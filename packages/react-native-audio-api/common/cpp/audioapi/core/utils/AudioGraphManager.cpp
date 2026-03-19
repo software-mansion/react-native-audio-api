@@ -72,11 +72,11 @@ AudioGraphManager::Event::~Event() {
   }
 }
 
-AudioGraphManager::AudioGraphManager() {
+AudioGraphManager::AudioGraphManager(const std::shared_ptr<utils::DisposerImpl<16>> &disposer)
+    : disposer_(disposer) {
   sourceNodes_.reserve(kInitialCapacity);
   processingNodes_.reserve(kInitialCapacity);
   audioParams_.reserve(kInitialCapacity);
-  audioBuffers_.reserve(kInitialCapacity);
 
   auto channel_pair = channels::spsc::channel<
       std::unique_ptr<Event>,
@@ -119,9 +119,8 @@ void AudioGraphManager::addPendingParamConnection(
 
 void AudioGraphManager::preProcessGraph() {
   settlePendingConnections();
-  AudioGraphManager::prepareForDestruction(sourceNodes_, nodeDestructor_);
-  AudioGraphManager::prepareForDestruction(processingNodes_, nodeDestructor_);
-  AudioGraphManager::prepareForDestruction(audioBuffers_, bufferDestructor_);
+  prepareForDestruction(sourceNodes_);
+  prepareForDestruction(processingNodes_);
 }
 
 void AudioGraphManager::addProcessingNode(const std::shared_ptr<AudioNode> &node) {
@@ -149,11 +148,6 @@ void AudioGraphManager::addAudioParam(const std::shared_ptr<AudioParam> &param) 
   event->payload.audioParam = param;
 
   sender_.send(std::move(event));
-}
-
-void AudioGraphManager::addAudioBufferForDestruction(std::shared_ptr<AudioBuffer> buffer) {
-  // direct access because this is called from the Audio thread
-  audioBuffers_.emplace_back(std::move(buffer));
 }
 
 void AudioGraphManager::settlePendingConnections() {
@@ -234,7 +228,6 @@ void AudioGraphManager::cleanup() {
   sourceNodes_.clear();
   processingNodes_.clear();
   audioParams_.clear();
-  audioBuffers_.clear();
 }
 
 } // namespace audioapi

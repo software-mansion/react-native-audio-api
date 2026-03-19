@@ -4,12 +4,11 @@
 
 #include <cstddef>
 #include <cstring>
-#include <new>
 #include <thread>
 #include <type_traits>
 #include <utility>
 
-namespace audioapi::utils::graph {
+namespace audioapi::utils {
 
 /// @brief A disposal payload that can hold any trivially-relocatable or
 /// move-constructible type up to N bytes. The value is moved into a raw byte
@@ -22,7 +21,7 @@ struct DisposalPayload {
   void (*destructor)(void *); // type-erased destructor
 
   /// @brief Sentinel check — a null destructor means "shutdown".
-  bool isSentinel() const;
+  [[nodiscard]] bool isSentinel() const;
 
   /// @brief Creates a sentinel payload used to signal worker thread shutdown.
   static DisposalPayload sentinel();
@@ -139,9 +138,9 @@ DisposerImpl<N>::DisposerImpl(size_t channelCapacity) {
   auto [sender, receiver] =
       channel<Payload, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>(channelCapacity);
   sender_ = std::move(sender);
-  workerHandle_ = std::thread([receiver = std::move(receiver)]() mutable {
+  workerHandle_ = std::thread([receiver_ = std::move(receiver)]() mutable {
     while (true) {
-      auto payload = receiver.receive();
+      auto payload = receiver_.receive();
       if (payload.isSentinel()) {
         break;
       }
@@ -163,4 +162,4 @@ bool DisposerImpl<N>::doDispose(DisposalPayload<N> &&payload) {
   return sender_.try_send(std::move(payload)) == audioapi::channels::spsc::ResponseStatus::SUCCESS;
 }
 
-} // namespace audioapi::utils::graph
+} // namespace audioapi::utils

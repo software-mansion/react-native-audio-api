@@ -27,7 +27,7 @@ ConvolverNode::ConvolverNode(
 
 void ConvolverNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    std::vector<Convolver> convolvers,
+    std::vector<std::unique_ptr<Convolver>> convolvers,
     const std::shared_ptr<ThreadPool> &threadPool,
     const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
     const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
@@ -39,11 +39,25 @@ void ConvolverNode::setBuffer(
 
   auto graphManager = context->getGraphManager();
 
-  if (buffer_) {
-    graphManager->addAudioBufferForDestruction(std::move(buffer_));
+  if (buffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(buffer_));
   }
 
-  // TODO move convolvers, thread pool and DSPAudioBuffers destruction to graph manager as well
+  if (threadPool_ != nullptr) {
+    context->getDisposer()->dispose(std::move(threadPool_));
+  }
+
+  for (auto it = convolvers_.begin(); it != convolvers_.end(); ++it) {
+    context->getDisposer()->dispose(std::move(*it));
+  }
+
+  if (internalBuffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(internalBuffer_));
+  }
+
+  if (intermediateBuffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(intermediateBuffer_));
+  }
 
   buffer_ = buffer;
   convolvers_ = std::move(convolvers);
@@ -86,7 +100,7 @@ void ConvolverNode::onInputDisabled() {
   numberOfEnabledInputNodes_ -= 1;
   if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
     signalledToStop_ = true;
-    remainingSegments_ = convolvers_.at(0).getSegCount();
+    remainingSegments_ = convolvers_.at(0)->getSegCount();
   }
 }
 
@@ -144,7 +158,7 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
   if (processingBuffer->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([&, i] {
-        convolvers_[i].process(
+        convolvers_[i]->process(
             *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i));
       });
     }
@@ -160,7 +174,7 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([this, i, inputChannelMap, outputChannelMap, &processingBuffer] {
-        convolvers_[i].process(
+        convolvers_[i]->process(
             *processingBuffer->getChannel(inputChannelMap[i]),
             *intermediateBuffer_->getChannel(outputChannelMap[i]));
       });

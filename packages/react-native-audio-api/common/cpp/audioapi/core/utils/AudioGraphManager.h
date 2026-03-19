@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/AudioDestructor.hpp>
+#include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 
@@ -59,7 +59,7 @@ class AudioGraphManager {
     ~Event();
   };
 
-  AudioGraphManager();
+  explicit AudioGraphManager(const std::shared_ptr<utils::DisposerImpl<16>> &disposer);
   ~AudioGraphManager();
 
   void preProcessGraph();
@@ -99,15 +99,10 @@ class AudioGraphManager {
   /// @note Should be only used from JavaScript/HostObjects thread
   void addAudioParam(const std::shared_ptr<AudioParam> &param);
 
-  /// @brief Adds an audio buffer to the manager for destruction.
-  /// @note Called directly from the Audio thread (bypasses SPSC).
-  void addAudioBufferForDestruction(std::shared_ptr<AudioBuffer> buffer);
-
   void cleanup();
 
  private:
-  AudioDestructor<AudioNode> nodeDestructor_;
-  AudioDestructor<AudioBuffer> bufferDestructor_;
+  const std::shared_ptr<utils::DisposerImpl<16>> disposer_;
 
   /// @brief Initial capacity for various node types for deletion
   /// @note Higher capacity decreases number of reallocations at runtime (can be easily adjusted to 128 if needed)
@@ -120,10 +115,8 @@ class AudioGraphManager {
   std::vector<std::shared_ptr<AudioScheduledSourceNode>> sourceNodes_;
   std::vector<std::shared_ptr<AudioNode>> processingNodes_;
   std::vector<std::shared_ptr<AudioParam>> audioParams_;
-  std::vector<std::shared_ptr<AudioBuffer>> audioBuffers_;
 
   channels::spsc::Receiver<AUDIO_GRAPH_MANAGER_SPSC_OPTIONS> receiver_;
-
   channels::spsc::Sender<AUDIO_GRAPH_MANAGER_SPSC_OPTIONS> sender_;
 
   void settlePendingConnections();
@@ -154,11 +147,8 @@ class AudioGraphManager {
     return node.use_count() == 1;
   }
 
-  template <typename T, typename D>
-    requires std::convertible_to<T *, D *>
-  static void prepareForDestruction(
-      std::vector<std::shared_ptr<T>> &vec,
-      AudioDestructor<D> &audioDestructor) {
+  template <typename T>
+  void prepareForDestruction(std::vector<std::shared_ptr<T>> &vec) {
     if (vec.empty()) {
       return;
     }
@@ -201,7 +191,7 @@ class AudioGraphManager {
       /// If we fail to add we can't safely remove the node from the vector
       /// so we swap it and advance begin cursor
       /// @note vec[i] does NOT get moved out if it is not successfully added.
-      if (!audioDestructor.tryAddForDeconstruction(std::move(vec[i]))) {
+      if (!disposer_->dispose(std::move(vec[i]))) {
         std::swap(vec[i], vec[begin]);
         begin++;
       }

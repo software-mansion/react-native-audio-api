@@ -67,17 +67,17 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   }
 
   auto threadPool = std::make_shared<ThreadPool>(4);
-  std::vector<Convolver> convolvers;
+  std::vector<std::unique_ptr<Convolver>> convolvers;
   for (size_t i = 0; i < copiedBuffer->getNumberOfChannels(); ++i) {
     AudioArray channelData(*copiedBuffer->getChannel(i));
     convolvers.emplace_back();
-    convolvers.back().init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
+    convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
   }
   if (copiedBuffer->getNumberOfChannels() == 1) {
     // add one more convolver, because right now input is always stereo
     AudioArray channelData(*copiedBuffer->getChannel(0));
     convolvers.emplace_back();
-    convolvers.back().init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
+    convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
   }
 
   auto internalBuffer = std::make_shared<DSPAudioBuffer>(
@@ -87,7 +87,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
 
   struct SetupData {
     std::shared_ptr<AudioBuffer> buffer;
-    std::vector<Convolver> convolvers;
+    std::vector<std::unique_ptr<Convolver>> convolvers;
     std::shared_ptr<ThreadPool> threadPool;
     std::shared_ptr<DSPAudioBuffer> internalBuffer;
     std::shared_ptr<DSPAudioBuffer> intermediateBuffer;

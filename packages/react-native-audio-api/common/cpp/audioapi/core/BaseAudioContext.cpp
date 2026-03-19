@@ -38,10 +38,11 @@ BaseAudioContext::BaseAudioContext(
     const RuntimeRegistry &runtimeRegistry)
     : state_(ContextState::SUSPENDED),
       sampleRate_(sampleRate),
-      graphManager_(std::make_shared<AudioGraphManager>()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       runtimeRegistry_(runtimeRegistry),
-      audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY) {}
+      audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY),
+      disposer_(std::make_shared<utils::DisposerImpl<16>>(AUDIO_SCHEDULER_CAPACITY)),
+      graphManager_(std::make_shared<AudioGraphManager>(disposer_)) {}
 
 void BaseAudioContext::initialize() {
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
@@ -254,6 +255,10 @@ std::shared_ptr<IAudioEventHandlerRegistry> BaseAudioContext::getAudioEventHandl
 
 const RuntimeRegistry &BaseAudioContext::getRuntimeRegistry() const {
   return runtimeRegistry_;
+}
+
+std::shared_ptr<utils::DisposerImpl<16>> BaseAudioContext::getDisposer() const {
+  return disposer_;
 }
 
 } // namespace audioapi

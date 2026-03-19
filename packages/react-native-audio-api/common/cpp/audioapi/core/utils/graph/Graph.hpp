@@ -1,7 +1,7 @@
 #pragma once
 
+#include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/Disposer.hpp>
 #include <audioapi/core/utils/graph/HostGraph.hpp>
 #include <audioapi/core/utils/graph/InputPool.hpp>
 

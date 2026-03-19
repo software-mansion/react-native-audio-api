@@ -58,10 +58,16 @@ void AudioBufferSourceNode::setBuffer(
   auto graphManager = context->getGraphManager();
 
   if (buffer_ != nullptr) {
-    graphManager->addAudioBufferForDestruction(std::move(buffer_));
+    context->getDisposer()->dispose(std::move(buffer_));
   }
 
-  // TODO move DSPAudioBuffers destruction to graph manager as well
+  if (playbackRateBuffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(playbackRateBuffer_));
+  }
+
+  if (audioBuffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(audioBuffer_));
+  }
 
   if (buffer == nullptr) {
     loopEnd_ = 0;

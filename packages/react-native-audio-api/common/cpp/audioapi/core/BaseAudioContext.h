@@ -2,6 +2,7 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
+#include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
@@ -107,6 +108,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<AudioGraphManager> getGraphManager() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   const RuntimeRegistry &getRuntimeRegistry() const;
+  std::shared_ptr<utils::DisposerImpl<16>> getDisposer() const;
 
   virtual void initialize();
 
@@ -131,7 +133,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  private:
   std::atomic<ContextState> state_;
   std::atomic<float> sampleRate_;
-  std::shared_ptr<AudioGraphManager> graphManager_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   RuntimeRegistry runtimeRegistry_;
 
@@ -142,6 +143,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
+  std::shared_ptr<utils::DisposerImpl<16>> disposer_;
+  std::shared_ptr<AudioGraphManager> graphManager_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };

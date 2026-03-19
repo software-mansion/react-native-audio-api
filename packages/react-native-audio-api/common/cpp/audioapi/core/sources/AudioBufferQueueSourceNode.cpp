@@ -81,7 +81,7 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
     auto graphManager = context->getGraphManager();
 
     if (buffers_.front().first == bufferId) {
-      graphManager->addAudioBufferForDestruction(std::move(buffers_.front().second));
+      context->getDisposer()->dispose(std::move(buffers_.front().second));
       buffers_.pop_front();
       vReadIndex_ = 0.0;
       return;
@@ -91,7 +91,7 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
     // And keep vReadIndex_ at the same position.
     for (auto it = std::next(buffers_.begin()); it != buffers_.end(); ++it) {
       if (it->first == bufferId) {
-        graphManager->addAudioBufferForDestruction(std::move(it->second));
+        context->getDisposer()->dispose(std::move(it->second));
         buffers_.erase(it);
         return;
       }
@@ -102,7 +102,7 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
 void AudioBufferQueueSourceNode::clearBuffers() {
   if (auto context = context_.lock()) {
     for (auto it = buffers_.begin(); it != buffers_.end(); ++it) {
-      context->getGraphManager()->addAudioBufferForDestruction(std::move(it->second));
+      context->getDisposer()->dispose(std::move(it->second));
     }
 
     buffers_.clear();
@@ -215,7 +215,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
             buffers_.emplace_back(bufferId, tailBuffer_);
             addExtraTailFrames_ = false;
           } else {
-            context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer));
+            context->getDisposer()->dispose(std::move(buffer));
             processingBuffer->zero(writeIndex, framesLeft);
             readIndex = 0;
 
@@ -223,7 +223,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
           }
         }
 
-        context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer));
+        context->getDisposer()->dispose(std::move(buffer));
         data = buffers_.front();
         bufferId = data.first;
         buffer = data.second;
@@ -296,14 +296,14 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
         sendOnBufferEndedEvent(bufferId, buffers_.empty());
 
         if (buffers_.empty()) {
-          context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer));
+          context->getDisposer()->dispose(std::move(buffer));
           processingBuffer->zero(writeIndex, framesLeft);
           vReadIndex_ = 0.0;
           break;
         }
 
-        context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer));
         vReadIndex_ = vReadIndex_ - buffer->getSize();
+        context->getDisposer()->dispose(std::move(buffer));
         data = buffers_.front();
         bufferId = data.first;
         buffer = data.second;
