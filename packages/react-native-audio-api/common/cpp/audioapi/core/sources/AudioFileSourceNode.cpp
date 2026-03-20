@@ -87,7 +87,24 @@ void AudioFileSourceNode::setDecoderState(const std::shared_ptr<AudioFileDecoder
   channelCount_ = state != nullptr ? state->channels : 1;
 }
 
+void AudioFileSourceNode::start(double when) {
+  if (filePaused_.load(std::memory_order_acquire)) {
+    filePaused_.store(false, std::memory_order_release);
+    if (fileStarted_) {
+      return;
+    }
+  }
+
+  AudioScheduledSourceNode::start(when);
+}
+
+void AudioFileSourceNode::pause() {
+  filePaused_.store(true, std::memory_order_release);
+}
+
 void AudioFileSourceNode::disable() {
+  filePaused_.store(false, std::memory_order_release);
+  fileStarted_ = false;
   if (FFmpegNeeded_) {
     decoder.close();
   } else {
@@ -127,6 +144,11 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
 
   if (startOffset > 0) {
     processingBuffer->zero(0, startOffset);
+  }
+
+  if (filePaused_.load(std::memory_order_acquire)) {
+    processingBuffer->zero(startOffset, nonSilentFrames);
+    return processingBuffer;
   }
 
   auto &state = *decoderState_;

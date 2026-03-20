@@ -1,4 +1,9 @@
 export { default } from './Audio';
 export { AudioComponentContext } from './Audio';
 
-export type { AudioProps, AudioSource, TimeRanges } from './types';
+export type {
+  AudioProps,
+  AudioSource,
+  AudioTagPlaybackState,
+  TimeRanges,
+} from './types';

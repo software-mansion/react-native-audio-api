@@ -36,6 +36,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   void disable() override;
 
+  void start(double when) override;
+
   float getVolume() const {
     return volume_.load(std::memory_order_acquire);
   }
@@ -43,6 +45,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   void setVolume(float v) {
     volume_.store(v, std::memory_order_release);
   }
+
+  void pause();
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(
@@ -55,6 +59,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   bool FFmpegNeeded_;
   ffmpegdecoder::FFmpegDecoder decoder;
   ffmpegdecoder::FFmpegDecoderConfig cfg;
+  std::atomic<bool> filePaused_{false};
+  bool fileStarted_{false};
 };
 
 } // namespace audioapi

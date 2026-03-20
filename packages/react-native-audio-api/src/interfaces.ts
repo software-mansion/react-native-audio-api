@@ -231,6 +231,7 @@ export interface IAudioBufferQueueSourceNode
 
 export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   volume?: number;
+  pause: () => void;
 }
 
 export interface IConvolverNode extends IAudioNode {

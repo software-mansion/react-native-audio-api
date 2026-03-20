@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import type { AudioProps } from './types';
+import type { AudioProps, AudioTagPlaybackState } from './types';
 import { AudioComponentContext } from './Audio';
 import { useStableAudioProps } from './utils';
 
@@ -30,6 +30,8 @@ const Audio: React.FC<AudioProps> = (props) => {
   const [volumeState, setVolumeState] = useState(volume);
   const [mutedState, setMutedState] = useState(muted);
   const [isReady, setIsReady] = useState(false);
+  const [playbackState, setPlaybackState] =
+    useState<AudioTagPlaybackState>('idle');
 
   useEffect(() => {
     setVolumeState(volume);
@@ -57,6 +59,10 @@ const Audio: React.FC<AudioProps> = (props) => {
     audioRef.current?.play()?.catch(() => {});
   }, []);
 
+  const pause = useCallback(() => {
+    audioRef.current?.pause();
+  }, []);
+
   const setVolume = useCallback((next: number) => {
     setVolumeState(next);
     const el = audioRef.current;
@@ -76,13 +82,24 @@ const Audio: React.FC<AudioProps> = (props) => {
   const ctxValue = useMemo(
     () => ({
       play,
+      pause,
       volume: volumeState,
       setVolume,
       muted: mutedState,
       setMuted,
       isReady,
+      playbackState,
     }),
-    [play, setVolume, volumeState, mutedState, setMuted, isReady]
+    [
+      play,
+      pause,
+      setVolume,
+      volumeState,
+      mutedState,
+      setMuted,
+      isReady,
+      playbackState,
+    ]
   );
 
   return (
@@ -92,6 +109,11 @@ const Audio: React.FC<AudioProps> = (props) => {
         muted={mutedState}
         ref={audioRef}
         onLoadedData={() => setIsReady(true)}
+        onPlay={() => setPlaybackState('playing')}
+        onPause={() =>
+          setPlaybackState((s) => (s === 'playing' ? 'paused' : s))
+        }
+        onEnded={() => setPlaybackState('idle')}
       />
       {children}
     </AudioComponentContext.Provider>

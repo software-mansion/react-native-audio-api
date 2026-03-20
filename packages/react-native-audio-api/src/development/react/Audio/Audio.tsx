@@ -7,26 +7,34 @@ import React, {
   useState,
 } from 'react';
 
-import AudioFileSourceNode from '../../../core/AudioFileSourceNode';
-import type { AudioProps, AudioURISource } from './types';
+import { IAudioFileSourceNode } from '../../../interfaces';
+import type {
+  AudioProps,
+  AudioTagPlaybackState,
+  AudioURISource,
+} from './types';
 import { useStableAudioProps } from './utils';
 
 export type AudioComponentContextType = {
   play: () => void;
+  pause: () => void;
   volume: number;
   setVolume: (volume: number) => void;
   muted: boolean;
   setMuted: (muted: boolean) => void;
   isReady: boolean;
+  playbackState: AudioTagPlaybackState;
 };
 
 export const AudioComponentContext = createContext<AudioComponentContextType>({
   play: () => {},
+  pause: () => {},
   volume: 1,
   setVolume: () => {},
   muted: false,
   setMuted: () => {},
   isReady: false,
+  playbackState: 'idle',
 });
 
 const Audio: React.FC<AudioProps> = (inProps) => {
@@ -53,10 +61,18 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     return (source as AudioURISource).uri ?? '';
   }, [source]);
 
-  const nodeRef = useRef<AudioFileSourceNode | null>(null);
+  const nodeRef = useRef<IAudioFileSourceNode | null>(null);
   const [volumeState, setVolumeState] = useState(volume);
   const [mutedState, setMutedState] = useState(muted);
   const [isReady, setIsReady] = useState(false);
+  const [playbackState, setPlaybackState] =
+    useState<AudioTagPlaybackState>('idle');
+
+  const volumeStateRef = useRef(volumeState);
+  volumeStateRef.current = volumeState;
+
+  const mutedStateRef = useRef(mutedState);
+  mutedStateRef.current = mutedState;
 
   const contextRef = useRef(context);
   contextRef.current = context;
@@ -75,20 +91,30 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     if (!n || !ctx) {
       return;
     }
-    n.connect(ctx.destination);
+    // @ts-ignore - internal
+    n.connect(ctx.destination.node);
     n.start(0);
+    setPlaybackState('playing');
+  }, []);
+
+  const pause = useCallback(() => {
+    if (!nodeRef.current) {
+      return;
+    }
+    nodeRef.current.pause();
+    setPlaybackState((s) => (s === 'idle' ? 'idle' : 'paused'));
   }, []);
 
   const attachNode = useCallback(
-    (n: AudioFileSourceNode) => {
-      n.volume = volumeState;
+    (n: IAudioFileSourceNode) => {
+      n.volume = mutedStateRef.current ? 0 : volumeStateRef.current;
       nodeRef.current = n;
       setIsReady(true);
       if (autoPlay) {
         play();
       }
     },
-    [autoPlay, play, volumeState]
+    [autoPlay, play]
   );
 
   useEffect(() => {
@@ -100,34 +126,40 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       if (path.startsWith('http')) {
         const response = await fetch(path);
         const arrayBuffer = await response.arrayBuffer();
-        attachNode(new AudioFileSourceNode(context, arrayBuffer));
+        attachNode(context.context.createFileSource(arrayBuffer));
       } else {
-        attachNode(new AudioFileSourceNode(context, path));
+        attachNode(context.context.createFileSource(path));
       }
     };
 
     setIsReady(false);
+    setPlaybackState('idle');
     run();
 
     return () => {
-      nodeRef.current?.disconnect();
+      const prev = nodeRef.current;
+      if (prev) {
+        prev.onEnded = '0';
+      }
+      prev?.disconnect(undefined);
       nodeRef.current = null;
       setIsReady(false);
+      setPlaybackState('idle');
     };
   }, [path, context, attachNode]);
 
   useEffect(() => {
     const n = nodeRef.current;
     if (n) {
-      n.volume = volumeState;
+      n.volume = mutedState ? 0 : volumeState;
     }
-  }, [volumeState]);
+  }, [volumeState, mutedState]);
 
   const setVolume = useCallback((next: number) => {
     setVolumeState(next);
     const n = nodeRef.current;
     if (n) {
-      n.volume = next;
+      n.volume = mutedStateRef.current ? 0 : next;
     }
   }, []);
 
@@ -149,13 +181,24 @@ const Audio: React.FC<AudioProps> = (inProps) => {
   const ctxValue = useMemo(
     () => ({
       play,
+      pause,
       volume: volumeState,
       setVolume,
       muted: mutedState,
       setMuted,
       isReady,
+      playbackState,
     }),
-    [play, setVolume, volumeState, mutedState, setMuted, isReady]
+    [
+      play,
+      pause,
+      setVolume,
+      volumeState,
+      mutedState,
+      setMuted,
+      isReady,
+      playbackState,
+    ]
   );
 
   if (context === null) {

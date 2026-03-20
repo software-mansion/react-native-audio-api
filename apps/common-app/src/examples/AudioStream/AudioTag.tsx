@@ -1,14 +1,14 @@
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { Audio } from 'react-native-audio-api/development/react';
 
-import { Button, Container } from '../../components';
+import { Container } from '../../components';
 import { layout } from '../../styles';
 import AudioContent from './AudioContent';
 
 const DEMO_AUDIO_URL =
-  // 'https://filesamples.com/samples/audio/aac/sample4.aac';
-  '/data/data/com.fabricexample/cache/audio.wav';
+  'https://filesamples.com/samples/audio/aac/sample4.aac';
+  // '/data/data/com.fabricexample/cache/audio.wav';
 
 const AudioTag: React.FC = () => {
   return (

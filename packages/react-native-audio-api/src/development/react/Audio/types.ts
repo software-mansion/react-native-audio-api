@@ -26,6 +26,12 @@ export type AudioSource =
 
 export type PreloadType = 'auto' | 'metadata' | 'none';
 
+/**
+ * Playback phase exposed on `<Audio />` context (native file source or
+ * `<audio>` element).
+ */
+export type AudioTagPlaybackState = 'idle' | 'playing' | 'paused';
+
 interface AudioControlProps {
   autoPlay: boolean;
   controls: boolean; // TBD: should we support control display at all?
