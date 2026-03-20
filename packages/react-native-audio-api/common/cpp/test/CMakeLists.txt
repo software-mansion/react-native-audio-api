@@ -38,6 +38,7 @@ list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/AudioContext.cpp"
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/AudioFileSourceNode.cpp"
 )
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS
