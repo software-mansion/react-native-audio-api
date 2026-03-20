@@ -20,6 +20,10 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
 
   JSI_PROPERTY_GETTER_DECL(volume);
   JSI_PROPERTY_SETTER_DECL(volume);
+  JSI_PROPERTY_GETTER_DECL(loop);
+  JSI_PROPERTY_SETTER_DECL(loop);
+  JSI_PROPERTY_GETTER_DECL(currentTime);
+  JSI_PROPERTY_GETTER_DECL(duration);
 
   JSI_HOST_FUNCTION_DECL(pause);
 };

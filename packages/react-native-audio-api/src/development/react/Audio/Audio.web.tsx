@@ -6,7 +6,7 @@ import React, {
   useState,
 } from 'react';
 import type { AudioProps, AudioTagPlaybackState } from './types';
-import { AudioComponentContext } from './Audio';
+import { AudioComponentContext } from './AudioTagContext';
 import { useStableAudioProps } from './utils';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -23,7 +23,6 @@ const Audio: React.FC<AudioProps> = (props) => {
     playbackRate,
     preservesPitch,
     volume,
-    context, // null on web, since web do not use AudioContext for audio tag, left for mobile compatibility
   } = useStableAudioProps(props);
 
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -32,6 +31,8 @@ const Audio: React.FC<AudioProps> = (props) => {
   const [isReady, setIsReady] = useState(false);
   const [playbackState, setPlaybackState] =
     useState<AudioTagPlaybackState>('idle');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     setVolumeState(volume);
@@ -47,6 +48,24 @@ const Audio: React.FC<AudioProps> = (props) => {
       el.volume = volumeState;
     }
   }, [volumeState]);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const onLoadedMetadata = () => {
+      setDuration(el.duration);
+      setCurrentTime(el.currentTime);
+    };
+    const onTimeUpdate = () => setCurrentTime(el.currentTime);
+    el.addEventListener('loadedmetadata', onLoadedMetadata);
+    el.addEventListener('timeupdate', onTimeUpdate);
+    if (!isNaN(el.duration)) setDuration(el.duration);
+    setCurrentTime(el.currentTime);
+    return () => {
+      el.removeEventListener('loadedmetadata', onLoadedMetadata);
+      el.removeEventListener('timeupdate', onTimeUpdate);
+    };
+  }, [isReady]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -89,6 +108,8 @@ const Audio: React.FC<AudioProps> = (props) => {
       setMuted,
       isReady,
       playbackState,
+      currentTime,
+      duration,
     }),
     [
       play,
@@ -99,6 +120,8 @@ const Audio: React.FC<AudioProps> = (props) => {
       setMuted,
       isReady,
       playbackState,
+      currentTime,
+      duration,
     ]
   );
 
@@ -106,6 +129,9 @@ const Audio: React.FC<AudioProps> = (props) => {
     <AudioComponentContext.Provider value={ctxValue}>
       <audio
         autoPlay={autoPlay}
+        controls={controls}
+        loop={loop}
+        preload={preload}
         muted={mutedState}
         ref={audioRef}
         onLoadedData={() => setIsReady(true)}

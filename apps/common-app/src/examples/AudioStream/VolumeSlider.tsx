@@ -1,10 +1,9 @@
-import { useContext } from 'react';
-import { AudioComponentContext } from 'react-native-audio-api/development/react';
+import { useAudioTagContext } from 'react-native-audio-api/development/react';
 import { Slider } from '../../components';
 import { View } from 'react-native';
 
 const VolumeSlider: React.FC = () => {
-  const { volume, setVolume } = useContext(AudioComponentContext);
+  const { volume, setVolume } = useAudioTagContext();
 
   return (
     <View style={{ width: 200 }}>

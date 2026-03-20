@@ -60,8 +60,8 @@ class FFmpegDecoder {
   FFmpegDecoder() = default;
   FFmpegDecoder(const FFmpegDecoder &) = delete;
   FFmpegDecoder &operator=(const FFmpegDecoder &) = delete;
-  FFmpegDecoder(FFmpegDecoder &&other) noexcept;
-  FFmpegDecoder &operator=(FFmpegDecoder &&other) noexcept;
+  FFmpegDecoder(FFmpegDecoder &&other) = delete;
+  FFmpegDecoder &operator=(FFmpegDecoder &&other) = delete;
   ~FFmpegDecoder();
 
   /// @brief Opens a file for decoding.
@@ -92,6 +92,16 @@ class FFmpegDecoder {
   [[nodiscard]] int outputChannels() const { return output_channels_; }
   [[nodiscard]] int outputSampleRate() const { return output_sample_rate_; }
 
+  /// @brief Duration in seconds. Returns 0 if unknown.
+  [[nodiscard]] float getDurationInSeconds() const;
+
+  /// @brief Current playback position in seconds (frames read / sample rate).
+  [[nodiscard]] float getCurrentPositionInSeconds() const;
+
+  /// @brief Seeks to the start of the stream. Call after EOF to loop.
+  /// @return True if seek succeeded.
+  [[nodiscard]] bool seekToStart();
+
   static constexpr size_t CHUNK_SIZE = 4096;
 
  private:
@@ -112,9 +122,11 @@ class FFmpegDecoder {
   AVIOContext *avio_ctx_ = nullptr;
 
   std::vector<float> leftover_;
+  size_t leftover_offset_ = 0;
   int audio_stream_index_ = -1;
   int output_channels_ = 0;
   int output_sample_rate_ = 0;
+  size_t total_output_frames_ = 0;
 };
 
 // --- One-shot decode (existing API) ----------------------------------------

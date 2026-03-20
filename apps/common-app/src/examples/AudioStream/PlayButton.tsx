@@ -1,9 +1,8 @@
-import { useContext } from 'react';
-import { AudioComponentContext } from 'react-native-audio-api/development/react';
+import { useAudioTagContext } from 'react-native-audio-api/development/react';
 import { Button } from 'react-native';
 
 const AudioPlayerButton: React.FC = () => {
-  const { play } = useContext(AudioComponentContext);
+  const { play } = useAudioTagContext();
 
   return (
     <Button onPress={play} title="Play" />

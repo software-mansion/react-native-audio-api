@@ -1,5 +1,5 @@
 export { default } from './Audio';
-export { AudioComponentContext } from './Audio';
+export { useAudioTagContext } from './AudioTagContext';
 
 export type {
   AudioProps,

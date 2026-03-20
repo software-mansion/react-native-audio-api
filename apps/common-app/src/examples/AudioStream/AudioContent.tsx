@@ -1,20 +1,17 @@
-import { useContext } from 'react';
-import { AudioComponentContext } from 'react-native-audio-api/development/react';
+import { useAudioTagContext } from 'react-native-audio-api/development/react';
 import { ActivityIndicator, Button, Text, View } from 'react-native';
 import VolumeSlider from './VolumeSlider';
 import { Spacer } from '../../components';
 
 const AudioContent: React.FC = () => {
-  const { isReady, play, pause, playbackState, setMuted, muted } = useContext(
-    AudioComponentContext
-  );
+  const { isReady, play, pause, playbackState, setMuted, muted } = useAudioTagContext();
 
   return (
     <View>
       {!isReady ? (
         <ActivityIndicator color="#fff" />
       ) : (
-        <>
+        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ color: '#fff' }}>{playbackState}</Text>
           <Spacer.Vertical size={12} />
           <Button
@@ -32,7 +29,7 @@ const AudioContent: React.FC = () => {
           <Spacer.Vertical size={12} />
           <Spacer.Vertical size={50} />
           <VolumeSlider />
-        </>
+        </View>
       )}
     </View>
   );

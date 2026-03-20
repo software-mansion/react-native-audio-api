@@ -231,6 +231,9 @@ export interface IAudioBufferQueueSourceNode
 
 export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   volume?: number;
+  loop: boolean;
+  readonly currentTime: number;
+  readonly duration: number;
   pause: () => void;
 }
 

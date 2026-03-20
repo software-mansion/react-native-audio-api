@@ -11,7 +11,7 @@ import { AudioProps, AudioPropsBase } from './types';
  */
 export function withPropsDefaults(
   props: AudioProps,
-  resolvedContext: BaseAudioContext | null
+  resolvedContext: BaseAudioContext | undefined
 ): AudioPropsBase {
   return {
     ...props,
@@ -30,14 +30,14 @@ export function withPropsDefaults(
 
 export function useStableAudioProps(props: AudioProps): AudioPropsBase {
   const defaultContextRef = useRef<BaseAudioContext | null>(null);
-  const resolvedContext: BaseAudioContext | null =
+  const resolvedContext: BaseAudioContext | undefined =
     Platform.OS === 'web'
-      ? null
+      ? undefined
       : (() => {
           if (defaultContextRef.current === null) {
             defaultContextRef.current = new AudioContext();
           }
-          return props.context ?? defaultContextRef.current;
+          return props.context ?? defaultContextRef.current ?? undefined;
         })();
 
   const {

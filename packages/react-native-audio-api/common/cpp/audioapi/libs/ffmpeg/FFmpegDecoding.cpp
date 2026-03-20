@@ -12,11 +12,13 @@
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
-#include <utility>
 
 extern "C" {
+#include <libavutil/avutil.h>
 #include <libavutil/channel_layout.h>
+#include <libavutil/mathematics.h>
 }
 
 namespace audioapi::ffmpegdecoder {
@@ -88,39 +90,6 @@ bool openCodec(AVFormatContext *fmt_ctx, int &audio_stream_index, AVCodecContext
   return true;
 }
 
-FFmpegDecoder::FFmpegDecoder(FFmpegDecoder &&other) noexcept {
-  *this = std::move(other);
-}
-
-FFmpegDecoder &FFmpegDecoder::operator=(FFmpegDecoder &&other) noexcept {
-  if (this != &other) {
-    close();
-    fmt_ctx_ = other.fmt_ctx_;
-    codec_ctx_ = other.codec_ctx_;
-    swr_ = other.swr_;
-    packet_ = other.packet_;
-    frame_ = other.frame_;
-    resampled_data_ = other.resampled_data_;
-    max_resampled_samples_ = other.max_resampled_samples_;
-    mem_io_ = std::move(other.mem_io_);
-    avio_ctx_ = other.avio_ctx_;
-    leftover_ = std::move(other.leftover_);
-    audio_stream_index_ = other.audio_stream_index_;
-    output_channels_ = other.output_channels_;
-    output_sample_rate_ = other.output_sample_rate_;
-
-    other.fmt_ctx_ = nullptr;
-    other.codec_ctx_ = nullptr;
-    other.swr_ = nullptr;
-    other.packet_ = nullptr;
-    other.frame_ = nullptr;
-    other.resampled_data_ = nullptr;
-    other.max_resampled_samples_ = 0;
-    other.avio_ctx_ = nullptr;
-  }
-  return *this;
-}
-
 FFmpegDecoder::~FFmpegDecoder() {
   close();
 }
@@ -151,9 +120,11 @@ void FFmpegDecoder::close() {
   }
   mem_io_.reset();
   leftover_.clear();
+  leftover_offset_ = 0;
   audio_stream_index_ = -1;
   output_channels_ = 0;
   output_sample_rate_ = 0;
+  total_output_frames_ = 0;
 }
 
 bool FFmpegDecoder::setupSwr() {
@@ -218,6 +189,7 @@ bool FFmpegDecoder::openFile(const FFmpegDecoderConfig &cfg, const std::string &
     close();
     return false;
   }
+  total_output_frames_ = 0;
   return true;
 }
 
@@ -279,6 +251,7 @@ bool FFmpegDecoder::openMemory(const FFmpegDecoderConfig &cfg, const void *data,
     close();
     return false;
   }
+  total_output_frames_ = 0;
   return true;
 }
 
@@ -347,6 +320,42 @@ bool FFmpegDecoder::feedPipeline() {
   }
 }
 
+float FFmpegDecoder::getDurationInSeconds() const {
+  if (!isOpen() || fmt_ctx_ == nullptr || audio_stream_index_ < 0) {
+    return 0;
+  }
+  if (fmt_ctx_->duration != AV_NOPTS_VALUE && fmt_ctx_->duration >= 0) {
+    double t =
+        static_cast<double>(fmt_ctx_->duration) / static_cast<double>(AV_TIME_BASE);
+    if (t > 0 && std::isfinite(t)) {
+      return static_cast<float>(t);
+    }
+  }
+  return 0;
+}
+
+float FFmpegDecoder::getCurrentPositionInSeconds() const {
+  if (!isOpen() || output_sample_rate_ <= 0) {
+    return 0;
+  }
+  return static_cast<float>(total_output_frames_) / static_cast<float>(output_sample_rate_);
+}
+
+bool FFmpegDecoder::seekToStart() {
+  if (!isOpen() || audio_stream_index_ < 0) {
+    return false;
+  }
+  if (avformat_seek_file(
+          fmt_ctx_, -1, INT64_MIN, 0, INT64_MAX, 0) < 0) {
+    return false;
+  }
+  avcodec_flush_buffers(codec_ctx_);
+  leftover_.clear();
+  leftover_offset_ = 0;
+  total_output_frames_ = 0;
+  return true;
+}
+
 size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   if (!isOpen() || outInterleaved == nullptr || frameCount == 0 || output_channels_ <= 0) {
     return 0;
@@ -356,20 +365,28 @@ size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
 
   while (delivered < frameCount) {
     size_t need = frameCount - delivered;
-    size_t leftover_frames = leftover_.size() / ch;
+    size_t available_samples = leftover_.size() > leftover_offset_
+        ? leftover_.size() - leftover_offset_
+        : 0;
+    size_t leftover_frames = available_samples / ch;
     if (leftover_frames > 0) {
       size_t take = std::min(need, leftover_frames);
       size_t samples = take * ch;
       memcpy(
           outInterleaved + delivered * ch,
-          leftover_.data(),
+          leftover_.data() + leftover_offset_,
           samples * sizeof(float));
-      leftover_.erase(leftover_.begin(), leftover_.begin() + static_cast<ptrdiff_t>(samples));
+      leftover_offset_ += samples;
+      if (leftover_offset_ >= leftover_.size()) {
+        leftover_.clear();
+        leftover_offset_ = 0;
+      }
       delivered += take;
     } else if (!feedPipeline()) {
       break;
     }
   }
+  total_output_frames_ += delivered;
   return delivered;
 }
 
@@ -451,6 +468,15 @@ bool FFmpegDecoder::openFile(const FFmpegDecoderConfig &, const std::string &) {
   return false;
 }
 bool FFmpegDecoder::openMemory(const FFmpegDecoderConfig &, const void *, size_t) {
+  return false;
+}
+float FFmpegDecoder::getDurationInSeconds() const {
+  return 0;
+}
+float FFmpegDecoder::getCurrentPositionInSeconds() const {
+  return 0;
+}
+bool FFmpegDecoder::seekToStart() {
   return false;
 }
 size_t FFmpegDecoder::readPcmFrames(float *, size_t) {

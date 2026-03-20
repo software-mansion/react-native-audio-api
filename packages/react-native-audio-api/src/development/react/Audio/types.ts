@@ -43,7 +43,7 @@ interface AudioControlProps {
   preservesPitch: boolean;
   volume: number;
   children?: ReactNode;
-  context: BaseAudioContext | null; // null on web, since web do not use AudioContext for audio tag
+  context?: BaseAudioContext; // optional on web, since web do not use AudioContext for audio tag
 }
 
 interface AudioReadonlyProps {

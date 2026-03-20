@@ -1,11 +1,11 @@
 import React, {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
+import { View } from 'react-native';
 
 import { IAudioFileSourceNode } from '../../../interfaces';
 import type {
@@ -14,28 +14,8 @@ import type {
   AudioURISource,
 } from './types';
 import { useStableAudioProps } from './utils';
-
-export type AudioComponentContextType = {
-  play: () => void;
-  pause: () => void;
-  volume: number;
-  setVolume: (volume: number) => void;
-  muted: boolean;
-  setMuted: (muted: boolean) => void;
-  isReady: boolean;
-  playbackState: AudioTagPlaybackState;
-};
-
-export const AudioComponentContext = createContext<AudioComponentContextType>({
-  play: () => {},
-  pause: () => {},
-  volume: 1,
-  setVolume: () => {},
-  muted: false,
-  setMuted: () => {},
-  isReady: false,
-  playbackState: 'idle',
-});
+import { AudioComponentContext } from './AudioTagContext';
+import AudioControls from './AudioControls';
 
 const Audio: React.FC<AudioProps> = (inProps) => {
   const { children } = inProps;
@@ -67,15 +47,8 @@ const Audio: React.FC<AudioProps> = (inProps) => {
   const [isReady, setIsReady] = useState(false);
   const [playbackState, setPlaybackState] =
     useState<AudioTagPlaybackState>('idle');
-
-  const volumeStateRef = useRef(volumeState);
-  volumeStateRef.current = volumeState;
-
-  const mutedStateRef = useRef(mutedState);
-  mutedStateRef.current = mutedState;
-
-  const contextRef = useRef(context);
-  contextRef.current = context;
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     setVolumeState(volume);
@@ -87,15 +60,14 @@ const Audio: React.FC<AudioProps> = (inProps) => {
 
   const play = useCallback(() => {
     const n = nodeRef.current;
-    const ctx = contextRef.current;
-    if (!n || !ctx) {
+    if (!n || !context) {
       return;
     }
     // @ts-ignore - internal
-    n.connect(ctx.destination.node);
+    n.connect(context.destination.node);
     n.start(0);
     setPlaybackState('playing');
-  }, []);
+  }, [context]);
 
   const pause = useCallback(() => {
     if (!nodeRef.current) {
@@ -107,14 +79,16 @@ const Audio: React.FC<AudioProps> = (inProps) => {
 
   const attachNode = useCallback(
     (n: IAudioFileSourceNode) => {
-      n.volume = mutedStateRef.current ? 0 : volumeStateRef.current;
       nodeRef.current = n;
+      n.loop = loop;
+      setCurrentTime(n.currentTime);
+      setDuration(n.duration);
       setIsReady(true);
       if (autoPlay) {
         play();
       }
     },
-    [autoPlay, play]
+    [autoPlay, play, loop]
   );
 
   useEffect(() => {
@@ -137,11 +111,7 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     run();
 
     return () => {
-      const prev = nodeRef.current;
-      if (prev) {
-        prev.onEnded = '0';
-      }
-      prev?.disconnect(undefined);
+      nodeRef.current?.disconnect(undefined);
       nodeRef.current = null;
       setIsReady(false);
       setPlaybackState('idle');
@@ -153,15 +123,40 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     if (n) {
       n.volume = mutedState ? 0 : volumeState;
     }
-  }, [volumeState, mutedState]);
+  }, [volumeState, mutedState, isReady]);
 
-  const setVolume = useCallback((next: number) => {
-    setVolumeState(next);
+  useEffect(() => {
     const n = nodeRef.current;
     if (n) {
-      n.volume = mutedStateRef.current ? 0 : next;
+      n.loop = loop;
     }
-  }, []);
+  }, [loop, isReady]);
+
+  useEffect(() => {
+    const n = nodeRef.current;
+    if (!n || playbackState !== 'playing') return;
+    const id = setInterval(() => {
+      const node = nodeRef.current;
+      if (node) {
+        setCurrentTime(node.currentTime);
+      }
+      console.log('currentTime', node?.currentTime);
+    }, 250);
+    return () => {
+      clearInterval(id);
+    };
+  }, [playbackState]);
+
+  const setVolume = useCallback(
+    (next: number) => {
+      setVolumeState(next);
+      const n = nodeRef.current;
+      if (n) {
+        n.volume = mutedState ? 0 : next;
+      }
+    },
+    [mutedState]
+  );
 
   const setMuted = useCallback(
     (next: boolean) => {
@@ -188,6 +183,8 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       setMuted,
       isReady,
       playbackState,
+      currentTime,
+      duration,
     }),
     [
       play,
@@ -198,16 +195,21 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       setMuted,
       isReady,
       playbackState,
+      currentTime,
+      duration,
     ]
   );
 
-  if (context === null) {
+  if (context == null) {
     return null;
   }
 
   return (
     <AudioComponentContext.Provider value={ctxValue}>
-      {children}
+      <View style={{ alignSelf: 'stretch', width: '100%' }}>
+        {controls && <AudioControls />}
+        {children}
+      </View>
     </AudioComponentContext.Provider>
   );
 };
