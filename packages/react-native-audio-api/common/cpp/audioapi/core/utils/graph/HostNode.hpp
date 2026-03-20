@@ -103,6 +103,18 @@ class HostNode {
     return graph_->removeEdge(node_, other.node_);
   }
 
+  /// @brief Connects this node's output to a param on the owner node via a bridge.
+  /// @return Ok on success, Err on cycle / duplicate / not-found
+  Res connectParam(HostNode &owner, AudioParam *param) {
+    return graph_->connectParam(node_, owner.node_, param);
+  }
+
+  /// @brief Disconnects this node's output from a param on the owner node.
+  /// @return Ok on success, Err on not-found
+  Res disconnectParam(HostNode &owner, AudioParam *param) {
+    return graph_->disconnectParam(node_, owner.node_, param);
+  }
+
   /// @brief Returns the raw HostGraph::Node pointer (for advanced usage / testing).
   [[nodiscard]] HNode *rawNode() const {
     return node_;

@@ -30,6 +30,15 @@ class GraphObject {
     return true;
   }
 
+  /// @brief Returns whether this node should be processed during audio iteration.
+  ///
+  /// Default is true. BridgeNodes override to return false — they exist only
+  /// for graph structure (cycle detection, topo ordering) and are skipped
+  /// by AudioGraph::iter().
+  [[nodiscard]] virtual bool isProcessable() const {
+    return true;
+  }
+
   /// @brief Downcast helper for node-specific handling.
   [[nodiscard]] virtual AudioNode *asAudioNode() {
     return nullptr;

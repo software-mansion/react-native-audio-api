@@ -166,7 +166,9 @@ inline bool AudioGraph::empty() const {
 }
 
 inline auto AudioGraph::iter() {
-  return nodes | std::views::transform([this](Node &node) {
+  return nodes |
+      std::views::filter([](const Node &n) { return n.handle->audioNode->isProcessable(); }) |
+      std::views::transform([this](Node &node) {
            return Entry{
                *node.handle->audioNode,
                pool_.view(node.input_head) |

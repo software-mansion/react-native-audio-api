@@ -8,6 +8,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
+#include <audioapi/core/utils/graph/BridgeNode.hpp>
 #include <audioapi/core/utils/graph/HostGraph.hpp>
 #include <audioapi/core/utils/graph/HostNode.hpp>
 #include <test/src/MockAudioEventHandlerRegistry.h>
@@ -56,6 +57,20 @@ struct MockNode : AudioNode {
   }
 
   std::atomic<bool> destructible_;
+};
+
+// ── NonProcessableMockNode ────────────────────────────────────────────────
+// Pure GraphObject subclass that is not processable. Used to test
+// iter() filtering at the AudioGraph level without depending on BridgeNode.
+
+struct NonProcessableMockNode : GraphObject {
+  [[nodiscard]] bool isProcessable() const override {
+    return false;
+  }
+
+  [[nodiscard]] bool canBeDestructed() const override {
+    return true;
+  }
 };
 
 // ── MockHostNode ──────────────────────────────────────────────────────────
