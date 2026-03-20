@@ -154,7 +154,9 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
   auto &state = *decoderState_;
   size_t framesReadCount = 0;
   if (FFmpegNeeded_) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
     framesReadCount = decoder.readPcmFrames(state.interleavedBuffer.data(), nonSilentFrames);
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
   } else {
     ma_uint64 framesRead = 0;
     ma_decoder_read_pcm_frames(

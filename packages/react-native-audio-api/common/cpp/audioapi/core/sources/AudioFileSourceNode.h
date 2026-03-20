@@ -1,7 +1,9 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
 #include <atomic>
@@ -57,8 +59,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   std::shared_ptr<AudioFileDecoderState> decoderState_;
   std::atomic<float> volume_;
   bool FFmpegNeeded_;
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   ffmpegdecoder::FFmpegDecoder decoder;
   ffmpegdecoder::FFmpegDecoderConfig cfg;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
   std::atomic<bool> filePaused_{false};
   bool fileStarted_{false};
 };
