@@ -4,6 +4,7 @@
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -35,6 +36,14 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   void disable() override;
 
+  float getVolume() const {
+    return volume_.load(std::memory_order_acquire);
+  }
+
+  void setVolume(float v) {
+    volume_.store(v, std::memory_order_release);
+  }
+
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
@@ -42,6 +51,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
  private:
   std::shared_ptr<AudioFileDecoderState> decoderState_;
+  std::atomic<float> volume_;
   bool FFmpegNeeded_;
   ffmpegdecoder::FFmpegDecoder decoder;
   ffmpegdecoder::FFmpegDecoderConfig cfg;

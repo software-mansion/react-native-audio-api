@@ -229,7 +229,9 @@ export interface IAudioBufferQueueSourceNode
   onBufferEnded: string;
 }
 
-export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {}
+export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
+  volume?: number;
+}
 
 export interface IConvolverNode extends IAudioNode {
   readonly buffer: IAudioBuffer | null;

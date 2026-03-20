@@ -1,3 +1,6 @@
+import { ReactNode } from 'react';
+import type BaseAudioContext from '../../../core/BaseAudioContext';
+
 export interface AudioURISource {
   uri?: string | undefined;
   // bundle?: string | undefined;
@@ -18,7 +21,8 @@ export interface TimeRanges {
 export type AudioSource =
   | AudioURISource
   | AudioRequireSource
-  | ReadonlyArray<AudioURISource>;
+  | ReadonlyArray<AudioURISource>
+  | string;
 
 export type PreloadType = 'auto' | 'metadata' | 'none';
 
@@ -32,6 +36,8 @@ interface AudioControlProps {
   playbackRate: number;
   preservesPitch: boolean;
   volume: number;
+  children?: ReactNode;
+  context: BaseAudioContext | null; // null on web, since web do not use AudioContext for audio tag
 }
 
 interface AudioReadonlyProps {

@@ -40,7 +40,7 @@ struct FFmpegDecoderConfig {
 };
 
 /// Initialize decoder config (mirrors miniaudio-style config step).
-void ffmpegDecoderConfigInit(FFmpegDecoderConfig *cfg, int outputSampleRate) {
+inline void ffmpegDecoderConfigInit(FFmpegDecoderConfig *cfg, int outputSampleRate) {
   if (cfg != nullptr) {
     cfg->outputSampleRate = outputSampleRate;
   }

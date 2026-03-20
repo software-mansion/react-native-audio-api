@@ -140,18 +140,23 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     framesReadCount = static_cast<size_t>(framesRead);
   }
 
-  int numOutputChannels = processingBuffer->getNumberOfChannels();
-  for (size_t i = 0; i < framesReadCount; i++) {
-    for (int ch = 0; ch < numOutputChannels; ch++) {
-      int srcCh = ch < state.channels ? ch : state.channels - 1;
-      processingBuffer->getChannel(ch)->span()[startOffset + i] =
-          state.interleavedBuffer[i * state.channels + srcCh];
+  const float vol = volume_.load(std::memory_order_acquire);
+  if (vol == 0) {
+    processingBuffer->zero();
+  } else {
+    int numOutputChannels = processingBuffer->getNumberOfChannels();
+    for (size_t i = 0; i < framesReadCount; i++) {
+      for (int ch = 0; ch < numOutputChannels; ch++) {
+        int srcCh = ch < state.channels ? ch : state.channels - 1;
+        processingBuffer->getChannel(ch)->span()[startOffset + i] =
+            vol * state.interleavedBuffer[i * state.channels + srcCh];
+      }
     }
-  }
 
-  if (framesReadCount < nonSilentFrames) {
-    processingBuffer->zero(startOffset + framesReadCount, nonSilentFrames - framesReadCount);
-    playbackState_ = PlaybackState::STOP_SCHEDULED;
+    if (framesReadCount < nonSilentFrames) {
+      processingBuffer->zero(startOffset + framesReadCount, nonSilentFrames - framesReadCount);
+      playbackState_ = PlaybackState::STOP_SCHEDULED;
+    }
   }
 
   handleStopScheduled();

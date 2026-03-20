@@ -1,7 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { Platform } from 'react-native';
+import AudioContext from '../../../core/AudioContext';
+import type BaseAudioContext from '../../../core/BaseAudioContext';
 import { AudioProps, AudioPropsBase } from './types';
 
-export function withPropsDefaults(props: AudioProps): AudioPropsBase {
+/**
+ * Merge props with defaults. `resolvedContext` must be stable when using the
+ * implicit default (see `useStableAudioProps` — one `AudioContext` per hook
+ * mount).
+ */
+export function withPropsDefaults(
+  props: AudioProps,
+  resolvedContext: BaseAudioContext | null
+): AudioPropsBase {
   return {
     ...props,
     autoPlay: props.autoPlay ?? false,
@@ -13,10 +24,22 @@ export function withPropsDefaults(props: AudioProps): AudioPropsBase {
     playbackRate: props.playbackRate ?? 1.0,
     preservesPitch: props.preservesPitch ?? true,
     volume: props.volume ?? 1.0,
+    context: resolvedContext,
   };
 }
 
 export function useStableAudioProps(props: AudioProps): AudioPropsBase {
+  const defaultContextRef = useRef<BaseAudioContext | null>(null);
+  const resolvedContext: BaseAudioContext | null =
+    Platform.OS === 'web'
+      ? null
+      : (() => {
+          if (defaultContextRef.current === null) {
+            defaultContextRef.current = new AudioContext();
+          }
+          return props.context ?? defaultContextRef.current;
+        })();
+
   const {
     // Control Props
     autoPlay,
@@ -28,6 +51,7 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
     playbackRate,
     preservesPitch,
     volume,
+    context,
 
     // Event Props
     onLoadStart,
@@ -38,7 +62,7 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
     onEnded,
     onPlay,
     onPause,
-  } = withPropsDefaults(props);
+  } = withPropsDefaults(props, resolvedContext);
 
   return useMemo(
     () => ({
@@ -52,6 +76,7 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       playbackRate,
       preservesPitch,
       volume,
+      context,
 
       // Event Props
       onLoadStart,
@@ -73,6 +98,7 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       playbackRate,
       preservesPitch,
       volume,
+      context,
       onLoadStart,
       onLoad,
       onError,

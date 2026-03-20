@@ -17,6 +17,9 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
       const AudioFileSourceOptions &options);
 
   ~AudioFileSourceNodeHostObject() override = default;
+
+  JSI_PROPERTY_GETTER_DECL(volume);
+  JSI_PROPERTY_SETTER_DECL(volume);
 };
 
 } // namespace audioapi
