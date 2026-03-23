@@ -12,7 +12,7 @@ import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
-import AudioStream from './AudioStream/AudioTag';
+import AudioStream from './AudioTag/AudioTag';
 
 type NavigationParamList = {
   Oscillator: undefined;
