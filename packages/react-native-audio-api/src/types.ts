@@ -247,3 +247,18 @@ export type DecodeDataInput = number | string | ArrayBuffer;
 export interface AudioRecorderStartOptions {
   fileNameOverride?: string;
 }
+
+export type TimestampedElement<T> = {
+  data: T;
+  insertionOrder: number;
+};
+
+export type Comparator<T> = (a: T, b: T) => boolean;
+
+export enum AutomationEventType {
+  SetValueAtTime = 'setValueAtTime',
+  LinearRampToValueAtTime = 'linearRampToValueAtTime',
+  ExponentialRampToValueAtTime = 'exponentialRampToValueAtTime',
+  SetTargetAtTime = 'setTargetAtTime',
+  SetValueCurveAtTime = 'setValueCurveAtTime',
+}
