@@ -48,6 +48,25 @@ AudioFileSourceNode::AudioFileSourceNode(
     initDecoders(useFilePath, context, state);
   }
 
+  if (decoderState_ != nullptr) {
+    seekOffloader_ = std::make_unique<task_offloader::TaskOffloader<
+        OffloadedSeekRequest,
+        audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+        audioapi::channels::spsc::WaitStrategy::YIELD>>(16, [this](OffloadedSeekRequest &&req) {
+      if (decoderState_ == nullptr) {
+        pendingOffloadedSeeks_.fetch_sub(1, std::memory_order_acq_rel);
+        return;
+      }
+      const bool ok = seekDecoderToTime(req.seconds);
+      if (ok) {
+        currentTime_.store(req.seconds, std::memory_order_release);
+        endedEventSent_.store(false, std::memory_order_release);
+        onPositionChangedFlush_.store(true, std::memory_order_release);
+      }
+      pendingOffloadedSeeks_.fetch_sub(1, std::memory_order_acq_rel);
+    });
+  }
+
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -70,14 +89,15 @@ void AudioFileSourceNode::unregisterOnEndedCallback(uint64_t callbackId) {
 void AudioFileSourceNode::sendOnPositionChangedEvent(int samplesWritten) {
   currentTime_.fetch_add(samplesWritten / sampleRate_);
   if (onPositionChangedCallbackId_ != 0 &&
-      (onPositionChangedFlush_ || onPositionChangedTime_ > onPositionChangedInterval_)) {
+      (onPositionChangedFlush_.load(std::memory_order_acquire) ||
+       onPositionChangedTime_ > onPositionChangedInterval_)) {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentTime()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId_, body);
 
     onPositionChangedTime_ = 0;
-    onPositionChangedFlush_ = false;
+    onPositionChangedFlush_.store(false, std::memory_order_release);
   }
 
   onPositionChangedTime_ += samplesWritten;
@@ -172,16 +192,17 @@ void AudioFileSourceNode::start() {
 }
 
 void AudioFileSourceNode::pause() {
-  if (std::shared_ptr<BaseAudioContext> ctx = context_.lock()) {
-    if (auto *audioContext = dynamic_cast<AudioContext *>(ctx.get())) {
-      audioContext->suspend();
-    }
-  }
+  // if (std::shared_ptr<BaseAudioContext> ctx = context_.lock()) {
+  //   if (auto *audioContext = dynamic_cast<AudioContext *>(ctx.get())) {
+  //     audioContext->suspend();
+  //   }
+  // }
 
   filePaused_.store(true, std::memory_order_release);
 }
 
 void AudioFileSourceNode::disable() {
+  seekOffloader_.reset();
   filePaused_.store(false, std::memory_order_release);
   fileStarted_ = false;
   totalFramesRead_ = 0;
@@ -194,6 +215,9 @@ void AudioFileSourceNode::disable() {
 }
 
 size_t AudioFileSourceNode::readFrames(float *buf, size_t frameCount) {
+  if (pendingOffloadedSeeks_.load(std::memory_order_acquire) > 0) {
+    return 0;
+  }
   if (FFmpegNeeded_) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
     return decoder.readPcmFrames(buf, frameCount);
@@ -209,28 +233,8 @@ size_t AudioFileSourceNode::readFrames(float *buf, size_t frameCount) {
   return static_cast<size_t>(framesRead);
 }
 
-bool AudioFileSourceNode::seekDecoderToStart() {
-  bool seeked = false;
-  if (FFmpegNeeded_) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    seeked = decoder.seekToTime(0);
-#endif
-  } else if (maDecoder_ != nullptr) {
-    seeked = ma_decoder_seek_to_pcm_frame(maDecoder_.get(), 0) == MA_SUCCESS;
-  }
-  if (seeked) {
-    totalFramesRead_ = 0;
-  }
-  return seeked;
-}
-
 void AudioFileSourceNode::seekToStart() {
-  if (!seekDecoderToStart()) {
-    return;
-  }
-  currentTime_.store(0);
-  endedEventSent_ = false;
-  onPositionChangedFlush_ = true;
+  seekToTime(0.0);
 }
 
 bool AudioFileSourceNode::seekDecoderToTime(double seconds) {
@@ -250,18 +254,26 @@ bool AudioFileSourceNode::seekDecoderToTime(double seconds) {
 }
 
 void AudioFileSourceNode::seekToTime(double seconds) {
+  if (decoderState_ == nullptr) {
+    return;
+  }
   const double dur = duration_.load(std::memory_order_acquire);
   if (dur > 0) {
     seconds = std::clamp(seconds, 0.0, dur);
   } else {
     seconds = std::max(0.0, seconds);
   }
-  if (!seekDecoderToTime(seconds)) {
+  if (seekOffloader_ == nullptr) {
+    if (!seekDecoderToTime(seconds)) {
+      return;
+    }
+    currentTime_.store(seconds, std::memory_order_release);
+    endedEventSent_.store(false, std::memory_order_release);
+    onPositionChangedFlush_.store(true, std::memory_order_release);
     return;
   }
-  currentTime_.store(seconds);
-  endedEventSent_ = false;
-  onPositionChangedFlush_ = true;
+  pendingOffloadedSeeks_.fetch_add(1, std::memory_order_acq_rel);
+  seekOffloader_->getSender()->send(OffloadedSeekRequest{seconds});
 }
 
 void AudioFileSourceNode::writeInterleavedToBuffer(
@@ -293,7 +305,7 @@ size_t AudioFileSourceNode::handleEof(
     return framesRead;
   }
 
-  if (!seekDecoderToStart()) {
+  if (!seekDecoderToTime(0)) {
     return framesRead;
   }
 
@@ -321,6 +333,11 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     return processingBuffer;
   }
 
+  if (pendingOffloadedSeeks_.load(std::memory_order_acquire) > 0) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
+
   if (filePaused_.load(std::memory_order_acquire)) {
     processingBuffer->zero();
     return processingBuffer;
@@ -337,20 +354,20 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
 
   if (framesRead < framesToProcess) {
     if (!loop_.load(std::memory_order_acquire)) {
-      if (!endedEventSent_) {
-        endedEventSent_ = true;
+      if (!endedEventSent_.load(std::memory_order_acquire)) {
+        endedEventSent_.store(true, std::memory_order_release);
         if (onEndedCallbackId_ != 0) {
           audioEventHandlerRegistry_->invokeHandlerWithEventBody(
               AudioEvent::ENDED, onEndedCallbackId_, {});
         }
       }
-      onPositionChangedFlush_ = true;
+      onPositionChangedFlush_.store(true, std::memory_order_release);
       sendOnPositionChangedEvent(static_cast<int>(framesToProcess - framesRead));
       processingBuffer->zero(framesRead, framesToProcess - framesRead);
       return processingBuffer;
     }
     size_t totalFilled = handleEof(processingBuffer, framesToProcess, framesRead, vol);
-    onPositionChangedFlush_ = true;
+    onPositionChangedFlush_.store(true, std::memory_order_release);
     sendOnPositionChangedEvent(static_cast<int>(totalFilled));
     processingBuffer->zero(totalFilled, framesToProcess - totalFilled);
   }

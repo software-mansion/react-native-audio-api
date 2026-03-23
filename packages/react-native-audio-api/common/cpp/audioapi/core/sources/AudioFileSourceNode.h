@@ -5,6 +5,7 @@
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/utils/TaskOffloader.hpp>
 
 #include <atomic>
 #include <memory>
@@ -106,7 +107,6 @@ class AudioFileSourceNode : public AudioNode {
   const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   size_t readFrames(float *buf, size_t frameCount);
-  bool seekDecoderToStart();
   bool seekDecoderToTime(double seconds);
   static void writeInterleavedToBuffer(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
@@ -124,11 +124,27 @@ class AudioFileSourceNode : public AudioNode {
 
   uint64_t onPositionChangedCallbackId_ = 0;
   uint64_t onEndedCallbackId_ = 0;
-  bool endedEventSent_{false};
+  std::atomic<bool> endedEventSent_{false};
   std::atomic<bool> playbackFinished_{false};
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
-  bool onPositionChangedFlush_ = true; // true to update ui at first position change
+  /// Written from seek worker and audio thread; read on audio thread.
+  std::atomic<bool> onPositionChangedFlush_{true};
+
+  struct OffloadedSeekRequest {
+    double seconds;
+    explicit OffloadedSeekRequest(double seconds) : seconds(seconds) {}
+    OffloadedSeekRequest() : seconds(0) {}
+  };
+
+  /// Pending offloaded seeks; while > 0 the audio thread must not read the decoder (outputs silence).
+  std::atomic<int> pendingOffloadedSeeks_{0};
+
+  std::unique_ptr<task_offloader::TaskOffloader<
+      OffloadedSeekRequest,
+      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      audioapi::channels::spsc::WaitStrategy::YIELD>>
+      seekOffloader_;
 };
 
 } // namespace audioapi
