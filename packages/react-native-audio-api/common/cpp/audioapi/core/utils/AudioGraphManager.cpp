@@ -1,5 +1,6 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
@@ -72,8 +73,8 @@ AudioGraphManager::Event::~Event() {
   }
 }
 
-AudioGraphManager::AudioGraphManager(const std::shared_ptr<utils::DisposerImpl<16>> &disposer)
-    : disposer_(disposer) {
+AudioGraphManager::AudioGraphManager(BaseAudioContext *context)
+    : disposer_(context->getDisposer()) {
   sourceNodes_.reserve(kInitialCapacity);
   processingNodes_.reserve(kInitialCapacity);
   audioParams_.reserve(kInitialCapacity);

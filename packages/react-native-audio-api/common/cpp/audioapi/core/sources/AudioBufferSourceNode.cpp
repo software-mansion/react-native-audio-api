@@ -1,7 +1,6 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.hpp>
@@ -54,8 +53,6 @@ void AudioBufferSourceNode::setBuffer(
   if (context == nullptr) {
     return;
   }
-
-  auto graphManager = context->getGraphManager();
 
   if (buffer_ != nullptr) {
     context->getDisposer()->dispose(std::move(buffer_));

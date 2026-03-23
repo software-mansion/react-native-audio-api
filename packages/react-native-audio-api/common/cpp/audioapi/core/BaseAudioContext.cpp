@@ -41,8 +41,9 @@ BaseAudioContext::BaseAudioContext(
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       runtimeRegistry_(runtimeRegistry),
       audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY),
-      disposer_(std::make_shared<utils::DisposerImpl<16>>(AUDIO_SCHEDULER_CAPACITY)),
-      graphManager_(std::make_shared<AudioGraphManager>(disposer_)) {}
+      disposer_(
+          std::make_unique<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>>(AUDIO_SCHEDULER_CAPACITY)),
+      graphManager_(std::make_unique<AudioGraphManager>(this)) {}
 
 void BaseAudioContext::initialize() {
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
@@ -245,8 +246,8 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType 
   }
 }
 
-std::shared_ptr<AudioGraphManager> BaseAudioContext::getGraphManager() const {
-  return graphManager_;
+AudioGraphManager *BaseAudioContext::getGraphManager() const {
+  return graphManager_.get();
 }
 
 std::shared_ptr<IAudioEventHandlerRegistry> BaseAudioContext::getAudioEventHandlerRegistry() const {
@@ -257,8 +258,8 @@ const RuntimeRegistry &BaseAudioContext::getRuntimeRegistry() const {
   return runtimeRegistry_;
 }
 
-std::shared_ptr<utils::DisposerImpl<16>> BaseAudioContext::getDisposer() const {
-  return disposer_;
+utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *BaseAudioContext::getDisposer() const {
+  return disposer_.get();
 }
 
 } // namespace audioapi

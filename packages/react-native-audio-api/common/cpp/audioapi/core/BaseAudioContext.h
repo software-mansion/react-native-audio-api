@@ -2,6 +2,7 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -105,10 +106,10 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  std::shared_ptr<AudioGraphManager> getGraphManager() const;
+  AudioGraphManager *getGraphManager() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   const RuntimeRegistry &getRuntimeRegistry() const;
-  std::shared_ptr<utils::DisposerImpl<16>> getDisposer() const;
+  utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *getDisposer() const;
 
   virtual void initialize();
 
@@ -143,8 +144,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
-  std::shared_ptr<utils::DisposerImpl<16>> disposer_;
-  std::shared_ptr<AudioGraphManager> graphManager_;
+  std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
+  std::unique_ptr<AudioGraphManager> graphManager_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };

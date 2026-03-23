@@ -1,7 +1,6 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.hpp>
@@ -77,8 +76,6 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
     if (buffers_.empty()) {
       return;
     }
-
-    auto graphManager = context->getGraphManager();
 
     if (buffers_.front().first == bufferId) {
       context->getDisposer()->dispose(std::move(buffers_.front().second));

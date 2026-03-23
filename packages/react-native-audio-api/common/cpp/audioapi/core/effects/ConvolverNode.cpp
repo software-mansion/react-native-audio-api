@@ -1,6 +1,5 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -36,8 +35,6 @@ void ConvolverNode::setBuffer(
   if (context == nullptr) {
     return;
   }
-
-  auto graphManager = context->getGraphManager();
 
   if (buffer_ != nullptr) {
     context->getDisposer()->dispose(std::move(buffer_));
