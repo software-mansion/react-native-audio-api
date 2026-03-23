@@ -13,10 +13,12 @@ namespace audioapi::utils::graph {
 
 class GraphTest : public ::testing::Test {
  protected:
+  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  DisposerImpl<kPayloadSize> disposer_{64};
   std::unique_ptr<Graph> graph;
 
   void SetUp() override {
-    graph = std::make_unique<Graph>(4096);
+    graph = std::make_unique<Graph>(4096, &disposer_);
   }
 
   const AudioGraph &getAudioGraph() {

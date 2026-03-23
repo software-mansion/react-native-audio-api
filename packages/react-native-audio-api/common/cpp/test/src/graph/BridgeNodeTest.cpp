@@ -320,10 +320,12 @@ TEST_F(BridgeGraphTest, BridgeOrphanedAndNoInputsGetsCompacted) {
 
 class BridgeGraphWrapperTest : public ::testing::Test {
  protected:
+  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;
 
   void SetUp() override {
-    graph = std::make_shared<Graph>(4096);
+    graph = std::make_shared<Graph>(4096, &disposer_);
   }
 
   void processAll() {
@@ -465,7 +467,7 @@ TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
   using Processor = audioapi::test::MockGraphProcessor<ProcessableMockNode>;
   // Pre-allocate node/pool capacity to avoid grow-event allocations inside
   // the AudioThreadGuard scope.
-  auto sharedGraph = std::make_shared<Graph>(4096, 16, 64);
+  auto sharedGraph = std::make_shared<Graph>(4096, &disposer_, 16, 64);
   Processor processor(*sharedGraph);
   processor.start();
 
@@ -497,14 +499,16 @@ TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
 class BridgeFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using HNode = HostGraph::Node;
+  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
 
+  DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;
   std::mt19937_64 rng;
   std::vector<HNode *> liveNodes;
   std::vector<AudioParam *> fakeParams;
 
   void SetUp() override {
-    graph = std::make_shared<Graph>(4096);
+    graph = std::make_shared<Graph>(4096, &disposer_);
     rng.seed(GetParam());
 
     // Create a set of fake param pointers

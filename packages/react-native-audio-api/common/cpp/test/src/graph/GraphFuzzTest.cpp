@@ -15,6 +15,7 @@
 
 using namespace audioapi::utils::graph;
 using audioapi::test::MockGraphProcessor;
+using audioapi::utils::DisposerImpl;
 
 // =========================================================================
 // Fixture — parameterized by seed for reproducible randomized testing
@@ -27,6 +28,8 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
   using Res = Graph::Res;
   using ResultError = Graph::ResultError;
 
+  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  DisposerImpl<kPayloadSize> disposer_{64};
   std::mt19937_64 rng;
   std::unique_ptr<Graph> graph;
   std::vector<HNode *> nodes; // tracks live (non-removed) nodes
@@ -49,7 +52,7 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     // Ensure graph growth does not happen on the audio thread during this fuzz run.
     const auto maxNodes = static_cast<std::uint32_t>(initialNodeCount + operationCount + 64);
     const auto maxEdges = static_cast<std::uint32_t>(operationCount * 2 + 64);
-    graph = std::make_unique<Graph>(4096, maxNodes, maxEdges);
+    graph = std::make_unique<Graph>(4096, &disposer_, maxNodes, maxEdges);
 
     // Randomly partition the range 0..99 into 4 operation weights
     size_t total = 100;

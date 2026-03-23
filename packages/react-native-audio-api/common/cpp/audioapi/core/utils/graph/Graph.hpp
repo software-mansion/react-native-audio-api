@@ -55,10 +55,11 @@ class Graph {
   using HNode = HostGraph::Node;
 
  public:
+  static constexpr size_t kDisposerPayloadSize = HostGraph::kDisposerPayloadSize;
   using ResultError = HostGraph::ResultError;
   using Res = Result<NoneType, ResultError>;
 
-  explicit Graph(size_t eventQueueCapacity) {
+  Graph(size_t eventQueueCapacity, Disposer<kDisposerPayloadSize> *disposer) : disposer_(disposer) {
     using namespace audioapi::channels::spsc;
 
     auto [es, er] = channel<AGEvent, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(
@@ -69,9 +70,10 @@ class Graph {
 
   Graph(
       size_t eventQueueCapacity,
+      Disposer<kDisposerPayloadSize> *disposer,
       std::uint32_t initialNodeCapacity,
       std::uint32_t initialEdgeCapacity)
-      : Graph(eventQueueCapacity) {
+      : Graph(eventQueueCapacity, disposer) {
     if (initialNodeCapacity > 0) {
       audioGraph.reserveNodes(initialNodeCapacity);
       nodeCapacity_ = initialNodeCapacity;
@@ -97,7 +99,7 @@ class Graph {
     AGEvent event;
     while (eventReceiver_.try_receive(event) == audioapi::channels::spsc::ResponseStatus::SUCCESS) {
       if (event) {
-        event(audioGraph, disposer_);
+        event(audioGraph, *disposer_);
       }
     }
   }
@@ -281,8 +283,6 @@ class Graph {
   }
 
  private:
-  static constexpr size_t kDisposerPayloadSize = HostGraph::kDisposerPayloadSize;
-
   using OwnedSlotBuffer = std::unique_ptr<InputPool::Slot[]>;
 
   // Aligning to cache line size to prevent false sharing between audio and main thread
@@ -296,7 +296,7 @@ class Graph {
 
   // ── Disposer — destroys old pool buffers off the audio thread ───────────
 
-  DisposerImpl<kDisposerPayloadSize> disposer_{64};
+  Disposer<kDisposerPayloadSize> *disposer_;
 
   // ── Main-thread tracking for pre-growth ─────────────────────────────────
 
