@@ -1,12 +1,10 @@
 #pragma once
 
-#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/graph/InputPool.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 
 #include <algorithm>
 #include <cassert>
-#include <concepts>
 #include <cstdint>
 #include <iterator>
 #include <memory>
@@ -16,9 +14,6 @@
 
 namespace audioapi::utils::graph {
 
-template <typename T>
-concept AudioGraphNode = std::derived_from<T, ::audioapi::AudioNode>;
-
 /// @brief Cache-friendly, index-stable node storage with in-place topological sort.
 ///
 /// Nodes are stored in a flat vector that is kept topologically sorted
@@ -26,16 +21,15 @@ concept AudioGraphNode = std::derived_from<T, ::audioapi::AudioNode>;
 /// orphaned nodes and O(1)-extra-space Kahn's toposort.
 ///
 /// @note Can store at most 2^30 nodes due to bit-packed indices (~10^9).
-template <AudioGraphNode NodeType>
 class AudioGraph {
   // ── Node ────────────────────────────────────────────────────────────────
 
   struct Node {
     Node() = default;
-    explicit Node(std::shared_ptr<NodeHandle<NodeType>> handle) : handle(handle) {}
+    explicit Node(std::shared_ptr<NodeHandle> handle) : handle(handle) {}
 
-    std::shared_ptr<NodeHandle<NodeType>> handle = nullptr; // owned handle bridging to HostGraph
-    std::uint32_t input_head = InputPool::kNull;            // head of input linked list in pool_
+    std::shared_ptr<NodeHandle> handle = nullptr; // owned handle bridging to HostGraph
+    std::uint32_t input_head = InputPool::kNull;  // head of input linked list in pool_
 
     std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
     unsigned will_be_deleted : 1 = 0;       // scratch — marked for compaction removal
@@ -60,10 +54,10 @@ class AudioGraph {
   AudioGraph(AudioGraph &&) noexcept = default;
   AudioGraph &operator=(AudioGraph &&) noexcept = default;
 
-  /// @brief Entry returned by iter() — a reference to the audio node and a view of its inputs.
+  /// @brief Entry returned by iter() — a reference to the graph object and a view of its inputs.
   template <typename InputsView>
   struct Entry {
-    NodeType &audioNode;
+    GraphObject &graphObject;
     InputsView inputs;
   };
 
@@ -83,13 +77,13 @@ class AudioGraph {
 
   /// @brief Provides an iterable view of the nodes in topological order.
   ///
-  /// Each entry contains a reference to the AudioNode and an immutable view
-  /// of its inputs (as references to AudioNodes).
+  /// Each entry contains a reference to the GraphObject and an immutable view
+  /// of its inputs (as references to GraphObject).
   ///
   /// ## Example usage:
   /// ```cpp
-  /// for (auto [audioNode, inputs] : graph.iter()) {
-  ///   // process audioNode and its inputs
+  /// for (auto [graphObject, inputs] : graph.iter()) {
+  ///   // process graphObject and its inputs
   /// }
   /// ```
   /// @note Lifetime of entries is bound to this graph — they are not owned.
@@ -115,14 +109,14 @@ class AudioGraph {
 
   /// @brief Adds a new node. AudioGraph takes shared ownership of the handle.
   /// @param handle shared NodeHandle bridging to HostGraph
-  void addNode(std::shared_ptr<NodeHandle<NodeType>> handle);
+  void addNode(std::shared_ptr<NodeHandle> handle);
 
   /// @brief Recomputes topological order (if dirty), then compacts the graph
   /// by removing orphaned, input-free, destructible nodes.
   ///
   /// When a node is compacted out its `shared_ptr<NodeHandle>` is released
   /// (refcount drops 2 → 1). HostGraph detects this via `use_count() == 1`
-  /// and destroys the ghost + AudioNode on the main thread.
+  /// and destroys the ghost + GraphObject on the main thread.
   ///
   /// Uses a two-pass approach: pass 1 marks deletions (cascading in topo
   /// order) and computes index remapping; pass 2 remaps inputs and shifts
@@ -155,68 +149,59 @@ class AudioGraph {
 
 // ── Accessors ─────────────────────────────────────────────────────────────
 
-template <AudioGraphNode NodeType>
-auto AudioGraph<NodeType>::operator[](std::uint32_t index) -> Node & {
+inline auto AudioGraph::operator[](std::uint32_t index) -> Node & {
   return nodes[index];
 }
 
-template <AudioGraphNode NodeType>
-auto AudioGraph<NodeType>::operator[](std::uint32_t index) const -> const Node & {
+inline auto AudioGraph::operator[](std::uint32_t index) const -> const Node & {
   return nodes[index];
 }
 
-template <AudioGraphNode NodeType>
-size_t AudioGraph<NodeType>::size() const {
+inline size_t AudioGraph::size() const {
   return nodes.size();
 }
 
-template <AudioGraphNode NodeType>
-bool AudioGraph<NodeType>::empty() const {
+inline bool AudioGraph::empty() const {
   return nodes.empty();
 }
 
-template <AudioGraphNode NodeType>
-auto AudioGraph<NodeType>::iter() {
-  return nodes | std::views::transform([this](Node &node) {
+inline auto AudioGraph::iter() {
+  return nodes |
+      std::views::filter([](const Node &n) { return n.handle->audioNode->isProcessable(); }) |
+      std::views::transform([this](Node &node) {
            return Entry{
                *node.handle->audioNode,
                pool_.view(node.input_head) |
-                   std::views::transform([this](std::uint32_t idx) -> const NodeType & {
+                   std::views::transform([this](std::uint32_t idx) -> const GraphObject & {
                      return *nodes[idx].handle->audioNode;
                    })};
          });
 }
 
-template <AudioGraphNode NodeType>
-InputPool &AudioGraph<NodeType>::pool() {
+inline InputPool &AudioGraph::pool() {
   return pool_;
 }
 
-template <AudioGraphNode NodeType>
-const InputPool &AudioGraph<NodeType>::pool() const {
+inline const InputPool &AudioGraph::pool() const {
   return pool_;
 }
 
-template <AudioGraphNode NodeType>
-void AudioGraph<NodeType>::reserveNodes(std::uint32_t capacity) {
+inline void AudioGraph::reserveNodes(std::uint32_t capacity) {
   nodes.reserve(capacity);
 }
 
 // ── Mutators ──────────────────────────────────────────────────────────────
 
-template <AudioGraphNode NodeType>
-void AudioGraph<NodeType>::markDirty() {
+inline void AudioGraph::markDirty() {
   topo_order_dirty = true;
 }
 
-template <AudioGraphNode NodeType>
-void AudioGraph<NodeType>::addNode(std::shared_ptr<NodeHandle<NodeType>> handle) {
+inline void AudioGraph::addNode(std::shared_ptr<NodeHandle> handle) {
   handle->index = static_cast<std::uint32_t>(nodes.size());
   nodes.emplace_back(std::move(handle));
 }
 
-template <AudioGraphNode NodeType>
-void AudioGraph<NodeType>::process() {
+inline void AudioGraph::process() {
   if (topo_order_dirty) {
     topo_order_dirty = false;
     kahn_toposort();
@@ -293,8 +278,7 @@ void AudioGraph<NodeType>::process() {
 
 // ── Kahn's toposort ───────────────────────────────────────────────────────
 
-template <AudioGraphNode NodeType>
-void AudioGraph<NodeType>::kahn_toposort() {
+inline void AudioGraph::kahn_toposort() {
   const auto n = static_cast<std::uint32_t>(nodes.size());
   if (n <= 1)
     return;

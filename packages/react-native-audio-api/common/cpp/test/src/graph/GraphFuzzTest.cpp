@@ -23,12 +23,12 @@ using audioapi::test::MockGraphProcessor;
 class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using PNode = ProcessableMockNode;
-  using HNode = HostGraph<PNode>::Node;
-  using Res = Graph<PNode>::Res;
-  using ResultError = Graph<PNode>::ResultError;
+  using HNode = HostGraph::Node;
+  using Res = Graph::Res;
+  using ResultError = Graph::ResultError;
 
   std::mt19937_64 rng;
-  std::unique_ptr<Graph<PNode>> graph;
+  std::unique_ptr<Graph> graph;
   std::vector<HNode *> nodes; // tracks live (non-removed) nodes
   size_t initialNodeCount;
   size_t operationCount;
@@ -49,7 +49,7 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     // Ensure graph growth does not happen on the audio thread during this fuzz run.
     const auto maxNodes = static_cast<std::uint32_t>(initialNodeCount + operationCount + 64);
     const auto maxEdges = static_cast<std::uint32_t>(operationCount * 2 + 64);
-    graph = std::make_unique<Graph<PNode>>(4096, maxNodes, maxEdges);
+    graph = std::make_unique<Graph>(4096, maxNodes, maxEdges);
 
     // Randomly partition the range 0..99 into 4 operation weights
     size_t total = 100;

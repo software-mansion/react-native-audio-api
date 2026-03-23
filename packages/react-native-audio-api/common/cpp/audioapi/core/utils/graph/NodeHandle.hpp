@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/core/utils/graph/GraphObject.hpp>
+
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -20,12 +22,11 @@ namespace audioapi::utils::graph {
 /// - When AudioGraph compacts out an orphaned node it releases its shared_ptr
 ///   (refcount 2 → 1). HostGraph detects use_count() == 1 and destroys the
 ///   ghost + payload on the main thread.
-template <typename T>
 struct NodeHandle {
-  std::uint32_t index;          // current position in AudioGraph::nodes
-  std::unique_ptr<T> audioNode; // the payload node (may be null in tests)
+  std::unique_ptr<GraphObject> audioNode; // payload graph object (may be null in tests)
+  std::uint32_t index;                    // current position in AudioGraph::nodes
 
-  NodeHandle(std::uint32_t index, std::unique_ptr<T> audioNode)
+  NodeHandle(std::uint32_t index, std::unique_ptr<GraphObject> audioNode)
       : index(index), audioNode(std::move(audioNode)) {}
 };
 

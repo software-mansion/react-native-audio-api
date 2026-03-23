@@ -14,26 +14,25 @@ namespace audioapi::utils::graph {
 // ---------------------------------------------------------------------------
 class AudioGraphTest : public ::testing::Test {
  protected:
-  AudioGraph<MockNode> graph;
+  AudioGraph graph;
 
   // Helpers ----------------------------------------------------------------
 
-  /// @brief Creates a shared NodeHandle<MockNode> with no node (for structural tests)
-  std::shared_ptr<NodeHandle<MockNode>> makeHandle(size_t testId = 0) {
-    auto h = std::make_shared<NodeHandle<MockNode>>(0, nullptr);
+  /// @brief Creates a shared NodeHandle with no node (for structural tests)
+  std::shared_ptr<NodeHandle> makeHandle(size_t testId = 0) {
+    auto h = std::make_shared<NodeHandle>(0, nullptr);
     return h;
   }
 
-  /// @brief Creates a shared NodeHandle<MockNode> with a MockNode
-  std::shared_ptr<NodeHandle<MockNode>> makeHandleWithNode(bool destructible = true) {
-    return std::make_shared<NodeHandle<MockNode>>(0, std::make_unique<MockNode>(destructible));
+  /// @brief Creates a shared NodeHandle with a MockNode
+  std::shared_ptr<NodeHandle> makeHandleWithNode(bool destructible = true) {
+    std::unique_ptr<GraphObject> obj = std::make_unique<MockNode>(destructible);
+    return std::make_shared<NodeHandle>(0, std::move(obj));
   }
 
   /// @brief Adds N nodes with test identifiers 0..N-1 and returns their handles
-  std::vector<std::shared_ptr<NodeHandle<MockNode>>> addNodes(
-      size_t n,
-      bool withAudioNode = false) {
-    std::vector<std::shared_ptr<NodeHandle<MockNode>>> handles;
+  std::vector<std::shared_ptr<NodeHandle>> addNodes(size_t n, bool withAudioNode = false) {
+    std::vector<std::shared_ptr<NodeHandle>> handles;
     handles.reserve(n);
     for (size_t i = 0; i < n; i++) {
       auto h = withAudioNode ? makeHandleWithNode() : makeHandle(i);
@@ -293,7 +292,9 @@ TEST_F(AudioGraphTest, Compact_RemovesOnceDestructible) {
   EXPECT_EQ(graph.size(), 2u);
 
   // Now make it destructible
-  h1->audioNode->setDestructible(true);
+  auto *mockNode = dynamic_cast<MockNode *>(h1->audioNode.get());
+  ASSERT_NE(mockNode, nullptr);
+  mockNode->setDestructible(true);
 
   graph.process(); // second pass: node 1 should be removed
   EXPECT_EQ(graph.size(), 1u);

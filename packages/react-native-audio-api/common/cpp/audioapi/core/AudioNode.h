@@ -4,6 +4,7 @@
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/graph/GraphObject.hpp>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
@@ -18,7 +19,7 @@ namespace audioapi {
 
 class AudioParam;
 
-class AudioNode : public std::enable_shared_from_this<AudioNode> {
+class AudioNode : public utils::graph::GraphObject, public std::enable_shared_from_this<AudioNode> {
  public:
   explicit AudioNode(
       const std::shared_ptr<BaseAudioContext> &context,
@@ -62,7 +63,15 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
     return false;
   }
 
-  virtual bool canBeDestructed() const;
+  bool canBeDestructed() const override;
+
+  [[nodiscard]] AudioNode *asAudioNode() override {
+    return this;
+  }
+
+  [[nodiscard]] const AudioNode *asAudioNode() const override {
+    return this;
+  }
 
  protected:
   friend class AudioGraphManager;

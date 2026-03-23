@@ -15,9 +15,7 @@ class GraphCycleDebugTest;
 
 namespace audioapi::utils::graph {
 
-template <AudioGraphNode NodeType>
 class HostGraph;
-template <AudioGraphNode NodeType>
 class Graph;
 class TestGraphUtils;
 
@@ -33,7 +31,6 @@ class TestGraphUtils;
 /// shared_ptr (detected via `use_count() == 1`).
 ///
 /// @note Use through the Graph wrapper for safety.
-template <AudioGraphNode NodeType>
 class HostGraph {
  public:
   enum class ResultError {
@@ -48,7 +45,7 @@ class HostGraph {
 
   /// Event that modifies AudioGraph to keep it consistent with HostGraph.
   /// The second argument is the Disposer used to offload buffer deallocation.
-  using AGEvent = FatFunction<32, void(AudioGraph<NodeType> &, Disposer<kDisposerPayloadSize> &)>;
+  using AGEvent = FatFunction<32, void(AudioGraph &, Disposer<kDisposerPayloadSize> &)>;
 
   using Res = Result<AGEvent, ResultError>;
 
@@ -65,7 +62,7 @@ class HostGraph {
     std::vector<Node *> inputs;  // reversed edges
     std::vector<Node *> outputs; // forward edges
     TraversalState traversalState;
-    std::shared_ptr<NodeHandle<NodeType>> handle; // shared handle bridging to AudioGraph
+    std::shared_ptr<NodeHandle> handle; // shared handle bridging to AudioGraph
     bool ghost = false; // kept for cycle detection until AudioGraph confirms deletion
 
 #if RN_AUDIO_API_TEST
@@ -92,7 +89,7 @@ class HostGraph {
   /// @brief Adds a new node to the graph.
   /// @param handle shared handle that bridges HostGraph ↔ AudioGraph
   /// @return pair of (raw Node pointer, AGEvent to replay on AudioGraph)
-  std::pair<Node *, AGEvent> addNode(std::shared_ptr<NodeHandle<NodeType>> handle);
+  std::pair<Node *, AGEvent> addNode(std::shared_ptr<NodeHandle> handle);
 
   /// @brief Removes a node (marks it as ghost, keeps edges for cycle detection).
   /// @return AGEvent that sets `orphaned = true` on the AudioGraph side.
@@ -124,7 +121,7 @@ class HostGraph {
   /// `use_count() == 1`, meaning AudioGraph has released its reference.
   void collectDisposedNodes();
 
-  friend class Graph<NodeType>;
+  friend class Graph;
   friend class TestGraphUtils;
   friend class HostGraphTest;
   friend class GraphCycleDebugTest;
@@ -134,8 +131,7 @@ class HostGraph {
 // Implementation
 // =========================================================================
 
-template <AudioGraphNode NodeType>
-bool HostGraph<NodeType>::TraversalState::visit(size_t currentTerm) {
+inline bool HostGraph::TraversalState::visit(size_t currentTerm) {
   if (term == currentTerm) {
     return false;
   }
@@ -143,8 +139,7 @@ bool HostGraph<NodeType>::TraversalState::visit(size_t currentTerm) {
   return true;
 }
 
-template <AudioGraphNode NodeType>
-HostGraph<NodeType>::Node::~Node() {
+inline HostGraph::Node::~Node() {
   for (Node *input : inputs) {
     auto &outs = input->outputs;
     outs.erase(std::remove(outs.begin(), outs.end(), this), outs.end());
@@ -157,23 +152,20 @@ HostGraph<NodeType>::Node::~Node() {
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-template <AudioGraphNode NodeType>
-HostGraph<NodeType>::~HostGraph() {
+inline HostGraph::~HostGraph() {
   for (Node *n : nodes) {
     delete n;
   }
   nodes.clear();
 }
 
-template <AudioGraphNode NodeType>
-HostGraph<NodeType>::HostGraph(HostGraph &&other) noexcept
+inline HostGraph::HostGraph(HostGraph &&other) noexcept
     : nodes(std::move(other.nodes)), edgeCount_(other.edgeCount_), last_term(other.last_term) {
   other.edgeCount_ = 0;
   other.last_term = 0;
 }
 
-template <AudioGraphNode NodeType>
-auto HostGraph<NodeType>::operator=(HostGraph &&other) noexcept -> HostGraph & {
+inline auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
   if (this != &other) {
     for (Node *n : nodes) {
       delete n;
@@ -187,9 +179,7 @@ auto HostGraph<NodeType>::operator=(HostGraph &&other) noexcept -> HostGraph & {
   return *this;
 }
 
-template <AudioGraphNode NodeType>
-auto HostGraph<NodeType>::addNode(std::shared_ptr<NodeHandle<NodeType>> handle)
-    -> std::pair<Node *, AGEvent> {
+inline auto HostGraph::addNode(std::shared_ptr<NodeHandle> handle) -> std::pair<Node *, AGEvent> {
   Node *newNode = new Node();
   newNode->handle = handle;
   nodes.push_back(newNode);
@@ -201,8 +191,7 @@ auto HostGraph<NodeType>::addNode(std::shared_ptr<NodeHandle<NodeType>> handle)
   return {newNode, std::move(event)};
 }
 
-template <AudioGraphNode NodeType>
-auto HostGraph<NodeType>::removeNode(Node *node) -> Res {
+inline auto HostGraph::removeNode(Node *node) -> Res {
   auto it = std::find(nodes.begin(), nodes.end(), node);
   if (it == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
@@ -211,11 +200,10 @@ auto HostGraph<NodeType>::removeNode(Node *node) -> Res {
   node->ghost = true;
 
   return Res::Ok(
-      [h = node->handle](AudioGraph<NodeType> &graph, auto &) { graph[h->index].orphaned = true; });
+      [h = node->handle](AudioGraph &graph, auto &) { graph[h->index].orphaned = true; });
 }
 
-template <AudioGraphNode NodeType>
-auto HostGraph<NodeType>::addEdge(Node *from, Node *to) -> Res {
+inline auto HostGraph::addEdge(Node *from, Node *to) -> Res {
   if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() ||
       std::find(nodes.begin(), nodes.end(), to) == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
@@ -237,14 +225,13 @@ auto HostGraph<NodeType>::addEdge(Node *from, Node *to) -> Res {
   to->inputs.push_back(from);
   edgeCount_++;
 
-  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph<NodeType> &graph, auto &) {
+  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph &graph, auto &) {
     graph.pool().push(graph[hTo->index].input_head, hFrom->index);
     graph.markDirty();
   });
 }
 
-template <AudioGraphNode NodeType>
-auto HostGraph<NodeType>::removeEdge(Node *from, Node *to) -> Res {
+inline auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
   if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() ||
       std::find(nodes.begin(), nodes.end(), to) == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
@@ -265,14 +252,13 @@ auto HostGraph<NodeType>::removeEdge(Node *from, Node *to) -> Res {
   from->outputs.erase(itOut);
   edgeCount_--;
 
-  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph<NodeType> &graph, auto &) {
+  return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph &graph, auto &) {
     graph.pool().remove(graph[hTo->index].input_head, hFrom->index);
     graph.markDirty();
   });
 }
 
-template <AudioGraphNode NodeType>
-bool HostGraph<NodeType>::hasPath(Node *start, Node *end) {
+inline bool HostGraph::hasPath(Node *start, Node *end) {
   if (start == end) {
     return true;
   }
@@ -301,18 +287,15 @@ bool HostGraph<NodeType>::hasPath(Node *start, Node *end) {
   return false;
 }
 
-template <AudioGraphNode NodeType>
-size_t HostGraph<NodeType>::edgeCount() const {
+inline size_t HostGraph::edgeCount() const {
   return edgeCount_;
 }
 
-template <AudioGraphNode NodeType>
-size_t HostGraph<NodeType>::nodeCount() const {
+inline size_t HostGraph::nodeCount() const {
   return nodes.size();
 }
 
-template <AudioGraphNode NodeType>
-void HostGraph<NodeType>::collectDisposedNodes() {
+inline void HostGraph::collectDisposedNodes() {
   for (auto it = nodes.begin(); it != nodes.end();) {
     Node *n = *it;
     if (n->ghost && n->handle.use_count() == 1) {
