@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/AudioNode.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -23,19 +23,16 @@ struct AudioFileDecoderState {
   std::string filePath;
 };
 
-class AudioFileSourceNode : public AudioScheduledSourceNode {
+class AudioFileSourceNode : public AudioNode {
  public:
   explicit AudioFileSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioFileSourceOptions &options);
   ~AudioFileSourceNode() override = default;
 
-  /// @note Audio Thread only
-  void setDecoderState(const std::shared_ptr<AudioFileDecoderState> &state);
-
   void disable() override;
 
-  void start(double when) override;
+  void start();
 
   float getVolume() const {
     return volume_.load(std::memory_order_acquire);
@@ -46,6 +43,16 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   }
 
   void pause();
+
+  /// @note Audio Thread only
+  void setOnPositionChangedCallbackId(uint64_t callbackId);
+
+  void unregisterOnPositionChangedCallback(uint64_t callbackId);
+
+  /// @note Audio Thread only
+  void setOnEndedCallbackId(uint64_t callbackId);
+
+  void unregisterOnEndedCallback(uint64_t callbackId);
 
   bool getLoop() const {
     return loop_.load(std::memory_order_acquire);
@@ -62,6 +69,13 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   double getCurrentTime() const {
     return currentTime_.load(std::memory_order_acquire);
   }
+
+  /// Seek the decoder to the beginning and reset playback position state.
+  /// Safe to call from the audio thread (e.g. via scheduleAudioEvent).
+  void seekToStart();
+
+  /// Seek to \p seconds (clamped to [0, duration]). Audio thread only via scheduleAudioEvent.
+  void seekToTime(double seconds);
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(
@@ -89,9 +103,11 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   std::atomic<double> currentTime_{0};
   size_t totalFramesRead_{0};
   double sampleRate_{0};
+  const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   size_t readFrames(float *buf, size_t frameCount);
-  bool seekToStart();
+  bool seekDecoderToStart();
+  bool seekDecoderToTime(double seconds);
   static void writeInterleavedToBuffer(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       const AudioFileDecoderState &state,
@@ -102,8 +118,17 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t nonSilentFrames,
       size_t framesRead,
-      float vol,
-      size_t startOffset);
+      float vol);
+
+  void sendOnPositionChangedEvent(int samplesWritten);
+
+  uint64_t onPositionChangedCallbackId_ = 0;
+  uint64_t onEndedCallbackId_ = 0;
+  bool endedEventSent_{false};
+  std::atomic<bool> playbackFinished_{false};
+  int onPositionChangedInterval_;
+  int onPositionChangedTime_ = 0;
+  bool onPositionChangedFlush_ = true; // true to update ui at first position change
 };
 
 } // namespace audioapi

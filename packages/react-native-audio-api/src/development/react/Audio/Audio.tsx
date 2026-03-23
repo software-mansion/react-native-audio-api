@@ -7,7 +7,6 @@ import React, {
 } from 'react';
 import { View } from 'react-native';
 
-import { IAudioFileSourceNode } from '../../../interfaces';
 import type {
   AudioProps,
   AudioTagPlaybackState,
@@ -16,6 +15,7 @@ import type {
 import { useStableAudioProps } from './utils';
 import { AudioComponentContext } from './AudioTagContext';
 import AudioControls from './AudioControls';
+import { AudioFileSourceNode } from './AudioFileSourceNode';
 
 const Audio: React.FC<AudioProps> = (inProps) => {
   const { children } = inProps;
@@ -41,7 +41,14 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     return (source as AudioURISource).uri ?? '';
   }, [source]);
 
-  const nodeRef = useRef<IAudioFileSourceNode | null>(null);
+  const fileSourceHandleRef = useRef(new AudioFileSourceNode());
+  const loadedSourceRef = useRef<ArrayBuffer | string | null>(null);
+  const loopRef = useRef(loop);
+  const effectiveVolumeRef = useRef(muted ? 0 : volume);
+  const contextRef = useRef(context);
+
+  const handlePlaybackEndedRef = useRef<() => void>(() => {});
+
   const [volumeState, setVolumeState] = useState(volume);
   const [mutedState, setMutedState] = useState(muted);
   const [isReady, setIsReady] = useState(false);
@@ -58,37 +65,77 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     setMutedState(muted);
   }, [muted]);
 
-  const play = useCallback(() => {
-    const n = nodeRef.current;
-    if (!n || !context) {
+  useEffect(() => {
+    effectiveVolumeRef.current = mutedState ? 0 : volumeState;
+  }, [mutedState, volumeState]);
+
+  handlePlaybackEndedRef.current = () => {
+    setPlaybackState('idle');
+    const ctx = contextRef.current;
+    const src = loadedSourceRef.current;
+    if (!ctx || !src) {
       return;
     }
-    // @ts-ignore - internal
-    n.connect(context.destination.node);
-    n.start(0);
+    const handle = fileSourceHandleRef.current;
+    const { duration: d } = handle.attach(ctx.context.createFileSource(src), {
+      loop: loopRef.current,
+      onEnded: () => handlePlaybackEndedRef.current(),
+    });
+    setDuration(d);
+    handle.setVolume(effectiveVolumeRef.current);
+    handle.setLoop(loopRef.current);
+  };
+
+  const play = useCallback(() => {
+    if (!context) {
+      return;
+    }
+    fileSourceHandleRef.current.play(context);
     setPlaybackState('playing');
   }, [context]);
 
   const pause = useCallback(() => {
-    if (!nodeRef.current) {
-      return;
-    }
-    nodeRef.current.pause();
-    setPlaybackState((s) => (s === 'idle' ? 'idle' : 'paused'));
+    fileSourceHandleRef.current.pause();
+    setPlaybackState('paused');
   }, []);
 
+  const seekToTime = useCallback(
+    (seconds: number) => {
+      fileSourceHandleRef.current.seekToTime(seconds);
+      const d = duration;
+      const t =
+        d > 0 ? Math.max(0, Math.min(seconds, d)) : Math.max(0, seconds);
+      setCurrentTime(t);
+    },
+    [duration]
+  );
+
   const attachNode = useCallback(
-    (n: IAudioFileSourceNode) => {
-      nodeRef.current = n;
-      n.loop = loop;
-      setCurrentTime(n.currentTime);
-      setDuration(n.duration);
+    (sourceArg: ArrayBuffer | string) => {
+      if (!context) {
+        return;
+      }
+      loadedSourceRef.current = sourceArg;
+      const handle = fileSourceHandleRef.current;
+      const { duration: d } = handle.attach(
+        context.context.createFileSource(sourceArg),
+        {
+          loop: loopRef.current,
+          onEnded: () => {
+            handlePlaybackEndedRef.current();
+            setCurrentTime(d);
+          },
+        }
+      );
+      setDuration(d);
       setIsReady(true);
+      handle.setVolume(effectiveVolumeRef.current);
+      handle.setLoop(loopRef.current);
       if (autoPlay) {
         play();
       }
     },
-    [autoPlay, play, loop]
+    [autoPlay, play, context]
   );
 
   useEffect(() => {
@@ -96,13 +143,15 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       return;
     }
 
+    const fileSourceHandle = fileSourceHandleRef.current;
+
     const run = async () => {
       if (path.startsWith('http')) {
         const response = await fetch(path);
         const arrayBuffer = await response.arrayBuffer();
-        attachNode(context.context.createFileSource(arrayBuffer));
+        attachNode(arrayBuffer);
       } else {
-        attachNode(context.context.createFileSource(path));
+        attachNode(path);
       }
     };
 
@@ -111,72 +160,47 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     run();
 
     return () => {
-      nodeRef.current?.disconnect(undefined);
-      nodeRef.current = null;
+      fileSourceHandle.dispose();
+      loadedSourceRef.current = null;
       setIsReady(false);
       setPlaybackState('idle');
     };
   }, [path, context, attachNode]);
 
   useEffect(() => {
-    const n = nodeRef.current;
-    if (n) {
-      n.volume = mutedState ? 0 : volumeState;
-    }
-  }, [volumeState, mutedState, isReady]);
+    fileSourceHandleRef.current.setVolume(mutedState ? 0 : volumeState);
+  }, [volumeState, mutedState]);
 
   useEffect(() => {
-    const n = nodeRef.current;
-    if (n) {
-      n.loop = loop;
-    }
-  }, [loop, isReady]);
+    fileSourceHandleRef.current.setLoop(loop);
+  }, [loop]);
 
   useEffect(() => {
-    const n = nodeRef.current;
-    if (!n || playbackState !== 'playing') return;
-    const id = setInterval(() => {
-      const node = nodeRef.current;
-      if (node) {
-        setCurrentTime(node.currentTime);
-      }
-      console.log('currentTime', node?.currentTime);
-    }, 250);
+    if (playbackState !== 'playing') {
+      return;
+    }
+
+    const handle = fileSourceHandleRef.current;
+    handle.startPositionTracking(setCurrentTime);
+
     return () => {
-      clearInterval(id);
+      handle.stopPositionTracking();
     };
   }, [playbackState]);
 
-  const setVolume = useCallback(
-    (next: number) => {
-      setVolumeState(next);
-      const n = nodeRef.current;
-      if (n) {
-        n.volume = mutedState ? 0 : next;
-      }
-    },
-    [mutedState]
-  );
+  const setVolume = useCallback((next: number) => {
+    setVolumeState(next);
+  }, []);
 
-  const setMuted = useCallback(
-    (next: boolean) => {
-      setMutedState(next);
-      const n = nodeRef.current;
-      if (n) {
-        if (next) {
-          n.volume = 0;
-        } else {
-          n.volume = volumeState;
-        }
-      }
-    },
-    [volumeState]
-  );
+  const setMuted = useCallback((next: boolean) => {
+    setMutedState(next);
+  }, []);
 
   const ctxValue = useMemo(
     () => ({
       play,
       pause,
+      seekToTime,
       volume: volumeState,
       setVolume,
       muted: mutedState,
@@ -189,6 +213,7 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     [
       play,
       pause,
+      seekToTime,
       setVolume,
       volumeState,
       mutedState,

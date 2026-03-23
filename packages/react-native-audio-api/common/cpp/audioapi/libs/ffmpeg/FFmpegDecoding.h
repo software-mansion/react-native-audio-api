@@ -98,9 +98,9 @@ class FFmpegDecoder {
   /// @brief Current playback position in seconds (frames read / sample rate).
   [[nodiscard]] float getCurrentPositionInSeconds() const;
 
-  /// @brief Seeks to the start of the stream. Call after EOF to loop.
+  /// @brief Seeks to a playback position in seconds (output / resampled timeline).
   /// @return True if seek succeeded.
-  [[nodiscard]] bool seekToStart();
+  [[nodiscard]] bool seekToTime(double seconds);
 
   static constexpr size_t CHUNK_SIZE = 4096;
 

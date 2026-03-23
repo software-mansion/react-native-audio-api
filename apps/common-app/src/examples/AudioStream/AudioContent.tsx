@@ -4,7 +4,7 @@ import VolumeSlider from './VolumeSlider';
 import { Spacer } from '../../components';
 
 const AudioContent: React.FC = () => {
-  const { isReady, play, pause, playbackState, setMuted, muted } = useAudioTagContext();
+  const { isReady, play, pause, playbackState, setMuted, muted, seekToTime } = useAudioTagContext();
 
   return (
     <View>
@@ -14,6 +14,15 @@ const AudioContent: React.FC = () => {
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ color: '#fff' }}>{playbackState}</Text>
           <Spacer.Vertical size={12} />
+          <Button onPress={() => {
+            pause();
+            setTimeout(() => {
+              seekToTime(10);
+            }, 50);
+            setTimeout(() => {
+              play();
+            }, 50);
+          }} title="Seek to 10" />
           <Button
             onPress={() => setMuted(!muted)}
             title={muted ? 'Unmute' : 'Mute'}

@@ -82,6 +82,29 @@ const Audio: React.FC<AudioProps> = (props) => {
     audioRef.current?.pause();
   }, []);
 
+  const seekToTime = useCallback(
+    (seconds: number) => {
+      const el = audioRef.current;
+      if (!el) {
+        return;
+      }
+      const d = duration;
+      const t =
+        d > 0 && Number.isFinite(d)
+          ? Math.max(0, Math.min(seconds, d))
+          : Math.max(0, seconds);
+      if (Number.isFinite(t)) {
+        el.currentTime = t;
+        setCurrentTime(t);
+      }
+    },
+    [duration]
+  );
+
+  const rewind = useCallback(() => {
+    seekToTime(0);
+  }, [seekToTime]);
+
   const setVolume = useCallback((next: number) => {
     setVolumeState(next);
     const el = audioRef.current;
@@ -102,6 +125,8 @@ const Audio: React.FC<AudioProps> = (props) => {
     () => ({
       play,
       pause,
+      rewind,
+      seekToTime,
       volume: volumeState,
       setVolume,
       muted: mutedState,
@@ -114,6 +139,8 @@ const Audio: React.FC<AudioProps> = (props) => {
     [
       play,
       pause,
+      rewind,
+      seekToTime,
       setVolume,
       volumeState,
       mutedState,
@@ -131,7 +158,6 @@ const Audio: React.FC<AudioProps> = (props) => {
         autoPlay={autoPlay}
         controls={controls}
         loop={loop}
-        preload={preload}
         muted={mutedState}
         ref={audioRef}
         onLoadedData={() => setIsReady(true)}

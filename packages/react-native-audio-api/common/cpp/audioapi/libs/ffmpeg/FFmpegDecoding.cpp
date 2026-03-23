@@ -341,18 +341,31 @@ float FFmpegDecoder::getCurrentPositionInSeconds() const {
   return static_cast<float>(total_output_frames_) / static_cast<float>(output_sample_rate_);
 }
 
-bool FFmpegDecoder::seekToStart() {
-  if (!isOpen() || audio_stream_index_ < 0) {
+// todo: offload this call to a separate thread because seeking decoder can take a while
+// current implementation suspends audio thread, which disable multiple playbacks
+bool FFmpegDecoder::seekToTime(double seconds) {
+  if (!isOpen() || audio_stream_index_ < 0 || output_sample_rate_ <= 0) {
     return false;
   }
-  if (avformat_seek_file(
-          fmt_ctx_, -1, INT64_MIN, 0, INT64_MAX, 0) < 0) {
+  float dur = getDurationInSeconds();
+  if (dur > 0 && std::isfinite(dur)) {
+    seconds = std::clamp(seconds, 0.0, static_cast<double>(dur));
+  } else {
+    seconds = std::max(0.0, seconds);
+    if (!std::isfinite(seconds)) {
+      return false;
+    }
+  }
+
+  auto ts = static_cast<int64_t>(seconds * static_cast<double>(AV_TIME_BASE));
+  if (avformat_seek_file(fmt_ctx_, -1, INT64_MIN, ts, INT64_MAX, 0) < 0) {
     return false;
   }
   avcodec_flush_buffers(codec_ctx_);
   leftover_.clear();
   leftover_offset_ = 0;
-  total_output_frames_ = 0;
+  total_output_frames_ = static_cast<size_t>(
+      std::llround(seconds * static_cast<double>(output_sample_rate_)));
   return true;
 }
 
@@ -476,7 +489,7 @@ float FFmpegDecoder::getDurationInSeconds() const {
 float FFmpegDecoder::getCurrentPositionInSeconds() const {
   return 0;
 }
-bool FFmpegDecoder::seekToStart() {
+bool FFmpegDecoder::seekToTime(double) {
   return false;
 }
 size_t FFmpegDecoder::readPcmFrames(float *, size_t) {

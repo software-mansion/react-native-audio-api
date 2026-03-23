@@ -4,6 +4,7 @@ import type { AudioTagPlaybackState } from './types';
 export type AudioComponentContextType = {
   play: () => void;
   pause: () => void;
+  seekToTime: (seconds: number) => void;
   volume: number;
   setVolume: (volume: number) => void;
   muted: boolean;
