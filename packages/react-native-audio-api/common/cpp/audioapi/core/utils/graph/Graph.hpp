@@ -139,7 +139,7 @@ class Graph {
     return hostNode;
   }
 
-  template <typename TObject, typename = std::enable_if_t<std::derived_from<TObject, GraphObject>>>
+  template <std::derived_from<GraphObject> TObject>
   HNode *addNode(std::unique_ptr<TObject> audioNode) {
     return addNode(std::unique_ptr<GraphObject>(std::move(audioNode)));
   }
