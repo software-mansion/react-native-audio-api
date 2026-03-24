@@ -1,9 +1,8 @@
 import React, { useRef } from 'react';
-import { Button, View } from 'react-native';
+import { View } from 'react-native';
 import { Audio } from 'react-native-audio-api/development/react';
 
 import { Container } from '../../components';
-import AudioContent from './AudioContent';
 import { AudioContext } from 'react-native-audio-api';
 
 const DEMO_AUDIO_URL =
@@ -16,8 +15,7 @@ const AudioTag: React.FC = () => {
     <Container disablePadding>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <View style={{ width: '90%' }}>
-          <Audio source={DEMO_AUDIO_URL} volume={1} controls context={audioContext.current}>
-          </Audio>
+          <Audio source={DEMO_AUDIO_URL} volume={1} controls context={audioContext.current} />
         </View>
       </View>
     </Container>

@@ -62,10 +62,6 @@ export class AudioFileSourceNode {
     this.node?.pause();
   }
 
-  seekToStart(): void {
-    this.node?.seekToStart();
-  }
-
   seekToTime(seconds: number): void {
     this.node?.seekToTime(seconds);
   }

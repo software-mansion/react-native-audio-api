@@ -236,7 +236,6 @@ export interface IAudioFileSourceNode extends IAudioNode {
   readonly duration: number;
   pause: () => void;
   start: () => void;
-  seekToStart: () => void;
   seekToTime: (seconds: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp

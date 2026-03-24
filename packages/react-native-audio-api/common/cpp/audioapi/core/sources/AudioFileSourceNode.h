@@ -12,16 +12,24 @@
 #include <string>
 #include <vector>
 
+using namespace audioapi::channels;
+
 namespace audioapi {
 
 struct AudioFileSourceOptions;
 
+struct OffloadedSeekRequest {
+  double seconds = 0;
+  OffloadedSeekRequest() = default;
+  explicit OffloadedSeekRequest(double t) : seconds(t) {}
+};
+
 struct AudioFileDecoderState {
   std::vector<uint8_t> memoryData;
+  std::string filePath;
   std::vector<float> interleavedBuffer;
   int channels = 0;
   float sampleRate = 0;
-  std::string filePath;
 };
 
 class AudioFileSourceNode : public AudioNode {
@@ -47,12 +55,10 @@ class AudioFileSourceNode : public AudioNode {
 
   /// @note Audio Thread only
   void setOnPositionChangedCallbackId(uint64_t callbackId);
-
   void unregisterOnPositionChangedCallback(uint64_t callbackId);
 
   /// @note Audio Thread only
   void setOnEndedCallbackId(uint64_t callbackId);
-
   void unregisterOnEndedCallback(uint64_t callbackId);
 
   bool getLoop() const {
@@ -71,11 +77,7 @@ class AudioFileSourceNode : public AudioNode {
     return currentTime_.load(std::memory_order_acquire);
   }
 
-  /// Seek the decoder to the beginning and reset playback position state.
-  /// Safe to call from the audio thread (e.g. via scheduleAudioEvent).
-  void seekToStart();
-
-  /// Seek to \p seconds (clamped to [0, duration]). Audio thread only via scheduleAudioEvent.
+  /// Seek to \p seconds (clamped to [0, duration]).
   void seekToTime(double seconds);
 
  protected:
@@ -92,9 +94,9 @@ class AudioFileSourceNode : public AudioNode {
   std::shared_ptr<AudioFileDecoderState> decoderState_;
   std::unique_ptr<ma_decoder> maDecoder_;
   std::atomic<float> volume_;
-  bool FFmpegNeeded_;
+  bool requiresFFmpeg_;
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-  ffmpegdecoder::FFmpegDecoder decoder;
+  ffmpegdecoder::FFmpegDecoder ffmpegDecoder_;
   ffmpegdecoder::FFmpegDecoderConfig cfg;
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
   std::atomic<bool> filePaused_{false};
@@ -102,9 +104,10 @@ class AudioFileSourceNode : public AudioNode {
   std::atomic<bool> loop_{false};
   std::atomic<double> duration_{0};
   std::atomic<double> currentTime_{0};
-  size_t totalFramesRead_{0};
   double sampleRate_{0};
   const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  static constexpr double ON_POSITION_CHANGED_INTERVAL = 0.25f;
+  static constexpr int SEEK_OFFLOADER_WORKER_COUNT = 16;
 
   size_t readFrames(float *buf, size_t frameCount);
   bool seekDecoderToTime(double seconds);
@@ -116,34 +119,30 @@ class AudioFileSourceNode : public AudioNode {
       float vol);
   size_t handleEof(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t nonSilentFrames,
+      size_t framesToProcess,
       size_t framesRead,
       float vol);
 
   void sendOnPositionChangedEvent(int samplesWritten);
+  void sendOnEndedEvent();
+
+  void applyPlaybackStateAfterSuccessfulSeek(double seconds);
+  void runOffloadedSeekTask(OffloadedSeekRequest req);
 
   uint64_t onPositionChangedCallbackId_ = 0;
   uint64_t onEndedCallbackId_ = 0;
-  std::atomic<bool> endedEventSent_{false};
   std::atomic<bool> playbackFinished_{false};
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
-  /// Written from seek worker and audio thread; read on audio thread.
   std::atomic<bool> onPositionChangedFlush_{true};
-
-  struct OffloadedSeekRequest {
-    double seconds;
-    explicit OffloadedSeekRequest(double seconds) : seconds(seconds) {}
-    OffloadedSeekRequest() : seconds(0) {}
-  };
 
   /// Pending offloaded seeks; while > 0 the audio thread must not read the decoder (outputs silence).
   std::atomic<int> pendingOffloadedSeeks_{0};
 
   std::unique_ptr<task_offloader::TaskOffloader<
       OffloadedSeekRequest,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::YIELD>>
+      spsc::OverflowStrategy::WAIT_ON_FULL,
+      spsc::WaitStrategy::YIELD>>
       seekOffloader_;
 };
 

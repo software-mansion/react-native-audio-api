@@ -26,7 +26,6 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioFileSourceNodeHostObject, pause),
       JSI_EXPORT_FUNCTION(AudioFileSourceNodeHostObject, start),
-      JSI_EXPORT_FUNCTION(AudioFileSourceNodeHostObject, seekToStart),
       JSI_EXPORT_FUNCTION(AudioFileSourceNodeHostObject, seekToTime));
 }
 
@@ -37,7 +36,7 @@ AudioFileSourceNodeHostObject::~AudioFileSourceNodeHostObject() {
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
   auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  return jsi::Value(node->getVolume());
+  return {node->getVolume()};
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
@@ -47,7 +46,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, loop) {
   auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  return jsi::Value(node->getLoop());
+  return {node->getLoop()};
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, loop) {
@@ -77,23 +76,7 @@ JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, start) {
 
 JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, pause) {
   auto audioFileSourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
-
-  auto event = [audioFileSourceNode](BaseAudioContext &) {
-    audioFileSourceNode->pause();
-  };
-  audioFileSourceNode->scheduleAudioEvent(std::move(event));
-
-  return jsi::Value::undefined();
-}
-
-JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, seekToStart) {
-  auto audioFileSourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
-
-  auto event = [audioFileSourceNode](BaseAudioContext &) {
-    audioFileSourceNode->seekToStart();
-  };
-  audioFileSourceNode->scheduleAudioEvent(std::move(event));
-
+  audioFileSourceNode->pause();
   return jsi::Value::undefined();
 }
 
