@@ -48,13 +48,23 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   void unregisterOnBufferEndedCallback(uint64_t callbackId);
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
-
   double getCurrentPosition() const override;
 
   void sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue);
+
+  bool isEmpty() const final;
+
+  void processWithoutInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) final;
+
+  void processWithInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) final;
 
  private:
   // User provided buffers
@@ -67,18 +77,6 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   double playedBuffersDuration_ = 0;
 
   uint64_t onBufferEndedCallbackId_ = 0; // 0 means no callback
-
-  void processWithoutInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) override;
-
-  void processWithInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) override;
 };
 
 } // namespace audioapi

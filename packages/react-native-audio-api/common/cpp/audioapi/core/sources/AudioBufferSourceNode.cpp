@@ -46,7 +46,6 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
 
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer,
     const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
 
@@ -58,10 +57,6 @@ void AudioBufferSourceNode::setBuffer(
     context->getDisposer()->dispose(std::move(buffer_));
   }
 
-  if (playbackRateBuffer_ != nullptr) {
-    context->getDisposer()->dispose(std::move(playbackRateBuffer_));
-  }
-
   if (audioBuffer_ != nullptr) {
     context->getDisposer()->dispose(std::move(audioBuffer_));
   }
@@ -71,12 +66,10 @@ void AudioBufferSourceNode::setBuffer(
     channelCount_ = 1;
 
     buffer_ = nullptr;
-    playbackRateBuffer_ = nullptr;
     return;
   }
 
   buffer_ = buffer;
-  playbackRateBuffer_ = playbackRateBuffer;
   audioBuffer_ = audioBuffer;
   channelCount_ = buffer_->getNumberOfChannels();
   loopEnd_ = buffer_->getDuration();
@@ -114,26 +107,6 @@ void AudioBufferSourceNode::unregisterOnLoopEndedCallback(uint64_t callbackId) {
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::LOOP_ENDED, callbackId);
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioBufferSourceNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
-  // No audio data to fill, zero the output and return.
-  if (buffer_ == nullptr) {
-    processingBuffer->zero();
-    return processingBuffer;
-  }
-
-  if (!pitchCorrection_) {
-    processWithoutPitchCorrection(processingBuffer, framesToProcess);
-  } else {
-    processWithPitchCorrection(processingBuffer, framesToProcess);
-  }
-
-  handleStopScheduled();
-
-  return processingBuffer;
-}
-
 double AudioBufferSourceNode::getCurrentPosition() const {
   return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), buffer_->getSampleRate());
 }
@@ -148,6 +121,10 @@ void AudioBufferSourceNode::sendOnLoopEndedEvent() {
 /**
  * Helper functions
  */
+
+bool AudioBufferSourceNode::isEmpty() const {
+  return buffer_ == nullptr;
+}
 
 void AudioBufferSourceNode::processWithoutInterpolation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,

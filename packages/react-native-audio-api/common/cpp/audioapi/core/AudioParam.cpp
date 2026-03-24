@@ -115,6 +115,10 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
   // Exponential curve function using power law
   auto calculateValue =
       [](double startTime, double endTime, float startValue, float endValue, double time) {
+        if (startValue * endValue < 0 || startValue == 0) {
+          return startValue;
+        }
+
         if (time < startTime) {
           return startValue;
         }
@@ -143,6 +147,10 @@ void AudioParam::setTargetAtTime(float target, double startTime, double timeCons
   // Exponential decay function towards target value
   auto calculateValue = [timeConstant, target](
                             double startTime, double, float startValue, float, double time) {
+    if (timeConstant == 0) {
+      return target;
+    }
+
     if (time < startTime) {
       return startValue;
     }
