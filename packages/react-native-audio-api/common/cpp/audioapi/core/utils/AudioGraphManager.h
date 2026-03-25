@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
@@ -104,7 +103,7 @@ class AudioGraphManager {
   void cleanup();
 
  private:
-  utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *const disposer_;
+  utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize> *const disposer_;
 
   /// @brief Initial capacity for various node types for deletion
   /// @note Higher capacity decreases number of reallocations at runtime (can be easily adjusted to 128 if needed)

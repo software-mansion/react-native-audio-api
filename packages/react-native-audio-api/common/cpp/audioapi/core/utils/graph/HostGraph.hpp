@@ -40,8 +40,8 @@ class HostGraph {
     EDGE_ALREADY_EXISTS,
   };
 
-  /// Size of the Disposer payload (= sizeof(std::unique_ptr<T[]>)).
-  static constexpr size_t kDisposerPayloadSize = 8;
+  /// Size of the Disposer payload (= sizeof(std::shared_ptr<T[]>)).
+  static constexpr size_t kDisposerPayloadSize = 16;
 
   /// Event that modifies AudioGraph to keep it consistent with HostGraph.
   /// The second argument is the Disposer used to offload buffer deallocation.

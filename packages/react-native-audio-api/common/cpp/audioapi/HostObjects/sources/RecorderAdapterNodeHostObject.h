@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/core/utils/graph/Graph.hpp>
 
 #include <memory>
 
@@ -12,8 +13,13 @@ class AudioRecorderHostObject;
 
 class RecorderAdapterNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit RecorderAdapterNodeHostObject(const std::shared_ptr<RecorderAdapterNode> &node)
-      : AudioNodeHostObject(node) {}
+  explicit RecorderAdapterNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioScheduledSourceNodeOptions &options = AudioScheduledSourceNodeOptions())
+      : AudioNodeHostObject(
+            context->getGraph(),
+            std::make_unique<RecorderAdapterNode>(context),
+            options) {}
 
  private:
   friend class AudioRecorderHostObject;

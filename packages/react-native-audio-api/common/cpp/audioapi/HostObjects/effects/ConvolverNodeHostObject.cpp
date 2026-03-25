@@ -18,7 +18,10 @@ namespace audioapi {
 ConvolverNodeHostObject::ConvolverNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const ConvolverOptions &options)
-    : AudioNodeHostObject(context->createConvolver(options), options),
+    : AudioNodeHostObject(
+          context->getGraph(),
+          std::make_unique<ConvolverNode>(context, options),
+          options),
       normalize_(!options.disableNormalization) {
   if (options.buffer != nullptr) {
     setBuffer(options.buffer);
@@ -57,7 +60,8 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
     return;
   }
 
-  auto convolverNode = std::static_pointer_cast<ConvolverNode>(node_);
+  auto handle = node_->handle;
+  auto convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());
 
   auto copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
 
@@ -102,7 +106,8 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
       intermediateBuffer,
       scaleFactor});
 
-  auto event = [convolverNode, setupData](BaseAudioContext &) {
+  auto event = [handle, setupData](BaseAudioContext &) {
+    auto convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());
     convolverNode->setBuffer(
         setupData->buffer,
         std::move(setupData->convolvers),

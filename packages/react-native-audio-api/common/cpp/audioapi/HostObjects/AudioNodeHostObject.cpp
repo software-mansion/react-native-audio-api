@@ -4,13 +4,15 @@
 #include <audioapi/core/AudioNode.h>
 
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
 AudioNodeHostObject::AudioNodeHostObject(
-    const std::shared_ptr<AudioNode> &node,
+    const std::shared_ptr<utils::graph::Graph> &graph,
+    std::unique_ptr<AudioNode> node,
     const AudioNodeOptions &options)
-    : node_(node),
+    : utils::graph::HostNode(graph, std::move(node)),
       numberOfInputs_(options.numberOfInputs),
       numberOfOutputs_(options.numberOfOutputs),
       channelCount_(options.channelCount),
@@ -60,29 +62,32 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
   auto obj = args[0].getObject(runtime);
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
-    node_->connect(std::shared_ptr<AudioNodeHostObject>(node)->node_);
+    connectNode(*node);
   }
   if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    node_->connect(std::shared_ptr<AudioParamHostObject>(param)->param_);
+    // TODO
+    // connectParam(*param->owner_, param->param_.get());
   }
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
   if (args[0].isUndefined()) {
-    node_->disconnect();
+    // TODO
+    // node_->disconnect();
     return jsi::Value::undefined();
   }
   auto obj = args[0].getObject(runtime);
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
-    node_->disconnect(std::shared_ptr<AudioNodeHostObject>(node)->node_);
+    disconnectNode(*node);
   }
 
   if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    node_->disconnect(std::shared_ptr<AudioParamHostObject>(param)->param_);
+    // TODO
+    // disconnectParam(*param->owner_, param->param_.get());
   }
   return jsi::Value::undefined();
 }

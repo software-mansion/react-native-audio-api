@@ -14,9 +14,12 @@ namespace audioapi {
 OscillatorNodeHostObject::OscillatorNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const OscillatorOptions &options)
-    : AudioScheduledSourceNodeHostObject(context->createOscillator(options), options),
+    : AudioScheduledSourceNodeHostObject(
+          context->getGraph(),
+          std::make_unique<OscillatorNode>(context, options),
+          options),
       type_(options.type) {
-  auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
+  auto oscillatorNode = static_cast<OscillatorNode *>(node_->handle->audioNode->asAudioNode());
   frequencyParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getFrequencyParam());
   detuneParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
 
@@ -43,11 +46,12 @@ JSI_PROPERTY_GETTER_IMPL(OscillatorNodeHostObject, type) {
 }
 
 JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
-  auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
+  auto handle = node_->handle;
+  auto oscillatorNode = static_cast<OscillatorNode *>(handle->audioNode->asAudioNode());
   auto periodicWave = args[0].getObject(runtime).getHostObject<PeriodicWaveHostObject>(runtime);
 
-  auto event = [oscillatorNode, periodicWave = periodicWave->periodicWave_](BaseAudioContext &) {
-    oscillatorNode->setPeriodicWave(periodicWave);
+  auto event = [handle, periodicWave = periodicWave->periodicWave_](BaseAudioContext &) {
+    static_cast<OscillatorNode *>(handle->audioNode->asAudioNode())->setPeriodicWave(periodicWave);
   };
   oscillatorNode->scheduleAudioEvent(std::move(event));
 
@@ -55,11 +59,12 @@ JSI_HOST_FUNCTION_IMPL(OscillatorNodeHostObject, setPeriodicWave) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(OscillatorNodeHostObject, type) {
-  auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
+  auto handle = node_->handle;
+  auto oscillatorNode = static_cast<OscillatorNode *>(handle->audioNode->asAudioNode());
   auto type = js_enum_parser::oscillatorTypeFromString(value.asString(runtime).utf8(runtime));
 
-  auto event = [oscillatorNode, type](BaseAudioContext &) {
-    oscillatorNode->setType(type);
+  auto event = [handle, type](BaseAudioContext &) {
+    static_cast<OscillatorNode *>(handle->audioNode->asAudioNode())->setType(type);
   };
   type_ = type;
 

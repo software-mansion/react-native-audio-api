@@ -2,6 +2,8 @@
 
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
+#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/HostNode.hpp>
 #include <audioapi/jsi/JsiHostObject.h>
 #include <audioapi/types/NodeOptions.h>
 
@@ -13,10 +15,11 @@ using namespace facebook;
 
 class AudioNode;
 
-class AudioNodeHostObject : public JsiHostObject {
+class AudioNodeHostObject : public JsiHostObject, public utils::graph::HostNode {
  public:
   explicit AudioNodeHostObject(
-      const std::shared_ptr<AudioNode> &node,
+      const std::shared_ptr<utils::graph::Graph> &graph,
+      std::unique_ptr<AudioNode> node,
       const AudioNodeOptions &options = AudioNodeOptions());
   ~AudioNodeHostObject() override;
 
@@ -30,8 +33,6 @@ class AudioNodeHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(disconnect);
 
  protected:
-  std::shared_ptr<AudioNode> node_;
-
   const int numberOfInputs_;
   const int numberOfOutputs_;
   size_t channelCount_;

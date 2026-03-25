@@ -14,8 +14,12 @@ namespace audioapi {
 BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const BiquadFilterOptions &options)
-    : AudioNodeHostObject(context->createBiquadFilter(options), options), type_(options.type) {
-  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
+    : AudioNodeHostObject(
+          context->getGraph(),
+          std::make_unique<BiquadFilterNode>(context, options),
+          options),
+      type_(options.type) {
+  auto biquadFilterNode = static_cast<BiquadFilterNode *>(node_->handle->audioNode->asAudioNode());
   frequencyParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getFrequencyParam());
   detuneParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getDetuneParam());
   QParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getQParam());
@@ -54,11 +58,12 @@ JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, type) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(BiquadFilterNodeHostObject, type) {
-  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
+  auto handle = node_->handle;
+  auto biquadFilterNode = static_cast<BiquadFilterNode *>(handle->audioNode->asAudioNode());
 
   auto type = js_enum_parser::filterTypeFromString(value.asString(runtime).utf8(runtime));
-  auto event = [biquadFilterNode, type](BaseAudioContext &) {
-    biquadFilterNode->setType(type);
+  auto event = [handle, type](BaseAudioContext &) {
+    static_cast<BiquadFilterNode *>(handle->audioNode->asAudioNode())->setType(type);
   };
   biquadFilterNode->scheduleAudioEvent(std::move(event));
   type_ = type;
@@ -78,7 +83,7 @@ JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {
       args[2].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto phaseResponseOut = reinterpret_cast<float *>(arrayBufferPhase.data(runtime));
 
-  auto biquadFilterNode = std::static_pointer_cast<BiquadFilterNode>(node_);
+  auto biquadFilterNode = static_cast<BiquadFilterNode *>(node_->handle->audioNode->asAudioNode());
   biquadFilterNode->getFrequencyResponse(
       frequencyArray, magResponseOut, phaseResponseOut, length, type_);
 

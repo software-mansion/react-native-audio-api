@@ -14,7 +14,8 @@ class AudioParamHostObject;
 class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit AudioBufferBaseSourceNodeHostObject(
-      const std::shared_ptr<AudioBufferBaseSourceNode> &node,
+      const std::shared_ptr<utils::graph::Graph> &graph,
+      std::unique_ptr<AudioNode> node,
       const BaseAudioBufferSourceOptions &options);
 
   ~AudioBufferBaseSourceNodeHostObject() override;

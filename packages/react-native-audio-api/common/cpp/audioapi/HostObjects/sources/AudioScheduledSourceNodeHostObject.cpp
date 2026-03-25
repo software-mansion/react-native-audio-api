@@ -8,9 +8,10 @@
 namespace audioapi {
 
 AudioScheduledSourceNodeHostObject::AudioScheduledSourceNodeHostObject(
-    const std::shared_ptr<AudioScheduledSourceNode> &node,
+    const std::shared_ptr<utils::graph::Graph> &graph,
+    std::unique_ptr<AudioNode> node,
     const AudioScheduledSourceNodeOptions &options)
-    : AudioNodeHostObject(node) {
+    : AudioNodeHostObject(graph, std::move(node), options) {
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onEnded));
 
   addFunctions(
@@ -31,10 +32,12 @@ JSI_PROPERTY_SETTER_IMPL(AudioScheduledSourceNodeHostObject, onEnded) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, start) {
-  auto audioScheduleSourceNode = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioScheduleSourceNode =
+      static_cast<AudioScheduledSourceNode *>(handle->audioNode->asAudioNode());
 
-  auto event = [audioScheduleSourceNode, when = args[0].getNumber()](BaseAudioContext &) {
-    audioScheduleSourceNode->start(when);
+  auto event = [handle, when = args[0].getNumber()](BaseAudioContext &) {
+    static_cast<AudioScheduledSourceNode *>(handle->audioNode->asAudioNode())->start(when);
   };
   audioScheduleSourceNode->scheduleAudioEvent(std::move(event));
 
@@ -42,10 +45,12 @@ JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, start) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, stop) {
-  auto audioScheduleSourceNode = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioScheduleSourceNode =
+      static_cast<AudioScheduledSourceNode *>(handle->audioNode->asAudioNode());
 
-  auto event = [audioScheduleSourceNode, when = args[0].getNumber()](BaseAudioContext &) {
-    audioScheduleSourceNode->stop(when);
+  auto event = [handle, when = args[0].getNumber()](BaseAudioContext &) {
+    static_cast<AudioScheduledSourceNode *>(handle->audioNode->asAudioNode())->stop(when);
   };
   audioScheduleSourceNode->scheduleAudioEvent(std::move(event));
 
@@ -53,10 +58,12 @@ JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, stop) {
 }
 
 void AudioScheduledSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackId) {
-  auto sourceNode = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
+  auto handle = node_->handle;
+  auto sourceNode = static_cast<AudioScheduledSourceNode *>(handle->audioNode->asAudioNode());
 
-  auto event = [sourceNode, callbackId](BaseAudioContext &) {
-    sourceNode->setOnEndedCallbackId(callbackId);
+  auto event = [handle, callbackId](BaseAudioContext &) {
+    static_cast<AudioScheduledSourceNode *>(handle->audioNode->asAudioNode())
+        ->setOnEndedCallbackId(callbackId);
   };
 
   sourceNode->unregisterOnEndedCallback(onEndedCallbackId_);

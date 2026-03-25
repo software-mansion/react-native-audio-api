@@ -11,8 +11,11 @@ namespace audioapi {
 DelayNodeHostObject::DelayNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const DelayOptions &options)
-    : AudioNodeHostObject(context->createDelay(options), options) {
-  auto delayNode = std::static_pointer_cast<DelayNode>(node_);
+    : AudioNodeHostObject(
+          context->getGraph(),
+          std::make_unique<DelayNode>(context, options),
+          options) {
+  auto delayNode = static_cast<DelayNode *>(node_->handle->audioNode->asAudioNode());
   delayTimeParam_ = std::make_shared<AudioParamHostObject>(delayNode->getDelayTimeParam());
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }
@@ -22,7 +25,7 @@ JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
 }
 
 size_t DelayNodeHostObject::getSizeInBytes() const {
-  auto delayNode = std::static_pointer_cast<DelayNode>(node_);
+  auto delayNode = static_cast<DelayNode *>(node_->handle->audioNode->asAudioNode());
   auto base = sizeof(float) * delayNode->getDelayTimeParam()->getMaxValue();
   return base * delayNode->getContextSampleRate();
 }

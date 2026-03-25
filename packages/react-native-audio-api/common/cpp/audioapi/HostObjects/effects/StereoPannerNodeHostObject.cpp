@@ -11,8 +11,11 @@ namespace audioapi {
 StereoPannerNodeHostObject::StereoPannerNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const StereoPannerOptions &options)
-    : AudioNodeHostObject(context->createStereoPanner(options), options) {
-  auto stereoPannerNode = std::static_pointer_cast<StereoPannerNode>(node_);
+    : AudioNodeHostObject(
+          context->getGraph(),
+          std::make_unique<StereoPannerNode>(context, options),
+          options) {
+  auto stereoPannerNode = static_cast<StereoPannerNode *>(node_->handle->audioNode->asAudioNode());
   panParam_ = std::make_shared<AudioParamHostObject>(stereoPannerNode->getPanParam());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(StereoPannerNodeHostObject, pan));

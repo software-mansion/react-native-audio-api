@@ -14,7 +14,10 @@ namespace audioapi {
 AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioBufferSourceOptions &options)
-    : AudioBufferBaseSourceNodeHostObject(context->createBufferSource(options), options),
+    : AudioBufferBaseSourceNodeHostObject(
+          context->getGraph(),
+          std::make_unique<AudioBufferSourceNode>(context, options),
+          options),
       loop_(options.loop),
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
@@ -68,11 +71,13 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferSourceNodeHostObject, loopEnd) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loop) {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioBufferSourceNode =
+      static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode());
   auto loop = value.getBool();
 
-  auto event = [audioBufferSourceNode, loop](BaseAudioContext &) {
-    audioBufferSourceNode->setLoop(loop);
+  auto event = [handle, loop](BaseAudioContext &) {
+    static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode())->setLoop(loop);
   };
 
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
@@ -80,11 +85,13 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loop) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopSkip) {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioBufferSourceNode =
+      static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode());
   auto loopSkip = value.getBool();
 
-  auto event = [audioBufferSourceNode, loopSkip](BaseAudioContext &) {
-    audioBufferSourceNode->setLoopSkip(loopSkip);
+  auto event = [handle, loopSkip](BaseAudioContext &) {
+    static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode())->setLoopSkip(loopSkip);
   };
 
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
@@ -92,11 +99,13 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopSkip) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopStart) {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioBufferSourceNode =
+      static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode());
   auto loopStart = value.getNumber();
 
-  auto event = [audioBufferSourceNode, loopStart](BaseAudioContext &) {
-    audioBufferSourceNode->setLoopStart(loopStart);
+  auto event = [handle, loopStart](BaseAudioContext &) {
+    static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode())->setLoopStart(loopStart);
   };
 
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
@@ -104,11 +113,13 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopStart) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopEnd) {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioBufferSourceNode =
+      static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode());
   auto loopEnd = value.getNumber();
 
-  auto event = [audioBufferSourceNode, loopEnd](BaseAudioContext &) {
-    audioBufferSourceNode->setLoopEnd(loopEnd);
+  auto event = [handle, loopEnd](BaseAudioContext &) {
+    static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode())->setLoopEnd(loopEnd);
   };
 
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
@@ -121,13 +132,16 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onLoopEnded) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioBufferSourceNode =
+      static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode());
 
-  auto event = [audioBufferSourceNode,
+  auto event = [handle,
                 when = args[0].getNumber(),
                 offset = args[1].getNumber(),
                 duration = args[2].isUndefined() ? -1 : args[2].getNumber()](BaseAudioContext &) {
-    audioBufferSourceNode->start(when, offset, duration);
+    static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode())
+        ->start(when, offset, duration);
   };
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
 
@@ -135,8 +149,6 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
-
   if (args[0].isNull()) {
     setBuffer(nullptr);
   } else {
@@ -151,10 +163,13 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
 }
 
 void AudioBufferSourceNodeHostObject::setOnLoopEndedCallbackId(uint64_t callbackId) {
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioBufferSourceNode =
+      static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode());
 
-  auto event = [audioBufferSourceNode, callbackId](BaseAudioContext &) {
-    audioBufferSourceNode->setOnLoopEndedCallbackId(callbackId);
+  auto event = [handle, callbackId](BaseAudioContext &) {
+    static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode())
+        ->setOnLoopEndedCallbackId(callbackId);
   };
 
   audioBufferSourceNode->unregisterOnLoopEndedCallback(onLoopEndedCallbackId_);
@@ -166,7 +181,9 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
   // TODO: add optimized memory management for buffer changes, e.g.
   //  when the same buffer is reused across threads and
   // buffer modification is not allowed on JS thread
-  auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
+  auto handle = node_->handle;
+  auto audioBufferSourceNode =
+      static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode());
 
   std::shared_ptr<AudioBuffer> copiedBuffer;
   std::shared_ptr<DSPAudioBuffer> audioBuffer;
@@ -195,8 +212,9 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
         audioBufferSourceNode->getContextSampleRate());
   }
 
-  auto event = [audioBufferSourceNode, copiedBuffer, audioBuffer](BaseAudioContext &) {
-    audioBufferSourceNode->setBuffer(copiedBuffer, audioBuffer);
+  auto event = [handle, copiedBuffer, audioBuffer](BaseAudioContext &) {
+    static_cast<AudioBufferSourceNode *>(handle->audioNode->asAudioNode())
+        ->setBuffer(copiedBuffer, audioBuffer);
   };
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
 }

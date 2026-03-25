@@ -10,8 +10,12 @@ namespace audioapi {
 ConstantSourceNodeHostObject::ConstantSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const ConstantSourceOptions &options)
-    : AudioScheduledSourceNodeHostObject(context->createConstantSource(options), options) {
-  auto constantSourceNode = std::static_pointer_cast<ConstantSourceNode>(node_);
+    : AudioScheduledSourceNodeHostObject(
+          context->getGraph(),
+          std::make_unique<ConstantSourceNode>(context, options),
+          options) {
+  auto constantSourceNode =
+      static_cast<ConstantSourceNode *>(node_->handle->audioNode->asAudioNode());
   offsetParam_ = std::make_shared<AudioParamHostObject>(constantSourceNode->getOffsetParam());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(ConstantSourceNodeHostObject, offset));

@@ -17,10 +17,10 @@ namespace audioapi::utils::graph {
 ///
 /// Host objects that represent audio processing nodes should publicly inherit
 /// from HostNode and pass their payload (GraphObject-derived object) to the
-/// constructor. `connect` / `disconnect` provide edge management.
+/// constructor. `connectNode` / `disconnectNode` provide edge management.
 ///
 /// @note HostNode intentionally does NOT prevent cycles — callers must handle
-/// the error returned by `connect()`.
+/// the error returned by `connectNode()`.
 ///
 /// ## Example usage:
 /// ```cpp
@@ -32,7 +32,7 @@ namespace audioapi::utils::graph {
 /// };
 ///
 /// auto gain = std::make_unique<MyGainNode>(graph, std::move(gainImpl));
-/// gain->connect(*destination);
+/// gain->connectNode(*destination);
 /// gain.reset(); // destructor removes the node from the graph
 /// ```
 class HostNode {
@@ -93,13 +93,13 @@ class HostNode {
 
   /// @brief Connects this node's output to another node's input (this → other).
   /// @return Ok on success, Err on cycle / duplicate / not-found
-  Res connect(HostNode &other) {
+  Res connectNode(HostNode &other) {
     return graph_->addEdge(node_, other.node_);
   }
 
   /// @brief Disconnects this node's output from another node's input.
   /// @return Ok on success, Err on not-found
-  Res disconnect(HostNode &other) {
+  Res disconnectNode(HostNode &other) {
     return graph_->removeEdge(node_, other.node_);
   }
 

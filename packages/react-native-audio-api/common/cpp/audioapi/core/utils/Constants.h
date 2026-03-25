@@ -30,9 +30,6 @@ inline float LOG2_MOST_POSITIVE_SINGLE_FLOAT = std::log2(MOST_POSITIVE_SINGLE_FL
 inline float LOG10_MOST_POSITIVE_SINGLE_FLOAT = std::log10(MOST_POSITIVE_SINGLE_FLOAT);
 inline constexpr float PI = std::numbers::pi_v<float>;
 
-// disposer
-inline constexpr size_t DISPOSER_PAYLOAD_SIZE = 16;
-
 // buffer sizes
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT = 4;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 32;

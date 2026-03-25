@@ -9,7 +9,10 @@ namespace audioapi {
 IIRFilterNodeHostObject::IIRFilterNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const IIRFilterOptions &options)
-    : AudioNodeHostObject(context->createIIRFilter(options), options) {
+    : AudioNodeHostObject(
+          context->getGraph(),
+          std::make_unique<IIRFilterNode>(context, options),
+          options) {
 
   addFunctions(JSI_EXPORT_FUNCTION(IIRFilterNodeHostObject, getFrequencyResponse));
 }
@@ -28,7 +31,7 @@ JSI_HOST_FUNCTION_IMPL(IIRFilterNodeHostObject, getFrequencyResponse) {
       args[2].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto phaseResponseOut = reinterpret_cast<float *>(arrayBufferPhase.data(runtime));
 
-  auto iirFilterNode = std::static_pointer_cast<IIRFilterNode>(node_);
+  auto iirFilterNode = static_cast<IIRFilterNode *>(node_->handle->audioNode->asAudioNode());
   iirFilterNode->getFrequencyResponse(frequencyArray, magResponseOut, phaseResponseOut, length);
 
   return jsi::Value::undefined();

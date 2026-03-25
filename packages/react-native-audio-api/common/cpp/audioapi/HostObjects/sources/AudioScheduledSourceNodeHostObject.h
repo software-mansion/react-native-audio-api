@@ -8,12 +8,11 @@
 namespace audioapi {
 using namespace facebook;
 
-class AudioScheduledSourceNode;
-
 class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioScheduledSourceNodeHostObject(
-      const std::shared_ptr<AudioScheduledSourceNode> &node,
+      const std::shared_ptr<utils::graph::Graph> &graph,
+      std::unique_ptr<AudioNode> node,
       const AudioScheduledSourceNodeOptions &options = AudioScheduledSourceNodeOptions());
 
   ~AudioScheduledSourceNodeHostObject() override;

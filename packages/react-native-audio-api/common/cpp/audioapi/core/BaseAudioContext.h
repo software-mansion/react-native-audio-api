@@ -4,6 +4,7 @@
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Disposer.hpp>
+#include <audioapi/core/utils/graph/Graph.hpp>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
@@ -70,46 +71,17 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   void setState(ContextState state);
 
-  std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
-  std::shared_ptr<WorkletSourceNode> createWorkletSourceNode(
-      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime,
-      bool shouldLockRuntime = true);
-  std::shared_ptr<WorkletNode> createWorkletNode(
-      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime,
-      size_t bufferLength,
-      size_t inputChannelCount,
-      bool shouldLockRuntime = true);
-  std::shared_ptr<WorkletProcessingNode> createWorkletProcessingNode(
-      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime,
-      bool shouldLockRuntime = true);
-  std::shared_ptr<DelayNode> createDelay(const DelayOptions &options);
-  std::shared_ptr<IIRFilterNode> createIIRFilter(const IIRFilterOptions &options);
-  std::shared_ptr<OscillatorNode> createOscillator(const OscillatorOptions &options);
-  std::shared_ptr<ConstantSourceNode> createConstantSource(const ConstantSourceOptions &options);
-  std::shared_ptr<StreamerNode> createStreamer(const StreamerOptions &options);
-  std::shared_ptr<GainNode> createGain(const GainOptions &options);
-  std::shared_ptr<StereoPannerNode> createStereoPanner(const StereoPannerOptions &options);
-  std::shared_ptr<BiquadFilterNode> createBiquadFilter(const BiquadFilterOptions &options);
-  std::shared_ptr<AudioBufferSourceNode> createBufferSource(
-      const AudioBufferSourceOptions &options);
-  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
-      const BaseAudioBufferSourceOptions &options);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
       int length) const;
-  std::shared_ptr<AnalyserNode> createAnalyser(const AnalyserOptions &options);
-  std::shared_ptr<ConvolverNode> createConvolver(const ConvolverOptions &options);
-  std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   AudioGraphManager *getGraphManager() const;
+  std::shared_ptr<utils::graph::Graph> getGraph() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   const RuntimeRegistry &getRuntimeRegistry() const;
-  utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *getDisposer() const;
+  utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize> *getDisposer() const;
 
   virtual void initialize();
 
@@ -144,8 +116,10 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
-  std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
   std::unique_ptr<AudioGraphManager> graphManager_;
+
+  std::unique_ptr<utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize>> disposer_;
+  std::shared_ptr<utils::graph::Graph> graph_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };
