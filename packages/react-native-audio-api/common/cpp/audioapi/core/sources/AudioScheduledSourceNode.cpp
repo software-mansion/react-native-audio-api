@@ -41,23 +41,23 @@ void AudioScheduledSourceNode::stop(double when) {
   stopTime_ = when;
 }
 
-bool AudioScheduledSourceNode::isUnscheduled() {
+bool AudioScheduledSourceNode::isUnscheduled() const {
   return playbackState_ == PlaybackState::UNSCHEDULED;
 }
 
-bool AudioScheduledSourceNode::isScheduled() {
+bool AudioScheduledSourceNode::isScheduled() const {
   return playbackState_ == PlaybackState::SCHEDULED;
 }
 
-bool AudioScheduledSourceNode::isPlaying() {
+bool AudioScheduledSourceNode::isPlaying() const {
   return playbackState_ == PlaybackState::PLAYING;
 }
 
-bool AudioScheduledSourceNode::isFinished() {
+bool AudioScheduledSourceNode::isFinished() const {
   return playbackState_ == PlaybackState::FINISHED;
 }
 
-bool AudioScheduledSourceNode::isStopScheduled() {
+bool AudioScheduledSourceNode::isStopScheduled() const {
   return playbackState_ == PlaybackState::STOP_SCHEDULED;
 }
 

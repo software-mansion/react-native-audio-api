@@ -27,19 +27,19 @@ class AudioScheduledSourceNode : public AudioNode {
   virtual void stop(double when);
 
   /// @note Audio Thread only
-  bool isUnscheduled();
+  bool isUnscheduled() const;
 
   /// @note Audio Thread only
-  bool isScheduled();
+  bool isScheduled() const;
 
   /// @note Audio Thread only
-  bool isPlaying();
+  bool isPlaying() const;
 
   /// @note Audio Thread only
-  bool isFinished();
+  bool isFinished() const;
 
   /// @note Audio Thread only
-  bool isStopScheduled();
+  bool isStopScheduled() const;
 
   /// @note Audio Thread only
   void setOnEndedCallbackId(uint64_t callbackId);
