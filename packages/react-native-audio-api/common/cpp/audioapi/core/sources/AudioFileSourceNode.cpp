@@ -54,8 +54,8 @@ AudioFileSourceNode::AudioFileSourceNode(
 
   seekOffloader_ = std::make_unique<task_offloader::TaskOffloader<
       OffloadedSeekRequest,
-      spsc::OverflowStrategy::WAIT_ON_FULL,
-      spsc::WaitStrategy::YIELD>>(
+      spsc::OverflowStrategy::OVERWRITE_ON_FULL,
+      spsc::WaitStrategy::ATOMIC_WAIT>>(
       SEEK_OFFLOADER_WORKER_COUNT, [this](OffloadedSeekRequest req) { runOffloadedSeekTask(req); });
 
   isInitialized_.store(true, std::memory_order_release);

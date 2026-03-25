@@ -141,8 +141,8 @@ class AudioFileSourceNode : public AudioNode {
 
   std::unique_ptr<task_offloader::TaskOffloader<
       OffloadedSeekRequest,
-      spsc::OverflowStrategy::WAIT_ON_FULL,
-      spsc::WaitStrategy::YIELD>>
+      spsc::OverflowStrategy::OVERWRITE_ON_FULL,
+      spsc::WaitStrategy::ATOMIC_WAIT>>
       seekOffloader_;
 };
 
