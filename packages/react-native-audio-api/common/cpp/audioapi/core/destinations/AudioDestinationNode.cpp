@@ -3,7 +3,7 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <memory>
 
 namespace audioapi {
@@ -22,7 +22,7 @@ double AudioDestinationNode::getCurrentTime() const {
 }
 
 void AudioDestinationNode::renderAudio(
-    const std::shared_ptr<AudioBuffer> &destinationBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &destinationBuffer,
     int numFrames) {
   if (numFrames < 0 || !destinationBuffer || !isInitialized_.load(std::memory_order_acquire)) {
     return;

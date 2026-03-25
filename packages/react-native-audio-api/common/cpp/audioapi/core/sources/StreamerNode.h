@@ -11,7 +11,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
@@ -24,7 +24,7 @@ extern "C" {
 }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
-#include <audioapi/dsp/r8brain/Resampler.h>
+#include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
 #include <memory>
@@ -58,7 +58,6 @@ struct StreamingData {
 
 namespace audioapi {
 
-class AudioBuffer;
 struct StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
@@ -69,8 +68,8 @@ class StreamerNode : public AudioScheduledSourceNode {
   ~StreamerNode() override;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

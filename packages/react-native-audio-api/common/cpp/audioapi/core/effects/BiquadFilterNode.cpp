@@ -30,8 +30,8 @@
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
@@ -380,8 +380,8 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
   return coeffs;
 }
 
-std::shared_ptr<AudioBuffer> BiquadFilterNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> BiquadFilterNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     auto currentTime = context->getCurrentTime();

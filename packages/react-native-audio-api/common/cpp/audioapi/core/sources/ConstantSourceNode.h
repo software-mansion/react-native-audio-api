@@ -2,12 +2,12 @@
 
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
 
 namespace audioapi {
 
-class AudioBuffer;
 struct ConstantSourceOptions;
 
 class ConstantSourceNode : public AudioScheduledSourceNode {
@@ -19,8 +19,8 @@ class ConstantSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getOffsetParam() const;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

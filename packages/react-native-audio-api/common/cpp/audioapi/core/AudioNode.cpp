@@ -3,8 +3,8 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
 
 namespace audioapi {
@@ -19,14 +19,18 @@ AudioNode::AudioNode(
       channelCountMode_(options.channelCountMode),
       channelInterpretation_(options.channelInterpretation),
       requiresTailProcessing_(options.requiresTailProcessing) {
-  audioBuffer_ =
-      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
 AudioNode::~AudioNode() {
   if (isInitialized_.load(std::memory_order_acquire)) {
     cleanup();
   }
+}
+
+bool AudioNode::canBeDestructed() const {
+  return true;
 }
 
 size_t AudioNode::getChannelCount() const {
@@ -100,8 +104,8 @@ void AudioNode::disable() {
   }
 }
 
-std::shared_ptr<AudioBuffer> AudioNode::processAudio(
-    const std::shared_ptr<AudioBuffer> &outputBuffer,
+std::shared_ptr<DSPAudioBuffer> AudioNode::processAudio(
+    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   if (!isInitialized_.load(std::memory_order_acquire)) {
@@ -146,8 +150,8 @@ bool AudioNode::isAlreadyProcessed() {
   return true;
 }
 
-std::shared_ptr<AudioBuffer> AudioNode::processInputs(
-    const std::shared_ptr<AudioBuffer> &outputBuffer,
+std::shared_ptr<DSPAudioBuffer> AudioNode::processInputs(
+    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   auto processingBuffer = audioBuffer_;
@@ -175,8 +179,8 @@ std::shared_ptr<AudioBuffer> AudioNode::processInputs(
   return processingBuffer;
 }
 
-std::shared_ptr<AudioBuffer> AudioNode::applyChannelCountMode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer) {
+std::shared_ptr<DSPAudioBuffer> AudioNode::applyChannelCountMode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
   // If the channelCountMode is EXPLICIT, the node should output the number of
   // channels specified by the channelCount.
   if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
@@ -193,7 +197,7 @@ std::shared_ptr<AudioBuffer> AudioNode::applyChannelCountMode(
   return processingBuffer;
 }
 
-void AudioNode::mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer) {
+void AudioNode::mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
   assert(processingBuffer != nullptr);
 
   for (auto it = inputBuffers_.begin(), end = inputBuffers_.end(); it != end; ++it) {

@@ -4,13 +4,13 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #include <audioapi/ios/system/AudioEngine.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 
 IOSAudioPlayer::IOSAudioPlayer(
-    const std::function<void(std::shared_ptr<AudioBuffer>, int)> &renderAudio,
+    const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
     : renderAudio_(renderAudio), channelCount_(channelCount), audioBuffer_(0), isRunning_(false)
@@ -42,7 +42,7 @@ IOSAudioPlayer::IOSAudioPlayer(
                                                      sampleRate:sampleRate
                                                    channelCount:channelCount_];
 
-  audioBuffer_ = std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
+  audioBuffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()

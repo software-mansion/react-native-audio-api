@@ -22,8 +22,8 @@ WorkletProcessingNode::WorkletProcessingNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-std::shared_ptr<AudioBuffer> WorkletProcessingNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> WorkletProcessingNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t channelCount = std::min(
       static_cast<size_t>(2), // Fixed to stereo for now
@@ -53,7 +53,7 @@ std::shared_ptr<AudioBuffer> WorkletProcessingNode::processNode(
         // We call unsafely here because we are already on the runtime thread
         // and the runtime is locked by executeOnRuntimeSync (if
         // shouldLockRuntime is true)
-        float time = 0.0f;
+        double time = 0.0f;
         if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
           time = context->getCurrentTime();
         }

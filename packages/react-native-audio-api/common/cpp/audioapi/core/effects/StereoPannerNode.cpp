@@ -2,8 +2,8 @@
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
@@ -22,8 +22,8 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> StereoPannerNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr)

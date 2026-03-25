@@ -5,7 +5,7 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiUtils.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>

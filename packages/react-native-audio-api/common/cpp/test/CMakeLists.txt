@@ -95,5 +95,19 @@ target_link_libraries(tests
   GTest::gmock
 )
 
+# --- Thread Sanitizer build ---
+add_executable(tests_tsan ${test_src})
+target_compile_options(tests_tsan PRIVATE -fsanitize=thread -g -O1)
+target_link_options(tests_tsan PRIVATE -fsanitize=thread)
+target_link_libraries(tests_tsan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+
+# --- Address + Undefined Behavior Sanitizer build ---
+add_executable(tests_asan ${test_src})
+target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -g -O1)
+target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
+target_link_libraries(tests_asan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+
 include(GoogleTest)
 gtest_discover_tests(tests)
+gtest_discover_tests(tests_tsan)
+gtest_discover_tests(tests_asan)
