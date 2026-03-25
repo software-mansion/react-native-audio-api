@@ -41,7 +41,7 @@ class TestableStereoPannerNode : public StereoPannerNode {
 };
 
 TEST_F(StereoPannerTest, StereoPannerCanBeCreated) {
-  auto panner = context->createStereoPanner(StereoPannerOptions());
+  auto panner = std::make_shared<StereoPannerNode>(context, StereoPannerOptions());
   ASSERT_NE(panner, nullptr);
 }
 

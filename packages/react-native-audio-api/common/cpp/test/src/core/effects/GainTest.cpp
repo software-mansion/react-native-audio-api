@@ -41,7 +41,7 @@ class TestableGainNode : public GainNode {
 };
 
 TEST_F(GainTest, GainCanBeCreated) {
-  auto gain = context->createGain(GainOptions());
+  auto gain = std::make_shared<GainNode>(context, GainOptions());
   ASSERT_NE(gain, nullptr);
 }
 

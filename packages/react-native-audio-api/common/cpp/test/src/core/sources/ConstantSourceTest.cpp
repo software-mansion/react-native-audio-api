@@ -41,7 +41,7 @@ class TestableConstantSourceNode : public ConstantSourceNode {
 };
 
 TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
-  auto constantSource = context->createConstantSource(ConstantSourceOptions());
+  auto constantSource = std::make_shared<ConstantSourceNode>(context, ConstantSourceOptions());
   ASSERT_NE(constantSource, nullptr);
 }
 

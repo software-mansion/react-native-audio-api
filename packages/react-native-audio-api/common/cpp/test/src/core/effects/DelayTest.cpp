@@ -41,7 +41,7 @@ class TestableDelayNode : public DelayNode {
 };
 
 TEST_F(DelayTest, DelayCanBeCreated) {
-  auto delay = context->createDelay(DelayOptions());
+  auto delay = std::make_shared<DelayNode>(context, DelayOptions());
   ASSERT_NE(delay, nullptr);
 }
 

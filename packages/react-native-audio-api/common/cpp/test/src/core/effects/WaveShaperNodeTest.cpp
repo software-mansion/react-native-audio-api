@@ -45,12 +45,12 @@ class TestableWaveShaperNode : public WaveShaperNode {
 };
 
 TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
-  auto waveShaper = context->createWaveShaper(WaveShaperOptions());
+  auto waveShaper = std::make_shared<WaveShaperNode>(context, WaveShaperOptions());
   ASSERT_NE(waveShaper, nullptr);
 }
 
 TEST_F(WaveShaperNodeTest, NullCanBeAsignedToCurve) {
-  auto waveShaper = context->createWaveShaper(WaveShaperOptions());
+  auto waveShaper = std::make_shared<WaveShaperNode>(context, WaveShaperOptions());
   ASSERT_NO_THROW(waveShaper->setCurve(nullptr));
 }
 
