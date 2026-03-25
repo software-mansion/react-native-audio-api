@@ -68,9 +68,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   ~StreamerNode() override;
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
 
  private:
   std::string streamPath_;

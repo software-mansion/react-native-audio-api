@@ -19,12 +19,10 @@ WorkletSourceNode::WorkletSourceNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-std::shared_ptr<DSPAudioBuffer> WorkletSourceNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
-  if (isUnscheduled() || isFinished() || !isEnabled()) {
-    processingBuffer->zero();
-    return processingBuffer;
+void WorkletSourceNode::processNode(int framesToProcess) {
+  if (isUnscheduled() || isFinished()) {
+    audioBuffer_->zero();
+    return;
   }
 
   size_t startOffset = 0;
@@ -32,11 +30,11 @@ std::shared_ptr<DSPAudioBuffer> WorkletSourceNode::processNode(
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
   updatePlaybackInfo(
-      processingBuffer,
+      audioBuffer_,
       framesToProcess,
       startOffset,
       nonSilentFramesToProcess,
@@ -44,11 +42,11 @@ std::shared_ptr<DSPAudioBuffer> WorkletSourceNode::processNode(
       context->getCurrentSampleFrame());
 
   if (nonSilentFramesToProcess == 0) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
-  size_t outputChannelCount = processingBuffer->getNumberOfChannels();
+  size_t outputChannelCount = audioBuffer_->getNumberOfChannels();
 
   auto result = workletRunner_.executeOnRuntimeSync(
       [this, nonSilentFramesToProcess, startOffset, time = context->getCurrentTime()](
@@ -72,19 +70,17 @@ std::shared_ptr<DSPAudioBuffer> WorkletSourceNode::processNode(
   // If the worklet execution failed, zero the output
   // It might happen if the runtime is not available
   if (!result.has_value()) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
   // Copy the processed data back to the AudioBuffer
   for (size_t i = 0; i < outputChannelCount; ++i) {
-    processingBuffer->getChannel(i)->copy(
+    audioBuffer_->getChannel(i)->copy(
         *outputBuffsHandles_[i], 0, startOffset, nonSilentFramesToProcess);
   }
 
   handleStopScheduled();
-
-  return processingBuffer;
 }
 
 } // namespace audioapi

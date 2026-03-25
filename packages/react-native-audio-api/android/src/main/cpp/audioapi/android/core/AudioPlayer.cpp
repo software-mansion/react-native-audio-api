@@ -12,14 +12,11 @@
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
-    const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount)
-    : renderAudio_(renderAudio),
-      sampleRate_(sampleRate),
-      channelCount_(channelCount),
-      isRunning_(false) {
-  isInitialized_ = openAudioStream();
+    : renderAudio_(renderAudio), sampleRate_(sampleRate), channelCount_(channelCount) {
+  isInitialized_.store(openAudioStream(), std::memory_order_release);
 }
 
 bool AudioPlayer::openAudioStream() {
@@ -85,7 +82,7 @@ void AudioPlayer::suspend() {
 }
 
 void AudioPlayer::cleanup() {
-  isInitialized_ = false;
+  isInitialized_.store(false, std::memory_order_release);
 
   if (mStream_ != nullptr) {
     mStream_->close();
@@ -100,7 +97,7 @@ bool AudioPlayer::isRunning() const {
 
 DataCallbackResult
 AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return DataCallbackResult::Continue;
   }
 
@@ -111,7 +108,7 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
     auto framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
     if (isRunning_.load(std::memory_order_acquire)) {
-      renderAudio_(buffer_, framesToProcess);
+      renderAudio_(buffer_.get(), framesToProcess);
     } else {
       buffer_->zero();
     }
@@ -129,7 +126,7 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (error == oboe::Result::ErrorDisconnected) {
     cleanup();
     if (openAudioStream()) {
-      isInitialized_ = true;
+      isInitialized_.store(true, std::memory_order_release);
       resume();
     }
   }

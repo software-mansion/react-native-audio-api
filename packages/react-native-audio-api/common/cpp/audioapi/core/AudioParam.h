@@ -16,7 +16,7 @@
 
 namespace audioapi {
 
-class AudioParam : public utils::graph::GraphObject {
+class AudioParam {
  public:
   explicit AudioParam(
       float defaultValue,
@@ -78,19 +78,6 @@ class AudioParam : public utils::graph::GraphObject {
     }
 
     return false;
-  }
-
-  /// @brief Temporary lifecycle policy for GraphObject-based graph storage.
-  [[nodiscard]] bool canBeDestructed() const override {
-    return true;
-  }
-
-  [[nodiscard]] AudioParam *asAudioParam() override {
-    return this;
-  }
-
-  [[nodiscard]] const AudioParam *asAudioParam() const override {
-    return this;
   }
 
   /// Audio-Thread only methods

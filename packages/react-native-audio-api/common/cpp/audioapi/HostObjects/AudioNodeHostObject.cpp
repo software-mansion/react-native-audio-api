@@ -1,5 +1,6 @@
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioNode.h>
 
@@ -63,8 +64,10 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
     connectNode(*node);
-  }
-  if (obj.isHostObject<AudioParamHostObject>(runtime)) {
+  } else if (obj.isHostObject<AudioDestinationNodeHostObject>(runtime)) {
+    auto dest = obj.getHostObject<AudioDestinationNodeHostObject>(runtime);
+    graph_->addEdge(node_, dest->rawNode());
+  } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
     // TODO
     // connectParam(*param->owner_, param->param_.get());
@@ -82,13 +85,15 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
     disconnectNode(*node);
-  }
-
-  if (obj.isHostObject<AudioParamHostObject>(runtime)) {
+  } else if (obj.isHostObject<AudioDestinationNodeHostObject>(runtime)) {
+    auto dest = obj.getHostObject<AudioDestinationNodeHostObject>(runtime);
+    graph_->removeEdge(node_, dest->rawNode());
+  } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
     // TODO
     // disconnectParam(*param->owner_, param->param_.get());
   }
+
   return jsi::Value::undefined();
 }
 } // namespace audioapi

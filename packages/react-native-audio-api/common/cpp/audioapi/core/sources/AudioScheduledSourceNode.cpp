@@ -1,6 +1,5 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>

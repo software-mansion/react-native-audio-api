@@ -33,10 +33,17 @@ class TestableGainNode : public GainNode {
     getGainParam()->setValue(value);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return GainNode::processNode(processingBuffer, framesToProcess);
+  void setInput(const std::shared_ptr<DSPAudioBuffer> &input) {
+    size_t copyChannels = std::min(
+        static_cast<size_t>(input->getNumberOfChannels()),
+        static_cast<size_t>(audioBuffer_->getNumberOfChannels()));
+    for (size_t ch = 0; ch < copyChannels; ch++) {
+      audioBuffer_->getChannel(ch)->copy(*input->getChannel(ch), 0, 0, input->getSize());
+    }
+  }
+
+  void processNode(int framesToProcess) override {
+    GainNode::processNode(framesToProcess);
   }
 };
 
@@ -56,7 +63,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectly) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBuffer = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
+  gainNode.setInput(buffer);
+  gainNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = gainNode.getAudioBuffer();
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], (i + 1) * GAIN_VALUE);
   }
@@ -74,7 +83,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
     (*buffer->getChannel(1))[i] = -i - 1;
   }
 
-  auto resultBuffer = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
+  gainNode.setInput(buffer);
+  gainNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = gainNode.getAudioBuffer();
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], (i + 1) * GAIN_VALUE);
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(1))[i], (-i - 1) * GAIN_VALUE);

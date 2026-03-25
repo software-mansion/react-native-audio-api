@@ -22,16 +22,14 @@ WorkletProcessingNode::WorkletProcessingNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-std::shared_ptr<DSPAudioBuffer> WorkletProcessingNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void WorkletProcessingNode::processNode(int framesToProcess) {
   size_t channelCount = std::min(
       static_cast<size_t>(2), // Fixed to stereo for now
-      static_cast<size_t>(processingBuffer->getNumberOfChannels()));
+      static_cast<size_t>(audioBuffer_->getNumberOfChannels()));
 
   // Copy input data to pre-allocated input buffers
   for (size_t ch = 0; ch < channelCount; ch++) {
-    inputBuffsHandles_[ch]->copy(*processingBuffer->getChannel(ch), 0, 0, framesToProcess);
+    inputBuffsHandles_[ch]->copy(*audioBuffer_->getChannel(ch), 0, 0, framesToProcess);
   }
 
   // Execute the worklet
@@ -66,7 +64,7 @@ std::shared_ptr<DSPAudioBuffer> WorkletProcessingNode::processNode(
 
   // Copy processed output data back to the processing buffer or zero on failure
   for (size_t ch = 0; ch < channelCount; ch++) {
-    auto channelData = processingBuffer->getChannel(ch);
+    auto channelData = audioBuffer_->getChannel(ch);
 
     if (result.has_value()) {
       // Copy processed output data
@@ -76,8 +74,6 @@ std::shared_ptr<DSPAudioBuffer> WorkletProcessingNode::processNode(
       channelData->zero(0, framesToProcess);
     }
   }
-
-  return processingBuffer;
 }
 
 } // namespace audioapi

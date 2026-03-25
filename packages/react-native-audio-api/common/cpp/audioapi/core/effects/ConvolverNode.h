@@ -36,16 +36,9 @@ class ConvolverNode : public AudioNode {
   float calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer);
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
 
  private:
-  std::shared_ptr<DSPAudioBuffer> processInputs(
-      const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-      int framesToProcess,
-      bool checkIsAlreadyProcessed) override;
-  void onInputDisabled() override;
   const float gainCalibrationSampleRate_;
   size_t remainingSegments_;
   size_t internalBufferIndex_;

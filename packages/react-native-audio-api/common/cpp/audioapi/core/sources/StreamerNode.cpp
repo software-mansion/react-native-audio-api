@@ -56,19 +56,17 @@ StreamerNode::~StreamerNode() {
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
-std::shared_ptr<DSPAudioBuffer> StreamerNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void StreamerNode::processNode(int framesToProcess) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   size_t startOffset = 0;
   size_t offsetLength = 0;
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
   updatePlaybackInfo(
-      processingBuffer,
+      audioBuffer_,
       framesToProcess,
       startOffset,
       offsetLength,
@@ -77,15 +75,15 @@ std::shared_ptr<DSPAudioBuffer> StreamerNode::processNode(
   isNodeFinished_.store(isFinished(), std::memory_order_release);
 
   if (!isPlaying() && !isStopScheduled()) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
   auto bufferRemaining = static_cast<int>(bufferedAudioData_.size - processedSamples_);
   int alreadyProcessed = 0;
   if (bufferRemaining < framesToProcess) {
     if (hasBufferedAudioData_) {
-      processingBuffer->copy(bufferedAudioData_.buffer, processedSamples_, 0, bufferRemaining);
+      audioBuffer_->copy(bufferedAudioData_.buffer, processedSamples_, 0, bufferRemaining);
       framesToProcess -= bufferRemaining;
       alreadyProcessed += bufferRemaining;
     }
@@ -99,13 +97,11 @@ std::shared_ptr<DSPAudioBuffer> StreamerNode::processNode(
     }
   }
   if (hasBufferedAudioData_ && framesToProcess > 0) {
-    processingBuffer->copy(
+    audioBuffer_->copy(
         bufferedAudioData_.buffer, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
-
-  return processingBuffer;
 }
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED

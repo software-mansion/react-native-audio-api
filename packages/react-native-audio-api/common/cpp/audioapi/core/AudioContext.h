@@ -26,7 +26,7 @@ class AudioContext : public BaseAudioContext {
   bool resume();
   bool suspend();
   bool start();
-  void initialize() override;
+  utils::graph::HostGraph::Node *initialize() override;
 
  private:
 #ifdef ANDROID
@@ -37,8 +37,6 @@ class AudioContext : public BaseAudioContext {
   std::atomic<bool> isInitialized_{false};
 
   bool isDriverRunning() const override;
-
-  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio();
 };
 
 } // namespace audioapi

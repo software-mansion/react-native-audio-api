@@ -10,7 +10,7 @@
 namespace audioapi {
 
 IOSAudioPlayer::IOSAudioPlayer(
-    const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount)
     : renderAudio_(renderAudio), channelCount_(channelCount), audioBuffer_(0), isRunning_(false)
@@ -22,7 +22,7 @@ IOSAudioPlayer::IOSAudioPlayer(
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
       if (isRunning_.load(std::memory_order_acquire)) {
-        renderAudio_(audioBuffer_, framesToProcess);
+        renderAudio_(audioBuffer_.get(), framesToProcess);
       } else {
         audioBuffer_->zero();
       }

@@ -35,10 +35,17 @@ class TestableWaveShaperNode : public WaveShaperNode {
     data[2] = 2.0f;
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return WaveShaperNode::processNode(processingBuffer, framesToProcess);
+  void setInput(const std::shared_ptr<DSPAudioBuffer> &input) {
+    size_t copyChannels = std::min(
+        static_cast<size_t>(input->getNumberOfChannels()),
+        static_cast<size_t>(audioBuffer_->getNumberOfChannels()));
+    for (size_t ch = 0; ch < copyChannels; ch++) {
+      audioBuffer_->getChannel(ch)->copy(*input->getChannel(ch), 0, 0, input->getSize());
+    }
+  }
+
+  void processNode(int framesToProcess) override {
+    WaveShaperNode::processNode(framesToProcess);
   }
 
   std::shared_ptr<AudioArray> testCurve_;
@@ -65,7 +72,9 @@ TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
     (*buffer->getChannel(0))[i] = -1.0f + i * 0.5f;
   }
 
-  auto resultBuffer = waveShaper->processNode(buffer, FRAMES_TO_PROCESS);
+  waveShaper->setInput(buffer);
+  waveShaper->processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = waveShaper->getAudioBuffer();
   auto curveData = waveShaper->testCurve_->span();
   auto resultData = resultBuffer->getChannel(0)->span();
 

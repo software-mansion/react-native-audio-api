@@ -48,10 +48,7 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
         currentSampleFrame);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(const std::shared_ptr<DSPAudioBuffer> &, int)
-      override {
-    return nullptr;
-  }
+  void processNode(int) override {}
 
   PlaybackState getPlaybackState() const {
     return playbackState_;
@@ -70,7 +67,7 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
           nonSilentFramesToProcess,
           context->getSampleRate(),
           context->getCurrentSampleFrame());
-      context->getDestination()->renderAudio(processingBuffer, frames);
+      context->processGraph(processingBuffer.get(), frames);
     }
   }
 };

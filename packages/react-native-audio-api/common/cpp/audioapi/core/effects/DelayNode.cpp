@@ -26,14 +26,6 @@ std::shared_ptr<AudioParam> DelayNode::getDelayTimeParam() const {
   return delayTimeParam_;
 }
 
-void DelayNode::onInputDisabled() {
-  numberOfEnabledInputNodes_ -= 1;
-  if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
-    signalledToStop_ = true;
-    remainingFrames_ = delayTimeParam_->getValue() * getContextSampleRate();
-  }
-}
-
 void DelayNode::delayBufferOperation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
@@ -75,39 +67,32 @@ void DelayNode::delayBufferOperation(
 // processing is split into two parts
 // 1. writing to delay buffer (mixing if needed) from processing buffer
 // 2. reading from delay buffer to processing buffer (mixing if needed) with delay
-std::shared_ptr<DSPAudioBuffer> DelayNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void DelayNode::processNode(int framesToProcess) {
   // handling tail processing
   if (signalledToStop_) {
     if (remainingFrames_ <= 0) {
       disable();
       signalledToStop_ = false;
-      return processingBuffer;
+      return;
     }
 
-    delayBufferOperation(
-        processingBuffer, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
+    delayBufferOperation(audioBuffer_, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
     remainingFrames_ -= framesToProcess;
-    return processingBuffer;
+    return;
   }
 
   // normal processing
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
   auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context->getCurrentTime());
   size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context->getSampleRate()) %
       delayBuffer_->getSize();
-  delayBufferOperation(
-      processingBuffer, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);
-  delayBufferOperation(
-      processingBuffer, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
-
-  return processingBuffer;
+  delayBufferOperation(audioBuffer_, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);
+  delayBufferOperation(audioBuffer_, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
 }
 
 } // namespace audioapi

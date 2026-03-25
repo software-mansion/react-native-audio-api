@@ -37,9 +37,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   // internal helper
   double vReadIndex_;
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) final;
+  void processNode(int framesToProcess) final;
 
   virtual double getCurrentPosition() const = 0;
 

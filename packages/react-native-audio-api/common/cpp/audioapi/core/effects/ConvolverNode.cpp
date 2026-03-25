@@ -93,29 +93,8 @@ float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuff
   return scaleFactor;
 }
 
-void ConvolverNode::onInputDisabled() {
-  numberOfEnabledInputNodes_ -= 1;
-  if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
-    signalledToStop_ = true;
-    remainingSegments_ = convolvers_.at(0)->getSegCount();
-  }
-}
-
-std::shared_ptr<DSPAudioBuffer> ConvolverNode::processInputs(
-    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-    int framesToProcess,
-    bool checkIsAlreadyProcessed) {
-  if (internalBufferIndex_ < framesToProcess) {
-    return AudioNode::processInputs(outputBuffer, RENDER_QUANTUM_SIZE, false);
-  }
-  return AudioNode::processInputs(outputBuffer, 0, false);
-}
-
-// processing pipeline: processingBuffer -> intermediateBuffer_ -> audioBuffer_ (mixing
-// with intermediateBuffer_)
-std::shared_ptr<DSPAudioBuffer> ConvolverNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+// processing pipeline: audioBuffer_ (input) -> intermediateBuffer_ -> audioBuffer_ (output)
+void ConvolverNode::processNode(int framesToProcess) {
   if (signalledToStop_) {
     if (remainingSegments_ > 0) {
       remainingSegments_--;
@@ -123,11 +102,12 @@ std::shared_ptr<DSPAudioBuffer> ConvolverNode::processNode(
       disable();
       signalledToStop_ = false;
       internalBufferIndex_ = 0;
-      return processingBuffer;
+      return;
     }
   }
   if (internalBufferIndex_ < framesToProcess) {
-    performConvolution(processingBuffer); // result returned to intermediateBuffer_
+    performConvolution(audioBuffer_); // reads from audioBuffer_, result goes to intermediateBuffer_
+    audioBuffer_->zero();
     audioBuffer_->sum(*intermediateBuffer_);
 
     internalBuffer_->copy(*audioBuffer_, 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
@@ -147,8 +127,6 @@ std::shared_ptr<DSPAudioBuffer> ConvolverNode::processNode(
   for (int i = 0; i < audioBuffer_->getNumberOfChannels(); ++i) {
     audioBuffer_->getChannel(i)->scale(scaleFactor_);
   }
-
-  return audioBuffer_;
 }
 
 void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {

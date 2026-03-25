@@ -19,41 +19,10 @@
 
 namespace audioapi {
 
-class GainNode;
-class DelayNode;
-class PeriodicWave;
-class OscillatorNode;
-class ConstantSourceNode;
-class StereoPannerNode;
-class AudioGraphManager;
-class BiquadFilterNode;
-class IIRFilterNode;
-class AudioDestinationNode;
-class AudioBufferSourceNode;
-class AudioBufferQueueSourceNode;
-class AnalyserNode;
 class AudioEventHandlerRegistry;
-class ConvolverNode;
 class IAudioEventHandlerRegistry;
-class RecorderAdapterNode;
-class WaveShaperNode;
-class WorkletSourceNode;
-class WorkletNode;
-class WorkletProcessingNode;
-class StreamerNode;
-struct GainOptions;
-struct StereoPannerOptions;
-struct ConvolverOptions;
-struct ConstantSourceOptions;
-struct AnalyserOptions;
-struct BiquadFilterOptions;
-struct OscillatorOptions;
-struct BaseAudioBufferSourceOptions;
-struct AudioBufferSourceOptions;
-struct StreamerOptions;
-struct DelayOptions;
-struct IIRFilterOptions;
-struct WaveShaperOptions;
+class PeriodicWave;
+class AudioDestinationNode;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
@@ -77,13 +46,14 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       int length) const;
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  AudioGraphManager *getGraphManager() const;
   std::shared_ptr<utils::graph::Graph> getGraph() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   const RuntimeRegistry &getRuntimeRegistry() const;
   utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize> *getDisposer() const;
 
-  virtual void initialize();
+  /// @brief Initializes audio destination and its corresponding graph node and adds it to graph. Must be called before using the context.
+  /// @return The graph node corresponding to the audio destination.
+  virtual utils::graph::HostGraph::Node *initialize();
 
   void inline processAudioEvents() {
     audioEventScheduler_.processAllEvents(*this);
@@ -100,7 +70,10 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     return audioEventScheduler_.scheduleEvent(std::forward<F>(event));
   }
 
+  void processGraph(DSPAudioBuffer *buffer, int numFrames);
+
  protected:
+  std::atomic<std::size_t> currentSampleFrame_{0};
   std::shared_ptr<AudioDestinationNode> destination_;
 
  private:
@@ -116,7 +89,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
-  std::unique_ptr<AudioGraphManager> graphManager_;
 
   std::unique_ptr<utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize>> disposer_;
   std::shared_ptr<utils::graph::Graph> graph_;

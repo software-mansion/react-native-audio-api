@@ -72,23 +72,19 @@ void AudioBufferBaseSourceNode::unregisterOnPositionChangedCallback(uint64_t cal
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
   if (isEmpty()) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
   if (!pitchCorrection_) {
-    processWithoutPitchCorrection(processingBuffer, framesToProcess);
+    processWithoutPitchCorrection(audioBuffer_, framesToProcess);
   } else {
-    processWithPitchCorrection(processingBuffer, framesToProcess);
+    processWithPitchCorrection(audioBuffer_, framesToProcess);
   }
 
   handleStopScheduled();
-
-  return processingBuffer;
 }
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {

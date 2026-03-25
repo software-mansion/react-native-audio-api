@@ -17,7 +17,7 @@ class AudioContext;
 class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  public:
   AudioPlayer(
-      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount);
 
@@ -40,13 +40,13 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
   void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */) override;
 
  private:
-  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
+  std::function<void(DSPAudioBuffer *, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
   std::shared_ptr<DSPAudioBuffer> buffer_;
-  bool isInitialized_ = false;
   float sampleRate_;
   int channelCount_;
-  std::atomic<bool> isRunning_;
+  std::atomic<bool> isInitialized_{false};
+  std::atomic<bool> isRunning_{false};
 
   bool openAudioStream();
 

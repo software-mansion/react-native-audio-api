@@ -21,7 +21,6 @@ class OfflineAudioContext : public BaseAudioContext {
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
-  ~OfflineAudioContext() override;
 
   /// @note JS Thread only
   void resume();

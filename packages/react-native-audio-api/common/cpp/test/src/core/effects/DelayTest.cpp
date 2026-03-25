@@ -33,10 +33,17 @@ class TestableDelayNode : public DelayNode {
     getDelayTimeParam()->setValue(value);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return DelayNode::processNode(processingBuffer, framesToProcess);
+  void setInput(const std::shared_ptr<DSPAudioBuffer> &input) {
+    size_t copyChannels = std::min(
+        static_cast<size_t>(input->getNumberOfChannels()),
+        static_cast<size_t>(audioBuffer_->getNumberOfChannels()));
+    for (size_t ch = 0; ch < copyChannels; ch++) {
+      audioBuffer_->getChannel(ch)->copy(*input->getChannel(ch), 0, 0, input->getSize());
+    }
+  }
+
+  void processNode(int framesToProcess) override {
+    DelayNode::processNode(framesToProcess);
   }
 };
 
@@ -58,7 +65,9 @@ TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBuffer = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
+  delayNode.setInput(buffer);
+  delayNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = delayNode.getAudioBuffer();
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], static_cast<float>(i + 1));
   }
@@ -77,7 +86,9 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBuffer = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
+  delayNode.setInput(buffer);
+  delayNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = delayNode.getAudioBuffer();
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be zero due to delay
       EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 0.0f);
@@ -103,8 +114,12 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  delayNode.processNode(buffer, FRAMES_TO_PROCESS);
-  auto resultBuffer = delayNode.processNode(buffer, FRAMES_TO_PROCESS);
+  delayNode.setInput(buffer);
+  delayNode.processNode(FRAMES_TO_PROCESS);
+  // Second call uses the result of the first call as input (same as old behavior
+  // where the same buffer object was passed to both calls)
+  delayNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = delayNode.getAudioBuffer();
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be 2nd part of buffer
       EXPECT_FLOAT_EQ(

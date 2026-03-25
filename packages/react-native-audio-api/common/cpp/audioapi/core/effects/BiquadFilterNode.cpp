@@ -380,9 +380,7 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
   return coeffs;
 }
 
-std::shared_ptr<DSPAudioBuffer> BiquadFilterNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void BiquadFilterNode::processNode(int framesToProcess) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     auto currentTime = context->getCurrentTime();
     float frequency = frequencyParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
@@ -394,10 +392,10 @@ std::shared_ptr<DSPAudioBuffer> BiquadFilterNode::processNode(
 
     float x1, x2, y1, y2;
 
-    auto numChannels = processingBuffer->getNumberOfChannels();
+    auto numChannels = audioBuffer_->getNumberOfChannels();
 
     for (size_t c = 0; c < numChannels; ++c) {
-      auto channel = processingBuffer->getChannel(c)->subSpan(framesToProcess);
+      auto channel = audioBuffer_->getChannel(c)->subSpan(framesToProcess);
 
       x1 = x1_[c];
       x2 = x2_[c];
@@ -428,10 +426,8 @@ std::shared_ptr<DSPAudioBuffer> BiquadFilterNode::processNode(
       y2_[c] = y2;
     }
   } else {
-    processingBuffer->zero();
+    audioBuffer_->zero();
   }
-
-  return processingBuffer;
 }
 
 } // namespace audioapi

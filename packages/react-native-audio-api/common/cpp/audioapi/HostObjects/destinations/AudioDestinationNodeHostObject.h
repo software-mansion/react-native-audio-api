@@ -1,20 +1,31 @@
 #pragma once
 
-#include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/types/NodeOptions.h>
+#include <audioapi/core/utils/graph/HostGraph.hpp>
+#include <audioapi/jsi/JsiHostObject.h>
 
 #include <memory>
-#include <utility>
 
 namespace audioapi {
 using namespace facebook;
 
-class AudioDestinationNodeHostObject : public AudioNodeHostObject {
+class AudioDestinationNodeHostObject : public JsiHostObject {
  public:
   explicit AudioDestinationNodeHostObject(
-      const std::shared_ptr<utils::graph::Graph> &graph,
-      std::unique_ptr<AudioNode> node)
-      : AudioNodeHostObject(graph, std::move(node), AudioDestinationOptions()) {}
+      utils::graph::HostGraph::Node *node,
+      std::shared_ptr<AudioDestinationNode> destination);
+
+  [[nodiscard]] utils::graph::HostGraph::Node *rawNode() const {
+    return node_;
+  }
+
+  JSI_PROPERTY_GETTER_DECL(numberOfInputs);
+  JSI_PROPERTY_GETTER_DECL(numberOfOutputs);
+  JSI_PROPERTY_GETTER_DECL(channelCount);
+
+ private:
+  utils::graph::HostGraph::Node *node_; // borrowed from BaseAudioContext; never removed
+  std::shared_ptr<AudioDestinationNode> destination_;
 };
+
 } // namespace audioapi

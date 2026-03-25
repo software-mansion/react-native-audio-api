@@ -276,14 +276,15 @@ void AudioParam::processInputs(
     auto inputNode = *it;
     assert(inputNode != nullptr);
 
-    if (!inputNode->isEnabled()) {
-      continue;
-    }
+    // if (!inputNode->isEnabled()) {
+    //   continue;
+    // }
 
     // Process this input node and store its output buffer
-    auto inputBuffer =
-        inputNode->processAudio(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
-    inputBuffers_.emplace_back(inputBuffer);
+    // TODO
+    // auto inputBuffer =
+    //     inputNode->processAudio(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
+    // inputBuffers_.emplace_back(inputBuffer);
   }
 }
 

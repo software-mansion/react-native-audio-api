@@ -33,10 +33,17 @@ class TestableStereoPannerNode : public StereoPannerNode {
     getPanParam()->setValue(value);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return StereoPannerNode::processNode(processingBuffer, framesToProcess);
+  void setInput(const std::shared_ptr<DSPAudioBuffer> &input) {
+    size_t copyChannels = std::min(
+        static_cast<size_t>(input->getNumberOfChannels()),
+        static_cast<size_t>(audioBuffer_->getNumberOfChannels()));
+    for (size_t ch = 0; ch < copyChannels; ch++) {
+      audioBuffer_->getChannel(ch)->copy(*input->getChannel(ch), 0, 0, input->getSize());
+    }
+  }
+
+  void processNode(int framesToProcess) override {
+    StereoPannerNode::processNode(framesToProcess);
   }
 };
 
@@ -56,7 +63,9 @@ TEST_F(StereoPannerTest, PanModulatesInputMonoCorrectly) {
     (*buffer->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
   }
 
-  auto resultBuffer = panNode.processNode(buffer, FRAMES_TO_PROCESS);
+  panNode.setInput(buffer);
+  panNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = panNode.getAudioBuffer();
   // x = (0.5 + 1) / 2 = 0.75
   // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
   // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
@@ -84,7 +93,9 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
     (*buffer->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;
   }
 
-  auto resultBuffer = panNode.processNode(buffer, FRAMES_TO_PROCESS);
+  panNode.setInput(buffer);
+  panNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = panNode.getAudioBuffer();
   // x = -0.5 + 1 = 0.5
   // gainL = cos(x * (π / 2)) = cos(0.5 * (π / 2)) = 0.7071067811865476
   // gainR = sin(x * (π / 2)) = sin(0.5 * (π / 2)) = 0.7071067811865476
@@ -112,7 +123,9 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
     (*buffer->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;
   }
 
-  auto resultBuffer = panNode.processNode(buffer, FRAMES_TO_PROCESS);
+  panNode.setInput(buffer);
+  panNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = panNode.getAudioBuffer();
   // x = 0.75
   // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
   // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867

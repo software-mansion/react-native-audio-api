@@ -6,7 +6,6 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <memory>
 
 namespace audioapi {
@@ -23,15 +22,20 @@ AudioContext::~AudioContext() {
   }
 }
 
-void AudioContext::initialize() {
-  BaseAudioContext::initialize();
+utils::graph::HostGraph::Node *AudioContext::initialize() {
+  auto *destinationNode = BaseAudioContext::initialize();
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(
-      this->renderAudio(), getSampleRate(), destination_->getChannelCount());
+      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
+      getSampleRate(),
+      destination_->getChannelCount());
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      this->renderAudio(), getSampleRate(), destination_->getChannelCount());
+      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
+      getSampleRate(),
+      destination_->getChannelCount());
 #endif
+  return destinationNode;
 }
 
 void AudioContext::close() {
@@ -39,7 +43,6 @@ void AudioContext::close() {
 
   audioPlayer_->stop();
   audioPlayer_->cleanup();
-  getGraphManager()->cleanup();
 }
 
 bool AudioContext::resume() {
@@ -87,12 +90,6 @@ bool AudioContext::start() {
   }
 
   return false;
-}
-
-std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> AudioContext::renderAudio() {
-  return [this](const std::shared_ptr<DSPAudioBuffer> &data, int frames) {
-    destination_->renderAudio(data, frames);
-  };
 }
 
 bool AudioContext::isDriverRunning() const {

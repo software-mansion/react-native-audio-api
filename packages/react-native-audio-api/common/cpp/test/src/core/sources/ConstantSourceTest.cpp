@@ -33,10 +33,8 @@ class TestableConstantSourceNode : public ConstantSourceNode {
     getOffsetParam()->setValue(value);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return ConstantSourceNode::processNode(processingBuffer, framesToProcess);
+  void processNode(int framesToProcess) override {
+    ConstantSourceNode::processNode(framesToProcess);
   }
 };
 
@@ -50,16 +48,18 @@ TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
 
   auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   auto constantSource = TestableConstantSourceNode(context);
-  // constantSource.start(context->getCurrentTime());
-  // auto resultBuffer = constantSource.processNode(buffer, FRAMES_TO_PROCESS);
+  constantSource.start(context->getCurrentTime());
+  constantSource.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = constantSource.getAudioBuffer();
 
-  // for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
-  //   EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 1.0f);
-  // }
+  for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 1.0f);
+  }
 
-  // constantSource.setOffsetParam(0.5f);
-  // resultBuffer = constantSource.processNode(buffer, FRAMES_TO_PROCESS);
-  // for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
-  //   EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 0.5f);
-  // }
+  constantSource.setOffsetParam(0.5f);
+  constantSource.processNode(FRAMES_TO_PROCESS);
+  resultBuffer = constantSource.getAudioBuffer();
+  for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 0.5f);
+  }
 }

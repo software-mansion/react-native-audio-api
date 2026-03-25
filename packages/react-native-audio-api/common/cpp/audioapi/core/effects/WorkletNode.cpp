@@ -20,12 +20,10 @@ WorkletNode::WorkletNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-std::shared_ptr<DSPAudioBuffer> WorkletNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void WorkletNode::processNode(int framesToProcess) {
   size_t processed = 0;
   size_t channelCount_ =
-      std::min(inputChannelCount_, static_cast<size_t>(processingBuffer->getNumberOfChannels()));
+      std::min(inputChannelCount_, static_cast<size_t>(audioBuffer_->getNumberOfChannels()));
   while (processed < framesToProcess) {
     size_t framesToWorkletInvoke = bufferLength_ - curBuffIndex_;
     size_t needsToProcess = framesToProcess - processed;
@@ -34,7 +32,7 @@ std::shared_ptr<DSPAudioBuffer> WorkletNode::processNode(
     /// here we copy
     /// to [curBuffIndex_, curBuffIndex_ + shouldProcess]
     /// from [processed, processed + shouldProcess]
-    buffer_->copy(*processingBuffer, processed, curBuffIndex_, shouldProcess);
+    buffer_->copy(*audioBuffer_, processed, curBuffIndex_, shouldProcess);
 
     processed += shouldProcess;
     curBuffIndex_ += shouldProcess;
@@ -66,8 +64,6 @@ std::shared_ptr<DSPAudioBuffer> WorkletNode::processNode(
       return jsi::Value::undefined();
     });
   }
-
-  return processingBuffer;
 }
 
 } // namespace audioapi
