@@ -108,13 +108,8 @@ const Crossfade: FC = () => {
       return;
     }
     const now = ctx.currentTime;
-    if (track === 1) {
-      g1.gain.setValueAtTime(MAX_GAIN, now);
-      g2.gain.setValueAtTime(0, now);
-    } else {
-      g1.gain.setValueAtTime(0, now);
-      g2.gain.setValueAtTime(MAX_GAIN, now);
-    }
+    g1.gain.setValueAtTime(visibleTrack === 1 ? MAX_GAIN : 0, now);
+    g2.gain.setValueAtTime(visibleTrack !== 1 ? MAX_GAIN : 0, now);
   }, []);
 
   useAnimatedReaction(
@@ -197,13 +192,8 @@ const Crossfade: FC = () => {
     );
     const startOffset = Math.min(Math.max(0, playbackPosition), maxOffset);
 
-    if (visibleTrack === 1) {
-      gainNode1.current.gain.setValueAtTime(MAX_GAIN, now);
-      gainNode2.current.gain.setValueAtTime(0, now);
-    } else {
-      gainNode1.current.gain.setValueAtTime(0, now);
-      gainNode2.current.gain.setValueAtTime(MAX_GAIN, now);
-    }
+    gainNode1.current.gain.setValueAtTime(visibleTrack === 1 ? MAX_GAIN : 0, now);
+    gainNode2.current.gain.setValueAtTime(visibleTrack !== 1 ? MAX_GAIN : 0, now);
     progress.value = visibleTrack === 1 ? 0 : 1;
 
     sourceNode1.current.onPositionChanged = (event) => {
@@ -395,10 +385,6 @@ const Crossfade: FC = () => {
 };
 
 export default Crossfade;
-
-// -----------------------------------------------------------------------------
-// Styles
-// -----------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
   content: {
