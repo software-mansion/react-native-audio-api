@@ -39,8 +39,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       int framesToProcess,
       bool checkIsAlreadyProcessed);
 
-  [[nodiscard]] float getContextSampleRate()
-      const { // NOLINT(readability-convert-member-functions-to-static)
+  [[nodiscard]] float getContextSampleRate() const {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->getSampleRate();
     }

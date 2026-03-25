@@ -13,11 +13,12 @@ namespace audioapi {
 AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
     const std::shared_ptr<AudioBufferBaseSourceNode> &node,
     const BaseAudioBufferSourceOptions &options)
-    : AudioScheduledSourceNodeHostObject(node, options), pitchCorrection_(options.pitchCorrection) {
+    : AudioScheduledSourceNodeHostObject(node, options),
+      onPositionChangedInterval_(options.onPositionChangedInterval),
+      pitchCorrection_(options.pitchCorrection) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
   detuneParam_ = std::make_shared<AudioParamHostObject>(sourceNode->getDetuneParam());
   playbackRateParam_ = std::make_shared<AudioParamHostObject>(sourceNode->getPlaybackRateParam());
-  onPositionChangedInterval_ = sourceNode->getOnPositionChangedInterval();
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferBaseSourceNodeHostObject, detune),
@@ -61,7 +62,6 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedI
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
   auto interval = static_cast<int>(value.getNumber());
 
-  sourceNode->setOnPositionChangedInterval(static_cast<int>(value.getNumber()));
   auto event = [sourceNode, interval](BaseAudioContext &) {
     sourceNode->setOnPositionChangedInterval(interval);
   };
@@ -99,8 +99,11 @@ void AudioBufferBaseSourceNodeHostObject::initStretch(int channelCount, float sa
   outputLatency_ = std::max(
       dsp::sampleFrameToTime(stretch->outputLatency(), node_->getContextSampleRate()), 0.0);
 
-  auto event = [sourceNode, stretch](BaseAudioContext &) {
-    sourceNode->initStretch(stretch);
+  auto playbackRateBuffer =
+      std::make_shared<DSPAudioBuffer>(3 * RENDER_QUANTUM_SIZE, channelCount, sampleRate);
+
+  auto event = [sourceNode, stretch, playbackRateBuffer](BaseAudioContext &) {
+    sourceNode->initStretch(stretch, playbackRateBuffer);
   };
   sourceNode->scheduleAudioEvent(std::move(event));
 }

@@ -169,12 +169,10 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
   auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
 
   std::shared_ptr<AudioBuffer> copiedBuffer;
-  std::shared_ptr<DSPAudioBuffer> playbackRateBuffer;
   std::shared_ptr<DSPAudioBuffer> audioBuffer;
 
   if (buffer == nullptr) {
     copiedBuffer = nullptr;
-    playbackRateBuffer = nullptr;
     audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE, 1, audioBufferSourceNode->getContextSampleRate());
   } else {
@@ -191,20 +189,15 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
       copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
     }
 
-    playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
-        3 * RENDER_QUANTUM_SIZE,
-        copiedBuffer->getNumberOfChannels(),
-        audioBufferSourceNode->getContextSampleRate());
     audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
         copiedBuffer->getNumberOfChannels(),
         audioBufferSourceNode->getContextSampleRate());
   }
 
-  auto event =
-      [audioBufferSourceNode, copiedBuffer, playbackRateBuffer, audioBuffer](BaseAudioContext &) {
-        audioBufferSourceNode->setBuffer(copiedBuffer, playbackRateBuffer, audioBuffer);
-      };
+  auto event = [audioBufferSourceNode, copiedBuffer, audioBuffer](BaseAudioContext &) {
+    audioBufferSourceNode->setBuffer(copiedBuffer, audioBuffer);
+  };
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
 }
 

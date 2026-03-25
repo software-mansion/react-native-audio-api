@@ -16,12 +16,8 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
+      vReadIndex_(0.0),
       pitchCorrection_(options.pitchCorrection),
-      playbackRateBuffer_( // TODO refactor init
-          std::make_shared<DSPAudioBuffer>(
-              RENDER_QUANTUM_SIZE * 3,
-              channelCount_,
-              context->getSampleRate())),
       detuneParam_(
           std::make_shared<AudioParam>(
               options.detune,
@@ -33,13 +29,15 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
               options.playbackRate,
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      vReadIndex_(0.0),
-      onPositionChangedInterval_(
-          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL_SECONDS)) {}
+              context)) {
+  setOnPositionChangedInterval(options.onPositionChangedInterval);
+}
+
 void AudioBufferBaseSourceNode::initStretch(
-    const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch) {
+    const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch,
+    const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer) {
   stretch_ = stretch;
+  playbackRateBuffer_ = playbackRateBuffer;
 }
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
@@ -55,30 +53,45 @@ void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callback
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
-  onPositionChangedInterval_ = static_cast<int>(
-      getContextSampleRate() * static_cast<float>(interval) *
-      1e-3f); //NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
-}
-
-int AudioBufferBaseSourceNode::getOnPositionChangedInterval() const {
-  return onPositionChangedInterval_;
+  onPositionChangedIntervalInFrames_ = static_cast<int>( //NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+      getContextSampleRate() * static_cast<float>(interval) / 1000);
 }
 
 void AudioBufferBaseSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
 }
 
+std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    int framesToProcess) {
+  if (isEmpty()) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
+
+  if (!pitchCorrection_) {
+    processWithoutPitchCorrection(processingBuffer, framesToProcess);
+  } else {
+    processWithPitchCorrection(processingBuffer, framesToProcess);
+  }
+
+  handleStopScheduled();
+
+  return processingBuffer;
+}
+
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  if (onPositionChangedCallbackId_ != 0 && onPositionChangedTime_ > onPositionChangedInterval_) {
+  if (onPositionChangedCallbackId_ != 0 &&
+      onPositionChangedTimeInFrames_ > onPositionChangedIntervalInFrames_) {
     std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
 
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId_, body);
 
-    onPositionChangedTime_ = 0;
+    onPositionChangedTimeInFrames_ = 0;
   }
 
-  onPositionChangedTime_ += RENDER_QUANTUM_SIZE;
+  onPositionChangedTimeInFrames_ += RENDER_QUANTUM_SIZE;
 }
 
 void AudioBufferBaseSourceNode::processWithPitchCorrection(
@@ -88,7 +101,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
   size_t offsetLength = 0;
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr) {
+  if (context == nullptr || playbackRateBuffer_ == nullptr) {
     processingBuffer->zero();
     return;
   }
@@ -145,8 +158,10 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
     processingBuffer->zero();
     return;
   }
+
   auto computedPlaybackRate =
       getComputedPlaybackRateValue(framesToProcess, context->getCurrentTime());
+
   updatePlaybackInfo(
       processingBuffer,
       framesToProcess,
