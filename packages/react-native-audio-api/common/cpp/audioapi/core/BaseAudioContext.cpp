@@ -1,7 +1,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/graph/DestinationGraphObject.hpp>
 #include <audioapi/core/utils/AudioDecoder.h>
+#include <audioapi/core/utils/graph/DestinationGraphObject.hpp>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>

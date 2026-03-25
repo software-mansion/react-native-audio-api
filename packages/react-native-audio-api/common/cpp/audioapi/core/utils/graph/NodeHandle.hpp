@@ -27,7 +27,7 @@ struct NodeHandle {
   std::uint32_t index;                    // current position in AudioGraph::nodes
 
   NodeHandle(std::uint32_t index, std::unique_ptr<GraphObject> audioNode)
-      : index(index), audioNode(std::move(audioNode)) {}
+      : audioNode(std::move(audioNode)), index(index) {}
 };
 
 } // namespace audioapi::utils::graph
