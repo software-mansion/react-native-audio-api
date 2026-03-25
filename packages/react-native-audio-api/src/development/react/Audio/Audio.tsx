@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { View } from 'react-native';
+import { View, Image, Platform } from 'react-native';
 
 import type {
   AudioProps,
@@ -16,6 +16,8 @@ import { useStableAudioProps } from './utils';
 import { AudioComponentContext } from './AudioTagContext';
 import AudioControls from './AudioControls';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
+import { NotSupportedError } from '../../../errors';
+import { NativeAudioAPIModule } from '../../../specs';
 
 const Audio: React.FC<AudioProps> = (inProps) => {
   const { children } = inProps;
@@ -36,9 +38,20 @@ const Audio: React.FC<AudioProps> = (inProps) => {
 
   const path = useMemo(() => {
     if (typeof source === 'string') {
+      if (source.startsWith('file://') || source.startsWith('http')) {
+        return source;
+      }
+      if (Platform.OS === 'android' && !__DEV__) {
+        return NativeAudioAPIModule.resolveAndroidReleaseAsset(source);
+      }
       return source;
     }
-    return (source as AudioURISource).uri ?? '';
+    // number
+    if (typeof source === 'number') {
+      return Image.resolveAssetSource(source).uri;
+    }
+    // AudioURISource
+    return source.uri ?? '';
   }, [source]);
 
   const fileSourceHandleRef = useRef(new AudioFileSourceNode());
@@ -46,8 +59,6 @@ const Audio: React.FC<AudioProps> = (inProps) => {
   const loopRef = useRef(loop);
   const effectiveVolumeRef = useRef(muted ? 0 : volume);
   const contextRef = useRef(context);
-
-  const handlePlaybackEndedRef = useRef<() => void>(() => {});
 
   const [volumeState, setVolumeState] = useState(volume);
   const [mutedState, setMutedState] = useState(muted);
@@ -69,7 +80,7 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     effectiveVolumeRef.current = mutedState ? 0 : volumeState;
   }, [mutedState, volumeState]);
 
-  handlePlaybackEndedRef.current = () => {
+  const handlePlaybackEnded = useCallback(() => {
     setPlaybackState('idle');
     const ctx = contextRef.current;
     const src = loadedSourceRef.current;
@@ -77,14 +88,18 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       return;
     }
     const handle = fileSourceHandleRef.current;
-    const { duration: d } = handle.attach(ctx.context.createFileSource(src), {
+    const node = ctx.context.createFileSource(src);
+    if (!node) {
+      throw new NotSupportedError('This file format requires FFmpeg build');
+    }
+    const { duration: d } = handle.attach(node, {
       loop: loopRef.current,
-      onEnded: () => handlePlaybackEndedRef.current(),
+      onEnded: () => handlePlaybackEnded(),
     });
     setDuration(d);
     handle.setVolume(effectiveVolumeRef.current);
     handle.setLoop(loopRef.current);
-  };
+  }, []);
 
   const play = useCallback(() => {
     if (!context) {
@@ -117,16 +132,17 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       }
       loadedSourceRef.current = sourceArg;
       const handle = fileSourceHandleRef.current;
-      const { duration: d } = handle.attach(
-        context.context.createFileSource(sourceArg),
-        {
-          loop: loopRef.current,
-          onEnded: () => {
-            handlePlaybackEndedRef.current();
-            setCurrentTime(d);
-          },
-        }
-      );
+      const node = context.context.createFileSource(sourceArg);
+      if (!node) {
+        throw new NotSupportedError('This file format requires FFmpeg build');
+      }
+      const { duration: d } = handle.attach(node, {
+        loop: loopRef.current,
+        onEnded: () => {
+          handlePlaybackEnded();
+          setCurrentTime(d);
+        },
+      });
       setDuration(d);
       setIsReady(true);
       handle.setVolume(effectiveVolumeRef.current);
@@ -135,7 +151,7 @@ const Audio: React.FC<AudioProps> = (inProps) => {
         play();
       }
     },
-    [autoPlay, play, context]
+    [autoPlay, play, context, handlePlaybackEnded]
   );
 
   useEffect(() => {
@@ -147,7 +163,9 @@ const Audio: React.FC<AudioProps> = (inProps) => {
 
     const run = async () => {
       if (path.startsWith('http')) {
-        const response = await fetch(path);
+        const response = await fetch(path, {
+          headers: (source as AudioURISource).headers,
+        });
         const arrayBuffer = await response.arrayBuffer();
         attachNode(arrayBuffer);
       } else {
@@ -165,7 +183,7 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       setIsReady(false);
       setPlaybackState('idle');
     };
-  }, [path, context, attachNode]);
+  }, [path, context, attachNode, source]);
 
   useEffect(() => {
     fileSourceHandleRef.current.setVolume(mutedState ? 0 : volumeState);

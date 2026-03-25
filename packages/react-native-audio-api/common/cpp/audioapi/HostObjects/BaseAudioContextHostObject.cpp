@@ -23,6 +23,7 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/AudioDecoder.h>
 
 #include <memory>
 #include <vector>
@@ -257,12 +258,25 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
   if (count > 0 && !args[0].isUndefined() && !args[0].isNull()) {
     if (args[0].isString()) {
       options.filePath = args[0].getString(runtime).utf8(runtime);
+      // ffmpeg decoded extensions
+#if RN_AUDIO_API_FFMPEG_DISABLED
+      if (AudioDecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"})) {
+        return jsi::Value::undefined();
+      }
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
     } else {
       auto obj = args[0].asObject(runtime);
       if (obj.isArrayBuffer(runtime)) {
         auto arrayBuffer = obj.getArrayBuffer(runtime);
         auto *data = arrayBuffer.data(runtime);
         auto size = arrayBuffer.size(runtime);
+        auto format = AudioDecoder::detectAudioFormat(data, size);
+#if RN_AUDIO_API_FFMPEG_DISABLED
+        if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
+            format == AudioFormat::AAC) {
+          return jsi::Value::undefined();
+        }
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
         options.data = std::vector<uint8_t>(data, data + size);
       }
     }

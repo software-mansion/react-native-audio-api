@@ -102,7 +102,9 @@ export interface IBaseAudioContext {
   createConvolver: (convolverOptions?: IConvolverOptions) => IConvolverNode;
   createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions?: WaveShaperOptions) => IWaveShaperNode;
-  createFileSource: (source: ArrayBuffer | string) => IAudioFileSourceNode;
+  createFileSource: (
+    source: ArrayBuffer | string
+  ) => IAudioFileSourceNode | null; // null when FFmpeg is not enabled, but needed
 }
 
 export interface IAudioContext extends IBaseAudioContext {

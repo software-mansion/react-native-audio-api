@@ -52,8 +52,6 @@ inline void ffmpegDecoderConfigInit(FFmpegDecoderConfig *cfg, int outputSampleRa
  *   2) openFile or openMemory
  *   3) readPcmFrames repeatedly; 0 returned = end of stream
  *   4) close when done
- *
- * For openMemory, \p data must remain valid until close().
  */
 class FFmpegDecoder {
  public:
@@ -128,8 +126,6 @@ class FFmpegDecoder {
   int output_sample_rate_ = 0;
   size_t total_output_frames_ = 0;
 };
-
-// --- One-shot decode (existing API) ----------------------------------------
 
 std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
 std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate);

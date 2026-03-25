@@ -106,9 +106,7 @@ void AudioFileSourceNode::initDecoders(
     const std::shared_ptr<BaseAudioContext> &context,
     const std::shared_ptr<AudioFileDecoderState> &state) {
   if (requiresFFmpeg_) {
-#if RN_AUDIO_API_FFMPEG_DISABLED
-    assert(false && "File codec is not supported when FFmpeg is disabled");
-#else
+#if !RN_AUDIO_API_FFMPEG_DISABLED
     ffmpegdecoder::ffmpegDecoderConfigInit(&cfg, static_cast<int>(context->getSampleRate()));
     bool result;
     if (useFilePath) {
@@ -119,7 +117,7 @@ void AudioFileSourceNode::initDecoders(
     if (result) {
       state->channels = ffmpegDecoder_.outputChannels();
       state->sampleRate = static_cast<float>(ffmpegDecoder_.outputSampleRate());
-      duration_.store(ffmpegDecoder_.getDurationInSeconds(), std::memory_order_release);
+      duration_ = ffmpegDecoder_.getDurationInSeconds();
     } else {
       ffmpegDecoder_.close();
     }
@@ -148,7 +146,7 @@ void AudioFileSourceNode::initDecoders(
       state->sampleRate = static_cast<float>(maDecoder_->outputSampleRate);
       ma_uint64 length = 0;
       if (ma_decoder_get_length_in_pcm_frames(maDecoder_.get(), &length) == MA_SUCCESS) {
-        duration_.store(static_cast<double>(length) / state->sampleRate, std::memory_order_release);
+        duration_ = static_cast<double>(length) / state->sampleRate;
       }
     } else {
       ma_decoder_uninit(maDecoder_.get());
@@ -181,7 +179,11 @@ void AudioFileSourceNode::disable() {
   seekOffloader_.reset();
   filePaused_.store(false, std::memory_order_release);
   if (requiresFFmpeg_) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
     ffmpegDecoder_.close();
+#else
+    return;
+#endif
   } else if (maDecoder_ != nullptr) {
     ma_decoder_uninit(maDecoder_.get());
     maDecoder_.reset();
@@ -240,7 +242,7 @@ void AudioFileSourceNode::seekToTime(double seconds) {
   if (decoderState_ == nullptr) {
     return;
   }
-  const double dur = duration_.load(std::memory_order_acquire);
+  const double dur = duration_;
   if (dur > 0) {
     seconds = std::clamp(seconds, 0.0, dur);
   } else {
@@ -327,8 +329,11 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
   if (framesRead < framesToProcess) {
     if (!loop_.load(std::memory_order_acquire)) {
       sendOnEndedEvent();
+      // if duration is not properly estimated, skip to the end
+      currentTime_.store(duration_, std::memory_order_release);
       onPositionChangedFlush_.store(true, std::memory_order_release);
       sendOnPositionChangedEvent(static_cast<int>(framesToProcess - framesRead));
+      filePaused_.store(true);
       processingBuffer->zero(framesRead, framesToProcess - framesRead);
       return processingBuffer;
     }

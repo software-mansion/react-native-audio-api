@@ -8,8 +8,8 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 
 #include <algorithm>
 #include <cmath>
@@ -19,6 +19,7 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/mathematics.h>
+#include <libavutil/rational.h>
 }
 
 namespace audioapi::ffmpegdecoder {
@@ -324,13 +325,29 @@ float FFmpegDecoder::getDurationInSeconds() const {
   if (!isOpen() || fmt_ctx_ == nullptr || audio_stream_index_ < 0) {
     return 0;
   }
-  if (fmt_ctx_->duration != AV_NOPTS_VALUE && fmt_ctx_->duration >= 0) {
-    double t =
-        static_cast<double>(fmt_ctx_->duration) / static_cast<double>(AV_TIME_BASE);
-    if (t > 0 && std::isfinite(t)) {
+  AVStream *st = fmt_ctx_->streams[audio_stream_index_];
+  if (st == nullptr) {
+    return 0;
+  }
+
+  auto validSeconds = [](double s) -> bool { return s > 0 && std::isfinite(s); };
+
+  // Prefer per-stream duration (e.g. MP4 mdhd) — often exact vs container-level
+  // guesses that trigger AAC “bitrate duration” warnings.
+  if (st->duration != AV_NOPTS_VALUE && st->duration > 0) {
+    double t = static_cast<double>(st->duration) * av_q2d(st->time_base);
+    if (validSeconds(t)) {
       return static_cast<float>(t);
     }
   }
+
+  if (fmt_ctx_->duration != AV_NOPTS_VALUE && fmt_ctx_->duration >= 0) {
+    double t = static_cast<double>(fmt_ctx_->duration) / static_cast<double>(AV_TIME_BASE);
+    if (validSeconds(t)) {
+      return static_cast<float>(t);
+    }
+  }
+
   return 0;
 }
 
@@ -469,13 +486,7 @@ std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size
 
 #else
 
-#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-
 namespace audioapi::ffmpegdecoder {
-
-FFmpegDecoder::FFmpegDecoder(FFmpegDecoder &&) noexcept = default;
-FFmpegDecoder &FFmpegDecoder::operator=(FFmpegDecoder &&) noexcept = default;
-FFmpegDecoder::~FFmpegDecoder() = default;
 void FFmpegDecoder::close() {}
 bool FFmpegDecoder::openFile(const FFmpegDecoderConfig &, const std::string &) {
   return false;

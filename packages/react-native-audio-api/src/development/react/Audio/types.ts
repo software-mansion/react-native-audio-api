@@ -4,10 +4,10 @@ import type BaseAudioContext from '../../../core/BaseAudioContext';
 export interface AudioURISource {
   uri?: string | undefined;
   // bundle?: string | undefined;
-  method?: string | undefined;
+  // method?: string | undefined;
   headers?: { [key: string]: string } | undefined;
   // cache?: 'default' | 'reload' | 'force-cache' | 'only-if-cached' | undefined;
-  body?: string | undefined;
+  // body?: string | undefined;
 }
 
 export type AudioRequireSource = number;
@@ -18,11 +18,7 @@ export interface TimeRanges {
   end(index: number): number;
 }
 
-export type AudioSource =
-  | AudioURISource
-  | AudioRequireSource
-  | ReadonlyArray<AudioURISource>
-  | string;
+export type AudioSource = AudioURISource | AudioRequireSource | string;
 
 export type PreloadType = 'auto' | 'metadata' | 'none';
 

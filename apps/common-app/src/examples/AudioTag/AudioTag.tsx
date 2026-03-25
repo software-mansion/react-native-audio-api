@@ -6,7 +6,7 @@ import { Container } from '../../components';
 import { AudioContext } from 'react-native-audio-api';
 
 const DEMO_AUDIO_URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
+  'https://filesamples.com/samples/audio/m4a/sample4.m4a';
   // '/data/data/com.fabricexample/cache/audio.wav';
 
 const AudioTag: React.FC = () => {

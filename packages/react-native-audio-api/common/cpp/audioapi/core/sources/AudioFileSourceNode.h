@@ -70,14 +70,13 @@ class AudioFileSourceNode : public AudioNode {
   }
 
   double getDuration() const {
-    return duration_.load(std::memory_order_acquire);
+    return duration_;
   }
 
   double getCurrentTime() const {
     return currentTime_.load(std::memory_order_acquire);
   }
 
-  /// Seek to \p seconds (clamped to [0, duration]).
   void seekToTime(double seconds);
 
  protected:
@@ -100,9 +99,8 @@ class AudioFileSourceNode : public AudioNode {
   ffmpegdecoder::FFmpegDecoderConfig cfg;
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
   std::atomic<bool> filePaused_{false};
-  bool fileStarted_{false};
   std::atomic<bool> loop_{false};
-  std::atomic<double> duration_{0};
+  double duration_{0};
   std::atomic<double> currentTime_{0};
   double sampleRate_{0};
   const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
