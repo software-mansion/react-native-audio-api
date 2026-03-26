@@ -14,11 +14,12 @@ class AudioDestinationNodeHostObject : public AudioNodeHostObject {
   explicit AudioDestinationNodeHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioDestinationOptions &options = AudioDestinationOptions())
-      : AudioNodeHostObject(context->getGraph(),
-                            std::make_unique<AudioDestinationNode>(context),
-                            options) {
-        context->initialize(static_cast<AudioDestinationNode*>(node_->handle->audioNode.get()));
-      }
+      : AudioNodeHostObject(
+            context->getGraph(),
+            std::make_unique<AudioDestinationNode>(context),
+            options) {
+    context->initialize(static_cast<AudioDestinationNode *>(node_->handle->audioNode.get()));
+  }
 };
 
 } // namespace audioapi
