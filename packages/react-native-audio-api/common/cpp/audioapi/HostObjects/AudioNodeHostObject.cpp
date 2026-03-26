@@ -81,6 +81,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
     // node_->disconnect();
     return jsi::Value::undefined();
   }
+
   auto obj = args[0].getObject(runtime);
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
