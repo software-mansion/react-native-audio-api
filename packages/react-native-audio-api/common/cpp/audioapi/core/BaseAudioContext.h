@@ -36,7 +36,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
-  std::shared_ptr<AudioDestinationNode> getDestination() const;
 
   void setState(ContextState state);
 
@@ -51,9 +50,10 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   const RuntimeRegistry &getRuntimeRegistry() const;
   utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize> *getDisposer() const;
 
-  /// @brief Initializes audio destination and its corresponding graph node and adds it to graph. Must be called before using the context.
-  /// @return The graph node corresponding to the audio destination.
-  virtual utils::graph::HostGraph::Node *initialize();
+  /// @brief Assigns the audio destination node to the context.
+  /// @param destination The audio destination node to be associated with the context.
+  /// @note This method must be called before the audio context can be used for processing audio.
+  virtual void initialize(const AudioDestinationNode *destination);
 
   void inline processAudioEvents() {
     audioEventScheduler_.processAllEvents(*this);
@@ -74,7 +74,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
  protected:
   std::atomic<std::size_t> currentSampleFrame_{0};
-  std::shared_ptr<AudioDestinationNode> destination_;
+  const AudioDestinationNode *destination_;
 
  private:
   std::atomic<ContextState> state_;

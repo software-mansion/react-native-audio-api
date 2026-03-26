@@ -1,13 +1,11 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
-#include <audioapi/core/utils/graph/DestinationGraphObject.hpp>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/CircularArray.hpp>
 #include <memory>
-#include <utility>
 #include <vector>
 
 namespace audioapi {
@@ -26,9 +24,8 @@ BaseAudioContext::BaseAudioContext(
               AUDIO_SCHEDULER_CAPACITY)),
       graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())) {}
 
-utils::graph::HostGraph::Node *BaseAudioContext::initialize() {
-  destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
-  return graph_->addNode(std::make_unique<DestinationGraphObject>(destination_.get()));
+void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
+  destination_ = destination;
 }
 
 ContextState BaseAudioContext::getState() {
@@ -51,10 +48,6 @@ std::size_t BaseAudioContext::getCurrentSampleFrame() const {
 
 double BaseAudioContext::getCurrentTime() const {
   return static_cast<double>(getCurrentSampleFrame()) / getSampleRate();
-}
-
-std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
-  return destination_;
 }
 
 void BaseAudioContext::setState(audioapi::ContextState state) {
@@ -122,7 +115,7 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
     auto audioNode = node.asAudioNode();
     if (audioNode != nullptr) {
       audioNode->process(inputs, numFrames);
-      if (audioNode == destination_.get()) {
+      if (audioNode == destination_) {
         buffer->copy(*audioNode->getOutputBuffer(), 0, 0, numFrames);
       }
     }

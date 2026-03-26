@@ -7,6 +7,7 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/BridgeNode.hpp>
 #include <audioapi/core/utils/graph/HostGraph.hpp>
@@ -30,7 +31,6 @@ inline std::shared_ptr<BaseAudioContext> getGraphTestContext() {
     auto eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     auto ctx =
         std::make_shared<OfflineAudioContext>(2, 1024, 44100.0f, eventRegistry, RuntimeRegistry{});
-    ctx->initialize();
     return ctx;
   }();
   return context;

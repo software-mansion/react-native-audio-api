@@ -22,8 +22,8 @@ AudioContext::~AudioContext() {
   }
 }
 
-utils::graph::HostGraph::Node *AudioContext::initialize() {
-  auto *destinationNode = BaseAudioContext::initialize();
+void AudioContext::initialize(const AudioDestinationNode *destination) {
+  BaseAudioContext::initialize(destination);
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
@@ -35,7 +35,6 @@ utils::graph::HostGraph::Node *AudioContext::initialize() {
       getSampleRate(),
       destination_->getChannelCount());
 #endif
-  return destinationNode;
 }
 
 void AudioContext::close() {

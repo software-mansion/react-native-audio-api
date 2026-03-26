@@ -4,7 +4,6 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
-#include <functional>
 #include <memory>
 
 namespace audioapi {
@@ -26,7 +25,11 @@ class AudioContext : public BaseAudioContext {
   bool resume();
   bool suspend();
   bool start();
-  utils::graph::HostGraph::Node *initialize() override;
+
+  /// @brief Initializes native audio player and assigns the audio destination node to the context.
+  /// @param destination The audio destination node to be associated with the context.
+  /// @note This method must be called before the audio context can be used for processing audio.
+  void initialize(const AudioDestinationNode *destination) final;
 
  private:
 #ifdef ANDROID
