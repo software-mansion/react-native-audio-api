@@ -1,26 +1,24 @@
 #pragma once
 
-#include <audioapi/core/types/ParamChangeEventType.h>
-#include <audioapi/core/utils/ParamChangeEvent.hpp>
-#include <audioapi/utils/BoundedPriorityQueue.hpp>
+#include <audioapi/core/types/AutomationEventType.h>
+#include <audioapi/core/utils/RenderAutomationEvent.hpp>
+#include <audioapi/core/utils/automation-queue/AutomationBaseQueue.hpp>
 
 namespace audioapi {
 
-/// @brief A queue for managing audio parameter change events.
+/// @brief A queue for managing audio parameter change events on the audio render thread.
 /// @note The invariant of the queue is that its internal buffer always contains non-overlapping events.
-class AudioParamEventQueue {
+class AutomationEventRenderQueue : public AutomationBaseQueue<RenderAutomationEvent> {
  public:
-  /// @brief Constructor for AudioParamEventQueue.
-  /// @note Capacity must be valid power of two.
-  explicit AudioParamEventQueue();
+  explicit AutomationEventRenderQueue() = default;
 
   /// @brief Push a new event to the back of the queue.
   /// @note Handles connecting the start value of the new event to the end value of the last event in the queue.
-  void push(ParamChangeEvent &&event);
+  void push(RenderAutomationEvent &&event);
 
   /// @brief Pop the front event from the queue.
-  /// @return The front event in the queue.
-  bool pop(ParamChangeEvent &event);
+  /// @return True if the pop was successful, false if the queue was empty.
+  bool pop(RenderAutomationEvent &event);
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
@@ -32,13 +30,13 @@ class AudioParamEventQueue {
 
   /// @brief Get the first event in the queue.
   /// @return The first event in the queue.
-  inline const ParamChangeEvent &front() const noexcept {
+  inline const RenderAutomationEvent &front() const noexcept {
     return eventQueue_.peekFront();
   }
 
   /// @brief Get the last event in the queue.
   /// @return The last event in the queue.
-  inline const ParamChangeEvent &back() const noexcept {
+  inline const RenderAutomationEvent &back() const noexcept {
     return eventQueue_.peekBack();
   }
 
@@ -55,14 +53,7 @@ class AudioParamEventQueue {
   }
 
  private:
-  struct ParamEventComparator {
-    bool operator()(const ParamChangeEvent &a, const ParamChangeEvent &b) const {
-      return a.getAutomationEventTime() < b.getAutomationEventTime();
-    }
-  };
-
-  BoundedPriorityQueue<ParamChangeEvent, 32, ParamEventComparator> eventQueue_;
-
-  inline void setEventEndValueToCurrentValue(ParamChangeEvent &event);
+  inline void setEventEndValueToCurrentValue(RenderAutomationEvent &event);
 };
+
 } // namespace audioapi

@@ -2,7 +2,7 @@
 
 namespace audioapi {
 
-enum class ParamChangeEventType {
+enum class AutomationEventType {
   LINEAR_RAMP,
   EXPONENTIAL_RAMP,
   SET_VALUE,

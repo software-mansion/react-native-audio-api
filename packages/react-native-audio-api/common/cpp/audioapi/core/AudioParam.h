@@ -2,9 +2,9 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/types/ParamChangeEventType.h>
-#include <audioapi/core/utils/AudioParamEventQueue.h>
-#include <audioapi/core/utils/ParamChangeEvent.hpp>
+#include <audioapi/core/types/AutomationEventType.h>
+#include <audioapi/core/utils/RenderAutomationEvent.hpp>
+#include <audioapi/core/utils/automation-queue/AutomationEventRenderQueue.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
@@ -102,7 +102,7 @@ class AudioParam {
   float minValue_;
   float maxValue_;
 
-  AudioParamEventQueue eventsQueue_;
+  AutomationEventRenderQueue eventsQueue_;
 
   // Current automation state (cached for performance)
   double startTime_;
@@ -137,7 +137,7 @@ class AudioParam {
   /// @brief Update the parameter queue with a new event.
   /// @param event The new event to add to the queue.
   /// @note Handles connecting start value of the new event to the end value of the previous event.
-  inline void updateQueue(ParamChangeEvent &&event) {
+  inline void updateQueue(RenderAutomationEvent &&event) {
     eventsQueue_.push(std::move(event));
   }
   float getValueAtTime(double time);

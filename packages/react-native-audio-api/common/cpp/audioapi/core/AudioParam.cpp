@@ -5,6 +5,8 @@
 #include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <utility>
+#include "audioapi/core/types/AutomationEventType.h"
+#include "audioapi/core/utils/RenderAutomationEvent.hpp"
 
 namespace audioapi {
 
@@ -37,7 +39,7 @@ float AudioParam::getValueAtTime(double time) {
   // Check if current automation segment has ended and we need to advance to
   // next event
   if (endTime_ < time && !eventsQueue_.isEmpty()) {
-    ParamChangeEvent event;
+    RenderAutomationEvent event;
     eventsQueue_.pop(event);
     startTime_ = event.getStartTime();
     endTime_ = event.getEndTime();
@@ -68,13 +70,13 @@ void AudioParam::setValueAtTime(float value, double startTime) {
         return endValue;
       };
 
-  this->updateQueue(ParamChangeEvent(
+  this->updateQueue(RenderAutomationEvent(
       startTime,
       startTime,
       this->getQueueEndValue(),
       value,
       std::move(calculateValue),
-      ParamChangeEventType::SET_VALUE));
+      AutomationEventType::SET_VALUE));
 }
 
 void AudioParam::linearRampToValueAtTime(float value, double endTime) {
@@ -98,13 +100,13 @@ void AudioParam::linearRampToValueAtTime(float value, double endTime) {
         return endValue;
       };
 
-  this->updateQueue(ParamChangeEvent(
+  this->updateQueue(RenderAutomationEvent(
       this->getQueueEndTime(),
       endTime,
       this->getQueueEndValue(),
       value,
       std::move(calculateValue),
-      ParamChangeEventType::LINEAR_RAMP));
+      AutomationEventType::LINEAR_RAMP));
 }
 
 void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
@@ -131,13 +133,13 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
         return endValue;
       };
 
-  this->updateQueue(ParamChangeEvent(
+  this->updateQueue(RenderAutomationEvent(
       this->getQueueEndTime(),
       endTime,
       this->getQueueEndValue(),
       value,
       std::move(calculateValue),
-      ParamChangeEventType::EXPONENTIAL_RAMP));
+      AutomationEventType::EXPONENTIAL_RAMP));
 }
 
 void AudioParam::setTargetAtTime(float target, double startTime, double timeConstant) {
@@ -158,14 +160,14 @@ void AudioParam::setTargetAtTime(float target, double startTime, double timeCons
     return static_cast<float>(
         target + (startValue - target) * exp(-(time - startTime) / timeConstant));
   };
-  this->updateQueue(ParamChangeEvent(
+  this->updateQueue(RenderAutomationEvent(
       startTime,
       startTime, // SetTarget events have infinite duration conceptually
       this->getQueueEndValue(),
       this->getQueueEndValue(), // End value is not meaningful for
                                 // infinite events
       std::move(calculateValue),
-      ParamChangeEventType::SET_TARGET));
+      AutomationEventType::SET_TARGET));
 }
 
 void AudioParam::setValueCurveAtTime(
@@ -197,13 +199,13 @@ void AudioParam::setValueCurveAtTime(
         return endValue;
       };
 
-  this->updateQueue(ParamChangeEvent(
+  this->updateQueue(RenderAutomationEvent(
       startTime,
       startTime + duration,
       this->getQueueEndValue(),
       values->span()[length - 1],
       std::move(calculateValue),
-      ParamChangeEventType::SET_VALUE_CURVE));
+      AutomationEventType::SET_VALUE_CURVE));
 }
 
 void AudioParam::cancelScheduledValues(double cancelTime) {
