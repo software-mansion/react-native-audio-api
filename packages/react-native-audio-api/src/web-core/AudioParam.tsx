@@ -5,9 +5,8 @@ export default class AudioParam {
   readonly defaultValue: number;
   readonly minValue: number;
   readonly maxValue: number;
-  readonly context: BaseAudioContext;
-
   readonly param: globalThis.AudioParam;
+  readonly context: BaseAudioContext;
 
   constructor(param: globalThis.AudioParam, context: BaseAudioContext) {
     this.param = param;

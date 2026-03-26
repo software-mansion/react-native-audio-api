@@ -12,6 +12,6 @@ export default class StereoPannerNode extends AudioNode {
       options || {}
     );
     super(context, pan);
-    this.pan = new AudioParam(pan.pan, context);
+    this.pan = new AudioParam(pan.pan, context, this);
   }
 }

@@ -1,6 +1,7 @@
 import { IAudioParam } from '../interfaces';
 import { RangeError, InvalidStateError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
+import AudioNode from './AudioNode';
 
 export default class AudioParam {
   readonly defaultValue: number;
@@ -8,14 +9,21 @@ export default class AudioParam {
   readonly maxValue: number;
   readonly audioParam: IAudioParam;
   readonly context: BaseAudioContext;
+  /** @internal */
+  public readonly owner: AudioNode;
 
-  constructor(audioParam: IAudioParam, context: BaseAudioContext) {
+  constructor(
+    audioParam: IAudioParam,
+    context: BaseAudioContext,
+    owner: AudioNode
+  ) {
     this.audioParam = audioParam;
     this.value = audioParam.value;
     this.defaultValue = audioParam.defaultValue;
     this.minValue = audioParam.minValue;
     this.maxValue = audioParam.maxValue;
     this.context = context;
+    this.owner = owner;
   }
 
   public get value(): number {
