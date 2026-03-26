@@ -34,6 +34,16 @@ const Audio: React.FC<AudioProps> = (props) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  const path = useMemo(() => {
+    if (typeof source === 'string') {
+      return source;
+    }
+    if (typeof source === 'number') {
+      throw new Error('Asset source is not supported on web');
+    }
+    return source.uri ?? '';
+  }, [source]);
+
   useEffect(() => {
     setVolumeState(volume);
   }, [volume]);
@@ -159,6 +169,8 @@ const Audio: React.FC<AudioProps> = (props) => {
         controls={controls}
         loop={loop}
         muted={mutedState}
+        preload={preload}
+        src={path}
         ref={audioRef}
         onLoadedData={() => setIsReady(true)}
         onPlay={() => setPlaybackState('playing')}

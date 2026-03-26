@@ -1,7 +1,8 @@
-import { Pause, Play, Volume, VolumeX } from 'lucide-react-native';
+import { Pause, Volume, VolumeX } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   LayoutChangeEvent,
   Platform,
   Pressable,
@@ -17,6 +18,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useAudioTagContext } from './AudioTagContext';
+
+const PLAY_ICON = require('./icons/play.jpg');
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -240,7 +243,7 @@ const AudioControls: React.FC = () => {
           {playbackState === 'playing' ? (
             <Pause color="#000" size={20} strokeWidth={2.5} />
           ) : (
-            <Play color="#000" size={20} strokeWidth={2.5} />
+            <Image source={PLAY_ICON} style={{ width: 24, height: 24 }} />
           )}
         </Pressable>
 
