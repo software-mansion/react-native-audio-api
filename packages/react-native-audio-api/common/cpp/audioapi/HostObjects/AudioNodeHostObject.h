@@ -29,6 +29,9 @@ class AudioNodeHostObject : public JsiHostObject, public utils::graph::HostNode 
   JSI_PROPERTY_GETTER_DECL(channelCountMode);
   JSI_PROPERTY_GETTER_DECL(channelInterpretation);
 
+  using utils::graph::HostNode::connect;
+  using utils::graph::HostNode::disconnect;
+
   JSI_HOST_FUNCTION_DECL(connect);
   JSI_HOST_FUNCTION_DECL(disconnect);
 

@@ -173,6 +173,15 @@ class Graph {
     });
   }
 
+  /// @brief Removes all outgoing edges from `from`.
+  Res removeAllEdges(HNode *from) {
+    hostGraph.collectDisposedNodes();
+    return hostGraph.removeAllEdges(from).map([&](AGEvent event) {
+      eventSender_.send(std::move(event));
+      return NoneType{};
+    });
+  }
+
   // ── Param bridge API ───────────────────────────────────────────────────
 
   /// @brief Creates a bridge node representing: source → bridge → owner.

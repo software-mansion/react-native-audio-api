@@ -63,7 +63,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
   auto obj = args[0].getObject(runtime);
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
-    connectNode(*node);
+    connect(*node);
   } else if (obj.isHostObject<AudioDestinationNodeHostObject>(runtime)) {
     auto dest = obj.getHostObject<AudioDestinationNodeHostObject>(runtime);
     graph_->addEdge(node_, dest->rawNode());
@@ -77,15 +77,14 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
   if (args[0].isUndefined()) {
-    // TODO
-    // node_->disconnect();
+    disconnect();
     return jsi::Value::undefined();
   }
 
   auto obj = args[0].getObject(runtime);
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
-    disconnectNode(*node);
+    disconnect(*node);
   } else if (obj.isHostObject<AudioDestinationNodeHostObject>(runtime)) {
     auto dest = obj.getHostObject<AudioDestinationNodeHostObject>(runtime);
     graph_->removeEdge(node_, dest->rawNode());

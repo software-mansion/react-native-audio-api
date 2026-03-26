@@ -93,13 +93,13 @@ class HostNode {
 
   /// @brief Connects this node's output to another node's input (this → other).
   /// @return Ok on success, Err on cycle / duplicate / not-found
-  Res connectNode(HostNode &other) {
+  Res connect(HostNode &other) {
     return graph_->addEdge(node_, other.node_);
   }
 
   /// @brief Disconnects this node's output from another node's input.
   /// @return Ok on success, Err on not-found
-  Res disconnectNode(HostNode &other) {
+  Res disconnect(HostNode &other) {
     return graph_->removeEdge(node_, other.node_);
   }
 
@@ -113,6 +113,12 @@ class HostNode {
   /// @return Ok on success, Err on not-found
   Res disconnectParam(HostNode &owner, AudioParam *param) {
     return graph_->disconnectParam(node_, owner.node_, param);
+  }
+
+  /// @brief Disconnects all this node's outputs.
+  /// @return Ok on success, Err on not-found
+  Res disconnect() {
+    return graph_->removeAllEdges(node_);
   }
 
   /// @brief Returns the raw HostGraph::Node pointer (for advanced usage / testing).

@@ -103,6 +103,10 @@ class HostGraph {
   /// @return AGEvent that removes the input on the AudioGraph side.
   Res removeEdge(Node *from, Node *to);
 
+  /// @brief Removes all outgoing edges from `from`.
+  /// @return single AGEvent that removes all inputs on the AudioGraph side, or NODE_NOT_FOUND.
+  Res removeAllEdges(Node *from);
+
   /// @brief Current number of live (non-ghost) edges.
   [[nodiscard]] size_t edgeCount() const;
 
@@ -254,6 +258,32 @@ inline auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
 
   return Res::Ok([hFrom = from->handle, hTo = to->handle](AudioGraph &graph, auto &) {
     graph.pool().remove(graph[hTo->index].input_head, hFrom->index);
+    graph.markDirty();
+  });
+}
+
+inline auto HostGraph::removeAllEdges(Node *from) -> Res {
+  if (std::find(nodes.begin(), nodes.end(), from) == nodes.end() || from->ghost) {
+    return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+
+  auto pairs = std::make_shared<std::vector<std::pair<std::uint32_t, std::uint32_t>>>();
+  pairs->reserve(from->outputs.size());
+
+  for (Node *to : from->outputs) {
+    auto itIn = std::find(to->inputs.begin(), to->inputs.end(), from);
+    if (itIn != to->inputs.end()) {
+      to->inputs.erase(itIn);
+    }
+    edgeCount_--;
+    pairs->emplace_back(from->handle->index, to->handle->index);
+  }
+  from->outputs.clear();
+
+  return Res::Ok([pairs = std::move(pairs)](AudioGraph &graph, auto &) {
+    for (auto &[fromIdx, toIdx] : *pairs) {
+      graph.pool().remove(graph[toIdx].input_head, fromIdx);
+    }
     graph.markDirty();
   });
 }
