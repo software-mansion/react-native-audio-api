@@ -27,7 +27,8 @@ AudioFileSourceNode::AudioFileSourceNode(
     : AudioNode(context, options),
       audioEventHandlerRegistry_(context->getAudioEventHandlerRegistry()),
       onPositionChangedInterval_(
-          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
+          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)),
+      requiresFFmpeg_(options.requiresFFmpeg) {
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
@@ -38,11 +39,6 @@ AudioFileSourceNode::AudioFileSourceNode(
     }
     if (useFilePath) {
       state->filePath = options.filePath;
-      requiresFFmpeg_ = AudioDecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
-    } else {
-      auto format = AudioDecoder::detectAudioFormat(options.data.data(), options.data.size());
-      requiresFFmpeg_ =
-          format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
     }
     initDecoders(useFilePath, context, state);
   }

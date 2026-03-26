@@ -259,8 +259,10 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
     if (args[0].isString()) {
       options.filePath = args[0].getString(runtime).utf8(runtime);
       // ffmpeg decoded extensions
+      options.requiresFFmpeg =
+          AudioDecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
 #if RN_AUDIO_API_FFMPEG_DISABLED
-      if (AudioDecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"})) {
+      if (options.requiresFFmpeg) {
         return jsi::Value::undefined();
       }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -271,9 +273,10 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
         auto *data = arrayBuffer.data(runtime);
         auto size = arrayBuffer.size(runtime);
         auto format = AudioDecoder::detectAudioFormat(data, size);
+        options.requiresFFmpeg =
+            format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
 #if RN_AUDIO_API_FFMPEG_DISABLED
-        if (format == AudioFormat::MP4 || format == AudioFormat::M4A ||
-            format == AudioFormat::AAC) {
+        if (options.requiresFFmpeg) {
           return jsi::Value::undefined();
         }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
