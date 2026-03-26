@@ -18,8 +18,6 @@ WorkletProcessingNode::WorkletProcessingNode(
     inputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(RENDER_QUANTUM_SIZE);
     outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(RENDER_QUANTUM_SIZE);
   }
-
-  isInitialized_.store(true, std::memory_order_release);
 }
 
 void WorkletProcessingNode::processNode(int framesToProcess) {

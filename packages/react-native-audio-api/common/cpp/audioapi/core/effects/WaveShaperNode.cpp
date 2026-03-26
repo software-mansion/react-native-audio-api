@@ -17,7 +17,6 @@ WaveShaperNode::WaveShaperNode(
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr, context->getSampleRate()));
   }
   setCurve(options.curve);
-  isInitialized_.store(true, std::memory_order_release);
 }
 
 void WaveShaperNode::setOversample(OverSampleType type) {

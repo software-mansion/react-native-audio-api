@@ -44,9 +44,11 @@ class AudioScheduledSourceNode : public AudioNode {
   /// @note Audio Thread only
   void setOnEndedCallbackId(uint64_t callbackId);
 
-  void disable() override;
+  virtual void disable();
 
   void unregisterOnEndedCallback(uint64_t callbackId);
+
+  bool canBeDestructed() const override;
 
  protected:
   double startTime_;

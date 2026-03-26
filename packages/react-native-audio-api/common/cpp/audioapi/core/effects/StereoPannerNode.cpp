@@ -19,9 +19,7 @@ StereoPannerNode::StereoPannerNode(
           std::make_shared<DSPAudioBuffer>(
               RENDER_QUANTUM_SIZE,
               channelCount_,
-              context->getSampleRate())) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+              context->getSampleRate())) {}
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;

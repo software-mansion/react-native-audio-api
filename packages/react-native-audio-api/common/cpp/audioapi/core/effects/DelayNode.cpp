@@ -18,9 +18,7 @@ DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext> &context, const Del
                   options.maxDelayTime * context->getSampleRate() +
                   1), // +1 to enable delayTime equal to maxDelayTime
               channelCount_,
-              context->getSampleRate())) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+              context->getSampleRate())) {}
 
 std::shared_ptr<AudioParam> DelayNode::getDelayTimeParam() const {
   return delayTimeParam_;
@@ -71,7 +69,6 @@ void DelayNode::processNode(int framesToProcess) {
   // handling tail processing
   if (signalledToStop_) {
     if (remainingFrames_ <= 0) {
-      disable();
       signalledToStop_ = false;
       return;
     }

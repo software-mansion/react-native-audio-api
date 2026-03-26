@@ -31,9 +31,7 @@ class AudioScheduledSourceTest : public ::testing::Test {
 class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
  public:
   explicit TestableAudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context)
-      : AudioScheduledSourceNode(context) {
-    isInitialized_.store(true, std::memory_order_release);
-  }
+      : AudioScheduledSourceNode(context) {}
 
   void updatePlaybackInfo(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,

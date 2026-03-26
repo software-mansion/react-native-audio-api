@@ -20,9 +20,7 @@ ConvolverNode::ConvolverNode(
       scaleFactor_(1.0f),
       intermediateBuffer_(nullptr),
       buffer_(nullptr),
-      internalBuffer_(nullptr) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+      internalBuffer_(nullptr) {}
 
 void ConvolverNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
@@ -99,7 +97,6 @@ void ConvolverNode::processNode(int framesToProcess) {
     if (remainingSegments_ > 0) {
       remainingSegments_--;
     } else {
-      disable();
       signalledToStop_ = false;
       internalBufferIndex_ = 0;
       return;

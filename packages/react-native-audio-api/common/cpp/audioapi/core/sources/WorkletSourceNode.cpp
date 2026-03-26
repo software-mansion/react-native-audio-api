@@ -15,8 +15,6 @@ WorkletSourceNode::WorkletSourceNode(
   for (size_t i = 0; i < outputChannelCount; ++i) {
     outputBuffsHandles_[i] = std::make_shared<AudioArrayBuffer>(RENDER_QUANTUM_SIZE);
   }
-
-  isInitialized_.store(true, std::memory_order_release);
 }
 
 void WorkletSourceNode::processNode(int framesToProcess) {
@@ -41,7 +39,7 @@ void WorkletSourceNode::processNode(int framesToProcess) {
       context->getSampleRate(),
       context->getCurrentSampleFrame());
 
-  if (nonSilentFramesToProcess == 0) {
+  if (!isPlaying() && !isStopScheduled() || nonSilentFramesToProcess == 0) {
     audioBuffer_->zero();
     return;
   }

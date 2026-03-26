@@ -21,7 +21,6 @@ AnalyserNode::AnalyserNode(
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant) {
   setFFTSize(options.fftSize);
-  isInitialized_.store(true, std::memory_order_release);
 }
 
 void AnalyserNode::setFFTSize(int fftSize) {

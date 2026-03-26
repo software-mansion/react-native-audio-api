@@ -15,9 +15,7 @@ GainNode::GainNode(const std::shared_ptr<BaseAudioContext> &context, const GainO
               options.gain,
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
-              context)) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+              context)) {}
 
 std::shared_ptr<AudioParam> GainNode::getGainParam() const {
   return gainParam_;

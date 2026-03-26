@@ -112,10 +112,6 @@ bool StreamerNode::initialize(const std::string &input_url) {
     return false;
   }
 
-  if (isInitialized_.load(std::memory_order_acquire)) {
-    return false;
-  }
-
   if (!openInput(input_url)) {
     if (VERBOSE)
       printf("Failed to open input\n");
@@ -151,7 +147,6 @@ bool StreamerNode::initialize(const std::string &input_url) {
   receiver_ = std::move(receiver);
 
   streamingThread_ = std::thread(&StreamerNode::streamAudio, this);
-  isInitialized_.store(true, std::memory_order_release);
   return true;
 }
 
@@ -344,7 +339,6 @@ void StreamerNode::cleanup() {
   decoder_ = nullptr;
   codecpar_ = nullptr;
   maxResampledSamples_ = 0;
-  isInitialized_.store(false, std::memory_order_release);
 }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 } // namespace audioapi

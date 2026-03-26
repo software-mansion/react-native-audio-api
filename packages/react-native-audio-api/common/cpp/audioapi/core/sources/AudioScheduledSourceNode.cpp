@@ -68,6 +68,10 @@ void AudioScheduledSourceNode::unregisterOnEndedCallback(uint64_t callbackId) {
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::ENDED, callbackId);
 }
 
+bool AudioScheduledSourceNode::canBeDestructed() const {
+  return isUnscheduled() || isFinished();
+}
+
 void AudioScheduledSourceNode::updatePlaybackInfo(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
@@ -155,8 +159,6 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 }
 
 void AudioScheduledSourceNode::disable() {
-  AudioNode::disable();
-
   if (onEndedCallbackId_ != 0) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
         AudioEvent::ENDED, onEndedCallbackId_, {});

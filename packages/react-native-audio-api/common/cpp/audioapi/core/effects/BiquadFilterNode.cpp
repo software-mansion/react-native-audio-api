@@ -67,9 +67,7 @@ BiquadFilterNode::BiquadFilterNode(
       x1_(MAX_CHANNEL_COUNT),
       x2_(MAX_CHANNEL_COUNT),
       y1_(MAX_CHANNEL_COUNT),
-      y2_(MAX_CHANNEL_COUNT) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+      y2_(MAX_CHANNEL_COUNT) {}
 
 void BiquadFilterNode::setType(BiquadFilterType type) {
   type_ = type;

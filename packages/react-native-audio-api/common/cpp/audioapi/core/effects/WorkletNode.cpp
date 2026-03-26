@@ -16,9 +16,7 @@ WorkletNode::WorkletNode(
           std::make_shared<AudioBuffer>(bufferLength, inputChannelCount, context->getSampleRate())),
       bufferLength_(bufferLength),
       inputChannelCount_(inputChannelCount),
-      curBuffIndex_(0) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+      curBuffIndex_(0) {}
 
 void WorkletNode::processNode(int framesToProcess) {
   size_t processed = 0;

@@ -105,14 +105,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   const ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;
 
-  std::atomic<bool> isInitialized_ = false;
-
-  virtual void disable() {
-    cleanup();
-  };
-
   virtual void processNode(int) = 0;
-  void cleanup();
 };
 
 } // namespace audioapi

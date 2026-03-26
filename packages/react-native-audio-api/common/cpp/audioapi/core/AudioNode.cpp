@@ -34,8 +34,4 @@ bool AudioNode::requiresTailProcessing() const {
   return requiresTailProcessing_;
 }
 
-void AudioNode::cleanup() {
-  isInitialized_.store(false, std::memory_order_release);
-}
-
 } // namespace audioapi

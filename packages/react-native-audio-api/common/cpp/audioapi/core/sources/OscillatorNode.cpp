@@ -26,8 +26,6 @@ OscillatorNode::OscillatorNode(
   } else {
     periodicWave_ = context->getBasicWaveForm(type_);
   }
-
-  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {

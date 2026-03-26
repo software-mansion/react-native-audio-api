@@ -13,10 +13,14 @@ class BaseAudioContext;
 
 class AudioDestinationNode : public AudioNode {
  public:
-  explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context);
+  explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
+      : AudioNode(context, AudioDestinationOptions()) {}
+
+  bool canBeDestructed() const override {
+    return false;
+  }
 
  protected:
-  // DestinationNode's processNode is never called; graph traversal skips it.
   void processNode(int) final {
     audioBuffer_->normalize();
   };

@@ -25,8 +25,6 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
   }
-
-  isInitialized_.store(true, std::memory_order_release);
 }
 
 void AudioBufferQueueSourceNode::stop(double when) {

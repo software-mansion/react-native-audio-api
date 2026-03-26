@@ -51,6 +51,8 @@ class RecorderAdapterNode : public AudioNode {
   // Accumulates resampled output across calls
   AudioBuffer overflowBuffer_;
   size_t overflowSize_ = 0;
+
+  std::atomic<bool> isInitialized_{false};
 };
 
 } // namespace audioapi

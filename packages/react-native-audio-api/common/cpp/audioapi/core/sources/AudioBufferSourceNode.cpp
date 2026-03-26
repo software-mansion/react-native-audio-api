@@ -21,9 +21,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loop_(options.loop),
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
-      loopEnd_(options.loopEnd) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+      loopEnd_(options.loopEnd) {}
 
 void AudioBufferSourceNode::setLoop(bool loop) {
   loop_ = loop;
