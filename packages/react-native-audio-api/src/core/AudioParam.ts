@@ -1,13 +1,11 @@
+import { InvalidStateError, RangeError } from '../errors';
 import { IAudioParam } from '../interfaces';
-import { RangeError, InvalidStateError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
-import { AutomationEventQueue } from '../utils/audio-param/AutomationEventQueue';
 
 export default class AudioParam {
   public readonly defaultValue: number;
   public readonly minValue: number;
   public readonly maxValue: number;
-  public readonly eventQueue = new AutomationEventQueue();
 
   constructor(
     public readonly audioParam: IAudioParam,
