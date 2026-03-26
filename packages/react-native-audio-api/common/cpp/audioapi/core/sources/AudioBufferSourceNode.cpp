@@ -95,10 +95,6 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
   vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
 }
 
-void AudioBufferSourceNode::disable() {
-  AudioScheduledSourceNode::disable();
-}
-
 void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
   onLoopEndedCallbackId_ = callbackId;
 }

@@ -105,6 +105,7 @@ void ConvolverNode::processNode(int framesToProcess) {
       return;
     }
   }
+
   if (internalBufferIndex_ < framesToProcess) {
     performConvolution(audioBuffer_); // reads from audioBuffer_, result goes to intermediateBuffer_
     audioBuffer_->zero();
@@ -113,6 +114,7 @@ void ConvolverNode::processNode(int framesToProcess) {
     internalBuffer_->copy(*audioBuffer_, 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
     internalBufferIndex_ += RENDER_QUANTUM_SIZE;
   }
+
   audioBuffer_->zero();
   audioBuffer_->copy(*internalBuffer_, 0, 0, framesToProcess);
   int remainingFrames = internalBufferIndex_ - framesToProcess;

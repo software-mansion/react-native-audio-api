@@ -14,12 +14,21 @@ StereoPannerNode::StereoPannerNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const StereoPannerOptions &options)
     : AudioNode(context, options),
-      panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)) {
+      panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)),
+      outputBuffer_(
+          std::make_shared<DSPAudioBuffer>(
+              RENDER_QUANTUM_SIZE,
+              channelCount_,
+              context->getSampleRate())) {
   isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
+}
+
+std::shared_ptr<DSPAudioBuffer> StereoPannerNode::getOutputBuffer() const {
+  return outputBuffer_;
 }
 
 void StereoPannerNode::processNode(int framesToProcess) {
@@ -31,8 +40,8 @@ void StereoPannerNode::processNode(int framesToProcess) {
 
   auto panParamValues = panParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
-  auto outputLeft = audioBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
-  auto outputRight = audioBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
+  auto outputLeft = outputBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
+  auto outputRight = outputBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
 
   // Input is mono
   if (audioBuffer_->getNumberOfChannels() == 1) {

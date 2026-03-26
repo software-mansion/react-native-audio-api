@@ -11,9 +11,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
-#include <unordered_set>
 #include <utility>
-#include <vector>
 
 namespace audioapi {
 
@@ -24,18 +22,17 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   explicit AudioNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioNodeOptions &options = AudioNodeOptions());
-  virtual ~AudioNode();
 
   size_t getChannelCount() const;
 
   template <std::ranges::input_range R>
     requires std::same_as<std::ranges::range_reference_t<R>, const GraphObject &>
   void process(R &&inputs, int numFrames) {
-    audioBuffer_->zero();
+    getInputBuffer()->zero();
 
     for (const auto &input : inputs) {
       if (const AudioNode *audioNode = input.asAudioNode()) {
-        audioBuffer_->sum(*audioNode->audioBuffer_, channelInterpretation_);
+        getInputBuffer()->sum(*audioNode->getOutputBuffer(), channelInterpretation_);
       }
     }
 
@@ -54,7 +51,21 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     return getContextSampleRate() / 2.0f;
   }
 
-  std::shared_ptr<DSPAudioBuffer> getAudioBuffer() const {
+  /// @brief Returns the input buffer for this node. By default, this is the same as the output buffer.
+  /// @note Audio Thread only.
+  /// @note For StereoPannerNode and PannerNode due to channel limitations -
+  /// https://webaudio.github.io/web-audio-api/#StereoPanner-channel-limitations
+  /// the input buffer is negotiate with inputs, but output buffer is always stereo.
+  std::shared_ptr<DSPAudioBuffer> getInputBuffer() const {
+    return audioBuffer_;
+  }
+
+  /// @brief Returns the output buffer for this node. By default, this is the same as the input buffer.
+  /// @note Audio Thread only.
+  /// @note For StereoPannerNode and PannerNode due to channel limitations -
+  /// https://webaudio.github.io/web-audio-api/#StereoPanner-channel-limitations
+  /// the input buffer is negotiate with inputs, but output buffer is always stereo.
+  virtual std::shared_ptr<DSPAudioBuffer> getOutputBuffer() const {
     return audioBuffer_;
   }
 
@@ -81,8 +92,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   }
 
  protected:
-  friend class AudioDestinationNode;
-  friend class ConvolverNode;
+  //  friend class ConvolverNode;
   friend class DelayNodeHostObject;
 
   std::weak_ptr<BaseAudioContext> context_;
@@ -97,14 +107,11 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   std::atomic<bool> isInitialized_ = false;
 
-  std::size_t lastRenderedFrame_{SIZE_MAX};
-
   virtual void disable() {
     cleanup();
   };
 
   virtual void processNode(int) = 0;
-
   void cleanup();
 };
 

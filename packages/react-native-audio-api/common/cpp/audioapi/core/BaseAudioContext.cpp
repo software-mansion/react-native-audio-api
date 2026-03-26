@@ -123,7 +123,7 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
     if (audioNode != nullptr) {
       audioNode->process(inputs, numFrames);
       if (audioNode == destination_.get()) {
-        buffer->copy(*audioNode->getAudioBuffer(), 0, 0, numFrames);
+        buffer->copy(*audioNode->getOutputBuffer(), 0, 0, numFrames);
       }
     }
   }

@@ -50,7 +50,7 @@ TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   auto constantSource = TestableConstantSourceNode(context);
   constantSource.start(context->getCurrentTime());
   constantSource.processNode(FRAMES_TO_PROCESS);
-  auto resultBuffer = constantSource.getAudioBuffer();
+  auto resultBuffer = constantSource.getOutputBuffer();
 
   for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 1.0f);
@@ -58,7 +58,7 @@ TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
 
   constantSource.setOffsetParam(0.5f);
   constantSource.processNode(FRAMES_TO_PROCESS);
-  resultBuffer = constantSource.getAudioBuffer();
+  resultBuffer = constantSource.getOutputBuffer();
   for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 0.5f);
   }

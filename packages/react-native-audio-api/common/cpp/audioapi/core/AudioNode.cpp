@@ -22,12 +22,6 @@ AudioNode::AudioNode(
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
-AudioNode::~AudioNode() {
-  if (isInitialized_.load(std::memory_order_acquire)) {
-    cleanup();
-  }
-}
-
 bool AudioNode::canBeDestructed() const {
   return true;
 }

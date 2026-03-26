@@ -19,11 +19,14 @@ class StereoPannerNode : public AudioNode {
 
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
 
+  std::shared_ptr<DSPAudioBuffer> getOutputBuffer() const override;
+
  protected:
   void processNode(int framesToProcess) override;
 
  private:
   const std::shared_ptr<AudioParam> panParam_;
+  const std::shared_ptr<DSPAudioBuffer> outputBuffer_;
 };
 
 } // namespace audioapi
