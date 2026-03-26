@@ -262,19 +262,19 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {
   auto arrayBufferReal =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto real = reinterpret_cast<float *>(arrayBufferReal.data(runtime));
+  auto *real = reinterpret_cast<float *>(arrayBufferReal.data(runtime));
   auto length = static_cast<int>(arrayBufferReal.size(runtime) / sizeof(float));
 
   auto arrayBufferImag =
       args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto imag = reinterpret_cast<float *>(arrayBufferImag.data(runtime));
+  auto *imag = reinterpret_cast<float *>(arrayBufferImag.data(runtime));
 
   auto disableNormalization = args[2].getBool();
 
   auto complexData = std::vector<std::complex<float>>(length);
 
-  for (size_t i = 0; i < length; i++) {
-    complexData[i] = std::complex<float>(static_cast<float>(real[i]), static_cast<float>(imag[i]));
+  for (int i = 0; i < length; i++) {
+    complexData[i] = std::complex<float>(real[i], imag[i]);
   }
 
   auto periodicWave = context_->createPeriodicWave(complexData, disableNormalization, length);

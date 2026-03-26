@@ -18,6 +18,7 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     : AudioScheduledSourceNode(context, options),
       vReadIndex_(0.0),
       pitchCorrection_(options.pitchCorrection),
+      onPositionChangedIntervalInFrames_(static_cast<int>(context->getSampleRate())),
       detuneParam_(
           std::make_shared<AudioParam>(
               options.detune,

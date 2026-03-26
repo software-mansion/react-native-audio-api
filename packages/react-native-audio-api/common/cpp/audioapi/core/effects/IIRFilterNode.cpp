@@ -40,9 +40,8 @@ IIRFilterNode::IIRFilterNode(
     : AudioNode(context, options),
       feedforward_(createNormalizedArray(options.feedforward, options.feedback[0])),
       feedback_(createNormalizedArray(options.feedback, options.feedback[0])),
-      xBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
-      yBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
-      bufferIndices_(bufferLength) {
+      xBuffers_(BUFFER_LENGTH, MAX_CHANNEL_COUNT, context->getSampleRate()),
+      yBuffers_(BUFFER_LENGTH, MAX_CHANNEL_COUNT, context->getSampleRate()) {
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -102,13 +101,13 @@ void IIRFilterNode::getFrequencyResponse(
 std::shared_ptr<DSPAudioBuffer> IIRFilterNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  int numChannels = static_cast<int>(processingBuffer->getNumberOfChannels());
+  auto numChannels = static_cast<int>(processingBuffer->getNumberOfChannels());
 
   size_t feedforwardLength = feedforward_.getSize();
   size_t feedbackLength = feedback_.getSize();
   auto minLength = static_cast<size_t>(std::min(feedbackLength, feedforwardLength));
 
-  int mask = bufferLength - 1;
+  constexpr int mask = BUFFER_LENGTH - 1;
 
   for (int c = 0; c < numChannels; ++c) {
     auto channel = processingBuffer->getChannel(c)->subSpan(framesToProcess);
@@ -132,7 +131,7 @@ std::shared_ptr<DSPAudioBuffer> IIRFilterNode::processNode(
         y_n = std::fma(feedforward_[k], x[(bufferIndex - k) & mask], y_n);
       }
       for (k = minLength; k < feedbackLength; ++k) {
-        y_n = std::fma(-feedback_[k], y[(bufferIndex - k) & (bufferLength - 1)], y_n);
+        y_n = std::fma(-feedback_[k], y[(bufferIndex - k) & (BUFFER_LENGTH - 1)], y_n);
       }
 
       // Avoid denormalized numbers
@@ -146,7 +145,7 @@ std::shared_ptr<DSPAudioBuffer> IIRFilterNode::processNode(
       x[bufferIndex] = x_n;
       y[bufferIndex] = y_n;
 
-      bufferIndex = (bufferIndex + 1) & (bufferLength - 1);
+      bufferIndex = (bufferIndex + 1) & (BUFFER_LENGTH - 1);
     }
     bufferIndices_[c] = bufferIndex;
   }

@@ -28,7 +28,7 @@ ConvolverNode::ConvolverNode(
 
 void ConvolverNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    std::vector<Convolver> convolvers,
+    std::vector<std::unique_ptr<Convolver>> convolvers,
     const std::shared_ptr<ThreadPool> &threadPool,
     const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
     const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
@@ -84,7 +84,7 @@ void ConvolverNode::onInputDisabled() {
   numberOfEnabledInputNodes_ -= 1;
   if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
     signalledToStop_ = true;
-    remainingSegments_ = convolvers_.at(0).getSegCount();
+    remainingSegments_ = convolvers_.at(0)->getSegCount();
   }
 }
 
@@ -122,7 +122,7 @@ std::shared_ptr<DSPAudioBuffer> ConvolverNode::processNode(
   }
   audioBuffer_->zero();
   audioBuffer_->copy(*internalBuffer_, 0, 0, framesToProcess);
-  int remainingFrames = internalBufferIndex_ - framesToProcess;
+  auto remainingFrames = static_cast<int>(internalBufferIndex_ - framesToProcess);
   if (remainingFrames > 0) {
     for (size_t ch = 0; ch < internalBuffer_->getNumberOfChannels(); ++ch) {
       internalBuffer_->getChannel(ch)->copyWithin(framesToProcess, 0, remainingFrames);
@@ -142,7 +142,7 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
   if (processingBuffer->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([&, i] {
-        convolvers_[i].process(
+        convolvers_[i]->process(
             *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i));
       });
     }
@@ -158,7 +158,7 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([this, i, inputChannelMap, outputChannelMap, &processingBuffer] {
-        convolvers_[i].process(
+        convolvers_[i]->process(
             *processingBuffer->getChannel(inputChannelMap[i]),
             *intermediateBuffer_->getChannel(outputChannelMap[i]));
       });

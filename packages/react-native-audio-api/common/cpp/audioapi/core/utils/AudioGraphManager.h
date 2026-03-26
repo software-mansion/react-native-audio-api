@@ -1,8 +1,8 @@
 #pragma once
 
 #include <audioapi/core/utils/AudioDestructor.hpp>
-#include <audioapi/core/utils/Macros.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <concepts>
 #include <memory>

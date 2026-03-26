@@ -13,7 +13,6 @@ AudioNode::AudioNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioNodeOptions &options)
     : context_(context),
-      audioBuffer_(nullptr),
       numberOfInputs_(options.numberOfInputs),
       numberOfOutputs_(options.numberOfOutputs),
       channelCount_(options.channelCount),

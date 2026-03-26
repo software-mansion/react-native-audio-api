@@ -1,9 +1,9 @@
 #pragma once
 
-#include <audioapi/core/utils/Macros.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/pffft/pffft.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <complex>
 #include <vector>

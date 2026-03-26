@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/Macros.h>
+#include <audioapi/utils/Macros.h>
 #include <bit>
 #include <new>
 #include <type_traits>
@@ -170,8 +170,8 @@ class RingBiDirectionalBuffer {
 
  private:
   T *buffer_;
-  size_t headIndex_ = 0;
-  size_t tailIndex_ = 0;
+  size_t headIndex_{0};
+  size_t tailIndex_{0};
 
   /// @brief Get the next index in the buffer.
   /// @param n The current index.

@@ -2,11 +2,11 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/Macros.h>
 #include <audioapi/core/utils/worklets/WorkletsRunner.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 #include <jsi/jsi.h>
 
 #include <memory>

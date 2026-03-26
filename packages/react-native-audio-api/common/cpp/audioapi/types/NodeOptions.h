@@ -151,7 +151,7 @@ struct IIRFilterOptions : AudioNodeOptions {
 };
 
 struct WaveShaperOptions : AudioNodeOptions {
-  std::shared_ptr<AudioArrayBuffer> curve = nullptr;
+  std::shared_ptr<AudioArray> curve{nullptr};
   OverSampleType oversample = OverSampleType::OVERSAMPLE_NONE;
 
   WaveShaperOptions() {

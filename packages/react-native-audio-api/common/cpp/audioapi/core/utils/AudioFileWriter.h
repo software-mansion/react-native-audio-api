@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/Macros.h>
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>

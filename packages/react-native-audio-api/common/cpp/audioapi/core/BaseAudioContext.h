@@ -6,6 +6,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 
+#include <audioapi/utils/Macros.h>
 #include <atomic>
 #include <cassert>
 #include <complex>
@@ -54,10 +55,7 @@ struct WaveShaperOptions;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
-  BaseAudioContext(const BaseAudioContext &) = delete;
-  BaseAudioContext &operator=(const BaseAudioContext &) = delete;
-  BaseAudioContext(BaseAudioContext &&) = delete;
-  BaseAudioContext &operator=(BaseAudioContext &&) = delete;
+  DELETE_COPY_AND_MOVE(BaseAudioContext);
 
   explicit BaseAudioContext(
       float sampleRate,

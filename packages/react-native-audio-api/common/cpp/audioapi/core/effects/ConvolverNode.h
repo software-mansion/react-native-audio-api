@@ -27,7 +27,7 @@ class ConvolverNode : public AudioNode {
   /// @note Audio Thread only
   void setBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,
-      std::vector<Convolver> convolvers,
+      std::vector<std::unique_ptr<Convolver>> convolvers,
       const std::shared_ptr<ThreadPool> &threadPool,
       const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
       const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
@@ -58,7 +58,7 @@ class ConvolverNode : public AudioNode {
   // buffer to hold internal processed data
   std::shared_ptr<DSPAudioBuffer> internalBuffer_;
   // vectors of convolvers, one per channel
-  std::vector<Convolver> convolvers_;
+  std::vector<std::unique_ptr<Convolver>> convolvers_;
   std::shared_ptr<ThreadPool> threadPool_;
 
   void performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
