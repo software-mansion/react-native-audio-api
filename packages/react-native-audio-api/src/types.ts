@@ -181,6 +181,12 @@ export interface IConvolverOptions extends AudioNodeOptions {
   disableNormalization?: boolean;
 }
 
+export interface AudioFileSourceOptions extends AudioNodeOptions {
+  source: ArrayBuffer | string;
+  loop?: boolean;
+  volume?: number;
+}
+
 export interface ConstantSourceOptions {
   offset?: number;
 }

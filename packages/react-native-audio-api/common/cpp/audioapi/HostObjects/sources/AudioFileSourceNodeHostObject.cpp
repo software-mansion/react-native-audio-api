@@ -11,7 +11,10 @@ namespace audioapi {
 AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options)
-    : AudioNodeHostObject(context->createFileSource(options), options) {
+    : AudioNodeHostObject(context->createFileSource(options), options),
+      loop_(options.loop),
+      volume_(options.volume),
+      duration_(std::static_pointer_cast<AudioFileSourceNode>(node_)->getDuration()) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, loop),
@@ -35,23 +38,23 @@ AudioFileSourceNodeHostObject::~AudioFileSourceNodeHostObject() {
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
-  auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  return {node->getVolume()};
+  return {volume_};
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
   auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  node->setVolume(static_cast<float>(value.getNumber()));
+  volume_ = static_cast<float>(value.getNumber());
+  node->setVolume(volume_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, loop) {
-  auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  return {node->getLoop()};
+  return {loop_};
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, loop) {
   auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  node->setLoop(value.getBool());
+  loop_ = value.getBool();
+  node->setLoop(loop_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, currentTime) {
@@ -60,8 +63,7 @@ JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, currentTime) {
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, duration) {
-  auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  return {node->getDuration()};
+  return {duration_};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, start) {

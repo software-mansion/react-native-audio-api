@@ -4,16 +4,14 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-#include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
-#include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
-#include <audioapi/libs/miniaudio/miniaudio.h>
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/types/NodeOptions.h>
 
 #include <audioapi/core/AudioContext.h>
 
 #include <algorithm>
-#include <cmath>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -29,6 +27,8 @@ AudioFileSourceNode::AudioFileSourceNode(
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)),
       requiresFFmpeg_(options.requiresFFmpeg) {
+  volume_.store(options.volume, std::memory_order_release);
+  loop_.store(options.loop, std::memory_order_release);
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
@@ -101,53 +101,26 @@ void AudioFileSourceNode::initDecoders(
     bool useFilePath,
     const std::shared_ptr<BaseAudioContext> &context,
     const std::shared_ptr<AudioFileDecoderState> &state) {
+  bool ok = false;
   if (requiresFFmpeg_) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-    ffmpegdecoder::ffmpegDecoderConfigInit(&cfg, static_cast<int>(context->getSampleRate()));
-    bool result;
-    if (useFilePath) {
-      result = ffmpegDecoder_.openFile(cfg, state->filePath);
-    } else {
-      result = ffmpegDecoder_.openMemory(cfg, state->memoryData.data(), state->memoryData.size());
-    }
-    if (result) {
-      state->channels = ffmpegDecoder_.outputChannels();
-      state->sampleRate = static_cast<float>(ffmpegDecoder_.outputSampleRate());
-      duration_ = ffmpegDecoder_.getDurationInSeconds();
-    } else {
-      ffmpegDecoder_.close();
-    }
+    decoder_ = std::make_unique<ffmpegdecoder::FFmpegDecoder>();
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
   } else {
-    ma_decoder_config config =
-        ma_decoder_config_init(ma_format_f32, 0, static_cast<ma_uint32>(context->getSampleRate()));
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-    ma_decoding_backend_vtable *customBackends[] = {
-        ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
-    config.ppCustomBackendVTables = customBackends;
-    config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
-
-    maDecoder_ = std::make_unique<ma_decoder>();
-    ma_result result;
-    if (useFilePath) {
-      result = ma_decoder_init_file(state->filePath.c_str(), &config, maDecoder_.get());
-    } else {
-      result = ma_decoder_init_memory(
-          state->memoryData.data(), state->memoryData.size(), &config, maDecoder_.get());
-    }
-
-    if (result == MA_SUCCESS) {
-      state->channels = static_cast<int>(maDecoder_->outputChannels);
-      state->sampleRate = static_cast<float>(maDecoder_->outputSampleRate);
-      ma_uint64 length = 0;
-      if (ma_decoder_get_length_in_pcm_frames(maDecoder_.get(), &length) == MA_SUCCESS) {
-        duration_ = static_cast<double>(length) / state->sampleRate;
-      }
-    } else {
-      ma_decoder_uninit(maDecoder_.get());
-      maDecoder_.reset();
-    }
+    decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
+  }
+  if (useFilePath) {
+    ok = decoder_->openFile(context->getSampleRate(), state->filePath);
+  } else {
+    ok = decoder_->openMemory(
+        context->getSampleRate(), state->memoryData.data(), state->memoryData.size());
+  }
+  if (ok) {
+    state->channels = decoder_->outputChannels();
+    state->sampleRate = static_cast<float>(decoder_->outputSampleRate());
+    duration_ = static_cast<double>(decoder_->getDurationInSeconds());
+  } else {
+    decoder_->close();
   }
   state->interleavedBuffer.resize(static_cast<size_t>(RENDER_QUANTUM_SIZE) * state->channels);
   decoderState_ = state;
@@ -174,48 +147,18 @@ void AudioFileSourceNode::pause() {
 void AudioFileSourceNode::disable() {
   seekOffloader_.reset();
   filePaused_.store(false, std::memory_order_release);
-  if (requiresFFmpeg_) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    ffmpegDecoder_.close();
-#else
-    return;
-#endif
-  } else if (maDecoder_ != nullptr) {
-    ma_decoder_uninit(maDecoder_.get());
-    maDecoder_.reset();
-  }
+  decoder_->close();
 }
 
 size_t AudioFileSourceNode::readFrames(float *buf, size_t frameCount) {
   if (pendingOffloadedSeeks_.load(std::memory_order_acquire) > 0) {
     return 0;
   }
-  if (requiresFFmpeg_) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    return ffmpegDecoder_.readPcmFrames(buf, frameCount);
-#else
-    return 0;
-#endif
-  }
-  if (maDecoder_ == nullptr) {
-    return 0;
-  }
-  ma_uint64 framesRead = 0;
-  ma_decoder_read_pcm_frames(maDecoder_.get(), buf, frameCount, &framesRead);
-  return static_cast<size_t>(framesRead);
+  return decoder_->readPcmFrames(buf, frameCount);
 }
 
 bool AudioFileSourceNode::seekDecoderToTime(double seconds) {
-  bool seeked = false;
-  if (requiresFFmpeg_) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    seeked = ffmpegDecoder_.seekToTime(seconds);
-#endif
-  } else if (maDecoder_ != nullptr && sampleRate_ > 0) {
-    const auto frame = static_cast<ma_uint64>(std::llround(seconds * sampleRate_));
-    seeked = ma_decoder_seek_to_pcm_frame(maDecoder_.get(), frame) == MA_SUCCESS;
-  }
-  return seeked;
+  return decoder_->seekToTime(seconds);
 }
 
 void AudioFileSourceNode::applyPlaybackStateAfterSuccessfulSeek(double seconds) {
@@ -258,14 +201,8 @@ void AudioFileSourceNode::writeInterleavedToBuffer(
     processingBuffer->zero();
     return;
   }
-  auto numOutputChannels = static_cast<int>(processingBuffer->getNumberOfChannels());
-  for (size_t i = 0; i < frameCount; i++) {
-    for (int ch = 0; ch < numOutputChannels; ch++) {
-      int srcCh = ch < state.channels ? ch : state.channels - 1;
-      processingBuffer->getChannel(ch)->span()[destSampleOffset + i] =
-          vol * state.interleavedBuffer[i * state.channels + srcCh];
-    }
-  }
+  processingBuffer->deinterleaveFrom(state.interleavedBuffer.data(), frameCount);
+  processingBuffer->scale(vol);
 }
 
 size_t AudioFileSourceNode::handleEof(

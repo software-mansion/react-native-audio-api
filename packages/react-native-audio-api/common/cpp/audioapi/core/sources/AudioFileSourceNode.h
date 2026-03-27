@@ -4,7 +4,7 @@
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 #include <audioapi/utils/TaskOffloader.hpp>
 
 #include <atomic>
@@ -91,13 +91,9 @@ class AudioFileSourceNode : public AudioNode {
       const std::shared_ptr<AudioFileDecoderState> &state);
 
   std::shared_ptr<AudioFileDecoderState> decoderState_;
-  std::unique_ptr<ma_decoder> maDecoder_;
+  std::unique_ptr<decoding::IIncrementalAudioDecoder> decoder_;
   std::atomic<float> volume_;
   bool requiresFFmpeg_;
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-  ffmpegdecoder::FFmpegDecoder ffmpegDecoder_;
-  ffmpegdecoder::FFmpegDecoderConfig cfg;
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
   std::atomic<bool> filePaused_{false};
   std::atomic<bool> loop_{false};
   double duration_{0};

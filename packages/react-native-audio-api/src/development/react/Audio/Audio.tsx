@@ -88,7 +88,11 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       return;
     }
     const handle = fileSourceHandleRef.current;
-    const node = ctx.context.createFileSource(src);
+    const node = ctx.context.createFileSource({
+      source: src,
+      loop: loopRef.current,
+      volume: effectiveVolumeRef.current,
+    });
     if (!node) {
       throw new NotSupportedError('This file format requires FFmpeg build');
     }
@@ -132,7 +136,11 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       }
       loadedSourceRef.current = sourceArg;
       const handle = fileSourceHandleRef.current;
-      const node = context.context.createFileSource(sourceArg);
+      const node = context.context.createFileSource({
+        source: sourceArg,
+        loop: loopRef.current,
+        volume: effectiveVolumeRef.current,
+      });
       if (!node) {
         throw new NotSupportedError('This file format requires FFmpeg build');
       }

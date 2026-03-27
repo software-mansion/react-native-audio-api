@@ -23,6 +23,7 @@ import type {
   StereoPannerOptions,
   StreamerOptions,
   WaveShaperOptions,
+  AudioFileSourceOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -99,11 +100,11 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
-  createConvolver: (convolverOptions?: IConvolverOptions) => IConvolverNode;
+  createConvolver: (convolverOptions: IConvolverOptions) => IConvolverNode;
   createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
-  createWaveShaper: (waveShaperOptions?: WaveShaperOptions) => IWaveShaperNode;
+  createWaveShaper: (waveShaperOptions: WaveShaperOptions) => IWaveShaperNode;
   createFileSource: (
-    source: ArrayBuffer | string
+    audioFileOptions: AudioFileSourceOptions
   ) => IAudioFileSourceNode | null; // null when FFmpeg is not enabled, but needed
 }
 

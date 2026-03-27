@@ -254,39 +254,22 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
-  AudioFileSourceOptions options;
-  if (count > 0 && !args[0].isUndefined() && !args[0].isNull()) {
-    if (args[0].isString()) {
-      options.filePath = args[0].getString(runtime).utf8(runtime);
-      // ffmpeg decoded extensions
-      options.requiresFFmpeg =
-          AudioDecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
+  auto makeFileSourceHostObject = [&](AudioFileSourceOptions opts) -> jsi::Value {
 #if RN_AUDIO_API_FFMPEG_DISABLED
-      if (options.requiresFFmpeg) {
-        return jsi::Value::undefined();
-      }
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-    } else {
-      auto obj = args[0].asObject(runtime);
-      if (obj.isArrayBuffer(runtime)) {
-        auto arrayBuffer = obj.getArrayBuffer(runtime);
-        auto *data = arrayBuffer.data(runtime);
-        auto size = arrayBuffer.size(runtime);
-        auto format = AudioDecoder::detectAudioFormat(data, size);
-        options.requiresFFmpeg =
-            format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
-#if RN_AUDIO_API_FFMPEG_DISABLED
-        if (options.requiresFFmpeg) {
-          return jsi::Value::undefined();
-        }
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-        options.data = std::vector<uint8_t>(data, data + size);
-      }
+    if (opts.requiresFFmpeg) {
+      return jsi::Value::undefined();
     }
-  }
-  const auto fileSourceHostObject =
-      std::make_shared<AudioFileSourceNodeHostObject>(context_, options);
-  return jsi::Object::createFromHostObject(runtime, fileSourceHostObject);
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+    const auto fileSourceHostObject =
+        std::make_shared<AudioFileSourceNodeHostObject>(context_, opts);
+    return jsi::Object::createFromHostObject(runtime, fileSourceHostObject);
+  };
+
+  const auto options = args[0].asObject(runtime);
+
+  const auto fileSourceOptions =
+      audioapi::option_parser::parseAudioFileSourceOptions(runtime, options);
+  return makeFileSourceHostObject(fileSourceOptions);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {

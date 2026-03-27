@@ -148,20 +148,20 @@ bool FFmpegDecoder::setupSwr() {
   }
   av_channel_layout_uninit(&out_layout);
 
-  if (av_samples_alloc_array_and_samples(
+    if (av_samples_alloc_array_and_samples(
           &resampled_data_,
           nullptr,
           output_channels_,
-          FFmpegDecoder::CHUNK_SIZE,
+          decoding::IIncrementalAudioDecoder::CHUNK_SIZE,
           AV_SAMPLE_FMT_FLT,
           0) < 0) {
     return false;
   }
-  max_resampled_samples_ = FFmpegDecoder::CHUNK_SIZE;
+  max_resampled_samples_ = static_cast<int>(decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
   return true;
 }
 
-bool FFmpegDecoder::openFile(const FFmpegDecoderConfig &cfg, const std::string &path) {
+bool FFmpegDecoder::openFile(int outputSampleRate, const std::string &path) {
   close();
   if (path.empty()) {
     return false;
@@ -182,7 +182,7 @@ bool FFmpegDecoder::openFile(const FFmpegDecoderConfig &cfg, const std::string &
   }
   output_channels_ = codec_ctx_->ch_layout.nb_channels;
   output_sample_rate_ =
-      (cfg.outputSampleRate > 0) ? cfg.outputSampleRate : codec_ctx_->sample_rate;
+      (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
 
   packet_ = av_packet_alloc();
   frame_ = av_frame_alloc();
@@ -194,7 +194,10 @@ bool FFmpegDecoder::openFile(const FFmpegDecoderConfig &cfg, const std::string &
   return true;
 }
 
-bool FFmpegDecoder::openMemory(const FFmpegDecoderConfig &cfg, const void *data, size_t size) {
+bool FFmpegDecoder::openMemory(
+    int outputSampleRate,
+    const void *data,
+    size_t size) {
   close();
   if (data == nullptr || size == 0) {
     return false;
@@ -204,14 +207,15 @@ bool FFmpegDecoder::openMemory(const FFmpegDecoderConfig &cfg, const void *data,
   mem_io_->size = size;
   mem_io_->pos = 0;
 
-  auto* io_buf = static_cast<uint8_t *>(av_malloc(FFmpegDecoder::CHUNK_SIZE));
+  auto* io_buf =
+      static_cast<uint8_t *>(av_malloc(decoding::IIncrementalAudioDecoder::CHUNK_SIZE));
   if (io_buf == nullptr) {
     close();
     return false;
   }
   avio_ctx_ = avio_alloc_context(
     io_buf,
-    static_cast<int>(FFmpegDecoder::CHUNK_SIZE),
+    static_cast<int>(decoding::IIncrementalAudioDecoder::CHUNK_SIZE),
     0,
     mem_io_.get(),
     read_packet,
@@ -244,7 +248,7 @@ bool FFmpegDecoder::openMemory(const FFmpegDecoderConfig &cfg, const void *data,
   }
   output_channels_ = codec_ctx_->ch_layout.nb_channels;
   output_sample_rate_ =
-      (cfg.outputSampleRate > 0) ? cfg.outputSampleRate : codec_ctx_->sample_rate;
+      (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
 
   packet_ = av_packet_alloc();
   frame_ = av_frame_alloc();
@@ -429,26 +433,21 @@ static std::shared_ptr<AudioBuffer> buildAudioBufferFromInterleaved(
   }
   size_t frames = interleaved.size() / static_cast<size_t>(channels);
   auto buf = std::make_shared<AudioBuffer>(frames, channels, static_cast<float>(sample_rate));
-  for (int c = 0; c < channels; ++c) {
-    auto span = buf->getChannel(c)->span();
-    for (size_t i = 0; i < frames; ++i) {
-      span[i] = interleaved[i * static_cast<size_t>(channels) + static_cast<size_t>(c)];
-    }
-  }
+  buf->deinterleaveFrom(interleaved.data(), frames);
   return buf;
 }
 
 std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate) {
-  FFmpegDecoderConfig cfg;
-  ffmpegDecoderConfigInit(&cfg, sample_rate);
   FFmpegDecoder dec;
-  if (!dec.openFile(cfg, path)) {
+  if (!dec.openFile(sample_rate, path)) {
     return nullptr;
   }
   std::vector<float> acc;
-  std::vector<float> tmp(FFmpegDecoder::CHUNK_SIZE * static_cast<size_t>(std::max(1, dec.outputChannels())));
+  std::vector<float> tmp(
+      decoding::IIncrementalAudioDecoder::CHUNK_SIZE *
+      static_cast<size_t>(std::max(1, dec.outputChannels())));
   while (true) {
-    size_t n = dec.readPcmFrames(tmp.data(), FFmpegDecoder::CHUNK_SIZE);
+    size_t n = dec.readPcmFrames(tmp.data(), decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
     if (n == 0) {
       break;
     }
@@ -461,16 +460,16 @@ std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sam
 }
 
 std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
-  FFmpegDecoderConfig cfg;
-  ffmpegDecoderConfigInit(&cfg, sample_rate);
   FFmpegDecoder dec;
-  if (!dec.openMemory(cfg, data, size)) {
+  if (!dec.openMemory(sample_rate, data, size)) {
     return nullptr;
   }
   std::vector<float> acc;
-  std::vector<float> tmp(FFmpegDecoder::CHUNK_SIZE * static_cast<size_t>(std::max(1, dec.outputChannels())));
+  std::vector<float> tmp(
+      decoding::IIncrementalAudioDecoder::CHUNK_SIZE *
+      static_cast<size_t>(std::max(1, dec.outputChannels())));
   while (true) {
-    size_t n = dec.readPcmFrames(tmp.data(), FFmpegDecoder::CHUNK_SIZE);
+    size_t n = dec.readPcmFrames(tmp.data(), decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
     if (n == 0) {
       break;
     }
@@ -487,11 +486,12 @@ std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size
 #else
 
 namespace audioapi::ffmpegdecoder {
+FFmpegDecoder::~FFmpegDecoder() = default;
 void FFmpegDecoder::close() {}
-bool FFmpegDecoder::openFile(const FFmpegDecoderConfig &, const std::string &) {
+bool FFmpegDecoder::openFile(int, const std::string &) {
   return false;
 }
-bool FFmpegDecoder::openMemory(const FFmpegDecoderConfig &, const void *, size_t) {
+bool FFmpegDecoder::openMemory(int, const void *, size_t) {
   return false;
 }
 float FFmpegDecoder::getDurationInSeconds() const {

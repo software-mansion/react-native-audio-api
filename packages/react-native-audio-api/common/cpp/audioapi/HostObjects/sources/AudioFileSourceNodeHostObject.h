@@ -19,11 +19,12 @@ class AudioFileSourceNodeHostObject : public AudioNodeHostObject {
   ~AudioFileSourceNodeHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(volume);
-  JSI_PROPERTY_SETTER_DECL(volume);
   JSI_PROPERTY_GETTER_DECL(loop);
-  JSI_PROPERTY_SETTER_DECL(loop);
   JSI_PROPERTY_GETTER_DECL(currentTime);
   JSI_PROPERTY_GETTER_DECL(duration);
+
+  JSI_PROPERTY_SETTER_DECL(volume);
+  JSI_PROPERTY_SETTER_DECL(loop);
   JSI_PROPERTY_SETTER_DECL(onPositionChanged);
   JSI_PROPERTY_SETTER_DECL(onEnded);
 
@@ -38,6 +39,10 @@ class AudioFileSourceNodeHostObject : public AudioNodeHostObject {
 
   void setOnPositionChangedCallbackId(uint64_t callbackId);
   void setOnEndedCallbackId(uint64_t callbackId);
+
+  bool loop_;
+  double duration_;
+  float volume_;
 };
 
 } // namespace audioapi
