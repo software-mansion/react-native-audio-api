@@ -52,6 +52,7 @@ void DelayNode::delayBufferOperation(
     } else { // READ
       processingBuffer->sum(
           *delayBuffer_, operationStartingIndex, processingBufferStartIndex, framesToEnd);
+      delayBuffer_->zero(operationStartingIndex, framesToEnd);
     }
 
     operationStartingIndex = 0;
