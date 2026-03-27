@@ -13,6 +13,27 @@ const appsRoot = path.resolve(monorepoRoot, 'apps');
 const config = {
   projectRoot: __dirname,
   watchFolders: [monorepoRoot, appsRoot],
+  server: {
+    rewriteRequestUrl: (url) => {
+      if (!url.startsWith('/assets/../../')) {
+        return url;
+      }
+
+      // return url.replace('/assets/../../', '/');
+      const queryIndex = url.indexOf('?');
+      const pathname = queryIndex >= 0 ? url.substring(0, queryIndex) : url;
+      const query = queryIndex >= 0 ? url.substring(queryIndex) : '';
+      const separator = query ? '&' : '?';
+
+      const relPath = pathname.startsWith('/assets/')
+        ? pathname.substring('/assets/'.length)
+        : `../../${pathname}`;
+
+      const rewrittenUrl = `/assets${query}${separator}unstable_path=${encodeURIComponent(relPath)}`;
+
+      return rewrittenUrl;
+    },
+  },
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

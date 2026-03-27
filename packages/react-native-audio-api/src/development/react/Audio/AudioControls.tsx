@@ -1,4 +1,3 @@
-import { Pause, Volume, VolumeX } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,7 +9,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
 import { scheduleOnRN } from 'react-native-worklets';
 import Animated, {
   useAnimatedStyle,
@@ -19,7 +22,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useAudioTagContext } from './AudioTagContext';
 
-const PLAY_ICON = require('./icons/play.jpg');
+import PlayIcon from './icons/play.png';
+import PauseIcon from './icons/pause.png';
+import VolumeIcon from './icons/speaker.png';
+import MuteIcon from './icons/speaker-x.png';
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -238,12 +244,12 @@ const AudioControls: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topRow}>
+      <GestureHandlerRootView style={styles.topRow}>
         <Pressable style={styles.playPause} onPress={onPlayPausePress}>
           {playbackState === 'playing' ? (
-            <Pause color="#000" size={20} strokeWidth={2.5} />
+            <Image source={PauseIcon} style={{ width: 24, height: 24 }} />
           ) : (
-            <Image source={PLAY_ICON} style={{ width: 24, height: 24 }} />
+            <Image source={PlayIcon} style={{ width: 24, height: 24 }} />
           )}
         </Pressable>
 
@@ -270,12 +276,12 @@ const AudioControls: React.FC = () => {
 
         <Pressable style={styles.volumeIcon} onPress={() => setMuted(!muted)}>
           {muted ? (
-            <VolumeX color="#000" size={20} strokeWidth={2.5} />
+            <Image source={MuteIcon} style={{ width: 24, height: 24 }} />
           ) : (
-            <Volume color="#000" size={20} strokeWidth={2.5} />
+            <Image source={VolumeIcon} style={{ width: 24, height: 24 }} />
           )}
         </Pressable>
-      </View>
+      </GestureHandlerRootView>
     </View>
   );
 };
