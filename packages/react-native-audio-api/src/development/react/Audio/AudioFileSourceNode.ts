@@ -55,7 +55,7 @@ export class AudioFileSourceNode {
       this.node.connect(baseContext.destination.node);
       this.didConnectToDestination = true;
     }
-    this.node.start();
+    this.node.start(baseContext.currentTime);
   }
 
   pause(): void {

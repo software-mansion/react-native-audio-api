@@ -5,13 +5,14 @@
 #include <audioapi/types/NodeOptions.h>
 #include <memory>
 #include <utility>
+#include "audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h"
 
 namespace audioapi {
 
 AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options)
-    : AudioNodeHostObject(context->createFileSource(options), options),
+    : AudioScheduledSourceNodeHostObject(context->createFileSource(options), options),
       loop_(options.loop),
       volume_(options.volume),
       duration_(std::static_pointer_cast<AudioFileSourceNode>(node_)->getDuration()) {
@@ -44,7 +45,10 @@ JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
   auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
   volume_ = static_cast<float>(value.getNumber());
-  node->setVolume(volume_);
+  auto event = [node, volume = this->volume_](BaseAudioContext &ctx) {
+    node->setVolume(volume);
+  };
+  node->scheduleAudioEvent(std::move(event));
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, loop) {
@@ -54,7 +58,10 @@ JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, loop) {
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, loop) {
   auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
   loop_ = value.getBool();
-  node->setLoop(loop_);
+  auto event = [node, loop = this->loop_](BaseAudioContext &ctx) {
+    node->setLoop(loop);
+  };
+  node->scheduleAudioEvent(std::move(event));
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, currentTime) {
@@ -66,19 +73,12 @@ JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, duration) {
   return {duration_};
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, start) {
-  auto audioFileSourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  auto event = [audioFileSourceNode](BaseAudioContext &) {
-    audioFileSourceNode->start();
-  };
-  audioFileSourceNode->scheduleAudioEvent(std::move(event));
-
-  return jsi::Value::undefined();
-}
-
 JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, pause) {
   auto audioFileSourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  audioFileSourceNode->pause();
+  auto event = [audioFileSourceNode](BaseAudioContext &ctx) {
+    audioFileSourceNode->pause();
+  };
+  audioFileSourceNode->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
 }
 
@@ -112,11 +112,6 @@ void AudioFileSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t call
   sourceNode->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
   sourceNode->scheduleAudioEvent(std::move(event));
   onPositionChangedCallbackId_ = callbackId;
-}
-
-JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, onEnded) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnEndedCallbackId(callbackId);
 }
 
 void AudioFileSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackId) {

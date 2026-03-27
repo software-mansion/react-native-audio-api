@@ -232,18 +232,16 @@ export interface IAudioBufferQueueSourceNode
   onBufferEnded: string;
 }
 
-export interface IAudioFileSourceNode extends IAudioNode {
+export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   volume?: number;
   loop: boolean;
   readonly currentTime: number;
   readonly duration: number;
   pause: () => void;
-  start: () => void;
   seekToTime: (seconds: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onPositionChanged: string;
-  onEnded: string;
 }
 
 export interface IConvolverNode extends IAudioNode {

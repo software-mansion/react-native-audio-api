@@ -3,6 +3,7 @@
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -20,11 +21,7 @@ class MiniAudioDecoder : public decoding::IIncrementalAudioDecoder {
  public:
   MiniAudioDecoder();
   ~MiniAudioDecoder() override;
-
-  MiniAudioDecoder(const MiniAudioDecoder &) = delete;
-  MiniAudioDecoder &operator=(const MiniAudioDecoder &) = delete;
-  MiniAudioDecoder(MiniAudioDecoder &&) = delete;
-  MiniAudioDecoder &operator=(MiniAudioDecoder &&) = delete;
+  DELETE_COPY_AND_MOVE(MiniAudioDecoder);
 
   [[nodiscard]] bool openFile(
       int outputSampleRate,

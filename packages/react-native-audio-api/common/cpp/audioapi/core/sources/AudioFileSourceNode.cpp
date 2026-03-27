@@ -1,34 +1,33 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioFileSourceNode.h>
-#include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/types/NodeOptions.h>
 
 #include <audioapi/core/AudioContext.h>
 
 #include <algorithm>
-#include <cstdio>
+#include <cassert>
 #include <memory>
 #include <string>
 #include <unordered_map>
+
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 namespace audioapi {
 
 AudioFileSourceNode::AudioFileSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options)
-    : AudioNode(context, options),
-      audioEventHandlerRegistry_(context->getAudioEventHandlerRegistry()),
+    : AudioScheduledSourceNode(context, options),
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)),
-      requiresFFmpeg_(options.requiresFFmpeg) {
-  volume_.store(options.volume, std::memory_order_release);
-  loop_.store(options.loop, std::memory_order_release);
+      requiresFFmpeg_(options.requiresFFmpeg),
+      loop_(options.loop),
+      volume_(options.volume) {
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
@@ -65,16 +64,8 @@ void AudioFileSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackI
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
 }
 
-void AudioFileSourceNode::setOnEndedCallbackId(uint64_t callbackId) {
-  onEndedCallbackId_ = callbackId;
-}
-
-void AudioFileSourceNode::unregisterOnEndedCallback(uint64_t callbackId) {
-  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::ENDED, callbackId);
-}
-
-void AudioFileSourceNode::sendOnPositionChangedEvent(int samplesWritten) {
-  currentTime_.fetch_add(samplesWritten / sampleRate_);
+void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
+  currentTime_.fetch_add(framesPlayed / sampleRate_);
   if (onPositionChangedCallbackId_ != 0 &&
       (onPositionChangedFlush_.load(std::memory_order_acquire) ||
        onPositionChangedTime_ > onPositionChangedInterval_)) {
@@ -87,14 +78,7 @@ void AudioFileSourceNode::sendOnPositionChangedEvent(int samplesWritten) {
     onPositionChangedFlush_.store(false, std::memory_order_release);
   }
 
-  onPositionChangedTime_ += samplesWritten;
-}
-
-void AudioFileSourceNode::sendOnEndedEvent() {
-  if (onEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::ENDED, onEndedCallbackId_, {});
-  }
+  onPositionChangedTime_ += framesPlayed;
 }
 
 void AudioFileSourceNode::initDecoders(
@@ -110,10 +94,12 @@ void AudioFileSourceNode::initDecoders(
     decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
   }
   if (useFilePath) {
-    ok = decoder_->openFile(context->getSampleRate(), state->filePath);
+    ok = decoder_->openFile(static_cast<int>(context->getSampleRate()), state->filePath);
   } else {
     ok = decoder_->openMemory(
-        context->getSampleRate(), state->memoryData.data(), state->memoryData.size());
+        static_cast<int>(context->getSampleRate()),
+        state->memoryData.data(),
+        state->memoryData.size());
   }
   if (ok) {
     state->channels = decoder_->outputChannels();
@@ -128,26 +114,22 @@ void AudioFileSourceNode::initDecoders(
   sampleRate_ = decoderState_->sampleRate;
 }
 
-// Same as AudioScheduledSourceNode::start: start or resume the native engine
-void AudioFileSourceNode::start() {
-  filePaused_.store(false, std::memory_order_release);
-
-  if (std::shared_ptr<BaseAudioContext> ctx = context_.lock();
-      auto *audioContext = dynamic_cast<AudioContext *>(ctx.get())) {
-    if (audioContext->getState() != ContextState::RUNNING) {
-      audioContext->start();
-    }
-  }
+void AudioFileSourceNode::start(double when) {
+  AudioScheduledSourceNode::start(when);
+  filePaused_ = false;
 }
 
 void AudioFileSourceNode::pause() {
-  filePaused_.store(true, std::memory_order_release);
+  filePaused_ = true;
 }
 
 void AudioFileSourceNode::disable() {
   seekOffloader_.reset();
-  filePaused_.store(false, std::memory_order_release);
-  decoder_->close();
+  filePaused_ = false;
+  if (decoder_ != nullptr) {
+    decoder_->close();
+  }
+  AudioScheduledSourceNode::disable();
 }
 
 size_t AudioFileSourceNode::readFrames(float *buf, size_t frameCount) {
@@ -191,26 +173,24 @@ void AudioFileSourceNode::seekToTime(double seconds) {
   seekOffloader_->getSender()->send(OffloadedSeekRequest{seconds});
 }
 
-void AudioFileSourceNode::writeInterleavedToBuffer(
+void AudioFileSourceNode::writeInterleavedToBufferAtOffset(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     const AudioFileDecoderState &state,
-    size_t destSampleOffset,
-    size_t frameCount,
-    float vol) {
-  if (vol == 0) {
-    processingBuffer->zero();
+    size_t destFrameOffset,
+    size_t frameCount) const {
+  if (frameCount == 0 || volume_ == 0.0f) {
     return;
   }
   processingBuffer->deinterleaveFrom(state.interleavedBuffer.data(), frameCount);
-  processingBuffer->scale(vol);
+  processingBuffer->scale(volume_);
 }
 
 size_t AudioFileSourceNode::handleEof(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    size_t framesToProcess,
+    size_t regionFrames,
     size_t framesRead,
-    float vol) {
-  if (!loop_.load(std::memory_order_acquire)) {
+    size_t destFrameOffset) {
+  if (!loop_) {
     return framesRead;
   }
 
@@ -218,16 +198,16 @@ size_t AudioFileSourceNode::handleEof(
     return framesRead;
   }
 
-  size_t toFill = framesToProcess - framesRead;
+  const size_t toFill = regionFrames - framesRead;
   if (toFill == 0) {
     return framesRead;
   }
 
   auto &state = *decoderState_;
-  size_t extra = readFrames(state.interleavedBuffer.data(), toFill);
+  const size_t extra = readFrames(state.interleavedBuffer.data(), toFill);
 
-  if (vol != 0) {
-    writeInterleavedToBuffer(processingBuffer, state, framesRead, extra, vol);
+  if (volume_ != 0.0f) {
+    writeInterleavedToBufferAtOffset(processingBuffer, state, destFrameOffset + framesRead, extra);
   }
 
   return framesRead + extra;
@@ -236,7 +216,13 @@ size_t AudioFileSourceNode::handleEof(
 std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  if (decoderState_ == nullptr) {
+  if (decoderState_ == nullptr || decoder_ == nullptr || !decoder_->isOpen()) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
+
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
     processingBuffer->zero();
     return processingBuffer;
   }
@@ -246,34 +232,54 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     return processingBuffer;
   }
 
-  if (filePaused_.load(std::memory_order_acquire)) {
+  if (filePaused_) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
+
+  size_t startOffset = 0;
+  size_t offsetLength = 0;
+  updatePlaybackInfo(
+      processingBuffer,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
+
+  if (!isPlaying() && !isStopScheduled()) {
     processingBuffer->zero();
     return processingBuffer;
   }
 
   auto &state = *decoderState_;
 
-  size_t framesRead = readFrames(state.interleavedBuffer.data(), framesToProcess);
+  size_t framesRead = readFrames(state.interleavedBuffer.data(), offsetLength);
   sendOnPositionChangedEvent(static_cast<int>(framesRead));
 
-  const float vol = volume_.load(std::memory_order_acquire);
-  writeInterleavedToBuffer(processingBuffer, state, 0, framesRead, vol);
+  if (volume_ != 0.0f && framesRead > 0) {
+    writeInterleavedToBufferAtOffset(processingBuffer, state, startOffset, framesRead);
+  }
 
-  if (framesRead < framesToProcess) {
-    if (!loop_.load(std::memory_order_acquire)) {
-      sendOnEndedEvent();
-      // if duration is not properly estimated, skip to the end
+  if (framesRead < offsetLength) {
+    if (!loop_) {
       currentTime_.store(duration_, std::memory_order_release);
       onPositionChangedFlush_.store(true, std::memory_order_release);
-      sendOnPositionChangedEvent(static_cast<int>(framesToProcess - framesRead));
-      filePaused_.store(true);
-      processingBuffer->zero(framesRead, framesToProcess - framesRead);
-      return processingBuffer;
+      sendOnPositionChangedEvent(static_cast<int>(offsetLength - framesRead));
+      filePaused_ = true;
+      playbackState_ = PlaybackState::STOP_SCHEDULED;
+      processingBuffer->zero(startOffset + framesRead, offsetLength - framesRead);
+    } else {
+      const size_t totalFilled = handleEof(processingBuffer, offsetLength, framesRead, startOffset);
+      onPositionChangedFlush_.store(true, std::memory_order_release);
+      currentTime_.store(0, std::memory_order_release);
+      sendOnPositionChangedEvent(static_cast<int>(totalFilled));
+      processingBuffer->zero(startOffset + totalFilled, offsetLength - totalFilled);
     }
-    size_t totalFilled = handleEof(processingBuffer, framesToProcess, framesRead, vol);
-    onPositionChangedFlush_.store(true, std::memory_order_release);
-    sendOnPositionChangedEvent(static_cast<int>(totalFilled));
-    processingBuffer->zero(totalFilled, framesToProcess - totalFilled);
+  }
+
+  if (isStopScheduled()) {
+    handleStopScheduled();
   }
 
   return processingBuffer;

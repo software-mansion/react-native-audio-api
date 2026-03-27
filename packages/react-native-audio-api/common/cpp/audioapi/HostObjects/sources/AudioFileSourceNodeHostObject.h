@@ -1,7 +1,6 @@
 #pragma once
 
-#include <audioapi/HostObjects/AudioNodeHostObject.h>
-
+#include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
 #include <memory>
 
 namespace audioapi {
@@ -10,7 +9,7 @@ using namespace facebook;
 struct AudioFileSourceOptions;
 class BaseAudioContext;
 
-class AudioFileSourceNodeHostObject : public AudioNodeHostObject {
+class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit AudioFileSourceNodeHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
@@ -26,10 +25,8 @@ class AudioFileSourceNodeHostObject : public AudioNodeHostObject {
   JSI_PROPERTY_SETTER_DECL(volume);
   JSI_PROPERTY_SETTER_DECL(loop);
   JSI_PROPERTY_SETTER_DECL(onPositionChanged);
-  JSI_PROPERTY_SETTER_DECL(onEnded);
 
   JSI_HOST_FUNCTION_DECL(pause);
-  JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(seekToStart);
   JSI_HOST_FUNCTION_DECL(seekToTime);
 

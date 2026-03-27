@@ -1,6 +1,8 @@
 #pragma once
 #include <cstddef>
 #include <string>
+#include <audioapi/utils/Macros.h>
+
 namespace audioapi::decoding {
 /**
  * Incremental PCM decoder: openFile or openMemory → readPcmFrames in a loop → close.
@@ -10,9 +12,8 @@ class IIncrementalAudioDecoder {
  public:
   static constexpr size_t CHUNK_SIZE = 4096;
   IIncrementalAudioDecoder() = default;
-  IIncrementalAudioDecoder(const IIncrementalAudioDecoder &) = delete;
-  IIncrementalAudioDecoder &operator=(const IIncrementalAudioDecoder &) = delete;
   virtual ~IIncrementalAudioDecoder() = default;
+  DELETE_COPY_AND_MOVE(IIncrementalAudioDecoder);
 
   /// @brief Opens a file for decoding.
   /// @param outputSampleRate The output sample rate.
