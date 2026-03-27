@@ -14,6 +14,7 @@ namespace audioapi::dsp {
   return static_cast<double>(sampleFrame) / sampleRate;
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) -- function, not variable
 [[nodiscard]] inline float linearInterpolate(
     std::span<const float> source,
     size_t firstIndex,
@@ -28,11 +29,14 @@ namespace audioapi::dsp {
 }
 
 [[nodiscard]] inline float linearToDecibels(float value) {
-  return 20.0f * log10f(value);
+  constexpr float kDecibelsLinearFactor = 20.0f;
+  return kDecibelsLinearFactor * log10f(value);
 }
 
 [[nodiscard]] inline float decibelsToLinear(float value) {
-  return static_cast<float>(pow(10, value / 20));
+  constexpr float kDecibelsDenominator = 20.0f;
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+  return static_cast<float>(pow(10, value / kDecibelsDenominator));
 }
 
 } // namespace audioapi::dsp

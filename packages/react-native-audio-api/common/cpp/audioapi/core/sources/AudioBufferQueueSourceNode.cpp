@@ -132,26 +132,6 @@ void AudioBufferQueueSourceNode::unregisterOnBufferEndedCallback(uint64_t callba
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, callbackId);
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioBufferQueueSourceNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
-  // no audio data to fill, zero the output and return.
-  if (buffers_.empty()) {
-    processingBuffer->zero();
-    return processingBuffer;
-  }
-
-  if (!pitchCorrection_) {
-    processWithoutPitchCorrection(processingBuffer, framesToProcess);
-  } else {
-    processWithPitchCorrection(processingBuffer, framesToProcess);
-  }
-
-  handleStopScheduled();
-
-  return processingBuffer;
-}
-
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
   return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), getContextSampleRate()) +
       playedBuffersDuration_;
@@ -171,6 +151,11 @@ void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool is
  * Helper functions
  */
 
+bool AudioBufferQueueSourceNode::isEmpty() const {
+  return buffers_.empty();
+}
+
+// todo: refactor so its less complex and more readable
 void AudioBufferQueueSourceNode::processWithoutInterpolation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
@@ -236,6 +221,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
   }
 }
 
+// todo: refactor so its less complex and more readable
 void AudioBufferQueueSourceNode::processWithInterpolation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
@@ -302,8 +288,8 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
           break;
         }
 
+        vReadIndex_ = vReadIndex_ - static_cast<double>(buffer->getSize());
         context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer));
-        vReadIndex_ = vReadIndex_ - buffer->getSize();
         data = buffers_.front();
         bufferId = data.first;
         buffer = data.second;

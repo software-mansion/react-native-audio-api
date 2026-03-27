@@ -23,7 +23,7 @@ class DelayNode : public AudioNode {
 
  private:
   void onInputDisabled() override;
-  enum class BufferAction { READ, WRITE };
+  enum class BufferAction : uint8_t { READ, WRITE };
   void delayBufferOperation(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,

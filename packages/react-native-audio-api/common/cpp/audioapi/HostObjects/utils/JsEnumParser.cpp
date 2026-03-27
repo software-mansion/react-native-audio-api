@@ -3,6 +3,8 @@
 
 namespace audioapi::js_enum_parser {
 
+// NOLINTBEGIN(readability-braces-around-statements)
+
 BiquadFilterType filterTypeFromString(const std::string &type) {
   if (type == "lowpass")
     return BiquadFilterType::LOWPASS;
@@ -187,3 +189,5 @@ std::string channelInterpretationToString(ChannelInterpretation interpretation) 
   }
 }
 } // namespace audioapi::js_enum_parser
+
+// NOLINTEND(readability-braces-around-statements)

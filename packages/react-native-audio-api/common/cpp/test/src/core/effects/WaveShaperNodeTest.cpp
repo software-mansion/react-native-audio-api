@@ -11,6 +11,8 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
+
 class WaveShaperNodeTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
@@ -75,3 +77,5 @@ TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
   EXPECT_FLOAT_EQ(resultData[3], 1.0f);
   EXPECT_FLOAT_EQ(resultData[4], curveData[2]);
 }
+
+// NOLINTEND

@@ -7,9 +7,8 @@
 namespace audioapi {
 
 AudioEventHandlerRegistryHostObject::AudioEventHandlerRegistryHostObject(
-    const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry) {
-  eventHandlerRegistry_ = eventHandlerRegistry;
-
+    const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry)
+    : eventHandlerRegistry_(eventHandlerRegistry) {
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, addAudioEventListener),
       JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, removeAudioEventListener));

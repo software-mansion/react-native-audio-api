@@ -12,15 +12,14 @@ namespace audioapi {
 OscillatorNode::OscillatorNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const OscillatorOptions &options)
-    : AudioScheduledSourceNode(context, options) {
+    : AudioScheduledSourceNode(context, options), type_(options.type) {
   frequencyParam_ = std::make_shared<AudioParam>(
       options.frequency, -getNyquistFrequency(), getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
       options.detune,
-      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      -static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
-  type_ = options.type;
   if (options.periodicWave) {
     periodicWave_ = options.periodicWave;
   } else {

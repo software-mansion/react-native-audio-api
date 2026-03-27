@@ -10,6 +10,8 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
+
 class GainTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
@@ -80,3 +82,5 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(1))[i], (-i - 1) * GAIN_VALUE);
   }
 }
+
+// NOLINTEND

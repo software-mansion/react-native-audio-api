@@ -65,6 +65,8 @@ void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t
   });
 }
 
+// todo: refactor this method to be less complex and more readable
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     AudioEvent eventName,
     const std::unordered_map<std::string, EventValue> &body) {
@@ -122,6 +124,8 @@ void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
   });
 }
 
+// todo: refactor this method to be less complex and more readable
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     AudioEvent eventName,
     uint64_t listenerId,
@@ -193,7 +197,7 @@ jsi::Object AudioEventHandlerRegistry::createEventObject(
   auto eventObject = jsi::Object(*runtime_);
 
   for (const auto &pair : body) {
-    const auto name = pair.first.data();
+    const auto *name = pair.first.data();
     const auto &value = pair.second;
 
     if (std::holds_alternative<int>(value)) {

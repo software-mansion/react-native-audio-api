@@ -2,8 +2,8 @@
 
 #include <audioapi/core/utils/AudioDestructor.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/SpscChannel.hpp>
-
 #include <concepts>
 #include <memory>
 #include <utility>
@@ -26,9 +26,9 @@ concept HasCleanupMethod = requires(T t) {
 
 class AudioGraphManager {
  public:
-  enum class ConnectionType { CONNECT, DISCONNECT, DISCONNECT_ALL, ADD };
-  typedef ConnectionType EventType; // for backwards compatibility
-  enum class EventPayloadType { NODES, PARAMS, SOURCE_NODE, AUDIO_PARAM, NODE };
+  enum class ConnectionType : uint8_t { CONNECT, DISCONNECT, DISCONNECT_ALL, ADD };
+  using EventType = ConnectionType; // for backwards compatibility
+  enum class EventPayloadType : uint8_t { NODES, PARAMS, SOURCE_NODE, AUDIO_PARAM, NODE };
   union EventPayload {
     struct {
       std::shared_ptr<AudioNode> from;
@@ -49,17 +49,18 @@ class AudioGraphManager {
     ~EventPayload() {}
   };
   struct Event {
-    EventType type;
-    EventPayloadType payloadType;
+    EventType type = ConnectionType::CONNECT;
+    EventPayloadType payloadType = EventPayloadType::NODES;
     EventPayload payload;
 
     Event(Event &&other) noexcept;
     Event &operator=(Event &&other) noexcept;
-    Event() : type(ConnectionType::CONNECT), payloadType(EventPayloadType::NODES), payload() {}
+    Event() = default;
     ~Event();
   };
 
   AudioGraphManager();
+  DELETE_COPY_AND_MOVE(AudioGraphManager);
   ~AudioGraphManager();
 
   void preProcessGraph();
@@ -127,19 +128,19 @@ class AudioGraphManager {
   channels::spsc::Sender<AUDIO_GRAPH_MANAGER_SPSC_OPTIONS> sender_;
 
   void settlePendingConnections();
-  void handleConnectEvent(std::unique_ptr<Event> event);
-  void handleDisconnectEvent(std::unique_ptr<Event> event);
-  void handleDisconnectAllEvent(std::unique_ptr<Event> event);
+  static void handleConnectEvent(std::unique_ptr<Event> event);
+  static void handleDisconnectEvent(std::unique_ptr<Event> event);
+  static void handleDisconnectAllEvent(std::unique_ptr<Event> event);
   void handleAddToDeconstructionEvent(std::unique_ptr<Event> event);
 
   template <typename U>
-  inline static bool canBeDestructed(const std::shared_ptr<U> &object) {
+  static bool canBeDestructed(const std::shared_ptr<U> &object) {
     return object.use_count() == 1;
   }
 
   template <typename U>
     requires std::derived_from<U, AudioNode>
-  inline static bool canBeDestructed(std::shared_ptr<U> const &node) {
+  static bool canBeDestructed(std::shared_ptr<U> const &node) {
     // If the node is an AudioScheduledSourceNode, we need to check if it is
     // playing
     if constexpr (std::is_base_of_v<AudioScheduledSourceNode, U>) {

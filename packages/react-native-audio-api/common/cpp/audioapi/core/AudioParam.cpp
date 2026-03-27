@@ -18,7 +18,6 @@ AudioParam::AudioParam(
       defaultValue_(defaultValue),
       minValue_(minValue),
       maxValue_(maxValue),
-      eventsQueue_(),
       startTime_(0),
       endTime_(0),
       startValue_(defaultValue),
@@ -115,6 +114,10 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
   // Exponential curve function using power law
   auto calculateValue =
       [](double startTime, double endTime, float startValue, float endValue, double time) {
+        if (startValue * endValue < 0 || startValue == 0) {
+          return startValue;
+        }
+
         if (time < startTime) {
           return startValue;
         }
@@ -143,6 +146,10 @@ void AudioParam::setTargetAtTime(float target, double startTime, double timeCons
   // Exponential decay function towards target value
   auto calculateValue = [timeConstant, target](
                             double startTime, double, float startValue, float, double time) {
+    if (timeConstant == 0) {
+      return target;
+    }
+
     if (time < startTime) {
       return startValue;
     }
@@ -236,16 +243,17 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
+  if (context == nullptr) {
     return processingBuffer;
+  }
   float sampleRate = context->getSampleRate();
   auto bufferData = processingBuffer->getChannel(0)->span();
-  float timeCache = time;
+  double timeCache = time;
   float timeStep = 1.0f / sampleRate;
   float sample = 0.0f;
 
   // Add automated parameter value to each sample
-  for (size_t i = 0; i < framesToProcess; i++, timeCache += timeStep) {
+  for (int i = 0; i < framesToProcess; i++, timeCache += timeStep) {
     sample = getValueAtTime(timeCache);
     bufferData[i] += sample;
   }
@@ -264,8 +272,7 @@ void AudioParam::processInputs(
     const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
-    auto inputNode = *it;
+  for (auto *inputNode : inputNodes_) {
     assert(inputNode != nullptr);
 
     if (!inputNode->isEnabled()) {

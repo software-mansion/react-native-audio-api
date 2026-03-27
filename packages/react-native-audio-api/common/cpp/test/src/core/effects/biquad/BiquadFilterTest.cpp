@@ -6,6 +6,8 @@
 
 namespace audioapi {
 
+// NOLINTBEGIN
+
 void BiquadFilterTest::expectCoefficientsNear(
     const BiquadFilterNode::FilterCoefficients &actual,
     const BiquadCoefficients &expected) {
@@ -257,3 +259,5 @@ TEST_F(BiquadFilterTest, GetFrequencyResponse) {
 }
 
 } // namespace audioapi
+
+// NOLINTEND

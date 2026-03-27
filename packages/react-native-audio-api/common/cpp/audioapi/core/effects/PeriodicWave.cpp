@@ -33,20 +33,23 @@
 #include <memory>
 #include <vector>
 
+// NOLINTBEGIN(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
+
 constexpr unsigned NumberOfOctaveBands = 3;
-constexpr float CentsPerRange = 1200.0f / NumberOfOctaveBands;
+constexpr float CentsPerRange = static_cast<float>(audioapi::OCTAVE_RANGE) / NumberOfOctaveBands;
 constexpr float interpolate2Point = 0.3;
 constexpr float interpolate3Point = 0.16;
 
 namespace audioapi {
 PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
-    : sampleRate_(sampleRate), disableNormalization_(disableNormalization) {
-  numberOfRanges_ = static_cast<int>(
-      round(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))));
-  auto nyquistFrequency = sampleRate_ / 2;
-  lowestFundamentalFrequency_ =
-      static_cast<float>(nyquistFrequency) / static_cast<float>(getMaxNumberOfPartials());
-  scale_ = static_cast<float>(getPeriodicWaveSize()) / static_cast<float>(sampleRate_);
+    : sampleRate_(sampleRate),
+      disableNormalization_(disableNormalization),
+      numberOfRanges_(
+          static_cast<int>(
+              round(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))))),
+      lowestFundamentalFrequency_(
+          static_cast<float>(sampleRate_ / 2) / static_cast<float>(getMaxNumberOfPartials())),
+      scale_(static_cast<float>(getPeriodicWaveSize()) / sampleRate_) {
   bandLimitedTables_ =
       std::make_unique<DSPAudioBuffer>(getPeriodicWaveSize(), numberOfRanges_, sampleRate_);
 
@@ -102,7 +105,7 @@ int PeriodicWave::getNumberOfPartialsPerRange(int rangeIndex) const {
   auto centsToCull = static_cast<float>(rangeIndex) * CentsPerRange;
 
   // A value from 0 -> 1 representing what fraction of the partials to keep.
-  auto cullingScale = std::pow(2, -centsToCull / 1200);
+  auto cullingScale = std::pow(2, -centsToCull / OCTAVE_RANGE);
 
   // The very top range will have all the partials culled.
   int numberOfPartials =
@@ -134,17 +137,17 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
     // https://mathworld.wolfram.com/FourierSeries.html
 
     // Coefficient for sin()
-    float b;
+    float coeff{};
 
     auto piFactor = 1.0f / (PI * static_cast<float>(i));
 
     switch (type) {
       case OscillatorType::SINE:
-        b = (i == 1) ? 1.0f : 0.0f;
+        coeff = (i == 1) ? 1.0f : 0.0f;
         break;
       case OscillatorType::SQUARE:
         // https://mathworld.wolfram.com/FourierSeriesSquareWave.html
-        b = ((i & 1) == 1) ? 4 * piFactor : 0.0f;
+        coeff = ((i & 1) == 1) ? 4 * piFactor : 0.0f;
         break;
       case OscillatorType::SAWTOOTH:
         // https://mathworld.wolfram.com/FourierSeriesSawtoothWave.html - our
@@ -152,21 +155,21 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
         // similar. our function - f(x) = 2(x / (2 * pi) - floor(x / (2 * pi) +
         // 0.5)));
         // https://www.wolframalpha.com/input?i=2%28x+%2F+%282+*+pi%29+-+floor%28x+%2F+%282+*+pi%29+%2B+0.5%29%29%29%3B
-        b = 2 * piFactor * ((i & 1) == 1 ? 1.0f : -1.0f);
+        coeff = 2 * piFactor * ((i & 1) == 1 ? 1.0f : -1.0f);
         break;
       case OscillatorType::TRIANGLE:
         // https://mathworld.wolfram.com/FourierSeriesTriangleWave.html
         if ((i & 1) == 1) {
-          b = 8.0f * piFactor * piFactor * ((i & 3) == 1 ? 1.0f : -1.0f);
+          coeff = 8.0f * piFactor * piFactor * ((i & 3) == 1 ? 1.0f : -1.0f);
         } else {
-          b = 0.0f;
+          coeff = 0.0f;
         }
         break;
       case OscillatorType::CUSTOM:
         throw std::invalid_argument("Custom waveforms are not supported.");
     }
 
-    complexData[i] = std::complex<float>(0.0f, b);
+    complexData[i] = std::complex<float>(0.0f, coeff);
   }
 
   createBandLimitedTables(complexData, halfSize);
@@ -207,7 +210,7 @@ void PeriodicWave::createBandLimitedTables(
     // Zero out the DC and nquist components.
     complexFFTData[0] = {0.0f, 0.0f};
 
-    auto channel = bandLimitedTables_->getChannel(rangeIndex);
+    auto *channel = bandLimitedTables_->getChannel(rangeIndex);
 
     // Perform the inverse FFT to get the time domain representation of the
     // band-limited waveform.
@@ -245,9 +248,10 @@ WaveTableSource PeriodicWave::getWaveDataForFundamentalFrequency(float fundament
   // get the wave data for the lower and higher range index.
   // calculate the interpolation factor between the lower and higher range data.
   return {
-      bandLimitedTables_->getChannel(lowerRangeIndex),
-      bandLimitedTables_->getChannel(higherRangeIndex),
-      pitchRange - static_cast<float>(lowerRangeIndex)};
+      .lower = bandLimitedTables_->getChannel(lowerRangeIndex),
+      .higher = bandLimitedTables_->getChannel(higherRangeIndex),
+      .interpolationFactor = pitchRange - static_cast<float>(lowerRangeIndex),
+  };
 }
 
 float PeriodicWave::doInterpolation(
@@ -266,12 +270,9 @@ float PeriodicWave::doInterpolation(
   auto factor = phase - static_cast<float>(index);
 
   if (phaseIncrement >= interpolate2Point) { // linear interpolation
-    int indices[2];
-
-    for (int i = 0; i < 2; i++) {
-      indices[i] = (index + i) &
-          (getPeriodicWaveSize() - 1); // more efficient alternative to % getPeriodicWaveSize()
-    }
+    auto indices = std::array<int, 2>{};
+    indices[0] = (index + 0) & (getPeriodicWaveSize() - 1);
+    indices[1] = (index + 1) & (getPeriodicWaveSize() - 1);
 
     auto lowerWaveDataSample1 = lowerWaveData[indices[0]];
     auto lowerWaveDataSample2 = lowerWaveData[indices[1]];
@@ -282,13 +283,13 @@ float PeriodicWave::doInterpolation(
     higherWaveDataSample = (1 - factor) * higherWaveDataSample1 + factor * higherWaveDataSample2;
   } else if (phaseIncrement >= interpolate3Point) { // 3-point Lagrange
                                                     // interpolation
-    int indices[3];
+    auto indices = std::array<int, 3>{};
 
     for (int i = 0; i < 3; i++) {
       indices[i] = (index + i - 1) & (getPeriodicWaveSize() - 1);
     }
 
-    float A[3];
+    auto A = std::array<float, 3>{};
 
     A[0] = factor * (factor - 1) / 2;
     A[1] = 1 - factor * factor;
@@ -299,13 +300,13 @@ float PeriodicWave::doInterpolation(
       higherWaveDataSample += higherWaveData[indices[i]] * A[i];
     }
   } else { // 5-point Lagrange interpolation
-    int indices[5];
+    auto indices = std::array<int, 5>{};
 
     for (int i = 0; i < 5; i++) {
       indices[i] = (index + i - 2) & (getPeriodicWaveSize() - 1);
     }
 
-    float A[5];
+    auto A = std::array<float, 5>{};
 
     A[0] = factor * (factor * factor - 1) * (factor - 2) / 24;
     A[1] = -factor * (factor - 1) * (factor * factor - 4) / 6;
@@ -322,3 +323,5 @@ float PeriodicWave::doInterpolation(
   return std::lerp(higherWaveDataSample, lowerWaveDataSample, waveTableInterpolationFactor);
 }
 } // namespace audioapi
+
+// NOLINTEND(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)

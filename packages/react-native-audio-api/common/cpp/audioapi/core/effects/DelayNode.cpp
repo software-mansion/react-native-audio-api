@@ -30,7 +30,7 @@ void DelayNode::onInputDisabled() {
   numberOfEnabledInputNodes_ -= 1;
   if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
     signalledToStop_ = true;
-    remainingFrames_ = delayTimeParam_->getValue() * getContextSampleRate();
+    remainingFrames_ = static_cast<int>(delayTimeParam_->getValue() * getContextSampleRate());
   }
 }
 
@@ -43,7 +43,8 @@ void DelayNode::delayBufferOperation(
 
   // handle buffer wrap around
   if (operationStartingIndex + framesToProcess > delayBuffer_->getSize()) {
-    int framesToEnd = operationStartingIndex + framesToProcess - delayBuffer_->getSize();
+    int framesToEnd =
+        static_cast<int>(operationStartingIndex + framesToProcess - delayBuffer_->getSize());
 
     if (action == BufferAction::WRITE) {
       delayBuffer_->sum(
@@ -100,7 +101,8 @@ std::shared_ptr<DSPAudioBuffer> DelayNode::processNode(
   }
 
   auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context->getCurrentTime());
-  size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context->getSampleRate()) %
+  size_t writeIndex =
+      static_cast<size_t>(static_cast<float>(readIndex_) + delayTime * context->getSampleRate()) %
       delayBuffer_->getSize();
   delayBufferOperation(
       processingBuffer, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);

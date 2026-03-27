@@ -40,9 +40,8 @@ IIRFilterNode::IIRFilterNode(
     : AudioNode(context, options),
       feedforward_(createNormalizedArray(options.feedforward, options.feedback[0])),
       feedback_(createNormalizedArray(options.feedback, options.feedback[0])),
-      xBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
-      yBuffers_(bufferLength, MAX_CHANNEL_COUNT, context->getSampleRate()),
-      bufferIndices_(bufferLength) {
+      xBuffers_(BUFFER_LENGTH, MAX_CHANNEL_COUNT, context->getSampleRate()),
+      yBuffers_(BUFFER_LENGTH, MAX_CHANNEL_COUNT, context->getSampleRate()) {
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -83,12 +82,14 @@ void IIRFilterNode::getFrequencyResponse(
     float omega = -PI * normalizedFreq;
     auto z = std::complex<float>(std::cos(omega), std::sin(omega));
 
-    auto numerator = IIRFilterNode::evaluatePolynomial(feedforward_, z, feedforward_.getSize() - 1);
-    auto denominator = IIRFilterNode::evaluatePolynomial(feedback_, z, feedback_.getSize() - 1);
+    auto numerator = IIRFilterNode::evaluatePolynomial(
+        feedforward_, z, static_cast<int>(feedforward_.getSize() - 1));
+    auto denominator =
+        IIRFilterNode::evaluatePolynomial(feedback_, z, static_cast<int>(feedback_.getSize() - 1));
     auto response = numerator / denominator;
 
-    magResponseOutput[k] = static_cast<float>(std::abs(response));
-    phaseResponseOutput[k] = static_cast<float>(atan2(imag(response), real(response)));
+    magResponseOutput[k] = std::abs(response);
+    phaseResponseOutput[k] = atan2(imag(response), real(response));
   }
 }
 
@@ -100,13 +101,13 @@ void IIRFilterNode::getFrequencyResponse(
 std::shared_ptr<DSPAudioBuffer> IIRFilterNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  int numChannels = processingBuffer->getNumberOfChannels();
+  auto numChannels = static_cast<int>(processingBuffer->getNumberOfChannels());
 
   size_t feedforwardLength = feedforward_.getSize();
   size_t feedbackLength = feedback_.getSize();
-  int minLength = std::min(feedbackLength, feedforwardLength);
+  auto minLength = static_cast<size_t>(std::min(feedbackLength, feedforwardLength));
 
-  int mask = bufferLength - 1;
+  constexpr int mask = BUFFER_LENGTH - 1;
 
   for (int c = 0; c < numChannels; ++c) {
     auto channel = processingBuffer->getChannel(c)->subSpan(framesToProcess);
@@ -114,25 +115,27 @@ std::shared_ptr<DSPAudioBuffer> IIRFilterNode::processNode(
     auto &x = xBuffers_[c];
     auto &y = yBuffers_[c];
     size_t bufferIndex = bufferIndices_[c];
+    size_t k;
 
     for (float &sample : channel) {
       const float x_n = sample;
       float y_n = feedforward_[0] * sample;
 
-      for (int k = 1; k < minLength; ++k) {
-        int m = (bufferIndex - k) & mask;
+      for (k = 1; k < minLength; ++k) {
+        size_t m = (bufferIndex - k) & mask;
         y_n = std::fma(feedforward_[k], x[m], y_n);
         y_n = std::fma(-feedback_[k], y[m], y_n);
       }
 
-      for (int k = minLength; k < feedforwardLength; ++k) {
+      for (k = minLength; k < feedforwardLength; ++k) {
         y_n = std::fma(feedforward_[k], x[(bufferIndex - k) & mask], y_n);
       }
-      for (int k = minLength; k < feedbackLength; ++k) {
-        y_n = std::fma(-feedback_[k], y[(bufferIndex - k) & (bufferLength - 1)], y_n);
+      for (k = minLength; k < feedbackLength; ++k) {
+        y_n = std::fma(-feedback_[k], y[(bufferIndex - k) & (BUFFER_LENGTH - 1)], y_n);
       }
 
       // Avoid denormalized numbers
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       if (std::abs(y_n) < 1e-15f) {
         y_n = 0.0f;
       }
@@ -142,7 +145,7 @@ std::shared_ptr<DSPAudioBuffer> IIRFilterNode::processNode(
       x[bufferIndex] = x_n;
       y[bufferIndex] = y_n;
 
-      bufferIndex = (bufferIndex + 1) & (bufferLength - 1);
+      bufferIndex = (bufferIndex + 1) & (BUFFER_LENGTH - 1);
     }
     bufferIndices_[c] = bufferIndex;
   }

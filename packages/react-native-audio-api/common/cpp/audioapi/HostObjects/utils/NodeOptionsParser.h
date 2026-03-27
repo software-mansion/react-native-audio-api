@@ -239,7 +239,7 @@ inline BaseAudioBufferSourceOptions parseBaseAudioBufferSourceOptions(
 
   auto pitchCorrectionValue = optionsObject.getProperty(runtime, "pitchCorrection");
   if (pitchCorrectionValue.isBool()) {
-    options.pitchCorrection = static_cast<bool>(pitchCorrectionValue.getBool());
+    options.pitchCorrection = pitchCorrectionValue.getBool();
   }
 
   return options;
@@ -259,7 +259,7 @@ inline AudioBufferSourceOptions parseAudioBufferSourceOptions(
 
   auto loopValue = optionsObject.getProperty(runtime, "loop");
   if (loopValue.isBool()) {
-    options.loop = static_cast<bool>(loopValue.getBool());
+    options.loop = loopValue.getBool();
   }
 
   auto loopStartValue = optionsObject.getProperty(runtime, "loopStart");

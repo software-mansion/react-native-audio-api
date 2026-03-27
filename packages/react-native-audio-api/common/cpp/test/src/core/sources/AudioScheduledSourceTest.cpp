@@ -8,6 +8,9 @@
 #include <memory>
 
 using namespace audioapi;
+
+// NOLINTBEGIN
+
 static constexpr int SAMPLE_RATE = 44100;
 static constexpr int RENDER_QUANTUM = 128;
 static constexpr double RENDER_QUANTUM_TIME = static_cast<double>(RENDER_QUANTUM) / SAMPLE_RATE;
@@ -129,3 +132,5 @@ TEST_F(AudioScheduledSourceTest, IsFinishedStateSetCorrectly) {
   sourceNode.playFrames(1);
   EXPECT_TRUE(sourceNode.isFinished());
 }
+
+// NOLINTEND

@@ -79,8 +79,9 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
 
   auto values = frame->timeDomain.span();
 
+  constexpr float BYTE_CENTER = 128.0f;
   for (int i = 0; i < size; i++) {
-    float scaledValue = 128 * (values[i] + 1);
+    float scaledValue = BYTE_CENTER * (values[i] + 1);
     scaledValue = std::clamp(scaledValue, 0.0f, static_cast<float>(UINT8_MAX));
 
     data[i] = static_cast<uint8_t>(scaledValue);
@@ -140,9 +141,8 @@ void AnalyserNode::doFFTAnalysis() {
 
   for (int i = 0; i < magnitudeArray_->getSize(); i++) {
     auto scalarMagnitude = std::abs(complexData_[i]) * magnitudeScale;
-    magnitudeBufferData[i] = static_cast<float>(
-        smoothingTimeConstant_ * magnitudeBufferData[i] +
-        (1 - smoothingTimeConstant_) * scalarMagnitude);
+    magnitudeBufferData[i] = smoothingTimeConstant_ * magnitudeBufferData[i] +
+        (1 - smoothingTimeConstant_) * scalarMagnitude;
   }
 }
 

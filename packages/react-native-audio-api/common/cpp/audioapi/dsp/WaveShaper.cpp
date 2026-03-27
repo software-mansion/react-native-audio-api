@@ -47,8 +47,6 @@ void WaveShaper::process(DSPAudioArray &channelData, int framesToProcess) {
 
   switch (oversample_) {
     case OverSampleType::OVERSAMPLE_2X:
-      processResampled(channelData, framesToProcess);
-      break;
     case OverSampleType::OVERSAMPLE_4X:
       processResampled(channelData, framesToProcess);
       break;

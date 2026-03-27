@@ -103,7 +103,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setTargetAtTime) {
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto rawValues = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+  auto *rawValues = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime) / sizeof(float));
   auto values = std::make_shared<AudioArray>(rawValues, length);
 

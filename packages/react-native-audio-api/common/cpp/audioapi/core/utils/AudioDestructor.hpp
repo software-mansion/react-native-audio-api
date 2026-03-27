@@ -1,11 +1,11 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
 #include <memory>
 #include <thread>
 #include <utility>
-#include <vector>
 
 namespace audioapi {
 
@@ -14,6 +14,8 @@ namespace audioapi {
 template <typename T>
 class AudioDestructor {
  public:
+  DELETE_COPY_AND_MOVE(AudioDestructor);
+
   AudioDestructor() : isExiting_(false) {
     auto [sender, receiver] = channels::spsc::channel<
         std::shared_ptr<T>,
