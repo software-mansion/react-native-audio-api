@@ -112,12 +112,11 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
   processAudioEvents();
 
   for (auto &&[node, inputs] : graph_->iter()) {
-    auto audioNode = node.asAudioNode();
-    if (audioNode != nullptr) {
-      audioNode->process(inputs, numFrames);
-      if (audioNode == destination_) {
-        buffer->copy(*audioNode->getOutputBuffer(), 0, 0, numFrames);
-      }
+    node.process(inputs, numFrames);
+
+    // Copy destination output to the final buffer
+    if (auto *audioNode = node.asAudioNode(); audioNode == destination_) {
+      buffer->copy(*audioNode->getOutputBuffer(), 0, 0, numFrames);
     }
   }
 

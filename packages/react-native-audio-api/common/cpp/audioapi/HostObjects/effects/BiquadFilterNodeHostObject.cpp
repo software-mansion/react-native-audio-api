@@ -20,10 +20,13 @@ BiquadFilterNodeHostObject::BiquadFilterNodeHostObject(
           options),
       type_(options.type) {
   auto biquadFilterNode = static_cast<BiquadFilterNode *>(node_->handle->audioNode->asAudioNode());
-  frequencyParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getFrequencyParam());
-  detuneParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getDetuneParam());
-  QParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getQParam());
-  gainParam_ = std::make_shared<AudioParamHostObject>(biquadFilterNode->getGainParam());
+  frequencyParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, biquadFilterNode->getFrequencyParam());
+  detuneParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, biquadFilterNode->getDetuneParam());
+  QParam_ = std::make_shared<AudioParamHostObject>(graph_, node_, biquadFilterNode->getQParam());
+  gainParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, biquadFilterNode->getGainParam());
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BiquadFilterNodeHostObject, frequency),

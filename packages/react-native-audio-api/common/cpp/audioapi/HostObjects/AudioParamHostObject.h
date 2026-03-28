@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/utils/graph/HostNode.hpp>
 #include <audioapi/jsi/JsiHostObject.h>
 
 #include <jsi/jsi.h>
@@ -11,9 +12,27 @@ using namespace facebook;
 
 class AudioParam;
 
+/// @brief Host object for AudioParam that owns its BridgeNode.
+///
+/// When created, a BridgeNode is added to the graph and connected to the
+/// owner node (bridge → owner). Sources connecting to this param connect
+/// to the bridge node (source → bridge).
+///
+/// When destroyed, the BridgeNode is removed from the graph.
 class AudioParamHostObject : public JsiHostObject {
  public:
-  explicit AudioParamHostObject(const std::shared_ptr<AudioParam> &param);
+  using HNode = utils::graph::HostGraph::Node;
+
+  /// @brief Creates an AudioParamHostObject with its BridgeNode.
+  /// @param graph The audio graph
+  /// @param ownerNode The HNode* of the AudioNode that owns this param
+  /// @param param The AudioParam this host object represents
+  explicit AudioParamHostObject(
+      std::shared_ptr<utils::graph::Graph> graph,
+      HNode *ownerNode,
+      const std::shared_ptr<AudioParam> &param);
+
+  ~AudioParamHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(value);
   JSI_PROPERTY_GETTER_DECL(defaultValue);
@@ -30,9 +49,16 @@ class AudioParamHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(cancelScheduledValues);
   JSI_HOST_FUNCTION_DECL(cancelAndHoldAtTime);
 
+  /// @brief Returns the bridge node for this param (for source → bridge connections).
+  [[nodiscard]] HNode *bridgeNode() const {
+    return bridgeNode_;
+  }
+
  private:
   friend class AudioNodeHostObject;
 
+  std::shared_ptr<utils::graph::Graph> graph_;
+  HNode *bridgeNode_ = nullptr;
   std::shared_ptr<AudioParam> param_;
   float defaultValue_;
   float minValue_;

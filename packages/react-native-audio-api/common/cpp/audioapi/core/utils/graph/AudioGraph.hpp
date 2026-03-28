@@ -223,6 +223,8 @@ inline void AudioGraph::process() {
     if (node.orphaned && InputPool::isEmpty(node.input_head) &&
         node.handle->audioNode->canBeDestructed()) {
       node.will_be_deleted = true;
+      // Call beforeDestruction while node is still valid (before move/compaction)
+      node.handle->audioNode->beforeDestruction();
     }
   }
 
@@ -265,6 +267,7 @@ inline void AudioGraph::process() {
   for (std::uint32_t i = b; i < n; i++) {
     // Free any lingering pool slots (should already be empty for deleted nodes)
     pool_.freeAll(nodes[i].input_head);
+    // Handle may have been moved-from during compaction, so just null it
     nodes[i].handle = nullptr;
   }
   nodes.resize(b);

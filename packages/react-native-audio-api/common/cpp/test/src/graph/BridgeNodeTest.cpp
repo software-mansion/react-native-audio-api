@@ -23,9 +23,9 @@ TEST(BridgeNodeContract, MockNodeIsProcessable) {
   EXPECT_TRUE(node.isProcessable());
 }
 
-TEST(BridgeNodeContract, BridgeNodeIsNotProcessable) {
+TEST(BridgeNodeContract, BridgeNodeIsProcessable) {
   BridgeNode bridge(nullptr);
-  EXPECT_FALSE(bridge.isProcessable());
+  EXPECT_TRUE(bridge.isProcessable());
 }
 
 TEST(BridgeNodeContract, BridgeNodeIsAlwaysDestructible) {
@@ -40,10 +40,10 @@ TEST(BridgeNodeContract, NonProcessableMockNodeIsNotProcessable) {
 }
 
 TEST(BridgeNodeContract, BridgeNodeStoresParam) {
-  // Use a dummy pointer to verify storage
-  auto *fakeParam = reinterpret_cast<AudioParam *>(0xDEAD);
-  BridgeNode bridge(fakeParam);
-  EXPECT_EQ(bridge.param(), fakeParam);
+  // Use a real AudioParam to verify storage
+  auto param = createMockAudioParam();
+  BridgeNode bridge(param.get());
+  EXPECT_EQ(bridge.param(), param.get());
 }
 
 // =========================================================================
@@ -215,23 +215,17 @@ TEST_F(BridgeIterTest, AllProcessableNodesInTopoOrder) {
   ASSERT_TRUE(addEdge(b, c));
   audioGraph.process();
 
-  // Should yield A, B, C in topo order (bridge skipped)
-  std::vector<int> values;
+  // Should yield A, bridge, B, C in topo order (bridge is now processable)
+  size_t count = 0;
   for (auto &&[graphObject, inputs] : audioGraph.iter()) {
-    auto *node = dynamic_cast<ProcessableMockNode *>(&graphObject);
-    ASSERT_NE(node, nullptr);
-    values.push_back(node->value.load());
+    count++;
   }
-  ASSERT_EQ(values.size(), 3u);
-  EXPECT_EQ(values[0], 1);
-  EXPECT_EQ(values[1], 2);
-  EXPECT_EQ(values[2], 3);
+  EXPECT_EQ(count, 4u);
 }
 
 TEST_F(BridgeIterTest, InputsViewMayReferenceBridgeIndices) {
   // source → bridge → owner
-  // iter() skips bridge but owner's input list in AudioGraph still
-  // references the bridge's index. Callers use asAudioNode() to handle this.
+  // iter() yields all processable nodes including bridge
   auto *source = addNode(std::make_unique<MockNode>());
   auto *bridge = addNode(std::make_unique<BridgeNode>(nullptr));
   auto *owner = addNode(std::make_unique<MockNode>());
@@ -243,13 +237,12 @@ TEST_F(BridgeIterTest, InputsViewMayReferenceBridgeIndices) {
   size_t processableCount = 0;
   for (auto &&[graphObject, inputs] : audioGraph.iter()) {
     processableCount++;
-    // Owner should see bridge as input (which is a BridgeNode, not AudioNode)
+    // Input could be bridge or source — both are valid GraphObjects
     for (const auto &input : inputs) {
-      // Input could be bridge or source — both are valid GraphObjects
       (void)input;
     }
   }
-  EXPECT_EQ(processableCount, 2u); // source + owner (bridge skipped)
+  EXPECT_EQ(processableCount, 3u); // source + bridge + owner
 }
 
 // =========================================================================
@@ -320,12 +313,27 @@ TEST_F(BridgeGraphTest, BridgeOrphanedAndNoInputsGetsCompacted) {
 
 class BridgeGraphWrapperTest : public ::testing::Test {
  protected:
+  using HNode = HostGraph::Node;
   static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;
+  // Hold real AudioParams to avoid fake pointer crashes
+  std::vector<std::shared_ptr<AudioParam>> params_;
 
   void SetUp() override {
     graph = std::make_shared<Graph>(4096, &disposer_);
+  }
+
+  AudioParam *createParam() {
+    params_.push_back(createMockAudioParam());
+    return params_.back().get();
+  }
+
+  /// Simulates AudioParamHostObject: creates bridge, adds to graph, connects bridge→owner
+  HNode *createParamBridge(AudioParam *param, HNode *owner) {
+    auto *bridge = graph->addNode(std::make_unique<BridgeNode>(param));
+    EXPECT_TRUE(graph->addEdge(bridge, owner).is_ok());
+    return bridge;
   }
 
   void processAll() {
@@ -334,34 +342,91 @@ class BridgeGraphWrapperTest : public ::testing::Test {
   }
 };
 
-TEST_F(BridgeGraphWrapperTest, ConnectParamCreatesBridge) {
+TEST_F(BridgeGraphWrapperTest, ConnectSourceToBridge) {
   auto *source = graph->addNode(std::make_unique<MockNode>());
   auto *owner = graph->addNode(std::make_unique<MockNode>());
-  auto *fakeParam = reinterpret_cast<AudioParam *>(0x1234);
+  auto *param = createParam();
+  auto *bridge = createParamBridge(param, owner);
 
-  auto result = graph->connectParam(source, owner, fakeParam);
+  auto result = graph->addEdge(source, bridge);
   ASSERT_TRUE(result.is_ok());
 
   processAll();
 
-  // Should have 3 nodes: source, bridge, owner
+  // Should have 3 nodes: source, bridge, owner (all processable now)
   size_t iterCount = 0;
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  // iter() skips non-processable bridge, so we see 2
-  EXPECT_EQ(iterCount, 2u);
+  EXPECT_EQ(iterCount, 3u);
 }
 
-TEST_F(BridgeGraphWrapperTest, DisconnectParamRemovesBridge) {
+TEST_F(BridgeGraphWrapperTest, DisconnectSourceFromBridge) {
   auto *source = graph->addNode(std::make_unique<MockNode>());
   auto *owner = graph->addNode(std::make_unique<MockNode>());
-  auto *fakeParam = reinterpret_cast<AudioParam *>(0x1234);
+  auto *param = createParam();
+  auto *bridge = createParamBridge(param, owner);
 
-  ASSERT_TRUE(graph->connectParam(source, owner, fakeParam).is_ok());
+  ASSERT_TRUE(graph->addEdge(source, bridge).is_ok());
   processAll();
 
-  ASSERT_TRUE(graph->disconnectParam(source, owner, fakeParam).is_ok());
+  // Disconnect source → bridge
+  ASSERT_TRUE(graph->removeEdge(source, bridge).is_ok());
+  processAll();
+
+  // Bridge still exists (owned by param host object), but no source connected
+  size_t iterCount = 0;
+  for (auto &&[graphObject, inputs] : graph->iter()) {
+    iterCount++;
+  }
+  EXPECT_EQ(iterCount, 3u); // source + bridge + owner all still exist
+}
+
+TEST_F(BridgeGraphWrapperTest, DuplicateEdgeToBridgeRejected) {
+  auto *source = graph->addNode(std::make_unique<MockNode>());
+  auto *owner = graph->addNode(std::make_unique<MockNode>());
+  auto *param = createParam();
+  auto *bridge = createParamBridge(param, owner);
+
+  ASSERT_TRUE(graph->addEdge(source, bridge).is_ok());
+
+  // Same edge again should fail
+  auto result = graph->addEdge(source, bridge);
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::EDGE_ALREADY_EXISTS);
+}
+
+TEST_F(BridgeGraphWrapperTest, CycleDetectedThroughBridge) {
+  auto *nodeA = graph->addNode(std::make_unique<MockNode>());
+  auto *nodeB = graph->addNode(std::make_unique<MockNode>());
+  auto *param = createParam();
+
+  // A → B (regular edge)
+  ASSERT_TRUE(graph->addEdge(nodeA, nodeB).is_ok());
+
+  // Create bridge for nodeA's param (bridge → nodeA)
+  auto *bridge = createParamBridge(param, nodeA);
+
+  // Try B → bridge — combined with bridge → A and A → B creates cycle
+  auto result = graph->addEdge(nodeB, bridge);
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::CYCLE_DETECTED);
+}
+
+TEST_F(BridgeGraphWrapperTest, BridgeRemovalWhenParamDestroyed) {
+  auto *source = graph->addNode(std::make_unique<MockNode>());
+  auto *owner = graph->addNode(std::make_unique<MockNode>());
+  auto *param = createParam();
+  auto *bridge = createParamBridge(param, owner);
+
+  ASSERT_TRUE(graph->addEdge(source, bridge).is_ok());
+  processAll();
+
+  // Simulate AudioParamHostObject destruction:
+  // First remove all edges to/from bridge, then remove bridge node
+  ASSERT_TRUE(graph->removeEdge(source, bridge).is_ok());
+  ASSERT_TRUE(graph->removeEdge(bridge, owner).is_ok());
+  ASSERT_TRUE(graph->removeNode(bridge).is_ok());
   processAll();
 
   // Bridge should be compacted away (orphaned + no inputs)
@@ -372,95 +437,34 @@ TEST_F(BridgeGraphWrapperTest, DisconnectParamRemovesBridge) {
   EXPECT_EQ(iterCount, 2u); // source + owner
 }
 
-TEST_F(BridgeGraphWrapperTest, DuplicateConnectParamRejected) {
-  auto *source = graph->addNode(std::make_unique<MockNode>());
+TEST_F(BridgeGraphWrapperTest, MultipleSourcesConnectToSameBridge) {
+  auto *source1 = graph->addNode(std::make_unique<MockNode>());
+  auto *source2 = graph->addNode(std::make_unique<MockNode>());
   auto *owner = graph->addNode(std::make_unique<MockNode>());
-  auto *fakeParam = reinterpret_cast<AudioParam *>(0x1234);
+  auto *param = createParam();
+  auto *bridge = createParamBridge(param, owner);
 
-  ASSERT_TRUE(graph->connectParam(source, owner, fakeParam).is_ok());
-
-  // Same connection again should fail
-  auto result = graph->connectParam(source, owner, fakeParam);
-  EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::EDGE_ALREADY_EXISTS);
-}
-
-TEST_F(BridgeGraphWrapperTest, ConnectParamCycleDetected) {
-  auto *nodeA = graph->addNode(std::make_unique<MockNode>());
-  auto *nodeB = graph->addNode(std::make_unique<MockNode>());
-  auto *fakeParam = reinterpret_cast<AudioParam *>(0x1234);
-
-  // A → B (regular edge)
-  ASSERT_TRUE(graph->addEdge(nodeA, nodeB).is_ok());
-
-  // Now try B →(param)→ A — this would create: B → bridge → A
-  // Combined with A → B, this creates cycle: A → B → bridge → A
-  auto result = graph->connectParam(nodeB, nodeA, fakeParam);
-  EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::CYCLE_DETECTED);
-}
-
-TEST_F(BridgeGraphWrapperTest, OwnerRemovalCascadesBridgeCleanup) {
-  auto *source = graph->addNode(std::make_unique<MockNode>());
-  auto *owner = graph->addNode(std::make_unique<MockNode>());
-  auto *fakeParam = reinterpret_cast<AudioParam *>(0x1234);
-
-  ASSERT_TRUE(graph->connectParam(source, owner, fakeParam).is_ok());
+  ASSERT_TRUE(graph->addEdge(source1, bridge).is_ok());
+  ASSERT_TRUE(graph->addEdge(source2, bridge).is_ok());
   processAll();
 
-  // Remove owner — should cascade remove the bridge
-  ASSERT_TRUE(graph->removeNodeWithBridges(owner).is_ok());
-  processAll();
-
-  // Only source should remain as processable
+  // Should have 4 nodes: source1, source2, bridge, owner
   size_t iterCount = 0;
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 1u);
-}
+  EXPECT_EQ(iterCount, 4u);
 
-TEST_F(BridgeGraphWrapperTest, SourceRemovalCascadesBridgeCleanup) {
-  auto *source = graph->addNode(std::make_unique<MockNode>());
-  auto *owner = graph->addNode(std::make_unique<MockNode>());
-  auto *fakeParam = reinterpret_cast<AudioParam *>(0x1234);
-
-  ASSERT_TRUE(graph->connectParam(source, owner, fakeParam).is_ok());
+  // Disconnect one source
+  ASSERT_TRUE(graph->removeEdge(source1, bridge).is_ok());
   processAll();
 
-  // Remove source — should cascade remove the bridge
-  ASSERT_TRUE(graph->removeNodeWithBridges(source).is_ok());
-  processAll();
-
-  // Only owner should remain as processable
-  size_t iterCount = 0;
+  // Still 4 nodes
+  iterCount = 0;
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 1u);
-}
-
-TEST_F(BridgeGraphWrapperTest, MultipleBridgesFromSameSource) {
-  auto *source = graph->addNode(std::make_unique<MockNode>());
-  auto *ownerA = graph->addNode(std::make_unique<MockNode>());
-  auto *ownerB = graph->addNode(std::make_unique<MockNode>());
-  auto *paramA = reinterpret_cast<AudioParam *>(0xA);
-  auto *paramB = reinterpret_cast<AudioParam *>(0xB);
-
-  ASSERT_TRUE(graph->connectParam(source, ownerA, paramA).is_ok());
-  ASSERT_TRUE(graph->connectParam(source, ownerB, paramB).is_ok());
-  processAll();
-
-  // Disconnect one
-  ASSERT_TRUE(graph->disconnectParam(source, ownerA, paramA).is_ok());
-  processAll();
-
-  // Other bridge should still exist (source → bridge → ownerB)
-  // Disconnected bridge should be compacted away
-
-  // Connect again should work
-  ASSERT_TRUE(graph->connectParam(source, ownerA, paramA).is_ok());
-  processAll();
+  EXPECT_EQ(iterCount, 4u);
 }
 
 TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
@@ -473,16 +477,20 @@ TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
 
   auto *source = sharedGraph->addNode(std::make_unique<ProcessableMockNode>(nullptr, 10));
   auto *owner = sharedGraph->addNode(std::make_unique<ProcessableMockNode>(nullptr, 20));
-  auto *fakeParam = reinterpret_cast<AudioParam *>(0x42);
+  auto *param = createParam();
 
-  ASSERT_TRUE(sharedGraph->connectParam(source, owner, fakeParam).is_ok());
+  // Create bridge and connect
+  auto *bridge = sharedGraph->addNode(std::make_unique<BridgeNode>(param));
+  ASSERT_TRUE(sharedGraph->addEdge(bridge, owner).is_ok());
+  ASSERT_TRUE(sharedGraph->addEdge(source, bridge).is_ok());
 
   // Let processor run a few cycles
   while (processor.cyclesCompleted() < 10) {
     std::this_thread::yield();
   }
 
-  ASSERT_TRUE(sharedGraph->disconnectParam(source, owner, fakeParam).is_ok());
+  // Disconnect source from bridge
+  ASSERT_TRUE(sharedGraph->removeEdge(source, bridge).is_ok());
 
   while (processor.cyclesCompleted() < 20) {
     std::this_thread::yield();
@@ -493,7 +501,7 @@ TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
 }
 
 // =========================================================================
-// F. Fuzz test extension with connectParam/disconnectParam
+// F. Fuzz test with bridge nodes
 // =========================================================================
 
 class BridgeFuzzTest : public ::testing::TestWithParam<uint64_t> {
@@ -505,15 +513,18 @@ class BridgeFuzzTest : public ::testing::TestWithParam<uint64_t> {
   std::shared_ptr<Graph> graph;
   std::mt19937_64 rng;
   std::vector<HNode *> liveNodes;
-  std::vector<AudioParam *> fakeParams;
+  std::vector<HNode *> bridgeNodes;
+  std::vector<std::shared_ptr<AudioParam>> params_; // Real params
+  std::vector<AudioParam *> paramPtrs_;             // Raw pointers for test use
 
   void SetUp() override {
     graph = std::make_shared<Graph>(4096, &disposer_);
     rng.seed(GetParam());
 
-    // Create a set of fake param pointers
+    // Create real AudioParam objects for testing
     for (int i = 1; i <= 8; i++) {
-      fakeParams.push_back(reinterpret_cast<AudioParam *>(static_cast<uintptr_t>(i * 0x100)));
+      params_.push_back(createMockAudioParam());
+      paramPtrs_.push_back(params_.back().get());
     }
   }
 
@@ -528,8 +539,14 @@ class BridgeFuzzTest : public ::testing::TestWithParam<uint64_t> {
     return liveNodes[std::uniform_int_distribution<size_t>(0, liveNodes.size() - 1)(rng)];
   }
 
+  HNode *pickBridge() {
+    if (bridgeNodes.empty())
+      return nullptr;
+    return bridgeNodes[std::uniform_int_distribution<size_t>(0, bridgeNodes.size() - 1)(rng)];
+  }
+
   AudioParam *pickParam() {
-    return fakeParams[std::uniform_int_distribution<size_t>(0, fakeParams.size() - 1)(rng)];
+    return paramPtrs_[std::uniform_int_distribution<size_t>(0, paramPtrs_.size() - 1)(rng)];
   }
 };
 
@@ -558,31 +575,49 @@ TEST_P(BridgeFuzzTest, RandomParamOps) {
         (void)graph->addEdge(a, b);
       }
 
-    } else if (op < 40) {
-      // Connect param
-      auto *source = pickRandom();
+    } else if (op < 35) {
+      // Create bridge for a param and connect to owner
       auto *owner = pickRandom();
-      if (source && owner && source != owner) {
-        (void)graph->connectParam(source, owner, pickParam());
+      if (owner) {
+        auto *bridge = graph->addNode(std::make_unique<BridgeNode>(pickParam()));
+        (void)graph->addEdge(bridge, owner);
+        bridgeNodes.push_back(bridge);
       }
 
-    } else if (op < 55) {
-      // Disconnect param
+    } else if (op < 50) {
+      // Connect source to bridge
       auto *source = pickRandom();
-      auto *owner = pickRandom();
-      if (source && owner) {
-        (void)graph->disconnectParam(source, owner, pickParam());
+      auto *bridge = pickBridge();
+      if (source && bridge) {
+        (void)graph->addEdge(source, bridge);
+      }
+
+    } else if (op < 60) {
+      // Disconnect source from bridge
+      auto *source = pickRandom();
+      auto *bridge = pickBridge();
+      if (source && bridge) {
+        (void)graph->removeEdge(source, bridge);
       }
 
     } else if (op < 70) {
-      // Remove node with bridges
+      // Remove bridge node (simulating param destruction)
+      auto *bridge = pickBridge();
+      if (bridge) {
+        (void)graph->removeNode(bridge);
+        bridgeNodes.erase(
+            std::remove(bridgeNodes.begin(), bridgeNodes.end(), bridge), bridgeNodes.end());
+      }
+
+    } else if (op < 80) {
+      // Remove regular node
       auto *n = pickRandom();
       if (n) {
-        (void)graph->removeNodeWithBridges(n);
+        (void)graph->removeNode(n);
         liveNodes.erase(std::remove(liveNodes.begin(), liveNodes.end(), n), liveNodes.end());
       }
 
-    } else if (op < 85) {
+    } else if (op < 90) {
       // Remove regular edge
       auto *a = pickRandom();
       auto *b = pickRandom();

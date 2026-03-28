@@ -6,6 +6,7 @@
 #endif
 
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/AudioParam.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
@@ -34,6 +35,13 @@ inline std::shared_ptr<BaseAudioContext> getGraphTestContext() {
     return ctx;
   }();
   return context;
+}
+
+// ── MockAudioParam ────────────────────────────────────────────────────────
+// Real AudioParam for use in graph tests that need valid param pointers.
+
+inline std::shared_ptr<AudioParam> createMockAudioParam() {
+  return std::make_shared<AudioParam>(0.0f, -1.0f, 1.0f, getGraphTestContext());
 }
 
 struct MockNode : AudioNode {

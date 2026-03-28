@@ -16,7 +16,8 @@ StereoPannerNodeHostObject::StereoPannerNodeHostObject(
           std::make_unique<StereoPannerNode>(context, options),
           options) {
   auto stereoPannerNode = static_cast<StereoPannerNode *>(node_->handle->audioNode->asAudioNode());
-  panParam_ = std::make_shared<AudioParamHostObject>(stereoPannerNode->getPanParam());
+  panParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, stereoPannerNode->getPanParam());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(StereoPannerNodeHostObject, pan));
 }

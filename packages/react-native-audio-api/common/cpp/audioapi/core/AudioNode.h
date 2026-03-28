@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -25,20 +26,6 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   size_t getChannelCount() const;
 
-  template <std::ranges::input_range R>
-    requires std::same_as<std::ranges::range_reference_t<R>, const GraphObject &>
-  void process(R &&inputs, int numFrames) {
-    getInputBuffer()->zero();
-
-    for (const auto &input : inputs) {
-      if (const AudioNode *audioNode = input.asAudioNode()) {
-        getInputBuffer()->sum(*audioNode->getOutputBuffer(), channelInterpretation_);
-      }
-    }
-
-    processNode(numFrames);
-  }
-
   float getContextSampleRate() const {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->getSampleRate();
@@ -49,6 +36,12 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   float getNyquistFrequency() const {
     return getContextSampleRate() / 2.0f;
+  }
+
+  /// @brief Returns the output buffer for this node.
+  /// @note Audio Thread only.
+  [[nodiscard]] const DSPAudioBuffer *getOutput() const override {
+    return audioBuffer_.get();
   }
 
   /// @brief Returns the input buffer for this node. By default, this is the same as the output buffer.
@@ -92,7 +85,6 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   }
 
  protected:
-  //  friend class ConvolverNode;
   friend class DelayNodeHostObject;
 
   std::weak_ptr<BaseAudioContext> context_;
@@ -104,6 +96,18 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   const ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   const ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;
+
+  /// @brief Implementation of processing logic for AudioNode.
+  /// Mixes input buffers and calls processNode.
+  void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames) override {
+    getInputBuffer()->zero();
+
+    for (const DSPAudioBuffer *input : inputs) {
+      getInputBuffer()->sum(*input, channelInterpretation_);
+    }
+
+    processNode(numFrames);
+  }
 
   virtual void processNode(int) = 0;
 };

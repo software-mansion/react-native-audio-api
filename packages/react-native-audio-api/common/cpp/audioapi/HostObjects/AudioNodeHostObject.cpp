@@ -66,8 +66,8 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
     connect(*node);
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    auto owner = args[1].getObject(runtime).getHostObject<AudioNodeHostObject>(runtime);
-    connectParam(*owner, param->param_.get());
+    // Connect source → bridge (the bridge → owner edge is created at param construction)
+    graph_->addEdge(node_, param->bridgeNode());
   }
   return jsi::Value::undefined();
 }
@@ -84,8 +84,8 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
     disconnect(*node);
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    auto owner = args[1].getObject(runtime).getHostObject<AudioNodeHostObject>(runtime);
-    disconnectParam(*owner, param->param_.get());
+    // Disconnect source → bridge
+    graph_->removeEdge(node_, param->bridgeNode());
   }
 
   return jsi::Value::undefined();

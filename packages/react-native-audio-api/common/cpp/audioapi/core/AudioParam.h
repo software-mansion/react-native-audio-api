@@ -1,18 +1,15 @@
 #pragma once
 
-#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/types/ParamChangeEventType.h>
 #include <audioapi/core/utils/AudioParamEventQueue.h>
 #include <audioapi/core/utils/ParamChangeEvent.hpp>
-#include <audioapi/core/utils/graph/GraphObject.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <cstddef>
 #include <memory>
 #include <utility>
-#include <vector>
 
 namespace audioapi {
 
@@ -83,11 +80,18 @@ class AudioParam {
   /// Audio-Thread only methods
   /// These methods are called only from the Audio rendering thread.
 
+  /// @brief Returns the input buffer where BridgeNode stores mixed modulation signals.
   /// @note Audio Thread only
-  void addInputNode(AudioNode *node);
+  [[nodiscard]] std::shared_ptr<DSPAudioBuffer> getInputBuffer() const {
+    return inputBuffer_;
+  }
 
+  /// @brief Called when a BridgeNode connected to this param is being destroyed.
+  /// Clears the input buffer so the param no longer relies on stale bridge data.
   /// @note Audio Thread only
-  void removeInputNode(AudioNode *node);
+  void onBridgeDetached() {
+    inputBuffer_->zero();
+  }
 
   /// @note Audio Thread only
   std::shared_ptr<DSPAudioBuffer> processARateParam(int framesToProcess, double time);
@@ -112,10 +116,10 @@ class AudioParam {
   float endValue_;
   std::function<float(double, double, float, float, double)> calculateValue_;
 
-  // Input modulation system
-  std::vector<AudioNode *> inputNodes_;
-  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
-  std::vector<std::shared_ptr<DSPAudioBuffer>> inputBuffers_;
+  // Input modulation buffer - filled by BridgeNode during graph processing
+  std::shared_ptr<DSPAudioBuffer> inputBuffer_;
+  // Output buffer for a-rate processing - contains modulation + param value
+  std::shared_ptr<DSPAudioBuffer> outputBuffer_;
 
   /// @brief Get the end time of the parameter queue.
   /// @return The end time of the parameter queue or last endTime_ if queue is empty.
@@ -141,15 +145,8 @@ class AudioParam {
   inline void updateQueue(ParamChangeEvent &&event) {
     eventsQueue_.pushBack(std::move(event));
   }
+
   float getValueAtTime(double time);
-  void processInputs(
-      const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-      int framesToProcess,
-      bool checkIsAlreadyProcessed);
-  void mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
-  std::shared_ptr<DSPAudioBuffer> calculateInputs(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess);
 };
 
 } // namespace audioapi

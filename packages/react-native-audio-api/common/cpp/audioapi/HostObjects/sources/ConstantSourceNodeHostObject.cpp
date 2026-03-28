@@ -16,7 +16,8 @@ ConstantSourceNodeHostObject::ConstantSourceNodeHostObject(
           options) {
   auto constantSourceNode =
       static_cast<ConstantSourceNode *>(node_->handle->audioNode->asAudioNode());
-  offsetParam_ = std::make_shared<AudioParamHostObject>(constantSourceNode->getOffsetParam());
+  offsetParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, constantSourceNode->getOffsetParam());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(ConstantSourceNodeHostObject, offset));
 }

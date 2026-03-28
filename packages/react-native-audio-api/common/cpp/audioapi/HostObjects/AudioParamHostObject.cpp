@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/utils/graph/BridgeNode.hpp>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <memory>
@@ -8,11 +9,22 @@
 
 namespace audioapi {
 
-AudioParamHostObject::AudioParamHostObject(const std::shared_ptr<AudioParam> &param)
-    : param_(param),
+AudioParamHostObject::AudioParamHostObject(
+    std::shared_ptr<utils::graph::Graph> graph,
+    HNode *ownerNode,
+    const std::shared_ptr<AudioParam> &param)
+    : graph_(std::move(graph)),
+      param_(param),
       defaultValue_(param->getDefaultValue()),
       minValue_(param->getMinValue()),
       maxValue_(param->getMaxValue()) {
+  // Create the bridge node in the graph
+  auto bridgeGraphObject = std::make_unique<utils::graph::BridgeNode>(param.get());
+  bridgeNode_ = graph_->addNode(std::move(bridgeGraphObject));
+
+  // Connect bridge → owner so topological sort orders correctly
+  (void)graph_->addEdge(bridgeNode_, ownerNode);
+
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, value),
       JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, defaultValue),
@@ -29,6 +41,16 @@ AudioParamHostObject::AudioParamHostObject(const std::shared_ptr<AudioParam> &pa
       JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelAndHoldAtTime));
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioParamHostObject, value));
+}
+
+AudioParamHostObject::~AudioParamHostObject() {
+  if (graph_ && bridgeNode_) {
+    // Remove outgoing edges (bridge → owner)
+    (void)graph_->removeAllEdges(bridgeNode_);
+    // Remove the bridge node itself
+    (void)graph_->removeNode(bridgeNode_);
+    bridgeNode_ = nullptr;
+  }
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioParamHostObject, value) {

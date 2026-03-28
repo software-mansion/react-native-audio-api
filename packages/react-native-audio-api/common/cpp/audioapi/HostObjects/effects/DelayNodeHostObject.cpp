@@ -16,7 +16,8 @@ DelayNodeHostObject::DelayNodeHostObject(
           std::make_unique<DelayNode>(context, options),
           options) {
   auto delayNode = static_cast<DelayNode *>(node_->handle->audioNode->asAudioNode());
-  delayTimeParam_ = std::make_shared<AudioParamHostObject>(delayNode->getDelayTimeParam());
+  delayTimeParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, delayNode->getDelayTimeParam());
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }
 

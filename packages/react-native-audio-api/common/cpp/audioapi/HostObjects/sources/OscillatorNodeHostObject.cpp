@@ -20,8 +20,10 @@ OscillatorNodeHostObject::OscillatorNodeHostObject(
           options),
       type_(options.type) {
   auto oscillatorNode = static_cast<OscillatorNode *>(node_->handle->audioNode->asAudioNode());
-  frequencyParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getFrequencyParam());
-  detuneParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
+  frequencyParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, oscillatorNode->getFrequencyParam());
+  detuneParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, oscillatorNode->getDetuneParam());
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),

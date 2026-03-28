@@ -19,8 +19,10 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
       pitchCorrection_(options.pitchCorrection) {
   auto sourceNode =
       static_cast<AudioBufferBaseSourceNode *>(node_->handle->audioNode->asAudioNode());
-  detuneParam_ = std::make_shared<AudioParamHostObject>(sourceNode->getDetuneParam());
-  playbackRateParam_ = std::make_shared<AudioParamHostObject>(sourceNode->getPlaybackRateParam());
+  detuneParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, sourceNode->getDetuneParam());
+  playbackRateParam_ =
+      std::make_shared<AudioParamHostObject>(graph_, node_, sourceNode->getPlaybackRateParam());
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferBaseSourceNodeHostObject, detune),
