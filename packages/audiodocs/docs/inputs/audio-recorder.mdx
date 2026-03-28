@@ -405,6 +405,8 @@ export default MyRecorder;
       <td>
         <div class="text-content">
         Stops the input stream and cleans up each input access method.
+
+        For details on the returned file information check: [FileInfo](#fileinfo)
         </div>
         ```tsx
         const result = audioRecorder.stop();
@@ -714,6 +716,20 @@ interface OnAudioReadyEventType {
 - `when` - The timestamp (in seconds) indicating when this buffer was captured, relative to the start of the recording session.
 
 ### File handling
+
+#### FileInfo
+
+```tsx
+interface FileInfo {
+  path: string;
+  size: number;
+  duration: number;
+}
+```
+
+- `path` - The path to the recorded audio file.
+- `size` - The file size (in MB).
+- `duration` - The recording duration (in seconds).
 
 #### AudioRecorderFileOptions
 
