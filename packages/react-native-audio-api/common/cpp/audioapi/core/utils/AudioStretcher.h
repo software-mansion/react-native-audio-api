@@ -1,11 +1,10 @@
 #pragma once
 
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <memory>
 #include <vector>
 
 namespace audioapi {
-
-class AudioBuffer;
 
 class AudioStretcher {
  public:
@@ -18,10 +17,10 @@ class AudioStretcher {
  private:
   static std::vector<int16_t> castToInt16Buffer(AudioBuffer &buffer);
 
-  [[nodiscard]] static inline int16_t floatToInt16(float sample) {
+  [[nodiscard]] static int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * INT16_MAX);
   }
-  [[nodiscard]] static inline float int16ToFloat(int16_t sample) {
+  [[nodiscard]] static float int16ToFloat(int16_t sample) {
     return static_cast<float>(sample) / INT16_MAX;
   }
 };

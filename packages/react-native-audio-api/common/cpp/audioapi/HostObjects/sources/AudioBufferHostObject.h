@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/jsi/JsiHostObject.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <jsi/jsi.h>
 #include <cstddef>
@@ -27,7 +27,9 @@ class AudioBufferHostObject : public JsiHostObject {
     return *this;
   }
 
-  [[nodiscard]] inline size_t getSizeInBytes() const {
+  ~AudioBufferHostObject() override = default;
+
+  [[nodiscard]] size_t getSizeInBytes() const {
     // *2 because every time buffer is passed we create a copy of it.
     return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float) * 2;
   }

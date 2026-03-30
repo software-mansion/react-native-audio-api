@@ -2,8 +2,8 @@
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
 
 namespace audioapi {
@@ -24,8 +24,8 @@ std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {
   return offsetParam_;
 }
 
-std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> ConstantSourceNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
@@ -49,7 +49,7 @@ std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
     return processingBuffer;
   }
 
-  auto offsetChannel =
+  auto *offsetChannel =
       offsetParam_->processARateParam(framesToProcess, context->getCurrentTime())->getChannel(0);
 
   for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); ++channel) {

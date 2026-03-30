@@ -8,6 +8,8 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
+
 class OscillatorTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
@@ -25,3 +27,5 @@ TEST_F(OscillatorTest, OscillatorCanBeCreated) {
   auto osc = context->createOscillator(OscillatorOptions());
   ASSERT_NE(osc, nullptr);
 }
+
+// NOLINTEND

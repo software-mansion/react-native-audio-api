@@ -2,7 +2,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <utility>
 
@@ -18,13 +18,12 @@ AudioParam::AudioParam(
       defaultValue_(defaultValue),
       minValue_(minValue),
       maxValue_(maxValue),
-      eventsQueue_(),
       startTime_(0),
       endTime_(0),
       startValue_(defaultValue),
       endValue_(defaultValue),
       audioBuffer_(
-          std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
+          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
   inputBuffers_.reserve(4);
   inputNodes_.reserve(4);
   // Default calculation function just returns the static value
@@ -115,6 +114,10 @@ void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
   // Exponential curve function using power law
   auto calculateValue =
       [](double startTime, double endTime, float startValue, float endValue, double time) {
+        if (startValue * endValue < 0 || startValue == 0) {
+          return startValue;
+        }
+
         if (time < startTime) {
           return startValue;
         }
@@ -143,6 +146,10 @@ void AudioParam::setTargetAtTime(float target, double startTime, double timeCons
   // Exponential decay function towards target value
   auto calculateValue = [timeConstant, target](
                             double startTime, double, float startValue, float, double time) {
+    if (timeConstant == 0) {
+      return target;
+    }
+
     if (time < startTime) {
       return startValue;
     }
@@ -220,8 +227,8 @@ void AudioParam::removeInputNode(AudioNode *node) {
   }
 }
 
-std::shared_ptr<AudioBuffer> AudioParam::calculateInputs(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> AudioParam::calculateInputs(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   processingBuffer->zero();
   if (inputNodes_.empty()) {
@@ -232,20 +239,21 @@ std::shared_ptr<AudioBuffer> AudioParam::calculateInputs(
   return processingBuffer;
 }
 
-std::shared_ptr<AudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
+std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
   auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
+  if (context == nullptr) {
     return processingBuffer;
+  }
   float sampleRate = context->getSampleRate();
   auto bufferData = processingBuffer->getChannel(0)->span();
-  float timeCache = time;
+  double timeCache = time;
   float timeStep = 1.0f / sampleRate;
   float sample = 0.0f;
 
   // Add automated parameter value to each sample
-  for (size_t i = 0; i < framesToProcess; i++, timeCache += timeStep) {
+  for (int i = 0; i < framesToProcess; i++, timeCache += timeStep) {
     sample = getValueAtTime(timeCache);
     bufferData[i] += sample;
   }
@@ -261,11 +269,10 @@ float AudioParam::processKRateParam(int framesToProcess, double time) {
 }
 
 void AudioParam::processInputs(
-    const std::shared_ptr<AudioBuffer> &outputBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
-    auto inputNode = *it;
+  for (auto *inputNode : inputNodes_) {
     assert(inputNode != nullptr);
 
     if (!inputNode->isEnabled()) {
@@ -279,7 +286,7 @@ void AudioParam::processInputs(
   }
 }
 
-void AudioParam::mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer) {
+void AudioParam::mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
   assert(processingBuffer != nullptr);
 
   // Sum all input buffers into the processing buffer

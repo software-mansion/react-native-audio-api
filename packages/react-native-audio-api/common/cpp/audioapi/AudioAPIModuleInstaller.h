@@ -10,7 +10,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/jsi/JsiPromise.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
@@ -35,7 +35,7 @@ class AudioAPIModuleInstaller {
         getCreateAudioRecorderFunction(jsiRuntime, audioEventHandlerRegistry);
     auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
-    auto createAudioBuffer = getCrateAudioBufferFunction(jsiRuntime);
+    auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioStretcher = getCreateAudioStretcherFunction(jsiRuntime, jsCallInvoker);
 
@@ -185,10 +185,10 @@ class AudioAPIModuleInstaller {
         });
   }
 
-  static jsi::Function getCrateAudioBufferFunction(jsi::Runtime *jsiRuntime) {
+  static jsi::Function getCreateAudioBufferFunction(jsi::Runtime *jsiRuntime) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
-        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioStretcher"),
+        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioBuffer"),
         3,
         [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
             -> jsi::Value {

@@ -4,14 +4,13 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/dsp/r8brain/Resampler.h>
+#include <audioapi/dsp/r8brain/Resampler.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <memory>
 #include <vector>
 
 namespace audioapi {
-
-class AudioBuffer;
 
 /// @brief RecorderAdapterNode is an AudioNode which adapts push Recorder into pull graph.
 /// It uses RingBuffer to store audio data and AudioParam to provide audio data in pull mode.
@@ -28,14 +27,14 @@ class RecorderAdapterNode : public AudioNode {
   /// @param channelCount The number of channels.
   /// @param sampleRate The recorder's native sample rate.
   void init(size_t bufferSize, int channelCount, float sampleRate);
-  void cleanup();
+  void adapterCleanup();
 
   // TODO: CircularOverflowableAudioBuffer
   std::vector<std::shared_ptr<CircularOverflowableAudioArray>> buff_;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
   std::shared_ptr<AudioBuffer> adapterOutputBuffer_;
 

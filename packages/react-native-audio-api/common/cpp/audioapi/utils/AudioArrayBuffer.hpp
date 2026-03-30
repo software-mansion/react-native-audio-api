@@ -1,38 +1,35 @@
 #pragma once
 
-#include <audioapi/utils/AudioArray.h>
-#include <memory>
+#include <audioapi/utils/AudioArray.hpp>
 
 #if !RN_AUDIO_API_TEST
 #include <jsi/jsi.h>
 using JsiBuffer = facebook::jsi::MutableBuffer;
 #else
 // Dummy class to inherit from nothing if testing
-struct JsiBuffer {};
+struct JsiBuffer {
+  virtual size_t size() const = 0;
+  virtual uint8_t *data() = 0;
+};
 #endif
 
 namespace audioapi {
 
-class AudioArrayBuffer : public JsiBuffer, public AudioArray {
+template <size_t Alignment>
+class AlignedAudioArrayBuffer : public JsiBuffer, public AlignedAudioArray<Alignment> {
  public:
-  explicit AudioArrayBuffer(size_t size) : AudioArray(size) {};
-  AudioArrayBuffer(const float *data, size_t size) : AudioArray(data, size) {};
+  explicit AlignedAudioArrayBuffer(size_t size) : AlignedAudioArray<Alignment>(size) {};
+  AlignedAudioArrayBuffer(const float *data, size_t size)
+      : AlignedAudioArray<Alignment>(data, size) {};
 
-#if !RN_AUDIO_API_TEST
   [[nodiscard]] size_t size() const override {
-    return size_ * sizeof(float);
+    return this->size_ * sizeof(float);
   }
   uint8_t *data() override {
-    return reinterpret_cast<uint8_t *>(data_.get());
+    return reinterpret_cast<uint8_t *>(this->data_.data());
   }
-#else
-  [[nodiscard]] size_t size() const {
-    return size_ * sizeof(float);
-  }
-  uint8_t *data() {
-    return reinterpret_cast<uint8_t *>(data_.get());
-  }
-#endif
 };
+
+using AudioArrayBuffer = AlignedAudioArrayBuffer<alignof(std::max_align_t)>;
 
 } // namespace audioapi

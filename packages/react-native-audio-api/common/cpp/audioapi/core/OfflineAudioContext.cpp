@@ -5,8 +5,7 @@
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -26,6 +25,8 @@ OfflineAudioContext::OfflineAudioContext(
       length_(length),
       numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0),
+      audioBuffer_(
+          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels, sampleRate)),
       resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {}
 
 OfflineAudioContext::~OfflineAudioContext() {
@@ -50,7 +51,7 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
   auto frame = static_cast<size_t>(when * getSampleRate());
   frame = RENDER_QUANTUM_SIZE * ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
 
-  if (scheduledSuspends_.find(frame) != scheduledSuspends_.end()) {
+  if (scheduledSuspends_.contains(frame)) {
     throw std::runtime_error(
         "cannot schedule more than one suspend at frame " + std::to_string(frame) + " (" +
         std::to_string(when) + " seconds)");
@@ -63,17 +64,15 @@ void OfflineAudioContext::renderAudio() {
   setState(ContextState::RUNNING);
 
   std::thread([this]() {
-    auto audioBuffer =
-        std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels_, getSampleRate());
-
     while (currentSampleFrame_ < length_) {
       Locker locker(mutex_);
       int framesToProcess =
           std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
 
-      destination_->renderAudio(audioBuffer, framesToProcess);
+      audioBuffer_->zero();
+      destination_->renderAudio(audioBuffer_, framesToProcess);
 
-      resultBuffer_->copy(*audioBuffer, 0, currentSampleFrame_, framesToProcess);
+      resultBuffer_->copy(*audioBuffer_, 0, currentSampleFrame_, framesToProcess);
 
       currentSampleFrame_ += framesToProcess;
 

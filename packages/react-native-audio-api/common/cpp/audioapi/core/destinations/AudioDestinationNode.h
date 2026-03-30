@@ -2,6 +2,7 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -9,7 +10,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
 class BaseAudioContext;
 
 class AudioDestinationNode : public AudioNode {
@@ -23,14 +23,14 @@ class AudioDestinationNode : public AudioNode {
   double getCurrentTime() const;
 
   /// @note Audio Thread only
-  void renderAudio(const std::shared_ptr<AudioBuffer> &audioData, int numFrames);
+  void renderAudio(const std::shared_ptr<DSPAudioBuffer> &audioData, int numFrames);
 
  protected:
   // DestinationNode is triggered by AudioContext using renderAudio
   // processNode function is not necessary and is never called.
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
-      int) final {
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess) final {
     return processingBuffer;
   };
 

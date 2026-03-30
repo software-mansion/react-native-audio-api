@@ -37,6 +37,8 @@
 
 namespace audioapi {
 
+// NOLINTBEGIN
+
 // Compute 10^x = exp(x*log(10))
 static double pow10(double x) {
   return std::exp(x * 2.30258509299404568402);
@@ -369,4 +371,6 @@ BiquadCoefficients calculateBandpassCoefficients(double frequency, double q) {
     return normalizeCoefficients(0, 0, 0, 1, 0, 0);
   }
 }
+
+// NOLINTEND
 } // namespace audioapi

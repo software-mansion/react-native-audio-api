@@ -3,7 +3,9 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/FFT.h>
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/TripleBuffer.hpp>
 
 #include <atomic>
@@ -15,8 +17,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
-class CircularAudioArray;
 struct AnalyserOptions;
 
 class AnalyserNode : public AudioNode {
@@ -26,21 +26,21 @@ class AnalyserNode : public AudioNode {
       const AnalyserOptions &options);
 
   /// @note JS Thread only
-  float getMinDecibels() const {
+  [[nodiscard]] float getMinDecibels() const {
     return minDecibels_;
   }
 
   /// @note JS Thread only
-  float getMaxDecibels() const {
+  [[nodiscard]] float getMaxDecibels() const {
     return maxDecibels_;
   }
 
   /// @note JS Thread only
-  float getSmoothingTimeConstant() const {
+  [[nodiscard]] float getSmoothingTimeConstant() const {
     return smoothingTimeConstant_;
   }
 
-  int getFFTSize() const {
+  [[nodiscard]] int getFFTSize() const {
     return fftSize_.load(std::memory_order_acquire);
   }
 
@@ -75,16 +75,16 @@ class AnalyserNode : public AudioNode {
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
   std::atomic<int> fftSize_;
 
   // Audio Thread data structures
-  std::unique_ptr<CircularAudioArray> inputArray_;
-  std::unique_ptr<AudioBuffer> downMixBuffer_;
+  std::unique_ptr<CircularDSPAudioArray> inputArray_;
+  std::unique_ptr<DSPAudioBuffer> downMixBuffer_;
 
   // JS Thread parameters
   float minDecibels_;
@@ -93,13 +93,13 @@ class AnalyserNode : public AudioNode {
 
   // JS Thread data structures
   std::unique_ptr<dsp::FFT> fft_;
-  std::unique_ptr<AudioArray> tempArray_;
-  std::unique_ptr<AudioArray> windowData_;
+  std::unique_ptr<DSPAudioArray> tempArray_;
+  std::unique_ptr<DSPAudioArray> windowData_;
   std::vector<std::complex<float>> complexData_;
-  std::unique_ptr<AudioArray> magnitudeArray_;
+  std::unique_ptr<DSPAudioArray> magnitudeArray_;
 
   struct AnalysisFrame {
-    AudioArray timeDomain;
+    DSPAudioArray timeDomain;
     size_t sequenceNumber = 0;
     int fftSize = 0;
 
@@ -107,6 +107,9 @@ class AnalyserNode : public AudioNode {
 
     AnalysisFrame(const AnalysisFrame &) = delete;
     AnalysisFrame &operator=(const AnalysisFrame &) = delete;
+    AnalysisFrame(AnalysisFrame &&) noexcept = default;
+    AnalysisFrame &operator=(AnalysisFrame &&) noexcept = default;
+    ~AnalysisFrame() = default;
   };
 
   TripleBuffer<AnalysisFrame> analysisBuffer_{MAX_FFT_SIZE};

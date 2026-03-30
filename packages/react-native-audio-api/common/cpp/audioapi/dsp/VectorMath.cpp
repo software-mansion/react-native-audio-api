@@ -41,7 +41,7 @@
 
 namespace audioapi::dsp {
 
-#if defined(HAVE_ACCELERATE)
+#ifdef HAVE_ACCELERATE
 
 void multiplyByScalar(
     const float *inputVector,
@@ -97,12 +97,6 @@ void multiplyByScalarThenAddToOutput(
   vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
-float computeConvolution(const float *state, const float *kernel, size_t kernelSize) {
-  float result = 0.0f;
-  vDSP_conv(state, 1, kernel, 1, &result, 1, 1, kernelSize);
-  return result;
-}
-
 void deinterleaveStereo(
     const float *__restrict inputInterleaved,
     float *__restrict outputLeft,
@@ -125,7 +119,7 @@ void interleaveStereo(
 
 #else
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
 static inline bool is16ByteAligned(const float *vector) {
   return !(reinterpret_cast<uintptr_t>(vector) & 0x0F);
 }
@@ -138,7 +132,7 @@ void multiplyByScalar(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
 
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
@@ -205,7 +199,7 @@ void addScalar(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector) && n) {
@@ -273,7 +267,7 @@ void add(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -378,7 +372,7 @@ void subtract(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -481,7 +475,7 @@ void multiply(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector1 address is not 16-byte aligned, the first several
   // frames (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -550,7 +544,7 @@ float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProces
   size_t n = numberOfElementsToProcess;
   float max = 0;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector) && n) {
@@ -680,35 +674,6 @@ void multiplyByScalarThenAddToOutput(
   }
 }
 
-float computeConvolution(const float *state, const float *kernel, size_t kernelSize) {
-  float sum = 0.0f;
-  int k = 0;
-
-#ifdef HAVE_ARM_NEON_INTRINSICS
-  float32x4_t vSum = vdupq_n_f32(0.0f);
-
-  // process 4 samples at a time
-  for (; k <= kernelSize - 4; k += 4) {
-    float32x4_t vState = vld1q_f32(state + k);
-    float32x4_t vKernel = vld1q_f32(kernel + k);
-
-    // fused multiply-add: vSum += vState * vKernel
-    vSum = vmlaq_f32(vSum, vState, vKernel);
-  }
-
-  // horizontal reduction: Sum the 4 lanes of vSum into a single float
-  sum += vgetq_lane_f32(vSum, 0);
-  sum += vgetq_lane_f32(vSum, 1);
-  sum += vgetq_lane_f32(vSum, 2);
-  sum += vgetq_lane_f32(vSum, 3);
-#endif
-  for (; k < kernelSize; ++k) {
-    sum += state[k] * kernel[k];
-  }
-
-  return sum;
-}
-
 void deinterleaveStereo(
     const float *__restrict inputInterleaved,
     float *__restrict outputLeft,
@@ -717,7 +682,7 @@ void deinterleaveStereo(
 
   size_t n = numberOfFrames;
 
-#if defined(HAVE_ARM_NEON_INTRINSICS)
+#ifdef HAVE_ARM_NEON_INTRINSICS
   // process 4 frames (8 samples) at a time using NEON
   size_t group = n / 4;
   while (group--) {
@@ -769,7 +734,7 @@ void interleaveStereo(
 
   size_t n = numberOfFrames;
 
-#if defined(HAVE_ARM_NEON_INTRINSICS)
+#ifdef HAVE_ARM_NEON_INTRINSICS
   // process 4 frames (8 samples) at a time
   size_t group = n / 4;
   while (group--) {

@@ -7,6 +7,8 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
+
 class AudioParamTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
@@ -209,3 +211,5 @@ TEST_F(AudioParamTest, CancelAndHoldAtTime) {
   value = param.processKRateParam(1, 0.25);
   EXPECT_FLOAT_EQ(value, 0.9);
 }
+
+// NOLINTEND

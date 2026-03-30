@@ -22,10 +22,10 @@ AudioDecoderHostObject::AudioDecoderHostObject(
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto data = arrayBuffer.data(runtime);
+  auto *data = arrayBuffer.data(runtime);
   auto size = static_cast<int>(arrayBuffer.size(runtime));
 
-  auto sampleRate = args[1].getNumber();
+  auto sampleRate = static_cast<float>(args[1].getNumber());
 
   auto promise = promiseVendor_->createAsyncPromise([data, size, sampleRate]() -> PromiseResolver {
     auto result = AudioDecoder::decodeWithMemoryBlock(data, size, sampleRate);
@@ -51,7 +51,7 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
 
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
   auto sourcePath = args[0].getString(runtime).utf8(runtime);
-  auto sampleRate = args[1].getNumber();
+  auto sampleRate = static_cast<float>(args[1].getNumber());
 
   auto promise = promiseVendor_->createAsyncPromise([sourcePath, sampleRate]() -> PromiseResolver {
     auto result = AudioDecoder::decodeWithFilePath(sourcePath, sampleRate);
@@ -78,8 +78,8 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
 
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
   auto b64 = args[0].getString(runtime).utf8(runtime);
-  auto inputSampleRate = args[1].getNumber();
-  auto inputChannelCount = args[2].getNumber();
+  auto inputSampleRate = static_cast<float>(args[1].getNumber());
+  auto inputChannelCount = static_cast<int>(args[2].getNumber());
   auto interleaved = args[3].getBool();
 
   auto promise = promiseVendor_->createAsyncPromise(

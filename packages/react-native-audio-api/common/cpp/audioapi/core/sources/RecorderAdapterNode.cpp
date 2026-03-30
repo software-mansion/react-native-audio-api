@@ -2,8 +2,7 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -30,7 +29,7 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sample
 
   buff_.resize(channelCount_);
 
-  for (size_t i = 0; i < channelCount_; ++i) {
+  for (int i = 0; i < channelCount_; ++i) {
     buff_[i] = std::make_shared<CircularOverflowableAudioArray>(bufferSize);
   }
 
@@ -59,7 +58,7 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sample
   isInitialized_.store(true, std::memory_order_release);
 }
 
-void RecorderAdapterNode::cleanup() {
+void RecorderAdapterNode::adapterCleanup() {
   needsResampling_ = false;
   buff_.clear();
   resampler_.reset();
@@ -68,8 +67,8 @@ void RecorderAdapterNode::cleanup() {
   isInitialized_.store(false, std::memory_order_release);
 }
 
-std::shared_ptr<AudioBuffer> RecorderAdapterNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> RecorderAdapterNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (!isInitialized_.load(std::memory_order_acquire)) {
     processingBuffer->zero();
@@ -90,7 +89,7 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
   adapterOutputBuffer_->zero();
 
   size_t outputWritten = 0;
-  const size_t needed = static_cast<size_t>(framesToProcess);
+  const auto needed = static_cast<size_t>(framesToProcess);
 
   // Drain leftover resampled samples from the previous call
   if (overflowSize_ > 0) {

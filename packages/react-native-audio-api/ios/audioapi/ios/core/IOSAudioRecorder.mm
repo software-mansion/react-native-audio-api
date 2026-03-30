@@ -15,10 +15,10 @@
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/ios/system/AudioEngine.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <audioapi/utils/Result.hpp>
 
@@ -170,7 +170,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   }
 
   if (isConnected()) {
-    adapterNode_->cleanup();
+    adapterNode_->adapterCleanup();
   }
 
   filePath_ = "";

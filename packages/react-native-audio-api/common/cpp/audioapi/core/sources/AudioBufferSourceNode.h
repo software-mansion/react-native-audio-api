@@ -2,14 +2,13 @@
 
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <cstddef>
 #include <memory>
 
 namespace audioapi {
 
-class AudioBuffer;
 class AudioParam;
 struct AudioBufferSourceOptions;
 
@@ -34,8 +33,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   /// @note Audio Thread only
   void setBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,
-      const std::shared_ptr<AudioBuffer> &playbackRateBuffer,
-      const std::shared_ptr<AudioBuffer> &audioBuffer);
+      const std::shared_ptr<DSPAudioBuffer> &audioBuffer);
 
   using AudioScheduledSourceNode::start;
   /// @note Audio Thread only
@@ -50,10 +48,21 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void unregisterOnLoopEndedCallback(uint64_t callbackId);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
-      int framesToProcess) override;
-  double getCurrentPosition() const override;
+  double getCurrentPosition() const final;
+
+  bool isEmpty() const final;
+
+  void processWithoutInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) final;
+
+  void processWithInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) final;
 
  private:
   // Looping related properties
@@ -67,18 +76,6 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   uint64_t onLoopEndedCallbackId_ = 0; // 0 means no callback
   void sendOnLoopEndedEvent();
-
-  void processWithoutInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) override;
-
-  void processWithInterpolation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) override;
 
   double getVirtualStartFrame(float sampleRate) const;
   double getVirtualEndFrame(float sampleRate);

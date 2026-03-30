@@ -2,6 +2,8 @@
 
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <functional>
 #include <memory>
@@ -20,6 +22,7 @@ class AudioContext : public BaseAudioContext {
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   ~AudioContext() override;
+  DELETE_COPY_AND_MOVE(AudioContext);
 
   void close();
   bool resume();
@@ -37,7 +40,7 @@ class AudioContext : public BaseAudioContext {
 
   bool isDriverRunning() const override;
 
-  std::function<void(std::shared_ptr<AudioBuffer>, int)> renderAudio();
+  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio();
 };
 
 } // namespace audioapi

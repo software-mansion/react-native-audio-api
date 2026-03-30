@@ -238,7 +238,7 @@ inline BaseAudioBufferSourceOptions parseBaseAudioBufferSourceOptions(
 
   auto pitchCorrectionValue = optionsObject.getProperty(runtime, "pitchCorrection");
   if (pitchCorrectionValue.isBool()) {
-    options.pitchCorrection = static_cast<bool>(pitchCorrectionValue.getBool());
+    options.pitchCorrection = pitchCorrectionValue.getBool();
   }
 
   return options;
@@ -258,7 +258,7 @@ inline AudioBufferSourceOptions parseAudioBufferSourceOptions(
 
   auto loopValue = optionsObject.getProperty(runtime, "loop");
   if (loopValue.isBool()) {
-    options.loop = static_cast<bool>(loopValue.getBool());
+    options.loop = loopValue.getBool();
   }
 
   auto loopStartValue = optionsObject.getProperty(runtime, "loopStart");
@@ -351,7 +351,7 @@ inline WaveShaperOptions parseWaveShaperOptions(
   if (optionsObject.hasProperty(runtime, "buffer")) {
     auto arrayBuffer = optionsObject.getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
 
-    options.curve = std::make_shared<AudioArrayBuffer>(
+    options.curve = std::make_shared<AudioArray>(
         reinterpret_cast<float *>(arrayBuffer.data(runtime)),
         static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float)));
   }

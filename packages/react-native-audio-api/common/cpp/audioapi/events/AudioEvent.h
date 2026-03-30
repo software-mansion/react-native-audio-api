@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
+
 namespace audioapi {
 
-enum class AudioEvent {
+enum class AudioEvent : uint8_t {
   PLAYBACK_NOTIFICATION_PLAY,
   PLAYBACK_NOTIFICATION_PAUSE,
   PLAYBACK_NOTIFICATION_STOP,

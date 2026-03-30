@@ -3,16 +3,14 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/dsp/WaveShaper.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
-#include <atomic>
 #include <memory>
-#include <mutex>
 #include <vector>
 
 namespace audioapi {
 
-class AudioBuffer;
-class AudioArray;
 struct WaveShaperOptions;
 
 class WaveShaperNode : public AudioNode {
@@ -28,15 +26,15 @@ class WaveShaperNode : public AudioNode {
   void setCurve(const std::shared_ptr<AudioArray> &curve);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
   OverSampleType oversample_;
   std::shared_ptr<AudioArray> curve_;
 
-  std::vector<std::unique_ptr<WaveShaper>> waveShapers_{};
+  std::vector<std::unique_ptr<WaveShaper>> waveShapers_;
 };
 
 } // namespace audioapi

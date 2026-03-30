@@ -7,8 +7,8 @@
 
 #include <audioapi/dsp/Convolver.h>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <algorithm>
 #include <memory>
 
@@ -20,10 +20,7 @@ Convolver::Convolver()
       _segSize(0),
       _segCount(0),
       _fftComplexSize(0),
-      _segments(),
-      _segmentsIR(),
       _fft(nullptr),
-      _preMultiplied(),
       _current(0) {}
 
 void Convolver::reset() {
@@ -44,7 +41,7 @@ void Convolver::reset() {
   }
 }
 
-bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t irLen) {
+bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
   reset();
   // blockSize must be a power of two
   if ((blockSize & (blockSize - 1))) {
@@ -72,7 +69,7 @@ bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t ir
   // complex-conjugate symmetricity
   _fftComplexSize = _segSize / 2 + 1;
   _fft = std::make_shared<dsp::FFT>(static_cast<int>(_segSize));
-  _fftBuffer = std::make_unique<AudioArray>(_segSize);
+  _fftBuffer = std::make_unique<DSPAudioArray>(_segSize);
 
   // segments preparation
   for (int i = 0; i < _segCount; ++i) {
@@ -98,7 +95,7 @@ bool Convolver::init(size_t blockSize, const audioapi::AudioArray &ir, size_t ir
   }
 
   _preMultiplied = aligned_vec_complex(_fftComplexSize);
-  _inputBuffer = std::make_unique<AudioArray>(_segSize);
+  _inputBuffer = std::make_unique<DSPAudioArray>(_segSize);
   _current = 0;
 
   return true;
@@ -166,7 +163,7 @@ void pairwise_complex_multiply_fast(
 #endif
 }
 
-void Convolver::process(const AudioArray &input, AudioArray &output) {
+void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output) {
   // The input buffer acts as a 2B-point sliding window of the input signal.
   // With each new input block, the right half of the input buffer is shifted
   // to the left and the new block is stored in the right half.
@@ -185,8 +182,7 @@ void Convolver::process(const AudioArray &input, AudioArray &output) {
   // The P sub filter spectra are pairwisely multiplied with the input spectra
   // in the FDL. The results are accumulated in the frequency-domain.
   memset(_preMultiplied.data(), 0, _preMultiplied.size() * sizeof(std::complex<float>));
-  // this is a bottleneck of the algorithm
-  for (int i = 0; i < _segCount; ++i) {
+  for (size_t i = 0; i < _segCount; ++i) {
     const int indexAudio = (_current + i) % _segCount;
     const auto &impulseResponseSegment = _segmentsIR[i];
     const auto &audioSegment = _segments[indexAudio];

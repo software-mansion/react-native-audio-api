@@ -2,9 +2,7 @@
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioArrayBuffer.hpp>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <memory>
 
 namespace audioapi {
@@ -15,7 +13,7 @@ WaveShaperNode::WaveShaperNode(
     : AudioNode(context, options), oversample_(options.oversample) {
 
   waveShapers_.reserve(6);
-  for (size_t i = 0; i < channelCount_; i++) {
+  for (int i = 0; i < channelCount_; i++) {
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr, context->getSampleRate()));
   }
   setCurve(options.curve);
@@ -38,15 +36,15 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   }
 }
 
-std::shared_ptr<AudioBuffer> WaveShaperNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> WaveShaperNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (curve_ == nullptr) {
     return processingBuffer;
   }
 
   for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); channel++) {
-    auto channelData = processingBuffer->getChannel(channel);
+    auto *channelData = processingBuffer->getChannel(channel);
 
     waveShapers_[channel]->process(*channelData, framesToProcess);
   }

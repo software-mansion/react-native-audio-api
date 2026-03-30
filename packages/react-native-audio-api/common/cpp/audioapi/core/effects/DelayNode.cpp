@@ -2,8 +2,8 @@
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
 
 namespace audioapi {
@@ -30,12 +30,12 @@ void DelayNode::onInputDisabled() {
   numberOfEnabledInputNodes_ -= 1;
   if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
     signalledToStop_ = true;
-    remainingFrames_ = delayTimeParam_->getValue() * getContextSampleRate();
+    remainingFrames_ = static_cast<int>(delayTimeParam_->getValue() * getContextSampleRate());
   }
 }
 
 void DelayNode::delayBufferOperation(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
     size_t &operationStartingIndex,
     DelayNode::BufferAction action) {
@@ -43,7 +43,8 @@ void DelayNode::delayBufferOperation(
 
   // handle buffer wrap around
   if (operationStartingIndex + framesToProcess > delayBuffer_->getSize()) {
-    int framesToEnd = operationStartingIndex + framesToProcess - delayBuffer_->getSize();
+    int framesToEnd =
+        static_cast<int>(operationStartingIndex + framesToProcess - delayBuffer_->getSize());
 
     if (action == BufferAction::WRITE) {
       delayBuffer_->sum(
@@ -75,8 +76,8 @@ void DelayNode::delayBufferOperation(
 // processing is split into two parts
 // 1. writing to delay buffer (mixing if needed) from processing buffer
 // 2. reading from delay buffer to processing buffer (mixing if needed) with delay
-std::shared_ptr<AudioBuffer> DelayNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> DelayNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   // handling tail processing
   if (signalledToStop_) {
@@ -100,7 +101,8 @@ std::shared_ptr<AudioBuffer> DelayNode::processNode(
   }
 
   auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context->getCurrentTime());
-  size_t writeIndex = static_cast<size_t>(readIndex_ + delayTime * context->getSampleRate()) %
+  size_t writeIndex =
+      static_cast<size_t>(static_cast<float>(readIndex_) + delayTime * context->getSampleRate()) %
       delayBuffer_->getSize();
   delayBufferOperation(
       processingBuffer, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <bit>
 #include <new>
 #include <type_traits>
@@ -17,10 +18,12 @@ template <typename T, size_t capacity_>
 class RingBiDirectionalBuffer {
  public:
   /// @brief Constructor for RingBuffer.
-  RingBiDirectionalBuffer() : headIndex_(0), tailIndex_(0) {
+  RingBiDirectionalBuffer()
+      : buffer_(
+            static_cast<T *>(::operator new[](
+                capacity_ * sizeof(T),
+                static_cast<std::align_val_t>(alignof(T))))) {
     static_assert(isPowerOfTwo(capacity_), "RingBiDirectionalBuffer's capacity must be power of 2");
-    buffer_ = static_cast<T *>(
-        ::operator new[](capacity_ * sizeof(T), static_cast<std::align_val_t>(alignof(T))));
   }
 
   /// @brief Destructor for RingBuffer.
@@ -30,6 +33,8 @@ class RingBiDirectionalBuffer {
     }
     ::operator delete[](buffer_, capacity_ * sizeof(T), static_cast<std::align_val_t>(alignof(T)));
   }
+
+  DELETE_COPY_AND_MOVE(RingBiDirectionalBuffer);
 
   /// @brief Push a value into the ring buffer.
   /// @tparam U The type of the value to push.
@@ -111,74 +116,74 @@ class RingBiDirectionalBuffer {
 
   /// @brief Peek at the front of the buffer.
   /// @return A const reference to the front element of the buffer.
-  const inline T &peekFront() const noexcept {
+  [[nodiscard]] const T &peekFront() const noexcept {
     return buffer_[headIndex_];
   }
 
   /// @brief Peek at the back of the buffer.
   /// @return A const reference to the back element of the buffer.
-  const inline T &peekBack() const noexcept {
+  [[nodiscard]] const T &peekBack() const noexcept {
     return buffer_[prevIndex(tailIndex_)];
   }
 
   /// @brief Peek at the front of the buffer.
   /// @return A mutable reference to the front element of the buffer.
-  inline T &peekFrontMut() noexcept {
+  [[nodiscard]] T &peekFrontMut() noexcept {
     return buffer_[headIndex_];
   }
 
   /// @brief Peek at the back of the buffer.
   /// @return A mutable reference to the back element of the buffer.
-  inline T &peekBackMut() noexcept {
+  [[nodiscard]] T &peekBackMut() noexcept {
     return buffer_[prevIndex(tailIndex_)];
   }
 
   /// @brief Check if the buffer is empty.
   /// @return True if the buffer is empty, false otherwise.
-  inline bool isEmpty() const noexcept {
+  [[nodiscard]] bool isEmpty() const noexcept {
     return headIndex_ == tailIndex_;
   }
 
   /// @brief Check if the buffer is full.
   /// @return True if the buffer is full, false otherwise.
-  inline bool isFull() const noexcept {
+  [[nodiscard]] bool isFull() const noexcept {
     return nextIndex(tailIndex_) == headIndex_;
   }
 
   /// @brief Get the capacity of the buffer.
   /// @return The capacity of the buffer.
-  inline size_t getCapacity() const noexcept {
+  [[nodiscard]] size_t getCapacity() const noexcept {
     return capacity_;
   }
 
   /// @brief Get the real capacity of the buffer (excluding one slot for the empty state).
   /// @return The real capacity of the buffer.
-  inline size_t getRealCapacity() const noexcept {
+  [[nodiscard]] size_t getRealCapacity() const noexcept {
     return capacity_ - 1;
   }
 
   /// @brief Get the number of elements in the buffer.
   /// @return The number of elements in the buffer.
-  inline size_t size() const noexcept {
+  [[nodiscard]] size_t size() const noexcept {
     return (capacity_ + tailIndex_ - headIndex_) & (capacity_ - 1);
   }
 
  private:
   T *buffer_;
-  size_t headIndex_;
-  size_t tailIndex_;
+  size_t headIndex_{0};
+  size_t tailIndex_{0};
 
   /// @brief Get the next index in the buffer.
   /// @param n The current index.
   /// @return The next index in the buffer.
-  inline size_t nextIndex(const size_t n) const noexcept {
+  [[nodiscard]] size_t nextIndex(const size_t n) const noexcept {
     return (n + 1) & (capacity_ - 1);
   }
 
   /// @brief Get the previous index in the buffer.
   /// @param n The current index.
   /// @return The previous index in the buffer.
-  inline size_t prevIndex(const size_t n) const noexcept {
+  [[nodiscard]] size_t prevIndex(const size_t n) const noexcept {
     return (n - 1) & (capacity_ - 1);
   }
 

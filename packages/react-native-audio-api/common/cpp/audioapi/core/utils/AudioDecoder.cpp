@@ -1,8 +1,7 @@
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/base64/base64.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
 
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
@@ -143,7 +142,7 @@ AudioBufferResult AudioDecoder::decodeWithPCMInBase64(
     int inputChannelCount,
     bool interleaved) {
   auto decodedData = base64_decode(data, false);
-  const auto uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
+  const auto *uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
   size_t numFramesDecoded = decodedData.size() / (inputChannelCount * sizeof(int16_t));
 
   auto audioBuffer =

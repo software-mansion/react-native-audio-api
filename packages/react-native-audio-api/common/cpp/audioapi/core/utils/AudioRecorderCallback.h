@@ -1,5 +1,8 @@
 #pragma once
 
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
@@ -10,9 +13,6 @@
 
 namespace audioapi {
 
-class AudioBuffer;
-class AudioArray;
-class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
 class AudioRecorderCallback {
@@ -23,6 +23,10 @@ class AudioRecorderCallback {
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId);
+  AudioRecorderCallback(const AudioRecorderCallback &) = delete;
+  AudioRecorderCallback(AudioRecorderCallback &&) = delete;
+  AudioRecorderCallback &operator=(const AudioRecorderCallback &) = delete;
+  AudioRecorderCallback &operator=(AudioRecorderCallback &&) = delete;
   virtual ~AudioRecorderCallback();
 
   virtual void cleanup() = 0;
@@ -48,6 +52,7 @@ class AudioRecorderCallback {
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   // TODO: CircularAudioBuffer
+  static constexpr size_t DEFAULT_RING_BUFFER_SIZE = 8192;
   std::vector<std::shared_ptr<CircularAudioArray>> circularBuffer_;
   static constexpr auto RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY =
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;

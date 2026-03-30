@@ -2,13 +2,15 @@
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
 
 using namespace audioapi;
+
+// NOLINTBEGIN
 
 class GainTest : public ::testing::Test {
  protected:
@@ -33,8 +35,8 @@ class TestableGainNode : public GainNode {
     getGainParam()->setValue(value);
   }
 
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override {
     return GainNode::processNode(processingBuffer, framesToProcess);
   }
@@ -51,7 +53,7 @@ TEST_F(GainTest, GainModulatesVolumeCorrectly) {
   auto gainNode = TestableGainNode(context);
   gainNode.setGainParam(GAIN_VALUE);
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < buffer->getSize(); ++i) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
@@ -68,7 +70,7 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
   auto gainNode = TestableGainNode(context);
   gainNode.setGainParam(GAIN_VALUE);
 
-  auto buffer = std::make_shared<audioapi::AudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < buffer->getSize(); ++i) {
     (*buffer->getChannel(0))[i] = i + 1;
     (*buffer->getChannel(1))[i] = -i - 1;
@@ -80,3 +82,5 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(1))[i], (-i - 1) * GAIN_VALUE);
   }
 }
+
+// NOLINTEND

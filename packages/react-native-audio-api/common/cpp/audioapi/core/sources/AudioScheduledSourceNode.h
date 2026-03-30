@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 
 namespace audioapi {
@@ -18,7 +19,13 @@ class AudioScheduledSourceNode : public AudioNode {
   // PLAYING: The node is currently playing.
   // STOP_SCHEDULED: The node is scheduled to stop at a specific time, but is still playing.
   // FINISHED: The node has finished playing.
-  enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
+  enum class PlaybackState : std::uint8_t {
+    UNSCHEDULED,
+    SCHEDULED,
+    PLAYING,
+    STOP_SCHEDULED,
+    FINISHED
+  };
   explicit AudioScheduledSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioScheduledSourceNodeOptions &options = AudioScheduledSourceNodeOptions());
@@ -58,7 +65,7 @@ class AudioScheduledSourceNode : public AudioNode {
   const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
       size_t &startOffset,
       size_t &nonSilentFramesToProcess,

@@ -5,7 +5,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioBuffer.h>
+
 #include <memory>
 #include <utility>
 
@@ -169,18 +169,16 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
   auto audioBufferSourceNode = std::static_pointer_cast<AudioBufferSourceNode>(node_);
 
   std::shared_ptr<AudioBuffer> copiedBuffer;
-  std::shared_ptr<AudioBuffer> playbackRateBuffer;
-  std::shared_ptr<AudioBuffer> audioBuffer;
+  std::shared_ptr<DSPAudioBuffer> audioBuffer;
 
   if (buffer == nullptr) {
     copiedBuffer = nullptr;
-    playbackRateBuffer = nullptr;
-    audioBuffer = std::make_shared<AudioBuffer>(
+    audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE, 1, audioBufferSourceNode->getContextSampleRate());
   } else {
     if (pitchCorrection_) {
       initStretch(static_cast<int>(buffer->getNumberOfChannels()), buffer->getSampleRate());
-      int extraTailFrames =
+      auto extraTailFrames =
           static_cast<size_t>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
       size_t totalSize = buffer->getSize() + extraTailFrames;
       copiedBuffer = std::make_shared<AudioBuffer>(
@@ -191,20 +189,15 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
       copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
     }
 
-    playbackRateBuffer = std::make_shared<AudioBuffer>(
-        3 * RENDER_QUANTUM_SIZE,
-        copiedBuffer->getNumberOfChannels(),
-        audioBufferSourceNode->getContextSampleRate());
-    audioBuffer = std::make_shared<AudioBuffer>(
+    audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
         copiedBuffer->getNumberOfChannels(),
         audioBufferSourceNode->getContextSampleRate());
   }
 
-  auto event =
-      [audioBufferSourceNode, copiedBuffer, playbackRateBuffer, audioBuffer](BaseAudioContext &) {
-        audioBufferSourceNode->setBuffer(copiedBuffer, playbackRateBuffer, audioBuffer);
-      };
+  auto event = [audioBufferSourceNode, copiedBuffer, audioBuffer](BaseAudioContext &) {
+    audioBufferSourceNode->setBuffer(copiedBuffer, audioBuffer);
+  };
   audioBufferSourceNode->scheduleAudioEvent(std::move(event));
 }
 
