@@ -16,6 +16,7 @@
 
 .controlsBox {
   flex: 1;
+  flex-shrink: 0;
 }
 
 .controlsPanel {
@@ -170,4 +171,28 @@
   color: var(--swm-navy-light-80);
   font-size: 12px;
   font-weight: 600;
+}
+
+.bottomRow {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+
+@media screen and (max-width: 500px) {
+  .topRow {
+    flex-direction: column;
+  }
+
+  .bottomRow {
+    padding: 0;
+    margin: -1px;
+  }
+
+  .codeContainer {
+    max-width: 100%;
+  }
 }

@@ -2,6 +2,7 @@ import FilterList from "@site/src/ui/FilterList";
 import SliderInput from "@site/src/ui/SliderInput";
 import React, { useState } from "react";
 import { OscillatorType } from "react-native-audio-api";
+
 import styles from "../styles.module.css";
 import OscillatorExample from "./OscillatorExample";
 

@@ -30,16 +30,17 @@ export const WaveformVisualizer: FC<{
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
       context.clearRect(0, 0, cssWidth, cssHeight);
 
-      if (!analyserNode) {
-        return;
-      }
-
       context.lineWidth = 2;
       context.strokeStyle = theme === "dark" ? "#ff7774" : "#fa7f7c";
       context.beginPath();
 
       const data = new Uint8Array(fftSize);
-      analyserNode.getByteTimeDomainData(data);
+
+      if (analyserNode) {
+        analyserNode.getByteTimeDomainData(data);
+      } else {
+        data.fill(128); // Default to a flat line if no analyser node is available
+      }
 
       const sliceWidth = cssWidth / (data.length - 1);
 
@@ -90,7 +91,6 @@ export const WaveformVisualizer: FC<{
   return (
     <ResponsiveCanvas
       onDraw={handleCanvasDraw}
-      aspectRatio={1}
       canvasRef={canvasRef}
       throttleMs={16}
     />

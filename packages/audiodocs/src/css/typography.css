@@ -156,7 +156,9 @@ ul[role='tablist'] {
 code {
   font-family: var(--swm-code-font);
   font-weight: 400;
-  padding: 0.25rem;
+  border: none;
+  padding: 0.1rem 0.25rem;
+  background-color: var(--swm-background-quote);
 }
 
 .markdown a code {
@@ -167,8 +169,6 @@ code {
 .markdown a {
   font-weight: 500;
   text-decoration: none;
-
-  border-bottom: 1px solid var(--ifm-font-color-base);
 }
 
 /* Sidebar */

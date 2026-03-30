@@ -1,3 +1,4 @@
+import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from "@docusaurus/theme-common";
 import React, { FC, ReactNode, useState } from "react";
 //@ts-ignore
@@ -48,7 +49,7 @@ const PlaygroundContent: FC<{ usePlayground: () => PlaygroundHookResult }> = ({
 
       {upload && <div className={styles.uploadBox}>{upload}</div>}
 
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+      <div className={styles.bottomRow}>
         <div className={styles.codeContainer}>
           <CodeBlock language="tsx" className={styles.codeBlock}>
             {code}
@@ -70,23 +71,27 @@ const InteractivePlayground: FC<InteractivePlaygroundProps> = ({
   };
 
   return (
-    <DetailBox tag={tag} info="interactive playground" startOpen>
-      <div className={styles.resetButtonContainer}>
-        <AnimableIcon
-          icon={<Reset />}
-          iconDark={<ResetDark />}
-          animation={Animation.FADE_IN_OUT}
-          onClick={(done, setDone) => {
-            if (!done) {
-              resetPlayground();
-              setDone(true);
-            }
-          }}
-        />
-      </div>
+    <BrowserOnly fallback={<div>Loading...</div>}>
+      {() => (
+        <DetailBox tag={tag} info="interactive playground" startOpen>
+          <div className={styles.resetButtonContainer}>
+            <AnimableIcon
+              icon={<Reset />}
+              iconDark={<ResetDark />}
+              animation={Animation.FADE_IN_OUT}
+              onClick={(done, setDone) => {
+                if (!done) {
+                  resetPlayground();
+                  setDone(true);
+                }
+              }}
+            />
+          </div>
 
-      <PlaygroundContent key={key} usePlayground={usePlayground} />
-    </DetailBox>
+          <PlaygroundContent key={key} usePlayground={usePlayground} />
+        </DetailBox>
+      )}
+    </BrowserOnly>
   );
 };
 
