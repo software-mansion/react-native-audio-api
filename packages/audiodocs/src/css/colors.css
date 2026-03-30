@@ -101,7 +101,8 @@
   --swm-yellow-dark-40: #fff9db;
 
   /* Black & White palette, mainly for background settings */
-  --swm-off-white: #f8f9ff;
+  /* --swm-off-white: #f8f9ff; */
+  --swm-off-white: #fffdfd;
   --swm-white: #fcfcff;
   --swm-white-transparent-light: #fcfcff40;
   --swm-white-transparent-dark: #fcfcff80;
@@ -109,6 +110,8 @@
   --swm-light-off-navy: #30354a;
   --swm-off-navy: #272b3c;
   --swm-navy: #232736;
+
+  --prism-background-color: transparent;
 
   /* Infima main colors */
   --ifm-color-primary: var(--swm-navy-light-100);
@@ -141,7 +144,7 @@
   --ifm-font-color-base: var(--black);
 
   /* Tabs */
-  --swm-tab: var(--swm-red-light-20);
+  --swm-tab: var(--swm-red-light-40);
   --swm-tab-hover: var(--swm-red-dark-80);
   --swm-tab-active: var(--swm-red-dark-100);
 
@@ -151,8 +154,8 @@
   --ifm-toc-link-color-active: var(--swm-navy-light-100);
 
   /* Details section */
-  --swm-details-foreground: var(--swm-purple-light-20);
-  --swm-details-background: var(--swm-purple-light-100);
+  --swm-details-foreground: var(--swm-red-light-20);
+  --swm-details-background: var(--swm-red-light-100);
 
   /* Admonitions */
   --swm-admonition-color-secondary: var(--swm-navy-light-10);
@@ -358,8 +361,8 @@
   --ifm-toc-link-color-active: var(--swm-off-white);
 
   /* Details section */
-  --swm-details-foreground: var(--swm-purple-dark-120);
-  --swm-details-background: var(--swm-purple-dark-140);
+  --swm-details-foreground: var(--swm-red-dark-120);
+  --swm-details-background: var(--swm-red-dark-100);
 
   /* Admonitions */
   --swm-admonition-color-secondary: var(--swm-navy-dark-60);

@@ -244,3 +244,12 @@ details.alert {
 [class*='headerWithBadges'] {
   align-items: baseline;
 }
+
+[class*=admonition-warning] code {
+  background-color: var(--swm-yellow-light-40) !important;
+  border: none !important;
+}
+
+[data-theme='dark'] [class*=admonition-warning] code {
+  background-color: var(--swm-yellow-dark-140) !important;
+}
