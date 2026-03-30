@@ -67,6 +67,16 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
   jsi::Object createEventObject(
       const std::unordered_map<std::string, EventValue> &body,
       size_t memoryPressure);
+
+  /// Builds the JS object passed to handlers (AUDIO_READY uses buffer memory pressure).
+  jsi::Object makeEventObjectForDispatch(
+      AudioEvent eventName,
+      const std::unordered_map<std::string, EventValue> &body);
+
+  void dispatchHandler(
+      AudioEvent eventName,
+      const std::shared_ptr<jsi::Function> &handler,
+      const std::unordered_map<std::string, EventValue> &body);
 };
 
 } // namespace audioapi

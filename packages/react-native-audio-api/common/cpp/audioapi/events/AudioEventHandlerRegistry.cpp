@@ -65,130 +65,86 @@ void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t
   });
 }
 
-// todo: refactor this method to be less complex and more readable
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+jsi::Object AudioEventHandlerRegistry::makeEventObjectForDispatch(
+    AudioEvent eventName,
+    const std::unordered_map<std::string, EventValue> &body) {
+  if (eventName != AudioEvent::AUDIO_READY) {
+    return createEventObject(body);
+  }
+  auto bufferIt = body.find("buffer");
+  if (bufferIt == body.end()) {
+    return createEventObject(body);
+  }
+  auto bufferHostObject = std::static_pointer_cast<AudioBufferHostObject>(
+      std::get<std::shared_ptr<jsi::HostObject>>(bufferIt->second));
+  return createEventObject(body, bufferHostObject->getSizeInBytes());
+}
+
+void AudioEventHandlerRegistry::dispatchHandler(
+    AudioEvent eventName,
+    const std::shared_ptr<jsi::Function> &handler,
+    const std::unordered_map<std::string, EventValue> &body) {
+  if (handler == nullptr || !handler->isFunction(*runtime_)) {
+    return;
+  }
+  try {
+    jsi::Object eventObject = makeEventObjectForDispatch(eventName, body);
+    handler->call(*runtime_, eventObject);
+  } catch (const std::exception &) {
+    throw;
+  } catch (...) {
+    printf("Unknown exception occurred while invoking handler for event: %d\n", eventName);
+  }
+}
+
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     AudioEvent eventName,
     const std::unordered_map<std::string, EventValue> &body) {
   if (runtime_ == nullptr) {
-    // If runtime is not valid, we cannot unregister the handler
     return;
   }
 
   auto weakSelf = weak_from_this();
 
-  // Read/Write on eventHandlers_ map only on the JS thread
   callInvoker_->invokeAsync([weakSelf, eventName, body]() {
-    if (auto self = weakSelf.lock()) {
-      auto it = self->eventHandlers_.find(eventName);
-
-      if (it == self->eventHandlers_.end()) {
-        // If the event name is not registered, we can skip invoking handlers
-        return;
-      }
-
-      auto handlersMap = it->second;
-
-      for (const auto &pair : handlersMap) {
-        auto handler = pair.second;
-
-        if (!handler || !handler->isFunction(*self->runtime_)) {
-          // If the handler is not valid, we can skip it
-          continue;
-        }
-
-        try {
-          jsi::Object eventObject(*self->runtime_);
-          // handle special logic for microphone, because we pass audio buffer
-          // which has significant size
-          if (eventName == AudioEvent::AUDIO_READY) {
-            auto bufferIt = body.find("buffer");
-            if (bufferIt != body.end()) {
-              auto bufferHostObject = std::static_pointer_cast<AudioBufferHostObject>(
-                  std::get<std::shared_ptr<jsi::HostObject>>(bufferIt->second));
-              eventObject = self->createEventObject(body, bufferHostObject->getSizeInBytes());
-            }
-          } else {
-            eventObject = self->createEventObject(body);
-          }
-          handler->call(*self->runtime_, eventObject);
-        } catch (const std::exception &e) {
-          // re-throw the exception to be handled by the caller
-          // std::exception is safe to parse by the rn bridge
-          throw;
-        } catch (...) {
-          printf("Unknown exception occurred while invoking handler for event: %d\n", eventName);
-        }
-      }
+    auto self = weakSelf.lock();
+    if (self == nullptr) {
+      return;
+    }
+    auto it = self->eventHandlers_.find(eventName);
+    if (it == self->eventHandlers_.end()) {
+      return;
+    }
+    for (const auto &pair : it->second) {
+      self->dispatchHandler(eventName, pair.second, body);
     }
   });
 }
 
-// todo: refactor this method to be less complex and more readable
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
     AudioEvent eventName,
     uint64_t listenerId,
     const std::unordered_map<std::string, EventValue> &body) {
   if (runtime_ == nullptr) {
-    // If runtime is not valid, we cannot unregister the handler
     return;
   }
 
   auto weakSelf = weak_from_this();
 
-  // Read/Write on eventHandlers_ map only on the JS thread
   callInvoker_->invokeAsync([weakSelf, eventName, listenerId, body]() {
-    if (auto self = weakSelf.lock()) {
-      auto it = self->eventHandlers_.find(eventName);
-
-      if (it == self->eventHandlers_.end()) {
-        // If the event name is not registered, we can skip invoking handlers
-        return;
-      }
-
-      auto handlerIt = it->second.find(listenerId);
-
-      if (handlerIt == it->second.end()) {
-        // If the listener ID is not registered, we can skip invoking handlers
-        return;
-      }
-
-      // Depending on how the AudioBufferSourceNode is handled on the JS side,
-      // it sometimes might enter race condition where the ABSN is deleted on JS
-      // side, but it is still processed on the audio thread, leading to a crash
-      // when f.e. `positionChanged` event is triggered.
-
-      // In case of debugging this, please increment the hours spent counter
-
-      // Hours spent on this: 8
-      try {
-        if (!handlerIt->second || !handlerIt->second->isFunction(*self->runtime_)) {
-          // If the handler is not valid, we can skip it
-          return;
-        }
-        jsi::Object eventObject(*self->runtime_);
-        // handle special logic for microphone, because we pass audio buffer which
-        // has significant size
-        if (eventName == AudioEvent::AUDIO_READY) {
-          auto bufferIt = body.find("buffer");
-          if (bufferIt != body.end()) {
-            auto bufferHostObject = std::static_pointer_cast<AudioBufferHostObject>(
-                std::get<std::shared_ptr<jsi::HostObject>>(bufferIt->second));
-            eventObject = self->createEventObject(body, bufferHostObject->getSizeInBytes());
-          }
-        } else {
-          eventObject = self->createEventObject(body);
-        }
-        handlerIt->second->call(*self->runtime_, eventObject);
-      } catch (const std::exception &e) {
-        // re-throw the exception to be handled by the caller
-        // std::exception is safe to parse by the rn bridge
-        throw;
-      } catch (...) {
-        printf("Unknown exception occurred while invoking handler for event: %d\n", eventName);
-      }
+    auto self = weakSelf.lock();
+    if (self == nullptr) {
+      return;
     }
+    auto it = self->eventHandlers_.find(eventName);
+    if (it == self->eventHandlers_.end()) {
+      return;
+    }
+    auto handlerIt = it->second.find(listenerId);
+    if (handlerIt == it->second.end()) {
+      return;
+    }
+    self->dispatchHandler(eventName, handlerIt->second, body);
   });
 }
 
