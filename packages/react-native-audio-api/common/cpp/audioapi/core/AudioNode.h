@@ -21,8 +21,9 @@ class AudioParam;
 
 class AudioNode : public utils::graph::GraphObject, public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(const std::shared_ptr<BaseAudioContext> &context,
-                     const AudioNodeOptions &options = AudioNodeOptions());
+  explicit AudioNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioNodeOptions &options = AudioNodeOptions());
   ~AudioNode() override = default;
   DELETE_COPY_AND_MOVE(AudioNode);
 

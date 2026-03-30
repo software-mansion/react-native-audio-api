@@ -34,7 +34,7 @@ void StereoPannerNode::processNode(int framesToProcess) {
   if (context == nullptr) {
     return;
   }
-  
+
   double time = context->getCurrentTime();
   double deltaTime = 1.0 / context->getSampleRate();
 
