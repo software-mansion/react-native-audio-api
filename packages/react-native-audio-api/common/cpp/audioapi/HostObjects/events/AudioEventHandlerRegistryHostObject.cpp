@@ -9,9 +9,8 @@ namespace audioapi {
 AudioEventHandlerRegistryHostObject::AudioEventHandlerRegistryHostObject(
     const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry)
     : eventHandlerRegistry_(eventHandlerRegistry) {
-  addFunctions(
-      JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, addAudioEventListener),
-      JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, removeAudioEventListener));
+  addFunctions(JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, addAudioEventListener),
+               JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, removeAudioEventListener));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioEventHandlerRegistryHostObject, addAudioEventListener) {
@@ -28,8 +27,8 @@ JSI_HOST_FUNCTION_IMPL(AudioEventHandlerRegistryHostObject, removeAudioEventList
   auto eventName = args[0].getString(runtime).utf8(runtime);
   uint64_t listenerId = std::stoull(args[1].getString(runtime).utf8(runtime));
 
-  eventHandlerRegistry_->unregisterHandler(
-      js_enum_parser::audioEventFromString(eventName), listenerId);
+  eventHandlerRegistry_->unregisterHandler(js_enum_parser::audioEventFromString(eventName),
+                                           listenerId);
 
   return jsi::Value::undefined();
 }

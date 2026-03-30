@@ -242,10 +242,9 @@ TEST_P(GraphFuzzTest, RapidAddRemoveCycles) {
 // Instantiation: 100 seeds (0..99), each producing a unique random scenario
 // =========================================================================
 
-INSTANTIATE_TEST_SUITE_P(
-    Seeds,
-    GraphFuzzTest,
-    ::testing::Range(uint64_t{0}, uint64_t{100}),
-    [](const ::testing::TestParamInfo<uint64_t> &info) {
-      return "seed_" + std::to_string(info.param);
-    });
+INSTANTIATE_TEST_SUITE_P(Seeds,
+                         GraphFuzzTest,
+                         ::testing::Range(uint64_t{0}, uint64_t{100}),
+                         [](const ::testing::TestParamInfo<uint64_t> &info) {
+                           return "seed_" + std::to_string(info.param);
+                         });

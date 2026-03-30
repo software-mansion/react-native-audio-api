@@ -64,10 +64,10 @@ template <size_t N>
 class DisposerImpl : public Disposer<N> {
   using Payload = DisposalPayload<N>;
 
-  using Sender = audioapi::channels::spsc::Sender<
-      Payload,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using Sender =
+      audioapi::channels::spsc::Sender<Payload,
+                                       audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+                                       audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT>;
 
  public:
   explicit DisposerImpl(size_t channelCapacity = 1024);
@@ -104,8 +104,8 @@ template <typename T>
 DisposalPayload<N> DisposalPayload<N>::create(T &&value) {
   using DecayedT = std::decay_t<T>;
   static_assert(sizeof(DecayedT) <= N, "Type too large for DisposalPayload");
-  static_assert(
-      alignof(DecayedT) <= alignof(std::max_align_t), "Type alignment exceeds max_align_t");
+  static_assert(alignof(DecayedT) <= alignof(std::max_align_t),
+                "Type alignment exceeds max_align_t");
 
   DisposalPayload p;
   // Move-construct the value into the raw buffer

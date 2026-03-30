@@ -27,12 +27,11 @@ AndroidRecorderCallback::AndroidRecorderCallback(
     size_t bufferLength,
     int channelCount,
     uint64_t callbackId)
-    : AudioRecorderCallback(
-          audioEventHandlerRegistry,
-          sampleRate,
-          bufferLength,
-          channelCount,
-          callbackId) {}
+    : AudioRecorderCallback(audioEventHandlerRegistry,
+                            sampleRate,
+                            bufferLength,
+                            channelCount,
+                            callbackId) {}
 
 AndroidRecorderCallback::~AndroidRecorderCallback() {
   if (converter_ != nullptr) {
@@ -55,31 +54,29 @@ AndroidRecorderCallback::~AndroidRecorderCallback() {
 /// @param streamSampleRate The sample rate of the incoming audio stream.
 /// @param streamChannelCount The channel count of the incoming audio stream.
 /// @param maxInputBufferLength The maximum buffer length of the incoming audio stream.
-Result<NoneType, std::string> AndroidRecorderCallback::prepare(
-    float streamSampleRate,
-    int32_t streamChannelCount,
-    size_t maxInputBufferLength) {
+Result<NoneType, std::string> AndroidRecorderCallback::prepare(float streamSampleRate,
+                                                               int32_t streamChannelCount,
+                                                               size_t maxInputBufferLength) {
   ma_result result;
 
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   maxInputBufferLength_ = maxInputBufferLength;
 
-  ma_data_converter_config converterConfig = ma_data_converter_config_init(
-      ma_format_f32,
-      ma_format_f32,
-      streamChannelCount_,
-      channelCount_,
-      streamSampleRate_,
-      static_cast<int32_t>(sampleRate_));
+  ma_data_converter_config converterConfig =
+      ma_data_converter_config_init(ma_format_f32,
+                                    ma_format_f32,
+                                    streamChannelCount_,
+                                    channelCount_,
+                                    streamSampleRate_,
+                                    static_cast<int32_t>(sampleRate_));
 
   converter_ = std::make_unique<ma_data_converter>();
   result = ma_data_converter_init(&converterConfig, nullptr, converter_.get());
 
   if (result != MA_SUCCESS) {
-    return Result<NoneType, std::string>::Err(
-        "Failed to initialize miniaudio data converter" +
-        std::string(ma_result_description(result)));
+    return Result<NoneType, std::string>::Err("Failed to initialize miniaudio data converter" +
+                                              std::string(ma_result_description(result)));
   }
 
   if (streamSampleRate_ <= 0 || streamChannelCount_ <= 0) {
@@ -103,10 +100,11 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
   auto offloaderLambda = [this](CallbackData data) {
     taskOffloaderFunction(data);
   };
-  offloader_ = std::make_unique<task_offloader::TaskOffloader<
-      CallbackData,
-      RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-      RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
+  offloader_ =
+      std::make_unique<task_offloader::TaskOffloader<CallbackData,
+                                                     RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+                                                     RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(
+          RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   return Result<NoneType, std::string>::Ok(None);
 }
 

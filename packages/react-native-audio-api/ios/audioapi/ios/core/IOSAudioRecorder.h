@@ -44,11 +44,10 @@ class IOSAudioRecorder : public AudioRecorder {
   bool isPaused() const override;
   bool isIdle() const override;
 
-  Result<NoneType, std::string> setOnAudioReadyCallback(
-      float sampleRate,
-      size_t bufferLength,
-      int channelCount,
-      uint64_t callbackId) override;
+  Result<NoneType, std::string> setOnAudioReadyCallback(float sampleRate,
+                                                        size_t bufferLength,
+                                                        int channelCount,
+                                                        uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 
  protected:

@@ -48,13 +48,12 @@ inline double convertResponseToLog(const double re, const double im) {
  * @param minstep The minimal allowed step.
  */
 
-inline void updateScanStep(
-    double &step,
-    const double curg,
-    double &prevg_log,
-    const double prec,
-    const double maxstep,
-    const double minstep = 1e-11) {
+inline void updateScanStep(double &step,
+                           const double curg,
+                           double &prevg_log,
+                           const double prec,
+                           const double maxstep,
+                           const double minstep = 1e-11) {
   double curg_log = 4.34294481903251828 * log(curg + 1e-100);
   curg_log += (prevg_log - curg_log) * 0.7;
 
@@ -87,12 +86,11 @@ inline void updateScanStep(
  * @param thend The ending frequency, inclusive.
  */
 
-inline void findFIRFilterResponseMinLtoR(
-    const double *const flt,
-    const int fltlen,
-    double &ming,
-    double &minth,
-    const double thend) {
+inline void findFIRFilterResponseMinLtoR(const double *const flt,
+                                         const int fltlen,
+                                         double &ming,
+                                         double &minth,
+                                         const double thend) {
   const double maxstep = minth * 2e-3;
   double curth = minth;
   double re;
@@ -145,12 +143,11 @@ inline void findFIRFilterResponseMinLtoR(
  * @param thend The ending frequency, inclusive.
  */
 
-inline void findFIRFilterResponseMaxLtoR(
-    const double *const flt,
-    const int fltlen,
-    double &maxg,
-    double &maxth,
-    const double thend) {
+inline void findFIRFilterResponseMaxLtoR(const double *const flt,
+                                         const int fltlen,
+                                         double &maxg,
+                                         double &maxth,
+                                         const double thend) {
   const double maxstep = maxth * 1e-4;
   double premaxth = maxth;
   double premaxg = maxg;
@@ -262,12 +259,11 @@ inline void findFIRFilterResponseMaxLtoR(
  * @param thend The leftmost frequency to scan, inclusive.
  */
 
-inline void findFIRFilterResponseLevelRtoL(
-    const double *const flt,
-    const int fltlen,
-    const double maxg,
-    double &th,
-    const double thend) {
+inline void findFIRFilterResponseLevelRtoL(const double *const flt,
+                                           const int fltlen,
+                                           const double maxg,
+                                           double &th,
+                                           const double thend) {
   // Perform exact binary search.
 
   double l = thend;

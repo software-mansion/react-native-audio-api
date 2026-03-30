@@ -30,9 +30,8 @@ class AudioGraphTest : public ::testing::Test {
   }
 
   /// @brief Adds N nodes with test identifiers 0..N-1 and returns their handles
-  std::vector<std::shared_ptr<NodeHandle<MockNode>>> addNodes(
-      size_t n,
-      bool withAudioNode = false) {
+  std::vector<std::shared_ptr<NodeHandle<MockNode>>> addNodes(size_t n,
+                                                              bool withAudioNode = false) {
     std::vector<std::shared_ptr<NodeHandle<MockNode>>> handles;
     handles.reserve(n);
     for (size_t i = 0; i < n; i++) {

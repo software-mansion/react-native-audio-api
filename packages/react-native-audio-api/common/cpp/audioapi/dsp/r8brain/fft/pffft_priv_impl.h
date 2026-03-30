@@ -149,14 +149,13 @@ static NEVER_INLINE(void)
 /*
   passf3 and passb3 has been merged here, fsign = -1 for passf3, +1 for passb3
 */
-static NEVER_INLINE(void) passf3_ps(
-    int ido,
-    int l1,
-    const v4sf *cc,
-    v4sf *ch,
-    const float *wa1,
-    const float *wa2,
-    float fsign) {
+static NEVER_INLINE(void) passf3_ps(int ido,
+                                    int l1,
+                                    const v4sf *cc,
+                                    v4sf *ch,
+                                    const float *wa1,
+                                    const float *wa2,
+                                    float fsign) {
   static const float taur = -0.5f;
   float taui = 0.866025403784439f * fsign;
   int i, k;
@@ -189,15 +188,14 @@ static NEVER_INLINE(void) passf3_ps(
   }
 } /* passf3 */
 
-static NEVER_INLINE(void) passf4_ps(
-    int ido,
-    int l1,
-    const v4sf *cc,
-    v4sf *ch,
-    const float *wa1,
-    const float *wa2,
-    const float *wa3,
-    float fsign) {
+static NEVER_INLINE(void) passf4_ps(int ido,
+                                    int l1,
+                                    const v4sf *cc,
+                                    v4sf *ch,
+                                    const float *wa1,
+                                    const float *wa2,
+                                    const float *wa3,
+                                    float fsign) {
   /* isign == -1 for forward transform and +1 for backward transform */
 
   int i, k;
@@ -267,16 +265,15 @@ static NEVER_INLINE(void) passf4_ps(
 /*
   passf5 and passb5 has been merged here, fsign = -1 for passf5, +1 for passb5
 */
-static NEVER_INLINE(void) passf5_ps(
-    int ido,
-    int l1,
-    const v4sf *cc,
-    v4sf *ch,
-    const float *wa1,
-    const float *wa2,
-    const float *wa3,
-    const float *wa4,
-    float fsign) {
+static NEVER_INLINE(void) passf5_ps(int ido,
+                                    int l1,
+                                    const v4sf *cc,
+                                    v4sf *ch,
+                                    const float *wa1,
+                                    const float *wa2,
+                                    const float *wa3,
+                                    const float *wa4,
+                                    float fsign) {
   static const float tr11 = .309016994374947f;
   const float ti11 = .951056516295154f * fsign;
   static const float tr12 = -.809016994374947f;
@@ -412,13 +409,12 @@ static NEVER_INLINE(void) radb2_ps(int ido, int l1, const v4sf *cc, v4sf *ch, co
   }
 } /* radb2 */
 
-static void radf3_ps(
-    int ido,
-    int l1,
-    const v4sf *RESTRICT cc,
-    v4sf *RESTRICT ch,
-    const float *wa1,
-    const float *wa2) {
+static void radf3_ps(int ido,
+                     int l1,
+                     const v4sf *RESTRICT cc,
+                     v4sf *RESTRICT ch,
+                     const float *wa1,
+                     const float *wa2) {
   static const float taur = -0.5f;
   static const float taui = 0.866025403784439f;
   int i, k, ic;
@@ -462,13 +458,12 @@ static void radf3_ps(
   }
 } /* radf3 */
 
-static void radb3_ps(
-    int ido,
-    int l1,
-    const v4sf *RESTRICT cc,
-    v4sf *RESTRICT ch,
-    const float *wa1,
-    const float *wa2) {
+static void radb3_ps(int ido,
+                     int l1,
+                     const v4sf *RESTRICT cc,
+                     v4sf *RESTRICT ch,
+                     const float *wa1,
+                     const float *wa2) {
   static const float taur = -0.5f;
   static const float taui = 0.866025403784439f;
   static const float taui_2 = 0.866025403784439f * 2;
@@ -510,14 +505,13 @@ static void radb3_ps(
   }
 } /* radb3 */
 
-static NEVER_INLINE(void) radf4_ps(
-    int ido,
-    int l1,
-    const v4sf *RESTRICT cc,
-    v4sf *RESTRICT ch,
-    const float *RESTRICT wa1,
-    const float *RESTRICT wa2,
-    const float *RESTRICT wa3) {
+static NEVER_INLINE(void) radf4_ps(int ido,
+                                   int l1,
+                                   const v4sf *RESTRICT cc,
+                                   v4sf *RESTRICT ch,
+                                   const float *RESTRICT wa1,
+                                   const float *RESTRICT wa2,
+                                   const float *RESTRICT wa3) {
   static const float minus_hsqt2 = (float)-0.7071067811865475;
   int i, k, l1ido = l1 * ido;
   {
@@ -603,14 +597,13 @@ static NEVER_INLINE(void) radf4_ps(
   }
 } /* radf4 */
 
-static NEVER_INLINE(void) radb4_ps(
-    int ido,
-    int l1,
-    const v4sf *RESTRICT cc,
-    v4sf *RESTRICT ch,
-    const float *RESTRICT wa1,
-    const float *RESTRICT wa2,
-    const float *RESTRICT wa3) {
+static NEVER_INLINE(void) radb4_ps(int ido,
+                                   int l1,
+                                   const v4sf *RESTRICT cc,
+                                   v4sf *RESTRICT ch,
+                                   const float *RESTRICT wa1,
+                                   const float *RESTRICT wa2,
+                                   const float *RESTRICT wa3) {
   static const float minus_sqrt2 = (float)-1.414213562373095;
   static const float two = 2.f;
   int i, k, l1ido = l1 * ido;
@@ -696,15 +689,14 @@ static NEVER_INLINE(void) radb4_ps(
   }
 } /* radb4 */
 
-static void radf5_ps(
-    int ido,
-    int l1,
-    const v4sf *RESTRICT cc,
-    v4sf *RESTRICT ch,
-    const float *wa1,
-    const float *wa2,
-    const float *wa3,
-    const float *wa4) {
+static void radf5_ps(int ido,
+                     int l1,
+                     const v4sf *RESTRICT cc,
+                     v4sf *RESTRICT ch,
+                     const float *wa1,
+                     const float *wa2,
+                     const float *wa3,
+                     const float *wa4) {
   static const float tr11 = .309016994374947f;
   static const float ti11 = .951056516295154f;
   static const float tr12 = -.809016994374947f;
@@ -792,15 +784,14 @@ static void radf5_ps(
 #undef ch_ref
 } /* radf5 */
 
-static void radb5_ps(
-    int ido,
-    int l1,
-    const v4sf *RESTRICT cc,
-    v4sf *RESTRICT ch,
-    const float *wa1,
-    const float *wa2,
-    const float *wa3,
-    const float *wa4) {
+static void radb5_ps(int ido,
+                     int l1,
+                     const v4sf *RESTRICT cc,
+                     v4sf *RESTRICT ch,
+                     const float *wa1,
+                     const float *wa2,
+                     const float *wa3,
+                     const float *wa4) {
   static const float tr11 = .309016994374947f;
   static const float ti11 = .951056516295154f;
   static const float tr12 = -.809016994374947f;
@@ -891,13 +882,12 @@ static void radb5_ps(
 #undef ch_ref
 } /* radb5 */
 
-static NEVER_INLINE(v4sf *) rfftf1_ps(
-    int n,
-    const v4sf *input_readonly,
-    v4sf *work1,
-    v4sf *work2,
-    const float *wa,
-    const int *ifac) {
+static NEVER_INLINE(v4sf *) rfftf1_ps(int n,
+                                      const v4sf *input_readonly,
+                                      v4sf *work1,
+                                      v4sf *work2,
+                                      const float *wa,
+                                      const int *ifac) {
   v4sf *in = (v4sf *)input_readonly;
   v4sf *out = (in == work2 ? work1 : work2);
   int nf = ifac[1], k1;
@@ -945,13 +935,12 @@ static NEVER_INLINE(v4sf *) rfftf1_ps(
   return in; /* this is in fact the output .. */
 } /* rfftf1 */
 
-static NEVER_INLINE(v4sf *) rfftb1_ps(
-    int n,
-    const v4sf *input_readonly,
-    v4sf *work1,
-    v4sf *work2,
-    const float *wa,
-    const int *ifac) {
+static NEVER_INLINE(v4sf *) rfftb1_ps(int n,
+                                      const v4sf *input_readonly,
+                                      v4sf *work1,
+                                      v4sf *work2,
+                                      const float *wa,
+                                      const int *ifac) {
   v4sf *in = (v4sf *)input_readonly;
   v4sf *out = (in == work2 ? work1 : work2);
   int nf = ifac[1], k1;
@@ -1094,14 +1083,13 @@ static void cffti1_ps(int n, float *wa, int *ifac) {
   }
 } /* cffti1 */
 
-static v4sf *cfftf1_ps(
-    int n,
-    const v4sf *input_readonly,
-    v4sf *work1,
-    v4sf *work2,
-    const float *wa,
-    const int *ifac,
-    int isign) {
+static v4sf *cfftf1_ps(int n,
+                       const v4sf *input_readonly,
+                       v4sf *work1,
+                       v4sf *work2,
+                       const float *wa,
+                       const int *ifac,
+                       int isign) {
   v4sf *in = (v4sf *)input_readonly;
   v4sf *out = (in == work2 ? work1 : work2);
   int nf = ifac[1], k1;
@@ -1422,12 +1410,11 @@ void FUNC_CPLX_PREPROCESS(int Ncvec, const v4sf *in, v4sf *out, const v4sf *e) {
   }
 }
 
-static ALWAYS_INLINE(void) FUNC_REAL_FINALIZE_4X4(
-    const v4sf *in0,
-    const v4sf *in1,
-    const v4sf *in,
-    const v4sf *e,
-    v4sf *out) {
+static ALWAYS_INLINE(void) FUNC_REAL_FINALIZE_4X4(const v4sf *in0,
+                                                  const v4sf *in1,
+                                                  const v4sf *in,
+                                                  const v4sf *e,
+                                                  v4sf *out) {
   v4sf r0, i0, r1, i1, r2, i2, r3, i3;
   v4sf sr0, dr0, sr1, dr1, si0, di0, si1, di1;
   r0 = *in0;
@@ -1643,13 +1630,12 @@ static NEVER_INLINE(void)
   uout[2 * Ncvec - 1].f[3] = ci3;
 }
 
-void FUNC_TRANSFORM_INTERNAL(
-    SETUP_STRUCT *setup,
-    const float *finput,
-    float *foutput,
-    v4sf *scratch,
-    pffft_direction_t direction,
-    int ordered) {
+void FUNC_TRANSFORM_INTERNAL(SETUP_STRUCT *setup,
+                             const float *finput,
+                             float *foutput,
+                             v4sf *scratch,
+                             pffft_direction_t direction,
+                             int ordered) {
   int k, Ncvec = setup->Ncvec;
   int nf_odd = (setup->ifac[1] & 1);
 
@@ -1668,22 +1654,20 @@ void FUNC_TRANSFORM_INTERNAL(
   if (direction == PFFFT_FORWARD) {
     ib = !ib;
     if (setup->transform == PFFFT_REAL) {
-      ib =
-          (rfftf1_ps(Ncvec * 2, vinput, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0]) ==
-                   buff[0]
-               ? 0
-               : 1);
+      ib = (rfftf1_ps(Ncvec * 2, vinput, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0]) ==
+                    buff[0]
+                ? 0
+                : 1);
       FUNC_REAL_FINALIZE(Ncvec, buff[ib], buff[!ib], (v4sf *)setup->e);
     } else {
       v4sf *tmp = buff[ib];
       for (k = 0; k < Ncvec; ++k) {
         UNINTERLEAVE2(vinput[k * 2], vinput[k * 2 + 1], tmp[k * 2], tmp[k * 2 + 1]);
       }
-      ib =
-          (cfftf1_ps(Ncvec, buff[ib], buff[!ib], buff[ib], setup->twiddle, &setup->ifac[0], -1) ==
-                   buff[0]
-               ? 0
-               : 1);
+      ib = (cfftf1_ps(Ncvec, buff[ib], buff[!ib], buff[ib], setup->twiddle, &setup->ifac[0], -1) ==
+                    buff[0]
+                ? 0
+                : 1);
       FUNC_CPLX_FINALIZE(Ncvec, buff[ib], buff[!ib], (v4sf *)setup->e);
     }
     if (ordered) {
@@ -1701,18 +1685,16 @@ void FUNC_TRANSFORM_INTERNAL(
     }
     if (setup->transform == PFFFT_REAL) {
       FUNC_REAL_PREPROCESS(Ncvec, vinput, buff[ib], (v4sf *)setup->e);
-      ib =
-          (rfftb1_ps(Ncvec * 2, buff[ib], buff[0], buff[1], setup->twiddle, &setup->ifac[0]) ==
-                   buff[0]
-               ? 0
-               : 1);
+      ib = (rfftb1_ps(Ncvec * 2, buff[ib], buff[0], buff[1], setup->twiddle, &setup->ifac[0]) ==
+                    buff[0]
+                ? 0
+                : 1);
     } else {
       FUNC_CPLX_PREPROCESS(Ncvec, vinput, buff[ib], (v4sf *)setup->e);
-      ib =
-          (cfftf1_ps(Ncvec, buff[ib], buff[0], buff[1], setup->twiddle, &setup->ifac[0], +1) ==
-                   buff[0]
-               ? 0
-               : 1);
+      ib = (cfftf1_ps(Ncvec, buff[ib], buff[0], buff[1], setup->twiddle, &setup->ifac[0], +1) ==
+                    buff[0]
+                ? 0
+                : 1);
       for (k = 0; k < Ncvec; ++k) {
         INTERLEAVE2(buff[ib][k * 2], buff[ib][k * 2 + 1], buff[ib][k * 2], buff[ib][k * 2 + 1]);
       }
@@ -1732,12 +1714,11 @@ void FUNC_TRANSFORM_INTERNAL(
   assert(buff[ib] == voutput);
 }
 
-void FUNC_ZCONVOLVE_ACCUMULATE(
-    SETUP_STRUCT *s,
-    const float *a,
-    const float *b,
-    float *ab,
-    float scaling) {
+void FUNC_ZCONVOLVE_ACCUMULATE(SETUP_STRUCT *s,
+                               const float *a,
+                               const float *b,
+                               float *ab,
+                               float scaling) {
   int Ncvec = s->Ncvec;
   const v4sf *RESTRICT va = (const v4sf *)a;
   const v4sf *RESTRICT vb = (const v4sf *)b;
@@ -1859,12 +1840,11 @@ void FUNC_ZCONVOLVE_ACCUMULATE(
   }
 }
 
-void FUNC_ZCONVOLVE_NO_ACCU(
-    SETUP_STRUCT *s,
-    const float *a,
-    const float *b,
-    float *ab,
-    float scaling) {
+void FUNC_ZCONVOLVE_NO_ACCU(SETUP_STRUCT *s,
+                            const float *a,
+                            const float *b,
+                            float *ab,
+                            float scaling) {
   v4sf vscal = LD_PS1(scaling);
   const v4sf *RESTRICT va = (const v4sf *)a;
   const v4sf *RESTRICT vb = (const v4sf *)b;
@@ -1927,11 +1907,10 @@ void FUNC_ZCONVOLVE_NO_ACCU(
 /* standard routine using scalar floats, without SIMD stuff. */
 
 #define pffft_zreorder_nosimd FUNC_ZREORDER
-void pffft_zreorder_nosimd(
-    SETUP_STRUCT *setup,
-    const float *in,
-    float *out,
-    pffft_direction_t direction) {
+void pffft_zreorder_nosimd(SETUP_STRUCT *setup,
+                           const float *in,
+                           float *out,
+                           pffft_direction_t direction) {
   int k, N = setup->N;
   if (setup->transform == PFFFT_COMPLEX) {
     for (k = 0; k < 2 * N; ++k)
@@ -1953,13 +1932,12 @@ void pffft_zreorder_nosimd(
 }
 
 #define pffft_transform_internal_nosimd FUNC_TRANSFORM_INTERNAL
-void pffft_transform_internal_nosimd(
-    SETUP_STRUCT *setup,
-    const float *input,
-    float *output,
-    float *scratch,
-    pffft_direction_t direction,
-    int ordered) {
+void pffft_transform_internal_nosimd(SETUP_STRUCT *setup,
+                                     const float *input,
+                                     float *output,
+                                     float *scratch,
+                                     pffft_direction_t direction,
+                                     int ordered) {
   int Ncvec = setup->Ncvec;
   int nf_odd = (setup->ifac[1] & 1);
 
@@ -1979,17 +1957,15 @@ void pffft_transform_internal_nosimd(
 
   if (direction == PFFFT_FORWARD) {
     if (setup->transform == PFFFT_REAL) {
-      ib =
-          (rfftf1_ps(Ncvec * 2, input, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0]) ==
-                   buff[0]
-               ? 0
-               : 1);
+      ib = (rfftf1_ps(Ncvec * 2, input, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0]) ==
+                    buff[0]
+                ? 0
+                : 1);
     } else {
-      ib =
-          (cfftf1_ps(Ncvec, input, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0], -1) ==
-                   buff[0]
-               ? 0
-               : 1);
+      ib = (cfftf1_ps(Ncvec, input, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0], -1) ==
+                    buff[0]
+                ? 0
+                : 1);
     }
     if (ordered) {
       FUNC_ZREORDER(setup, buff[ib], buff[!ib], PFFFT_FORWARD);
@@ -2004,17 +1980,15 @@ void pffft_transform_internal_nosimd(
       input = buff[!ib];
     }
     if (setup->transform == PFFFT_REAL) {
-      ib =
-          (rfftb1_ps(Ncvec * 2, input, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0]) ==
-                   buff[0]
-               ? 0
-               : 1);
+      ib = (rfftb1_ps(Ncvec * 2, input, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0]) ==
+                    buff[0]
+                ? 0
+                : 1);
     } else {
-      ib =
-          (cfftf1_ps(Ncvec, input, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0], +1) ==
-                   buff[0]
-               ? 0
-               : 1);
+      ib = (cfftf1_ps(Ncvec, input, buff[ib], buff[!ib], setup->twiddle, &setup->ifac[0], +1) ==
+                    buff[0]
+                ? 0
+                : 1);
     }
   }
   if (buff[ib] != output) {
@@ -2032,12 +2006,11 @@ void pffft_transform_internal_nosimd(
 }
 
 #define pffft_zconvolve_accumulate_nosimd FUNC_ZCONVOLVE_ACCUMULATE
-void pffft_zconvolve_accumulate_nosimd(
-    SETUP_STRUCT *s,
-    const float *a,
-    const float *b,
-    float *ab,
-    float scaling) {
+void pffft_zconvolve_accumulate_nosimd(SETUP_STRUCT *s,
+                                       const float *a,
+                                       const float *b,
+                                       float *ab,
+                                       float scaling) {
   int NcvecMulTwo = 2 * s->Ncvec; /* int Ncvec = s->Ncvec; */
   int k;                          /* was i -- but always used "2*i" - except at for() */
 
@@ -2063,12 +2036,11 @@ void pffft_zconvolve_accumulate_nosimd(
 }
 
 #define pffft_zconvolve_no_accu_nosimd FUNC_ZCONVOLVE_NO_ACCU
-void pffft_zconvolve_no_accu_nosimd(
-    SETUP_STRUCT *s,
-    const float *a,
-    const float *b,
-    float *ab,
-    float scaling) {
+void pffft_zconvolve_no_accu_nosimd(SETUP_STRUCT *s,
+                                    const float *a,
+                                    const float *b,
+                                    float *ab,
+                                    float scaling) {
   int NcvecMulTwo = 2 * s->Ncvec; /* int Ncvec = s->Ncvec; */
   int k;                          /* was i -- but always used "2*i" - except at for() */
 
@@ -2095,21 +2067,19 @@ void pffft_zconvolve_no_accu_nosimd(
 
 #endif /* #if ( SIMD_SZ == 4 )    * !defined(PFFFT_SIMD_DISABLE) */
 
-void FUNC_TRANSFORM_UNORDRD(
-    SETUP_STRUCT *setup,
-    const float *input,
-    float *output,
-    float *work,
-    pffft_direction_t direction) {
+void FUNC_TRANSFORM_UNORDRD(SETUP_STRUCT *setup,
+                            const float *input,
+                            float *output,
+                            float *work,
+                            pffft_direction_t direction) {
   FUNC_TRANSFORM_INTERNAL(setup, input, output, (v4sf *)work, direction, 0);
 }
 
-void FUNC_TRANSFORM_ORDERED(
-    SETUP_STRUCT *setup,
-    const float *input,
-    float *output,
-    float *work,
-    pffft_direction_t direction) {
+void FUNC_TRANSFORM_ORDERED(SETUP_STRUCT *setup,
+                            const float *input,
+                            float *output,
+                            float *work,
+                            pffft_direction_t direction) {
   FUNC_TRANSFORM_INTERNAL(setup, input, output, (v4sf *)work, direction, 1);
 }
 
@@ -2143,29 +2113,27 @@ void FUNC_VALIDATE_SIMD_A(void) {
   assertv4(t, 32, 46, 62, 80);
 
   INTERLEAVE2(a1.v, a2.v, t.v, u.v);
-  printf(
-      "INTERLEAVE2(4:7,8:11)=[%2g %2g %2g %2g] [%2g %2g %2g %2g]\n",
-      t.f[0],
-      t.f[1],
-      t.f[2],
-      t.f[3],
-      u.f[0],
-      u.f[1],
-      u.f[2],
-      u.f[3]);
+  printf("INTERLEAVE2(4:7,8:11)=[%2g %2g %2g %2g] [%2g %2g %2g %2g]\n",
+         t.f[0],
+         t.f[1],
+         t.f[2],
+         t.f[3],
+         u.f[0],
+         u.f[1],
+         u.f[2],
+         u.f[3]);
   assertv4(t, 4, 8, 5, 9);
   assertv4(u, 6, 10, 7, 11);
   UNINTERLEAVE2(a1.v, a2.v, t.v, u.v);
-  printf(
-      "UNINTERLEAVE2(4:7,8:11)=[%2g %2g %2g %2g] [%2g %2g %2g %2g]\n",
-      t.f[0],
-      t.f[1],
-      t.f[2],
-      t.f[3],
-      u.f[0],
-      u.f[1],
-      u.f[2],
-      u.f[3]);
+  printf("UNINTERLEAVE2(4:7,8:11)=[%2g %2g %2g %2g] [%2g %2g %2g %2g]\n",
+         t.f[0],
+         t.f[1],
+         t.f[2],
+         t.f[3],
+         u.f[0],
+         u.f[1],
+         u.f[2],
+         u.f[3]);
   assertv4(t, 4, 6, 8, 10);
   assertv4(u, 5, 7, 9, 11);
 
@@ -2200,41 +2168,38 @@ void FUNC_VALIDATE_SIMD_A(void) {
   assertv4(a3, 3, 7, 11, 15);
 }
 
-static void pffft_assert1(
-    float result,
-    float ref,
-    const char *vartxt,
-    const char *functxt,
-    int *numErrs,
-    const char *f,
-    int lineNo) {
+static void pffft_assert1(float result,
+                          float ref,
+                          const char *vartxt,
+                          const char *functxt,
+                          int *numErrs,
+                          const char *f,
+                          int lineNo) {
   if (!(fabs(result - ref) < 0.01F)) {
-    fprintf(
-        stderr,
-        "%s: assert for %s at %s(%d)\n  expected %f  value %f\n",
-        functxt,
-        vartxt,
-        f,
-        lineNo,
-        ref,
-        result);
+    fprintf(stderr,
+            "%s: assert for %s at %s(%d)\n  expected %f  value %f\n",
+            functxt,
+            vartxt,
+            f,
+            lineNo,
+            ref,
+            result);
     ++(*numErrs);
   }
 }
 
-static void pffft_assert4(
-    vsfscalar v0,
-    vsfscalar v1,
-    vsfscalar v2,
-    vsfscalar v3,
-    float a,
-    float b,
-    float c,
-    float d,
-    const char *functxt,
-    int *numErrs,
-    const char *f,
-    int lineNo) {
+static void pffft_assert4(vsfscalar v0,
+                          vsfscalar v1,
+                          vsfscalar v2,
+                          vsfscalar v3,
+                          float a,
+                          float b,
+                          float c,
+                          float d,
+                          const char *functxt,
+                          int *numErrs,
+                          const char *f,
+                          int lineNo) {
   pffft_assert1(v0, a, "[0]", functxt, numErrs, f, lineNo);
   pffft_assert1(v1, b, "[1]", functxt, numErrs, f, lineNo);
   pffft_assert1(v2, c, "[2]", functxt, numErrs, f, lineNo);

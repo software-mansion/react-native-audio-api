@@ -178,12 +178,11 @@ bool AudioGraph<NodeType>::empty() const {
 template <AudioGraphNode NodeType>
 auto AudioGraph<NodeType>::iter() {
   return nodes | std::views::transform([this](Node &node) {
-           return Entry{
-               *node.handle->audioNode,
-               pool_.view(node.input_head) |
-                   std::views::transform([this](std::uint32_t idx) -> const NodeType & {
-                     return *nodes[idx].handle->audioNode;
-                   })};
+           return Entry{*node.handle->audioNode,
+                        pool_.view(node.input_head) |
+                            std::views::transform([this](std::uint32_t idx) -> const NodeType & {
+                              return *nodes[idx].handle->audioNode;
+                            })};
          });
 }
 
@@ -232,8 +231,8 @@ void AudioGraph<NodeType>::process() {
   // Because the array is topologically sorted, removing a source first lets
   // its dependents see the updated input set and potentially cascade.
   for (auto &node : nodes) {
-    pool_.removeIf(
-        node.input_head, [this](std::uint32_t inp) { return nodes[inp].will_be_deleted; });
+    pool_.removeIf(node.input_head,
+                   [this](std::uint32_t inp) { return nodes[inp].will_be_deleted; });
 
     if (node.orphaned && InputPool::isEmpty(node.input_head) &&
         node.handle->audioNode->canBeDestructed()) {

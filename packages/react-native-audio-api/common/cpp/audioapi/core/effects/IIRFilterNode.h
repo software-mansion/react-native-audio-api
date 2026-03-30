@@ -42,16 +42,14 @@ struct IIRFilterOptions;
 class IIRFilterNode : public AudioNode {
 
  public:
-  explicit IIRFilterNode(
-      const std::shared_ptr<BaseAudioContext> &context,
-      const IIRFilterOptions &options);
+  explicit IIRFilterNode(const std::shared_ptr<BaseAudioContext> &context,
+                         const IIRFilterOptions &options);
 
   /// @note Audio Thread only
-  void getFrequencyResponse(
-      const float *frequencyArray,
-      float *magResponseOutput,
-      float *phaseResponseOutput,
-      size_t length) const;
+  void getFrequencyResponse(const float *frequencyArray,
+                            float *magResponseOutput,
+                            float *phaseResponseOutput,
+                            size_t length) const;
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(
@@ -68,8 +66,9 @@ class IIRFilterNode : public AudioNode {
   AudioBuffer yBuffers_;
   std::array<size_t, BUFFER_LENGTH> bufferIndices_{};
 
-  static std::complex<float>
-  evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {
+  static std::complex<float> evaluatePolynomial(const AudioArray &coefficients,
+                                                std::complex<float> z,
+                                                int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
     std::complex<float> result = 0;
     for (int k = order; k >= 0; --k) {
@@ -78,9 +77,8 @@ class IIRFilterNode : public AudioNode {
     return result;
   }
 
-  static AudioArray createNormalizedArray(
-      const std::vector<float> &inputVector,
-      float scaleFactor) {
+  static AudioArray createNormalizedArray(const std::vector<float> &inputVector,
+                                          float scaleFactor) {
     AudioArray result(inputVector.data(), inputVector.size());
     if (scaleFactor != 1.0f && scaleFactor != 0.0f && result.getSize() > 0) {
       result.scale(1.0f / scaleFactor);

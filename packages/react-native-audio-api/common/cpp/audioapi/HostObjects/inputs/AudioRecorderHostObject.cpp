@@ -24,21 +24,20 @@ AudioRecorderHostObject::AudioRecorderHostObject(
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry);
 #endif
 
-  addFunctions(
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, stop),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, isRecording),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, enableFileOutput),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disableFileOutput),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, pause),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, resume),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, connect),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disconnect),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnAudioReady),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnAudioReady),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnError),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration));
+  addFunctions(JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, stop),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, isRecording),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, enableFileOutput),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disableFileOutput),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, pause),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, resume),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, connect),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disconnect),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnAudioReady),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnAudioReady),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnError),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError),
+               JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
@@ -46,10 +45,9 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   auto result = audioRecorder_->start(fileNameOverride);
   auto jsResult = jsi::Object(runtime);
 
-  jsResult.setProperty(
-      runtime,
-      "status",
-      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+  jsResult.setProperty(runtime,
+                       "status",
+                       jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
   if (result.is_ok()) {
     jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.unwrap()));
@@ -65,10 +63,9 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
   auto result = audioRecorder_->stop();
   auto jsResult = jsi::Object(runtime);
 
-  jsResult.setProperty(
-      runtime,
-      "status",
-      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+  jsResult.setProperty(runtime,
+                       "status",
+                       jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
   if (result.is_ok()) {
     auto info = result.unwrap();
@@ -98,10 +95,9 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
   auto result = audioRecorder_->enableFileOutput(fileProperties);
   auto jsResult = jsi::Object(runtime);
 
-  jsResult.setProperty(
-      runtime,
-      "status",
-      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+  jsResult.setProperty(runtime,
+                       "status",
+                       jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
   if (result.is_ok()) {
     jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.unwrap()));
@@ -157,10 +153,9 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnAudioReady) {
       audioRecorder_->setOnAudioReadyCallback(sampleRate, bufferLength, channelCount, callbackId);
   auto jsResult = jsi::Object(runtime);
 
-  jsResult.setProperty(
-      runtime,
-      "status",
-      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+  jsResult.setProperty(runtime,
+                       "status",
+                       jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
   if (result.is_err()) {
     jsResult.setProperty(

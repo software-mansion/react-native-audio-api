@@ -7,19 +7,18 @@
 
 namespace audioapi {
 
-AudioFileProperties::AudioFileProperties(
-    FileDirectory directory,
-    const std::string &subDirectory,
-    const std::string &fileNamePrefix,
-    int channelCount,
-    size_t batchDurationSeconds,
-    Format format,
-    float sampleRate,
-    size_t bitRate,
-    BitDepth bitDepth,
-    int flacCompressionLevel,
-    int androidFlushIntervalMs,
-    IOSAudioQuality iosAudioQuality)
+AudioFileProperties::AudioFileProperties(FileDirectory directory,
+                                         const std::string &subDirectory,
+                                         const std::string &fileNamePrefix,
+                                         int channelCount,
+                                         size_t batchDurationSeconds,
+                                         Format format,
+                                         float sampleRate,
+                                         size_t bitRate,
+                                         BitDepth bitDepth,
+                                         int flacCompressionLevel,
+                                         int androidFlushIntervalMs,
+                                         IOSAudioQuality iosAudioQuality)
     : directory(directory),
       subDirectory(subDirectory),
       fileNamePrefix(fileNamePrefix),
@@ -73,19 +72,18 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
   IOSAudioQuality iosAudioQuality =
       static_cast<IOSAudioQuality>(presetOptions.getProperty(runtime, "iosQuality").getNumber());
 
-  return std::make_shared<AudioFileProperties>(
-      directory,
-      subDirectory,
-      fileNamePrefix,
-      channelCount,
-      batchDurationSeconds,
-      format,
-      sampleRate,
-      bitRate,
-      bitDepth,
-      flacCompressionLevel,
-      androidFlushIntervalMs,
-      iosAudioQuality);
+  return std::make_shared<AudioFileProperties>(directory,
+                                               subDirectory,
+                                               fileNamePrefix,
+                                               channelCount,
+                                               batchDurationSeconds,
+                                               format,
+                                               sampleRate,
+                                               bitRate,
+                                               bitDepth,
+                                               flacCompressionLevel,
+                                               androidFlushIntervalMs,
+                                               iosAudioQuality);
 }
 
 } // namespace audioapi

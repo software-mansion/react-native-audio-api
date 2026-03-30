@@ -38,9 +38,8 @@ class Convolver {
   size_t _current;
   std::unique_ptr<DSPAudioArray> _inputBuffer;
 
-  friend void pairwise_complex_multiply_fast(
-      const aligned_vec_complex &ir,
-      const aligned_vec_complex &audio,
-      aligned_vec_complex &pre);
+  friend void pairwise_complex_multiply_fast(const aligned_vec_complex &ir,
+                                             const aligned_vec_complex &audio,
+                                             aligned_vec_complex &pre);
 };
 } // namespace audioapi

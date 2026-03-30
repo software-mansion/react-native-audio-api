@@ -191,9 +191,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-FabricExample/Pods-FabricExample-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-FabricExample/Pods-FabricExample-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -230,9 +234,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-FabricExample/Pods-FabricExample-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-FabricExample/Pods-FabricExample-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -261,7 +269,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 852ZJU38RC;
+				DEVELOPMENT_TEAM = WC59N2X3FV;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = FabricExample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -281,7 +289,7 @@
 					"-lc++",
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg333er.--PRODUCT-NAME-rfc1034identifier-";
+				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3233er.--PRODUCT-NAME-rfc1034identifier-";
 				PRODUCT_NAME = FabricExample;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -300,7 +308,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 852ZJU38RC;
+				DEVELOPMENT_TEAM = WC59N2X3FV;
 				INFOPLIST_FILE = FabricExample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -319,7 +327,7 @@
 					"-lc++",
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg333er.--PRODUCT-NAME-rfc1034identifier-";
+				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3233er.--PRODUCT-NAME-rfc1034identifier-";
 				PRODUCT_NAME = FabricExample;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -416,10 +424,7 @@
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -507,10 +512,7 @@
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;

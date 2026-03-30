@@ -52,9 +52,8 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
   frame = RENDER_QUANTUM_SIZE * ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
 
   if (scheduledSuspends_.contains(frame)) {
-    throw std::runtime_error(
-        "cannot schedule more than one suspend at frame " + std::to_string(frame) + " (" +
-        std::to_string(when) + " seconds)");
+    throw std::runtime_error("cannot schedule more than one suspend at frame " +
+                             std::to_string(frame) + " (" + std::to_string(when) + " seconds)");
   }
 
   scheduledSuspends_.emplace(frame, callback);

@@ -16,12 +16,11 @@ void AudioParamEventQueue::pushBack(ParamChangeEvent &&event) {
     prev.setEndTime(event.getStartTime());
     // Calculate what the SET_TARGET value would be at the new event's start
     // time
-    prev.setEndValue(prev.getCalculateValue()(
-        prev.getStartTime(),
-        prev.getEndTime(),
-        prev.getStartValue(),
-        prev.getEndValue(),
-        event.getStartTime()));
+    prev.setEndValue(prev.getCalculateValue()(prev.getStartTime(),
+                                              prev.getEndTime(),
+                                              prev.getStartValue(),
+                                              prev.getEndValue(),
+                                              event.getStartTime()));
   }
   event.setStartValue(prev.getEndValue());
   eventQueue_.pushBack(std::move(event));
@@ -59,12 +58,11 @@ void AudioParamEventQueue::cancelAndHoldAtTime(double cancelTime, double &endTim
   }
 
   auto &back = eventQueue_.peekBackMut();
-  back.setEndValue(back.getCalculateValue()(
-      back.getStartTime(),
-      back.getEndTime(),
-      back.getStartValue(),
-      back.getEndValue(),
-      cancelTime));
+  back.setEndValue(back.getCalculateValue()(back.getStartTime(),
+                                            back.getEndTime(),
+                                            back.getStartValue(),
+                                            back.getEndValue(),
+                                            cancelTime));
   back.setEndTime(std::min(cancelTime, back.getEndTime()));
 }
 

@@ -13,10 +13,9 @@ AudioDecoderHostObject::AudioDecoderHostObject(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker) {
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
-  addFunctions(
-      JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithPCMInBase64),
-      JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithFilePath),
-      JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithMemoryBlock));
+  addFunctions(JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithPCMInBase64),
+               JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithFilePath),
+               JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithMemoryBlock));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {

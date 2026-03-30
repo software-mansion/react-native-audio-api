@@ -13,9 +13,8 @@ AudioScheduledSourceNodeHostObject::AudioScheduledSourceNodeHostObject(
     : AudioNodeHostObject(node) {
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onEnded));
 
-  addFunctions(
-      JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, start),
-      JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, stop));
+  addFunctions(JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, start),
+               JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, stop));
 }
 
 AudioScheduledSourceNodeHostObject::~AudioScheduledSourceNodeHostObject() {

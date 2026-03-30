@@ -24,9 +24,8 @@
 
 namespace audioapi {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-StreamerNode::StreamerNode(
-    const std::shared_ptr<BaseAudioContext> &context,
-    const StreamerOptions &options)
+StreamerNode::StreamerNode(const std::shared_ptr<BaseAudioContext> &context,
+                           const StreamerOptions &options)
     : AudioScheduledSourceNode(context, options),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
@@ -44,9 +43,8 @@ StreamerNode::StreamerNode(
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 #else
-StreamerNode::StreamerNode(
-    const std::shared_ptr<BaseAudioContext> &context,
-    const StreamerOptions &options)
+StreamerNode::StreamerNode(const std::shared_ptr<BaseAudioContext> &context,
+                           const StreamerOptions &options)
     : AudioScheduledSourceNode(context) {}
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
@@ -67,13 +65,12 @@ std::shared_ptr<DSPAudioBuffer> StreamerNode::processNode(
     processingBuffer->zero();
     return processingBuffer;
   }
-  updatePlaybackInfo(
-      processingBuffer,
-      framesToProcess,
-      startOffset,
-      offsetLength,
-      context->getSampleRate(),
-      context->getCurrentSampleFrame());
+  updatePlaybackInfo(processingBuffer,
+                     framesToProcess,
+                     startOffset,
+                     offsetLength,
+                     context->getSampleRate(),
+                     context->getCurrentSampleFrame());
   isNodeFinished_.store(isFinished(), std::memory_order_release);
 
   if (!isPlaying() && !isStopScheduled()) {
@@ -147,10 +144,10 @@ bool StreamerNode::initialize(const std::string &input_url) {
   audioBuffer_ = std::make_shared<DSPAudioBuffer>(
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 
-  auto [sender, receiver] = channels::spsc::channel<
-      StreamingData,
-      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
-      STREAMER_NODE_SPSC_WAIT_STRATEGY>(CHANNEL_CAPACITY);
+  auto [sender, receiver] =
+      channels::spsc::channel<StreamingData,
+                              STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
+                              STREAMER_NODE_SPSC_WAIT_STRATEGY>(CHANNEL_CAPACITY);
   sender_ = std::move(sender);
   receiver_ = std::move(receiver);
 
@@ -240,9 +237,8 @@ static void extractChannelAsFloat(const AVFrame *frame, int channel, float *outp
   }
 }
 
-void StreamerNode::processFrameWithResampler(
-    AVFrame *frame,
-    const std::shared_ptr<BaseAudioContext> &context) {
+void StreamerNode::processFrameWithResampler(AVFrame *frame,
+                                             const std::shared_ptr<BaseAudioContext> &context) {
   if (this->isFinished()) {
     return;
   }

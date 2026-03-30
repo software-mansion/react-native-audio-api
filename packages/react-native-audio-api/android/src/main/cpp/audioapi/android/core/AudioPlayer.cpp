@@ -98,8 +98,9 @@ bool AudioPlayer::isRunning() const {
       isRunning_.load(std::memory_order_acquire);
 }
 
-DataCallbackResult
-AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
+DataCallbackResult AudioPlayer::onAudioReady(AudioStream *oboeStream,
+                                             void *audioData,
+                                             int32_t numFrames) {
   if (!isInitialized_) {
     return DataCallbackResult::Continue;
   }

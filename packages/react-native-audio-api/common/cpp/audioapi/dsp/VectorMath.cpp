@@ -43,43 +43,38 @@ namespace audioapi::dsp {
 
 #ifdef HAVE_ACCELERATE
 
-void multiplyByScalar(
-    const float *inputVector,
-    float scalar,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void multiplyByScalar(const float *inputVector,
+                      float scalar,
+                      float *outputVector,
+                      size_t numberOfElementsToProcess) {
   vDSP_vsmul(inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
 }
 
-void addScalar(
-    const float *inputVector,
-    float scalar,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void addScalar(const float *inputVector,
+               float scalar,
+               float *outputVector,
+               size_t numberOfElementsToProcess) {
   vDSP_vsadd(inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
 }
 
-void add(
-    const float *inputVector1,
-    const float *inputVector2,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void add(const float *inputVector1,
+         const float *inputVector2,
+         float *outputVector,
+         size_t numberOfElementsToProcess) {
   vDSP_vadd(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
-void subtract(
-    const float *inputVector1,
-    const float *inputVector2,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void subtract(const float *inputVector1,
+              const float *inputVector2,
+              float *outputVector,
+              size_t numberOfElementsToProcess) {
   vDSP_vsub(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
-void multiply(
-    const float *inputVector1,
-    const float *inputVector2,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void multiply(const float *inputVector1,
+              const float *inputVector2,
+              float *outputVector,
+              size_t numberOfElementsToProcess) {
   vDSP_vmul(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
@@ -89,29 +84,26 @@ float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProces
   return maximumValue;
 }
 
-void multiplyByScalarThenAddToOutput(
-    const float *inputVector,
-    float scalar,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void multiplyByScalarThenAddToOutput(const float *inputVector,
+                                     float scalar,
+                                     float *outputVector,
+                                     size_t numberOfElementsToProcess) {
   vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
-void deinterleaveStereo(
-    const float *__restrict inputInterleaved,
-    float *__restrict outputLeft,
-    float *__restrict outputRight,
-    size_t numberOfFrames) {
+void deinterleaveStereo(const float *__restrict inputInterleaved,
+                        float *__restrict outputLeft,
+                        float *__restrict outputRight,
+                        size_t numberOfFrames) {
   float zero = 0.0f;
   vDSP_vsadd(inputInterleaved, 2, &zero, outputLeft, 1, numberOfFrames);
   vDSP_vsadd(inputInterleaved + 1, 2, &zero, outputRight, 1, numberOfFrames);
 }
 
-void interleaveStereo(
-    const float *__restrict inputLeft,
-    const float *__restrict inputRight,
-    float *__restrict outputInterleaved,
-    size_t numberOfFrames) {
+void interleaveStereo(const float *__restrict inputLeft,
+                      const float *__restrict inputRight,
+                      float *__restrict outputInterleaved,
+                      size_t numberOfFrames) {
   float zero = 0.0f;
   vDSP_vsadd(inputLeft, 1, &zero, outputInterleaved, 2, numberOfFrames);
   vDSP_vsadd(inputRight, 1, &zero, outputInterleaved + 1, 2, numberOfFrames);
@@ -125,11 +117,10 @@ static inline bool is16ByteAligned(const float *vector) {
 }
 #endif
 
-void multiplyByScalar(
-    const float *inputVector,
-    float scalar,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void multiplyByScalar(const float *inputVector,
+                      float scalar,
+                      float *outputVector,
+                      size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
 #ifdef HAVE_X86_SSE2
@@ -192,11 +183,10 @@ void multiplyByScalar(
   }
 }
 
-void addScalar(
-    const float *inputVector,
-    float scalar,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void addScalar(const float *inputVector,
+               float scalar,
+               float *outputVector,
+               size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
 #ifdef HAVE_X86_SSE2
@@ -260,11 +250,10 @@ void addScalar(
   }
 }
 
-void add(
-    const float *inputVector1,
-    const float *inputVector2,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void add(const float *inputVector1,
+         const float *inputVector2,
+         float *outputVector,
+         size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
 #ifdef HAVE_X86_SSE2
@@ -365,11 +354,10 @@ void add(
   }
 }
 
-void subtract(
-    const float *inputVector1,
-    const float *inputVector2,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void subtract(const float *inputVector1,
+              const float *inputVector2,
+              float *outputVector,
+              size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
 #ifdef HAVE_X86_SSE2
@@ -468,11 +456,10 @@ void subtract(
   }
 }
 
-void multiply(
-    const float *inputVector1,
-    const float *inputVector2,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void multiply(const float *inputVector1,
+              const float *inputVector2,
+              float *outputVector,
+              size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
 #ifdef HAVE_X86_SSE2
@@ -605,11 +592,10 @@ float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProces
   return max;
 }
 
-void multiplyByScalarThenAddToOutput(
-    const float *inputVector,
-    float scalar,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
+void multiplyByScalarThenAddToOutput(const float *inputVector,
+                                     float scalar,
+                                     float *outputVector,
+                                     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
 #if HAVE_X86_SSE2
@@ -674,11 +660,10 @@ void multiplyByScalarThenAddToOutput(
   }
 }
 
-void deinterleaveStereo(
-    const float *__restrict inputInterleaved,
-    float *__restrict outputLeft,
-    float *__restrict outputRight,
-    size_t numberOfFrames) {
+void deinterleaveStereo(const float *__restrict inputInterleaved,
+                        float *__restrict outputLeft,
+                        float *__restrict outputRight,
+                        size_t numberOfFrames) {
 
   size_t n = numberOfFrames;
 
@@ -726,11 +711,10 @@ void deinterleaveStereo(
   }
 }
 
-void interleaveStereo(
-    const float *__restrict inputLeft,
-    const float *__restrict inputRight,
-    float *__restrict outputInterleaved,
-    size_t numberOfFrames) {
+void interleaveStereo(const float *__restrict inputLeft,
+                      const float *__restrict inputRight,
+                      float *__restrict outputInterleaved,
+                      size_t numberOfFrames) {
 
   size_t n = numberOfFrames;
 

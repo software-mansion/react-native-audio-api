@@ -50,11 +50,10 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
 /// @param streamChannelCount The number of channels in the incoming audio stream.
 /// @param streamMaxBufferSize The estimated maximum buffer size for the incoming audio stream.
 /// @returns Success status with file path or Error status with message.
-OpenFileResult FFmpegAudioFileWriter::openFile(
-    float streamSampleRate,
-    int32_t streamChannelCount,
-    int32_t streamMaxBufferSize,
-    const std::string &fileNameOverride) {
+OpenFileResult FFmpegAudioFileWriter::openFile(float streamSampleRate,
+                                               int32_t streamChannelCount,
+                                               int32_t streamMaxBufferSize,
+                                               const std::string &fileNameOverride) {
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   streamMaxBufferSize_ = streamMaxBufferSize;
@@ -80,10 +79,10 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
     taskOffloaderFunction(data);
   };
 
-  offloader_ = std::make_unique<task_offloader::TaskOffloader<
-      WriterData,
-      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-      FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+  offloader_ = std::make_unique<task_offloader::TaskOffloader<WriterData,
+                                                              FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+                                                              FILE_WRITER_SPSC_WAIT_STRATEGY>>(
+      FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
 
   return initializeFormatContext(codec)
       .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
@@ -197,8 +196,8 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::configureAndOpenCodec(const
   av_dict_free(&codecOptions);
 
   if (result < 0) {
-    return Result<NoneType, std::string>::Err(
-        "Failed to open FFmpeg codec with error: " + parseErrorCode(result));
+    return Result<NoneType, std::string>::Err("Failed to open FFmpeg codec with error: " +
+                                              parseErrorCode(result));
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -233,8 +232,8 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::openIOAndWriteHeader() {
     result = avio_open(&formatCtx_->pb, filePath_.c_str(), AVIO_FLAG_WRITE);
 
     if (result < 0) {
-      return Result<NoneType, std::string>::Err(
-          "Failed to open output file with error: " + parseErrorCode(result));
+      return Result<NoneType, std::string>::Err("Failed to open output file with error: " +
+                                                parseErrorCode(result));
     }
   }
 
@@ -251,9 +250,8 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::openIOAndWriteHeader() {
 /// @param inputRate The sample rate of the input audio.
 /// @param inputChannels The number of channels in the input audio.
 /// @returns Success status or Error status with message.
-Result<NoneType, std::string> FFmpegAudioFileWriter::initializeResampler(
-    float inputRate,
-    int inputChannels) {
+Result<NoneType, std::string> FFmpegAudioFileWriter::initializeResampler(float inputRate,
+                                                                         int inputChannels) {
   resampleCtx_ = av_unique_ptr<SwrContext>(swr_alloc());
 
   if (!resampleCtx_) {
@@ -275,8 +273,8 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::initializeResampler(
   int result = swr_init(resampleCtx_.get());
 
   if (result < 0) {
-    return Result<NoneType, std::string>::Err(
-        "Failed to initialize resampler for file: " + parseErrorCode(result));
+    return Result<NoneType, std::string>::Err("Failed to initialize resampler for file: " +
+                                              parseErrorCode(result));
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -291,11 +289,10 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
   packet_ = av_unique_ptr<AVPacket>(av_packet_alloc());
 
   // Calculate resampler size of output buffer from the resampler
-  int resamplerFrameSize = av_rescale_rnd(
-      maxBufferSize,
-      static_cast<int>(encoderCtx_->sample_rate),
-      static_cast<int>(streamSampleRate_),
-      AV_ROUND_UP);
+  int resamplerFrameSize = av_rescale_rnd(maxBufferSize,
+                                          static_cast<int>(encoderCtx_->sample_rate),
+                                          static_cast<int>(streamSampleRate_),
+                                          AV_ROUND_UP);
 
   // Configure frame parameters for desired file output
   resamplerFrame_->nb_samples = resamplerFrameSize;
@@ -334,12 +331,11 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
 
   assert(outputLength <= resamplerFrame_->nb_samples);
 
-  int convertedSamples = swr_convert(
-      resampleCtx_.get(),
-      resamplerFrame_->data,
-      static_cast<int>(outputLength),
-      inputs,
-      inputFrameCount);
+  int convertedSamples = swr_convert(resampleCtx_.get(),
+                                     resamplerFrame_->data,
+                                     static_cast<int>(outputLength),
+                                     inputs,
+                                     inputFrameCount);
 
   if (convertedSamples < 0) {
     invokeOnErrorCallback("Failed to convert audio samples: " + parseErrorCode(convertedSamples));
@@ -372,9 +368,9 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
 
     assert(chunkSize <= writingFrame_->nb_samples);
 
-    if (av_audio_fifo_read(
-            audioFifo_.get(), reinterpret_cast<void **>(writingFrame_->data), chunkSize) !=
-        chunkSize) {
+    if (av_audio_fifo_read(audioFifo_.get(),
+                           reinterpret_cast<void **>(writingFrame_->data),
+                           chunkSize) != chunkSize) {
       invokeOnErrorCallback("Failed to read data from FIFO");
       return -1;
     }

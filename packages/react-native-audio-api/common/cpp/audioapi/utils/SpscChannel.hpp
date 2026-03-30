@@ -63,10 +63,9 @@ class InnerChannel;
 /// @tparam Strategy The overflow strategy (default: WAIT_ON_FULL)
 /// @tparam Wait The wait strategy used when looping and trying to send or receive (default: BUSY_LOOP)
 /// @return A pair of sender and receiver for the channel
-template <
-    typename T,
-    OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL,
-    WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
+template <typename T,
+          OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL,
+          WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
 std::pair<Sender<T, Strategy, Wait>, Receiver<T, Strategy, Wait>> channel(size_t capacity) {
   auto channel = std::make_shared<InnerChannel<T, Strategy, Wait>>(capacity);
   return {Sender<T, Strategy, Wait>(channel), Receiver<T, Strategy, Wait>(channel)};
@@ -76,10 +75,9 @@ std::pair<Sender<T, Strategy, Wait>, Receiver<T, Strategy, Wait>> channel(size_t
 /// @tparam T The type of values sent through the channel
 /// @tparam Strategy The overflow strategy used by the channel
 /// It allows to send values to the channel. It is designed to be used only from one thread at a time.
-template <
-    typename T,
-    OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL,
-    WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
+template <typename T,
+          OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL,
+          WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
 class Sender {
   /// Disallows sender creation outside of channel function
   explicit Sender(std::shared_ptr<InnerChannel<T, Strategy, Wait>> chan) : channel_(chan) {}
@@ -151,10 +149,9 @@ class Sender {
 /// @tparam T The type of values sent through the channel
 /// @tparam Strategy The overflow strategy used by the channel
 /// It allows to receive values from the channel. It is designed to be used only from one thread at a time.
-template <
-    typename T,
-    OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL,
-    WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
+template <typename T,
+          OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL,
+          WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
 class Receiver {
   /// Disallows receiver creation outside of channel function
   explicit Receiver(std::shared_ptr<InnerChannel<T, Strategy, Wait>> chan) : channel_(chan) {}
@@ -176,17 +173,16 @@ class Receiver {
   /// @param value The received value
   /// @return ResponseStatus indicating the result of the operation
   /// @note This function is lock-free and wait-free.
-  ResponseStatus try_receive(T &value) noexcept(
-      std::is_nothrow_move_assignable_v<T> && std::is_nothrow_destructible_v<T>) {
+  ResponseStatus try_receive(T &value) noexcept(std::is_nothrow_move_assignable_v<T> &&
+                                                std::is_nothrow_destructible_v<T>) {
     return channel_->try_receive(value);
   }
 
   /// @brief Receive a value from the channel
   /// @return The received value
   /// @note This function is lock-free but may block if the channel is empty.
-  T receive() noexcept(
-      std::is_nothrow_default_constructible_v<T> && std::is_nothrow_move_assignable_v<T> &&
-      std::is_nothrow_destructible_v<T>) {
+  T receive() noexcept(std::is_nothrow_default_constructible_v<T> &&
+                       std::is_nothrow_move_assignable_v<T> && std::is_nothrow_destructible_v<T>) {
     T value;
     if (channel_->try_receive(value) != ResponseStatus::SUCCESS) [[unlikely]] {
       do {
@@ -215,10 +211,9 @@ class Receiver {
 /// @tparam Wait The wait strategy used for internal operations
 /// This class is not intended to be used directly by users.
 /// @note this class is not thread safe and should be wrapped in std::shared_ptr
-template <
-    typename T,
-    OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL,
-    WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
+template <typename T,
+          OverflowStrategy Strategy = OverflowStrategy::WAIT_ON_FULL,
+          WaitStrategy Wait = WaitStrategy::BUSY_LOOP>
 class InnerChannel {
  public:
   /// @brief Construct a channel with a given capacity
@@ -269,8 +264,8 @@ class InnerChannel {
   /// @param value The variable to store the received value
   /// @return ResponseStatus indicating the result of the operation
   /// @note This function is lock-free and wait-free
-  ResponseStatus try_receive(T &value) noexcept(
-      std::is_nothrow_move_assignable_v<T> && std::is_nothrow_destructible_v<T>) {
+  ResponseStatus try_receive(T &value) noexcept(std::is_nothrow_move_assignable_v<T> &&
+                                                std::is_nothrow_destructible_v<T>) {
     if constexpr (Strategy == OverflowStrategy::OVERWRITE_ON_FULL) {
       // Set reader active flag to prevent overwrites during read
       bool isOccupied = oldestOccupied_.exchange(true, std::memory_order_acq_rel);

@@ -70,20 +70,18 @@ class AudioGraphManager {
   /// @param to The destination audio node.
   /// @param type The type of connection (connect/disconnect).
   /// @note Should be only used from JavaScript/HostObjects thread
-  void addPendingNodeConnection(
-      const std::shared_ptr<AudioNode> &from,
-      const std::shared_ptr<AudioNode> &to,
-      ConnectionType type);
+  void addPendingNodeConnection(const std::shared_ptr<AudioNode> &from,
+                                const std::shared_ptr<AudioNode> &to,
+                                ConnectionType type);
 
   /// @brief Adds a pending connection between an audio node and an audio parameter.
   /// @param from The source audio node.
   /// @param to The destination audio parameter.
   /// @param type The type of connection (connect/disconnect).
   /// @note Should be only used from JavaScript/HostObjects thread
-  void addPendingParamConnection(
-      const std::shared_ptr<AudioNode> &from,
-      const std::shared_ptr<AudioParam> &to,
-      ConnectionType type);
+  void addPendingParamConnection(const std::shared_ptr<AudioNode> &from,
+                                 const std::shared_ptr<AudioParam> &to,
+                                 ConnectionType type);
 
   /// @brief Adds a processing node to the manager.
   /// @param node The processing node to add.
@@ -157,9 +155,8 @@ class AudioGraphManager {
 
   template <typename T, typename D>
     requires std::convertible_to<T *, D *>
-  static void prepareForDestruction(
-      std::vector<std::shared_ptr<T>> &vec,
-      AudioDestructor<D> &audioDestructor) {
+  static void prepareForDestruction(std::vector<std::shared_ptr<T>> &vec,
+                                    AudioDestructor<D> &audioDestructor) {
     if (vec.empty()) {
       return;
     }

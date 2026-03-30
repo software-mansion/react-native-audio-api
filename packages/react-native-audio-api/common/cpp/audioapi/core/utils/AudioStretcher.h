@@ -10,9 +10,8 @@ class AudioStretcher {
  public:
   AudioStretcher() = delete;
 
-  [[nodiscard]] static std::shared_ptr<AudioBuffer> changePlaybackSpeed(
-      AudioBuffer buffer,
-      float playbackSpeed);
+  [[nodiscard]] static std::shared_ptr<AudioBuffer> changePlaybackSpeed(AudioBuffer buffer,
+                                                                        float playbackSpeed);
 
  private:
   static std::vector<int16_t> castToInt16Buffer(AudioBuffer &buffer);

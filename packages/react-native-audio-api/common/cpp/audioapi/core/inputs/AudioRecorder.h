@@ -41,11 +41,10 @@ class AudioRecorder {
   virtual void connect(const std::shared_ptr<RecorderAdapterNode> &node) = 0;
   virtual void disconnect() = 0;
 
-  virtual Result<NoneType, std::string> setOnAudioReadyCallback(
-      float sampleRate,
-      size_t bufferLength,
-      int channelCount,
-      uint64_t callbackId) = 0;
+  virtual Result<NoneType, std::string> setOnAudioReadyCallback(float sampleRate,
+                                                                size_t bufferLength,
+                                                                int channelCount,
+                                                                uint64_t callbackId) = 0;
   virtual void clearOnAudioReadyCallback() = 0;
 
   void setOnErrorCallback(uint64_t callbackId);

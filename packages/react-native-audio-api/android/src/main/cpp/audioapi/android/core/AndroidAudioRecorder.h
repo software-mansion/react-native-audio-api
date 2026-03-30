@@ -36,18 +36,18 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
   bool isPaused() const override;
   bool isIdle() const override;
 
-  Result<NoneType, std::string> setOnAudioReadyCallback(
-      float sampleRate,
-      size_t bufferLength,
-      int channelCount,
-      uint64_t callbackId) override;
+  Result<NoneType, std::string> setOnAudioReadyCallback(float sampleRate,
+                                                        size_t bufferLength,
+                                                        int channelCount,
+                                                        uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 
   void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
   void disconnect() override;
 
-  oboe::DataCallbackResult
-  onAudioReady(oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) override;
+  oboe::DataCallbackResult onAudioReady(oboe::AudioStream *oboeStream,
+                                        void *audioData,
+                                        int32_t numFrames) override;
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
  private:

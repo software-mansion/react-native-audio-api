@@ -8,27 +8,23 @@
 
 namespace audioapi {
 
-AnalyserNodeHostObject::AnalyserNodeHostObject(
-    const std::shared_ptr<BaseAudioContext> &context,
-    const AnalyserOptions &options)
+AnalyserNodeHostObject::AnalyserNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
+                                               const AnalyserOptions &options)
     : AudioNodeHostObject(context->createAnalyser(options), options) {
-  addGetters(
-      JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, fftSize),
-      JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, minDecibels),
-      JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, maxDecibels),
-      JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, smoothingTimeConstant));
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, fftSize),
+             JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, minDecibels),
+             JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, maxDecibels),
+             JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, smoothingTimeConstant));
 
-  addSetters(
-      JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, fftSize),
-      JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, minDecibels),
-      JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, maxDecibels),
-      JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, smoothingTimeConstant));
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, fftSize),
+             JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, minDecibels),
+             JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, maxDecibels),
+             JSI_EXPORT_PROPERTY_SETTER(AnalyserNodeHostObject, smoothingTimeConstant));
 
-  addFunctions(
-      JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getFloatFrequencyData),
-      JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getByteFrequencyData),
-      JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getFloatTimeDomainData),
-      JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getByteTimeDomainData));
+  addFunctions(JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getFloatFrequencyData),
+               JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getByteFrequencyData),
+               JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getFloatTimeDomainData),
+               JSI_EXPORT_FUNCTION(AnalyserNodeHostObject, getByteTimeDomainData));
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, fftSize) {

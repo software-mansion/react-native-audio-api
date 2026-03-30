@@ -327,12 +327,11 @@ TEST_P(GraphCycleDebugTest, FindCycleFormation) {
   ASSERT_FALSE(audioGraphHasCycle()) << "Cycle after all operations!";
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    Seeds,
-    GraphCycleDebugTest,
-    ::testing::Range(uint64_t{0}, uint64_t{100}),
-    [](const ::testing::TestParamInfo<uint64_t> &info) {
-      return "seed_" + std::to_string(info.param);
-    });
+INSTANTIATE_TEST_SUITE_P(Seeds,
+                         GraphCycleDebugTest,
+                         ::testing::Range(uint64_t{0}, uint64_t{100}),
+                         [](const ::testing::TestParamInfo<uint64_t> &info) {
+                           return "seed_" + std::to_string(info.param);
+                         });
 
 } // namespace audioapi::utils::graph

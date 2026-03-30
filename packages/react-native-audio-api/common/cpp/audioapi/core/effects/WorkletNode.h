@@ -16,11 +16,10 @@ namespace audioapi {
 #if RN_AUDIO_API_TEST
 class WorkletNode : public AudioNode {
  public:
-  explicit WorkletNode(
-      std::shared_ptr<BaseAudioContext> context,
-      size_t bufferLength,
-      size_t inputChannelCount,
-      WorkletsRunner &&workletRunner)
+  explicit WorkletNode(std::shared_ptr<BaseAudioContext> context,
+                       size_t bufferLength,
+                       size_t inputChannelCount,
+                       WorkletsRunner &&workletRunner)
       : AudioNode(context) {}
 
  protected:
@@ -36,11 +35,10 @@ using namespace facebook;
 
 class WorkletNode : public AudioNode {
  public:
-  explicit WorkletNode(
-      const std::shared_ptr<BaseAudioContext> &context,
-      size_t bufferLength,
-      size_t inputChannelCount,
-      WorkletsRunner &&workletRunner);
+  explicit WorkletNode(const std::shared_ptr<BaseAudioContext> &context,
+                       size_t bufferLength,
+                       size_t inputChannelCount,
+                       WorkletsRunner &&workletRunner);
   DELETE_COPY_AND_MOVE(WorkletNode);
   ~WorkletNode() override = default;
 

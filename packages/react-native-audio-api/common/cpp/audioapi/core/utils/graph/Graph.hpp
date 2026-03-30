@@ -38,14 +38,14 @@ class Graph {
 
   // ── Event channel (main → audio): grow + graph mutations ───────────────
 
-  using EventReceiver = audioapi::channels::spsc::Receiver<
-      AGEvent,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
-  using EventSender = audioapi::channels::spsc::Sender<
-      AGEvent,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
+  using EventReceiver =
+      audioapi::channels::spsc::Receiver<AGEvent,
+                                         audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+                                         audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
+  using EventSender =
+      audioapi::channels::spsc::Sender<AGEvent,
+                                       audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+                                       audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
 
   using HNode = HostGraph<NodeType>::Node;
 
@@ -62,10 +62,9 @@ class Graph {
     eventReceiver_ = std::move(er);
   }
 
-  Graph(
-      size_t eventQueueCapacity,
-      std::uint32_t initialNodeCapacity,
-      std::uint32_t initialEdgeCapacity)
+  Graph(size_t eventQueueCapacity,
+        std::uint32_t initialNodeCapacity,
+        std::uint32_t initialEdgeCapacity)
       : Graph(eventQueueCapacity) {
     if (initialNodeCapacity > 0) {
       audioGraph.reserveNodes(initialNodeCapacity);
@@ -197,8 +196,8 @@ class Graph {
       std::uint32_t newCap = std::max(static_cast<std::uint32_t>(edges * 2), std::uint32_t{64});
       auto buf = std::make_unique<InputPool::Slot[]>(newCap);
       eventSender_.send(
-          [buf = std::move(buf), newCap](
-              AudioGraph<NodeType> &graph, Disposer<kDisposerPayloadSize> &disposer) mutable {
+          [buf = std::move(buf), newCap](AudioGraph<NodeType> &graph,
+                                         Disposer<kDisposerPayloadSize> &disposer) mutable {
             auto *old = graph.pool().adoptBuffer(buf.release(), newCap);
             if (old) {
               disposer.dispose(OwnedSlotBuffer(old));

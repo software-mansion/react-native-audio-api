@@ -1,6 +1,11 @@
 #import <AVFAudio/AVFAudio.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+static inline BOOL RNAudioAPIHasUsableFormat(AVAudioFormat *format)
+{
+  return format != nil && format.sampleRate > 0 && format.channelCount > 0;
+}
+
 @implementation AudioSessionManager
 
 static AudioSessionManager *_sharedInstance = nil;
@@ -36,11 +41,11 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (bool)areDesiredOptionsSet
 {
-  return (
-      self.audioSession.category == self.desiredCategory &&
-      self.audioSession.mode == self.desiredMode &&
-      self.audioSession.categoryOptions == self.desiredOptions &&
-      self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
+  return (self.audioSession.category == self.desiredCategory &&
+          self.audioSession.mode == self.desiredMode &&
+          self.audioSession.categoryOptions == self.desiredOptions &&
+          self.audioSession.allowHapticsAndSystemSoundsDuringRecording ==
+              self.allowHapticsAndSounds);
 }
 
 - (bool)configureAudioSession
@@ -60,11 +65,10 @@ static AudioSessionManager *_sharedInstance = nil;
     NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
     return false;
   } else {
-    NSLog(
-        @"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
-        self.audioSession.category,
-        self.audioSession.mode,
-        (unsigned long)self.audioSession.categoryOptions);
+    NSLog(@"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
+          self.audioSession.category,
+          self.audioSession.mode,
+          (unsigned long)self.audioSession.categoryOptions);
   }
 
   if (@available(iOS 13.0, *)) {
@@ -74,9 +78,8 @@ static AudioSessionManager *_sharedInstance = nil;
                                                                  error:&error];
 
       if (error != nil) {
-        NSLog(
-            @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
-            [error debugDescription]);
+        NSLog(@"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
+              [error debugDescription]);
         return false;
       }
     }
@@ -114,29 +117,23 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (bool)setActive:(bool)active error:(NSError **)error
 {
-  bool success = false;
-
   if (!self.shouldManageSession) {
     return true;
   }
 
-  if (self.isActive == active) {
-    return true;
+  if (active) {
+    return [self ensureActive:false error:error];
   }
 
-  if (active) {
-    success = [self configureAudioSession];
-
-    if (!success) {
-      return false;
-    }
+  if (!self.isActive) {
+    return true;
   }
 
   AVAudioSessionSetActiveOptions options = active
       ? 0
       : (self.notifyOthersOnDeactivation ? AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation
                                          : 0);
-  success = [self.audioSession setActive:active withOptions:options error:error];
+  bool success = [self.audioSession setActive:active withOptions:options error:error];
 
   if (success) {
     self.isActive = active;
@@ -145,11 +142,36 @@ static AudioSessionManager *_sharedInstance = nil;
   return success;
 }
 
+- (bool)ensureActive:(bool)force error:(NSError **)error
+{
+  if (!self.shouldManageSession) {
+    return true;
+  }
+
+  if (self.isActive && !force) {
+    return true;
+  }
+
+  bool success = [self configureAudioSession];
+
+  if (!success) {
+    return false;
+  }
+
+  success = [self.audioSession setActive:true withOptions:0 error:error];
+
+  if (success) {
+    self.isActive = true;
+  }
+
+  return success;
+}
+
 - (void)markInactive
 {
-  // Mark as inactive no matter the state reported by AVAudioSession,
-  // this is used during interruptions to "force" going through configure&activate flow
-  // which is necessary after some of the interruptions (f.e. when the other app re-configures the hardware)
+  // Mark as inactive even though AVAudioSession does not expose a reliable "currently active" query.
+  // This invalidates our last known successful activation and forces the next user of the session
+  // to re-assert activation before starting audio work.
   self.isActive = false;
 }
 
@@ -166,6 +188,35 @@ static AudioSessionManager *_sharedInstance = nil;
 - (NSNumber *)getDevicePreferredInputChannelCount
 {
   return [NSNumber numberWithInteger:[self.audioSession inputNumberOfChannels]];
+}
+
+- (bool)hasValidInputRoute
+{
+  AVAudioSessionRouteDescription *route = [self.audioSession currentRoute];
+  return route.inputs.count > 0 && self.audioSession.sampleRate > 0 &&
+      self.audioSession.inputNumberOfChannels > 0;
+}
+
+- (bool)hasValidOutputRoute
+{
+  AVAudioSessionRouteDescription *route = [self.audioSession currentRoute];
+  return route.outputs.count > 0 && self.audioSession.sampleRate > 0 &&
+      self.audioSession.outputNumberOfChannels > 0;
+}
+
+- (AVAudioFormat *)getPreferredInputFormat
+{
+  double sampleRate = self.audioSession.sampleRate;
+  AVAudioChannelCount channelCount = (AVAudioChannelCount)self.audioSession.inputNumberOfChannels;
+
+  if (sampleRate <= 0 || channelCount == 0) {
+    return nil;
+  }
+
+  AVAudioFormat *format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate
+                                                                         channels:channelCount];
+
+  return RNAudioAPIHasUsableFormat(format) ? format : nil;
 }
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
@@ -329,11 +380,10 @@ static AudioSessionManager *_sharedInstance = nil;
   [self.audioSession setPreferredInput:selectedInput error:&error];
 
   if (error != nil) {
-    reject(
-        nil,
-        [NSString
-            stringWithFormat:@"Error while setting preferred input: %@", [error debugDescription]],
-        error);
+    reject(nil,
+           [NSString stringWithFormat:@"Error while setting preferred input: %@",
+                                      [error debugDescription]],
+           error);
     return;
   }
 

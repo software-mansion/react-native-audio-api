@@ -17,9 +17,8 @@ class IAudioEventHandlerRegistry {
  public:
   virtual ~IAudioEventHandlerRegistry() = default;
 
-  virtual uint64_t registerHandler(
-      AudioEvent eventName,
-      const std::shared_ptr<facebook::jsi::Function> &handler) = 0;
+  virtual uint64_t registerHandler(AudioEvent eventName,
+                                   const std::shared_ptr<facebook::jsi::Function> &handler) = 0;
   virtual void unregisterHandler(AudioEvent eventName, uint64_t listenerId) = 0;
 
   virtual void invokeHandlerWithEventBody(

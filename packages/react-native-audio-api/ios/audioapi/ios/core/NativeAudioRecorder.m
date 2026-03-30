@@ -27,10 +27,9 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
     self.receiverBlock = [receiverBlock copy];
 
     __weak typeof(self) weakSelf = self;
-    self.receiverSinkBlock = ^OSStatus(
-        const AudioTimeStamp *_Nonnull timestamp,
-        AVAudioFrameCount frameCount,
-        const AudioBufferList *_Nonnull inputData) {
+    self.receiverSinkBlock = ^OSStatus(const AudioTimeStamp *_Nonnull timestamp,
+                                       AVAudioFrameCount frameCount,
+                                       const AudioBufferList *_Nonnull inputData) {
       weakSelf.receiverBlock(inputData, frameCount);
 
       return kAudioServicesNoError;
@@ -49,11 +48,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
   if (format.sampleRate == 0 || format.channelCount == 0) {
     AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
-
-    format = [[AVAudioFormat alloc]
-        initStandardFormatWithSampleRate:[[sessionManager getDevicePreferredSampleRate] doubleValue]
-                                channels:[[sessionManager getDevicePreferredInputChannelCount]
-                                             intValue]];
+    format = [sessionManager getPreferredInputFormat];
   }
 
   return format;

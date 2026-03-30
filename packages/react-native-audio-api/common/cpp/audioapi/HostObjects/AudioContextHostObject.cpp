@@ -16,10 +16,9 @@ AudioContextHostObject::AudioContextHostObject(
           std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
           runtime,
           callInvoker) {
-  addFunctions(
-      JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
-      JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
-      JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend));
+  addFunctions(JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
+               JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
+               JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {

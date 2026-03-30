@@ -74,8 +74,8 @@ class Result {
     }
   }
 
-  Result(Result<T, E> &&other) noexcept(
-      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
+  Result(Result<T, E> &&other) noexcept(std::is_nothrow_move_constructible_v<T> &&
+                                        std::is_nothrow_move_constructible_v<E>)
       : is_ok_(other.is_ok_) {
     if (is_ok_) {
       new (&ok_value) T(std::move(other.ok_value));
@@ -108,9 +108,10 @@ class Result {
     return *this;
   }
 
-  Result &operator=(Result &&other) noexcept(
-      std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_assignable_v<E> &&
-      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>) {
+  Result &operator=(Result &&other) noexcept(std::is_nothrow_move_assignable_v<T> &&
+                                             std::is_nothrow_move_assignable_v<E> &&
+                                             std::is_nothrow_move_constructible_v<T> &&
+                                             std::is_nothrow_move_constructible_v<E>) {
     if (this == &other) {
       return *this;
     }

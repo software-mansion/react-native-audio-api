@@ -43,26 +43,24 @@ class CDSPHBDownsampler : public CDSPProcessor {
 	 * latency can be obtained via the getLatencyFrac() function.
 	 */
 
-  CDSPHBDownsampler(
-      const double ReqAtten,
-      const int SteepIndex,
-      const bool IsThird,
-      const double PrevLatency) {
-    static const CConvolveFn FltConvFn[14] = {
-        &CDSPHBDownsampler ::convolve1,
-        &CDSPHBDownsampler ::convolve2,
-        &CDSPHBDownsampler ::convolve3,
-        &CDSPHBDownsampler ::convolve4,
-        &CDSPHBDownsampler ::convolve5,
-        &CDSPHBDownsampler ::convolve6,
-        &CDSPHBDownsampler ::convolve7,
-        &CDSPHBDownsampler ::convolve8,
-        &CDSPHBDownsampler ::convolve9,
-        &CDSPHBDownsampler ::convolve10,
-        &CDSPHBDownsampler ::convolve11,
-        &CDSPHBDownsampler ::convolve12,
-        &CDSPHBDownsampler ::convolve13,
-        &CDSPHBDownsampler ::convolve14};
+  CDSPHBDownsampler(const double ReqAtten,
+                    const int SteepIndex,
+                    const bool IsThird,
+                    const double PrevLatency) {
+    static const CConvolveFn FltConvFn[14] = {&CDSPHBDownsampler ::convolve1,
+                                              &CDSPHBDownsampler ::convolve2,
+                                              &CDSPHBDownsampler ::convolve3,
+                                              &CDSPHBDownsampler ::convolve4,
+                                              &CDSPHBDownsampler ::convolve5,
+                                              &CDSPHBDownsampler ::convolve6,
+                                              &CDSPHBDownsampler ::convolve7,
+                                              &CDSPHBDownsampler ::convolve8,
+                                              &CDSPHBDownsampler ::convolve9,
+                                              &CDSPHBDownsampler ::convolve10,
+                                              &CDSPHBDownsampler ::convolve11,
+                                              &CDSPHBDownsampler ::convolve12,
+                                              &CDSPHBDownsampler ::convolve13,
+                                              &CDSPHBDownsampler ::convolve14};
 
     const double *fltp0;
     int fltt;
@@ -254,24 +252,22 @@ class CDSPHBDownsampler : public CDSPProcessor {
                    ///< together with the `BufLeft` variable.
   int ReadPos;     ///< The current buffer read position.
 
-  typedef void (*CConvolveFn)(
-      double *op,
-      double *const opend,
-      const double *const flt,
-      const double *const rp01,
-      const double *const rp02,
-      int rpos);      ///<
-                      ///< Convolution function type.
-  CConvolveFn convfn; ///< Convolution function in use.
+  typedef void (*CConvolveFn)(double *op,
+                              double *const opend,
+                              const double *const flt,
+                              const double *const rp01,
+                              const double *const rp02,
+                              int rpos); ///<
+                                         ///< Convolution function type.
+  CConvolveFn convfn;                    ///< Convolution function in use.
 
 #define R8BHBC1(fn) \
-  static void fn( \
-      double *op, \
-      double *const opend, \
-      const double *const flt, \
-      const double *const rp01, \
-      const double *const rp02, \
-      int rpos) { \
+  static void fn(double *op, \
+                 double *const opend, \
+                 const double *const flt, \
+                 const double *const rp01, \
+                 const double *const rp02, \
+                 int rpos) { \
     while (op != opend) { \
       const double *const rp1 = rp01 + rpos; \
       const double *const rp = rp02 + rpos;

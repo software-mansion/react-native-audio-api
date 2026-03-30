@@ -5,11 +5,10 @@
 
 namespace audioapi {
 
-WorkletNode::WorkletNode(
-    const std::shared_ptr<BaseAudioContext> &context,
-    size_t bufferLength,
-    size_t inputChannelCount,
-    WorkletsRunner &&workletRunner)
+WorkletNode::WorkletNode(const std::shared_ptr<BaseAudioContext> &context,
+                         size_t bufferLength,
+                         size_t inputChannelCount,
+                         WorkletsRunner &&workletRunner)
     : AudioNode(context),
       workletRunner_(std::move(workletRunner)),
       buffer_(
@@ -59,8 +58,8 @@ std::shared_ptr<DSPAudioBuffer> WorkletNode::processNode(
       buffer_->zero();
 
       /// Call the worklet
-      workletRunner_.callUnsafe(
-          std::move(jsArray), jsi::Value(uiRuntimeRaw, static_cast<int>(channelCount_)));
+      workletRunner_.callUnsafe(std::move(jsArray),
+                                jsi::Value(uiRuntimeRaw, static_cast<int>(channelCount_)));
 
       return jsi::Value::undefined();
     });

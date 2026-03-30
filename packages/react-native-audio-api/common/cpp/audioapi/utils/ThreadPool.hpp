@@ -28,36 +28,33 @@ class ThreadPool {
     std::atomic<size_t> tasksScheduled{0};
   };
 
-  using Sender = channels::spsc::Sender<
-      Event,
-      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      channels::spsc::WaitStrategy::ATOMIC_WAIT>;
-  using Receiver = channels::spsc::Receiver<
-      Event,
-      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using Sender = channels::spsc::Sender<Event,
+                                        channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+                                        channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using Receiver = channels::spsc::Receiver<Event,
+                                            channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+                                            channels::spsc::WaitStrategy::ATOMIC_WAIT>;
 
  public:
   /// @brief Construct a new ThreadPool
   /// @param numThreads The number of worker threads to create
   /// @param loadBalancerQueueSize The size of the load balancer's queue
   /// @param workerQueueSize The size of each worker thread's queue
-  explicit ThreadPool(
-      size_t numThreads,
-      size_t loadBalancerQueueSize = 32,
-      size_t workerQueueSize = 32) {
-    auto [sender, receiver] = channels::spsc::channel<
-        Event,
-        channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-        channels::spsc::WaitStrategy::ATOMIC_WAIT>(loadBalancerQueueSize);
+  explicit ThreadPool(size_t numThreads,
+                      size_t loadBalancerQueueSize = 32,
+                      size_t workerQueueSize = 32) {
+    auto [sender, receiver] =
+        channels::spsc::channel<Event,
+                                channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+                                channels::spsc::WaitStrategy::ATOMIC_WAIT>(loadBalancerQueueSize);
     loadBalancerSender = std::move(sender);
     std::vector<Sender> workerSenders;
     workerSenders.reserve(numThreads);
     for (size_t i = 0; i < numThreads; ++i) {
-      auto [workerSender, workerReceiver] = channels::spsc::channel<
-          Event,
-          channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-          channels::spsc::WaitStrategy::ATOMIC_WAIT>(workerQueueSize);
+      auto [workerSender, workerReceiver] =
+          channels::spsc::channel<Event,
+                                  channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+                                  channels::spsc::WaitStrategy::ATOMIC_WAIT>(workerQueueSize);
       workers.emplace_back(&ThreadPool::workerThreadFunc, this, std::move(workerReceiver));
       workerSenders.emplace_back(std::move(workerSender));
     }
@@ -104,10 +101,9 @@ class ThreadPool {
   /// @note The task should not throw exceptions, as they will not be caught.
   /// @note The task should end at some point, otherwise the thread pool will never be able to shut down.
   /// @note IMPORTANT: This function is not thread-safe and should be called from a single thread only.
-  template <
-      typename Func,
-      typename... Args,
-      typename = std::enable_if_t<std::is_invocable_r_v<void, Func, Args...>>>
+  template <typename Func,
+            typename... Args,
+            typename = std::enable_if_t<std::is_invocable_r_v<void, Func, Args...>>>
   void schedule(Func &&task, Args &&...args) noexcept {
     controlBlock_->tasksScheduled.fetch_add(1, std::memory_order_release);
 

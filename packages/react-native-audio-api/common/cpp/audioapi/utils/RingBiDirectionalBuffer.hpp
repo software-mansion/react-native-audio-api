@@ -19,10 +19,8 @@ class RingBiDirectionalBuffer {
  public:
   /// @brief Constructor for RingBuffer.
   RingBiDirectionalBuffer()
-      : buffer_(
-            static_cast<T *>(::operator new[](
-                capacity_ * sizeof(T),
-                static_cast<std::align_val_t>(alignof(T))))) {
+      : buffer_(static_cast<T *>(
+            ::operator new[](capacity_ * sizeof(T), static_cast<std::align_val_t>(alignof(T))))) {
     static_assert(isPowerOfTwo(capacity_), "RingBiDirectionalBuffer's capacity must be power of 2");
   }
 
@@ -67,8 +65,8 @@ class RingBiDirectionalBuffer {
   /// @brief Pop a value from the front of the buffer.
   /// @param out The value popped from the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
-  bool popFront(T &out) noexcept(
-      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
+  bool popFront(T &out) noexcept(std::is_nothrow_move_constructible_v<T> &&
+                                 std::is_nothrow_destructible_v<T>) {
     if (isEmpty()) [[unlikely]] {
       return false;
     }
@@ -92,8 +90,8 @@ class RingBiDirectionalBuffer {
   /// @brief Pop a value from the back of the buffer.
   /// @param out The value popped from the buffer.
   /// @return True if the value was popped successfully, false if the buffer is empty.
-  bool popBack(T &out) noexcept(
-      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
+  bool popBack(T &out) noexcept(std::is_nothrow_move_constructible_v<T> &&
+                                std::is_nothrow_destructible_v<T>) {
     if (isEmpty()) [[unlikely]] {
       return false;
     }

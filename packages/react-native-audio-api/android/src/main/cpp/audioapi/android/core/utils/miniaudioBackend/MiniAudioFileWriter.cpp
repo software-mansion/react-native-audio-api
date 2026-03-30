@@ -72,45 +72,43 @@ MiniAudioFileWriter::~MiniAudioFileWriter() {
 /// @param streamChannelCount The channel count of the incoming audio stream.
 /// @param streamMaxBufferSize The maximum buffer size of the incoming audio stream.
 /// @return The status of the file opening operation.
-OpenFileResult MiniAudioFileWriter::openFile(
-    float streamSampleRate,
-    int32_t streamChannelCount,
-    int32_t streamMaxBufferSize,
-    const std::string &fileNameOverride) {
+OpenFileResult MiniAudioFileWriter::openFile(float streamSampleRate,
+                                             int32_t streamChannelCount,
+                                             int32_t streamMaxBufferSize,
+                                             const std::string &fileNameOverride) {
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   streamMaxBufferSize_ = streamMaxBufferSize;
   ma_result result;
   framesWritten_.store(0, std::memory_order_release);
 
-  isConverterRequired_.store(
-      (streamSampleRate_ != fileProperties_->sampleRate) ||
-          (streamChannelCount_ != fileProperties_->channelCount) ||
-          (getDataFormat(fileProperties_) != ma_format_f32),
-      std::memory_order_release);
+  isConverterRequired_.store((streamSampleRate_ != fileProperties_->sampleRate) ||
+                                 (streamChannelCount_ != fileProperties_->channelCount) ||
+                                 (getDataFormat(fileProperties_) != ma_format_f32),
+                             std::memory_order_release);
 
   result = initializeConverterIfNeeded();
 
   if (result != MA_SUCCESS) {
-    return OpenFileResult ::Err(
-        "Failed to initialize converter" + std::string(ma_result_description(result)));
+    return OpenFileResult ::Err("Failed to initialize converter" +
+                                std::string(ma_result_description(result)));
   }
 
   result = initializeEncoder(fileNameOverride);
 
   if (result != MA_SUCCESS) {
-    return OpenFileResult ::Err(
-        "Failed to initialize encoder" + std::string(ma_result_description(result)));
+    return OpenFileResult ::Err("Failed to initialize encoder" +
+                                std::string(ma_result_description(result)));
   }
 
   auto offloaderLambda = [this](WriterData data) {
     taskOffloaderFunction(data);
   };
 
-  offloader_ = std::make_unique<task_offloader::TaskOffloader<
-      WriterData,
-      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-      FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+  offloader_ = std::make_unique<task_offloader::TaskOffloader<WriterData,
+                                                              FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+                                                              FILE_WRITER_SPSC_WAIT_STRATEGY>>(
+      FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
 
   isFileOpen_.store(true, std::memory_order_release);
   return OpenFileResult ::Ok(filePath_);
@@ -190,9 +188,8 @@ void MiniAudioFileWriter::taskOffloaderFunction(WriterData data) {
     result = ma_encoder_write_pcm_frames(encoder_.get(), audioData, numFrames, &framesWritten);
 
     if (result != MA_SUCCESS) {
-      invokeOnErrorCallback(
-          "Failed to write audio data to file: " + filePath_ +
-          std::string(ma_result_description(result)));
+      invokeOnErrorCallback("Failed to write audio data to file: " + filePath_ +
+                            std::string(ma_result_description(result)));
       return;
     }
 
@@ -206,9 +203,8 @@ void MiniAudioFileWriter::taskOffloaderFunction(WriterData data) {
       encoder_.get(), processingBuffer_, convertedFrameCount, &framesWritten);
 
   if (result != MA_SUCCESS) {
-    invokeOnErrorCallback(
-        "Failed to write converted audio data to file: " + filePath_ +
-        std::string(ma_result_description(result)));
+    invokeOnErrorCallback("Failed to write converted audio data to file: " + filePath_ +
+                          std::string(ma_result_description(result)));
     return;
   }
 
@@ -244,13 +240,13 @@ ma_result MiniAudioFileWriter::initializeConverterIfNeeded() {
   ma_result result;
   ma_format dataFormat = getDataFormat(fileProperties_);
 
-  ma_data_converter_config converterConfig = ma_data_converter_config_init(
-      ma_format_f32,
-      dataFormat,
-      streamChannelCount_,
-      fileProperties_->channelCount,
-      static_cast<int32_t>(streamSampleRate_),
-      fileProperties_->sampleRate);
+  ma_data_converter_config converterConfig =
+      ma_data_converter_config_init(ma_format_f32,
+                                    dataFormat,
+                                    streamChannelCount_,
+                                    fileProperties_->channelCount,
+                                    static_cast<int32_t>(streamSampleRate_),
+                                    fileProperties_->sampleRate);
 
   converter_ = std::make_unique<ma_data_converter>();
   result = ma_data_converter_init(&converterConfig, nullptr, converter_.get());
@@ -284,11 +280,10 @@ ma_result MiniAudioFileWriter::initializeEncoder(const std::string &fileNameOver
 
   filePath_ = filePathResult.unwrap();
 
-  ma_encoder_config config = ma_encoder_config_init(
-      getFormat(fileProperties_),
-      getDataFormat(fileProperties_),
-      fileProperties_->channelCount,
-      fileProperties_->sampleRate);
+  ma_encoder_config config = ma_encoder_config_init(getFormat(fileProperties_),
+                                                    getDataFormat(fileProperties_),
+                                                    fileProperties_->channelCount,
+                                                    fileProperties_->sampleRate);
 
   encoder_ = std::make_unique<ma_encoder>();
   result = ma_encoder_init_file(filePath_.c_str(), &config, encoder_.get());

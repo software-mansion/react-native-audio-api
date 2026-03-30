@@ -25,10 +25,9 @@ using namespace facebook;
 
 class WorkletsRunner {
  public:
-  explicit WorkletsRunner(
-      std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
-      const std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-      bool shouldLockRuntime = true);
+  explicit WorkletsRunner(std::weak_ptr<worklets::WorkletRuntime> weakRuntime,
+                          const std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+                          bool shouldLockRuntime = true);
   WorkletsRunner(WorkletsRunner &&);
   ~WorkletsRunner();
 

@@ -9,16 +9,14 @@ namespace audioapi {
 
 AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> &audioBuffer)
     : audioBuffer_(audioBuffer) {
-  addGetters(
-      JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, sampleRate),
-      JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, length),
-      JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, duration),
-      JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, numberOfChannels));
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, sampleRate),
+             JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, length),
+             JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, duration),
+             JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, numberOfChannels));
 
-  addFunctions(
-      JSI_EXPORT_FUNCTION(AudioBufferHostObject, getChannelData),
-      JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyFromChannel),
-      JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyToChannel));
+  addFunctions(JSI_EXPORT_FUNCTION(AudioBufferHostObject, getChannelData),
+               JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyFromChannel),
+               JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyToChannel));
 }
 
 AudioBufferHostObject::AudioBufferHostObject(AudioBufferHostObject &&other) noexcept

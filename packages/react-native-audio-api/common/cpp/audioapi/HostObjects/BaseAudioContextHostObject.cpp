@@ -38,31 +38,29 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
   context_->initialize();
   destination_ = std::make_shared<AudioDestinationNodeHostObject>(context_->getDestination());
 
-  addGetters(
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
+             JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
+             JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
+             JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
-  addFunctions(
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletSourceNode),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletNode),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletProcessingNode),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConstantSource),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWaveShaper));
+  addFunctions(JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletSourceNode),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletNode),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletProcessingNode),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConstantSource),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
+               JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWaveShaper));
 }
 
 // Explicitly define destructors here, as they to exist in order to act as a
@@ -76,8 +74,8 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
-  return jsi::String::createFromUtf8(
-      runtime, js_enum_parser::contextStateToString(context_->getState()));
+  return jsi::String::createFromUtf8(runtime,
+                                     js_enum_parser::contextStateToString(context_->getState()));
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {

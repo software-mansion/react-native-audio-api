@@ -41,23 +41,21 @@ class AudioFileProperties {
     Bit32 = 2,
   };
 
-  AudioFileProperties(
-      FileDirectory directory,
-      const std::string &subDirectory,
-      const std::string &fileNamePrefix,
-      int channelCount,
-      size_t batchDurationSeconds,
-      Format format,
-      float sampleRate,
-      size_t bitRate,
-      BitDepth bitDepth,
-      int flacCompressionLevel,
-      int androidFlushIntervalMs,
-      IOSAudioQuality iosAudioQuality);
+  AudioFileProperties(FileDirectory directory,
+                      const std::string &subDirectory,
+                      const std::string &fileNamePrefix,
+                      int channelCount,
+                      size_t batchDurationSeconds,
+                      Format format,
+                      float sampleRate,
+                      size_t bitRate,
+                      BitDepth bitDepth,
+                      int flacCompressionLevel,
+                      int androidFlushIntervalMs,
+                      IOSAudioQuality iosAudioQuality);
 
-  static std::shared_ptr<AudioFileProperties> CreateFromJSIValue(
-      facebook::jsi::Runtime &runtime,
-      const facebook::jsi::Value &value);
+  static std::shared_ptr<AudioFileProperties> CreateFromJSIValue(facebook::jsi::Runtime &runtime,
+                                                                 const facebook::jsi::Value &value);
 
   FileDirectory directory;
   std::string subDirectory;

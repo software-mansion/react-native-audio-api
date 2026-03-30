@@ -28,26 +28,23 @@ class AudioDecoder {
  public:
   AudioDecoder() = delete;
 
-  [[nodiscard]] static AudioBufferResult decodeWithFilePath(
-      const std::string &path,
-      float sampleRate);
-  [[nodiscard]] static AudioBufferResult
-  decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
-  [[nodiscard]] static AudioBufferResult decodeWithPCMInBase64(
-      const std::string &data,
-      float inputSampleRate,
-      int inputChannelCount,
-      bool interleaved);
+  [[nodiscard]] static AudioBufferResult decodeWithFilePath(const std::string &path,
+                                                            float sampleRate);
+  [[nodiscard]] static AudioBufferResult decodeWithMemoryBlock(const void *data,
+                                                               size_t size,
+                                                               float sampleRate);
+  [[nodiscard]] static AudioBufferResult decodeWithPCMInBase64(const std::string &data,
+                                                               float inputSampleRate,
+                                                               int inputChannelCount,
+                                                               bool interleaved);
 
  private:
   static AudioBufferResult decodeWithMiniaudio(float sampleRate, DecoderSource source);
-  static Result<std::vector<float>, std::string> readAllPcmFrames(
-      ma_decoder &decoder,
-      int outputChannels);
-  static AudioBufferResult makeAudioBufferFromFloatBuffer(
-      const std::vector<float> &buffer,
-      float outputSampleRate,
-      int outputChannels);
+  static Result<std::vector<float>, std::string> readAllPcmFrames(ma_decoder &decoder,
+                                                                  int outputChannels);
+  static AudioBufferResult makeAudioBufferFromFloatBuffer(const std::vector<float> &buffer,
+                                                          float outputSampleRate,
+                                                          int outputChannels);
   // NOLINTBEGIN(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
   static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12) {
@@ -95,9 +92,8 @@ class AudioDecoder {
     return AudioFormat::UNKNOWN;
   }
   // NOLINTEND(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
-  static bool pathHasExtension(
-      const std::string &path,
-      const std::vector<std::string> &extensions) {
+  static bool pathHasExtension(const std::string &path,
+                               const std::vector<std::string> &extensions) {
     std::string pathLower = path;
     std::ranges::transform(pathLower, pathLower.begin(), ::tolower);
     return std::ranges::any_of(

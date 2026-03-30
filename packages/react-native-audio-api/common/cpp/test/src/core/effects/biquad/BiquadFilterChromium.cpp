@@ -44,12 +44,11 @@ static double pow10(double x) {
   return std::exp(x * 2.30258509299404568402);
 }
 
-void getFrequencyResponse(
-    const BiquadCoefficients &coeffs,
-    std::span<const float> frequency,
-    std::span<float> mag_response,
-    std::span<float> phase_response,
-    float nyquistFrequency) {
+void getFrequencyResponse(const BiquadCoefficients &coeffs,
+                          std::span<const float> frequency,
+                          std::span<float> mag_response,
+                          std::span<float> phase_response,
+                          float nyquistFrequency) {
   assert(!frequency.empty());
   assert(!mag_response.empty());
   assert(!phase_response.empty());
@@ -98,8 +97,12 @@ void getFrequencyResponse(
   }
 }
 
-BiquadCoefficients
-normalizeCoefficients(double b0, double b1, double b2, double a0, double a1, double a2) {
+BiquadCoefficients normalizeCoefficients(double b0,
+                                         double b1,
+                                         double b2,
+                                         double a0,
+                                         double a1,
+                                         double a2) {
   return BiquadCoefficients{b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0};
 }
 

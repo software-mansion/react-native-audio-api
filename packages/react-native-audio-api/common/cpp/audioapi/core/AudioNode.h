@@ -21,9 +21,8 @@ class AudioParam;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(
-      const std::shared_ptr<BaseAudioContext> &context,
-      const AudioNodeOptions &options = AudioNodeOptions());
+  explicit AudioNode(const std::shared_ptr<BaseAudioContext> &context,
+                     const AudioNodeOptions &options = AudioNodeOptions());
   virtual ~AudioNode();
 
   DELETE_COPY_AND_MOVE(AudioNode);
@@ -104,9 +103,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
       int framesToProcess,
       bool checkIsAlreadyProcessed);
-  virtual std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &,
-      int) = 0;
+  virtual std::shared_ptr<DSPAudioBuffer> processNode(const std::shared_ptr<DSPAudioBuffer> &,
+                                                      int) = 0;
 
   bool isAlreadyProcessed();
   std::shared_ptr<DSPAudioBuffer> applyChannelCountMode(

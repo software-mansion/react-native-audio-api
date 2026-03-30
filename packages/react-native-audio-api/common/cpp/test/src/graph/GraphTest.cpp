@@ -54,8 +54,8 @@ TEST_F(GraphTest, NoUselessEventsScheduled) {
   // Initial state
   const auto &ag = getAudioGraph();
   // Convert to verify
-  auto initialAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(
-      const_cast<AudioGraph<MockNode> &>(
+  auto initialAdj =
+      TestGraphUtils::convertAudioGraphToAdjacencyList(const_cast<AudioGraph<MockNode> &>(
           ag)); // casting const away if utils need it, or verifyutils usage
 
   // Try adding duplicate edge (should fail and NOT schedule event)

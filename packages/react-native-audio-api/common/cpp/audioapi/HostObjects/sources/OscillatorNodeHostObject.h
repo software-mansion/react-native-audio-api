@@ -14,9 +14,8 @@ class AudioParamHostObject;
 
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
-  explicit OscillatorNodeHostObject(
-      const std::shared_ptr<BaseAudioContext> &context,
-      const OscillatorOptions &options);
+  explicit OscillatorNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
+                                    const OscillatorOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(frequency);
   JSI_PROPERTY_GETTER_DECL(detune);

@@ -64,9 +64,8 @@ void AudioRecorderCallback::emitAudioData(bool flush) {
   }
 }
 
-void AudioRecorderCallback::invokeCallback(
-    const std::shared_ptr<AudioBuffer> &buffer,
-    int numFrames) {
+void AudioRecorderCallback::invokeCallback(const std::shared_ptr<AudioBuffer> &buffer,
+                                           int numFrames) {
   auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
 
   std::unordered_map<std::string, EventValue> eventPayload = {};

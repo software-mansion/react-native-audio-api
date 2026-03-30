@@ -10,9 +10,8 @@
 
 namespace audioapi {
 
-AnalyserNode::AnalyserNode(
-    const std::shared_ptr<BaseAudioContext> &context,
-    const AnalyserOptions &options)
+AnalyserNode::AnalyserNode(const std::shared_ptr<BaseAudioContext> &context,
+                           const AnalyserOptions &options)
     : AudioNode(context, options),
       inputArray_(std::make_unique<CircularDSPAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(

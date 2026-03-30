@@ -15,9 +15,8 @@ struct WaveShaperOptions;
 
 class WaveShaperNode : public AudioNode {
  public:
-  explicit WaveShaperNode(
-      const std::shared_ptr<BaseAudioContext> &context,
-      const WaveShaperOptions &options);
+  explicit WaveShaperNode(const std::shared_ptr<BaseAudioContext> &context,
+                          const WaveShaperOptions &options);
 
   /// @note Audio Thread only
   void setOversample(OverSampleType);

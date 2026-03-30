@@ -35,24 +35,22 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
     isInitialized_.store(true, std::memory_order_release);
   }
 
-  void updatePlaybackInfo(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess,
-      size_t &startOffset,
-      size_t &nonSilentFramesToProcess,
-      float sampleRate,
-      size_t currentSampleFrame) {
-    AudioScheduledSourceNode::updatePlaybackInfo(
-        processingBuffer,
-        framesToProcess,
-        startOffset,
-        nonSilentFramesToProcess,
-        sampleRate,
-        currentSampleFrame);
+  void updatePlaybackInfo(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+                          int framesToProcess,
+                          size_t &startOffset,
+                          size_t &nonSilentFramesToProcess,
+                          float sampleRate,
+                          size_t currentSampleFrame) {
+    AudioScheduledSourceNode::updatePlaybackInfo(processingBuffer,
+                                                 framesToProcess,
+                                                 startOffset,
+                                                 nonSilentFramesToProcess,
+                                                 sampleRate,
+                                                 currentSampleFrame);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(const std::shared_ptr<DSPAudioBuffer> &, int)
-      override {
+  std::shared_ptr<DSPAudioBuffer> processNode(const std::shared_ptr<DSPAudioBuffer> &,
+                                              int) override {
     return nullptr;
   }
 
@@ -66,13 +64,12 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
       size_t nonSilentFramesToProcess = 0;
       auto processingBuffer =
           std::make_shared<DSPAudioBuffer>(128, 2, static_cast<float>(SAMPLE_RATE));
-      updatePlaybackInfo(
-          processingBuffer,
-          frames,
-          startOffset,
-          nonSilentFramesToProcess,
-          context->getSampleRate(),
-          context->getCurrentSampleFrame());
+      updatePlaybackInfo(processingBuffer,
+                         frames,
+                         startOffset,
+                         nonSilentFramesToProcess,
+                         context->getSampleRate(),
+                         context->getCurrentSampleFrame());
       context->getDestination()->renderAudio(processingBuffer, frames);
     }
   }

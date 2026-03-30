@@ -7,13 +7,12 @@ namespace audioapi {
 
 using namespace facebook::jni;
 
-AudioAPIModule::AudioAPIModule(
-    jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
+AudioAPIModule::AudioAPIModule(jni::alias_ref<AudioAPIModule::jhybridobject> &jThis,
 #if RN_AUDIO_API_ENABLE_WORKLETS
-    std::weak_ptr<WorkletsModuleProxy> weakWorkletsModuleProxy,
+                               std::weak_ptr<WorkletsModuleProxy> weakWorkletsModuleProxy,
 #endif
-    jsi::Runtime *jsiRuntime,
-    const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
+                               jsi::Runtime *jsiRuntime,
+                               const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
     : javaPart_(make_global(jThis)),
       jsiRuntime_(jsiRuntime),
 #if RN_AUDIO_API_ENABLE_WORKLETS
@@ -47,9 +46,8 @@ void AudioAPIModule::registerNatives() {
   registerHybrid({
       makeNativeMethod("initHybrid", AudioAPIModule::initHybrid),
       makeNativeMethod("injectJSIBindings", AudioAPIModule::injectJSIBindings),
-      makeNativeMethod(
-          "invokeHandlerWithEventNameAndEventBody",
-          AudioAPIModule::invokeHandlerWithEventNameAndEventBody),
+      makeNativeMethod("invokeHandlerWithEventNameAndEventBody",
+                       AudioAPIModule::invokeHandlerWithEventNameAndEventBody),
   });
 }
 

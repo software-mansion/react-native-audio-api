@@ -9,9 +9,8 @@
 
 namespace audioapi {
 
-WaveShaperNodeHostObject::WaveShaperNodeHostObject(
-    const std::shared_ptr<BaseAudioContext> &context,
-    const WaveShaperOptions &options)
+WaveShaperNodeHostObject::WaveShaperNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
+                                                   const WaveShaperOptions &options)
     : AudioNodeHostObject(context->createWaveShaper(options), options),
       oversample_(options.oversample) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(WaveShaperNodeHostObject, oversample));

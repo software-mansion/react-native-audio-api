@@ -12,9 +12,8 @@ class BaseAudioContext;
 
 class AnalyserNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit AnalyserNodeHostObject(
-      const std::shared_ptr<BaseAudioContext> &context,
-      const AnalyserOptions &options);
+  explicit AnalyserNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
+                                  const AnalyserOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(fftSize);
   JSI_PROPERTY_GETTER_DECL(minDecibels);

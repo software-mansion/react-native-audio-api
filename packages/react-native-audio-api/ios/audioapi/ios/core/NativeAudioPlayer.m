@@ -1,7 +1,27 @@
 #import <audioapi/ios/core/NativeAudioPlayer.h>
 #import <audioapi/ios/system/AudioEngine.h>
+#import <audioapi/ios/system/AudioSessionManager.h>
 
 @implementation NativeAudioPlayer
+
+- (void)detachSourceNodeIfAttached:(AudioEngine *)audioEngine
+{
+  if (self.sourceNodeId == nil) {
+    return;
+  }
+
+  [audioEngine detachSourceNodeWithId:self.sourceNodeId];
+  self.sourceNodeId = nil;
+}
+
+- (void)attachSourceNodeIfNeeded:(AudioEngine *)audioEngine
+{
+  if (self.sourceNodeId != nil) {
+    return;
+  }
+
+  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
+}
 
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                          sampleRate:(float)sampleRate
@@ -14,11 +34,10 @@
     self.renderAudio = [renderAudio copy];
 
     __weak typeof(self) weakSelf = self;
-    self.renderBlock = ^OSStatus(
-        BOOL *isSilence,
-        const AudioTimeStamp *timestamp,
-        AVAudioFrameCount frameCount,
-        AudioBufferList *outputData) {
+    self.renderBlock = ^OSStatus(BOOL *isSilence,
+                                 const AudioTimeStamp *timestamp,
+                                 AVAudioFrameCount frameCount,
+                                 AudioBufferList *outputData) {
       if (outputData->mNumberBuffers != weakSelf.channelCount) {
         return kAudioServicesBadPropertySizeError;
       }
@@ -40,7 +59,18 @@
 - (bool)start
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
   assert(audioEngine != nil);
+
+  NSError *error = nil;
+  if (![sessionManager ensureActive:true error:&error]) {
+    NSLog(@"Error while activating audio session for playback: %@", [error debugDescription]);
+    return false;
+  }
+
+  if (![sessionManager hasValidOutputRoute]) {
+    NSLog(@"Playback start continuing even though output route is not fully resolved yet");
+  }
 
   // AudioEngine allows us to attach and connect nodes at runtime but with few
   // limitations in this case if it is the first player and recorder started the
@@ -51,7 +81,8 @@
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop player very frequently
   [audioEngine stopIfNecessary];
-  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
+  [self detachSourceNodeIfAttached:audioEngine];
+  [self attachSourceNodeIfNeeded:audioEngine];
   return [audioEngine startIfNecessary];
 }
 
@@ -60,16 +91,29 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  [audioEngine detachSourceNodeWithId:self.sourceNodeId];
+  [self detachSourceNodeIfAttached:audioEngine];
   [audioEngine stopIfPossible];
-  self.sourceNodeId = nil;
 }
 
 - (bool)resume
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
   assert(audioEngine != nil);
 
+  NSError *error = nil;
+  if (![sessionManager ensureActive:true error:&error]) {
+    NSLog(@"Error while re-activating audio session for playback: %@", [error debugDescription]);
+    return false;
+  }
+
+  if (![sessionManager hasValidOutputRoute]) {
+    NSLog(@"Playback resume continuing even though output route is not fully resolved yet");
+  }
+
+  [audioEngine stopIfNecessary];
+  [self detachSourceNodeIfAttached:audioEngine];
+  [self attachSourceNodeIfNeeded:audioEngine];
   return [audioEngine startIfNecessary];
 }
 
@@ -78,7 +122,8 @@
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  [audioEngine pauseIfNecessary];
+  [self detachSourceNodeIfAttached:audioEngine];
+  [audioEngine stopIfPossible];
 }
 
 - (void)cleanup

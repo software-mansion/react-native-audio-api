@@ -327,12 +327,11 @@ class CDSPFIRFilter : public R8B_BASECLASS {
 
         fo1 = 0.987205355829873 * tb +
             1.00011788929851 *
-                atan2(
-                    -0.321432067051302 - 6.19131357321578 * sqrt(pwr),
-                    hl + -1.14861472207245 / (hl - 14.1821147585957) +
-                        pow(0.9521145021664,
-                            pow(atan2(1.12018764830637, tb),
-                                2.10988901686912 * hl - 20.9691278378345)));
+                atan2(-0.321432067051302 - 6.19131357321578 * sqrt(pwr),
+                      hl + -1.14861472207245 / (hl - 14.1821147585957) +
+                          pow(0.9521145021664,
+                              pow(atan2(1.12018764830637, tb),
+                                  2.10988901686912 * hl - 20.9691278378345)));
       } else if (tb >= 0.10) {
         hl = (1.56688617018066 + 142.064321294568 * pwr +
               0.00419441117131136 * cos(243.633511747297 * pwr) - 0.022953443903576 * atten -
@@ -345,9 +344,8 @@ class CDSPFIRFilter : public R8B_BASECLASS {
         hl = (2.45739657014937 +
               269.183679500541 * pwr *
                   cos(5.73225668178813 +
-                      atan2(
-                          cosh(0.988861169868941 - 17.2201556280744 * pwr),
-                          1.08340138240431 * pwr))) /
+                      atan2(cosh(0.988861169868941 - 17.2201556280744 * pwr),
+                            1.08340138240431 * pwr))) /
             tb;
 
         fo1 = 2.291956939 * tb + 0.01942450693 * sqr(tb) * hl - 4.67538973161837 * pwr * tb -
@@ -436,10 +434,9 @@ class CDSPFIRFilter : public R8B_BASECLASS {
         KernelBlock[BlockLen * 2 - i] = KernelBlock[i];
       }
 
-      memset(
-          &KernelBlock[sinc.fl2 + 1],
-          0,
-          (size_t)(BlockLen * 2 - KernelLen) * sizeof(KernelBlock[0]));
+      memset(&KernelBlock[sinc.fl2 + 1],
+             0,
+             (size_t)(BlockLen * 2 - KernelLen) * sizeof(KernelBlock[0]));
 
       ffto->forward(KernelBlock);
       ffto->convertToZP(KernelBlock);
@@ -520,13 +517,12 @@ class CDSPFIRFilterCache : public R8B_BASECLASS {
 	 * after use via the CDSPFIRFilter::unref() function.
 	 */
 
-  static CDSPFIRFilter &getLPFilter(
-      const double ReqNormFreq,
-      const double ReqTransBand,
-      const double ReqAtten,
-      const EDSPFilterPhaseResponse ReqPhase,
-      const double ReqGain,
-      const double *const AttenCorrs = R8B_NULL) {
+  static CDSPFIRFilter &getLPFilter(const double ReqNormFreq,
+                                    const double ReqTransBand,
+                                    const double ReqAtten,
+                                    const EDSPFilterPhaseResponse ReqPhase,
+                                    const double ReqGain,
+                                    const double *const AttenCorrs = R8B_NULL) {
     R8BASSERT(ReqNormFreq > 0.0 && ReqNormFreq <= 1.0);
     R8BASSERT(ReqTransBand >= CDSPFIRFilter ::getLPMinTransBand());
     R8BASSERT(ReqTransBand <= CDSPFIRFilter ::getLPMaxTransBand());

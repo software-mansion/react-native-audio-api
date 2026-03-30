@@ -12,9 +12,8 @@ using namespace facebook;
 
 class AudioStretcherHostObject : public JsiHostObject {
  public:
-  explicit AudioStretcherHostObject(
-      jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker);
+  explicit AudioStretcherHostObject(jsi::Runtime *runtime,
+                                    const std::shared_ptr<react::CallInvoker> &callInvoker);
   JSI_HOST_FUNCTION_DECL(changePlaybackSpeed);
 
  private:

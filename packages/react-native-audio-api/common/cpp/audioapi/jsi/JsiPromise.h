@@ -22,13 +22,11 @@ class Promise {
   };
 
  public:
-  explicit Promise(
-      std::shared_ptr<react::CallInvoker> &&callInvoker,
-      jsi::Function &&resolve,
-      jsi::Function &&reject)
-      : inner_(
-            std::make_shared<Inner>(
-                Inner{std::move(callInvoker), std::move(resolve), std::move(reject)})) {}
+  explicit Promise(std::shared_ptr<react::CallInvoker> &&callInvoker,
+                   jsi::Function &&resolve,
+                   jsi::Function &&reject)
+      : inner_(std::make_shared<Inner>(
+            Inner{std::move(callInvoker), std::move(resolve), std::move(reject)})) {}
 
   Promise(const Promise &other) {
     inner_ = other.inner_;
@@ -71,11 +69,10 @@ class PromiseVendor {
   PromiseVendor(jsi::Runtime *runtime, const std::shared_ptr<react::CallInvoker> &callInvoker)
       : runtime_(runtime),
         callInvoker_(callInvoker),
-        threadPool_(
-            std::make_shared<ThreadPool>(
-                audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT,
-                audioapi::PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE,
-                audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE)) {}
+        threadPool_(std::make_shared<ThreadPool>(
+            audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT,
+            audioapi::PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE,
+            audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE)) {}
 
   /// @brief Creates an asynchronous promise.
   /// @param function The function to execute asynchronously. It should return either a jsi::Value on success or a std::string error message on failure.
@@ -110,11 +107,10 @@ class PromiseVendor {
   std::shared_ptr<react::CallInvoker> callInvoker_;
   std::shared_ptr<ThreadPool> threadPool_;
 
-  static void asyncPromiseJob(
-      std::shared_ptr<react::CallInvoker> callInvoker,
-      std::function<PromiseResolver()> &&function,
-      std::shared_ptr<jsi::Function> &&resolve,
-      std::shared_ptr<jsi::Function> &&reject);
+  static void asyncPromiseJob(std::shared_ptr<react::CallInvoker> callInvoker,
+                              std::function<PromiseResolver()> &&function,
+                              std::shared_ptr<jsi::Function> &&resolve,
+                              std::shared_ptr<jsi::Function> &&reject);
 };
 
 } // namespace audioapi

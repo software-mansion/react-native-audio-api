@@ -19,18 +19,14 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
       vReadIndex_(0.0),
       pitchCorrection_(options.pitchCorrection),
       onPositionChangedIntervalInFrames_(static_cast<int>(context->getSampleRate())),
-      detuneParam_(
-          std::make_shared<AudioParam>(
-              options.detune,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      playbackRateParam_(
-          std::make_shared<AudioParam>(
-              options.playbackRate,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)) {
+      detuneParam_(std::make_shared<AudioParam>(options.detune,
+                                                MOST_NEGATIVE_SINGLE_FLOAT,
+                                                MOST_POSITIVE_SINGLE_FLOAT,
+                                                context)),
+      playbackRateParam_(std::make_shared<AudioParam>(options.playbackRate,
+                                                      MOST_NEGATIVE_SINGLE_FLOAT,
+                                                      MOST_POSITIVE_SINGLE_FLOAT,
+                                                      context)) {
   setOnPositionChangedInterval(options.onPositionChangedInterval);
 }
 
@@ -54,7 +50,8 @@ void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callback
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
-  onPositionChangedIntervalInFrames_ = static_cast<int>( //NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+  onPositionChangedIntervalInFrames_ = static_cast<
+      int>( //NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       getContextSampleRate() * static_cast<float>(interval) / 1000);
 }
 
@@ -107,26 +104,23 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     return;
   }
   auto time = context->getCurrentTime();
-  auto playbackRate = std::clamp(
-      playbackRateParam_->processKRateParam(framesToProcess, time),
-      MIN_PLAYBACK_RATE,
-      MAX_PLAYBACK_RATE);
-  auto detune = std::clamp(
-      detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
-      static_cast<float>(-SEMITONES_PER_OCTAVE),
-      static_cast<float>(SEMITONES_PER_OCTAVE));
+  auto playbackRate = std::clamp(playbackRateParam_->processKRateParam(framesToProcess, time),
+                                 MIN_PLAYBACK_RATE,
+                                 MAX_PLAYBACK_RATE);
+  auto detune = std::clamp(detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
+                           static_cast<float>(-SEMITONES_PER_OCTAVE),
+                           static_cast<float>(SEMITONES_PER_OCTAVE));
 
   playbackRateBuffer_->zero();
 
   auto framesNeededToStretch = static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
 
-  updatePlaybackInfo(
-      playbackRateBuffer_,
-      framesNeededToStretch,
-      startOffset,
-      offsetLength,
-      context->getSampleRate(),
-      context->getCurrentSampleFrame());
+  updatePlaybackInfo(playbackRateBuffer_,
+                     framesNeededToStretch,
+                     startOffset,
+                     offsetLength,
+                     context->getSampleRate(),
+                     context->getCurrentSampleFrame());
 
   if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled()) || stretch_ == nullptr) {
     processingBuffer->zero();
@@ -135,11 +129,10 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 
   processWithoutInterpolation(playbackRateBuffer_, startOffset, offsetLength, playbackRate);
 
-  stretch_->process(
-      playbackRateBuffer_.get()[0],
-      framesNeededToStretch,
-      processingBuffer.get()[0],
-      framesToProcess);
+  stretch_->process(playbackRateBuffer_.get()[0],
+                    framesNeededToStretch,
+                    processingBuffer.get()[0],
+                    framesToProcess);
 
   if (detune != 0.0f) {
     stretch_->setTransposeSemitones(detune);
@@ -163,13 +156,12 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   auto computedPlaybackRate =
       getComputedPlaybackRateValue(framesToProcess, context->getCurrentTime());
 
-  updatePlaybackInfo(
-      processingBuffer,
-      framesToProcess,
-      startOffset,
-      offsetLength,
-      context->getSampleRate(),
-      context->getCurrentSampleFrame());
+  updatePlaybackInfo(processingBuffer,
+                     framesToProcess,
+                     startOffset,
+                     offsetLength,
+                     context->getSampleRate(),
+                     context->getCurrentSampleFrame());
 
   if (computedPlaybackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBuffer->zero();

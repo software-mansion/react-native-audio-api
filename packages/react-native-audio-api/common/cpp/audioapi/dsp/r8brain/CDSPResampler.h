@@ -113,13 +113,12 @@ class CDSPResampler : public CDSPProcessor {
 	 * @see EDSPFilterPhaseResponse
 	 */
 
-  CDSPResampler(
-      const double SrcSampleRate,
-      const double DstSampleRate,
-      const int aMaxInLen,
-      const double ReqTransBand = 2.0,
-      const double ReqAtten = 206.91,
-      const EDSPFilterPhaseResponse ReqPhase = fprLinearPhase)
+  CDSPResampler(const double SrcSampleRate,
+                const double DstSampleRate,
+                const int aMaxInLen,
+                const double ReqTransBand = 2.0,
+                const double ReqAtten = 206.91,
+                const EDSPFilterPhaseResponse ReqPhase = fprLinearPhase)
       : StepCapacity(0),
         StepCount(0),
         MaxInLen(aMaxInLen),
@@ -685,18 +684,16 @@ class CDSPResampler16 : public CDSPResampler {
 	 * @param ReqTransBand Required transition band, in percent.
 	 */
 
-  CDSPResampler16(
-      const double SrcSampleRate,
-      const double DstSampleRate,
-      const int aMaxInLen,
-      const double ReqTransBand = 2.0)
-      : CDSPResampler(
-            SrcSampleRate,
-            DstSampleRate,
-            aMaxInLen,
-            ReqTransBand,
-            136.45,
-            fprLinearPhase) {}
+  CDSPResampler16(const double SrcSampleRate,
+                  const double DstSampleRate,
+                  const int aMaxInLen,
+                  const double ReqTransBand = 2.0)
+      : CDSPResampler(SrcSampleRate,
+                      DstSampleRate,
+                      aMaxInLen,
+                      ReqTransBand,
+                      136.45,
+                      fprLinearPhase) {}
 };
 
 /**
@@ -721,18 +718,16 @@ class CDSPResampler16IR : public CDSPResampler {
 	 * @param ReqTransBand Required transition band, in percent.
 	 */
 
-  CDSPResampler16IR(
-      const double SrcSampleRate,
-      const double DstSampleRate,
-      const int aMaxInLen,
-      const double ReqTransBand = 2.0)
-      : CDSPResampler(
-            SrcSampleRate,
-            DstSampleRate,
-            aMaxInLen,
-            ReqTransBand,
-            109.56,
-            fprLinearPhase) {}
+  CDSPResampler16IR(const double SrcSampleRate,
+                    const double DstSampleRate,
+                    const int aMaxInLen,
+                    const double ReqTransBand = 2.0)
+      : CDSPResampler(SrcSampleRate,
+                      DstSampleRate,
+                      aMaxInLen,
+                      ReqTransBand,
+                      109.56,
+                      fprLinearPhase) {}
 };
 
 /**
@@ -756,18 +751,16 @@ class CDSPResampler24 : public CDSPResampler {
 	 * @param ReqTransBand Required transition band, in percent.
 	 */
 
-  CDSPResampler24(
-      const double SrcSampleRate,
-      const double DstSampleRate,
-      const int aMaxInLen,
-      const double ReqTransBand = 2.0)
-      : CDSPResampler(
-            SrcSampleRate,
-            DstSampleRate,
-            aMaxInLen,
-            ReqTransBand,
-            180.15,
-            fprLinearPhase) {}
+  CDSPResampler24(const double SrcSampleRate,
+                  const double DstSampleRate,
+                  const int aMaxInLen,
+                  const double ReqTransBand = 2.0)
+      : CDSPResampler(SrcSampleRate,
+                      DstSampleRate,
+                      aMaxInLen,
+                      ReqTransBand,
+                      180.15,
+                      fprLinearPhase) {}
 };
 
 } // namespace r8b

@@ -16,12 +16,11 @@ class HostGraphTest : public ::testing::Test {
   static constexpr size_t kPayloadSize = HostGraph<MockNode>::kDisposerPayloadSize;
   DisposerImpl<kPayloadSize> disposer_{64};
 
-  void verifyAddEdge(
-      HostGraph<MockNode> &hostGraph,
-      AudioGraph<MockNode> &audioGraph,
-      size_t fromId,
-      size_t toId,
-      const std::vector<std::vector<size_t>> &expectedAdjacencyList) {
+  void verifyAddEdge(HostGraph<MockNode> &hostGraph,
+                     AudioGraph<MockNode> &audioGraph,
+                     size_t fromId,
+                     size_t toId,
+                     const std::vector<std::vector<size_t>> &expectedAdjacencyList) {
     // Find nodes by ID
 
     HostGraph<MockNode>::Node *fromNode = nullptr;
@@ -108,16 +107,15 @@ TEST_F(HostGraphTest, AddEdge_SimpleForward) {
       {}   // 2
   });
 
-  verifyAddEdge(
-      hostGraph,
-      audioGraph,
-      1,
-      2,
-      {
-          {1}, // 0 -> 1
-          {2}, // 1 -> 2
-          {}   // 2
-      });
+  verifyAddEdge(hostGraph,
+                audioGraph,
+                1,
+                2,
+                {
+                    {1}, // 0 -> 1
+                    {2}, // 1 -> 2
+                    {}   // 2
+                });
 }
 
 TEST_F(HostGraphTest, AddEdge_SimpleReorder) {
@@ -129,15 +127,14 @@ TEST_F(HostGraphTest, AddEdge_SimpleReorder) {
   // Initial: 0, 1 (probably)
   // Expected: 1 -> 0
 
-  verifyAddEdge(
-      hostGraph,
-      audioGraph,
-      1,
-      0,
-      {
-          {}, // 0
-          {0} // 1 -> 0
-      });
+  verifyAddEdge(hostGraph,
+                audioGraph,
+                1,
+                0,
+                {
+                    {}, // 0
+                    {0} // 1 -> 0
+                });
 }
 
 TEST_F(HostGraphTest, AddEdge_TransitiveReorder) {

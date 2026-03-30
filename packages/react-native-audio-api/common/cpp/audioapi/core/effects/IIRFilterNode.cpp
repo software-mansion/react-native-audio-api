@@ -34,9 +34,8 @@
 
 namespace audioapi {
 
-IIRFilterNode::IIRFilterNode(
-    const std::shared_ptr<BaseAudioContext> &context,
-    const IIRFilterOptions &options)
+IIRFilterNode::IIRFilterNode(const std::shared_ptr<BaseAudioContext> &context,
+                             const IIRFilterOptions &options)
     : AudioNode(context, options),
       feedforward_(createNormalizedArray(options.feedforward, options.feedback[0])),
       feedback_(createNormalizedArray(options.feedback, options.feedback[0])),
@@ -62,11 +61,10 @@ IIRFilterNode::IIRFilterNode(
 // phase response - angle of the frequency response
 //
 
-void IIRFilterNode::getFrequencyResponse(
-    const float *frequencyArray,
-    float *magResponseOutput,
-    float *phaseResponseOutput,
-    size_t length) const {
+void IIRFilterNode::getFrequencyResponse(const float *frequencyArray,
+                                         float *magResponseOutput,
+                                         float *phaseResponseOutput,
+                                         size_t length) const {
   float nyquist = getNyquistFrequency();
 
   for (size_t k = 0; k < length; ++k) {

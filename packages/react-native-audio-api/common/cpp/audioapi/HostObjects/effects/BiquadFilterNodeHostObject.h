@@ -13,9 +13,8 @@ class AudioParamHostObject;
 
 class BiquadFilterNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit BiquadFilterNodeHostObject(
-      const std::shared_ptr<BaseAudioContext> &context,
-      const BiquadFilterOptions &options);
+  explicit BiquadFilterNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
+                                      const BiquadFilterOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(frequency);
   JSI_PROPERTY_GETTER_DECL(detune);

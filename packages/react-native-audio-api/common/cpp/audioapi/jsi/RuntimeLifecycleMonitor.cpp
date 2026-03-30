@@ -29,11 +29,10 @@ void RuntimeLifecycleMonitor::addListener(jsi::Runtime &rt, RuntimeLifecycleList
     // use that host object destructor to get notified when the runtime is being
     // terminated. We use a unique name for the object as it gets saved with the
     // runtime's global object.
-    rt.global().setProperty(
-        rt,
-        "__rnaudioapi_runtime_lifecycle_monitor",
-        jsi::Object::createFromHostObject(
-            rt, std::make_shared<RuntimeLifecycleMonitorObject>(&rt)));
+    rt.global().setProperty(rt,
+                            "__rnaudioapi_runtime_lifecycle_monitor",
+                            jsi::Object::createFromHostObject(
+                                rt, std::make_shared<RuntimeLifecycleMonitorObject>(&rt)));
     std::unordered_set<RuntimeLifecycleListener *> newSet;
     newSet.insert(listener);
     listeners.emplace(&rt, std::move(newSet));

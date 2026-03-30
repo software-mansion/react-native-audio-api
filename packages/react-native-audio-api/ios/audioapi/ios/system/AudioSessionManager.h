@@ -31,12 +31,16 @@
     notifyOthersOnDeactivation:(BOOL)notifyOthersOnDeactivation;
 
 - (bool)configureAudioSession;
+- (bool)ensureActive:(bool)force error:(NSError **)error;
 - (bool)setActive:(bool)active error:(NSError **)error;
 - (void)markInactive;
 - (void)disableSessionManagement;
 
 - (NSNumber *)getDevicePreferredSampleRate;
 - (NSNumber *)getDevicePreferredInputChannelCount;
+- (bool)hasValidInputRoute;
+- (bool)hasValidOutputRoute;
+- (AVAudioFormat *)getPreferredInputFormat;
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
                              reject:(RCTPromiseRejectBlock)reject;

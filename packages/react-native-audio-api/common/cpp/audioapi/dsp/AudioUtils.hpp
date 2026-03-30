@@ -15,11 +15,10 @@ namespace audioapi::dsp {
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) -- function, not variable
-[[nodiscard]] inline float linearInterpolate(
-    std::span<const float> source,
-    size_t firstIndex,
-    size_t secondIndex,
-    float factor) {
+[[nodiscard]] inline float linearInterpolate(std::span<const float> source,
+                                             size_t firstIndex,
+                                             size_t secondIndex,
+                                             float factor) {
 
   if (firstIndex == secondIndex && firstIndex >= 1) {
     return source[firstIndex] + factor * (source[firstIndex] - source[firstIndex - 1]);

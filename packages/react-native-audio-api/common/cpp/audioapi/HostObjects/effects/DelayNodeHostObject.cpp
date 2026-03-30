@@ -8,9 +8,8 @@
 
 namespace audioapi {
 
-DelayNodeHostObject::DelayNodeHostObject(
-    const std::shared_ptr<BaseAudioContext> &context,
-    const DelayOptions &options)
+DelayNodeHostObject::DelayNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
+                                         const DelayOptions &options)
     : AudioNodeHostObject(context->createDelay(options), options) {
   auto delayNode = std::static_pointer_cast<DelayNode>(node_);
   delayTimeParam_ = std::make_shared<AudioParamHostObject>(delayNode->getDelayTimeParam());

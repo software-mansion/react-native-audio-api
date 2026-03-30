@@ -1,13 +1,13 @@
 #include <audioapi/core/effects/WorkletProcessingNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <algorithm>
 #include <memory>
 #include <utility>
 
 namespace audioapi {
 
-WorkletProcessingNode::WorkletProcessingNode(
-    const std::shared_ptr<BaseAudioContext> &context,
-    WorkletsRunner &&workletRunner)
+WorkletProcessingNode::WorkletProcessingNode(const std::shared_ptr<BaseAudioContext> &context,
+                                             WorkletsRunner &&workletRunner)
     : AudioNode(context), workletRunner_(std::move(workletRunner)) {
   // Pre-allocate buffers for max 128 frames and 2 channels (stereo)
   size_t maxChannelCount = 2;
@@ -25,9 +25,8 @@ WorkletProcessingNode::WorkletProcessingNode(
 std::shared_ptr<DSPAudioBuffer> WorkletProcessingNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  size_t channelCount = std::min(
-      static_cast<size_t>(2), // Fixed to stereo for now
-      processingBuffer->getNumberOfChannels());
+  size_t channelCount = std::min(static_cast<size_t>(2), // Fixed to stereo for now
+                                 processingBuffer->getNumberOfChannels());
 
   // Copy input data to pre-allocated input buffers
   for (size_t ch = 0; ch < channelCount; ch++) {
@@ -57,11 +56,10 @@ std::shared_ptr<DSPAudioBuffer> WorkletProcessingNode::processNode(
         if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
           time = context->getCurrentTime();
         }
-        return workletRunner_.callUnsafe(
-            inputJsArray,
-            outputJsArray,
-            jsi::Value(rt, static_cast<int>(framesToProcess)),
-            jsi::Value(rt, time));
+        return workletRunner_.callUnsafe(inputJsArray,
+                                         outputJsArray,
+                                         jsi::Value(rt, static_cast<int>(framesToProcess)),
+                                         jsi::Value(rt, time));
       });
 
   // Copy processed output data back to the processing buffer or zero on failure

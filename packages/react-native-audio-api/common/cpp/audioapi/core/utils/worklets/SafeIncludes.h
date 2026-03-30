@@ -37,11 +37,10 @@ class WorkletsModuleProxy {};
 class WorkletRuntime {
  public:
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) -- dummy type, members unused
-  explicit WorkletRuntime(
-      uint64_t,
-      const std::shared_ptr<MessageQueueThread> &,
-      const std::string &,
-      const bool) {
+  explicit WorkletRuntime(uint64_t,
+                          const std::shared_ptr<MessageQueueThread> &,
+                          const std::string &,
+                          const bool) {
     throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
   }
   [[nodiscard]] jsi::Runtime &getJSIRuntime() const {

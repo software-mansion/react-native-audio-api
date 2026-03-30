@@ -67,9 +67,8 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     graph.markDirty();
   }
 
-  void doRemoveEdge(
-      std::shared_ptr<NodeHandle<MNode>> &from,
-      std::shared_ptr<NodeHandle<MNode>> &to) {
+  void doRemoveEdge(std::shared_ptr<NodeHandle<MNode>> &from,
+                    std::shared_ptr<NodeHandle<MNode>> &to) {
     // Same as what HostGraph's removeEdge event does
     graph.pool().remove(graph[to->index].input_head, from->index);
     graph.markDirty();
@@ -342,12 +341,11 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
   assertAllInvariants("after final process()");
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    Seeds,
-    AudioGraphFuzzTest,
-    ::testing::Range(uint64_t{0}, uint64_t{100}),
-    [](const ::testing::TestParamInfo<uint64_t> &info) {
-      return "seed_" + std::to_string(info.param);
-    });
+INSTANTIATE_TEST_SUITE_P(Seeds,
+                         AudioGraphFuzzTest,
+                         ::testing::Range(uint64_t{0}, uint64_t{100}),
+                         [](const ::testing::TestParamInfo<uint64_t> &info) {
+                           return "seed_" + std::to_string(info.param);
+                         });
 
 } // namespace audioapi::utils::graph

@@ -24,6 +24,11 @@
 
 namespace audioapi {
 
+static inline bool hasUsableRecorderFormat(AVAudioFormat *format)
+{
+  return format != nil && format.sampleRate > 0 && format.channelCount > 0;
+}
+
 /// @brief Constructs an IOSAudioRecorder instance.
 /// This constructor initializes the receiver block and native side recorder wrapper (AVAudioSinkNode).
 /// All other necessary fields (like buffers) are initialized in start() method.
@@ -84,10 +89,12 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
     return Result<std::string, std::string>::Err("Microphone permissions are not granted");
   }
 
-  // TODO: recorder should probably request the options if not set by user
-  // but lets handle that in another PR
-  if (![audioSessionManager isSessionActive]) {
-    return Result<std::string, std::string>::Err("Audio session is not active");
+  NSError *sessionError = nil;
+  if (![audioSessionManager ensureActive:true error:&sessionError]) {
+    return Result<std::string, std::string>::Err(
+        std::string("Failed to activate audio session for recording") +
+        (sessionError != nil ? std::string(": ") + [[sessionError debugDescription] UTF8String]
+                             : ""));
   }
 
   // TODO: this is a bit ugly, and could be written slightly better
@@ -98,17 +105,50 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   // Engine will be started again once the native recorder starts
   [AudioEngine.sharedInstance stopIfNecessary];
 
+  AVAudioFormat *inputFormat = nil;
+  NSError *lastActivationError = nil;
+  const int maxFormatAttempts = 4;
+  for (int attempt = 0; attempt < maxFormatAttempts; ++attempt) {
+    inputFormat = [nativeRecorder_ getInputFormat];
+    if (hasUsableRecorderFormat(inputFormat)) {
+      break;
+    }
+
+    lastActivationError = nil;
+    [audioSessionManager ensureActive:true error:&lastActivationError];
+
+    if (attempt + 1 < maxFormatAttempts) {
+      [NSThread sleepForTimeInterval:0.05];
+    }
+  }
+
+  if (!hasUsableRecorderFormat(inputFormat)) {
+    auto routeReady = [audioSessionManager hasValidInputRoute];
+    auto sessionSampleRate = [[audioSessionManager getDevicePreferredSampleRate] doubleValue];
+    auto sessionChannelCount = [[audioSessionManager getDevicePreferredInputChannelCount] intValue];
+    std::string message =
+        "Audio input route is not ready: sampleRate=" + std::to_string(sessionSampleRate) +
+        ", channelCount=" + std::to_string(sessionChannelCount) +
+        ", routeReady=" + std::string(routeReady ? "true" : "false");
+
+    if (lastActivationError != nil) {
+      message +=
+          ", activationError=" + std::string([[lastActivationError debugDescription] UTF8String]);
+    }
+
+    return Result<std::string, std::string>::Err(message);
+  }
+
   // Estimate the maximum input buffer lengths that can be expected from the sink node
   size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
-  auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
     auto fileResult = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
                           ->openFile(inputFormat, maxInputBufferLength, fileNameOverride);
 
     if (fileResult.is_err()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to open file for writing: " + fileResult.unwrap_err());
+      return Result<std::string, std::string>::Err("Failed to open file for writing: " +
+                                                   fileResult.unwrap_err());
     }
 
     filePath_ = fileResult.unwrap();
@@ -119,8 +159,8 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
                               ->prepare(inputFormat, maxInputBufferLength);
 
     if (callbackResult.is_err()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to prepare callback: " + callbackResult.unwrap_err());
+      return Result<std::string, std::string>::Err("Failed to prepare callback: " +
+                                                   callbackResult.unwrap_err());
     }
   }
 
@@ -195,8 +235,8 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
             ->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize], "");
 
     if (result.is_err()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to open file for writing: " + result.unwrap_err());
+      return Result<std::string, std::string>::Err("Failed to open file for writing: " +
+                                                   result.unwrap_err());
     }
 
     filePath_ = result.unwrap();
@@ -225,10 +265,9 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
   adapterNode_ = node;
 
   if (!isIdle()) {
-    adapterNode_->init(
-        [nativeRecorder_ getBufferSize],
-        [nativeRecorder_ getInputFormat].channelCount,
-        [nativeRecorder_ getInputFormat].sampleRate);
+    adapterNode_->init([nativeRecorder_ getBufferSize],
+                       [nativeRecorder_ getInputFormat].channelCount,
+                       [nativeRecorder_ getInputFormat].sampleRate);
   }
 
   isConnected_.store(true, std::memory_order_release);
@@ -310,11 +349,10 @@ bool IOSAudioRecorder::isIdle() const
 /// @param channelCount Number of channels for the callback audio data.
 /// @param callbackId Identifier for the JS callback to be invoked.
 /// @returns Success status or Error status with message.
-Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
-    float sampleRate,
-    size_t bufferLength,
-    int channelCount,
-    uint64_t callbackId)
+Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(float sampleRate,
+                                                                        size_t bufferLength,
+                                                                        int channelCount,
+                                                                        uint64_t callbackId)
 {
   std::scoped_lock lock(callbackMutex_, errorCallbackMutex_);
 

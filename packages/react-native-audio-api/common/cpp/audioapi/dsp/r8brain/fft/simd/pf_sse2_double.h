@@ -206,12 +206,10 @@ out2 = [ in1[2], in2[2], in1[3], in2[3] ]
     __m128d low2__ = mm256_castpd256_pd128(in2); \
     __m128d high1__ = mm256_extractf128_pd(in1, 1); \
     __m128d high2__ = mm256_extractf128_pd(in2, 1); \
-    m256d tmp__ = mm256_insertf128_pd_1( \
-        mm256_castpd128_pd256(_mm_shuffle_pd(low1__, low2__, 0)), \
-        _mm_shuffle_pd(low1__, low2__, 3)); \
-    out2 = mm256_insertf128_pd_1( \
-        mm256_castpd128_pd256(_mm_shuffle_pd(high1__, high2__, 0)), \
-        _mm_shuffle_pd(high1__, high2__, 3)); \
+    m256d tmp__ = mm256_insertf128_pd_1(mm256_castpd128_pd256(_mm_shuffle_pd(low1__, low2__, 0)), \
+                                        _mm_shuffle_pd(low1__, low2__, 3)); \
+    out2 = mm256_insertf128_pd_1(mm256_castpd128_pd256(_mm_shuffle_pd(high1__, high2__, 0)), \
+                                 _mm_shuffle_pd(high1__, high2__, 3)); \
     out1 = tmp__; \
   }
 
@@ -225,12 +223,10 @@ out2 = [ in1[1], in1[3], in2[1], in2[3] ]
     __m128d low2__ = mm256_castpd256_pd128(in2); \
     __m128d high1__ = mm256_extractf128_pd(in1, 1); \
     __m128d high2__ = mm256_extractf128_pd(in2, 1); \
-    m256d tmp__ = mm256_insertf128_pd_1( \
-        mm256_castpd128_pd256(_mm_shuffle_pd(low1__, high1__, 0)), \
-        _mm_shuffle_pd(low2__, high2__, 0)); \
-    out2 = mm256_insertf128_pd_1( \
-        mm256_castpd128_pd256(_mm_shuffle_pd(low1__, high1__, 3)), \
-        _mm_shuffle_pd(low2__, high2__, 3)); \
+    m256d tmp__ = mm256_insertf128_pd_1(mm256_castpd128_pd256(_mm_shuffle_pd(low1__, high1__, 0)), \
+                                        _mm_shuffle_pd(low2__, high2__, 0)); \
+    out2 = mm256_insertf128_pd_1(mm256_castpd128_pd256(_mm_shuffle_pd(low1__, high1__, 3)), \
+                                 _mm_shuffle_pd(low2__, high2__, 3)); \
     out1 = tmp__; \
   }
 

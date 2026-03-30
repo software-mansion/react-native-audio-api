@@ -62,9 +62,8 @@ std::string getFileExtension(const std::shared_ptr<AudioFileProperties> &propert
   }
 }
 
-Result<std::string, std::string> getFilePath(
-    const std::shared_ptr<AudioFileProperties> &properties,
-    const std::string &fileNameOverride) {
+Result<std::string, std::string> getFilePath(const std::shared_ptr<AudioFileProperties> &properties,
+                                             const std::string &fileNameOverride) {
   std::string directory = getDirectory(properties);
   std::string subDirectory = std::format("{}/{}", directory, properties->subDirectory);
   std::string fileTimestamp = getTimestampString();

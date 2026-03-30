@@ -13,14 +13,12 @@ struct BaseAudioBufferSourceOptions;
 
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit AudioBufferBaseSourceNode(
-      const std::shared_ptr<BaseAudioContext> &context,
-      const BaseAudioBufferSourceOptions &options);
+  explicit AudioBufferBaseSourceNode(const std::shared_ptr<BaseAudioContext> &context,
+                                     const BaseAudioBufferSourceOptions &options);
 
   /// @note Audio Thread only
-  void initStretch(
-      const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch,
-      const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer);
+  void initStretch(const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch,
+                   const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
@@ -45,17 +43,15 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   virtual bool isEmpty() const = 0;
 
-  virtual void processWithoutInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) = 0;
+  virtual void processWithoutInterpolation(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+                                           size_t startOffset,
+                                           size_t offsetLength,
+                                           float playbackRate) = 0;
 
-  virtual void processWithInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) = 0;
+  virtual void processWithInterpolation(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+                                        size_t startOffset,
+                                        size_t offsetLength,
+                                        float playbackRate) = 0;
 
  private:
   // pitch correction parameters
@@ -76,12 +72,10 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   void sendOnPositionChangedEvent();
 
-  void processWithPitchCorrection(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess);
-  void processWithoutPitchCorrection(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess);
+  void processWithPitchCorrection(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+                                  int framesToProcess);
+  void processWithoutPitchCorrection(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+                                     int framesToProcess);
 
   float getComputedPlaybackRateValue(int framesToProcess, double time);
 };

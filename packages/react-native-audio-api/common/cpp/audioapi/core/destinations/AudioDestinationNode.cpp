@@ -21,9 +21,8 @@ double AudioDestinationNode::getCurrentTime() const {
   return static_cast<double>(getCurrentSampleFrame()) / getContextSampleRate();
 }
 
-void AudioDestinationNode::renderAudio(
-    const std::shared_ptr<DSPAudioBuffer> &destinationBuffer,
-    int numFrames) {
+void AudioDestinationNode::renderAudio(const std::shared_ptr<DSPAudioBuffer> &destinationBuffer,
+                                       int numFrames) {
   if (numFrames < 0 || !destinationBuffer || !isInitialized_.load(std::memory_order_acquire)) {
     return;
   }

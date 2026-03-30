@@ -83,8 +83,8 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
   auto result = builder.openStream(mStream_);
 
   if (result != oboe::Result::OK || mStream_ == nullptr) {
-    return Result<NoneType, std::string>::Err(
-        "Failed to open audio stream: " + std::string(oboe::convertToText(result)));
+    return Result<NoneType, std::string>::Err("Failed to open audio stream: " +
+                                              std::string(oboe::convertToText(result)));
   }
 
   streamSampleRate_ = static_cast<float>(mStream_->getSampleRate());
@@ -121,15 +121,14 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
 
   if (usesFileOutput()) {
     auto fileResult = std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-                          ->openFile(
-                              streamSampleRate_,
-                              streamChannelCount_,
-                              streamMaxBufferSizeInFrames_,
-                              fileNameOverride);
+                          ->openFile(streamSampleRate_,
+                                     streamChannelCount_,
+                                     streamMaxBufferSizeInFrames_,
+                                     fileNameOverride);
 
     if (!fileResult.is_ok()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to open file for writing: " + fileResult.unwrap_err());
+      return Result<std::string, std::string>::Err("Failed to open file for writing: " +
+                                                   fileResult.unwrap_err());
     }
 
     filePath_ = fileResult.unwrap();
@@ -149,8 +148,8 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   auto result = mStream_->requestStart();
 
   if (result != oboe::Result::OK) {
-    return Result<std::string, std::string>::Err(
-        "Failed to start stream: " + std::string(oboe::convertToText(result)));
+    return Result<std::string, std::string>::Err("Failed to start stream: " +
+                                                 std::string(oboe::convertToText(result)));
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);
@@ -235,8 +234,8 @@ Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
             ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_, "");
 
     if (!fileResult.is_ok()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to open file for writing: " + fileResult.unwrap_err());
+      return Result<std::string, std::string>::Err("Failed to open file for writing: " +
+                                                   fileResult.unwrap_err());
     }
 
     filePath_ = fileResult.unwrap();
@@ -286,11 +285,10 @@ void AndroidAudioRecorder::resume() {
 /// @param channelCount Number of channels for the callback audio data.
 /// @param callbackId Identifier for the JS callback to be invoked.
 /// @returns Success status or Error status with message.
-Result<NoneType, std::string> AndroidAudioRecorder::setOnAudioReadyCallback(
-    float sampleRate,
-    size_t bufferLength,
-    int channelCount,
-    uint64_t callbackId) {
+Result<NoneType, std::string> AndroidAudioRecorder::setOnAudioReadyCallback(float sampleRate,
+                                                                            size_t bufferLength,
+                                                                            int channelCount,
+                                                                            uint64_t callbackId) {
   std::scoped_lock callbackLock(callbackMutex_);
   dataCallback_ = std::make_shared<AndroidRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
@@ -350,10 +348,9 @@ void AndroidAudioRecorder::disconnect() {
 /// @param audioData Pointer to the audio data buffer (interleaved float samples).
 /// @param numFrames Number of audio frames in the data buffer.
 /// @returns DataCallbackResult indicating whether to continue or stop the stream.
-oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
-    oboe::AudioStream *oboeStream,
-    void *audioData,
-    int32_t numFrames) {
+oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(oboe::AudioStream *oboeStream,
+                                                            void *audioData,
+                                                            int32_t numFrames) {
   if (isPaused()) {
     return oboe::DataCallbackResult::Continue;
   }

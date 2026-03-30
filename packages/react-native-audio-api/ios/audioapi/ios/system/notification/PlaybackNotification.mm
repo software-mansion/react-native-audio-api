@@ -39,9 +39,8 @@
   }
 
   // Enable remote control events
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
-  });
+  dispatch_async(dispatch_get_main_queue(),
+                 ^{ [[UIApplication sharedApplication] beginReceivingRemoteControlEvents]; });
 
   // Enable default remote commands
   [self enableRemoteCommand:@"play" enabled:true];
@@ -118,9 +117,8 @@
   [remoteCenter.changePlaybackPositionCommand removeTarget:self];
 
   // Disable remote control events
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
-  });
+  dispatch_async(dispatch_get_main_queue(),
+                 ^{ [[UIApplication sharedApplication] endReceivingRemoteControlEvents]; });
 
   _isInitialized = false;
 }

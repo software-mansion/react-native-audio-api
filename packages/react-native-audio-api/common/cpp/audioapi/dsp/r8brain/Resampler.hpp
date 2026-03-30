@@ -80,10 +80,9 @@ class MultiChannelResampler : public BaseResampler {
   ~MultiChannelResampler() = default;
 
   template <size_t Alignment>
-  int process(
-      const audioapi::AlignedAudioBuffer<Alignment> &input,
-      int length,
-      audioapi::AlignedAudioBuffer<Alignment> &output) {
+  int process(const audioapi::AlignedAudioBuffer<Alignment> &input,
+              int length,
+              audioapi::AlignedAudioBuffer<Alignment> &output) {
     const size_t numChannels = input.getNumberOfChannels();
     std::vector<float *> inputPtrs(numChannels);
     std::vector<float *> outputPtrs(numChannels);
@@ -103,10 +102,9 @@ class SingleChannelResampler : public BaseResampler {
   ~SingleChannelResampler() = default;
 
   template <size_t Alignment>
-  int process(
-      const audioapi::AlignedAudioArray<Alignment> &input,
-      int length,
-      audioapi::AlignedAudioArray<Alignment> &output) {
+  int process(const audioapi::AlignedAudioArray<Alignment> &input,
+              int length,
+              audioapi::AlignedAudioArray<Alignment> &output) {
     std::vector<float *> inputPtrs(1);
     std::vector<float *> outputPtrs(1);
     inputPtrs[0] = const_cast<float *>(input.begin());
