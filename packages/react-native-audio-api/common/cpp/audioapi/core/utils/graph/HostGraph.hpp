@@ -41,7 +41,7 @@ class HostGraph {
   };
 
   /// Size of the Disposer payload (= sizeof(std::shared_ptr<T[]>)).
-  static constexpr size_t kDisposerPayloadSize = 16;
+  static constexpr size_t kDisposerPayloadSize = 24;
 
   /// Event that modifies AudioGraph to keep it consistent with HostGraph.
   /// The second argument is the Disposer used to offload buffer deallocation.
@@ -217,8 +217,9 @@ inline auto HostGraph::addEdge(Node *from, Node *to) -> Res {
   }
 
   for (Node *out : from->outputs) {
-    if (out == to)
+    if (out == to) {
       return Res::Err(ResultError::EDGE_ALREADY_EXISTS);
+    }
   }
 
   if (hasPath(to, from)) {
@@ -267,8 +268,8 @@ inline auto HostGraph::removeAllEdges(Node *from) -> Res {
     return Res::Err(ResultError::NODE_NOT_FOUND);
   }
 
-  auto pairs = std::make_shared<std::vector<std::pair<std::uint32_t, std::uint32_t>>>();
-  pairs->reserve(from->outputs.size());
+  auto pairs = std::vector<std::pair<std::uint32_t, std::uint32_t>>();
+  pairs.reserve(from->outputs.size());
 
   for (Node *to : from->outputs) {
     auto itIn = std::find(to->inputs.begin(), to->inputs.end(), from);
@@ -276,15 +277,16 @@ inline auto HostGraph::removeAllEdges(Node *from) -> Res {
       to->inputs.erase(itIn);
     }
     edgeCount_--;
-    pairs->emplace_back(from->handle->index, to->handle->index);
+    pairs.emplace_back(from->handle->index, to->handle->index);
   }
   from->outputs.clear();
 
-  return Res::Ok([pairs = std::move(pairs)](AudioGraph &graph, auto &) {
-    for (auto &[fromIdx, toIdx] : *pairs) {
+  return Res::Ok([pairs = std::move(pairs)](AudioGraph &graph, auto &disposer) mutable {
+    for (const auto &[fromIdx, toIdx] : pairs) {
       graph.pool().remove(graph[toIdx].input_head, fromIdx);
     }
     graph.markDirty();
+    disposer.dispose(std::move(pairs));
   });
 }
 
