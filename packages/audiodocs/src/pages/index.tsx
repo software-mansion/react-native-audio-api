@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 // @ts-ignore
 import Layout from '@theme/Layout';
 
-import { FooterBackground, Hero, LandingBlog, HireUsSectionWrapper, LandingFeatures, LandingWidget, Testimonials } from '@site/src/landingComponents';
+import { FooterBackground, Hero, HireUsSectionWrapper, LandingBlog, LandingFeatures, LandingWidget, Testimonials } from '@site/src/landingComponents';
 import { Spacer } from '@site/src/ui/Layout';
 
 import AudioManager from '../audio/AudioManager';

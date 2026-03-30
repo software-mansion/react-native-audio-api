@@ -1,6 +1,6 @@
-import React from 'react';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import { DocSidebar } from '@swmansion/t-rex-ui';
+import React from 'react';
 
 export default function DocSidebarWrapper(props) {
   const titleImages = {
