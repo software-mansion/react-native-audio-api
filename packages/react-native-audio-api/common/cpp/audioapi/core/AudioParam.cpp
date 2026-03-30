@@ -18,7 +18,6 @@ AudioParam::AudioParam(
       defaultValue_(defaultValue),
       minValue_(minValue),
       maxValue_(maxValue),
-      eventsQueue_(),
       startTime_(0),
       endTime_(0),
       startValue_(defaultValue),

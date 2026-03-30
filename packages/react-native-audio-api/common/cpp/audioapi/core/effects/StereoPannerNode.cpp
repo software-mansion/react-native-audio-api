@@ -31,8 +31,10 @@ std::shared_ptr<DSPAudioBuffer> StereoPannerNode::getOutputBuffer() const {
 
 void StereoPannerNode::processNode(int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
+  if (context == nullptr) {
     return;
+  }
+  
   double time = context->getCurrentTime();
   double deltaTime = 1.0 / context->getSampleRate();
 
@@ -62,8 +64,8 @@ void StereoPannerNode::processNode(int framesToProcess) {
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
       const auto x = (pan <= 0 ? pan + 1 : pan);
-      const auto gainL = static_cast<float>(cos(x * PI / 2));
-      const auto gainR = static_cast<float>(sin(x * PI / 2));
+      const auto gainL = cos(x * PI / 2);
+      const auto gainR = sin(x * PI / 2);
       const float inputL = inputLeft[i];
       const float inputR = inputRight[i];
 

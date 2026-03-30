@@ -74,13 +74,13 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   std::vector<std::unique_ptr<Convolver>> convolvers;
   for (size_t i = 0; i < copiedBuffer->getNumberOfChannels(); ++i) {
     AudioArray channelData(*copiedBuffer->getChannel(i));
-    convolvers.emplace_back(std::make_unique<Convolver>());
+    convolvers.push_back(std::make_unique<Convolver>());
     convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
   }
   if (copiedBuffer->getNumberOfChannels() == 1) {
     // add one more convolver, because right now input is always stereo
     AudioArray channelData(*copiedBuffer->getChannel(0));
-    convolvers.emplace_back(std::make_unique<Convolver>());
+    convolvers.push_back(std::make_unique<Convolver>());
     convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
   }
 
@@ -99,12 +99,12 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   };
 
   auto setupData = std::make_shared<SetupData>(SetupData{
-      copiedBuffer,
-      std::move(convolvers),
-      threadPool,
-      internalBuffer,
-      intermediateBuffer,
-      scaleFactor});
+      .buffer = copiedBuffer,
+      .convolvers = std::move(convolvers),
+      .threadPool = threadPool,
+      .internalBuffer = internalBuffer,
+      .intermediateBuffer = intermediateBuffer,
+      .scaleFactor = scaleFactor});
 
   auto event = [handle, setupData](BaseAudioContext &) {
     auto convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());

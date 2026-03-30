@@ -56,7 +56,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyFromChannel) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto destination = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+  auto *destination = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = arrayBuffer.size(runtime) / sizeof(float);
   auto channelNumber = static_cast<int>(args[1].getNumber());
   auto startInChannel = static_cast<size_t>(args[2].getNumber());
@@ -69,7 +69,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyFromChannel) {
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyToChannel) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto source = reinterpret_cast<float *>(arrayBuffer.data(runtime));
+  auto *source = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = arrayBuffer.size(runtime) / sizeof(float);
   auto channelNumber = static_cast<int>(args[1].getNumber());
   auto startInChannel = static_cast<size_t>(args[2].getNumber());

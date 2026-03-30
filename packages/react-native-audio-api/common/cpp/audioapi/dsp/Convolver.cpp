@@ -20,10 +20,7 @@ Convolver::Convolver()
       _segSize(0),
       _segCount(0),
       _fftComplexSize(0),
-      _segments(),
-      _segmentsIR(),
       _fft(nullptr),
-      _preMultiplied(),
       _current(0) {}
 
 void Convolver::reset() {
@@ -185,8 +182,7 @@ void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output) {
   // The P sub filter spectra are pairwisely multiplied with the input spectra
   // in the FDL. The results are accumulated in the frequency-domain.
   memset(_preMultiplied.data(), 0, _preMultiplied.size() * sizeof(std::complex<float>));
-  // this is a bottleneck of the algorithm
-  for (int i = 0; i < _segCount; ++i) {
+  for (size_t i = 0; i < _segCount; ++i) {
     const int indexAudio = (_current + i) % _segCount;
     const auto &impulseResponseSegment = _segmentsIR[i];
     const auto &audioSegment = _segments[indexAudio];

@@ -45,7 +45,7 @@ void ConstantSourceNode::processNode(int framesToProcess) {
     return;
   }
 
-  auto offsetChannel =
+  auto *offsetChannel =
       offsetParam_->processARateParam(framesToProcess, context->getCurrentTime())->getChannel(0);
 
   for (size_t channel = 0; channel < audioBuffer_->getNumberOfChannels(); ++channel) {

@@ -23,7 +23,7 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
             std::make_unique<StreamerNode>(context, options),
             options) {}
 
-  [[nodiscard]] static inline size_t getSizeInBytes() {
+  [[nodiscard]] static size_t getSizeInBytes() {
     return SIZE;
   }
 

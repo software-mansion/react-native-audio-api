@@ -20,7 +20,7 @@ class DelayNode : public AudioNode {
   void processNode(int framesToProcess) override;
 
  private:
-  enum class BufferAction { READ, WRITE };
+  enum class BufferAction : uint8_t { READ, WRITE };
   void delayBufferOperation(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,

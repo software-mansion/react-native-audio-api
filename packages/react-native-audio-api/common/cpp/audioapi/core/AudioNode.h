@@ -7,6 +7,7 @@
 #include <audioapi/core/utils/graph/GraphObject.hpp>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <cassert>
 #include <cstddef>
@@ -20,13 +21,14 @@ class AudioParam;
 
 class AudioNode : public utils::graph::GraphObject, public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(
-      const std::shared_ptr<BaseAudioContext> &context,
-      const AudioNodeOptions &options = AudioNodeOptions());
+  explicit AudioNode(const std::shared_ptr<BaseAudioContext> &context,
+                     const AudioNodeOptions &options = AudioNodeOptions());
+  ~AudioNode() override = default;
+  DELETE_COPY_AND_MOVE(AudioNode);
 
-  size_t getChannelCount() const;
+  [[nodiscard]] size_t getChannelCount() const;
 
-  float getContextSampleRate() const {
+  [[nodiscard]] float getContextSampleRate() const {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->getSampleRate();
     }
@@ -34,8 +36,9 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     return DEFAULT_SAMPLE_RATE;
   }
 
-  float getNyquistFrequency() const {
-    return getContextSampleRate() / 2.0f;
+  [[nodiscard]] float getNyquistFrequency() const {
+    constexpr float kNyquistDivisor = 2.0f;
+    return getContextSampleRate() / kNyquistDivisor;
   }
 
   /// @brief Returns the output buffer for this node.
@@ -63,10 +66,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   }
 
   /// @note JS Thread only
-  bool requiresTailProcessing() const;
+  [[nodiscard]] bool requiresTailProcessing() const;
 
   template <typename F>
-  bool inline scheduleAudioEvent(F &&event) noexcept {
+  bool scheduleAudioEvent(F &&event) noexcept {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->scheduleAudioEvent(std::forward<F>(event));
     }
@@ -92,7 +95,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   const int numberOfInputs_ = 1;
   const int numberOfOutputs_ = 1;
-  size_t channelCount_ = 2;
+  int channelCount_ = 2;
   const ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   const ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;

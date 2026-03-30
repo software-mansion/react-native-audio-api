@@ -36,6 +36,7 @@
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
 // formulas for filters
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers, readability-identifier-length)
 
 namespace audioapi {
 
@@ -219,7 +220,7 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::getLowshelfCoefficients(
   }
 
   float w0 = PI * frequency;
-  float alpha = 0.5f * std::sin(w0) * std::sqrt(2.0f);
+  float alpha = 0.5f * std::sin(w0) * std::numbers::sqrt2_v<float>;
   float cosW = std::cos(w0);
   float gamma = 2.0f * std::sqrt(A) * alpha;
 
@@ -248,7 +249,7 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::getHighshelfCoefficients(
   float w0 = PI * frequency;
   // In the original formula: sqrt((A + 1/A) * (1/S - 1) + 2), but we assume
   // the maximum value S = 1, so it becomes 0 + 2 under the square root
-  float alpha = 0.5f * std::sin(w0) * std::sqrt(2.0f);
+  float alpha = 0.5f * std::sin(w0) * std::numbers::sqrt2_v<float>;
   float cosW = std::cos(w0);
   float gamma = 2.0f * std::sqrt(A) * alpha;
 
@@ -344,7 +345,7 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
     normalizedFrequency *= std::pow(2.0f, detune / 1200.0f);
   }
 
-  FilterCoefficients coeffs = {1.0, 0.0, 0.0, 0.0, 0.0};
+  FilterCoefficients coeffs = {.b0 = 1.0, .b1 = 0.0, .b2 = 0.0, .a1 = 0.0, .a2 = 0.0};
 
   switch (type) {
     case BiquadFilterType::LOWPASS:
@@ -388,7 +389,7 @@ void BiquadFilterNode::processNode(int framesToProcess) {
 
     auto coeffs = applyFilter(frequency, Q, gain, detune, type_);
 
-    float x1, x2, y1, y2;
+    float x1, x2, y1, y2; // NOLINT(cppcoreguidelines-init-variables)
 
     auto numChannels = audioBuffer_->getNumberOfChannels();
 
@@ -429,3 +430,5 @@ void BiquadFilterNode::processNode(int framesToProcess) {
 }
 
 } // namespace audioapi
+
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers, readability-identifier-length)

@@ -27,7 +27,7 @@ class RecorderAdapterNode : public AudioNode {
   /// @param channelCount The number of channels.
   /// @param sampleRate The recorder's native sample rate.
   void init(size_t bufferSize, int channelCount, float sampleRate);
-  void cleanup();
+  void adapterCleanup();
 
   // TODO: CircularOverflowableAudioBuffer
   std::vector<std::shared_ptr<CircularOverflowableAudioArray>> buff_;

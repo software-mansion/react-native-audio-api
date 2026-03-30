@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -68,7 +69,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
  private:
   // User provided buffers
-  std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_{};
+  std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
 
   bool isPaused_ = false;
   bool addExtraTailFrames_ = false;

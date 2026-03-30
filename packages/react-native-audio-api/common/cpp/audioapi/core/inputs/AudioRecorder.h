@@ -18,10 +18,14 @@ class AudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
-  enum class RecorderState { Idle = 0, Recording, Paused };
+  enum class RecorderState : uint8_t { Idle = 0, Recording, Paused };
   explicit AudioRecorder(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
       : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
+  AudioRecorder(const AudioRecorder &) = delete;
+  AudioRecorder(AudioRecorder &&) = delete;
+  AudioRecorder &operator=(const AudioRecorder &) = delete;
+  AudioRecorder &operator=(AudioRecorder &&) = delete;
   virtual ~AudioRecorder() = default;
 
   virtual Result<std::string, std::string> start(const std::string &fileNameOverride) = 0;
@@ -71,7 +75,7 @@ class AudioRecorder {
 
   std::atomic<uint64_t> errorCallbackId_{0};
 
-  std::string filePath_{""};
+  std::string filePath_;
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;

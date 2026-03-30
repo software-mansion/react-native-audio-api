@@ -12,6 +12,8 @@ struct IntVal {
   explicit IntVal(int v = 0) : value(v) {}
 };
 
+// NOLINTBEGIN
+
 // ---------------------------------------------------------------------------
 // Functional Tests
 // ---------------------------------------------------------------------------
@@ -265,3 +267,5 @@ TEST_F(TripleBufferTest, StressBothSidesMakeProgress) {
   EXPECT_GT(writeCount.load(), 1'000);
   EXPECT_GT(readCount.load(), 1'000);
 }
+
+// NOLINTEND

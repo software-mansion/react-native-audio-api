@@ -11,6 +11,8 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
+
 class DelayTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
@@ -128,3 +130,5 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
     }
   }
 }
+
+// NOLINTEND

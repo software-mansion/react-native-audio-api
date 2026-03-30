@@ -9,6 +9,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 
+#include <audioapi/utils/Macros.h>
 #include <atomic>
 #include <cassert>
 #include <complex>
@@ -31,6 +32,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
+  DELETE_COPY_AND_MOVE(BaseAudioContext);
 
   ContextState getState();
   [[nodiscard]] float getSampleRate() const;
@@ -55,12 +57,12 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   /// @note This method must be called before the audio context can be used for processing audio.
   virtual void initialize(const AudioDestinationNode *destination);
 
-  void inline processAudioEvents() {
+  void processAudioEvents() {
     audioEventScheduler_.processAllEvents(*this);
   }
 
   template <typename F>
-  bool inline scheduleAudioEvent(F &&event) noexcept {
+  bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
     if (getState() != ContextState::RUNNING) {
       processAudioEvents();
       event(*this);

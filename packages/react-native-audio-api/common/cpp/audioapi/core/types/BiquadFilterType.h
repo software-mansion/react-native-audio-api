@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
+
 namespace audioapi {
 
-enum class BiquadFilterType {
+enum class BiquadFilterType : std::uint8_t {
   LOWPASS,
   HIGHPASS,
   BANDPASS,

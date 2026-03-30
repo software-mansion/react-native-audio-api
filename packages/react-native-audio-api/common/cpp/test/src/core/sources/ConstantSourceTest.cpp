@@ -11,6 +11,8 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
+
 class ConstantSourceTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
@@ -66,3 +68,5 @@ TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 0.5f);
   }
 }
+
+// NOLINTEND

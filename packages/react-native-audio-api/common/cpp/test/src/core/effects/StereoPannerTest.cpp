@@ -11,6 +11,8 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
+
 class StereoPannerTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
@@ -138,3 +140,5 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
         1e-4);
   }
 }
+
+// NOLINTEND
