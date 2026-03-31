@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/AudioParam.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/graph/GraphObject.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -34,8 +35,6 @@ class BridgeNode final : public GraphObject {
  public:
   explicit BridgeNode(AudioParam *param) : param_(param) {}
 
-  void beforeDestruction() override;
-
   [[nodiscard]] bool isProcessable() const override {
     return true;
   }
@@ -55,7 +54,20 @@ class BridgeNode final : public GraphObject {
   }
 
  protected:
-  void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames) override;
+  void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames) override {
+    // Skip processing if param is null (e.g., in tests)
+    if (param_ == nullptr) {
+      return;
+    }
+
+    // Get AudioParam's input buffer and fill it with mixed inputs
+    auto inputBuffer = param_->getInputBuffer();
+    inputBuffer->zero();
+
+    for (const DSPAudioBuffer *input : inputs) {
+      inputBuffer->sum(*input, ChannelInterpretation::SPEAKERS);
+    }
+  }
 
  private:
   AudioParam *param_;

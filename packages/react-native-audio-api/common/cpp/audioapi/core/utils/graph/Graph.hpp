@@ -49,11 +49,11 @@ class Graph {
   using HNode = HostGraph::Node;
 
  public:
-  static constexpr size_t kDisposerPayloadSize = HostGraph::kDisposerPayloadSize;
   using ResultError = HostGraph::ResultError;
   using Res = Result<NoneType, ResultError>;
 
-  Graph(size_t eventQueueCapacity, Disposer<kDisposerPayloadSize> *disposer) : disposer_(disposer) {
+  Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer)
+      : disposer_(disposer) {
     using namespace audioapi::channels::spsc;
 
     auto [es, er] = channel<AGEvent, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(
@@ -64,7 +64,7 @@ class Graph {
 
   Graph(
       size_t eventQueueCapacity,
-      Disposer<kDisposerPayloadSize> *disposer,
+      Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer,
       std::uint32_t initialNodeCapacity,
       std::uint32_t initialEdgeCapacity)
       : Graph(eventQueueCapacity, disposer) {
@@ -190,7 +190,7 @@ class Graph {
 
   // ── Disposer — destroys old pool buffers off the audio thread ───────────
 
-  Disposer<kDisposerPayloadSize> *disposer_;
+  Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer_;
 
   // ── Main-thread tracking for pre-growth ─────────────────────────────────
 
@@ -209,13 +209,14 @@ class Graph {
     if (edges > poolCapacity_ / 2) {
       std::uint32_t newCap = std::max(static_cast<std::uint32_t>(edges * 2), std::uint32_t{64});
       auto buf = std::make_unique<InputPool::Slot[]>(newCap);
-      eventSender_.send([buf = std::move(buf), newCap](
-                            AudioGraph &graph, Disposer<kDisposerPayloadSize> &disposer) mutable {
-        auto *old = graph.pool().adoptBuffer(buf.release(), newCap);
-        if (old) {
-          disposer.dispose(OwnedSlotBuffer(old));
-        }
-      });
+      eventSender_.send(
+          [buf = std::move(buf), newCap](
+              AudioGraph &graph, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &disposer) mutable {
+            auto *old = graph.pool().adoptBuffer(buf.release(), newCap);
+            if (old) {
+              disposer.dispose(OwnedSlotBuffer(old));
+            }
+          });
       poolCapacity_ = newCap;
     }
   }

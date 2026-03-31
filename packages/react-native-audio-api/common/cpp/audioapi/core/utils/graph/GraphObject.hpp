@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <ranges>
 #include <vector>
@@ -29,11 +30,9 @@ namespace audioapi::utils::graph {
 /// - `getOutput()` returns the output buffer; nullptr means not mixable as input
 class GraphObject {
  public:
+  GraphObject() = default;
   virtual ~GraphObject() = default;
-
-  /// @brief Called before destruction to allow cleanup or state updates.
-  /// @note called on the audio thread just before letting the object go
-  virtual void beforeDestruction() {}
+  DELETE_COPY_AND_MOVE(GraphObject);
 
   /// @brief Returns whether this graph object can be safely destroyed.
   [[nodiscard]] virtual bool canBeDestructed() const {

@@ -1,7 +1,5 @@
 #include <audioapi/core/utils/graph/Graph.hpp>
 #include <gtest/gtest.h>
-#include <algorithm>
-#include <atomic>
 #include <chrono>
 #include <memory>
 #include <random>
@@ -9,7 +7,6 @@
 #include <thread>
 #include <utility>
 #include <vector>
-#include "AudioThreadGuard.h"
 #include "MockGraphProcessor.h"
 #include "TestGraphUtils.h"
 
@@ -28,7 +25,7 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
   using Res = Graph::Res;
   using ResultError = Graph::ResultError;
 
-  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::mt19937_64 rng;
   std::unique_ptr<Graph> graph;

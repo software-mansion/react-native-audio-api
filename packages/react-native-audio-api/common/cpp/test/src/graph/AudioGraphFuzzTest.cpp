@@ -3,14 +3,13 @@
 #include <gtest/gtest.h>
 #include "TestGraphUtils.h"
 
-#include <algorithm>
 #include <iostream>
-#include <memory>
 #include <random>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
+#include <memory>
 
 namespace audioapi::utils::graph {
 
@@ -25,6 +24,7 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using MNode = MockNode;
 
+  DisposerImpl<audioapi::DISPOSER_PAYLOAD_SIZE> disposer_{64};
   AudioGraph graph;
   std::mt19937_64 rng;
 

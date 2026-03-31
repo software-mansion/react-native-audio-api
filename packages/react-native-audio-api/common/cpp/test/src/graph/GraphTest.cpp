@@ -4,7 +4,6 @@
 #include <chrono>
 #include <cstdlib>
 #include <memory>
-#include <mutex>
 #include <thread>
 #include <vector>
 #include "TestGraphUtils.h"
@@ -13,7 +12,7 @@ namespace audioapi::utils::graph {
 
 class GraphTest : public ::testing::Test {
  protected:
-  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::unique_ptr<Graph> graph;
 

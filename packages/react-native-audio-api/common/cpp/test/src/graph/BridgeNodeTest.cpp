@@ -54,7 +54,7 @@ class BridgeGraphTest : public ::testing::Test {
  protected:
   using HNode = HostGraph::Node;
   using AGEvent = HostGraph::AGEvent;
-  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   AudioGraph audioGraph;
   HostGraph hostGraph;
@@ -162,7 +162,7 @@ TEST_F(BridgeGraphTest, DuplicateEdgeRejectionWithBridges) {
 class BridgeIterTest : public ::testing::Test {
  protected:
   using HNode = HostGraph::Node;
-  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   AudioGraph audioGraph;
   HostGraph hostGraph;
@@ -314,7 +314,7 @@ TEST_F(BridgeGraphTest, BridgeOrphanedAndNoInputsGetsCompacted) {
 class BridgeGraphWrapperTest : public ::testing::Test {
  protected:
   using HNode = HostGraph::Node;
-  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;
   // Hold real AudioParams to avoid fake pointer crashes
@@ -507,7 +507,7 @@ TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
 class BridgeFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using HNode = HostGraph::Node;
-  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;

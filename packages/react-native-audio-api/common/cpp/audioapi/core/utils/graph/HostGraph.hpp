@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
@@ -40,12 +41,9 @@ class HostGraph {
     EDGE_ALREADY_EXISTS,
   };
 
-  /// Size of the Disposer payload (= sizeof(std::shared_ptr<T[]>)).
-  static constexpr size_t kDisposerPayloadSize = 24;
-
   /// Event that modifies AudioGraph to keep it consistent with HostGraph.
   /// The second argument is the Disposer used to offload buffer deallocation.
-  using AGEvent = FatFunction<32, void(AudioGraph &, Disposer<kDisposerPayloadSize> &)>;
+  using AGEvent = FatFunction<32, void(AudioGraph &, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &)>;
 
   using Res = Result<AGEvent, ResultError>;
 

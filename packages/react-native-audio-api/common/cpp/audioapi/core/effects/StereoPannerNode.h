@@ -18,8 +18,7 @@ class StereoPannerNode : public AudioNode {
       const StereoPannerOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
-
-  std::shared_ptr<DSPAudioBuffer> getOutputBuffer() const override;
+  [[nodiscard]] std::shared_ptr<DSPAudioBuffer> getOutputBuffer() const override;
 
  protected:
   void processNode(int framesToProcess) override;

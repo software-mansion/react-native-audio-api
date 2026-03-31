@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/graph/InputPool.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 
@@ -223,8 +225,6 @@ inline void AudioGraph::process() {
     if (node.orphaned && InputPool::isEmpty(node.input_head) &&
         node.handle->audioNode->canBeDestructed()) {
       node.will_be_deleted = true;
-      // Call beforeDestruction while node is still valid (before move/compaction)
-      node.handle->audioNode->beforeDestruction();
     }
   }
 
@@ -242,8 +242,9 @@ inline void AudioGraph::process() {
   // Must happen BEFORE shifting nodes, because shifting invalidates source
   // positions that later nodes' inputs may still reference.
   for (std::uint32_t e = 0; e < n; e++) {
-    if (nodes[e].will_be_deleted)
+    if (nodes[e].will_be_deleted) {
       continue;
+    }
     for (auto &inp : pool_.mutableView(nodes[e].input_head)) {
       inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
     }
@@ -252,8 +253,9 @@ inline void AudioGraph::process() {
   // ── Pass 2b: compact — shift kept nodes left ───────────────────────────
   std::uint32_t b = 0;
   for (std::uint32_t e = 0; e < n; e++) {
-    if (nodes[e].will_be_deleted)
+    if (nodes[e].will_be_deleted) {
       continue;
+    }
     if (b != e) {
       nodes[b] = std::move(nodes[e]);
       nodes[e].input_head = InputPool::kNull; // prevent double-free in truncation
@@ -283,13 +285,15 @@ inline void AudioGraph::process() {
 
 inline void AudioGraph::kahn_toposort() {
   const auto n = static_cast<std::uint32_t>(nodes.size());
-  if (n <= 1)
+  if (n <= 1) {
     return;
+  }
 
   // Phase 1: compute out-degree
   for (const auto &nd : nodes) {
-    for (std::uint32_t inp : pool_.view(nd.input_head))
+    for (std::uint32_t inp : pool_.view(nd.input_head)) {
       nodes[inp].topo_out_degree++;
+    }
   }
 
   // Phase 2: reverse Kahn BFS — sinks first, sources last in dequeue order.
@@ -306,8 +310,9 @@ inline void AudioGraph::kahn_toposort() {
   };
 
   for (std::uint32_t i = 0; i < n; i++) {
-    if (nodes[i].topo_out_degree == 0)
+    if (nodes[i].topo_out_degree == 0) {
       enq(i);
+    }
   }
 
   std::uint32_t write = n;
@@ -317,15 +322,17 @@ inline void AudioGraph::kahn_toposort() {
     nodes[idx].after_compaction_ind = static_cast<std::int32_t>(--write);
 
     for (std::uint32_t inp : pool_.view(nodes[idx].input_head)) {
-      if (--nodes[inp].topo_out_degree == 0)
+      if (--nodes[inp].topo_out_degree == 0) {
         enq(inp);
+      }
     }
   }
 
   // Phase 3: remap input indices to new positions (before nodes move)
   for (auto &nd : nodes) {
-    for (std::uint32_t &inp : pool_.mutableView(nd.input_head))
+    for (std::uint32_t &inp : pool_.mutableView(nd.input_head)) {
       inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
+    }
   }
 
   // Phase 4: apply permutation in place via cycle sort
@@ -338,8 +345,9 @@ inline void AudioGraph::kahn_toposort() {
 
   // Phase 5: update handle indices & reset scratch
   for (std::uint32_t i = 0; i < n; i++) {
-    if (nodes[i].handle)
+    if (nodes[i].handle) {
       nodes[i].handle->index = i;
+    }
     nodes[i].after_compaction_ind = -1;
   }
 }

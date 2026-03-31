@@ -44,9 +44,7 @@ AudioParamHostObject::AudioParamHostObject(
 }
 
 AudioParamHostObject::~AudioParamHostObject() {
-  if (graph_ && bridgeNode_) {
-    // Remove outgoing edges (bridge → owner)
-    (void)graph_->removeAllEdges(bridgeNode_);
+  if (graph_ && bridgeNode_ != nullptr) {
     // Remove the bridge node itself
     (void)graph_->removeNode(bridgeNode_);
     bridgeNode_ = nullptr;

@@ -50,7 +50,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<utils::graph::Graph> getGraph() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   const RuntimeRegistry &getRuntimeRegistry() const;
-  utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize> *getDisposer() const;
+  utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *getDisposer() const;
 
   /// @brief Assigns the audio destination node to the context.
   /// @param destination The audio destination node to be associated with the context.
@@ -92,7 +92,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
 
-  std::unique_ptr<utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize>> disposer_;
+  std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
   std::shared_ptr<utils::graph::Graph> graph_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;

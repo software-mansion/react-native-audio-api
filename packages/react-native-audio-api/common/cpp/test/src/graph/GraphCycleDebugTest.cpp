@@ -21,7 +21,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
   using HNode = HostGraph::Node;
   using AGEvent = HostGraph::AGEvent;
 
-  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   std::mt19937_64 rng;
   AudioGraph audioGraph;

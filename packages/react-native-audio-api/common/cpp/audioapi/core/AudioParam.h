@@ -66,9 +66,7 @@ class AudioParam {
   /// @note Audio Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
-  template <
-      typename F,
-      typename = std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
+  template <typename F>
   bool scheduleAudioEvent(F &&event) noexcept {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->scheduleAudioEvent(std::forward<F>(event));
@@ -84,13 +82,6 @@ class AudioParam {
   /// @note Audio Thread only
   [[nodiscard]] std::shared_ptr<DSPAudioBuffer> getInputBuffer() const {
     return inputBuffer_;
-  }
-
-  /// @brief Called when a BridgeNode connected to this param is being destroyed.
-  /// Clears the input buffer so the param no longer relies on stale bridge data.
-  /// @note Audio Thread only
-  void onBridgeDetached() {
-    inputBuffer_->zero();
   }
 
   /// @note Audio Thread only

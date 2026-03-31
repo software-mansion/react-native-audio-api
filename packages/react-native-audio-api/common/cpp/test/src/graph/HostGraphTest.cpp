@@ -4,7 +4,6 @@
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include <gtest/gtest.h>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 #include "TestGraphUtils.h"
@@ -13,7 +12,7 @@ namespace audioapi::utils::graph {
 
 class HostGraphTest : public ::testing::Test {
  protected:
-  static constexpr size_t kPayloadSize = HostGraph::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
 
   void verifyAddEdge(

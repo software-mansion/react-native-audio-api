@@ -1,7 +1,6 @@
 #include <audioapi/core/utils/graph/AudioGraph.hpp>
 #include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include <gtest/gtest.h>
-#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -14,6 +13,7 @@ namespace audioapi::utils::graph {
 // ---------------------------------------------------------------------------
 class AudioGraphTest : public ::testing::Test {
  protected:
+  DisposerImpl<audioapi::DISPOSER_PAYLOAD_SIZE> disposer_{64};
   AudioGraph graph;
 
   // Helpers ----------------------------------------------------------------
