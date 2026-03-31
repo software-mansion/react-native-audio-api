@@ -9,22 +9,15 @@
 
 namespace audioapi {
 
-AudioParamHostObject::AudioParamHostObject(
-    std::shared_ptr<utils::graph::Graph> graph,
-    HNode *ownerNode,
-    const std::shared_ptr<AudioParam> &param)
+AudioParamHostObject::AudioParamHostObject(std::shared_ptr<utils::graph::Graph> graph,
+                                           HNode *ownerNode,
+                                           const std::shared_ptr<AudioParam> &param)
     : graph_(std::move(graph)),
+      ownerNode_(ownerNode),
       param_(param),
       defaultValue_(param->getDefaultValue()),
       minValue_(param->getMinValue()),
       maxValue_(param->getMaxValue()) {
-  // Create the bridge node in the graph
-  auto bridgeGraphObject = std::make_unique<utils::graph::BridgeNode>(param.get());
-  bridgeNode_ = graph_->addNode(std::move(bridgeGraphObject));
-
-  // Connect bridge → owner so topological sort orders correctly
-  (void)graph_->addEdge(bridgeNode_, ownerNode);
-
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, value),
       JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, defaultValue),
@@ -155,6 +148,18 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelAndHoldAtTime) {
 
   param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
+}
+
+void AudioParamHostObject::connectToGraph() {
+  if (isConnectedToGraph_ || graph_ == nullptr) {
+    return;
+  }
+
+  auto bridgeGraphObject = std::make_unique<utils::graph::BridgeNode>(param_.get());
+  bridgeNode_ = graph_->addNode(std::move(bridgeGraphObject));
+  // Connect bridge → owner so topological sort orders correctly
+  (void)graph_->addEdge(bridgeNode_, ownerNode_);
+  isConnectedToGraph_ = true;
 }
 
 } // namespace audioapi

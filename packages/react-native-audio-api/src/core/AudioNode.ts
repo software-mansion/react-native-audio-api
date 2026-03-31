@@ -37,7 +37,7 @@ export default class AudioNode {
     }
 
     if (destination instanceof AudioParam) {
-      this.node.connect(destination.audioParam, destination.owner.node);
+      this.node.connect(destination.audioParam);
     } else {
       if (destination.numberOfInputs === 0) {
         throw new IndexSizeError(
@@ -52,7 +52,7 @@ export default class AudioNode {
 
   public disconnect(destination?: AudioNode | AudioParam): void {
     if (destination instanceof AudioParam) {
-      this.node.disconnect(destination.audioParam, destination.owner.node);
+      this.node.disconnect(destination.audioParam);
     } else if (destination) {
       this.node.disconnect(destination.node);
     } else {

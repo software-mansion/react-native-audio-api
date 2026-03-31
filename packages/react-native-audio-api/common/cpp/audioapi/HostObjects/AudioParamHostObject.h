@@ -14,9 +14,9 @@ class AudioParam;
 
 /// @brief Host object for AudioParam that owns its BridgeNode.
 ///
-/// When created, a BridgeNode is added to the graph and connected to the
-/// owner node (bridge → owner). Sources connecting to this param connect
-/// to the bridge node (source → bridge).
+/// The BridgeNode is created lazily on the first connectToGraph() call
+/// and connected to the owner node (bridge → owner). Sources connecting
+/// to this param connect to the bridge node (source → bridge).
 ///
 /// When destroyed, the BridgeNode is removed from the graph.
 class AudioParamHostObject : public JsiHostObject {
@@ -54,11 +54,15 @@ class AudioParamHostObject : public JsiHostObject {
     return bridgeNode_;
   }
 
+  void connectToGraph();
+
  private:
   friend class AudioNodeHostObject;
 
   std::shared_ptr<utils::graph::Graph> graph_;
+  HNode *ownerNode_ = nullptr;
   HNode *bridgeNode_ = nullptr;
+  bool isConnectedToGraph_ = false;
   std::shared_ptr<AudioParam> param_;
   float defaultValue_;
   float minValue_;

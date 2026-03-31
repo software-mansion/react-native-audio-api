@@ -66,7 +66,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
     connect(*node);
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    // Connect source → bridge (the bridge → owner edge is created at param construction)
+    param->connectToGraph();
     graph_->addEdge(node_, param->bridgeNode());
   }
   return jsi::Value::undefined();

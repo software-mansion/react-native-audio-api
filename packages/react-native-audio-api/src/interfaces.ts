@@ -124,11 +124,8 @@ export interface IAudioNode {
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
 
-  connect(destination: IAudioNode): void;
-  connect(destination: IAudioParam, owner: IAudioNode): void;
-  disconnect(): void;
-  disconnect(destination: IAudioNode): void;
-  disconnect(destination: IAudioParam, owner: IAudioNode): void;
+  connect(destination: IAudioNode | IAudioParam): void;
+  disconnect(destination?: IAudioNode | IAudioParam): void;
 }
 
 export interface IDelayNode extends IAudioNode {
