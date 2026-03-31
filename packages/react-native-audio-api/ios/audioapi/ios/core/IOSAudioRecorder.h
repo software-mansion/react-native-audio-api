@@ -10,9 +10,8 @@ typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include <audioapi/utils/Result.hpp>
-
-#include <mutex>
 
 namespace audioapi {
 
@@ -34,7 +33,7 @@ class IOSAudioRecorder : public AudioRecorder {
       std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
 
-  void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
+  void connect(const std::shared_ptr<utils::graph::NodeHandle> &node) override;
   void disconnect() override;
 
   void pause() override;

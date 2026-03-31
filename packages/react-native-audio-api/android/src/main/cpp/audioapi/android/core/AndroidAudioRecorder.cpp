@@ -49,7 +49,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 
     if (isConnected()) {
       isConnected_.store(false, std::memory_order_release);
-      adapterNode_->adapterCleanup();
+      static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
     }
   }
 
@@ -143,7 +143,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   if (isConnected()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
+    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
   }
 
   auto result = mStream_->requestStart();
@@ -198,7 +198,7 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
   }
 
   if (isConnected()) {
-    adapterNode_->adapterCleanup();
+    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
   }
 
   filePath_ = "";
@@ -318,14 +318,14 @@ void AndroidAudioRecorder::clearOnAudioReadyCallback() {
 /// If the recorder is already active, it will initialize the adapter node immediately.
 /// This method should be called from the JS thread only.
 /// @param node Shared pointer to the RecorderAdapterNode to connect.
-void AndroidAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node) {
+void AndroidAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &node) {
   std::scoped_lock adapterLock(adapterNodeMutex_);
-  adapterNode_ = node;
+  adapterNodeHandle_ = node;
 
   if (!isIdle()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
+    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
   }
 
   isConnected_.store(true, std::memory_order_release);
@@ -338,7 +338,7 @@ void AndroidAudioRecorder::disconnect() {
   std::scoped_lock adapterLock(adapterNodeMutex_);
   isConnected_.store(false, std::memory_order_release);
   deinterleavingBuffer_ = nullptr;
-  adapterNode_ = nullptr;
+  adapterNodeHandle_ = nullptr;
 }
 
 /// @brief onAudioReady callback that is invoked by the Oboe stream when new audio data is available.
@@ -376,9 +376,10 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
     if (auto adapterLock = Locker::tryLock(adapterNodeMutex_)) {
       auto const data = static_cast<float *>(audioData);
       deinterleavingBuffer_->deinterleaveFrom(data, numFrames);
+      auto *adapterNode = static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get());
 
       for (size_t ch = 0; ch < streamChannelCount_; ++ch) {
-        adapterNode_->buff_[ch]->write(*deinterleavingBuffer_->getChannel(ch), numFrames);
+        adapterNode->buff_[ch]->write(*deinterleavingBuffer_->getChannel(ch), numFrames);
       }
     }
   }

@@ -133,8 +133,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, connect) {
   auto adapterNodeHostObject =
       args[0].getObject(runtime).getHostObject<RecorderAdapterNodeHostObject>(runtime);
 
-  // TODO
-  // audioRecorder_->connect(adapterNodeHostObject->adapterNode_);
+  audioRecorder_->connect(adapterNodeHostObject->node_->handle);
   return jsi::Value::undefined();
 }
 

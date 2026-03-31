@@ -4,6 +4,7 @@
 #import <Foundation/Foundation.h>
 
 #include <unordered_map>
+#include <mutex>
 
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
@@ -50,10 +51,10 @@ IOSAudioRecorder::IOSAudioRecorder(
 
     if (isConnected()) {
       if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
-        for (size_t channel = 0; channel < adapterNode_->getChannelCount(); ++channel) {
-          auto data = (float *)inputBuffer->mBuffers[channel].mData;
-
-          adapterNode_->buff_[channel]->write(data, numFrames);
+        auto *adapterNode = static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get());
+        for (size_t channel = 0; channel < adapterNode->getChannelCount(); ++channel) {
+          auto *data = static_cast<float *>(inputBuffer->mBuffers[channel].mData);
+          adapterNode->buff_[channel]->write(data, numFrames);
         }
       }
     }
@@ -125,7 +126,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   }
 
   if (isConnected()) {
-    adapterNode_->init(maxInputBufferLength, inputFormat.channelCount, inputFormat.sampleRate);
+    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->init(maxInputBufferLength, inputFormat.channelCount, inputFormat.sampleRate);
   }
 
   [nativeRecorder_ start];
@@ -170,7 +171,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   }
 
   if (isConnected()) {
-    adapterNode_->adapterCleanup();
+    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
   }
 
   filePath_ = "";
@@ -219,16 +220,17 @@ void IOSAudioRecorder::disableFileOutput()
 /// If the recorder is already active, it will initialize the adapter node immediately.
 /// This method should be called from the JS thread only.
 /// @param node Shared pointer to the RecorderAdapterNode to connect.
-void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
+void IOSAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &node)
 {
   std::scoped_lock lock(adapterNodeMutex_);
-  adapterNode_ = node;
+  adapterNodeHandle_ = node;
 
   if (!isIdle()) {
-    adapterNode_->init(
+    auto inputFormat = [nativeRecorder_ getInputFormat];
+    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->init(
         [nativeRecorder_ getBufferSize],
-        [nativeRecorder_ getInputFormat].channelCount,
-        [nativeRecorder_ getInputFormat].sampleRate);
+        inputFormat.channelCount,
+        inputFormat.sampleRate);
   }
 
   isConnected_.store(true, std::memory_order_release);
@@ -240,7 +242,7 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 void IOSAudioRecorder::disconnect()
 {
   std::scoped_lock lock(adapterNodeMutex_);
-  adapterNode_ = nullptr;
+  adapterNodeHandle_ = nullptr;
   isConnected_.store(false, std::memory_order_release);
 }
 

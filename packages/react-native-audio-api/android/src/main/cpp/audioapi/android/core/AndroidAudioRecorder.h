@@ -43,7 +43,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
       uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 
-  void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
+  void connect(const std::shared_ptr<utils::graph::NodeHandle> &node) override;
   void disconnect() override;
 
   oboe::DataCallbackResult

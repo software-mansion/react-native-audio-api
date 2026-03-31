@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/utils/graph/NodeHandle.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <atomic>
@@ -11,7 +12,6 @@
 namespace audioapi {
 
 class AudioFileWriter;
-class RecorderAdapterNode;
 class AudioFileProperties;
 class AudioRecorderCallback;
 class AudioEventHandlerRegistry;
@@ -38,7 +38,7 @@ class AudioRecorder {
   virtual void pause() = 0;
   virtual void resume() = 0;
 
-  virtual void connect(const std::shared_ptr<RecorderAdapterNode> &node) = 0;
+  virtual void connect(const std::shared_ptr<utils::graph::NodeHandle> &node) = 0;
   virtual void disconnect() = 0;
 
   virtual Result<NoneType, std::string> setOnAudioReadyCallback(
@@ -77,7 +77,7 @@ class AudioRecorder {
 
   std::string filePath_;
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
-  std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
+  std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
