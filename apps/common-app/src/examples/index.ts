@@ -2,6 +2,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { icons } from 'lucide-react-native';
 
 import AudioFile from './AudioFile';
+import AudioPipelineStress from './AudioPipelineStress';
 import AudioVisualizer from './AudioVisualizer';
 import DrumMachine from './DrumMachine';
 import Metronome from './Metronome';
@@ -20,6 +21,7 @@ type NavigationParamList = {
   Piano: undefined;
   TextToSpeech: undefined;
   AudioFile: undefined;
+  AudioPipelineStress: undefined;
   PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
@@ -61,6 +63,12 @@ export const Examples: Example[] = [
     title: 'Audio File',
     Icon: icons.Music,
     screen: AudioFile,
+  },
+  {
+    key: 'AudioPipelineStress',
+    title: 'Audio Pipeline Stress',
+    Icon: icons.Activity,
+    screen: AudioPipelineStress,
   },
   {
     key: 'PlaybackSpeed',

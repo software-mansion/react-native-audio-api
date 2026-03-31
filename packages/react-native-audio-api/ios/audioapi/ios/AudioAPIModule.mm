@@ -165,7 +165,7 @@ RCT_EXPORT_METHOD(
 
   [self.audioSessionManager setAudioSessionOptions:category
                                               mode:mode
-                                            options:options
+                                           options:options
                                       allowHaptics:allowHaptics
                         notifyOthersOnDeactivation:notifyOthersOnDeactivation];
 }

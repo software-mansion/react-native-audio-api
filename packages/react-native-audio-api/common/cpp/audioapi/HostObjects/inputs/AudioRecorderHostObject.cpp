@@ -28,6 +28,7 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, stop),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, isRecording),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, isPaused),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, enableFileOutput),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disableFileOutput),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, pause),
