@@ -122,7 +122,7 @@ class Graph {
   /// @param audioNode the audio processing node to add (ownership transferred)
   /// @return pointer to the newly added HostGraph::Node
   HNode *addNode(std::unique_ptr<GraphObject> audioNode = nullptr) {
-    hostGraph.collectDisposedNodes();
+    collectDisposedNodes();
 
     auto handle = std::make_shared<NodeHandle>(0, std::move(audioNode));
     auto [hostNode, event] = hostGraph.addNode(handle);
@@ -141,7 +141,7 @@ class Graph {
   /// @brief Removes a node (marks as ghost). Pointer remains valid until
   /// the ghost is collected after AudioGraph releases its shared_ptr.
   Res removeNode(HNode *node) {
-    hostGraph.collectDisposedNodes();
+    collectDisposedNodes();
     return hostGraph.removeNode(node).map([&](AGEvent event) {
       eventSender_.send(std::move(event));
       return NoneType{};
@@ -150,7 +150,7 @@ class Graph {
 
   /// @brief Adds a directed edge from → to. Rejects cycles and duplicates.
   Res addEdge(HNode *from, HNode *to) {
-    hostGraph.collectDisposedNodes();
+    collectDisposedNodes();
     return hostGraph.addEdge(from, to).map([&](AGEvent event) {
       sendPoolGrowIfNeeded();
       eventSender_.send(std::move(event));
@@ -160,7 +160,7 @@ class Graph {
 
   /// @brief Removes a directed edge from → to.
   Res removeEdge(HNode *from, HNode *to) {
-    hostGraph.collectDisposedNodes();
+    collectDisposedNodes();
     return hostGraph.removeEdge(from, to).map([&](AGEvent event) {
       eventSender_.send(std::move(event));
       return NoneType{};
@@ -169,11 +169,15 @@ class Graph {
 
   /// @brief Removes all outgoing edges from `from`.
   Res removeAllEdges(HNode *from) {
-    hostGraph.collectDisposedNodes();
+    collectDisposedNodes();
     return hostGraph.removeAllEdges(from).map([&](AGEvent event) {
       eventSender_.send(std::move(event));
       return NoneType{};
     });
+  }
+
+  void collectDisposedNodes() {
+    hostGraph.collectDisposedNodes();
   }
 
  private:

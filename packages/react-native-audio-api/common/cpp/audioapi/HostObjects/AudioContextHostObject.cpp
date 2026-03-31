@@ -23,6 +23,7 @@ AudioContextHostObject::AudioContextHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
+  context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
     return [audioContext](jsi::Runtime &runtime) {
@@ -35,6 +36,7 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
+  context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
     auto result = audioContext->resume();
@@ -46,6 +48,7 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
+  context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
     auto result = audioContext->suspend();

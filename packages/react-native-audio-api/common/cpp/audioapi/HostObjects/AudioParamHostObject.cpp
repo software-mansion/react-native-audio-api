@@ -9,9 +9,10 @@
 
 namespace audioapi {
 
-AudioParamHostObject::AudioParamHostObject(std::shared_ptr<utils::graph::Graph> graph,
-                                           HNode *ownerNode,
-                                           const std::shared_ptr<AudioParam> &param)
+AudioParamHostObject::AudioParamHostObject(
+    std::shared_ptr<utils::graph::Graph> graph,
+    HNode *ownerNode,
+    const std::shared_ptr<AudioParam> &param)
     : graph_(std::move(graph)),
       ownerNode_(ownerNode),
       param_(param),
@@ -41,6 +42,7 @@ AudioParamHostObject::~AudioParamHostObject() {
     // Remove the bridge node itself
     (void)graph_->removeNode(bridgeNode_);
     bridgeNode_ = nullptr;
+    ownerNode_ = nullptr;
   }
 }
 

@@ -31,6 +31,7 @@ OfflineAudioContextHostObject::OfflineAudioContextHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
+  context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext]() {
     audioContext->resume();
@@ -43,6 +44,7 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
 }
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
+  context_->getGraph()->collectDisposedNodes();
   double when = args[0].getNumber();
   auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
 
