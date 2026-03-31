@@ -54,8 +54,8 @@ void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callback
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
-  onPositionChangedIntervalInFrames_ = static_cast<
-      int>( //NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+  onPositionChangedIntervalInFrames_ = static_cast<int>(
+      //NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       getContextSampleRate() * static_cast<float>(interval) / 1000);
 }
 

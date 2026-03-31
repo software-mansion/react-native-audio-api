@@ -20,18 +20,6 @@ using namespace audioapi;
 using namespace facebook::react;
 using namespace worklets;
 
-static dispatch_queue_t RNAudioAPIAudioSessionQueue()
-{
-  static dispatch_queue_t queue;
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    queue =
-        dispatch_queue_create("com.swmansion.audioapi.AudioSessionQueue", DISPATCH_QUEUE_SERIAL);
-  });
-
-  return queue;
-}
-
 @interface RCTBridge (JSIRuntime)
 - (void *)runtime;
 @end
@@ -139,7 +127,7 @@ RCT_EXPORT_METHOD(
     setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  dispatch_async(RNAudioAPIAudioSessionQueue(), ^{
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     NSError *error = nil;
     auto success = [self.audioSessionManager setActive:enabled error:&error];
 
@@ -171,16 +159,15 @@ RCT_EXPORT_METHOD(
         options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
             notifyOthersOnDeactivation)
 {
-  dispatch_async(RNAudioAPIAudioSessionQueue(), ^{
-    if (!self.audioSessionManager.shouldManageSession) {
-      [self.audioSessionManager setShouldManageSession:true];
-    }
-    [self.audioSessionManager setAudioSessionOptions:category
-                                                mode:mode
-                                             options:options
-                                        allowHaptics:allowHaptics
-                          notifyOthersOnDeactivation:notifyOthersOnDeactivation];
-  });
+  if (!self.audioSessionManager.shouldManageSession) {
+    [self.audioSessionManager setShouldManageSession:true];
+  }
+
+  [self.audioSessionManager setAudioSessionOptions:category
+                                              mode:mode
+                                            options:options
+                                      allowHaptics:allowHaptics
+                        notifyOthersOnDeactivation:notifyOthersOnDeactivation];
 }
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (NSString *)focusType enabled : (BOOL)enabled)
