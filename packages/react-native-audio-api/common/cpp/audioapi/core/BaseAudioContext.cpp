@@ -20,8 +20,7 @@ BaseAudioContext::BaseAudioContext(
       runtimeRegistry_(runtimeRegistry),
       audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY),
       disposer_(
-          std::make_unique<utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize>>(
-              AUDIO_SCHEDULER_CAPACITY)),
+          std::make_unique<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>>(AUDIO_SCHEDULER_CAPACITY)),
       graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())) {}
 
 void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
@@ -101,15 +100,14 @@ const RuntimeRegistry &BaseAudioContext::getRuntimeRegistry() const {
   return runtimeRegistry_;
 }
 
-utils::DisposerImpl<utils::graph::Graph::kDisposerPayloadSize> *BaseAudioContext::getDisposer()
-    const {
+utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *BaseAudioContext::getDisposer() const {
   return disposer_.get();
 }
 
 void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
+  processAudioEvents();
   graph_->processEvents();
   graph_->process();
-  processAudioEvents();
 
   for (auto &&[node, inputs] : graph_->iter()) {
     node.process(inputs, numFrames);

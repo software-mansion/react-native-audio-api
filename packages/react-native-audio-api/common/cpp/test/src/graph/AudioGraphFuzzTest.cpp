@@ -4,12 +4,12 @@
 #include "TestGraphUtils.h"
 
 #include <iostream>
+#include <memory>
 #include <random>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <memory>
 
 namespace audioapi::utils::graph {
 
