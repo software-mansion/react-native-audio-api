@@ -105,22 +105,11 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   // Engine will be started again once the native recorder starts
   [AudioEngine.sharedInstance stopIfNecessary];
 
-  AVAudioFormat *inputFormat = nil;
-  NSError *lastActivationError = nil;
-  const int maxFormatAttempts = 4;
-  for (int attempt = 0; attempt < maxFormatAttempts; ++attempt) {
-    inputFormat = [nativeRecorder_ getInputFormat];
-    if (hasUsableRecorderFormat(inputFormat)) {
-      break;
-    }
+  NSError *activationError = nil;
 
-    lastActivationError = nil;
-    [audioSessionManager ensureActive:true error:&lastActivationError];
+  [audioSessionManager ensureActive:true error:&activationError];
 
-    if (attempt + 1 < maxFormatAttempts) {
-      [NSThread sleepForTimeInterval:0.05];
-    }
-  }
+  AVAudioFormat *inputFormat = [nativeRecorder_ getInputFormat];
 
   if (!hasUsableRecorderFormat(inputFormat)) {
     auto routeReady = [audioSessionManager hasValidInputRoute];
@@ -131,9 +120,9 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
         ", channelCount=" + std::to_string(sessionChannelCount) +
         ", routeReady=" + std::string(routeReady ? "true" : "false");
 
-    if (lastActivationError != nil) {
+    if (activationError != nil) {
       message +=
-          ", activationError=" + std::string([[lastActivationError debugDescription] UTF8String]);
+          ", activationError=" + std::string([[activationError debugDescription] UTF8String]);
     }
 
     return Result<std::string, std::string>::Err(message);
