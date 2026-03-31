@@ -1,15 +1,16 @@
-#include "audioapi/core/utils/automation-queue/AutomationEventControlQueue.h"
+#include "audioapi/core/utils/automation/AutomationControlQueue.h"
 #include <cstddef>
 #include <format>
 #include <string>
+#include <utility>
 #include "audioapi/core/types/AutomationEventType.h"
-#include "audioapi/core/utils/BaseAutomationEvent.hpp"
+#include "audioapi/core/utils/automation/AutomationEvent.hpp"
 #include "audioapi/utils/Result.hpp"
 
 namespace audioapi {
 
-Result<NoneType, std::string> AutomationEventControlQueue::checkCurveExclusion(
-    const BaseAutomationEvent &event) {
+Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
+    const AutomationEvent &event) {
   if (event.getType() == AutomationEventType::SET_VALUE_CURVE) {
     const auto *conflict = findEventInInterval(event.getStartTime(), event.getEndTime());
     if (conflict) {
@@ -36,7 +37,24 @@ Result<NoneType, std::string> AutomationEventControlQueue::checkCurveExclusion(
   return Ok(None);
 }
 
-const BaseAutomationEvent *AutomationEventControlQueue::findEventAtTime(double time) const {
+void AutomationControlQueue::cancelAutomationEvents(double cancelTime) {
+  // BoundedPriorityQueue has no erase; drain into a temp buffer, keep survivors, rebuild.
+  AutomationEvent survivors[32];
+  size_t count = 0;
+
+  AutomationEvent event;
+  while (eventQueue_.pop(event)) {
+    if (event.getAutomationEventTime() < cancelTime) {
+      survivors[count++] = std::move(event);
+    }
+  }
+
+  for (size_t i = 0; i < count; ++i) {
+    eventQueue_.push(std::move(survivors[i]));
+  }
+}
+
+const AutomationEvent *AutomationControlQueue::findEventAtTime(double time) const {
   for (size_t i = 0; i < eventQueue_.size(); ++i) {
     const auto &event = eventQueue_.peekAt(i);
     if ((event.getType() == AutomationEventType::SET_VALUE_CURVE && event.getStartTime() <= time &&
@@ -48,9 +66,8 @@ const BaseAutomationEvent *AutomationEventControlQueue::findEventAtTime(double t
   return nullptr;
 }
 
-const BaseAutomationEvent *AutomationEventControlQueue::findEventInInterval(
-    double startTime,
-    double endTime) const {
+const AutomationEvent *AutomationControlQueue::findEventInInterval(double startTime, double endTime)
+    const {
   for (size_t i = 0; i < eventQueue_.size(); ++i) {
     const auto &event = eventQueue_.peekAt(i);
     if (event.getStartTime() >= startTime && event.getStartTime() < endTime) {

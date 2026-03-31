@@ -3,8 +3,8 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/types/AutomationEventType.h>
-#include <audioapi/core/utils/RenderAutomationEvent.hpp>
-#include <audioapi/core/utils/automation-queue/AutomationEventRenderQueue.h>
+#include <audioapi/core/utils/automation/AutomationRenderQueue.h>
+#include <audioapi/core/utils/automation/RenderAutomationEvent.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
@@ -102,7 +102,7 @@ class AudioParam {
   float minValue_;
   float maxValue_;
 
-  AutomationEventRenderQueue eventsQueue_;
+  AutomationRenderQueue eventsQueue_;
 
   // Current automation state (cached for performance)
   double startTime_;

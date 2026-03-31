@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <memory>
 #include <string>
-#include "audioapi/core/utils/automation-queue/AutomationEventControlQueue.h"
+#include "audioapi/core/utils/automation/AutomationControlQueue.h"
 #include "audioapi/utils/Result.hpp"
 
 namespace audioapi {
@@ -39,7 +39,7 @@ class AudioParamHostObject : public JsiHostObject {
   friend class AudioNodeHostObject;
 
   std::shared_ptr<AudioParam> param_;
-  AutomationEventControlQueue eventsQueue_ = AutomationEventControlQueue();
+  AutomationControlQueue eventsQueue_ = AutomationControlQueue();
   float defaultValue_;
   float minValue_;
   float maxValue_;

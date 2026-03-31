@@ -1,16 +1,16 @@
 #pragma once
 
 #include <audioapi/core/types/AutomationEventType.h>
-#include <audioapi/core/utils/RenderAutomationEvent.hpp>
-#include <audioapi/core/utils/automation-queue/AutomationBaseQueue.hpp>
+#include <audioapi/core/utils/automation/AutomationQueueBase.hpp>
+#include <audioapi/core/utils/automation/RenderAutomationEvent.hpp>
 
 namespace audioapi {
 
 /// @brief A queue for managing audio parameter change events on the audio render thread.
 /// @note The invariant of the queue is that its internal buffer always contains non-overlapping events.
-class AutomationEventRenderQueue : public AutomationBaseQueue<RenderAutomationEvent> {
+class AutomationRenderQueue : public AutomationQueueBase<RenderAutomationEvent> {
  public:
-  explicit AutomationEventRenderQueue() = default;
+  explicit AutomationRenderQueue() = default;
 
   /// @brief Push a new event to the back of the queue.
   /// @note Handles connecting the start value of the new event to the end value of the last event in the queue.

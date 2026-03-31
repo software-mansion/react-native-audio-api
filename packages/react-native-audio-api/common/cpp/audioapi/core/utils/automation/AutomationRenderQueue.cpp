@@ -1,11 +1,11 @@
-#include <audioapi/core/utils/automation-queue/AutomationEventRenderQueue.h>
+#include <audioapi/core/utils/automation/AutomationRenderQueue.h>
 #include <algorithm>
 #include <utility>
 #include "audioapi/core/types/AutomationEventType.h"
 
 namespace audioapi {
 
-void AutomationEventRenderQueue::push(RenderAutomationEvent &&event) {
+void AutomationRenderQueue::push(RenderAutomationEvent &&event) {
   if (eventQueue_.isEmpty()) {
     eventQueue_.push(std::move(event));
   }
@@ -13,11 +13,11 @@ void AutomationEventRenderQueue::push(RenderAutomationEvent &&event) {
   eventQueue_.push(std::move(event));
 }
 
-bool AutomationEventRenderQueue::pop(RenderAutomationEvent &event) {
+bool AutomationRenderQueue::pop(RenderAutomationEvent &event) {
   return eventQueue_.pop(event);
 }
 
-void AutomationEventRenderQueue::cancelScheduledValues(double cancelTime) {
+void AutomationRenderQueue::cancelScheduledValues(double cancelTime) {
   while (!eventQueue_.isEmpty()) {
     auto &back = eventQueue_.peekBack();
     if (back.getEndTime() < cancelTime) {
@@ -30,7 +30,7 @@ void AutomationEventRenderQueue::cancelScheduledValues(double cancelTime) {
   }
 }
 
-void AutomationEventRenderQueue::cancelAndHoldAtTime(double cancelTime, double &endTimeCache) {
+void AutomationRenderQueue::cancelAndHoldAtTime(double cancelTime, double &endTimeCache) {
   while (!eventQueue_.isEmpty()) {
     auto &back = eventQueue_.peekBack();
     if (back.getEndTime() < cancelTime || back.getStartTime() <= cancelTime) {
@@ -54,7 +54,7 @@ void AutomationEventRenderQueue::cancelAndHoldAtTime(double cancelTime, double &
   back.setEndTime(std::min(cancelTime, back.getEndTime()));
 }
 
-void AutomationEventRenderQueue::setEventEndValueToCurrentValue(RenderAutomationEvent &event) {
+void AutomationRenderQueue::setEventEndValueToCurrentValue(RenderAutomationEvent &event) {
   auto &prev = eventQueue_.peekBackMut();
   if (prev.getType() == AutomationEventType::SET_TARGET) {
     prev.setEndTime(event.getStartTime());

@@ -1,7 +1,7 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <audioapi/core/AudioParam.h>
-#include <audioapi/core/utils/BaseAutomationEvent.hpp>
+#include <audioapi/core/utils/automation/AutomationEvent.hpp>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <memory>
@@ -171,13 +171,13 @@ Result<NoneType, std::string> AudioParamHostObject::checkCurveExclusionFromJSI(
     case AutomationEventType::EXPONENTIAL_RAMP:
     case AutomationEventType::SET_TARGET: {
       auto startTime = arg.getProperty(runtime, "startTime").getNumber();
-      return eventsQueue_.checkCurveExclusion(BaseAutomationEvent(type, startTime));
+      return eventsQueue_.checkCurveExclusion(AutomationEvent(type, startTime));
     }
     case AutomationEventType::SET_VALUE_CURVE: {
       auto startTime = arg.getProperty(runtime, "startTime").getNumber();
       auto duration = arg.getProperty(runtime, "duration").getNumber();
       return eventsQueue_.checkCurveExclusion(
-          BaseAutomationEvent(type, startTime, startTime + duration));
+          AutomationEvent(type, startTime, startTime + duration));
     }
     default:
       return Ok(None);

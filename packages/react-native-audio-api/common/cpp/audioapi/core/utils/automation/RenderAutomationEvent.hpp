@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/BaseAutomationEvent.hpp>
+#include <audioapi/core/utils/automation/AutomationEvent.hpp>
 
 #include <functional>
 #include <utility>
@@ -8,7 +8,7 @@
 
 namespace audioapi {
 
-class RenderAutomationEvent : public BaseAutomationEvent {
+class RenderAutomationEvent : public AutomationEvent {
  public:
   RenderAutomationEvent() = default;
 
@@ -19,7 +19,7 @@ class RenderAutomationEvent : public BaseAutomationEvent {
       float endValue,
       std::function<float(double, double, float, float, double)> &&calculateValue,
       AutomationEventType type)
-      : BaseAutomationEvent(type, startTime, endTime),
+      : AutomationEvent(type, startTime, endTime),
         calculateValue_(std::move(calculateValue)),
         startValue_(startValue),
         endValue_(endValue) {}
@@ -28,14 +28,14 @@ class RenderAutomationEvent : public BaseAutomationEvent {
   RenderAutomationEvent &operator=(const RenderAutomationEvent &) = delete;
 
   RenderAutomationEvent(RenderAutomationEvent &&other) noexcept
-      : BaseAutomationEvent(std::move(other)),
+      : AutomationEvent(std::move(other)),
         calculateValue_(std::move(other.calculateValue_)),
         startValue_(other.startValue_),
         endValue_(other.endValue_) {}
 
   RenderAutomationEvent &operator=(RenderAutomationEvent &&other) noexcept {
     if (this != &other) {
-      BaseAutomationEvent::operator=(std::move(other));
+      AutomationEvent::operator=(std::move(other));
       calculateValue_ = std::move(other.calculateValue_);
       startValue_ = other.startValue_;
       endValue_ = other.endValue_;

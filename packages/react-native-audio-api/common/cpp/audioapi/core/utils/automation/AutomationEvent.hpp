@@ -4,20 +4,20 @@
 
 namespace audioapi {
 
-class BaseAutomationEvent {
+class AutomationEvent {
  public:
-  BaseAutomationEvent() = default;
+  AutomationEvent() = default;
 
-  explicit BaseAutomationEvent(AutomationEventType type, double startTime, double endTime = 0.0)
+  explicit AutomationEvent(AutomationEventType type, double startTime, double endTime = 0.0)
       : type_(type), startTime_(startTime), endTime_(endTime) {}
 
-  BaseAutomationEvent(const BaseAutomationEvent &) = delete;
-  BaseAutomationEvent &operator=(const BaseAutomationEvent &) = delete;
+  AutomationEvent(const AutomationEvent &) = delete;
+  AutomationEvent &operator=(const AutomationEvent &) = delete;
 
-  BaseAutomationEvent(BaseAutomationEvent &&other) noexcept
+  AutomationEvent(AutomationEvent &&other) noexcept
       : type_(other.type_), startTime_(other.startTime_), endTime_(other.endTime_) {}
 
-  BaseAutomationEvent &operator=(BaseAutomationEvent &&other) noexcept {
+  AutomationEvent &operator=(AutomationEvent &&other) noexcept {
     if (this != &other) {
       type_ = other.type_;
       startTime_ = other.startTime_;

@@ -6,7 +6,7 @@
 #include <memory>
 #include <utility>
 #include "audioapi/core/types/AutomationEventType.h"
-#include "audioapi/core/utils/RenderAutomationEvent.hpp"
+#include "audioapi/core/utils/automation/RenderAutomationEvent.hpp"
 
 namespace audioapi {
 
