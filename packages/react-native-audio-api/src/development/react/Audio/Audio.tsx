@@ -1,28 +1,24 @@
 import React, {
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import { View, Image, Platform } from 'react-native';
 
-import type {
-  AudioProps,
-  AudioTagPlaybackState,
-  AudioURISource,
-} from './types';
-import { useStableAudioProps } from './utils';
+import type { AudioHandle, AudioProps, AudioTagPlaybackState } from './types';
+
 import { AudioComponentContext } from './AudioTagContext';
-import AudioControls from './controls/AudioControls';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
+import { useStableAudioProps } from './utils';
 import { NotSupportedError } from '../../../errors';
 import { NativeAudioAPIModule } from '../../../specs';
+import { AudioControls } from '..';
 
-const Audio: React.FC<AudioProps> = (inProps) => {
-  const { children } = inProps;
-
-  /* eslint-disable @typescript-eslint/no-unused-vars */
+const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
+  const { children } = props;
   const {
     autoPlay,
     controls,
@@ -34,9 +30,25 @@ const Audio: React.FC<AudioProps> = (inProps) => {
     preservesPitch,
     volume,
     context,
-  } = useStableAudioProps(inProps);
+    onLoadStart,
+    onLoad,
+    onError,
+    onPositionChanged,
+    onSeek,
+    onEnded: onEndedCallback,
+    onPlay,
+    onPause,
+    onVolumeChange,
+  } = useStableAudioProps(props);
+  const audioContext = context ?? null;
+  const [volumeState, setVolumeState] = useState(volume);
+  const [mutedState, setMutedState] = useState(muted);
+  const [ready, setReady] = useState(false);
 
   const path = useMemo(() => {
+    if (!source) {
+      return '';
+    }
     if (typeof source === 'string') {
       if (source.startsWith('file://') || source.startsWith('http')) {
         return source;
@@ -56,105 +68,149 @@ const Audio: React.FC<AudioProps> = (inProps) => {
 
   const fileSourceRef = useRef<AudioFileSourceNode>(null);
   const sourceRef = useRef<ArrayBuffer | string | null>(null);
-  const loopRef = useRef(loop);
-  const effectiveVolumeRef = useRef(muted ? 0 : volume);
-  const contextRef = useRef(context);
 
-  const [volumeState, setVolumeState] = useState(volume);
-  const [mutedState, setMutedState] = useState(muted);
-  const [isReady, setIsReady] = useState(false);
+  const effectiveVolumeRef = useRef(mutedState ? 0 : volumeState);
+  const lastEffectiveVolumeRef = useRef(muted ? 0 : volume);
+
   const [playbackState, setPlaybackState] =
     useState<AudioTagPlaybackState>('idle');
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    setVolumeState(volume);
-    setMutedState(muted);
-  }, [volume, muted]);
-
-  useEffect(() => {
     effectiveVolumeRef.current = mutedState ? 0 : volumeState;
+    fileSourceRef.current?.setVolume(effectiveVolumeRef.current);
   }, [mutedState, volumeState]);
 
-  const spawnFileSource = useCallback(() => {
-    const ctx = contextRef.current;
-    const src = sourceRef.current;
-    if (!ctx || !src) {
-      return;
-    }
-
-    const node = ctx.context.createFileSource({
-      source: src,
-      loop: loopRef.current,
-      volume: effectiveVolumeRef.current,
-    });
-    if (!node) {
-      throw new NotSupportedError('This file format requires FFmpeg build');
-    }
-
-    fileSourceRef.current = new AudioFileSourceNode(ctx, node);
-    const { duration: d } = fileSourceRef.current.attach({
-      loop: loopRef.current,
-      onEnded: () => {
-        setPlaybackState('idle');
-        spawnFileSource();
-      },
-    });
-    fileSourceRef.current.setVolume(effectiveVolumeRef.current);
-    fileSourceRef.current.setLoop(loopRef.current);
-
-    setDuration(d);
-    setIsReady(true);
-  }, [setDuration, setIsReady, setPlaybackState]);
-
   const play = useCallback(() => {
-    if (!context) {
-      return;
-    }
     fileSourceRef.current?.play();
     setPlaybackState('playing');
-  }, [context]);
+    onPlay();
+  }, [onPlay]);
 
   const pause = useCallback(() => {
     fileSourceRef.current?.pause();
     setPlaybackState('paused');
-  }, []);
+    onPause();
+  }, [onPause]);
 
   const seekToTime = useCallback(
     (seconds: number) => {
       fileSourceRef.current?.seekToTime(seconds);
-      const d = duration;
-      const t =
-        d > 0 ? Math.max(0, Math.min(seconds, d)) : Math.max(0, seconds);
-      setCurrentTime(t);
+      const nextTime =
+        duration > 0
+          ? Math.max(0, Math.min(seconds, duration))
+          : Math.max(0, seconds);
+      setCurrentTime(nextTime);
+      onSeek(nextTime);
     },
-    [duration]
+    [duration, onSeek, setCurrentTime]
   );
 
-  useEffect(() => {
-    if (!path) {
+  const spawnFileSource = useCallback(() => {
+    const nextSource = sourceRef.current;
+    if (!context || !nextSource) {
       return;
     }
 
-    const run = async () => {
-      if (path.startsWith('http')) {
-        await fetch(path, {
-          headers: (source as AudioURISource).headers,
-        })
-          .then((response) => response.arrayBuffer())
-          .then((arrayBuffer) => (sourceRef.current = arrayBuffer));
-      } else {
-        sourceRef.current = path;
-      }
-      spawnFileSource();
-    };
-    run();
-  }, [path, spawnFileSource, source]);
+    fileSourceRef.current?.dispose();
+    setCurrentTime(0);
+    setDuration(0);
+    setPlaybackState('idle');
+
+    const node = context.context.createFileSource({
+      source: nextSource,
+      loop,
+      volume: effectiveVolumeRef.current,
+    });
+    if (!node) {
+      onError(new NotSupportedError('This file format requires FFmpeg build'));
+      return;
+    }
+
+    const fileSource = new AudioFileSourceNode(context, node);
+    const { duration: nextDuration } = fileSource.attach({
+      loop,
+      onEnded: () => {
+        setPlaybackState('idle');
+        setCurrentTime(nextDuration);
+        onEndedCallback();
+        spawnFileSource();
+      },
+    });
+
+    fileSource.setVolume(effectiveVolumeRef.current);
+    fileSourceRef.current = fileSource;
+    setDuration(nextDuration);
+    onLoad();
+
+    if (autoPlay) {
+      fileSource.play();
+      setPlaybackState('playing');
+      onPlay();
+    }
+  }, [context, loop, onError, onEndedCallback, onLoad, onPlay, autoPlay]);
 
   useEffect(() => {
-    fileSourceRef.current?.setVolume(mutedState ? 0 : volumeState);
-  }, [volumeState, mutedState]);
+    if (!path) {
+      fileSourceRef.current?.dispose();
+      sourceRef.current = null;
+      setPlaybackState('idle');
+      setCurrentTime(0);
+      setDuration(0);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const run = async () => {
+      setReady(false);
+      onLoadStart();
+      try {
+        if (path.startsWith('http')) {
+          const arrayBuffer = await fetch(path, {
+            headers:
+              typeof source === 'object' && source && 'headers' in source
+                ? source.headers
+                : undefined,
+          }).then((response) => response.arrayBuffer());
+
+          if (isCancelled) {
+            return;
+          }
+          sourceRef.current = arrayBuffer;
+        } else {
+          sourceRef.current = path;
+        }
+
+        if (!isCancelled) {
+          spawnFileSource();
+          setReady(true);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          onError(error as Error);
+        }
+        setReady(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      isCancelled = true;
+      fileSourceRef.current?.stopPositionTracking();
+      fileSourceRef.current?.dispose();
+    };
+  }, [path, source, spawnFileSource, onError, onLoadStart]);
+
+  useEffect(() => {
+    const effectiveVolume = mutedState ? 0 : volumeState;
+    if (lastEffectiveVolumeRef.current !== effectiveVolume) {
+      lastEffectiveVolumeRef.current = effectiveVolume;
+      onVolumeChange(effectiveVolume);
+    }
+  }, [mutedState, onVolumeChange, volumeState]);
 
   useEffect(() => {
     fileSourceRef.current?.setLoop(loop);
@@ -165,47 +221,72 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       return;
     }
 
-    fileSourceRef.current?.startPositionTracking(setCurrentTime);
+    fileSourceRef.current?.startPositionTracking((seconds) => {
+      setCurrentTime(seconds);
+      onPositionChanged(seconds);
+    });
 
     return () => {
       fileSourceRef.current?.stopPositionTracking();
     };
-  }, [playbackState]);
+  }, [onPositionChanged, playbackState]);
 
-  const setVolume = useCallback((next: number) => {
-    setVolumeState(next);
-  }, []);
-
-  const setMuted = useCallback((next: boolean) => {
-    setMutedState(next);
-  }, []);
+  useImperativeHandle(
+    ref,
+    () => ({
+      play,
+      pause,
+      seekToTime,
+      setVolume: setVolumeState,
+      setMuted: setMutedState,
+    }),
+    [pause, play, seekToTime, setMutedState, setVolumeState]
+  );
 
   const ctxValue = useMemo(
     () => ({
       play,
       pause,
       seekToTime,
+      setVolume: setVolumeState,
       volume: volumeState,
-      setVolume,
+      ready,
+      setMuted: setMutedState,
       muted: mutedState,
-      setMuted,
-      isReady,
       playbackState,
       currentTime,
       duration,
+      autoPlay,
+      controls,
+      loop,
+      preload,
+      playbackRate,
+      preservesPitch,
+      sourcePath: path,
+      source,
+      audioContext,
     }),
     [
       play,
       pause,
       seekToTime,
-      setVolume,
+      setVolumeState,
       volumeState,
+      ready,
+      setMutedState,
       mutedState,
-      setMuted,
-      isReady,
       playbackState,
       currentTime,
       duration,
+      autoPlay,
+      controls,
+      loop,
+      preload,
+      playbackRate,
+      preservesPitch,
+      path,
+      source,
+      audioContext,
     ]
   );
 
@@ -217,6 +298,6 @@ const Audio: React.FC<AudioProps> = (inProps) => {
       </View>
     </AudioComponentContext.Provider>
   );
-};
+});
 
 export default Audio;

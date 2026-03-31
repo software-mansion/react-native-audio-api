@@ -1,18 +1,26 @@
 import { createContext, useContext } from 'react';
-import type { AudioTagPlaybackState } from './types';
+import type BaseAudioContext from '../../../core/BaseAudioContext';
+import type { AudioTagPlaybackState, PreloadType } from './types';
 
 export type AudioComponentContextType = {
   play: () => void;
   pause: () => void;
   seekToTime: (seconds: number) => void;
-  volume: number;
   setVolume: (volume: number) => void;
-  muted: boolean;
   setMuted: (muted: boolean) => void;
-  isReady: boolean;
+
+  ready: boolean;
+  volume: number;
+  muted: boolean;
   playbackState: AudioTagPlaybackState;
   currentTime: number;
   duration: number;
+  autoPlay: boolean;
+  loop: boolean;
+  preload: PreloadType;
+  playbackRate: number;
+  preservesPitch: boolean;
+  audioContext: BaseAudioContext | null;
 };
 
 export const AudioComponentContext = createContext<

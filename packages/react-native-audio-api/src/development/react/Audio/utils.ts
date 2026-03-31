@@ -13,6 +13,10 @@ export function withPropsDefaults(
   props: AudioProps,
   resolvedContext: BaseAudioContext | undefined
 ): AudioPropsBase {
+  const noop = () => {};
+  const noopError = (_error: Error) => {};
+  const noopNumber = (_number: number) => {};
+
   return {
     ...props,
     autoPlay: props.autoPlay ?? false,
@@ -25,6 +29,15 @@ export function withPropsDefaults(
     preservesPitch: props.preservesPitch ?? true,
     volume: props.volume ?? 1.0,
     context: resolvedContext,
+    onLoadStart: props.onLoadStart ?? noop,
+    onLoad: props.onLoad ?? noop,
+    onError: props.onError ?? noopError,
+    onPositionChanged: props.onPositionChanged ?? noopNumber,
+    onSeek: props.onSeek ?? noopNumber,
+    onEnded: props.onEnded ?? noop,
+    onPlay: props.onPlay ?? noop,
+    onPause: props.onPause ?? noop,
+    onVolumeChange: props.onVolumeChange ?? noopNumber,
   };
 }
 
@@ -53,11 +66,12 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
     onLoadStart,
     onLoad,
     onError,
-    onProgress,
-    onSeeked,
+    onPositionChanged,
+    onSeek,
     onEnded,
     onPlay,
     onPause,
+    onVolumeChange,
   } = withPropsDefaults(props, resolvedContext);
 
   return useMemo(
@@ -78,11 +92,12 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       onLoadStart,
       onLoad,
       onError,
-      onProgress,
-      onSeeked,
+      onPositionChanged,
+      onSeek,
       onEnded,
       onPlay,
       onPause,
+      onVolumeChange,
     }),
     [
       autoPlay,
@@ -98,11 +113,12 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       onLoadStart,
       onLoad,
       onError,
-      onProgress,
-      onSeeked,
+      onPositionChanged,
+      onSeek,
       onEnded,
       onPlay,
       onPause,
+      onVolumeChange,
     ]
   );
 }

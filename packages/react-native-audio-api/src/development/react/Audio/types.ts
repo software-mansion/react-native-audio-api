@@ -28,6 +28,14 @@ export type PreloadType = 'auto' | 'metadata' | 'none';
  */
 export type AudioTagPlaybackState = 'idle' | 'playing' | 'paused';
 
+export interface AudioHandle {
+  play: () => void;
+  pause: () => void;
+  seekToTime: (seconds: number) => void;
+  setVolume: (volume: number) => void;
+  setMuted: (muted: boolean) => void;
+}
+
 interface AudioControlProps {
   autoPlay: boolean;
   controls: boolean; // TBD: should we support control display at all?
@@ -52,16 +60,19 @@ interface AudioReadonlyProps {
 }
 
 type TMPEmptyEventHandler = () => void;
+type TMPNumberEventHandler = (number: number) => void;
+type TMPErrorEventHandler = (error: Error) => void;
 
 interface AudioEventProps {
-  onLoadStart?: TMPEmptyEventHandler;
-  onLoad?: TMPEmptyEventHandler;
-  onError?: TMPEmptyEventHandler;
-  onProgress?: TMPEmptyEventHandler;
-  onSeeked?: TMPEmptyEventHandler;
-  onEnded?: TMPEmptyEventHandler;
-  onPlay?: TMPEmptyEventHandler;
-  onPause?: TMPEmptyEventHandler;
+  onLoadStart: TMPEmptyEventHandler;
+  onLoad: TMPEmptyEventHandler;
+  onError: TMPErrorEventHandler;
+  onPositionChanged: TMPNumberEventHandler;
+  onSeek: TMPNumberEventHandler;
+  onEnded: TMPEmptyEventHandler;
+  onPlay: TMPEmptyEventHandler;
+  onPause: TMPEmptyEventHandler;
+  onVolumeChange: TMPNumberEventHandler;
 }
 
 export interface AudioPropsBase

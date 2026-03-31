@@ -32,7 +32,7 @@ const SCRUB_PAN_MIN_DISTANCE = 8;
 
 const AudioControls: React.FC = () => {
   const {
-    isReady,
+    ready,
     play,
     pause,
     seekToTime,
@@ -53,32 +53,18 @@ const AudioControls: React.FC = () => {
   const progressTrackRef = useAnimatedRef<View>();
   const progressMetricsWidth = useSharedValue(0);
   const durationRef = useRef(duration);
-  const wasPlayingBeforeScrubRef = useRef(false);
   durationRef.current = duration;
 
   const onStart = useCallback(
     (x: number) => {
       progressTrackAnim.expand();
       const d = durationRef.current;
-      if (playbackState === 'playing') {
-        wasPlayingBeforeScrubRef.current = true;
-        pause();
-      } else {
-        wasPlayingBeforeScrubRef.current = false;
-      }
       progressTrackRef.current?.measureInWindow((_left, _y, width, _h) => {
         progressMetricsWidth.value = width;
         setScrubTime(timeFromLocationX(x, width, d));
       });
     },
-    [
-      playbackState,
-      pause,
-      progressTrackAnim,
-      progressMetricsWidth,
-      setScrubTime,
-      progressTrackRef,
-    ]
+    [progressTrackAnim, progressMetricsWidth, setScrubTime, progressTrackRef]
   );
 
   const onUpdate = useCallback(
@@ -105,11 +91,8 @@ const AudioControls: React.FC = () => {
       seekTo(x);
       progressTrackAnim.collapse();
       setScrubTime(null);
-      if (wasPlayingBeforeScrubRef.current) {
-        play();
-      }
     },
-    [play, progressTrackAnim, seekTo]
+    [progressTrackAnim, seekTo]
   );
 
   const onCancel = useCallback(() => {
@@ -119,15 +102,9 @@ const AudioControls: React.FC = () => {
 
   const onTapSeek = useCallback(
     (x: number) => {
-      if (playbackState === 'playing') {
-        wasPlayingBeforeScrubRef.current = true;
-        pause();
-      } else {
-        wasPlayingBeforeScrubRef.current = false;
-      }
       onEnd(x);
     },
-    [onEnd, playbackState, pause]
+    [onEnd]
   );
 
   const scrubGesture = useMemo(() => {
@@ -175,7 +152,7 @@ const AudioControls: React.FC = () => {
     });
   }, [progressMetricsWidth, progressTrackRef]);
 
-  if (!isReady) {
+  if (!ready) {
     return (
       <View style={styles.container}>
         <ActivityIndicator color="#333" size="small" />

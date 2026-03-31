@@ -1,22 +1,53 @@
 import React, { useRef } from 'react';
-import { View } from 'react-native';
-import { Audio } from 'react-native-audio-api/development/react';
+import { Button, View } from 'react-native';
+import { Audio, AudioHandle } from 'react-native-audio-api/development/react';
 
 import { Container } from '../../components';
-import { AudioContext } from 'react-native-audio-api';
 
-const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/mp3/sample4.mp3';
 // const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/m4a/sample4.m4a';
-
-  // '/data/data/com.fabricexample/cache/audio.wav';
+const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/mp3/sample4.mp3';
 
 const AudioTag: React.FC = () => {
-  const audioContext = useRef(new AudioContext());
+  const audioRef = useRef<AudioHandle>(null);
+
+  // const handlePlay = () => {
+  //   audioRef.current?.play();
+  // };
+
+  // const handlePause = () => {
+  //   audioRef.current?.pause();
+  // };
+
+  // const handleSeekToTime = (time: number) => {
+  //   console.log('handleSeekToTime', time);
+  //   audioRef.current?.seekToTime(time);
+  // };
+
+  // const handleSetVolume = (volume: number) => {
+  //   audioRef.current?.setVolume(volume);
+  // };
+
+  // const handleSetMuted = (muted: boolean) => {
+  //   audioRef.current?.setMuted(muted);
+  // };
+
   return (
     <Container disablePadding>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <View style={{ width: '90%' }}>
-          <Audio source={DEMO_AUDIO_URL} volume={1} controls context={audioContext.current} />
+          <Audio source={DEMO_AUDIO_URL} ref={audioRef} controls
+                 onLoadStart={() => console.log('onLoadStart')}
+                 onLoad={() => console.log('onLoad')}
+                 onError={(error) => console.log('onError', error)}
+                 onPositionChanged={(seconds) =>
+                   console.log('onPositionChanged', seconds)
+                 }
+                 onSeek={(seconds) => console.log('onSeek', seconds)}
+                 onEnded={() => console.log('onEnded')}
+                 onPlay={() => console.log('onPlay')}
+                 onPause={() => console.log('onPause')}
+                 onVolumeChange={(volume) => console.log('onVolumeChange', volume)}
+                 />
         </View>
       </View>
     </Container>
