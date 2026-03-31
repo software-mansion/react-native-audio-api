@@ -40,6 +40,9 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void start(double when, double offset, double duration = -1);
 
   /// @note Audio Thread only
+  void disable() override;
+
+  /// @note Audio Thread only
   void setOnLoopEndedCallbackId(uint64_t callbackId);
 
   void unregisterOnLoopEndedCallback(uint64_t callbackId);
