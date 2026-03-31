@@ -16,6 +16,8 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)destroyAudioEngine
 {
+  bool hadGraph = self.inputNode != nil || [self.sourceNodes count] > 0;
+
   if (self.audioEngine != nil) {
     if ([self.audioEngine isRunning]) {
       [self.audioEngine stop];
@@ -25,6 +27,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   self.audioEngine = nil;
+  self.graphNeedsRebuild = hadGraph;
 }
 
 + (instancetype)sharedInstance
@@ -38,6 +41,7 @@ static AudioEngine *_sharedInstance = nil;
     self.state = AudioEngineState::AudioEngineStateIdle;
     self.audioEngine = nil;
     self.inputNode = nil;
+    self.graphNeedsRebuild = false;
 
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
@@ -57,6 +61,7 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
   self.inputNode = nil;
+  self.graphNeedsRebuild = false;
 
   [self.sessionManager setActive:false error:nil];
   self.sessionManager = nil;
@@ -90,6 +95,10 @@ static AudioEngine *_sharedInstance = nil;
 
   [self.sourceNodes removeObjectForKey:sourceNodeId];
   [self.sourceFormats removeObjectForKey:sourceNodeId];
+
+  if ([self.sourceNodes count] == 0 && self.inputNode == nil) {
+    self.graphNeedsRebuild = false;
+  }
 }
 
 - (void)attachInputNode:(AVAudioSinkNode *)inputNode format:(AVAudioFormat *)format
@@ -108,6 +117,10 @@ static AudioEngine *_sharedInstance = nil;
 
   [self.audioEngine detachNode:self.inputNode];
   self.inputNode = nil;
+
+  if ([self.sourceNodes count] == 0) {
+    self.graphNeedsRebuild = false;
+  }
 }
 
 - (void)onInterruptionBegin
@@ -119,6 +132,24 @@ static AudioEngine *_sharedInstance = nil;
 
   // If engine was active or paused (or interrupted :)) mark as interrupted
   self.state = AudioEngineState::AudioEngineStateInterrupted;
+}
+
+- (void)onSessionDeactivated
+{
+  if (self.state == AudioEngineState::AudioEngineStateIdle) {
+    return;
+  }
+
+  if (self.audioEngine != nil && ![self.audioEngine isRunning]) {
+    self.state = AudioEngineState::AudioEngineStatePaused;
+    return;
+  }
+
+  if (self.audioEngine != nil) {
+    [self.audioEngine pause];
+  }
+
+  self.state = AudioEngineState::AudioEngineStatePaused;
 }
 
 - (void)onInterruptionEnd:(bool)shouldResume
@@ -163,6 +194,11 @@ static AudioEngine *_sharedInstance = nil;
   return self.state;
 }
 
+- (bool)isEngineRunning
+{
+  return self.audioEngine != nil && [self.audioEngine isRunning];
+}
+
 /// @brief Rebuilds the audio engine by re-attaching and re-connecting all source nodes and input node.
 - (void)rebuildAudioEngine
 {
@@ -193,6 +229,8 @@ static AudioEngine *_sharedInstance = nil;
     [self.audioEngine attachNode:self.inputNode];
     [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
   }
+
+  self.graphNeedsRebuild = false;
 }
 
 // @brief Starts the audio engine if not already running.
@@ -200,7 +238,7 @@ static AudioEngine *_sharedInstance = nil;
 {
   NSError *error = nil;
 
-  if ([self.audioEngine isRunning] && self.state == AudioEngineState::AudioEngineStateRunning) {
+  if ([self isEngineRunning] && self.state == AudioEngineState::AudioEngineStateRunning) {
     return true;
   }
 
@@ -215,6 +253,8 @@ static AudioEngine *_sharedInstance = nil;
   if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
     [self.audioEngine stop];
     [self.audioEngine reset];
+    [self rebuildAudioEngine];
+  } else if (self.graphNeedsRebuild) {
     [self rebuildAudioEngine];
   }
 
@@ -246,7 +286,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (bool)startIfNecessary
 {
-  if (self.state == AudioEngineState::AudioEngineStateRunning) {
+  if (self.state == AudioEngineState::AudioEngineStateRunning && [self isEngineRunning]) {
     return true;
   }
 

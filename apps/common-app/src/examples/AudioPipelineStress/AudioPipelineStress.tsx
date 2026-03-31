@@ -149,8 +149,6 @@ class StressPlaybackController {
     }
 
     this.source = null;
-
-    this.context.suspend();
   }
 
   snapshot() {

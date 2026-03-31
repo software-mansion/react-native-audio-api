@@ -150,6 +150,11 @@ RCT_EXPORT_METHOD(
       return;
     }
 
+    if (!enabled) {
+      [self.audioSessionManager markInactive];
+      dispatch_async(dispatch_get_main_queue(), ^{ [self.audioEngine onSessionDeactivated]; });
+    }
+
     resolve(@(success));
   });
 }
