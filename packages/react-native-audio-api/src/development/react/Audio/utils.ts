@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { Platform } from 'react-native';
 import AudioContext from '../../../core/AudioContext';
 import type BaseAudioContext from '../../../core/BaseAudioContext';
@@ -29,16 +29,12 @@ export function withPropsDefaults(
 }
 
 export function useStableAudioProps(props: AudioProps): AudioPropsBase {
-  const defaultContextRef = useRef<BaseAudioContext | null>(null);
-  const resolvedContext: BaseAudioContext | undefined =
-    Platform.OS === 'web'
-      ? undefined
-      : (() => {
-          if (defaultContextRef.current === null) {
-            defaultContextRef.current = new AudioContext();
-          }
-          return props.context ?? defaultContextRef.current ?? undefined;
-        })();
+  const resolvedContext = useMemo(() => {
+    if (Platform.OS === 'web') {
+      return undefined;
+    }
+    return props.context ?? new AudioContext();
+  }, [props.context]);
 
   const {
     // Control Props

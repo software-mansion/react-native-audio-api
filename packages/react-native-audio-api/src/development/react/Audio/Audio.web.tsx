@@ -45,12 +45,9 @@ const Audio: React.FC<AudioProps> = (props) => {
   }, [source]);
 
   useEffect(() => {
-    setVolumeState(volume);
-  }, [volume]);
-
-  useEffect(() => {
     setMutedState(muted);
-  }, [muted]);
+    setVolumeState(volume);
+  }, [volume, muted]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -58,6 +55,13 @@ const Audio: React.FC<AudioProps> = (props) => {
       el.volume = volumeState;
     }
   }, [volumeState]);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    if (el) {
+      el.muted = mutedState;
+    }
+  }, [mutedState]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -69,7 +73,7 @@ const Audio: React.FC<AudioProps> = (props) => {
     const onTimeUpdate = () => setCurrentTime(el.currentTime);
     el.addEventListener('loadedmetadata', onLoadedMetadata);
     el.addEventListener('timeupdate', onTimeUpdate);
-    if (!isNaN(el.duration)) setDuration(el.duration);
+    setDuration(el.duration);
     setCurrentTime(el.currentTime);
     return () => {
       el.removeEventListener('loadedmetadata', onLoadedMetadata);
@@ -77,15 +81,8 @@ const Audio: React.FC<AudioProps> = (props) => {
     };
   }, [isReady]);
 
-  useEffect(() => {
-    const el = audioRef.current;
-    if (el) {
-      el.muted = mutedState;
-    }
-  }, [mutedState]);
-
   const play = useCallback(() => {
-    audioRef.current?.play()?.catch(() => {});
+    audioRef.current?.play();
   }, []);
 
   const pause = useCallback(() => {

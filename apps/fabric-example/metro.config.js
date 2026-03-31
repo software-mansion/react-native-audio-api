@@ -13,13 +13,14 @@ const appsRoot = path.resolve(monorepoRoot, 'apps');
 const config = {
   projectRoot: __dirname,
   watchFolders: [monorepoRoot, appsRoot],
+  /* we are rewriting requests because due to monorepo structure, the assets are found with '../../../' prefix
+  and we redirect them to the correct path without relative prefixes */
   server: {
     rewriteRequestUrl: (url) => {
       if (!url.startsWith('/assets/../../')) {
         return url;
       }
 
-      // return url.replace('/assets/../../', '/');
       const queryIndex = url.indexOf('?');
       const pathname = queryIndex >= 0 ? url.substring(0, queryIndex) : url;
       const query = queryIndex >= 0 ? url.substring(queryIndex) : '';

@@ -23,7 +23,9 @@ export function useAudioTagContext(): AudioComponentContextType {
   const context = useContext(AudioComponentContext);
 
   if (context === undefined) {
-    throw new Error('useAudioTagContext must be used within an <Audio> tag.');
+    throw new Error(
+      'useAudioTagContext must be used within an <Audio> component.'
+    );
   }
 
   return context;

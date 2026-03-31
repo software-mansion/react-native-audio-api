@@ -2,82 +2,33 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  LayoutChangeEvent,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from 'react-native-gesture-handler';
-import { scheduleOnRN } from 'react-native-worklets';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  useAnimatedStyle,
+  useAnimatedRef,
   useSharedValue,
-  withTiming,
 } from 'react-native-reanimated';
-import { useAudioTagContext } from './AudioTagContext';
+import { useAudioTagContext } from '../AudioTagContext';
+import {
+  formatTime,
+  timeFromLocationX,
+  useExpandableTrackHeight,
+} from './audioControlUtils';
 
 import PlayIcon from './icons/play.png';
 import PauseIcon from './icons/pause.png';
 import VolumeIcon from './icons/speaker.png';
 import MuteIcon from './icons/speaker-x.png';
 
-function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) {
-    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  } else {
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  }
-}
-
-function timeFromLocationX(
-  locationX: number,
-  trackWidth: number,
-  durationSeconds: number
-): number {
-  if (trackWidth <= 0 || durationSeconds <= 0) {
-    return 0;
-  }
-  const pct = Math.max(0, Math.min(1, locationX / trackWidth));
-  return pct * durationSeconds;
-}
-
 const TRACK_BAR_HEIGHT = 12;
 const TRACK_BAR_HEIGHT_PRESSED = 18;
 const TRACK_BAR_ANIM_MS = 150;
-const NATIVE_DELAY_MS = 10; // delay between native calls so audio engine can catch up
 const SCRUB_PAN_MIN_DISTANCE = 8;
-
-function useExpandableTrackHeight() {
-  const height = useSharedValue(TRACK_BAR_HEIGHT);
-  const animatedStyle = useAnimatedStyle(() => ({
-    height: height.value,
-    borderRadius: height.value / 2,
-  }));
-
-  const expand = () => {
-    height.value = withTiming(TRACK_BAR_HEIGHT_PRESSED, {
-      duration: TRACK_BAR_ANIM_MS,
-    });
-  };
-
-  const collapse = () => {
-    height.value = withTiming(TRACK_BAR_HEIGHT, {
-      duration: TRACK_BAR_ANIM_MS,
-    });
-  };
-
-  return { animatedStyle, expand, collapse };
-}
 
 const AudioControls: React.FC = () => {
   const {
@@ -92,18 +43,18 @@ const AudioControls: React.FC = () => {
     duration,
   } = useAudioTagContext();
 
-  const [progressWidth, setProgressWidth] = useState(0);
+  const progressTrackAnim = useExpandableTrackHeight(
+    TRACK_BAR_HEIGHT,
+    TRACK_BAR_HEIGHT_PRESSED,
+    TRACK_BAR_ANIM_MS
+  );
+
   const [scrubTime, setScrubTime] = useState<number | null>(null);
-
-  const progressTrackAnim = useExpandableTrackHeight();
-
-  const progressTrackRef = useRef<View>(null);
-  const progressMetricsRef = useRef({ left: 0, width: 0 });
-  const progressWidthRef = useRef(0);
+  const progressTrackRef = useAnimatedRef<View>();
+  const progressMetricsWidth = useSharedValue(0);
   const durationRef = useRef(duration);
   const wasPlayingBeforeScrubRef = useRef(false);
   durationRef.current = duration;
-  progressWidthRef.current = progressWidth;
 
   const onStart = useCallback(
     (x: number) => {
@@ -115,44 +66,47 @@ const AudioControls: React.FC = () => {
       } else {
         wasPlayingBeforeScrubRef.current = false;
       }
-      progressTrackRef.current?.measureInWindow((left, _y, width, _h) => {
-        progressMetricsRef.current.left = left;
-        progressMetricsRef.current.width = width;
-        setScrubTime(
-          timeFromLocationX(x, width || progressWidthRef.current, d)
-        );
+      progressTrackRef.current?.measureInWindow((_left, _y, width, _h) => {
+        progressMetricsWidth.value = width;
+        setScrubTime(timeFromLocationX(x, width, d));
       });
     },
-    [playbackState, pause, progressTrackAnim]
+    [
+      playbackState,
+      pause,
+      progressTrackAnim,
+      progressMetricsWidth,
+      setScrubTime,
+      progressTrackRef,
+    ]
   );
 
-  const onUpdate = useCallback((x: number) => {
-    const d = durationRef.current;
-    const w = progressMetricsRef.current.width || progressWidthRef.current;
-    setScrubTime(timeFromLocationX(x, w, d));
-  }, []);
+  const onUpdate = useCallback(
+    (x: number) => {
+      const d = durationRef.current;
+      const w = progressMetricsWidth.value;
+      setScrubTime(timeFromLocationX(x, w, d));
+    },
+    [progressMetricsWidth]
+  );
 
   const seekTo = useCallback(
     (x: number) => {
       const d = durationRef.current;
-      const w = progressMetricsRef.current.width || progressWidthRef.current;
+      const w = progressMetricsWidth.value;
       const t = timeFromLocationX(x, w, d);
       seekToTime(t);
     },
-    [seekToTime]
+    [progressMetricsWidth, seekToTime]
   );
 
   const onEnd = useCallback(
-    (x: number, flag: boolean = true) => {
-      if (flag) {
-        seekTo(x);
-      }
+    (x: number) => {
+      seekTo(x);
       progressTrackAnim.collapse();
       setScrubTime(null);
       if (wasPlayingBeforeScrubRef.current) {
-        setTimeout(() => {
-          play();
-        }, NATIVE_DELAY_MS);
+        play();
       }
     },
     [play, progressTrackAnim, seekTo]
@@ -171,70 +125,60 @@ const AudioControls: React.FC = () => {
       } else {
         wasPlayingBeforeScrubRef.current = false;
       }
-      setTimeout(() => {
-        seekTo(x);
-        setTimeout(() => {
-          onEnd(x, false);
-        }, NATIVE_DELAY_MS);
-      }, NATIVE_DELAY_MS);
+      onEnd(x);
     },
-    [seekTo, onEnd, playbackState, pause]
+    [onEnd, playbackState, pause]
   );
 
   const scrubGesture = useMemo(() => {
     const panGesture = Gesture.Pan()
+      .runOnJS(true)
       .minDistance(SCRUB_PAN_MIN_DISTANCE)
       .onStart((e) => {
-        scheduleOnRN(onStart, e.x);
+        onStart(e.x);
       })
       .onUpdate((e) => {
-        scheduleOnRN(onUpdate, e.x);
+        onUpdate(e.x);
       })
       .onEnd((e) => {
-        scheduleOnRN(onEnd, e.x);
+        onEnd(e.x);
       })
       .onFinalize((_e, success) => {
         if (!success) {
-          scheduleOnRN(onCancel);
+          onCancel();
         }
       });
 
     const tapGesture = Gesture.Tap()
+      .runOnJS(true)
       .maxDistance(14)
       .onEnd((e, success) => {
         if (success) {
-          scheduleOnRN(onTapSeek, e.x);
+          onTapSeek(e.x);
         }
       });
 
     return Gesture.Race(panGesture, tapGesture);
   }, [onStart, onUpdate, onEnd, onCancel, onTapSeek]);
 
-  const onPlayPausePress = () => {
+  const onPlayPausePress = useCallback(() => {
     if (playbackState === 'playing') {
       pause();
     } else {
       play();
     }
-  };
+  }, [playbackState, pause, play]);
 
-  const onProgressTrackLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    setProgressWidth(w);
-    progressWidthRef.current = w;
-    progressTrackRef.current?.measureInWindow((left, _y, width, _h) => {
-      progressMetricsRef.current.left = left;
-      progressMetricsRef.current.width = width;
+  const onProgressTrackLayout = useCallback(() => {
+    progressTrackRef.current?.measureInWindow((_left, _y, width, _h) => {
+      progressMetricsWidth.value = width;
     });
-  };
+  }, [progressMetricsWidth, progressTrackRef]);
 
   if (!isReady) {
     return (
       <View style={styles.container}>
-        <View style={styles.loadingRow}>
-          <ActivityIndicator color="#333" size="small" />
-          <Text style={[styles.loadingText, { marginLeft: 8 }]}>Loading…</Text>
-        </View>
+        <ActivityIndicator color="#333" size="small" />
       </View>
     );
   }
@@ -244,7 +188,7 @@ const AudioControls: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <GestureHandlerRootView style={styles.topRow}>
+      <View style={styles.topRow}>
         <Pressable style={styles.playPause} onPress={onPlayPausePress}>
           {playbackState === 'playing' ? (
             <Image source={PauseIcon} style={{ width: 24, height: 24 }} />
@@ -281,7 +225,7 @@ const AudioControls: React.FC = () => {
             <Image source={VolumeIcon} style={{ width: 24, height: 24 }} />
           )}
         </Pressable>
-      </GestureHandlerRootView>
+      </View>
     </View>
   );
 };
