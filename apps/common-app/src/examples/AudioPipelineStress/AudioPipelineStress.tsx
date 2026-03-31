@@ -733,7 +733,7 @@ const AudioPipelineStress: FC = () => {
     fileNameOverride: string
   ): Promise<RecordingCapture> => {
     await activateRecordingSession();
-    await sleep(1500);
+
     resourcesRef.current.configureRecorderTap();
     resourcesRef.current.startRecording(fileNameOverride);
     await waitForRecordingCallbacks(1);
@@ -748,7 +748,6 @@ const AudioPipelineStress: FC = () => {
     }
 
     await AudioManager.setAudioSessionActivity(false);
-    await sleep(1500);
     return capture;
   };
 
@@ -764,7 +763,6 @@ const AudioPipelineStress: FC = () => {
     );
 
     await activatePlaybackSession();
-    await sleep(1500);
     await playback.play(buffer, durationSeconds);
     const playbackStats = await waitForPlaybackProgress(
       progressThreshold,
@@ -773,7 +771,6 @@ const AudioPipelineStress: FC = () => {
     await sleep(SHORT_PLAYBACK_MS);
     playback.stop();
     await AudioManager.setAudioSessionActivity(false);
-    await sleep(1500);
     return playbackStats;
   };
 
@@ -945,8 +942,6 @@ const AudioPipelineStress: FC = () => {
                 const capture = await performCleanRecording(
                   `record-to-playback-${cycle}-${Date.now()}`
                 );
-
-                await sleep(1500);
 
                 const playbackStats = await performCleanPlayback(
                   capture.decodedBuffer,

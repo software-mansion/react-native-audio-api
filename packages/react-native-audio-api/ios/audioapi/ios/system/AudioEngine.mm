@@ -250,11 +250,12 @@ static AudioEngine *_sharedInstance = nil;
     return false;
   }
 
-  if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
-    [self.audioEngine stop];
-    [self.audioEngine reset];
-    [self rebuildAudioEngine];
-  } else if (self.graphNeedsRebuild) {
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild) {
+    if (self.audioEngine != nil) {
+      [self.audioEngine stop];
+      [self.audioEngine reset];
+    }
+
     [self rebuildAudioEngine];
   }
 
@@ -327,8 +328,7 @@ static AudioEngine *_sharedInstance = nil;
 
   if (self.state != AudioEngineState::AudioEngineStateIdle) {
     [self stopEngine];
-  } else {
-    self.state = AudioEngineState::AudioEngineStateIdle;
+    return;
   }
 
   [self destroyAudioEngine];
@@ -336,9 +336,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)restartAudioEngine
 {
-  if (self.audioEngine == nil) {
-    [self createAudioEngineIfNeeded];
-  } else if ([self.audioEngine isRunning]) {
+  if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
 

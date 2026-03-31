@@ -1,11 +1,6 @@
 #import <AVFAudio/AVFAudio.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
-static inline BOOL RNAudioAPIHasUsableFormat(AVAudioFormat *format)
-{
-  return format != nil && format.sampleRate > 0 && format.channelCount > 0;
-}
-
 @implementation AudioSessionManager
 
 static AudioSessionManager *_sharedInstance = nil;
@@ -119,12 +114,12 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (bool)setActive:(bool)active error:(NSError **)error
 {
-  if (!self.shouldManageSession) {
-    return true;
-  }
-
   if (active) {
     return [self ensureActive:false error:error];
+  }
+
+  if (!self.shouldManageSession) {
+    return true;
   }
 
   if (!self.isActive) {
@@ -146,6 +141,11 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (bool)ensureActive:(bool)force error:(NSError **)error
 {
+  return [self activateSessionIfNeeded:force error:error];
+}
+
+- (bool)activateSessionIfNeeded:(bool)force error:(NSError **)error
+{
   if (!self.shouldManageSession) {
     return true;
   }
@@ -154,13 +154,11 @@ static AudioSessionManager *_sharedInstance = nil;
     return true;
   }
 
-  bool success = [self configureAudioSession];
-
-  if (!success) {
+  if (![self configureAudioSession]) {
     return false;
   }
 
-  success = [self.audioSession setActive:true withOptions:0 error:error];
+  bool success = [self.audioSession setActive:true withOptions:0 error:error];
 
   if (success) {
     self.isActive = true;
@@ -171,9 +169,8 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)markInactive
 {
-  // Mark as inactive even though AVAudioSession does not expose a reliable "currently active" query.
-  // This invalidates our last known successful activation and forces the next user of the session
-  // to re-assert activation before starting audio work.
+  // AVAudioSession does not expose a reliable active-state query, so drop our cached flag and
+  // force the next audio operation to re-assert activation.
   self.isActive = false;
 }
 
@@ -199,13 +196,6 @@ static AudioSessionManager *_sharedInstance = nil;
       self.audioSession.inputNumberOfChannels > 0;
 }
 
-- (bool)hasValidOutputRoute
-{
-  AVAudioSessionRouteDescription *route = [self.audioSession currentRoute];
-  return route.outputs.count > 0 && self.audioSession.sampleRate > 0 &&
-      self.audioSession.outputNumberOfChannels > 0;
-}
-
 - (AVAudioFormat *)getPreferredInputFormat
 {
   double sampleRate = self.audioSession.sampleRate;
@@ -215,10 +205,8 @@ static AudioSessionManager *_sharedInstance = nil;
     return nil;
   }
 
-  AVAudioFormat *format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate
-                                                                         channels:channelCount];
-
-  return RNAudioAPIHasUsableFormat(format) ? format : nil;
+  return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate
+                                                        channels:channelCount];
 }
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve

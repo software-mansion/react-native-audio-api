@@ -39,7 +39,6 @@
 - (NSNumber *)getDevicePreferredSampleRate;
 - (NSNumber *)getDevicePreferredInputChannelCount;
 - (bool)hasValidInputRoute;
-- (bool)hasValidOutputRoute;
 - (AVAudioFormat *)getPreferredInputFormat;
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve

@@ -104,11 +104,6 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   // (especially on simulators)
   // Engine will be started again once the native recorder starts
   [AudioEngine.sharedInstance stopIfNecessary];
-
-  NSError *activationError = nil;
-
-  [audioSessionManager ensureActive:true error:&activationError];
-
   AVAudioFormat *inputFormat = [nativeRecorder_ getInputFormat];
 
   if (!hasUsableRecorderFormat(inputFormat)) {
@@ -119,11 +114,6 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
         "Audio input route is not ready: sampleRate=" + std::to_string(sessionSampleRate) +
         ", channelCount=" + std::to_string(sessionChannelCount) +
         ", routeReady=" + std::string(routeReady ? "true" : "false");
-
-    if (activationError != nil) {
-      message +=
-          ", activationError=" + std::string([[activationError debugDescription] UTF8String]);
-    }
 
     return Result<std::string, std::string>::Err(message);
   }
