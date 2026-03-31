@@ -1,25 +1,26 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
 import type {
+  AnalyserOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
+  AutomationEventData,
+  BaseAudioBufferSourceOptions,
+  BiquadFilterOptions,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
-  ContextState,
-  FileInfo,
-  OscillatorType,
-  OverSampleType,
-  Result,
-  AnalyserOptions,
-  BaseAudioBufferSourceOptions,
-  BiquadFilterOptions,
   ConstantSourceOptions,
+  ContextState,
   DelayOptions,
+  FileInfo,
   GainOptions,
   IAudioBufferSourceOptions,
   IConvolverOptions,
   IIRFilterOptions,
   OscillatorOptions,
+  OscillatorType,
+  OverSampleType,
+  Result,
   StereoPannerOptions,
   StreamerOptions,
   WaveShaperOptions,
@@ -142,10 +143,10 @@ export interface IStereoPannerNode extends IAudioNode {
 }
 
 export interface IBiquadFilterNode extends IAudioNode {
-  readonly frequency: AudioParam;
-  readonly detune: AudioParam;
-  readonly Q: AudioParam;
-  readonly gain: AudioParam;
+  readonly frequency: IAudioParam;
+  readonly detune: IAudioParam;
+  readonly Q: IAudioParam;
+  readonly gain: IAudioParam;
   type: BiquadFilterType;
 
   getFrequencyResponse(
@@ -275,6 +276,7 @@ export interface IAudioParam {
   ) => void;
   cancelScheduledValues: (cancelTime: number) => void;
   cancelAndHoldAtTime: (cancelTime: number) => void;
+  checkCurveExclusion: (eventData: AutomationEventData) => Result<void>;
 }
 
 export interface IPeriodicWave {}

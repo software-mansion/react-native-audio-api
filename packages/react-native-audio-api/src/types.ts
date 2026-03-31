@@ -248,17 +248,27 @@ export interface AudioRecorderStartOptions {
   fileNameOverride?: string;
 }
 
-export type TimestampedElement<T> = {
-  data: T;
-  insertionOrder: number;
-};
-
-export type Comparator<T> = (a: T, b: T) => boolean;
-
 export enum AutomationEventType {
-  SetValueAtTime = 'setValueAtTime',
-  LinearRampToValueAtTime = 'linearRampToValueAtTime',
-  ExponentialRampToValueAtTime = 'exponentialRampToValueAtTime',
-  SetTargetAtTime = 'setTargetAtTime',
-  SetValueCurveAtTime = 'setValueCurveAtTime',
+  LINEAR_RAMP,
+  EXPONENTIAL_RAMP,
+  SET_VALUE,
+  SET_TARGET,
+  SET_VALUE_CURVE,
 }
+
+export type AutomationEventData =
+  | { type: AutomationEventType.SET_VALUE; startTime: number }
+  | { type: AutomationEventType.LINEAR_RAMP; endTime: number }
+  | {
+      type: AutomationEventType.EXPONENTIAL_RAMP;
+      endTime: number;
+    }
+  | {
+      type: AutomationEventType.SET_TARGET;
+      startTime: number;
+    }
+  | {
+      type: AutomationEventType.SET_VALUE_CURVE;
+      startTime: number;
+      duration: number;
+    };
