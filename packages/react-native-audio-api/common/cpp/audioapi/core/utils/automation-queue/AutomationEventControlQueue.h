@@ -17,14 +17,15 @@ class AutomationEventControlQueue : public AutomationBaseQueue<BaseAutomationEve
   /// @brief Validate if a new event can be added to the queue without violating curve exclusion rules.
   /// @param event The new event to validate.
   /// @return Ok if the event can be added, Err with a message if it cannot be added.
-  [[nodiscard]] Result<NoneType, std::string> satisfiesCurveExclusion(
-      const BaseAutomationEvent &event);
+  [[nodiscard]] Result<NoneType, std::string> checkCurveExclusion(const BaseAutomationEvent &event);
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
   void cancelAutomationEvents(double cancelTime);
 
  private:
+  const BaseAutomationEvent *findEventAtTime(double time) const;
+  const BaseAutomationEvent *findEventInInterval(double startTime, double endTime) const;
 };
 
 } // namespace audioapi

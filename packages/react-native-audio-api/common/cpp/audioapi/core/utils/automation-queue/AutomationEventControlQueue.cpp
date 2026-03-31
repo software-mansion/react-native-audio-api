@@ -1,51 +1,63 @@
 #include "audioapi/core/utils/automation-queue/AutomationEventControlQueue.h"
+#include <cstddef>
 #include <format>
 #include <string>
 #include "audioapi/core/types/AutomationEventType.h"
+#include "audioapi/core/utils/BaseAutomationEvent.hpp"
 #include "audioapi/utils/Result.hpp"
 
 namespace audioapi {
 
-Result<NoneType, std::string> AutomationEventControlQueue::satisfiesCurveExclusion(
+Result<NoneType, std::string> AutomationEventControlQueue::checkCurveExclusion(
     const BaseAutomationEvent &event) {
-  double newT = event.getStartTime();
-  bool isSetValueCurveAtTime = (event.getType() == AutomationEventType::SET_VALUE_CURVE);
-  double newD = isSetValueCurveAtTime ? event.getEndTime() - event.getStartTime() : 0.0;
-
-  for (size_t i = 0; i < eventQueue_.size(); ++i) {
-    const auto &existing = eventQueue_.peekAt(i);
-    double existingT = existing.getStartTime();
-
-    // 1. Check if existing curve blocks the new event
-    // Any automation method called at a time in [T, T+D) of an existing curve is not allowed
-    if (existing.getType() == AutomationEventType::SET_VALUE_CURVE) {
-      double existingEndTime = existing.getEndTime();
-      if (newT >= existingT && newT < existingEndTime) {
-        return Err(
-            std::format(
-                "Cannot schedule event {} at time {} because it overlaps with an existing SetValueCurveAtTime event from {} to {}",
-                static_cast<int>(event.getType()), // TODO add event type to string conversion
-                newT,
-                existingT,
-                existingEndTime));
-      }
+  if (event.getType() == AutomationEventType::SET_VALUE_CURVE) {
+    const auto *conflict = findEventInInterval(event.getStartTime(), event.getEndTime());
+    if (conflict) {
+      return Err(
+          std::format(
+              "Cannot schedule curve event from time {} to {} because it conflicts with an existing event of type {} at time {}.",
+              event.getStartTime(),
+              event.getEndTime(),
+              toString(conflict->getType()),
+              conflict->getAutomationEventTime()));
     }
-
-    // 2. If new event is a curve, existing events strictly inside (T, T+D) are not allowed
-    if (isSetValueCurveAtTime) {
-      if (existingT > newT && existingT < (newT + newD)) {
-        return Err(
-            std::format(
-                "Cannot schedule SetValueCurveAtTime event from {} to {} because it overlaps with an existing event {} at time {}",
-                newT,
-                newT + newD,
-                static_cast<int>(existing.getType()), // TODO add event type to string conversion
-                existingT));
-      }
+  } else {
+    const auto *conflict = findEventAtTime(event.getAutomationEventTime());
+    if (conflict && conflict->getType() == AutomationEventType::SET_VALUE_CURVE) {
+      return Err(
+          std::format(
+              "Cannot schedule event of type {} at time {} because it conflicts with an existing curve event from time {} to {}.",
+              toString(event.getType()),
+              event.getAutomationEventTime(),
+              conflict->getStartTime(),
+              conflict->getEndTime()));
     }
   }
-
   return Ok(None);
+}
+
+const BaseAutomationEvent *AutomationEventControlQueue::findEventAtTime(double time) const {
+  for (size_t i = 0; i < eventQueue_.size(); ++i) {
+    const auto &event = eventQueue_.peekAt(i);
+    if ((event.getType() == AutomationEventType::SET_VALUE_CURVE && event.getStartTime() <= time &&
+         time <= event.getEndTime()) ||
+        event.getStartTime() == time) {
+      return &event;
+    }
+  }
+  return nullptr;
+}
+
+const BaseAutomationEvent *AutomationEventControlQueue::findEventInInterval(
+    double startTime,
+    double endTime) const {
+  for (size_t i = 0; i < eventQueue_.size(); ++i) {
+    const auto &event = eventQueue_.peekAt(i);
+    if (event.getStartTime() >= startTime && event.getStartTime() < endTime) {
+      return &event;
+    }
+  }
+  return nullptr;
 }
 
 } // namespace audioapi
