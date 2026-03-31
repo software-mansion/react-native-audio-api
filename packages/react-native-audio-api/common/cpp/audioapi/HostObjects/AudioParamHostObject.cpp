@@ -1,10 +1,13 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/utils/BaseAutomationEvent.hpp>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <memory>
+#include <string>
 #include <utility>
+#include "audioapi/jsi/JsiHostObject.h"
 
 namespace audioapi {
 
@@ -26,7 +29,8 @@ AudioParamHostObject::AudioParamHostObject(const std::shared_ptr<AudioParam> &pa
       JSI_EXPORT_FUNCTION(AudioParamHostObject, setTargetAtTime),
       JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueCurveAtTime),
       JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelScheduledValues),
-      JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelAndHoldAtTime));
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelAndHoldAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, checkCurveExclusion));
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioParamHostObject, value));
 }
@@ -135,6 +139,49 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelAndHoldAtTime) {
 
   param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, checkCurveExclusion) {
+
+  auto checkExclusionResult = checkCurveExclusionFromJSI(runtime, args);
+
+  auto jsResult = jsi::Object(runtime);
+  jsResult.setProperty(
+      runtime,
+      "status",
+      jsi::String::createFromUtf8(runtime, checkExclusionResult.is_ok() ? "success" : "error"));
+  if (checkExclusionResult.is_err()) {
+    jsResult.setProperty(
+        runtime,
+        "message",
+        jsi::String::createFromUtf8(runtime, checkExclusionResult.unwrap_err()));
+  }
+  return jsResult;
+}
+
+Result<NoneType, std::string> AudioParamHostObject::checkCurveExclusionFromJSI(
+    jsi::Runtime &runtime,
+    const jsi::Value *args) {
+  auto arg = args[0].getObject(runtime);
+  auto type = static_cast<AutomationEventType>(arg.getProperty(runtime, "type").getNumber());
+
+  switch (type) {
+    case AutomationEventType::SET_VALUE:
+    case AutomationEventType::LINEAR_RAMP:
+    case AutomationEventType::EXPONENTIAL_RAMP:
+    case AutomationEventType::SET_TARGET: {
+      auto startTime = arg.getProperty(runtime, "startTime").getNumber();
+      return eventsQueue_.checkCurveExclusion(BaseAutomationEvent(type, startTime));
+    }
+    case AutomationEventType::SET_VALUE_CURVE: {
+      auto startTime = arg.getProperty(runtime, "startTime").getNumber();
+      auto duration = arg.getProperty(runtime, "duration").getNumber();
+      return eventsQueue_.checkCurveExclusion(
+          BaseAutomationEvent(type, startTime, startTime + duration));
+    }
+    default:
+      return Ok(None);
+  }
 }
 
 } // namespace audioapi

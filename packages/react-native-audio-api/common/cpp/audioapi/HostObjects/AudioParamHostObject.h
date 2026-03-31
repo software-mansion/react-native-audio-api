@@ -5,6 +5,9 @@
 #include <jsi/jsi.h>
 #include <cstddef>
 #include <memory>
+#include <string>
+#include "audioapi/core/utils/automation-queue/AutomationEventControlQueue.h"
+#include "audioapi/utils/Result.hpp"
 
 namespace audioapi {
 using namespace facebook;
@@ -30,12 +33,19 @@ class AudioParamHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(cancelScheduledValues);
   JSI_HOST_FUNCTION_DECL(cancelAndHoldAtTime);
 
+  JSI_HOST_FUNCTION_DECL(checkCurveExclusion);
+
  private:
   friend class AudioNodeHostObject;
 
   std::shared_ptr<AudioParam> param_;
+  AutomationEventControlQueue eventsQueue_ = AutomationEventControlQueue();
   float defaultValue_;
   float minValue_;
   float maxValue_;
+
+  Result<NoneType, std::string> checkCurveExclusionFromJSI(
+      jsi::Runtime &runtime,
+      const jsi::Value *args);
 };
 } // namespace audioapi
