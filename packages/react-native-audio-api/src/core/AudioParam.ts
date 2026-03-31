@@ -1,4 +1,5 @@
-import { InvalidStateError, RangeError } from '../errors';
+import { AutomationEventType } from '../api';
+import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
 import { IAudioParam } from '../interfaces';
 import BaseAudioContext from './BaseAudioContext';
 
@@ -32,6 +33,15 @@ export default class AudioParam {
       );
     }
 
+    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+      type: AutomationEventType.SET_VALUE,
+      startTime,
+    });
+
+    if (checkExclusionResult.status === 'error') {
+      throw new NotSupportedError(checkExclusionResult.message);
+    }
+
     const clampedTime = Math.max(startTime, this.context.currentTime);
     this.audioParam.setValueAtTime(value, clampedTime);
 
@@ -43,6 +53,15 @@ export default class AudioParam {
       throw new RangeError(
         `endTime must be a finite non-negative number: ${endTime}`
       );
+    }
+
+    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+      type: AutomationEventType.LINEAR_RAMP,
+      endTime,
+    });
+
+    if (checkExclusionResult.status === 'error') {
+      throw new NotSupportedError(checkExclusionResult.message);
     }
 
     const clampedTime = Math.max(endTime, this.context.currentTime);
@@ -63,6 +82,15 @@ export default class AudioParam {
       throw new RangeError(
         `endTime must be a finite non-negative number: ${endTime}`
       );
+    }
+
+    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+      type: AutomationEventType.EXPONENTIAL_RAMP,
+      endTime,
+    });
+
+    if (checkExclusionResult.status === 'error') {
+      throw new NotSupportedError(checkExclusionResult.message);
     }
 
     const clampedTime = Math.max(endTime, this.context.currentTime);
@@ -86,6 +114,15 @@ export default class AudioParam {
       throw new RangeError(
         `timeConstant must be a finite non-negative number: ${timeConstant}`
       );
+    }
+
+    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+      type: AutomationEventType.SET_TARGET,
+      startTime,
+    });
+
+    if (checkExclusionResult.status === 'error') {
+      throw new NotSupportedError(checkExclusionResult.message);
     }
 
     const clampedTime = Math.max(startTime, this.context.currentTime);
@@ -113,6 +150,16 @@ export default class AudioParam {
 
     if (values.length < 2) {
       throw new InvalidStateError(`values must contain at least two values`);
+    }
+
+    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+      type: AutomationEventType.SET_VALUE_CURVE,
+      startTime,
+      duration,
+    });
+
+    if (checkExclusionResult.status === 'error') {
+      throw new NotSupportedError(checkExclusionResult.message);
     }
 
     const clampedTime = Math.max(startTime, this.context.currentTime);
