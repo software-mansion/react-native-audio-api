@@ -16,8 +16,9 @@ struct BaseAudioBufferSourceOptions;
 
 class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferQueueSourceNode(const std::shared_ptr<BaseAudioContext> &context,
-                                      const BaseAudioBufferSourceOptions &options);
+  explicit AudioBufferQueueSourceNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const BaseAudioBufferSourceOptions &options);
 
   /// @note Audio Thread only
   void stop(double when) override;
@@ -29,9 +30,10 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   void pause();
 
   /// @note Audio Thread only
-  void enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer,
-                     size_t bufferId,
-                     const std::shared_ptr<AudioBuffer> &tailBuffer);
+  void enqueueBuffer(
+      const std::shared_ptr<AudioBuffer> &buffer,
+      size_t bufferId,
+      const std::shared_ptr<AudioBuffer> &tailBuffer);
 
   /// @note Audio Thread only
   void dequeueBuffer(size_t bufferId);
@@ -53,15 +55,17 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   bool isEmpty() const final;
 
-  void processWithoutInterpolation(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-                                   size_t startOffset,
-                                   size_t offsetLength,
-                                   float playbackRate) final;
+  void processWithoutInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) final;
 
-  void processWithInterpolation(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-                                size_t startOffset,
-                                size_t offsetLength,
-                                float playbackRate) final;
+  void processWithInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) final;
 
  private:
   // User provided buffers

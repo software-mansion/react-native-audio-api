@@ -16,8 +16,9 @@ AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
   eventHandlers_.clear();
 }
 
-uint64_t AudioEventHandlerRegistry::registerHandler(AudioEvent eventName,
-                                                    const std::shared_ptr<jsi::Function> &handler) {
+uint64_t AudioEventHandlerRegistry::registerHandler(
+    AudioEvent eventName,
+    const std::shared_ptr<jsi::Function> &handler) {
   auto listenerId = listenerIdCounter_.fetch_add(1, std::memory_order_relaxed);
 
   if (runtime_ == nullptr) {

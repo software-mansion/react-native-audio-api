@@ -27,9 +27,8 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
       uint64_t callbackId);
   ~AndroidRecorderCallback() override;
 
-  Result<NoneType, std::string> prepare(float streamSampleRate,
-                                        int streamChannelCount,
-                                        size_t maxInputBufferLength);
+  Result<NoneType, std::string>
+  prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
   void cleanup() override;
 
   void receiveAudioData(void *data, int numFrames);
@@ -49,9 +48,10 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
 
  private:
   // delay initialization of offloader until prepare is called
-  std::unique_ptr<task_offloader::TaskOffloader<CallbackData,
-                                                RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-                                                RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
+  std::unique_ptr<task_offloader::TaskOffloader<
+      CallbackData,
+      RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
       offloader_;
   void taskOffloaderFunction(CallbackData data);
 };

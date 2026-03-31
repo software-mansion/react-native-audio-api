@@ -12,8 +12,9 @@ class BaseAudioContext;
 
 class IIRFilterNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit IIRFilterNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
-                                   const IIRFilterOptions &options);
+  explicit IIRFilterNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const IIRFilterOptions &options);
 
   JSI_HOST_FUNCTION_DECL(getFrequencyResponse);
 };

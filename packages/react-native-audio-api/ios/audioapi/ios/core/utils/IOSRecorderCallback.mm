@@ -21,11 +21,12 @@ IOSRecorderCallback::IOSRecorderCallback(
     size_t bufferLength,
     int channelCount,
     uint64_t callbackId)
-    : AudioRecorderCallback(audioEventHandlerRegistry,
-                            sampleRate,
-                            bufferLength,
-                            channelCount,
-                            callbackId)
+    : AudioRecorderCallback(
+          audioEventHandlerRegistry,
+          sampleRate,
+          bufferLength,
+          channelCount,
+          callbackId)
 {
 }
 
@@ -50,8 +51,9 @@ IOSRecorderCallback::~IOSRecorderCallback()
 /// @param bufferFormat The format of the incoming audio data.
 /// @param maxInputBufferLength The maximum length of the input buffer in frames.
 /// @returns Result indicating success or error with message.
-Result<NoneType, std::string> IOSRecorderCallback::prepare(AVAudioFormat *bufferFormat,
-                                                           size_t maxInputBufferLength)
+Result<NoneType, std::string> IOSRecorderCallback::prepare(
+    AVAudioFormat *bufferFormat,
+    size_t maxInputBufferLength)
 {
   @autoreleasepool {
     bufferFormat_ = bufferFormat;
@@ -89,11 +91,10 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(AVAudioFormat *buffer
     auto offloaderLambda = [this](CallbackData data) {
       taskOffloaderFunction(data);
     };
-    offloader_ =
-        std::make_unique<task_offloader::TaskOffloader<CallbackData,
-                                                       RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-                                                       RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(
-            RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
+    offloader_ = std::make_unique<task_offloader::TaskOffloader<
+        CallbackData,
+        RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+        RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>(RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -161,9 +162,10 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
     size_t outputFrameCount = ceil(numFrames * (sampleRate_ / bufferFormat_.sampleRate));
 
     for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
-      memcpy(converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
-             inputBuffer->mBuffers[i].mData,
-             inputBuffer->mBuffers[i].mDataByteSize);
+      memcpy(
+          converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
+          inputBuffer->mBuffers[i].mData,
+          inputBuffer->mBuffers[i].mDataByteSize);
     }
 
     inputBuffer = nullptr;
@@ -187,8 +189,9 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
     converterOutputBuffer_.frameLength = sampleRate_ / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
-      invokeOnErrorCallback(std::string("Error during audio conversion, native error: ") +
-                            [[error debugDescription] UTF8String]);
+      invokeOnErrorCallback(
+          std::string("Error during audio conversion, native error: ") +
+          [[error debugDescription] UTF8String]);
       return;
     }
 

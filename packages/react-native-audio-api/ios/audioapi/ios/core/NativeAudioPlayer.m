@@ -34,10 +34,11 @@
     self.renderAudio = [renderAudio copy];
 
     __weak typeof(self) weakSelf = self;
-    self.renderBlock = ^OSStatus(BOOL *isSilence,
-                                 const AudioTimeStamp *timestamp,
-                                 AVAudioFrameCount frameCount,
-                                 AudioBufferList *outputData) {
+    self.renderBlock = ^OSStatus(
+        BOOL *isSilence,
+        const AudioTimeStamp *timestamp,
+        AVAudioFrameCount frameCount,
+        AudioBufferList *outputData) {
       if (outputData->mNumberBuffers != weakSelf.channelCount) {
         return kAudioServicesBadPropertySizeError;
       }

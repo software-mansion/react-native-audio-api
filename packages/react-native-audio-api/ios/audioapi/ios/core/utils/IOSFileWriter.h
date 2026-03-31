@@ -29,13 +29,15 @@ class AudioEventHandlerRegistry;
 
 class IOSFileWriter : public AudioFileWriter {
  public:
-  IOSFileWriter(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-                const std::shared_ptr<AudioFileProperties> &fileProperties);
+  IOSFileWriter(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<AudioFileProperties> &fileProperties);
   ~IOSFileWriter();
 
-  Result<std::string, std::string> openFile(AVAudioFormat *bufferFormat,
-                                            size_t maxInputBufferLength,
-                                            const std::string &fileNameOverride);
+  Result<std::string, std::string> openFile(
+      AVAudioFormat *bufferFormat,
+      size_t maxInputBufferLength,
+      const std::string &fileNameOverride);
   Result<std::tuple<double, double>, std::string> closeFile() override;
 
   void writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
@@ -57,9 +59,10 @@ class IOSFileWriter : public AudioFileWriter {
 
  private:
   // delay initialization of offloader until prepare is called
-  std::unique_ptr<task_offloader::TaskOffloader<WriterData,
-                                                FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-                                                FILE_WRITER_SPSC_WAIT_STRATEGY>>
+  std::unique_ptr<task_offloader::TaskOffloader<
+      WriterData,
+      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      FILE_WRITER_SPSC_WAIT_STRATEGY>>
       offloader_;
   void taskOffloaderFunction(WriterData data);
 };

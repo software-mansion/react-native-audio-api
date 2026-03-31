@@ -62,8 +62,9 @@ struct StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
  public:
-  explicit StreamerNode(const std::shared_ptr<BaseAudioContext> &context,
-                        const StreamerOptions &options);
+  explicit StreamerNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const StreamerOptions &options);
   ~StreamerNode() override;
 
  protected:
@@ -100,9 +101,10 @@ class StreamerNode : public AudioScheduledSourceNode {
   channels::spsc::
       Sender<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY>
           sender_;
-  channels::spsc::Receiver<StreamingData,
-                           STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
-                           STREAMER_NODE_SPSC_WAIT_STRATEGY>
+  channels::spsc::Receiver<
+      StreamingData,
+      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
+      STREAMER_NODE_SPSC_WAIT_STRATEGY>
       receiver_;
 
   /// @brief Initialize the StreamerNode by opening the input stream,

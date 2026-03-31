@@ -15,9 +15,10 @@ class AudioContext;
 
 class IOSAudioPlayer {
  public:
-  IOSAudioPlayer(const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
-                 float sampleRate,
-                 int channelCount);
+  IOSAudioPlayer(
+      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+      float sampleRate,
+      int channelCount);
   ~IOSAudioPlayer();
 
   bool start();

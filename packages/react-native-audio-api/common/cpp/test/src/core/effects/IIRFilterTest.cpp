@@ -27,9 +27,8 @@ class IIRFilterTest : public ::testing::Test {
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
   }
 
-  static std::complex<double> evaluatePolynomial(std::span<const double> coefficients,
-                                                 std::complex<double> z,
-                                                 int order) {
+  static std::complex<double>
+  evaluatePolynomial(std::span<const double> coefficients, std::complex<double> z, int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
     std::complex<double> result = 0;
     for (int k = order; k >= 0; --k)
@@ -37,13 +36,14 @@ class IIRFilterTest : public ::testing::Test {
     return result;
   }
 
-  static void getFrequencyResponseChromium(std::vector<float> feedforward,
-                                           std::vector<float> feedback,
-                                           unsigned length,
-                                           std::span<const float> frequency,
-                                           std::span<float> magResponse,
-                                           std::span<float> phaseResponse,
-                                           float nyquistFrequency) {
+  static void getFrequencyResponseChromium(
+      std::vector<float> feedforward,
+      std::vector<float> feedback,
+      unsigned length,
+      std::span<const float> frequency,
+      std::span<float> magResponse,
+      std::span<float> phaseResponse,
+      float nyquistFrequency) {
     assert(!frequency.empty());
     assert(!magResponse.empty());
     assert(!phaseResponse.empty());
@@ -106,32 +106,35 @@ TEST_F(IIRFilterTest, GetFrequencyResponse) {
   float frequency = 1000.0f;
   float normalizedFrequency = frequency / nyquistFrequency;
 
-  std::vector<float> TestFrequencies = {-0.0001f,
-                                        0.0f,
-                                        0.0001f,
-                                        0.25f * nyquistFrequency,
-                                        0.5f * nyquistFrequency,
-                                        0.75f * nyquistFrequency,
-                                        nyquistFrequency - 0.0001f,
-                                        nyquistFrequency,
-                                        nyquistFrequency + 0.0001f};
+  std::vector<float> TestFrequencies = {
+      -0.0001f,
+      0.0f,
+      0.0001f,
+      0.25f * nyquistFrequency,
+      0.5f * nyquistFrequency,
+      0.75f * nyquistFrequency,
+      nyquistFrequency - 0.0001f,
+      nyquistFrequency,
+      nyquistFrequency + 0.0001f};
 
   std::vector<float> magResponseNode(TestFrequencies.size());
   std::vector<float> phaseResponseNode(TestFrequencies.size());
   std::vector<float> magResponseExpected(TestFrequencies.size());
   std::vector<float> phaseResponseExpected(TestFrequencies.size());
 
-  node.getFrequencyResponse(TestFrequencies.data(),
-                            magResponseNode.data(),
-                            phaseResponseNode.data(),
-                            TestFrequencies.size());
-  getFrequencyResponseChromium(feedforward,
-                               feedback,
-                               TestFrequencies.size(),
-                               TestFrequencies,
-                               magResponseExpected,
-                               phaseResponseExpected,
-                               nyquistFrequency);
+  node.getFrequencyResponse(
+      TestFrequencies.data(),
+      magResponseNode.data(),
+      phaseResponseNode.data(),
+      TestFrequencies.size());
+  getFrequencyResponseChromium(
+      feedforward,
+      feedback,
+      TestFrequencies.size(),
+      TestFrequencies,
+      magResponseExpected,
+      phaseResponseExpected,
+      nyquistFrequency);
 
   for (size_t i = 0; i < TestFrequencies.size(); ++i) {
     float f = TestFrequencies[i];

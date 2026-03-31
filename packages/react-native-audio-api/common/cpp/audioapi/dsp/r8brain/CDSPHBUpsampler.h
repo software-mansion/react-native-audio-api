@@ -43,11 +43,12 @@ class CDSPHBUpsampler : public CDSPProcessor {
 	 * @param[out] att Resulting filter's attenuation (the closest found).
 	 */
 
-  static void getHBFilter(const double ReqAtten,
-                          const int SteepIndex,
-                          const double *&flt,
-                          int &fltt,
-                          double &att) {
+  static void getHBFilter(
+      const double ReqAtten,
+      const int SteepIndex,
+      const double *&flt,
+      int &fltt,
+      double &att) {
     static const double HBKernel_4A[4] = {
         // -54.5176 dB, 4
         6.1729335650971517e-001,
@@ -536,11 +537,12 @@ class CDSPHBUpsampler : public CDSPProcessor {
 	 * @param[out] att Resulting filter's attenuation (the closest found).
 	 */
 
-  static void getHBFilterThird(const double ReqAtten,
-                               const int SteepIndex,
-                               const double *&flt,
-                               int &fltt,
-                               double &att) {
+  static void getHBFilterThird(
+      const double ReqAtten,
+      const int SteepIndex,
+      const double *&flt,
+      int &fltt,
+      double &att) {
     static const double HBKernel_3A[3] = {
         // -66.3726 dB, 6
         5.9811355069551475e-001,
@@ -918,26 +920,28 @@ class CDSPHBUpsampler : public CDSPProcessor {
 	 * part is available).
 	 */
 
-  CDSPHBUpsampler(const double ReqAtten,
-                  const int SteepIndex,
-                  const bool IsThird,
-                  const double PrevLatency,
-                  const bool aDoConsumeLatency = true)
+  CDSPHBUpsampler(
+      const double ReqAtten,
+      const int SteepIndex,
+      const bool IsThird,
+      const double PrevLatency,
+      const bool aDoConsumeLatency = true)
       : DoConsumeLatency(aDoConsumeLatency) {
-    static const CConvolveFn FltConvFn[14] = {&CDSPHBUpsampler ::convolve1,
-                                              &CDSPHBUpsampler ::convolve2,
-                                              &CDSPHBUpsampler ::convolve3,
-                                              &CDSPHBUpsampler ::convolve4,
-                                              &CDSPHBUpsampler ::convolve5,
-                                              &CDSPHBUpsampler ::convolve6,
-                                              &CDSPHBUpsampler ::convolve7,
-                                              &CDSPHBUpsampler ::convolve8,
-                                              &CDSPHBUpsampler ::convolve9,
-                                              &CDSPHBUpsampler ::convolve10,
-                                              &CDSPHBUpsampler ::convolve11,
-                                              &CDSPHBUpsampler ::convolve12,
-                                              &CDSPHBUpsampler ::convolve13,
-                                              &CDSPHBUpsampler ::convolve14};
+    static const CConvolveFn FltConvFn[14] = {
+        &CDSPHBUpsampler ::convolve1,
+        &CDSPHBUpsampler ::convolve2,
+        &CDSPHBUpsampler ::convolve3,
+        &CDSPHBUpsampler ::convolve4,
+        &CDSPHBUpsampler ::convolve5,
+        &CDSPHBUpsampler ::convolve6,
+        &CDSPHBUpsampler ::convolve7,
+        &CDSPHBUpsampler ::convolve8,
+        &CDSPHBUpsampler ::convolve9,
+        &CDSPHBUpsampler ::convolve10,
+        &CDSPHBUpsampler ::convolve11,
+        &CDSPHBUpsampler ::convolve12,
+        &CDSPHBUpsampler ::convolve13,
+        &CDSPHBUpsampler ::convolve14};
 
     const double *fltp0;
     int fltt;
@@ -1104,20 +1108,22 @@ class CDSPHBUpsampler : public CDSPProcessor {
                          ///< consumed. Does not apply to the fractional part of the latency
                          ///< (if such part is available).
 
-  typedef void (*CConvolveFn)(double *op,
-                              double *const opend,
-                              const double *const flt,
-                              const double *const rp0,
-                              int rpos); ///<
-                                         ///< Convolution function type.
-  CConvolveFn convfn;                    ///< Convolution function in use.
+  typedef void (*CConvolveFn)(
+      double *op,
+      double *const opend,
+      const double *const flt,
+      const double *const rp0,
+      int rpos);      ///<
+                      ///< Convolution function type.
+  CConvolveFn convfn; ///< Convolution function in use.
 
 #define R8BHBC1(fn) \
-  static void fn(double *op, \
-                 double *const opend, \
-                 const double *const flt, \
-                 const double *const rp0, \
-                 int rpos) { \
+  static void fn( \
+      double *op, \
+      double *const opend, \
+      const double *const flt, \
+      const double *const rp0, \
+      int rpos) { \
     while (op != opend) { \
       const double *const rp = rp0 + rpos; \
       op[0] = rp[0];

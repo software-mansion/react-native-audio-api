@@ -49,8 +49,9 @@ class BiquadFilterNode : public AudioNode {
 #endif // RN_AUDIO_API_TEST
 
  public:
-  explicit BiquadFilterNode(const std::shared_ptr<BaseAudioContext> &context,
-                            const BiquadFilterOptions &options);
+  explicit BiquadFilterNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const BiquadFilterOptions &options);
 
   void setType(BiquadFilterType);
   [[nodiscard]] std::shared_ptr<AudioParam> getFrequencyParam() const;
@@ -59,11 +60,12 @@ class BiquadFilterNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 
   /// @note JS Thread only
-  void getFrequencyResponse(const float *frequencyArray,
-                            float *magResponseOutput,
-                            float *phaseResponseOutput,
-                            size_t length,
-                            BiquadFilterType type);
+  void getFrequencyResponse(
+      const float *frequencyArray,
+      float *magResponseOutput,
+      float *phaseResponseOutput,
+      size_t length,
+      BiquadFilterType type);
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(
@@ -95,17 +97,10 @@ class BiquadFilterNode : public AudioNode {
   static FilterCoefficients getPeakingCoefficients(float frequency, float Q, float gain);
   static FilterCoefficients getNotchCoefficients(float frequency, float Q);
   static FilterCoefficients getAllpassCoefficients(float frequency, float Q);
-  static FilterCoefficients getNormalizedCoefficients(float b0,
-                                                      float b1,
-                                                      float b2,
-                                                      float a0,
-                                                      float a1,
-                                                      float a2);
-  FilterCoefficients applyFilter(float frequency,
-                                 float Q,
-                                 float gain,
-                                 float detune,
-                                 BiquadFilterType type);
+  static FilterCoefficients
+  getNormalizedCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
+  FilterCoefficients
+  applyFilter(float frequency, float Q, float gain, float detune, BiquadFilterType type);
 };
 
 } // namespace audioapi

@@ -83,9 +83,10 @@ class CDSPSincFilterGen {
 	 * or default value of -1.0 (off) will be used.
 	 */
 
-  void initWindow(const EWindowFunctionType WinType = wftCosine,
-                  const double *const Params = R8B_NULL,
-                  const bool UsePower = false) {
+  void initWindow(
+      const EWindowFunctionType WinType = wftCosine,
+      const double *const Params = R8B_NULL,
+      const bool UsePower = false) {
     R8BASSERT(Len2 >= 2.0);
 
     fl2 = (int)floor(Len2);
@@ -109,9 +110,10 @@ class CDSPSincFilterGen {
 	 * or default value of -1.0 (off) will be used.
 	 */
 
-  void initBand(const EWindowFunctionType WinType = wftCosine,
-                const double *const Params = R8B_NULL,
-                const bool UsePower = false) {
+  void initBand(
+      const EWindowFunctionType WinType = wftCosine,
+      const double *const Params = R8B_NULL,
+      const bool UsePower = false) {
     R8BASSERT(Len2 >= 2.0);
 
     fl2 = (int)floor(Len2);
@@ -136,9 +138,10 @@ class CDSPSincFilterGen {
 	 * or default value of -1.0 (off) will be used.
 	 */
 
-  void initHilbert(const EWindowFunctionType WinType = wftCosine,
-                   const double *const Params = R8B_NULL,
-                   const bool UsePower = false) {
+  void initHilbert(
+      const EWindowFunctionType WinType = wftCosine,
+      const double *const Params = R8B_NULL,
+      const bool UsePower = false) {
     R8BASSERT(Len2 >= 2.0);
 
     fl2 = (int)floor(Len2);
@@ -163,9 +166,10 @@ class CDSPSincFilterGen {
 	 * or default value of -1.0 (off) will be used.
 	 */
 
-  void initFrac(const EWindowFunctionType WinType = wftCosine,
-                const double *const Params = R8B_NULL,
-                const bool UsePower = false) {
+  void initFrac(
+      const EWindowFunctionType WinType = wftCosine,
+      const double *const Params = R8B_NULL,
+      const bool UsePower = false) {
     R8BASSERT(Len2 >= 2.0);
 
     fl2 = (int)ceil(Len2);
@@ -203,8 +207,8 @@ class CDSPSincFilterGen {
 	 */
 
   double calcWindowNuttall() {
-    return (0.355768 + 0.487396 * w1.generate() + 0.144232 * w2.generate() +
-            0.012604 * w3.generate());
+    return (
+        0.355768 + 0.487396 * w1.generate() + 0.144232 * w2.generate() + 0.012604 * w3.generate());
   }
 
   /**
@@ -212,8 +216,9 @@ class CDSPSincFilterGen {
 	 */
 
   double calcWindowBlackmanNuttall() {
-    return (0.3635819 + 0.4891775 * w1.generate() + 0.1365995 * w2.generate() +
-            0.0106411 * w3.generate());
+    return (
+        0.3635819 + 0.4891775 * w1.generate() + 0.1365995 * w2.generate() +
+        0.0106411 * w3.generate());
   }
 
   /**
@@ -404,9 +409,10 @@ class CDSPSincFilterGen {
 	 * @param opinc Output buffer increment, in "op" elements.
 	 */
 
-  void generateFrac(double *op,
-                    CWindowFunc wfunc = &CDSPSincFilterGen ::calcWindowBlackman,
-                    const int opinc = 1) {
+  void generateFrac(
+      double *op,
+      CWindowFunc wfunc = &CDSPSincFilterGen ::calcWindowBlackman,
+      const int opinc = 1) {
     R8BASSERT(opinc != 0);
 
     const double pw = Power;
@@ -586,11 +592,12 @@ class CDSPSincFilterGen {
 	 * @param UseFracDelay Fractional delay to use.
 	 */
 
-  void setWindow(const EWindowFunctionType WinType,
-                 const double *const Params,
-                 const bool UsePower,
-                 const bool IsCentered,
-                 const double UseFracDelay = 0.0) {
+  void setWindow(
+      const EWindowFunctionType WinType,
+      const double *const Params,
+      const bool UsePower,
+      const bool IsCentered,
+      const double UseFracDelay = 0.0) {
     FracDelay = UseFracDelay;
 
     if (WinType == wftCosine) {

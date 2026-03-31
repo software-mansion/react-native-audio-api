@@ -8,8 +8,9 @@
 
 namespace audioapi {
 
-GainNodeHostObject::GainNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
-                                       const GainOptions &options)
+GainNodeHostObject::GainNodeHostObject(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const GainOptions &options)
     : AudioNodeHostObject(context->createGain(options), options) {
   auto gainNode = std::static_pointer_cast<GainNode>(node_);
   gainParam_ = std::make_shared<AudioParamHostObject>(gainNode->getGainParam());

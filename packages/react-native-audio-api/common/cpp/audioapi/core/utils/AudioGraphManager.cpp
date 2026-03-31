@@ -78,10 +78,10 @@ AudioGraphManager::AudioGraphManager() {
   audioParams_.reserve(kInitialCapacity);
   audioBuffers_.reserve(kInitialCapacity);
 
-  auto channel_pair =
-      channels::spsc::channel<std::unique_ptr<Event>,
-                              channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-                              channels::spsc::WaitStrategy::BUSY_LOOP>(kChannelCapacity);
+  auto channel_pair = channels::spsc::channel<
+      std::unique_ptr<Event>,
+      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      channels::spsc::WaitStrategy::BUSY_LOOP>(kChannelCapacity);
 
   sender_ = std::move(channel_pair.first);
   receiver_ = std::move(channel_pair.second);
@@ -91,9 +91,10 @@ AudioGraphManager::~AudioGraphManager() {
   cleanup();
 }
 
-void AudioGraphManager::addPendingNodeConnection(const std::shared_ptr<AudioNode> &from,
-                                                 const std::shared_ptr<AudioNode> &to,
-                                                 ConnectionType type) {
+void AudioGraphManager::addPendingNodeConnection(
+    const std::shared_ptr<AudioNode> &from,
+    const std::shared_ptr<AudioNode> &to,
+    ConnectionType type) {
   auto event = std::make_unique<Event>();
   event->type = type;
   event->payloadType = EventPayloadType::NODES;
@@ -103,9 +104,10 @@ void AudioGraphManager::addPendingNodeConnection(const std::shared_ptr<AudioNode
   sender_.send(std::move(event));
 }
 
-void AudioGraphManager::addPendingParamConnection(const std::shared_ptr<AudioNode> &from,
-                                                  const std::shared_ptr<AudioParam> &to,
-                                                  ConnectionType type) {
+void AudioGraphManager::addPendingParamConnection(
+    const std::shared_ptr<AudioNode> &from,
+    const std::shared_ptr<AudioParam> &to,
+    ConnectionType type) {
   auto event = std::make_unique<Event>();
   event->type = type;
   event->payloadType = EventPayloadType::PARAMS;

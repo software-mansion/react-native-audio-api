@@ -15,9 +15,10 @@ class AudioDestinationNodeHostObject;
 
 class BaseAudioContextHostObject : public JsiHostObject {
  public:
-  explicit BaseAudioContextHostObject(const std::shared_ptr<BaseAudioContext> &context,
-                                      jsi::Runtime *runtime,
-                                      const std::shared_ptr<react::CallInvoker> &callInvoker);
+  explicit BaseAudioContextHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      jsi::Runtime *runtime,
+      const std::shared_ptr<react::CallInvoker> &callInvoker);
 
   ~BaseAudioContextHostObject() override;
 

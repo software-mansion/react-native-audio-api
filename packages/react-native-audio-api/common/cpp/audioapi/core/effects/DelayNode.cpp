@@ -12,11 +12,13 @@ DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext> &context, const Del
     : AudioNode(context, options),
       delayTimeParam_(
           std::make_shared<AudioParam>(options.delayTime, 0, options.maxDelayTime, context)),
-      delayBuffer_(std::make_shared<AudioBuffer>(
-          static_cast<size_t>(options.maxDelayTime * context->getSampleRate() +
-                              1), // +1 to enable delayTime equal to maxDelayTime
-          channelCount_,
-          context->getSampleRate())) {
+      delayBuffer_(
+          std::make_shared<AudioBuffer>(
+              static_cast<size_t>(
+                  options.maxDelayTime * context->getSampleRate() +
+                  1), // +1 to enable delayTime equal to maxDelayTime
+              channelCount_,
+              context->getSampleRate())) {
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -32,10 +34,11 @@ void DelayNode::onInputDisabled() {
   }
 }
 
-void DelayNode::delayBufferOperation(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-                                     int framesToProcess,
-                                     size_t &operationStartingIndex,
-                                     DelayNode::BufferAction action) {
+void DelayNode::delayBufferOperation(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    int framesToProcess,
+    size_t &operationStartingIndex,
+    DelayNode::BufferAction action) {
   size_t processingBufferStartIndex = 0;
 
   // handle buffer wrap around

@@ -64,12 +64,13 @@ class AudioScheduledSourceNode : public AudioNode {
   uint64_t onEndedCallbackId_ = 0;
   const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
-  void updatePlaybackInfo(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-                          int framesToProcess,
-                          size_t &startOffset,
-                          size_t &nonSilentFramesToProcess,
-                          float sampleRate,
-                          size_t currentSampleFrame);
+  void updatePlaybackInfo(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess,
+      size_t &startOffset,
+      size_t &nonSilentFramesToProcess,
+      float sampleRate,
+      size_t currentSampleFrame);
 
   void handleStopScheduled();
 };

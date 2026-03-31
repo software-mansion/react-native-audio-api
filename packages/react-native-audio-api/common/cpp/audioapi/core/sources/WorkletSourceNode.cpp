@@ -5,8 +5,9 @@
 
 namespace audioapi {
 
-WorkletSourceNode::WorkletSourceNode(const std::shared_ptr<BaseAudioContext> &context,
-                                     WorkletsRunner &&workletRunner)
+WorkletSourceNode::WorkletSourceNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    WorkletsRunner &&workletRunner)
     : AudioScheduledSourceNode(context), workletRunner_(std::move(workletRunner)) {
   // Prepare buffers for audio processing
   size_t outputChannelCount = this->getChannelCount();
@@ -34,12 +35,13 @@ std::shared_ptr<DSPAudioBuffer> WorkletSourceNode::processNode(
     processingBuffer->zero();
     return processingBuffer;
   }
-  updatePlaybackInfo(processingBuffer,
-                     framesToProcess,
-                     startOffset,
-                     nonSilentFramesToProcess,
-                     context->getSampleRate(),
-                     context->getCurrentSampleFrame());
+  updatePlaybackInfo(
+      processingBuffer,
+      framesToProcess,
+      startOffset,
+      nonSilentFramesToProcess,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (nonSilentFramesToProcess == 0) {
     processingBuffer->zero();
@@ -60,10 +62,11 @@ std::shared_ptr<DSPAudioBuffer> WorkletSourceNode::processNode(
         // We call unsafely here because we are already on the runtime thread
         // and the runtime is locked by executeOnRuntimeSync (if
         // shouldLockRuntime is true)
-        return workletRunner_.callUnsafe(jsiArray,
-                                         jsi::Value(rt, static_cast<int>(nonSilentFramesToProcess)),
-                                         jsi::Value(rt, time),
-                                         jsi::Value(rt, static_cast<int>(startOffset)));
+        return workletRunner_.callUnsafe(
+            jsiArray,
+            jsi::Value(rt, static_cast<int>(nonSilentFramesToProcess)),
+            jsi::Value(rt, time),
+            jsi::Value(rt, static_cast<int>(startOffset)));
       });
 
   // If the worklet execution failed, zero the output

@@ -48,8 +48,9 @@ struct MockNode : AudioNode {
   }
 
  private:
-  std::shared_ptr<DSPAudioBuffer> processNode(const std::shared_ptr<DSPAudioBuffer> &processingBus,
-                                              int) override {
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBus,
+      int) override {
     return processingBus;
   }
 
@@ -82,9 +83,10 @@ struct ProcessableMockNode : MockNode {
 
   static constexpr size_t kMaxInputs = 128;
 
-  explicit ProcessableMockNode(ProcessFn processFn = nullptr,
-                               int initialValue = 0,
-                               bool destructible = true)
+  explicit ProcessableMockNode(
+      ProcessFn processFn = nullptr,
+      int initialValue = 0,
+      bool destructible = true)
       : MockNode(destructible), value(initialValue), processFn_(std::move(processFn)) {}
 
   /// @brief Called by the audio thread with the inputs range from iter().

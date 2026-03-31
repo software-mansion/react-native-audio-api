@@ -14,8 +14,9 @@ class AudioBufferHostObject;
 
 class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObject {
  public:
-  explicit AudioBufferSourceNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
-                                           const AudioBufferSourceOptions &options);
+  explicit AudioBufferSourceNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioBufferSourceOptions &options);
 
   ~AudioBufferSourceNodeHostObject() override;
 

@@ -58,11 +58,12 @@ class CDSPBlockConvolver : public CDSPProcessor {
 	 * part is available).
 	 */
 
-  CDSPBlockConvolver(CDSPFIRFilter &aFilter,
-                     const int aUpFactor,
-                     const int aDownFactor,
-                     const double PrevLatency = 0.0,
-                     const bool aDoConsumeLatency = true)
+  CDSPBlockConvolver(
+      CDSPFIRFilter &aFilter,
+      const int aUpFactor,
+      const int aDownFactor,
+      const double PrevLatency = 0.0,
+      const bool aDoConsumeLatency = true)
       : Filter(&aFilter),
         UpFactor(aUpFactor),
         DownFactor(aDownFactor),

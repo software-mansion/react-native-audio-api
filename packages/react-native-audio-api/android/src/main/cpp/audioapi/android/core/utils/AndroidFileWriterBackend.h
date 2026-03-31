@@ -22,10 +22,11 @@ class AndroidFileWriterBackend : public AudioFileWriter {
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties);
 
-  virtual OpenFileResult openFile(float streamSampleRate,
-                                  int32_t streamChannelCount,
-                                  int32_t streamMaxBufferSize,
-                                  const std::string &fileNameOverride) = 0;
+  virtual OpenFileResult openFile(
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t streamMaxBufferSize,
+      const std::string &fileNameOverride) = 0;
   void writeAudioData(void *data, int numFrames);
 
   std::string getFilePath() const override {
@@ -42,9 +43,10 @@ class AndroidFileWriterBackend : public AudioFileWriter {
   std::string filePath_;
 
   // delay initialization of offloader until prepare is called
-  std::unique_ptr<task_offloader::TaskOffloader<WriterData,
-                                                FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-                                                FILE_WRITER_SPSC_WAIT_STRATEGY>>
+  std::unique_ptr<task_offloader::TaskOffloader<
+      WriterData,
+      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      FILE_WRITER_SPSC_WAIT_STRATEGY>>
       offloader_;
   virtual void taskOffloaderFunction(WriterData data) = 0;
 };

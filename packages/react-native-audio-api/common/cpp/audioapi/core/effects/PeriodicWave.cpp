@@ -44,10 +44,11 @@ namespace audioapi {
 PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
     : sampleRate_(sampleRate),
       disableNormalization_(disableNormalization),
-      numberOfRanges_(static_cast<int>(
-          round(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))))),
-      lowestFundamentalFrequency_(static_cast<float>(sampleRate_ / 2) /
-                                  static_cast<float>(getMaxNumberOfPartials())),
+      numberOfRanges_(
+          static_cast<int>(
+              round(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))))),
+      lowestFundamentalFrequency_(
+          static_cast<float>(sampleRate_ / 2) / static_cast<float>(getMaxNumberOfPartials())),
       scale_(static_cast<float>(getPeriodicWaveSize()) / sampleRate_) {
   bandLimitedTables_ =
       std::make_unique<DSPAudioBuffer>(getPeriodicWaveSize(), numberOfRanges_, sampleRate_);
@@ -55,17 +56,19 @@ PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
   fft_ = std::make_unique<dsp::FFT>(getPeriodicWaveSize());
 }
 
-PeriodicWave::PeriodicWave(float sampleRate,
-                           audioapi::OscillatorType type,
-                           bool disableNormalization)
+PeriodicWave::PeriodicWave(
+    float sampleRate,
+    audioapi::OscillatorType type,
+    bool disableNormalization)
     : PeriodicWave(sampleRate, disableNormalization) {
   this->generateBasicWaveForm(type);
 }
 
-PeriodicWave::PeriodicWave(float sampleRate,
-                           const std::vector<std::complex<float>> &complexData,
-                           int length,
-                           bool disableNormalization)
+PeriodicWave::PeriodicWave(
+    float sampleRate,
+    const std::vector<std::complex<float>> &complexData,
+    int length,
+    bool disableNormalization)
     : PeriodicWave(sampleRate, disableNormalization) {
   createBandLimitedTables(complexData, length);
 }
@@ -172,8 +175,9 @@ void PeriodicWave::generateBasicWaveForm(OscillatorType type) {
   createBandLimitedTables(complexData, halfSize);
 }
 
-void PeriodicWave::createBandLimitedTables(const std::vector<std::complex<float>> &complexData,
-                                           int size) {
+void PeriodicWave::createBandLimitedTables(
+    const std::vector<std::complex<float>> &complexData,
+    int size) {
   float normalizationFactor = 0.5f;
 
   auto fftSize = getPeriodicWaveSize();
@@ -197,8 +201,9 @@ void PeriodicWave::createBandLimitedTables(const std::vector<std::complex<float>
       if (i >= clampedSize && i < halfSize) {
         complexFFTData[i] = std::complex<float>(0.0f, 0.0f);
       } else {
-        complexFFTData[i] = {complexData[i].real() * static_cast<float>(fftSize),
-                             complexData[i].imag() * -static_cast<float>(fftSize)};
+        complexFFTData[i] = {
+            complexData[i].real() * static_cast<float>(fftSize),
+            complexData[i].imag() * -static_cast<float>(fftSize)};
       }
     }
 
@@ -249,11 +254,12 @@ WaveTableSource PeriodicWave::getWaveDataForFundamentalFrequency(float fundament
   };
 }
 
-float PeriodicWave::doInterpolation(float phase,
-                                    float phaseIncrement,
-                                    float waveTableInterpolationFactor,
-                                    const DSPAudioArray &lowerWaveData,
-                                    const DSPAudioArray &higherWaveData) const {
+float PeriodicWave::doInterpolation(
+    float phase,
+    float phaseIncrement,
+    float waveTableInterpolationFactor,
+    const DSPAudioArray &lowerWaveData,
+    const DSPAudioArray &higherWaveData) const {
   float lowerWaveDataSample = 0;
   float higherWaveDataSample = 0;
 

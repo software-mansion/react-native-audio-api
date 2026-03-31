@@ -139,8 +139,9 @@ NSDictionary *getFileSettings(const std::shared_ptr<AudioFileProperties> &proper
   return settings;
 }
 
-NSURL *getFileURL(const std::shared_ptr<AudioFileProperties> &properties,
-                  const std::string &fileNameOverride)
+NSURL *getFileURL(
+    const std::shared_ptr<AudioFileProperties> &properties,
+    const std::string &fileNameOverride)
 {
   NSError *error = nil;
 

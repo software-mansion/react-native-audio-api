@@ -16,9 +16,10 @@ class AudioContext;
 
 class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  public:
-  AudioPlayer(const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
-              float sampleRate,
-              int channelCount);
+  AudioPlayer(
+      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+      float sampleRate,
+      int channelCount);
 
   ~AudioPlayer() override {
     nativeAudioPlayer_.release();
@@ -33,9 +34,8 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
 
   [[nodiscard]] bool isRunning() const;
 
-  DataCallbackResult onAudioReady(AudioStream *oboeStream,
-                                  void *audioData,
-                                  int32_t numFrames) override;
+  DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
+      override;
 
   void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */) override;
 

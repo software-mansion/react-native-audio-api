@@ -17,10 +17,10 @@ class AudioDestructor {
   DELETE_COPY_AND_MOVE(AudioDestructor);
 
   AudioDestructor() : isExiting_(false) {
-    auto [sender, receiver] =
-        channels::spsc::channel<std::shared_ptr<T>,
-                                channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-                                channels::spsc::WaitStrategy::ATOMIC_WAIT>(kChannelCapacity);
+    auto [sender, receiver] = channels::spsc::channel<
+        std::shared_ptr<T>,
+        channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+        channels::spsc::WaitStrategy::ATOMIC_WAIT>(kChannelCapacity);
     sender_ = std::move(sender);
     workerHandle_ = std::thread(&AudioDestructor::process, this, std::move(receiver));
   }
@@ -49,13 +49,15 @@ class AudioDestructor {
   std::thread workerHandle_;
   std::atomic<bool> isExiting_;
 
-  using SenderType = channels::spsc::Sender<std::shared_ptr<T>,
-                                            channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-                                            channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using SenderType = channels::spsc::Sender<
+      std::shared_ptr<T>,
+      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      channels::spsc::WaitStrategy::ATOMIC_WAIT>;
 
-  using ReceiverType = channels::spsc::Receiver<std::shared_ptr<T>,
-                                                channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-                                                channels::spsc::WaitStrategy::ATOMIC_WAIT>;
+  using ReceiverType = channels::spsc::Receiver<
+      std::shared_ptr<T>,
+      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      channels::spsc::WaitStrategy::ATOMIC_WAIT>;
 
   SenderType sender_;
 

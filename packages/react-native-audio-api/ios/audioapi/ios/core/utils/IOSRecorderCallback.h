@@ -22,11 +22,12 @@ class AudioEventHandlerRegistry;
 
 class IOSRecorderCallback : public AudioRecorderCallback {
  public:
-  IOSRecorderCallback(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-                      float sampleRate,
-                      size_t bufferLength,
-                      int channelCount,
-                      uint64_t callbackId);
+  IOSRecorderCallback(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      float sampleRate,
+      size_t bufferLength,
+      int channelCount,
+      uint64_t callbackId);
   ~IOSRecorderCallback();
 
   Result<NoneType, std::string> prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
@@ -46,9 +47,10 @@ class IOSRecorderCallback : public AudioRecorderCallback {
   AVAudioPCMBuffer *converterOutputBuffer_;
 
  private:
-  std::unique_ptr<task_offloader::TaskOffloader<CallbackData,
-                                                RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-                                                RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
+  std::unique_ptr<task_offloader::TaskOffloader<
+      CallbackData,
+      RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
+      RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
       offloader_;
   // delay initialization of offloader until prepare is called
   void taskOffloaderFunction(CallbackData data);

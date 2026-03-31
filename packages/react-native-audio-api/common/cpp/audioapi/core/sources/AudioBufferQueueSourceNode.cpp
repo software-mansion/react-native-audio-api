@@ -57,9 +57,10 @@ void AudioBufferQueueSourceNode::pause() {
   isPaused_ = true;
 }
 
-void AudioBufferQueueSourceNode::enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer,
-                                               size_t bufferId,
-                                               const std::shared_ptr<AudioBuffer> &tailBuffer) {
+void AudioBufferQueueSourceNode::enqueueBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    size_t bufferId,
+    const std::shared_ptr<AudioBuffer> &tailBuffer) {
   buffers_.emplace_back(bufferId, buffer);
 
   if (tailBuffer != nullptr) {

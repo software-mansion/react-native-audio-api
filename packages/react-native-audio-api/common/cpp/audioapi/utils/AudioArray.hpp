@@ -121,11 +121,12 @@ class AlignedAudioArray {
   /// @brief Sums a sub-range of source into this array with an optional gain.
   /// @note Assumes source and this are in distinct, non-overlapping memory locations.
   template <size_t OtherAlignment>
-  void sum(const AlignedAudioArray<OtherAlignment> &source,
-           size_t sourceStart,
-           size_t destinationStart,
-           size_t length,
-           float gain = 1.0f) {
+  void sum(
+      const AlignedAudioArray<OtherAlignment> &source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length,
+      float gain = 1.0f) {
     if (size_ - destinationStart < length || source.size_ - sourceStart < length) [[unlikely]] {
       throw std::out_of_range("Not enough data to sum two vectors.");
     }
@@ -168,10 +169,11 @@ class AlignedAudioArray {
   /// @brief Copies a sub-range of source into this array.
   /// @note Assumes source and this are in distinct, non-overlapping memory locations.
   template <size_t OtherAlignment>
-  void copy(const AlignedAudioArray<OtherAlignment> &source,
-            size_t sourceStart,
-            size_t destinationStart,
-            size_t length) { // NOLINT(build/include_what_you_use)
+  void copy(
+      const AlignedAudioArray<OtherAlignment> &source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length) { // NOLINT(build/include_what_you_use)
     if (source.size_ - sourceStart < length) [[unlikely]] {
       throw std::out_of_range("Not enough data to copy from source.");
     }
@@ -180,10 +182,11 @@ class AlignedAudioArray {
 
   /// @brief Copies data from a raw float pointer into this array.
   /// @note Assumes source and this are in distinct, non-overlapping memory locations.
-  void copy(const float *source,
-            size_t sourceStart,
-            size_t destinationStart,
-            size_t length) { // NOLINT(build/include_what_you_use)
+  void copy(
+      const float *source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length) { // NOLINT(build/include_what_you_use)
     if (size_ - destinationStart < length) [[unlikely]] {
       throw std::out_of_range("Not enough space to copy to destination.");
     }
@@ -193,10 +196,11 @@ class AlignedAudioArray {
   /// @brief Copies source array in reverse order into this array.
   /// @note Assumes source and this are in distinct, non-overlapping memory locations.
   template <size_t OtherAlignment>
-  void copyReverse(const AlignedAudioArray<OtherAlignment> &source,
-                   size_t sourceStart,
-                   size_t destinationStart,
-                   size_t length) {
+  void copyReverse(
+      const AlignedAudioArray<OtherAlignment> &source,
+      size_t sourceStart,
+      size_t destinationStart,
+      size_t length) {
     if (size_ - destinationStart < length || source.size_ - sourceStart < length) [[unlikely]] {
       throw std::out_of_range("Not enough space to copy to destination or from source.");
     }
@@ -212,10 +216,8 @@ class AlignedAudioArray {
 
   /// @brief Copies data from this array to a raw float pointer.
   /// @note Assumes destination and this are in distinct, non-overlapping memory locations.
-  void copyTo(float *destination,
-              size_t sourceStart,
-              size_t destinationStart,
-              size_t length) const {
+  void copyTo(float *destination, size_t sourceStart, size_t destinationStart, size_t length)
+      const {
     if (size_ - sourceStart < length) [[unlikely]] {
       throw std::out_of_range("Not enough data to copy from source.");
     }

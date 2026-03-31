@@ -638,11 +638,12 @@ class CDSPRealFFTKeeper : public R8B_BASECLASS {
  * delay at DC offset, in samples (can be a non-integer value).
  */
 
-inline void calcMinPhaseTransform(double *const Kernel,
-                                  const int KernelLen,
-                                  const int LenMult = 2,
-                                  const bool DoFinalMul = true,
-                                  double *const DCGroupDelay = R8B_NULL) {
+inline void calcMinPhaseTransform(
+    double *const Kernel,
+    const int KernelLen,
+    const int LenMult = 2,
+    const bool DoFinalMul = true,
+    double *const DCGroupDelay = R8B_NULL) {
   R8BASSERT(KernelLen > 0);
   R8BASSERT(LenMult >= 2);
 

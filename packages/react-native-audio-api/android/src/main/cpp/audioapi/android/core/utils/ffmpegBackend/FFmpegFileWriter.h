@@ -28,10 +28,11 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
       const std::shared_ptr<AudioFileProperties> &fileProperties);
   ~FFmpegAudioFileWriter();
 
-  OpenFileResult openFile(float streamSampleRate,
-                          int32_t streamChannelCount,
-                          int32_t streamMaxBufferSize,
-                          const std::string &fileNameOverride) override;
+  OpenFileResult openFile(
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t streamMaxBufferSize,
+      const std::string &fileNameOverride) override;
   CloseFileResult closeFile() override;
 
  private:

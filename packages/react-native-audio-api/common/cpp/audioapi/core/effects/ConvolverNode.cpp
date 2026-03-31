@@ -11,8 +11,9 @@
 #include <vector>
 
 namespace audioapi {
-ConvolverNode::ConvolverNode(const std::shared_ptr<BaseAudioContext> &context,
-                             const ConvolverOptions &options)
+ConvolverNode::ConvolverNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const ConvolverOptions &options)
     : AudioNode(context, options),
       gainCalibrationSampleRate_(context->getSampleRate()),
       remainingSegments_(0),
@@ -25,12 +26,13 @@ ConvolverNode::ConvolverNode(const std::shared_ptr<BaseAudioContext> &context,
   isInitialized_.store(true, std::memory_order_release);
 }
 
-void ConvolverNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer,
-                              std::vector<std::unique_ptr<Convolver>> convolvers,
-                              const std::shared_ptr<ThreadPool> &threadPool,
-                              const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
-                              const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
-                              float scaleFactor) {
+void ConvolverNode::setBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    std::vector<std::unique_ptr<Convolver>> convolvers,
+    const std::shared_ptr<ThreadPool> &threadPool,
+    const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
+    const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
+    float scaleFactor) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
     return;
@@ -140,8 +142,8 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
   if (processingBuffer->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([&, i] {
-        convolvers_[i]->process(*processingBuffer->getChannel(0),
-                                *intermediateBuffer_->getChannel(i));
+        convolvers_[i]->process(
+            *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i));
       });
     }
   } else if (processingBuffer->getNumberOfChannels() == 2) {
@@ -156,8 +158,9 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
       threadPool_->schedule([this, i, inputChannelMap, outputChannelMap, &processingBuffer] {
-        convolvers_[i]->process(*processingBuffer->getChannel(inputChannelMap[i]),
-                                *intermediateBuffer_->getChannel(outputChannelMap[i]));
+        convolvers_[i]->process(
+            *processingBuffer->getChannel(inputChannelMap[i]),
+            *intermediateBuffer_->getChannel(outputChannelMap[i]));
       });
     }
   }

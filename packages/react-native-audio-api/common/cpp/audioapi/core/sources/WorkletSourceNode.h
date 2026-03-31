@@ -16,8 +16,9 @@ namespace audioapi {
 #if RN_AUDIO_API_TEST
 class WorkletSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit WorkletSourceNode(std::shared_ptr<BaseAudioContext> context,
-                             WorkletsRunner &&workletRunner)
+  explicit WorkletSourceNode(
+      std::shared_ptr<BaseAudioContext> context,
+      WorkletsRunner &&workletRunner)
       : AudioScheduledSourceNode(context) {}
 
  protected:
@@ -31,8 +32,9 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
 
 class WorkletSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit WorkletSourceNode(const std::shared_ptr<BaseAudioContext> &context,
-                             WorkletsRunner &&workletRunner);
+  explicit WorkletSourceNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      WorkletsRunner &&workletRunner);
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(

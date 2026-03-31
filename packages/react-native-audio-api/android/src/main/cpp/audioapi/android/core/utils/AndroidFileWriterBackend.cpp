@@ -11,10 +11,10 @@ AndroidFileWriterBackend::AndroidFileWriterBackend(
   auto offloaderLambda = [this](WriterData data) {
     taskOffloaderFunction(data);
   };
-  offloader_ = std::make_unique<task_offloader::TaskOffloader<WriterData,
-                                                              FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-                                                              FILE_WRITER_SPSC_WAIT_STRATEGY>>(
-      FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+  offloader_ = std::make_unique<task_offloader::TaskOffloader<
+      WriterData,
+      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
+      FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
 }
 
 void AndroidFileWriterBackend::writeAudioData(void *data, int numFrames) {

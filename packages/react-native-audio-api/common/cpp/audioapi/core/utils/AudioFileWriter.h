@@ -20,8 +20,9 @@ class AudioFileWriter {
  public:
   DELETE_COPY_AND_MOVE(AudioFileWriter);
 
-  AudioFileWriter(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-                  const std::shared_ptr<AudioFileProperties> &fileProperties);
+  AudioFileWriter(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<AudioFileProperties> &fileProperties);
   virtual ~AudioFileWriter() = default;
 
   virtual CloseFileResult closeFile() = 0;

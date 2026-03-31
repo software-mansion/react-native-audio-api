@@ -57,11 +57,12 @@ class CDSPFracDelayFilterBank : public R8B_BASECLASS {
 	 * @param aIsThird `true` if one-third filter is required.
 	 */
 
-  CDSPFracDelayFilterBank(const int aFilterFracs,
-                          const int aElementSize,
-                          const int aInterpPoints,
-                          const double aReqAtten,
-                          const bool aIsThird)
+  CDSPFracDelayFilterBank(
+      const int aFilterFracs,
+      const int aElementSize,
+      const int aInterpPoints,
+      const double aReqAtten,
+      const bool aIsThird)
       : InitFilterFracs(aFilterFracs),
         ElementSize(aElementSize),
         InterpPoints(aInterpPoints),
@@ -125,15 +126,16 @@ class CDSPFracDelayFilterBank : public R8B_BASECLASS {
         // coefficients using 8 points.
 
         while (p < TableEnd) {
-          calcSpline2p8Coeffs(p,
-                              p[0],
-                              p[TablePos2],
-                              p[TablePos3],
-                              p[TablePos4],
-                              p[TablePos5],
-                              p[TablePos6],
-                              p[TablePos7],
-                              p[TablePos8]);
+          calcSpline2p8Coeffs(
+              p,
+              p[0],
+              p[TablePos2],
+              p[TablePos3],
+              p[TablePos4],
+              p[TablePos5],
+              p[TablePos6],
+              p[TablePos7],
+              p[TablePos8]);
 
           p += ElementSize;
         }
@@ -146,15 +148,16 @@ class CDSPFracDelayFilterBank : public R8B_BASECLASS {
         // coefficients using 8 points.
 
         while (p < TableEnd) {
-          calcSpline3p8Coeffs(p,
-                              p[0],
-                              p[TablePos2],
-                              p[TablePos3],
-                              p[TablePos4],
-                              p[TablePos5],
-                              p[TablePos6],
-                              p[TablePos7],
-                              p[TablePos8]);
+          calcSpline3p8Coeffs(
+              p,
+              p[0],
+              p[TablePos2],
+              p[TablePos3],
+              p[TablePos4],
+              p[TablePos5],
+              p[TablePos6],
+              p[TablePos7],
+              p[TablePos8]);
 
           p += ElementSize;
         }
@@ -422,12 +425,13 @@ class CDSPFracDelayFilterBankCache : public R8B_BASECLASS {
 	 * @return Reference to a filter bank.
 	 */
 
-  static CDSPFracDelayFilterBank &getFilterBank(const int aFilterFracs,
-                                                const int aElementSize,
-                                                const int aInterpPoints,
-                                                double ReqAtten,
-                                                const bool IsThird,
-                                                const bool IsStatic) {
+  static CDSPFracDelayFilterBank &getFilterBank(
+      const int aFilterFracs,
+      const int aElementSize,
+      const int aInterpPoints,
+      double ReqAtten,
+      const bool IsThird,
+      const bool IsStatic) {
     R8B_EXITDTOR static CPtrKeeper<CDSPFracDelayFilterBank> Objects;
     // The chain of cached objects.
     R8B_EXITDTOR static CPtrKeeper<CDSPFracDelayFilterBank> StaticObjects;
@@ -600,10 +604,11 @@ inline bool findGCD(double l, double s, double &GCD) {
  * @return `true` if stepping was acquired.
  */
 
-inline bool getWholeStepping(const double SSampleRate,
-                             const double DSampleRate,
-                             int &ResInStep,
-                             int &ResOutStep) {
+inline bool getWholeStepping(
+    const double SSampleRate,
+    const double DSampleRate,
+    int &ResInStep,
+    int &ResOutStep) {
   double GCD;
 
   if (!findGCD(SSampleRate, DSampleRate, GCD)) {
@@ -660,11 +665,12 @@ class CDSPFracInterpolator : public CDSPProcessor {
 	 * be consumed completely.
 	 */
 
-  CDSPFracInterpolator(const double aSrcSampleRate,
-                       const double aDstSampleRate,
-                       const double ReqAtten,
-                       const bool IsThird,
-                       const double PrevLatency)
+  CDSPFracInterpolator(
+      const double aSrcSampleRate,
+      const double aDstSampleRate,
+      const double ReqAtten,
+      const bool IsThird,
+      const double PrevLatency)
       : SrcSampleRate(aSrcSampleRate),
         DstSampleRate(aDstSampleRate)
 #if R8B_FASTTIMING
@@ -715,19 +721,20 @@ class CDSPFracInterpolator : public CDSPProcessor {
 
     R8BASSERT((1 << BufLenBits) >= FilterLen * 3);
 
-    static const CConvolveFn FltConvFn0[13] = {&CDSPFracInterpolator ::convolve0<6>,
-                                               &CDSPFracInterpolator ::convolve0<8>,
-                                               &CDSPFracInterpolator ::convolve0<10>,
-                                               &CDSPFracInterpolator ::convolve0<12>,
-                                               &CDSPFracInterpolator ::convolve0<14>,
-                                               &CDSPFracInterpolator ::convolve0<16>,
-                                               &CDSPFracInterpolator ::convolve0<18>,
-                                               &CDSPFracInterpolator ::convolve0<20>,
-                                               &CDSPFracInterpolator ::convolve0<22>,
-                                               &CDSPFracInterpolator ::convolve0<24>,
-                                               &CDSPFracInterpolator ::convolve0<26>,
-                                               &CDSPFracInterpolator ::convolve0<28>,
-                                               &CDSPFracInterpolator ::convolve0<30>};
+    static const CConvolveFn FltConvFn0[13] = {
+        &CDSPFracInterpolator ::convolve0<6>,
+        &CDSPFracInterpolator ::convolve0<8>,
+        &CDSPFracInterpolator ::convolve0<10>,
+        &CDSPFracInterpolator ::convolve0<12>,
+        &CDSPFracInterpolator ::convolve0<14>,
+        &CDSPFracInterpolator ::convolve0<16>,
+        &CDSPFracInterpolator ::convolve0<18>,
+        &CDSPFracInterpolator ::convolve0<20>,
+        &CDSPFracInterpolator ::convolve0<22>,
+        &CDSPFracInterpolator ::convolve0<24>,
+        &CDSPFracInterpolator ::convolve0<26>,
+        &CDSPFracInterpolator ::convolve0<28>,
+        &CDSPFracInterpolator ::convolve0<30>};
 
     convfn = (IsWhole ? FltConvFn0[fl2 - 3] : &CDSPFracInterpolator ::convolve2);
 
@@ -757,9 +764,10 @@ class CDSPFracInterpolator : public CDSPProcessor {
     const int ilat = fl2 + Latency;
 
     if (IsWhole) {
-      return (ilat +
-              (int)((InitFracPosW + (double)ReqOutPos * InStep) / OutStep +
-                    LatencyFrac * InStep / OutStep));
+      return (
+          ilat +
+          (int)((InitFracPosW + (double)ReqOutPos * InStep) / OutStep +
+                LatencyFrac * InStep / OutStep));
     }
 
     return (ilat + (int)(InitFracPos + ReqOutPos * SrcSampleRate / DstSampleRate));

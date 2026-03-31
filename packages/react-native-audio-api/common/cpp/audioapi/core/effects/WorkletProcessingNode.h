@@ -16,8 +16,9 @@ namespace audioapi {
 #if RN_AUDIO_API_TEST
 class WorkletProcessingNode : public AudioNode {
  public:
-  explicit WorkletProcessingNode(std::shared_ptr<BaseAudioContext> context,
-                                 WorkletsRunner &&workletRunner)
+  explicit WorkletProcessingNode(
+      std::shared_ptr<BaseAudioContext> context,
+      WorkletsRunner &&workletRunner)
       : AudioNode(context) {}
 
  protected:
@@ -33,8 +34,9 @@ using namespace facebook;
 
 class WorkletProcessingNode : public AudioNode {
  public:
-  explicit WorkletProcessingNode(const std::shared_ptr<BaseAudioContext> &context,
-                                 WorkletsRunner &&workletRunner);
+  explicit WorkletProcessingNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      WorkletsRunner &&workletRunner);
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(

@@ -107,9 +107,10 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
 /// @param pre Output buffer for pre-multiplied results
 /// @note IMPORTANT: ir, audio, and pre must be the same size and should be
 /// aligned to 16 bytes for optimal performance
-void pairwise_complex_multiply_fast(const Convolver::aligned_vec_complex &ir,
-                                    const Convolver::aligned_vec_complex &audio,
-                                    Convolver::aligned_vec_complex &pre) {
+void pairwise_complex_multiply_fast(
+    const Convolver::aligned_vec_complex &ir,
+    const Convolver::aligned_vec_complex &audio,
+    Convolver::aligned_vec_complex &pre) {
   size_t n = ir.size();
 
 /// @note Using ARM NEON intrinsics for SIMD optimization

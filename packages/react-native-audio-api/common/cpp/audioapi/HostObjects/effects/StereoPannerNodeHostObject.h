@@ -13,8 +13,9 @@ class AudioParamHostObject;
 
 class StereoPannerNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit StereoPannerNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
-                                      const StereoPannerOptions &options);
+  explicit StereoPannerNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const StereoPannerOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(pan);
 

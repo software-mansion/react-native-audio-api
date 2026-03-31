@@ -29,8 +29,9 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferBaseSourceNodeHostObject, onPositionChanged),
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
 
-  addFunctions(JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getInputLatency),
-               JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getOutputLatency));
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getInputLatency),
+      JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getOutputLatency));
 }
 
 AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {

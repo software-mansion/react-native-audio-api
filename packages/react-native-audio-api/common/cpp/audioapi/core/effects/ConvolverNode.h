@@ -20,16 +20,18 @@ struct ConvolverOptions;
 
 class ConvolverNode : public AudioNode {
  public:
-  explicit ConvolverNode(const std::shared_ptr<BaseAudioContext> &context,
-                         const ConvolverOptions &options);
+  explicit ConvolverNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const ConvolverOptions &options);
 
   /// @note Audio Thread only
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer,
-                 std::vector<std::unique_ptr<Convolver>> convolvers,
-                 const std::shared_ptr<ThreadPool> &threadPool,
-                 const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
-                 const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
-                 float scaleFactor);
+  void setBuffer(
+      const std::shared_ptr<AudioBuffer> &buffer,
+      std::vector<std::unique_ptr<Convolver>> convolvers,
+      const std::shared_ptr<ThreadPool> &threadPool,
+      const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
+      float scaleFactor);
 
   float calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) const;
 
@@ -39,9 +41,10 @@ class ConvolverNode : public AudioNode {
       int framesToProcess) override;
 
  private:
-  std::shared_ptr<DSPAudioBuffer> processInputs(const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-                                                int framesToProcess,
-                                                bool checkIsAlreadyProcessed) override;
+  std::shared_ptr<DSPAudioBuffer> processInputs(
+      const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
+      int framesToProcess,
+      bool checkIsAlreadyProcessed) override;
   void onInputDisabled() override;
   const float gainCalibrationSampleRate_;
   size_t remainingSegments_;

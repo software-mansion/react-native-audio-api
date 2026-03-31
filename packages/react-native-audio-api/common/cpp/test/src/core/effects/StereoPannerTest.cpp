@@ -63,12 +63,14 @@ TEST_F(StereoPannerTest, PanModulatesInputMonoCorrectly) {
   // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
   // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    EXPECT_NEAR((*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
-                (i + 1) * 0.38268343236508984,
-                1e-4);
-    EXPECT_NEAR((*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
-                (i + 1) * 0.9238795325112867,
-                1e-4);
+    EXPECT_NEAR(
+        (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
+        (i + 1) * 0.38268343236508984,
+        1e-4);
+    EXPECT_NEAR(
+        (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
+        (i + 1) * 0.9238795325112867,
+        1e-4);
   }
 }
 
@@ -89,12 +91,14 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
   // gainL = cos(x * (π / 2)) = cos(0.5 * (π / 2)) = 0.7071067811865476
   // gainR = sin(x * (π / 2)) = sin(0.5 * (π / 2)) = 0.7071067811865476
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    EXPECT_NEAR((*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
-                (i + 1) + (i + 1) * 0.7071067811865476,
-                1e-4);
-    EXPECT_NEAR((*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
-                (i + 1) * 0.7071067811865476,
-                1e-4);
+    EXPECT_NEAR(
+        (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
+        (i + 1) + (i + 1) * 0.7071067811865476,
+        1e-4);
+    EXPECT_NEAR(
+        (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
+        (i + 1) * 0.7071067811865476,
+        1e-4);
   }
 }
 
@@ -115,12 +119,14 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
   // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
   // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    EXPECT_NEAR((*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
-                (i + 1) * 0.38268343236508984,
-                1e-4);
-    EXPECT_NEAR((*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
-                (i + 1) + (i + 1) * 0.9238795325112867,
-                1e-4);
+    EXPECT_NEAR(
+        (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
+        (i + 1) * 0.38268343236508984,
+        1e-4);
+    EXPECT_NEAR(
+        (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
+        (i + 1) + (i + 1) * 0.9238795325112867,
+        1e-4);
   }
 }
 

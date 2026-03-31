@@ -15,8 +15,9 @@
 
 namespace audioapi {
 
-AudioBufferSourceNode::AudioBufferSourceNode(const std::shared_ptr<BaseAudioContext> &context,
-                                             const AudioBufferSourceOptions &options)
+AudioBufferSourceNode::AudioBufferSourceNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const AudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options),
       loop_(options.loop),
       loopSkip_(options.loopSkip),
@@ -44,8 +45,9 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
   loopEnd_ = loopEnd;
 }
 
-void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer,
-                                      const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
+void AudioBufferSourceNode::setBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
 
   if (context == nullptr) {

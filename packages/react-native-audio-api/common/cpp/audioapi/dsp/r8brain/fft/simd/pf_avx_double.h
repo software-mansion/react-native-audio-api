@@ -80,13 +80,14 @@ out2 = [ in1[2], in2[2], in1[3], in2[3] ]
     __m128d low2__ = _mm256_castpd256_pd128(in2); \
     __m128d high1__ = _mm256_extractf128_pd(in1, 1); \
     __m128d high2__ = _mm256_extractf128_pd(in2, 1); \
-    __m256d tmp__ = \
-        _mm256_insertf128_pd(_mm256_castpd128_pd256(_mm_shuffle_pd(low1__, low2__, 0)), \
-                             _mm_shuffle_pd(low1__, low2__, 3), \
-                             1); \
-    out2 = _mm256_insertf128_pd(_mm256_castpd128_pd256(_mm_shuffle_pd(high1__, high2__, 0)), \
-                                _mm_shuffle_pd(high1__, high2__, 3), \
-                                1); \
+    __m256d tmp__ = _mm256_insertf128_pd( \
+        _mm256_castpd128_pd256(_mm_shuffle_pd(low1__, low2__, 0)), \
+        _mm_shuffle_pd(low1__, low2__, 3), \
+        1); \
+    out2 = _mm256_insertf128_pd( \
+        _mm256_castpd128_pd256(_mm_shuffle_pd(high1__, high2__, 0)), \
+        _mm_shuffle_pd(high1__, high2__, 3), \
+        1); \
     out1 = tmp__; \
   }
 
@@ -100,13 +101,14 @@ out2 = [ in1[1], in1[3], in2[1], in2[3] ]
     __m128d low2__ = _mm256_castpd256_pd128(in2); \
     __m128d high1__ = _mm256_extractf128_pd(in1, 1); \
     __m128d high2__ = _mm256_extractf128_pd(in2, 1); \
-    __m256d tmp__ = \
-        _mm256_insertf128_pd(_mm256_castpd128_pd256(_mm_shuffle_pd(low1__, high1__, 0)), \
-                             _mm_shuffle_pd(low2__, high2__, 0), \
-                             1); \
-    out2 = _mm256_insertf128_pd(_mm256_castpd128_pd256(_mm_shuffle_pd(low1__, high1__, 3)), \
-                                _mm_shuffle_pd(low2__, high2__, 3), \
-                                1); \
+    __m256d tmp__ = _mm256_insertf128_pd( \
+        _mm256_castpd128_pd256(_mm_shuffle_pd(low1__, high1__, 0)), \
+        _mm_shuffle_pd(low2__, high2__, 0), \
+        1); \
+    out2 = _mm256_insertf128_pd( \
+        _mm256_castpd128_pd256(_mm_shuffle_pd(low1__, high1__, 3)), \
+        _mm_shuffle_pd(low2__, high2__, 3), \
+        1); \
     out1 = tmp__; \
   }
 
@@ -134,9 +136,10 @@ return [ b[0], b[1], a[2], a[3] ]
 
 /* reverse/flip all floats */
 #define VREV_S(a) \
-  _mm256_insertf128_pd(_mm256_castpd128_pd256(_mm_permute_pd(_mm256_extractf128_pd(a, 1), 1)), \
-                       _mm_permute_pd(_mm256_castpd256_pd128(a), 1), \
-                       1)
+  _mm256_insertf128_pd( \
+      _mm256_castpd128_pd256(_mm_permute_pd(_mm256_extractf128_pd(a, 1), 1)), \
+      _mm_permute_pd(_mm256_castpd256_pd128(a), 1), \
+      1)
 
 /* reverse/flip complex floats */
 #define VREV_C(a) \

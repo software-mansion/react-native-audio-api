@@ -18,11 +18,12 @@ AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onBufferEnded));
 
-  addFunctions(JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
-               JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer),
-               JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, dequeueBuffer),
-               JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, clearBuffers),
-               JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause));
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, dequeueBuffer),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, clearBuffers),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause));
 }
 
 AudioBufferQueueSourceNodeHostObject::~AudioBufferQueueSourceNodeHostObject() {
@@ -73,8 +74,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   std::shared_ptr<AudioBuffer> tailBuffer = nullptr;
 
   if (pitchCorrection_ && !stretchHasBeenInit_) {
-    initStretch(static_cast<int>(copiedBuffer->getNumberOfChannels()),
-                copiedBuffer->getSampleRate());
+    initStretch(
+        static_cast<int>(copiedBuffer->getNumberOfChannels()), copiedBuffer->getSampleRate());
     auto extraTailFrames =
         static_cast<size_t>((inputLatency_ + outputLatency_) * copiedBuffer->getSampleRate());
     tailBuffer = std::make_shared<AudioBuffer>(

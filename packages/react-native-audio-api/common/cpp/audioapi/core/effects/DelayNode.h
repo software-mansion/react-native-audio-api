@@ -24,10 +24,11 @@ class DelayNode : public AudioNode {
  private:
   void onInputDisabled() override;
   enum class BufferAction : uint8_t { READ, WRITE };
-  void delayBufferOperation(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-                            int framesToProcess,
-                            size_t &operationStartingIndex,
-                            BufferAction action);
+  void delayBufferOperation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess,
+      size_t &operationStartingIndex,
+      BufferAction action);
   const std::shared_ptr<AudioParam> delayTimeParam_;
   std::shared_ptr<AudioBuffer> delayBuffer_;
   size_t readIndex_ = 0;

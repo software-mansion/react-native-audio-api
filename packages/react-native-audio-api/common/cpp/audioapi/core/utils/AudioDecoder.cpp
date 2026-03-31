@@ -21,8 +21,9 @@ namespace audioapi {
 // Decoding audio in fixed-size chunks because total frame count can't be
 // determined in advance. Note: ma_decoder_get_length_in_pcm_frames() always
 // returns 0 for Vorbis decoders.
-Result<std::vector<float>, std::string> AudioDecoder::readAllPcmFrames(ma_decoder &decoder,
-                                                                       int outputChannels) {
+Result<std::vector<float>, std::string> AudioDecoder::readAllPcmFrames(
+    ma_decoder &decoder,
+    int outputChannels) {
   std::vector<float> buffer;
   std::vector<float> temp(CHUNK_SIZE * outputChannels);
   ma_uint64 outFramesRead = 0;
@@ -45,9 +46,10 @@ Result<std::vector<float>, std::string> AudioDecoder::readAllPcmFrames(ma_decode
   return Ok(std::move(buffer));
 }
 
-AudioBufferResult AudioDecoder::makeAudioBufferFromFloatBuffer(const std::vector<float> &buffer,
-                                                               float outputSampleRate,
-                                                               int outputChannels) {
+AudioBufferResult AudioDecoder::makeAudioBufferFromFloatBuffer(
+    const std::vector<float> &buffer,
+    float outputSampleRate,
+    int outputChannels) {
   if (buffer.empty()) {
     return Err("Buffer is empty");
   }
@@ -63,8 +65,8 @@ AudioBufferResult AudioDecoder::makeAudioBufferFromFloatBuffer(const std::vector
 AudioBufferResult AudioDecoder::decodeWithMiniaudio(float sampleRate, DecoderSource source) {
   ma_decoder decoder;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, static_cast<int>(sampleRate));
-  ma_decoding_backend_vtable *customBackends[] = {ma_decoding_backend_libvorbis,
-                                                  ma_decoding_backend_libopus};
+  ma_decoding_backend_vtable *customBackends[] = {
+      ma_decoding_backend_libvorbis, ma_decoding_backend_libopus};
 
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount = sizeof(customBackends) / sizeof(customBackends[0]);
@@ -83,8 +85,9 @@ AudioBufferResult AudioDecoder::decodeWithMiniaudio(float sampleRate, DecoderSou
       source);
 
   if (initResult != MA_SUCCESS) {
-    return Err("Failed to initialize miniaudio decoder: " +
-               std::string(ma_result_description(initResult)));
+    return Err(
+        "Failed to initialize miniaudio decoder: " +
+        std::string(ma_result_description(initResult)));
   }
 
   auto outputSampleRate = static_cast<float>(decoder.outputSampleRate);
@@ -116,9 +119,8 @@ AudioBufferResult AudioDecoder::decodeWithFilePath(const std::string &path, floa
   return decodeWithMiniaudio(sampleRate, path);
 }
 
-AudioBufferResult AudioDecoder::decodeWithMemoryBlock(const void *data,
-                                                      size_t size,
-                                                      float sampleRate) {
+AudioBufferResult
+AudioDecoder::decodeWithMemoryBlock(const void *data, size_t size, float sampleRate) {
   const AudioFormat format = AudioDecoder::detectAudioFormat(data, size);
   if (format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -134,10 +136,11 @@ AudioBufferResult AudioDecoder::decodeWithMemoryBlock(const void *data,
   return decodeWithMiniaudio(sampleRate, MemorySource{.data = data, .size = size});
 }
 
-AudioBufferResult AudioDecoder::decodeWithPCMInBase64(const std::string &data,
-                                                      float inputSampleRate,
-                                                      int inputChannelCount,
-                                                      bool interleaved) {
+AudioBufferResult AudioDecoder::decodeWithPCMInBase64(
+    const std::string &data,
+    float inputSampleRate,
+    int inputChannelCount,
+    bool interleaved) {
   auto decodedData = base64_decode(data, false);
   const auto *uint8Data = reinterpret_cast<uint8_t *>(decodedData.data());
   size_t numFramesDecoded = decodedData.size() / (inputChannelCount * sizeof(int16_t));

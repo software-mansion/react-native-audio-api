@@ -9,8 +9,9 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(const std::shared_ptr<BaseAudioContext> &context,
-                     const AudioNodeOptions &options)
+AudioNode::AudioNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const AudioNodeOptions &options)
     : context_(context),
       numberOfInputs_(options.numberOfInputs),
       numberOfOutputs_(options.numberOfOutputs),
@@ -36,16 +37,18 @@ size_t AudioNode::getChannelCount() const {
   return channelCount_;
 }
 
-void AudioNode::connect(const std::shared_ptr<AudioNode>
-                            &node) { // NOLINT(readability-convert-member-functions-to-static)
+void AudioNode::connect(
+    const std::shared_ptr<AudioNode>
+        &node) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingNodeConnection(
         shared_from_this(), node, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
-void AudioNode::connect(const std::shared_ptr<AudioParam>
-                            &param) { // NOLINT(readability-convert-member-functions-to-static)
+void AudioNode::connect(
+    const std::shared_ptr<AudioParam>
+        &param) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingParamConnection(
         shared_from_this(), param, AudioGraphManager::ConnectionType::CONNECT);
@@ -59,16 +62,18 @@ void AudioNode::disconnect() { // NOLINT(readability-convert-member-functions-to
   }
 }
 
-void AudioNode::disconnect(const std::shared_ptr<AudioNode>
-                               &node) { // NOLINT(readability-convert-member-functions-to-static)
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioNode>
+        &node) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingNodeConnection(
         shared_from_this(), node, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 
-void AudioNode::disconnect(const std::shared_ptr<AudioParam>
-                               &param) { // NOLINT(readability-convert-member-functions-to-static)
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioParam>
+        &param) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingParamConnection(
         shared_from_this(), param, AudioGraphManager::ConnectionType::DISCONNECT);

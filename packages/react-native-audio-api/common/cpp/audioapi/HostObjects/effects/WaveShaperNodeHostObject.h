@@ -13,8 +13,9 @@ class BaseAudioContext;
 
 class WaveShaperNodeHostObject : public AudioNodeHostObject {
  public:
-  explicit WaveShaperNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
-                                    const WaveShaperOptions &options);
+  explicit WaveShaperNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const WaveShaperOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(oversample);
 

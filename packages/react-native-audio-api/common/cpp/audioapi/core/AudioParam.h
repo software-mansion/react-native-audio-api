@@ -17,10 +17,11 @@ namespace audioapi {
 
 class AudioParam {
  public:
-  explicit AudioParam(float defaultValue,
-                      float minValue,
-                      float maxValue,
-                      const std::shared_ptr<BaseAudioContext> &context);
+  explicit AudioParam(
+      float defaultValue,
+      float minValue,
+      float maxValue,
+      const std::shared_ptr<BaseAudioContext> &context);
 
   [[nodiscard]] float getValue() const noexcept {
     return value_.load(std::memory_order_relaxed);
@@ -55,10 +56,11 @@ class AudioParam {
   void setTargetAtTime(float target, double startTime, double timeConstant);
 
   /// @note Audio Thread only
-  void setValueCurveAtTime(const std::shared_ptr<AudioArray> &values,
-                           size_t length,
-                           double startTime,
-                           double duration);
+  void setValueCurveAtTime(
+      const std::shared_ptr<AudioArray> &values,
+      size_t length,
+      double startTime,
+      double duration);
 
   /// @note Audio Thread only
   void cancelScheduledValues(double cancelTime);
@@ -139,9 +141,10 @@ class AudioParam {
     eventsQueue_.pushBack(std::move(event));
   }
   float getValueAtTime(double time);
-  void processInputs(const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-                     int framesToProcess,
-                     bool checkIsAlreadyProcessed);
+  void processInputs(
+      const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
+      int framesToProcess,
+      bool checkIsAlreadyProcessed);
   void mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
   std::shared_ptr<DSPAudioBuffer> calculateInputs(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,

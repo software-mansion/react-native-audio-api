@@ -41,11 +41,11 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (bool)areDesiredOptionsSet
 {
-  return (self.audioSession.category == self.desiredCategory &&
-          self.audioSession.mode == self.desiredMode &&
-          self.audioSession.categoryOptions == self.desiredOptions &&
-          self.audioSession.allowHapticsAndSystemSoundsDuringRecording ==
-              self.allowHapticsAndSounds);
+  return (
+      self.audioSession.category == self.desiredCategory &&
+      self.audioSession.mode == self.desiredMode &&
+      self.audioSession.categoryOptions == self.desiredOptions &&
+      self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
 }
 
 - (bool)configureAudioSession
@@ -65,10 +65,11 @@ static AudioSessionManager *_sharedInstance = nil;
     NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
     return false;
   } else {
-    NSLog(@"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
-          self.audioSession.category,
-          self.audioSession.mode,
-          (unsigned long)self.audioSession.categoryOptions);
+    NSLog(
+        @"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
+        self.audioSession.category,
+        self.audioSession.mode,
+        (unsigned long)self.audioSession.categoryOptions);
   }
 
   if (@available(iOS 13.0, *)) {
@@ -78,8 +79,9 @@ static AudioSessionManager *_sharedInstance = nil;
                                                                  error:&error];
 
       if (error != nil) {
-        NSLog(@"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
-              [error debugDescription]);
+        NSLog(
+            @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
+            [error debugDescription]);
         return false;
       }
     }
@@ -380,10 +382,11 @@ static AudioSessionManager *_sharedInstance = nil;
   [self.audioSession setPreferredInput:selectedInput error:&error];
 
   if (error != nil) {
-    reject(nil,
-           [NSString stringWithFormat:@"Error while setting preferred input: %@",
-                                      [error debugDescription]],
-           error);
+    reject(
+        nil,
+        [NSString
+            stringWithFormat:@"Error while setting preferred input: %@", [error debugDescription]],
+        error);
     return;
   }
 

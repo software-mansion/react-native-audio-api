@@ -14,8 +14,9 @@ struct AudioBufferSourceOptions;
 
 class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferSourceNode(const std::shared_ptr<BaseAudioContext> &context,
-                                 const AudioBufferSourceOptions &options);
+  explicit AudioBufferSourceNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioBufferSourceOptions &options);
 
   /// @note Audio Thread only
   void setLoop(bool loop);
@@ -30,8 +31,9 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   void setLoopEnd(double loopEnd);
 
   /// @note Audio Thread only
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer,
-                 const std::shared_ptr<DSPAudioBuffer> &audioBuffer);
+  void setBuffer(
+      const std::shared_ptr<AudioBuffer> &buffer,
+      const std::shared_ptr<DSPAudioBuffer> &audioBuffer);
 
   using AudioScheduledSourceNode::start;
   /// @note Audio Thread only
@@ -50,15 +52,17 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   bool isEmpty() const final;
 
-  void processWithoutInterpolation(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-                                   size_t startOffset,
-                                   size_t offsetLength,
-                                   float playbackRate) final;
+  void processWithoutInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) final;
 
-  void processWithInterpolation(const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-                                size_t startOffset,
-                                size_t offsetLength,
-                                float playbackRate) final;
+  void processWithInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) final;
 
  private:
   // Looping related properties

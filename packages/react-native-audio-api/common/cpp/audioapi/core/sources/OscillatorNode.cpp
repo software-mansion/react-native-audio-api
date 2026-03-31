@@ -9,8 +9,9 @@
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(const std::shared_ptr<BaseAudioContext> &context,
-                               const OscillatorOptions &options)
+OscillatorNode::OscillatorNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const OscillatorOptions &options)
     : AudioScheduledSourceNode(context, options), type_(options.type) {
   frequencyParam_ = std::make_shared<AudioParam>(
       options.frequency, -getNyquistFrequency(), getNyquistFrequency(), context);
@@ -60,12 +61,13 @@ std::shared_ptr<DSPAudioBuffer> OscillatorNode::processNode(
     return processingBuffer;
   }
 
-  updatePlaybackInfo(processingBuffer,
-                     framesToProcess,
-                     startOffset,
-                     offsetLength,
-                     context->getSampleRate(),
-                     context->getCurrentSampleFrame());
+  updatePlaybackInfo(
+      processingBuffer,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBuffer->zero();

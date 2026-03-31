@@ -13,18 +13,20 @@ AudioParamHostObject::AudioParamHostObject(const std::shared_ptr<AudioParam> &pa
       defaultValue_(param->getDefaultValue()),
       minValue_(param->getMinValue()),
       maxValue_(param->getMaxValue()) {
-  addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, value),
-             JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, defaultValue),
-             JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, minValue),
-             JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, maxValue));
+  addGetters(
+      JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, value),
+      JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, defaultValue),
+      JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, minValue),
+      JSI_EXPORT_PROPERTY_GETTER(AudioParamHostObject, maxValue));
 
-  addFunctions(JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueAtTime),
-               JSI_EXPORT_FUNCTION(AudioParamHostObject, linearRampToValueAtTime),
-               JSI_EXPORT_FUNCTION(AudioParamHostObject, exponentialRampToValueAtTime),
-               JSI_EXPORT_FUNCTION(AudioParamHostObject, setTargetAtTime),
-               JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueCurveAtTime),
-               JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelScheduledValues),
-               JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelAndHoldAtTime));
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, linearRampToValueAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, exponentialRampToValueAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, setTargetAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, setValueCurveAtTime),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelScheduledValues),
+      JSI_EXPORT_FUNCTION(AudioParamHostObject, cancelAndHoldAtTime));
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioParamHostObject, value));
 }

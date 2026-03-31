@@ -148,8 +148,9 @@ static AudioEngine *_sharedInstance = nil;
   [self.audioEngine startAndReturnError:&error];
 
   if (error != nil) {
-    NSLog(@"Error while restarting the audio engine after interruption: %@",
-          [error debugDescription]);
+    NSLog(
+        @"Error while restarting the audio engine after interruption: %@",
+        [error debugDescription]);
     self.state = AudioEngineState::AudioEngineStateIdle;
     return;
   }
@@ -315,8 +316,9 @@ static AudioEngine *_sharedInstance = nil;
 
   // AVAudioEngine state
   NSLog(@"➡️ engine.isRunning: %@", self.audioEngine.isRunning ? @"true" : @"false");
-  NSLog(@"➡️ engine.isInManualRenderingMode: %@",
-        self.audioEngine.isInManualRenderingMode ? @"true" : @"false");
+  NSLog(
+      @"➡️ engine.isInManualRenderingMode: %@",
+      self.audioEngine.isInManualRenderingMode ? @"true" : @"false");
 
   // Session state
   NSLog(@"🎚️ Session category: %@", session.category);

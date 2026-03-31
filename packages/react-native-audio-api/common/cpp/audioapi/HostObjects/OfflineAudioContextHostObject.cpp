@@ -15,16 +15,19 @@ OfflineAudioContextHostObject::OfflineAudioContextHostObject(
     const RuntimeRegistry &runtimeRegistry,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker)
-    : BaseAudioContextHostObject(std::make_shared<OfflineAudioContext>(numberOfChannels,
-                                                                       length,
-                                                                       sampleRate,
-                                                                       audioEventHandlerRegistry,
-                                                                       runtimeRegistry),
-                                 runtime,
-                                 callInvoker) {
-  addFunctions(JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, resume),
-               JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),
-               JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, startRendering));
+    : BaseAudioContextHostObject(
+          std::make_shared<OfflineAudioContext>(
+              numberOfChannels,
+              length,
+              sampleRate,
+              audioEventHandlerRegistry,
+              runtimeRegistry),
+          runtime,
+          callInvoker) {
+  addFunctions(
+      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, resume),
+      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),
+      JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, startRendering));
 }
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {

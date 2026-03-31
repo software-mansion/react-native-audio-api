@@ -11,17 +11,19 @@
 
 namespace audioapi {
 
-OscillatorNodeHostObject::OscillatorNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
-                                                   const OscillatorOptions &options)
+OscillatorNodeHostObject::OscillatorNodeHostObject(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const OscillatorOptions &options)
     : AudioScheduledSourceNodeHostObject(context->createOscillator(options), options),
       type_(options.type) {
   auto oscillatorNode = std::static_pointer_cast<OscillatorNode>(node_);
   frequencyParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getFrequencyParam());
   detuneParam_ = std::make_shared<AudioParamHostObject>(oscillatorNode->getDetuneParam());
 
-  addGetters(JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),
-             JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, detune),
-             JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, type));
+  addGetters(
+      JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, frequency),
+      JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, detune),
+      JSI_EXPORT_PROPERTY_GETTER(OscillatorNodeHostObject, type));
 
   addFunctions(JSI_EXPORT_FUNCTION(OscillatorNodeHostObject, setPeriodicWave));
 

@@ -21,8 +21,9 @@ struct AnalyserOptions;
 
 class AnalyserNode : public AudioNode {
  public:
-  explicit AnalyserNode(const std::shared_ptr<BaseAudioContext> &context,
-                        const AnalyserOptions &options);
+  explicit AnalyserNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AnalyserOptions &options);
 
   /// @note JS Thread only
   [[nodiscard]] float getMinDecibels() const {

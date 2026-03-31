@@ -15,8 +15,9 @@
 
 namespace audioapi {
 
-ConvolverNodeHostObject::ConvolverNodeHostObject(const std::shared_ptr<BaseAudioContext> &context,
-                                                 const ConvolverOptions &options)
+ConvolverNodeHostObject::ConvolverNodeHostObject(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const ConvolverOptions &options)
     : AudioNodeHostObject(context->createConvolver(options), options),
       normalize_(!options.disableNormalization) {
   if (options.buffer != nullptr) {
@@ -43,8 +44,8 @@ JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   }
 
   auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-  thisValue.asObject(runtime).setExternalMemoryPressure(runtime,
-                                                        bufferHostObject->getSizeInBytes());
+  thisValue.asObject(runtime).setExternalMemoryPressure(
+      runtime, bufferHostObject->getSizeInBytes());
 
   setBuffer(bufferHostObject->audioBuffer_);
 
@@ -93,20 +94,22 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
     float scaleFactor;
   };
 
-  auto setupData = std::make_shared<SetupData>(SetupData{.buffer = copiedBuffer,
-                                                         .convolvers = std::move(convolvers),
-                                                         .threadPool = threadPool,
-                                                         .internalBuffer = internalBuffer,
-                                                         .intermediateBuffer = intermediateBuffer,
-                                                         .scaleFactor = scaleFactor});
+  auto setupData = std::make_shared<SetupData>(SetupData{
+      .buffer = copiedBuffer,
+      .convolvers = std::move(convolvers),
+      .threadPool = threadPool,
+      .internalBuffer = internalBuffer,
+      .intermediateBuffer = intermediateBuffer,
+      .scaleFactor = scaleFactor});
 
   auto event = [convolverNode, setupData](BaseAudioContext &) {
-    convolverNode->setBuffer(setupData->buffer,
-                             std::move(setupData->convolvers),
-                             setupData->threadPool,
-                             setupData->internalBuffer,
-                             setupData->intermediateBuffer,
-                             setupData->scaleFactor);
+    convolverNode->setBuffer(
+        setupData->buffer,
+        std::move(setupData->convolvers),
+        setupData->threadPool,
+        setupData->internalBuffer,
+        setupData->intermediateBuffer,
+        setupData->scaleFactor);
   };
   convolverNode->scheduleAudioEvent(std::move(event));
 }

@@ -47,11 +47,12 @@ struct WaveTableSource {
 class PeriodicWave {
  public:
   explicit PeriodicWave(float sampleRate, OscillatorType type, bool disableNormalization);
-  explicit PeriodicWave(float sampleRate,
-                        const std::vector<std::complex<float>>
-                            &complexData, // NOLINT(readability-avoid-const-params-in-decls)
-                        int length,
-                        bool disableNormalization);
+  explicit PeriodicWave(
+      float sampleRate,
+      const std::vector<std::complex<float>>
+          &complexData, // NOLINT(readability-avoid-const-params-in-decls)
+      int length,
+      bool disableNormalization);
 
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getScale() const;
@@ -81,8 +82,9 @@ class PeriodicWave {
   // The higher frequencies are culled to band-limit the waveform.
   // For each range, the inverse FFT is performed to get the time domain
   // representation of the band-limited waveform.
-  void createBandLimitedTables(const std::vector<std::complex<float>> &complexData,
-                               int size); // NOLINT(readability-avoid-const-params-in-decls)
+  void createBandLimitedTables(
+      const std::vector<std::complex<float>> &complexData,
+      int size); // NOLINT(readability-avoid-const-params-in-decls)
 
   // This function returns the interpolation factor between the lower and higher
   // range data and sets the lower and higher wave data for the given
@@ -94,11 +96,12 @@ class PeriodicWave {
   // data based on the interpolation factor and current buffer index. Type of
   // interpolation is determined by the phase increment. Returns the
   // interpolated sample.
-  [[nodiscard]] float doInterpolation(float phase,
-                                      float phaseIncrement,
-                                      float waveTableInterpolationFactor,
-                                      const DSPAudioArray &lowerWaveData,
-                                      const DSPAudioArray &higherWaveData) const;
+  [[nodiscard]] float doInterpolation(
+      float phase,
+      float phaseIncrement,
+      float waveTableInterpolationFactor,
+      const DSPAudioArray &lowerWaveData,
+      const DSPAudioArray &higherWaveData) const;
 
   // determines the time resolution of the waveform.
   float sampleRate_;

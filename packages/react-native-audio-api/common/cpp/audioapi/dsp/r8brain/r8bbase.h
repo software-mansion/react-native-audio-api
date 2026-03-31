@@ -739,12 +739,13 @@ inline int getBitOccupancy(const int v) {
  * @param fltlat Filter's latency, in samples.
  */
 
-inline void calcFIRFilterResponse(const double *flt,
-                                  int fltlen,
-                                  const double th,
-                                  double &re0,
-                                  double &im0,
-                                  const int fltlat = 0) {
+inline void calcFIRFilterResponse(
+    const double *flt,
+    int fltlen,
+    const double th,
+    double &re0,
+    double &im0,
+    const int fltlat = 0) {
   const double sincr = 2.0 * cos(th);
   double cvalue1;
   double svalue1;
@@ -844,10 +845,8 @@ inline double calcFIRFilterGroupDelay(const double *const flt, const int fltlen,
  * @param pstep "p" array step.
  */
 
-inline void normalizeFIRFilter(double *const p,
-                               const int l,
-                               const double DCGain,
-                               const int pstep = 1) {
+inline void
+normalizeFIRFilter(double *const p, const int l, const double DCGain, const int pstep = 1) {
   R8BASSERT(l > 0);
   R8BASSERT(pstep != 0);
 
@@ -889,15 +888,16 @@ inline void normalizeFIRFilter(double *const p,
  * @param x4 Point at x+4 position.
  */
 
-inline void calcSpline3p8Coeffs(double *const c,
-                                const double xm3,
-                                const double xm2,
-                                const double xm1,
-                                const double x0,
-                                const double x1,
-                                const double x2,
-                                const double x3,
-                                const double x4) {
+inline void calcSpline3p8Coeffs(
+    double *const c,
+    const double xm3,
+    const double xm2,
+    const double xm1,
+    const double x0,
+    const double x1,
+    const double x2,
+    const double x3,
+    const double x4) {
   c[0] = x0;
   c[1] = (61.0 * (x1 - xm1) + 16.0 * (xm2 - x2) + 3.0 * (x3 - xm3)) * 1.31578947368421052e-2;
 
@@ -927,15 +927,16 @@ inline void calcSpline3p8Coeffs(double *const c,
  * @param x4 Point at x+4 position.
  */
 
-inline void calcSpline2p8Coeffs(double *const c,
-                                const double xm3,
-                                const double xm2,
-                                const double xm1,
-                                const double x0,
-                                const double x1,
-                                const double x2,
-                                const double x3,
-                                const double x4) {
+inline void calcSpline2p8Coeffs(
+    double *const c,
+    const double xm3,
+    const double xm2,
+    const double xm1,
+    const double x0,
+    const double x1,
+    const double x2,
+    const double x3,
+    const double x4) {
   c[0] = x0;
   c[1] = (61.0 * (x1 - xm1) + 16.0 * (xm2 - x2) + 3.0 * (x3 - xm3)) * 1.31578947368421052e-2;
 
@@ -1103,12 +1104,13 @@ inline double besselI0(const double x) {
     y = x / 3.75;
     y *= y;
 
-    return (1.0 +
-            y *
-                (3.5156229 +
-                 y *
-                     (3.0899424 +
-                      y * (1.2067492 + y * (0.2659732 + y * (0.360768e-1 + y * 0.45813e-2))))));
+    return (
+        1.0 +
+        y *
+            (3.5156229 +
+             y *
+                 (3.0899424 +
+                  y * (1.2067492 + y * (0.2659732 + y * (0.360768e-1 + y * 0.45813e-2))))));
   }
 
   y = 3.75 / ax;
