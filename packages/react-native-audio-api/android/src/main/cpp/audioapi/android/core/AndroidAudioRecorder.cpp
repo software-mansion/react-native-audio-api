@@ -49,7 +49,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 
     if (isConnected()) {
       isConnected_.store(false, std::memory_order_release);
-      static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
+      static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
     }
   }
 
@@ -143,7 +143,8 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   if (isConnected()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
+        ->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
   }
 
   auto result = mStream_->requestStart();
@@ -198,7 +199,7 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
   }
 
   if (isConnected()) {
-    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
   }
 
   filePath_ = "";
@@ -325,7 +326,8 @@ void AndroidAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandl
   if (!isIdle()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
+        ->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
   }
 
   isConnected_.store(true, std::memory_order_release);
@@ -376,7 +378,7 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
     if (auto adapterLock = Locker::tryLock(adapterNodeMutex_)) {
       auto const data = static_cast<float *>(audioData);
       deinterleavingBuffer_->deinterleaveFrom(data, numFrames);
-      auto *adapterNode = static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get());
+      auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get());
 
       for (size_t ch = 0; ch < streamChannelCount_; ++ch) {
         adapterNode->buff_[ch]->write(*deinterleavingBuffer_->getChannel(ch), numFrames);

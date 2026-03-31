@@ -3,8 +3,8 @@
 #import <AudioSessionManager.h>
 #import <Foundation/Foundation.h>
 
-#include <unordered_map>
 #include <mutex>
+#include <unordered_map>
 
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
@@ -51,7 +51,7 @@ IOSAudioRecorder::IOSAudioRecorder(
 
     if (isConnected()) {
       if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
-        auto *adapterNode = static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get());
+        auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get());
         for (size_t channel = 0; channel < adapterNode->getChannelCount(); ++channel) {
           auto *data = static_cast<float *>(inputBuffer->mBuffers[channel].mData);
           adapterNode->buff_[channel]->write(data, numFrames);
@@ -126,7 +126,8 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   }
 
   if (isConnected()) {
-    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->init(maxInputBufferLength, inputFormat.channelCount, inputFormat.sampleRate);
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
+        ->init(maxInputBufferLength, inputFormat.channelCount, inputFormat.sampleRate);
   }
 
   [nativeRecorder_ start];
@@ -171,7 +172,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   }
 
   if (isConnected()) {
-    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
   }
 
   filePath_ = "";
@@ -227,10 +228,8 @@ void IOSAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &
 
   if (!isIdle()) {
     auto inputFormat = [nativeRecorder_ getInputFormat];
-    static_cast<RecorderAdapterNode*>(adapterNodeHandle_->audioNode.get())->init(
-        [nativeRecorder_ getBufferSize],
-        inputFormat.channelCount,
-        inputFormat.sampleRate);
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
+        ->init([nativeRecorder_ getBufferSize], inputFormat.channelCount, inputFormat.sampleRate);
   }
 
   isConnected_.store(true, std::memory_order_release);
