@@ -51,7 +51,7 @@ class BaseAutomationEvent {
  protected:
   double startTime_ = 0.0;
   double endTime_ = 0.0;
-  AutomationEventType type_ = AutomationEventType::SET_VALUE;
+  AutomationEventType type_;
 };
 
 } // namespace audioapi
