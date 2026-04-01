@@ -60,9 +60,11 @@ JSI_PROPERTY_SETTER_IMPL(AudioParamHostObject, value) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
-  auto event = [param = param_,
-                value = static_cast<float>(args[0].getNumber()),
-                startTime = args[1].getNumber()](BaseAudioContext &) {
+  auto startTime = args[1].getNumber();
+  controlQueue_.push(AutomationEvent(AutomationEventType::SET_VALUE, startTime));
+
+  auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), startTime](
+                   BaseAudioContext &) {
     param->setValueAtTime(value, startTime);
   };
 
@@ -71,9 +73,11 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
-  auto event = [param = param_,
-                value = static_cast<float>(args[0].getNumber()),
-                endTime = args[1].getNumber()](BaseAudioContext &) {
+  auto endTime = args[1].getNumber();
+  controlQueue_.push(AutomationEvent(AutomationEventType::LINEAR_RAMP, endTime));
+
+  auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime](
+                   BaseAudioContext &) {
     param->linearRampToValueAtTime(value, endTime);
   };
 
@@ -82,9 +86,11 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
-  auto event = [param = param_,
-                value = static_cast<float>(args[0].getNumber()),
-                endTime = args[1].getNumber()](BaseAudioContext &) {
+  auto endTime = args[1].getNumber();
+  controlQueue_.push(AutomationEvent(AutomationEventType::EXPONENTIAL_RAMP, endTime));
+
+  auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime](
+                   BaseAudioContext &) {
     param->exponentialRampToValueAtTime(value, endTime);
   };
 
@@ -93,9 +99,12 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setTargetAtTime) {
+  auto startTime = args[1].getNumber();
+  controlQueue_.push(AutomationEvent(AutomationEventType::SET_TARGET, startTime));
+
   auto event = [param = param_,
                 target = static_cast<float>(args[0].getNumber()),
-                startTime = args[1].getNumber(),
+                startTime,
                 timeConstant = args[2].getNumber()](BaseAudioContext &) {
     param->setTargetAtTime(target, startTime, timeConstant);
   };
@@ -105,17 +114,18 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setTargetAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
+  auto startTime = args[1].getNumber();
+  auto duration = args[2].getNumber();
+  controlQueue_.push(
+      AutomationEvent(AutomationEventType::SET_VALUE_CURVE, startTime, startTime + duration));
+
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto *rawValues = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime) / sizeof(float));
   auto values = std::make_shared<AudioArray>(rawValues, length);
 
-  auto event = [param = param_,
-                values,
-                length,
-                startTime = args[1].getNumber(),
-                duration = args[2].getNumber()](BaseAudioContext &) {
+  auto event = [param = param_, values, length, startTime, duration](BaseAudioContext &) {
     param->setValueCurveAtTime(values, length, startTime, duration);
   };
 
@@ -124,7 +134,10 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelScheduledValues) {
-  auto event = [param = param_, cancelTime = args[0].getNumber()](BaseAudioContext &) {
+  auto cancelTime = args[0].getNumber();
+  controlQueue_.cancelScheduledValues(cancelTime);
+
+  auto event = [param = param_, cancelTime](BaseAudioContext &) {
     param->cancelScheduledValues(cancelTime);
   };
 
@@ -133,7 +146,10 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelScheduledValues) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelAndHoldAtTime) {
-  auto event = [param = param_, cancelTime = args[0].getNumber()](BaseAudioContext &) {
+  auto cancelTime = args[0].getNumber();
+  controlQueue_.cancelScheduledValues(cancelTime);
+
+  auto event = [param = param_, cancelTime](BaseAudioContext &) {
     param->cancelAndHoldAtTime(cancelTime);
   };
 
@@ -164,24 +180,17 @@ Result<NoneType, std::string> AudioParamHostObject::checkCurveExclusionFromJSI(
     const jsi::Value *args) {
   auto arg = args[0].getObject(runtime);
   auto type = static_cast<AutomationEventType>(arg.getProperty(runtime, "type").getNumber());
+  auto automationTime = arg.getProperty(runtime, "automationTime").getNumber();
 
-  switch (type) {
-    case AutomationEventType::SET_VALUE:
-    case AutomationEventType::LINEAR_RAMP:
-    case AutomationEventType::EXPONENTIAL_RAMP:
-    case AutomationEventType::SET_TARGET: {
-      auto startTime = arg.getProperty(runtime, "startTime").getNumber();
-      return controlQueue_.checkCurveExclusion(AutomationEvent(type, startTime));
-    }
-    case AutomationEventType::SET_VALUE_CURVE: {
-      auto startTime = arg.getProperty(runtime, "startTime").getNumber();
-      auto duration = arg.getProperty(runtime, "duration").getNumber();
-      return controlQueue_.checkCurveExclusion(
-          AutomationEvent(type, startTime, startTime + duration));
-    }
-    default:
-      return Ok(None);
+  AutomationEvent event;
+  if (type == AutomationEventType::SET_VALUE_CURVE) {
+    auto duration = arg.getProperty(runtime, "duration").getNumber();
+    event = AutomationEvent(type, automationTime, automationTime + duration);
+  } else {
+    event = AutomationEvent(type, automationTime);
   }
+
+  return controlQueue_.checkCurveExclusion(event);
 }
 
 } // namespace audioapi

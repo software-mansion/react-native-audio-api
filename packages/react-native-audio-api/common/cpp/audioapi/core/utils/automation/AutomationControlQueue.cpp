@@ -42,11 +42,11 @@ void AutomationControlQueue::cancelScheduledValues(double cancelTime) {
   }
 }
 
-const AutomationEvent *AutomationControlQueue::findEventAtTime(double time) const {
+const AutomationEvent *AutomationControlQueue::findEventAtTime(double automationTime) const {
   for (const auto &event : eventQueue_) {
-    if ((event.getType() == AutomationEventType::SET_VALUE_CURVE && event.getStartTime() <= time &&
-         time <= event.getEndTime()) ||
-        event.getStartTime() == time) {
+    if ((event.getType() == AutomationEventType::SET_VALUE_CURVE &&
+         event.getStartTime() <= automationTime && automationTime <= event.getEndTime()) ||
+        event.getAutomationEventTime() == automationTime) {
       return &event;
     }
   }

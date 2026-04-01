@@ -259,18 +259,18 @@ export enum AutomationEventType {
 }
 
 export type AutomationEventData =
-  | { type: AutomationEventType.SET_VALUE; startTime: number }
-  | { type: AutomationEventType.LINEAR_RAMP; endTime: number }
+  | { type: AutomationEventType.SET_VALUE; automationTime: number }
+  | { type: AutomationEventType.LINEAR_RAMP; automationTime: number }
   | {
       type: AutomationEventType.EXPONENTIAL_RAMP;
-      endTime: number;
+      automationTime: number;
     }
   | {
       type: AutomationEventType.SET_TARGET;
-      startTime: number;
+      automationTime: number;
     }
   | {
       type: AutomationEventType.SET_VALUE_CURVE;
-      startTime: number;
+      automationTime: number;
       duration: number;
     };

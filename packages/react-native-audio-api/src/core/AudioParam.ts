@@ -35,7 +35,7 @@ export default class AudioParam {
 
     const checkExclusionResult = this.audioParam.checkCurveExclusion({
       type: AutomationEventType.SET_VALUE,
-      startTime,
+      automationTime: startTime,
     });
 
     if (checkExclusionResult.status === 'error') {
@@ -57,7 +57,7 @@ export default class AudioParam {
 
     const checkExclusionResult = this.audioParam.checkCurveExclusion({
       type: AutomationEventType.LINEAR_RAMP,
-      endTime,
+      automationTime: endTime,
     });
 
     if (checkExclusionResult.status === 'error') {
@@ -86,7 +86,7 @@ export default class AudioParam {
 
     const checkExclusionResult = this.audioParam.checkCurveExclusion({
       type: AutomationEventType.EXPONENTIAL_RAMP,
-      endTime,
+      automationTime: endTime,
     });
 
     if (checkExclusionResult.status === 'error') {
@@ -118,7 +118,7 @@ export default class AudioParam {
 
     const checkExclusionResult = this.audioParam.checkCurveExclusion({
       type: AutomationEventType.SET_TARGET,
-      startTime,
+      automationTime: startTime,
     });
 
     if (checkExclusionResult.status === 'error') {
@@ -154,7 +154,7 @@ export default class AudioParam {
 
     const checkExclusionResult = this.audioParam.checkCurveExclusion({
       type: AutomationEventType.SET_VALUE_CURVE,
-      startTime,
+      automationTime: startTime,
       duration,
     });
 

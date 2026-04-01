@@ -9,8 +9,16 @@ class AutomationEvent {
   AutomationEvent() = default;
   ~AutomationEvent() = default;
 
-  explicit AutomationEvent(AutomationEventType type, double startTime, double endTime = 0.0)
+  explicit AutomationEvent(AutomationEventType type, double startTime, double endTime)
       : type_(type), startTime_(startTime), endTime_(endTime) {}
+
+  /// @brief Construct from a single automationTime value, setting startTime or endTime based on type.
+  /// Ramp events (LINEAR_RAMP, EXPONENTIAL_RAMP) store automationTime as endTime.
+  /// All other types store it as startTime.
+  explicit AutomationEvent(AutomationEventType type, double automationTime)
+      : type_(type),
+        startTime_(isRamp(type) ? 0.0 : automationTime),
+        endTime_(isRamp(type) ? automationTime : 0.0) {}
 
   AutomationEvent(const AutomationEvent &) = delete;
   AutomationEvent &operator=(const AutomationEvent &) = delete;
@@ -28,9 +36,7 @@ class AutomationEvent {
   }
 
   [[nodiscard]] double getAutomationEventTime() const noexcept {
-    bool isRamp =
-        type_ == AutomationEventType::LINEAR_RAMP || type_ == AutomationEventType::EXPONENTIAL_RAMP;
-    return isRamp ? endTime_ : startTime_;
+    return isRamp(type_) ? endTime_ : startTime_;
   }
 
   [[nodiscard]] double getStartTime() const noexcept {
@@ -53,6 +59,12 @@ class AutomationEvent {
   double startTime_ = 0.0;
   double endTime_ = 0.0;
   AutomationEventType type_ = AutomationEventType::SET_VALUE;
+
+ private:
+  static bool isRamp(AutomationEventType type) noexcept {
+    return type == AutomationEventType::LINEAR_RAMP ||
+        type == AutomationEventType::EXPONENTIAL_RAMP;
+  }
 };
 
 } // namespace audioapi
