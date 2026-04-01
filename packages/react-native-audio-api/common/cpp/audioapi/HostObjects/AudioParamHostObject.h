@@ -39,7 +39,7 @@ class AudioParamHostObject : public JsiHostObject {
   friend class AudioNodeHostObject;
 
   std::shared_ptr<AudioParam> param_;
-  AutomationControlQueue controlQueue_ = AutomationControlQueue();
+  AutomationControlQueue controlQueue_;
   float defaultValue_;
   float minValue_;
   float maxValue_;

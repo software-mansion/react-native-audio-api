@@ -1,6 +1,7 @@
 #pragma once
 
 #include <utility>
+#include "audioapi/core/utils/Constants.h"
 #include "audioapi/utils/BoundedPriorityQueue.hpp"
 
 namespace audioapi {
@@ -8,6 +9,11 @@ namespace audioapi {
 template <typename TEvent>
 class AutomationQueueBase {
  public:
+  AutomationQueueBase() = default;
+  AutomationQueueBase(const AutomationQueueBase &) = delete;
+  AutomationQueueBase &operator=(const AutomationQueueBase &) = delete;
+  AutomationQueueBase(AutomationQueueBase &&) noexcept = delete;
+  AutomationQueueBase &operator=(AutomationQueueBase &&) noexcept = delete;
   virtual ~AutomationQueueBase() = default;
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
@@ -23,12 +29,12 @@ class AutomationQueueBase {
   }
 
   /// @brief Check if the event queue is empty.
-  [[nodiscard]] inline bool isEmpty() const noexcept {
+  [[nodiscard]] bool isEmpty() const noexcept {
     return eventQueue_.isEmpty();
   }
 
   /// @brief Check if the event queue is full.
-  [[nodiscard]] inline bool isFull() const noexcept {
+  [[nodiscard]] bool isFull() const noexcept {
     return eventQueue_.isFull();
   }
 
@@ -51,7 +57,7 @@ class AutomationQueueBase {
     }
   };
 
-  BoundedPriorityQueue<TEvent, 32, EventComparator> eventQueue_;
+  BoundedPriorityQueue<TEvent, AUDIO_PARAM_MAX_QUEUED_EVENTS, EventComparator> eventQueue_;
 };
 
 } // namespace audioapi

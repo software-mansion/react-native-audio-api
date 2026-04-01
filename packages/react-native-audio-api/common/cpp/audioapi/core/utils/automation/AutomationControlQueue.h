@@ -24,8 +24,8 @@ class AutomationControlQueue : public AutomationQueueBase<AutomationEvent> {
   void cancelScheduledValues(double cancelTime) override;
 
  private:
-  const AutomationEvent *findEventAtTime(double time) const;
-  const AutomationEvent *findEventInInterval(double startTime, double endTime) const;
+  [[nodiscard]] const AutomationEvent *findEventAtTime(double time) const;
+  [[nodiscard]] const AutomationEvent *findEventInInterval(double startTime, double endTime) const;
 };
 
 } // namespace audioapi

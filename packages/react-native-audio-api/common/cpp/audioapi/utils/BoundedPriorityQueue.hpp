@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <functional>
 #include <memory_resource>
@@ -28,9 +29,9 @@ class BoundedPriorityQueue {
   static constexpr size_t kBufferSize = Capacity * kNodeSize + 256;
 
   // Members must be declared in this order: buffer_ → mono_ → pool_ → set_.
-  alignas(std::max_align_t) std::byte buffer_[kBufferSize];
+  alignas(std::max_align_t) std::array<std::byte, kBufferSize> buffer_;
   std::pmr::monotonic_buffer_resource mono_{
-      buffer_,
+      buffer_.data(),
       sizeof(buffer_),
       std::pmr::null_memory_resource()};
   std::pmr::unsynchronized_pool_resource pool_{
@@ -43,7 +44,7 @@ class BoundedPriorityQueue {
  public:
   /// @brief Forward iterator that exposes const T& directly.
   struct Iterator {
-    typename SetType::const_iterator inner_;
+    SetType::const_iterator inner_;
 
     const T &operator*() const noexcept {
       return *inner_;
@@ -68,14 +69,17 @@ class BoundedPriorityQueue {
 
   BoundedPriorityQueue(const BoundedPriorityQueue &) = delete;
   BoundedPriorityQueue &operator=(const BoundedPriorityQueue &) = delete;
+  BoundedPriorityQueue(BoundedPriorityQueue &&) noexcept = delete;
+  BoundedPriorityQueue &operator=(BoundedPriorityQueue &&) noexcept = delete;
 
   /// @brief Insert a value in sorted order. Amortized O(1) when inserting the largest element
   /// (common case: events scheduled in chronological order), O(log n) otherwise.
   /// @return True if inserted, false if full.
   template <typename U>
   bool push(U &&value) {
-    if (isFull()) [[unlikely]]
-      return false;
+    if (isFull()) {
+      [[unlikely]] return false;
+    }
     // Hint with end(): amortized O(1) when the new event has the largest key (in-order scheduling).
     set_.insert(set_.end(), std::forward<U>(value));
     return true;
@@ -84,8 +88,9 @@ class BoundedPriorityQueue {
   /// @brief Remove and return the smallest element (front). Amortized O(1).
   /// @return True if successful, false if empty.
   bool pop(T &out) {
-    if (isEmpty()) [[unlikely]]
-      return false;
+    if (isEmpty()) {
+      [[unlikely]] return false;
+    }
     auto node = set_.extract(set_.begin());
     out = std::move(node.value());
     return true;
@@ -94,8 +99,9 @@ class BoundedPriorityQueue {
   /// @brief Remove the smallest element (front) without retrieving it. Amortized O(1).
   /// @return True if successful, false if empty.
   bool pop() {
-    if (isEmpty()) [[unlikely]]
-      return false;
+    if (isEmpty()) {
+      [[unlikely]] return false;
+    }
     set_.erase(set_.begin());
     return true;
   }
@@ -103,45 +109,46 @@ class BoundedPriorityQueue {
   /// @brief Remove the largest element (back). Amortized O(1).
   /// @return True if successful, false if empty.
   bool popBack() {
-    if (isEmpty()) [[unlikely]]
-      return false;
+    if (isEmpty()) {
+      [[unlikely]] return false;
+    }
     set_.erase(std::prev(set_.end()));
     return true;
   }
 
   /// @brief Peek at the smallest element (front).
-  [[nodiscard]] inline const T &peekFront() const noexcept {
+  [[nodiscard]] const T &peekFront() const noexcept {
     return *set_.begin();
   }
 
   /// @brief Peek at the smallest element (front), mutable.
-  [[nodiscard]] inline T &peekFrontMut() noexcept {
+  [[nodiscard]] T &peekFrontMut() noexcept {
     return const_cast<T &>(*set_.begin());
   }
 
   /// @brief Peek at the largest element (back).
-  [[nodiscard]] inline const T &peekBack() const noexcept {
+  [[nodiscard]] const T &peekBack() const noexcept {
     return *std::prev(set_.end());
   }
 
   /// @brief Peek at the largest element (back), mutable.
-  [[nodiscard]] inline T &peekBackMut() noexcept {
+  [[nodiscard]] T &peekBackMut() noexcept {
     return const_cast<T &>(*std::prev(set_.end()));
   }
 
-  [[nodiscard]] inline bool isEmpty() const noexcept {
+  [[nodiscard]] bool isEmpty() const noexcept {
     return set_.empty();
   }
 
-  [[nodiscard]] inline bool isFull() const noexcept {
+  [[nodiscard]] bool isFull() const noexcept {
     return set_.size() >= Capacity;
   }
 
-  [[nodiscard]] inline size_t size() const noexcept {
+  [[nodiscard]] size_t size() const noexcept {
     return set_.size();
   }
 
-  [[nodiscard]] inline size_t getCapacity() const noexcept {
+  [[nodiscard]] size_t getCapacity() const noexcept {
     return Capacity;
   }
 

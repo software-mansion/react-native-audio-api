@@ -12,7 +12,7 @@ Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
     const AutomationEvent &event) {
   if (event.getType() == AutomationEventType::SET_VALUE_CURVE) {
     const auto *conflict = findEventInInterval(event.getStartTime(), event.getEndTime());
-    if (conflict) {
+    if (conflict != nullptr) {
       return Err(
           std::format(
               "Cannot schedule curve event from time {} to {} because it conflicts with an existing event of type {} at time {}.",
@@ -23,7 +23,7 @@ Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
     }
   } else {
     const auto *conflict = findEventAtTime(event.getAutomationEventTime());
-    if (conflict && conflict->getType() == AutomationEventType::SET_VALUE_CURVE) {
+    if ((conflict != nullptr) && conflict->getType() == AutomationEventType::SET_VALUE_CURVE) {
       return Err(
           std::format(
               "Cannot schedule event of type {} at time {} because it conflicts with an existing curve event from time {} to {}.",
