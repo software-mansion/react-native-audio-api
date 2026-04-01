@@ -4,6 +4,10 @@ import AudioContext from '../../../core/AudioContext';
 import type BaseAudioContext from '../../../core/BaseAudioContext';
 import { AudioProps, AudioPropsBase } from './types';
 
+const noop = () => {};
+const noopError = (_error: Error) => {};
+const noopNumber = (_number: number) => {};
+
 /**
  * Merge props with defaults. `resolvedContext` must be stable when using the
  * implicit default (see `useStableAudioProps` — one `AudioContext` per hook
@@ -13,10 +17,6 @@ export function withPropsDefaults(
   props: AudioProps,
   resolvedContext: BaseAudioContext | undefined
 ): AudioPropsBase {
-  const noop = () => {};
-  const noopError = (_error: Error) => {};
-  const noopNumber = (_number: number) => {};
-
   return {
     ...props,
     autoPlay: props.autoPlay ?? false,
@@ -32,8 +32,7 @@ export function withPropsDefaults(
     onLoadStart: props.onLoadStart ?? noop,
     onLoad: props.onLoad ?? noop,
     onError: props.onError ?? noopError,
-    onPositionChanged: props.onPositionChanged ?? noopNumber,
-    onSeek: props.onSeek ?? noopNumber,
+    onPositionChange: props.onPositionChange ?? noopNumber,
     onEnded: props.onEnded ?? noop,
     onPlay: props.onPlay ?? noop,
     onPause: props.onPause ?? noop,
@@ -66,8 +65,7 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
     onLoadStart,
     onLoad,
     onError,
-    onPositionChanged,
-    onSeek,
+    onPositionChange,
     onEnded,
     onPlay,
     onPause,
@@ -92,8 +90,7 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       onLoadStart,
       onLoad,
       onError,
-      onPositionChanged,
-      onSeek,
+      onPositionChange,
       onEnded,
       onPlay,
       onPause,
@@ -113,8 +110,7 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       onLoadStart,
       onLoad,
       onError,
-      onPositionChanged,
-      onSeek,
+      onPositionChange,
       onEnded,
       onPlay,
       onPause,

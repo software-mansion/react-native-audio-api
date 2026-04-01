@@ -22,13 +22,9 @@ export type AudioSource = AudioURISource | AudioRequireSource | string;
 
 export type PreloadType = 'auto' | 'metadata' | 'none';
 
-/**
- * Playback phase exposed on `<Audio />` context (native file source or
- * `<audio>` element).
- */
 export type AudioTagPlaybackState = 'idle' | 'playing' | 'paused';
 
-export interface AudioHandle {
+export interface AudioTagHandle {
   play: () => void;
   pause: () => void;
   seekToTime: (seconds: number) => void;
@@ -67,8 +63,7 @@ interface AudioEventProps {
   onLoadStart: TMPEmptyEventHandler;
   onLoad: TMPEmptyEventHandler;
   onError: TMPErrorEventHandler;
-  onPositionChanged: TMPNumberEventHandler;
-  onSeek: TMPNumberEventHandler;
+  onPositionChange: TMPNumberEventHandler;
   onEnded: TMPEmptyEventHandler;
   onPlay: TMPEmptyEventHandler;
   onPause: TMPEmptyEventHandler;

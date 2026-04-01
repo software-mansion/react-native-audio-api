@@ -8,7 +8,11 @@ import React, {
 } from 'react';
 import { View, Image, Platform } from 'react-native';
 
-import type { AudioHandle, AudioProps, AudioTagPlaybackState } from './types';
+import type {
+  AudioTagHandle,
+  AudioProps,
+  AudioTagPlaybackState,
+} from './types';
 
 import { AudioComponentContext } from './AudioTagContext';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
@@ -17,7 +21,7 @@ import { NotSupportedError } from '../../../errors';
 import { NativeAudioAPIModule } from '../../../specs';
 import { AudioControls } from '..';
 
-const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
+const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   const { children } = props;
   const {
     autoPlay,
@@ -33,16 +37,15 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
     onLoadStart,
     onLoad,
     onError,
-    onPositionChanged,
-    onSeek,
+    onPositionChange,
     onEnded: onEndedCallback,
     onPlay,
     onPause,
     onVolumeChange,
   } = useStableAudioProps(props);
   const audioContext = context ?? null;
-  const [volumeState, setVolumeState] = useState(volume);
-  const [mutedState, setMutedState] = useState(muted);
+  const [volumeState, setVolumeState] = useState<number | null>(null);
+  const [mutedState, setMutedState] = useState<boolean | null>(null);
   const [ready, setReady] = useState(false);
 
   const path = useMemo(() => {
@@ -69,7 +72,6 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
   const fileSourceRef = useRef<AudioFileSourceNode>(null);
   const sourceRef = useRef<ArrayBuffer | string | null>(null);
 
-  const effectiveVolumeRef = useRef(mutedState ? 0 : volumeState);
   const lastEffectiveVolumeRef = useRef(muted ? 0 : volume);
 
   const [playbackState, setPlaybackState] =
@@ -77,10 +79,17 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  const effectiveMutedState = useMemo(() => {
+    return mutedState ?? muted;
+  }, [mutedState, muted]);
+
+  const effectiveVolumeState = useMemo(() => {
+    return effectiveMutedState ? 0 : (volumeState ?? volume);
+  }, [effectiveMutedState, volumeState, volume]);
+
   useEffect(() => {
-    effectiveVolumeRef.current = mutedState ? 0 : volumeState;
-    fileSourceRef.current?.setVolume(effectiveVolumeRef.current);
-  }, [mutedState, volumeState]);
+    fileSourceRef.current?.setVolume(effectiveVolumeState);
+  }, [effectiveVolumeState]);
 
   const play = useCallback(() => {
     fileSourceRef.current?.play();
@@ -102,9 +111,9 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
           ? Math.max(0, Math.min(seconds, duration))
           : Math.max(0, seconds);
       setCurrentTime(nextTime);
-      onSeek(nextTime);
+      onPositionChange(nextTime);
     },
-    [duration, onSeek, setCurrentTime]
+    [duration, setCurrentTime, onPositionChange]
   );
 
   const spawnFileSource = useCallback(() => {
@@ -121,7 +130,7 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
     const node = context.context.createFileSource({
       source: nextSource,
       loop,
-      volume: effectiveVolumeRef.current,
+      volume: effectiveVolumeState,
     });
     if (!node) {
       onError(new NotSupportedError('This file format requires FFmpeg build'));
@@ -139,7 +148,7 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
       },
     });
 
-    fileSource.setVolume(effectiveVolumeRef.current);
+    fileSource.setVolume(effectiveVolumeState);
     fileSourceRef.current = fileSource;
     setDuration(nextDuration);
     onLoad();
@@ -149,7 +158,16 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
       setPlaybackState('playing');
       onPlay();
     }
-  }, [context, loop, onError, onEndedCallback, onLoad, onPlay, autoPlay]);
+  }, [
+    context,
+    loop,
+    onError,
+    onEndedCallback,
+    onLoad,
+    onPlay,
+    autoPlay,
+    effectiveVolumeState,
+  ]);
 
   useEffect(() => {
     if (!path) {
@@ -205,12 +223,11 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
   }, [path, source, spawnFileSource, onError, onLoadStart]);
 
   useEffect(() => {
-    const effectiveVolume = mutedState ? 0 : volumeState;
-    if (lastEffectiveVolumeRef.current !== effectiveVolume) {
-      lastEffectiveVolumeRef.current = effectiveVolume;
-      onVolumeChange(effectiveVolume);
+    if (lastEffectiveVolumeRef.current !== effectiveVolumeState) {
+      lastEffectiveVolumeRef.current = effectiveVolumeState;
+      onVolumeChange(effectiveVolumeState);
     }
-  }, [mutedState, onVolumeChange, volumeState]);
+  }, [onVolumeChange, effectiveVolumeState]);
 
   useEffect(() => {
     fileSourceRef.current?.setLoop(loop);
@@ -223,13 +240,13 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
 
     fileSourceRef.current?.startPositionTracking((seconds) => {
       setCurrentTime(seconds);
-      onPositionChanged(seconds);
+      onPositionChange(seconds);
     });
 
     return () => {
       fileSourceRef.current?.stopPositionTracking();
     };
-  }, [onPositionChanged, playbackState]);
+  }, [onPositionChange, playbackState]);
 
   useImperativeHandle(
     ref,
@@ -249,10 +266,10 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
       pause,
       seekToTime,
       setVolume: setVolumeState,
-      volume: volumeState,
+      volume: effectiveVolumeState,
       ready,
       setMuted: setMutedState,
-      muted: mutedState,
+      muted: effectiveMutedState,
       playbackState,
       currentTime,
       duration,
@@ -271,10 +288,10 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
       pause,
       seekToTime,
       setVolumeState,
-      volumeState,
+      effectiveVolumeState,
       ready,
       setMutedState,
-      mutedState,
+      effectiveMutedState,
       playbackState,
       currentTime,
       duration,

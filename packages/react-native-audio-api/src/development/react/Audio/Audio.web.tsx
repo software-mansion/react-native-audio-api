@@ -8,11 +8,15 @@ import React, {
 } from 'react';
 import { View } from 'react-native';
 
-import type { AudioHandle, AudioProps, AudioTagPlaybackState } from './types';
+import type {
+  AudioTagHandle,
+  AudioProps,
+  AudioTagPlaybackState,
+} from './types';
 import { AudioComponentContext } from './AudioTagContext';
 import { useStableAudioProps } from './utils';
 
-const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
+const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   const { children } = props;
   const {
     autoPlay,
@@ -27,8 +31,7 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
     onLoadStart,
     onLoad,
     onError,
-    onPositionChanged,
-    onSeek,
+    onPositionChange,
     onEnded: onEndedCallback,
     onPlay,
     onPause,
@@ -37,16 +40,25 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const [volumeState, setVolumeState] = useState(volume);
-  const [mutedState, setMutedState] = useState(muted);
+  const [mutedState, setMutedState] = useState<boolean | null>(null);
   const [ready, setReady] = useState(false);
   const [playbackState, setPlaybackState] =
     useState<AudioTagPlaybackState>('idle');
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const lastPropMutedRef = useRef(muted);
-  const lastPropVolumeRef = useRef(volume);
   const lastElementVolumeRef = useRef(muted ? 0 : volume);
-  const isSeekingRef = useRef(false);
+
+  const effectiveMutedState = useMemo(() => {
+    return mutedState ?? muted;
+  }, [mutedState, muted]);
+
+  const effectiveVolumeState = useMemo(() => {
+    return volumeState ?? volume;
+  }, [volumeState, volume]);
+
+  const reportedVolumeState = useMemo(() => {
+    return effectiveMutedState ? 0 : effectiveVolumeState;
+  }, [effectiveMutedState, effectiveVolumeState]);
 
   const path = useMemo(() => {
     if (!source) {
@@ -78,53 +90,26 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
     if (!el) {
       return;
     }
-    el.volume = mutedState ? 0 : volumeState;
-  }, [mutedState, volumeState]);
+    el.volume = effectiveVolumeState;
+  }, [effectiveVolumeState]);
 
   useEffect(() => {
     const el = audioRef.current;
     if (!el) {
       return;
     }
-    el.muted = mutedState;
-  }, [mutedState]);
-
-  useEffect(() => {
-    if (lastPropVolumeRef.current !== volume) {
-      lastPropVolumeRef.current = volume;
-      setVolumeState(volume);
-    }
-  }, [volume]);
-
-  useEffect(() => {
-    if (lastPropMutedRef.current !== muted) {
-      lastPropMutedRef.current = muted;
-      setMutedState(muted);
-    }
-  }, [muted]);
+    el.muted = effectiveMutedState;
+  }, [effectiveMutedState]);
 
   useEffect(() => {
     const el = audioRef.current;
     if (!el) {
       return;
     }
-
-    const handleLoadedMetadata = () => {
-      setDuration(el.duration);
-      setCurrentTime(el.currentTime);
-    };
 
     const handleTimeUpdate = () => {
-      if (!isSeekingRef.current) {
-        setCurrentTime(el.currentTime);
-        onPositionChanged(el.currentTime);
-      }
-    };
-
-    const handleSeeked = () => {
       setCurrentTime(el.currentTime);
-      onSeek(el.currentTime);
-      isSeekingRef.current = false;
+      onPositionChange(el.currentTime);
     };
 
     const handleVolumeChange = () => {
@@ -140,21 +125,17 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
       }
     };
 
-    el.addEventListener('loadedmetadata', handleLoadedMetadata);
     el.addEventListener('timeupdate', handleTimeUpdate);
-    el.addEventListener('seeked', handleSeeked);
     el.addEventListener('volumechange', handleVolumeChange);
     setDuration(el.duration);
     setCurrentTime(el.currentTime);
     lastElementVolumeRef.current = el.muted ? 0 : el.volume;
 
     return () => {
-      el.removeEventListener('loadedmetadata', handleLoadedMetadata);
       el.removeEventListener('timeupdate', handleTimeUpdate);
-      el.removeEventListener('seeked', handleSeeked);
       el.removeEventListener('volumechange', handleVolumeChange);
     };
-  }, [onPositionChanged, onSeek, onVolumeChange, ready]);
+  }, [onPositionChange, onVolumeChange, ready]);
 
   const play = useCallback(() => {
     audioRef.current?.play();
@@ -174,7 +155,6 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
       if (!el) {
         return;
       }
-      isSeekingRef.current = true;
       const nextTime =
         duration > 0
           ? Math.max(0, Math.min(seconds, duration))
@@ -212,9 +192,9 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
       seekToTime,
       setVolume,
       ready,
-      volume: volumeState,
+      volume: reportedVolumeState,
       setMuted,
-      muted: mutedState,
+      muted: effectiveMutedState,
       playbackState,
       currentTime,
       duration,
@@ -232,9 +212,9 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
       seekToTime,
       setVolume,
       ready,
-      volumeState,
+      reportedVolumeState,
       setMuted,
-      mutedState,
+      effectiveMutedState,
       playbackState,
       currentTime,
       duration,
@@ -254,7 +234,7 @@ const Audio = React.forwardRef<AudioHandle, AudioProps>((props, ref) => {
           autoPlay={autoPlay}
           controls={controls}
           loop={loop}
-          muted={mutedState}
+          muted={effectiveMutedState}
           preload={preload}
           src={path}
           ref={audioRef}

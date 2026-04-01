@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Button, View } from 'react-native';
-import { Audio, AudioHandle } from 'react-native-audio-api/development/react';
+import { Audio, AudioTagHandle } from 'react-native-audio-api/development/react';
 
 import { Container } from '../../components';
 
@@ -8,7 +8,7 @@ import { Container } from '../../components';
 const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/mp3/sample4.mp3';
 
 const AudioTag: React.FC = () => {
-  const audioRef = useRef<AudioHandle>(null);
+  const audioRef = useRef<AudioTagHandle>(null);
 
   // const handlePlay = () => {
   //   audioRef.current?.play();
@@ -39,10 +39,9 @@ const AudioTag: React.FC = () => {
                  onLoadStart={() => console.log('onLoadStart')}
                  onLoad={() => console.log('onLoad')}
                  onError={(error) => console.log('onError', error)}
-                 onPositionChanged={(seconds) =>
-                   console.log('onPositionChanged', seconds)
+                 onPositionChange={(seconds) =>
+                   console.log('onPositionChange', seconds)
                  }
-                 onSeek={(seconds) => console.log('onSeek', seconds)}
                  onEnded={() => console.log('onEnded')}
                  onPlay={() => console.log('onPlay')}
                  onPause={() => console.log('onPause')}

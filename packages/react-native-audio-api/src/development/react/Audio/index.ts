@@ -2,7 +2,7 @@ export { default } from './Audio';
 export { useAudioTagContext } from './AudioTagContext';
 
 export type {
-  AudioHandle,
+  AudioTagHandle,
   AudioProps,
   AudioSource,
   AudioTagPlaybackState,
