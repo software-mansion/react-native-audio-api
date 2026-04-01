@@ -5,38 +5,36 @@
 
 namespace audioapi {
 
-void AutomationRenderQueue::push(RenderAutomationEvent &&event) {
+bool AutomationRenderQueue::push(RenderAutomationEvent &&event) {
   if (eventQueue_.isEmpty()) {
-    eventQueue_.push(std::move(event));
+    return eventQueue_.push(std::move(event));
   }
   setEventEndValueToCurrentValue(event);
-  eventQueue_.push(std::move(event));
-}
-
-bool AutomationRenderQueue::pop(RenderAutomationEvent &event) {
-  return eventQueue_.pop(event);
+  return eventQueue_.push(std::move(event));
 }
 
 void AutomationRenderQueue::cancelScheduledValues(double cancelTime) {
   while (!eventQueue_.isEmpty()) {
-    auto &back = eventQueue_.peekBack();
+    const auto &back = eventQueue_.peekBack();
     if (back.getEndTime() < cancelTime) {
       break;
     }
     if (back.getStartTime() >= cancelTime ||
         back.getType() == AutomationEventType::SET_VALUE_CURVE) {
-      eventQueue_.pop();
+      eventQueue_.popBack();
+    } else {
+      break;
     }
   }
 }
 
 void AutomationRenderQueue::cancelAndHoldAtTime(double cancelTime, double &endTimeCache) {
   while (!eventQueue_.isEmpty()) {
-    auto &back = eventQueue_.peekBack();
+    const auto &back = eventQueue_.peekBack();
     if (back.getEndTime() < cancelTime || back.getStartTime() <= cancelTime) {
       break;
     }
-    eventQueue_.pop();
+    eventQueue_.popBack();
   }
 
   if (eventQueue_.isEmpty()) {

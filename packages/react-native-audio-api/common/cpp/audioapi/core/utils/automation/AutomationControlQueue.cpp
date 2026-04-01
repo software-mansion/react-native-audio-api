@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <format>
 #include <string>
-#include <utility>
 #include "audioapi/core/types/AutomationEventType.h"
 #include "audioapi/core/utils/automation/AutomationEvent.hpp"
 #include "audioapi/utils/Result.hpp"
@@ -37,26 +36,14 @@ Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
   return Ok(None);
 }
 
-void AutomationControlQueue::cancelAutomationEvents(double cancelTime) {
-  // BoundedPriorityQueue has no erase; drain into a temp buffer, keep survivors, rebuild.
-  AutomationEvent survivors[32];
-  size_t count = 0;
-
-  AutomationEvent event;
-  while (eventQueue_.pop(event)) {
-    if (event.getAutomationEventTime() < cancelTime) {
-      survivors[count++] = std::move(event);
-    }
-  }
-
-  for (size_t i = 0; i < count; ++i) {
-    eventQueue_.push(std::move(survivors[i]));
+void AutomationControlQueue::cancelScheduledValues(double cancelTime) {
+  while (!eventQueue_.isEmpty() && eventQueue_.peekBack().getAutomationEventTime() >= cancelTime) {
+    eventQueue_.popBack();
   }
 }
 
 const AutomationEvent *AutomationControlQueue::findEventAtTime(double time) const {
-  for (size_t i = 0; i < eventQueue_.size(); ++i) {
-    const auto &event = eventQueue_.peekAt(i);
+  for (const auto &event : eventQueue_) {
     if ((event.getType() == AutomationEventType::SET_VALUE_CURVE && event.getStartTime() <= time &&
          time <= event.getEndTime()) ||
         event.getStartTime() == time) {
@@ -68,8 +55,7 @@ const AutomationEvent *AutomationControlQueue::findEventAtTime(double time) cons
 
 const AutomationEvent *AutomationControlQueue::findEventInInterval(double startTime, double endTime)
     const {
-  for (size_t i = 0; i < eventQueue_.size(); ++i) {
-    const auto &event = eventQueue_.peekAt(i);
+  for (const auto &event : eventQueue_) {
     if (event.getStartTime() >= startTime && event.getStartTime() < endTime) {
       return &event;
     }

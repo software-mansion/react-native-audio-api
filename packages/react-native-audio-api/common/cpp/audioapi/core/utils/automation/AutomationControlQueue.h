@@ -21,7 +21,7 @@ class AutomationControlQueue : public AutomationQueueBase<AutomationEvent> {
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
-  void cancelAutomationEvents(double cancelTime);
+  void cancelScheduledValues(double cancelTime) override;
 
  private:
   const AutomationEvent *findEventAtTime(double time) const;

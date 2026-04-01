@@ -1,214 +1,156 @@
 #pragma once
 
-#include <bit>
+#include <cstddef>
 #include <functional>
-#include <new>
-#include <type_traits>
+#include <memory_resource>
+#include <set>
 #include <utility>
 
 namespace audioapi {
 
-/// @brief A bounded priority queue (min-heap) with fixed capacity. When full, new elements are rejected. When popping, the highest priority element is removed and returned.
-/// @tparam T The type of elements stored in the queue.
-/// @tparam capacity_ The maximum number of elements. Must be a power of two greater than zero.
-/// @tparam Compare Comparator type. Defaults to std::less<T> (min-heap: smallest element at top). The queue implements a stable priority order meaning that if two elements compare equal, the one that was inserted earlier will be popped first.
+/// @brief A bounded priority queue with fixed capacity backed by a static pool allocator.
+/// Elements are kept in ascending sorted order (smallest element at front).
+/// All operations avoid heap allocation.
+/// @tparam T The type of elements stored. Must be move-constructible.
+/// @tparam Capacity The maximum number of elements.
+/// @tparam Compare Comparator type. Defaults to std::less<T> (smallest element at front).
+/// @note Stable: for equal keys, insertion order is preserved by std::multiset.
 /// @note This implementation is NOT thread-safe.
-/// @note Capacity must be a power of two and greater than zero.
-template <typename T, size_t capacity_, typename Compare = std::less<T>>
+template <typename T, size_t Capacity, typename Compare = std::less<T>>
 class BoundedPriorityQueue {
- public:
-  explicit BoundedPriorityQueue() : size_(0) {
-    static_assert(isPowerOfTwo(capacity_), "BoundedPriorityQueue's capacity must be a power of 2");
-    buffer_ = static_cast<TimestampedElement *>(::operator new[](
-        capacity_ * sizeof(TimestampedElement),
-        static_cast<std::align_val_t>(alignof(TimestampedElement))));
-  }
+ private:
+  using SetType = std::pmr::multiset<T, Compare>;
 
-  ~BoundedPriorityQueue() {
-    for (size_t i = 0; i < size_; ++i) {
-      buffer_[i].data.~T();
+  // Conservative RB-tree node size: value + 3 pointers + color, aligned to pointer size.
+  static constexpr size_t kNodeOverhead = 4 * sizeof(void *);
+  static constexpr size_t kNodeSize = sizeof(T) + kNodeOverhead;
+  // Extra headroom for pool resource bookkeeping structures.
+  static constexpr size_t kBufferSize = Capacity * kNodeSize + 256;
+
+  // Members must be declared in this order: buffer_ → mono_ → pool_ → set_.
+  alignas(std::max_align_t) std::byte buffer_[kBufferSize];
+  std::pmr::monotonic_buffer_resource mono_{
+      buffer_,
+      sizeof(buffer_),
+      std::pmr::null_memory_resource()};
+  std::pmr::unsynchronized_pool_resource pool_{
+      std::pmr::pool_options{
+          .max_blocks_per_chunk = Capacity,
+          .largest_required_pool_block = kNodeSize},
+      &mono_};
+  SetType set_{Compare{}, &pool_};
+
+ public:
+  /// @brief Forward iterator that exposes const T& directly.
+  struct Iterator {
+    typename SetType::const_iterator inner_;
+
+    const T &operator*() const noexcept {
+      return *inner_;
     }
-    ::operator delete[](
-        buffer_,
-        capacity_ * sizeof(TimestampedElement),
-        static_cast<std::align_val_t>(alignof(TimestampedElement)));
-  }
+    const T *operator->() const noexcept {
+      return &*inner_;
+    }
+    Iterator &operator++() noexcept {
+      ++inner_;
+      return *this;
+    }
+    bool operator!=(const Iterator &other) const noexcept {
+      return inner_ != other.inner_;
+    }
+    bool operator==(const Iterator &other) const noexcept {
+      return inner_ == other.inner_;
+    }
+  };
+
+  explicit BoundedPriorityQueue() = default;
+  ~BoundedPriorityQueue() = default;
 
   BoundedPriorityQueue(const BoundedPriorityQueue &) = delete;
   BoundedPriorityQueue &operator=(const BoundedPriorityQueue &) = delete;
 
-  /// @brief Push a value into the priority queue.
-  /// @tparam U The type of the value to push.
-  /// @param value The value to push.
-  /// @return True if pushed successfully, false if the queue is full.
+  /// @brief Insert a value in sorted order. Amortized O(1) when inserting the largest element
+  /// (common case: events scheduled in chronological order), O(log n) otherwise.
+  /// @return True if inserted, false if full.
   template <typename U>
-  bool push(U &&value) noexcept(std::is_nothrow_constructible_v<T, U &&>) {
-    if (isFull()) [[unlikely]] {
+  bool push(U &&value) {
+    if (isFull()) [[unlikely]]
       return false;
-    }
-    new (&buffer_[size_]) TimestampedElement(std::forward<U>(value), globalCounter_++);
-    siftUp(size_);
-    ++size_;
+    // Hint with end(): amortized O(1) when the new event has the largest key (in-order scheduling).
+    set_.insert(set_.end(), std::forward<U>(value));
     return true;
   }
 
-  /// @brief Pop the top (highest priority) element and retrieve it.
-  /// @param out The popped element.
-  /// @return True if popped successfully, false if the queue is empty.
-  bool pop(T &out) noexcept(
-      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>) {
-    if (isEmpty()) [[unlikely]] {
+  /// @brief Remove and return the smallest element (front). Amortized O(1).
+  /// @return True if successful, false if empty.
+  bool pop(T &out) {
+    if (isEmpty()) [[unlikely]]
       return false;
-    }
-    out = std::move(buffer_[0].data);
-    buffer_[0].~TimestampedElement();
-    --size_;
-    if (size_ > 0) {
-      new (&buffer_[0]) TimestampedElement(std::move(buffer_[size_]));
-      buffer_[size_].~TimestampedElement();
-      siftDown(0);
-    }
+    auto node = set_.extract(set_.begin());
+    out = std::move(node.value());
     return true;
   }
 
-  /// @brief Pop the top element without retrieving it.
-  /// @return True if popped successfully, false if the queue is empty.
-  bool pop() noexcept(std::is_nothrow_destructible_v<T>) {
-    if (isEmpty()) [[unlikely]] {
+  /// @brief Remove the smallest element (front) without retrieving it. Amortized O(1).
+  /// @return True if successful, false if empty.
+  bool pop() {
+    if (isEmpty()) [[unlikely]]
       return false;
-    }
-    buffer_[0].~TimestampedElement();
-    --size_;
-    if (size_ > 0) {
-      new (&buffer_[0]) TimestampedElement(std::move(buffer_[size_]));
-      buffer_[size_].~TimestampedElement();
-      siftDown(0);
-    }
+    set_.erase(set_.begin());
     return true;
   }
 
-  /// @brief Peek at the top (highest priority) element without removing it.
-  /// @return A const reference to the top element.
+  /// @brief Remove the largest element (back). Amortized O(1).
+  /// @return True if successful, false if empty.
+  bool popBack() {
+    if (isEmpty()) [[unlikely]]
+      return false;
+    set_.erase(std::prev(set_.end()));
+    return true;
+  }
+
+  /// @brief Peek at the smallest element (front).
   [[nodiscard]] inline const T &peekFront() const noexcept {
-    return buffer_[0].data;
+    return *set_.begin();
   }
 
-  /// @brief Peek at the last (lowest priority) element without removing it.
-  /// @return A reference to the last element.
+  /// @brief Peek at the smallest element (front), mutable.
   [[nodiscard]] inline T &peekFrontMut() noexcept {
-    return buffer_[size_ - 1].data;
+    return const_cast<T &>(*set_.begin());
   }
 
-  /// @brief Peek at the last (lowest priority) element without removing it.
-  /// @return A reference to the last element.
+  /// @brief Peek at the largest element (back).
   [[nodiscard]] inline const T &peekBack() const noexcept {
-    return buffer_[size_ - 1].data;
+    return *std::prev(set_.end());
   }
 
-  /// @brief Peek at the last (lowest priority) element without removing it.
-  /// @return A reference to the last element.
+  /// @brief Peek at the largest element (back), mutable.
   [[nodiscard]] inline T &peekBackMut() noexcept {
-    return buffer_[size_ - 1].data;
+    return const_cast<T &>(*std::prev(set_.end()));
   }
 
-  /// @brief Check if the queue is empty.
-  /// @return True if the queue is empty, false otherwise.
   [[nodiscard]] inline bool isEmpty() const noexcept {
-    return size_ == 0;
+    return set_.empty();
   }
 
-  /// @brief Check if the queue is full.
-  /// @return True if the queue is full, false otherwise.
   [[nodiscard]] inline bool isFull() const noexcept {
-    return size_ == capacity_;
+    return set_.size() >= Capacity;
   }
 
-  /// @brief Get the number of elements in the queue.
-  /// @return The current number of elements.
   [[nodiscard]] inline size_t size() const noexcept {
-    return size_;
+    return set_.size();
   }
 
-  /// @brief Get the maximum capacity of the queue.
-  /// @return The capacity.
   [[nodiscard]] inline size_t getCapacity() const noexcept {
-    return capacity_;
+    return Capacity;
   }
 
-  /// @brief Peek at the i-th element in the internal buffer (heap order, not sorted).
-  /// @note Intended for iterating over all elements without removing them.
-  [[nodiscard]] inline const T &peekAt(size_t i) const noexcept {
-    return buffer_[i].data;
+  [[nodiscard]] Iterator begin() const noexcept {
+    return {set_.begin()};
   }
 
- private:
-  // Internal wrapper to track arrival order
-  struct TimestampedElement {
-    T data;
-    uint64_t insertionOrder;
-
-    // Use the provided Compare for T, but fall back to insertionOrder for ties
-    struct InternalCompare {
-      Compare userComp;
-      bool operator()(const TimestampedElement &a, const TimestampedElement &b) const {
-        if (userComp(a.data, b.data)) {
-          return true;
-        }
-        if (userComp(b.data, a.data)) {
-          return false;
-        }
-        return a.insertionOrder < b.insertionOrder;
-      }
-    };
-  };
-
-  TimestampedElement *buffer_;
-  size_t size_;
-  uint64_t globalCounter_ = 0;
-  typename TimestampedElement::InternalCompare compare_;
-
-  static constexpr bool isPowerOfTwo(size_t n) {
-    return std::has_single_bit(n);
-  }
-
-  void siftUp(size_t index) noexcept {
-    while (index > 0) {
-      size_t parent = (index - 1) / 2;
-      if (compare_(buffer_[index], buffer_[parent])) {
-        swapAt(index, parent);
-        index = parent;
-      } else {
-        break;
-      }
-    }
-  }
-
-  void siftDown(size_t index) noexcept {
-    while (true) {
-      size_t left = 2 * index + 1;
-      size_t right = 2 * index + 2;
-      size_t top = index;
-
-      if (left < size_ && compare_(buffer_[left], buffer_[top])) {
-        top = left;
-      }
-      if (right < size_ && compare_(buffer_[right], buffer_[top])) {
-        top = right;
-      }
-      if (top == index) {
-        break;
-      }
-      swapAt(index, top);
-      index = top;
-    }
-  }
-
-  void swapAt(size_t a, size_t b) noexcept {
-    TimestampedElement tmp(std::move(buffer_[a]));
-    buffer_[a].~TimestampedElement();
-    new (&buffer_[a]) TimestampedElement(std::move(buffer_[b]));
-    buffer_[b].~TimestampedElement();
-    new (&buffer_[b]) TimestampedElement(std::move(tmp));
+  [[nodiscard]] Iterator end() const noexcept {
+    return {set_.end()};
   }
 };
 
