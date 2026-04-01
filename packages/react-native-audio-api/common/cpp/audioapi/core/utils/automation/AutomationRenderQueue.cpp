@@ -13,6 +13,7 @@ bool AutomationRenderQueue::push(RenderAutomationEvent &&event) {
   return eventQueue_.push(std::move(event));
 }
 
+// TODO: these lookups can be optimized using multiset interface of the underlying queue
 void AutomationRenderQueue::cancelScheduledValues(double cancelTime) {
   while (!eventQueue_.isEmpty()) {
     const auto &back = eventQueue_.peekBack();
@@ -27,7 +28,7 @@ void AutomationRenderQueue::cancelScheduledValues(double cancelTime) {
     }
   }
 }
-
+// TODO: these lookups can be optimized using multiset interface of the underlying queue
 void AutomationRenderQueue::cancelAndHoldAtTime(double cancelTime, double &endTimeCache) {
   while (!eventQueue_.isEmpty()) {
     const auto &back = eventQueue_.peekBack();

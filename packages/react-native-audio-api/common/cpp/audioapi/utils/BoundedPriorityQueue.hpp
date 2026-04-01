@@ -42,28 +42,6 @@ class BoundedPriorityQueue {
   SetType set_{Compare{}, &pool_};
 
  public:
-  /// @brief Forward iterator that exposes const T& directly.
-  struct Iterator {
-    SetType::const_iterator inner_;
-
-    const T &operator*() const noexcept {
-      return *inner_;
-    }
-    const T *operator->() const noexcept {
-      return &*inner_;
-    }
-    Iterator &operator++() noexcept {
-      ++inner_;
-      return *this;
-    }
-    bool operator!=(const Iterator &other) const noexcept {
-      return inner_ != other.inner_;
-    }
-    bool operator==(const Iterator &other) const noexcept {
-      return inner_ == other.inner_;
-    }
-  };
-
   explicit BoundedPriorityQueue() = default;
   ~BoundedPriorityQueue() = default;
 
@@ -152,12 +130,12 @@ class BoundedPriorityQueue {
     return Capacity;
   }
 
-  [[nodiscard]] Iterator begin() const noexcept {
-    return {set_.begin()};
+  [[nodiscard]] SetType::const_iterator begin() const noexcept {
+    return set_.begin();
   }
 
-  [[nodiscard]] Iterator end() const noexcept {
-    return {set_.end()};
+  [[nodiscard]] SetType::const_iterator end() const noexcept {
+    return set_.end();
   }
 };
 

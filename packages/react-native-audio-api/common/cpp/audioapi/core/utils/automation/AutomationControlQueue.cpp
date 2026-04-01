@@ -42,6 +42,7 @@ void AutomationControlQueue::cancelScheduledValues(double cancelTime) {
   }
 }
 
+// TODO: these lookups can be optimized using multiset interface of the underlying queue
 const AutomationEvent *AutomationControlQueue::findEventAtTime(double automationTime) const {
   for (const auto &event : eventQueue_) {
     if ((event.getType() == AutomationEventType::SET_VALUE_CURVE &&
@@ -53,6 +54,7 @@ const AutomationEvent *AutomationControlQueue::findEventAtTime(double automation
   return nullptr;
 }
 
+// TODO: these lookups can be optimized using multiset interface of the underlying queue
 const AutomationEvent *AutomationControlQueue::findEventInInterval(double startTime, double endTime)
     const {
   for (const auto &event : eventQueue_) {
