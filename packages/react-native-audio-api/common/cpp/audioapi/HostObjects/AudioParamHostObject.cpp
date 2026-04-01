@@ -171,12 +171,12 @@ Result<NoneType, std::string> AudioParamHostObject::checkCurveExclusionFromJSI(
     case AutomationEventType::EXPONENTIAL_RAMP:
     case AutomationEventType::SET_TARGET: {
       auto startTime = arg.getProperty(runtime, "startTime").getNumber();
-      return eventsQueue_.checkCurveExclusion(AutomationEvent(type, startTime));
+      return controlQueue_.checkCurveExclusion(AutomationEvent(type, startTime));
     }
     case AutomationEventType::SET_VALUE_CURVE: {
       auto startTime = arg.getProperty(runtime, "startTime").getNumber();
       auto duration = arg.getProperty(runtime, "duration").getNumber();
-      return eventsQueue_.checkCurveExclusion(
+      return controlQueue_.checkCurveExclusion(
           AutomationEvent(type, startTime, startTime + duration));
     }
     default:
