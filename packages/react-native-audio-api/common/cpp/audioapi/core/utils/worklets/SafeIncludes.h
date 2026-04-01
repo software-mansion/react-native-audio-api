@@ -36,16 +36,23 @@ class MessageQueueThread {};
 class WorkletsModuleProxy {};
 class WorkletRuntime {
  public:
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) -- dummy type, members unused
   explicit WorkletRuntime(
       uint64_t,
       const std::shared_ptr<MessageQueueThread> &,
       const std::string &,
-      const bool){throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Runtime &getJSIRuntime() const {
+      const bool) {
+    throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
+  [[nodiscard]] jsi::Runtime &getJSIRuntime() const {
+    throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
+  [[nodiscard]] jsi::Value executeSync(jsi::Runtime &rt, const jsi::Value &worklet) const {
+    throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
+  }
+  [[nodiscard]] jsi::Value executeSync(std::function<jsi::Value(jsi::Runtime &)> &&job) const {
+      // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
       throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
-      executeSync(jsi::Runtime &rt, const jsi::Value &worklet) const {
-          throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
-      executeSync(std::function<jsi::Value(jsi::Runtime &)> &&job) const {
-          throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
       executeSync(const std::function<jsi::Value(jsi::Runtime &)> &job) const {
     throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
   }
@@ -65,7 +72,8 @@ class SerializableWorklet {
 
 /// @brief Struct to hold references to different runtimes used in the AudioAPI
 /// @note it is used to pass them around and avoid creating multiple instances of the same runtime
-struct RuntimeRegistry {
+struct
+    RuntimeRegistry { // NOLINT(cppcoreguidelines-pro-type-member-init) -- weak_ptr/shared_ptr default-init
   std::weak_ptr<worklets::WorkletRuntime> uiRuntime;
   std::shared_ptr<worklets::WorkletRuntime> audioRuntime;
 

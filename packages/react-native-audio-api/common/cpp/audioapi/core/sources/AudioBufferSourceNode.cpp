@@ -72,7 +72,7 @@ void AudioBufferSourceNode::setBuffer(
 
   buffer_ = buffer;
   audioBuffer_ = audioBuffer;
-  channelCount_ = buffer_->getNumberOfChannels();
+  channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
   loopEnd_ = buffer_->getDuration();
 }
 
@@ -127,6 +127,7 @@ bool AudioBufferSourceNode::isEmpty() const {
   return buffer_ == nullptr;
 }
 
+// todo: refactor so its less complex and more readable
 void AudioBufferSourceNode::processWithoutInterpolation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,

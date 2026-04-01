@@ -7,6 +7,7 @@ namespace audioapi {
 class AutomationEvent {
  public:
   AutomationEvent() = default;
+  ~AutomationEvent() = default;
 
   explicit AutomationEvent(AutomationEventType type, double startTime, double endTime = 0.0)
       : type_(type), startTime_(startTime), endTime_(endTime) {}
@@ -26,32 +27,32 @@ class AutomationEvent {
     return *this;
   }
 
-  [[nodiscard]] inline double getAutomationEventTime() const noexcept {
+  [[nodiscard]] double getAutomationEventTime() const noexcept {
     bool isRamp =
         type_ == AutomationEventType::LINEAR_RAMP || type_ == AutomationEventType::EXPONENTIAL_RAMP;
     return isRamp ? endTime_ : startTime_;
   }
 
-  [[nodiscard]] inline double getStartTime() const noexcept {
+  [[nodiscard]] double getStartTime() const noexcept {
     return startTime_;
   }
 
-  [[nodiscard]] inline double getEndTime() const noexcept {
+  [[nodiscard]] double getEndTime() const noexcept {
     return endTime_;
   }
 
-  [[nodiscard]] inline AutomationEventType getType() const noexcept {
+  [[nodiscard]] AutomationEventType getType() const noexcept {
     return type_;
   }
 
-  inline void setEndTime(double endTime) noexcept {
+  void setEndTime(double endTime) noexcept {
     endTime_ = endTime;
   }
 
  protected:
   double startTime_ = 0.0;
   double endTime_ = 0.0;
-  AutomationEventType type_;
+  AutomationEventType type_ = AutomationEventType::SET_VALUE;
 };
 
 } // namespace audioapi

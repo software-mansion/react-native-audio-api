@@ -7,7 +7,6 @@
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <memory>
 #include <unordered_map>
@@ -21,7 +20,7 @@ namespace audioapi {
 template <size_t Alignment>
 class AlignedAudioBuffer {
  public:
-  enum {
+  enum : uint8_t {
     ChannelMono = 0,
     ChannelLeft = 0,
     ChannelRight = 1,

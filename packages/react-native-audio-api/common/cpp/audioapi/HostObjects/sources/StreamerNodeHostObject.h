@@ -20,7 +20,7 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
       const StreamerOptions &options)
       : AudioScheduledSourceNodeHostObject(context->createStreamer(options), options) {}
 
-  [[nodiscard]] static inline size_t getSizeInBytes() {
+  [[nodiscard]] static size_t getSizeInBytes() {
     return SIZE;
   }
 

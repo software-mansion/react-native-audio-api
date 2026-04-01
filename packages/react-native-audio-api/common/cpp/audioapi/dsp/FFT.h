@@ -3,6 +3,7 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/libs/pffft/pffft.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <complex>
 #include <vector>
@@ -13,6 +14,7 @@ class FFT {
  public:
   explicit FFT(int size);
   ~FFT();
+  DELETE_COPY_AND_MOVE(FFT);
 
   template <typename Allocator, size_t Alignment>
   void doFFT(

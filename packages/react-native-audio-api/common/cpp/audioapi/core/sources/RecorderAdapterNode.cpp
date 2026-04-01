@@ -29,7 +29,7 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sample
 
   buff_.resize(channelCount_);
 
-  for (size_t i = 0; i < channelCount_; ++i) {
+  for (int i = 0; i < channelCount_; ++i) {
     buff_[i] = std::make_shared<CircularOverflowableAudioArray>(bufferSize);
   }
 
@@ -58,7 +58,7 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sample
   isInitialized_.store(true, std::memory_order_release);
 }
 
-void RecorderAdapterNode::cleanup() {
+void RecorderAdapterNode::adapterCleanup() {
   needsResampling_ = false;
   buff_.clear();
   resampler_.reset();
@@ -89,7 +89,7 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
   adapterOutputBuffer_->zero();
 
   size_t outputWritten = 0;
-  const size_t needed = static_cast<size_t>(framesToProcess);
+  const auto needed = static_cast<size_t>(framesToProcess);
 
   // Drain leftover resampled samples from the previous call
   if (overflowSize_ > 0) {

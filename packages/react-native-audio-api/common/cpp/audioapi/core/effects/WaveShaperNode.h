@@ -34,7 +34,7 @@ class WaveShaperNode : public AudioNode {
   OverSampleType oversample_;
   std::shared_ptr<AudioArray> curve_;
 
-  std::vector<std::unique_ptr<WaveShaper>> waveShapers_{};
+  std::vector<std::unique_ptr<WaveShaper>> waveShapers_;
 };
 
 } // namespace audioapi

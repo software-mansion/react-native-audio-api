@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
+
 namespace audioapi {
 
-enum class ChannelCountMode { MAX, CLAMPED_MAX, EXPLICIT };
+enum class ChannelCountMode : std::uint8_t { MAX, CLAMPED_MAX, EXPLICIT };
 
 }

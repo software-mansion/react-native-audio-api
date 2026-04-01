@@ -48,20 +48,20 @@ struct StereoPannerOptions : AudioNodeOptions {
     channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 
-  explicit StereoPannerOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
+  explicit StereoPannerOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 };
 
 struct ConvolverOptions : AudioNodeOptions {
   bool disableNormalization = false;
-  std::shared_ptr<AudioBuffer> buffer;
+  std::shared_ptr<AudioBuffer> buffer = nullptr;
 
   ConvolverOptions() {
     requiresTailProcessing = true;
   }
 
-  explicit ConvolverOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
+  explicit ConvolverOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     requiresTailProcessing = true;
   }
 };
@@ -71,23 +71,29 @@ struct ConstantSourceOptions : AudioScheduledSourceNodeOptions {
 };
 
 struct AnalyserOptions : AudioNodeOptions {
-  int fftSize = 2048;
-  float minDecibels = -100.0f;
-  float maxDecibels = -30.0f;
-  float smoothingTimeConstant = 0.8f;
+  static constexpr int kDefaultFftSize = 2048;
+  static constexpr float kDefaultMinDecibels = -100.0f;
+  static constexpr float kDefaultMaxDecibels = -30.0f;
+  static constexpr float kDefaultSmoothingTimeConstant = 0.8f;
+  int fftSize = kDefaultFftSize;
+  float minDecibels = kDefaultMinDecibels;
+  float maxDecibels = kDefaultMaxDecibels;
+  float smoothingTimeConstant = kDefaultSmoothingTimeConstant;
 };
 
 struct BiquadFilterOptions : AudioNodeOptions {
+  static constexpr float kDefaultFrequency = 350.0f;
   BiquadFilterType type = BiquadFilterType::LOWPASS;
-  float frequency = 350.0f;
+  float frequency = kDefaultFrequency;
   float detune = 0.0f;
   float Q = 1.0f;
   float gain = 0.0f;
 };
 
 struct OscillatorOptions : AudioScheduledSourceNodeOptions {
-  std::shared_ptr<PeriodicWave> periodicWave;
-  float frequency = 440.0f;
+  static constexpr float kDefaultFrequency = 440.0f;
+  std::shared_ptr<PeriodicWave> periodicWave = nullptr;
+  float frequency = kDefaultFrequency;
   float detune = 0.0f;
   OscillatorType type = OscillatorType::SINE;
 };
@@ -100,13 +106,13 @@ struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
 };
 
 struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
-  std::shared_ptr<AudioBuffer> buffer;
+  std::shared_ptr<AudioBuffer> buffer = nullptr;
   float loopStart = 0.0f;
   float loopEnd = 0.0f;
   bool loop = false;
   bool loopSkip = false;
 
-  explicit AudioBufferSourceOptions(BaseAudioBufferSourceOptions &&options)
+  explicit AudioBufferSourceOptions(BaseAudioBufferSourceOptions options)
       : BaseAudioBufferSourceOptions(options) {
     channelCount = 1;
   }
@@ -124,7 +130,7 @@ struct DelayOptions : AudioNodeOptions {
     requiresTailProcessing = true;
   }
 
-  explicit DelayOptions(AudioNodeOptions &&options) : AudioNodeOptions(options) {
+  explicit DelayOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     requiresTailProcessing = true;
   }
 };
@@ -135,7 +141,7 @@ struct IIRFilterOptions : AudioNodeOptions {
 
   IIRFilterOptions() = default;
 
-  explicit IIRFilterOptions(const AudioNodeOptions options) : AudioNodeOptions(options) {}
+  explicit IIRFilterOptions(AudioNodeOptions options) : AudioNodeOptions(options) {}
 
   IIRFilterOptions(const std::vector<float> &ff, const std::vector<float> &fb)
       : feedforward(ff), feedback(fb) {}
@@ -145,7 +151,7 @@ struct IIRFilterOptions : AudioNodeOptions {
 };
 
 struct WaveShaperOptions : AudioNodeOptions {
-  std::shared_ptr<AudioArray> curve;
+  std::shared_ptr<AudioArray> curve{nullptr};
   OverSampleType oversample = OverSampleType::OVERSAMPLE_NONE;
 
   WaveShaperOptions() {
@@ -153,7 +159,7 @@ struct WaveShaperOptions : AudioNodeOptions {
     channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 
-  explicit WaveShaperOptions(const AudioNodeOptions &&options) : AudioNodeOptions(options) {
+  explicit WaveShaperOptions(const AudioNodeOptions &options) : AudioNodeOptions(options) {
     // to change after graph processing improvement - should be max
     channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }

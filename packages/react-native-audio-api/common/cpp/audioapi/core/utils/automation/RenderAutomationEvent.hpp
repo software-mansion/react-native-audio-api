@@ -11,6 +11,7 @@ namespace audioapi {
 class RenderAutomationEvent : public AutomationEvent {
  public:
   RenderAutomationEvent() = default;
+  ~RenderAutomationEvent() = default;
 
   explicit RenderAutomationEvent(
       double startTime,
@@ -43,24 +44,24 @@ class RenderAutomationEvent : public AutomationEvent {
     return *this;
   }
 
-  [[nodiscard]] inline float getEndValue() const noexcept {
+  [[nodiscard]] float getEndValue() const noexcept {
     return endValue_;
   }
 
-  [[nodiscard]] inline float getStartValue() const noexcept {
+  [[nodiscard]] float getStartValue() const noexcept {
     return startValue_;
   }
 
-  [[nodiscard]] inline const std::function<float(double, double, float, float, double)> &
+  [[nodiscard]] const std::function<float(double, double, float, float, double)> &
   getCalculateValue() const noexcept {
     return calculateValue_;
   }
 
-  inline void setStartValue(float startValue) noexcept {
+  void setStartValue(float startValue) noexcept {
     startValue_ = startValue;
   }
 
-  inline void setEndValue(float endValue) noexcept {
+  void setEndValue(float endValue) noexcept {
     endValue_ = endValue;
   }
 

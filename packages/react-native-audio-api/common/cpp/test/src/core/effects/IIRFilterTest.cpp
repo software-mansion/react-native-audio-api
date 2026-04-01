@@ -11,6 +11,8 @@
 
 using namespace audioapi;
 
+// NOLINTBEGIN
+
 class IIRFilterTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
@@ -151,3 +153,5 @@ TEST_F(IIRFilterTest, GetFrequencyResponse) {
     }
   }
 }
+
+// NOLINTEND

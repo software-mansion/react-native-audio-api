@@ -26,7 +26,9 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <array>
 #include <complex>
+#include <cstddef>
 #include <vector>
 
 #include <audioapi/utils/AudioArray.hpp>
@@ -57,21 +59,22 @@ class IIRFilterNode : public AudioNode {
       int framesToProcess) override;
 
  private:
-  static constexpr size_t bufferLength = 32;
+  static constexpr size_t BUFFER_LENGTH = 32;
 
   const AudioArray feedforward_;
   const AudioArray feedback_;
 
   AudioBuffer xBuffers_;
   AudioBuffer yBuffers_;
-  DSPAudioArray bufferIndices_;
+  std::array<size_t, BUFFER_LENGTH> bufferIndices_{};
 
   static std::complex<float>
   evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {
     // Use Horner's method to evaluate the polynomial P(z) = sum(coef[k]*z^k, k, 0, order);
     std::complex<float> result = 0;
-    for (int k = order; k >= 0; --k)
+    for (int k = order; k >= 0; --k) {
       result = result * z + std::complex<float>(coefficients[k]);
+    }
     return result;
   }
 

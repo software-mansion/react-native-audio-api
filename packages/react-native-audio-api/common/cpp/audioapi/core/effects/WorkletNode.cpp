@@ -9,9 +9,9 @@ WorkletNode::WorkletNode(
     const std::shared_ptr<BaseAudioContext> &context,
     size_t bufferLength,
     size_t inputChannelCount,
-    WorkletsRunner &&runtime)
+    WorkletsRunner &&workletRunner)
     : AudioNode(context),
-      workletRunner_(std::move(runtime)),
+      workletRunner_(std::move(workletRunner)),
       buffer_(
           std::make_shared<AudioBuffer>(bufferLength, inputChannelCount, context->getSampleRate())),
       bufferLength_(bufferLength),
@@ -23,9 +23,8 @@ WorkletNode::WorkletNode(
 std::shared_ptr<DSPAudioBuffer> WorkletNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  size_t processed = 0;
-  size_t channelCount_ =
-      std::min(inputChannelCount_, static_cast<size_t>(processingBuffer->getNumberOfChannels()));
+  int processed = 0;
+  size_t channelCount_ = std::min(inputChannelCount_, processingBuffer->getNumberOfChannels());
   while (processed < framesToProcess) {
     size_t framesToWorkletInvoke = bufferLength_ - curBuffIndex_;
     size_t needsToProcess = framesToProcess - processed;
@@ -36,7 +35,7 @@ std::shared_ptr<DSPAudioBuffer> WorkletNode::processNode(
     /// from [processed, processed + shouldProcess]
     buffer_->copy(*processingBuffer, processed, curBuffIndex_, shouldProcess);
 
-    processed += shouldProcess;
+    processed += static_cast<int>(shouldProcess);
     curBuffIndex_ += shouldProcess;
 
     /// If we filled the entire buffer, we need to execute the worklet

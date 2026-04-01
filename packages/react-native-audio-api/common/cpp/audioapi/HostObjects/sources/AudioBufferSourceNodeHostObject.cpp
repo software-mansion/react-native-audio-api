@@ -178,7 +178,7 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
   } else {
     if (pitchCorrection_) {
       initStretch(static_cast<int>(buffer->getNumberOfChannels()), buffer->getSampleRate());
-      int extraTailFrames =
+      auto extraTailFrames =
           static_cast<size_t>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
       size_t totalSize = buffer->getSize() + extraTailFrames;
       copiedBuffer = std::make_shared<AudioBuffer>(

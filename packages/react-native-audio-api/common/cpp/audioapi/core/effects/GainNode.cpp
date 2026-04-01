@@ -27,14 +27,15 @@ std::shared_ptr<DSPAudioBuffer> GainNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
+  if (context == nullptr) {
     return processingBuffer;
+  }
   double time = context->getCurrentTime();
   auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
-  auto gainValues = gainParamValues->getChannel(0);
+  auto *gainValues = gainParamValues->getChannel(0);
 
   for (size_t i = 0; i < processingBuffer->getNumberOfChannels(); i++) {
-    auto channel = processingBuffer->getChannel(i);
+    auto *channel = processingBuffer->getChannel(i);
     channel->multiply(*gainValues, framesToProcess);
   }
 

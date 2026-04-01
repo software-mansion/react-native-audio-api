@@ -63,6 +63,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   const bool pitchCorrection_;
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
+  static constexpr float MAX_PLAYBACK_RATE = 3.0f;
+  static constexpr float MIN_PLAYBACK_RATE = 0.0f;
 
   // k-rate params
   const std::shared_ptr<AudioParam> detuneParam_;

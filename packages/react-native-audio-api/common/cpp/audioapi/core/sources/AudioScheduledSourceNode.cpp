@@ -27,7 +27,7 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(
 void AudioScheduledSourceNode::start(double when) {
 #if !RN_AUDIO_API_TEST
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    if (auto audioContext = dynamic_cast<AudioContext *>(context.get())) {
+    if (auto *audioContext = dynamic_cast<AudioContext *>(context.get())) {
       audioContext->start();
     }
   }

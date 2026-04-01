@@ -20,14 +20,14 @@ export { default as WaveShaperNode } from './web-core/WaveShaperNode';
 
 export * from './web-core/custom';
 
-export {
+export type {
   OscillatorType,
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
 } from './types';
 
-export {
+export type {
   IOSCategory,
   IOSMode,
   IOSOption,

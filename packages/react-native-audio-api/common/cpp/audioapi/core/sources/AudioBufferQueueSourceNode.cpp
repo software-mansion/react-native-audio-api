@@ -155,6 +155,7 @@ bool AudioBufferQueueSourceNode::isEmpty() const {
   return buffers_.empty();
 }
 
+// todo: refactor so its less complex and more readable
 void AudioBufferQueueSourceNode::processWithoutInterpolation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
@@ -220,6 +221,7 @@ void AudioBufferQueueSourceNode::processWithoutInterpolation(
   }
 }
 
+// todo: refactor so its less complex and more readable
 void AudioBufferQueueSourceNode::processWithInterpolation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
@@ -286,7 +288,7 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
           break;
         }
 
-        vReadIndex_ = vReadIndex_ - buffer->getSize();
+        vReadIndex_ = vReadIndex_ - static_cast<double>(buffer->getSize());
         context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer));
         data = buffers_.front();
         bufferId = data.first;

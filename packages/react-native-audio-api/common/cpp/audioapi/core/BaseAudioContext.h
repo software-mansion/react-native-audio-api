@@ -6,6 +6,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 
+#include <audioapi/utils/Macros.h>
 #include <atomic>
 #include <cassert>
 #include <complex>
@@ -54,6 +55,8 @@ struct WaveShaperOptions;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
+  DELETE_COPY_AND_MOVE(BaseAudioContext);
+
   explicit BaseAudioContext(
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -64,7 +67,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
-  std::shared_ptr<AudioDestinationNode> getDestination() const;
+  [[nodiscard]] std::shared_ptr<AudioDestinationNode> getDestination() const;
 
   void setState(ContextState state);
 
@@ -95,8 +98,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       const AudioBufferSourceOptions &options);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       const BaseAudioBufferSourceOptions &options);
-  std::shared_ptr<PeriodicWave> createPeriodicWave(
-      const std::vector<std::complex<float>> &complexData,
+  [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(
+      const std::vector<std::complex<float>>
+          &complexData, // NOLINT(readability-avoid-const-params-in-decls)
       bool disableNormalization,
       int length) const;
   std::shared_ptr<AnalyserNode> createAnalyser(const AnalyserOptions &options);
@@ -104,18 +108,18 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  std::shared_ptr<AudioGraphManager> getGraphManager() const;
-  std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
-  const RuntimeRegistry &getRuntimeRegistry() const;
+  [[nodiscard]] std::shared_ptr<AudioGraphManager> getGraphManager() const;
+  [[nodiscard]] std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
+  [[nodiscard]] const RuntimeRegistry &getRuntimeRegistry() const;
 
   virtual void initialize();
 
-  void inline processAudioEvents() {
+  void processAudioEvents() {
     audioEventScheduler_.processAllEvents(*this);
   }
 
   template <typename F>
-  bool inline scheduleAudioEvent(F &&event) noexcept {
+  bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
     if (getState() != ContextState::RUNNING) {
       processAudioEvents();
       event(*this);
