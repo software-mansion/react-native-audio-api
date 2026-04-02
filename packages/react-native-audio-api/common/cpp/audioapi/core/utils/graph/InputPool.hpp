@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <cstring>
 #include <iterator>
-#include <new>
 #include <type_traits>
 
 namespace audioapi::utils::graph {
@@ -184,12 +183,12 @@ bool InputPool::Iterator<Const>::operator!=(const Iterator &other) const {
 
 template <bool Const>
 auto InputPool::InputView<Const>::begin() const -> Iterator<Const> {
-  return {slots, head};
+  return {.slots = slots, .current = head};
 }
 
 template <bool Const>
 auto InputPool::InputView<Const>::end() const -> Iterator<Const> {
-  return {slots, kNull};
+  return {.slots = slots, .current = kNull};
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -290,11 +289,11 @@ inline bool InputPool::isEmpty(std::uint32_t head) {
 // ── Iteration ─────────────────────────────────────────────────────────────
 
 inline InputPool::InputView<true> InputPool::view(std::uint32_t head) const {
-  return {slots_, head};
+  return {.slots = slots_, .head = head};
 }
 
 inline InputPool::InputView<false> InputPool::mutableView(std::uint32_t head) {
-  return {slots_, head};
+  return {.slots = slots_, .head = head};
 }
 
 // ── Pool management ───────────────────────────────────────────────────────
@@ -304,7 +303,7 @@ inline std::uint32_t InputPool::capacity() const {
 }
 
 inline InputPool::Slot *InputPool::adoptBuffer(Slot *newSlots, std::uint32_t newCapacity) {
-  if (slots_) {
+  if (slots_ != nullptr) {
     std::memcpy(newSlots, slots_, capacity_ * sizeof(Slot));
   }
   for (std::uint32_t i = capacity_; i < newCapacity; i++) {

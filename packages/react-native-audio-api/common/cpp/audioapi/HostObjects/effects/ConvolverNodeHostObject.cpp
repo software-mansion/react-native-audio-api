@@ -33,7 +33,7 @@ ConvolverNodeHostObject::ConvolverNodeHostObject(
 }
 
 JSI_PROPERTY_GETTER_IMPL(ConvolverNodeHostObject, normalize) {
-  return jsi::Value(normalize_);
+  return {normalize_};
 }
 
 JSI_PROPERTY_SETTER_IMPL(ConvolverNodeHostObject, normalize) {
@@ -61,7 +61,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   }
 
   auto handle = node_->handle;
-  auto convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());
+  auto *convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());
 
   auto copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
 
@@ -107,7 +107,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
       .scaleFactor = scaleFactor});
 
   auto event = [handle, setupData](BaseAudioContext &) {
-    auto convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());
+    auto *convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());
     convolverNode->setBuffer(
         setupData->buffer,
         std::move(setupData->convolvers),

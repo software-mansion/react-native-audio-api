@@ -91,6 +91,9 @@ float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuff
 
 // processing pipeline: audioBuffer_ (input) -> intermediateBuffer_ -> audioBuffer_ (output)
 void ConvolverNode::processNode(int framesToProcess) {
+  if (buffer_ == nullptr) {
+    return;
+  }
   if (signalledToStop_) {
     if (remainingSegments_ > 0) {
       remainingSegments_--;

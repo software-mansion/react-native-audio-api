@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <iterator>
 #include <memory>
 #include <ranges>
 #include <utility>
@@ -28,7 +27,7 @@ class AudioGraph {
 
   struct Node {
     Node() = default;
-    explicit Node(std::shared_ptr<NodeHandle> handle) : handle(handle) {}
+    explicit Node(std::shared_ptr<NodeHandle> handle) : handle(std::move(handle)) {}
 
     std::shared_ptr<NodeHandle> handle = nullptr; // owned handle bridging to HostGraph
     std::uint32_t input_head = InputPool::kNull;  // head of input linked list in pool_
@@ -213,11 +212,12 @@ inline auto AudioGraph::iter() {
       std::views::filter([](const Node &n) { return n.handle->audioNode->isProcessable(); }) |
       std::views::transform([this](Node &node) {
            return Entry{
-               *node.handle->audioNode,
-               pool_.view(node.input_head) |
+            .graphObject = *node.handle->audioNode,
+            .inputs = pool_.view(node.input_head) |
                    std::views::transform([this](std::uint32_t idx) -> const GraphObject & {
                      return *nodes[idx].handle->audioNode;
-                   })};
+                   }),
+           };
          });
 }
 
