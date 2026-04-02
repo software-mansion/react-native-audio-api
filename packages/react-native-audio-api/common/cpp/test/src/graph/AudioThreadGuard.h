@@ -54,6 +54,14 @@ class AudioThreadGuard {
   /// Takes a snapshot of context-switch counters.
   static ContextSwitchSnapshot contextSwitches();
 
+  // ── Sanitizer-awareness ─────────────────────────────────────────────────
+
+  /// Returns true if the operator new/delete overrides are active.
+  /// When building with ASan or TSan the overrides are disabled (the
+  /// sanitizer provides its own interceptors), so allocation tracking
+  /// is unavailable and any test relying on it should be skipped.
+  static bool isEnabled();
+
   // ── Internal — called by operator new/delete overrides ──────────────────
 
   static void recordAllocation();

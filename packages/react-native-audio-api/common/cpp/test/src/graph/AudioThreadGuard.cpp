@@ -103,6 +103,21 @@ bool AudioThreadGuard::Scope::clean() const {
 #if !defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) && \
     !__has_feature(address_sanitizer) && !__has_feature(thread_sanitizer)
 
+bool audioapi::test::AudioThreadGuard::isEnabled() {
+  return true;
+}
+
+#else
+
+bool audioapi::test::AudioThreadGuard::isEnabled() {
+  return false;
+}
+
+#endif
+
+#if !defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) && \
+    !__has_feature(address_sanitizer) && !__has_feature(thread_sanitizer)
+
 void *allocate_with_thread_guard(std::size_t size) {
   audioapi::test::AudioThreadGuard::recordAllocation();
   void *p = std::malloc(size);

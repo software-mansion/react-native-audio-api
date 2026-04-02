@@ -56,6 +56,47 @@ class AudioGraph {
   AudioGraph(AudioGraph &&) noexcept = default;
   AudioGraph &operator=(AudioGraph &&) noexcept = default;
 
+  // ── Node buffer pre-allocation (main-thread → audio-thread handoff) ─────
+
+  /// @brief Opaque pre-allocated node storage.
+  ///
+  /// Created on the main thread via makeNodeBuffer(), then handed to the
+  /// audio thread via adoptNodeBuffer(). The returned (old) buffer must be
+  /// disposed off the audio thread.
+  struct NodeBuffer {
+    std::vector<Node> data;
+    explicit NodeBuffer(std::uint32_t capacity) {
+      data.reserve(capacity);
+    }
+    NodeBuffer() = default;
+  };
+
+  /// @brief Allocates a node buffer with the given capacity on the calling thread.
+  [[nodiscard]] static NodeBuffer makeNodeBuffer(std::uint32_t capacity) {
+    return NodeBuffer(capacity);
+  }
+
+  /// @brief Installs a pre-allocated node buffer on the audio thread.
+  ///
+  /// Moves all live nodes into the pre-allocated buffer (allocation-free:
+  /// capacity was ensured on the main thread), swaps it in, and returns
+  /// the old buffer for disposal off the audio thread.
+  ///
+  /// @note Must be called only from the audio thread.
+  [[nodiscard]] NodeBuffer adoptNodeBuffer(NodeBuffer preAllocated) {
+    // Move live nodes into the pre-allocated (empty, large-capacity) buffer.
+    // No reallocation: preAllocated.data.capacity() >= nodes.size() guaranteed
+    // by the main thread before sending this event.
+    preAllocated.data.insert(
+        preAllocated.data.end(),
+        std::make_move_iterator(nodes.begin()),
+        std::make_move_iterator(nodes.end()));
+    std::swap(nodes, preAllocated.data);
+    // preAllocated.data now holds the old (small) buffer with moved-from nodes.
+    // Caller disposes it off the audio thread.
+    return preAllocated;
+  }
+
   /// @brief Entry returned by iter() — a reference to the graph object and a view of its inputs.
   template <typename InputsView>
   struct Entry {

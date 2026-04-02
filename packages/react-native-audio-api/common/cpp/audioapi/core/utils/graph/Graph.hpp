@@ -182,6 +182,7 @@ class Graph {
 
  private:
   using OwnedSlotBuffer = std::unique_ptr<InputPool::Slot[]>;
+  using OwnedNodeBuffer = AudioGraph::NodeBuffer;
 
   // Aligning to cache line size to prevent false sharing between audio and main thread
   alignas(hardware_destructive_interference_size) AudioGraph audioGraph;
@@ -226,13 +227,21 @@ class Graph {
   }
 
   /// @brief Pre-reserves the AudioGraph node vector when node count exceeds
-  /// the last ensured capacity. Queries HostGraph::nodeCount() for the
-  /// current truth. Sends a grow event through the event channel.
+  /// the last ensured capacity. Allocates a new node buffer on the main
+  /// thread and sends it as an AGEvent through the event channel. The old
+  /// buffer is sent to the Disposer for deallocation on a separate thread —
+  /// never on the audio thread.
   void sendNodeGrowIfNeeded() {
     auto nodes = static_cast<std::uint32_t>(hostGraph.nodeCount());
     if (nodes > nodeCapacity_) {
       std::uint32_t newCap = std::max(static_cast<std::uint32_t>(nodes * 2), std::uint32_t{64});
-      eventSender_.send([newCap](AudioGraph &graph, auto &) { graph.reserveNodes(newCap); });
+      auto buf = AudioGraph::makeNodeBuffer(newCap);
+      eventSender_.send(
+          [buf = std::move(buf)](
+              AudioGraph &graph, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &disposer) mutable {
+            auto old = graph.adoptNodeBuffer(std::move(buf));
+            disposer.dispose(std::move(old));
+          });
       nodeCapacity_ = newCap;
     }
   }
