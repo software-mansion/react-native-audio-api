@@ -35,7 +35,7 @@ class AutomationEvent {
     return *this;
   }
 
-  [[nodiscard]] double getAutomationEventTime() const noexcept {
+  [[nodiscard]] double getAutomationTime() const noexcept {
     return isRamp(type_) ? endTime_ : startTime_;
   }
 

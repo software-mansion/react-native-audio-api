@@ -7,6 +7,10 @@
 namespace audioapi {
 
 template <typename TEvent>
+concept AutomationEventConcept = requires(TEvent event) {
+  { event.getAutomationTime() } -> std::convertible_to<double>;
+};
+template <AutomationEventConcept TEvent>
 class AutomationQueueBase {
  public:
   AutomationQueueBase() = default;
@@ -53,7 +57,7 @@ class AutomationQueueBase {
  protected:
   struct EventComparator {
     bool operator()(const TEvent &a, const TEvent &b) const {
-      return a.getAutomationEventTime() < b.getAutomationEventTime();
+      return a.getAutomationTime() < b.getAutomationTime();
     }
   };
 

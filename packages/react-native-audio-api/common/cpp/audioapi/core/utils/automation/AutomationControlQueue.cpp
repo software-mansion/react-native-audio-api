@@ -19,16 +19,16 @@ Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
               event.getStartTime(),
               event.getEndTime(),
               toString(conflict->getType()),
-              conflict->getAutomationEventTime()));
+              conflict->getAutomationTime()));
     }
   } else {
-    const auto *conflict = findEventAtTime(event.getAutomationEventTime());
+    const auto *conflict = findEventAtTime(event.getAutomationTime());
     if ((conflict != nullptr) && conflict->getType() == AutomationEventType::SET_VALUE_CURVE) {
       return Err(
           std::format(
               "Cannot schedule event of type {} at time {} because it conflicts with an existing curve event from time {} to {}.",
               toString(event.getType()),
-              event.getAutomationEventTime(),
+              event.getAutomationTime(),
               conflict->getStartTime(),
               conflict->getEndTime()));
     }
@@ -37,7 +37,7 @@ Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
 }
 
 void AutomationControlQueue::cancelScheduledValues(double cancelTime) {
-  while (!eventQueue_.isEmpty() && eventQueue_.peekBack().getAutomationEventTime() >= cancelTime) {
+  while (!eventQueue_.isEmpty() && eventQueue_.peekBack().getAutomationTime() >= cancelTime) {
     eventQueue_.popBack();
   }
 }
@@ -47,7 +47,7 @@ const AutomationEvent *AutomationControlQueue::findEventAtTime(double automation
   for (const auto &event : eventQueue_) {
     if ((event.getType() == AutomationEventType::SET_VALUE_CURVE &&
          event.getStartTime() <= automationTime && automationTime <= event.getEndTime()) ||
-        event.getAutomationEventTime() == automationTime) {
+        event.getAutomationTime() == automationTime) {
       return &event;
     }
   }

@@ -68,10 +68,10 @@ class AudioParam {
   /// @note Audio Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
-  template <
-      typename F,
-      typename = std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
-  bool scheduleAudioEvent(F &&event) noexcept {
+  template <typename F>
+  bool scheduleAudioEvent(F &&event) noexcept
+    requires(std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>)
+  {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->scheduleAudioEvent(std::forward<F>(event));
     }
@@ -140,6 +140,7 @@ class AudioParam {
   void updateQueue(RenderAutomationEvent &&event) {
     eventsQueue_.push(std::move(event));
   }
+
   float getValueAtTime(double time);
   void processInputs(
       const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
