@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 #include "AudioThreadGuard.h"
 
 #include <atomic>

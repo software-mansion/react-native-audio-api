@@ -1,18 +1,18 @@
 #pragma once
 
 #include <audioapi/core/utils/Disposer.hpp>
-#include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/HostGraph.hpp>
-#include <audioapi/core/utils/graph/InputPool.hpp>
+#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/HostGraph.h>
+#include <audioapi/core/utils/graph/InputPool.h>
 
 #include <audioapi/utils/FatFunction.hpp>
-#include <audioapi/utils/SpscChannel.hpp>
-
 #include <audioapi/utils/Result.hpp>
+#include <audioapi/utils/SpscChannel.hpp>
 
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <new>
 #include <utility>
 
 namespace audioapi::utils::graph {
@@ -52,31 +52,13 @@ class Graph {
   using ResultError = HostGraph::ResultError;
   using Res = Result<NoneType, ResultError>;
 
-  Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer)
-      : disposer_(disposer) {
-    using namespace audioapi::channels::spsc;
-
-    auto [es, er] = channel<AGEvent, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(
-        eventQueueCapacity);
-    eventSender_ = std::move(es);
-    eventReceiver_ = std::move(er);
-  }
+  Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer);
 
   Graph(
       size_t eventQueueCapacity,
       Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer,
       std::uint32_t initialNodeCapacity,
-      std::uint32_t initialEdgeCapacity)
-      : Graph(eventQueueCapacity, disposer) {
-    if (initialNodeCapacity > 0) {
-      audioGraph.reserveNodes(initialNodeCapacity);
-      nodeCapacity_ = initialNodeCapacity;
-    }
-    if (initialEdgeCapacity > 0) {
-      audioGraph.pool().grow(initialEdgeCapacity);
-      poolCapacity_ = initialEdgeCapacity;
-    }
-  }
+      std::uint32_t initialEdgeCapacity);
 
   // ── Audio-thread API ────────────────────────────────────────────────────
 
@@ -89,21 +71,12 @@ class Graph {
   /// grow event in the same FIFO.
   ///
   /// @note Should be called only from the audio thread.
-  void processEvents() {
-    AGEvent event;
-    while (eventReceiver_.try_receive(event) == audioapi::channels::spsc::ResponseStatus::SUCCESS) {
-      if (event) {
-        event(audioGraph, *disposer_);
-      }
-    }
-  }
+  void processEvents();
 
   /// @brief Runs toposort + compaction on the audio graph.
   /// Allocation-free.
   /// @note Should be called only from the audio thread.
-  void process() {
-    audioGraph.process();
-  }
+  void process();
 
   /// @brief Returns an iterable view of nodes in topological order.
   ///
@@ -121,17 +94,7 @@ class Graph {
   /// @brief Adds a new node to the graph and returns a pointer to it.
   /// @param audioNode the audio processing node to add (ownership transferred)
   /// @return pointer to the newly added HostGraph::Node
-  HNode *addNode(std::unique_ptr<GraphObject> audioNode = nullptr) {
-    collectDisposedNodes();
-
-    auto handle = std::make_shared<NodeHandle>(0, std::move(audioNode));
-    auto [hostNode, event] = hostGraph.addNode(handle);
-
-    sendNodeGrowIfNeeded();
-
-    eventSender_.send(std::move(event));
-    return hostNode;
-  }
+  HNode *addNode(std::unique_ptr<GraphObject> audioNode = nullptr);
 
   template <std::derived_from<GraphObject> TObject>
   HNode *addNode(std::unique_ptr<TObject> audioNode) {
@@ -140,45 +103,18 @@ class Graph {
 
   /// @brief Removes a node (marks as ghost). Pointer remains valid until
   /// the ghost is collected after AudioGraph releases its shared_ptr.
-  Res removeNode(HNode *node) {
-    collectDisposedNodes();
-    return hostGraph.removeNode(node).map([&](AGEvent event) {
-      eventSender_.send(std::move(event));
-      return NoneType{};
-    });
-  }
+  Res removeNode(HNode *node);
 
   /// @brief Adds a directed edge from → to. Rejects cycles and duplicates.
-  Res addEdge(HNode *from, HNode *to) {
-    collectDisposedNodes();
-    return hostGraph.addEdge(from, to).map([&](AGEvent event) {
-      sendPoolGrowIfNeeded();
-      eventSender_.send(std::move(event));
-      return NoneType{};
-    });
-  }
+  Res addEdge(HNode *from, HNode *to);
 
   /// @brief Removes a directed edge from → to.
-  Res removeEdge(HNode *from, HNode *to) {
-    collectDisposedNodes();
-    return hostGraph.removeEdge(from, to).map([&](AGEvent event) {
-      eventSender_.send(std::move(event));
-      return NoneType{};
-    });
-  }
+  Res removeEdge(HNode *from, HNode *to);
 
   /// @brief Removes all outgoing edges from `from`.
-  Res removeAllEdges(HNode *from) {
-    collectDisposedNodes();
-    return hostGraph.removeAllEdges(from).map([&](AGEvent event) {
-      eventSender_.send(std::move(event));
-      return NoneType{};
-    });
-  }
+  Res removeAllEdges(HNode *from);
 
-  void collectDisposedNodes() {
-    hostGraph.collectDisposedNodes();
-  }
+  void collectDisposedNodes();
 
  private:
   using OwnedSlotBuffer = std::unique_ptr<InputPool::Slot[]>;
@@ -208,23 +144,7 @@ class Graph {
   /// slot buffer on the main thread and sends it as an AGEvent through the
   /// event channel. The old buffer is sent to the Disposer for deallocation
   /// on a separate thread — never on the audio thread.
-  void sendPoolGrowIfNeeded() {
-    auto edges = static_cast<std::uint32_t>(hostGraph.edgeCount());
-    // edges > poolCapacity_ / 2 || (poolCapacity_ == 0 && edges > 0) left for clarity
-    if (edges > poolCapacity_ / 2) {
-      std::uint32_t newCap = std::max(static_cast<std::uint32_t>(edges * 2), std::uint32_t{64});
-      auto buf = std::make_unique<InputPool::Slot[]>(newCap);
-      eventSender_.send(
-          [buf = std::move(buf), newCap](
-              AudioGraph &graph, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &disposer) mutable {
-            auto *old = graph.pool().adoptBuffer(buf.release(), newCap);
-            if (old) {
-              disposer.dispose(OwnedSlotBuffer(old));
-            }
-          });
-      poolCapacity_ = newCap;
-    }
-  }
+  void sendPoolGrowIfNeeded();
 
   /// @brief Pre-reserves the AudioGraph node vector when node count exceeds
   /// the last ensured capacity. Allocates a new node buffer on the main

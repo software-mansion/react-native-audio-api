@@ -4,7 +4,7 @@
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Disposer.hpp>
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/graph/HostNode.hpp>
+#include <audioapi/core/utils/graph/HostNode.h>
 #include <audioapi/jsi/JsiHostObject.h>
 
 #include <jsi/jsi.h>

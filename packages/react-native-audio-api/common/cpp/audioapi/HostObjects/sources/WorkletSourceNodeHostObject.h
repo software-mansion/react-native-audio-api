@@ -2,7 +2,7 @@
 
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
 #include <audioapi/core/sources/WorkletSourceNode.h>
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <memory>

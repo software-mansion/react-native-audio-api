@@ -1,7 +1,9 @@
 #pragma once
 
 #include <audioapi/utils/AudioBuffer.hpp>
+
 #include <audioapi/utils/Macros.h>
+#include <cstdint>
 
 #include <ranges>
 #include <vector>
@@ -13,6 +15,7 @@ class AudioNode;
 namespace audioapi::utils::graph {
 
 /// @brief Base class for graph objects (AudioNode, BridgeNode, etc.).
+///
 /// GraphObjects are owned by NodeHandles and stored in AudioGraph's flat vector
 ///
 /// ## Lifecycle
@@ -35,21 +38,24 @@ class GraphObject {
   DELETE_COPY_AND_MOVE(GraphObject);
 
   /// @brief Returns whether this graph object can be safely destroyed.
-  [[nodiscard]] virtual bool canBeDestructed() const {
-    return true;
-  }
+  [[nodiscard]] virtual bool canBeDestructed() const;
+
+  /// @brief Controls how `isProcessable()` is derived for nodes that support conditional processing.
+  enum class PROCESSABLE_STATE : std::uint8_t {
+    ALWAYS_PROCESSABLE,
+    NOT_PROCESSABLE,
+    CONDITIONAL_PROCESSABLE,
+  };
 
   /// @brief Returns whether this node should be processed during audio iteration.
-  [[nodiscard]] virtual bool isProcessable() const {
-    return true;
-  }
+  [[nodiscard]] virtual bool isProcessable() const;
+
+  void setProcessableState(PROCESSABLE_STATE state);
 
   /// @brief Returns the output buffer for this node.
   /// @return Pointer to output buffer, or nullptr if this node should not
   ///         contribute to input mixing for other nodes.
-  [[nodiscard]] virtual const DSPAudioBuffer *getOutput() const {
-    return nullptr;
-  }
+  [[nodiscard]] virtual const DSPAudioBuffer *getOutput() const;
 
   /// @brief Processes this node with the given inputs.
   /// Filters inputs to only those with valid output buffers.
@@ -70,24 +76,19 @@ class GraphObject {
   }
 
   /// @brief Downcast helper for JS thread communication with AudioNode.
-  [[nodiscard]] virtual AudioNode *asAudioNode() {
-    return nullptr;
-  }
+  [[nodiscard]] virtual AudioNode *asAudioNode();
 
   /// @brief Downcast helper for JS thread communication with AudioNode.
-  [[nodiscard]] virtual const AudioNode *asAudioNode() const {
-    return nullptr;
-  }
+  [[nodiscard]] virtual const AudioNode *asAudioNode() const;
 
  protected:
+  friend class HostGraph;
   /// @brief Implementation of processing logic with filtered input buffers.
   /// @param inputs Vector of pointers to valid input buffers
   /// @param numFrames Number of audio frames to process
-  virtual void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames) {
-    // Default: do nothing. Subclasses override for actual processing.
-    (void)inputs;
-    (void)numFrames;
-  }
+  virtual void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames);
+
+  PROCESSABLE_STATE processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
 
  private:
   // Reusable buffer for collecting inputs (avoids allocation per frame)

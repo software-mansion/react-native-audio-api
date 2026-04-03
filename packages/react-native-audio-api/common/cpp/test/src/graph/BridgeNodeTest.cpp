@@ -1,6 +1,6 @@
-#include <audioapi/core/utils/graph/BridgeNode.hpp>
-#include <audioapi/core/utils/graph/Graph.hpp>
-#include <audioapi/core/utils/graph/NodeHandle.hpp>
+#include <audioapi/core/utils/graph/BridgeNode.h>
+#include <audioapi/core/utils/graph/Graph.h>
+#include <audioapi/core/utils/graph/NodeHandle.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -18,14 +18,14 @@ namespace audioapi::utils::graph {
 // A. isProcessable contract
 // =========================================================================
 
-TEST(BridgeNodeContract, MockNodeIsProcessable) {
+TEST(BridgeNodeContract, MockNodeIsNotProcessable) {
   MockNode node;
-  EXPECT_TRUE(node.isProcessable());
+  EXPECT_FALSE(node.isProcessable());
 }
 
-TEST(BridgeNodeContract, BridgeNodeIsProcessable) {
+TEST(BridgeNodeContract, BridgeNodeIsNotProcessable) {
   BridgeNode bridge(nullptr);
-  EXPECT_TRUE(bridge.isProcessable());
+  EXPECT_FALSE(bridge.isProcessable());
 }
 
 TEST(BridgeNodeContract, BridgeNodeIsAlwaysDestructible) {
@@ -186,9 +186,13 @@ class BridgeIterTest : public ::testing::Test {
 };
 
 TEST_F(BridgeIterTest, IterSkipsNonProcessableNodes) {
-  auto *processable1 = addNode(std::make_unique<MockNode>());
+  auto node = std::make_unique<MockNode>();
+  node->setProcessable();
+  auto *processable1 = addNode(std::move(node));
   auto *nonProcessable = addNode(std::make_unique<NonProcessableMockNode>());
-  auto *processable2 = addNode(std::make_unique<MockNode>());
+  auto node2 = std::make_unique<MockNode>();
+  node2->setProcessable();
+  auto *processable2 = addNode(std::move(node2));
 
   ASSERT_TRUE(addEdge(processable1, nonProcessable));
   ASSERT_TRUE(addEdge(nonProcessable, processable2));
@@ -228,7 +232,9 @@ TEST_F(BridgeIterTest, InputsViewMayReferenceBridgeIndices) {
   // iter() yields all processable nodes including bridge
   auto *source = addNode(std::make_unique<MockNode>());
   auto *bridge = addNode(std::make_unique<BridgeNode>(nullptr));
-  auto *owner = addNode(std::make_unique<MockNode>());
+  auto node = std::make_unique<MockNode>();
+  node->setProcessable();
+  auto *owner = addNode(std::move(node));
 
   ASSERT_TRUE(addEdge(source, bridge));
   ASSERT_TRUE(addEdge(bridge, owner));
@@ -344,7 +350,10 @@ class BridgeGraphWrapperTest : public ::testing::Test {
 
 TEST_F(BridgeGraphWrapperTest, ConnectSourceToBridge) {
   auto *source = graph->addNode(std::make_unique<MockNode>());
-  auto *owner = graph->addNode(std::make_unique<MockNode>());
+  auto node = std::make_unique<MockNode>();
+  // set manually so processable propagates through bridge and source
+  node->setProcessable();
+  auto *owner = graph->addNode(std::move(node));
   auto *param = createParam();
   auto *bridge = createParamBridge(param, owner);
 
@@ -363,7 +372,10 @@ TEST_F(BridgeGraphWrapperTest, ConnectSourceToBridge) {
 
 TEST_F(BridgeGraphWrapperTest, DisconnectSourceFromBridge) {
   auto *source = graph->addNode(std::make_unique<MockNode>());
-  auto *owner = graph->addNode(std::make_unique<MockNode>());
+  auto node = std::make_unique<MockNode>();
+  // set manually so processable propagates through bridge and source
+  node->setProcessable();
+  auto *owner = graph->addNode(std::move(node));
   auto *param = createParam();
   auto *bridge = createParamBridge(param, owner);
 
@@ -379,7 +391,7 @@ TEST_F(BridgeGraphWrapperTest, DisconnectSourceFromBridge) {
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 3u); // source + bridge + owner all still exist
+  EXPECT_EQ(iterCount, 2u); // only owner + bridge remains processable
 }
 
 TEST_F(BridgeGraphWrapperTest, DuplicateEdgeToBridgeRejected) {
@@ -415,7 +427,10 @@ TEST_F(BridgeGraphWrapperTest, CycleDetectedThroughBridge) {
 
 TEST_F(BridgeGraphWrapperTest, BridgeRemovalWhenParamDestroyed) {
   auto *source = graph->addNode(std::make_unique<MockNode>());
-  auto *owner = graph->addNode(std::make_unique<MockNode>());
+  auto node = std::make_unique<MockNode>();
+  // set manually so processable propagates through bridge and source
+  node->setProcessable();
+  auto *owner = graph->addNode(std::move(node));
   auto *param = createParam();
   auto *bridge = createParamBridge(param, owner);
 
@@ -434,13 +449,16 @@ TEST_F(BridgeGraphWrapperTest, BridgeRemovalWhenParamDestroyed) {
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 2u); // source + owner
+  EXPECT_EQ(iterCount, 1u); // only owner remains processable
 }
 
 TEST_F(BridgeGraphWrapperTest, MultipleSourcesConnectToSameBridge) {
   auto *source1 = graph->addNode(std::make_unique<MockNode>());
   auto *source2 = graph->addNode(std::make_unique<MockNode>());
-  auto *owner = graph->addNode(std::make_unique<MockNode>());
+  auto node = std::make_unique<MockNode>();
+  // set manually so processable propagates through bridge and source
+  node->setProcessable();
+  auto *owner = graph->addNode(std::move(node));
   auto *param = createParam();
   auto *bridge = createParamBridge(param, owner);
 
@@ -464,7 +482,7 @@ TEST_F(BridgeGraphWrapperTest, MultipleSourcesConnectToSameBridge) {
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 4u);
+  EXPECT_EQ(iterCount, 3u); // source1 is unprocessable
 }
 
 TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {

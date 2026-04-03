@@ -2,7 +2,7 @@
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 
 #include <memory>
 

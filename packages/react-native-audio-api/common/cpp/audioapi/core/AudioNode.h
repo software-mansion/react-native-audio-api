@@ -4,7 +4,7 @@
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/core/utils/graph/GraphObject.hpp>
+#include <audioapi/core/utils/graph/GraphObject.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -66,6 +66,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     return audioBuffer_;
   }
 
+  virtual void setOutputBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) {
+    audioBuffer_ = buffer;
+  }
+
   /// @note JS Thread only
   [[nodiscard]] bool requiresTailProcessing() const;
 
@@ -90,6 +94,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
  protected:
   friend class DelayNodeHostObject;
+  friend class utils::graph::HostGraph;
 
   std::weak_ptr<BaseAudioContext> context_;
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;

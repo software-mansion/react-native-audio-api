@@ -1,10 +1,9 @@
 #pragma once
 
-#include <audioapi/core/utils/graph/GraphObject.hpp>
+#include <audioapi/core/utils/graph/GraphObject.h>
 
 #include <cstdint>
 #include <memory>
-#include <utility>
 
 namespace audioapi::utils::graph {
 
@@ -26,8 +25,7 @@ struct NodeHandle {
   std::unique_ptr<GraphObject> audioNode; // payload graph object (may be null in tests)
   std::uint32_t index;                    // current position in AudioGraph::nodes
 
-  NodeHandle(std::uint32_t index, std::unique_ptr<GraphObject> audioNode)
-      : audioNode(std::move(audioNode)), index(index) {}
+  NodeHandle(std::uint32_t index, std::unique_ptr<GraphObject> audioNode);
 };
 
 } // namespace audioapi::utils::graph

@@ -1,5 +1,5 @@
-#include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/NodeHandle.hpp>
+#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/NodeHandle.h>
 #include <gtest/gtest.h>
 #include "TestGraphUtils.h"
 

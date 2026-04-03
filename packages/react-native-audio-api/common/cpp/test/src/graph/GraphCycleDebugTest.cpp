@@ -1,4 +1,4 @@
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <iostream>

@@ -9,10 +9,10 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/BridgeNode.hpp>
-#include <audioapi/core/utils/graph/HostGraph.hpp>
-#include <audioapi/core/utils/graph/HostNode.hpp>
+#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/BridgeNode.h>
+#include <audioapi/core/utils/graph/HostGraph.h>
+#include <audioapi/core/utils/graph/HostNode.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <atomic>
 #include <functional>
@@ -55,6 +55,10 @@ struct MockNode : AudioNode {
   /// @brief Thread-safe setter for use in tests.
   void setDestructible(bool value) {
     destructible_.store(value, std::memory_order_release);
+  }
+
+  void setProcessable() {
+    setProcessableState(PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE);
   }
 
  private:
@@ -107,7 +111,9 @@ struct ProcessableMockNode : MockNode {
       ProcessFn processFn = nullptr,
       int initialValue = 0,
       bool destructible = true)
-      : MockNode(destructible), value(initialValue), processFn_(std::move(processFn)) {}
+      : MockNode(destructible), value(initialValue), processFn_(std::move(processFn)) {
+    setProcessable();
+  }
 
   /// @brief Called by the audio thread with an input range from `Graph::iter()`.
   ///

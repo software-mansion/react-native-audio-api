@@ -2,7 +2,7 @@
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/core/effects/WorkletNode.h>
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 
 #include <memory>
 

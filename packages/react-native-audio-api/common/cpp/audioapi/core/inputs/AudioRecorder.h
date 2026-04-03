@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/graph/NodeHandle.hpp>
+#include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <atomic>

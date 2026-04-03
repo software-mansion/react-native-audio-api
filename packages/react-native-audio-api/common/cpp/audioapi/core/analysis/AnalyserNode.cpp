@@ -21,6 +21,7 @@ AnalyserNode::AnalyserNode(
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant) {
   setFFTSize(options.fftSize);
+  setProcessableState(GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE);
 }
 
 void AnalyserNode::setFFTSize(int fftSize) {

@@ -14,10 +14,8 @@ class BaseAudioContext;
 class AudioDestinationNode : public AudioNode {
  public:
   explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
-      : AudioNode(context, AudioDestinationOptions()) {}
-
-  bool canBeDestructed() const override {
-    return false;
+      : AudioNode(context, AudioDestinationOptions()) {
+    processableState_ = GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE;
   }
 
  protected:

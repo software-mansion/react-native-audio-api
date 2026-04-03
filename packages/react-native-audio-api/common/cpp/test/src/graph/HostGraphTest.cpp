@@ -1,7 +1,7 @@
 #include <audioapi/core/utils/Disposer.hpp>
-#include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/HostGraph.hpp>
-#include <audioapi/core/utils/graph/NodeHandle.hpp>
+#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/HostGraph.h>
+#include <audioapi/core/utils/graph/NodeHandle.h>
 #include <gtest/gtest.h>
 #include <memory>
 #include <utility>

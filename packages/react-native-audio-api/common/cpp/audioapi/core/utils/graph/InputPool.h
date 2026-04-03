@@ -77,7 +77,7 @@ class InputPool {
 
   // ── Lifecycle ───────────────────────────────────────────────────────────
 
-  InputPool() = default;
+  InputPool();
   ~InputPool();
 
   InputPool(const InputPool &) = delete;
@@ -147,12 +147,6 @@ class InputPool {
   std::uint32_t free_head_ = kNull;
 };
 
-// =========================================================================
-// Implementation
-// =========================================================================
-
-// ── Iterator ──────────────────────────────────────────────────────────────
-
 template <bool Const>
 auto InputPool::Iterator<Const>::operator*() const -> reference {
   return slots[current].val;
@@ -179,8 +173,6 @@ bool InputPool::Iterator<Const>::operator!=(const Iterator &other) const {
   return current != other.current;
 }
 
-// ── InputView ─────────────────────────────────────────────────────────────
-
 template <bool Const>
 auto InputPool::InputView<Const>::begin() const -> Iterator<Const> {
   return {.slots = slots, .current = head};
@@ -189,72 +181,6 @@ auto InputPool::InputView<Const>::begin() const -> Iterator<Const> {
 template <bool Const>
 auto InputPool::InputView<Const>::end() const -> Iterator<Const> {
   return {.slots = slots, .current = kNull};
-}
-
-// ── Lifecycle ─────────────────────────────────────────────────────────────
-
-inline InputPool::~InputPool() {
-  delete[] slots_;
-}
-
-inline InputPool::InputPool(InputPool &&other) noexcept
-    : slots_(other.slots_), capacity_(other.capacity_), free_head_(other.free_head_) {
-  other.slots_ = nullptr;
-  other.capacity_ = 0;
-  other.free_head_ = kNull;
-}
-
-inline InputPool &InputPool::operator=(InputPool &&other) noexcept {
-  if (this != &other) {
-    delete[] slots_;
-    slots_ = other.slots_;
-    capacity_ = other.capacity_;
-    free_head_ = other.free_head_;
-    other.slots_ = nullptr;
-    other.capacity_ = 0;
-    other.free_head_ = kNull;
-  }
-  return *this;
-}
-
-// ── Slot allocation ───────────────────────────────────────────────────────
-
-inline std::uint32_t InputPool::alloc() {
-  if (free_head_ == kNull) {
-    grow(capacity_ == 0 ? 64 : capacity_ * 2);
-  }
-  std::uint32_t idx = free_head_;
-  free_head_ = slots_[idx].next_free;
-  return idx;
-}
-
-inline void InputPool::free(std::uint32_t idx) {
-  slots_[idx].next_free = free_head_;
-  free_head_ = idx;
-}
-
-// ── Linked-list operations ────────────────────────────────────────────────
-
-inline void InputPool::push(std::uint32_t &head, std::uint32_t inputVal) {
-  std::uint32_t idx = alloc();
-  slots_[idx].val = inputVal;
-  slots_[idx].next = head;
-  head = idx;
-}
-
-inline bool InputPool::remove(std::uint32_t &head, std::uint32_t inputVal) {
-  std::uint32_t *prev = &head;
-  std::uint32_t curr = head;
-  while (curr != kNull) {
-    if (slots_[curr].val == inputVal) {
-      *prev = slots_[curr].next;
-      free(curr);
-      return true;
-    }
-    prev = &slots_[curr].next;
-    curr = slots_[curr].next;
-  }
-  return false;
 }
 
 template <typename Pred>
@@ -272,54 +198,6 @@ void InputPool::removeIf(std::uint32_t &head, Pred pred) {
     }
     curr = nxt;
   }
-}
-
-inline void InputPool::freeAll(std::uint32_t &head) {
-  while (head != kNull) {
-    std::uint32_t nxt = slots_[head].next;
-    free(head);
-    head = nxt;
-  }
-}
-
-inline bool InputPool::isEmpty(std::uint32_t head) {
-  return head == kNull;
-}
-
-// ── Iteration ─────────────────────────────────────────────────────────────
-
-inline InputPool::InputView<true> InputPool::view(std::uint32_t head) const {
-  return {.slots = slots_, .head = head};
-}
-
-inline InputPool::InputView<false> InputPool::mutableView(std::uint32_t head) {
-  return {.slots = slots_, .head = head};
-}
-
-// ── Pool management ───────────────────────────────────────────────────────
-
-inline std::uint32_t InputPool::capacity() const {
-  return capacity_;
-}
-
-inline InputPool::Slot *InputPool::adoptBuffer(Slot *newSlots, std::uint32_t newCapacity) {
-  if (slots_ != nullptr) {
-    std::memcpy(newSlots, slots_, capacity_ * sizeof(Slot));
-  }
-  for (std::uint32_t i = capacity_; i < newCapacity; i++) {
-    newSlots[i].next_free = free_head_;
-    free_head_ = i;
-  }
-  Slot *old = slots_;
-  slots_ = newSlots;
-  capacity_ = newCapacity;
-  return old;
-}
-
-inline void InputPool::grow(std::uint32_t newCapacity) {
-  auto *newSlots = new Slot[newCapacity];
-  Slot *old = adoptBuffer(newSlots, newCapacity);
-  delete[] old;
 }
 
 } // namespace audioapi::utils::graph
