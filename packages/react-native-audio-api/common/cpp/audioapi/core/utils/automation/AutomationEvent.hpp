@@ -51,8 +51,16 @@ class AutomationEvent {
     return type_;
   }
 
+  [[nodiscard]] bool isRampType() const noexcept {
+    return isRamp(type_);
+  }
+
   void setEndTime(double endTime) noexcept {
     endTime_ = endTime;
+  }
+
+  void setStartTime(double startTime) noexcept {
+    startTime_ = startTime;
   }
 
  protected:

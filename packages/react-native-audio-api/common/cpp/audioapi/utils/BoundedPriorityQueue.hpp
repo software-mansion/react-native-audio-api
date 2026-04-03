@@ -137,6 +137,20 @@ class BoundedPriorityQueue {
   [[nodiscard]] SetType::const_iterator end() const noexcept {
     return set_.end();
   }
+
+  template <typename Key>
+  [[nodiscard]] SetType::iterator lower_bound(const Key &key) noexcept {
+    return set_.lower_bound(key);
+  }
+
+  template <typename Key>
+  [[nodiscard]] SetType::iterator upper_bound(const Key &key) noexcept {
+    return set_.upper_bound(key);
+  }
+
+  [[nodiscard]] T &deref_mut(SetType::const_iterator it) noexcept {
+    return const_cast<T &>(*it);
+  }
 };
 
 } // namespace audioapi

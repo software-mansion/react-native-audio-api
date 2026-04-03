@@ -102,43 +102,18 @@ class AudioParam {
   float minValue_;
   float maxValue_;
 
-  AutomationRenderQueue eventsQueue_;
-
-  // Current automation state (cached for performance)
-  double startTime_;
-  double endTime_;
-  float startValue_;
-  float endValue_;
-  std::function<float(double, double, float, float, double)> calculateValue_;
+  AutomationRenderQueue eventRenderQueue_;
 
   // Input modulation system
   std::vector<AudioNode *> inputNodes_;
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   std::vector<std::shared_ptr<DSPAudioBuffer>> inputBuffers_;
 
-  /// @brief Get the end time of the parameter queue.
-  /// @return The end time of the parameter queue or last endTime_ if queue is empty.
-  [[nodiscard]] double getQueueEndTime() const noexcept {
-    if (eventsQueue_.isEmpty()) {
-      return endTime_;
-    }
-    return eventsQueue_.back().getEndTime();
-  }
-
-  /// @brief Get the end value of the parameter queue.
-  /// @return The end value of the parameter queue or last endValue_ if queue is empty.
-  [[nodiscard]] float getQueueEndValue() const noexcept {
-    if (eventsQueue_.isEmpty()) {
-      return endValue_;
-    }
-    return eventsQueue_.back().getEndValue();
-  }
-
   /// @brief Update the parameter queue with a new event.
   /// @param event The new event to add to the queue.
   /// @note Handles connecting start value of the new event to the end value of the previous event.
   void updateQueue(RenderAutomationEvent &&event) {
-    eventsQueue_.push(std::move(event));
+    eventRenderQueue_.push(std::move(event));
   }
 
   float getValueAtTime(double time);

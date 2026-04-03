@@ -56,8 +56,15 @@ class AutomationQueueBase {
 
  protected:
   struct EventComparator {
+    using is_transparent = void;
     bool operator()(const TEvent &a, const TEvent &b) const {
       return a.getAutomationTime() < b.getAutomationTime();
+    }
+    bool operator()(const TEvent &a, double time) const {
+      return a.getAutomationTime() < time;
+    }
+    bool operator()(double time, const TEvent &b) const {
+      return time < b.getAutomationTime();
     }
   };
 
