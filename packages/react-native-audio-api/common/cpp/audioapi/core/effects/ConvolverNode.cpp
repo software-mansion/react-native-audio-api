@@ -88,21 +88,15 @@ void ConvolverNode::onInputDisabled() {
   }
 }
 
-std::shared_ptr<DSPAudioBuffer> ConvolverNode::processInputs(
-    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-    int framesToProcess,
-    bool checkIsAlreadyProcessed) {
-  if (internalBufferIndex_ < framesToProcess) {
-    return AudioNode::processInputs(outputBuffer, RENDER_QUANTUM_SIZE, false);
-  }
-  return AudioNode::processInputs(outputBuffer, 0, false);
-}
-
 // processing pipeline: processingBuffer -> intermediateBuffer_ -> audioBuffer_ (mixing
 // with intermediateBuffer_)
 std::shared_ptr<DSPAudioBuffer> ConvolverNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
+  if (processingBuffer->getSize() != RENDER_QUANTUM_SIZE) {
+    printf(
+        "[AUDIOAPI WARN] convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor\n");
+  }
   if (signalledToStop_) {
     if (remainingSegments_ > 0) {
       remainingSegments_--;

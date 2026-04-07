@@ -31,6 +31,7 @@ bool AudioPlayer::openAudioStream() {
       ->setPerformanceMode(PerformanceMode::None)
       ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+      ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)
       ->setDataCallback(this)
       ->setSampleRate(static_cast<int>(sampleRate_))
       ->setErrorCallback(this);
