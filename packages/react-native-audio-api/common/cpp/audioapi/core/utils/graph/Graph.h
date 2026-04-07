@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
-#include <new>
 #include <utility>
 
 namespace audioapi::utils::graph {
@@ -151,20 +150,7 @@ class Graph {
   /// thread and sends it as an AGEvent through the event channel. The old
   /// buffer is sent to the Disposer for deallocation on a separate thread —
   /// never on the audio thread.
-  void sendNodeGrowIfNeeded() {
-    auto nodes = static_cast<std::uint32_t>(hostGraph.nodeCount());
-    if (nodes > nodeCapacity_) {
-      std::uint32_t newCap = std::max(static_cast<std::uint32_t>(nodes * 2), std::uint32_t{64});
-      auto buf = AudioGraph::makeNodeBuffer(newCap);
-      eventSender_.send(
-          [buf = std::move(buf)](
-              AudioGraph &graph, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &disposer) mutable {
-            auto old = graph.adoptNodeBuffer(std::move(buf));
-            disposer.dispose(std::move(old));
-          });
-      nodeCapacity_ = newCap;
-    }
-  }
+  void sendNodeGrowIfNeeded();
 
   // ── Bridge tracking (main thread only) ──────────────────────────────────
 

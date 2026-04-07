@@ -1,0 +1,17 @@
+#pragma once
+
+#include <audioapi/core/utils/graph/Graph.h>
+#include <audioapi/core/utils/graph/HostNode.h>
+#include <memory>
+
+namespace audioapi {
+
+class DelayWriter;
+
+class DelayWriterHostNode : public utils::graph::HostNode {
+ public:
+  explicit DelayWriterHostNode(
+      const std::shared_ptr<utils::graph::Graph> &graph,
+      std::unique_ptr<DelayWriter> delayWriter);
+};
+} // namespace audioapi

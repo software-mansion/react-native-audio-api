@@ -1,6 +1,8 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/DelayNode.h>
+#include <audioapi/core/effects/delay/DelayReader.h>
+#include <audioapi/core/effects/delay/DelayWriter.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -29,22 +31,59 @@ class DelayTest : public ::testing::Test {
   }
 };
 
+class TestableDelayWriter : public DelayWriter {
+ public:
+  explicit TestableDelayWriter(
+      std::shared_ptr<BaseAudioContext> context,
+      const DelayOptions &options,
+      std::shared_ptr<DelayLine> delayLine)
+      : DelayWriter(context, options, delayLine) {}
+
+  void setInputBuffer(const std::shared_ptr<DSPAudioBuffer> &input) {
+    audioBuffer_ = input;
+  }
+};
+
+class TestableDelayReader : public DelayReader {
+ public:
+  explicit TestableDelayReader(
+      std::shared_ptr<BaseAudioContext> context,
+      const DelayOptions &options,
+      std::shared_ptr<DelayLine> delayLine)
+      : DelayReader(context, options, delayLine) {}
+
+  auto getOutputBuffer() {
+    return audioBuffer_;
+  }
+};
+
 class TestableDelayNode : public DelayNode {
  public:
   explicit TestableDelayNode(std::shared_ptr<BaseAudioContext> context, const DelayOptions &options)
-      : DelayNode(context, options) {}
+      : DelayNode(context, options),
+        testableDelayReader_(context, options, delayLine_),
+        testableDelayWriter_(context, options, delayLine_) {}
 
   void setDelayTimeParam(float value) {
     getDelayTimeParam()->setValue(value);
   }
 
   void setInputBuffer(const std::shared_ptr<DSPAudioBuffer> &input) {
-    audioBuffer_ = input;
+    testableDelayWriter_.setInputBuffer(input);
+  }
+
+  auto getOutputBuffer() {
+    return testableDelayReader_.getOutputBuffer();
   }
 
   void processNode(int framesToProcess) override {
-    DelayNode::processNode(framesToProcess);
+    testableDelayWriter_.processNode(framesToProcess);
+    testableDelayReader_.processNode(framesToProcess);
   }
+
+ private:
+  TestableDelayWriter testableDelayWriter_;
+  TestableDelayReader testableDelayReader_;
 };
 
 TEST_F(DelayTest, DelayCanBeCreated) {
@@ -54,7 +93,7 @@ TEST_F(DelayTest, DelayCanBeCreated) {
 
 TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
   static constexpr float DELAY_TIME = 0.0f;
-  static constexpr int FRAMES_TO_PROCESS = 4;
+  static constexpr int FRAMES_TO_PROCESS = 128;
   auto options = DelayOptions();
   options.maxDelayTime = 1.0f;
   auto delayNode = TestableDelayNode(context, options);
@@ -74,8 +113,8 @@ TEST_F(DelayTest, DelayWithZeroDelayOutputsInputSignal) {
 }
 
 TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
-  float DELAY_TIME = (128.0 / context->getSampleRate()) * 0.5;
   static constexpr int FRAMES_TO_PROCESS = 128;
+  float DELAY_TIME = (FRAMES_TO_PROCESS / context->getSampleRate()) * 0.5;
   auto options = DelayOptions();
   options.maxDelayTime = 1.0f;
   auto delayNode = TestableDelayNode(context, options);
@@ -102,10 +141,10 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
 }
 
 TEST_F(DelayTest, DelayHandlesTailCorrectly) {
-  float DELAY_TIME = (128.0 / context->getSampleRate()) * 0.5;
   static constexpr int FRAMES_TO_PROCESS = 128;
+  float DELAY_TIME = (FRAMES_TO_PROCESS / context->getSampleRate()) * 0.5;
   auto options = DelayOptions();
-  options.maxDelayTime = 1.0f;
+  options.maxDelayTime = (FRAMES_TO_PROCESS / context->getSampleRate()) * 3;
   auto delayNode = TestableDelayNode(context, options);
   delayNode.setDelayTimeParam(DELAY_TIME);
 
@@ -116,17 +155,17 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
 
   delayNode.setInputBuffer(buffer);
   delayNode.processNode(FRAMES_TO_PROCESS);
-  // Second call uses the result of the first call as input (same as old behavior
-  // where the same buffer object was passed to both calls)
+  // Second call uses the result of the first call as input
+  delayNode.getOutputBuffer()->zero();
   delayNode.processNode(FRAMES_TO_PROCESS);
   auto resultBuffer = delayNode.getOutputBuffer();
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
-    if (i < FRAMES_TO_PROCESS / 2) { // First 64 samples should be 2nd part of buffer
+    if (i < FRAMES_TO_PROCESS / 2) { // First samples should be 2nd part of buffer
       EXPECT_FLOAT_EQ(
           (*resultBuffer->getChannel(0))[i], static_cast<float>(i + 1 + FRAMES_TO_PROCESS / 2.0));
     } else {
       EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i],
-                      0.0f); // Last 64 samples should be zero
+                      0.0f); // Last samples should be zero
     }
   }
 }

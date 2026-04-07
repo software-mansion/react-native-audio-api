@@ -130,7 +130,7 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
   // could be problematic, since we are passing raw pointers to the lambda
   return Res::Ok([from, to](AudioGraph &graph, auto &) {
     if (!from->handle->audioNode->isProcessable() && to->handle->audioNode->isProcessable()) {
-      HostGraph::markNodesAsProcessing(from);
+      markNodesAsProcessing(from);
     }
     graph.pool().push(graph[to->handle->index].input_head, from->handle->index);
     graph.markDirty();

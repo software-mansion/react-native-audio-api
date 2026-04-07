@@ -1,8 +1,11 @@
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
+#include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/effects/delay/host_nodes/DelayReaderHostNode.h>
+#include <audioapi/core/effects/delay/host_nodes/DelayWriterHostNode.h>
 
 #include <memory>
 #include <utility>
@@ -61,6 +64,24 @@ JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelInterpretation) {
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
   auto obj = args[0].getObject(runtime);
+
+  // delay node is being connected to something, use delay reader
+  if (auto *fromNode = dynamic_cast<DelayNodeHostObject *>(this); fromNode != nullptr) {
+    auto delayReader = fromNode->delayReaderHostNode_;
+    auto toNode = obj.getHostObject<AudioNodeHostObject>(runtime);
+    delayReader->connect(*toNode);
+    return jsi::Value::undefined();
+  }
+
+  // something is being connected to a delay node, use delay writer
+  if (auto *toNode = dynamic_cast<DelayNodeHostObject *>(
+          obj.getHostObject<AudioNodeHostObject>(runtime).get());
+      toNode != nullptr) {
+    auto delayWriter = toNode->delayWriterHostNode_;
+    connect(*delayWriter);
+    return jsi::Value::undefined();
+  }
+
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
     connect(*node);

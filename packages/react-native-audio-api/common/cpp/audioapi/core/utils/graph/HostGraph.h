@@ -32,7 +32,7 @@ class TestGraphUtils;
 /// @note Use through the Graph wrapper for safety.
 class HostGraph {
  public:
-  enum class ResultError {
+  enum class ResultError : uint8_t {
     NODE_NOT_FOUND,
     CYCLE_DETECTED,
     EDGE_NOT_FOUND,
@@ -95,12 +95,14 @@ class HostGraph {
   /// @return AGEvent that adds the input on the AudioGraph side.
   Res addEdge(Node *from, Node *to);
 
+  /// @brief Marks a node as processing and recursively marks all inputs as processing.
   static void markNodesAsProcessing(Node *node);
 
   /// @brief Removes a directed edge from → to.
   /// @return AGEvent that removes the input on the AudioGraph side.
   Res removeEdge(Node *from, Node *to);
 
+  /// @brief Marks a node as not processing and recursively marks all inputs as not processing.
   static void markNodesAsNotProcessing(Node *node);
 
   /// @brief Removes all outgoing edges from `from`.
