@@ -4,11 +4,13 @@
 
 namespace audioapi {
 
+/// @brief Base class for automation events, containing common properties like startTime, endTime, and type.
 class AutomationEvent {
  public:
   AutomationEvent() = default;
   ~AutomationEvent() = default;
 
+  /// @brief Construct an event with explicit start and end times.
   explicit AutomationEvent(AutomationEventType type, double startTime, double endTime)
       : type_(type), startTime_(startTime), endTime_(endTime) {}
 
@@ -35,6 +37,8 @@ class AutomationEvent {
     return *this;
   }
 
+  /// @brief Get the automation time of the event. For ramp events, this is the end time; for other events, it's the start time.
+  /// @return The automation time of the event.
   [[nodiscard]] double getAutomationTime() const noexcept {
     return isRamp(type_) ? endTime_ : startTime_;
   }

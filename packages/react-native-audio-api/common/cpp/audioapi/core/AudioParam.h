@@ -43,6 +43,14 @@ class AudioParam {
     value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
   }
 
+  /// @note JS Thread only
+  [[nodiscard]] double getCurrentTime() const noexcept {
+    if (auto context = context_.lock()) {
+      return context->getCurrentTime();
+    }
+    return 0.0;
+  }
+
   /// @note Audio Thread only
   void setValueAtTime(float value, double startTime);
 
@@ -111,7 +119,8 @@ class AudioParam {
 
   /// @brief Update the parameter queue with a new event.
   /// @param event The new event to add to the queue.
-  /// @note Handles connecting start value of the new event to the end value of the previous event.
+  /// @note Resolves the event's startValue and startTime based on neighboring events,
+  // and adjusts neighboring events to maintain the invariant of non-overlapping events in the queue.
   void updateQueue(RenderAutomationEvent &&event) {
     eventRenderQueue_.push(std::move(event));
   }

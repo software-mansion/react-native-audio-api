@@ -35,39 +35,58 @@ bool AutomationRenderQueue::push(RenderAutomationEvent &&event) {
 }
 
 void AutomationRenderQueue::resolveEventValues(RenderAutomationEvent &event) {
-  auto it = eventQueue_.upper_bound(event.getAutomationTime());
+  auto it = eventQueue_.upperBound(event.getAutomationTime());
 
-  RenderAutomationEvent *predecessor = nullptr;
   if (it != eventQueue_.begin()) {
-    predecessor = &eventQueue_.deref_mut(std::prev(it));
-  } else if (currentEvent_) {
-    predecessor = &currentEvent_.value();
-  }
+    // Case 1: there is a preceding event in the queue
+    auto predIt = std::prev(it);
 
-  if (predecessor != nullptr) {
-    // Set startTime BEFORE startValue for ramps — startValue depends on the resolved startTime
+    // if the new event is a ramp resolve its startTime and startValue from the predecessor event
     if (event.isRampType()) {
-      event.setStartTime(predecessor->getEndTime());
+      event.setStartTime(predIt->getEndTime());
     }
+    event.setStartValue(getValueOfPreviousEventAt(*predIt, event.getStartTime()));
 
-    event.setStartValue(getValueOfPreviousEventAt(*predecessor, event.getStartTime()));
+    // If the predecessor is a setTarget event, adjust its endTime and endValue to connect to the new event
+    if (predIt->getType() == AutomationEventType::SET_TARGET) {
+      float newEndValue = getValueOfPreviousEventAt(*predIt, event.getStartTime());
+      auto node = eventQueue_.extract(predIt);
+      node.value().setEndTime(event.getStartTime());
+      node.value().setEndValue(newEndValue);
+      eventQueue_.insert(it, std::move(node));
+    }
+  } else if (currentEvent_) {
+    // Case 2: no preceding event in queue, but currentEvent_ exists
 
-    if (predecessor->getType() == AutomationEventType::SET_TARGET) {
-      predecessor->setEndTime(event.getStartTime());
-      predecessor->setEndValue(getValueOfPreviousEventAt(*predecessor, predecessor->getEndTime()));
+    // if the new event is a ramp resolve its startTime and startValue from the predecessor event
+    if (event.isRampType()) {
+      event.setStartTime(currentEvent_->getEndTime());
+    }
+    event.setStartValue(getValueOfPreviousEventAt(*currentEvent_, event.getStartTime()));
+
+    // If the predecessor is a setTarget event, adjust its endTime and endValue to connect to the new event
+    if (currentEvent_->getType() == AutomationEventType::SET_TARGET) {
+      currentEvent_->setEndTime(event.getStartTime());
+      currentEvent_->setEndValue(getValueOfPreviousEventAt(*currentEvent_, event.getStartTime()));
     }
   } else {
+    // Case 3: no predecessor at all — fall back to default value
     event.setStartValue(defaultValue_);
   }
 
+  // If the successor exists and is a ramp, reconnect its start to this event's end
   if (it != eventQueue_.end() && it->isRampType()) {
-    auto *successor = &eventQueue_.deref_mut(it);
-    successor->setStartTime(event.getEndTime());
-    successor->setStartValue(event.getEndValue());
+    auto hint = std::next(it);
+    auto node = eventQueue_.extract(it);
+    node.value().setStartTime(event.getEndTime());
+    node.value().setStartValue(event.getEndValue());
+    eventQueue_.insert(hint, std::move(node));
   }
 }
 
-float AutomationRenderQueue::getValueOfPreviousEventAt(RenderAutomationEvent &event, double time) {
+float AutomationRenderQueue::getValueOfPreviousEventAt(
+    const RenderAutomationEvent &event,
+    double time) {
   if (event.getType() == AutomationEventType::SET_TARGET) {
     return event.getCalculateValue()(
         event.getStartTime(), event.getEndTime(), event.getStartValue(), event.getEndValue(), time);
@@ -75,40 +94,82 @@ float AutomationRenderQueue::getValueOfPreviousEventAt(RenderAutomationEvent &ev
   return event.getEndValue();
 }
 
-void AutomationRenderQueue::cancelScheduledValues(double cancelTime) {
-  while (!eventQueue_.isEmpty() && eventQueue_.peekBack().getAutomationTime() >= cancelTime) {
-    eventQueue_.popBack();
-  }
-}
-
 void AutomationRenderQueue::cancelAndHoldAtTime(double cancelTime) {
-  float holdValue = currentEvent_ ? currentEvent_->getStartValue() : 0.0f;
-
-  // Check E2: first event with automationTime > cancelTime
-  auto e2It = eventQueue_.upper_bound(cancelTime);
+  // E2: first event with automationTime strictly after cancelTime
+  auto e2It = eventQueue_.upperBound(cancelTime);
 
   if (e2It != eventQueue_.end() && e2It->isRampType()) {
-    // E2 is a ramp — compute its value at cancelTime
-    const auto &e2 = *e2It;
-    holdValue = e2.getCalculateValue()(
-        e2.getStartTime(), e2.getEndTime(), e2.getStartValue(), e2.getEndValue(), cancelTime);
-  } else {
-    // Hold value comes from E1 or currentEvent_
-    auto e1It = (e2It != eventQueue_.begin()) ? std::prev(e2It) : eventQueue_.end();
-    if (e1It != eventQueue_.end()) {
-      holdValue = getValueOfPreviousEventAt(eventQueue_.deref_mut(e1It), cancelTime);
-    } else if (currentEvent_) {
-      holdValue = getValueOfPreviousEventAt(*currentEvent_, cancelTime);
+    // Spec step 3: E2 is a ramp — truncate it to end at cancelTime
+    float holdValue = e2It->getCalculateValue()(
+        e2It->getStartTime(),
+        e2It->getEndTime(),
+        e2It->getStartValue(),
+        e2It->getEndValue(),
+        cancelTime);
+    auto node = eventQueue_.extract(e2It);
+    node.value().setEndTime(cancelTime);
+    node.value().setEndValue(holdValue);
+    auto insertPos = eventQueue_.upperBound(cancelTime);
+    eventQueue_.insert(insertPos, std::move(node));
+    // Step 5: remove everything strictly after cancelTime
+    eventQueue_.erase(eventQueue_.upperBound(cancelTime), eventQueue_.end());
+    return;
+  }
+
+  // Spec step 4: check E1 (last event with automationTime <= cancelTime)
+  auto e1It = (e2It != eventQueue_.begin()) ? std::prev(e2It) : eventQueue_.end();
+
+  if (e1It != eventQueue_.end()) {
+    if (e1It->getType() == AutomationEventType::SET_TARGET) {
+      // Insert setValueAtTime to freeze the exponential approach
+      float holdValue = getValueOfPreviousEventAt(*e1It, cancelTime);
+      eventQueue_.erase(e2It, eventQueue_.end());
+      this->push(AutomationRenderEventFactory::createSetValueEvent(holdValue, cancelTime));
+      return;
+    }
+
+    if (e1It->getType() == AutomationEventType::SET_VALUE_CURVE &&
+        cancelTime <= e1It->getEndTime()) {
+      // Truncate curve; compute holdValue using original endTime to preserve sampling behaviour
+      float holdValue = e1It->getCalculateValue()(
+          e1It->getStartTime(),
+          e1It->getEndTime(),
+          e1It->getStartValue(),
+          e1It->getEndValue(),
+          cancelTime);
+      auto hint = std::next(e1It);
+      auto node = eventQueue_.extract(e1It);
+      node.value().setEndTime(cancelTime);
+      node.value().setEndValue(holdValue);
+      eventQueue_.insert(hint, std::move(node));
+      // fall through to step 5
+    }
+    // All other E1 types (SET_VALUE, completed ramps): nothing to modify, fall through to step 5
+  } else if (currentEvent_) {
+    // No E1 in queue, but currentEvent_ exists — check if it needs to be truncated
+    if (currentEvent_->getType() == AutomationEventType::SET_TARGET) {
+      float holdValue = getValueOfPreviousEventAt(*currentEvent_, cancelTime);
+      eventQueue_.erase(eventQueue_.begin(), eventQueue_.end());
+      this->push(AutomationRenderEventFactory::createSetValueEvent(holdValue, cancelTime));
+      return;
+    }
+
+    if (currentEvent_->getType() == AutomationEventType::SET_VALUE_CURVE &&
+        cancelTime <= currentEvent_->getEndTime()) {
+      float holdValue = currentEvent_->getCalculateValue()(
+          currentEvent_->getStartTime(),
+          currentEvent_->getEndTime(),
+          currentEvent_->getStartValue(),
+          currentEvent_->getEndValue(),
+          cancelTime);
+      currentEvent_->setEndTime(cancelTime);
+      currentEvent_->setEndValue(holdValue);
+      // fall through to step 5
     }
   }
 
-  // Remove all events after cancelTime
-  while (!eventQueue_.isEmpty() && eventQueue_.peekBack().getAutomationTime() > cancelTime) {
-    eventQueue_.popBack();
-  }
-
-  // Insert hold event — resolveEventValues will set startValue from E1
-  this->push(std::move(AutomationRenderEventFactory::createSetValueEvent(holdValue, cancelTime)));
+  // Step 5: remove all events strictly after cancelTime
+  eventQueue_.erase(eventQueue_.upperBound(cancelTime), eventQueue_.end());
 }
 
 } // namespace audioapi

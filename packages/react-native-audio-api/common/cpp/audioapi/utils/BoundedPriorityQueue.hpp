@@ -11,7 +11,8 @@ namespace audioapi {
 
 /// @brief A bounded priority queue with fixed capacity backed by a static pool allocator.
 /// Elements are kept in ascending sorted order (smallest element at front).
-/// All operations avoid heap allocation.
+/// All operations avoid heap allocation. Uses std::multiset under the hood
+// to maintain sorted order and provide efficient insertion and removal.
 /// @tparam T The type of elements stored. Must be move-constructible.
 /// @tparam Capacity The maximum number of elements.
 /// @tparam Compare Comparator type. Defaults to std::less<T> (smallest element at front).
@@ -63,7 +64,7 @@ class BoundedPriorityQueue {
     return true;
   }
 
-  /// @brief Remove and return the smallest element (front). Amortized O(1).
+  /// @brief Remove and return the smallest element (front).
   /// @return True if successful, false if empty.
   bool pop(T &out) {
     if (isEmpty()) {
@@ -74,7 +75,7 @@ class BoundedPriorityQueue {
     return true;
   }
 
-  /// @brief Remove the smallest element (front) without retrieving it. Amortized O(1).
+  /// @brief Remove the smallest element (front) without retrieving it.
   /// @return True if successful, false if empty.
   bool pop() {
     if (isEmpty()) {
@@ -84,34 +85,14 @@ class BoundedPriorityQueue {
     return true;
   }
 
-  /// @brief Remove the largest element (back). Amortized O(1).
-  /// @return True if successful, false if empty.
-  bool popBack() {
-    if (isEmpty()) {
-      [[unlikely]] return false;
-    }
-    set_.erase(std::prev(set_.end()));
-    return true;
-  }
-
   /// @brief Peek at the smallest element (front).
   [[nodiscard]] const T &peekFront() const noexcept {
     return *set_.begin();
   }
 
-  /// @brief Peek at the smallest element (front), mutable.
-  [[nodiscard]] T &peekFrontMut() noexcept {
-    return const_cast<T &>(*set_.begin());
-  }
-
   /// @brief Peek at the largest element (back).
   [[nodiscard]] const T &peekBack() const noexcept {
     return *std::prev(set_.end());
-  }
-
-  /// @brief Peek at the largest element (back), mutable.
-  [[nodiscard]] T &peekBackMut() noexcept {
-    return const_cast<T &>(*std::prev(set_.end()));
   }
 
   [[nodiscard]] bool isEmpty() const noexcept {
@@ -126,10 +107,6 @@ class BoundedPriorityQueue {
     return set_.size();
   }
 
-  [[nodiscard]] size_t getCapacity() const noexcept {
-    return Capacity;
-  }
-
   [[nodiscard]] SetType::const_iterator begin() const noexcept {
     return set_.begin();
   }
@@ -138,18 +115,40 @@ class BoundedPriorityQueue {
     return set_.end();
   }
 
+  /// @brief Find the first element with key >= the given key.
+  /// @return An iterator to the first element with key >= the given key, or end() if no such element exists.
   template <typename Key>
-  [[nodiscard]] SetType::iterator lower_bound(const Key &key) noexcept {
+  [[nodiscard]] SetType::iterator lowerBound(const Key &key) noexcept {
     return set_.lower_bound(key);
   }
 
+  /// @brief Find the first element with key > the given key.
+  /// @note For events with duplicate keys, upperBound returns the position after the last duplicate.
+  /// @return An iterator to the first element with key > the given key, or end() if no such element exists.
   template <typename Key>
-  [[nodiscard]] SetType::iterator upper_bound(const Key &key) noexcept {
+  [[nodiscard]] SetType::iterator upperBound(const Key &key) noexcept {
     return set_.upper_bound(key);
   }
 
-  [[nodiscard]] T &deref_mut(SetType::const_iterator it) noexcept {
-    return const_cast<T &>(*it);
+  /// @brief Erase all elements in the range [first, last).
+  void erase(SetType::iterator first, SetType::iterator last) noexcept {
+    set_.erase(first, last);
+  }
+
+  /// @brief Extract a node at the given iterator position.
+  /// @note The extracted node can be modified and reinserted without reallocation.
+  /// @param it An iterator pointing to the element to extract. Must be a valid iterator in the set.
+  /// @return A node handle owning the extracted element.
+  [[nodiscard]] SetType::node_type extract(SetType::iterator it) noexcept {
+    return set_.extract(it);
+  }
+
+  /// @brief Reinsert an extracted node with a hint.
+  /// @note Use std::next(original_it) as hint when the sort key has not changed.
+  /// @param hint An iterator pointing to the position before which the node should be reinserted. Must be a valid iterator in the set or end().
+  /// @param node A node handle owning the element to reinsert. Must have been extracted from this set and not yet reinserted.
+  void insert(SetType::iterator hint, SetType::node_type &&node) noexcept {
+    set_.insert(hint, std::move(node));
   }
 };
 

@@ -146,8 +146,8 @@ void AudioParam::mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &process
   assert(processingBuffer != nullptr);
 
   // Sum all input buffers into the processing buffer
-  for (auto it = inputBuffers_.begin(), end = inputBuffers_.end(); it != end; ++it) {
-    processingBuffer->sum(**it, ChannelInterpretation::SPEAKERS);
+  for (auto &inputBuffer : inputBuffers_) {
+    processingBuffer->sum(*inputBuffer, ChannelInterpretation::SPEAKERS);
   }
 
   // Clear for next processing cycle

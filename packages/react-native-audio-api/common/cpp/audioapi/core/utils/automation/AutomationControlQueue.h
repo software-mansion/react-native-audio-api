@@ -15,17 +15,26 @@ class AutomationControlQueue : public AutomationQueueBase<AutomationEvent> {
   explicit AutomationControlQueue() = default;
 
   /// @brief Validate if a new event can be added to the queue without violating curve exclusion rules.
+  /// See: https://webaudio.github.io/web-audio-api/#automation-event-time
   /// @param event The new event to validate.
   /// @return Ok if the event can be added, Err with a message if it cannot be added.
   [[nodiscard]] Result<NoneType, std::string> checkCurveExclusion(const AutomationEvent &event);
 
-  /// @brief Cancel scheduled parameter changes at or after the given time.
-  /// @param cancelTime The time at which to cancel scheduled changes.
-  void cancelScheduledValues(double cancelTime) override;
+  /// @brief Remove all events with automationTime strictly before currentTime.
+  /// @note Should be called before push to prevent the queue from filling up with past events.
+  void purge(double currentTime);
 
  private:
-  [[nodiscard]] const AutomationEvent *findEventAtTime(double time) const;
-  [[nodiscard]] const AutomationEvent *findEventInInterval(double startTime, double endTime) const;
+  /// @brief Find an event that occurs at the given time. For curve events, checks if time is within the event's interval.
+  /// @param time The time to check for an event.
+  /// @return A pointer to the conflicting event, or nullptr if no conflict.
+  [[nodiscard]] const AutomationEvent *findEventAtTime(double time);
+
+  /// @brief Find an event that starts within the given time interval.
+  /// @param startTime The start time of the interval.
+  /// @param endTime The end time of the interval.
+  /// @return A pointer to the conflicting event, or nullptr if no conflict.
+  [[nodiscard]] const AutomationEvent *findEventInInterval(double startTime, double endTime);
 };
 
 } // namespace audioapi

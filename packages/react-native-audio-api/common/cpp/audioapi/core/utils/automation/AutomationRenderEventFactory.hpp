@@ -8,6 +8,8 @@
 
 namespace audioapi {
 
+/// @brief A peer class to AutomationQueue classes for creating RenderAutomationEvents
+/// and resolving their values based on the current state of the queue.
 class AutomationRenderEventFactory {
  public:
   static RenderAutomationEvent createSetValueEvent(float value, double startTime) {

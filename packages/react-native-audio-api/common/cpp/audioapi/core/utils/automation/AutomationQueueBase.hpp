@@ -22,36 +22,12 @@ class AutomationQueueBase {
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
-  virtual void cancelScheduledValues(double cancelTime) = 0;
+  void cancelScheduledValues(double cancelTime) {
+    eventQueue_.erase(eventQueue_.lowerBound(cancelTime), eventQueue_.end());
+  }
 
   virtual bool push(TEvent &&event) {
     return eventQueue_.push(std::move(event));
-  }
-
-  virtual bool pop(TEvent &event) {
-    return eventQueue_.pop(event);
-  }
-
-  /// @brief Check if the event queue is empty.
-  [[nodiscard]] bool isEmpty() const noexcept {
-    return eventQueue_.isEmpty();
-  }
-
-  /// @brief Check if the event queue is full.
-  [[nodiscard]] bool isFull() const noexcept {
-    return eventQueue_.isFull();
-  }
-
-  /// @brief Get the first event in the queue.
-  /// @return The first event in the queue.
-  [[nodiscard]] const TEvent &front() const noexcept {
-    return eventQueue_.peekFront();
-  }
-
-  /// @brief Get the last event in the queue.
-  /// @return The last event in the queue.
-  [[nodiscard]] const TEvent &back() const noexcept {
-    return eventQueue_.peekBack();
   }
 
  protected:

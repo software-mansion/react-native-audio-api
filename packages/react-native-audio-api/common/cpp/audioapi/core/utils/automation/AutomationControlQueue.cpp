@@ -11,6 +11,7 @@ namespace audioapi {
 Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
     const AutomationEvent &event) {
   if (event.getType() == AutomationEventType::SET_VALUE_CURVE) {
+    // For curve events, check for any event that occurs at or within the curve's time interval
     const auto *conflict = findEventInInterval(event.getStartTime(), event.getEndTime());
     if (conflict != nullptr) {
       return Err(
@@ -22,6 +23,7 @@ Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
               conflict->getAutomationTime()));
     }
   } else {
+    // For non-curve events check for curve events that conflict at the event's automationTime
     const auto *conflict = findEventAtTime(event.getAutomationTime());
     if ((conflict != nullptr) && conflict->getType() == AutomationEventType::SET_VALUE_CURVE) {
       return Err(
@@ -36,30 +38,40 @@ Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
   return Ok(None);
 }
 
-void AutomationControlQueue::cancelScheduledValues(double cancelTime) {
-  while (!eventQueue_.isEmpty() && eventQueue_.peekBack().getAutomationTime() >= cancelTime) {
-    eventQueue_.popBack();
-  }
+void AutomationControlQueue::purge(double currentTime) {
+  eventQueue_.erase(eventQueue_.begin(), eventQueue_.lowerBound(currentTime));
 }
 
-// TODO: these lookups can be optimized using multiset interface of the underlying queue
-const AutomationEvent *AutomationControlQueue::findEventAtTime(double automationTime) const {
-  for (const auto &event : eventQueue_) {
-    if ((event.getType() == AutomationEventType::SET_VALUE_CURVE &&
-         event.getStartTime() <= automationTime && automationTime <= event.getEndTime()) ||
-        event.getAutomationTime() == automationTime) {
-      return &event;
+const AutomationEvent *AutomationControlQueue::findEventAtTime(double automationTime) {
+  // Check if a SET_VALUE_CURVE that starts before automationTime extends into it
+  auto it = eventQueue_.upperBound(automationTime);
+  if (it != eventQueue_.begin()) {
+    const auto &pred = *std::prev(it);
+    if (pred.getType() == AutomationEventType::SET_VALUE_CURVE &&
+        automationTime <= pred.getEndTime()) {
+      return &pred;
     }
   }
+
+  // Check for an event with an exact automationTime match
+  auto lo = eventQueue_.lowerBound(automationTime);
+  if (lo != it) {
+    return &(*lo);
+  }
+
   return nullptr;
 }
 
-// TODO: these lookups can be optimized using multiset interface of the underlying queue
-const AutomationEvent *AutomationControlQueue::findEventInInterval(double startTime, double endTime)
-    const {
-  for (const auto &event : eventQueue_) {
-    if (event.getStartTime() >= startTime && event.getStartTime() < endTime) {
-      return &event;
+const AutomationEvent *AutomationControlQueue::findEventInInterval(
+    double startTime,
+    double endTime) {
+  // Non-ramp events have automationTime == startTime, so lowerBound/lowerBound brackets them.
+  // Ramp events have startTime == 0 (unresolved on the control thread), so getStartTime() >= startTime
+  // filters them out.
+  for (auto it = eventQueue_.lowerBound(startTime), hi = eventQueue_.lowerBound(endTime); it != hi;
+       ++it) {
+    if (it->getStartTime() >= startTime) {
+      return &(*it);
     }
   }
   return nullptr;

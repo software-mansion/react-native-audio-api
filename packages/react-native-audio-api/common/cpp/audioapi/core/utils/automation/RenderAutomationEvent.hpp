@@ -7,7 +7,8 @@
 #include "audioapi/core/types/AutomationEventType.h"
 
 namespace audioapi {
-
+/// @brief A RenderAutomationEvent extends AutomationEvent with additional properties and a value calculation function
+/// that can compute the parameter value at any time during the event's active period based on its type and the current state of the queue.
 class RenderAutomationEvent : public AutomationEvent {
  public:
   RenderAutomationEvent() = default;

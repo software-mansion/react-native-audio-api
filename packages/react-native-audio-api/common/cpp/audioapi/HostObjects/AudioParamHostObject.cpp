@@ -61,6 +61,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioParamHostObject, value) {
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
   auto startTime = args[1].getNumber();
+  controlQueue_.purge(param_->getCurrentTime());
   controlQueue_.push(AutomationEvent(AutomationEventType::SET_VALUE, startTime));
 
   auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), startTime](
@@ -74,6 +75,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
   auto endTime = args[1].getNumber();
+  controlQueue_.purge(param_->getCurrentTime());
   controlQueue_.push(AutomationEvent(AutomationEventType::LINEAR_RAMP, endTime));
 
   auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime](
@@ -87,6 +89,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
   auto endTime = args[1].getNumber();
+  controlQueue_.purge(param_->getCurrentTime());
   controlQueue_.push(AutomationEvent(AutomationEventType::EXPONENTIAL_RAMP, endTime));
 
   auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime](
@@ -100,6 +103,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setTargetAtTime) {
   auto startTime = args[1].getNumber();
+  controlQueue_.purge(param_->getCurrentTime());
   controlQueue_.push(AutomationEvent(AutomationEventType::SET_TARGET, startTime));
 
   auto event = [param = param_,
@@ -116,6 +120,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setTargetAtTime) {
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
   auto startTime = args[1].getNumber();
   auto duration = args[2].getNumber();
+  controlQueue_.purge(param_->getCurrentTime());
   controlQueue_.push(
       AutomationEvent(AutomationEventType::SET_VALUE_CURVE, startTime, startTime + duration));
 
@@ -158,7 +163,6 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelAndHoldAtTime) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, checkCurveExclusion) {
-
   auto checkExclusionResult = checkCurveExclusionFromJSI(runtime, args);
 
   auto jsResult = jsi::Object(runtime);
