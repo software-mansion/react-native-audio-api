@@ -19,7 +19,7 @@ runs:
 
     - name: Install cpplint
       shell: bash
-      run: pip install 'cpplint==2.0.0'
+      run: pip install 'cpplint==2.0.2'
 
     - name: Install ktlint
       shell: bash
