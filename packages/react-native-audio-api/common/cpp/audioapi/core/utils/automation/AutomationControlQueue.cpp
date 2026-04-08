@@ -1,6 +1,6 @@
 #include "audioapi/core/utils/automation/AutomationControlQueue.h"
 #include <cstddef>
-#include <format>
+#include <sstream>
 #include <string>
 #include "audioapi/core/types/AutomationEventType.h"
 #include "audioapi/core/utils/automation/AutomationEvent.hpp"
@@ -14,25 +14,22 @@ Result<NoneType, std::string> AutomationControlQueue::checkCurveExclusion(
     // For curve events, check for any event that occurs at or within the curve's time interval
     const auto *conflict = findEventInInterval(event.getStartTime(), event.getEndTime());
     if (conflict != nullptr) {
-      return Err(
-          std::format(
-              "Cannot schedule curve event from time {} to {} because it conflicts with an existing event of type {} at time {}.",
-              event.getStartTime(),
-              event.getEndTime(),
-              toString(conflict->getType()),
-              conflict->getAutomationTime()));
+      std::stringstream ss;
+      ss << "Cannot schedule curve event from time " << event.getStartTime() << " to "
+         << event.getEndTime() << " because it conflicts with an existing event of type "
+         << toString(conflict->getType()) << " at time " << conflict->getAutomationTime() << ".";
+      return Err(ss.str());
     }
   } else {
     // For non-curve events check for curve events that conflict at the event's automationTime
     const auto *conflict = findEventAtTime(event.getAutomationTime());
     if ((conflict != nullptr) && conflict->getType() == AutomationEventType::SET_VALUE_CURVE) {
-      return Err(
-          std::format(
-              "Cannot schedule event of type {} at time {} because it conflicts with an existing curve event from time {} to {}.",
-              toString(event.getType()),
-              event.getAutomationTime(),
-              conflict->getStartTime(),
-              conflict->getEndTime()));
+      std::stringstream ss;
+      ss << "Cannot schedule event of type " << toString(event.getType()) << " at time "
+         << event.getAutomationTime()
+         << " because it conflicts with an existing curve event from time "
+         << conflict->getStartTime() << " to " << conflict->getEndTime() << ".";
+      return Err(ss.str());
     }
   }
   return Ok(None);
