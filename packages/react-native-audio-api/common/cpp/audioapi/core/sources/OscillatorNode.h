@@ -5,14 +5,10 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/types/OscillatorType.h>
 
-#include <algorithm>
-#include <cmath>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 
-class AudioBuffer;
 struct OscillatorOptions;
 
 class OscillatorNode : public AudioScheduledSourceNode {
@@ -23,13 +19,16 @@ class OscillatorNode : public AudioScheduledSourceNode {
 
   [[nodiscard]] std::shared_ptr<AudioParam> getFrequencyParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
-  [[nodiscard]] OscillatorType getType();
+
+  /// @note Audio Thread only
   void setType(OscillatorType);
+
+  /// @note Audio Thread only
   void setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:

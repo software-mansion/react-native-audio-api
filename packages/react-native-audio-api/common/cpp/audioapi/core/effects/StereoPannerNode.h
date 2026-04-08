@@ -2,14 +2,13 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
-#include <algorithm>
 #include <cassert>
 #include <memory>
 
 namespace audioapi {
 
-class AudioBuffer;
 struct StereoPannerOptions;
 
 class StereoPannerNode : public AudioNode {
@@ -21,12 +20,12 @@ class StereoPannerNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
-  std::shared_ptr<AudioParam> panParam_;
+  const std::shared_ptr<AudioParam> panParam_;
 };
 
 } // namespace audioapi

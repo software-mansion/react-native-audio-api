@@ -1,73 +1,124 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/FFT.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/CircularArray.hpp>
+#include <audioapi/utils/TripleBuffer.hpp>
 
-#include <algorithm>
+#include <atomic>
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <string>
 #include <vector>
 
 namespace audioapi {
 
-class AudioBuffer;
-class AudioArray;
-class CircularAudioArray;
 struct AnalyserOptions;
 
 class AnalyserNode : public AudioNode {
  public:
-  enum class WindowType { BLACKMAN, HANN };
   explicit AnalyserNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const AnalyserOptions &options);
 
-  int getFftSize() const;
-  int getFrequencyBinCount() const;
-  float getMinDecibels() const;
-  float getMaxDecibels() const;
-  float getSmoothingTimeConstant() const;
-  AnalyserNode::WindowType getWindowType() const;
+  /// @note JS Thread only
+  [[nodiscard]] float getMinDecibels() const {
+    return minDecibels_;
+  }
 
-  void setFftSize(int fftSize);
-  void setMinDecibels(float minDecibels);
-  void setMaxDecibels(float maxDecibels);
-  void setSmoothingTimeConstant(float smoothingTimeConstant);
-  void setWindowType(AnalyserNode::WindowType);
+  /// @note JS Thread only
+  [[nodiscard]] float getMaxDecibels() const {
+    return maxDecibels_;
+  }
 
+  /// @note JS Thread only
+  [[nodiscard]] float getSmoothingTimeConstant() const {
+    return smoothingTimeConstant_;
+  }
+
+  [[nodiscard]] int getFFTSize() const {
+    return fftSize_.load(std::memory_order_acquire);
+  }
+
+  /// @note JS Thread only
+  void setMinDecibels(float minDecibels) {
+    minDecibels_ = minDecibels;
+  }
+
+  /// @note JS Thread only
+  void setMaxDecibels(float maxDecibels) {
+    maxDecibels_ = maxDecibels;
+  }
+
+  /// @note JS Thread only
+  void setSmoothingTimeConstant(float smoothingTimeConstant) {
+    smoothingTimeConstant_ = smoothingTimeConstant;
+  }
+
+  /// @note JS Thread only
+  void setFFTSize(int fftSize);
+
+  /// @note JS Thread only
   void getFloatFrequencyData(float *data, int length);
+
+  /// @note JS Thread only
   void getByteFrequencyData(uint8_t *data, int length);
+
+  /// @note JS Thread only
   void getFloatTimeDomainData(float *data, int length);
+
+  /// @note JS Thread only
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
-  int fftSize_;
+  std::atomic<int> fftSize_;
+
+  // Audio Thread data structures
+  std::unique_ptr<CircularDSPAudioArray> inputArray_;
+  std::unique_ptr<DSPAudioBuffer> downMixBuffer_;
+
+  // JS Thread parameters
   float minDecibels_;
   float maxDecibels_;
   float smoothingTimeConstant_;
 
-  WindowType windowType_;
-  std::shared_ptr<AudioArray> windowData_;
-
-  std::unique_ptr<CircularAudioArray> inputArray_;
-  std::unique_ptr<AudioBuffer> downMixBuffer_;
-  std::unique_ptr<AudioArray> tempArray_;
-
+  // JS Thread data structures
   std::unique_ptr<dsp::FFT> fft_;
+  std::unique_ptr<DSPAudioArray> tempArray_;
+  std::unique_ptr<DSPAudioArray> windowData_;
   std::vector<std::complex<float>> complexData_;
-  std::unique_ptr<AudioArray> magnitudeArray_;
-  bool shouldDoFFTAnalysis_{true};
+  std::unique_ptr<DSPAudioArray> magnitudeArray_;
+
+  struct AnalysisFrame {
+    DSPAudioArray timeDomain;
+    size_t sequenceNumber = 0;
+    int fftSize = 0;
+
+    explicit AnalysisFrame(size_t size) : timeDomain(size) {}
+
+    AnalysisFrame(const AnalysisFrame &) = delete;
+    AnalysisFrame &operator=(const AnalysisFrame &) = delete;
+    AnalysisFrame(AnalysisFrame &&) noexcept = default;
+    AnalysisFrame &operator=(AnalysisFrame &&) noexcept = default;
+    ~AnalysisFrame() = default;
+  };
+
+  TripleBuffer<AnalysisFrame> analysisBuffer_{MAX_FFT_SIZE};
+  size_t publishSequence_ = 0;      // audio thread only
+  size_t lastAnalyzedSequence_ = 0; // JS thread only
 
   void doFFTAnalysis();
 
-  void setWindowData(WindowType type, int size);
+  void initializeWindowData(int fftSize);
 };
 
 } // namespace audioapi

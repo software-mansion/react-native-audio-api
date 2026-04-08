@@ -59,7 +59,14 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
 /// @param streamChannelCount The number of channels in the incoming audio stream.
 /// @param streamMaxBufferSize The estimated maximum buffer size for the incoming audio stream.
 /// @returns Success status with file path or Error status with message.
-OpenFileResult FFmpegAudioFileWriter::openFile() {
+OpenFileResult FFmpegAudioFileWriter::openFile(
+    float streamSampleRate,
+    int32_t streamChannelCount,
+    int32_t streamMaxBufferSize,
+    const std::string &fileNameOverride) {
+  streamSampleRate_ = streamSampleRate;
+  streamChannelCount_ = streamChannelCount;
+  streamMaxBufferSize_ = streamMaxBufferSize;
   framesWritten_.store(0, std::memory_order_release);
   nextPts_ = 0;
   auto filePathResult = fileoptions::getFilePath(fileProperties_, "");

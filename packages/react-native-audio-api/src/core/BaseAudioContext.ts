@@ -130,8 +130,8 @@ export default class BaseAudioContext {
     return new OscillatorNode(this);
   }
 
-  createStreamer(): StreamerNode {
-    return new StreamerNode(this);
+  createStreamer(streamPath: string): StreamerNode {
+    return new StreamerNode(this, { streamPath });
   }
 
   createConstantSource(): ConstantSourceNode {

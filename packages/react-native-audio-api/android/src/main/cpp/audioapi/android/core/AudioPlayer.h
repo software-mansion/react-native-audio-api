@@ -6,18 +6,18 @@
 #include <memory>
 
 #include <audioapi/android/core/NativeAudioPlayer.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 
 using namespace oboe;
 
 class AudioContext;
-class AudioBuffer;
 
 class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  public:
   AudioPlayer(
-      const std::function<void(std::shared_ptr<AudioBuffer>, int)> &renderAudio,
+      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
       int channelCount);
 
@@ -40,9 +40,9 @@ class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
   void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */) override;
 
  private:
-  std::function<void(std::shared_ptr<AudioBuffer>, int)> renderAudio_;
+  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
-  std::shared_ptr<AudioBuffer> buffer_;
+  std::shared_ptr<DSPAudioBuffer> buffer_;
   bool isInitialized_ = false;
   float sampleRate_;
   int channelCount_;

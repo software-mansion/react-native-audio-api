@@ -1,9 +1,9 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
@@ -15,19 +15,20 @@ StereoPannerNode::StereoPannerNode(
     const StereoPannerOptions &options)
     : AudioNode(context, options),
       panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)) {
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> StereoPannerNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
+  if (context == nullptr) {
     return processingBuffer;
+  }
   double time = context->getCurrentTime();
   double deltaTime = 1.0 / context->getSampleRate();
 
@@ -57,8 +58,8 @@ std::shared_ptr<AudioBuffer> StereoPannerNode::processNode(
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
       const auto x = (pan <= 0 ? pan + 1 : pan);
-      const auto gainL = static_cast<float>(cos(x * PI / 2));
-      const auto gainR = static_cast<float>(sin(x * PI / 2));
+      const auto gainL = cos(x * PI / 2);
+      const auto gainR = sin(x * PI / 2);
       const float inputL = inputLeft[i];
       const float inputR = inputRight[i];
 

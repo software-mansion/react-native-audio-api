@@ -204,21 +204,10 @@ describe('React Native Audio API Mocks', () => {
 
     describe('StreamerNode', () => {
       it('should create a StreamerNode', () => {
-        const streamer = context.createStreamer();
+        const streamer = context.createStreamer({
+          streamPath: 'http://example.com/stream',
+        });
         expect(streamer).toBeInstanceOf(MockAPI.StreamerNode);
-      });
-
-      it('should support initialization with stream path', () => {
-        const streamer = context.createStreamer();
-        const result = streamer.initialize('http://example.com/stream');
-        expect(result).toBe(true);
-        expect(streamer.streamPath).toBe('http://example.com/stream');
-      });
-
-      it('should throw error on duplicate initialization', () => {
-        const streamer = context.createStreamer();
-        streamer.initialize('http://example.com/stream');
-        expect(() => streamer.initialize('http://example.com/other')).toThrow();
       });
     });
 

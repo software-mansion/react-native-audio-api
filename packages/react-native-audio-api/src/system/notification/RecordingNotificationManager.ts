@@ -1,12 +1,11 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../../events';
 import { NativeAudioAPIModule } from '../../specs';
 import type {
-  RecordingNotificationEvent,
+  NotificationCallback,
   NotificationManager,
   RecordingNotificationEventName,
   RecordingNotificationInfo,
 } from './types';
-
 import { AudioApiError } from '../../errors';
 
 class RecordingNotificationManager
@@ -88,7 +87,7 @@ class RecordingNotificationManager
    */
   addEventListener<T extends RecordingNotificationEventName>(
     eventName: T,
-    callback: (event: RecordingNotificationEvent[T]) => void
+    callback: NotificationCallback<T>
   ): AudioEventSubscription {
     return this.audioEventEmitter.addAudioEventListener(eventName, callback);
   }

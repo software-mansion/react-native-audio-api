@@ -7,13 +7,13 @@
 #define INCLUDE_SYS_TYPES_H 1
 
 #if INCLUDE_INTTYPES_H
-#include <inttypes.h>
+#  include <inttypes.h>
 #endif
 #if INCLUDE_STDINT_H
-#include <stdint.h>
+#  include <stdint.h>
 #endif
 #if INCLUDE_SYS_TYPES_H
-#include <sys/types.h>
+#  include <sys/types.h>
 #endif
 
 typedef int16_t ogg_int16_t;

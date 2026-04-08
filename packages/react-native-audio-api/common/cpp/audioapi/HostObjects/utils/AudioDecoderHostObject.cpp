@@ -6,7 +6,6 @@
 #include <jsi/jsi.h>
 #include <memory>
 #include <string>
-#include <thread>
 #include <utility>
 
 namespace audioapi {
@@ -23,21 +22,22 @@ AudioDecoderHostObject::AudioDecoderHostObject(
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto data = arrayBuffer.data(runtime);
+  auto *data = arrayBuffer.data(runtime);
   auto size = static_cast<int>(arrayBuffer.size(runtime));
 
-  auto sampleRate = args[1].getNumber();
+  auto sampleRate = static_cast<float>(args[1].getNumber());
 
   auto promise = promiseVendor_->createAsyncPromise([data, size, sampleRate]() -> PromiseResolver {
     auto result = AudioDecoder::decodeWithMemoryBlock(data, size, sampleRate);
 
-    if (!result) {
-      return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-        return std::string("Failed to decode audio data.");
+    if (result.is_err()) {
+      return [result = std::move(result)](
+                 jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+        return result.unwrap_err();
       };
     }
 
-    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result);
+    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
 
     return [audioBufferHostObject = std::move(audioBufferHostObject)](
                jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
@@ -51,18 +51,19 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
 
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
   auto sourcePath = args[0].getString(runtime).utf8(runtime);
-  auto sampleRate = args[1].getNumber();
+  auto sampleRate = static_cast<float>(args[1].getNumber());
 
   auto promise = promiseVendor_->createAsyncPromise([sourcePath, sampleRate]() -> PromiseResolver {
     auto result = AudioDecoder::decodeWithFilePath(sourcePath, sampleRate);
 
-    if (!result) {
-      return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-        return std::string("Failed to decode audio data source.");
+    if (result.is_err()) {
+      return [result = std::move(result)](
+                 jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+        return result.unwrap_err();
       };
     }
 
-    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result);
+    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
 
     return [audioBufferHostObject = std::move(audioBufferHostObject)](
                jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
@@ -77,8 +78,8 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
 
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
   auto b64 = args[0].getString(runtime).utf8(runtime);
-  auto inputSampleRate = args[1].getNumber();
-  auto inputChannelCount = args[2].getNumber();
+  auto inputSampleRate = static_cast<float>(args[1].getNumber());
+  auto inputChannelCount = static_cast<int>(args[2].getNumber());
   auto interleaved = args[3].getBool();
 
   auto promise = promiseVendor_->createAsyncPromise(
@@ -86,13 +87,14 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
         auto result = AudioDecoder::decodeWithPCMInBase64(
             b64, inputSampleRate, inputChannelCount, interleaved);
 
-        if (!result) {
-          return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-            return std::string("Failed to decode audio data source.");
+        if (result.is_err()) {
+          return [result = std::move(result)](
+                     jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+            return result.unwrap_err();
           };
         }
 
-        auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result);
+        auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
 
         return [audioBufferHostObject = std::move(audioBufferHostObject)](
                    jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {

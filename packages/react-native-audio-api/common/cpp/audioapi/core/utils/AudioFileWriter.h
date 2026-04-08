@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
@@ -13,8 +14,8 @@ class AudioFileProperties;
 class RotatingFileWriter;
 class AudioEventHandlerRegistry;
 
-typedef Result<std::string, std::string> OpenFileResult;
-typedef Result<std::tuple<double, double>, std::string> CloseFileResult;
+using OpenFileResult = Result<std::string, std::string>;
+using CloseFileResult = Result<std::tuple<double, double>, std::string>;
 
 #if defined(__APPLE__)
 #include <CoreAudio/CoreAudioTypes.h>
@@ -25,6 +26,8 @@ typedef void *AudioDataType;
 
 class AudioFileWriter {
  public:
+  DELETE_COPY_AND_MOVE(AudioFileWriter);
+
   AudioFileWriter(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties);

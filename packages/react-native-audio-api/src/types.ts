@@ -103,11 +103,11 @@ export interface AudioRecorderFileOptions {
 
 export interface FileInfo {
   path: string;
+  /** The size of the recorded file (in MB). */
   size: number;
+  /** The duration of the recording (in seconds). */
   duration: number;
 }
-
-export type WindowType = 'blackman' | 'hann';
 
 export type ProcessorMode = 'processInPlace' | 'processThrough';
 
@@ -189,7 +189,7 @@ export interface ConstantSourceOptions {
 }
 
 export interface StreamerOptions {
-  streamPath?: string;
+  streamPath: string;
 }
 
 export interface PeriodicWaveConstraints {

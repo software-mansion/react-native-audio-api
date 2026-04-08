@@ -4,9 +4,8 @@
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
 #include <atomic>
-#include <string>
 #include <memory>
-#include <tuple>
+#include <string>
 
 namespace audioapi {
 
@@ -15,14 +14,20 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   explicit MiniAudioFileWriter(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
-      float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize);
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t streamMaxBufferSize);
   ~MiniAudioFileWriter();
 
-  OpenFileResult openFile() override;
-  CloseFileResult closeFile() override;
-
-  bool writeAudioData(void *data, int numFrames) override;
+  bool writeAudioData(AudioDataType data, int numFrames) override;
   size_t getFileSizeBytes() const override;
+
+  OpenFileResult openFile(
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t streamMaxBufferSize,
+      const std::string &fileNameOverride) override;
+  CloseFileResult closeFile() override;
 
  private:
   std::atomic<bool> isConverterRequired_{false};
@@ -33,7 +38,8 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   ma_uint64 processingBufferLength_{0};
 
   ma_result initializeConverterIfNeeded();
-  ma_result initializeEncoder();
+  ma_result initializeEncoder(const std::string &fileNameOverride);
+  // TODO: rewrite to use r8brain resampler
   ma_uint64 convertBuffer(void *data, int numFrames);
 
   bool isConverterRequired();

@@ -3,9 +3,7 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularArray.hpp>
 
 #include <algorithm>
 #include <memory>
@@ -32,7 +30,7 @@ AudioRecorderCallback::AudioRecorderCallback(
       channelCount_(channelCount),
       callbackId_(callbackId),
       audioEventHandlerRegistry_(audioEventHandlerRegistry) {
-  ringBufferSize_ = std::max(bufferLength * 2, static_cast<size_t>(8192));
+  ringBufferSize_ = std::max(bufferLength * 2, static_cast<size_t>(DEFAULT_RING_BUFFER_SIZE));
   circularBuffer_.resize(channelCount_);
 
   for (size_t i = 0; i < channelCount_; ++i) {

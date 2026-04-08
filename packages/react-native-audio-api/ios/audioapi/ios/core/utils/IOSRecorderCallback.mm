@@ -6,9 +6,9 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <algorithm>
 #include <utility>
@@ -152,6 +152,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
         circularBuffer_[i]->push_back(data, numFrames);
       }
 
+      inputBuffer = nullptr;
       if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
         emitAudioData();
       }
@@ -167,6 +168,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
           inputBuffer->mBuffers[i].mDataByteSize);
     }
 
+    inputBuffer = nullptr;
     converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;

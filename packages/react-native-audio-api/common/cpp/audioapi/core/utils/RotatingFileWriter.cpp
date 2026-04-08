@@ -7,8 +7,8 @@
 namespace audioapi {
 
 RotatingFileWriter::RotatingFileWriter(
-    const std::shared_ptr<AudioEventHandlerRegistry>& audioEventHandlerRegistry,
-    const std::shared_ptr<AudioFileProperties>& fileProperties,
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<AudioFileProperties> &fileProperties,
     size_t rotateIntervalBytes,
     WriterFactory writerFactory)
     : AudioFileWriter(audioEventHandlerRegistry, fileProperties),
@@ -24,7 +24,8 @@ OpenFileResult RotatingFileWriter::openFile() {
 }
 
 CloseFileResult RotatingFileWriter::closeFile() {
-  return currentWriter_ != nullptr ? currentWriter_->closeFile() : CloseFileResult::Err("No file open");
+  return currentWriter_ != nullptr ? currentWriter_->closeFile()
+                                   : CloseFileResult::Err("No file open");
 }
 
 std::string RotatingFileWriter::getFilePath() const {
@@ -39,17 +40,17 @@ bool RotatingFileWriter::writeAudioData(AudioDataType data, int numFrames) {
   bool success = currentWriter_->writeAudioData(data, numFrames);
 
   if (success) {
-      writesSinceLastCheck_++;
-      // Check file size every ~10 writes to avoid syscall overhead
-      if (writesSinceLastCheck_ >= 10) {
-          writesSinceLastCheck_ = 0;
-          size_t size = currentWriter_->getFileSizeBytes();
-          currentFileBytes_ = size;
-          if (size > rotateIntervalBytes_) {
-              rotateFiles();
-          }
+    writesSinceLastCheck_++;
+    // Check file size every ~10 writes to avoid syscall overhead
+    if (writesSinceLastCheck_ >= 10) {
+      writesSinceLastCheck_ = 0;
+      size_t size = currentWriter_->getFileSizeBytes();
+      currentFileBytes_ = size;
+      if (size > rotateIntervalBytes_) {
+        rotateFiles();
       }
-      framesWritten_.fetch_add(numFrames, std::memory_order_relaxed);
+    }
+    framesWritten_.fetch_add(numFrames, std::memory_order_relaxed);
   }
   return success;
 }
@@ -79,7 +80,8 @@ void RotatingFileWriter::openNewFile() {
 
 std::shared_ptr<AudioFileProperties> RotatingFileWriter::createRotatedProperties() {
   auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch()).count();
+                std::chrono::system_clock::now().time_since_epoch())
+                .count();
 
   std::string newName = baseFileName_ + "." + std::to_string(ts);
 

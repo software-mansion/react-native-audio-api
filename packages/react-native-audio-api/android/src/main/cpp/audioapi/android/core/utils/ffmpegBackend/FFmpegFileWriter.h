@@ -2,11 +2,10 @@
 
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/ffmpegBackend/utils.h>
-#include <string>
-#include <memory>
-#include <tuple>
-#include <chrono>
 #include <audioapi/utils/Result.hpp>
+#include <chrono>
+#include <memory>
+#include <string>
 
 struct AVCodecContext;
 struct AVFormatContext;
@@ -27,14 +26,20 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   explicit FFmpegAudioFileWriter(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
-      float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize);
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t streamMaxBufferSize);
   ~FFmpegAudioFileWriter();
 
-  OpenFileResult openFile() override;
-  CloseFileResult closeFile() override;
-
-  bool writeAudioData(void *data, int numFrames) override;
+  bool writeAudioData(AudioDataType data, int numFrames) override;
   size_t getFileSizeBytes() const override;
+
+  OpenFileResult openFile(
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t streamMaxBufferSize,
+      const std::string &fileNameOverride) override;
+  CloseFileResult closeFile() override;
 
  private:
   av_unique_ptr<AVCodecContext> encoderCtx_{nullptr};
@@ -44,7 +49,7 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   av_unique_ptr<AVPacket> packet_{nullptr};
   av_unique_ptr<AVFrame> resamplerFrame_{nullptr};
   av_unique_ptr<AVFrame> writingFrame_{nullptr};
-  AVStream* stream_{nullptr};
+  AVStream *stream_{nullptr};
 
   unsigned int nextPts_{0};
 
@@ -52,10 +57,11 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   int flushIntervalMs_;
 
   // Initialization helper methods
-  Result<NoneType, std::string> initializeFormatContext(const AVCodec* codec);
-  Result<NoneType, std::string> configureAndOpenCodec(const AVCodec* codec);
+  Result<NoneType, std::string> initializeFormatContext(const AVCodec *codec);
+  Result<NoneType, std::string> configureAndOpenCodec(const AVCodec *codec);
   Result<NoneType, std::string> initializeStream();
   Result<NoneType, std::string> openIOAndWriteHeader();
+  // TODO: rewrite to use r8brain resampler
   Result<NoneType, std::string> initializeResampler(float inputRate, int inputChannels);
   void initializeBuffers(int32_t maxBufferSize);
 

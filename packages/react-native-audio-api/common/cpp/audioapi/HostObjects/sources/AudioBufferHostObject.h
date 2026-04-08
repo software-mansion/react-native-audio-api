@@ -1,13 +1,12 @@
 #pragma once
 
 #include <audioapi/jsi/JsiHostObject.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <jsi/jsi.h>
 #include <cstddef>
 #include <memory>
 #include <utility>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;
@@ -28,8 +27,11 @@ class AudioBufferHostObject : public JsiHostObject {
     return *this;
   }
 
-  [[nodiscard]] inline size_t getSizeInBytes() const {
-    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float);
+  ~AudioBufferHostObject() override = default;
+
+  [[nodiscard]] size_t getSizeInBytes() const {
+    // *2 because every time buffer is passed we create a copy of it.
+    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float) * 2;
   }
 
   JSI_PROPERTY_GETTER_DECL(sampleRate);

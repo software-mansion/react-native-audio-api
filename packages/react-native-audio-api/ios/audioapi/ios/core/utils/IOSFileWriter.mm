@@ -146,7 +146,7 @@ CloseFileResult IOSFileWriter::closeFile()
     framesWritten_.store(0, std::memory_order_release);
     offloader_.reset();
 
-    return CloseFileResult::Ok(std::make_tuple(fileDuration, fileSizeBytesMb));
+    return CloseFileResult::Ok(std::make_tuple(fileSizeBytesMb, fileDuration));
   }
 }
 
@@ -198,6 +198,8 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
             audioBufferList->mBuffers[i].mData,
             audioBufferList->mBuffers[i].mDataByteSize);
       }
+
+      audioBufferList = nullptr;
       converterInputBuffer_.frameLength = numFrames;
 
       [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
@@ -220,6 +222,7 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
           audioBufferList->mBuffers[i].mDataByteSize);
     }
 
+    audioBufferList = nullptr;
     converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;

@@ -4,8 +4,6 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 
 #include <memory>
-#include <string>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;

@@ -3,11 +3,9 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
-#include <string>
-#include <utility>
 
 namespace audioapi {
 
@@ -21,65 +19,61 @@ AudioNode::AudioNode(
       channelCountMode_(options.channelCountMode),
       channelInterpretation_(options.channelInterpretation),
       requiresTailProcessing_(options.requiresTailProcessing) {
-  audioBuffer_ =
-      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
 AudioNode::~AudioNode() {
-  if (isInitialized_) {
+  if (isInitialized_.load(std::memory_order_acquire)) {
     cleanup();
   }
 }
 
-int AudioNode::getNumberOfInputs() const {
-  return numberOfInputs_;
-}
-
-int AudioNode::getNumberOfOutputs() const {
-  return numberOfOutputs_;
+bool AudioNode::canBeDestructed() const {
+  return true;
 }
 
 size_t AudioNode::getChannelCount() const {
   return channelCount_;
 }
 
-ChannelCountMode AudioNode::getChannelCountMode() const {
-  return channelCountMode_;
-}
-
-ChannelInterpretation AudioNode::getChannelInterpretation() const {
-  return channelInterpretation_;
-}
-
-void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
+void AudioNode::connect(
+    const std::shared_ptr<AudioNode>
+        &node) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingNodeConnection(
         shared_from_this(), node, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
-void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
+void AudioNode::connect(
+    const std::shared_ptr<AudioParam>
+        &param) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingParamConnection(
         shared_from_this(), param, AudioGraphManager::ConnectionType::CONNECT);
   }
 }
 
-void AudioNode::disconnect() {
+void AudioNode::disconnect() { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingNodeConnection(
         shared_from_this(), nullptr, AudioGraphManager::ConnectionType::DISCONNECT_ALL);
   }
 }
 
-void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioNode>
+        &node) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingNodeConnection(
         shared_from_this(), node, AudioGraphManager::ConnectionType::DISCONNECT);
   }
 }
 
-void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioParam>
+        &param) { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     context->getGraphManager()->addPendingParamConnection(
         shared_from_this(), param, AudioGraphManager::ConnectionType::DISCONNECT);
@@ -118,11 +112,11 @@ void AudioNode::disable() {
   }
 }
 
-std::shared_ptr<AudioBuffer> AudioNode::processAudio(
-    const std::shared_ptr<AudioBuffer> &outputBuffer,
+std::shared_ptr<DSPAudioBuffer> AudioNode::processAudio(
+    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return outputBuffer;
   }
 
@@ -145,7 +139,7 @@ std::shared_ptr<AudioBuffer> AudioNode::processAudio(
   return processNode(processingBuffer, framesToProcess);
 }
 
-bool AudioNode::isAlreadyProcessed() {
+bool AudioNode::isAlreadyProcessed() { // NOLINT(readability-convert-member-functions-to-static)
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     std::size_t currentSampleFrame = context->getCurrentSampleFrame();
 
@@ -161,19 +155,18 @@ bool AudioNode::isAlreadyProcessed() {
   }
 
   // If context is invalid, consider it as already processed to avoid processing
-  return true;
+  return true; // NOLINT(readability-simplify-boolean-expr)
 }
 
-std::shared_ptr<AudioBuffer> AudioNode::processInputs(
-    const std::shared_ptr<AudioBuffer> &outputBuffer,
+std::shared_ptr<DSPAudioBuffer> AudioNode::processInputs(
+    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
     int framesToProcess,
-    bool checkIsAlreadyProcessed) {
+    bool checkIsAlreadyProcessed) { // NOLINT(readability-convert-member-functions-to-static)
   auto processingBuffer = audioBuffer_;
   processingBuffer->zero();
 
   size_t maxNumberOfChannels = 0;
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end; ++it) {
-    auto inputNode = *it;
+  for (auto *inputNode : inputNodes_) {
     assert(inputNode != nullptr);
 
     if (!inputNode->isEnabled()) {
@@ -193,8 +186,8 @@ std::shared_ptr<AudioBuffer> AudioNode::processInputs(
   return processingBuffer;
 }
 
-std::shared_ptr<AudioBuffer> AudioNode::applyChannelCountMode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer) {
+std::shared_ptr<DSPAudioBuffer> AudioNode::applyChannelCountMode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
   // If the channelCountMode is EXPLICIT, the node should output the number of
   // channels specified by the channelCount.
   if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
@@ -211,7 +204,7 @@ std::shared_ptr<AudioBuffer> AudioNode::applyChannelCountMode(
   return processingBuffer;
 }
 
-void AudioNode::mixInputsBuffers(const std::shared_ptr<AudioBuffer> &processingBuffer) {
+void AudioNode::mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
   assert(processingBuffer != nullptr);
 
   for (auto it = inputBuffers_.begin(), end = inputBuffers_.end(); it != end; ++it) {
@@ -274,7 +267,7 @@ void AudioNode::onInputDisabled() {
 }
 
 void AudioNode::onInputConnected(AudioNode *node) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 
@@ -286,7 +279,7 @@ void AudioNode::onInputConnected(AudioNode *node) {
 }
 
 void AudioNode::onInputDisconnected(AudioNode *node) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 
@@ -302,7 +295,7 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
 }
 
 void AudioNode::cleanup() {
-  isInitialized_ = false;
+  isInitialized_.store(false, std::memory_order_release);
 
   for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
     it->get()->onInputDisconnected(this);

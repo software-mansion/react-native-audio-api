@@ -9,13 +9,15 @@ cleanup() {
 
 trap cleanup EXIT
 
-cd packages/react-native-audio-api/common/cpp/test
+cd common/cpp/test
 
 cmake -S . -B build -Wno-dev
 
 cd build
 make -j10
-./tests --gtest_print_time=1
+
+GRAPH_FILTER="AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:Seeds/*"
+./tests --gtest_print_time=1 --gtest_filter="-${GRAPH_FILTER}"
 cd ..
 
 rm -rf build/

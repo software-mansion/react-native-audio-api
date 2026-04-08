@@ -3,17 +3,10 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/types/NodeOptions.h>
 
-#include <algorithm>
-#include <atomic>
 #include <cassert>
-#include <chrono>
 #include <cstddef>
-#include <functional>
-#include <iostream>
-#include <limits>
+#include <cstdint>
 #include <memory>
-#include <thread>
-#include <utility>
 
 namespace audioapi {
 
@@ -26,7 +19,13 @@ class AudioScheduledSourceNode : public AudioNode {
   // PLAYING: The node is currently playing.
   // STOP_SCHEDULED: The node is scheduled to stop at a specific time, but is still playing.
   // FINISHED: The node has finished playing.
-  enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
+  enum class PlaybackState : std::uint8_t {
+    UNSCHEDULED,
+    SCHEDULED,
+    PLAYING,
+    STOP_SCHEDULED,
+    FINISHED
+  };
   explicit AudioScheduledSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioScheduledSourceNodeOptions &options = AudioScheduledSourceNodeOptions());
@@ -34,15 +33,27 @@ class AudioScheduledSourceNode : public AudioNode {
   virtual void start(double when);
   virtual void stop(double when);
 
+  /// @note Audio Thread only
   bool isUnscheduled();
+
+  /// @note Audio Thread only
   bool isScheduled();
+
+  /// @note Audio Thread only
   bool isPlaying();
+
+  /// @note Audio Thread only
   bool isFinished();
+
+  /// @note Audio Thread only
   bool isStopScheduled();
 
+  /// @note Audio Thread only
   void setOnEndedCallbackId(uint64_t callbackId);
 
   void disable() override;
+
+  void unregisterOnEndedCallback(uint64_t callbackId);
 
  protected:
   double startTime_;
@@ -50,11 +61,11 @@ class AudioScheduledSourceNode : public AudioNode {
 
   PlaybackState playbackState_;
 
-  std::atomic<uint64_t> onEndedCallbackId_ = 0;
-  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  uint64_t onEndedCallbackId_ = 0;
+  const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
       size_t &startOffset,
       size_t &nonSilentFramesToProcess,

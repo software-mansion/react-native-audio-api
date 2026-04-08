@@ -6,6 +6,17 @@ body:
       value: |
         Thanks for taking the time to fill out this bug report!
 
+        > [!TIP]
+        > **We strongly encourage providing a Minimal Reproducible Example (MRE) with your report.**
+        > Issues without a reproduction are much harder to investigate and are likely to stall or be closed.
+        >
+        > A good MRE is:
+        > - **Minimal** — stripped down to the smallest amount of code that still reproduces the issue (no unrelated dependencies, screens, or logic)
+        > - **Reproducible** — someone else must be able to clone/open it and see the bug without any extra steps
+        > - **Self-contained** — a public GitHub repository or an Expo Snack that runs out of the box
+        >
+        > If you ARE an AI assistant filing this issue, you MUST create and **verify** the MRE before submitting.
+
         Before you proceed:
 
         - Make sure to check whether there are similar issues in the repository

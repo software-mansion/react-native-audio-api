@@ -2,13 +2,12 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
-#include <functional>
 #include <memory>
 
 namespace audioapi {
 
-class AudioBuffer;
 struct DelayOptions;
 
 class DelayNode : public AudioNode {
@@ -18,19 +17,19 @@ class DelayNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getDelayTimeParam() const;
 
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
   void onInputDisabled() override;
-  enum class BufferAction { READ, WRITE };
+  enum class BufferAction : uint8_t { READ, WRITE };
   void delayBufferOperation(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
       size_t &operationStartingIndex,
       BufferAction action);
-  std::shared_ptr<AudioParam> delayTimeParam_;
+  const std::shared_ptr<AudioParam> delayTimeParam_;
   std::shared_ptr<AudioBuffer> delayBuffer_;
   size_t readIndex_ = 0;
   bool signalledToStop_ = false;

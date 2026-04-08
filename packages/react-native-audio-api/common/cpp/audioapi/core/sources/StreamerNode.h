@@ -11,7 +11,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
@@ -24,9 +24,9 @@ extern "C" {
 }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
+#include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
-#include <cmath>
 #include <memory>
 #include <string>
 #include <utility>
@@ -58,7 +58,6 @@ struct StreamingData {
 
 namespace audioapi {
 
-class AudioBuffer;
 struct StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
@@ -68,22 +67,15 @@ class StreamerNode : public AudioScheduledSourceNode {
       const StreamerOptions &options);
   ~StreamerNode() override;
 
-  /**
-   * @brief Initialize all necessary ffmpeg components for streaming audio
-  */
-  bool initialize(const std::string &inputUrl);
-
-  std::string getStreamPath() const {
-    return streamPath_;
-  }
-
  protected:
-  std::shared_ptr<AudioBuffer> processNode(
-      const std::shared_ptr<AudioBuffer> &processingBuffer,
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
   std::string streamPath_;
+  std::unique_ptr<r8b::MultiChannelResampler> resampler_;
+  float outSampleRate_;
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   AVFormatContext *fmtCtx_;
@@ -93,10 +85,12 @@ class StreamerNode : public AudioScheduledSourceNode {
   AVPacket *pkt_;
   AVFrame *frame_; // Frame that is currently being processed
   SwrContext *swrCtx_;
-  uint8_t **resampledData_; // weird ffmpeg way of using raw byte pointers for resampled data
 
-  std::shared_ptr<AudioBuffer> bufferedAudioBuffer_; // audio buffer for buffering hls frames
-  size_t bufferedAudioBufferSize_;                   // size of currently buffered buffer
+  // --resampling--
+  AudioBuffer resamplerInputBuffer_;
+  AudioBuffer resamplerOutputBuffer_;
+  StreamingData bufferedAudioData_; // audio data for buffering hls frames
+  bool hasBufferedAudioData_;
   int audio_stream_index_; // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
@@ -113,6 +107,12 @@ class StreamerNode : public AudioScheduledSourceNode {
       STREAMER_NODE_SPSC_WAIT_STRATEGY>
       receiver_;
 
+  /// @brief Initialize the StreamerNode by opening the input stream,
+  /// finding the audio stream, setting up the decoder, and starting the streaming thread.
+  /// @param inputUrl The URL of the input stream
+  /// @return true if initialization was successful, false otherwise
+  bool initialize(const std::string &inputUrl);
+
   /**
    * @brief Setting up the resampler
    * @param outSampleRate Sample rate for the output audio
@@ -123,9 +123,9 @@ class StreamerNode : public AudioScheduledSourceNode {
   /**
    * @brief Resample the audio frame, change its sample format and channel layout
    * @param frame The AVFrame to resample
-   * @return true if successful, false otherwise
+   * @param context The context
    */
-  bool processFrameWithResampler(AVFrame *frame, const std::shared_ptr<BaseAudioContext> &context);
+  void processFrameWithResampler(AVFrame *frame, const std::shared_ptr<BaseAudioContext> &context);
 
   /**
    * @brief Thread function to continuously read and process audio frames

@@ -13,10 +13,8 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
 #include <audioapi/utils/AudioFileProperties.h>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
 #include <memory>
@@ -53,7 +51,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 
     if (isConnected()) {
       isConnected_.store(false, std::memory_order_release);
-      adapterNode_->cleanup();
+      adapterNode_->adapterCleanup();
     }
   }
 
@@ -143,7 +141,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   if (isConnected()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_);
+    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
   }
 
   auto result = mStream_->requestStart();
@@ -198,7 +196,7 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
   }
 
   if (isConnected()) {
-    adapterNode_->cleanup();
+    adapterNode_->adapterCleanup();
   }
 
   filePath_ = "";
@@ -361,7 +359,7 @@ void AndroidAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &n
   if (!isIdle()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_);
+    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
   }
 
   isConnected_.store(true, std::memory_order_release);

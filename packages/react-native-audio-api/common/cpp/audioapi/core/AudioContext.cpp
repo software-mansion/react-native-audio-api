@@ -8,7 +8,6 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <memory>
-#include <string>
 
 namespace audioapi {
 AudioContext::AudioContext(
@@ -52,7 +51,7 @@ bool AudioContext::resume() {
     return true;
   }
 
-  if (isInitialized_ && audioPlayer_->resume()) {
+  if (isInitialized_.load(std::memory_order_acquire) && audioPlayer_->resume()) {
     setState(ContextState::RUNNING);
     return true;
   }
@@ -80,8 +79,8 @@ bool AudioContext::start() {
     return false;
   }
 
-  if (!isInitialized_ && audioPlayer_->start()) {
-    isInitialized_ = true;
+  if (!isInitialized_.load(std::memory_order_acquire) && audioPlayer_->start()) {
+    isInitialized_.store(true, std::memory_order_release);
     setState(ContextState::RUNNING);
 
     return true;
@@ -90,8 +89,8 @@ bool AudioContext::start() {
   return false;
 }
 
-std::function<void(std::shared_ptr<AudioBuffer>, int)> AudioContext::renderAudio() {
-  return [this](const std::shared_ptr<AudioBuffer> &data, int frames) {
+std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> AudioContext::renderAudio() {
+  return [this](const std::shared_ptr<DSPAudioBuffer> &data, int frames) {
     destination_->renderAudio(data, frames);
   };
 }

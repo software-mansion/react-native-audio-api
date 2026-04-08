@@ -7,15 +7,19 @@ set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
 
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/3983f67e32fb3e9294487b9d4f9586efa6e5d088.zip
-)
+find_package(GTest QUIET)
 
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+if(NOT GTest_FOUND)
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/3983f67e32fb3e9294487b9d4f9586efa6e5d088.zip
+  )
+
+  # For Windows: Prevent overriding the parent project's compiler/linker settings
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+endif()
 
 enable_testing()
 
@@ -55,9 +59,16 @@ target_include_directories(rnaudioapi PUBLIC
   ${JSI_DIR}
   "${REACT_NATIVE_DIR}/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
-  ${gtest_SOURCE_DIR}/include
-  ${gmock_SOURCE_DIR}/include
 )
+
+if(GTest_FOUND)
+  target_link_libraries(rnaudioapi PUBLIC GTest::gtest GTest::gmock)
+else()
+  target_include_directories(rnaudioapi PUBLIC
+    ${gtest_SOURCE_DIR}/include
+    ${gmock_SOURCE_DIR}/include
+  )
+endif()
 
 target_include_directories(rnaudioapi_libs PUBLIC
   ${ROOT}/packages/react-native-audio-api/common/cpp
@@ -84,5 +95,19 @@ target_link_libraries(tests
   GTest::gmock
 )
 
+# --- Thread Sanitizer build ---
+add_executable(tests_tsan ${test_src})
+target_compile_options(tests_tsan PRIVATE -fsanitize=thread -g -O1)
+target_link_options(tests_tsan PRIVATE -fsanitize=thread)
+target_link_libraries(tests_tsan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+
+# --- Address + Undefined Behavior Sanitizer build ---
+add_executable(tests_asan ${test_src})
+target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -g -O1)
+target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
+target_link_libraries(tests_asan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+
 include(GoogleTest)
 gtest_discover_tests(tests)
+gtest_discover_tests(tests_tsan)
+gtest_discover_tests(tests_asan)

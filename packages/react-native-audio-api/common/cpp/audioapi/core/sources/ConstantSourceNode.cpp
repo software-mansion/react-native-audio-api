@@ -1,27 +1,31 @@
-#include <audioapi/types/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/dsp/AudioUtils.hpp>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioArray.hpp>
+
 #include <memory>
 
 namespace audioapi {
 ConstantSourceNode::ConstantSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const ConstantSourceOptions &options)
-    : AudioScheduledSourceNode(context) {
-  offsetParam_ = std::make_shared<AudioParam>(
-      options.offset, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  isInitialized_ = true;
+    : AudioScheduledSourceNode(context),
+      offsetParam_(
+          std::make_shared<AudioParam>(
+              options.offset,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)) {
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {
   return offsetParam_;
 }
 
-std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
-    const std::shared_ptr<AudioBuffer> &processingBuffer,
+std::shared_ptr<DSPAudioBuffer> ConstantSourceNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
@@ -45,7 +49,7 @@ std::shared_ptr<AudioBuffer> ConstantSourceNode::processNode(
     return processingBuffer;
   }
 
-  auto offsetChannel =
+  auto *offsetChannel =
       offsetParam_->processARateParam(framesToProcess, context->getCurrentTime())->getChannel(0);
 
   for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); ++channel) {

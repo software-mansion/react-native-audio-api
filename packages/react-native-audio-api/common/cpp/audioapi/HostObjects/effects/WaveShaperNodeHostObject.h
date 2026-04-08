@@ -4,8 +4,6 @@
 #include <audioapi/core/types/OverSampleType.h>
 
 #include <memory>
-#include <string>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;
@@ -20,9 +18,11 @@ class WaveShaperNodeHostObject : public AudioNodeHostObject {
       const WaveShaperOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(oversample);
-  JSI_PROPERTY_GETTER_DECL(curve);
 
   JSI_PROPERTY_SETTER_DECL(oversample);
   JSI_HOST_FUNCTION_DECL(setCurve);
+
+ private:
+  OverSampleType oversample_;
 };
 } // namespace audioapi

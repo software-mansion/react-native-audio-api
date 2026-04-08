@@ -1,11 +1,32 @@
 #pragma once
 
 #include <functional>
-#include <new>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
+
+namespace audioapi {
+
+template <typename T>
+struct Ok_wrapper {
+  T value;
+};
+
+template <typename E>
+struct Err_wrapper {
+  E value;
+};
+
+template <typename T>
+auto Ok(T &&value) {
+  return Ok_wrapper<std::decay_t<T>>{std::forward<T>(value)};
+}
+
+template <typename E>
+auto Err(E &&error) {
+  return Err_wrapper<std::decay_t<E>>{std::forward<E>(error)};
+}
 
 struct NoneType {};
 inline constexpr NoneType None{};
@@ -29,14 +50,23 @@ class Result {
   struct OkTag {};
   struct ErrTag {};
 
-  explicit Result(OkTag, const T &value) : ok_value(value), is_ok_(true) {}
-  explicit Result(OkTag, T &&value) : ok_value(std::move(value)), is_ok_(true) {}
-  explicit Result(ErrTag, const E &error) : err_value(error), is_ok_(false) {}
-  explicit Result(ErrTag, E &&error) : err_value(std::move(error)), is_ok_(false) {}
+  explicit Result(OkTag okTag, const T &value) : ok_value(value), is_ok_(true) {}
+  explicit Result(OkTag okTag, T &&value) : ok_value(std::move(value)), is_ok_(true) {}
+  explicit Result(ErrTag errTag, const E &error) : err_value(error), is_ok_(false) {}
+  explicit Result(ErrTag errTag, E &&error) : err_value(std::move(error)), is_ok_(false) {}
 
  public:
-  Result(const Result<T, E> &other) {
-    is_ok_ = other.is_ok_;
+  template <typename U>
+  Result(Ok_wrapper<U> &&ok) : is_ok_(true) { // NOLINT(runtime/explicit)
+    new (&ok_value) T(std::move(ok.value));
+  }
+
+  template <typename F>
+  Result(Err_wrapper<F> &&err) : is_ok_(false) { // NOLINT(runtime/explicit)
+    new (&err_value) E(std::move(err.value));
+  }
+
+  Result(const Result<T, E> &other) : is_ok_(other.is_ok_) {
     if (is_ok_) {
       new (&ok_value) T(other.ok_value);
     } else {
@@ -45,8 +75,8 @@ class Result {
   }
 
   Result(Result<T, E> &&other) noexcept(
-      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>) {
-    is_ok_ = other.is_ok_;
+      std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
+      : is_ok_(other.is_ok_) {
     if (is_ok_) {
       new (&ok_value) T(std::move(other.ok_value));
     } else {
@@ -55,13 +85,15 @@ class Result {
   }
 
   Result &operator=(const Result &other) {
-    if (this == &other)
+    if (this == &other) {
       return *this;
+    }
     if (is_ok_ == other.is_ok_) {
-      if (is_ok_)
+      if (is_ok_) {
         ok_value = other.ok_value;
-      else
+      } else {
         err_value = other.err_value;
+      }
     } else {
       if (is_ok_) {
         ok_value.~T();
@@ -79,13 +111,15 @@ class Result {
   Result &operator=(Result &&other) noexcept(
       std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_assignable_v<E> &&
       std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>) {
-    if (this == &other)
+    if (this == &other) {
       return *this;
+    }
     if (is_ok_ == other.is_ok_) {
-      if (is_ok_)
+      if (is_ok_) {
         ok_value = std::move(other.ok_value);
-      else
+      } else {
         err_value = std::move(other.err_value);
+      }
     } else {
       if (is_ok_) {
         ok_value.~T();
@@ -253,9 +287,8 @@ class Result {
     using ResultType = Result<U, E>;
     if (is_ok_) {
       return ResultType::Ok(ok_func(std::move(ok_value)));
-    } else {
-      return ResultType::Err(std::move(err_value));
     }
+    return ResultType::Err(std::move(err_value));
   }
 
   /// @brief Maps a Result<T, E> to Result<T, F> by applying a function to a contained Err value.
@@ -265,9 +298,8 @@ class Result {
     using ResultType = Result<T, U>;
     if (is_ok_) {
       return ResultType::Ok(std::move(ok_value));
-    } else {
-      return ResultType::Err(err_func(std::move(err_value)));
     }
+    return ResultType::Err(err_func(std::move(err_value)));
   }
 
   /// @brief Returns the provided default (if Err), or applies a function to the contained value (if Ok).
@@ -275,9 +307,8 @@ class Result {
   [[nodiscard]] auto map_or(F &&ok_func, U &&default_value) && {
     if (is_ok_) {
       return ok_func(std::move(ok_value));
-    } else {
-      return std::forward<U>(default_value);
     }
+    return std::forward<U>(default_value);
   }
 
   /// @brief Maps a Result<T, E> to U by applying fallback function default to a contained Err value, or function f to a contained Ok value.
@@ -285,9 +316,8 @@ class Result {
   [[nodiscard]] auto map_or_else(FT &&ok_func, FE &&err_func) && {
     if (is_ok_) {
       return ok_func(std::move(ok_value));
-    } else {
-      return err_func(std::move(err_value));
     }
+    return err_func(std::move(err_value));
   }
 
   /// @brief Calls the provided closure with the contained Ok value, if any, otherwise returns the Err value of self.
@@ -297,9 +327,8 @@ class Result {
     using ResultType = std::invoke_result_t<F, T>;
     if (is_ok_) {
       return ok_func(std::move(ok_value));
-    } else {
-      return ResultType::Err(std::move(err_value));
     }
+    return ResultType::Err(std::move(err_value));
   }
 
   /// @brief Calls the provided closure with the contained Err value, if any, otherwise returns the Ok value of self.
@@ -309,9 +338,8 @@ class Result {
     using ResultType = std::invoke_result_t<F, E>;
     if (is_ok_) {
       return ResultType::Ok(std::move(ok_value));
-    } else {
-      return err_func(std::move(err_value));
     }
+    return err_func(std::move(err_value));
   }
 
  private:
@@ -321,3 +349,5 @@ class Result {
   };
   bool is_ok_;
 };
+
+} // namespace audioapi

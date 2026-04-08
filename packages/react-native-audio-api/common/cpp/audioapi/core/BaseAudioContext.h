@@ -3,23 +3,22 @@
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/CrossThreadEventScheduler.hpp>
 
+#include <audioapi/utils/Macros.h>
 #include <atomic>
 #include <cassert>
 #include <complex>
 #include <cstddef>
-#include <functional>
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
 namespace audioapi {
 
-class AudioBuffer;
 class GainNode;
 class DelayNode;
-class AudioBuffer;
 class PeriodicWave;
 class OscillatorNode;
 class ConstantSourceNode;
@@ -56,6 +55,8 @@ struct WaveShaperOptions;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
+  DELETE_COPY_AND_MOVE(BaseAudioContext);
+
   explicit BaseAudioContext(
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -66,7 +67,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
-  std::shared_ptr<AudioDestinationNode> getDestination() const;
+  [[nodiscard]] std::shared_ptr<AudioDestinationNode> getDestination() const;
 
   void setState(ContextState state);
 
@@ -97,8 +98,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       const AudioBufferSourceOptions &options);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       const BaseAudioBufferSourceOptions &options);
-  std::shared_ptr<PeriodicWave> createPeriodicWave(
-      const std::vector<std::complex<float>> &complexData,
+  [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(
+      const std::vector<std::complex<float>>
+          &complexData, // NOLINT(readability-avoid-const-params-in-decls)
       bool disableNormalization,
       int length) const;
   std::shared_ptr<AnalyserNode> createAnalyser(const AnalyserOptions &options);
@@ -106,12 +108,26 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  [[nodiscard]] float getNyquistFrequency() const;
-  std::shared_ptr<AudioGraphManager> getGraphManager() const;
-  std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
-  const RuntimeRegistry &getRuntimeRegistry() const;
+  [[nodiscard]] std::shared_ptr<AudioGraphManager> getGraphManager() const;
+  [[nodiscard]] std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
+  [[nodiscard]] const RuntimeRegistry &getRuntimeRegistry() const;
 
   virtual void initialize();
+
+  void processAudioEvents() {
+    audioEventScheduler_.processAllEvents(*this);
+  }
+
+  template <typename F>
+  bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
+    if (getState() != ContextState::RUNNING) {
+      processAudioEvents();
+      event(*this);
+      return true;
+    }
+
+    return audioEventScheduler_.scheduleEvent(std::forward<F>(event));
+  }
 
  protected:
   std::shared_ptr<AudioDestinationNode> destination_;
@@ -127,6 +143,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
+
+  static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
+  CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };

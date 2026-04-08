@@ -231,8 +231,6 @@ describe('Mock Integration Tests', () => {
         streamPath: 'https://example.com/audio-stream',
       });
 
-      expect(streamer.streamPath).toBe('https://example.com/audio-stream');
-
       // Connect to output
       streamer.connect(context.destination);
 
@@ -241,17 +239,6 @@ describe('Mock Integration Tests', () => {
       streamer.pause();
       streamer.resume();
       streamer.stop();
-    });
-
-    it('should handle streamer initialization errors', () => {
-      const context = new MockAPI.AudioContext();
-      const streamer = context.createStreamer();
-
-      // First initialization should succeed
-      expect(streamer.initialize('http://stream1.com')).toBe(true);
-
-      // Second initialization should fail
-      expect(() => streamer.initialize('http://stream2.com')).toThrow();
     });
   });
 

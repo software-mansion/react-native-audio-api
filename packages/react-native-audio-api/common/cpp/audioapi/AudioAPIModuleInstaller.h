@@ -10,7 +10,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/jsi/JsiPromise.h>
-#include <audioapi/utils/AudioBuffer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
@@ -18,9 +18,6 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <memory>
-#include <string>
-#include <vector>
-
 namespace audioapi {
 
 using namespace facebook;
@@ -38,7 +35,7 @@ class AudioAPIModuleInstaller {
         getCreateAudioRecorderFunction(jsiRuntime, audioEventHandlerRegistry);
     auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
-    auto createAudioBuffer = getCrateAudioBufferFunction(jsiRuntime);
+    auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioStretcher = getCreateAudioStretcherFunction(jsiRuntime, jsCallInvoker);
 
@@ -76,9 +73,10 @@ class AudioAPIModuleInstaller {
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
 #if RN_AUDIO_API_ENABLE_WORKLETS
-          auto runtimeRegistry = RuntimeRegistry{
-              .uiRuntime = uiRuntime,
-              .audioRuntime = worklets::extractWorkletRuntime(runtime, args[1])};
+          auto runtimeRegistry = RuntimeRegistry{.uiRuntime = uiRuntime};
+          if (count > 1 && args[1].isObject()) {
+            runtimeRegistry.audioRuntime = worklets::extractWorkletRuntime(runtime, args[1]);
+          }
 #else
           auto runtimeRegistry = RuntimeRegistry{};
 #endif
@@ -109,9 +107,10 @@ class AudioAPIModuleInstaller {
           auto sampleRate = static_cast<float>(args[2].getNumber());
 
 #if RN_AUDIO_API_ENABLE_WORKLETS
-          auto runtimeRegistry = RuntimeRegistry{
-              .uiRuntime = uiRuntime,
-              .audioRuntime = worklets::extractWorkletRuntime(runtime, args[3])};
+          auto runtimeRegistry = RuntimeRegistry{.uiRuntime = uiRuntime};
+          if (count > 3 && args[3].isObject()) {
+            runtimeRegistry.audioRuntime = worklets::extractWorkletRuntime(runtime, args[3]);
+          }
 #else
           auto runtimeRegistry = RuntimeRegistry{};
 #endif
@@ -186,10 +185,10 @@ class AudioAPIModuleInstaller {
         });
   }
 
-  static jsi::Function getCrateAudioBufferFunction(jsi::Runtime *jsiRuntime) {
+  static jsi::Function getCreateAudioBufferFunction(jsi::Runtime *jsiRuntime) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
-        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioStretcher"),
+        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioBuffer"),
         3,
         [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
             -> jsi::Value {

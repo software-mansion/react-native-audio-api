@@ -1,10 +1,9 @@
 
 #pragma once
 
-#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <atomic>
 #include <mutex>
-#include <stdexcept>
 
 namespace audioapi {
 

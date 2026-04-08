@@ -1,4 +1,3 @@
-
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>

@@ -1,15 +1,16 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;
 
 struct AudioBufferSourceOptions;
 class BaseAudioContext;
+class AudioBufferHostObject;
 
 class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObject {
  public:
@@ -21,7 +22,6 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
 
   JSI_PROPERTY_GETTER_DECL(loop);
   JSI_PROPERTY_GETTER_DECL(loopSkip);
-  JSI_PROPERTY_GETTER_DECL(buffer);
   JSI_PROPERTY_GETTER_DECL(loopStart);
   JSI_PROPERTY_GETTER_DECL(loopEnd);
 
@@ -33,6 +33,16 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(setBuffer);
+
+ protected:
+  bool loop_;
+  bool loopSkip_;
+  double loopStart_;
+  double loopEnd_;
+  uint64_t onLoopEndedCallbackId_ = 0;
+
+  void setOnLoopEndedCallbackId(uint64_t callbackId);
+  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 };
 
 } // namespace audioapi

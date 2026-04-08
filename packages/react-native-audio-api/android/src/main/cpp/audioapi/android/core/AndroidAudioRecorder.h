@@ -2,19 +2,15 @@
 
 #include <audioapi/android/core/NativeAudioRecorder.hpp>
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
-#include <functional>
 #include <memory>
-#include <mutex>
 #include <string>
-#include <tuple>
 
 namespace audioapi {
 
-class AudioBuffer;
-class AudioArray;
-class CircularAudioArray;
 class AudioFileProperties;
 class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
@@ -65,8 +61,10 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
 
   std::shared_ptr<oboe::AudioStream> mStream_;
   Result<NoneType, std::string> openAudioStream();
-  std::shared_ptr<AudioFileWriter> createFileWriter(const std::shared_ptr<AudioFileProperties> &props);
-  Result<std::string, std::string> setupFileWriter(const std::shared_ptr<AudioFileProperties> &properties);
+  std::shared_ptr<AudioFileWriter> createFileWriter(
+      const std::shared_ptr<AudioFileProperties> &props);
+  Result<std::string, std::string> setupFileWriter(
+      const std::shared_ptr<AudioFileProperties> &properties);
 };
 
 } // namespace audioapi

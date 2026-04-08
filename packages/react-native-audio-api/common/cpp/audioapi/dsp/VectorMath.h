@@ -28,8 +28,6 @@
 // Defines the interface for several vector math functions whose implementation
 // will ideally be optimized.
 
-#include <algorithm>
-#include <cmath>
 #include <cstddef>
 
 namespace audioapi::dsp {
@@ -68,8 +66,6 @@ void multiply(
 
 // Finds the maximum magnitude of a float vector.
 float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess);
-
-float computeConvolution(const float *state, const float *kernel, size_t kernelSize);
 
 void interleaveStereo(
     const float *inputLeft,
