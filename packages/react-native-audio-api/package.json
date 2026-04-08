@@ -45,7 +45,12 @@
     "app.plugin.js"
   ],
   "scripts": {
-    "test": "jest",
+    "test": "yarn test:js && yarn test:cpp",
+    "test:js": "jest",
+    "test:cpp": "bash common/cpp/test/RunTests.sh",
+    "test:full": "yarn test && yarn test:graph",
+    "test:graph": "bash common/cpp/test/RunTestsGraph.sh",
+    "test:graph:docker": "bash common/cpp/test/RunTestsGraphDocker.sh",
     "typecheck": "tsc --noEmit",
     "lint": "yarn lint:js && yarn lint:cpp && yarn lint:ios && yarn lint:kotlin",
     "lint:js": "eslint src && yarn prettier --check src",

@@ -5,6 +5,13 @@ module.exports = {
     {
       files: ['./src/**/*.{ts,tsx}'],
     },
+    {
+      files: ['./tests/**/*.{ts,tsx}'],
+      parserOptions: {
+        project: './tsconfig.test.json',
+        tsconfigRootDir: __dirname,
+      },
+    },
   ],
-  ignorePatterns: ['lib', 'src/web-core/custom/signalsmithStretch' ],
+  ignorePatterns: ['lib', 'src/web-core/custom/signalsmithStretch'],
 };
