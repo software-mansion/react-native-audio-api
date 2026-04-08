@@ -9,7 +9,7 @@ cleanup() {
 
 trap cleanup EXIT
 
-cd packages/react-native-audio-api/common/cpp/test
+cd common/cpp/test
 
 cmake -S . -B build -Wno-dev
 

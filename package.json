@@ -16,9 +16,7 @@
     "format": "yarn workspaces foreach -A -p run format",
     "clean": "del-cli packages/**/android/build apps/**/android/build apps/**/android/app/build apps/**/ios/build packages/**/lib node_modules apps/**/node_modules packages/**/node_modules",
     "typecheck": "yarn workspaces foreach -A -p run typecheck",
-    "test": "bash packages/react-native-audio-api/common/cpp/test/RunTests.sh",
-    "test:graph": "bash packages/react-native-audio-api/common/cpp/test/RunTestsGraph.sh",
-    "test:graph:docker": "bash packages/react-native-audio-api/common/cpp/test/RunTestsGraphDocker.sh",
+    "test": "yarn workspace react-native-audio-api run test",
     "check-audio-enum-sync": "bash packages/react-native-audio-api/scripts/check-audio-events-sync.sh"
   },
   "devDependencies": {
