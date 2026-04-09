@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/automation/AutomationEvent.hpp>
+#include "audioapi/core/utils/automation/AutomationEvent.h"
 
 #include <functional>
 #include <utility>

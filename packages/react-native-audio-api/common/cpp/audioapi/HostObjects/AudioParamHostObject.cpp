@@ -1,13 +1,11 @@
-#include <audioapi/HostObjects/AudioParamHostObject.h>
-
-#include <audioapi/core/AudioParam.h>
-#include <audioapi/core/utils/automation/AutomationEvent.hpp>
-#include <audioapi/utils/AudioArray.hpp>
-
+#include "audioapi/HostObjects/AudioParamHostObject.h"
 #include <memory>
 #include <string>
 #include <utility>
+#include "audioapi/core/AudioParam.h"
+#include "audioapi/core/utils/automation/AutomationEvent.h"
 #include "audioapi/jsi/JsiHostObject.h"
+#include "audioapi/utils/AudioArray.hpp"
 
 namespace audioapi {
 

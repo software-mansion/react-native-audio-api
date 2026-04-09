@@ -1,9 +1,8 @@
 #pragma once
 
-#include <audioapi/core/types/AutomationEventType.h>
-#include <audioapi/core/utils/automation/AutomationQueueBase.hpp>
-#include <audioapi/core/utils/automation/RenderAutomationEvent.hpp>
 #include <optional>
+#include "audioapi/core/utils/automation/AutomationQueueBase.hpp"
+#include "audioapi/core/utils/automation/RenderAutomationEvent.hpp"
 
 namespace audioapi {
 

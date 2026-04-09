@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/types/AutomationEventType.h>
+#include "audioapi/core/types/AutomationEventType.h"
 
 namespace audioapi {
 
@@ -22,8 +22,8 @@ class AutomationEvent {
         startTime_(isRamp(type) ? 0.0 : automationTime),
         endTime_(isRamp(type) ? automationTime : 0.0) {}
 
-  AutomationEvent(const AutomationEvent &) = delete;
-  AutomationEvent &operator=(const AutomationEvent &) = delete;
+  AutomationEvent(const AutomationEvent &) = default;
+  AutomationEvent &operator=(const AutomationEvent &) = default;
 
   AutomationEvent(AutomationEvent &&other) noexcept
       : type_(other.type_), startTime_(other.startTime_), endTime_(other.endTime_) {}

@@ -3,6 +3,7 @@
 #include <utility>
 #include "audioapi/core/utils/Constants.h"
 #include "audioapi/utils/BoundedPriorityQueue.hpp"
+#include "audioapi/utils/Macros.h"
 
 namespace audioapi {
 
@@ -14,10 +15,7 @@ template <AutomationEventConcept TEvent>
 class AutomationQueueBase {
  public:
   AutomationQueueBase() = default;
-  AutomationQueueBase(const AutomationQueueBase &) = delete;
-  AutomationQueueBase &operator=(const AutomationQueueBase &) = delete;
-  AutomationQueueBase(AutomationQueueBase &&) noexcept = delete;
-  AutomationQueueBase &operator=(AutomationQueueBase &&) noexcept = delete;
+  DELETE_COPY_AND_MOVE(AutomationQueueBase);
   virtual ~AutomationQueueBase() = default;
 
   /// @brief Cancel scheduled parameter changes at or after the given time.

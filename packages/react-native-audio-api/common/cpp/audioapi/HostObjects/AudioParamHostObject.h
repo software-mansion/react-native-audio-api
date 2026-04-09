@@ -1,12 +1,11 @@
 #pragma once
 
-#include <audioapi/jsi/JsiHostObject.h>
-
 #include <jsi/jsi.h>
 #include <cstddef>
 #include <memory>
 #include <string>
 #include "audioapi/core/utils/automation/AutomationControlQueue.h"
+#include "audioapi/jsi/JsiHostObject.h"
 #include "audioapi/utils/Result.hpp"
 
 namespace audioapi {
@@ -32,7 +31,6 @@ class AudioParamHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(setValueCurveAtTime);
   JSI_HOST_FUNCTION_DECL(cancelScheduledValues);
   JSI_HOST_FUNCTION_DECL(cancelAndHoldAtTime);
-
   JSI_HOST_FUNCTION_DECL(checkCurveExclusion);
 
  private:

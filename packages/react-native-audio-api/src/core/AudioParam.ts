@@ -1,4 +1,4 @@
-import { AutomationEventType } from '../api';
+import { AutomationEventData, AutomationEventType } from '../api';
 import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
 import { IAudioParam } from '../interfaces';
 import BaseAudioContext from './BaseAudioContext';
@@ -33,14 +33,10 @@ export default class AudioParam {
       );
     }
 
-    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+    this.checkCurveExclusion({
       type: AutomationEventType.SET_VALUE,
       automationTime: startTime,
     });
-
-    if (checkExclusionResult.status === 'error') {
-      throw new NotSupportedError(checkExclusionResult.message);
-    }
 
     const clampedTime = Math.max(startTime, this.context.currentTime);
     this.audioParam.setValueAtTime(value, clampedTime);
@@ -55,14 +51,10 @@ export default class AudioParam {
       );
     }
 
-    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+    this.checkCurveExclusion({
       type: AutomationEventType.LINEAR_RAMP,
       automationTime: endTime,
     });
-
-    if (checkExclusionResult.status === 'error') {
-      throw new NotSupportedError(checkExclusionResult.message);
-    }
 
     const clampedTime = Math.max(endTime, this.context.currentTime);
     this.audioParam.linearRampToValueAtTime(value, clampedTime);
@@ -84,14 +76,10 @@ export default class AudioParam {
       );
     }
 
-    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+    this.checkCurveExclusion({
       type: AutomationEventType.EXPONENTIAL_RAMP,
       automationTime: endTime,
     });
-
-    if (checkExclusionResult.status === 'error') {
-      throw new NotSupportedError(checkExclusionResult.message);
-    }
 
     const clampedTime = Math.max(endTime, this.context.currentTime);
     this.audioParam.exponentialRampToValueAtTime(value, clampedTime);
@@ -116,14 +104,10 @@ export default class AudioParam {
       );
     }
 
-    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+    this.checkCurveExclusion({
       type: AutomationEventType.SET_TARGET,
       automationTime: startTime,
     });
-
-    if (checkExclusionResult.status === 'error') {
-      throw new NotSupportedError(checkExclusionResult.message);
-    }
 
     const clampedTime = Math.max(startTime, this.context.currentTime);
     this.audioParam.setTargetAtTime(target, clampedTime, timeConstant);
@@ -152,15 +136,11 @@ export default class AudioParam {
       throw new InvalidStateError(`values must contain at least two values`);
     }
 
-    const checkExclusionResult = this.audioParam.checkCurveExclusion({
+    this.checkCurveExclusion({
       type: AutomationEventType.SET_VALUE_CURVE,
       automationTime: startTime,
       duration,
     });
-
-    if (checkExclusionResult.status === 'error') {
-      throw new NotSupportedError(checkExclusionResult.message);
-    }
 
     const clampedTime = Math.max(startTime, this.context.currentTime);
     this.audioParam.setValueCurveAtTime(values, clampedTime, duration);
@@ -192,5 +172,13 @@ export default class AudioParam {
     this.audioParam.cancelAndHoldAtTime(clampedTime);
 
     return this;
+  }
+
+  private checkCurveExclusion(eventData: AutomationEventData): void {
+    const checkExclusionResult = this.audioParam.checkCurveExclusion(eventData);
+
+    if (checkExclusionResult.status === 'error') {
+      throw new NotSupportedError(checkExclusionResult.message);
+    }
   }
 }

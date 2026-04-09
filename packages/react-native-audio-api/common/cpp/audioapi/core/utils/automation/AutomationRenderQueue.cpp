@@ -1,9 +1,10 @@
-#include <audioapi/core/utils/automation/AutomationRenderEventFactory.hpp>
-#include <audioapi/core/utils/automation/AutomationRenderQueue.h>
+#include "audioapi/core/utils/automation/AutomationRenderQueue.h"
 #include <cstddef>
 #include <optional>
 #include <utility>
 #include "audioapi/core/types/AutomationEventType.h"
+#include "audioapi/core/utils/automation/AutomationQueueBase.hpp"
+#include "audioapi/core/utils/automation/AutomationRenderEventFactory.hpp"
 
 namespace audioapi {
 
@@ -31,7 +32,7 @@ std::optional<float> AutomationRenderQueue::computeValueAtTime(double time) {
 
 bool AutomationRenderQueue::push(RenderAutomationEvent &&event) {
   resolveEventValues(event);
-  return eventQueue_.push(std::move(event));
+  return AutomationQueueBase::push(std::move(event));
 }
 
 void AutomationRenderQueue::resolveEventValues(RenderAutomationEvent &event) {

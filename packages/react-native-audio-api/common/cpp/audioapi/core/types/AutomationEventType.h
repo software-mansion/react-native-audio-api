@@ -1,9 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 namespace audioapi {
 
-enum class AutomationEventType {
+enum class AutomationEventType : uint8_t {
   LINEAR_RAMP,
   EXPONENTIAL_RAMP,
   SET_VALUE,

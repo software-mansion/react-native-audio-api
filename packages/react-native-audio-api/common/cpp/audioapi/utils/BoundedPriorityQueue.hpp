@@ -6,6 +6,7 @@
 #include <memory_resource>
 #include <set>
 #include <utility>
+#include "audioapi/utils/Macros.h"
 
 namespace audioapi {
 
@@ -45,19 +46,15 @@ class BoundedPriorityQueue {
  public:
   explicit BoundedPriorityQueue() = default;
   ~BoundedPriorityQueue() = default;
-
-  BoundedPriorityQueue(const BoundedPriorityQueue &) = delete;
-  BoundedPriorityQueue &operator=(const BoundedPriorityQueue &) = delete;
-  BoundedPriorityQueue(BoundedPriorityQueue &&) noexcept = delete;
-  BoundedPriorityQueue &operator=(BoundedPriorityQueue &&) noexcept = delete;
+  DELETE_COPY_AND_MOVE(BoundedPriorityQueue);
 
   /// @brief Insert a value in sorted order. Amortized O(1) when inserting the largest element
   /// (common case: events scheduled in chronological order), O(log n) otherwise.
   /// @return True if inserted, false if full.
   template <typename U>
   bool push(U &&value) {
-    if (isFull()) {
-      [[unlikely]] return false;
+    if (isFull()) [[unlikely]] {
+      return false;
     }
     // Hint with end(): amortized O(1) when the new event has the largest key (in-order scheduling).
     set_.insert(set_.end(), std::forward<U>(value));
@@ -67,8 +64,8 @@ class BoundedPriorityQueue {
   /// @brief Remove and return the smallest element (front).
   /// @return True if successful, false if empty.
   bool pop(T &out) {
-    if (isEmpty()) {
-      [[unlikely]] return false;
+    if (isEmpty()) [[unlikely]] {
+      return false;
     }
     auto node = set_.extract(set_.begin());
     out = std::move(node.value());
@@ -78,8 +75,8 @@ class BoundedPriorityQueue {
   /// @brief Remove the smallest element (front) without retrieving it.
   /// @return True if successful, false if empty.
   bool pop() {
-    if (isEmpty()) {
-      [[unlikely]] return false;
+    if (isEmpty()) [[unlikely]] {
+      return false;
     }
     set_.erase(set_.begin());
     return true;
