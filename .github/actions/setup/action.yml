@@ -19,7 +19,7 @@ runs:
 
     - name: Install cpplint
       shell: bash
-      run: pip install 'cpplint==2.0.0'
+      run: pip install 'cpplint==2.0.2'
 
     - name: Install ktlint
       shell: bash
@@ -27,6 +27,17 @@ runs:
         curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.7.0/ktlint
         chmod a+x ktlint
         sudo mv ktlint /usr/local/bin/
+
+    # .clang-format uses options added in clang-format 22 (BreakAfterOpenBracket*).
+    # ubuntu-latest still defaults to an older binary; install 22
+    - name: Install clang-format 22
+      shell: bash
+      run: |
+        set -euo pipefail
+        curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 22
+        sudo apt-get install -y clang-format-22
+        sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-22 200
+        clang-format --version
 
     - name: Cache dependencies
       id: yarn-cache

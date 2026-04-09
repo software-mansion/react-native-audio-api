@@ -8,6 +8,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/types/NodeOptions.h>
 
 namespace audioapi::option_parser {
@@ -282,6 +283,46 @@ inline StreamerOptions parseStreamerOptions(
     options.streamPath =
         optionsObject.getProperty(runtime, "streamPath").asString(runtime).utf8(runtime);
   }
+  return options;
+}
+
+inline AudioFileSourceOptions parseAudioFileSourceOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  AudioFileSourceOptions options;
+
+  auto nodeOpts = parseAudioNodeOptions(runtime, optionsObject);
+  static_cast<AudioNodeOptions &>(options) = nodeOpts;
+  options.numberOfInputs = 0;
+
+  auto loopValue = optionsObject.getProperty(runtime, "loop");
+  if (loopValue.isBool()) {
+    options.loop = static_cast<bool>(loopValue.getBool());
+  }
+
+  auto volumeValue = optionsObject.getProperty(runtime, "volume");
+  if (volumeValue.isNumber()) {
+    options.volume = static_cast<float>(volumeValue.getNumber());
+  }
+
+  auto sourceValue = optionsObject.getProperty(runtime, "source");
+  if (sourceValue.isString()) {
+    options.filePath = sourceValue.asString(runtime).utf8(runtime);
+    options.requiresFFmpeg =
+        AudioDecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
+  } else if (sourceValue.isObject()) {
+    auto sourceObj = sourceValue.asObject(runtime);
+    if (sourceObj.isArrayBuffer(runtime)) {
+      auto arrayBuffer = sourceObj.getArrayBuffer(runtime);
+      auto *data = arrayBuffer.data(runtime);
+      auto size = arrayBuffer.size(runtime);
+      auto format = AudioDecoder::detectAudioFormat(data, size);
+      options.requiresFFmpeg =
+          format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
+      options.data = std::vector<uint8_t>(data, data + size);
+    }
+  }
+
   return options;
 }
 

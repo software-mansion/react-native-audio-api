@@ -5,16 +5,28 @@ on:
   workflow_dispatch:
 
 jobs:
-  tests:
+  cpp-tests:
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Run tests
-        run: yarn test
+      - name: Run C++ tests
+        working-directory: packages/react-native-audio-api
+        run: yarn test:cpp
 
+  js-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Run JS integration tests
+        working-directory: packages/react-native-audio-api
+        run: yarn test:js

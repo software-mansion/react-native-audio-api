@@ -29,6 +29,7 @@ class IIRFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
+class AudioFileSourceNode;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
 class ConvolverNode;
@@ -48,6 +49,7 @@ struct BiquadFilterOptions;
 struct OscillatorOptions;
 struct BaseAudioBufferSourceOptions;
 struct AudioBufferSourceOptions;
+struct AudioFileSourceOptions;
 struct StreamerOptions;
 struct DelayOptions;
 struct IIRFilterOptions;
@@ -96,6 +98,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<BiquadFilterNode> createBiquadFilter(const BiquadFilterOptions &options);
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(
       const AudioBufferSourceOptions &options);
+#if !RN_AUDIO_API_TEST
+  std::shared_ptr<AudioFileSourceNode> createFileSource(const AudioFileSourceOptions &options);
+#endif // RN_AUDIO_API_TEST
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       const BaseAudioBufferSourceOptions &options);
   [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(

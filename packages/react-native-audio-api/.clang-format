@@ -1,7 +1,7 @@
 ---
 ColumnLimit: 100
 AccessModifierOffset: -1
-AlignAfterOpenBracket: AlwaysBreak
+AlignAfterOpenBracket: false
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: DontAlign
@@ -70,6 +70,8 @@ SpacesInSquareBrackets: false
 UseTab: Never
 ---
 Language: Cpp
+BreakAfterOpenBracketBracedList: true
+BreakAfterOpenBracketFunction: true
 Standard: c++20
 ---
 Language: ObjC
@@ -77,3 +79,5 @@ BreakBeforeBraces: WebKit
 ObjCBlockIndentWidth: 2
 ObjCSpaceAfterProperty: true
 ObjCSpaceBeforeProtocolList: true
+BreakAfterOpenBracketBracedList: true
+BreakAfterOpenBracketFunction: true

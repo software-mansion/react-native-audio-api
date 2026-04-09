@@ -8,8 +8,13 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
+#pragma once
+
+#include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <cstddef>
 #include <memory>
+#include <string>
 #include <vector>
 
 extern "C" {
@@ -18,53 +23,82 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
 }
-class AudioBuffer;
 
 namespace audioapi::ffmpegdecoder {
-// Custom IO context for reading from memory
+
+/// Opaque IO state for openMemory (must outlive decode until close).
 struct MemoryIOContext {
-  const uint8_t *data;
-  size_t size;
-  size_t pos;
+  const uint8_t *data = nullptr;
+  size_t size = 0;
+  size_t pos = 0;
 };
 
-struct AudioStreamContext {
-  AVFormatContext *fmt_ctx = nullptr;
-  AVCodecContext *codec_ctx = nullptr;
-  int audio_stream_index = -1;
+/**
+ * FFmpeg decoder with incremental read, analogous to ma_decoder:
+ *   1) openFile or openMemory
+ *   2) readPcmFrames repeatedly; 0 returned = end of stream
+ *   3) close when done
+ */
+class FFmpegDecoder : public decoding::IIncrementalAudioDecoder {
+ public:
+  FFmpegDecoder() = default;
+  FFmpegDecoder(const FFmpegDecoder &) = delete;
+  FFmpegDecoder &operator=(const FFmpegDecoder &) = delete;
+  FFmpegDecoder(FFmpegDecoder &&other) = delete;
+  FFmpegDecoder &operator=(FFmpegDecoder &&other) = delete;
+  ~FFmpegDecoder() override;
+
+  [[nodiscard]] bool openFile(
+      int outputSampleRate,
+      const std::string &path) override;
+
+  [[nodiscard]] bool openMemory(
+      int outputSampleRate,
+      const void *data,
+      size_t size) override;
+
+  [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
+
+  void close() override;
+
+  [[nodiscard]] bool isOpen() const override {
+    return fmt_ctx_ != nullptr && codec_ctx_ != nullptr;
+  }
+  [[nodiscard]] int outputChannels() const override { return output_channels_; }
+  [[nodiscard]] int outputSampleRate() const override { return output_sample_rate_; }
+
+  [[nodiscard]] float getDurationInSeconds() const override;
+
+  [[nodiscard]] float getCurrentPositionInSeconds() const override;
+
+  [[nodiscard]] bool seekToTime(double seconds) override;
+
+ private:
+  bool setupSwr();
+  bool feedPipeline();
+  void appendFrameResampled(AVFrame *frame);
+
+  AVFormatContext *fmt_ctx_ = nullptr;
+  AVCodecContext *codec_ctx_ = nullptr;
+  SwrContext *swr_ = nullptr;
+  AVPacket *packet_ = nullptr;
+  AVFrame *frame_ = nullptr;
+
+  uint8_t **resampled_data_ = nullptr;
+  int max_resampled_samples_ = 0;
+
+  std::unique_ptr<MemoryIOContext> mem_io_;
+  AVIOContext *avio_ctx_ = nullptr;
+
+  std::vector<float> leftover_;
+  size_t leftover_offset_ = 0;
+  int audio_stream_index_ = -1;
+  int output_channels_ = 0;
+  int output_sample_rate_ = 0;
+  size_t total_output_frames_ = 0;
 };
-
-int read_packet(void *opaque, uint8_t *buf, int buf_size);
-int64_t seek_packet(void *opaque, int64_t offset, int whence);
-inline int findAudioStreamIndex(AVFormatContext *fmt_ctx);
-std::vector<float> readAllPcmFrames(
-    AVFormatContext *fmt_ctx,
-    AVCodecContext *codec_ctx,
-    int out_sample_rate,
-    int output_channel_count,
-    int audio_stream_index,
-    size_t &framesRead);
-
-void convertFrameToBuffer(
-    SwrContext *swr,
-    AVFrame *frame,
-    int output_channel_count,
-    std::vector<float> &buffer,
-    size_t &framesRead,
-    uint8_t **&resampled_data,
-    int &max_resampled_samples);
-bool setupDecoderContext(
-    AVFormatContext *fmt_ctx,
-    int &audio_stream_index,
-    std::unique_ptr<AVCodecContext, decltype(&avcodec_free_context)> &codec_ctx);
-std::shared_ptr<AudioBuffer> decodeAudioFrames(
-    AVFormatContext *fmt_ctx,
-    AVCodecContext *codec_ctx,
-    int audio_stream_index,
-    int sample_rate);
 
 std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
-
 std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate);
 
 } // namespace audioapi::ffmpegdecoder

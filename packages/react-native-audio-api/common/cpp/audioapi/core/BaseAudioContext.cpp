@@ -12,6 +12,7 @@
 #include <audioapi/core/effects/WorkletProcessingNode.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
+#include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
@@ -176,6 +177,15 @@ std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
   graphManager_->addSourceNode(bufferSource);
   return bufferSource;
 }
+
+#if !RN_AUDIO_API_TEST
+std::shared_ptr<AudioFileSourceNode> BaseAudioContext::createFileSource(
+    const AudioFileSourceOptions &options) {
+  auto fileSource = std::make_shared<AudioFileSourceNode>(shared_from_this(), options);
+  graphManager_->addSourceNode(fileSource);
+  return fileSource;
+}
+#endif // RN_AUDIO_API_TEST
 
 std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(const IIRFilterOptions &options) {
   auto iirFilter = std::make_shared<IIRFilterNode>(shared_from_this(), options);

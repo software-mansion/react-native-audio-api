@@ -118,6 +118,14 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
   }
 };
 
+struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
+  std::vector<uint8_t> data;
+  std::string filePath;
+  bool requiresFFmpeg = false;
+  bool loop = false;
+  float volume = 1.0f;
+};
+
 struct StreamerOptions : AudioScheduledSourceNodeOptions {
   std::string streamPath;
 };

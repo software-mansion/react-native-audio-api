@@ -102,7 +102,9 @@ export interface AudioRecorderFileOptions {
 
 export interface FileInfo {
   path: string;
+  /** The size of the recorded file (in MB). */
   size: number;
+  /** The duration of the recording (in seconds). */
   duration: number;
 }
 
@@ -179,6 +181,12 @@ export interface ConvolverOptions extends AudioNodeOptions {
 export interface IConvolverOptions extends AudioNodeOptions {
   buffer?: IAudioBuffer;
   disableNormalization?: boolean;
+}
+
+export interface AudioFileSourceOptions extends AudioNodeOptions {
+  source: ArrayBuffer | string;
+  loop?: boolean;
+  volume?: number;
 }
 
 export interface ConstantSourceOptions {
