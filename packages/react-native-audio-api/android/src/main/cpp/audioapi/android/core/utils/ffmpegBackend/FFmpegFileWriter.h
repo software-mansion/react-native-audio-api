@@ -31,7 +31,6 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
       int32_t streamMaxBufferSize);
   ~FFmpegAudioFileWriter();
 
-  bool writeAudioData(AudioDataType data, int numFrames) override;
   size_t getFileSizeBytes() const override;
 
   OpenFileResult openFile(

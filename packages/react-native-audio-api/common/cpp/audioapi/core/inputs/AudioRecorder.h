@@ -29,7 +29,7 @@ class AudioRecorder {
   virtual ~AudioRecorder() = default;
 
   virtual Result<std::string, std::string> start(const std::string &fileNameOverride) = 0;
-  virtual Result<std::tuple<std::string, double, double>, std::string> stop() = 0;
+  virtual Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() = 0;
 
   virtual Result<std::string, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) = 0;

@@ -2,6 +2,7 @@
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
+#include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
@@ -45,12 +46,7 @@ MiniAudioFileWriter::MiniAudioFileWriter(
     float streamSampleRate,
     int32_t streamChannelCount,
     int32_t streamMaxBufferSize)
-    : AndroidFileWriterBackend(
-          audioEventHandlerRegistry,
-          fileProperties,
-          streamSampleRate,
-          streamChannelCount,
-          streamMaxBufferSize) {}
+    : AndroidFileWriterBackend(audioEventHandlerRegistry, fileProperties) {}
 
 MiniAudioFileWriter::~MiniAudioFileWriter() {
   isFileOpen_.store(false, std::memory_order_release);
@@ -135,6 +131,8 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
     return CloseFileResult ::Err("File is not open");
   }
 
+  offloader_.reset();
+
   isFileOpen_.store(false, std::memory_order_release);
 
   if (encoder_ != nullptr) {
@@ -177,7 +175,6 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
     fclose(file);
     fileSizeInMB = static_cast<double>(fileSizeInBytes) / MB_IN_BYTES;
   }
-  offloader_.reset();
 
   filePath_ = "";
   return CloseFileResult ::Ok({fileSizeInMB, durationInSeconds});

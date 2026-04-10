@@ -166,7 +166,7 @@ NSURL *getFileURL(
   NSString *timestamp = getTimestampString();
   NSString *fileExtension = getFileExtension(properties);
 
-  NSString *fileName = fileNameOverride.length() > 0
+  NSString *fileName = fileNameOverride.length() > 0 && properties->rotateIntervalBytes == 0
       ? [NSString stringWithFormat:@"%@.%@",
                                    [NSString stringWithUTF8String:fileNameOverride.c_str()],
                                    fileExtension]
@@ -194,7 +194,7 @@ NSString *getTimestampString()
   NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
   fmt.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
   fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"]; // or local if you prefer
-  fmt.dateFormat = @"yyyyMMdd_HHmmss_SSS";
+  fmt.dateFormat = @"yyyyMMdd_HHmmss";
   return [fmt stringFromDate:[NSDate date]];
 }
 

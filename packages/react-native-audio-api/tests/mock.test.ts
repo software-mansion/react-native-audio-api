@@ -283,7 +283,7 @@ describe('React Native Audio API Mocks', () => {
 
       const stopResult = recorder.stop();
       expect(stopResult.status).toBe('success');
-      expect((stopResult as { path?: string }).path).toBeDefined();
+      expect(stopResult.paths?.length).toBeGreaterThan(0);
       expect(recorder.isRecording()).toBe(false);
     });
 

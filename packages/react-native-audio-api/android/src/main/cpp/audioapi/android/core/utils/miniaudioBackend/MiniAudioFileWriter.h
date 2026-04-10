@@ -19,7 +19,6 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
       int32_t streamMaxBufferSize);
   ~MiniAudioFileWriter();
 
-  bool writeAudioData(AudioDataType data, int numFrames) override;
   size_t getFileSizeBytes() const override;
 
   OpenFileResult openFile(

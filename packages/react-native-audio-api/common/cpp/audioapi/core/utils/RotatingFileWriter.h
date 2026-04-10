@@ -9,40 +9,33 @@
 
 namespace audioapi {
 
-class RotatingFileWriter : public AudioFileWriter {
+class RotatingFileWriter {
  public:
+  virtual ~RotatingFileWriter() = default;
   using WriterFactory =
       std::function<std::shared_ptr<AudioFileWriter>(const std::shared_ptr<AudioFileProperties> &)>;
+  using OnSegmentFileOpenedCallback = std::function<void(const std::string &)>;
 
   RotatingFileWriter(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const std::shared_ptr<AudioFileProperties> &fileProperties,
       size_t rotateIntervalBytes,
-      WriterFactory writerFactory);
+      WriterFactory writerFactory,
+      OnSegmentFileOpenedCallback onSegmentFileOpened);
 
-  ~RotatingFileWriter() override = default;
+  CloseFileResult closeFile();
+  virtual void rotateFiles();
 
-  // AudioFileWriter overrides
-  OpenFileResult openFile() override;
-  CloseFileResult closeFile() override;
-  std::string getFilePath() const override;
-  bool writeAudioData(AudioDataType data, int numFrames) override;
-  double getCurrentDuration() const override;
-  size_t getFileSizeBytes() const override;
-
-  // Rotating logic
-  void rotateFiles();
-
- private:
-  std::shared_ptr<AudioFileProperties> createRotatedProperties();
-  void openNewFile();
+ protected:
+  static constexpr int FILE_SIZE_CHECK_WRITE_INTERVAL = 10;
 
   WriterFactory writerFactory_;
+  OnSegmentFileOpenedCallback onSegmentFileOpened_;
   size_t rotateIntervalBytes_;
-  size_t currentFileBytes_ = 0;
   size_t writesSinceLastCheck_ = 0;
   std::shared_ptr<AudioFileWriter> currentWriter_;
   std::string baseFileName_;
+
+  double cumulativeSizeMB_{0.0};
+  double cumulativeDurationSec_{0.0};
 };
 
 } // namespace audioapi

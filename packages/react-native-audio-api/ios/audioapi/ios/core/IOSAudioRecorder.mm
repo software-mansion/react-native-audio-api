@@ -4,17 +4,18 @@
 #import <Foundation/Foundation.h>
 
 #include <unordered_map>
+#include <vector>
 
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
+#include <audioapi/ios/core/utils/IOSRotatingFileWriter.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -103,11 +104,11 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
-    auto writerResult = setupFileWriter(fileProperties_, maxInputBufferLength);
+    recordingSegmentPaths_.clear();
+    auto writerResult = setupFileWriter(fileProperties_, fileNameOverride);
     if (writerResult.is_err()) {
       return Result<std::string, std::string>::Err(writerResult.unwrap_err());
     }
-    NSLog(@"[IOSAudioRecorder] File created successfully at path: %s", filePath_.c_str());
   }
 
   if (usesCallback()) {
@@ -132,8 +133,8 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
 /// @brief Stops the audio recording process and releases resources.
 /// It finalizes any data receiver and closes the stream.
 /// This method should be called from the JS thread only.
-/// @returns Result containing a tuple of the output file path, size, and duration if stopped successfully, or an error message.
-Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::stop()
+/// @returns Result containing paths, size, and duration if stopped successfully, or an error message.
+Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAudioRecorder::stop()
 {
   std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
@@ -142,7 +143,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   double outputDuration = 0;
 
   if (isIdle()) {
-    return Result<std::tuple<std::string, double, double>, std::string>::Err(
+    return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
         "Recorder is not in recording state.");
   }
 
@@ -153,7 +154,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
     auto fileResult = fileWriter_->closeFile();
 
     if (fileResult.is_err()) {
-      return Result<std::tuple<std::string, double, double>, std::string>::Err(
+      return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
           "Failed to close file: " + fileResult.unwrap_err());
     }
 
@@ -169,9 +170,20 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
     adapterNode_->adapterCleanup();
   }
 
+  std::vector<std::string> outputPaths;
+  for (const auto &raw : recordingSegmentPaths_) {
+    if (!raw.empty()) {
+      outputPaths.push_back(std::string("file://") + raw);
+    }
+  }
+  if (usesFileOutput() && outputPaths.empty() && !filePath.empty()) {
+    outputPaths.push_back(std::string("file://") + filePath);
+  }
+
+  recordingSegmentPaths_.clear();
   filePath_ = "";
-  return Result<std::tuple<std::string, double, double>, std::string>::Ok(
-      std::make_tuple(filePath, outputFileSize, outputDuration));
+  return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Ok(
+      std::make_tuple(std::move(outputPaths), outputFileSize, outputDuration));
 }
 
 /// @brief Enables file output for the recorder with specified properties.
@@ -186,7 +198,7 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
   fileProperties_ = properties;
 
   if (!isIdle()) {
-    auto writerResult = setupFileWriter(properties, [nativeRecorder_ getBufferSize]);
+    auto writerResult = setupFileWriter(properties);
     if (writerResult.is_err()) {
       return Result<std::string, std::string>::Err(writerResult.unwrap_err());
     }
@@ -196,33 +208,47 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
   return Result<std::string, std::string>::Ok(filePath_);
 }
 
+std::shared_ptr<AudioFileWriter> IOSAudioRecorder::createFileWriter(
+    const std::shared_ptr<AudioFileProperties> &props)
+{
+  return std::make_shared<IOSFileWriter>(audioEventHandlerRegistry_, props);
+}
+
 Result<std::string, std::string> IOSAudioRecorder::setupFileWriter(
     const std::shared_ptr<AudioFileProperties> &properties,
-    size_t bufferSize)
+    const std::string &fileNameOverride)
 {
-  auto createWriter =
-      [this, bufferSize](
-          const std::shared_ptr<AudioFileProperties> &props) -> std::shared_ptr<AudioFileWriter> {
-    return std::make_shared<IOSFileWriter>(
-        audioEventHandlerRegistry_, props, [nativeRecorder_ getInputFormat], bufferSize);
-  };
-
   if (properties->rotateIntervalBytes > 0) {
-    fileWriter_ = std::make_shared<RotatingFileWriter>(
-        audioEventHandlerRegistry_, properties, properties->rotateIntervalBytes, createWriter);
+    fileWriter_ = std::make_shared<IOSRotatingFileWriter>(
+        audioEventHandlerRegistry_,
+        properties,
+        properties->rotateIntervalBytes,
+        [this](const std::shared_ptr<AudioFileProperties> &p) { return createFileWriter(p); },
+        [this](const std::string &path) {
+          if (!path.empty()) {
+            recordingSegmentPaths_.push_back(path);
+          }
+        });
   } else {
-    fileWriter_ = createWriter(properties);
+    fileWriter_ = createFileWriter(properties);
   }
 
   fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
-  auto fileResult = fileWriter_->openFile();
-  if (fileResult.is_err()) {
+  auto backend = std::static_pointer_cast<IOSFileWriter>(fileWriter_);
+  auto fileResult = backend->openFile(
+      [nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize], fileNameOverride);
+
+  if (!fileResult.is_ok()) {
     return Result<std::string, std::string>::Err(
         "Failed to open file for writing: " + fileResult.unwrap_err());
   }
 
   filePath_ = fileResult.unwrap();
+
+  if (properties->rotateIntervalBytes == 0) {
+    recordingSegmentPaths_.push_back(filePath_);
+  }
   return Result<std::string, std::string>::Ok(filePath_);
 }
 

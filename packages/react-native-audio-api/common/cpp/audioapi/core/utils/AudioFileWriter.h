@@ -8,21 +8,19 @@
 #include <string>
 #include <tuple>
 
+#ifdef __APPLE__
+typedef const struct AudioBufferList *AudioDataType;
+#else
+typedef void *AudioDataType;
+#endif
+
 namespace audioapi {
 
 class AudioFileProperties;
-class RotatingFileWriter;
 class AudioEventHandlerRegistry;
 
 using OpenFileResult = Result<std::string, std::string>;
 using CloseFileResult = Result<std::tuple<double, double>, std::string>;
-
-#if defined(__APPLE__)
-#include <CoreAudio/CoreAudioTypes.h>
-typedef const AudioBufferList *AudioDataType;
-#else
-typedef void *AudioDataType;
-#endif
 
 class AudioFileWriter {
  public:
@@ -34,10 +32,9 @@ class AudioFileWriter {
   virtual ~AudioFileWriter() = default;
 
   virtual CloseFileResult closeFile() = 0;
-  virtual OpenFileResult openFile() = 0;
   virtual std::string getFilePath() const = 0;
 
-  virtual bool writeAudioData(AudioDataType data, int numFrames) = 0;
+  virtual void writeAudioData(AudioDataType data, int numFrames) = 0;
 
   virtual double getCurrentDuration() const = 0;
   virtual size_t getFileSizeBytes() const = 0;

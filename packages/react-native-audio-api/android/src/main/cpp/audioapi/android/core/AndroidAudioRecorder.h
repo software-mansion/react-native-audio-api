@@ -8,6 +8,7 @@
 #include <oboe/Oboe.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace audioapi {
 
@@ -24,7 +25,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
   void cleanup();
 
   Result<std::string, std::string> start(const std::string &fileNameOverride) override;
-  Result<std::tuple<std::string, double, double>, std::string> stop() override;
+  Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
 
   Result<std::string, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
@@ -60,11 +61,13 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
   facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
 
   std::shared_ptr<oboe::AudioStream> mStream_;
+  std::vector<std::string> recordingSegmentPaths_;
   Result<NoneType, std::string> openAudioStream();
   std::shared_ptr<AudioFileWriter> createFileWriter(
       const std::shared_ptr<AudioFileProperties> &props);
   Result<std::string, std::string> setupFileWriter(
-      const std::shared_ptr<AudioFileProperties> &properties);
+      const std::shared_ptr<AudioFileProperties> &properties,
+      const std::string &fileNameOverride = "");
 };
 
 } // namespace audioapi
