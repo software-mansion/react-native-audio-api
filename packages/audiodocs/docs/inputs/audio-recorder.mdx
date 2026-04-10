@@ -412,7 +412,7 @@ export default MyRecorder;
         const result = audioRecorder.stop();
 
         if (result.status === 'success') {
-          const { path, duration, size } = result;
+          const { paths, duration, size } = result;
         } else if (result.status === 'error') {
           console.error(result.message);
         }
@@ -762,13 +762,13 @@ enum FileFormat {
 
 ```tsx
 interface FileInfo {
-  path: string;
+  paths: string[];
   size: number;
   duration: number;
 }
 ```
 
-- `path` - The path to the recorded audio file.
+- `paths` - Paths to the recorded audio files. When file rotation is disabled it has only one entry, otherwise list of paths to recorder files is returned.
 - `size` - The file size (in MB).
 - `duration` - The recording duration (in seconds).
 
