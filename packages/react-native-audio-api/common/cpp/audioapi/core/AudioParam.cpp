@@ -1,11 +1,11 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/param/ParamRenderEventFactory.hpp>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <utility>
-#include "audioapi/core/utils/automation/AutomationRenderEventFactory.hpp"
 
 namespace audioapi {
 
@@ -36,20 +36,19 @@ float AudioParam::getValueAtTime(double time) {
 }
 
 void AudioParam::setValueAtTime(float value, double startTime) {
-  this->updateQueue(AutomationRenderEventFactory::createSetValueEvent(value, startTime));
+  this->updateQueue(ParamRenderEventFactory::createSetValueEvent(value, startTime));
 }
 
 void AudioParam::linearRampToValueAtTime(float value, double endTime) {
-  this->updateQueue(AutomationRenderEventFactory::createLinearRampEvent(value, endTime));
+  this->updateQueue(ParamRenderEventFactory::createLinearRampEvent(value, endTime));
 }
 
 void AudioParam::exponentialRampToValueAtTime(float value, double endTime) {
-  this->updateQueue(AutomationRenderEventFactory::createExponentialRampEvent(value, endTime));
+  this->updateQueue(ParamRenderEventFactory::createExponentialRampEvent(value, endTime));
 }
 
 void AudioParam::setTargetAtTime(float target, double startTime, double timeConstant) {
-  this->updateQueue(
-      AutomationRenderEventFactory::createSetTargetEvent(target, startTime, timeConstant));
+  this->updateQueue(ParamRenderEventFactory::createSetTargetEvent(target, startTime, timeConstant));
 }
 
 void AudioParam::setValueCurveAtTime(
@@ -58,7 +57,7 @@ void AudioParam::setValueCurveAtTime(
     double startTime,
     double duration) {
   this->updateQueue(
-      AutomationRenderEventFactory::createSetValueCurveEvent(values, length, startTime, duration));
+      ParamRenderEventFactory::createSetValueCurveEvent(values, length, startTime, duration));
 }
 
 void AudioParam::cancelScheduledValues(double cancelTime) {

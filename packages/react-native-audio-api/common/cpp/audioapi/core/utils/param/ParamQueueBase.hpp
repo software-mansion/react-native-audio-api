@@ -1,22 +1,22 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
+#include <audioapi/utils/BoundedPriorityQueue.hpp>
+#include <audioapi/utils/Macros.h>
 #include <utility>
-#include "audioapi/core/utils/Constants.h"
-#include "audioapi/utils/BoundedPriorityQueue.hpp"
-#include "audioapi/utils/Macros.h"
 
 namespace audioapi {
 
 template <typename TEvent>
-concept AutomationEventConcept = requires(TEvent event) {
+concept ParamEventConcept = requires(TEvent event) {
   { event.getAutomationTime() } -> std::convertible_to<double>;
 };
-template <AutomationEventConcept TEvent>
-class AutomationQueueBase {
+template <ParamEventConcept TEvent>
+class ParamQueueBase {
  public:
-  AutomationQueueBase() = default;
-  DELETE_COPY_AND_MOVE(AutomationQueueBase);
-  virtual ~AutomationQueueBase() = default;
+  ParamQueueBase() = default;
+  DELETE_COPY_AND_MOVE(ParamQueueBase);
+  virtual ~ParamQueueBase() = default;
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.

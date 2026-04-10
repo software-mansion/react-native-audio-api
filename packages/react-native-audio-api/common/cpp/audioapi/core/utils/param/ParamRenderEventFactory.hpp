@@ -1,18 +1,18 @@
 #pragma once
 
+#include <audioapi/core/utils/param/RenderParamEvent.h>
+#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <utility>
-#include "audioapi/core/utils/automation/RenderAutomationEvent.hpp"
-#include "audioapi/dsp/AudioUtils.hpp"
-#include "audioapi/utils/AudioArray.hpp"
 
 namespace audioapi {
 
-/// @brief A peer class to AutomationQueue classes for creating RenderAutomationEvents
-/// and resolving their values based on the current state of the queue.
-class AutomationRenderEventFactory {
+/// @brief A factory for creating RenderParamEvents and resolving their values
+/// based on the current state of the queue.
+class ParamRenderEventFactory {
  public:
-  static RenderAutomationEvent createSetValueEvent(float value, double startTime) {
+  static RenderParamEvent createSetValueEvent(float value, double startTime) {
     auto calculateValue =
         [](double startTime, double /* endTime */, float startValue, float endValue, double time) {
           if (time < startTime) {
@@ -22,16 +22,11 @@ class AutomationRenderEventFactory {
           return endValue;
         };
 
-    return RenderAutomationEvent(
-        startTime,
-        startTime,
-        value,
-        value,
-        std::move(calculateValue),
-        AutomationEventType::SET_VALUE);
+    return RenderParamEvent(
+        startTime, startTime, value, value, std::move(calculateValue), ParamEventType::SET_VALUE);
   }
 
-  static RenderAutomationEvent createLinearRampEvent(float value, double endTime) {
+  static RenderParamEvent createLinearRampEvent(float value, double endTime) {
     auto calculateValue =
         [](double startTime, double endTime, float startValue, float endValue, double time) {
           if (time < startTime) {
@@ -46,11 +41,11 @@ class AutomationRenderEventFactory {
           return endValue;
         };
 
-    return RenderAutomationEvent(
-        0.0, endTime, 0.0f, value, std::move(calculateValue), AutomationEventType::LINEAR_RAMP);
+    return RenderParamEvent(
+        0.0, endTime, 0.0f, value, std::move(calculateValue), ParamEventType::LINEAR_RAMP);
   }
 
-  static RenderAutomationEvent createExponentialRampEvent(float value, double endTime) {
+  static RenderParamEvent createExponentialRampEvent(float value, double endTime) {
     auto calculateValue =
         [](double startTime, double endTime, float startValue, float endValue, double time) {
           if (startValue * endValue < 0 || startValue == 0) {
@@ -70,16 +65,11 @@ class AutomationRenderEventFactory {
           return endValue;
         };
 
-    return RenderAutomationEvent(
-        0.0,
-        endTime,
-        0.0f,
-        value,
-        std::move(calculateValue),
-        AutomationEventType::EXPONENTIAL_RAMP);
+    return RenderParamEvent(
+        0.0, endTime, 0.0f, value, std::move(calculateValue), ParamEventType::EXPONENTIAL_RAMP);
   }
 
-  static RenderAutomationEvent
+  static RenderParamEvent
   createSetTargetEvent(float target, double startTime, double timeConstant) {
     auto calculateValue = [timeConstant, target](
                               double startTime,
@@ -99,16 +89,16 @@ class AutomationRenderEventFactory {
           target + (startValue - target) * exp(-(time - startTime) / timeConstant));
     };
 
-    return RenderAutomationEvent(
+    return RenderParamEvent(
         startTime,
         startTime, // SetTarget events have infinite duration conceptually
         0.0f,
         0.0f, // End value is not meaningful for infinite events
         std::move(calculateValue),
-        AutomationEventType::SET_TARGET);
+        ParamEventType::SET_TARGET);
   }
 
-  static RenderAutomationEvent createSetValueCurveEvent(
+  static RenderParamEvent createSetValueCurveEvent(
       const std::shared_ptr<AudioArray> &values,
       size_t length,
       double startTime,
@@ -133,13 +123,13 @@ class AutomationRenderEventFactory {
           return endValue;
         };
 
-    return RenderAutomationEvent(
+    return RenderParamEvent(
         startTime,
         startTime + duration,
         0.0f,
         values->span()[length - 1],
         std::move(calculateValue),
-        AutomationEventType::SET_VALUE_CURVE);
+        ParamEventType::SET_VALUE_CURVE);
   }
 };
 

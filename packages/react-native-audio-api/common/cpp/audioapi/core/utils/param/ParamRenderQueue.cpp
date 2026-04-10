@@ -1,19 +1,19 @@
-#include "audioapi/core/utils/automation/AutomationRenderQueue.h"
+#include <audioapi/core/types/ParamEventType.h>
+#include <audioapi/core/utils/param/ParamQueueBase.hpp>
+#include <audioapi/core/utils/param/ParamRenderEventFactory.hpp>
+#include <audioapi/core/utils/param/ParamRenderQueue.h>
 #include <cstddef>
 #include <optional>
 #include <utility>
-#include "audioapi/core/types/AutomationEventType.h"
-#include "audioapi/core/utils/automation/AutomationQueueBase.hpp"
-#include "audioapi/core/utils/automation/AutomationRenderEventFactory.hpp"
 
 namespace audioapi {
 
-std::optional<float> AutomationRenderQueue::computeValueAtTime(double time) {
+std::optional<float> ParamRenderQueue::computeValueAtTime(double time) {
   while (
       !eventQueue_.isEmpty() &&
       (!currentEvent_ ||
        (time >= currentEvent_->getEndTime() && eventQueue_.peekFront().getStartTime() <= time))) {
-    RenderAutomationEvent next;
+    RenderParamEvent next;
     eventQueue_.pop(next);
     currentEvent_ = std::move(next);
   }
@@ -30,12 +30,12 @@ std::optional<float> AutomationRenderQueue::computeValueAtTime(double time) {
       time);
 }
 
-bool AutomationRenderQueue::push(RenderAutomationEvent &&event) {
+bool ParamRenderQueue::push(RenderParamEvent &&event) {
   resolveEventValues(event);
-  return AutomationQueueBase::push(std::move(event));
+  return ParamQueueBase::push(std::move(event));
 }
 
-void AutomationRenderQueue::resolveEventValues(RenderAutomationEvent &event) {
+void ParamRenderQueue::resolveEventValues(RenderParamEvent &event) {
   auto it = eventQueue_.upperBound(event.getAutomationTime());
 
   if (it != eventQueue_.begin()) {
@@ -49,7 +49,7 @@ void AutomationRenderQueue::resolveEventValues(RenderAutomationEvent &event) {
     event.setStartValue(getValueOfPreviousEventAt(*predIt, event.getStartTime()));
 
     // If the predecessor is a setTarget event, adjust its endTime and endValue to connect to the new event
-    if (predIt->getType() == AutomationEventType::SET_TARGET) {
+    if (predIt->getType() == ParamEventType::SET_TARGET) {
       float newEndValue = getValueOfPreviousEventAt(*predIt, event.getStartTime());
       auto node = eventQueue_.extract(predIt);
       node.value().setEndTime(event.getStartTime());
@@ -66,7 +66,7 @@ void AutomationRenderQueue::resolveEventValues(RenderAutomationEvent &event) {
     event.setStartValue(getValueOfPreviousEventAt(*currentEvent_, event.getStartTime()));
 
     // If the predecessor is a setTarget event, adjust its endTime and endValue to connect to the new event
-    if (currentEvent_->getType() == AutomationEventType::SET_TARGET) {
+    if (currentEvent_->getType() == ParamEventType::SET_TARGET) {
       currentEvent_->setEndTime(event.getStartTime());
       currentEvent_->setEndValue(getValueOfPreviousEventAt(*currentEvent_, event.getStartTime()));
     }
@@ -85,17 +85,15 @@ void AutomationRenderQueue::resolveEventValues(RenderAutomationEvent &event) {
   }
 }
 
-float AutomationRenderQueue::getValueOfPreviousEventAt(
-    const RenderAutomationEvent &event,
-    double time) {
-  if (event.getType() == AutomationEventType::SET_TARGET) {
+float ParamRenderQueue::getValueOfPreviousEventAt(const RenderParamEvent &event, double time) {
+  if (event.getType() == ParamEventType::SET_TARGET) {
     return event.getCalculateValue()(
         event.getStartTime(), event.getEndTime(), event.getStartValue(), event.getEndValue(), time);
   }
   return event.getEndValue();
 }
 
-void AutomationRenderQueue::cancelAndHoldAtTime(double cancelTime) {
+void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
   // E2: first event with automationTime strictly after cancelTime
   auto e2It = eventQueue_.upperBound(cancelTime);
 
@@ -121,16 +119,15 @@ void AutomationRenderQueue::cancelAndHoldAtTime(double cancelTime) {
   auto e1It = (e2It != eventQueue_.begin()) ? std::prev(e2It) : eventQueue_.end();
 
   if (e1It != eventQueue_.end()) {
-    if (e1It->getType() == AutomationEventType::SET_TARGET) {
+    if (e1It->getType() == ParamEventType::SET_TARGET) {
       // Insert setValueAtTime to freeze the exponential approach
       float holdValue = getValueOfPreviousEventAt(*e1It, cancelTime);
       eventQueue_.erase(e2It, eventQueue_.end());
-      this->push(AutomationRenderEventFactory::createSetValueEvent(holdValue, cancelTime));
+      this->push(ParamRenderEventFactory::createSetValueEvent(holdValue, cancelTime));
       return;
     }
 
-    if (e1It->getType() == AutomationEventType::SET_VALUE_CURVE &&
-        cancelTime <= e1It->getEndTime()) {
+    if (e1It->getType() == ParamEventType::SET_VALUE_CURVE && cancelTime <= e1It->getEndTime()) {
       // Truncate curve; compute holdValue using original endTime to preserve sampling behaviour
       float holdValue = e1It->getCalculateValue()(
           e1It->getStartTime(),
@@ -148,14 +145,14 @@ void AutomationRenderQueue::cancelAndHoldAtTime(double cancelTime) {
     // All other E1 types (SET_VALUE, completed ramps): nothing to modify, fall through to step 5
   } else if (currentEvent_) {
     // No E1 in queue, but currentEvent_ exists — check if it needs to be truncated
-    if (currentEvent_->getType() == AutomationEventType::SET_TARGET) {
+    if (currentEvent_->getType() == ParamEventType::SET_TARGET) {
       float holdValue = getValueOfPreviousEventAt(*currentEvent_, cancelTime);
       eventQueue_.erase(eventQueue_.begin(), eventQueue_.end());
-      this->push(AutomationRenderEventFactory::createSetValueEvent(holdValue, cancelTime));
+      this->push(ParamRenderEventFactory::createSetValueEvent(holdValue, cancelTime));
       return;
     }
 
-    if (currentEvent_->getType() == AutomationEventType::SET_VALUE_CURVE &&
+    if (currentEvent_->getType() == ParamEventType::SET_VALUE_CURVE &&
         cancelTime <= currentEvent_->getEndTime()) {
       float holdValue = currentEvent_->getCalculateValue()(
           currentEvent_->getStartTime(),

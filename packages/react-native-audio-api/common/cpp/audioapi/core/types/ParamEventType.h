@@ -4,7 +4,7 @@
 #include <string_view>
 namespace audioapi {
 
-enum class AutomationEventType : uint8_t {
+enum class ParamEventType : uint8_t {
   LINEAR_RAMP,
   EXPONENTIAL_RAMP,
   SET_VALUE,
@@ -12,17 +12,17 @@ enum class AutomationEventType : uint8_t {
   SET_VALUE_CURVE,
 };
 
-inline std::string_view toString(AutomationEventType type) {
+inline std::string_view toString(ParamEventType type) {
   switch (type) {
-    case AutomationEventType::LINEAR_RAMP:
+    case ParamEventType::LINEAR_RAMP:
       return "LinearRampToValueAtTime";
-    case AutomationEventType::EXPONENTIAL_RAMP:
+    case ParamEventType::EXPONENTIAL_RAMP:
       return "ExponentialRampToValueAtTime";
-    case AutomationEventType::SET_VALUE:
+    case ParamEventType::SET_VALUE:
       return "SetValueAtTime";
-    case AutomationEventType::SET_TARGET:
+    case ParamEventType::SET_TARGET:
       return "SetTargetAtTime";
-    case AutomationEventType::SET_VALUE_CURVE:
+    case ParamEventType::SET_VALUE_CURVE:
       return "SetValueCurveAtTime";
   }
   return "Unknown";

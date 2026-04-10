@@ -1,12 +1,12 @@
 #pragma once
 
+#include <audioapi/core/utils/param/ParamControlQueue.h>
+#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/utils/Result.hpp>
 #include <jsi/jsi.h>
 #include <cstddef>
 #include <memory>
 #include <string>
-#include "audioapi/core/utils/automation/AutomationControlQueue.h"
-#include "audioapi/jsi/JsiHostObject.h"
-#include "audioapi/utils/Result.hpp"
 
 namespace audioapi {
 using namespace facebook;
@@ -37,7 +37,7 @@ class AudioParamHostObject : public JsiHostObject {
   friend class AudioNodeHostObject;
 
   std::shared_ptr<AudioParam> param_;
-  AutomationControlQueue controlQueue_;
+  ParamControlQueue controlQueue_;
   float defaultValue_;
   float minValue_;
   float maxValue_;

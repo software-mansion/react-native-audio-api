@@ -1,43 +1,45 @@
 #pragma once
 
-#include "audioapi/core/utils/automation/AutomationEvent.h"
+#include <audioapi/core/utils/param/ParamEvent.h>
 
+#include <audioapi/core/types/ParamEventType.h>
 #include <functional>
 #include <utility>
-#include "audioapi/core/types/AutomationEventType.h"
 
 namespace audioapi {
-/// @brief A RenderAutomationEvent extends AutomationEvent with additional properties and a value calculation function
-/// that can compute the parameter value at any time during the event's active period based on its type and the current state of the queue.
-class RenderAutomationEvent : public AutomationEvent {
- public:
-  RenderAutomationEvent() = default;
-  ~RenderAutomationEvent() = default;
 
-  explicit RenderAutomationEvent(
+/// @brief A RenderParamEvent extends ParamEvent with additional properties and a value calculation
+/// function that can compute the parameter value at any time during the event's active period
+/// based on its type and the current state of the queue.
+class RenderParamEvent : public ParamEvent {
+ public:
+  RenderParamEvent() = default;
+  ~RenderParamEvent() = default;
+
+  explicit RenderParamEvent(
       double startTime,
       double endTime,
       float startValue,
       float endValue,
       std::function<float(double, double, float, float, double)> &&calculateValue,
-      AutomationEventType type)
-      : AutomationEvent(type, startTime, endTime),
+      ParamEventType type)
+      : ParamEvent(type, startTime, endTime),
         calculateValue_(std::move(calculateValue)),
         startValue_(startValue),
         endValue_(endValue) {}
 
-  RenderAutomationEvent(const RenderAutomationEvent &) = delete;
-  RenderAutomationEvent &operator=(const RenderAutomationEvent &) = delete;
+  RenderParamEvent(const RenderParamEvent &) = delete;
+  RenderParamEvent &operator=(const RenderParamEvent &) = delete;
 
-  RenderAutomationEvent(RenderAutomationEvent &&other) noexcept
-      : AutomationEvent(std::move(other)),
+  RenderParamEvent(RenderParamEvent &&other) noexcept
+      : ParamEvent(std::move(other)),
         calculateValue_(std::move(other.calculateValue_)),
         startValue_(other.startValue_),
         endValue_(other.endValue_) {}
 
-  RenderAutomationEvent &operator=(RenderAutomationEvent &&other) noexcept {
+  RenderParamEvent &operator=(RenderParamEvent &&other) noexcept {
     if (this != &other) {
-      AutomationEvent::operator=(std::move(other));
+      ParamEvent::operator=(std::move(other));
       calculateValue_ = std::move(other.calculateValue_);
       startValue_ = other.startValue_;
       endValue_ = other.endValue_;

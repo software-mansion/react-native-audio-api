@@ -1,34 +1,34 @@
 #pragma once
 
-#include "audioapi/core/types/AutomationEventType.h"
+#include <audioapi/core/types/ParamEventType.h>
 
 namespace audioapi {
 
-/// @brief Base class for automation events, containing common properties like startTime, endTime, and type.
-class AutomationEvent {
+/// @brief Base class for param events, containing common properties like startTime, endTime, and type.
+class ParamEvent {
  public:
-  AutomationEvent() = default;
-  ~AutomationEvent() = default;
+  ParamEvent() = default;
+  ~ParamEvent() = default;
 
   /// @brief Construct an event with explicit start and end times.
-  explicit AutomationEvent(AutomationEventType type, double startTime, double endTime)
+  explicit ParamEvent(ParamEventType type, double startTime, double endTime)
       : type_(type), startTime_(startTime), endTime_(endTime) {}
 
   /// @brief Construct from a single automationTime value, setting startTime or endTime based on type.
   /// Ramp events (LINEAR_RAMP, EXPONENTIAL_RAMP) store automationTime as endTime.
   /// All other types store it as startTime.
-  explicit AutomationEvent(AutomationEventType type, double automationTime)
+  explicit ParamEvent(ParamEventType type, double automationTime)
       : type_(type),
         startTime_(isRamp(type) ? 0.0 : automationTime),
         endTime_(isRamp(type) ? automationTime : 0.0) {}
 
-  AutomationEvent(const AutomationEvent &) = default;
-  AutomationEvent &operator=(const AutomationEvent &) = default;
+  ParamEvent(const ParamEvent &) = default;
+  ParamEvent &operator=(const ParamEvent &) = default;
 
-  AutomationEvent(AutomationEvent &&other) noexcept
+  ParamEvent(ParamEvent &&other) noexcept
       : type_(other.type_), startTime_(other.startTime_), endTime_(other.endTime_) {}
 
-  AutomationEvent &operator=(AutomationEvent &&other) noexcept {
+  ParamEvent &operator=(ParamEvent &&other) noexcept {
     if (this != &other) {
       type_ = other.type_;
       startTime_ = other.startTime_;
@@ -51,7 +51,7 @@ class AutomationEvent {
     return endTime_;
   }
 
-  [[nodiscard]] AutomationEventType getType() const noexcept {
+  [[nodiscard]] ParamEventType getType() const noexcept {
     return type_;
   }
 
@@ -70,12 +70,11 @@ class AutomationEvent {
  protected:
   double startTime_ = 0.0;
   double endTime_ = 0.0;
-  AutomationEventType type_ = AutomationEventType::SET_VALUE;
+  ParamEventType type_ = ParamEventType::SET_VALUE;
 
  private:
-  static bool isRamp(AutomationEventType type) noexcept {
-    return type == AutomationEventType::LINEAR_RAMP ||
-        type == AutomationEventType::EXPONENTIAL_RAMP;
+  static bool isRamp(ParamEventType type) noexcept {
+    return type == ParamEventType::LINEAR_RAMP || type == ParamEventType::EXPONENTIAL_RAMP;
   }
 };
 

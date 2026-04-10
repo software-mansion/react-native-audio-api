@@ -1,14 +1,14 @@
-#include "audioapi/core/utils/automation/AutomationControlQueue.h"
+#include <audioapi/core/types/ParamEventType.h>
+#include <audioapi/core/utils/param/ParamControlQueue.h>
+#include <audioapi/core/utils/param/ParamEvent.h>
+#include <audioapi/utils/Result.hpp>
 #include <cstddef>
 #include <sstream>
-#include "audioapi/core/types/AutomationEventType.h"
-#include "audioapi/core/utils/automation/AutomationEvent.h"
-#include "audioapi/utils/Result.hpp"
 
 namespace audioapi {
 
-EventConflictResult AutomationControlQueue::checkCurveExclusion(const AutomationEvent &event) {
-  if (event.getType() == AutomationEventType::SET_VALUE_CURVE) {
+EventConflictResult ParamControlQueue::checkCurveExclusion(const ParamEvent &event) {
+  if (event.getType() == ParamEventType::SET_VALUE_CURVE) {
     // For curve events, check for any event that occurs at or within the curve's time interval
     return isConflictInInterval(event, event.getStartTime(), event.getEndTime());
   }
@@ -16,19 +16,18 @@ EventConflictResult AutomationControlQueue::checkCurveExclusion(const Automation
   return isConflictAtTime(event, event.getAutomationTime());
 }
 
-void AutomationControlQueue::purge(double currentTime) {
+void ParamControlQueue::purge(double currentTime) {
   eventQueue_.erase(eventQueue_.begin(), eventQueue_.lowerBound(currentTime));
 }
 
-EventConflictResult AutomationControlQueue::isConflictAtTime(
-    const AutomationEvent &newEvent,
+EventConflictResult ParamControlQueue::isConflictAtTime(
+    const ParamEvent &newEvent,
     double automationTime) {
   // Check if a SET_VALUE_CURVE that starts before automationTime extends into it
   auto it = eventQueue_.upperBound(automationTime);
   if (it != eventQueue_.begin()) {
     const auto &pred = *std::prev(it);
-    if (pred.getType() == AutomationEventType::SET_VALUE_CURVE &&
-        automationTime < pred.getEndTime()) {
+    if (pred.getType() == ParamEventType::SET_VALUE_CURVE && automationTime < pred.getEndTime()) {
       std::stringstream ss;
       ss << "Cannot schedule event of type " << toString(newEvent.getType()) << " at time "
          << newEvent.getAutomationTime()
@@ -40,12 +39,12 @@ EventConflictResult AutomationControlQueue::isConflictAtTime(
   return Ok(None);
 }
 
-EventConflictResult AutomationControlQueue::isConflictInInterval(
-    const AutomationEvent &newEvent,
+EventConflictResult ParamControlQueue::isConflictInInterval(
+    const ParamEvent &newEvent,
     double startTime,
     double endTime) {
   // Non-ramp events have automationTime == startTime, so lowerBound/lowerBound brackets them.
-  // Ramp events have startTime == 0 (unresolved on the control thread), so getStartTime() >= startTime
+  // Ramp events have startTime == 0 (unresolved on the control thread), so getStartTime() > startTime
   // filters them out.
   for (auto it = eventQueue_.lowerBound(startTime), hi = eventQueue_.lowerBound(endTime); it != hi;
        ++it) {

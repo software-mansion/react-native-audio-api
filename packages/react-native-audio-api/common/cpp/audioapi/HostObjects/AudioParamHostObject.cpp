@@ -1,11 +1,11 @@
-#include "audioapi/HostObjects/AudioParamHostObject.h"
+#include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/core/AudioParam.h>
+#include <audioapi/core/utils/param/ParamEvent.h>
+#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <string>
 #include <utility>
-#include "audioapi/core/AudioParam.h"
-#include "audioapi/core/utils/automation/AutomationEvent.h"
-#include "audioapi/jsi/JsiHostObject.h"
-#include "audioapi/utils/AudioArray.hpp"
 
 namespace audioapi {
 
@@ -60,7 +60,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioParamHostObject, value) {
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
   auto startTime = args[1].getNumber();
   controlQueue_.purge(param_->getCurrentTime());
-  controlQueue_.push(AutomationEvent(AutomationEventType::SET_VALUE, startTime));
+  controlQueue_.push(ParamEvent(ParamEventType::SET_VALUE, startTime));
 
   auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), startTime](
                    BaseAudioContext &) {
@@ -74,7 +74,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueAtTime) {
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
   auto endTime = args[1].getNumber();
   controlQueue_.purge(param_->getCurrentTime());
-  controlQueue_.push(AutomationEvent(AutomationEventType::LINEAR_RAMP, endTime));
+  controlQueue_.push(ParamEvent(ParamEventType::LINEAR_RAMP, endTime));
 
   auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime](
                    BaseAudioContext &) {
@@ -88,7 +88,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, linearRampToValueAtTime) {
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
   auto endTime = args[1].getNumber();
   controlQueue_.purge(param_->getCurrentTime());
-  controlQueue_.push(AutomationEvent(AutomationEventType::EXPONENTIAL_RAMP, endTime));
+  controlQueue_.push(ParamEvent(ParamEventType::EXPONENTIAL_RAMP, endTime));
 
   auto event = [param = param_, value = static_cast<float>(args[0].getNumber()), endTime](
                    BaseAudioContext &) {
@@ -102,7 +102,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, exponentialRampToValueAtTime) {
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setTargetAtTime) {
   auto startTime = args[1].getNumber();
   controlQueue_.purge(param_->getCurrentTime());
-  controlQueue_.push(AutomationEvent(AutomationEventType::SET_TARGET, startTime));
+  controlQueue_.push(ParamEvent(ParamEventType::SET_TARGET, startTime));
 
   auto event = [param = param_,
                 target = static_cast<float>(args[0].getNumber()),
@@ -119,8 +119,7 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, setValueCurveAtTime) {
   auto startTime = args[1].getNumber();
   auto duration = args[2].getNumber();
   controlQueue_.purge(param_->getCurrentTime());
-  controlQueue_.push(
-      AutomationEvent(AutomationEventType::SET_VALUE_CURVE, startTime, startTime + duration));
+  controlQueue_.push(ParamEvent(ParamEventType::SET_VALUE_CURVE, startTime, startTime + duration));
 
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
@@ -181,15 +180,15 @@ Result<NoneType, std::string> AudioParamHostObject::checkCurveExclusionFromJSI(
     jsi::Runtime &runtime,
     const jsi::Value *args) {
   auto arg = args[0].getObject(runtime);
-  auto type = static_cast<AutomationEventType>(arg.getProperty(runtime, "type").getNumber());
+  auto type = static_cast<ParamEventType>(arg.getProperty(runtime, "type").getNumber());
   auto automationTime = arg.getProperty(runtime, "automationTime").getNumber();
 
-  AutomationEvent event;
-  if (type == AutomationEventType::SET_VALUE_CURVE) {
+  ParamEvent event;
+  if (type == ParamEventType::SET_VALUE_CURVE) {
     auto duration = arg.getProperty(runtime, "duration").getNumber();
-    event = AutomationEvent(type, automationTime, automationTime + duration);
+    event = ParamEvent(type, automationTime, automationTime + duration);
   } else {
-    event = AutomationEvent(type, automationTime);
+    event = ParamEvent(type, automationTime);
   }
 
   return controlQueue_.checkCurveExclusion(event);

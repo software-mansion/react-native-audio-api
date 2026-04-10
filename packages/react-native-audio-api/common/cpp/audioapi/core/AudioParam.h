@@ -2,9 +2,9 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/types/AutomationEventType.h>
-#include <audioapi/core/utils/automation/AutomationRenderQueue.h>
-#include <audioapi/core/utils/automation/RenderAutomationEvent.hpp>
+#include <audioapi/core/types/ParamEventType.h>
+#include <audioapi/core/utils/param/ParamRenderQueue.h>
+#include <audioapi/core/utils/param/RenderParamEvent.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
@@ -110,7 +110,7 @@ class AudioParam {
   float minValue_;
   float maxValue_;
 
-  AutomationRenderQueue eventRenderQueue_;
+  ParamRenderQueue eventRenderQueue_;
 
   // Input modulation system
   std::vector<AudioNode *> inputNodes_;
@@ -121,7 +121,7 @@ class AudioParam {
   /// @param event The new event to add to the queue.
   /// @note Resolves the event's startValue and startTime based on neighboring events,
   // and adjusts neighboring events to maintain the invariant of non-overlapping events in the queue.
-  void updateQueue(RenderAutomationEvent &&event) {
+  void updateQueue(RenderParamEvent &&event) {
     eventRenderQueue_.push(std::move(event));
   }
 
