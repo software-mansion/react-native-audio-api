@@ -108,9 +108,8 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  // Stop just in case, reset the engine and build it from scratch
+  // Stop just in case and rebuild graph connections.
   [self stopIfNecessary];
-  [self.audioEngine reset];
   [self rebuildAudioEngine];
 
   // If shouldResume is false, mark the engine as paused and wait
@@ -140,33 +139,51 @@ static AudioEngine *_sharedInstance = nil;
   return self.state;
 }
 
-/// @brief Rebuilds the audio engine by re-attaching and re-connecting all source nodes and input node.
+/// @brief Rebuilds audio graph connections on the current engine instance.
 - (void)rebuildAudioEngine
 {
-  if (self.audioEngine != nil) {
-    for (id sourceNodeId in self.sourceNodes) {
-      AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
+  BOOL createdFreshEngine = NO;
+  if (self.audioEngine == nil) {
+    self.audioEngine = [[AVAudioEngine alloc] init];
+    createdFreshEngine = YES;
+  }
 
-      [self.audioEngine detachNode:sourceNode];
-    }
+  if ([self.audioEngine isRunning]) {
+    [self.audioEngine stop];
+  }
 
-    if (self.inputNode) {
-      [self.audioEngine detachNode:self.inputNode];
+  [self.audioEngine reset];
+
+  // Keep nodes attached to the same engine instance and only rebuild
+  // connections. This avoids reusing nodes across engine instances.
+  for (id sourceNodeId in self.sourceNodes) {
+    AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
+    if (createdFreshEngine) {
+      [self.audioEngine attachNode:sourceNode];
+    } else {
+      [self.audioEngine disconnectNodeInput:sourceNode];
+      [self.audioEngine disconnectNodeOutput:sourceNode];
     }
   }
 
-  self.audioEngine = [[AVAudioEngine alloc] init];
+  if (self.inputNode) {
+    if (createdFreshEngine) {
+      [self.audioEngine attachNode:self.inputNode];
+    } else {
+      [self.audioEngine disconnectNodeInput:self.inputNode];
+      [self.audioEngine disconnectNodeOutput:self.inputNode];
+      [self.audioEngine disconnectNodeOutput:self.audioEngine.inputNode];
+    }
+  }
 
   for (id sourceNodeId in self.sourceNodes) {
     AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
     AVAudioFormat *format = [self.sourceFormats valueForKey:sourceNodeId];
 
-    [self.audioEngine attachNode:sourceNode];
     [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
   }
 
   if (self.inputNode) {
-    [self.audioEngine attachNode:self.inputNode];
     [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
   }
 }
@@ -188,7 +205,6 @@ static AudioEngine *_sharedInstance = nil;
 
   if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
     [self.audioEngine stop];
-    [self.audioEngine reset];
     [self rebuildAudioEngine];
   }
 
