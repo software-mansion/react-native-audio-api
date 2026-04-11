@@ -9,10 +9,10 @@ import type {
 } from './types';
 import { AudioApiError } from '../../errors';
 
-class PlaybackNotificationManager
-  implements
-    NotificationManager<PlaybackNotificationInfo, PlaybackNotificationEventName>
-{
+class PlaybackNotificationManager implements NotificationManager<
+  PlaybackNotificationInfo,
+  PlaybackNotificationEventName
+> {
   private notificationKey = 'playback';
   private audioEventEmitter: AudioEventEmitter;
 

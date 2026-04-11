@@ -164,8 +164,7 @@ export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
 }
 
 // options that are passed to c++ layer
-export interface IAudioBufferSourceOptions
-  extends BaseAudioBufferSourceOptions {
+export interface IAudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: IAudioBuffer;
   loop?: boolean;
   loopStart?: number;

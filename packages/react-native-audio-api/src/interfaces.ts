@@ -218,8 +218,7 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   onLoopEnded: string;
 }
 
-export interface IAudioBufferQueueSourceNode
-  extends IAudioBufferBaseSourceNode {
+export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode {
   dequeueBuffer: (bufferId: number) => void;
   clearBuffers: () => void;
 
@@ -322,8 +321,7 @@ export interface IWaveShaperNode extends IAudioNode {
 
   setCurve(curve: Float32Array | null): void;
 }
-export interface IAudioRecorderCallbackOptions
-  extends AudioRecorderCallbackOptions {
+export interface IAudioRecorderCallbackOptions extends AudioRecorderCallbackOptions {
   callbackId: string;
 }
 

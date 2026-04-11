@@ -1,17 +1,14 @@
 'use strict';
 
-const semverPrerelease = require('semver/functions/prerelease');
+const semverGte = require('semver/functions/gte');
 
-const validWorkletsVersions = [
-  '0.6.0',
-  '0.6.1',
-  '0.7.0',
-  '0.7.1',
-  '0.7.2',
-  '0.7.3',
-  '0.7.4',
-];
+const MIN_WORKLETS_VERSION = '0.6.0';
 
+
+/**
+ * Checks if the installed version of react-native-worklets is compatible with react-native-audio-api.
+ * @returns {boolean} True if the version is compatible, false otherwise.
+ */
 function validateVersion() {
   let workletsVersion;
   try {
@@ -20,11 +17,8 @@ function validateVersion() {
   } catch (e) {
     return false;
   }
-  if (semverPrerelease(workletsVersion)) {
-    return true;
-  }
 
-  return validWorkletsVersions.includes(workletsVersion);
+  return semverGte(workletsVersion, MIN_WORKLETS_VERSION);
 }
 
 if (!validateVersion()) {

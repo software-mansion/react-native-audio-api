@@ -5,22 +5,14 @@ import type {
   IWorkletsModule,
 } from './ModuleInterfaces';
 import { AudioApiError } from '../errors';
+import semverGte from 'semver/functions/gte';
 
 class AudioAPIModule implements IAudioAPIModule {
   #workletsModule_: IWorkletsModule | null = null;
   #canUseWorklets_ = false;
   #workletsVersion = 'unknown';
   #workletsAvailable_ = false;
-
-  public supportedWorkletsVersion = [
-    '0.6.0',
-    '0.6.1',
-    '0.7.0',
-    '0.7.1',
-    '0.7.2',
-    '0.7.3',
-    '0.7.4',
-  ];
+  private static readonly MIN_WORKLETS_VERSION = '0.6.0';
 
   constructor() {
     // Important! Verify and import worklets first
@@ -48,8 +40,9 @@ class AudioAPIModule implements IAudioAPIModule {
       this.#workletsVersion = workletsPackageJson.version;
       this.#workletsAvailable_ = true;
 
-      this.#canUseWorklets_ = this.supportedWorkletsVersion.includes(
-        workletsPackageJson.version
+      this.#canUseWorklets_ = semverGte(
+        this.#workletsVersion,
+        AudioAPIModule.MIN_WORKLETS_VERSION
       );
 
       if (this.#canUseWorklets_) {
@@ -107,6 +100,11 @@ class AudioAPIModule implements IAudioAPIModule {
   get isWorkletsVersionSupported(): boolean {
     // Note: if areWorkletsAvailable is true, canUseWorklets is equivalent to version check
     return this.#canUseWorklets_;
+  }
+
+  /** Returns the range of supported worklets versions. */
+  get supportedWorkletsVersion(): string[] {
+    return [`>=${AudioAPIModule.MIN_WORKLETS_VERSION}`];
   }
 
   public createAudioRuntime(): WorkletRuntime | null {

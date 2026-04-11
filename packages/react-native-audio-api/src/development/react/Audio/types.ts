@@ -71,8 +71,6 @@ interface AudioEventProps {
 }
 
 export interface AudioPropsBase
-  extends AudioControlProps,
-    AudioReadonlyProps,
-    AudioEventProps {}
+  extends AudioControlProps, AudioReadonlyProps, AudioEventProps {}
 
 export type AudioProps = Partial<AudioPropsBase> & { source: AudioSource };

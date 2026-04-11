@@ -6,13 +6,10 @@ import type {
   RecordingNotificationInfo,
 } from './types';
 
-class RecordingNotificationManager
-  implements
-    NotificationManager<
-      RecordingNotificationInfo,
-      RecordingNotificationEventName
-    >
-{
+class RecordingNotificationManager implements NotificationManager<
+  RecordingNotificationInfo,
+  RecordingNotificationEventName
+> {
   private audioEventEmitter: AudioEventEmitter;
 
   constructor() {
