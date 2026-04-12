@@ -142,6 +142,8 @@ class IOSAudioRecorder : public AudioRecorder {
 @property(nonatomic, assign) NSInteger cleanupCallCount;
 @property(nonatomic, assign) NSInteger setInputArmedCallCount;
 @property(nonatomic, assign) BOOL lastInputArmed;
+@property(nonatomic, assign) BOOL throwsOnStart;
+@property(nonatomic, strong) NSException *startException;
 
 @end
 
@@ -173,6 +175,12 @@ class IOSAudioRecorder : public AudioRecorder {
 - (BOOL)start:(NSError **)error
 {
   self.startCallCount += 1;
+
+  if (self.throwsOnStart) {
+    @throw self.startException ?: [NSException exceptionWithName:@"FakeStartException"
+                                                          reason:@"boom"
+                                                        userInfo:nil];
+  }
 
   if (error != nil) {
     *error = self.startError;
@@ -350,6 +358,26 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   NSString *message = NSStringFromStdString(result.unwrap_err());
   XCTAssertTrue([message containsString:@"Failed to start native recorder"]);
   XCTAssertTrue([message containsString:@"RecorderTests"]);
+}
+
+- (void)testStartReturnsErrorWhenNativeRecorderThrows
+{
+  self.nativeRecorder.throwsOnStart = YES;
+  self.nativeRecorder.startException = [NSException exceptionWithName:@"WrongCategory"
+                                                               reason:@"attempt-wrong-category-record"
+                                                             userInfo:nil];
+
+  auto result = _recorder->start("");
+
+  XCTAssertTrue(result.is_err());
+  XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
+  XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
+
+  NSString *message = NSStringFromStdString(result.unwrap_err());
+  XCTAssertTrue([message containsString:@"Failed to start native recorder"]);
+  XCTAssertTrue([message containsString:@"WrongCategory"]);
+  XCTAssertTrue([message containsString:@"attempt-wrong-category-record"]);
+  XCTAssertTrue([message containsString:@"session={"]);
 }
 
 - (void)testStartReturnsErrorWhenEngineInputFormatIsUnavailable

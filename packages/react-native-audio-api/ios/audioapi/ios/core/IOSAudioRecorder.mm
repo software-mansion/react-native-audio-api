@@ -156,7 +156,29 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
   }
 
   NSError *nativeStartError = nil;
-  if (![nativeRecorder_ start:&nativeStartError]) {
+  BOOL didStartNativeRecorder = NO;
+
+  @try {
+    didStartNativeRecorder = [nativeRecorder_ start:&nativeStartError];
+  } @catch (NSException *exception) {
+    cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
+
+    std::string message = "Failed to start native recorder";
+    message += ": exception={name=";
+    message += [[exception.name description] UTF8String];
+    message += ", reason=";
+    message += [[(exception.reason ?: @"<none>") description] UTF8String];
+    message += "}; ";
+    message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
+
+#if TARGET_OS_SIMULATOR
+    message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
+#endif
+
+    return Result<std::string, std::string>::Err(message);
+  }
+
+  if (!didStartNativeRecorder) {
     std::string message = "Failed to start native recorder";
 
     if (nativeStartError != nil) {
