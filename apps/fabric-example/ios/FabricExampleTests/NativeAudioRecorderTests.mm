@@ -89,7 +89,7 @@
 @property(nonatomic, assign) NSInteger pauseIfNecessaryCallCount;
 @property(nonatomic, assign) NSInteger rebuildAfterDeactivationCallCount;
 @property(nonatomic, strong) AVAudioSinkNode *lastAttachedInputNode;
-@property(nonatomic, strong) AVAudioFormat *lastAttachedFormat;
+@property(nonatomic, copy) AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
 
 @end
 
@@ -112,12 +112,12 @@
   self.stopIfNecessaryCallCount += 1;
 }
 
-- (void)attachInputNode:(AVAudioSinkNode *)inputNode format:(AVAudioFormat *)format
+- (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
 {
   self.attachInputNodeCallCount += 1;
-  self.inputNode = inputNode;
-  self.lastAttachedInputNode = inputNode;
-  self.lastAttachedFormat = format;
+  self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
+  self.lastAttachedInputNode = self.inputNode;
+  self.lastAttachedReceiverBlock = receiverBlock;
 }
 
 - (bool)startIfNecessary
@@ -297,7 +297,6 @@ static void ClearFakeRecorderSharedAudioSession(void)
     receivedFrames = numFrames;
   }];
 
-  XCTAssertNotNil(recorder.sinkNode);
   XCTAssertNotNil(recorder.receiverBlock);
   XCTAssertNotNil(recorder.receiverSinkBlock);
 
@@ -358,9 +357,8 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
-  XCTAssertEqual(self.audioEngine.lastAttachedInputNode, recorder.sinkNode);
-  XCTAssertNil(self.audioEngine.lastAttachedFormat);
-  XCTAssertNil(self.audioEngine.inputNodeFormat);
+  XCTAssertNotNil(self.audioEngine.lastAttachedInputNode);
+  XCTAssertNotNil(self.audioEngine.lastAttachedReceiverBlock);
 }
 
 - (void)testStartReturnsErrorWhenAudioEngineFailsToStart

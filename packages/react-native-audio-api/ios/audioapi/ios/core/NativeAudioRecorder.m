@@ -22,7 +22,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
 - (AVAudioFormat *)readLiveInputFormat
 {
-  return [AudioEngine.sharedInstance.audioEngine.inputNode outputFormatForBus:0];
+  return [[AudioEngine sharedInstance] getLiveInputFormat];
 }
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
@@ -45,8 +45,6 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
       return kAudioServicesNoError;
     };
-
-    self.sinkNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:self.receiverSinkBlock];
   }
 
   return self;
@@ -95,7 +93,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   self.resolvedBufferSize = 0;
 
   [audioEngine stopIfNecessary];
-  [audioEngine attachInputNode:self.sinkNode format:nil];
+  [audioEngine attachInputNodeWithReceiverBlock:self.receiverSinkBlock];
 
   if (![audioEngine startIfNecessary]) {
     [audioEngine detachInputNode];
@@ -159,6 +157,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   self.resolvedInputFormat = nil;
   self.resolvedBufferSize = 0;
   self.receiverBlock = nil;
+  self.receiverSinkBlock = nil;
 }
 
 @end

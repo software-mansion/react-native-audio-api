@@ -100,8 +100,9 @@ class IOSAudioPlayer {
 @property(nonatomic, assign) NSInteger stopIfPossibleCallCount;
 @property(nonatomic, assign) NSInteger attachSourceNodeCallCount;
 @property(nonatomic, assign) NSInteger detachSourceNodeCallCount;
-@property(nonatomic, strong) AVAudioSourceNode *lastAttachedSourceNode;
-@property(nonatomic, strong) AVAudioFormat *lastAttachedFormat;
+@property(nonatomic, copy) AVAudioSourceNodeRenderBlock lastAttachedRenderBlock;
+@property(nonatomic, assign) float lastAttachedSampleRate;
+@property(nonatomic, assign) AVAudioChannelCount lastAttachedChannelCount;
 @property(nonatomic, copy) NSString *returnedSourceNodeId;
 @property(nonatomic, copy) NSString *lastDetachedSourceNodeId;
 
@@ -145,11 +146,14 @@ class IOSAudioPlayer {
   self.stopIfPossibleCallCount += 1;
 }
 
-- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
+- (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
+                                   sampleRate:(float)sampleRate
+                                 channelCount:(AVAudioChannelCount)channelCount
 {
   self.attachSourceNodeCallCount += 1;
-  self.lastAttachedSourceNode = sourceNode;
-  self.lastAttachedFormat = format;
+  self.lastAttachedRenderBlock = renderBlock;
+  self.lastAttachedSampleRate = sampleRate;
+  self.lastAttachedChannelCount = channelCount;
   return self.returnedSourceNodeId;
 }
 
@@ -302,7 +306,7 @@ struct TestAudioOutput {
                                            channelCount:2];
 }
 
-- (void)testInitStoresConfigurationAndCreatesAudioNodes
+- (void)testInitStoresConfigurationAndCreatesRenderBlock
 {
   NSInteger renderCallCount = 0;
   NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:&renderCallCount];
@@ -311,10 +315,6 @@ struct TestAudioOutput {
   XCTAssertEqual(player.channelCount, 2);
   XCTAssertNotNil(player.renderAudio);
   XCTAssertNotNil(player.renderBlock);
-  XCTAssertNotNil(player.format);
-  XCTAssertNotNil(player.sourceNode);
-  XCTAssertEqualWithAccuracy(player.format.sampleRate, 48000.0, 0.001);
-  XCTAssertEqual(player.format.channelCount, 2U);
 }
 
 - (void)testRenderBlockReturnsErrorWhenBufferCountDoesNotMatch
@@ -366,8 +366,9 @@ struct TestAudioOutput {
   XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
-  XCTAssertEqualObjects(self.audioEngine.lastAttachedSourceNode, player.sourceNode);
-  XCTAssertEqualObjects(self.audioEngine.lastAttachedFormat, player.format);
+  XCTAssertNotNil(self.audioEngine.lastAttachedRenderBlock);
+  XCTAssertEqualWithAccuracy(self.audioEngine.lastAttachedSampleRate, 48000.0f, 0.001f);
+  XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 2U);
   XCTAssertEqualObjects(player.sourceNodeId, self.audioEngine.returnedSourceNodeId);
 }
 

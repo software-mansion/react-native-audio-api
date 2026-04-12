@@ -20,7 +20,9 @@
     return;
   }
 
-  self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
+  self.sourceNodeId = [audioEngine attachSourceNodeWithRenderBlock:self.renderBlock
+                                                        sampleRate:self.sampleRate
+                                                      channelCount:self.channelCount];
 }
 
 - (bool)startPlaybackGraph:(AudioEngine *)audioEngine
@@ -54,11 +56,6 @@
 
       return kAudioServicesNoError;
     };
-
-    _format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:self.sampleRate
-                                                             channels:self.channelCount];
-    _sourceNode = [[AVAudioSourceNode alloc] initWithFormat:self.format
-                                                renderBlock:self.renderBlock];
   }
 
   return self;
@@ -123,6 +120,7 @@
 - (void)cleanup
 {
   self.renderAudio = nil;
+  self.renderBlock = nil;
 }
 
 @end
