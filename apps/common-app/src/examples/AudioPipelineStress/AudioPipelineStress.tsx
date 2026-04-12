@@ -1,497 +1,47 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet } from 'react-native';
+import { AudioBuffer, AudioManager } from 'react-native-audio-api';
+
+import { Container } from '../../components';
 import {
-  AudioBuffer,
-  AudioBufferSourceNode,
-  AudioContext,
-  AudioManager,
-  AudioRecorder,
-  FileDirectory,
-  FileFormat,
-} from 'react-native-audio-api';
-
-import { Button, Container, Spacer } from '../../components';
-import { colors, layout } from '../../styles';
+  TestUI,
+  type ControlAction,
+  type ScenarioItem,
+  type SummaryItem,
+} from '../../testComponents';
+import {
+  DEFAULT_LOOP_COUNT,
+  MIN_DECODED_DURATION_SECONDS,
+  PLAYBACK_PROGRESS_TIMEOUT_MS,
+  PLAYBACK_STALL_WINDOW_MS,
+  POSITION_POLL_INTERVAL_MS,
+  RECORDING_CALLBACK_TIMEOUT_MS,
+  RECORDING_STALL_WINDOW_MS,
+  SHORT_PLAYBACK_MS,
+  SHORT_RECORDING_MS,
+} from './constants';
+import StressResourceOwner from './StressResourceOwner';
+import StopRequestedError from './StopRequestedError';
+import { activatePlaybackSession, activateRecordingSession } from './audioSessions';
+import {
+  formatDurationMs,
+  formatPlaybackProgressStats,
+  formatTimestamp,
+  getPlaybackProgressThreshold,
+  serializeUnknownError,
+  sleep,
+  waitForCondition,
+} from './helpers';
 import staticAsset from '../AudioFile/voice-sample-landing.mp3';
-
-type RunnerState = 'idle' | 'running' | 'stopping' | 'finished';
-
-type ScenarioId =
-  | 'playback_warmup'
-  | 'record_warmup'
-  | 'record_to_playback_loop'
-  | 'playback_to_record_loop'
-  | 'playback_session_deactivation_mid_run'
-  | 'record_session_deactivation_mid_run'
-  | 'wrong_category_then_recover'
-  | 'final_clean_cycle';
-
-type StepStatus = 'pass' | 'fail' | 'info' | 'skipped';
-type ScenarioStatus = 'pass' | 'fail' | 'skipped';
-
-interface StepResult {
-  id: string;
-  message: string;
-  status: StepStatus;
-  startedAt: number;
-  finishedAt: number;
-  details?: string;
-}
-
-interface ScenarioResult {
-  scenarioId: ScenarioId;
-  label: string;
-  status: ScenarioStatus;
-  startedAt: number;
-  finishedAt: number;
-  steps: StepResult[];
-  error?: string;
-}
-
-interface RecordingCapture {
-  decodedBuffer: AudioBuffer;
-  fileDurationSeconds: number;
-  path: string;
-}
-
-interface ReadyResources {
-  assetBuffer: AudioBuffer;
-  context: AudioContext;
-  playback: StressPlaybackController;
-  recorder: AudioRecorder;
-}
-
-interface RecorderHostShape {
-  isPaused?: unknown;
-}
-
-interface SerializedError {
-  headline: string;
-  details: string;
-}
-
-interface PlaybackProgressStats {
-  engineEndTimeSeconds: number;
-  engineDeltaSeconds: number;
-  engineStartTimeSeconds: number;
-  engineSamples: number[];
-  positionMaxObservedSeconds: number;
-  positionSamples: number[];
-  thresholdSeconds: number;
-}
-
-const DEFAULT_LOOP_COUNT = 5;
-const PLAYBACK_PROGRESS_TIMEOUT_MS = 4000;
-const RECORDING_CALLBACK_TIMEOUT_MS = 4000;
-const POSITION_POLL_INTERVAL_MS = 150;
-const PLAYBACK_STALL_WINDOW_MS = 900;
-const RECORDING_STALL_WINDOW_MS = 900;
-const SHORT_RECORDING_MS = 900;
-const SHORT_PLAYBACK_MS = 1100;
-const BUFFER_LENGTH = 4096;
-const MIN_DECODED_DURATION_SECONDS = 0.2;
-
-class StopRequestedError extends Error {
-  constructor() {
-    super('Run stopped by user');
-    this.name = 'StopRequestedError';
-  }
-}
-
-class StressPlaybackController {
-  private readonly context: AudioContext;
-  private source: AudioBufferSourceNode | null = null;
-  private lastPositionSeconds = 0;
-  private ended = false;
-
-  constructor(context: AudioContext) {
-    this.context = context;
-  }
-
-  async play(buffer: AudioBuffer, durationSeconds?: number): Promise<void> {
-    this.stop();
-
-    if (this.context.state === 'suspended') {
-      await this.context.resume();
-    }
-
-    const source = this.context.createBufferSource({
-      pitchCorrection: true,
-    });
-
-    this.lastPositionSeconds = 0;
-    this.ended = false;
-    this.source = source;
-    source.buffer = buffer;
-    source.onPositionChangedInterval = 50;
-    source.onPositionChanged = (event) => {
-      this.lastPositionSeconds = event.value;
-    };
-    source.onEnded = () => {
-      this.ended = true;
-    };
-    source.connect(this.context.destination);
-    source.start(this.context.currentTime, 0, durationSeconds);
-  }
-
-  stop(): void {
-    if (!this.source) {
-      return;
-    }
-
-    this.source.onEnded = null;
-    this.source.onPositionChanged = null;
-
-    try {
-      this.source.stop(this.context.currentTime);
-    } catch {
-      // Source nodes cannot always be stopped twice safely.
-    }
-
-    this.source = null;
-  }
-
-  snapshot() {
-    return {
-      ended: this.ended,
-      lastPositionSeconds: this.lastPositionSeconds,
-      isActive: this.source !== null,
-    };
-  }
-}
-
-class StressResourceOwner {
-  public context: AudioContext | null = null;
-  public recorder: AudioRecorder | null = null;
-  public playback: StressPlaybackController | null = null;
-  public assetBuffer: AudioBuffer | null = null;
-  public lastRecorderError: string | null = null;
-  public callbackCount = 0;
-  public lastCallbackFrames = 0;
-
-  private readonly asset: string | number;
-
-  constructor(asset: string | number) {
-    this.asset = asset;
-  }
-
-  async recreate(): Promise<void> {
-    await this.cleanup();
-
-    const context = new AudioContext();
-    const recorder = new AudioRecorder();
-    const recorderHost = (
-      recorder as unknown as { recorder?: RecorderHostShape }
-    ).recorder;
-
-    if (typeof recorderHost?.isPaused !== 'function') {
-      throw new Error(
-        `Recorder host object is missing isPaused(); typeof isPaused=${typeof recorderHost?.isPaused}`
-      );
-    }
-
-    const fileOutputResult = recorder.enableFileOutput({
-      channelCount: 1,
-      directory: FileDirectory.Cache,
-      fileNamePrefix: 'audio-pipeline-stress',
-      format: FileFormat.M4A,
-      subDirectory: 'AudioPipelineStress',
-    });
-
-    if (fileOutputResult.status === 'error') {
-      throw new Error(
-        `Failed to enable recorder file output: ${fileOutputResult.message}`
-      );
-    }
-
-    recorder.onError((event) => {
-      this.lastRecorderError = event.message;
-    });
-
-    this.context = context;
-    this.recorder = recorder;
-    this.playback = new StressPlaybackController(context);
-    this.assetBuffer = await context.decodeAudioData(this.asset);
-    this.lastRecorderError = null;
-    this.callbackCount = 0;
-    this.lastCallbackFrames = 0;
-  }
-
-  getReadyResources(): ReadyResources {
-    if (
-      !this.context ||
-      !this.recorder ||
-      !this.playback ||
-      !this.assetBuffer
-    ) {
-      throw new Error('Audio pipeline resources are not ready');
-    }
-
-    return {
-      assetBuffer: this.assetBuffer,
-      context: this.context,
-      playback: this.playback,
-      recorder: this.recorder,
-    };
-  }
-
-  configureRecorderTap(): void {
-    const { context, recorder } = this.getReadyResources();
-    this.callbackCount = 0;
-    this.lastCallbackFrames = 0;
-    this.lastRecorderError = null;
-
-    const callbackResult = recorder.onAudioReady(
-      {
-        sampleRate: context.sampleRate,
-        channelCount: 1,
-        bufferLength: BUFFER_LENGTH,
-      },
-      (event) => {
-        this.callbackCount += 1;
-        this.lastCallbackFrames = event.numFrames;
-      }
-    );
-
-    if (callbackResult.status === 'error') {
-      throw new Error(
-        `Failed to attach recorder callback: ${callbackResult.message}`
-      );
-    }
-  }
-
-  startRecording(fileNameOverride: string): void {
-    const { recorder } = this.getReadyResources();
-    const result = recorder.start({ fileNameOverride });
-
-    if (result.status === 'error') {
-      throw new Error(`Failed to start recording: ${result.message}`);
-    }
-  }
-
-  tryStartRecording(fileNameOverride: string) {
-    const { recorder } = this.getReadyResources();
-    return recorder.start({ fileNameOverride });
-  }
-
-  async stopRecordingAndDecode(): Promise<RecordingCapture> {
-    const { context, recorder } = this.getReadyResources();
-
-    const stopResult = recorder.stop();
-    recorder.clearOnAudioReady();
-
-    if (stopResult.status === 'error') {
-      throw new Error(`Failed to stop recording: ${stopResult.message}`);
-    }
-
-    if (!stopResult.path) {
-      throw new Error('Recorder stop returned an empty file path');
-    }
-
-    const decodedBuffer = await context.decodeAudioData(stopResult.path);
-
-    if (decodedBuffer.duration < MIN_DECODED_DURATION_SECONDS) {
-      throw new Error(
-        `Decoded buffer is too short: ${decodedBuffer.duration.toFixed(3)}s`
-      );
-    }
-
-    return {
-      decodedBuffer,
-      fileDurationSeconds: stopResult.duration,
-      path: stopResult.path,
-    };
-  }
-
-  async cleanup(): Promise<void> {
-    const recorder = this.recorder;
-    const playback = this.playback;
-    const context = this.context;
-
-    try {
-      playback?.stop();
-    } catch {}
-
-    try {
-      recorder?.clearOnAudioReady();
-    } catch {}
-
-    try {
-      recorder?.clearOnError();
-    } catch {}
-
-    try {
-      if (recorder && (recorder.isRecording() || recorder.isPaused())) {
-        recorder.stop();
-      }
-    } catch {}
-
-    try {
-      recorder?.disableFileOutput();
-    } catch {}
-
-    try {
-      if (context?.state === 'running') {
-        await context.suspend();
-      }
-    } catch {}
-
-    try {
-      await context?.close();
-    } catch {}
-
-    try {
-      await AudioManager.setAudioSessionActivity(false);
-    } catch {}
-
-    this.context = null;
-    this.recorder = null;
-    this.playback = null;
-    this.assetBuffer = null;
-    this.lastRecorderError = null;
-    this.callbackCount = 0;
-    this.lastCallbackFrames = 0;
-  }
-}
-
-async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function formatDurationMs(durationMs: number): string {
-  return `${(durationMs / 1000).toFixed(2)}s`;
-}
-
-function formatTimestamp(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
-
-function getPlaybackProgressThreshold(durationSeconds: number): number {
-  return Number(
-    Math.max(0.08, Math.min(durationSeconds * 0.15, 0.18)).toFixed(2)
-  );
-}
-
-function serializeUnknownError(
-  error: unknown,
-  contextLabel?: string
-): SerializedError {
-  const prefix = contextLabel ? `${contextLabel}: ` : '';
-
-  if (error instanceof Error) {
-    const headline = `${prefix}${error.name}: ${error.message}`;
-    const details = [headline, error.stack].filter(Boolean).join('\n');
-
-    return { headline, details };
-  }
-
-  const type = typeof error;
-  const constructorName =
-    error && typeof error === 'object' && 'constructor' in error
-      ? ((error as { constructor?: { name?: string } }).constructor?.name ??
-        'unknown')
-      : 'n/a';
-  const keys =
-    error && typeof error === 'object' ? Object.keys(error as object) : [];
-
-  let renderedValue = '';
-
-  try {
-    renderedValue =
-      typeof error === 'string' ? error : JSON.stringify(error, null, 2);
-  } catch {
-    renderedValue = String(error);
-  }
-
-  const headline = `${prefix}Non-Error throw: ${String(error)}`;
-  const details = [
-    headline,
-    `typeof=${type}`,
-    `constructor=${constructorName}`,
-    `keys=${keys.join(', ') || 'none'}`,
-    `value=${renderedValue}`,
-  ].join('\n');
-
-  return { headline, details };
-}
-
-function formatPlaybackProgressStats(stats: PlaybackProgressStats): string {
-  const diagnosis =
-    stats.engineDeltaSeconds < 0.05
-      ? 'engine-clock-stalled'
-      : stats.positionMaxObservedSeconds < stats.thresholdSeconds
-        ? 'engine-running-node-stalled'
-        : 'engine-and-node-running';
-
-  return [
-    `diagnosis=${diagnosis}`,
-    `threshold=${stats.thresholdSeconds.toFixed(2)}s`,
-    `positionMax=${stats.positionMaxObservedSeconds.toFixed(3)}s`,
-    `engineDelta=${stats.engineDeltaSeconds.toFixed(3)}s`,
-    `engineStart=${stats.engineStartTimeSeconds.toFixed(3)}s`,
-    `engineEnd=${stats.engineEndTimeSeconds.toFixed(3)}s`,
-    `recentPositionSamples=[${stats.positionSamples
-      .slice(-8)
-      .map((value) => value.toFixed(3))
-      .join(', ')}]`,
-    `recentEngineSamples=[${stats.engineSamples
-      .slice(-8)
-      .map((value) => value.toFixed(3))
-      .join(', ')}]`,
-  ].join(', ');
-}
-
-async function waitForCondition(
-  condition: () => boolean,
-  timeoutMs: number,
-  failureMessage: string,
-  intervalMs: number = POSITION_POLL_INTERVAL_MS
-): Promise<void> {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < timeoutMs) {
-    if (condition()) {
-      return;
-    }
-
-    await sleep(intervalMs);
-  }
-
-  throw new Error(failureMessage);
-}
-
-async function activatePlaybackSession(): Promise<void> {
-  AudioManager.setAudioSessionOptions({
-    iosCategory: 'playback',
-    iosMode: 'default',
-    iosOptions: [],
-  });
-
-  const success = await AudioManager.setAudioSessionActivity(true);
-
-  if (!success) {
-    throw new Error('Failed to activate playback session');
-  }
-}
-
-async function activateRecordingSession(): Promise<void> {
-  AudioManager.setAudioSessionOptions({
-    iosCategory: 'playAndRecord',
-    iosMode: 'default',
-    iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
-  });
-
-  const success = await AudioManager.setAudioSessionActivity(true);
-
-  if (!success) {
-    throw new Error('Failed to activate recording session');
-  }
-}
+import type {
+  PlaybackProgressStats,
+  RecordingCapture,
+  RunnerState,
+  ScenarioId,
+  ScenarioResult,
+  ScenarioStatus,
+  StepResult,
+} from './types';
 
 const AudioPipelineStress: FC = () => {
   const resourcesRef = useRef(new StressResourceOwner(staticAsset));
@@ -507,10 +57,12 @@ const AudioPipelineStress: FC = () => {
   const [liveLog, setLiveLog] = useState<string[]>([]);
 
   useEffect(() => {
+    const resources = resourcesRef.current;
+
     return () => {
       isMountedRef.current = false;
       stopRequestedRef.current = true;
-      resourcesRef.current.cleanup().catch((error) => {
+      resources.cleanup().catch((error) => {
         console.warn('AudioPipelineStress cleanup failed', error);
       });
     };
@@ -1264,12 +816,10 @@ const AudioPipelineStress: FC = () => {
   if (Platform.OS !== 'ios') {
     return (
       <Container centered>
-        <Text style={styles.unsupportedTitle}>Audio Pipeline Stress</Text>
-        <Spacer.Vertical size={12} />
-        <Text style={styles.unsupportedText}>
-          This screen is iOS-only because it validates the shared iOS audio
-          session and engine pipeline.
-        </Text>
+        <TestUI.UnsupportedNotice
+          title="Audio Pipeline Stress"
+          message="This screen is iOS-only because it validates the shared iOS audio session and engine pipeline."
+        />
       </Container>
     );
   }
@@ -1283,213 +833,77 @@ const AudioPipelineStress: FC = () => {
   const skippedScenarios = scenarioResults.filter(
     (result) => result.status === 'skipped'
   ).length;
+  const summaryItems: SummaryItem[] = [
+    { label: 'State', value: runnerState },
+    { label: 'Passed', value: String(passedScenarios) },
+    { label: 'Failed', value: String(failedScenarios) },
+    { label: 'Skipped', value: String(skippedScenarios) },
+  ];
+  const controlActions: ControlAction[] = [
+    {
+      title: 'Run Suite',
+      onPress: () => {
+        runSuite();
+      },
+      disabled: runnerState === 'running' || runnerState === 'stopping',
+      width: 120,
+    },
+    {
+      title: 'Stop',
+      onPress: requestStop,
+      disabled: runnerState !== 'running',
+      width: 90,
+    },
+    {
+      title: 'Reset',
+      onPress: () => {
+        resetSuite();
+      },
+      disabled: runnerState === 'running' || runnerState === 'stopping',
+      width: 90,
+    },
+  ];
+  const scenarioItems: ScenarioItem[] = scenarioResults.map((scenario) => ({
+    id: `${scenario.scenarioId}-${scenario.startedAt}`,
+    title: scenario.label,
+    status: scenario.status,
+    durationLabel: formatDurationMs(scenario.finishedAt - scenario.startedAt),
+    steps: scenario.steps.map((step) => ({
+      id: `${scenario.scenarioId}-${step.id}`,
+      message: step.message,
+      status: step.status,
+      details: step.details,
+    })),
+  }));
 
   return (
     <Container disablePadding>
-      <View style={styles.header}>
-        <Text style={styles.title}>Audio Pipeline Stress</Text>
-        <Text style={styles.subtitle}>
-          Automated iOS playback and recording pipeline stress suite.
-        </Text>
-      </View>
-
-      <View style={styles.summaryRow}>
-        <SummaryBadge label="State" value={runnerState} />
-        <SummaryBadge label="Passed" value={String(passedScenarios)} />
-        <SummaryBadge label="Failed" value={String(failedScenarios)} />
-        <SummaryBadge label="Skipped" value={String(skippedScenarios)} />
-      </View>
-
-      <View style={styles.stepCard}>
-        <Text style={styles.stepLabel}>Current step</Text>
-        <Text style={styles.stepText}>{currentStep}</Text>
-      </View>
-
-      <View style={styles.controls}>
-        <Button
-          title="Run Suite"
-          onPress={() => {
-            runSuite();
-          }}
-          disabled={runnerState === 'running' || runnerState === 'stopping'}
-          width={120}
-        />
-        <Button
-          title="Stop"
-          onPress={requestStop}
-          disabled={runnerState !== 'running'}
-          width={90}
-        />
-        <Button
-          title="Reset"
-          onPress={() => {
-            resetSuite();
-          }}
-          disabled={runnerState === 'running' || runnerState === 'stopping'}
-          width={90}
-        />
-      </View>
+      <TestUI.Header
+        title="Audio Pipeline Stress"
+        subtitle="Automated iOS playback and recording pipeline stress suite."
+      />
+      <TestUI.Summary items={summaryItems} />
+      <TestUI.CurrentStepCard message={currentStep} />
+      <TestUI.ControlBar actions={controlActions} />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        <SectionTitle title="Scenario Results" />
-        {scenarioResults.length === 0 ? (
-          <EmptyState message="No scenario results yet." />
-        ) : (
-          scenarioResults.map((scenario) => (
-            <View
-              key={`${scenario.scenarioId}-${scenario.startedAt}`}
-              style={styles.scenarioCard}
-            >
-              <View style={styles.scenarioHeader}>
-                <Text style={styles.scenarioTitle}>{scenario.label}</Text>
-                <StatusPill status={scenario.status} />
-              </View>
-              <Text style={styles.scenarioMeta}>
-                {formatDurationMs(scenario.finishedAt - scenario.startedAt)}
-              </Text>
-              {scenario.steps.map((step) => (
-                <View
-                  key={`${scenario.scenarioId}-${step.id}`}
-                  style={styles.stepRow}
-                >
-                  <View style={styles.stepRowHeader}>
-                    <Text style={stepStatusStyle(step.status)}>
-                      {step.status.toUpperCase()}
-                    </Text>
-                    <Text style={styles.stepMessage}>{step.message}</Text>
-                  </View>
-                  {step.details ? (
-                    <Text style={styles.stepDetails}>{step.details}</Text>
-                  ) : null}
-                </View>
-              ))}
-            </View>
-          ))
-        )}
-
-        <SectionTitle title="Live Log" />
-        {liveLog.length === 0 ? (
-          <EmptyState message="Live log will appear here while the suite runs." />
-        ) : (
-          <View style={styles.logCard}>
-            {liveLog.map((entry, index) => (
-              <Text key={`${entry}-${index}`} style={styles.logLine}>
-                {entry}
-              </Text>
-            ))}
-          </View>
-        )}
+        <TestUI.ScenarioResults
+          scenarios={scenarioItems}
+          emptyMessage="No scenario results yet."
+        />
+        <TestUI.LiveLog
+          entries={liveLog}
+          emptyMessage="Live log will appear here while the suite runs."
+        />
       </ScrollView>
     </Container>
   );
 };
 
-const SectionTitle: FC<{ title: string }> = ({ title }) => (
-  <Text style={styles.sectionTitle}>{title}</Text>
-);
-
-const EmptyState: FC<{ message: string }> = ({ message }) => (
-  <View style={styles.emptyCard}>
-    <Text style={styles.emptyText}>{message}</Text>
-  </View>
-);
-
-const SummaryBadge: FC<{ label: string; value: string }> = ({
-  label,
-  value,
-}) => (
-  <View style={styles.summaryBadge}>
-    <Text style={styles.summaryLabel}>{label}</Text>
-    <Text style={styles.summaryValue}>{value}</Text>
-  </View>
-);
-
-const StatusPill: FC<{ status: ScenarioStatus }> = ({ status }) => (
-  <View
-    style={[
-      styles.statusPill,
-      status === 'pass'
-        ? styles.statusPass
-        : status === 'fail'
-          ? styles.statusFail
-          : styles.statusSkipped,
-    ]}
-  >
-    <Text style={styles.statusText}>{status.toUpperCase()}</Text>
-  </View>
-);
-
-const stepStatusStyle = (status: StepStatus) => ({
-  color:
-    status === 'pass'
-      ? '#7bd88f'
-      : status === 'fail'
-        ? '#ff8d8d'
-        : status === 'skipped'
-          ? colors.gray
-          : '#8fc8ff',
-  fontSize: 11,
-  fontWeight: '700' as const,
-  minWidth: 44,
-});
-
 const styles = StyleSheet.create({
-  controls: {
-    flexDirection: 'row',
-    gap: layout.spacing,
-    paddingHorizontal: 18,
-    paddingBottom: 12,
-  },
-  emptyCard: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: layout.radius,
-    padding: 16,
-  },
-  emptyText: {
-    color: colors.gray,
-  },
-  header: {
-    gap: 6,
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 12,
-  },
-  logCard: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: layout.radius,
-    gap: 8,
-    padding: 16,
-  },
-  logLine: {
-    color: colors.gray,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  scenarioCard: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: layout.radius,
-    gap: 10,
-    padding: 16,
-  },
-  scenarioHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  scenarioMeta: {
-    color: colors.gray,
-    fontSize: 12,
-  },
-  scenarioTitle: {
-    color: colors.white,
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    paddingRight: 12,
-  },
   scrollContent: {
     gap: 12,
     paddingHorizontal: 18,
@@ -1498,112 +912,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  sectionTitle: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  statusFail: {
-    backgroundColor: '#a63f3f',
-  },
-  statusPass: {
-    backgroundColor: '#28794a',
-  },
-  statusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  statusSkipped: {
-    backgroundColor: '#5b5f6c',
-  },
-  statusText: {
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  stepCard: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: layout.radius,
-    gap: 8,
-    marginHorizontal: 18,
-    marginBottom: 16,
-    marginTop: 18,
-    padding: 16,
-  },
-  stepDetails: {
-    color: colors.gray,
-    fontSize: 12,
-    lineHeight: 17,
-    paddingLeft: 56,
-  },
-  stepLabel: {
-    color: colors.gray,
-    fontSize: 12,
-    textTransform: 'uppercase',
-  },
-  stepMessage: {
-    color: colors.white,
-    flex: 1,
-    fontSize: 13,
-  },
-  stepRow: {
-    gap: 6,
-  },
-  stepRowHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-  },
-  stepText: {
-    color: colors.white,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  subtitle: {
-    color: colors.gray,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  summaryBadge: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: layout.radius,
-    flex: 1,
-    gap: 4,
-    padding: 12,
-  },
-  summaryLabel: {
-    color: colors.gray,
-    fontSize: 11,
-    textTransform: 'uppercase',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 18,
-  },
-  summaryValue: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  title: {
-    color: colors.white,
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  unsupportedText: {
-    color: colors.gray,
-    fontSize: 14,
-    lineHeight: 20,
-    maxWidth: 280,
-    textAlign: 'center',
-  },
-  unsupportedTitle: {
-    color: colors.white,
-    fontSize: 24,
-    fontWeight: '700',
   },
 });
 
