@@ -1,6 +1,16 @@
 #import <AVFAudio/AVFAudio.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+@interface AudioSessionManager ()
+
+- (id)microphoneUsageDescriptionValue;
+- (bool)usesAudioApplicationRecordPermissionAPI;
+- (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion;
+- (NSInteger)currentRecordPermissionStatus;
+- (NSString *)recordPermissionStatusString:(NSInteger)status;
+
+@end
+
 @implementation AudioSessionManager
 
 static AudioSessionManager *_sharedInstance = nil;
@@ -205,14 +215,81 @@ static AudioSessionManager *_sharedInstance = nil;
     return nil;
   }
 
-  return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate
-                                                        channels:channelCount];
+  return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate channels:channelCount];
+}
+
+- (id)microphoneUsageDescriptionValue
+{
+  return [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
+}
+
+- (bool)usesAudioApplicationRecordPermissionAPI
+{
+#if TARGET_OS_SIMULATOR
+  return false;
+#else
+  if (@available(iOS 17.0, *)) {
+    return true;
+  }
+
+  return false;
+#endif
+}
+
+- (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion
+{
+  if ([self usesAudioApplicationRecordPermissionAPI]) {
+    if (@available(iOS 17.0, *)) {
+      [AVAudioApplication requestRecordPermissionWithCompletionHandler:completion];
+      return;
+    }
+  }
+
+  [self.audioSession requestRecordPermission:completion];
+}
+
+- (NSInteger)currentRecordPermissionStatus
+{
+  if ([self usesAudioApplicationRecordPermissionAPI]) {
+    if (@available(iOS 17.0, *)) {
+      return [[AVAudioApplication sharedInstance] recordPermission];
+    }
+  }
+
+  return [self.audioSession recordPermission];
+}
+
+- (NSString *)recordPermissionStatusString:(NSInteger)status
+{
+  if ([self usesAudioApplicationRecordPermissionAPI]) {
+    switch (status) {
+      case AVAudioApplicationRecordPermissionUndetermined:
+        return @"Undetermined";
+      case AVAudioApplicationRecordPermissionGranted:
+        return @"Granted";
+      case AVAudioApplicationRecordPermissionDenied:
+        return @"Denied";
+      default:
+        return @"Undetermined";
+    }
+  }
+
+  switch (status) {
+    case AVAudioSessionRecordPermissionUndetermined:
+      return @"Undetermined";
+    case AVAudioSessionRecordPermissionGranted:
+      return @"Granted";
+    case AVAudioSessionRecordPermissionDenied:
+      return @"Denied";
+    default:
+      return @"Undetermined";
+  }
 }
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
                              reject:(RCTPromiseRejectBlock)reject
 {
-  id value = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
+  id value = [self microphoneUsageDescriptionValue];
   // if there is no entry NSMicrophoneUsageDescription calling
   // requestRecordPermission will quit an app
   if (value == nil) {
@@ -228,7 +305,7 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (NSString *)requestRecordingPermissions
 {
-  id value = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
+  id value = [self microphoneUsageDescriptionValue];
 
   if (value == nil) {
     return @"Denied";
@@ -237,30 +314,13 @@ static AudioSessionManager *_sharedInstance = nil;
   __block NSString *result = @"Denied";
   dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-#if TARGET_OS_SIMULATOR
-  [self.audioSession requestRecordPermission:^(BOOL granted) {
+  [self requestSystemRecordPermission:^(BOOL granted) {
     result = granted ? @"Granted" : @"Denied";
     dispatch_semaphore_signal(sem);
   }];
 
   dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
   return result;
-#else
-  if (@available(iOS 17.0, *)) {
-    [AVAudioApplication requestRecordPermissionWithCompletionHandler:^(BOOL granted) {
-      result = granted ? @"Granted" : @"Denied";
-      dispatch_semaphore_signal(sem);
-    }];
-  } else {
-    [self.audioSession requestRecordPermission:^(BOOL granted) {
-      result = granted ? @"Granted" : @"Denied";
-      dispatch_semaphore_signal(sem);
-    }];
-  }
-
-  dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
-  return result;
-#endif
 }
 
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
@@ -271,48 +331,7 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (NSString *)checkRecordingPermissions
 {
-#if TARGET_OS_SIMULATOR
-  NSInteger res = [self.audioSession recordPermission];
-
-  switch (res) {
-    case AVAudioSessionRecordPermissionUndetermined:
-      return @"Undetermined";
-    case AVAudioSessionRecordPermissionGranted:
-      return @"Granted";
-    case AVAudioSessionRecordPermissionDenied:
-      return @"Denied";
-    default:
-      return @"Undetermined";
-  }
-#else
-  if (@available(iOS 17, *)) {
-    NSInteger res = [[AVAudioApplication sharedInstance] recordPermission];
-
-    switch (res) {
-      case AVAudioApplicationRecordPermissionUndetermined:
-        return @"Undetermined";
-      case AVAudioApplicationRecordPermissionGranted:
-        return @"Granted";
-      case AVAudioApplicationRecordPermissionDenied:
-        return @"Denied";
-      default:
-        return @"Undetermined";
-    }
-  }
-
-  NSInteger res = [self.audioSession recordPermission];
-
-  switch (res) {
-    case AVAudioSessionRecordPermissionUndetermined:
-      return @"Undetermined";
-    case AVAudioSessionRecordPermissionGranted:
-      return @"Granted";
-    case AVAudioSessionRecordPermissionDenied:
-      return @"Denied";
-    default:
-      return @"Undetermined";
-  }
-#endif
+  return [self recordPermissionStatusString:[self currentRecordPermissionStatus]];
 }
 
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject

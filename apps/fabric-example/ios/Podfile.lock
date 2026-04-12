@@ -2553,7 +2553,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: d1956f0eec54c619b63a379520fb4c618a55ccb9
   react-native-background-timer: 4638ae3bee00320753647900b21260b10587b6f7
   react-native-safe-area-context: ae7587b95fb580d1800c5b0b2a7bd48c2868e67a
-  react-native-skia: e139352898210c60de326fea01880b7bf9561409
+  react-native-skia: 5f68d3c3749bfb4f726e408410b8be5999392cd9
   React-NativeModulesApple: 5ba0903927f6b8d335a091700e9fda143980f819
   React-networking: 3a4b7f9ed2b2d1c0441beacb79674323a24bcca6
   React-oscompat: ff26abf0ae3e3fdbe47b44224571e3fc7226a573
@@ -2596,6 +2596,6 @@ SPEC CHECKSUMS:
   RNWorklets: 8497c4bd8c9eae405a60c1b3823856aee2ffe95c
   Yoga: c0b3f2c7e8d3e327e450223a2414ca3fa296b9a2
 
-PODFILE CHECKSUM: dbba43186123d539b77cd9e432c6c7c32cbad230
+PODFILE CHECKSUM: 435ccb12d8f72abbb2424d54f6ec603f419769fd
 
 COCOAPODS: 1.16.2

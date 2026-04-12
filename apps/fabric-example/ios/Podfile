@@ -26,6 +26,10 @@ target 'FabricExample' do
     :privacy_file_aggregation_enabled => true
   )
 
+  target 'FabricExampleTests' do
+    inherit! :search_paths
+  end
+
   post_install do |installer|
     react_native_post_install(
       installer,
