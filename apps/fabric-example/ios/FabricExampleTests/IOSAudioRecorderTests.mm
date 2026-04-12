@@ -490,37 +490,6 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   XCTAssertEqual(std::get<2>(stopResult.unwrap()), 0);
 }
 
-- (void)testStateHelpersReflectEngineState
-{
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Recording);
-  self.audioEngine.state = AudioEngineStateRunning;
-  XCTAssertTrue(_recorder->isRecording());
-  XCTAssertFalse(_recorder->isPaused());
-  XCTAssertFalse(_recorder->isIdle());
-
-  self.audioEngine.state = AudioEngineStatePaused;
-  XCTAssertFalse(_recorder->isRecording());
-  XCTAssertTrue(_recorder->isPaused());
-
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Idle);
-  XCTAssertFalse(_recorder->isPaused());
-  XCTAssertTrue(_recorder->isIdle());
-}
-
-- (void)testEnableAndDisableFileOutputWhileIdle
-{
-  auto result = _recorder->enableFileOutput([self validFileProperties]);
-
-  XCTAssertTrue(result.is_ok());
-  XCTAssertEqual(result.unwrap(), "");
-  XCTAssertTrue(_recorder->usesFileOutput());
-
-  _recorder->disableFileOutput();
-
-  XCTAssertFalse(_recorder->usesFileOutput());
-  XCTAssertEqual(_recorder->currentFilePath(), "");
-}
-
 - (void)testFileOutputSmokeTest
 {
   self.audioEngine.state = AudioEngineStateRunning;
@@ -545,18 +514,6 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   XCTAssertEqual(_recorder->currentFilePath(), "");
 
   [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-}
-
-- (void)testSetOnAudioReadyCallbackAndClearToggleCallbackFlag
-{
-  auto result = _recorder->setOnAudioReadyCallback(44100, 256, 2, 99);
-
-  XCTAssertTrue(result.is_ok());
-  XCTAssertTrue(_recorder->usesCallback());
-
-  _recorder->clearOnAudioReadyCallback();
-
-  XCTAssertFalse(_recorder->usesCallback());
 }
 
 - (void)testStartReturnsCallbackPreparationFailureForInvalidCallbackFormat

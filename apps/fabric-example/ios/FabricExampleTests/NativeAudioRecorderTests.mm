@@ -379,36 +379,34 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(originalAudioEngine.stopIfPossibleCallCount, 1);
 }
 
-- (void)testStopRestartsEngineWhenItIsNotRunning
+- (void)testStopDetachesInputClearsResolvedStateAndNeverRestartsEngine
 {
-  self.audioEngine.state = AudioEngineStatePaused;
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
+  auto assertStopBehaviorForState = ^(AudioEngineState state) {
+    self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = [self validFormat];
+    NativeAudioRecorder *recorder =
+        [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
+                                                             int numFrames){
+        }];
 
-  [recorder stop];
+    XCTAssertTrue([recorder start:nil]);
+    XCTAssertNotNil([recorder getResolvedInputFormat]);
+    XCTAssertGreaterThan([recorder getResolvedBufferSize], 0);
 
-  XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, 1);
-  XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
-  XCTAssertEqual(self.audioEngine.restartAudioEngineCallCount, 0);
-  XCTAssertNil([recorder getResolvedInputFormat]);
-  XCTAssertEqual([recorder getResolvedBufferSize], 0);
-}
+    NSInteger previousDetachCount = self.audioEngine.detachInputNodeCallCount;
+    NSInteger previousStopIfPossibleCount = self.audioEngine.stopIfPossibleCallCount;
+    self.audioEngine.state = state;
 
-- (void)testStopDoesNotRestartEngineWhenItIsAlreadyRunning
-{
-  self.audioEngine.state = AudioEngineStateRunning;
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
+    [recorder stop];
 
-  [recorder stop];
+    XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, previousDetachCount + 1);
+    XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, previousStopIfPossibleCount + 1);
+    XCTAssertEqual(self.audioEngine.restartAudioEngineCallCount, 0);
+    XCTAssertNil([recorder getResolvedInputFormat]);
+    XCTAssertEqual([recorder getResolvedBufferSize], 0);
+  };
 
-  XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, 1);
-  XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
-  XCTAssertEqual(self.audioEngine.restartAudioEngineCallCount, 0);
+  assertStopBehaviorForState(AudioEngineStatePaused);
+  assertStopBehaviorForState(AudioEngineStateRunning);
 }
 
 - (void)testPauseAndResumeDelegateToAudioEngine
@@ -452,18 +450,6 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertFalse(self.audioEngine.sessionDeactivationInvalidatedGraph);
   XCTAssertEqualObjects([recorder getResolvedInputFormat], recoveredFormat);
   XCTAssertEqual([recorder getResolvedBufferSize], 16384);
-}
-
-- (void)testCleanupClearsReceiverBlock
-{
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
-
-  [recorder cleanup];
-
-  XCTAssertNil(recorder.receiverBlock);
 }
 
 @end

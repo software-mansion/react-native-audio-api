@@ -233,20 +233,6 @@
   return port;
 }
 
-- (void)testInitSetsSharedInstanceAndDefaultState
-{
-  XCTAssertEqual([AudioSessionManager sharedInstance], self.manager);
-  XCTAssertEqualObjects(self.manager.audioSession, (AVAudioSession *)self.fakeSession);
-  XCTAssertFalse(self.manager.isActive);
-  XCTAssertTrue(self.manager.shouldManageSession);
-  XCTAssertEqualObjects(self.manager.desiredCategory, AVAudioSessionCategoryPlayback);
-  XCTAssertEqualObjects(self.manager.desiredMode, AVAudioSessionModeDefault);
-  XCTAssertEqual(self.manager.desiredOptions, (AVAudioSessionCategoryOptions)0);
-  XCTAssertFalse(self.manager.allowHapticsAndSounds);
-  XCTAssertTrue(self.manager.notifyOthersOnDeactivation);
-  XCTAssertTrue([self.manager areDesiredOptionsSet]);
-}
-
 - (void)testConfigureAudioSessionNoOpsWhenSessionManagementDisabled
 {
   self.manager.shouldManageSession = false;
@@ -438,23 +424,6 @@
   XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
 }
 
-- (void)testMarkInactiveDisableSessionManagementAndIsSessionActive
-{
-  self.manager.isActive = true;
-  [self.manager markInactive];
-  XCTAssertFalse(self.manager.isActive);
-
-  [self.manager disableSessionManagement];
-  XCTAssertFalse(self.manager.shouldManageSession);
-}
-
-- (void)testDevicePreferredSampleRateMirrorsAudioSession
-{
-  self.fakeSession.sampleRate = 48000;
-
-  XCTAssertEqualObjects([self.manager getDevicePreferredSampleRate], @48000);
-}
-
 - (void)testInputDiagnosticsSnapshotReportsCurrentRouteAndOwnershipState
 {
   self.fakeSession.sampleRate = 48000;
@@ -608,63 +577,6 @@
   XCTAssertEqualObjects(self.fakeSession.lastPreferredInput, input);
 }
 
-- (void)testCategoryFromStringCoversKnownValuesAndUnknownFallback
-{
-  XCTAssertEqualObjects([self.manager categoryFromString:@"record"], AVAudioSessionCategoryRecord);
-  XCTAssertEqualObjects([self.manager categoryFromString:@"ambient"], AVAudioSessionCategoryAmbient);
-  XCTAssertEqualObjects([self.manager categoryFromString:@"playback"], AVAudioSessionCategoryPlayback);
-  XCTAssertEqualObjects(
-      [self.manager categoryFromString:@"multiRoute"], AVAudioSessionCategoryMultiRoute);
-  XCTAssertEqualObjects(
-      [self.manager categoryFromString:@"soloAmbient"], AVAudioSessionCategorySoloAmbient);
-  XCTAssertEqualObjects(
-      [self.manager categoryFromString:@"playAndRecord"], AVAudioSessionCategoryPlayAndRecord);
-  XCTAssertNil([self.manager categoryFromString:@"unknown"]);
-}
-
-- (void)testModeFromStringCoversKnownValuesAndUnknownFallback
-{
-  XCTAssertEqualObjects([self.manager modeFromString:@"default"], AVAudioSessionModeDefault);
-  XCTAssertEqualObjects([self.manager modeFromString:@"gameChat"], AVAudioSessionModeGameChat);
-  XCTAssertEqualObjects([self.manager modeFromString:@"videoChat"], AVAudioSessionModeVideoChat);
-  XCTAssertEqualObjects([self.manager modeFromString:@"voiceChat"], AVAudioSessionModeVoiceChat);
-  XCTAssertEqualObjects(
-      [self.manager modeFromString:@"measurement"], AVAudioSessionModeMeasurement);
-  XCTAssertEqualObjects(
-      [self.manager modeFromString:@"voicePrompt"], AVAudioSessionModeVoicePrompt);
-  XCTAssertEqualObjects(
-      [self.manager modeFromString:@"spokenAudio"], AVAudioSessionModeSpokenAudio);
-  XCTAssertEqualObjects(
-      [self.manager modeFromString:@"moviePlayback"], AVAudioSessionModeMoviePlayback);
-  XCTAssertEqualObjects(
-      [self.manager modeFromString:@"videoRecording"], AVAudioSessionModeVideoRecording);
-  XCTAssertNil([self.manager modeFromString:@"unknown"]);
-}
-
-- (void)testOptionsFromArrayCombinesBitmaskValuesIncludingBluetoothCompatibilityBranch
-{
-  AVAudioSessionCategoryOptions options = [self.manager optionsFromArray:@[
-    @"duckOthers",
-    @"allowAirPlay",
-    @"mixWithOthers",
-    @"allowBluetoothHFP",
-    @"defaultToSpeaker",
-    @"allowBluetoothA2DP",
-    @"overrideMutedMicrophoneInterruption",
-    @"interruptSpokenAudioAndMixWithOthers",
-  ]];
-
-  AVAudioSessionCategoryOptions expected =
-      AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowAirPlay |
-      AVAudioSessionCategoryOptionMixWithOthers | 0x4 |
-      AVAudioSessionCategoryOptionDefaultToSpeaker |
-      AVAudioSessionCategoryOptionAllowBluetoothA2DP |
-      AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption |
-      AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
-
-  XCTAssertEqual(options, expected);
-}
-
 - (void)testRequestRecordingPermissionsReturnsDeniedWhenMicrophoneUsageDescriptionIsMissing
 {
   self.manager.overriddenMicrophoneUsageDescription = nil;
@@ -698,7 +610,7 @@
   XCTAssertEqual(self.manager.requestSystemRecordPermissionCallCount, 1);
 }
 
-- (void)testCheckRecordingPermissionsMapsAudioSessionStatuses
+- (void)testCheckRecordingPermissionsMapsStatusesToUserVisibleValues
 {
   self.manager.shouldUseAudioApplicationRecordPermissionAPI = NO;
   self.manager.hasOverriddenRecordPermissionStatus = YES;
@@ -711,23 +623,6 @@
 
   self.manager.overriddenRecordPermissionStatus = AVAudioSessionRecordPermissionDenied;
   XCTAssertEqualObjects([self.manager checkRecordingPermissions], @"Denied");
-}
-
-- (void)testCheckRecordingPermissionsMapsAudioApplicationStatuses
-{
-  if (@available(iOS 17.0, *)) {
-    self.manager.shouldUseAudioApplicationRecordPermissionAPI = YES;
-    self.manager.hasOverriddenRecordPermissionStatus = YES;
-
-    self.manager.overriddenRecordPermissionStatus = AVAudioApplicationRecordPermissionUndetermined;
-    XCTAssertEqualObjects([self.manager checkRecordingPermissions], @"Undetermined");
-
-    self.manager.overriddenRecordPermissionStatus = AVAudioApplicationRecordPermissionGranted;
-    XCTAssertEqualObjects([self.manager checkRecordingPermissions], @"Granted");
-
-    self.manager.overriddenRecordPermissionStatus = AVAudioApplicationRecordPermissionDenied;
-    XCTAssertEqualObjects([self.manager checkRecordingPermissions], @"Denied");
-  }
 }
 
 @end

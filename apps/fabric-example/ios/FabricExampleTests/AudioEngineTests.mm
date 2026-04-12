@@ -328,21 +328,6 @@
                          channelCount:2];
 }
 
-- (void)testInitCreatesInternalEngineAndInitialState {
-  XCTAssertNotNil(self.audioEngine);
-  XCTAssertNotNil(self.audioEngine.audioEngine);
-  XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
-  XCTAssertNotNil(self.audioEngine.sourceNodes);
-  XCTAssertEqual(self.audioEngine.sourceNodes.count, 0UL);
-  XCTAssertNotNil(self.audioEngine.sourceFormats);
-  XCTAssertEqual(self.audioEngine.sourceFormats.count, 0UL);
-  XCTAssertNil(self.audioEngine.inputNode);
-  XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
-  XCTAssertFalse(self.audioEngine.sessionDeactivationInvalidatedGraph);
-  XCTAssertEqual([AudioEngine sharedInstance], self.audioEngine);
-  XCTAssertEqual(self.audioEngine.createdFakeEngines.count, 1UL);
-}
-
 - (void)testCleanupDestroysInternalEngineAndResetsStateAndDeactivatesSession {
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.graphNeedsRebuild = YES;

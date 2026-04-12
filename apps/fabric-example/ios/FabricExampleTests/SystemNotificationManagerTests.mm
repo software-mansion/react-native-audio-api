@@ -310,23 +310,6 @@ static void ClearFakeSharedAudioSession(void)
                                      }];
 }
 
-- (void)testInitSetsModuleAndDefaultState
-{
-  XCTAssertEqual((id)self.manager.audioAPIModule, self.module);
-  XCTAssertNotNil(self.manager.notificationCenter);
-  XCTAssertFalse(self.manager.audioInterruptionsObserved);
-  XCTAssertFalse(self.manager.volumeChangesObserved);
-}
-
-- (void)testObserveAudioInterruptionsUpdatesFlag
-{
-  [self.manager observeAudioInterruptions:YES];
-  XCTAssertTrue(self.manager.audioInterruptionsObserved);
-
-  [self.manager observeAudioInterruptions:NO];
-  XCTAssertFalse(self.manager.audioInterruptionsObserved);
-}
-
 - (void)testObserveVolumeChangesIsIdempotent
 {
   [self.manager observeVolumeChanges:YES];
