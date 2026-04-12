@@ -1,6 +1,12 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+@interface AudioEngine ()
+
+- (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState;
+
+@end
+
 @implementation AudioEngine
 
 static AudioEngine *_sharedInstance = nil;
@@ -16,6 +22,11 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)destroyAudioEngine
 {
+  [self destroyAudioEnginePreservingSessionDeactivationState:NO];
+}
+
+- (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState
+{
   bool hadGraph = self.inputNode != nil || [self.sourceNodes count] > 0;
 
   if (self.audioEngine != nil) {
@@ -28,6 +39,10 @@ static AudioEngine *_sharedInstance = nil;
 
   self.audioEngine = nil;
   self.graphNeedsRebuild = hadGraph;
+
+  if (!preserveSessionDeactivationState) {
+    self.sessionDeactivationInvalidatedGraph = false;
+  }
 }
 
 + (instancetype)sharedInstance
@@ -41,7 +56,9 @@ static AudioEngine *_sharedInstance = nil;
     self.state = AudioEngineState::AudioEngineStateIdle;
     self.audioEngine = nil;
     self.inputNode = nil;
+    self.inputNodeFormat = nil;
     self.graphNeedsRebuild = false;
+    self.sessionDeactivationInvalidatedGraph = false;
 
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
@@ -61,7 +78,9 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
   self.inputNode = nil;
+  self.inputNodeFormat = nil;
   self.graphNeedsRebuild = false;
+  self.sessionDeactivationInvalidatedGraph = false;
 
   [self.sessionManager setActive:false error:nil];
   self.sessionManager = nil;
@@ -105,6 +124,7 @@ static AudioEngine *_sharedInstance = nil;
 {
   [self createAudioEngineIfNeeded];
   self.inputNode = inputNode;
+  self.inputNodeFormat = format;
   [self.audioEngine attachNode:inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:format];
 }
@@ -117,6 +137,7 @@ static AudioEngine *_sharedInstance = nil;
 
   [self.audioEngine detachNode:self.inputNode];
   self.inputNode = nil;
+  self.inputNodeFormat = nil;
 
   if ([self.sourceNodes count] == 0) {
     self.graphNeedsRebuild = false;
@@ -136,8 +157,19 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)onSessionDeactivated
 {
-  if (self.state == AudioEngineState::AudioEngineStateIdle) {
+  bool hadTrackedGraph = self.inputNode != nil || [self.sourceNodes count] > 0;
+  bool hadActiveState = self.state != AudioEngineState::AudioEngineStateIdle;
+
+  if (!hadActiveState && !hadTrackedGraph) {
     return;
+  }
+
+  self.sessionDeactivationInvalidatedGraph = true;
+
+  if (hadTrackedGraph) {
+    // Explicit deactivation tears down the underlying audio route. Rebuild the graph on the
+    // next start so input/output node formats are renegotiated against the reactivated session.
+    self.graphNeedsRebuild = true;
   }
 
   if (self.audioEngine != nil && ![self.audioEngine isRunning]) {
@@ -162,9 +194,8 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  // Stop just in case, reset the engine and build it from scratch
+  // Stop just in case and build the engine from scratch.
   [self stopIfNecessary];
-  [self.audioEngine reset];
   [self rebuildAudioEngine];
 
   // If shouldResume is false, mark the engine as paused and wait
@@ -187,6 +218,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
+  self.sessionDeactivationInvalidatedGraph = false;
 }
 
 - (AudioEngineState)getState
@@ -214,7 +246,7 @@ static AudioEngine *_sharedInstance = nil;
     }
   }
 
-  [self destroyAudioEngine];
+  [self destroyAudioEnginePreservingSessionDeactivationState:YES];
   [self createAudioEngineIfNeeded];
 
   for (id sourceNodeId in self.sourceNodes) {
@@ -227,7 +259,9 @@ static AudioEngine *_sharedInstance = nil;
 
   if (self.inputNode) {
     [self.audioEngine attachNode:self.inputNode];
-    [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
+    [self.audioEngine connect:self.audioEngine.inputNode
+                           to:self.inputNode
+                       format:self.inputNodeFormat];
   }
 
   self.graphNeedsRebuild = false;
@@ -250,12 +284,8 @@ static AudioEngine *_sharedInstance = nil;
     return false;
   }
 
-  if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild) {
-    if (self.audioEngine != nil) {
-      [self.audioEngine stop];
-      [self.audioEngine reset];
-    }
-
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
+      self.sessionDeactivationInvalidatedGraph) {
     [self rebuildAudioEngine];
   }
 
@@ -268,6 +298,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
+  self.sessionDeactivationInvalidatedGraph = false;
   return true;
 }
 
@@ -277,11 +308,10 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  if (self.audioEngine != nil) {
+  if (self.audioEngine != nil && [self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
 
-  [self destroyAudioEngine];
   self.state = AudioEngineState::AudioEngineStateIdle;
 }
 
@@ -304,7 +334,10 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  [self.audioEngine pause];
+  if (self.audioEngine != nil) {
+    [self.audioEngine pause];
+  }
+
   self.state = AudioEngineState::AudioEngineStatePaused;
 }
 
@@ -328,10 +361,7 @@ static AudioEngine *_sharedInstance = nil;
 
   if (self.state != AudioEngineState::AudioEngineStateIdle) {
     [self stopEngine];
-    return;
   }
-
-  [self destroyAudioEngine];
 }
 
 - (void)restartAudioEngine

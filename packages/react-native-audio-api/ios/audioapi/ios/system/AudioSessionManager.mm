@@ -8,6 +8,7 @@
 - (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion;
 - (NSInteger)currentRecordPermissionStatus;
 - (NSString *)recordPermissionStatusString:(NSInteger)status;
+- (NSString *)formatPorts:(NSArray<AVAudioSessionPortDescription *> *)ports;
 
 @end
 
@@ -194,28 +195,24 @@ static AudioSessionManager *_sharedInstance = nil;
   return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
-- (NSNumber *)getDevicePreferredInputChannelCount
-{
-  return [NSNumber numberWithInteger:[self.audioSession inputNumberOfChannels]];
-}
-
-- (bool)hasValidInputRoute
+- (NSString *)inputDiagnosticsSnapshot
 {
   AVAudioSessionRouteDescription *route = [self.audioSession currentRoute];
-  return route.inputs.count > 0 && self.audioSession.sampleRate > 0 &&
-      self.audioSession.inputNumberOfChannels > 0;
-}
+  NSArray<AVAudioSessionPortDescription *> *inputs = route != nil ? route.inputs : @[];
+  NSArray<AVAudioSessionPortDescription *> *outputs = route != nil ? route.outputs : @[];
 
-- (AVAudioFormat *)getPreferredInputFormat
-{
-  double sampleRate = self.audioSession.sampleRate;
-  AVAudioChannelCount channelCount = (AVAudioChannelCount)self.audioSession.inputNumberOfChannels;
-
-  if (sampleRate <= 0 || channelCount == 0) {
-    return nil;
-  }
-
-  return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate channels:channelCount];
+  return [NSString stringWithFormat:
+                       @"session={active=%@, shouldManage=%@, category=%@, mode=%@, options=%lu, "
+                       @"sampleRate=%f, inputChannels=%lu}; route={inputs=%@, outputs=%@}",
+                       self.isActive ? @"true" : @"false",
+                       self.shouldManageSession ? @"true" : @"false",
+                       self.audioSession.category ?: @"(null)",
+                       self.audioSession.mode ?: @"(null)",
+                       (unsigned long)self.audioSession.categoryOptions,
+                       self.audioSession.sampleRate,
+                       (unsigned long)self.audioSession.inputNumberOfChannels,
+                       [self formatPorts:inputs],
+                       [self formatPorts:outputs]];
 }
 
 - (id)microphoneUsageDescriptionValue
@@ -284,6 +281,25 @@ static AudioSessionManager *_sharedInstance = nil;
     default:
       return @"Undetermined";
   }
+}
+
+- (NSString *)formatPorts:(NSArray<AVAudioSessionPortDescription *> *)ports
+{
+  if (ports.count == 0) {
+    return @"[]";
+  }
+
+  NSMutableArray<NSString *> *formattedPorts =
+      [[NSMutableArray alloc] initWithCapacity:ports.count];
+
+  for (AVAudioSessionPortDescription *port in ports) {
+    [formattedPorts addObject:[NSString stringWithFormat:@"%@(%@,%@)",
+                                                         port.portName ?: @"unknown",
+                                                         port.portType ?: @"unknown",
+                                                         port.UID ?: @"unknown"]];
+  }
+
+  return [NSString stringWithFormat:@"[%@]", [formattedPorts componentsJoinedByString:@", "]];
 }
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
@@ -493,10 +509,4 @@ static AudioSessionManager *_sharedInstance = nil;
 
   return options;
 }
-
-- (bool)isSessionActive
-{
-  return self.isActive;
-}
-
 @end

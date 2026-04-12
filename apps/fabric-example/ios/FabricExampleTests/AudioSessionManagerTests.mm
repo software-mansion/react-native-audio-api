@@ -441,52 +441,36 @@
 - (void)testMarkInactiveDisableSessionManagementAndIsSessionActive
 {
   self.manager.isActive = true;
-  XCTAssertTrue([self.manager isSessionActive]);
-
   [self.manager markInactive];
-  XCTAssertFalse([self.manager isSessionActive]);
+  XCTAssertFalse(self.manager.isActive);
 
   [self.manager disableSessionManagement];
   XCTAssertFalse(self.manager.shouldManageSession);
 }
 
-- (void)testDevicePreferredValuesMirrorAudioSession
+- (void)testDevicePreferredSampleRateMirrorsAudioSession
+{
+  self.fakeSession.sampleRate = 48000;
+
+  XCTAssertEqualObjects([self.manager getDevicePreferredSampleRate], @48000);
+}
+
+- (void)testInputDiagnosticsSnapshotReportsCurrentRouteAndOwnershipState
 {
   self.fakeSession.sampleRate = 48000;
   self.fakeSession.inputNumberOfChannels = 4;
-
-  XCTAssertEqualObjects([self.manager getDevicePreferredSampleRate], @48000);
-  XCTAssertEqualObjects([self.manager getDevicePreferredInputChannelCount], @4);
-}
-
-- (void)testHasValidInputRouteRequiresInputsSampleRateAndChannelCount
-{
-  XCTAssertFalse([self.manager hasValidInputRoute]);
-
   self.fakeSession.currentRoute.inputs = @[ [self portWithName:@"Mic" type:@"mic" uid:@"mic-1"] ];
-  XCTAssertTrue([self.manager hasValidInputRoute]);
+  self.fakeSession.currentRoute.outputs =
+      @[ [self portWithName:@"Speaker" type:@"speaker" uid:@"spk-1"] ];
 
-  self.fakeSession.sampleRate = 0;
-  XCTAssertFalse([self.manager hasValidInputRoute]);
+  NSString *snapshot = [self.manager inputDiagnosticsSnapshot];
 
-  self.fakeSession.sampleRate = 44100;
-  self.fakeSession.inputNumberOfChannels = 0;
-  XCTAssertFalse([self.manager hasValidInputRoute]);
-}
-
-- (void)testGetPreferredInputFormatReturnsNilForInvalidRouteAndFormatForValidRoute
-{
-  self.fakeSession.sampleRate = 0;
-  XCTAssertNil([self.manager getPreferredInputFormat]);
-
-  self.fakeSession.sampleRate = 48000;
-  self.fakeSession.inputNumberOfChannels = 1;
-
-  AVAudioFormat *format = [self.manager getPreferredInputFormat];
-
-  XCTAssertNotNil(format);
-  XCTAssertEqual(format.sampleRate, 48000);
-  XCTAssertEqual(format.channelCount, (AVAudioChannelCount)1);
+  XCTAssertTrue([snapshot containsString:@"active=false"]);
+  XCTAssertTrue([snapshot containsString:@"shouldManage=true"]);
+  XCTAssertTrue([snapshot containsString:@"sampleRate=48000.000000"]);
+  XCTAssertTrue([snapshot containsString:@"inputChannels=4"]);
+  XCTAssertTrue([snapshot containsString:@"Mic(mic,mic-1)"]);
+  XCTAssertTrue([snapshot containsString:@"Speaker(speaker,spk-1)"]);
 }
 
 - (void)testParseDeviceListMapsPortDescriptionsToDictionaries

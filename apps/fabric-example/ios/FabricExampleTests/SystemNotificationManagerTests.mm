@@ -121,8 +121,8 @@
 @interface SNMFakeAudioSessionManager : AudioSessionManager
 
 @property(nonatomic, assign) NSInteger markInactiveCallCount;
-@property(nonatomic, assign) NSInteger setActiveCallCount;
-@property(nonatomic, assign) BOOL lastSetActiveValue;
+@property(nonatomic, assign) NSInteger ensureActiveCallCount;
+@property(nonatomic, assign) BOOL lastEnsureActiveForce;
 
 @end
 
@@ -134,16 +134,16 @@
   self.isActive = false;
 }
 
-- (bool)setActive:(bool)active error:(NSError **)error
+- (bool)ensureActive:(bool)force error:(NSError **)error
 {
-  self.setActiveCallCount += 1;
-  self.lastSetActiveValue = active;
+  self.ensureActiveCallCount += 1;
+  self.lastEnsureActiveForce = force;
 
   if (error != nil) {
     *error = nil;
   }
 
-  self.isActive = active;
+  self.isActive = true;
   return true;
 }
 
@@ -502,8 +502,8 @@ static void ClearFakeSharedAudioSession(void)
   [self flushMainQueue];
 
   XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
-  XCTAssertEqual(self.fakeSessionManager.setActiveCallCount, 1);
-  XCTAssertTrue(self.fakeSessionManager.lastSetActiveValue);
+  XCTAssertEqual(self.fakeSessionManager.ensureActiveCallCount, 1);
+  XCTAssertTrue(self.fakeSessionManager.lastEnsureActiveForce);
   XCTAssertEqual(self.fakeAudioEngine.restartAudioEngineCallCount, 1);
 }
 

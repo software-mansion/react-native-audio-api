@@ -38,6 +38,12 @@ using namespace worklets;
   std::weak_ptr<WorkletsModuleProxy> weakWorkletsModuleProxy_;
 }
 
+- (void)handleSessionDeactivation
+{
+  [self.audioSessionManager markInactive];
+  [self.audioEngine onSessionDeactivated];
+}
+
 #if defined(RCT_NEW_ARCH_ENABLED)
 @synthesize callInvoker = _callInvoker;
 @synthesize moduleRegistry = _moduleRegistry;
@@ -151,8 +157,11 @@ RCT_EXPORT_METHOD(
     }
 
     if (!enabled) {
-      [self.audioSessionManager markInactive];
-      dispatch_async(dispatch_get_main_queue(), ^{ [self.audioEngine onSessionDeactivated]; });
+      if ([NSThread isMainThread]) {
+        [self handleSessionDeactivation];
+      } else {
+        dispatch_sync(dispatch_get_main_queue(), ^{ [self handleSessionDeactivation]; });
+      }
     }
 
     resolve(@(success));

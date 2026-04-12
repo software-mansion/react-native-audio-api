@@ -19,8 +19,10 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 @property (nonatomic, strong) NSMutableDictionary *sourceNodes;
 @property (nonatomic, strong) NSMutableDictionary *sourceFormats;
 @property (nonatomic, strong) AVAudioSinkNode *inputNode;
+@property (nonatomic, strong) AVAudioFormat *inputNodeFormat;
 @property (nonatomic, weak) AudioSessionManager *sessionManager;
 @property (nonatomic, assign) BOOL graphNeedsRebuild;
+@property (nonatomic, assign) BOOL sessionDeactivationInvalidatedGraph;
 
 - (instancetype)init;
 + (instancetype)sharedInstance;

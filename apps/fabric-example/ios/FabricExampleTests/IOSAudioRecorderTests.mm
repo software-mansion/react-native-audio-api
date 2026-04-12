@@ -84,12 +84,9 @@ class IOSAudioRecorder : public AudioRecorder {
 @interface FakeIOSRecorderAudioSessionManager : AudioSessionManager
 
 @property(nonatomic, copy) NSString *recordingPermissions;
-@property(nonatomic, assign) BOOL ensureActiveResult;
-@property(nonatomic, strong) NSError *ensureActiveFailure;
-@property(nonatomic, strong) NSNumber *preferredSampleRate;
-@property(nonatomic, strong) NSNumber *preferredInputChannelCount;
-@property(nonatomic, assign) BOOL validInputRoute;
-@property(nonatomic, assign) NSInteger ensureActiveCallCount;
+@property(nonatomic, assign) double diagnosticSampleRate;
+@property(nonatomic, assign) AVAudioChannelCount diagnosticInputChannels;
+@property(nonatomic, assign) BOOL routeReady;
 
 @end
 
@@ -99,10 +96,9 @@ class IOSAudioRecorder : public AudioRecorder {
 {
   if (self = [super init]) {
     self.recordingPermissions = @"Granted";
-    self.ensureActiveResult = YES;
-    self.preferredSampleRate = @44100;
-    self.preferredInputChannelCount = @2;
-    self.validInputRoute = YES;
+    self.diagnosticSampleRate = 44100;
+    self.diagnosticInputChannels = 2;
+    self.routeReady = YES;
   }
 
   return self;
@@ -115,50 +111,37 @@ class IOSAudioRecorder : public AudioRecorder {
 
 - (bool)ensureActive:(bool)force error:(NSError **)error
 {
-  self.ensureActiveCallCount += 1;
-
-  if (!self.ensureActiveResult) {
-    if (error != nil) {
-      *error = self.ensureActiveFailure;
-    }
-
-    return false;
-  }
-
   if (error != nil) {
     *error = nil;
   }
-
-  self.isActive = true;
   return true;
 }
 
-- (NSNumber *)getDevicePreferredSampleRate
+- (NSString *)inputDiagnosticsSnapshot
 {
-  return self.preferredSampleRate;
-}
-
-- (NSNumber *)getDevicePreferredInputChannelCount
-{
-  return self.preferredInputChannelCount;
-}
-
-- (bool)hasValidInputRoute
-{
-  return self.validInputRoute;
+  return [NSString stringWithFormat:@"session={active=%@, sampleRate=%f, inputChannels=%lu}; "
+                                   @"route={routeReady=%@}",
+                                   self.isActive ? @"true" : @"false",
+                                   self.diagnosticSampleRate,
+                                   (unsigned long)self.diagnosticInputChannels,
+                                   self.routeReady ? @"true" : @"false"];
 }
 
 @end
 
 @interface FakeNativeAudioRecorder : NativeAudioRecorder
 
-@property(nonatomic, strong) id mockInputFormat;
-@property(nonatomic, assign) int mockBufferSize;
+@property(nonatomic, strong) id mockResolvedInputFormat;
+@property(nonatomic, assign) int mockResolvedBufferSize;
+@property(nonatomic, assign) BOOL startResult;
+@property(nonatomic, strong) NSError *startError;
 @property(nonatomic, assign) NSInteger startCallCount;
 @property(nonatomic, assign) NSInteger stopCallCount;
 @property(nonatomic, assign) NSInteger pauseCallCount;
 @property(nonatomic, assign) NSInteger resumeCallCount;
 @property(nonatomic, assign) NSInteger cleanupCallCount;
+@property(nonatomic, assign) NSInteger setInputArmedCallCount;
+@property(nonatomic, assign) BOOL lastInputArmed;
 
 @end
 
@@ -168,26 +151,41 @@ class IOSAudioRecorder : public AudioRecorder {
 {
   if (self = [super initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {
       }]) {
-    self.mockInputFormat = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100 channels:2];
-    self.mockBufferSize = 512;
+    self.mockResolvedInputFormat =
+        [[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100 channels:2];
+    self.mockResolvedBufferSize = 512;
+    self.startResult = YES;
   }
 
   return self;
 }
 
-- (AVAudioFormat *)getInputFormat
+- (AVAudioFormat *)getResolvedInputFormat
 {
-  return (AVAudioFormat *)self.mockInputFormat;
+  return (AVAudioFormat *)self.mockResolvedInputFormat;
 }
 
-- (int)getBufferSize
+- (int)getResolvedBufferSize
 {
-  return self.mockBufferSize;
+  return self.mockResolvedBufferSize;
 }
 
-- (void)start
+- (BOOL)start:(NSError **)error
 {
   self.startCallCount += 1;
+
+  if (error != nil) {
+    *error = self.startError;
+  }
+
+  return self.startResult;
+}
+
+- (void)setInputArmed:(BOOL)armed
+{
+  self.setInputArmedCallCount += 1;
+  self.lastInputArmed = armed;
+  [super setInputArmed:armed];
 }
 
 - (void)stop
@@ -308,6 +306,16 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   return format;
 }
 
+- (id)validMultichannelFormat
+{
+  AVAudioChannelLayout *layout =
+      [[AVAudioChannelLayout alloc] initWithLayoutTag:kAudioChannelLayoutTag_MPEG_7_1_A];
+  return [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                          sampleRate:44100
+                                         interleaved:NO
+                                       channelLayout:layout];
+}
+
 - (void)testStartReturnsErrorWhenRecorderIsNotIdle
 {
   _recorder->setRecorderState(AudioRecorder::RecorderState::Paused);
@@ -332,47 +340,78 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
 
 - (void)testStartReturnsErrorWhenSessionActivationFails
 {
-  self.sessionManager.ensureActiveResult = NO;
-  self.sessionManager.ensureActiveFailure =
+  self.nativeRecorder.startResult = NO;
+  self.nativeRecorder.startError =
       [NSError errorWithDomain:@"RecorderTests" code:7 userInfo:@{NSLocalizedDescriptionKey : @"boom"}];
 
   auto result = _recorder->start("");
 
   XCTAssertTrue(result.is_err());
   NSString *message = NSStringFromStdString(result.unwrap_err());
-  XCTAssertTrue([message containsString:@"Failed to activate audio session for recording"]);
+  XCTAssertTrue([message containsString:@"Failed to start native recorder"]);
   XCTAssertTrue([message containsString:@"RecorderTests"]);
 }
 
-- (void)testStartReturnsErrorWhenInputRouteIsNotReady
+- (void)testStartReturnsErrorWhenEngineInputFormatIsUnavailable
 {
-  self.nativeRecorder.mockInputFormat = [self invalidFormat];
-  self.sessionManager.preferredSampleRate = @12345;
-  self.sessionManager.preferredInputChannelCount = @1;
-  self.sessionManager.validInputRoute = NO;
+  self.nativeRecorder.mockResolvedInputFormat = [self invalidFormat];
+  self.sessionManager.diagnosticSampleRate = 0;
+  self.sessionManager.diagnosticInputChannels = 0;
+  self.sessionManager.routeReady = NO;
 
   auto result = _recorder->start("");
 
   XCTAssertTrue(result.is_err());
-  XCTAssertEqual(self.nativeRecorder.startCallCount, 0);
+  XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
+  XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
 
   NSString *message = NSStringFromStdString(result.unwrap_err());
-  XCTAssertTrue([message containsString:@"Audio input route is not ready"]);
-  XCTAssertTrue([message containsString:@"sampleRate=12345.000000"]);
-  XCTAssertTrue([message containsString:@"channelCount=1"]);
+  XCTAssertTrue([message containsString:@"Audio input format is unavailable"]);
+  XCTAssertTrue([message containsString:@"engineFormat={sampleRate=0.000000, channelCount=0"]);
+  XCTAssertTrue([message containsString:@"sampleRate=0.000000"]);
+  XCTAssertTrue([message containsString:@"inputChannels=0"]);
   XCTAssertTrue([message containsString:@"routeReady=false"]);
 }
 
-- (void)testStartSucceedsWithValidRecorderAndUpdatesState
+- (void)testStartSucceedsWhenResolvedInputFormatIsAvailable
 {
   self.audioEngine.state = AudioEngineStateRunning;
+  self.nativeRecorder.mockResolvedInputFormat = [self validMultichannelFormat];
 
   auto result = _recorder->start("");
 
   XCTAssertTrue(result.is_ok());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
   XCTAssertFalse(_recorder->isIdle());
+  XCTAssertTrue(self.nativeRecorder.lastInputArmed);
+  XCTAssertGreaterThanOrEqual(self.nativeRecorder.setInputArmedCallCount, 1);
+  XCTAssertFalse(_recorder->isIdle());
   XCTAssertEqual(_recorder->currentFilePath(), "");
+}
+
+- (void)testStartPreparesMonoCallbackAgainstResolvedMultichannelInputFormat
+{
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.nativeRecorder.mockResolvedInputFormat = [self validMultichannelFormat];
+
+  auto callbackResult = _recorder->setOnAudioReadyCallback(48000, 256, 1, 99);
+  XCTAssertTrue(callbackResult.is_ok());
+
+  auto startResult = _recorder->start("");
+
+  XCTAssertTrue(startResult.is_ok());
+  XCTAssertTrue(_recorder->usesCallback());
+  XCTAssertTrue(self.nativeRecorder.lastInputArmed);
+}
+
+- (void)testStartDoesNotAttemptToManageSessionWhenOwnershipIsExternal
+{
+  self.sessionManager.shouldManageSession = NO;
+
+  auto result = _recorder->start("");
+
+  XCTAssertTrue(result.is_ok());
+  XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
 }
 
 - (void)testPauseAndResumeRespectCurrentState

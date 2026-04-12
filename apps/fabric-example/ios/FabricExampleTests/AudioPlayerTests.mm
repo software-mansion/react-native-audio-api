@@ -362,7 +362,7 @@ struct TestAudioOutput {
 
   XCTAssertTrue([player start]);
   XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
-  XCTAssertTrue(self.sessionManager.lastEnsureActiveForce);
+  XCTAssertFalse(self.sessionManager.lastEnsureActiveForce);
   XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
@@ -392,7 +392,7 @@ struct TestAudioOutput {
 
   XCTAssertTrue([player resume]);
   XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
-  XCTAssertTrue(self.sessionManager.lastEnsureActiveForce);
+  XCTAssertFalse(self.sessionManager.lastEnsureActiveForce);
   XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);

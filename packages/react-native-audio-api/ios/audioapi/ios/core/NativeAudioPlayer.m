@@ -23,6 +23,13 @@
   self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
 }
 
+- (bool)startPlaybackGraph:(AudioEngine *)audioEngine
+{
+  [audioEngine stopIfNecessary];
+  [self attachSourceNodeIfNeeded:audioEngine];
+  return [audioEngine startIfNecessary];
+}
+
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                          sampleRate:(float)sampleRate
                        channelCount:(int)channelCount
@@ -64,7 +71,7 @@
   assert(audioEngine != nil);
 
   NSError *error = nil;
-  if (![sessionManager ensureActive:true error:&error]) {
+  if (![sessionManager ensureActive:false error:&error]) {
     NSLog(@"Error while activating audio session for playback: %@", [error debugDescription]);
     return false;
   }
@@ -77,9 +84,7 @@
   //
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop player very frequently
-  [audioEngine stopIfNecessary];
-  [self attachSourceNodeIfNeeded:audioEngine];
-  return [audioEngine startIfNecessary];
+  return [self startPlaybackGraph:audioEngine];
 }
 
 - (void)stop
@@ -98,14 +103,12 @@
   assert(audioEngine != nil);
 
   NSError *error = nil;
-  if (![sessionManager ensureActive:true error:&error]) {
+  if (![sessionManager ensureActive:false error:&error]) {
     NSLog(@"Error while re-activating audio session for playback: %@", [error debugDescription]);
     return false;
   }
 
-  [audioEngine stopIfNecessary];
-  [self attachSourceNodeIfNeeded:audioEngine];
-  return [audioEngine startIfNecessary];
+  return [self startPlaybackGraph:audioEngine];
 }
 
 - (void)suspend

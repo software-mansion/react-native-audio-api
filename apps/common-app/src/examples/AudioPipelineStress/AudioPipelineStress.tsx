@@ -860,6 +860,14 @@ const AudioPipelineStress: FC = () => {
     setVisibleStep('Preparing audio pipeline resources...');
 
     try {
+      const permissionStatus = await AudioManager.requestRecordingPermissions();
+
+      if (permissionStatus !== 'Granted') {
+        throw new Error(
+          `Microphone permission is required to run the stress suite (status=${permissionStatus})`
+        );
+      }
+
       await resourcesRef.current.recreate();
 
       await runScenario('playback_warmup', 'Playback Warmup', async (steps) => {
