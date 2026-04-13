@@ -241,6 +241,36 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   {
     return filePath_;
   }
+
+  bool fileOutputEnabledIntent() const
+  {
+    return fileOutputEnabled_.load(std::memory_order_acquire);
+  }
+
+  bool fileOutputConfigured() const
+  {
+    return fileOutputConfigured_.load(std::memory_order_acquire);
+  }
+
+  bool callbackOutputEnabledIntent() const
+  {
+    return callbackOutputEnabled_.load(std::memory_order_acquire);
+  }
+
+  bool callbackOutputConfigured() const
+  {
+    return callbackOutputConfigured_.load(std::memory_order_acquire);
+  }
+
+  bool connectionEnabledIntent() const
+  {
+    return isConnected_.load(std::memory_order_acquire);
+  }
+
+  bool connectionConfigured() const
+  {
+    return connectedConfigured_.load(std::memory_order_acquire);
+  }
 };
 
 @interface IOSAudioRecorderTests : XCTestCase {
@@ -433,6 +463,43 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   XCTAssertTrue(self.nativeRecorder.lastInputArmed);
 }
 
+- (void)testEnableFileOutputWhileIdleTracksIntentWithoutLiveWriter
+{
+  auto enableResult = _recorder->enableFileOutput([self validFileProperties]);
+
+  XCTAssertTrue(enableResult.is_ok());
+  XCTAssertTrue(_recorder->fileOutputEnabledIntent());
+  XCTAssertFalse(_recorder->fileOutputConfigured());
+  XCTAssertFalse(_recorder->usesFileOutput());
+  XCTAssertEqual(_recorder->getCurrentDuration(), 0.0);
+
+  _recorder->clearOnErrorCallback();
+}
+
+- (void)testSetOnAudioReadyWhileIdleTracksIntentWithoutLiveCallback
+{
+  auto callbackResult = _recorder->setOnAudioReadyCallback(48000, 256, 1, 99);
+
+  XCTAssertTrue(callbackResult.is_ok());
+  XCTAssertTrue(_recorder->callbackOutputEnabledIntent());
+  XCTAssertFalse(_recorder->callbackOutputConfigured());
+  XCTAssertFalse(_recorder->usesCallback());
+}
+
+- (void)testConnectWhileIdleTracksIntentWithoutLiveConnection
+{
+  auto context =
+      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr, RuntimeRegistry{});
+  context->initialize();
+  auto adapter = context->createRecorderAdapter();
+
+  _recorder->connect(adapter);
+
+  XCTAssertTrue(_recorder->connectionEnabledIntent());
+  XCTAssertFalse(_recorder->connectionConfigured());
+  XCTAssertFalse(_recorder->isConnected());
+}
+
 - (void)testStartDoesNotAttemptToManageSessionWhenOwnershipIsExternal
 {
   self.sessionManager.shouldManageSession = NO;
@@ -489,6 +556,38 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   XCTAssertTrue(std::get<0>(stopResult.unwrap()).empty());
   XCTAssertEqual(std::get<1>(stopResult.unwrap()), 0);
   XCTAssertEqual(std::get<2>(stopResult.unwrap()), 0);
+}
+
+- (void)testStopClearsConfiguredStateButPreservesConfiguredIntent
+{
+  self.audioEngine.state = AudioEngineStateRunning;
+  auto context =
+      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr, RuntimeRegistry{});
+  context->initialize();
+  auto adapter = context->createRecorderAdapter();
+
+  XCTAssertTrue(_recorder->enableFileOutput([self validFileProperties]).is_ok());
+  XCTAssertTrue(_recorder->setOnAudioReadyCallback(48000, 256, 1, 99).is_ok());
+  _recorder->connect(adapter);
+
+  auto startResult = _recorder->start("");
+  XCTAssertTrue(startResult.is_ok());
+  XCTAssertTrue(_recorder->fileOutputConfigured());
+  XCTAssertTrue(_recorder->callbackOutputConfigured());
+  XCTAssertTrue(_recorder->connectionConfigured());
+
+  auto stopResult = _recorder->stop();
+
+  XCTAssertTrue(stopResult.is_ok());
+  XCTAssertTrue(_recorder->fileOutputEnabledIntent());
+  XCTAssertFalse(_recorder->fileOutputConfigured());
+  XCTAssertFalse(_recorder->usesFileOutput());
+  XCTAssertTrue(_recorder->callbackOutputEnabledIntent());
+  XCTAssertFalse(_recorder->callbackOutputConfigured());
+  XCTAssertFalse(_recorder->usesCallback());
+  XCTAssertTrue(_recorder->connectionEnabledIntent());
+  XCTAssertFalse(_recorder->connectionConfigured());
+  XCTAssertFalse(_recorder->isConnected());
 }
 
 - (void)testFileOutputSmokeTest

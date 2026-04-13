@@ -27,11 +27,11 @@ void AudioRecorder::setOnErrorCallback(uint64_t callbackId) {
 void AudioRecorder::clearOnErrorCallback() {
   std::scoped_lock lock(callbackMutex_, fileWriterMutex_, errorCallbackMutex_);
 
-  if (usesFileOutput()) {
+  if (usesFileOutput() && fileWriter_ != nullptr) {
     fileWriter_->clearOnErrorCallback();
   }
 
-  if (usesCallback()) {
+  if (usesCallback() && dataCallback_ != nullptr) {
     dataCallback_->clearOnErrorCallback();
   }
 
@@ -41,9 +41,10 @@ void AudioRecorder::clearOnErrorCallback() {
 /// @brief Gets the current duration of the recorded audio in seconds.
 /// @returns Duration in seconds.
 double AudioRecorder::getCurrentDuration() const {
+  std::scoped_lock lock(fileWriterMutex_);
   double duration = 0.0;
 
-  if (usesFileOutput()) {
+  if (usesFileOutput() && fileWriter_ != nullptr) {
     duration = fileWriter_->getCurrentDuration();
   }
 
@@ -51,14 +52,26 @@ double AudioRecorder::getCurrentDuration() const {
 }
 
 bool AudioRecorder::usesCallback() const {
-  return callbackOutputEnabled_.load(std::memory_order_acquire);
+  return wantsCallback() && callbackOutputConfigured_.load(std::memory_order_acquire);
 }
 
 bool AudioRecorder::usesFileOutput() const {
-  return fileOutputEnabled_.load(std::memory_order_acquire);
+  return wantsFileOutput() && fileOutputConfigured_.load(std::memory_order_acquire);
 }
 
 bool AudioRecorder::isConnected() const {
+  return wantsConnection() && connectedConfigured_.load(std::memory_order_acquire);
+}
+
+bool AudioRecorder::wantsCallback() const {
+  return callbackOutputEnabled_.load(std::memory_order_acquire);
+}
+
+bool AudioRecorder::wantsFileOutput() const {
+  return fileOutputEnabled_.load(std::memory_order_acquire);
+}
+
+bool AudioRecorder::wantsConnection() const {
   return isConnected_.load(std::memory_order_acquire);
 }
 
