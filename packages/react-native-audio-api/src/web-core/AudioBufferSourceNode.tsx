@@ -617,9 +617,7 @@ class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
   }
 }
 
-export default class AudioBufferSourceNode
-  implements IAudioAPIBufferSourceNodeWeb
-{
+export default class AudioBufferSourceNode implements IAudioAPIBufferSourceNodeWeb {
   private node: AudioBufferSourceNodeStretcher | AudioBufferSourceNodeWeb;
   constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
     this.node = options?.pitchCorrection

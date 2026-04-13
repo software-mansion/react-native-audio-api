@@ -3,6 +3,7 @@ const lightTheme = require('prism-react-renderer').themes.github;
 module.exports = {
   ...lightTheme,
   plain: {
+    background: 'transparent',
     color: 'var(--swm-navy-light-80)',
   },
   styles: [
@@ -29,7 +30,7 @@ module.exports = {
     {
       types: ['punctuation'],
       style: {
-        color: 'var(--swm-green-light-100)',
+        color: 'var(--swm-blue-light-100)',
       },
     },
     {
@@ -47,7 +48,7 @@ module.exports = {
         'attr-value',
       ],
       style: {
-        color: 'var(--swm-red-light-100)',
+        color: 'var(--swm-green-light-100)',
       },
     },
     {

@@ -1,7 +1,22 @@
 import { useMemo } from 'react';
+import { Platform } from 'react-native';
+import AudioContext from '../../../core/AudioContext';
+import type BaseAudioContext from '../../../core/BaseAudioContext';
 import { AudioProps, AudioPropsBase } from './types';
 
-export function withPropsDefaults(props: AudioProps): AudioPropsBase {
+const noop = () => {};
+const noopError = (_error: Error) => {};
+const noopNumber = (_number: number) => {};
+
+/**
+ * Merge props with defaults. `resolvedContext` must be stable when using the
+ * implicit default (see `useStableAudioProps` — one `AudioContext` per hook
+ * mount).
+ */
+export function withPropsDefaults(
+  props: AudioProps,
+  resolvedContext: BaseAudioContext | undefined
+): AudioPropsBase {
   return {
     ...props,
     autoPlay: props.autoPlay ?? false,
@@ -13,10 +28,26 @@ export function withPropsDefaults(props: AudioProps): AudioPropsBase {
     playbackRate: props.playbackRate ?? 1.0,
     preservesPitch: props.preservesPitch ?? true,
     volume: props.volume ?? 1.0,
+    context: resolvedContext,
+    onLoadStart: props.onLoadStart ?? noop,
+    onLoad: props.onLoad ?? noop,
+    onError: props.onError ?? noopError,
+    onPositionChange: props.onPositionChange ?? noopNumber,
+    onEnded: props.onEnded ?? noop,
+    onPlay: props.onPlay ?? noop,
+    onPause: props.onPause ?? noop,
+    onVolumeChange: props.onVolumeChange ?? noopNumber,
   };
 }
 
 export function useStableAudioProps(props: AudioProps): AudioPropsBase {
+  const resolvedContext = useMemo(() => {
+    if (Platform.OS === 'web') {
+      return undefined;
+    }
+    return props.context ?? new AudioContext();
+  }, [props.context]);
+
   const {
     // Control Props
     autoPlay,
@@ -28,17 +59,18 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
     playbackRate,
     preservesPitch,
     volume,
+    context,
 
     // Event Props
     onLoadStart,
     onLoad,
     onError,
-    onProgress,
-    onSeeked,
+    onPositionChange,
     onEnded,
     onPlay,
     onPause,
-  } = withPropsDefaults(props);
+    onVolumeChange,
+  } = withPropsDefaults(props, resolvedContext);
 
   return useMemo(
     () => ({
@@ -52,16 +84,17 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       playbackRate,
       preservesPitch,
       volume,
+      context,
 
       // Event Props
       onLoadStart,
       onLoad,
       onError,
-      onProgress,
-      onSeeked,
+      onPositionChange,
       onEnded,
       onPlay,
       onPause,
+      onVolumeChange,
     }),
     [
       autoPlay,
@@ -73,14 +106,15 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       playbackRate,
       preservesPitch,
       volume,
+      context,
       onLoadStart,
       onLoad,
       onError,
-      onProgress,
-      onSeeked,
+      onPositionChange,
       onEnded,
       onPlay,
       onPause,
+      onVolumeChange,
     ]
   );
 }

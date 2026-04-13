@@ -3,8 +3,7 @@ sidebar_position: 3
 ---
 
 import InteractiveExample from '@site/src/components/InteractiveExample';
-import InteractivePlayground from '@site/src/components/InteractivePlayground';
-import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
+
 
 # Making a piano keyboard
 
@@ -214,7 +213,11 @@ An envelope describes how a sound's amplitude changes over time. The most widely
 - **Sustain** — volume level held while the note is active.
 - **Release** — time to fade out after the note ends.
 
-<InteractivePlayground usePlayground={useGainAdsrPlayground} />
+
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
+
+<InteractivePlayground usePlayground={useGainAdsrPlayground} tag="ADSR Envelope" />
 
 You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.org/wiki/Envelope_(music)>).
 

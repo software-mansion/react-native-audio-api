@@ -76,7 +76,7 @@ Result<std::string, std::string> getFilePath(
     return Result<std::string, std::string>::Err(result.unwrap_err());
   }
 
-  auto filePath = fileNameOverride.length() > 0
+  auto filePath = !fileNameOverride.empty() && properties->rotateIntervalBytes == 0
       ? std::format("{}/{}.{}", subDirectory, fileNameOverride, extension)
       : std::format(
             "{}/{}_{}.{}", subDirectory, properties->fileNamePrefix, fileTimestamp, extension);

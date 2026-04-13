@@ -1,6 +1,6 @@
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
+
 #include <memory>
-#include <utility>
 
 namespace audioapi {
 AndroidFileWriterBackend::AndroidFileWriterBackend(
@@ -18,6 +18,6 @@ AndroidFileWriterBackend::AndroidFileWriterBackend(
 }
 
 void AndroidFileWriterBackend::writeAudioData(void *data, int numFrames) {
-  offloader_->getSender()->send({data, numFrames});
+  offloader_->getSender()->send({.data = data, .numFrames = numFrames});
 }
 } // namespace audioapi

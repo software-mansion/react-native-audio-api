@@ -15,15 +15,15 @@
 }
 
 [data-theme='dark'] .basic {
-  background-color: var(--swm-blue-dark-140);
+  background-color: var(--swm-blue-dark-120);
 }
 
 .experimental {
   color: var(--swm-off-white);
-  background-color: var(--swm-purple-light-100);
+  background-color: var(--swm-red-light-100);
 }
 
 
 [data-theme='dark'] .experimental {
-  background-color: var(--swm-purple-dark-140);
+  background-color: var(--swm-red-dark-120);
 }

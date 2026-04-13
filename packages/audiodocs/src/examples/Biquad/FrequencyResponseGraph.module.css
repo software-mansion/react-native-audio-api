@@ -1,0 +1,70 @@
+.container {
+  flex: 1;
+  padding: 16px;
+}
+
+.loadingRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadingSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(145, 159, 207, 0.25);
+  border-top-color: var(--swm-red-light-80);
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+.loadingText {
+  color: var(--swm-off-white);
+  font-size: 12px;
+}
+
+.canvasContainer {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.playPauseButtonContainer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.playPauseButton {
+  min-width: 200px;
+  border: none;
+  border-radius: 0;
+  padding: 12px 16px;
+  background-color: var(--swm-red-light-80);
+  color: #fcfcff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 180ms ease;
+}
+
+.playPauseButton:hover {
+  filter: brightness(0.95);
+}
+
+.playPauseButton:focus-visible {
+  outline: 2px solid var(--swm-red-light-80);
+  outline-offset: 2px;
+}
+
+.sliderSection {
+  margin-top: 16px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

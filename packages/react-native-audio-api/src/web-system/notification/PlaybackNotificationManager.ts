@@ -12,10 +12,10 @@ import type {
 } from '../../system';
 
 /// Mock Manager for playback notifications. Does nothing.
-class PlaybackNotificationManager
-  implements
-    NotificationManager<PlaybackNotificationInfo, PlaybackNotificationEventName>
-{
+class PlaybackNotificationManager implements NotificationManager<
+  PlaybackNotificationInfo,
+  PlaybackNotificationEventName
+> {
   private isRegistered_ = false;
   private isShown_ = false;
 

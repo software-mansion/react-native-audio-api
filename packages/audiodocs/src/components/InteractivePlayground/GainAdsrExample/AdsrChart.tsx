@@ -1,5 +1,15 @@
-import React, { useRef, useEffect, FC, useState } from "react"; 
-import { HANDLE_RADIUS, HIT_PADDING, MIN_TIME, SUSTAIN_HOLD_TIME, MAX_TIME, VISUAL_SCALE, ATTACK_MAX, RELEASE_MAX, DECAY_MAX } from "./constants";
+import React, { FC, useCallback, useEffect, useRef, useState } from "react";
+import {
+  ATTACK_MAX,
+  DECAY_MAX,
+  HANDLE_RADIUS,
+  HIT_PADDING,
+  MAX_TIME,
+  MIN_TIME,
+  RELEASE_MAX,
+  SUSTAIN_HOLD_TIME,
+  VISUAL_SCALE,
+} from "./constants";
 
 interface AdsrChartProps {
   attack: number;
@@ -13,6 +23,44 @@ interface AdsrChartProps {
   theme: "light" | "dark";
   playbackProgress: number; // 0 to 1 indicating current playback position
 }
+
+type DraggingPoint = "attack" | "decay" | "sustain" | "release";
+
+const PADDING = 10;
+
+const getGeometry = (
+  width: number,
+  height: number,
+  attack: number,
+  decay: number,
+  sustain: number,
+  release: number
+) => {
+  const chartWidth = Math.max(1, width - 2 * PADDING);
+  const chartHeight = Math.max(1, height - 2 * PADDING);
+
+  const timeToX = (time: number) =>
+    PADDING + ((time * VISUAL_SCALE) / MAX_TIME) * chartWidth;
+  const xToTime = (x: number) =>
+    ((x - PADDING) / chartWidth) * (MAX_TIME / VISUAL_SCALE);
+
+  const levelToY = (level: number) => PADDING + (1 - level) * chartHeight;
+  const yToLevel = (y: number) => 1 - (y - PADDING) / chartHeight;
+
+  const totalDuration = attack + decay + SUSTAIN_HOLD_TIME + release;
+  const points = {
+    start: { x: timeToX(0), y: levelToY(0) },
+    attackEnd: { x: timeToX(attack), y: levelToY(1) },
+    decayEnd: { x: timeToX(attack + decay), y: levelToY(sustain) },
+    sustainEnd: {
+      x: timeToX(attack + decay + SUSTAIN_HOLD_TIME),
+      y: levelToY(sustain),
+    },
+    releaseEnd: { x: timeToX(totalDuration), y: levelToY(0) },
+  };
+
+  return { points, totalDuration, timeToX, xToTime, yToLevel };
+};
 
 const AdsrChart: FC<AdsrChartProps> = (props) => {
   const {
@@ -28,7 +76,112 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     playbackProgress,
   } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [draggingPoint, setDraggingPoint] = useState<string | null>(null);
+  const draggingPointRef = useRef<DraggingPoint | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const getMousePosition = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return null;
+    }
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+  }, []);
+
+  const findDragPoint = useCallback((mouseX: number, mouseY: number, width: number, height: number) => {
+    const { points } = getGeometry(width, height, attack, decay, sustain, release);
+
+    if (Math.hypot(points.attackEnd.x - mouseX, points.attackEnd.y - mouseY) < HANDLE_RADIUS + HIT_PADDING) {
+      return "attack" as const;
+    }
+    if (Math.hypot(points.sustainEnd.x - mouseX, points.sustainEnd.y - mouseY) < HANDLE_RADIUS + HIT_PADDING) {
+      return "sustain" as const;
+    }
+    if (Math.hypot(points.decayEnd.x - mouseX, points.decayEnd.y - mouseY) < HANDLE_RADIUS + HIT_PADDING) {
+      return "decay" as const;
+    }
+    if (Math.hypot(points.releaseEnd.x - mouseX, points.releaseEnd.y - mouseY) < HANDLE_RADIUS + HIT_PADDING) {
+      return "release" as const;
+    }
+
+    return null;
+  }, [attack, decay, sustain, release]);
+
+  const updateByPointer = useCallback((point: DraggingPoint, mouseX: number, mouseY: number, width: number, height: number) => {
+    const { xToTime, yToLevel } = getGeometry(width, height, attack, decay, sustain, release);
+
+    const currentTime = xToTime(mouseX); // real seconds
+    const currentLevel = yToLevel(mouseY);
+
+    if (point === "attack") {
+      const clamped = Math.max(MIN_TIME, Math.min(currentTime, ATTACK_MAX));
+      setAttack(clamped);
+      return;
+    }
+
+    if (point === "decay") {
+      const rawDecay = currentTime - attack;
+      const clamped = Math.max(MIN_TIME, Math.min(rawDecay, DECAY_MAX));
+      setDecay(clamped);
+      return;
+    }
+
+    if (point === "sustain") {
+      setSustain(Math.max(0, Math.min(1, currentLevel)));
+      return;
+    }
+
+    const rawRelease = currentTime - (attack + decay + SUSTAIN_HOLD_TIME);
+    const clamped = Math.max(MIN_TIME, Math.min(rawRelease, RELEASE_MAX));
+    setRelease(clamped);
+  }, [attack, decay, sustain, release, setAttack, setDecay, setSustain, setRelease]);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const position = getMousePosition(e.clientX, e.clientY);
+    if (!position) {
+      return;
+    }
+
+    const nextDraggingPoint = findDragPoint(position.x, position.y, position.width, position.height);
+    if (!nextDraggingPoint) {
+      return;
+    }
+
+    draggingPointRef.current = nextDraggingPoint;
+    setIsDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    updateByPointer(nextDraggingPoint, position.x, position.y, position.width, position.height);
+  }, [findDragPoint, getMousePosition, updateByPointer]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const draggingPoint = draggingPointRef.current;
+    if (!draggingPoint) {
+      return;
+    }
+
+    const position = getMousePosition(e.clientX, e.clientY);
+    if (!position) {
+      return;
+    }
+
+    updateByPointer(draggingPoint, position.x, position.y, position.width, position.height);
+  }, [getMousePosition, updateByPointer]);
+
+  const stopDragging = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!draggingPointRef.current) {
+      return;
+    }
+    draggingPointRef.current = null;
+    setIsDragging(false);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -40,41 +193,22 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const { width, height } = rect;
 
-    const padding = 10;
-    const chartWidth = width - 2 * padding;
-    const chartHeight = height - 2 * padding;
-
-    const timeToX = (time: number) =>
-      padding + ((time * VISUAL_SCALE) / MAX_TIME) * chartWidth;
-    const xToTime = (x: number) =>
-      ((x - padding) / chartWidth) * (MAX_TIME / VISUAL_SCALE);
-
-    const levelToY = (level: number) => padding + (1 - level) * chartHeight;
-    const yToLevel = (y: number) => 1 - (y - padding) / chartHeight;
-
-    const totalDuration = attack + decay + SUSTAIN_HOLD_TIME + release;
-
-    const points = {
-      start: { x: timeToX(0), y: levelToY(0) },
-      attackEnd: { x: timeToX(attack), y: levelToY(1) },
-      decayEnd: { x: timeToX(attack + decay), y: levelToY(sustain) },
-      sustainEnd: {
-        x: timeToX(attack + decay + SUSTAIN_HOLD_TIME),
-        y: levelToY(sustain),
-      },
-      releaseEnd: {
-        x: timeToX(totalDuration),
-        y: levelToY(0),
-      },
-    };
+    const { points, totalDuration, timeToX } = getGeometry(
+      width,
+      height,
+      attack,
+      decay,
+      sustain,
+      release
+    );
 
     ctx.clearRect(0, 0, width, height);
 
     ctx.fillStyle =
-      theme === "dark" ? "rgba(167, 139, 250, 0.4)" : "rgba(139, 92, 246, 0.6)";
+      theme === "dark" ? "rgba(255, 119, 116, 0.4)" : "rgba(255, 119, 116, 0.6)";
     ctx.beginPath();
     ctx.moveTo(points.start.x, points.start.y);
     ctx.lineTo(points.attackEnd.x, points.attackEnd.y);
@@ -98,14 +232,14 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
     const progressX = timeToX(totalDuration * playbackProgress);
 
     ctx.fillStyle =
-      theme === "dark" ? "rgba(167, 139, 250, 0.4)" : "rgba(139, 92, 246, 0.6)";
+      theme === "dark" ? "rgba(255, 119, 116, 0.4)" : "rgba(255, 119, 116, 0.6)";
 
     ctx.fillRect(0, 0, progressX, height);
 
     ctx.restore();
 
     const handleFill =
-      theme === "dark" ? "rgba(193, 189, 204, 1)" : "rgba(193, 189, 204, 1)";
+      theme === "dark" ? "var(--swm-off-white)" : "var(--swm-off-white)";
     ctx.lineWidth = 1.5;
 
     [
@@ -119,99 +253,21 @@ const AdsrChart: FC<AdsrChartProps> = (props) => {
       ctx.fillStyle = handleFill;
       ctx.fill();
     });
-
-    const handleMouseDown = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      if (
-        Math.hypot(points.attackEnd.x - mouseX, points.attackEnd.y - mouseY) <
-        HANDLE_RADIUS + HIT_PADDING
-      ) {
-        setDraggingPoint("attack");
-      } else if (
-        Math.hypot(points.sustainEnd.x - mouseX, points.sustainEnd.y - mouseY) <
-        HANDLE_RADIUS + HIT_PADDING
-      ) {
-        setDraggingPoint("sustain");
-      } else if (
-        Math.hypot(points.decayEnd.x - mouseX, points.decayEnd.y - mouseY) <
-        HANDLE_RADIUS + HIT_PADDING
-      ) {
-        setDraggingPoint("decay");
-      } else if (
-        Math.hypot(points.releaseEnd.x - mouseX, points.releaseEnd.y - mouseY) <
-        HANDLE_RADIUS + HIT_PADDING
-      ) {
-        setDraggingPoint("release");
-      }
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!draggingPoint) return;
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      const currentTime = xToTime(mouseX); // real seconds
-      const currentLevel = yToLevel(mouseY);
-
-      if (draggingPoint === "attack") {
-        const clamped = Math.max(MIN_TIME, Math.min(currentTime, ATTACK_MAX));
-        setAttack(clamped);
-      } else if (draggingPoint === "decay") {
-        const rawDecay = currentTime - attack;
-        const clamped = Math.max(MIN_TIME, Math.min(rawDecay, DECAY_MAX));
-        setDecay(clamped);
-      } else if (draggingPoint === "sustain") {
-        setSustain(Math.max(0, Math.min(1, currentLevel)));
-      } else if (draggingPoint === "release") {
-        const rawRelease = currentTime - (attack + decay + SUSTAIN_HOLD_TIME);
-        const clamped = Math.max(MIN_TIME, Math.min(rawRelease, RELEASE_MAX));
-        setRelease(clamped);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setDraggingPoint(null);
-    };
-    const handleMouseLeave = () => {
-      setDraggingPoint(null);
-    };
-
-    canvas.addEventListener("mousedown", handleMouseDown);
-    canvas.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    canvas.addEventListener("mouseleave", handleMouseLeave);
-
-    return () => {
-      canvas.removeEventListener("mousedown", handleMouseDown);
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      canvas.removeEventListener("mouseleave", handleMouseLeave);
-    };
-  }, [
-    attack,
-    decay,
-    sustain,
-    release,
-    theme,
-    draggingPoint,
-    setAttack,
-    setDecay,
-    setSustain,
-    setRelease,
-    playbackProgress,
-  ]);
+  }, [attack, decay, sustain, release, theme, playbackProgress]);
 
   return (
     <canvas
       ref={canvasRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={stopDragging}
+      onPointerCancel={stopDragging}
+      onLostPointerCapture={stopDragging}
       style={{
         width: "100%",
         height: "100%",
-        cursor: draggingPoint ? "grabbing" : "grab",
+        cursor: isDragging ? "grabbing" : "grab",
+        touchAction: "none",
       }}
     />
   );

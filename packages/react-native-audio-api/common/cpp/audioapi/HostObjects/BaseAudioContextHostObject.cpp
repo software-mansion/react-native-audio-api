@@ -14,6 +14,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/AudioFileSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
@@ -22,6 +23,7 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/AudioDecoder.h>
 
 #include <memory>
 #include <vector>
@@ -58,6 +60,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createFileSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
@@ -248,6 +251,25 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
   auto bufferSourceHostObject =
       std::make_shared<AudioBufferSourceNodeHostObject>(context_, audioBufferSourceOptions);
   return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
+  auto makeFileSourceHostObject = [&](AudioFileSourceOptions opts) -> jsi::Value {
+#if RN_AUDIO_API_FFMPEG_DISABLED
+    if (opts.requiresFFmpeg) {
+      return jsi::Value::undefined();
+    }
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+    const auto fileSourceHostObject =
+        std::make_shared<AudioFileSourceNodeHostObject>(context_, opts);
+    return jsi::Object::createFromHostObject(runtime, fileSourceHostObject);
+  };
+
+  const auto options = args[0].asObject(runtime);
+
+  const auto fileSourceOptions =
+      audioapi::option_parser::parseAudioFileSourceOptions(runtime, options);
+  return makeFileSourceHostObject(fileSourceOptions);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {

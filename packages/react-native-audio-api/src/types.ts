@@ -90,6 +90,7 @@ export interface FilePresetType {
 export interface AudioRecorderFileOptions {
   channelCount?: number;
   batchDurationSeconds?: number;
+  rotateIntervalBytes?: number;
 
   format?: FileFormat;
   preset?: FilePresetType;
@@ -101,7 +102,7 @@ export interface AudioRecorderFileOptions {
 }
 
 export interface FileInfo {
-  path: string;
+  paths: string[];
   /** The size of the recorded file (in MB). */
   size: number;
   /** The duration of the recording (in seconds). */
@@ -164,8 +165,7 @@ export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
 }
 
 // options that are passed to c++ layer
-export interface IAudioBufferSourceOptions
-  extends BaseAudioBufferSourceOptions {
+export interface IAudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: IAudioBuffer;
   loop?: boolean;
   loopStart?: number;
@@ -181,6 +181,12 @@ export interface ConvolverOptions extends AudioNodeOptions {
 export interface IConvolverOptions extends AudioNodeOptions {
   buffer?: IAudioBuffer;
   disableNormalization?: boolean;
+}
+
+export interface AudioFileSourceOptions extends AudioNodeOptions {
+  source: ArrayBuffer | string;
+  loop?: boolean;
+  volume?: number;
 }
 
 export interface ConstantSourceOptions {

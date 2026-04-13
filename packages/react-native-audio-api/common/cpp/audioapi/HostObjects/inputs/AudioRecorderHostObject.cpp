@@ -51,9 +51,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
       "status",
       jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-  if (result.is_ok()) {
-    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.unwrap()));
-  } else {
+  if (!result.is_ok()) {
     jsResult.setProperty(
         runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
   }
@@ -72,8 +70,12 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
 
   if (result.is_ok()) {
     auto info = result.unwrap();
-
-    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, std::get<0>(info)));
+    const auto &paths = std::get<0>(info);
+    auto pathsArray = jsi::Array(runtime, paths.size());
+    for (size_t i = 0; i < paths.size(); ++i) {
+      pathsArray.setValueAtIndex(runtime, i, jsi::String::createFromUtf8(runtime, paths[i]));
+    }
+    jsResult.setProperty(runtime, "paths", pathsArray);
     jsResult.setProperty(runtime, "size", std::get<1>(info));
     jsResult.setProperty(runtime, "duration", std::get<2>(info));
   } else {
@@ -103,9 +105,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
       "status",
       jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-  if (result.is_ok()) {
-    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.unwrap()));
-  } else {
+  if (!result.is_ok()) {
     jsResult.setProperty(
         runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
   }

@@ -1,24 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useColorMode } from '@docusaurus/theme-common';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  AudioContext,
   AudioBuffer,
   AudioBufferSourceNode,
+  AudioContext,
   BiquadFilterNode,
 } from 'react-native-audio-api';
-import {
-  View,
-  Button,
-  Text,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
-import { drawFrequencyResponse } from './drawFrequencyResponse';
-import RangeSlider from './RangeSlider';
 
-const FILTER_TYPES: BiquadFilterType[] = [
-  'allpass', 'lowpass', 'highpass', 'bandpass',
-  'lowshelf', 'highshelf', 'peaking', 'notch',
+import DetailBox from '@site/src/ui/DetailBox';
+import FilterList from '@site/src/ui/FilterList';
+import type { ResponsiveCanvasDrawParams } from '@site/src/ui/ResponsiveCanvas';
+import ResponsiveCanvas from '@site/src/ui/ResponsiveCanvas';
+import SliderInput from '@site/src/ui/SliderInput';
+import Switch from '@site/src/ui/Switch';
+import { drawFrequencyResponse } from './drawFrequencyResponse';
+import styles from './FrequencyResponseGraph.module.css';
+
+const FILTER_OPTIONS: Array<{ value: BiquadFilterType; label: string }> = [
+  { value: 'allpass', label: 'All-pass' },
+  { value: 'lowpass', label: 'Low-pass' },
+  { value: 'highpass', label: 'High-pass' },
+  { value: 'bandpass', label: 'Band-pass' },
+  { value: 'lowshelf', label: 'Low-shelf' },
+  { value: 'highshelf', label: 'High-shelf' },
+  { value: 'peaking', label: 'Peaking' },
+  { value: 'notch', label: 'Notch' },
 ];
 
 const FrequencyResponseGraph: React.FC = () => {
@@ -29,6 +35,8 @@ const FrequencyResponseGraph: React.FC = () => {
   const [filterQ, setFilterQ] = useState(1);
   const [filterGain, setFilterGain] = useState(0);
   const [selectedAudio, setSelectedAudio] = useState<'speech' | 'music'>('speech');
+  const [isFilterReady, setIsFilterReady] = useState(false);
+  const { colorMode } = useColorMode();
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -37,26 +45,13 @@ const FrequencyResponseGraph: React.FC = () => {
     music: null,
   });
   const filterRef = useRef<BiquadFilterNode | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const adjustCanvasForRetina = (canvas: HTMLCanvasElement | null, cssWidth = 600, cssHeight = 200) => {
-    if (!canvas) return;
-    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
-
-    const measuredCssWidth = canvas.clientWidth || cssWidth;
-    const measuredCssHeight = canvas.clientHeight || cssHeight;
-
-    const scaledWidth = Math.max(1, Math.floor(measuredCssWidth * dpr));
-    const scaledHeight = Math.max(1, Math.floor(measuredCssHeight * dpr));
-
-    if (canvas.width !== scaledWidth) canvas.width = scaledWidth;
-    if (canvas.height !== scaledHeight) canvas.height = scaledHeight;
-
-    canvas.style.width = `${measuredCssWidth}px`;
-    canvas.style.height = `${measuredCssHeight}px`;
-  };
+  const gridColor = colorMode === 'dark' ? 'rgba(252, 252, 255, 0.15)' : 'rgba(0, 0, 0, 0.2)';
+  const isSpeech = selectedAudio === 'speech';
 
   useEffect(() => {
+    let mounted = true;
+
     const init = async () => {
       const ctx = new AudioContext();
       audioContextRef.current = ctx;
@@ -64,6 +59,7 @@ const FrequencyResponseGraph: React.FC = () => {
       const filter = ctx.createBiquadFilter();
       filter.connect(ctx.destination);
       filterRef.current = filter;
+      setIsFilterReady(true);
 
       setIsLoading(true);
       try {
@@ -75,21 +71,32 @@ const FrequencyResponseGraph: React.FC = () => {
           .then((response) => response.arrayBuffer())
           .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
 
-        audioBuffersRef.current = { speech, music };
+        if (mounted) {
+          audioBuffersRef.current = { speech, music };
+        }
       } catch (error) {
         console.error('Error decoding audio data source:', error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-      setIsLoading(false);
     };
 
     init();
+
     return () => {
+      mounted = false;
+      bufferSourceRef.current?.stop();
+      bufferSourceRef.current = null;
       audioContextRef.current?.close();
     };
   }, []);
 
-  useEffect(() => {
-    if (!filterRef.current) return;
+  const handleCanvasDraw = useCallback(({ canvas }: ResponsiveCanvasDrawParams) => {
+    if (!isFilterReady || !filterRef.current) {
+      return;
+    }
 
     const filter = filterRef.current;
     filter.type = filterType;
@@ -97,35 +104,37 @@ const FrequencyResponseGraph: React.FC = () => {
     filter.Q.value = filterQ;
     filter.gain.value = filterGain;
 
-    adjustCanvasForRetina(canvasRef.current);
-    drawFrequencyResponse(canvasRef.current, filterRef.current);
-  }, [filterType, filterFreq, filterQ, filterGain]);
-
-  useEffect(() => {
-    const onResize = () => {
-      adjustCanvasForRetina(canvasRef.current);
-      if (filterRef.current) drawFrequencyResponse(canvasRef.current, filterRef.current);
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+    drawFrequencyResponse(canvas, filter, gridColor);
+  }, [filterFreq, filterGain, filterQ, filterType, gridColor, isFilterReady]);
 
   const playAudio = async () => {
-    if (!audioContextRef.current) return;
+    const context = audioContextRef.current;
+    if (!context) {
+      return;
+    }
 
     bufferSourceRef.current?.stop();
     bufferSourceRef.current = null;
 
-    const buffer = selectedAudio === 'speech' ? audioBuffersRef.current.speech : audioBuffersRef.current.music;
-    if (!buffer) return;
+    const buffer = selectedAudio === 'speech'
+      ? audioBuffersRef.current.speech
+      : audioBuffersRef.current.music;
 
-    const source = await audioContextRef.current.createBufferSource();
+    if (!buffer) {
+      return;
+    }
+
+    const source = await context.createBufferSource();
     source.buffer = buffer;
     bufferSourceRef.current = source;
-
     source.connect(filterRef.current!);
+    source.onEnded = () => {
+      if (bufferSourceRef.current === source) {
+        bufferSourceRef.current = null;
+        setIsPlaying(false);
+      }
+    };
     source.start();
-
     setIsPlaying(true);
   };
 
@@ -134,112 +143,91 @@ const FrequencyResponseGraph: React.FC = () => {
       bufferSourceRef.current?.stop();
       bufferSourceRef.current = null;
       setIsPlaying(false);
-    } else {
-      await playAudio();
+      return;
     }
+
+    await playAudio();
   };
 
   useEffect(() => {
-    if (isPlaying) playAudio();
+    if (isPlaying) {
+      void playAudio();
+    }
   }, [selectedAudio]);
 
   return (
-    <View style={styles.container}>
-      {isLoading && <ActivityIndicator color="#fcfcff" />}
+    <DetailBox tag="BiquadFilterNode" info="interactive playground" startOpen>
+      <div className={styles.container}>
+        {isLoading && (
+          <div className={styles.loadingRow}>
+            <span className={styles.loadingSpinner} aria-hidden="true" />
+            <span className={styles.loadingText}>Loading audio...</span>
+          </div>
+        )}
 
-      <canvas
-        ref={canvasRef}
-        width={600}
-        height={200}
-        style={styles.canvas}
-        aria-label="frequency-response-canvas"
-      />
-      <View style={{ paddingTop: 10 }}>
-        <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} color="#33488e" />
-      </View>
-      <View style={[styles.filterButtonsContainer, { marginTop: 16 }]}>
-        {FILTER_TYPES.map((type) => (
-          <Pressable
-            key={type}
-            onPress={() => setFilterType(type)}
-            style={[
-              styles.filterButton,
-              filterType === type && styles.filterButtonActive,
-            ]}
-          >
-            <Text style={styles.labelText}>{type}</Text>
-          </Pressable>
-        ))}
-      </View>
+        <ResponsiveCanvas
+          onDraw={handleCanvasDraw}
+          aspectRatio={3}
+          containerClassName={styles.canvasContainer}
+        />
 
-      <View style={styles.audioToggleContainer}>
-        <Text style={[styles.labelText, { marginRight: 8 }]}>Speech</Text>
-        <Pressable
-          onPress={() => setSelectedAudio(selectedAudio === 'speech' ? 'music' : 'speech')}
-          style={styles.toggleTrack}
-        >
-          <View
-            style={[
-              styles.toggleThumb,
-              { transform: [{ translateX: selectedAudio === 'speech' ? 0 : 26 }] },
-            ]}
+        <div className={styles.playPauseButtonContainer}>
+          <button type="button" onClick={handlePlayPause} className={styles.playPauseButton}>
+            {isPlaying ? 'Pause' : 'Play'}
+          </button>
+        </div>
+
+        <FilterList<BiquadFilterType>
+          options={FILTER_OPTIONS}
+          value={filterType}
+          onChange={setFilterType}
+        />
+
+        <Switch
+          checked={!isSpeech}
+          onChange={(isMusic) => setSelectedAudio(isMusic ? 'music' : 'speech')}
+          leftLabel="Speech"
+          rightLabel="Music"
+          ariaLabel="Toggle between speech and music samples"
+        />
+
+        <div className={styles.sliderSection}>
+          <SliderInput
+            label="Frequency"
+            value={filterFreq}
+            min={10}
+            max={5000}
+            step={10}
+            unit="Hz"
+            onChange={setFilterFreq}
           />
-        </Pressable>
-        <Text style={[styles.labelText, { marginLeft: 8 }]}>Music</Text>
-      </View>
 
-      <div style={{ marginTop: 16 }}>
-        <RangeSlider label="Frequency" value={filterFreq} min={10} max={5000} step={10} unit="Hz" onChange={setFilterFreq} />
-        {(filterType !== 'lowshelf' && filterType !== 'highshelf') && (
-          <RangeSlider label="Q" value={filterQ} min={0.1} max={20} step={0.1} onChange={setFilterQ} />
-        )}
-        {(filterType === 'peaking' || filterType === 'lowshelf' || filterType === 'highshelf') && (
-          <RangeSlider label="Gain" value={filterGain} min={-40} max={40} step={0.5} unit="dB" onChange={setFilterGain} />
-        )}
+          {filterType !== 'lowshelf' && filterType !== 'highshelf' && (
+            <SliderInput
+              label="Q"
+              value={filterQ}
+              min={0.1}
+              max={20}
+              step={0.1}
+              onChange={setFilterQ}
+            />
+          )}
+
+          {(filterType === 'peaking' || filterType === 'lowshelf' || filterType === 'highshelf') && (
+            <SliderInput
+              label="Gain"
+              value={filterGain}
+              min={-40}
+              max={40}
+              step={0.5}
+              unit="dB"
+              onChange={setFilterGain}
+            />
+          )}
+        </div>
       </div>
-    </View>
+    </DetailBox>
   );
 };
 
 export default FrequencyResponseGraph;
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  canvas: { marginTop: 16 },
-  filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#6676aa',
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  filterButtonsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  filterButtonActive: {
-    backgroundColor: '#33488e',
-  },
-  labelText: {
-    color: '#fcfcff',
-  },
-  audioToggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  toggleTrack: {
-    width: 50,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#33488e',
-    padding: 2,
-    justifyContent: 'center',
-  },
-  toggleThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#6676aa',
-  },
-});

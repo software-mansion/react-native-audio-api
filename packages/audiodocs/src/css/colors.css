@@ -101,7 +101,8 @@
   --swm-yellow-dark-40: #fff9db;
 
   /* Black & White palette, mainly for background settings */
-  --swm-off-white: #f8f9ff;
+  /* --swm-off-white: #f8f9ff; */
+  --swm-off-white: #fffdfd;
   --swm-white: #fcfcff;
   --swm-white-transparent-light: #fcfcff40;
   --swm-white-transparent-dark: #fcfcff80;
@@ -109,6 +110,8 @@
   --swm-light-off-navy: #30354a;
   --swm-off-navy: #272b3c;
   --swm-navy: #232736;
+
+  --prism-background-color: transparent;
 
   /* Infima main colors */
   --ifm-color-primary: var(--swm-navy-light-100);
@@ -141,9 +144,9 @@
   --ifm-font-color-base: var(--black);
 
   /* Tabs */
-  --swm-tab: var(--swm-navy-light-20);
-  --swm-tab-hover: var(--swm-navy-dark-80);
-  --swm-tab-active: var(--swm-navy-dark-100);
+  --swm-tab: var(--swm-red-light-40);
+  --swm-tab-hover: var(--swm-red-dark-80);
+  --swm-tab-active: var(--swm-red-dark-100);
 
   /* Table of Contents */
   --ifm-toc-border-color: transparent;
@@ -151,8 +154,8 @@
   --ifm-toc-link-color-active: var(--swm-navy-light-100);
 
   /* Details section */
-  --swm-details-foreground: var(--swm-purple-light-20);
-  --swm-details-background: var(--swm-purple-light-100);
+  --swm-details-foreground: var(--swm-red-light-20);
+  --swm-details-background: var(--swm-red-light-100);
 
   /* Admonitions */
   --swm-admonition-color-secondary: var(--swm-navy-light-10);
@@ -176,7 +179,7 @@
   --swm-background-quote-blue: var(--swm-blue-light-40);
   --swm-background-quote-green: var(--swm-green-light-40);
   --swm-background-quote-red: var(--swm-red-light-40);
-  --swm-background-quote-yellow: var(--swm-blue-light-40);
+  --swm-background-quote-yellow: var(--swm-yellow-light-40);
   --swm-background-quote-purple: var(--swm-purple-light-40);
 
   /* Code snippets */
@@ -348,9 +351,9 @@
   --ifm-font-color-base: var(--swm-navy-light-10);
 
   /* Tabs */
-  --swm-tab: var(--swm-navy-light-60);
-  --swm-tab-hover: var(--swm-blue-light-60);
-  --swm-tab-active: var(--swm-blue-light-80);
+  --swm-tab: var(--swm-red-light-60);
+  --swm-tab-hover: var(--swm-red-light-60);
+  --swm-tab-active: var(--swm-red-light-80);
 
   /* Table of Contents */
   --ifm-toc-border-color: transparent;
@@ -358,8 +361,8 @@
   --ifm-toc-link-color-active: var(--swm-off-white);
 
   /* Details section */
-  --swm-details-foreground: var(--swm-purple-dark-120);
-  --swm-details-background: var(--swm-purple-dark-140);
+  --swm-details-foreground: var(--swm-red-dark-120);
+  --swm-details-background: var(--swm-red-dark-100);
 
   /* Admonitions */
   --swm-admonition-color-secondary: var(--swm-navy-dark-60);
@@ -383,7 +386,7 @@
   --swm-background-quote-blue: var(--swm-blue-dark-140);
   --swm-background-quote-green: var(--swm-green-light-40);
   --swm-background-quote-red: var(--swm-red-light-100);
-  --swm-background-quote-yellow: var(--swm-navy-light-60);
+  --swm-background-quote-yellow: var(--swm-yellow-dark-140);
   --swm-background-quote-purple: var(--swm-purple-light-80);
 
   /* Code snippets */
@@ -512,14 +515,4 @@
   --swm-platform-badge-color: var(--swm-off-white);
   --swm-available-from-badge-background: var(--swm-yellow-dark-120);
   --swm-available-from-badge-color: var(--swm-off-white);
-}
-
-code {
-  background-color: var(--swm-background-quote);
-  border: none;
-}
-
-/* Styling for quote blocks (labels surrounded by ` sign) in details tag */
-details code {
-  background-color: var(--swm-background-quote-purple);
 }
