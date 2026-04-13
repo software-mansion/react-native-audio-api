@@ -139,11 +139,13 @@ export default class StressResourceOwner {
       throw new Error(`Failed to stop recording: ${stopResult.message}`);
     }
 
-    if (!stopResult.path) {
+    if (!stopResult.paths.length) {
       throw new Error('Recorder stop returned an empty file path');
     }
 
-    const decodedBuffer = await context.decodeAudioData(stopResult.path);
+    const filePath = stopResult.paths[0];
+
+    const decodedBuffer = await context.decodeAudioData(filePath);
 
     if (decodedBuffer.duration < MIN_DECODED_DURATION_SECONDS) {
       throw new Error(
@@ -154,7 +156,7 @@ export default class StressResourceOwner {
     return {
       decodedBuffer,
       fileDurationSeconds: stopResult.duration,
-      path: stopResult.path,
+      path: filePath,
     };
   }
 

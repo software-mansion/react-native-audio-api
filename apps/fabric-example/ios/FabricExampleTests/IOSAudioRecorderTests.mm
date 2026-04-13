@@ -28,10 +28,10 @@ class IOSAudioRecorder : public AudioRecorder {
   IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
 
-  Result<std::string, std::string> start(const std::string &fileNameOverride = "") override;
-  Result<std::tuple<std::string, double, double>, std::string> stop() override;
+  Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
+  Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
 
-  Result<std::string, std::string> enableFileOutput(
+  Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
 
@@ -296,6 +296,7 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
       "ios-recorder-test",
       2,
       1,
+      0,
       AudioFileProperties::Format::WAV,
       44100,
       128000,
@@ -485,7 +486,7 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
   XCTAssertTrue(_recorder->isIdle());
   XCTAssertEqual(_recorder->currentFilePath(), "");
-  XCTAssertEqual(std::get<0>(stopResult.unwrap()), "");
+  XCTAssertTrue(std::get<0>(stopResult.unwrap()).empty());
   XCTAssertEqual(std::get<1>(stopResult.unwrap()), 0);
   XCTAssertEqual(std::get<2>(stopResult.unwrap()), 0);
 }
@@ -502,13 +503,17 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   auto startResult = _recorder->start(fileName);
   XCTAssertTrue(startResult.is_ok());
 
-  NSString *path = NSStringFromStdString(startResult.unwrap());
+  NSString *path = NSStringFromStdString(_recorder->currentFilePath());
   XCTAssertFalse(path.length == 0);
   XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:path]);
 
   auto stopResult = _recorder->stop();
   XCTAssertTrue(stopResult.is_ok());
-  XCTAssertEqualObjects(NSStringFromStdString(std::get<0>(stopResult.unwrap())), path);
+  const auto &outputPaths = std::get<0>(stopResult.unwrap());
+  XCTAssertEqual(outputPaths.size(), 1U);
+  XCTAssertEqualObjects(
+      NSStringFromStdString(outputPaths.front()),
+      [@"file://" stringByAppendingString:path]);
   XCTAssertGreaterThanOrEqual(std::get<1>(stopResult.unwrap()), 0.0);
   XCTAssertGreaterThanOrEqual(std::get<2>(stopResult.unwrap()), 0.0);
   XCTAssertEqual(_recorder->currentFilePath(), "");
