@@ -105,21 +105,21 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 /// RN side requires their "file://" prefix, but sometimes it returned raw path.
 /// Most likely this was due to alpha version mistakes, but in case of problems leaving this here. (ㆆ _ ㆆ)
 /// @returns On success, returns the file URI where the recording is being saved (if file output is enabled).
-Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &fileNameOverride) {
+Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fileNameOverride) {
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
   if (!isIdle()) {
-    return Result<std::string, std::string>::Err("Recorder is already recording");
+    return Result<NoneType, std::string>::Err("Recorder is already recording");
   }
 
   auto streamResult = openAudioStream();
 
   if (!streamResult.is_ok()) {
-    return Result<std::string, std::string>::Err(streamResult.unwrap_err());
+    return Result<NoneType, std::string>::Err(streamResult.unwrap_err());
   }
 
   if (mStream_ == nullptr) {
-    return Result<std::string, std::string>::Err("Audio stream is not initialized.");
+    return Result<NoneType, std::string>::Err("Audio stream is not initialized.");
   }
 
   if (usesFileOutput()) {
@@ -149,12 +149,12 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   auto result = mStream_->requestStart();
 
   if (result != oboe::Result::OK) {
-    return Result<std::string, std::string>::Err(
+    return Result<NoneType, std::string>::Err(
         "Failed to start stream: " + std::string(oboe::convertToText(result)));
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);
-  return Result<std::string, std::string>::Ok(std::format("file://{}", filePath_));
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 /// @brief Stops the audio stream and finalizes any output (file writing, callback, adapter node).
@@ -224,7 +224,7 @@ AndroidAudioRecorder::stop() {
 /// This method should be called from the JS thread only.
 /// @param properties Properties defining the audio file format and encoding options.
 /// @returns On success, returns the file URI where the recording is being saved, otherwise returns an error message.
-Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
+Result<NoneType, std::string> AndroidAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
   std::scoped_lock fileWriterLock(fileWriterMutex_);
   fileProperties_ = properties;
@@ -237,7 +237,7 @@ Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
   }
 
   fileOutputEnabled_.store(true, std::memory_order_release);
-  return Result<std::string, std::string>::Ok(filePath_);
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 std::shared_ptr<AudioFileWriter> AndroidAudioRecorder::createFileWriter(
@@ -262,7 +262,7 @@ std::shared_ptr<AudioFileWriter> AndroidAudioRecorder::createFileWriter(
 #endif
 }
 
-Result<std::string, std::string> AndroidAudioRecorder::setupFileWriter(
+Result<NoneType, std::string> AndroidAudioRecorder::setupFileWriter(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileNameOverride) {
 #if RN_AUDIO_API_FFMPEG_DISABLED
@@ -294,7 +294,7 @@ Result<std::string, std::string> AndroidAudioRecorder::setupFileWriter(
       streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_, fileNameOverride);
 
   if (!fileResult.is_ok()) {
-    return Result<std::string, std::string>::Err(
+    return Result<NoneType, std::string>::Err(
         "Failed to open file for writing: " + fileResult.unwrap_err());
   }
 
@@ -302,7 +302,7 @@ Result<std::string, std::string> AndroidAudioRecorder::setupFileWriter(
   if (properties->rotateIntervalBytes == 0) {
     recordingSegmentPaths_.push_back(filePath_);
   }
-  return Result<std::string, std::string>::Ok(filePath_);
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 /// @brief Disables file output for the recorder.

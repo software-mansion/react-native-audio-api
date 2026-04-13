@@ -313,14 +313,12 @@ export interface IAudioRecorderCallbackOptions
 
 export interface IAudioRecorder {
   // default recorder methods
-  start: (fileNameOverride?: string) => Result<{ path: string }>;
+  start: (fileNameOverride?: string) => Result<{}>;
   stop: () => Result<FileInfo>;
   isRecording: () => boolean;
   isPaused: () => boolean;
 
-  enableFileOutput: (
-    options: AudioRecorderFileOptions
-  ) => Result<{ path: string }>;
+  enableFileOutput: (options: AudioRecorderFileOptions) => Result<{}>;
   disableFileOutput: () => void;
 
   // pause and resume methods for file recording

@@ -72,23 +72,23 @@ IOSAudioRecorder::~IOSAudioRecorder()
 /// @brief Starts the audio recording process and prepares necessary resources.
 /// This method should be called from the JS thread only.
 /// @returns Result containing the file path if recording started successfully, or an error message.
-Result<std::string, std::string> IOSAudioRecorder::start(const std::string &fileNameOverride)
+Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNameOverride)
 {
   if (!isIdle()) {
-    return Result<std::string, std::string>::Err("Recorder is already recording");
+    return Result<NoneType, std::string>::Err("Recorder is already recording");
   }
 
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
   AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
 
   if ([[audioSessionManager checkRecordingPermissions] isEqual:@"Denied"]) {
-    return Result<std::string, std::string>::Err("Microphone permissions are not granted");
+    return Result<NoneType, std::string>::Err("Microphone permissions are not granted");
   }
 
   // TODO: recorder should probably request the options if not set by user
   // but lets handle that in another PR
   if (![audioSessionManager isSessionActive]) {
-    return Result<std::string, std::string>::Err("Audio session is not active");
+    return Result<NoneType, std::string>::Err("Audio session is not active");
   }
 
   // TODO: this is a bit ugly, and could be written slightly better
@@ -107,7 +107,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
     recordingSegmentPaths_.clear();
     auto writerResult = setupFileWriter(fileProperties_, fileNameOverride);
     if (writerResult.is_err()) {
-      return Result<std::string, std::string>::Err(writerResult.unwrap_err());
+      return Result<NoneType, std::string>::Err(writerResult.unwrap_err());
     }
   }
 
@@ -116,7 +116,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
                               ->prepare(inputFormat, maxInputBufferLength);
 
     if (callbackResult.is_err()) {
-      return Result<std::string, std::string>::Err(
+      return Result<NoneType, std::string>::Err(
           "Failed to prepare callback: " + callbackResult.unwrap_err());
     }
   }
@@ -127,7 +127,7 @@ Result<std::string, std::string> IOSAudioRecorder::start(const std::string &file
 
   [nativeRecorder_ start];
   state_.store(RecorderState::Recording, std::memory_order_release);
-  return Result<std::string, std::string>::Ok(filePath_);
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 /// @brief Stops the audio recording process and releases resources.
@@ -191,7 +191,7 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
 /// This method should be called from the JS thread only.
 /// @param properties Shared pointer to AudioFileProperties defining the output file format.
 /// @returns Result containing the output file path if enabled successfully, or an error message.
-Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
+Result<NoneType, std::string> IOSAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties)
 {
   std::scoped_lock lock(fileWriterMutex_, errorCallbackMutex_);
@@ -200,12 +200,12 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
   if (!isIdle()) {
     auto writerResult = setupFileWriter(properties);
     if (writerResult.is_err()) {
-      return Result<std::string, std::string>::Err(writerResult.unwrap_err());
+      return Result<NoneType, std::string>::Err(writerResult.unwrap_err());
     }
   }
 
   fileOutputEnabled_.store(true, std::memory_order_release);
-  return Result<std::string, std::string>::Ok(filePath_);
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 std::shared_ptr<AudioFileWriter> IOSAudioRecorder::createFileWriter(

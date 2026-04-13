@@ -31,10 +31,10 @@ class IOSAudioRecorder : public AudioRecorder {
   IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
 
-  Result<std::string, std::string> start(const std::string &fileNameOverride = "") override;
+  Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
   Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
 
-  Result<std::string, std::string> enableFileOutput(
+  Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
 

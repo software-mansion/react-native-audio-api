@@ -51,9 +51,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
       "status",
       jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-  if (result.is_ok()) {
-    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.unwrap()));
-  } else {
+  if (!result.is_ok()) {
     jsResult.setProperty(
         runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
   }
@@ -107,9 +105,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
       "status",
       jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-  if (result.is_ok()) {
-    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.unwrap()));
-  } else {
+  if (!result.is_ok()) {
     jsResult.setProperty(
         runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
   }
