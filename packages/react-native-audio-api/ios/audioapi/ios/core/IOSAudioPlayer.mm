@@ -44,7 +44,7 @@ void IOSAudioPlayer::clearPendingSaved()
 
 void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFrames)
 {
-  // if flushOverflowNextPull_ is true, clear pendingSaved and set output to 0
+  // If requested, clear any saved overflow before continuing normal rendering.
   if (flushOverflowNextPull_.exchange(false, std::memory_order_acq_rel)) {
     clearPendingSaved();
   }
