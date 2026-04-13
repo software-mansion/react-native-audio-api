@@ -190,43 +190,60 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
 /// NOTE: due to the file access nature on Android, the size might sometimes be zeroed (really long files).
 Result<std::tuple<std::vector<std::string>, double, double>, std::string>
 AndroidAudioRecorder::stop() {
-  std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+  std::shared_ptr<AudioFileWriter> fileWriter;
+  std::shared_ptr<AudioRecorderCallback> dataCallback;
+  std::shared_ptr<RecorderAdapterNode> adapterNode;
+  std::vector<std::string> outputPaths;
 
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
+  bool hadFileOutput = false;
 
-  if (isIdle()) {
-    return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
-        "Recorder is not in recording state.");
+  {
+    std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+
+    if (isIdle()) {
+      return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
+          "Recorder is not in recording state.");
+    }
+
+    if (mStream_ == nullptr) {
+      return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
+          "Audio stream is not initialized.");
+    }
+
+    state_.store(RecorderState::Idle, std::memory_order_release);
+    mStream_->requestStop();
+
+    hadFileOutput = usesFileOutput();
+
+    if (hadFileOutput) {
+      fileOutputConfigured_.store(false, std::memory_order_release);
+      fileWriter = std::move(fileWriter_);
+    }
+
+    if (usesCallback()) {
+      callbackOutputConfigured_.store(false, std::memory_order_release);
+      dataCallback = std::move(dataCallback_);
+    }
+
+    if (isConnected()) {
+      connectedConfigured_.store(false, std::memory_order_release);
+      adapterNode = std::move(adapterNode_);
+    }
   }
 
-  if (mStream_ == nullptr) {
-    return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
-        "Audio stream is not initialized.");
+  for (const auto &raw : recordingSegmentPaths_) {
+    if (!raw.empty()) {
+      outputPaths.push_back(std::format("file://{}", raw));
+    }
+  }
+  if (hadFileOutput && outputPaths.empty() && !filePath_.empty()) {
+    outputPaths.push_back(std::format("file://{}", filePath_));
   }
 
-  state_.store(RecorderState::Idle, std::memory_order_release);
-  mStream_->requestStop();
-
-  bool hadFileOutput = usesFileOutput();
-  bool hadCallback = usesCallback();
-  bool hadConnection = isConnected();
-  auto fileWriter = hadFileOutput ? fileWriter_ : nullptr;
-  auto dataCallback = hadCallback ? dataCallback_ : nullptr;
-  auto adapterNode = hadConnection ? adapterNode_ : nullptr;
-
-  if (hadFileOutput) {
-    fileOutputConfigured_.store(false, std::memory_order_release);
-    fileWriter_ = nullptr;
-  }
-
-  if (hadCallback) {
-    callbackOutputConfigured_.store(false, std::memory_order_release);
-  }
-
-  if (hadConnection) {
-    connectedConfigured_.store(false, std::memory_order_release);
-  }
+  recordingSegmentPaths_.clear();
+  filePath_ = "";
 
   if (fileWriter != nullptr) {
     auto fileResult = fileWriter->closeFile();
@@ -248,18 +265,6 @@ AndroidAudioRecorder::stop() {
     adapterNode->adapterCleanup();
   }
 
-  std::vector<std::string> outputPaths;
-  for (const auto &raw : recordingSegmentPaths_) {
-    if (!raw.empty()) {
-      outputPaths.push_back(std::format("file://{}", raw));
-    }
-  }
-  if (hadFileOutput && outputPaths.empty() && !filePath_.empty()) {
-    outputPaths.push_back(std::format("file://{}", filePath_));
-  }
-
-  recordingSegmentPaths_.clear();
-  filePath_ = "";
   return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Ok(
       std::make_tuple(std::move(outputPaths), outputFileSize, outputDuration));
 }
