@@ -135,6 +135,7 @@ Schedules the parameters's value change following a curve defined by given array
 | Error type | Description |
 | :---: | :---- |
 | `RangeError` | `startTime` is negative number. |
+| `NotSupportedError` | there are already scheduled events that fall within the interval $(T, T+D)$ where $T$ is the `startTime` and $D$ is the `duration`. |
 
 #### Returns `AudioParam`.
 
