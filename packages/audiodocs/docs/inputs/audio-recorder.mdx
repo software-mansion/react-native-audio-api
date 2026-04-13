@@ -145,7 +145,7 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    console.log('Recording started to file:', result.path);
+    console.log('Recording started');
     setIsRecording(true);
   };
 
@@ -387,11 +387,7 @@ export default MyRecorder;
           fileNameOverride: `my_audio_${mySessionId}`
         });
 
-        if (result.status === 'success') {
-          const openedFilePath = result.path;
-        } else if (result.status === 'error') {
-          console.error(result.message);
-        }
+        console.log(result.status);
         ```
       </td>
     </tr>
