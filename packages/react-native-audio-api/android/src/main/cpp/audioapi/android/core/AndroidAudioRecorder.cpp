@@ -1,3 +1,4 @@
+#include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/AndroidRecorderCallback.h>
@@ -6,6 +7,7 @@
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
+#include <audioapi/android/core/utils/AndroidRotatingFileWriter.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
@@ -19,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -102,37 +105,34 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 /// RN side requires their "file://" prefix, but sometimes it returned raw path.
 /// Most likely this was due to alpha version mistakes, but in case of problems leaving this here. (ㆆ _ ㆆ)
 /// @returns On success, returns the file URI where the recording is being saved (if file output is enabled).
-Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &fileNameOverride) {
+Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fileNameOverride) {
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
   if (!isIdle()) {
-    return Result<std::string, std::string>::Err("Recorder is already recording");
+    return Result<NoneType, std::string>::Err("Recorder is already recording");
   }
 
   auto streamResult = openAudioStream();
 
   if (!streamResult.is_ok()) {
-    return Result<std::string, std::string>::Err(streamResult.unwrap_err());
+    return Result<NoneType, std::string>::Err(streamResult.unwrap_err());
   }
 
   if (mStream_ == nullptr) {
-    return Result<std::string, std::string>::Err("Audio stream is not initialized.");
+    return Result<NoneType, std::string>::Err("Audio stream is not initialized.");
   }
 
   if (usesFileOutput()) {
-    auto fileResult = std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-                          ->openFile(
-                              streamSampleRate_,
-                              streamChannelCount_,
-                              streamMaxBufferSizeInFrames_,
-                              fileNameOverride);
-
-    if (!fileResult.is_ok()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to open file for writing: " + fileResult.unwrap_err());
+    recordingSegmentPaths_.clear();
+    auto writerResult = setupFileWriter(fileProperties_, fileNameOverride);
+    if (!writerResult.is_ok()) {
+      return writerResult;
     }
-
-    filePath_ = fileResult.unwrap();
+    __android_log_print(
+        ANDROID_LOG_INFO,
+        "AndroidAudioRecorder",
+        "File created successfully at path: %s",
+        filePath_.c_str());
   }
 
   if (usesCallback()) {
@@ -149,32 +149,32 @@ Result<std::string, std::string> AndroidAudioRecorder::start(const std::string &
   auto result = mStream_->requestStart();
 
   if (result != oboe::Result::OK) {
-    return Result<std::string, std::string>::Err(
+    return Result<NoneType, std::string>::Err(
         "Failed to start stream: " + std::string(oboe::convertToText(result)));
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);
-  return Result<std::string, std::string>::Ok(std::format("file://{}", filePath_));
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 /// @brief Stops the audio stream and finalizes any output (file writing, callback, adapter node).
 /// This method should be called from the JS thread only.
 /// @returns On success, returns the file URI, size in MB and duration in seconds of the recorded file (if file output is enabled).
 /// NOTE: due to the file access nature on Android, the size might sometimes be zeroed (really long files).
-Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorder::stop() {
+Result<std::tuple<std::vector<std::string>, double, double>, std::string>
+AndroidAudioRecorder::stop() {
   std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
-  std::string filePath = std::format("file://{}", filePath_);
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
 
   if (isIdle()) {
-    return Result<std::tuple<std::string, double, double>, std::string>::Err(
+    return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
         "Recorder is not in recording state.");
   }
 
   if (mStream_ == nullptr) {
-    return Result<std::tuple<std::string, double, double>, std::string>::Err(
+    return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
         "Audio stream is not initialized.");
   }
 
@@ -185,7 +185,7 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
     auto fileResult = fileWriter_->closeFile();
 
     if (!fileResult.is_ok()) {
-      return Result<std::tuple<std::string, double, double>, std::string>::Err(
+      return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
           "Failed to close file: " + fileResult.unwrap_err());
     }
 
@@ -201,9 +201,20 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
     adapterNode_->adapterCleanup();
   }
 
+  std::vector<std::string> outputPaths;
+  for (const auto &raw : recordingSegmentPaths_) {
+    if (!raw.empty()) {
+      outputPaths.push_back(std::format("file://{}", raw));
+    }
+  }
+  if (usesFileOutput() && outputPaths.empty() && !filePath_.empty()) {
+    outputPaths.push_back(std::format("file://{}", filePath_));
+  }
+
+  recordingSegmentPaths_.clear();
   filePath_ = "";
-  return Result<std::tuple<std::string, double, double>, std::string>::Ok(
-      {filePath, outputFileSize, outputDuration});
+  return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Ok(
+      std::make_tuple(std::move(outputPaths), outputFileSize, outputDuration));
 }
 
 /// @brief Enables file output for the recorder with the specified properties.
@@ -213,37 +224,85 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
 /// This method should be called from the JS thread only.
 /// @param properties Properties defining the audio file format and encoding options.
 /// @returns On success, returns the file URI where the recording is being saved, otherwise returns an error message.
-Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
+Result<NoneType, std::string> AndroidAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
   std::scoped_lock fileWriterLock(fileWriterMutex_);
-
-  if (properties->format == AudioFileProperties::Format::WAV) {
-    fileWriter_ = std::make_shared<MiniAudioFileWriter>(audioEventHandlerRegistry_, properties);
-  } else {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
-        audioEventHandlerRegistry_, properties);
-#else
-    return Result<std::string, std::string>::Err(
-        "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV format instead.");
-#endif
-  }
+  fileProperties_ = properties;
 
   if (!isIdle()) {
-    auto fileResult =
-        std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-            ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_, "");
-
-    if (!fileResult.is_ok()) {
-      return Result<std::string, std::string>::Err(
-          "Failed to open file for writing: " + fileResult.unwrap_err());
+    auto writerResult = setupFileWriter(properties);
+    if (!writerResult.is_ok()) {
+      return writerResult;
     }
-
-    filePath_ = fileResult.unwrap();
   }
 
   fileOutputEnabled_.store(true, std::memory_order_release);
-  return Result<std::string, std::string>::Ok(filePath_);
+  return Result<NoneType, std::string>::Ok(None);
+}
+
+std::shared_ptr<AudioFileWriter> AndroidAudioRecorder::createFileWriter(
+    const std::shared_ptr<AudioFileProperties> &props) {
+  if (props->format == AudioFileProperties::Format::WAV) {
+    return std::make_shared<MiniAudioFileWriter>(
+        audioEventHandlerRegistry_,
+        props,
+        streamSampleRate_,
+        streamChannelCount_,
+        streamMaxBufferSizeInFrames_);
+  }
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+  return std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
+      audioEventHandlerRegistry_,
+      props,
+      streamSampleRate_,
+      streamChannelCount_,
+      streamMaxBufferSizeInFrames_);
+#else
+  return nullptr;
+#endif
+}
+
+Result<NoneType, std::string> AndroidAudioRecorder::setupFileWriter(
+    const std::shared_ptr<AudioFileProperties> &properties,
+    const std::string &fileNameOverride) {
+#if RN_AUDIO_API_FFMPEG_DISABLED
+  if (properties->format != AudioFileProperties::Format::WAV) {
+    return Result<std::string, std::string>::Err(
+        "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV format instead.");
+  }
+#endif
+
+  if (properties->rotateIntervalBytes > 0) {
+    fileWriter_ = std::make_shared<AndroidRotatingFileWriter>(
+        audioEventHandlerRegistry_,
+        properties,
+        properties->rotateIntervalBytes,
+        [this](const std::shared_ptr<AudioFileProperties> &p) { return createFileWriter(p); },
+        [this](const std::string &path) {
+          if (!path.empty()) {
+            recordingSegmentPaths_.push_back(path);
+          }
+        });
+  } else {
+    fileWriter_ = createFileWriter(properties);
+  }
+
+  fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+
+  auto backend = std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_);
+  auto fileResult = backend->openFile(
+      streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_, fileNameOverride);
+
+  if (!fileResult.is_ok()) {
+    return Result<NoneType, std::string>::Err(
+        "Failed to open file for writing: " + fileResult.unwrap_err());
+  }
+
+  filePath_ = fileResult.unwrap();
+  if (properties->rotateIntervalBytes == 0) {
+    recordingSegmentPaths_.push_back(filePath_);
+  }
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 /// @brief Disables file output for the recorder.
@@ -360,8 +419,7 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
 
   if (usesFileOutput()) {
     if (auto fileWriterLock = Locker::tryLock(fileWriterMutex_)) {
-      std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
-          ->writeAudioData(audioData, numFrames);
+      fileWriter_->writeAudioData(audioData, numFrames);
     }
   }
 

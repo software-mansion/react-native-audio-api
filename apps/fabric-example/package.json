@@ -13,8 +13,8 @@
     "common-app": "workspace:*",
     "lucide-react-native": "^0.555.0",
     "react": "19.2.3",
-    "react-native": "0.84.1",
-    "react-native-svg": "15.15.3"
+    "react-native": "0.85.0",
+    "react-native-svg": "15.15.4"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

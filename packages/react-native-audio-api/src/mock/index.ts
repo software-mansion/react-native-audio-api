@@ -747,7 +747,7 @@ class AudioRecorderMock {
     this._currentDuration = 0;
     return {
       status: 'success',
-      path: '/mock/path/recording.m4a',
+      paths: ['/mock/path/recording.m4a'],
       size: 12345,
       duration: 5.0,
     };

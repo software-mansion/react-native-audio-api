@@ -3,6 +3,7 @@ const darkTheme = require('prism-react-renderer').themes.github;
 module.exports = {
   ...darkTheme,
   plain: {
+    background: 'transparent',
     color: 'var(--swm-navy-light-40)',
   },
   styles: [

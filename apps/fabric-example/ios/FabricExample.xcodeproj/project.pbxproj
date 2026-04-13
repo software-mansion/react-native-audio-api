@@ -12,14 +12,14 @@
 		56A4D8FCA4F4A4F4D6931F91 /* libPods-FabricExampleTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CC5986FE0E14CB5D60FE16B1 /* libPods-FabricExampleTests.a */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-			88485BE83AA320DC6673875F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
-			A1B2C4301E00000100A0A001 /* AudioAPIModuleTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */; };
-			A1B2C3D41E00000100A0A001 /* AudioEngineTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */; };
-			A1B2C3E01E00000100A0A001 /* AudioSessionManagerTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3E11E00000100A0A001 /* AudioSessionManagerTests.mm */; };
+		88485BE83AA320DC6673875F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		A1B2C3D41E00000100A0A001 /* AudioEngineTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */; };
+		A1B2C3E01E00000100A0A001 /* AudioSessionManagerTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3E11E00000100A0A001 /* AudioSessionManagerTests.mm */; };
 		A1B2C3F01E00000100A0A001 /* SystemNotificationManagerTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3F11E00000100A0A001 /* SystemNotificationManagerTests.mm */; };
 		A1B2C4001E00000100A0A001 /* AudioPlayerTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4011E00000100A0A001 /* AudioPlayerTests.mm */; };
 		A1B2C4101E00000100A0A001 /* NativeAudioRecorderTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4111E00000100A0A001 /* NativeAudioRecorderTests.mm */; };
 		A1B2C4201E00000100A0A001 /* IOSAudioRecorderTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4211E00000100A0A001 /* IOSAudioRecorderTests.mm */; };
+		A1B2C4301E00000100A0A001 /* AudioAPIModuleTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,15 +42,15 @@
 		5709B34CF0A7D63546082F79 /* Pods-FabricExample.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FabricExample.release.xcconfig"; path = "Target Support Files/Pods-FabricExample/Pods-FabricExample.release.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = FabricExample/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = FabricExample/LaunchScreen.storyboard; sourceTree = "<group>"; };
-			83D4BF4645ED53746187231E /* Pods-FabricExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FabricExampleTests.release.xcconfig"; path = "Target Support Files/Pods-FabricExampleTests/Pods-FabricExampleTests.release.xcconfig"; sourceTree = "<group>"; };
-			A1B2C3D51E00000100A0A001 /* FabricExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FabricExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-			A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioEngineTests.mm; sourceTree = "<group>"; };
-			A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioAPIModuleTests.mm; sourceTree = "<group>"; };
-			A1B2C3E11E00000100A0A001 /* AudioSessionManagerTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioSessionManagerTests.mm; sourceTree = "<group>"; };
+		83D4BF4645ED53746187231E /* Pods-FabricExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FabricExampleTests.release.xcconfig"; path = "Target Support Files/Pods-FabricExampleTests/Pods-FabricExampleTests.release.xcconfig"; sourceTree = "<group>"; };
+		A1B2C3D51E00000100A0A001 /* FabricExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FabricExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioEngineTests.mm; sourceTree = "<group>"; };
+		A1B2C3E11E00000100A0A001 /* AudioSessionManagerTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioSessionManagerTests.mm; sourceTree = "<group>"; };
 		A1B2C3F11E00000100A0A001 /* SystemNotificationManagerTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = SystemNotificationManagerTests.mm; sourceTree = "<group>"; };
 		A1B2C4011E00000100A0A001 /* AudioPlayerTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioPlayerTests.mm; sourceTree = "<group>"; };
 		A1B2C4111E00000100A0A001 /* NativeAudioRecorderTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = NativeAudioRecorderTests.mm; sourceTree = "<group>"; };
 		A1B2C4211E00000100A0A001 /* IOSAudioRecorderTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = IOSAudioRecorderTests.mm; sourceTree = "<group>"; };
+		A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioAPIModuleTests.mm; sourceTree = "<group>"; };
 		CC5986FE0E14CB5D60FE16B1 /* libPods-FabricExampleTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-FabricExampleTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E03ADA267568B5D61B986B06 /* libPods-FabricExample.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-FabricExample.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -129,14 +129,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-			A1B2C3D81E00000100A0A001 /* FabricExampleTests */ = {
-				isa = PBXGroup;
-				children = (
-					A1B2C4211E00000100A0A001 /* IOSAudioRecorderTests.mm */,
-					A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */,
-					A1B2C4011E00000100A0A001 /* AudioPlayerTests.mm */,
-					A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */,
-					A1B2C4111E00000100A0A001 /* NativeAudioRecorderTests.mm */,
+		A1B2C3D81E00000100A0A001 /* FabricExampleTests */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C4211E00000100A0A001 /* IOSAudioRecorderTests.mm */,
+				A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */,
+				A1B2C4011E00000100A0A001 /* AudioPlayerTests.mm */,
+				A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */,
+				A1B2C4111E00000100A0A001 /* NativeAudioRecorderTests.mm */,
 				A1B2C3E11E00000100A0A001 /* AudioSessionManagerTests.mm */,
 				A1B2C3F11E00000100A0A001 /* SystemNotificationManagerTests.mm */,
 			);
@@ -359,14 +359,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-			A1B2C3DC1E00000100A0A001 /* Sources */ = {
-				isa = PBXSourcesBuildPhase;
-				buildActionMask = 2147483647;
-				files = (
-					A1B2C4201E00000100A0A001 /* IOSAudioRecorderTests.mm in Sources */,
-					A1B2C4301E00000100A0A001 /* AudioAPIModuleTests.mm in Sources */,
-					A1B2C4001E00000100A0A001 /* AudioPlayerTests.mm in Sources */,
-					A1B2C3D41E00000100A0A001 /* AudioEngineTests.mm in Sources */,
+		A1B2C3DC1E00000100A0A001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C4201E00000100A0A001 /* IOSAudioRecorderTests.mm in Sources */,
+				A1B2C4301E00000100A0A001 /* AudioAPIModuleTests.mm in Sources */,
+				A1B2C4001E00000100A0A001 /* AudioPlayerTests.mm in Sources */,
+				A1B2C3D41E00000100A0A001 /* AudioEngineTests.mm in Sources */,
 				A1B2C4101E00000100A0A001 /* NativeAudioRecorderTests.mm in Sources */,
 				A1B2C3E01E00000100A0A001 /* AudioSessionManagerTests.mm in Sources */,
 				A1B2C3F01E00000100A0A001 /* SystemNotificationManagerTests.mm in Sources */,

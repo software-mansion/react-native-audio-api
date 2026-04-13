@@ -2,7 +2,9 @@ import { BiquadFilterNode } from 'react-native-audio-api';
 
 export const drawFrequencyResponse = (
   canvas: HTMLCanvasElement | null,
-  filter: BiquadFilterNode | null
+  filter: BiquadFilterNode | null,
+  gridColor = 'rgba(255, 255, 255, 0.15)',
+  responseColor = '#fa7f7c',
 ) => {
   if (!canvas || !filter) return;
 
@@ -29,7 +31,7 @@ export const drawFrequencyResponse = (
   };
 
   ctx.clearRect(0, 0, width, height);
-  ctx.strokeStyle = '#bcdae4ff';
+  ctx.strokeStyle = gridColor;
   ctx.lineWidth = 1 * dpr;
 
   const numGridLines = 11;
@@ -52,7 +54,7 @@ export const drawFrequencyResponse = (
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
 
-  ctx.strokeStyle = '#38acdd';
+  ctx.strokeStyle = responseColor;
   ctx.lineWidth = 2 * dpr;
   ctx.stroke();
 };

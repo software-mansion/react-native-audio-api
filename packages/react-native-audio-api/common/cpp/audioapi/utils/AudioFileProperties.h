@@ -47,6 +47,7 @@ class AudioFileProperties {
       const std::string &fileNamePrefix,
       int channelCount,
       size_t batchDurationSeconds,
+      size_t rotateIntervalBytes,
       Format format,
       float sampleRate,
       size_t bitRate,
@@ -64,6 +65,7 @@ class AudioFileProperties {
   std::string fileNamePrefix;
   int channelCount;
   size_t batchDurationSeconds;
+  size_t rotateIntervalBytes;
   Format format;
   float sampleRate;
   size_t bitRate;

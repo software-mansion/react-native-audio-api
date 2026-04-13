@@ -10,11 +10,11 @@ namespace audioapi {
 void AudioRecorder::setOnErrorCallback(uint64_t callbackId) {
   std::scoped_lock lock(callbackMutex_, fileWriterMutex_, errorCallbackMutex_);
 
-  if (usesFileOutput()) {
+  if (usesFileOutput() && fileWriter_ != nullptr) {
     fileWriter_->setOnErrorCallback(callbackId);
   }
 
-  if (usesCallback()) {
+  if (usesCallback() && dataCallback_ != nullptr) {
     dataCallback_->setOnErrorCallback(callbackId);
   }
 

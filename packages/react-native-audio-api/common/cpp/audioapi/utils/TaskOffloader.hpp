@@ -56,7 +56,6 @@ class TaskOffloader {
   Sender<T, Strategy, Wait> sender_;
   std::thread workerThread_;
   std::atomic<bool> shouldRun_;
-  bool taskOffloaded_;
 };
 
 } // namespace audioapi::task_offloader

@@ -28,10 +28,10 @@ class AudioRecorder {
   AudioRecorder &operator=(AudioRecorder &&) = delete;
   virtual ~AudioRecorder() = default;
 
-  virtual Result<std::string, std::string> start(const std::string &fileNameOverride) = 0;
-  virtual Result<std::tuple<std::string, double, double>, std::string> stop() = 0;
+  virtual Result<NoneType, std::string> start(const std::string &fileNameOverride) = 0;
+  virtual Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() = 0;
 
-  virtual Result<std::string, std::string> enableFileOutput(
+  virtual Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) = 0;
   virtual void disableFileOutput() = 0;
 
@@ -80,6 +80,7 @@ class AudioRecorder {
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
 };
 
 } // namespace audioapi

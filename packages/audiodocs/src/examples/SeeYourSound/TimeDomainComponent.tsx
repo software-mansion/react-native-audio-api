@@ -1,16 +1,16 @@
 import React, {
-  useState,
+  useCallback,
   useEffect,
   useRef,
-  useCallback,
+  useState,
 } from 'react';
+import { ActivityIndicator, Button, View } from 'react-native';
 import {
-  AudioContext,
+  AnalyserNode,
   AudioBuffer,
   AudioBufferSourceNode,
-  AnalyserNode,
+  AudioContext,
 } from 'react-native-audio-api';
-import { ActivityIndicator, View, Button } from 'react-native';
 import CanvasSizer from './CanvasSizerComponent';
 
 interface ChartProps {
@@ -206,7 +206,7 @@ const AudioVisualizer: React.FC = () => {
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
-            color={'#38acdd'}
+            color="#ff6259"
           />
         </View>
       </View>

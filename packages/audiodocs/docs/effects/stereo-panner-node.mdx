@@ -9,10 +9,6 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 The `StereoPannerNode` interface represents the change in ratio between two output channels (f. e. left and right speaker).
 
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
-<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"clamped-max"} channelInterpretation={"speakers"} />
-
 ## Constructor
 
 ```tsx
@@ -33,6 +29,8 @@ Or by using `BaseAudioContext` factory method:
 ## Properties
 
 It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :--: | :--: | :---------- |

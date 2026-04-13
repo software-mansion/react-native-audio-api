@@ -1,3 +1,10 @@
 export { default } from './Audio';
+export { useAudioTagContext } from './AudioTagContext';
 
-export type { AudioProps, AudioSource, TimeRanges } from './types';
+export type {
+  AudioTagHandle,
+  AudioProps,
+  AudioSource,
+  AudioTagPlaybackState,
+  TimeRanges,
+} from './types';

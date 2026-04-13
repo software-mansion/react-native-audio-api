@@ -1,0 +1,124 @@
+
+.detailBox {
+  background-color: var(--audiodocs-detail-box-bg, var(--swm-red-light-20));
+  box-shadow: -10px 10px 0 var(--audiodocs-detail-box-shadow, var(--swm-red-light-100));
+  margin-bottom: 20px;
+}
+
+.detailBoxHeader {
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.detailBoxChevron {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform 0.2s ease;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.detailBoxChevronOpen {
+  transform: rotate(180deg);
+}
+
+.detailBoxTag {
+  background-color: var(--audiodocs-detail-box-tag-bg, var(--swm-red-light-40));
+  color: var(--audiodocs-detail-box-tag-color, var(--swm-navy));
+  font-weight: 400;
+  padding: 4px;
+  border: none;
+  margin: 0 0.2rem 0 0;
+  font-size: 0.8rem;
+}
+
+.detailBoxInfo {
+  color: var(--audiodocs-detail-box-info-color, var(--swm-navy));
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.detailBoxContent {
+  margin: 0 32px;
+  border: 1px solid var(--swm-border);
+  background: var(--swm-off-background);
+}
+
+.detailBoxClear {
+  width: 100%;
+  clear: both;
+  padding-top: 32px;
+}
+
+:root[data-theme='dark'] {
+  --audiodocs-detail-box-bg: var(--swm-red-dark-140);
+  --audiodocs-detail-box-shadow: var(--swm-red-dark-100);
+  --audiodocs-detail-box-tag-bg: var(--swm-red-dark-100);
+  --audiodocs-detail-box-tag-color: var(--swm-off-white);
+  --audiodocs-detail-box-info-color: var(--swm-off-white);
+}
+
+@media (max-width: 996px) {
+  .detailBoxHeader {
+    padding: 20px 24px;
+  }
+
+  .detailBoxContent {
+    margin: 0 24px;
+  }
+
+  .detailBoxClear {
+    padding-top: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .detailBoxHeader {
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .detailBoxChevron {
+    width: 14px;
+    height: 14px;
+  }
+
+  .detailBoxTag {
+    font-size: 0.75rem;
+  }
+
+  .detailBoxInfo {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .detailBoxContent {
+    margin: 0 16px;
+  }
+
+  .detailBoxClear {
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .detailBoxHeader {
+    padding: 12px;
+  }
+
+  .detailBoxInfo {
+    font-size: 0.9rem;
+  }
+
+  .detailBoxContent {
+    margin: 0 12px;
+  }
+}

@@ -145,7 +145,7 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    console.log('Recording started to file:', result.path);
+    console.log('Recording started');
     setIsRecording(true);
   };
 
@@ -387,11 +387,7 @@ export default MyRecorder;
           fileNameOverride: `my_audio_${mySessionId}`
         });
 
-        if (result.status === 'success') {
-          const openedFilePath = result.path;
-        } else if (result.status === 'error') {
-          console.error(result.message);
-        }
+        console.log(result.status);
         ```
       </td>
     </tr>
@@ -412,7 +408,7 @@ export default MyRecorder;
         const result = audioRecorder.stop();
 
         if (result.status === 'success') {
-          const { path, duration, size } = result;
+          const { paths, duration, size } = result;
         } else if (result.status === 'error') {
           console.error(result.message);
         }
@@ -722,6 +718,7 @@ interface OnAudioReadyEventType {
 ```tsx
 interface AudioRecorderFileOptions {
   channelCount?: number;
+  rotateIntervalBytes?: number;
 
   format?: FileFormat;
   preset?: FilePresetType;
@@ -734,6 +731,7 @@ interface AudioRecorderFileOptions {
 ```
 
 - `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
+- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to 0 (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp.
 - `format` - The desired extension and file format of the recorder file. Check: [FileFormat](#fileformat) below.
 - `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
@@ -760,13 +758,13 @@ enum FileFormat {
 
 ```tsx
 interface FileInfo {
-  path: string;
+  paths: string[];
   size: number;
   duration: number;
 }
 ```
 
-- `path` - The path to the recorded audio file.
+- `paths` - Paths to the recorded audio files. When file rotation is disabled it has only one entry, otherwise list of paths to recorder files is returned.
 - `size` - The file size (in MB).
 - `duration` - The recording duration (in seconds).
 
