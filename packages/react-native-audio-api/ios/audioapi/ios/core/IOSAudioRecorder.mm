@@ -217,7 +217,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
 
   if (usesFileOutput()) {
     recordingSegmentPaths_.clear();
-  auto writerResult = setupFileWriter(fileProperties_, fileNameOverride);
+    auto writerResult = setupFileWriter(fileProperties_, fileNameOverride);
     if (writerResult.is_err()) {
       return Result<NoneType, std::string>::Err(writerResult.unwrap_err());
     }
