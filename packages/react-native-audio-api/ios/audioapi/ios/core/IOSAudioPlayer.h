@@ -48,7 +48,7 @@ class IOSAudioPlayer {
   std::atomic<bool> flushOverflowNextPull_{false};
   /// Frames valid at the front of each `pendingSaved_[ch]` (0 … RENDER_QUANTUM_SIZE).
   int pendingSavedCount_{0};
-  DSPAudioBuffer pendingSaved;
+  DSPAudioBuffer pendingSaved_;
 };
 
 } // namespace audioapi

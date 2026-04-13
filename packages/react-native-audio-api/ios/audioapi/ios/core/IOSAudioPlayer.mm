@@ -19,7 +19,7 @@ IOSAudioPlayer::IOSAudioPlayer(
       renderAudio_(renderAudio),
       channelCount_(channelCount),
       isRunning_(false),
-      pendingSaved(RENDER_QUANTUM_SIZE, channelCount_, sampleRate)
+      pendingSaved_(RENDER_QUANTUM_SIZE, channelCount_, sampleRate)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     deliverOutputBuffers(outputData, numFrames);
@@ -39,7 +39,7 @@ IOSAudioPlayer::~IOSAudioPlayer()
 void IOSAudioPlayer::clearPendingSaved()
 {
   pendingSavedCount_ = 0;
-  pendingSaved.zero();
+  pendingSaved_.zero();
 }
 
 void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFrames)
@@ -68,13 +68,13 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
       // populate output with pendingSaved
       for (int ch = 0; ch < channelCount_; ++ch) {
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
-        const float *src = pendingSaved[ch].begin();
+        const float *src = pendingSaved_[ch].begin();
         std::memcpy(dst, src, fromPending * sizeof(float));
 
         // move the remaining samples to the beginning of the pendingSaved buffer
         const int remain = pendingSavedCount_ - fromPending;
         if (remain > 0) {
-          float *buf = pendingSaved[ch].begin();
+          float *buf = pendingSaved_[ch].begin();
           std::memmove(buf, buf + fromPending, remain * sizeof(float));
         }
       }
@@ -103,7 +103,7 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
         std::memcpy(dst, src, stillNeed * sizeof(float));
       }
-      pendingSaved.copy(*audioBuffer_, stillNeed, 0, tail);
+      pendingSaved_.copy(*audioBuffer_, stillNeed, 0, tail);
       pendingSavedCount_ = tail;
       outPos += stillNeed;
     }
