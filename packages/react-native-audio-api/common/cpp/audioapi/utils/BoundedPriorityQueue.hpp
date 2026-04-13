@@ -1,12 +1,12 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <array>
 #include <cstddef>
 #include <functional>
 #include <memory_resource>
 #include <set>
 #include <utility>
-#include "audioapi/utils/Macros.h"
 
 namespace audioapi {
 
