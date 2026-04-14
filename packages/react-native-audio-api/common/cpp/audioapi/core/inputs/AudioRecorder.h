@@ -62,14 +62,21 @@ class AudioRecorder {
   virtual bool isIdle() const = 0;
 
  protected:
+  bool wantsCallback() const;
+  bool wantsFileOutput() const;
+  bool wantsConnection() const;
+
   std::atomic<RecorderState> state_{RecorderState::Idle};
 
   std::atomic<bool> isConnected_{false};
   std::atomic<bool> fileOutputEnabled_{false};
   std::atomic<bool> callbackOutputEnabled_{false};
+  std::atomic<bool> connectedConfigured_{false};
+  std::atomic<bool> fileOutputConfigured_{false};
+  std::atomic<bool> callbackOutputConfigured_{false};
 
   std::mutex callbackMutex_;
-  std::mutex fileWriterMutex_;
+  mutable std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;
   mutable std::mutex adapterNodeMutex_;
 

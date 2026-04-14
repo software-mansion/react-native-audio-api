@@ -1,9 +1,10 @@
-import React, { FC, useCallback, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState, useRef } from 'react';
 import { Alert, Text, View } from 'react-native';
 import {
   AudioBuffer,
   AudioManager,
   useAudioInput,
+  AudioBufferSourceNode,
 } from 'react-native-audio-api';
 
 import { Button, Container, Select } from '../../components';
@@ -23,6 +24,7 @@ const Record: FC = () => {
 
   const [status, setStatus] = useState<Status>(Status.Idle);
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
+  const sourceNodesRef = useRef<AudioBufferSourceNode[]>([]);
 
   const verifyPermissions = async () => {
     const recPerm = await AudioManager.requestRecordingPermissions();
@@ -197,6 +199,7 @@ const Record: FC = () => {
       source.connect(audioContext.destination);
       source.start(nextStartAt);
       nextStartAt += buffer.duration;
+      sourceNodesRef.current.push(source);
     });
 
     setStatus(Status.Playback);
@@ -225,6 +228,10 @@ const Record: FC = () => {
   useEffect(() => {
     return () => {
       audioRecorder.stop();
+      sourceNodesRef.current.forEach((source) => {
+        source.disconnect();
+      });
+      sourceNodesRef.current = [];
     };
   }, []);
 

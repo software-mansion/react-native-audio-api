@@ -128,6 +128,9 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   self.inputArmed = NO;
   [audioEngine detachInputNode];
   [audioEngine stopIfPossible];
+  // This makes sure that the engine releases the input properly when we no longer need it
+  // (i.e. no more misleading dot)
+  [audioEngine restartAudioEngine];
   self.resolvedInputFormat = nil;
   self.resolvedBufferSize = 0;
 }

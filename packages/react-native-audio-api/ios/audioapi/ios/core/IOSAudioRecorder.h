@@ -13,13 +13,11 @@ typedef struct objc_object NativeAudioRecorder;
 #include <audioapi/utils/Result.hpp>
 
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 
 namespace audioapi {
 
-class FileWriter;
 class RecorderCallback;
 class RecorderAdapterNode;
 class AudioFileProperties;
