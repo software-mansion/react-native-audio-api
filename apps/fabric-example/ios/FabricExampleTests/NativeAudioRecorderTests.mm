@@ -394,13 +394,14 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
     NSInteger previousDetachCount = self.audioEngine.detachInputNodeCallCount;
     NSInteger previousStopIfPossibleCount = self.audioEngine.stopIfPossibleCallCount;
+    NSInteger previousRestartAudioEngineCallCount = self.audioEngine.restartAudioEngineCallCount;
     self.audioEngine.state = state;
 
     [recorder stop];
 
     XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, previousDetachCount + 1);
     XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, previousStopIfPossibleCount + 1);
-    XCTAssertEqual(self.audioEngine.restartAudioEngineCallCount, 0);
+    XCTAssertEqual(self.audioEngine.restartAudioEngineCallCount, previousRestartAudioEngineCallCount + 1);
     XCTAssertNil([recorder getResolvedInputFormat]);
     XCTAssertEqual([recorder getResolvedBufferSize], 0);
   };

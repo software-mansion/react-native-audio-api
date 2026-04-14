@@ -74,7 +74,8 @@ Then run the tests from the repo root or from `apps/fabric-example`:
 xcodebuild test \
   -workspace ios/FabricExample.xcworkspace \
   -scheme FabricExample \
-  -destination 'platform=iOS Simulator,name=iPhone 17 pro,OS=26.4'
+  -destination 'platform=iOS Simulator,name=iPhone 17 pro,OS=26.4' \
+  -parallelizeTargets
 ```
 
 If that simulator is not available on your machine, list installed simulators and swap the destination:
