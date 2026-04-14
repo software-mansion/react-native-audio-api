@@ -407,46 +407,56 @@ static AudioSessionManager *_sharedInstance = nil;
   for (NSString *option in optionsArray) {
     if ([option isEqualToString:@"allowAirPlay"]) {
       options |= AVAudioSessionCategoryOptionAllowAirPlay;
+      continue;
     }
 
     if ([option isEqualToString:@"allowBluetoothA2DP"]) {
       options |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+      continue;
     }
 
     if ([option isEqualToString:@"allowBluetoothHFP"]) {
       options |= AVAudioSessionCategoryOptionAllowBluetoothHFP;
+      continue;
     }
 
     if ([option isEqualToString:@"bluetoothHighQualityRecording"]) {
       if (@available(iOS 26, *)) {
         options |= AVAudioSessionCategoryOptionBluetoothHighQualityRecording;
       }
+      continue;
     }
 
     if ([option isEqualToString:@"defaultToSpeaker"]) {
       options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+      continue;
     }
 
     if ([option isEqualToString:@"duckOthers"]) {
       options |= AVAudioSessionCategoryOptionDuckOthers;
+      continue;
     }
 
     if ([option isEqualToString:@"farFieldInput"]) {
       if (@available(iOS 26.2, *)) {
         options |= AVAudioSessionCategoryOptionFarFieldInput;
+        continue;
       }
     }
 
     if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
       options |= AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
+      continue;
     }
 
     if ([option isEqualToString:@"mixWithOthers"]) {
       options |= AVAudioSessionCategoryOptionMixWithOthers;
+      continue;
     }
 
     if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
       options |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
+      continue;
     }
   }
 

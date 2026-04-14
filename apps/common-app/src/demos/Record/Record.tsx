@@ -90,7 +90,6 @@ const Record: FC = () => {
     setupNotification(false);
 
     if (result.status === 'success') {
-      console.log('Recording started, file path:', result.path);
       setState(RecordingState.Recording);
       return;
     }
@@ -124,7 +123,7 @@ const Record: FC = () => {
       return;
     }
 
-    const audioBuffer = await audioContext.decodeAudioData(info.path);
+    const audioBuffer = await audioContext.decodeAudioData(info.paths[0]);
     setRecordedBuffer(audioBuffer);
     setState(RecordingState.ReadyToPlay);
     currentPositionSV.value = 0;
