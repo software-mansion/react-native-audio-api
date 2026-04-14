@@ -2,26 +2,30 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
-#include <algorithm>
-#include <memory>
 #include <cassert>
+#include <memory>
 
 namespace audioapi {
 
-class AudioBus;
+struct StereoPannerOptions;
 
 class StereoPannerNode : public AudioNode {
  public:
-  explicit StereoPannerNode(BaseAudioContext *context);
+  explicit StereoPannerNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const StereoPannerOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess) override;
 
  private:
-  std::shared_ptr<AudioParam> panParam_;
+  const std::shared_ptr<AudioParam> panParam_;
 };
 
 } // namespace audioapi

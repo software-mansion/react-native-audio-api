@@ -1,7 +1,16 @@
 'use strict';
-import { TurboModuleRegistry } from 'react-native';
 import type { TurboModule } from 'react-native';
-import { PermissionStatus, AudioDevicesInfo } from '../system/types';
+import { TurboModuleRegistry } from 'react-native';
+import { AudioDevicesInfo, PermissionStatus } from '../system/types';
+
+type OptionsMap = { [key: string]: string | boolean | number | undefined };
+type NotificationOpResponse = { success: boolean; error?: string };
+type NotificationType = 'playback' | 'recording' | 'simple';
+type AudioFocusType =
+  | 'gain'
+  | 'gainTransient'
+  | 'gainTransientExclusive'
+  | 'gainTransientMayDuck';
 
 interface Spec extends TurboModule {
   install(): boolean;
@@ -13,28 +22,37 @@ interface Spec extends TurboModule {
     category: string,
     mode: string,
     options: Array<string>,
-    allowHaptics: boolean
+    allowHaptics: boolean,
+    notifyOthersOnDeactivation: boolean
   ): void;
+  disableSessionManagement(): void;
 
-  // Lock Screen Info
-  setLockScreenInfo(info: {
-    [key: string]: string | boolean | number | undefined;
-  }): void;
-  resetLockScreenInfo(): void;
-
-  // Remote commands, system events and interruptions
-  enableRemoteCommand(name: string, enabled: boolean): void;
-  observeAudioInterruptions(enabled: boolean): void;
+  // system events and interruptions
+  observeAudioInterruptions(focusType: AudioFocusType, enabled: boolean): void;
+  activelyReclaimSession(enabled: boolean): void;
   observeVolumeChanges(enabled: boolean): void;
 
   // Permissions
   requestRecordingPermissions(): Promise<PermissionStatus>;
   checkRecordingPermissions(): Promise<PermissionStatus>;
+  requestNotificationPermissions(): Promise<PermissionStatus>;
+  checkNotificationPermissions(): Promise<PermissionStatus>;
 
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
+  setInputDevice(deviceId: string): Promise<boolean>;
+
+  // Notification system
+  showNotification(
+    type: NotificationType,
+    key: string,
+    options: OptionsMap
+  ): Promise<NotificationOpResponse>;
+  hideNotification(key: string): Promise<NotificationOpResponse>;
+  isNotificationActive(key: string): Promise<boolean>;
+  resolveAndroidReleaseAsset(assetPath: string): string;
 }
 
-const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule');
+const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule')!;
 
 export { NativeAudioAPIModule };

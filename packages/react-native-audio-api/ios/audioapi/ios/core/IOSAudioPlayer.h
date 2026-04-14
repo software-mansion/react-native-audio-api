@@ -1,37 +1,40 @@
 #pragma once
 
-#ifdef __OBJC__ // when compiled as Objective-C++
+#ifdef __OBJC__ // when compiled as Objective-C
 #import <NativeAudioPlayer.h>
-#else // when compiled as C++
+#else  // when compiled as C++
 typedef struct objc_object NativeAudioPlayer;
 #endif // __OBJC__
 
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <functional>
 
 namespace audioapi {
 
-class AudioBus;
 class AudioContext;
 
 class IOSAudioPlayer {
  public:
   IOSAudioPlayer(
-      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
       int channelCount);
   ~IOSAudioPlayer();
 
-  void start();
+  bool start();
   void stop();
-  void resume();
+  bool resume();
   void suspend();
   void cleanup();
 
+  bool isRunning() const;
+
  protected:
-  std::shared_ptr<AudioBus> audioBus_;
+  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
-  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
+  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
   int channelCount_;
   std::atomic<bool> isRunning_;
 };
+
 } // namespace audioapi

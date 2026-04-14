@@ -8,7 +8,6 @@ import Spacer from './Spacer';
 import MenuIcon from './icons/MenuIcon';
 import CheckCircleIcon from './icons/CheckedCircleIcon';
 
-
 interface SelectProps<T extends string> {
   value: T;
   options: T[];
@@ -29,8 +28,7 @@ function Select<T extends string>(props: SelectProps<T>) {
       onPress={() => {
         onChange(option);
         setModalOpen(false);
-      }}
-    >
+      }}>
       <View style={styles.optionRow}>
         <CheckCircleIcon selected={option === value} color={colors.white} />
         <Spacer.Horizontal size={12} />

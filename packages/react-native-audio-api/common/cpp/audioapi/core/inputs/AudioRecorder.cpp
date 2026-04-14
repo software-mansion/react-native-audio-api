@@ -1,58 +1,65 @@
-#include <audioapi/HostObjects/AudioBufferHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/core/sources/AudioBuffer.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/utils/AudioBus.h>
-#include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/core/utils/AudioFileWriter.h>
+#include <audioapi/core/utils/AudioRecorderCallback.h>
 
 namespace audioapi {
 
-AudioRecorder::AudioRecorder(
-    float sampleRate,
-    int bufferLength,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : sampleRate_(sampleRate),
-      bufferLength_(bufferLength),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {
-  circularBuffer_ =
-      std::make_shared<CircularAudioArray>(std::max(2 * bufferLength, 2048));
-  isRunning_.store(false);
-}
+/// @brief Sets the error callback to be invoked when an error occurs during recording.
+/// This method should be called from the JS thread only.
+/// @param callbackId Identifier for the JS callback to be invoked.
+void AudioRecorder::setOnErrorCallback(uint64_t callbackId) {
+  std::scoped_lock lock(callbackMutex_, fileWriterMutex_, errorCallbackMutex_);
 
-void AudioRecorder::setOnAudioReadyCallbackId(uint64_t callbackId) {
-  onAudioReadyCallbackId_ = callbackId;
-}
-
-void AudioRecorder::invokeOnAudioReadyCallback(
-    const std::shared_ptr<AudioBus> &bus,
-    int numFrames,
-    double when) {
-  auto audioBuffer = std::make_shared<AudioBuffer>(bus);
-  auto audioBufferHostObject =
-      std::make_shared<AudioBufferHostObject>(audioBuffer);
-
-  std::unordered_map<std::string, EventValue> body = {};
-  body.insert({"buffer", audioBufferHostObject});
-  body.insert({"numFrames", numFrames});
-  body.insert({"when", when});
-
-  if (audioEventHandlerRegistry_ != nullptr) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "audioReady", onAudioReadyCallbackId_, body);
+  if (usesFileOutput() && fileWriter_ != nullptr) {
+    fileWriter_->setOnErrorCallback(callbackId);
   }
+
+  if (usesCallback() && dataCallback_ != nullptr) {
+    dataCallback_->setOnErrorCallback(callbackId);
+  }
+
+  errorCallbackId_.store(callbackId, std::memory_order_release);
 }
 
-void AudioRecorder::sendRemainingData() {
-  auto bus = std::make_shared<AudioBus>(
-      circularBuffer_->getNumberOfAvailableFrames(), 1, sampleRate_);
-  auto *outputChannel = bus->getChannel(0)->getData();
-  auto availableFrames =
-      static_cast<int>(circularBuffer_->getNumberOfAvailableFrames());
+/// @brief Clears the error callback.
+/// If the recorder is currently active, it will stop invoking the callback immediately.
+/// This method should be called from the JS thread only.
+void AudioRecorder::clearOnErrorCallback() {
+  std::scoped_lock lock(callbackMutex_, fileWriterMutex_, errorCallbackMutex_);
 
-  circularBuffer_->pop_front(
-      outputChannel, circularBuffer_->getNumberOfAvailableFrames());
+  if (usesFileOutput()) {
+    fileWriter_->clearOnErrorCallback();
+  }
 
-  invokeOnAudioReadyCallback(bus, availableFrames, 0);
+  if (usesCallback()) {
+    dataCallback_->clearOnErrorCallback();
+  }
+
+  errorCallbackId_.store(0, std::memory_order_release);
+}
+
+/// @brief Gets the current duration of the recorded audio in seconds.
+/// @returns Duration in seconds.
+double AudioRecorder::getCurrentDuration() const {
+  double duration = 0.0;
+
+  if (usesFileOutput()) {
+    duration = fileWriter_->getCurrentDuration();
+  }
+
+  return duration;
+}
+
+bool AudioRecorder::usesCallback() const {
+  return callbackOutputEnabled_.load(std::memory_order_acquire);
+}
+
+bool AudioRecorder::usesFileOutput() const {
+  return fileOutputEnabled_.load(std::memory_order_acquire);
+}
+
+bool AudioRecorder::isConnected() const {
+  return isConnected_.load(std::memory_order_acquire);
 }
 
 } // namespace audioapi

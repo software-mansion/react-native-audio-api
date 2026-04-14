@@ -16,18 +16,33 @@ class Locker {
     unlock();
   }
 
+  Locker(const Locker &) = delete;
+  Locker &operator=(const Locker &) = delete;
+
+  Locker(Locker &&other) noexcept : lockPtr_(other.lockPtr_) {
+    other.lockPtr_ = nullptr;
+  }
+  Locker &operator=(Locker &&other) noexcept {
+    if (this != &other) {
+      unlock();
+      lockPtr_ = other.lockPtr_;
+      other.lockPtr_ = nullptr;
+    }
+    return *this;
+  }
+
   explicit operator bool() const {
     return lockPtr_ != nullptr;
   }
 
   void lock() {
-    if (lockPtr_) {
+    if (lockPtr_ != nullptr) {
       lockPtr_->lock();
     }
   }
 
   void unlock() {
-    if (lockPtr_) {
+    if (lockPtr_ != nullptr) {
       lockPtr_->unlock();
     }
   }

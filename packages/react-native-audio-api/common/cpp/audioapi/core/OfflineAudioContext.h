@@ -1,11 +1,13 @@
 #pragma once
 
-#include "BaseAudioContext.h"
+#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 
-#include <mutex>
-#include <map>
-#include <unordered_map>
 #include <memory>
+#include <mutex>
+#include <unordered_map>
 
 namespace audioapi {
 
@@ -14,12 +16,22 @@ using OfflineAudioContextResultCallback = std::function<void(std::shared_ptr<Aud
 
 class OfflineAudioContext : public BaseAudioContext {
  public:
-  explicit OfflineAudioContext(int numberOfChannels, size_t length, float sampleRate, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit OfflineAudioContext(
+      int numberOfChannels,
+      size_t length,
+      float sampleRate,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const RuntimeRegistry &runtimeRegistry);
   ~OfflineAudioContext() override;
+  DELETE_COPY_AND_MOVE(OfflineAudioContext);
 
+  /// @note JS Thread only
   void resume();
-  void suspend(double when, const OfflineAudioContextSuspendCallback& callback);
 
+  /// @note JS Thread only
+  void suspend(double when, const OfflineAudioContextSuspendCallback &callback);
+
+  /// @note JS Thread only
   void startRendering(OfflineAudioContextResultCallback callback);
 
  private:
@@ -28,13 +40,16 @@ class OfflineAudioContext : public BaseAudioContext {
   std::unordered_map<size_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
   OfflineAudioContextResultCallback resultCallback_;
 
-  size_t length_;
-  int numberOfChannels_;
+  const size_t length_;
+  const int numberOfChannels_;
   size_t currentSampleFrame_;
 
-  std::shared_ptr<AudioBus> resultBus_;
+  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
+  std::shared_ptr<AudioBuffer> resultBuffer_;
 
   void renderAudio();
+
+  bool isDriverRunning() const override;
 };
 
 } // namespace audioapi

@@ -6,97 +6,97 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioDecoder.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
+#include <memory>
 
 namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
-    bool initSuspended,
-    const std::shared_ptr<IAudioEventHandlerRegistry>
-        &audioEventHandlerRegistry)
-    : BaseAudioContext(audioEventHandlerRegistry) {
-#ifdef ANDROID
-  audioPlayer_ = std::make_shared<AudioPlayer>(
-      this->renderAudio(), sampleRate, destination_->getChannelCount());
-#else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      this->renderAudio(), sampleRate, destination_->getChannelCount());
-#endif
-
-  sampleRate_ = sampleRate;
-  audioDecoder_ = std::make_shared<AudioDecoder>(sampleRate);
-
-  if (initSuspended) {
-    playerHasBeenStarted_ = false;
-    state_ = ContextState::SUSPENDED;
-
-    return;
-  }
-
-  playerHasBeenStarted_ = true;
-  audioPlayer_->start();
-  state_ = ContextState::RUNNING;
-}
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const RuntimeRegistry &runtimeRegistry)
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
+      isInitialized_(false) {}
 
 AudioContext::~AudioContext() {
-  if (!isClosed()) {
+  if (getState() != ContextState::CLOSED) {
     close();
   }
 }
 
+void AudioContext::initialize() {
+  BaseAudioContext::initialize();
+#ifdef ANDROID
+  audioPlayer_ = std::make_shared<AudioPlayer>(
+      this->renderAudio(), getSampleRate(), destination_->getChannelCount());
+#else
+  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
+      this->renderAudio(), getSampleRate(), destination_->getChannelCount());
+#endif
+}
+
 void AudioContext::close() {
-  state_ = ContextState::CLOSED;
+  setState(ContextState::CLOSED);
 
   audioPlayer_->stop();
   audioPlayer_->cleanup();
-  nodeManager_->cleanup();
+  getGraphManager()->cleanup();
 }
 
 bool AudioContext::resume() {
-  if (isClosed()) {
+  if (getState() == ContextState::CLOSED) {
     return false;
   }
 
-  if (isRunning()) {
+  if (getState() == ContextState::RUNNING) {
     return true;
   }
 
-  if (!playerHasBeenStarted_) {
-    playerHasBeenStarted_ = true;
-    audioPlayer_->start();
-  } else {
-    audioPlayer_->resume();
+  if (isInitialized_.load(std::memory_order_acquire) && audioPlayer_->resume()) {
+    setState(ContextState::RUNNING);
+    return true;
   }
 
-  state_ = ContextState::RUNNING;
-  return true;
+  return start();
 }
 
 bool AudioContext::suspend() {
-  if (isClosed()) {
+  if (getState() == ContextState::CLOSED) {
     return false;
   }
 
-  if (isSuspended()) {
+  if (getState() == ContextState::SUSPENDED) {
     return true;
   }
 
   audioPlayer_->suspend();
 
-  state_ = ContextState::SUSPENDED;
+  setState(ContextState::SUSPENDED);
   return true;
 }
 
-std::function<void(std::shared_ptr<AudioBus>, int)>
-AudioContext::renderAudio() {
-  if (!isRunning() || !destination_) {
-    return [](const std::shared_ptr<AudioBus> &, int) {};
+bool AudioContext::start() {
+  if (getState() == ContextState::CLOSED) {
+    return false;
   }
 
-  return [this](const std::shared_ptr<AudioBus> &data, int frames) {
+  if (!isInitialized_.load(std::memory_order_acquire) && audioPlayer_->start()) {
+    isInitialized_.store(true, std::memory_order_release);
+    setState(ContextState::RUNNING);
+
+    return true;
+  }
+
+  return false;
+}
+
+std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> AudioContext::renderAudio() {
+  return [this](const std::shared_ptr<DSPAudioBuffer> &data, int frames) {
     destination_->renderAudio(data, frames);
   };
+}
+
+bool AudioContext::isDriverRunning() const {
+  return audioPlayer_->isRunning();
 }
 
 } // namespace audioapi

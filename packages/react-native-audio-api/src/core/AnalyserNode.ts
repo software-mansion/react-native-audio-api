@@ -1,12 +1,22 @@
+import BaseAudioContext from './BaseAudioContext';
 import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
-import { WindowType } from '../types';
+import { AnalyserOptions } from '../types';
 import AudioNode from './AudioNode';
+import { AnalyserOptionsValidator } from '../options-validators';
 
 export default class AnalyserNode extends AudioNode {
   private static allowedFFTSize: number[] = [
     32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
   ];
+
+  constructor(context: BaseAudioContext, options?: AnalyserOptions) {
+    AnalyserOptionsValidator.validate(options);
+    const analyserNode: IAnalyserNode = context.context.createAnalyser(
+      options || {}
+    );
+    super(context, analyserNode);
+  }
 
   public get fftSize(): number {
     return (this.node as IAnalyserNode).fftSize;
@@ -64,16 +74,8 @@ export default class AnalyserNode extends AudioNode {
     (this.node as IAnalyserNode).smoothingTimeConstant = value;
   }
 
-  public get window(): WindowType {
-    return (this.node as IAnalyserNode).window;
-  }
-
-  public set window(value: WindowType) {
-    (this.node as IAnalyserNode).window = value;
-  }
-
   public get frequencyBinCount(): number {
-    return (this.node as IAnalyserNode).frequencyBinCount;
+    return Math.floor((this.node as IAnalyserNode).fftSize / 2);
   }
 
   public getFloatFrequencyData(array: Float32Array): void {

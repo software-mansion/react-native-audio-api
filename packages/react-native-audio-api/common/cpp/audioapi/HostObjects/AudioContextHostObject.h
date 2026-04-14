@@ -1,82 +1,28 @@
 #pragma once
 
-#include <audioapi/core/AudioContext.h>
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <jsi/jsi.h>
 #include <memory>
-#include <utility>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;
 
+class AudioContext;
+
 class AudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit AudioContextHostObject(
-      const std::shared_ptr<AudioContext> &audioContext,
+      float sampleRate,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const RuntimeRegistry &runtimeRegistry,
       jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker)
-      : BaseAudioContextHostObject(audioContext, runtime, callInvoker) {
-    addFunctions(
-      JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
-      JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
-      JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend));
-  }
+      const std::shared_ptr<react::CallInvoker> &callInvoker);
 
-  JSI_HOST_FUNCTION(close) {
-    auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
-      std::thread([this, promise = std::move(promise)]() {
-          auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-          audioContext->close();
-
-          promise->resolve([](jsi::Runtime &runtime) {
-              return jsi::Value::undefined();
-          });
-      }).detach();
-    });
-
-    return promise;
-  }
-
-  JSI_HOST_FUNCTION(resume) {
-    auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
-      std::thread([this, promise = std::move(promise)]() {
-          auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-          auto result = audioContext->resume();
-
-          if (!result) {
-              promise->reject("Failed to resume audio context because it is already closed.");
-              return;
-          }
-
-          promise->resolve([result](jsi::Runtime &runtime) {
-            return jsi::Value(result);
-          });
-      }).detach();
-    });
-
-    return promise;
-  }
-
-  JSI_HOST_FUNCTION(suspend) {
-    auto promise = promiseVendor_->createPromise([this](std::shared_ptr<Promise> promise) {
-      std::thread([this, promise = std::move(promise)]() {
-          auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-          auto result = audioContext->suspend();
-
-          if (!result) {
-            promise->reject("Failed to suspend audio context because it is already closed.");
-            return;
-          }
-
-          promise->resolve([result](jsi::Runtime &runtime) {
-            return jsi::Value(result);
-          });
-      }).detach();
-    });
-
-    return promise;
-  }
+  JSI_HOST_FUNCTION_DECL(close);
+  JSI_HOST_FUNCTION_DECL(resume);
+  JSI_HOST_FUNCTION_DECL(suspend);
 };
 } // namespace audioapi

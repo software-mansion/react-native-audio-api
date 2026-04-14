@@ -5,43 +5,52 @@
 #include <functional>
 #include <memory>
 
+#include <audioapi/android/core/NativeAudioPlayer.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
+
 namespace audioapi {
 
 using namespace oboe;
 
 class AudioContext;
-class AudioBus;
 
 class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
  public:
   AudioPlayer(
-      const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
       int channelCount);
 
-  void start();
+  ~AudioPlayer() override {
+    nativeAudioPlayer_.release();
+    cleanup();
+  }
+
+  bool start();
   void stop();
-  void resume();
+  bool resume();
   void suspend();
   void cleanup();
 
-  DataCallbackResult onAudioReady(
-      AudioStream *oboeStream,
-      void *audioData,
-      int32_t numFrames) override;
+  [[nodiscard]] bool isRunning() const;
 
-  void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */)
+  DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;
 
+  void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */) override;
+
  private:
-  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio_;
+  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
-  std::shared_ptr<AudioBus> mBus_;
+  std::shared_ptr<DSPAudioBuffer> buffer_;
   bool isInitialized_ = false;
   float sampleRate_;
   int channelCount_;
+  std::atomic<bool> isRunning_;
 
   bool openAudioStream();
+
+  facebook::jni::global_ref<NativeAudioPlayer> nativeAudioPlayer_;
 };
 
 } // namespace audioapi

@@ -1,0 +1,64 @@
+#pragma once
+
+#include <audioapi/core/AudioNode.h>
+#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/worklets/WorkletsRunner.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
+#include <jsi/jsi.h>
+
+#include <memory>
+
+namespace audioapi {
+
+#if RN_AUDIO_API_TEST
+class WorkletNode : public AudioNode {
+ public:
+  explicit WorkletNode(
+      std::shared_ptr<BaseAudioContext> context,
+      size_t bufferLength,
+      size_t inputChannelCount,
+      WorkletsRunner &&workletRunner)
+      : AudioNode(context) {}
+
+ protected:
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess) override {
+    return processingBuffer;
+  }
+};
+#else
+
+using namespace facebook;
+
+class WorkletNode : public AudioNode {
+ public:
+  explicit WorkletNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      size_t bufferLength,
+      size_t inputChannelCount,
+      WorkletsRunner &&workletRunner);
+  DELETE_COPY_AND_MOVE(WorkletNode);
+  ~WorkletNode() override = default;
+
+ protected:
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess) override;
+
+ private:
+  WorkletsRunner workletRunner_;
+  std::shared_ptr<AudioBuffer> buffer_;
+
+  /// @brief Length of the byte buffer that will be passed to the AudioArrayBuffer
+  size_t bufferLength_;
+  size_t inputChannelCount_;
+  size_t curBuffIndex_;
+};
+
+#endif // RN_AUDIO_API_TEST
+
+} // namespace audioapi

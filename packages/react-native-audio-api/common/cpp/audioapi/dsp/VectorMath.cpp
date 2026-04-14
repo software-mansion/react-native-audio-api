@@ -23,8 +23,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/dsp/VectorMath.h>
+#include <algorithm>
 
 #if defined(HAVE_ACCELERATE)
 #include <Accelerate/Accelerate.h>
@@ -40,15 +41,14 @@
 
 namespace audioapi::dsp {
 
-#if defined(HAVE_ACCELERATE)
+#ifdef HAVE_ACCELERATE
 
 void multiplyByScalar(
     const float *inputVector,
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsmul(
-      inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
+  vDSP_vsmul(inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
 }
 
 void addScalar(
@@ -56,8 +56,7 @@ void addScalar(
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsadd(
-      inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
+  vDSP_vsadd(inputVector, 1, &scalar, outputVector, 1, numberOfElementsToProcess);
 }
 
 void add(
@@ -65,14 +64,7 @@ void add(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vadd(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vadd(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
 void subtract(
@@ -80,14 +72,7 @@ void subtract(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsub(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vsub(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
 void multiply(
@@ -95,19 +80,10 @@ void multiply(
     const float *inputVector2,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vmul(
-      inputVector1,
-      1,
-      inputVector2,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vmul(inputVector1, 1, inputVector2, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
-float maximumMagnitude(
-    const float *inputVector,
-    size_t numberOfElementsToProcess) {
+float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess) {
   float maximumValue = 0;
   vDSP_maxmgv(inputVector, 1, &maximumValue, numberOfElementsToProcess);
   return maximumValue;
@@ -118,20 +94,32 @@ void multiplyByScalarThenAddToOutput(
     float scalar,
     float *outputVector,
     size_t numberOfElementsToProcess) {
-  vDSP_vsma(
-      inputVector,
-      1,
-      &scalar,
-      outputVector,
-      1,
-      outputVector,
-      1,
-      numberOfElementsToProcess);
+  vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
+}
+
+void deinterleaveStereo(
+    const float *__restrict inputInterleaved,
+    float *__restrict outputLeft,
+    float *__restrict outputRight,
+    size_t numberOfFrames) {
+  float zero = 0.0f;
+  vDSP_vsadd(inputInterleaved, 2, &zero, outputLeft, 1, numberOfFrames);
+  vDSP_vsadd(inputInterleaved + 1, 2, &zero, outputRight, 1, numberOfFrames);
+}
+
+void interleaveStereo(
+    const float *__restrict inputLeft,
+    const float *__restrict inputRight,
+    float *__restrict outputInterleaved,
+    size_t numberOfFrames) {
+  float zero = 0.0f;
+  vDSP_vsadd(inputLeft, 1, &zero, outputInterleaved, 2, numberOfFrames);
+  vDSP_vsadd(inputRight, 1, &zero, outputInterleaved + 1, 2, numberOfFrames);
 }
 
 #else
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
 static inline bool is16ByteAligned(const float *vector) {
   return !(reinterpret_cast<uintptr_t>(vector) & 0x0F);
 }
@@ -144,7 +132,7 @@ void multiplyByScalar(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
 
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
@@ -211,7 +199,7 @@ void addScalar(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector) && n) {
@@ -279,7 +267,7 @@ void add(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -384,7 +372,7 @@ void subtract(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -487,7 +475,7 @@ void multiply(
     size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector1 address is not 16-byte aligned, the first several
   // frames (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector1) && n) {
@@ -508,15 +496,15 @@ void multiply(
   bool source2Aligned = is16ByteAligned(inputVector2);
   bool destAligned = is16ByteAligned(outputVector);
 
-#define SSE2_MULT(loadInstr, storeInstr)           \
-  while (outputVector < endP) {                    \
-    pSource1 = _mm_load_ps(inputVector1);          \
+#define SSE2_MULT(loadInstr, storeInstr) \
+  while (outputVector < endP) { \
+    pSource1 = _mm_load_ps(inputVector1); \
     pSource2 = _mm_##loadInstr##_ps(inputVector2); \
-    dest = _mm_mul_ps(pSource1, pSource2);         \
-    _mm_##storeInstr##_ps(outputVector, dest);     \
-    inputVector1 += 4;                             \
-    inputVector2 += 4;                             \
-    outputVector += 4;                             \
+    dest = _mm_mul_ps(pSource1, pSource2); \
+    _mm_##storeInstr##_ps(outputVector, dest); \
+    inputVector1 += 4; \
+    inputVector2 += 4; \
+    outputVector += 4; \
   }
 
   if (source2Aligned && destAligned) // Both aligned.
@@ -552,13 +540,11 @@ void multiply(
   }
 }
 
-float maximumMagnitude(
-    const float *inputVector,
-    size_t numberOfElementsToProcess) {
+float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess) {
   size_t n = numberOfElementsToProcess;
   float max = 0;
 
-#if defined(HAVE_X86_SSE2)
+#ifdef HAVE_X86_SSE2
   // If the inputVector address is not 16-byte aligned, the first several frames
   // (at most three) should be processed separately.
   while (!is16ByteAligned(inputVector) && n) {
@@ -647,15 +633,15 @@ void multiplyByScalarThenAddToOutput(
 
   bool destAligned = is16ByteAligned(outputVector);
 
-#define SSE2_MULT_ADD(loadInstr, storeInstr)   \
-  while (outputVector < endP) {                \
-    pSource = _mm_load_ps(inputVector);        \
-    temp = _mm_mul_ps(pSource, mScale);        \
+#define SSE2_MULT_ADD(loadInstr, storeInstr) \
+  while (outputVector < endP) { \
+    pSource = _mm_load_ps(inputVector); \
+    temp = _mm_mul_ps(pSource, mScale); \
     dest = _mm_##loadInstr##_ps(outputVector); \
-    dest = _mm_add_ps(dest, temp);             \
+    dest = _mm_add_ps(dest, temp); \
     _mm_##storeInstr##_ps(outputVector, dest); \
-    inputVector += 4;                          \
-    outputVector += 4;                         \
+    inputVector += 4; \
+    outputVector += 4; \
   }
 
   if (destAligned)
@@ -688,15 +674,112 @@ void multiplyByScalarThenAddToOutput(
   }
 }
 
+void deinterleaveStereo(
+    const float *__restrict inputInterleaved,
+    float *__restrict outputLeft,
+    float *__restrict outputRight,
+    size_t numberOfFrames) {
+
+  size_t n = numberOfFrames;
+
+#ifdef HAVE_ARM_NEON_INTRINSICS
+  // process 4 frames (8 samples) at a time using NEON
+  size_t group = n / 4;
+  while (group--) {
+    // vld2q_f32 deinterleaves L and R into separate registers in one hardware op
+    float32x4x2_t v = vld2q_f32(inputInterleaved);
+    vst1q_f32(outputLeft, v.val[0]);
+    vst1q_f32(outputRight, v.val[1]);
+
+    inputInterleaved += 8;
+    outputLeft += 4;
+    outputRight += 4;
+  }
+  n %= 4;
+#elif defined(HAVE_X86_SSE2)
+  // process 4 frames (8 samples) at a time using SSE
+  size_t group = n / 4;
+  while (group--) {
+    // load two 128-bit registers (8 floats total)
+    __m128 s0 = _mm_loadu_ps(inputInterleaved);
+    __m128 s1 = _mm_loadu_ps(inputInterleaved + 4);
+
+    // use shuffle to group the Left samples and Right samples
+    // mask 0x88 (2,0,2,0) picks indices 0 and 2 from both s0 and s1
+    // mask 0xDD (3,1,3,1) picks indices 1 and 3 from both s0 and s1
+    __m128 left_v = _mm_shuffle_ps(s0, s1, _MM_SHUFFLE(2, 0, 2, 0));
+    __m128 right_v = _mm_shuffle_ps(s0, s1, _MM_SHUFFLE(3, 1, 3, 1));
+
+    _mm_storeu_ps(outputLeft, left_v);
+    _mm_storeu_ps(outputRight, right_v);
+
+    inputInterleaved += 8;
+    outputLeft += 4;
+    outputRight += 4;
+  }
+  n %= 4;
 #endif
 
-void linearToDecibels(
-    const float *inputVector,
-    float *outputVector,
-    size_t numberOfElementsToProcess) {
-  for (int i = 0; i < numberOfElementsToProcess; i++) {
-    outputVector[i] = dsp::linearToDecibels(inputVector[i]);
+  while (n--) {
+    *outputLeft++ = *inputInterleaved++;
+    *outputRight++ = *inputInterleaved++;
   }
 }
+
+void interleaveStereo(
+    const float *__restrict inputLeft,
+    const float *__restrict inputRight,
+    float *__restrict outputInterleaved,
+    size_t numberOfFrames) {
+
+  size_t n = numberOfFrames;
+
+#ifdef HAVE_ARM_NEON_INTRINSICS
+  // process 4 frames (8 samples) at a time
+  size_t group = n / 4;
+  while (group--) {
+    // load contiguous planar data
+    float32x4_t vL = vld1q_f32(inputLeft);
+    float32x4_t vR = vld1q_f32(inputRight);
+
+    // vst2q_f32 takes two registers and interleaves them during the store:
+    float32x4x2_t vOut = {vL, vR};
+    vst2q_f32(outputInterleaved, vOut);
+
+    inputLeft += 4;
+    inputRight += 4;
+    outputInterleaved += 8;
+  }
+  n %= 4;
+#elif defined(HAVE_X86_SSE2)
+  // process 4 frames (8 samples) at a time
+  size_t group = n / 4;
+  while (group--) {
+    __m128 vL = _mm_loadu_ps(inputLeft);
+    __m128 vR = _mm_loadu_ps(inputRight);
+
+    // unpack low: Interleaves first two elements of each register
+    __m128 vLow = _mm_unpacklo_ps(vL, vR);
+
+    // unpack high: Interleaves last two elements of each register
+    __m128 vHigh = _mm_unpackhi_ps(vL, vR);
+
+    _mm_storeu_ps(outputInterleaved, vLow);
+    _mm_storeu_ps(outputInterleaved + 4, vHigh);
+
+    inputLeft += 4;
+    inputRight += 4;
+    outputInterleaved += 8;
+  }
+  n %= 4;
+#endif
+
+  while (n--) {
+    *outputInterleaved++ = *inputLeft++;
+    *outputInterleaved++ = *inputRight++;
+  }
+}
+
+#endif
 
 } // namespace audioapi::dsp

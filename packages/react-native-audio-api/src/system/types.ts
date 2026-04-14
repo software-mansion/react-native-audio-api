@@ -1,61 +1,64 @@
+import type { AudioEventSubscription } from '../events';
+import type { SystemEventCallback, SystemEventName } from '../events/types';
+
 export type IOSCategory =
-  | 'record'
   | 'ambient'
-  | 'playback'
   | 'multiRoute'
-  | 'soloAmbient'
-  | 'playAndRecord';
+  | 'playAndRecord'
+  | 'playback'
+  | 'record'
+  | 'soloAmbient';
 
 export type IOSMode =
   | 'default'
+  | 'dualRoute'
   | 'gameChat'
-  | 'videoChat'
-  | 'voiceChat'
   | 'measurement'
-  | 'voicePrompt'
-  | 'spokenAudio'
   | 'moviePlayback'
-  | 'videoRecording';
+  | 'shortFormVideo'
+  | 'spokenAudio'
+  | 'videoChat'
+  | 'videoRecording'
+  | 'voiceChat'
+  | 'voicePrompt';
 
 export type IOSOption =
-  | 'duckOthers'
   | 'allowAirPlay'
-  | 'mixWithOthers'
+  | 'allowBluetoothA2DP'
   | 'allowBluetoothHFP'
   | 'bluetoothHighQualityRecording'
   | 'defaultToSpeaker'
-  | 'allowBluetoothA2DP'
-  | 'overrideMutedMicrophoneInterruption'
-  | 'interruptSpokenAudioAndMixWithOthers';
+  | 'duckOthers'
+  | 'farFieldInput'
+  | 'interruptSpokenAudioAndMixWithOthers'
+  | 'mixWithOthers'
+  | 'overrideMutedMicrophoneInterruption';
+
+export type AudioFocusType =
+  | 'gain'
+  | 'gainTransient'
+  | 'gainTransientExclusive'
+  | 'gainTransientMayDuck';
 
 export interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
   iosAllowHaptics?: boolean;
-}
-
-export type MediaState = 'state_playing' | 'state_paused';
-
-interface BaseLockScreenInfo {
-  [key: string]: string | boolean | number | undefined;
-}
-
-export interface LockScreenInfo extends BaseLockScreenInfo {
-  title?: string;
-  artwork?: string;
-  artist?: string;
-  album?: string;
-  duration?: number;
-  description?: string; // android only
-  state?: MediaState;
-  speed?: number;
-  elapsedTime?: number;
+  /**
+   * Setting this to `true` will allow other audio apps to resume playing when
+   * the session is deactivated.
+   *
+   * Has no effect when using PlaybackNotificationManager as it takes over the
+   * "Now playing" controls.
+   */
+  iosNotifyOthersOnDeactivation?: boolean;
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 
 export interface AudioDeviceInfo {
+  id: string;
   name: string;
   category: string;
 }
@@ -67,4 +70,24 @@ export interface AudioDevicesInfo {
   availableOutputs: AudioDeviceList;
   currentInputs: AudioDeviceList; // iOS only
   currentOutputs: AudioDeviceList; // iOS only
+}
+
+export interface IAudioManager {
+  getDevicePreferredSampleRate(): number;
+  setAudioSessionActivity(enabled: boolean): Promise<boolean>;
+  setAudioSessionOptions(options: SessionOptions): void;
+  disableSessionManagement(): void;
+  observeAudioInterruptions(enabled: boolean): void;
+  activelyReclaimSession(enabled: boolean): void;
+  observeAudioInterruptions(param: AudioFocusType | boolean | null): void;
+  addSystemEventListener<Name extends SystemEventName>(
+    name: Name,
+    callback: SystemEventCallback<Name>
+  ): AudioEventSubscription | undefined;
+  requestRecordingPermissions(): Promise<PermissionStatus>;
+  checkRecordingPermissions(): Promise<PermissionStatus>;
+  requestNotificationPermissions(): Promise<PermissionStatus>;
+  checkNotificationPermissions(): Promise<PermissionStatus>;
+  getDevicesInfo(): Promise<AudioDevicesInfo>;
+  setInputDevice(deviceId: string): Promise<boolean>;
 }

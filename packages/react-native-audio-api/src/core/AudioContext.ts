@@ -1,8 +1,9 @@
+import AudioAPIModule from '../AudioAPIModule';
+import { NotSupportedError } from '../errors';
 import { IAudioContext } from '../interfaces';
-import BaseAudioContext from './BaseAudioContext';
 import AudioManager from '../system';
 import { AudioContextOptions } from '../types';
-import { NotSupportedError } from '../errors';
+import BaseAudioContext from './BaseAudioContext';
 
 export default class AudioContext extends BaseAudioContext {
   constructor(options?: AudioContextOptions) {
@@ -16,23 +17,25 @@ export default class AudioContext extends BaseAudioContext {
       );
     }
 
+    const audioRuntime = AudioAPIModule.createAudioRuntime();
+
     super(
       global.createAudioContext(
         options?.sampleRate || AudioManager.getDevicePreferredSampleRate(),
-        options?.initSuspended || false
+        audioRuntime
       )
     );
   }
 
-  async close(): Promise<undefined> {
-    await (this.context as IAudioContext).close();
+  async close(): Promise<void> {
+    return (this.context as IAudioContext).close();
   }
 
-  async resume(): Promise<undefined> {
-    await (this.context as IAudioContext).resume();
+  async resume(): Promise<boolean> {
+    return (this.context as IAudioContext).resume();
   }
 
-  async suspend(): Promise<undefined> {
-    await (this.context as IAudioContext).suspend();
+  async suspend(): Promise<boolean> {
+    return (this.context as IAudioContext).suspend();
   }
 }

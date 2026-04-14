@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { Optional, ReadOnly, OnlyiOS } from '@site/src/components/Badges';
+import { Optional, ReadOnly, IOS, Experimental } from '@site/src/components/Badges';
 
 # AudioManager
 
@@ -16,44 +16,17 @@ import { AudioManager } from 'react-native-audio-api';
 import { useEffect } from 'react';
 
 function App() {
-    // set AVAudioSession example options (iOS only)
+    // set AVAudioSession example options (iOS)
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playback',
       iosMode: 'default',
       iosOptions: ['allowBluetoothHFP', 'allowAirPlay'],
     })
-
-    // set info for track to be visible while device is locked
-    AudioManager.setLockScreenInfo({
-        title: 'Audio file',
-        artist: 'Software Mansion',
-        album: 'Audio API',
-        duration: 10,
-    });
+    // enabling emission of events
+    AudioManager.observeAudioInterruptions(true);
+    AudioManager.getDevicesInfo().then(console.log);
 
   useEffect(() => {
-
-    // enabling emission of events
-    AudioManager.enableRemoteCommand('remotePlay', true);
-    AudioManager.enableRemoteCommand('remotePause', true);
-    AudioManager.observeAudioInterruptions(true);
-
-    // callback to be invoked on 'remotePlay' event
-    const remotePlaySubscription = AudioManager.addSystemEventListener(
-      'remotePlay',
-      (event) => {
-        console.log('remotePlay event:', event);
-      }
-    );
-
-    // callback to be invoked on 'remotePause' event
-    const remotePauseSubscription = AudioManager.addSystemEventListener(
-      'remotePause',
-      (event) => {
-        console.log('remotePause event:', event);
-      }
-    );
-
     // callback to be invoked on 'interruption' event
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
@@ -62,11 +35,7 @@ function App() {
       }
     );
 
-    AudioManager.getDevicesInfo().then(console.log);
-
     return () => {
-      remotePlaySubscription?.remove();
-      remotePauseSubscription?.remove();
       interruptionSubscription?.remove();
     };
   }, []);
@@ -75,35 +44,30 @@ function App() {
 
 ## Methods
 
-### `setLockScreenInfo`
+### `setAudioSessionOptions` <IOS />
 
-| Parameters | Type | Description |
-| :---: | :---: | :-----: |
-| `info` | [`LockScreenInfo`](/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
-
-#### Returns `undefined`
-
-### `resetLockScreenInfo`
-
-Resets all of the lock screen data.
-
-#### Returns `undefined`
-
-### `setAudioSessionOptions` <OnlyiOS />
-
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
-| options | [`SessionOptions`](/system/audio-manager#sessionoptions) | Options to be set for AVAudioSession |
+| options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) |
 
 #### Returns `undefined`
 
-### `setAudioSessionActivity` <OnlyiOS />
+### `setAudioSessionActivity` <IOS />
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
-| enabled | `boolean` | It is used to set/unset AVAudioSession activity |
+| enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
 
-#### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.
+#### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.'
+
+### `disableSessionManagement` <IOS />
+
+#### Returns `undefined`.
+
+Disables all internal default [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession) configurations and management done by the `react-native-audio-api` package. After calling this method, user is responsible for managing audio session entirely on their own.
+Typical use-case for this method is when user wants to fully control audio session outside of `react-native-audio-api` package,
+commonly when using another audio library along `react-native-audio-api`. The method has to be called before `AudioContext` is created, for example in app initialization code.
+Any later call to `setAudioSessionOptions` or `setAudioSessionActivity` will re-enable internal audio session management.
 
 ### `getDevicePreferredSampleRate`
 
@@ -111,94 +75,103 @@ Resets all of the lock screen data.
 
 ### `observeAudioInterruptions`
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `enabled` | `boolean` | It is used to enable/disable observing audio interruptions |
+| `param` |  [`AudioFocusType`](audio-manager#audiofocustype) \| `boolean` \| `null` | It is used to enable/disable observing audio interruptions. Passing `false` or `null` disables the observation, otherwise it is enabled. |
+
+:::info
+On android passing the audio focus type set the native [audio focus](https://developer.android.com/media/optimize/audio-focus) accordingly.
+It is recommended for apps to respect the rules for good user experience.
+On iOS it just enables/disables event emission and has no additional effects.
+:::
 
 #### Returns `undefined`
 
+### `activelyReclaimSession` <IOS /> <Experimental />
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `enabled` | `boolean` | It is used to enable/disable session spoofing |
+
+#### Returns `undefined`
+
+More aggressively try to reactivate the audio session during interruptions.
+
+In some cases (depends on app session settings and other apps using audio) system may never
+send the `interruption ended` event. This method will check if any other audio is playing
+and try to reactivate the audio session, as soon as there is "silence".
+Although this might change the expected behavior.
+
+Internally method uses `AVAudioSessionSilenceSecondaryAudioHintNotification` as well as
+interval polling to check if other audio is playing.
+
 ### `observeVolumeChanges`
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable observing volume changes |
 
 #### Returns `undefined`
-
-### `enableRemoteCommand`
-
-Enables emition of some system events.
-
-| Parameters | Type | Description |
-| :---: | :---: | :---- |
-| `name` | [`RemoteCommandEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
-| `enabled` | `boolean` | Indicates the start or the end of event emission |
-
-#### Returns `undefined`
-
-:::info
-
-If you want to add callback upon hearing event, remember to call [`addSystemEventListener`](/system/audio-manager#addsystemeventlistener)
-with proper parameters.
-
-:::
 
 
 ### `addSystemEventListener`
 
 Adds callback to be invoked upon hearing an event.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `name` | [`SystemEventName`](/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event listener |
-| `callback` | [`SystemEventCallback`](/system/audio-manager#systemeventname--remotecommandeventname) | Callback that will be invoked upon hearing an event |
+| `name` | [`SystemEventName`](audio-manager#systemeventname) | Name of an event listener |
+| `callback` | [`SystemEventCallback`](audio-manager#systemeventname) | Callback that will be invoked upon hearing an event |
 
-#### Returns [`AudioEventSubscription`](/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
+#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
 
 ### `requestRecordingPermissions`
 
-Allows to bring up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
+Brings up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
 is directly requested, but sometimes it is better to ask beforehand.
 
-#### Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`
+
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `checkRecordingPermissions`
 
-Allows to check if permissions were previously granted.
+Checks if permissions were previously granted.
 
-#### Returns promise of [`PermissionStatus`](/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`
+
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
+### `requestNotificationPermissions`
+
+Brings up the system notification permissions pop-up on demand. The pop-up automatically shows if notification data
+is directly requested, but sometimes it is better to ask beforehand.
+
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+
+### `checkRecordingPermissions`
+
+Checks if permissions were previously granted.
+
+#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `getDevicesInfo`
 
-Allows to check currently used and available devices.
+Checks currently used and available devices.
 
-#### Returns promise of [`AudioDevicesInfo`](/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
+#### Returns promise of [`AudioDevicesInfo`](/docs/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
 
 ## Remarks
 
-### `LockScreenInfo`
-
+### `AudioFocusType`
 <details>
 <summary>Type definitions</summary>
 ```typescript
-interface BaseLockScreenInfo {
-  [key: string]: string | boolean | number | undefined;
-}
-
-//state_playing if track is played, state_paused otherwise
-type MediaState = 'state_playing' | 'state_paused';
-
-interface LockScreenInfo extends BaseLockScreenInfo {
-  title?: string; //title of the track
-  artwork?: string; //uri to the artwork
-  artist?: string; //name of the artist
-  album?: string; //name of the album
-  duration?: number; //duration in seconds
-  description?: string; // android only, description of the track
-  state?: MediaState;
-  speed?: number; //playback rate
-  elapsedTime?: number; //elapsed time of an audio in seconds
-}
+type AudioFocusType =
+  | 'gain'
+  | 'gainTransient'
+  | 'gainTransientExclusive'
+  | 'gainTransientMayDuck';
 ```
 </details>
 
@@ -208,45 +181,51 @@ interface LockScreenInfo extends BaseLockScreenInfo {
 <summary>Type definitions</summary>
 ```typescript
 type IOSCategory =
-  | 'record'
   | 'ambient'
-  | 'playback'
   | 'multiRoute'
-  | 'soloAmbient'
-  | 'playAndRecord';
+  | 'playAndRecord'
+  | 'playback'
+  | 'record'
+  | 'soloAmbient';
 
 type IOSMode =
   | 'default'
+  | 'dualRoute'
   | 'gameChat'
-  | 'videoChat'
-  | 'voiceChat'
   | 'measurement'
-  | 'voicePrompt'
-  | 'spokenAudio'
   | 'moviePlayback'
-  | 'videoRecording';
+  | 'shortFormVideo'
+  | 'spokenAudio'
+  | 'videoChat'
+  | 'videoRecording'
+  | 'voiceChat'
+  | 'voicePrompt';
 
 type IOSOption =
-  | 'duckOthers'
   | 'allowAirPlay'
-  | 'mixWithOthers'
+  | 'allowBluetoothA2DP'
   | 'allowBluetoothHFP'
   | 'bluetoothHighQualityRecording'
   | 'defaultToSpeaker'
-  | 'allowBluetoothA2DP'
-  | 'overrideMutedMicrophoneInterruption'
-  | 'interruptSpokenAudioAndMixWithOthers';
+  | 'duckOthers'
+  | 'farFieldInput'
+  | 'interruptSpokenAudioAndMixWithOthers'
+  | 'mixWithOthers'
+  | 'overrideMutedMicrophoneInterruption';
 
 interface SessionOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
+  iosAllowHaptics?: boolean;
+  // Has no effect when using PlaybackNotificationManager as it takes over the "Now playing" controls
+  iosNotifyOthersOnDeactivation?: boolean;
 }
 ```
 </details>
 
 
-### `SystemEventName` | `RemoteCommandEventName`
+### `SystemEventName`
 
 <details>
 <summary>Type definitions</summary>
@@ -258,8 +237,8 @@ interface EventTypeWithValue {
 }
 
 interface OnInterruptionEventType {
-  type: 'ended' | 'began'; //if interruption event has started or ended
-  shouldResume: boolean; //if we should resume playing after interruption
+  type: 'ended' | 'began'; // if the interruption event has started or ended
+  shouldResume: boolean; // if the interruption was temporary and we can resume the playback/recording
 }
 
 interface OnRouteChangeEventType {
@@ -274,30 +253,13 @@ interface OnRouteChangeEventType {
     | 'NoSuitableRouteForCategory';
 }
 
-// visit https://developer.apple.com/documentation/mediaplayer/mpremotecommandcenter?language=objc
-// for further info
-interface RemoteCommandEvents {
-  remotePlay: EventEmptyType;
-  remotePause: EventEmptyType;
-  remoteStop: EventEmptyType;
-  remoteTogglePlayPause: EventEmptyType; // iOS only
-  remoteChangePlaybackRate: EventTypeWithValue;
-  remoteNextTrack: EventEmptyType;
-  remotePreviousTrack: EventEmptyType;
-  remoteSkipForward: EventTypeWithValue;
-  remoteSkipBackward: EventTypeWithValue; // iOS only
-  remoteSeekForward: EventEmptyType; // iOS only
-  remoteSeekBackward: EventEmptyType;
-  remoteChangePlaybackPosition: EventTypeWithValue;
-}
-
-type SystemEvents = RemoteCommandEvents & {
-  volumeChange: EventTypeWithValue; //triggered when volume level is changed
-  interruption: OnInterruptionEventType; //triggered when f.e. some app wants to play music when we are playing
-  routeChange: OnRouteChangeEventType; //change of output f.e. from speaker to headphones, events are always emitted!
+type SystemEvents = {
+  volumeChange: EventTypeWithValue;
+  interruption: OnInterruptionEventType;
+  duck: EventEmptyType;
+  routeChange: OnRouteChangeEventType;
 };
 
-type RemoteCommandEventName = keyof RemoteCommandEvents;
 type SystemEventName = keyof SystemEvents;
 type SystemEventCallback<Name extends SystemEventName> = (
   event: SystemEvents[Name]
@@ -311,28 +273,11 @@ type SystemEventCallback<Name extends SystemEventName> = (
 <details>
 <summary>Type definitions</summary>
 ```typescript
-class AudioEventSubscription {
-  private readonly audioEventEmitter: AudioEventEmitter;
-  private readonly eventName: AudioEventName;
+interface AudioEventSubscription {
   /** @internal */
   public readonly subscriptionId: string;
 
-  constructor(
-    subscriptionId: string,
-    eventName: AudioEventName,
-    audioEventEmitter: AudioEventEmitter
-  ) {
-    this.subscriptionId = subscriptionId;
-    this.eventName = eventName;
-    this.audioEventEmitter = audioEventEmitter;
-  }
-
-  public remove(): void {
-    this.audioEventEmitter.removeAudioEventListener(
-      this.eventName,
-      this.subscriptionId
-    );
-  }
+  public remove(): void; // used to remove the subscription
 }
 ```
 </details>
@@ -361,8 +306,8 @@ export type AudioDeviceList = AudioDeviceInfo[];
 export interface AudioDevicesInfo {
   availableInputs: AudioDeviceList;
   availableOutputs: AudioDeviceList;
-  currentInputs: AudioDeviceList; // iOS only
-  currentOutputs: AudioDeviceList; // iOS only
+  currentInputs: AudioDeviceList; // iOS
+  currentOutputs: AudioDeviceList; // iOS
 }
 ```
 </details>

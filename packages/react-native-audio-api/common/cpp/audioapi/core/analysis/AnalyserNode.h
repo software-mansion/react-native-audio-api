@@ -1,92 +1,124 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/FFT.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/CircularArray.hpp>
+#include <audioapi/utils/TripleBuffer.hpp>
 
-#include <memory>
-#include <cstddef>
-#include <string>
+#include <atomic>
 #include <complex>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace audioapi {
 
-class AudioBus;
-class AudioArray;
-class CircularAudioArray;
+struct AnalyserOptions;
 
 class AnalyserNode : public AudioNode {
  public:
-  enum class WindowType { BLACKMAN, HANN };
-  explicit AnalyserNode(BaseAudioContext *context);
+  explicit AnalyserNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AnalyserOptions &options);
 
-  int getFftSize() const;
-  int getFrequencyBinCount() const;
-  float getMinDecibels() const;
-  float getMaxDecibels() const;
-  float getSmoothingTimeConstant() const;
-  std::string getWindowType() const;
+  /// @note JS Thread only
+  [[nodiscard]] float getMinDecibels() const {
+    return minDecibels_;
+  }
 
-  void setFftSize(int fftSize);
-  void setMinDecibels(float minDecibels);
-  void setMaxDecibels(float maxDecibels);
-  void setSmoothingTimeConstant(float smoothingTimeConstant);
-  void setWindowType(const std::string &type);
+  /// @note JS Thread only
+  [[nodiscard]] float getMaxDecibels() const {
+    return maxDecibels_;
+  }
 
+  /// @note JS Thread only
+  [[nodiscard]] float getSmoothingTimeConstant() const {
+    return smoothingTimeConstant_;
+  }
+
+  [[nodiscard]] int getFFTSize() const {
+    return fftSize_.load(std::memory_order_acquire);
+  }
+
+  /// @note JS Thread only
+  void setMinDecibels(float minDecibels) {
+    minDecibels_ = minDecibels;
+  }
+
+  /// @note JS Thread only
+  void setMaxDecibels(float maxDecibels) {
+    maxDecibels_ = maxDecibels;
+  }
+
+  /// @note JS Thread only
+  void setSmoothingTimeConstant(float smoothingTimeConstant) {
+    smoothingTimeConstant_ = smoothingTimeConstant;
+  }
+
+  /// @note JS Thread only
+  void setFFTSize(int fftSize);
+
+  /// @note JS Thread only
   void getFloatFrequencyData(float *data, int length);
+
+  /// @note JS Thread only
   void getByteFrequencyData(uint8_t *data, int length);
+
+  /// @note JS Thread only
   void getFloatTimeDomainData(float *data, int length);
+
+  /// @note JS Thread only
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess) override;
 
  private:
-  int fftSize_;
+  std::atomic<int> fftSize_;
+
+  // Audio Thread data structures
+  std::unique_ptr<CircularDSPAudioArray> inputArray_;
+  std::unique_ptr<DSPAudioBuffer> downMixBuffer_;
+
+  // JS Thread parameters
   float minDecibels_;
   float maxDecibels_;
   float smoothingTimeConstant_;
 
-  WindowType windowType_;
-  std::shared_ptr<AudioArray> windowData_;
-
-  std::unique_ptr<CircularAudioArray> inputBuffer_;
-  std::unique_ptr<AudioBus> downMixBus_;
-  std::unique_ptr<AudioArray> tempBuffer_;
-
+  // JS Thread data structures
   std::unique_ptr<dsp::FFT> fft_;
+  std::unique_ptr<DSPAudioArray> tempArray_;
+  std::unique_ptr<DSPAudioArray> windowData_;
   std::vector<std::complex<float>> complexData_;
-  std::unique_ptr<AudioArray> magnitudeBuffer_;
-  bool shouldDoFFTAnalysis_ { true };
+  std::unique_ptr<DSPAudioArray> magnitudeArray_;
 
-  static WindowType fromString(const std::string &type) {
-    std::string lowerType = type;
-    std::transform(
-        lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
-    if (lowerType == "blackman") {
-      return WindowType::BLACKMAN;
-    }
-    if (lowerType == "hann") {
-      return WindowType::HANN;
-    }
+  struct AnalysisFrame {
+    DSPAudioArray timeDomain;
+    size_t sequenceNumber = 0;
+    int fftSize = 0;
 
-    throw std::invalid_argument("Unknown window type");
-  }
+    explicit AnalysisFrame(size_t size) : timeDomain(size) {}
 
-  static std::string toString(WindowType type) {
-    switch (type) {
-      case WindowType::BLACKMAN:
-        return "blackman";
-      case WindowType::HANN:
-        return "hann";
-      default:
-        throw std::invalid_argument("Unknown window type");
-    }
-  }
+    AnalysisFrame(const AnalysisFrame &) = delete;
+    AnalysisFrame &operator=(const AnalysisFrame &) = delete;
+    AnalysisFrame(AnalysisFrame &&) noexcept = default;
+    AnalysisFrame &operator=(AnalysisFrame &&) noexcept = default;
+    ~AnalysisFrame() = default;
+  };
+
+  TripleBuffer<AnalysisFrame> analysisBuffer_{MAX_FFT_SIZE};
+  size_t publishSequence_ = 0;      // audio thread only
+  size_t lastAnalyzedSequence_ = 0; // JS thread only
 
   void doFFTAnalysis();
 
-  void setWindowData(WindowType type, int size);
+  void initializeWindowData(int fftSize);
 };
 
 } // namespace audioapi

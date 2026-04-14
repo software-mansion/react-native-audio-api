@@ -1,8 +1,8 @@
 import React, { FC, useEffect, useRef } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { AudioContext, AudioBuffer, GainNode, AudioBufferSourceNode } from 'react-native-audio-api';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { AudioBuffer, AudioBufferSourceNode, AudioContext, GainNode } from 'react-native-audio-api';
 
-const WhiteNoise: FC = () => {
+const BrownianNoise: FC = () => {
   const aCtxRef = useRef<AudioContext | null>(null);
   const bufferRef = useRef<AudioBuffer | null>(null);
   const gainRef = useRef<GainNode | null>(null);
@@ -76,7 +76,7 @@ const WhiteNoise: FC = () => {
   );
 }
 
-export default WhiteNoise;
+export default BrownianNoise;
 
 const styles = StyleSheet.create({
   container: {
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   button: {
     width: 160,
     height: 160,
-    backgroundColor: '#b07eff',
+    backgroundColor: 'var(--swm-red-light-100)',
     justifyContent: 'center',
     alignItems: 'center',
   },

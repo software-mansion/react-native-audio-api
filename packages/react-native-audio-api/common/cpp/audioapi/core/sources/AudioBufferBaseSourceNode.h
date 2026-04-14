@@ -2,58 +2,88 @@
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
-#include <mutex>
-#include <atomic>
 
 namespace audioapi {
 
-class AudioBus;
 class AudioParam;
+struct BaseAudioBufferSourceOptions;
 
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit AudioBufferBaseSourceNode(BaseAudioContext *context);
-  virtual ~AudioBufferBaseSourceNode();
+  explicit AudioBufferBaseSourceNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const BaseAudioBufferSourceOptions &options);
+
+  /// @note Audio Thread only
+  void initStretch(
+      const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch,
+      const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
-  void clearOnPositionChangedCallback();
+  /// @note Audio Thread only
   void setOnPositionChangedCallbackId(uint64_t callbackId);
+
+  /// @note Audio Thread only
   void setOnPositionChangedInterval(int interval);
-  [[nodiscard]] int getOnPositionChangedInterval();
+
+  void unregisterOnPositionChangedCallback(uint64_t callbackId);
 
  protected:
-    std::mutex bufferLock_;
+  // internal helper
+  double vReadIndex_;
 
-    // pitch correction
-    std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
-    std::shared_ptr<AudioBus> playbackRateBus_;
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess) final;
 
-    // k-rate params
-    std::shared_ptr<AudioParam> detuneParam_;
-    std::shared_ptr<AudioParam> playbackRateParam_;
+  virtual double getCurrentPosition() const = 0;
 
-    // internal helper
-    double vReadIndex_;
+  virtual bool isEmpty() const = 0;
 
-    std::atomic<uint64_t> onPositionChangedCallbackId_ = 0; // 0 means no callback
-    int onPositionChangedInterval_;
-    int onPositionChangedTime_ = 0;
+  virtual void processWithoutInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) = 0;
 
-    std::mutex &getBufferLock();
-    virtual double getCurrentPosition() const = 0;
+  virtual void processWithInterpolation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      size_t startOffset,
+      size_t offsetLength,
+      float playbackRate) = 0;
 
-    void sendOnPositionChangedEvent();
-    void processWithPitchCorrection(const std::shared_ptr<AudioBus> &processingBus,
-                                    int framesToProcess);
-    virtual void processWithoutInterpolation(
-            const std::shared_ptr<AudioBus>& processingBus,
-            size_t startOffset,
-            size_t offsetLength,
-            float playbackRate) = 0;
+ private:
+  // pitch correction parameters
+  // late init to avoid unnecessary allocation when pitch correction is not used.
+  const bool pitchCorrection_;
+  std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
+  std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
+  static constexpr float MAX_PLAYBACK_RATE = 3.0f;
+  static constexpr float MIN_PLAYBACK_RATE = 0.0f;
+
+  // k-rate params
+  const std::shared_ptr<AudioParam> detuneParam_;
+  const std::shared_ptr<AudioParam> playbackRateParam_;
+
+  uint64_t onPositionChangedCallbackId_ = 0; // 0 means no callback
+  int onPositionChangedIntervalInFrames_;
+  int onPositionChangedTimeInFrames_ = 0;
+
+  void sendOnPositionChangedEvent();
+
+  void processWithPitchCorrection(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess);
+  void processWithoutPitchCorrection(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess);
+
+  float getComputedPlaybackRateValue(int framesToProcess, double time);
 };
 
 } // namespace audioapi

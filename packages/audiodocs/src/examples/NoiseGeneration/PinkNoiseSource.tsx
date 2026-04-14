@@ -2,7 +2,7 @@ import React, { FC, useEffect, useRef } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { AudioContext, AudioBuffer, GainNode, AudioBufferSourceNode } from 'react-native-audio-api';
 
-const WhiteNoise: FC = () => {
+const PinkNoise: FC = () => {
   const aCtxRef = useRef<AudioContext | null>(null);
   const bufferRef = useRef<AudioBuffer | null>(null);
   const gainRef = useRef<GainNode | null>(null);
@@ -84,7 +84,7 @@ const WhiteNoise: FC = () => {
   );
 }
 
-export default WhiteNoise;
+export default PinkNoise;
 
 const styles = StyleSheet.create({
   container: {

@@ -1,19 +1,24 @@
 #include <android/log.h>
 #include <audioapi/android/core/AudioPlayer.h>
 #include <audioapi/core/AudioContext.h>
-#include <audioapi/core/Constants.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/core/utils/Constants.h>
+#include <audioapi/utils/AudioArray.hpp>
+
+#include <jni.h>
+
+#include <algorithm>
+#include <memory>
 
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
-    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+    const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
     : renderAudio_(renderAudio),
       sampleRate_(sampleRate),
-      channelCount_(channelCount) {
+      channelCount_(channelCount),
+      isRunning_(false) {
   isInitialized_ = openAudioStream();
 }
 
@@ -33,38 +38,48 @@ bool AudioPlayer::openAudioStream() {
   auto result = builder.openStream(mStream_);
   if (result != oboe::Result::OK || mStream_ == nullptr) {
     __android_log_print(
-        ANDROID_LOG_ERROR,
-        "AudioPlayer",
-        "Failed to open stream: %s",
-        oboe::convertToText(result));
+        ANDROID_LOG_ERROR, "AudioPlayer", "Failed to open stream: %s", oboe::convertToText(result));
     return false;
   }
 
-  mBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
+  buffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
   return true;
 }
 
-void AudioPlayer::start() {
-  if (mStream_) {
-    mStream_->requestStart();
+bool AudioPlayer::start() {
+  if (mStream_ != nullptr) {
+    auto result = mStream_->requestStart() == oboe::Result::OK;
+    isRunning_.store(result, std::memory_order_release);
+    return result;
   }
+
+  return false;
 }
 
 void AudioPlayer::stop() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
+    isRunning_.store(false, std::memory_order_release);
     mStream_->requestStop();
   }
 }
 
-void AudioPlayer::resume() {
-  if (mStream_) {
-    mStream_->requestStart();
+bool AudioPlayer::resume() {
+  if (isRunning()) {
+    return true;
   }
+
+  if (mStream_ != nullptr) {
+    auto result = mStream_->requestStart() == oboe::Result::OK;
+    isRunning_.store(result, std::memory_order_release);
+    return result;
+  }
+
+  return false;
 }
 
 void AudioPlayer::suspend() {
-  if (mStream_) {
+  if (mStream_ != nullptr) {
+    isRunning_.store(false, std::memory_order_release);
     mStream_->requestPause();
   }
 }
@@ -72,16 +87,19 @@ void AudioPlayer::suspend() {
 void AudioPlayer::cleanup() {
   isInitialized_ = false;
 
-  if (mStream_) {
+  if (mStream_ != nullptr) {
     mStream_->close();
     mStream_.reset();
   }
 }
 
-DataCallbackResult AudioPlayer::onAudioReady(
-    AudioStream *oboeStream,
-    void *audioData,
-    int32_t numFrames) {
+bool AudioPlayer::isRunning() const {
+  return mStream_ && mStream_->getState() == oboe::StreamState::Started &&
+      isRunning_.load(std::memory_order_acquire);
+}
+
+DataCallbackResult
+AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
   if (!isInitialized_) {
     return DataCallbackResult::Continue;
   }
@@ -89,30 +107,25 @@ DataCallbackResult AudioPlayer::onAudioReady(
   auto buffer = static_cast<float *>(audioData);
   int processedFrames = 0;
 
-  assert(buffer != nullptr);
-
   while (processedFrames < numFrames) {
-    int framesToProcess =
-        std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
-    renderAudio_(mBus_, framesToProcess);
+    auto framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
-    // TODO: optimize this with SIMD?
-    for (int i = 0; i < framesToProcess; i++) {
-      for (int channel = 0; channel < channelCount_; channel += 1) {
-        buffer[(processedFrames + i) * channelCount_ + channel] =
-            mBus_->getChannel(channel)->getData()[i];
-      }
+    if (isRunning_.load(std::memory_order_acquire)) {
+      renderAudio_(buffer_, framesToProcess);
+    } else {
+      buffer_->zero();
     }
 
+    float *destination = buffer + (processedFrames * channelCount_);
+
+    buffer_->interleaveTo(destination, framesToProcess);
     processedFrames += framesToProcess;
   }
 
   return DataCallbackResult::Continue;
 }
 
-void AudioPlayer::onErrorAfterClose(
-    oboe::AudioStream *stream,
-    oboe::Result error) {
+void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
   if (error == oboe::Result::ErrorDisconnected) {
     cleanup();
     if (openAudioStream()) {
@@ -121,5 +134,4 @@ void AudioPlayer::onErrorAfterClose(
     }
   }
 }
-
 } // namespace audioapi

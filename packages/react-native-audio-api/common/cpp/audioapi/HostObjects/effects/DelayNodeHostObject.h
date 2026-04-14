@@ -1,0 +1,27 @@
+#pragma once
+
+#include <audioapi/HostObjects/AudioNodeHostObject.h>
+
+#include <memory>
+
+namespace audioapi {
+using namespace facebook;
+
+struct DelayOptions;
+class BaseAudioContext;
+class AudioParamHostObject;
+
+class DelayNodeHostObject : public AudioNodeHostObject {
+ public:
+  explicit DelayNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const DelayOptions &options);
+
+  [[nodiscard]] size_t getSizeInBytes() const;
+
+  JSI_PROPERTY_GETTER_DECL(delayTime);
+
+ private:
+  std::shared_ptr<AudioParamHostObject> delayTimeParam_;
+};
+} // namespace audioapi

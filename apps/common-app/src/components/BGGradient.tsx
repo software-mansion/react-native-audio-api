@@ -1,6 +1,6 @@
+import { Canvas, RadialGradient, Rect, vec } from '@shopify/react-native-skia';
 import React, { useCallback, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
-import { vec, Rect, Canvas, RadialGradient } from '@shopify/react-native-skia';
 
 import { colors } from '../styles';
 
@@ -19,7 +19,7 @@ const BGGradient = () => {
       <Canvas style={styles.canvas}>
         <Rect x={0} y={0} width={size.width} height={size.height}>
           <RadialGradient
-            r={size.width}
+            r={size.width / 4}
             c={vec(size.width / 2, 0)}
             colors={[colors.backgroundLight, colors.background]}
           />

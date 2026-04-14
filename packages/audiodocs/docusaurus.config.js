@@ -3,7 +3,10 @@
 
 const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
+
+// eslint-disable-next-line import/first
 import remarkMath from 'remark-math';
+// eslint-disable-next-line import/first
 import rehypeKatex from 'rehype-katex';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -14,7 +17,7 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://software-mansion.github.io/',
+  url: 'https://docs.swmansion.com/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/react-native-audio-api/',
@@ -40,7 +43,6 @@ const config = {
       'classic',
       {
         docs: {
-          routeBasePath: '/',
           breadcrumbs: false,
           sidebarCollapsible: false,
           sidebarPath: require.resolve('./sidebars.js'),
@@ -53,12 +55,9 @@ const config = {
         theme: {
           customCss: './src/css/custom.css',
         },
-        gtag: {
-          trackingID: 'G-4BDHB978P1',
-          anonymizeIP: true,
-        },
       },
     ],
+    require.resolve('@swmansion/t-rex-ui/preset'),
   ],
 
   stylesheets: [
@@ -77,8 +76,7 @@ const config = {
   themes: ['@docusaurus/theme-mermaid'],
 
   themeConfig: {
-    // Replace with your project's social card
-    // image: 'img/docusaurus-social-card.jpg',
+    image: '/img/og-image.png',
 
     navbar: {
       hideOnScroll: true,
@@ -103,7 +101,7 @@ const config = {
       copyright: `All trademarks and copyrights belong to their respective owners.`,
     },
     prism: {
-      additionalLanguages: ['bash'],
+      additionalLanguages: ['bash', 'cmake'],
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
     },
@@ -111,10 +109,25 @@ const config = {
       appId: '7OKARNAQRP',
       apiKey: 'f06db3d3f64e619012f52f9fb3edf349',
       indexName: 'swmansion',
+      askAi: {
+        assistantId: 'Gy3lkaKLUCko',
+        indexName: 'audio-api-ai',
+        apiKey: 'f06db3d3f64e619012f52f9fb3edf349',
+        appId: '7OKARNAQRP',
+      },
     },
   },
+    clientModules: [
+    require.resolve('./src/wasm-loader.js'),
+  ],
 
   plugins: [
+    [
+      '@docusaurus/plugin-google-tag-manager',
+      {
+        containerId: 'GTM-K8VRM8H4',
+      },
+    ],
     ...[
       process.env.NODE_ENV === 'production' && '@docusaurus/plugin-debug',
     ].filter(Boolean),
@@ -134,8 +147,12 @@ const config = {
             },
             plugins: [
               new webpack.DefinePlugin({
-              ...processMock,
-              __DEV__: 'false',
+                ...processMock,
+                __DEV__: 'false',
+              }),
+              // Provide React automatically where library code expects global React
+              new webpack.ProvidePlugin({
+                React: 'react',
               }),
             ],
             module: {
@@ -148,11 +165,23 @@ const config = {
                   test: /\.tsx?$/,
                   use: 'babel-loader',
                 },
+                {
+                  test: /\.(js|jsx)$/,
+                  use: {
+                    loader: 'babel-loader',
+                    options: {
+                      presets: [
+                        '@babel/preset-react',
+                        { plugins: ['@babel/plugin-proposal-class-properties'] },
+                      ],
+                    },
+                  },
+                },
               ],
             },
             resolve: {
               alias: { 'react-native$': 'react-native-web' },
-              extensions: ['.web.js', '...'],
+              extensions: ['.web.js', '.js', '...'],
             },
           };
         },

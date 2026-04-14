@@ -1,5 +1,6 @@
 import { IAudioBuffer } from '../interfaces';
-import { IndexSizeError } from '../errors';
+import { IndexSizeError, NotSupportedError } from '../errors';
+import { AudioBufferOptions } from '../types';
 
 export default class AudioBuffer {
   readonly length: number;
@@ -9,12 +10,20 @@ export default class AudioBuffer {
   /** @internal */
   public readonly buffer: IAudioBuffer;
 
-  constructor(buffer: IAudioBuffer) {
-    this.buffer = buffer;
-    this.length = buffer.length;
-    this.duration = buffer.duration;
-    this.sampleRate = buffer.sampleRate;
-    this.numberOfChannels = buffer.numberOfChannels;
+  constructor(options: AudioBufferOptions);
+
+  /** @internal */
+  constructor(buffer: IAudioBuffer);
+
+  /** @internal */
+  constructor(arg: AudioBufferOptions | IAudioBuffer) {
+    this.buffer = this.isAudioBuffer(arg)
+      ? arg
+      : AudioBuffer.createBufferFromOptions(arg);
+    this.length = this.buffer.length;
+    this.duration = this.buffer.duration;
+    this.sampleRate = this.buffer.sampleRate;
+    this.numberOfChannels = this.buffer.numberOfChannels;
   }
 
   public getChannelData(channel: number): Float32Array {
@@ -64,5 +73,36 @@ export default class AudioBuffer {
     }
 
     this.buffer.copyToChannel(source, channelNumber, startInChannel);
+  }
+
+  private static createBufferFromOptions(
+    options: AudioBufferOptions
+  ): IAudioBuffer {
+    const { numberOfChannels = 1, length, sampleRate } = options;
+    if (numberOfChannels < 1 || numberOfChannels >= 32) {
+      throw new NotSupportedError(
+        `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
+      );
+    }
+    if (length <= 0) {
+      throw new NotSupportedError(
+        `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
+      );
+    }
+    if (sampleRate < 8000 || sampleRate > 96000) {
+      throw new NotSupportedError(
+        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
+      );
+    }
+    return global.createAudioBuffer(numberOfChannels, length, sampleRate);
+  }
+
+  private isAudioBuffer(obj: unknown): obj is IAudioBuffer {
+    return (
+      typeof obj === 'object' &&
+      obj !== null &&
+      'getChannelData' in obj &&
+      typeof (obj as IAudioBuffer).getChannelData === 'function'
+    );
   }
 }

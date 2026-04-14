@@ -30,32 +30,34 @@
 
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/dsp/FFT.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
-#include <algorithm>
-#include <cmath>
+#include <complex>
 #include <memory>
 #include <vector>
-#include <complex>
 
 namespace audioapi {
+
+struct WaveTableSource {
+  const DSPAudioArray *lower;
+  const DSPAudioArray *higher;
+  float interpolationFactor;
+};
+
 class PeriodicWave {
  public:
+  explicit PeriodicWave(float sampleRate, OscillatorType type, bool disableNormalization);
   explicit PeriodicWave(
       float sampleRate,
-      OscillatorType type,
-      bool disableNormalization);
-  explicit PeriodicWave(
-      float sampleRate,
-      const std::vector<std::complex<float>> &complexData,
+      const std::vector<std::complex<float>>
+          &complexData, // NOLINT(readability-avoid-const-params-in-decls)
       int length,
       bool disableNormalization);
-  ~PeriodicWave();
 
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getScale() const;
 
-  float
-  getSample(float fundamentalFrequency, float phase, float phaseIncrement);
+  float getSample(float fundamentalFrequency, float phase, float phaseIncrement);
 
  private:
   explicit PeriodicWave(float sampleRate, bool disableNormalization);
@@ -80,27 +82,26 @@ class PeriodicWave {
   // The higher frequencies are culled to band-limit the waveform.
   // For each range, the inverse FFT is performed to get the time domain
   // representation of the band-limited waveform.
-  void
-  createBandLimitedTables(const std::vector<std::complex<float>> &complexData, int size);
+  void createBandLimitedTables(
+      const std::vector<std::complex<float>> &complexData,
+      int size); // NOLINT(readability-avoid-const-params-in-decls)
 
   // This function returns the interpolation factor between the lower and higher
   // range data and sets the lower and higher wave data for the given
   // fundamental frequency.
-  float getWaveDataForFundamentalFrequency(
-      float fundamentalFrequency,
-      float *&lowerWaveData,
-      float *&higherWaveData);
+  [[nodiscard]] WaveTableSource getWaveDataForFundamentalFrequency(
+      float fundamentalFrequency) const;
 
   // This function performs interpolation between the lower and higher range
   // data based on the interpolation factor and current buffer index. Type of
   // interpolation is determined by the phase increment. Returns the
   // interpolated sample.
-  float doInterpolation(
-      float bufferIndex,
+  [[nodiscard]] float doInterpolation(
+      float phase,
       float phaseIncrement,
       float waveTableInterpolationFactor,
-      const float *lowerWaveData,
-      const float *higherWaveData) const;
+      const DSPAudioArray &lowerWaveData,
+      const DSPAudioArray &higherWaveData) const;
 
   // determines the time resolution of the waveform.
   float sampleRate_;
@@ -113,8 +114,7 @@ class PeriodicWave {
   // rate.
   float scale_;
   // array of band-limited waveforms.
-  float **bandLimitedTables_;
-  //
+  std::unique_ptr<DSPAudioBuffer> bandLimitedTables_;
   std::unique_ptr<dsp::FFT> fft_;
   // if true, the waveTable is not normalized.
   bool disableNormalization_;

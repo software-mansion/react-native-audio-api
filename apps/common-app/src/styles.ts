@@ -17,9 +17,9 @@ export const colors = {
   gray: '#d7d7d7',
   yellow: '#FFD61E',
 
-  background: '#222222',
+  background: '#232736',
   backgroundDark: '#1f2020',
-  backgroundLight: '#333333',
+  backgroundLight: '#32384d',
 
   separator: '#333333',
   modalBackdrop: '#00000040',

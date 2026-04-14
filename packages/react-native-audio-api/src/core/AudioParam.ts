@@ -33,7 +33,8 @@ export default class AudioParam {
       );
     }
 
-    this.audioParam.setValueAtTime(value, startTime);
+    const clampedTime = Math.max(startTime, this.context.currentTime);
+    this.audioParam.setValueAtTime(value, clampedTime);
 
     return this;
   }
@@ -45,7 +46,8 @@ export default class AudioParam {
       );
     }
 
-    this.audioParam.linearRampToValueAtTime(value, endTime);
+    const clampedTime = Math.max(endTime, this.context.currentTime);
+    this.audioParam.linearRampToValueAtTime(value, clampedTime);
 
     return this;
   }
@@ -54,13 +56,18 @@ export default class AudioParam {
     value: number,
     endTime: number
   ): AudioParam {
-    if (endTime < 0) {
+    if (value === 0) {
+      throw new RangeError(`value must be a non-zero number: ${value}`);
+    }
+
+    if (endTime <= 0) {
       throw new RangeError(
         `endTime must be a finite non-negative number: ${endTime}`
       );
     }
 
-    this.audioParam.exponentialRampToValueAtTime(value, endTime);
+    const clampedTime = Math.max(endTime, this.context.currentTime);
+    this.audioParam.exponentialRampToValueAtTime(value, clampedTime);
 
     return this;
   }
@@ -78,11 +85,12 @@ export default class AudioParam {
 
     if (timeConstant < 0) {
       throw new RangeError(
-        `timeConstant must be a finite non-negative number: ${startTime}`
+        `timeConstant must be a finite non-negative number: ${timeConstant}`
       );
     }
 
-    this.audioParam.setTargetAtTime(target, startTime, timeConstant);
+    const clampedTime = Math.max(startTime, this.context.currentTime);
+    this.audioParam.setTargetAtTime(target, clampedTime, timeConstant);
 
     return this;
   }
@@ -98,9 +106,9 @@ export default class AudioParam {
       );
     }
 
-    if (duration < 0) {
+    if (duration <= 0) {
       throw new RangeError(
-        `duration must be a finite non-negative number: ${startTime}`
+        `duration must be a finite strictly-positive number: ${duration}`
       );
     }
 
@@ -108,7 +116,8 @@ export default class AudioParam {
       throw new InvalidStateError(`values must contain at least two values`);
     }
 
-    this.audioParam.setValueCurveAtTime(values, startTime, duration);
+    const clampedTime = Math.max(startTime, this.context.currentTime);
+    this.audioParam.setValueCurveAtTime(values, clampedTime, duration);
 
     return this;
   }
@@ -120,7 +129,8 @@ export default class AudioParam {
       );
     }
 
-    this.audioParam.cancelScheduledValues(cancelTime);
+    const clampedTime = Math.max(cancelTime, this.context.currentTime);
+    this.audioParam.cancelScheduledValues(clampedTime);
 
     return this;
   }
@@ -132,7 +142,8 @@ export default class AudioParam {
       );
     }
 
-    this.audioParam.cancelAndHoldAtTime(cancelTime);
+    const clampedTime = Math.max(cancelTime, this.context.currentTime);
+    this.audioParam.cancelAndHoldAtTime(clampedTime);
 
     return this;
   }

@@ -1,0 +1,56 @@
+.container {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.labelText {
+  color: var(--swm-navy);
+  font-size: 14px;
+}
+
+.track {
+  width: 50px;
+  height: 24px;
+  border: none;
+  border-radius: 12px;
+  padding: 2px;
+  position: relative;
+  cursor: pointer;
+  background-color: rgba(145, 159, 207, 0.2);
+  transition: background-color 200ms ease;
+}
+
+.trackChecked {
+  background-color: rgba(145, 159, 207, 0.4);
+}
+
+.track:focus-visible {
+  outline: 2px solid var(--swm-red-light-80);
+  outline-offset: 2px;
+}
+
+.track:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background-color: var(--swm-red-light-80);
+  transition: transform 200ms ease;
+}
+
+.thumbChecked {
+  transform: translateX(26px);
+}
+
+:root[data-theme='dark'] .labelText {
+  color: var(--swm-off-white);
+}

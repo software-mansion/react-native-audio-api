@@ -10,12 +10,13 @@ permissions:
 
 concurrency:
   group: 'pages'
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   publish:
     if: github.repository == 'software-mansion/react-native-audio-api'
     runs-on: ubuntu-latest
+    environment: github-pages
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

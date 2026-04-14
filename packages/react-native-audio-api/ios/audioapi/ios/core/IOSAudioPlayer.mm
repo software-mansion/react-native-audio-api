@@ -1,18 +1,19 @@
 #import <AVFoundation/AVFoundation.h>
 
-#include <audioapi/core/Constants.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/ios/system/AudioEngine.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 
 IOSAudioPlayer::IOSAudioPlayer(
-    const std::function<void(std::shared_ptr<AudioBus>, int)> &renderAudio,
+    const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
     float sampleRate,
     int channelCount)
-    : renderAudio_(renderAudio), channelCount_(channelCount), audioBus_(0), isRunning_(false)
+    : renderAudio_(renderAudio), channelCount_(channelCount), audioBuffer_(0), isRunning_(false)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     int processedFrames = 0;
@@ -20,17 +21,17 @@ IOSAudioPlayer::IOSAudioPlayer(
     while (processedFrames < numFrames) {
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
-      if (isRunning_.load()) {
-        renderAudio_(audioBus_, framesToProcess);
+      if (isRunning_.load(std::memory_order_acquire)) {
+        renderAudio_(audioBuffer_, framesToProcess);
       } else {
-        audioBus_->zero();
+        audioBuffer_->zero();
       }
 
-      for (int channel = 0; channel < channelCount_; channel += 1) {
+      for (size_t channel = 0; channel < channelCount_; channel += 1) {
         float *outputChannel = (float *)outputData->mBuffers[channel].mData;
-        auto *inputChannel = audioBus_->getChannel(channel)->getData();
 
-        memcpy(outputChannel + processedFrames, inputChannel, framesToProcess * sizeof(float));
+        audioBuffer_->getChannel(channel)->copyTo(
+            outputChannel, 0, processedFrames, framesToProcess);
       }
 
       processedFrames += framesToProcess;
@@ -41,7 +42,7 @@ IOSAudioPlayer::IOSAudioPlayer(
                                                      sampleRate:sampleRate
                                                    channelCount:channelCount_];
 
-  audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
+  audioBuffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
@@ -49,46 +50,53 @@ IOSAudioPlayer::~IOSAudioPlayer()
   cleanup();
 }
 
-void IOSAudioPlayer::start()
+bool IOSAudioPlayer::start()
 {
-  if (isRunning_.load()) {
-    return;
+  if (isRunning()) {
+    return true;
   }
 
-  [audioPlayer_ start];
-  isRunning_.store(true);
+  bool success = [audioPlayer_ start];
+  isRunning_.store(success, std::memory_order_release);
+  return success;
 }
 
 void IOSAudioPlayer::stop()
 {
-  isRunning_.store(false);
+  isRunning_.store(false, std::memory_order_release);
   [audioPlayer_ stop];
 }
 
-void IOSAudioPlayer::resume()
+bool IOSAudioPlayer::resume()
 {
-  if (isRunning_.load()) {
-    return;
+  if (isRunning()) {
+    return true;
   }
 
-  [audioPlayer_ resume];
-  isRunning_.store(true);
+  bool success = [audioPlayer_ resume];
+  isRunning_.store(success, std::memory_order_release);
+  return success;
 }
 
 void IOSAudioPlayer::suspend()
 {
-  isRunning_.store(false);
+  isRunning_.store(false, std::memory_order_release);
   [audioPlayer_ suspend];
+}
+
+bool IOSAudioPlayer::isRunning() const
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+
+  return isRunning_.load(std::memory_order_acquire) &&
+      [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
 void IOSAudioPlayer::cleanup()
 {
   stop();
   [audioPlayer_ cleanup];
-
-  if (audioBus_) {
-    audioBus_ = nullptr;
-  }
+  audioBuffer_ = nullptr;
 }
 
 } // namespace audioapi

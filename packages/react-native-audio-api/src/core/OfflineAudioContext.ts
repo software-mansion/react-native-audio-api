@@ -1,8 +1,9 @@
-import { IOfflineAudioContext } from '../interfaces';
-import BaseAudioContext from './BaseAudioContext';
-import { OfflineAudioContextOptions } from '../types';
+import AudioAPIModule from '../AudioAPIModule';
 import { InvalidStateError, NotSupportedError } from '../errors';
+import { IOfflineAudioContext } from '../interfaces';
+import { OfflineAudioContextOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
+import BaseAudioContext from './BaseAudioContext';
 
 export default class OfflineAudioContext extends BaseAudioContext {
   private isSuspended: boolean;
@@ -16,10 +17,17 @@ export default class OfflineAudioContext extends BaseAudioContext {
     arg1?: number,
     arg2?: number
   ) {
+    const audioRuntime = AudioAPIModule.createAudioRuntime();
+
     if (typeof arg0 === 'object') {
       const { numberOfChannels, length, sampleRate } = arg0;
       super(
-        global.createOfflineAudioContext(numberOfChannels, length, sampleRate)
+        global.createOfflineAudioContext(
+          numberOfChannels,
+          length,
+          sampleRate,
+          audioRuntime
+        )
       );
 
       this.duration = length / sampleRate;
@@ -28,7 +36,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
       typeof arg1 === 'number' &&
       typeof arg2 === 'number'
     ) {
-      super(global.createOfflineAudioContext(arg0, arg1, arg2));
+      super(global.createOfflineAudioContext(arg0, arg1, arg2, audioRuntime));
       this.duration = arg1 / arg2;
     } else {
       throw new NotSupportedError('Invalid constructor arguments');

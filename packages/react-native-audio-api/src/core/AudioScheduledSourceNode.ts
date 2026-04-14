@@ -10,7 +10,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
     global.AudioEventEmitter
   );
 
-  private onendedSubscription?: AudioEventSubscription;
+  private onEndedSubscription?: AudioEventSubscription;
   private onEndedCallback?: (event: EventEmptyType) => void;
 
   public start(when: number = 0): void {
@@ -51,19 +51,19 @@ export default class AudioScheduledSourceNode extends AudioNode {
   public set onEnded(callback: ((event: EventEmptyType) => void) | null) {
     if (!callback) {
       (this.node as IAudioScheduledSourceNode).onEnded = '0';
-      this.onendedSubscription?.remove();
-      this.onendedSubscription = undefined;
+      this.onEndedSubscription?.remove();
+      this.onEndedSubscription = undefined;
       this.onEndedCallback = undefined;
       return;
     }
 
     this.onEndedCallback = callback;
-    this.onendedSubscription = this.audioEventEmitter.addAudioEventListener(
+    this.onEndedSubscription = this.audioEventEmitter.addAudioEventListener(
       'ended',
       callback
     );
 
     (this.node as IAudioScheduledSourceNode).onEnded =
-      this.onendedSubscription.subscriptionId;
+      this.onEndedSubscription.subscriptionId;
   }
 }

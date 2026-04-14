@@ -1,6 +1,5 @@
 .badge {
   display: inline-block;
-  border: 1px solid #ccc;
   color: var(--ifm-font-color-base);
   border-radius: 4rem;
   font-size: 12px;
@@ -10,7 +9,21 @@
   margin: 0 0.25rem;
 }
 
+.basic {
+  color: var(--swm-off-white);
+  background-color: var(--swm-blue-light-100);
+}
+
+[data-theme='dark'] .basic {
+  background-color: var(--swm-blue-dark-120);
+}
+
 .experimental {
-  color: var(--swm-sidebar-label-text-experimental);
-  background-color: var(--swm-sidebar-label-background-experimental);
+  color: var(--swm-off-white);
+  background-color: var(--swm-red-light-100);
+}
+
+
+[data-theme='dark'] .experimental {
+  background-color: var(--swm-red-dark-120);
 }

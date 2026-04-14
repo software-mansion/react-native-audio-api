@@ -1,12 +1,15 @@
 <img src="./assets/react-native-audio-api-gh-cover.png?v0.0.1" alt="React Native Audio API" width="100%">
 
+[![Ad](https://swm-delivery.com/www/images/zone-gh-react-native-audio-api-1?n=1)](https://swm-delivery.com/www/delivery/ck.php?zoneid=zone-gh-react-native-audio-api-1&n=1)
+[![Ad](https://swm-delivery.com/www/images/zone-gh-react-native-audio-api-2?n=1)](https://swm-delivery.com/www/delivery/ck.php?zoneid=zone-gh-react-native-audio-api-2&n=1)
+[![Ad](https://swm-delivery.com/www/images/zone-gh-react-native-audio-api-3?n=1)](https://swm-delivery.com/www/delivery/ck.php?zoneid=zone-gh-react-native-audio-api-3&n=1)
+
 ### High-performance audio engine for React Native based on web audio api specification
 
 [![NPM latest](https://img.shields.io/npm/v/react-native-audio-api/latest)](https://www.npmjs.com/package/react-native-audio-api)
-[![NPM next](https://img.shields.io/npm/v/react-native-audio-api/next)](https://www.npmjs.com/package/react-native-audio-api?activeTab=versions)
 [![NPM nightly](https://img.shields.io/npm/v/react-native-audio-api/audio-api-nightly)](https://www.npmjs.com/package/react-native-audio-api?activeTab=versions)
+<br />
 [![github ci](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml)
-[![NPM Audio Api publish nightly](https://github.com/software-mansion/react-native-audio-api/actions/workflows/npm-publish-nightly.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/npm-publish-nightly.yml)
 [![Audio Api tests](https://github.com/software-mansion/react-native-audio-api/actions/workflows/tests.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/tests.yml)
 
 `react-native-audio-api` provides system for controlling audio in React Native environment compatible with Web Audio API specification,
@@ -14,45 +17,80 @@ allowing developers to generate and modify audio in exact same way it is possibl
 
 ## Installation
 
-check out the [Getting Started](https://docs.swmansion.com/react-native-audio-api/fundamentals/getting-started) section of our documentation for detailed instructions!
+check out the [Getting Started](https://docs.swmansion.com/react-native-audio-api/docs/fundamentals/getting-started) section of our documentation for detailed instructions!
 
 ## Roadmap
 
-- <sub>[![Released in 0.1.0](https://img.shields.io/badge/Released_in-0.1.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.1.0)</sub> **Sound synthesis and system audio** 🐣 <br />
-  Access to devices audio engines and threads, basic nodes for sound synthesis, simple effects and audio graph implementation
-  <br />
+### Planned
 
-- <sub>[![Released in 0.2.0](https://img.shields.io/badge/Released_in-0.2.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.2.0)</sub> **Graph Processing** 🛎️ <br />
-  Support for multi-channel audio processing, audio-graph route optimizations, improved react-native layer for managing audio nodes
-  <br />
-- <sub>[![Released in 0.3.2](https://img.shields.io/badge/Released_in-0.3.2-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.3.2)</sub> **Audio Files** 🎸 <br />
-  Support for local and remote audio file resources: MP3, WAV, FLAC.
-  <br />
+### <img src="https://img.shields.io/badge/Coming_in-x.x.x-orange" />
 
-- <sub>[![Released in 0.4.0](https://img.shields.io/badge/Released_in-0.4.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.4.0)</sub> **Analyser Node** 🌊 <br />
-  Ability to draw, animate or simply debug audio data in time or frequency domain.
-  <br />
+- **DynamicCompressorNode 〽️**<br />
+  Reduce the volume of loud sounds and boost quieter nodes to balance the audio signal, avoid clipping or distorted sounds
 
-- <sub>[![Released in 0.5.0](https://img.shields.io/badge/Released_in-0.5.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.5.0)</sub> **Pitch correction, extending the web** 💥 <br />
-  Ability to modify playback speed without affecting pitch of the sound
-  <br />
+- **Audio tag 🏷️**<br />
+  Simple ability to play and buffer audio, with all of the most commonly used functions, same as on the web, without the need to create and manipulate an audio graph.
 
-- <sub>[![Released in 0.6.0](https://img.shields.io/badge/Released_in-0.6.0-green)](https://github.com/software-mansion/react-native-audio-api/releases/tag/0.6.0)</sub> **System configuration** 🛠️ <br />
-  Full control of system audio settings, remote controls, lock screen integration and most importantly configurable background modes <br />
+- **MIDI support 🎸**<br />
+  Complementary lib for react-native-audio-api, that will allow to communicate with MIDI devices or read/write MIDI files.
 
-- **Microphone support** 🎙️ <br />
-  Grab audio data from device microphone or connected device, connect it to the audio graph or stream through the internet <br />
+- **Spatial Audio 🛢️**<br />
+  manipulate audio in 3D space
 
-- **Connect audio param** 🤞 <br />
-  Ability to connect Audio nodes to audio params, which will allow for powerful and efficient modulation of audio parameters, creating effects like tremolo, vibrato or complex envelope followers. <br />
+- **Noise Cancellation 🦇**<br />
+  System-based active noise and echo cancellation support
 
-- **JS Audio Worklets** 🐎 <br />
-  Ability to run JS functions connected to the audio graph running on audio thread allowing for full customization of what happens to the audio signal.
-  <br />
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.11.0"><img src="https://img.shields.io/badge/Released_in-0.11.0-green" /></a>
+
+- **Recording to file 📼**<br />
+  Fully customizable recording to a file. Choose a file format, quality and other parameters. Fully integrated with the audio graph.
+
+- **Playback and recording notification system 🔔**<br />
+  Control playback and recording from the notification center / lock screen and create custom notification layouts.
+
+- **Wave Shaper Node 🎸**<br />
+  Create custom nonlinear distortion effects. No need to buy guitar pedals anymore!
+
+- **IIR Filter Node 🧪**<br />
+  Implement custom digital filters using feedforward and feedback coefficients.
+
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.10.0"><img src="https://img.shields.io/badge/Released_in-0.10.0-green" /></a>
+
+- **Decoding and utility modules 🔧**<br />
+  Decode and modify audio data without the need to create AudioContext first through a set of utility classes
+
+- **Convolver Node 🐐**<br />
+  Realistic reverb and spatial effects in the browser by applying impulse responses. It makes audio sound like it’s being played in real spaces, from small rooms to cathedrals, or through hardware like amps and speakers
+
+- **JS Audio Worklets V2 🐎**<br />
+  Customize the process pipeline with JS functions running on audio thread.
+
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.9.0"><img src="https://img.shields.io/badge/Released_in-0.9.0-green" /></a>
+
+- **JS Audio Worklets V1 🐎**<br />
+  Receive events and data callbacks from audio thread to synchronize with UI on UI thread.
+
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.8.0"><img src="https://img.shields.io/badge/Released_in-0.8.0-green" /></a>
+
+- **Decoding support for m4a/mp4/aac/ogg/opus 📁** <br />
+  Decode m4a/mp4/aac/ogg/opus audio files, allowing for playback of these formats in the audio graph.
+
+- **HLS streaming support** 🌊 <br />
+  Stream audio from HLS sources, allowing for playback of live audio streams or pre-recorded audio files.
+
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.7.0"><img src="https://img.shields.io/badge/Released_in-0.7.0-green" /></a>
+
+- **Microphone support 🎙️** <br />
+  Grab audio data from device microphone or connected device, connect it to the audio graph or stream through the internet.
+
+- **Custom Audio Processor ⚙️** <br />
+  Write your own processing AudioNode.
+
+See more in [Changelog](./ghdocs/changelog.md)
 
 ## Web Audio API Specification Coverage
 
-Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://software-mansion.github.io/react-native-audio-api/other/web-audio-api-coverage).
+Our current coverage of Web Audio API specification can be found here: [Web Audio API coverage](https://docs.swmansion.com/react-native-audio-api/docs/other/web-audio-api-coverage).
 
 ## Examples
 
@@ -64,7 +102,7 @@ We are open to new ideas and general feedback. If you want to share your opinion
 
 ## License
 
-react-native-audio-api library is licensed under [The MIT License](./LICENSE). Some of the source code uses implementation directly copied from Webkit and copyrights are held by respective organizations, check [COPYING](./COPYING) file for further details
+react-native-audio-api library is licensed under [The MIT License](./LICENSE). Some of the source code uses implementation directly copied from Webkit and utilizes FFmpeg binaries. Copyrights are held by respective organizations, check [THIRD_PARTY](./THIRD_PARTY.md) file for further details.
 
 ## Credits
 

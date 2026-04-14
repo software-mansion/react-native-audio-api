@@ -2,23 +2,51 @@ import { IAudioBufferSourceNode } from '../interfaces';
 import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { InvalidStateError, RangeError } from '../errors';
+import { EventEmptyType } from '../events/types';
+import { AudioEventSubscription } from '../events';
+import { AudioBufferSourceOptions } from '../types';
+import BaseAudioContext from './BaseAudioContext';
 
 export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
-  public get buffer(): AudioBuffer | null {
-    const buffer = (this.node as IAudioBufferSourceNode).buffer;
-    if (!buffer) {
-      return null;
+  private onLoopEndedSubscription?: AudioEventSubscription;
+  private onLoopEndedCallback?: (event: EventEmptyType) => void;
+
+  private _buffer: AudioBuffer | null = null;
+  private bufferHasBeenSet: boolean = false;
+
+  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
+    const node = context.context.createBufferSource(options || {});
+    super(context, node);
+
+    if (options?.buffer) {
+      this._buffer = options.buffer;
+      this.bufferHasBeenSet = true;
     }
-    return new AudioBuffer(buffer);
+  }
+
+  public get buffer(): AudioBuffer | null {
+    return this._buffer;
   }
 
   public set buffer(buffer: AudioBuffer | null) {
-    if (!buffer) {
-      (this.node as IAudioBufferSourceNode).setBuffer(null);
+    if (buffer === null) {
+      if (this.buffer !== null) {
+        (this.node as IAudioBufferSourceNode).setBuffer(null);
+        this._buffer = null;
+      }
+
       return;
     }
 
+    if (this.bufferHasBeenSet) {
+      throw new InvalidStateError(
+        'The buffer can only be set once and cannot be changed afterwards.'
+      );
+    }
+
     (this.node as IAudioBufferSourceNode).setBuffer(buffer.buffer);
+    this._buffer = buffer;
+    this.bufferHasBeenSet = true;
   }
 
   public get loopSkip(): boolean {
@@ -78,5 +106,29 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
 
     this.hasBeenStarted = true;
     (this.node as IAudioBufferSourceNode).start(when, offset, duration);
+  }
+
+  public get onLoopEnded(): ((event: EventEmptyType) => void) | undefined {
+    return this.onLoopEndedCallback;
+  }
+
+  public set onLoopEnded(callback: ((event: EventEmptyType) => void) | null) {
+    if (!callback) {
+      (this.node as IAudioBufferSourceNode).onLoopEnded = '0';
+      this.onLoopEndedSubscription?.remove();
+      this.onLoopEndedSubscription = undefined;
+      this.onLoopEndedCallback = undefined;
+
+      return;
+    }
+
+    this.onLoopEndedCallback = callback;
+    this.onLoopEndedSubscription = this.audioEventEmitter.addAudioEventListener(
+      'loopEnded',
+      callback
+    );
+
+    (this.node as IAudioBufferSourceNode).onLoopEnded =
+      this.onLoopEndedSubscription.subscriptionId;
   }
 }

@@ -1,16 +1,21 @@
 import { IOscillatorNode } from '../interfaces';
-import { OscillatorType } from '../types';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import AudioParam from './AudioParam';
 import BaseAudioContext from './BaseAudioContext';
 import PeriodicWave from './PeriodicWave';
 import { InvalidStateError } from '../errors';
+import { OscillatorOptions } from '../types';
 
 export default class OscillatorNode extends AudioScheduledSourceNode {
   readonly frequency: AudioParam;
   readonly detune: AudioParam;
 
-  constructor(context: BaseAudioContext, node: IOscillatorNode) {
+  constructor(context: BaseAudioContext, options?: OscillatorOptions) {
+    if (options?.periodicWave) {
+      options.type = 'custom';
+    }
+
+    const node = context.context.createOscillator(options || {});
     super(context, node);
     this.frequency = new AudioParam(node.frequency, context);
     this.detune = new AudioParam(node.detune, context);

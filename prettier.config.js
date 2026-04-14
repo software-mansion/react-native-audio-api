@@ -2,6 +2,7 @@
 module.exports = {
   plugins: ['prettier-plugin-jsdoc'],
   bracketSameLine: true,
+  jsxBracketSameLine: false,
   printWidth: 80,
   singleQuote: true,
   trailingComma: 'es5',

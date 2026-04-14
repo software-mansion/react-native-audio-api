@@ -12,14 +12,20 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
     set(HAVE_X86_SSE2 TRUE)
 endif()
 
+# default CMAKE_CXX_FLAGS: "-g -DANDROID -fdata-sections -ffunction-sections
+# -funwind-tables -fstack-protector-strong -no-canonical-prefixes
+# -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -fstack-protector-all"
 include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
 add_compile_options(${folly_FLAGS})
 
-# frtti - enable Run-Time Type Information (dynamic_cast, typeid)
-# -std=c++20 - use C++20 standard
-# -Wall - enable all compiler's warning messages
-string(APPEND CMAKE_CXX_FLAGS
-       " -frtti -std=c++${CMAKE_CXX_STANDARD} -Wall")
+if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 80)
+  include("${REACT_NATIVE_DIR}/ReactCommon/cmake-utils/react-native-flags.cmake")
+  target_compile_reactnative_options(react-native-audio-api PRIVATE)
+else()
+  string(APPEND CMAKE_CXX_FLAGS " -fexceptions -frtti -std=c++${CMAKE_CXX_STANDARD} -Wall")
+endif()
+
+string(APPEND CMAKE_CXX_FLAGS " -fno-omit-frame-pointer")
 
 if(${IS_NEW_ARCHITECTURE_ENABLED})
   string(APPEND CMAKE_CXX_FLAGS " -DRCT_NEW_ARCH_ENABLED")

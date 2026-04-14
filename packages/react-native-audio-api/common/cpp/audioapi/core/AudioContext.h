@@ -1,9 +1,12 @@
 #pragma once
 
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 
-#include <memory>
 #include <functional>
+#include <memory>
 
 namespace audioapi {
 #ifdef ANDROID
@@ -14,12 +17,18 @@ class IOSAudioPlayer;
 
 class AudioContext : public BaseAudioContext {
  public:
-  explicit AudioContext(float sampleRate, bool initSuspended, const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit AudioContext(
+      float sampleRate,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const RuntimeRegistry &runtimeRegistry);
   ~AudioContext() override;
+  DELETE_COPY_AND_MOVE(AudioContext);
 
   void close();
   bool resume();
   bool suspend();
+  bool start();
+  void initialize() override;
 
  private:
 #ifdef ANDROID
@@ -27,9 +36,11 @@ class AudioContext : public BaseAudioContext {
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
-  bool playerHasBeenStarted_;
+  std::atomic<bool> isInitialized_{false};
 
-  std::function<void(std::shared_ptr<AudioBus>, int)> renderAudio();
+  bool isDriverRunning() const override;
+
+  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio();
 };
 
 } // namespace audioapi

@@ -1,10 +1,6 @@
 #pragma once
 
 #include <jsi/jsi.h>
-#include <memory>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
 
 namespace audioapi {
 
@@ -27,9 +23,7 @@ struct RuntimeLifecycleListener {
  */
 struct RuntimeLifecycleMonitor {
   static void addListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener);
-  static void removeListener(
-      jsi::Runtime &rt,
-      RuntimeLifecycleListener *listener);
+  static void removeListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener);
 };
 
 } // namespace audioapi

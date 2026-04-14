@@ -9,6 +9,7 @@ class PermissionRequestListener(
 ) : PermissionListener {
   companion object {
     const val RECORDING_REQUEST_CODE = 1234
+    const val NOTIFICATION_REQUEST_CODE = 1235
   }
 
   override fun onRequestPermissionsResult(
@@ -16,7 +17,7 @@ class PermissionRequestListener(
     permissions: Array<String>,
     grantResults: IntArray,
   ): Boolean {
-    if (requestCode == RECORDING_REQUEST_CODE) {
+    if (requestCode == RECORDING_REQUEST_CODE || requestCode == NOTIFICATION_REQUEST_CODE) {
       if (grantResults.isEmpty()) {
         this.promise.resolve("Undetermined")
       } else {

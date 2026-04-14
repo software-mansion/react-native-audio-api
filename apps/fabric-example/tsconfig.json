@@ -1,11 +1,19 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "types": ["jest"],
     "baseUrl": ".",
     "moduleSuffixes": [".ios", ".android", ".native", ""],
     "paths": {
       "@/*": ["../common-app/src/*"]
     }
   },
-  "exclude": ["metro.config.js", "android", "ios", ".bundle", "node_modules"]
+  "exclude": [
+    "**/node_modules",
+    "**/Pods",
+    "metro.config.js",
+    "android",
+    "ios",
+    ".bundle"
+  ]
 }

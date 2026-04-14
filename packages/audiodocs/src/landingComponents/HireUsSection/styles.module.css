@@ -1,0 +1,14 @@
+@media (max-width: 420px) {
+  [class*='hireUsSectionBody'] {
+    font-size: 18px !important;
+  }
+}
+
+[class*='hireUsSectionBody'] {
+  font-size: 20px !important;
+  color: var(--swm-navy-light-80);
+}
+
+[data-theme='dark'] [class*='hireUsSectionBody'] {
+  color: var(--swm-navy-dark-40);
+}

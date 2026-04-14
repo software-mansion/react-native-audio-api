@@ -7,47 +7,41 @@ import { ReadOnly, Optional } from '@site/src/components/Badges';
 # AudioBuffer
 
 The `AudioBuffer` interface represents a short audio asset, commonly shorter then one minute.
-It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://pl.wikipedia.org/wiki/PCM) values with a nominal range of [−1, 1] (but not limited to that range),
+It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) values with a nominal range of [−1, 1] (but not limited to that range),
 specific sample rate which is the quantity of frames that will play in one second and length.
 
 ![](/img/audioBuffer.png)
 
-It can be created from audio file using `decodeAudioData`, `decodeAudioDataSource`, `decodePCMInBase64Data` or from raw data using `constructor`.
+It can be created from audio file using [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) or from raw data using `constructor`.
 Once you have data in `AudioBuffer`, audio can be played by passing it to [`AudioBufferSourceNode`](audio-buffer-source-node).
 
 ## Constructor
 
-[`BaseAudioContext.createBuffer(numChannels, length, sampleRate)`](/core/base-audio-context#createbuffer)
+```tsx
+constructor(options: AudioBufferOptions)
+```
+
+### `AudioBufferOptions`
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :----: | :---- |
+| `length` | `number` | - | [`Length`](/docs/sources/audio-buffer#properties) of the buffer |
+| `numberOfChannels` <Optional /> | `number` | 1.0 | Number of [`channels`](/docs/sources/audio-buffer#properties) in buffer |
+| `sampleRate` | `number` | - | [`Sample rate`](/docs/sources/audio-buffer#properties) of the buffer in Hz |
+
+Or by using `BaseAudioContext` factory method:
+[`BaseAudioContext.createBuffer(numChannels, length, sampleRate)`](/docs/core/base-audio-context#createbuffer) that creates buffer with default values.
 
 ## Decoding
 
-#### [`BaseAudioContext.decodeAudioData`](/core/base-audio-context#decodeaudiodata)
-
-```tsx
-const audioBuffer = await fetch(URL)
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) =>
-        audioContextRef.current!.decodeAudioData(arrayBuffer)
-      )
-```
-
-#### [`BaseAudioContext.decodeAudioDataSource`](/core/base-audio-context#decodeaudiodatasource)
-
-```tsx
-import * as FileSystem from 'expo-file-system';
-
-const audioBuffer = await FileSystem.downloadAsync(
-      URL,
-      `${FileSystem.documentDirectory}/example-music-01.mp3`
-    ).then(({ uri }) => audioContext.decodeAudioDataSource(uri));
-```
+See example implementations in [`BaseAudioContext`](/docs/core/base-audio-context#decodeaudiodata) on how to decode data in various ways.
 
 ## Properties
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
 | `sampleRate` | `number` | Float value representing sample rate of the PCM data stored in the buffer. | <ReadOnly /> |
-| `length` | `length` | Integer value representing length of the PCM data stored in the buffer. | <ReadOnly /> |
+| `length` | `number` | Integer value representing length of the PCM data stored in the buffer. | <ReadOnly /> |
 | `duration` | `number` | Double value representing duration, in seconds, of the PCM data stored in the buffer. | <ReadOnly /> |
 | `numberOfChannels` | `number` | Integer value representing the number of audio channels of the PCM data stored in the buffer. | <ReadOnly /> |
 
@@ -55,11 +49,11 @@ const audioBuffer = await FileSystem.downloadAsync(
 
 ### `getChannelData`
 
-The above method returns modifiable array with PCM data from given channel.
+Gets modifiable array with PCM data from given channel.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `channel` | `number` | Index of the `AudioBuffer's` channel from which data will be returned. |
+| `channel` | `number` | Index of the `AudioBuffer's` channel, from which data will be returned. |
 
 #### Errors:
 
@@ -71,12 +65,12 @@ The above method returns modifiable array with PCM data from given channel.
 
 ### `copyFromChannel`
 
-The above method copies data from given channel of the `AudioBuffer` to an array.
+Copies data from given channel of the `AudioBuffer` to an array.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `destination` | `Float32Array` | The array to which data will be copied. |
-| `channelNumber` | `number` | Index of the `AudioBuffer's` channel from which data will be copied. |
+| `channelNumber` | `number` | Index of the `AudioBuffer's` channel, from which data will be copied. |
 | `startInChannel` <Optional /> | `number` | Channel's offset from which to start copying data. |
 
 #### Errors:
@@ -90,9 +84,9 @@ The above method copies data from given channel of the `AudioBuffer` to an array
 
 ### `copyToChannel`
 
-The above method copies data from given array to specified channel of the `AudioBuffer`.
+Copies data from given array to specified channel of the `AudioBuffer`.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `source` | `Float32Array` | The array from which data will be copied. |
 | `channelNumber` | `number` | Index of the `AudioBuffer's` channel to which data will be copied. |

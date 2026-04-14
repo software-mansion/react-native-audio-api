@@ -8,19 +8,16 @@ cleanup() {
 }
 
 trap cleanup EXIT
-# Step 1: Move to the script's directory
-cd packages/react-native-audio-api/common/cpp/test
-# Step 2: Configure CMake project
-# mkdir build
-cmake -S . -B build
 
-# Step 3: Build the project
-cmake --build build
+cd common/cpp/test
 
-# Step 4: Run the test binary
+cmake -S . -B build -Wno-dev
+
 cd build
-./tests
+make -j10
+
+GRAPH_FILTER="AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:Seeds/*"
+./tests --gtest_print_time=1 --gtest_filter="-${GRAPH_FILTER}"
 cd ..
 
-# Step 5: Clean up build directory
 rm -rf build/

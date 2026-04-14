@@ -1,31 +1,38 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
-#include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
+#include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioArray.hpp>
+
+#if !RN_AUDIO_API_TEST
+#include <audioapi/core/AudioContext.h>
+#endif // RN_AUDIO_API_TEST
+
+#include <algorithm>
+#include <limits>
+#include <memory>
 
 namespace audioapi {
 
-AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
-    : AudioNode(context),
+AudioScheduledSourceNode::AudioScheduledSourceNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const AudioScheduledSourceNodeOptions &options)
+    : AudioNode(context, options),
       startTime_(-1.0),
       stopTime_(-1.0),
-      playbackState_(PlaybackState::UNSCHEDULED) {
-  numberOfInputs_ = 0;
-}
-
-AudioScheduledSourceNode::~AudioScheduledSourceNode() {
-  if (onEndedCallbackId_ != 0 &&
-      context_->audioEventHandlerRegistry_ != nullptr) {
-    context_->audioEventHandlerRegistry_->unregisterHandler(
-        "ended", onEndedCallbackId_);
-    onEndedCallbackId_ = 0;
-  }
-}
+      playbackState_(PlaybackState::UNSCHEDULED),
+      audioEventHandlerRegistry_(context->getAudioEventHandlerRegistry()) {}
 
 void AudioScheduledSourceNode::start(double when) {
+#if !RN_AUDIO_API_TEST
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    if (auto *audioContext = dynamic_cast<AudioContext *>(context.get())) {
+      audioContext->start();
+    }
+  }
+#endif // RN_AUDIO_API_TEST
+
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = when;
 }
@@ -54,45 +61,27 @@ bool AudioScheduledSourceNode::isStopScheduled() {
   return playbackState_ == PlaybackState::STOP_SCHEDULED;
 }
 
-void AudioScheduledSourceNode::clearOnEndedCallback() {
-  if (onEndedCallbackId_ == 0 || context_ == nullptr ||
-      context_->audioEventHandlerRegistry_ == nullptr) {
-    return;
-  }
-
-  context_->audioEventHandlerRegistry_->unregisterHandler(
-      "ended", onEndedCallbackId_);
-  onEndedCallbackId_ = 0;
-}
-
 void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
   onEndedCallbackId_ = callbackId;
 }
 
+void AudioScheduledSourceNode::unregisterOnEndedCallback(uint64_t callbackId) {
+  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::ENDED, callbackId);
+}
+
 void AudioScheduledSourceNode::updatePlaybackInfo(
-    const std::shared_ptr<AudioBus> &processingBus,
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
     size_t &startOffset,
-    size_t &nonSilentFramesToProcess) {
-  if (!isInitialized_) {
-    startOffset = 0;
-    nonSilentFramesToProcess = 0;
-    return;
-  }
+    size_t &nonSilentFramesToProcess,
+    float sampleRate,
+    size_t currentSampleFrame) {
+  auto firstFrame = currentSampleFrame;
+  size_t lastFrame = firstFrame + framesToProcess - 1;
 
-  assert(context_ != nullptr);
-
-  auto sampleRate = context_->getSampleRate();
-
-  size_t firstFrame = context_->getCurrentSampleFrame();
-  size_t lastFrame = firstFrame + framesToProcess;
-
-  size_t startFrame =
-      std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
-  size_t stopFrame = stopTime_ == -1.0
-      ? std::numeric_limits<size_t>::max()
-      : dsp::timeToSampleFrame(stopTime_, sampleRate);
-
+  size_t startFrame = std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
+  size_t stopFrame = stopTime_ == -1.0 ? std::numeric_limits<size_t>::max()
+                                       : dsp::timeToSampleFrame(stopTime_, sampleRate);
   if (isFinished()) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
@@ -114,7 +103,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
         ? std::max(startFrame, firstFrame) - firstFrame
         : 0;
     nonSilentFramesToProcess =
-        std::max(std::min(lastFrame, stopFrame), startFrame) - startFrame;
+        std::max(std::min(lastFrame, stopFrame) + 1, startFrame) - startFrame;
 
     assert(startOffset <= framesToProcess);
     assert(nonSilentFramesToProcess <= framesToProcess);
@@ -122,10 +111,10 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     // stop will happen in the same render quantum
     if (stopFrame <= lastFrame && stopFrame >= firstFrame) {
       playbackState_ = PlaybackState::STOP_SCHEDULED;
-      processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
+      processingBuffer->zero(stopFrame - firstFrame, lastFrame - stopFrame);
     }
 
-    processingBus->zero(0, startOffset);
+    processingBuffer->zero(0, startOffset);
     return;
   }
 
@@ -133,7 +122,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 
   // stop will happen in this render quantum
   // zero remaining frames after stop frame
-  if (stopFrame < lastFrame && stopFrame >= firstFrame) {
+  if (stopFrame <= lastFrame && stopFrame >= firstFrame) {
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     startOffset = 0;
     nonSilentFramesToProcess = stopFrame - firstFrame;
@@ -141,7 +130,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     assert(startOffset <= framesToProcess);
     assert(nonSilentFramesToProcess <= framesToProcess);
 
-    processingBus->zero(stopFrame - firstFrame, lastFrame - stopFrame);
+    processingBuffer->zero(stopFrame - firstFrame, lastFrame - stopFrame);
     return;
   }
 
@@ -169,9 +158,9 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 
-  if (context_->audioEventHandlerRegistry_ != nullptr) {
-    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "ended", onEndedCallbackId_, {});
+  if (onEndedCallbackId_ != 0) {
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        AudioEvent::ENDED, onEndedCallbackId_, {});
   }
 }
 

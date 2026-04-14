@@ -1,14 +1,18 @@
 import { StackNavigationProp } from '@react-navigation/stack';
+import { icons } from 'lucide-react-native';
 
-import Piano from './Piano';
-import TextToSpeech from './TextToSpeech';
-import Metronome from './Metronome';
-import Oscillator from './Oscillator';
-import DrumMachine from './DrumMachine';
 import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
+import DrumMachine from './DrumMachine';
+import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
+import Oscillator from './Oscillator';
+import Piano from './Piano';
+import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Record from './Record/Record';
+import Streaming from './Streaming/Streaming';
+import Worklets from './Worklets/Worklets';
+import AudioStream from './AudioTag/AudioTag';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -17,18 +21,27 @@ type NavigationParamList = {
   Piano: undefined;
   TextToSpeech: undefined;
   AudioFile: undefined;
+  PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
   Record: undefined;
+  Worklets: undefined;
+  Streamer: undefined;
+  AudioTag: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
+
+interface SimplifiedIconProps {
+  color?: string;
+  size?: number;
+}
 
 export type MainStackProps = StackNavigationProp<NavigationParamList>;
 export interface Example {
   key: ExampleKey;
   title: string;
-  subtitle: string;
+  Icon: React.FC<SimplifiedIconProps>;
   screen: React.FC;
 }
 
@@ -36,55 +49,73 @@ export const Examples: Example[] = [
   {
     key: 'DrumMachine',
     title: 'Drum Machine',
-    subtitle: 'Create drum patterns',
+    Icon: icons.Drum,
     screen: DrumMachine,
   },
   {
     key: 'Piano',
+    Icon: icons.Piano,
     title: 'Simple Piano',
-    subtitle: 'Play some notes',
     screen: Piano,
   },
   {
-    key: 'TextToSpeech',
-    title: 'Text to Speech',
-    subtitle: 'type some text and hear it spoken',
-    screen: TextToSpeech,
+    key: 'AudioFile',
+    title: 'Audio File',
+    Icon: icons.Music,
+    screen: AudioFile,
+  },
+  {
+    key: 'PlaybackSpeed',
+    Icon: icons.VenetianMask,
+    title: 'Playback Speed',
+    screen: PlaybackSpeed,
   },
   {
     key: 'Metronome',
     title: 'Metronome',
-    subtitle: 'Keep time with the beat',
+    Icon: icons.Thermometer,
     screen: Metronome,
   },
   {
     key: 'Oscillator',
     title: 'Oscillator',
-    subtitle: 'Generate sound waves',
+    Icon: icons.Waves,
     screen: Oscillator,
-  },
-  {
-    key: 'AudioFile',
-    title: 'Audio File',
-    subtitle: 'Play an audio file',
-    screen: AudioFile,
   },
   {
     key: 'AudioVisualizer',
     title: 'Audio Visualizer',
-    subtitle: 'Visualize audio data',
+    Icon: icons.Activity,
     screen: AudioVisualizer,
   },
   {
     key: 'OfflineRendering',
     title: 'Offline Rendering',
-    subtitle: 'Rendering audio in offline',
+    Icon: icons.HardDrive,
     screen: OfflineRendering,
   },
   {
     key: 'Record',
     title: 'Record',
-    subtitle: 'Record audio',
+    Icon: icons.Mic,
     screen: Record,
   },
+  {
+    key: 'Worklets',
+    title: 'Worklets',
+    Icon: icons.Code,
+    screen: Worklets,
+  },
+  {
+    key: 'Streamer',
+    title: 'Streamer',
+    Icon: icons.Radio,
+    screen: Streaming,
+  },
+  {
+    key: 'AudioTag',
+    title: 'Audio Tag',
+    Icon: icons.Tag,
+    screen: AudioStream,
+  }
 ] as const;

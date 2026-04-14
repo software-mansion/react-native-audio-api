@@ -10,7 +10,7 @@ export default class AudioNode {
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
 
-  protected readonly node: globalThis.AudioNode;
+  readonly node: globalThis.AudioNode;
 
   constructor(context: BaseAudioContext, node: globalThis.AudioNode) {
     this.context = context;
@@ -38,12 +38,16 @@ export default class AudioNode {
     return destination;
   }
 
-  public disconnect(destination?: AudioNode): void {
+  public disconnect(destination?: AudioNode | AudioParam): void {
     if (destination === undefined) {
       this.node.disconnect();
       return;
     }
 
+    if (destination instanceof AudioParam) {
+      this.node.disconnect(destination.param);
+      return;
+    }
     this.node.disconnect(destination.node);
   }
 }

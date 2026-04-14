@@ -9,10 +9,6 @@
   background-color: var(--ifm-navbar-background-color);
 }
 
-[class*='navbarHideable'] {
-  background-color: var(--ifm-navbar-background-color) !important;
-}
-
 .navbar__title {
   display: flex;
   align-items: center;
@@ -160,4 +156,100 @@ button[class*='DocSearch-Button'] {
 
 [class*='plugin-blog'] [class*='sidebar']:not([class*='navbar-sidebar']) {
   background-color: transparent;
+}
+
+.table-vertical-top {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  box-sizing: border-box;
+}
+
+/* padding: 0.75rem */
+.table-vertical-top td {
+  vertical-align: top;
+  padding: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  box-sizing: border-box;
+}
+
+.table-vertical-top td div.text-content {
+  padding: 0.75rem;
+  font-size: inherit;
+  margin-bottom: 0.25rem;
+}
+
+.table-vertical-top td div.text-content p {
+  margin: 0;
+}
+
+.table-vertical-top td div.text-content:last-child {
+  margin-bottom: 0;
+}
+
+.table-vertical-top [class*='codeBlockContainer'] {
+  margin: -1px;
+}
+
+.table-vertical-top tbody tr td:first-child {
+  min-width: 200px;
+  text-wrap: wrap;
+  word-break: break-all;
+}
+
+.table-vertical-top tbody tr td:last-child {
+  width: 100%;
+}
+
+.table-vertical-top tbody tr:nth-child(2n) code {
+  background-color: var(--swm-white) !important;
+}
+
+[data-theme='dark'] .table-vertical-top tbody tr:nth-child(2n) code {
+  background-color: var(--swm-navy) !important;
+}
+
+.table-vertical-top div table {
+  width: 101%;
+  margin: -1px;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.table-vertical-top div table td {
+  padding: 0.2rem;
+}
+
+.table-vertical-top div table td:nth-child(2) {
+  min-width: 150px;
+}
+
+.table-vertical-top-table {
+  padding-top: 1px;
+  overflow-x: hidden;
+  border-collapse: collapse;
+  box-sizing: border-box;
+}
+
+[class*=alert--warning] {
+  background-color: var(--swm-admonition-color-caution) !important;
+  box-shadow: -8px 8px 0 var(--swm-admonition-color-caution-shadow) !important;
+}
+
+details.alert {
+  border-radius: 0 !important;
+}
+
+[class*='headerWithBadges'] {
+  align-items: baseline;
+}
+
+[class*=admonition-warning] code {
+  background-color: var(--swm-yellow-light-40) !important;
+  border: none !important;
+}
+
+[data-theme='dark'] [class*=admonition-warning] code {
+  background-color: var(--swm-yellow-dark-140) !important;
 }

@@ -1,13 +1,18 @@
-import { ContextState, PeriodicWaveConstraints } from '../types';
+import { ContextState } from '../types';
 import AnalyserNode from './AnalyserNode';
-import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
+import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import ConstantSourceNode from './ConstantSourceNode';
+import ConvolverNode from './ConvolverNode';
+import DelayNode from './DelayNode';
 import GainNode from './GainNode';
+import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import WaveShaperNode from './WaveShaperNode';
 
 export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
@@ -18,10 +23,14 @@ export default interface BaseAudioContext {
   get currentTime(): number;
   get state(): ContextState;
   createOscillator(): OscillatorNode;
+  createConstantSource(): ConstantSourceNode;
   createGain(): GainNode;
+  createDelay(maxDelayTime?: number): DelayNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
-  createBufferSource(): Promise<AudioBufferSourceNode>;
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode;
+  createConvolver(): ConvolverNode;
+  createBufferSource(): AudioBufferSourceNode;
   createBuffer(
     numOfChannels: number,
     length: number,
@@ -33,6 +42,9 @@ export default interface BaseAudioContext {
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave;
   createAnalyser(): AnalyserNode;
-  decodeAudioDataSource(source: string): Promise<AudioBuffer>;
-  decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
+  createWaveShaper(): WaveShaperNode;
+  decodeAudioData(
+    arrayBuffer: ArrayBuffer,
+    fetchOptions?: RequestInit
+  ): Promise<AudioBuffer>;
 }

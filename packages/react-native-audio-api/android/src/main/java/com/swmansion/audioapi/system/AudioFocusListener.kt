@@ -11,65 +11,60 @@ import java.util.HashMap
 class AudioFocusListener(
   private val audioManager: WeakReference<AudioManager>,
   private val audioAPIModule: WeakReference<AudioAPIModule>,
-  private val lockScreenManager: WeakReference<LockScreenManager>,
 ) : AudioManager.OnAudioFocusChangeListener {
-  private var playOnAudioFocus: Boolean = false
   private var focusRequest: AudioFocusRequest? = null
+  private var isTransientLoss: Boolean = false
 
   override fun onAudioFocusChange(focusChange: Int) {
     Log.d("AudioFocusListener", "onAudioFocusChange: $focusChange")
     when (focusChange) {
       AudioManager.AUDIOFOCUS_LOSS -> {
-        playOnAudioFocus = false
         val body =
           HashMap<String, Any>().apply {
             put("type", "began")
             put("shouldResume", false)
+            isTransientLoss = false
           }
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
       }
+
       AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-        playOnAudioFocus = lockScreenManager.get()?.isPlaying == true
         val body =
           HashMap<String, Any>().apply {
             put("type", "began")
-            put("shouldResume", playOnAudioFocus)
+            put("shouldResume", false)
+            isTransientLoss = true
           }
-        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
       }
-      AudioManager.AUDIOFOCUS_GAIN -> {
-        if (playOnAudioFocus) {
-          val body =
-            HashMap<String, Any>().apply {
-              put("type", "ended")
-              put("shouldResume", true)
-            }
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
-        } else {
-          val body =
-            HashMap<String, Any>().apply {
-              put("type", "ended")
-              put("shouldResume", false)
-            }
-          audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
-        }
 
-        playOnAudioFocus = false
+      AudioManager.AUDIOFOCUS_GAIN -> {
+        val body =
+          HashMap<String, Any>().apply {
+            put("type", "ended")
+            put("shouldResume", isTransientLoss)
+            isTransientLoss = false
+          }
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.INTERRUPTION.ordinal, body)
+      }
+
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+        audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.DUCK.ordinal, emptyMap())
       }
     }
   }
 
-  fun requestAudioFocus() {
+  fun requestAudioFocus(focus: Int) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       this.focusRequest =
         AudioFocusRequest
-          .Builder(AudioManager.AUDIOFOCUS_GAIN)
+          .Builder(focus)
           .setOnAudioFocusChangeListener(this)
           .build()
 
       audioManager.get()?.requestAudioFocus(focusRequest!!)
     } else {
-      audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+      audioManager.get()?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, focus)
     }
   }
 

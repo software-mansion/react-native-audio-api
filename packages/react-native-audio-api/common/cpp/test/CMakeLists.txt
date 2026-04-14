@@ -1,35 +1,55 @@
 cmake_minimum_required(VERSION 3.14)
 project(rnaudioapi_test)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
 
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/3983f67e32fb3e9294487b9d4f9586efa6e5d088.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+find_package(GTest QUIET)
+
+if(NOT GTest_FOUND)
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/3983f67e32fb3e9294487b9d4f9586efa6e5d088.zip
+  )
+
+  # For Windows: Prevent overriding the parent project's compiler/linker settings
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+endif()
 
 enable_testing()
 
+set(REACT_NATIVE_AUDIO_API_DIR "${ROOT}/node_modules/react-native-audio-api")
+
 file(GLOB_RECURSE RNAUDIOAPI_SRC
   CONFIGURE_DEPENDS
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/*.cpp"
-  "${ROOT}/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AudioDecoder.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/*.cpp"
 )
 
-list(REMOVE_ITEM RNAUDIOAPI_SRC "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/core/AudioContext.cpp")
+# exclude HostObjects from tests
+list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
+# exclude worklet nodes
+list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")
+
+list(REMOVE_ITEM RNAUDIOAPI_SRC
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/AudioContext.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/AudioFileSourceNode.cpp"
+)
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS
   CONFIGURE_DEPENDS
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.c"
-  "${ROOT}/node_modules/react-native-audio-api/common/cpp/audioapi/libs/*.h"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/*.c"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/*.h"
+)
+
+list(REMOVE_ITEM RNAUDIOAPI_LIBS
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.c"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.c"
 )
 
 add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC})
@@ -42,15 +62,32 @@ target_include_directories(rnaudioapi PUBLIC
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
 )
 
+if(GTest_FOUND)
+  target_link_libraries(rnaudioapi PUBLIC GTest::gtest GTest::gmock)
+else()
+  target_include_directories(rnaudioapi PUBLIC
+    ${gtest_SOURCE_DIR}/include
+    ${gmock_SOURCE_DIR}/include
+  )
+endif()
+
 target_include_directories(rnaudioapi_libs PUBLIC
   ${ROOT}/packages/react-native-audio-api/common/cpp
 )
 
+file(GLOB_RECURSE test_src
+  CONFIGURE_DEPENDS
+  "src/*.cpp"
+)
+
 add_executable(
   tests
-  OscillatorTest.cpp
-  GainTest.cpp
+  ${test_src}
 )
+
+add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
+add_compile_definitions(RN_AUDIO_API_TEST=1)
+add_compile_definitions(RN_AUDIO_API_FFMPEG_DISABLED=1)
 
 target_link_libraries(tests
   rnaudioapi
@@ -59,5 +96,19 @@ target_link_libraries(tests
   GTest::gmock
 )
 
+# --- Thread Sanitizer build ---
+add_executable(tests_tsan ${test_src})
+target_compile_options(tests_tsan PRIVATE -fsanitize=thread -g -O1)
+target_link_options(tests_tsan PRIVATE -fsanitize=thread)
+target_link_libraries(tests_tsan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+
+# --- Address + Undefined Behavior Sanitizer build ---
+add_executable(tests_asan ${test_src})
+target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -g -O1)
+target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
+target_link_libraries(tests_asan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+
 include(GoogleTest)
 gtest_discover_tests(tests)
+gtest_discover_tests(tests_tsan)
+gtest_discover_tests(tests_asan)

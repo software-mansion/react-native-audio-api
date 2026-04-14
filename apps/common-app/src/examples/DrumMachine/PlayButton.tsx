@@ -3,12 +3,11 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import React, { memo } from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { colors } from '../../styles';
 import type { PlayingInstruments, XYWHRect } from '../../types';
-import { size } from './constants';
 import PlayPauseIcon from '../../components/icons/PlayPauseIcon';
 
 interface PlayButtonProps {
@@ -46,7 +45,11 @@ const PlayButtonInner: React.FC<PlayButtonInnerProps> = (props) => {
 
   return (
     <Animated.View style={[styles.playButtonInner, containerStyle]}>
-      <PlayPauseIcon size={48} isPlaying={isPlaying ?? false} color={colors.white} />
+      <PlayPauseIcon
+        size={48}
+        isPlaying={isPlaying ?? false}
+        color={colors.white}
+      />
     </Animated.View>
   );
 };
@@ -54,17 +57,20 @@ const PlayButtonInner: React.FC<PlayButtonInnerProps> = (props) => {
 const PlayButton: React.FC<PlayButtonProps> = (props) => {
   const { canvasRect, onPress, isPlaying, playingInstruments } = props;
 
+  useEffect(() => {
+    console.log('Canvas rect changed:', canvasRect);
+  }, [canvasRect]);
+
   return (
     <Pressable
       style={[
         styles.playButton,
         {
-          top: canvasRect.y + size / 2 - 30,
-          left: canvasRect.x + size / 2 - 30,
+          top: canvasRect.y + canvasRect.height / 2 - 30,
+          left: canvasRect.x + canvasRect.width / 2 - 30,
         },
       ]}
-      onPress={onPress}
-    >
+      onPress={onPress}>
       {({ pressed }) => (
         <PlayButtonInner
           pressed={pressed}
@@ -76,7 +82,7 @@ const PlayButton: React.FC<PlayButtonProps> = (props) => {
   );
 };
 
-export default memo(PlayButton);
+export default PlayButton;
 
 const styles = StyleSheet.create({
   playButton: {

@@ -1,0 +1,10 @@
+Documentation:
+  CommentFormat: Doxygen
+
+CompileFlags:
+  Add:
+    - -std=c++20
+
+Diagnostics:
+  ClangTidy:
+    FastCheckFilter: Loose

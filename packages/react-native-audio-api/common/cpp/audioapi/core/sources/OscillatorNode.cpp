@@ -1,27 +1,32 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
-#include <audioapi/dsp/AudioUtils.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/core/utils/Constants.h>
+#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioArray.hpp>
+
+#include <memory>
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(BaseAudioContext *context)
-    : AudioScheduledSourceNode(context) {
+OscillatorNode::OscillatorNode(
+    const std::shared_ptr<BaseAudioContext> &context,
+    const OscillatorOptions &options)
+    : AudioScheduledSourceNode(context, options), type_(options.type) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      444.0,
-      -context_->getNyquistFrequency(),
-      context_->getNyquistFrequency(),
-      context);
+      options.frequency, -getNyquistFrequency(), getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
-      0.0,
-      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      options.detune,
+      -static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+      static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
-  type_ = OscillatorType::SINE;
-  periodicWave_ = context_->getBasicWaveForm(type_);
+  if (options.periodicWave) {
+    periodicWave_ = options.periodicWave;
+  } else {
+    periodicWave_ = context->getBasicWaveForm(type_);
+  }
 
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::shared_ptr<AudioParam> OscillatorNode::getFrequencyParam() const {
@@ -32,63 +37,79 @@ std::shared_ptr<AudioParam> OscillatorNode::getDetuneParam() const {
   return detuneParam_;
 }
 
-std::string OscillatorNode::getType() {
-  return OscillatorNode::toString(type_);
+void OscillatorNode::setType(OscillatorType type) {
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    type_ = type;
+    periodicWave_ = context->getBasicWaveForm(type_);
+  }
 }
 
-void OscillatorNode::setType(const std::string &type) {
-  type_ = OscillatorNode::fromString(type);
-  periodicWave_ = context_->getBasicWaveForm(type_);
-}
-
-void OscillatorNode::setPeriodicWave(
-    const std::shared_ptr<PeriodicWave> &periodicWave) {
+void OscillatorNode::setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave) {
   periodicWave_ = periodicWave;
   type_ = OscillatorType::CUSTOM;
 }
 
-void OscillatorNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
+std::shared_ptr<DSPAudioBuffer> OscillatorNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
+
+  updatePlaybackInfo(
+      processingBuffer,
+      framesToProcess,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
-    processingBus->zero();
-    return;
+    processingBuffer->zero();
+    return processingBuffer;
   }
 
-  auto time = context_->getCurrentTime() +
-      static_cast<double>(startOffset) * 1.0 / context_->getSampleRate();
-  auto detuneParamValues =
-      detuneParam_->processARateParam(framesToProcess, time);
-  auto frequencyParamValues =
-      frequencyParam_->processARateParam(framesToProcess, time);
+  auto time =
+      context->getCurrentTime() + static_cast<double>(startOffset) / context->getSampleRate();
+  auto detuneSpan = detuneParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  auto freqSpan = frequencyParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+
+  const auto tableSize = static_cast<float>(periodicWave_->getPeriodicWaveSize());
+  const auto tableScale = periodicWave_->getScale();
+  const auto numChannels = processingBuffer->getNumberOfChannels();
+
+  auto channelSpan = processingBuffer->getChannel(0)->span();
+  float currentPhase = phase_;
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
-    auto detuneRatio = std::pow(
-        2.0f, detuneParamValues->getChannel(0)->getData()[i] / 1200.0f);
-    auto detunedFrequency =
-        frequencyParamValues->getChannel(0)->getData()[i] * detuneRatio;
-    auto phaseIncrement = detunedFrequency * periodicWave_->getScale();
+    auto detuneRatio = detuneSpan[i] == 0 ? 1.0f : exp2f(detuneSpan[i] * CENTS_TO_RATIO);
+    auto detunedFrequency = freqSpan[i] * detuneRatio;
+    auto phaseIncrement = detunedFrequency * tableScale;
 
-    float sample =
-        periodicWave_->getSample(detunedFrequency, phase_, phaseIncrement);
+    channelSpan[i] = periodicWave_->getSample(detunedFrequency, currentPhase, phaseIncrement);
 
-    for (int j = 0; j < processingBus->getNumberOfChannels(); j += 1) {
-      (*processingBus->getChannel(j))[i] = sample;
+    currentPhase += phaseIncrement;
+
+    if (currentPhase >= tableSize) {
+      currentPhase -= tableSize;
+    } else if (currentPhase < 0.0f) {
+      currentPhase += tableSize;
     }
-
-    phase_ += phaseIncrement;
-    phase_ -=
-        floor(
-            phase_ / static_cast<float>(periodicWave_->getPeriodicWaveSize())) *
-        static_cast<float>(periodicWave_->getPeriodicWaveSize());
   }
 
+  phase_ = currentPhase;
+
+  for (size_t ch = 1; ch < numChannels; ch += 1) {
+    processingBuffer->getChannel(ch)->copy(*processingBuffer->getChannel(0));
+  }
   handleStopScheduled();
+
+  return processingBuffer;
 }
 
 } // namespace audioapi

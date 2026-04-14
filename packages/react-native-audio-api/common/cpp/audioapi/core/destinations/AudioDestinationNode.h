@@ -1,33 +1,41 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
-#include <algorithm>
-#include <memory>
-#include <vector>
+#include <atomic>
 #include <cstddef>
+#include <memory>
 
 namespace audioapi {
 
-class AudioBus;
 class BaseAudioContext;
 
 class AudioDestinationNode : public AudioNode {
  public:
-  explicit AudioDestinationNode(BaseAudioContext *context);
+  explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context);
 
+  /// @note Thread safe
   std::size_t getCurrentSampleFrame() const;
+
+  /// @note Thread safe
   double getCurrentTime() const;
 
-  void renderAudio(const std::shared_ptr<AudioBus>& audioData, int numFrames);
+  /// @note Audio Thread only
+  void renderAudio(const std::shared_ptr<DSPAudioBuffer> &audioData, int numFrames);
 
  protected:
   // DestinationNode is triggered by AudioContext using renderAudio
   // processNode function is not necessary and is never called.
-  void processNode(const std::shared_ptr<AudioBus>& processingBus, int) final {};
+  std::shared_ptr<DSPAudioBuffer> processNode(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess) final {
+    return processingBuffer;
+  };
 
  private:
-  std::size_t currentSampleFrame_;
+  std::atomic<std::size_t> currentSampleFrame_;
 };
 
 } // namespace audioapi

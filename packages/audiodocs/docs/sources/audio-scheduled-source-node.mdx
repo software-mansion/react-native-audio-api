@@ -6,21 +6,28 @@ import { Optional, Experimental } from '@site/src/components/Badges';
 
 # AudioScheduledSourceNode
 
-The `AudioScheduledSourceNode` interface is an [`AudioNode`](/core/audio-node) which serves as a parent interface for several types of audio source nodes.
+The `AudioScheduledSourceNode` interface is an [`AudioNode`](/docs/core/audio-node) which serves as a parent interface for several types of audio source nodes.
 It provides ability to start and stop audio playback.
 
 Child classes:
- - [`AudioBufferBaseSourceNode`](/sources/audio-buffer-base-source-node)
- - [`OscillatorNode`](/sources/oscillator-node)
+ - [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node)
+ - [`OscillatorNode`](/docs/sources/oscillator-node)
+ - [`StreamerNode`](/docs/sources/streamer-node)
+
+## Properties
+
+`AudioScheduledSourceNode` does not define any additional properties.
+It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
+It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ### `start`
 
-The above method schedules the node to start audio playback at specified time, if no time is given, it starts immediately.
+Schedules the node to start audio playback at specified time. If no time is given, it starts immediately.
 You can invoke this method only once in node's life.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `when` | `number` | The time, in seconds, at which the node will start to play. |
 
@@ -35,10 +42,10 @@ You can invoke this method only once in node's life.
 
 ### `stop`
 
-The above method schedules the node to stop audio playback at specified time, if no time is given, it stops immediately.
+Schedules the node to stop audio playback at specified time. If no time is given, it stops immediately.
 If you invoke this method multiple times on the same node before the designated stop time, the most recent call overwrites previous one.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `when` | `number` | The time, in seconds, at which the node will stop playing. |
 
@@ -53,13 +60,17 @@ If you invoke this method multiple times on the same node before the designated 
 
 ## Events
 
-Allows to set (or remove) callback that will be fired when source node has stopped playing,
+### `onEnded`
+
+Sets (or remove) callback that will be fired when source node has stopped playing,
 either because it's reached a predetermined stop time, the full duration of the audio has been performed, or because the entire buffer has been played.
-You can remove callback by passing `null`.
+You can remove callback either by passing `null` or calling `remove` on the returned subscription.
 
 
 ```ts
-audioBufferSourceNode.onEnded = () => { //setting callback
+const subscription = audioBufferSourceNode.onEnded = () => { // setting the callback
   console.log("audio ended");
 };
+
+subscription.remove(); // removal of the subscription
 ```

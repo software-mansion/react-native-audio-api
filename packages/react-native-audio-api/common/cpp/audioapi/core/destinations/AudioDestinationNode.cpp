@@ -1,47 +1,49 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioNodeManager.h>
-#include <audioapi/utils/AudioBus.h>
+#include <audioapi/core/utils/AudioGraphManager.h>
+#include <audioapi/types/NodeOptions.h>
+
+#include <memory>
 
 namespace audioapi {
 
-AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
-    : AudioNode(context), currentSampleFrame_(0) {
-  numberOfOutputs_ = 0;
-  numberOfInputs_ = 1;
-  channelCountMode_ = ChannelCountMode::EXPLICIT;
-  isInitialized_ = true;
+AudioDestinationNode::AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
+    : AudioNode(context, AudioDestinationOptions()), currentSampleFrame_(0) {
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 std::size_t AudioDestinationNode::getCurrentSampleFrame() const {
-  return currentSampleFrame_;
+  return currentSampleFrame_.load(std::memory_order_acquire);
 }
 
 double AudioDestinationNode::getCurrentTime() const {
-  return static_cast<double>(currentSampleFrame_) / context_->getSampleRate();
+  return static_cast<double>(getCurrentSampleFrame()) / getContextSampleRate();
 }
 
 void AudioDestinationNode::renderAudio(
-    const std::shared_ptr<AudioBus> &destinationBus,
+    const std::shared_ptr<DSPAudioBuffer> &destinationBuffer,
     int numFrames) {
-  if (numFrames < 0 || !destinationBus || !isInitialized_) {
+  if (numFrames < 0 || !destinationBuffer || !isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 
-  context_->getNodeManager()->preProcessGraph();
-
-  destinationBus->zero();
-
-  auto processedBus = processAudio(destinationBus, numFrames, true);
-
-  if (processedBus && processedBus != destinationBus) {
-    destinationBus->copy(processedBus.get());
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    context->processAudioEvents();
+    context->getGraphManager()->preProcessGraph();
   }
 
-  destinationBus->normalize();
+  destinationBuffer->zero();
 
-  currentSampleFrame_ += numFrames;
+  auto processedBuffer = processAudio(destinationBuffer, numFrames, true);
+
+  if (processedBuffer && processedBuffer != destinationBuffer) {
+    destinationBuffer->copy(*processedBuffer);
+  }
+
+  destinationBuffer->normalize();
+
+  currentSampleFrame_.fetch_add(numFrames, std::memory_order_release);
 }
 
 } // namespace audioapi
