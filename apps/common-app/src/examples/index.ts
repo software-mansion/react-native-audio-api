@@ -13,6 +13,7 @@ import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
+import ConvolverIR from './ConvolverIR';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -28,6 +29,7 @@ type NavigationParamList = {
   Worklets: undefined;
   Streamer: undefined;
   AudioTag: undefined;
+  ConvolverIR: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -117,5 +119,11 @@ export const Examples: Example[] = [
     title: 'Audio Tag',
     Icon: icons.Tag,
     screen: AudioStream,
-  }
+  },
+  {
+    key: 'ConvolverIR',
+    title: 'Reverb Effect',
+    Icon: icons.AudioWaveform,
+    screen: ConvolverIR,
+  },
 ] as const;

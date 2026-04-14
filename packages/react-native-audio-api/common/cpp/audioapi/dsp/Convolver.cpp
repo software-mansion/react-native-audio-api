@@ -48,14 +48,9 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
     return false;
   }
 
-  // Ignore zeros at the end of the impulse response because they only waste
-  // computation time
   _blockSize = blockSize;
   _trueSegmentCount =
       static_cast<size_t>((std::ceil(static_cast<float>(irLen) / static_cast<float>(_blockSize))));
-  while (irLen > 0 && ::fabs(ir[irLen - 1]) < 10e-3) {
-    --irLen;
-  }
 
   if (irLen == 0) {
     return true;

@@ -87,6 +87,9 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     return effectiveMutedState ? 0 : (volumeState ?? volume);
   }, [effectiveMutedState, volumeState, volume]);
 
+  const effectiveVolumeRef = useRef(effectiveVolumeState);
+  effectiveVolumeRef.current = effectiveVolumeState;
+
   useEffect(() => {
     fileSourceRef.current?.setVolume(effectiveVolumeState);
   }, [effectiveVolumeState]);
@@ -127,10 +130,12 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     setDuration(0);
     setPlaybackState('idle');
 
+    const initialVolume = effectiveVolumeRef.current;
+
     const node = context.context.createFileSource({
       source: nextSource,
       loop,
-      volume: effectiveVolumeState,
+      volume: initialVolume,
     });
     if (!node) {
       onError(new NotSupportedError('This file format requires FFmpeg build'));
@@ -148,7 +153,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       },
     });
 
-    fileSource.setVolume(effectiveVolumeState);
+    fileSource.setVolume(initialVolume);
     fileSourceRef.current = fileSource;
     setDuration(nextDuration);
     onLoad();
@@ -158,16 +163,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       setPlaybackState('playing');
       onPlay();
     }
-  }, [
-    context,
-    loop,
-    onError,
-    onEndedCallback,
-    onLoad,
-    onPlay,
-    autoPlay,
-    effectiveVolumeState,
-  ]);
+  }, [context, loop, onError, onEndedCallback, onLoad, onPlay, autoPlay]);
 
   useEffect(() => {
     if (!path) {
