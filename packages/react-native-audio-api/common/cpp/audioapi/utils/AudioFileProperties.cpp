@@ -12,7 +12,6 @@ AudioFileProperties::AudioFileProperties(
     const std::string &subDirectory,
     const std::string &fileNamePrefix,
     int channelCount,
-    size_t batchDurationSeconds,
     size_t rotateIntervalBytes,
     Format format,
     float sampleRate,
@@ -25,7 +24,6 @@ AudioFileProperties::AudioFileProperties(
       subDirectory(subDirectory),
       fileNamePrefix(fileNamePrefix),
       channelCount(channelCount),
-      batchDurationSeconds(batchDurationSeconds),
       rotateIntervalBytes(rotateIntervalBytes),
       format(format),
       sampleRate(sampleRate),
@@ -50,9 +48,6 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
       options.getProperty(runtime, "fileNamePrefix").asString(runtime).utf8(runtime);
 
   int channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
-
-  size_t batchDurationSeconds =
-      static_cast<size_t>(options.getProperty(runtime, "batchDurationSeconds").getNumber());
 
   size_t rotateIntervalBytes =
       static_cast<size_t>(options.getProperty(runtime, "rotateIntervalBytes").getNumber());
@@ -83,7 +78,6 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
       subDirectory,
       fileNamePrefix,
       channelCount,
-      batchDurationSeconds,
       rotateIntervalBytes,
       format,
       sampleRate,
