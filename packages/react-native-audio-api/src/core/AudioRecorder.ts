@@ -29,7 +29,6 @@ function withDefaultOptions(
     fileNamePrefix: 'recording',
     channelCount: 2,
     format: FileFormat.M4A,
-    batchDurationSeconds: 0,
     preset: FilePreset.High,
     androidFlushIntervalMs: 500,
     rotateIntervalBytes: 0,
@@ -52,10 +51,7 @@ export default class AudioRecorder {
     this.recorder = global.createAudioRecorder();
   }
 
-  enableFileOutput(
-    // TODO: Re-enable 'batchDurationSeconds' once supported
-    options?: Omit<AudioRecorderFileOptions, 'batchDurationSeconds'>
-  ): Result<{}> {
+  enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
     this.options_ = options || {};
     const parsedOptions = withDefaultOptions(this.options_);
     const result = this.recorder.enableFileOutput(parsedOptions);

@@ -428,7 +428,9 @@ Result<std::string, std::string> IOSAudioRecorder::setupFileWriter(
 
   auto backend = std::static_pointer_cast<IOSFileWriter>(fileWriter_);
   auto fileResult = backend->openFile(
-      [nativeRecorder_ getResolvedInputFormat], [nativeRecorder_ getBufferSize], fileNameOverride);
+      [nativeRecorder_ getResolvedInputFormat],
+      [nativeRecorder_ getResolvedBufferSize],
+      fileNameOverride);
 
   if (!fileResult.is_ok()) {
     fileOutputConfigured_.store(false, std::memory_order_release);

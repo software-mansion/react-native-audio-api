@@ -89,7 +89,6 @@ export interface FilePresetType {
 
 export interface AudioRecorderFileOptions {
   channelCount?: number;
-  batchDurationSeconds?: number;
   rotateIntervalBytes?: number;
 
   format?: FileFormat;
