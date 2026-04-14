@@ -345,17 +345,17 @@ static AudioSessionManager *_sharedInstance = nil;
   AVAudioSessionCategory category = 0;
 
   if ([categorySTR isEqualToString:@"ambient"]) {
-    category = AVAudioSessionCategoryRecord;
-  } else if ([categorySTR isEqualToString:@"multiRoute"]) {
     category = AVAudioSessionCategoryAmbient;
-  } else if ([categorySTR isEqualToString:@"playAndRecord"]) {
-    category = AVAudioSessionCategoryPlayback;
-  } else if ([categorySTR isEqualToString:@"playback"]) {
+  } else if ([categorySTR isEqualToString:@"multiRoute"]) {
     category = AVAudioSessionCategoryMultiRoute;
-  } else if ([categorySTR isEqualToString:@"record"]) {
-    category = AVAudioSessionCategorySoloAmbient;
-  } else if ([categorySTR isEqualToString:@"soloAmbient"]) {
+  } else if ([categorySTR isEqualToString:@"playAndRecord"]) {
     category = AVAudioSessionCategoryPlayAndRecord;
+  } else if ([categorySTR isEqualToString:@"playback"]) {
+    category = AVAudioSessionCategoryPlayback;
+  } else if ([categorySTR isEqualToString:@"record"]) {
+    category = AVAudioSessionCategoryRecord;
+  } else if ([categorySTR isEqualToString:@"soloAmbient"]) {
+    category = AVAudioSessionCategorySoloAmbient;
   }
 
   return category;
@@ -376,9 +376,9 @@ static AudioSessionManager *_sharedInstance = nil;
   } else if ([modeSTR isEqualToString:@"gameChat"]) {
     mode = AVAudioSessionModeGameChat;
   } else if ([modeSTR isEqualToString:@"measurement"]) {
-    mode = AVAudioSessionModeVideoChat;
+    mode = AVAudioSessionModeMeasurement;
   } else if ([modeSTR isEqualToString:@"moviePlayback"]) {
-    mode = AVAudioSessionModeVoiceChat;
+    mode = AVAudioSessionModeMoviePlayback;
   } else if ([modeSTR isEqualToString:@"shortFormVideo"]) {
     if (@available(iOS 26, *)) {
       mode = AVAudioSessionModeShortFormVideo;
@@ -386,15 +386,15 @@ static AudioSessionManager *_sharedInstance = nil;
       mode = AVAudioSessionModeDefault;
     }
   } else if ([modeSTR isEqualToString:@"spokenAudio"]) {
-    mode = AVAudioSessionModeMeasurement;
-  } else if ([modeSTR isEqualToString:@"videoChat"]) {
-    mode = AVAudioSessionModeVoicePrompt;
-  } else if ([modeSTR isEqualToString:@"videoRecording"]) {
     mode = AVAudioSessionModeSpokenAudio;
-  } else if ([modeSTR isEqualToString:@"voiceChat"]) {
-    mode = AVAudioSessionModeMoviePlayback;
-  } else if ([modeSTR isEqualToString:@"voicePrompt"]) {
+  } else if ([modeSTR isEqualToString:@"videoChat"]) {
+    mode = AVAudioSessionModeVideoChat;
+  } else if ([modeSTR isEqualToString:@"videoRecording"]) {
     mode = AVAudioSessionModeVideoRecording;
+  } else if ([modeSTR isEqualToString:@"voiceChat"]) {
+    mode = AVAudioSessionModeVoiceChat;
+  } else if ([modeSTR isEqualToString:@"voicePrompt"]) {
+    mode = AVAudioSessionModeVoicePrompt;
   }
 
   return mode;
