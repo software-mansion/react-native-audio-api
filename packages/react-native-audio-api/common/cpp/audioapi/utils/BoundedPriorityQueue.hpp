@@ -24,8 +24,7 @@ class BoundedPriorityQueue {
  private:
   using SetType = std::pmr::multiset<T, Compare>;
 
-  // Conservative RB-tree node size: value + 3 pointers + color, aligned to pointer size.
-  static constexpr size_t kNodeOverhead = 4 * sizeof(void *);
+  static constexpr size_t kNodeOverhead = 96;
   static constexpr size_t kNodeSize = sizeof(T) + kNodeOverhead;
   // Extra headroom for pool resource bookkeeping structures.
   static constexpr size_t kBufferSize = Capacity * kNodeSize + 256;
@@ -36,11 +35,11 @@ class BoundedPriorityQueue {
       buffer_.data(),
       sizeof(buffer_),
       std::pmr::null_memory_resource()};
-  std::pmr::unsynchronized_pool_resource pool_{
-      std::pmr::pool_options{
-          .max_blocks_per_chunk = Capacity,
-          .largest_required_pool_block = kNodeSize},
-      &mono_};
+      std::pmr::unsynchronized_pool_resource pool_{
+        std::pmr::pool_options{
+            .max_blocks_per_chunk = 1,
+            .largest_required_pool_block = 0},
+        &mono_};
   SetType set_{Compare{}, &pool_};
 
  public:
