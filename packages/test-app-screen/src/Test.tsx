@@ -5,11 +5,20 @@ import {
   AudioManager,
 } from 'react-native-audio-api';
 
-import { oscillatorTestWithDetune, oscillatorTestWithGain, oscillatorTestWithStereoPanner } from './OscillatorTest';
+import {
+  oscillatorTestWithDetune,
+  oscillatorTestWithGain,
+  oscillatorTestWithStereoPanner,
+} from './OscillatorTest';
 import { streamerTest } from './StreamingTest';
 import { workletTest } from './WorkletsTest';
 import { recorderTest, recorderPlaybackTest } from './RecorderTest';
-import { audioBufferFormatsTest, audioBufferChannelsTest, audioBufferBase64Test } from './AudioBufferTest';
+import {
+  audioBufferFormatsTest,
+  audioBufferChannelsTest,
+  audioBufferBase64Test,
+} from './AudioBufferTest';
+import { audioParamTestSuite } from './AudioParamTest';
 
 import { View, Text, Button } from 'react-native';
 
@@ -34,21 +43,21 @@ const Test: FC = () => {
         iosMode: 'spokenAudio',
         iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
       });
-    }
+    };
     init();
     return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close();
         audioContextRef.current = null;
       }
-    }
+    };
   }, []);
 
   const setupAudioContext = async () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     }
-  }
+  };
 
   const oscillatorTest = () => {
     setIsTesting(true);
@@ -71,7 +80,7 @@ const Test: FC = () => {
       setTestingInfo('Oscillator test completed.');
       setIsTesting(false);
     }, 12500);
-  }
+  };
 
   const audioBufferTest = async () => {
     setupAudioContext();
@@ -80,13 +89,13 @@ const Test: FC = () => {
     await audioBufferFormatsTest(audioContextRef, setTestingInfo);
     await audioBufferBase64Test(audioContextRef, setTestingInfo);
     setIsTesting(false);
-  }
+  };
 
   const recordingTest = () => {
     setupAudioContext();
     setIsTesting(true);
     setTestingInfo('Recording...');
-    let buffers: AudioBuffer[] = [];
+    const buffers: AudioBuffer[] = [];
     recorderTest(audioContextRef, buffers);
     setTimeout(() => {
       setTestingInfo('Stopping recording and playing back...');
@@ -96,7 +105,7 @@ const Test: FC = () => {
       setTestingInfo('Recording test completed.');
       setIsTesting(false);
     }, 11000);
-  }
+  };
 
   const streamingTest = () => {
     setIsTesting(true);
@@ -107,7 +116,7 @@ const Test: FC = () => {
       setTestingInfo('Streaming test completed.');
       setIsTesting(false);
     }, 5000);
-  }
+  };
 
   const workletsTest = () => {
     setIsTesting(true);
@@ -119,21 +128,58 @@ const Test: FC = () => {
       setTestingInfo('Worklet test completed.');
       setIsTesting(false);
     }, 4000);
-  }
+  };
 
+  const audioParamTest = async () => {
+    setIsTesting(true);
+    setupAudioContext();
+
+    setTestingInfo('AudioParam test');
+    await audioParamTestSuite(setTestingInfo);
+    setTimeout(() => {
+      setTestingInfo('AudioParam test completed.');
+      setIsTesting(false);
+    }, 4000);
+  };
 
   return (
-    <View style={{ gap: 40, paddingTop: 200, backgroundColor: 'black', height: '100%' }}>
+    <View
+      style={{
+        gap: 40,
+        paddingTop: 200,
+        backgroundColor: 'black',
+        height: '100%',
+      }}
+    >
       <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         <Text style={{ color: 'white' }}>{testingInfo}</Text>
       </View>
       <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-        <Button title="oscillator" onPress={oscillatorTest} disabled={isTesting} />
-        <Button title="audio buffer" onPress={audioBufferTest} disabled={isTesting} />
+        <Button
+          title="oscillator"
+          onPress={oscillatorTest}
+          disabled={isTesting}
+        />
+        <Button
+          title="audio buffer"
+          onPress={audioBufferTest}
+          disabled={isTesting}
+        />
         <Button title="recorder" onPress={recordingTest} disabled={isTesting} />
         <Button title="streamer" onPress={streamingTest} disabled={isTesting} />
-        <Button title="worklet node" onPress={workletsTest} disabled={isTesting} />
-        <Text style={{color: 'white', paddingTop: 40}}>CHECK IF EVERYTHING WORKS AFTER HOT RELOAD</Text>
+        <Button
+          title="worklet node"
+          onPress={workletsTest}
+          disabled={isTesting}
+        />
+        <Button
+          title="audio param"
+          onPress={audioParamTest}
+          disabled={isTesting}
+        />
+        <Text style={{ color: 'white', paddingTop: 40 }}>
+          CHECK IF EVERYTHING WORKS AFTER HOT RELOAD
+        </Text>
       </View>
     </View>
   );
