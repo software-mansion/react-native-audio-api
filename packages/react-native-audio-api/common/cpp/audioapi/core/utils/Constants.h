@@ -46,5 +46,5 @@ constexpr std::size_t hardware_destructive_interference_size = 64;
 #endif
 
 // audio param
-inline constexpr size_t AUDIO_PARAM_MAX_QUEUED_EVENTS = 32;
+inline constexpr size_t AUDIO_PARAM_MAX_QUEUED_EVENTS = 128;
 } // namespace audioapi
