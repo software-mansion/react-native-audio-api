@@ -200,6 +200,8 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
               return;
             }
             sourceRef.current = arrayBuffer;
+          } else if (path.startsWith('file://')) {
+            sourceRef.current = path.replace('file://', '');
           } else {
             sourceRef.current = path;
           }
