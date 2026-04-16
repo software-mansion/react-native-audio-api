@@ -89,11 +89,9 @@ class AudioDecoder {
   }
 
   private resolveLocalFilePath(stringSource: string): string {
-    const filePath = stringSource.startsWith('file://')
+    return stringSource.startsWith('file://')
       ? stringSource.replace('file://', '')
       : stringSource;
-
-    return filePath;
   }
 
   private async decodeFromLocalFile(
