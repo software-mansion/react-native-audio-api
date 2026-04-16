@@ -1,4 +1,4 @@
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
 import { AnalyserOptions } from '../types';

@@ -1,5 +1,5 @@
 import AudioNode from './AudioNode';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { InvalidStateError } from '../errors';
 import { IWaveShaperNode } from '../interfaces';
 import { WaveShaperOptions } from '../types';

@@ -1,7 +1,7 @@
-import { AutomationEventData, AutomationEventType } from '../api';
+import { AutomationEventData, AutomationEventType } from '../types';
 import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
 import { IAudioParam } from '../interfaces';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 
 export default class AudioParam {
   public readonly defaultValue: number;

@@ -1,7 +1,7 @@
 import { IOscillatorNode } from '../interfaces';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import AudioParam from './AudioParam';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import PeriodicWave from './PeriodicWave';
 import { InvalidStateError } from '../errors';
 import { OscillatorOptions } from '../types';

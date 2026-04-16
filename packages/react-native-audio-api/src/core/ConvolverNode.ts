@@ -1,6 +1,6 @@
 import { IConvolverNode } from '../interfaces';
 import { ConvolverOptions } from '../types';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 import AudioBuffer from './AudioBuffer';
 

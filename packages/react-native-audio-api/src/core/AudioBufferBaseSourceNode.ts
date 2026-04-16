@@ -1,5 +1,5 @@
 import AudioParam from './AudioParam';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { AudioEventSubscription } from '../events';
 import { EventTypeWithValue } from '../events/types';
 import { IAudioBufferBaseSourceNode } from '../interfaces';
