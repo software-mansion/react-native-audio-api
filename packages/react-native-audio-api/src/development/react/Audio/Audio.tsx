@@ -20,6 +20,7 @@ import { useStableAudioProps } from './utils';
 import { NotSupportedError } from '../../../errors';
 import { NativeAudioAPIModule } from '../../../specs';
 import { AudioControls } from '..';
+import { base64ToArrayBuffer } from '../../../utils';
 
 const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   const { children } = props;
@@ -55,9 +56,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     if (typeof source === 'string') {
       if (source.startsWith('file://') || source.startsWith('http')) {
         return source;
-      }
-      if (Platform.OS === 'android' && !__DEV__) {
-        return NativeAudioAPIModule.resolveAndroidReleaseAsset(source);
       }
       return source;
     }
@@ -181,20 +179,33 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       setReady(false);
       onLoadStart();
       try {
-        if (path.startsWith('http')) {
-          const arrayBuffer = await fetch(path, {
-            headers:
-              typeof source === 'object' && source && 'headers' in source
-                ? source.headers
-                : undefined,
-          }).then((response) => response.arrayBuffer());
-
-          if (isCancelled) {
-            return;
-          }
+        if (
+          Platform.OS === 'android' &&
+          !__DEV__ &&
+          !path.startsWith('file://')
+        ) {
+          const base64Payload =
+            await NativeAudioAPIModule.readAndroidReleaseAssetBytesAsBase64(
+              path
+            );
+          const arrayBuffer = base64ToArrayBuffer(base64Payload);
           sourceRef.current = arrayBuffer;
         } else {
-          sourceRef.current = path;
+          if (path.startsWith('http')) {
+            const arrayBuffer = await fetch(path, {
+              headers:
+                typeof source === 'object' && source && 'headers' in source
+                  ? source.headers
+                  : undefined,
+            }).then((response) => response.arrayBuffer());
+
+            if (isCancelled) {
+              return;
+            }
+            sourceRef.current = arrayBuffer;
+          } else {
+            sourceRef.current = path;
+          }
         }
 
         if (!isCancelled) {
