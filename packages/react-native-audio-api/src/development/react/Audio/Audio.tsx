@@ -54,9 +54,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       return '';
     }
     if (typeof source === 'string') {
-      if (source.startsWith('file://') || source.startsWith('http')) {
-        return source;
-      }
       return source;
     }
     // number

@@ -112,6 +112,8 @@ void AudioFileSourceNode::initDecoders(
   decoderState_ = state;
   channelCount_ = decoderState_->channels;
   sampleRate_ = decoderState_->sampleRate;
+  audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+      static_cast<size_t>(RENDER_QUANTUM_SIZE), channelCount_, context->getSampleRate());
 }
 
 void AudioFileSourceNode::start(double when) {
