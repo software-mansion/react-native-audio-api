@@ -6,6 +6,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "postinstall": "cd ../.. && npx patch-package --patch-dir apps/fabric-example/patches",
     "start": "react-native start",
     "test": "jest"
   },
@@ -17,6 +18,7 @@
     "react-native-svg": "15.15.4"
   },
   "devDependencies": {
+    "patch-package": "^8.0.0",
     "prettier": "^3.3.3"
   },
   "engines": {

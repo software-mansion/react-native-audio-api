@@ -12,6 +12,7 @@ import Piano from './Piano';
 import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
+import VisionCameraCompat from './VisionCameraCompat';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
@@ -32,6 +33,7 @@ type NavigationParamList = {
   Streamer: undefined;
   AudioTag: undefined;
   ConvolverIR: undefined;
+  VisionCameraCompat: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -133,5 +135,11 @@ export const Examples: Example[] = [
     title: 'Reverb Effect',
     Icon: icons.AudioWaveform,
     screen: ConvolverIR,
+  },
+  {
+    key: 'VisionCameraCompat',
+    title: 'Vision Camera Compat',
+    Icon: icons.Camera,
+    screen: VisionCameraCompat,
   },
 ] as const;

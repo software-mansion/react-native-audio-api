@@ -1,0 +1,17 @@
+diff --git a/node_modules/react-native-vision-camera/ios/Core/CameraSession+Configuration.swift b/node_modules/react-native-vision-camera/ios/Core/CameraSession+Configuration.swift
+index ecd2a94..5e0cb76 100644
+--- a/node_modules/react-native-vision-camera/ios/Core/CameraSession+Configuration.swift
++++ b/node_modules/react-native-vision-camera/ios/Core/CameraSession+Configuration.swift
+@@ -25,8 +25,10 @@ extension CameraSession {
+     videoDeviceInput = nil
+
+     #if targetEnvironment(simulator)
+-      // iOS Simulators don't have Cameras
+-      throw CameraError.device(.notAvailableOnSimulator)
++      // Allow simulator camera usage when an external/injected virtual camera exists.
++      if AVCaptureDevice.default(for: .video) == nil {
++        throw CameraError.device(.notAvailableOnSimulator)
++      }
+     #endif
+
+     guard let cameraId = configuration.cameraId else {
