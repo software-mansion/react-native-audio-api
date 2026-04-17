@@ -35,11 +35,9 @@ class BoundedPriorityQueue {
       buffer_.data(),
       sizeof(buffer_),
       std::pmr::null_memory_resource()};
-      std::pmr::unsynchronized_pool_resource pool_{
-        std::pmr::pool_options{
-            .max_blocks_per_chunk = 1,
-            .largest_required_pool_block = 0},
-        &mono_};
+  std::pmr::unsynchronized_pool_resource pool_{
+      std::pmr::pool_options{.max_blocks_per_chunk = 1, .largest_required_pool_block = 0},
+      &mono_};
   SetType set_{Compare{}, &pool_};
 
  public:

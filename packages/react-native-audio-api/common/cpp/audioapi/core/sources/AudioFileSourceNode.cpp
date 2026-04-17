@@ -23,11 +23,11 @@ AudioFileSourceNode::AudioFileSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
-      onPositionChangedInterval_(
-          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)),
+      volume_(options.volume),
       requiresFFmpeg_(options.requiresFFmpeg),
       loop_(options.loop),
-      volume_(options.volume) {
+      onPositionChangedInterval_(
+          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 

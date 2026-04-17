@@ -12,8 +12,8 @@ RotatingFileWriter::RotatingFileWriter(
     WriterFactory writerFactory,
     OnSegmentFileOpenedCallback onSegmentFileOpened)
     : writerFactory_(std::move(writerFactory)),
-      rotateIntervalBytes_(rotateIntervalBytes),
-      onSegmentFileOpened_(std::move(onSegmentFileOpened)) {}
+      onSegmentFileOpened_(std::move(onSegmentFileOpened)),
+      rotateIntervalBytes_(rotateIntervalBytes) {}
 
 CloseFileResult RotatingFileWriter::closeFile() {
   if (currentWriter_ == nullptr) {
