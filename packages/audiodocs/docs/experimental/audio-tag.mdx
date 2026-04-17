@@ -1,0 +1,97 @@
+---
+sidebar_position: 1
+---
+
+import { Experimental } from '@site/src/components/Badges';
+
+# Audio tag (`<Audio>`)
+
+<Experimental />
+
+React component that mimics web `<Audio>` behavior.
+
+:::caution
+This API lives under `react-native-audio-api/development/react` and is **experimental**: behavior and props may change.
+:::
+
+## Usage
+
+```tsx
+import React, { useRef } from 'react';
+import { View } from 'react-native';
+import { Audio, AudioTagHandle } from 'react-native-audio-api/development/react';
+
+const DEMO_URL = 'https://example.com/audio.mp3';
+
+export function Player() {
+  const ref = useRef<AudioTagHandle>(null);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Audio
+        ref={ref}
+        source={DEMO_URL}
+        controls
+        onLoad={() => console.log('ready')}
+        onError={(e) => console.error(e)}
+        onPositionChange={(seconds) => {}}
+      />
+    </View>
+  );
+}
+```
+
+## Props (`AudioProps`)
+
+`AudioProps` is `Partial<AudioPropsBase>` with a **required** `source`. Callbacks default to no-ops if omitted.
+
+| Name | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `source` | `AudioSource` | — | Asset id (`require(...)`), string URI/path, or `{ uri?, headers? }` for HTTP(S). |
+| `context` | `BaseAudioContext` | — | Optional. Native: implicit [`AudioContext`](/docs/core/audio-context) when omitted. Web: unused for HTML element playback. |
+| `autoPlay` | `boolean` | `false` | Start playback after load. |
+| `controls` | `boolean` | `false` | When `true`, renders default [`AudioControls`](#audiocontrols) above `children`. |
+| `loop` | `boolean` | `false` | Loop playback. |
+| `muted` | `boolean` | `false` | Muted state. |
+| `volume` | `number` | `1` | Linear volume passed to the underlying source. |
+| `preload` | `PreloadType` | `'auto'` | *Web support only* |
+| `playbackRate` | `number` | `1` | *Web support only*  |
+| `preservesPitch` | `boolean` | `true` | *Web support only* |
+| `onLoadStart` | `() => void` | no-op | Load started. |
+| `onLoad` | `() => void` | no-op | Source decoded / graph attached. |
+| `onError` | `(error: Error) => void` | no-op | Network, decode, or unsupported format (e.g. missing FFmpeg) errors. |
+| `onPositionChange` | `(seconds: number) => void` | no-op | Playback position updates while playing. |
+| `onEnded` | `() => void` | no-op | Natural end of playback (also used internally when looping restarts). |
+| `onPlay` | `() => void` | no-op | After `play()`. |
+| `onPause` | `() => void` | no-op | After `pause()`. |
+| `onVolumeChange` | `(volume: number) => void` | no-op | When effective volume changes. |
+
+### `AudioSource`
+
+- `string` — URI or path (`http(s):`, `file://`, or platform-specific asset path).
+- `number` — Result of `require('./file.mp3')` (bundled asset).
+- `AudioURISource` — `{ uri?: string; headers?: Record<string, string> }` for fetch with custom headers.
+
+## Ref handle (`AudioTagHandle`)
+
+| Method | Description |
+| :--- | :--- |
+| `play()` | Start or resume playback. |
+| `pause()` | Pause playback. |
+| `seekToTime(seconds)` | Seek to a time in seconds (clamped to duration when known). |
+| `setVolume(volume)` | Updates internal volume state (also forwarded to the file source). |
+| `setMuted(muted)` | Updates internal muted state. |
+
+### `useAudioTagContext`
+
+Must be used under `<Audio>`. Throws if used outside the provider.
+
+Exposed fields include `play`, `pause`, `seekToTime`, `setVolume`, `setMuted`, `ready`, `volume`, `muted`, `playbackState` (`'idle' \| 'playing' \| 'paused'`), `currentTime`, `duration`, `autoPlay`, `loop`, `preload`, `playbackRate`, `preservesPitch`, and `audioContext` (native context used for file playback, or `null` on web).
+
+### `AudioControls`
+
+Default control strip rendered when `controls` is `true`. Compose your own UI by leaving `controls` false and consuming `useAudioTagContext()` instead.
+
+## Remarks
+
+- **FFmpeg:** Some formats require a build with FFmpeg; otherwise `createFileSource` may fail and `onError` receives a `NotSupportedError`.
