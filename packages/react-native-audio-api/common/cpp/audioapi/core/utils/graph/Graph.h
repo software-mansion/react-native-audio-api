@@ -107,6 +107,13 @@ class Graph {
   /// @brief Adds a directed edge from → to. Rejects cycles and duplicates.
   Res addEdge(HNode *from, HNode *to);
 
+  /// @brief Links two nodes so that `to` follows the processable state of
+  /// `from` (one-way). No AudioGraph side effect — purely a host-graph hint
+  /// for propagating the processable state between nodes that share
+  /// processing semantics but not an audio edge (e.g. DelayReader →
+  /// DelayWriter).
+  static void linkNodes(HNode *from, HNode *to);
+
   /// @brief Removes a directed edge from → to.
   Res removeEdge(HNode *from, HNode *to);
 

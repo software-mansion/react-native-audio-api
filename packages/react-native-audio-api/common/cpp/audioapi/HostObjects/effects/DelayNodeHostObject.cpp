@@ -28,10 +28,19 @@ DelayNodeHostObject::DelayNodeHostObject(
       channelCount_,
       context->getSampleRate());
 
-  delayWriterHostNode_ =
-      std::make_shared<DelayWriterHostNode>(graph_, std::move(delayNode->delayWriter_));
+  // order has to be preserved because adding cycle would not change their order in the graph
   delayReaderHostNode_ =
       std::make_shared<DelayReaderHostNode>(graph_, std::move(delayNode->delayReader_));
+  delayWriterHostNode_ =
+      std::make_shared<DelayWriterHostNode>(graph_, std::move(delayNode->delayWriter_));
+
+  // Reader and writer communicate via the delay line (a ring buffer), not via
+  // an audio edge. Linking their processable state ensures that when the
+  // reader becomes processable (because something downstream pulls from it),
+  // the writer — and everything feeding the writer — is also marked
+  // processable. The same link carries the transition back to NOT_PROCESSABLE
+  // on disconnect.
+  audioapi::utils::graph::Graph::linkNodes(delayReaderHostNode_->rawNode(), delayWriterHostNode_->rawNode());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }

@@ -77,6 +77,10 @@ Graph::Res Graph::addEdge(HNode *from, HNode *to) {
   });
 }
 
+void Graph::linkNodes(HNode *from, HNode *to) {
+  HostGraph::linkNodes(from, to);
+}
+
 Graph::Res Graph::removeEdge(HNode *from, HNode *to) {
   collectDisposedNodes();
   return hostGraph.removeEdge(from, to).map([&](AGEvent event) {

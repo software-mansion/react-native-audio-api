@@ -57,6 +57,13 @@ class HostGraph {
   struct Node {
     std::vector<Node *> inputs;  // reversed edges
     std::vector<Node *> outputs; // forward edges
+    /// Nodes whose processable state should follow this node's state.
+    /// Used to tie together the state of logically-linked host nodes that do
+    /// not share a graph edge (e.g. DelayReader → DelayWriter communicate via
+    /// a ring buffer, so no audio edge exists, but they must be processed
+    /// together). One-way: when THIS node is marked (not)processing, every
+    /// entry in `linkedNodes` is marked too (recursively).
+    std::vector<Node *> linkedNodes;
     TraversalState traversalState;
     std::shared_ptr<NodeHandle> handle; // shared handle bridging to AudioGraph
     bool ghost = false; // kept for cycle detection until AudioGraph confirms deletion
@@ -95,7 +102,19 @@ class HostGraph {
   /// @return AGEvent that adds the input on the AudioGraph side.
   Res addEdge(Node *from, Node *to);
 
-  /// @brief Marks a node as processing and recursively marks all inputs as processing.
+  /// @brief Links the processable-state of `from` to propagate into `to`.
+  ///
+  /// When `from` is marked (not)processing, `to` will be too. The link is
+  /// one-way and does NOT create a graph edge (no AudioGraph side effect).
+  /// Intended for host nodes that share processing semantics but do not
+  /// share an audio edge (e.g. DelayReader → DelayWriter).
+  ///
+  /// If the same pair is already linked, this is a no-op.
+  static void linkNodes(Node *from, Node *to);
+
+  /// @brief Marks this node CONDITIONAL_PROCESSABLE, then recurses into inputs
+  /// and linkedNodes. Skips nodes that are already processable (terminates
+  /// cycles and redundant paths).
   static void markNodesAsProcessing(Node *node);
 
   /// @brief Removes a directed edge from → to.

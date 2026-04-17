@@ -38,6 +38,9 @@ HostGraph::HostGraph() = default;
 
 HostGraph::~HostGraph() {
   for (Node *n : nodes) {
+    n->linkedNodes.clear();
+  }
+  for (Node *n : nodes) {
     delete n;
   }
   nodes.clear();
@@ -51,6 +54,9 @@ HostGraph::HostGraph(HostGraph &&other) noexcept
 
 auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
   if (this != &other) {
+    for (Node *n : nodes) {
+      n->linkedNodes.clear();
+    }
     for (Node *n : nodes) {
       delete n;
     }
@@ -91,16 +97,19 @@ void HostGraph::markNodesAsProcessing(Node *node) {
   if (node == nullptr) {
     return;
   }
-  if (!node->handle->audioNode->isProcessable()) {
-    node->handle->audioNode->setProcessableState(
-        GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE);
-  }
-  if (node->inputs.empty()) {
+  // Already CONDITIONAL or ALWAYS — do not recurse. Stops infinite recursion
+  // on cycles (e.g. delay feedback) and avoids redundant walks.
+  if (node->handle->audioNode->isProcessable()) {
     return;
   }
+  node->handle->audioNode->setProcessableState(
+      GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE);
 
   for (Node *input : node->inputs) {
     markNodesAsProcessing(input);
+  }
+  for (Node *linked : node->linkedNodes) {
+    markNodesAsProcessing(linked);
   }
 }
 
@@ -144,16 +153,17 @@ void HostGraph::markNodesAsNotProcessing(Node *node) {
   if (!node->handle->audioNode->isProcessable()) {
     return;
   }
-  if (node->handle->audioNode->processableState_ ==
+  if (node->handle->audioNode->processableState_ !=
       GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
-    node->handle->audioNode->setProcessableState(GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
-  }
-  if (node->inputs.empty()) {
     return;
   }
+  node->handle->audioNode->setProcessableState(GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
 
   for (Node *input : node->inputs) {
     markNodesAsNotProcessing(input);
+  }
+  for (Node *linked : node->linkedNodes) {
+    markNodesAsNotProcessing(linked);
   }
 }
 
@@ -255,6 +265,16 @@ bool HostGraph::hasPath(Node *start, Node *end) {
   return false;
 }
 
+void HostGraph::linkNodes(Node *from, Node *to) {
+  if (from == nullptr || to == nullptr || from == to) {
+    return;
+  }
+  if (std::ranges::find(from->linkedNodes, to) != from->linkedNodes.end()) {
+    return;
+  }
+  from->linkedNodes.push_back(to);
+}
+
 size_t HostGraph::edgeCount() const {
   return edgeCount_;
 }
@@ -268,6 +288,10 @@ void HostGraph::collectDisposedNodes() {
     Node *n = *it;
     if (n->ghost && n->handle.use_count() == 1) {
       edgeCount_ -= n->outputs.size();
+      for (Node *m : nodes) {
+        auto &ln = m->linkedNodes;
+        ln.erase(std::remove(ln.begin(), ln.end(), n), ln.end());
+      }
       *it = nodes.back();
       nodes.pop_back();
       delete n;
