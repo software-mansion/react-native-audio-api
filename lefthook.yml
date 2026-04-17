@@ -1,8 +1,8 @@
 pre-commit:
   parallel: true
   commands:
-    format:
-      run: yarn format
+    format_check:
+      run: yarn format:check
     lint:
       run: yarn lint
     types:
