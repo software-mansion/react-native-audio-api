@@ -2553,7 +2553,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: d1956f0eec54c619b63a379520fb4c618a55ccb9
   react-native-background-timer: 4638ae3bee00320753647900b21260b10587b6f7
   react-native-safe-area-context: ae7587b95fb580d1800c5b0b2a7bd48c2868e67a
-  react-native-skia: 5f68d3c3749bfb4f726e408410b8be5999392cd9
+  react-native-skia: 9e5b3a8a4ced921df89cb625dd9eb4fb10be1acf
   React-NativeModulesApple: 5ba0903927f6b8d335a091700e9fda143980f819
   React-networking: 3a4b7f9ed2b2d1c0441beacb79674323a24bcca6
   React-oscompat: ff26abf0ae3e3fdbe47b44224571e3fc7226a573

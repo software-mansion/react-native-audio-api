@@ -1,10 +1,15 @@
+#include <audioapi/core/AudioNode.h>
+#include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/utils/graph/Graph.h>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <thread>
+#include <utility>
 #include <vector>
 #include "TestGraphUtils.h"
 
@@ -28,6 +33,47 @@ class GraphTest : public ::testing::Test {
     return graph->hostGraph;
   }
 };
+
+namespace {
+
+/// Minimal AudioNode used as both a "source" (configurable channel count on
+/// its output buffer) and a "destination" (configurable channelCount /
+/// channelCountMode whose effective buffer we assert on).
+class ChannelCountTestNode : public audioapi::AudioNode {
+ public:
+  ChannelCountTestNode(
+      const std::shared_ptr<audioapi::BaseAudioContext> &context,
+      const audioapi::AudioNodeOptions &options)
+      : AudioNode(context, options) {}
+
+  void processNode(int /*framesToProcess*/) override {}
+};
+
+struct ChannelOpts {
+  int channelCount;
+  audioapi::ChannelCountMode mode;
+};
+
+/// @returns the computed number of channels on the output buffer of the
+/// AudioNode that backs `node`.
+inline size_t channelsOf(const HostGraph::Node *node) {
+  auto *audioNode = node->handle->audioNode->asAudioNode();
+  return audioNode->getOutputBuffer()->getNumberOfChannels();
+}
+
+/// Adds a ChannelCountTestNode with the given options to the managed
+/// `graph`. Returns the HostGraph::Node pointer; the associated AudioGraph
+/// slot is populated once `graph->processEvents()` is called.
+inline HostGraph::Node *addChannelCountNode(Graph &graph, const ChannelOpts &opts) {
+  audioapi::AudioNodeOptions audioNodeOpts;
+  audioNodeOpts.channelCount = opts.channelCount;
+  audioNodeOpts.channelCountMode = opts.mode;
+
+  auto audioNode = std::make_unique<ChannelCountTestNode>(getGraphTestContext(), audioNodeOpts);
+  return graph.addNode(std::move(audioNode));
+}
+
+} // namespace
 
 TEST_F(GraphTest, EventsAreScheduledButNotExecutedUntilProcess) {
   auto *node = graph->addNode();
@@ -151,6 +197,119 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
     // They should match
     EXPECT_EQ(audioAdj, hostAdj);
   }
+}
+
+// ─── Channel-count negotiation on connect/disconnect ─────────────────────
+//
+// These tests assert the Web Audio contract: the computed number of
+// channels on a node's output buffer must follow `channelCountMode`
+//   - MAX          -> max(channelCount of each connected input)
+//                     (the node's channelCount attribute is ignored)
+//   - CLAMPED_MAX  -> min(channelCount attribute,
+//                         max(channelCount of each connected input))
+//   - EXPLICIT     -> always the channelCount attribute
+//
+// The computation must happen on the HostGraph side at addEdge/removeEdge
+// time, but the actual buffer swap is published through the AGEvent and
+// applied on the AudioGraph side — therefore each test calls
+// `graph->processEvents()` before inspecting `channelsOf(...)`.
+
+TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_SingleInput) {
+  auto *source = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 4u)
+      << "MAX mode: after connecting a 4-channel source the downstream buffer "
+         "must be resized to 4 channels (channelCount attribute is ignored)";
+}
+
+TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_MultipleInputsTakeMax) {
+  auto *mono = addChannelCountNode(*graph, {.channelCount=1, .mode=ChannelCountMode::EXPLICIT});
+  auto *six = addChannelCountNode(*graph, {.channelCount=6, .mode=ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(mono, dest).is_ok());
+  ASSERT_TRUE(graph->addEdge(six, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 6u)
+      << "MAX mode: the downstream buffer must follow the largest connected input";
+}
+
+TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_ClampsAboveAttribute) {
+  auto *source = addChannelCountNode(*graph, {.channelCount=6, .mode=ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::CLAMPED_MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "CLAMPED_MAX should clamp a 6-channel input down to channelCount=2";
+}
+
+TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_FollowsInputWhenBelowAttribute) {
+  auto *source = addChannelCountNode(*graph, {.channelCount=1, .mode=ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::CLAMPED_MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 1u)
+      << "CLAMPED_MAX: mono input with channelCount=4 must still produce a mono buffer";
+}
+
+TEST_F(GraphTest, ChannelCountNegotiation_ExplicitMode_IgnoresInput) {
+  auto *source = addChannelCountNode(*graph, {.channelCount=6, .mode=ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::EXPLICIT});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 4u)
+      << "EXPLICIT must always produce exactly channelCount channels";
+}
+
+TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnSecondConnection) {
+  auto *stereoSource = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::EXPLICIT});
+  auto *quadSource = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(stereoSource, dest).is_ok());
+  graph->processEvents();
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "MAX: with only a stereo source connected, buffer should be 2 channels";
+
+  ASSERT_TRUE(graph->addEdge(quadSource, dest).is_ok());
+  graph->processEvents();
+  EXPECT_EQ(channelsOf(dest), 4u)
+      << "MAX: connecting a 4-channel source must grow the buffer to 4 channels";
+}
+
+TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnDisconnection) {
+  auto *stereoSource = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::EXPLICIT});
+  auto *quadSource = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(stereoSource, dest).is_ok());
+  ASSERT_TRUE(graph->addEdge(quadSource, dest).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(dest), 4u);
+
+  ASSERT_TRUE(graph->removeEdge(quadSource, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "MAX: removing the 4-channel source should shrink the buffer back to 2 channels";
 }
 
 } // namespace audioapi::utils::graph

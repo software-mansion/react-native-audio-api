@@ -29,6 +29,13 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   [[nodiscard]] size_t getChannelCount() const;
 
+  /// @brief Returns this node's `channelCountMode` attribute.
+  /// @note The value is immutable after construction, so this is safe to call
+  /// from any thread.
+  [[nodiscard]] ChannelCountMode getChannelCountMode() const {
+    return channelCountMode_;
+  }
+
   [[nodiscard]] float getContextSampleRate() const {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->getSampleRate();

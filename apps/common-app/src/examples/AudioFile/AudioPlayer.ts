@@ -49,10 +49,16 @@ class AudioPlayer {
     this.sourceNode = this.audioContext.createBufferSource({pitchCorrection: true});
     this.sourceNode.buffer = this.audioBuffer;
     this.sourceNode.playbackRate.value = this.playbackRate;
-    this.volumeNode = this.audioContext.createGain();
-    this.volumeNode.gain.value = this.volume;
+    const volume1 = this.audioContext.createGain();
+    const volume2 = this.audioContext.createGain();
+    volume1.gain.value = 0.5;
+    volume2.gain.value = 0.5;
+    // this.volumeNode = this.audioContext.createGain();
+    // this.volumeNode.gain.value = this.volume;
 
-    this.sourceNode.connect(this.volumeNode).connect(this.audioContext.destination);
+    this.sourceNode.connect(volume1).connect(this.audioContext.destination);
+    this.sourceNode.connect(volume2).connect(this.audioContext.destination);
+
     this.sourceNode.onPositionChangedInterval = 1000;
     this.sourceNode.onPositionChanged = (event) => {
       PlaybackNotificationManager.show({
