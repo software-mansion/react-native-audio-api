@@ -1,7 +1,7 @@
 import { IAudioNode } from '../interfaces';
 import AudioParam from './AudioParam';
 import { ChannelCountMode, ChannelInterpretation } from '../types';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { IndexSizeError } from '../errors';
 
 export default class AudioNode {

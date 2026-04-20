@@ -22,13 +22,17 @@ const defaultOptions: GridOptions = {
 const labelBoxSize = 32;
 
 export function getDrawingBounds(canvas: HTMLCanvasElement): { x: number; y: number; width: number; height: number } {
-  const { width, height } = canvas;
+  const dpr = typeof window !== 'undefined' && window.devicePixelRatio
+    ? window.devicePixelRatio
+    : 1;
+  const width = canvas.clientWidth || Math.floor(canvas.width / dpr);
+  const height = canvas.clientHeight || Math.floor(canvas.height / dpr);
 
   return {
     x: 0,
     y: 0,
-    width: width - labelBoxSize,
-    height: height - labelBoxSize,
+    width: Math.max(0, width - labelBoxSize),
+    height: Math.max(0, height - labelBoxSize),
   };
 }
 

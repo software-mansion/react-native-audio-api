@@ -84,8 +84,8 @@ size_t negotiateChannelCount(const HostGraph::Node *dest) {
 /// replacement `DSPAudioBuffer` on the host thread and returns it.
 /// Returns `nullptr` when no swap is needed (no audio payload, negotiation
 /// converged, or context gone).
-std::shared_ptr<audioapi::DSPAudioBuffer>
-buildNegotiatedBufferIfNeeded(const HostGraph::Node *dest) {
+std::shared_ptr<audioapi::DSPAudioBuffer> buildNegotiatedBufferIfNeeded(
+    const HostGraph::Node *dest) {
   auto *destAudio = audioNodeOf(dest);
   if (destAudio == nullptr) {
     return nullptr;
@@ -108,9 +108,7 @@ buildNegotiatedBufferIfNeeded(const HostGraph::Node *dest) {
   }
 
   return std::make_shared<audioapi::DSPAudioBuffer>(
-      audioapi::RENDER_QUANTUM_SIZE,
-      static_cast<int>(desired),
-      destAudio->getContextSampleRate());
+      audioapi::RENDER_QUANTUM_SIZE, static_cast<int>(desired), destAudio->getContextSampleRate());
 }
 
 } // namespace
@@ -248,9 +246,8 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
   return Res::Ok([from, to, negotiatedBuffer = std::move(negotiatedBuffer)](
                      AudioGraph &graph, auto &disposer) mutable {
     auto *fromNode = from->handle ? from->handle->audioNode.get() : nullptr;
-    auto *toNode   = to->handle   ? to->handle->audioNode.get()   : nullptr;
-    if (fromNode && toNode &&
-        !fromNode->isProcessable() && toNode->isProcessable()) {
+    auto *toNode = to->handle ? to->handle->audioNode.get() : nullptr;
+    if (fromNode && toNode && !fromNode->isProcessable() && toNode->isProcessable()) {
       markNodesAsProcessing(from);
     }
     if (auto *toAudio = (toNode ? toNode->asAudioNode() : nullptr);
@@ -267,16 +264,14 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
 }
 
 void HostGraph::markNodesAsNotProcessing(Node *node) {
-  if (node == nullptr || node->handle == nullptr ||
-      node->handle->audioNode == nullptr) {
+  if (node == nullptr || node->handle == nullptr || node->handle->audioNode == nullptr) {
     return;
   }
   auto *audioNode = node->handle->audioNode.get();
   if (!audioNode->isProcessable()) {
     return;
   }
-  if (audioNode->processableState_ !=
-      GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
+  if (audioNode->processableState_ != GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
     return;
   }
   audioNode->setProcessableState(GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
@@ -320,8 +315,7 @@ auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
     auto *fromAudio = (from && from->handle) ? from->handle->audioNode.get() : nullptr;
 
     if (fromAudio != nullptr &&
-        fromAudio->processableState_ ==
-            GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
+        fromAudio->processableState_ == GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
       bool updateProcessingNodes = std::ranges::all_of(from->outputs, [](Node *output) {
         auto *outAudio = (output && output->handle) ? output->handle->audioNode.get() : nullptr;
         return outAudio == nullptr || !outAudio->isProcessable();

@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-api",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "react-native-audio-api provides system for controlling audio in React Native environment compatible with Web Audio API specification",
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
@@ -45,7 +45,12 @@
     "app.plugin.js"
   ],
   "scripts": {
-    "test": "jest",
+    "test": "yarn test:js && yarn test:cpp",
+    "test:js": "jest",
+    "test:cpp": "bash common/cpp/test/RunTests.sh",
+    "test:full": "yarn test && yarn test:graph",
+    "test:graph": "bash common/cpp/test/RunTestsGraph.sh",
+    "test:graph:docker": "bash common/cpp/test/RunTestsGraphDocker.sh",
     "typecheck": "tsc --noEmit",
     "lint": "yarn lint:js && yarn lint:cpp && yarn lint:ios && yarn lint:kotlin",
     "lint:js": "eslint src && yarn prettier --check src",
@@ -53,6 +58,12 @@
     "lint:ios": "yarn format:ios -Werror",
     "lint:kotlin": "ktlint 'android/src/main/java/**/*.kt'",
     "format": "yarn format:js && yarn format:android:cpp && yarn format:android:kotlin && yarn format:ios && yarn format:common",
+    "format:check": "yarn format:check:js && yarn format:check:android:cpp && yarn format:check:android:kotlin && yarn format:check:ios && yarn format:check:common",
+    "format:check:js": "prettier --check src",
+    "format:check:android:cpp": "find android/src/ -path android/src/main/cpp/audioapi/android/libs -prune -o -type f -iname \"*.h\" -print -o -type f -iname \"*.cpp\" -print -o -type f -iname \"*.hpp\" -print | xargs clang-format --dry-run --Werror",
+    "format:check:android:kotlin": "ktlint 'android/src/main/java/**/*.kt'",
+    "format:check:ios": "find ios/audioapi/ios -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" | xargs clang-format --dry-run --Werror",
+    "format:check:common": "find common/cpp/ -path 'common/cpp/audioapi/libs' -prune -o -path 'common/cpp/audioapi/external' -prune -o -type f -iname \"*.h\" -print -o -type f -iname \"*.cpp\" -print -o -type f -iname \"*.hpp\" -print | xargs clang-format --dry-run --Werror",
     "format:js": "prettier --write --list-different src",
     "format:android:cpp": "find android/src/ -path android/src/main/cpp/audioapi/android/libs -prune -o -type f -iname \"*.h\" -print -o -type f -iname \"*.cpp\" -print -o -type f -iname \"*.hpp\" -print | xargs clang-format -i",
     "format:android:kotlin": "ktlint -F 'android/src/main/java/**/*.kt'",
@@ -98,10 +109,10 @@
     "@evilmartians/lefthook": "^1.5.0",
     "@expo/config-plugins": "^9.0.0",
     "@expo/config-types": "^53.0.4",
-    "@react-native/babel-preset": "0.84.1",
-    "@react-native/eslint-config": "0.84.1",
-    "@react-native/metro-config": "0.84.1",
-    "@react-native/typescript-config": "0.84.1",
+    "@react-native/babel-preset": "0.85.0",
+    "@react-native/eslint-config": "0.85.0",
+    "@react-native/metro-config": "0.85.0",
+    "@react-native/typescript-config": "0.85.0",
     "@types/babel__core": "^7.20.0",
     "@types/babel__generator": "^7.6.4",
     "@types/babel__traverse": "^7.14.2",
@@ -131,7 +142,7 @@
     "jest": "^29.7.0",
     "prettier": "^3.3.3",
     "react": "19.2.3",
-    "react-native": "0.84.1",
+    "react-native": "0.85.0",
     "react-native-builder-bob": "0.33.1",
     "turbo": "^1.10.7",
     "typescript": "~5.8.3"

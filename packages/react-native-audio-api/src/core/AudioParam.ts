@@ -1,23 +1,19 @@
+import { AutomationEventData, AutomationEventType } from '../types';
+import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
 import { IAudioParam } from '../interfaces';
-import { RangeError, InvalidStateError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
-import AudioNode from './AudioNode';
+import type BaseAudioContext from './BaseAudioContext';
+import type AudioNode from './AudioNode';
 
 export default class AudioParam {
-  readonly defaultValue: number;
-  readonly minValue: number;
-  readonly maxValue: number;
-  readonly audioParam: IAudioParam;
-  readonly context: BaseAudioContext;
-  /** @internal */
-  public readonly owner: AudioNode;
+  public readonly defaultValue: number;
+  public readonly minValue: number;
+  public readonly maxValue: number;
 
   constructor(
-    audioParam: IAudioParam,
-    context: BaseAudioContext,
-    owner: AudioNode
+    public readonly audioParam: IAudioParam,
+    public readonly context: BaseAudioContext,
+    public readonly owner: AudioNode
   ) {
-    this.audioParam = audioParam;
     this.value = audioParam.value;
     this.defaultValue = audioParam.defaultValue;
     this.minValue = audioParam.minValue;
@@ -41,6 +37,11 @@ export default class AudioParam {
       );
     }
 
+    this.checkCurveExclusion({
+      type: AutomationEventType.SET_VALUE,
+      automationTime: startTime,
+    });
+
     const clampedTime = Math.max(startTime, this.context.currentTime);
     this.audioParam.setValueAtTime(value, clampedTime);
 
@@ -53,6 +54,11 @@ export default class AudioParam {
         `endTime must be a finite non-negative number: ${endTime}`
       );
     }
+
+    this.checkCurveExclusion({
+      type: AutomationEventType.LINEAR_RAMP,
+      automationTime: endTime,
+    });
 
     const clampedTime = Math.max(endTime, this.context.currentTime);
     this.audioParam.linearRampToValueAtTime(value, clampedTime);
@@ -73,6 +79,11 @@ export default class AudioParam {
         `endTime must be a finite non-negative number: ${endTime}`
       );
     }
+
+    this.checkCurveExclusion({
+      type: AutomationEventType.EXPONENTIAL_RAMP,
+      automationTime: endTime,
+    });
 
     const clampedTime = Math.max(endTime, this.context.currentTime);
     this.audioParam.exponentialRampToValueAtTime(value, clampedTime);
@@ -96,6 +107,11 @@ export default class AudioParam {
         `timeConstant must be a finite non-negative number: ${timeConstant}`
       );
     }
+
+    this.checkCurveExclusion({
+      type: AutomationEventType.SET_TARGET,
+      automationTime: startTime,
+    });
 
     const clampedTime = Math.max(startTime, this.context.currentTime);
     this.audioParam.setTargetAtTime(target, clampedTime, timeConstant);
@@ -123,6 +139,12 @@ export default class AudioParam {
     if (values.length < 2) {
       throw new InvalidStateError(`values must contain at least two values`);
     }
+
+    this.checkCurveExclusion({
+      type: AutomationEventType.SET_VALUE_CURVE,
+      automationTime: startTime,
+      duration,
+    });
 
     const clampedTime = Math.max(startTime, this.context.currentTime);
     this.audioParam.setValueCurveAtTime(values, clampedTime, duration);
@@ -154,5 +176,13 @@ export default class AudioParam {
     this.audioParam.cancelAndHoldAtTime(clampedTime);
 
     return this;
+  }
+
+  private checkCurveExclusion(eventData: AutomationEventData): void {
+    const checkExclusionResult = this.audioParam.checkCurveExclusion(eventData);
+
+    if (checkExclusionResult.status === 'error') {
+      throw new NotSupportedError(checkExclusionResult.message);
+    }
   }
 }

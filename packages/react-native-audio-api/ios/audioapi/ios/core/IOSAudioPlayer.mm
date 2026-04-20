@@ -88,7 +88,7 @@ bool IOSAudioPlayer::isRunning() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
 
-  return isRunning_.load(std::memory_order_acquire) &&
+  return isRunning_.load(std::memory_order_acquire) && [audioEngine isEngineRunning] &&
       [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 

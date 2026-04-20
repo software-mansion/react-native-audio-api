@@ -2,6 +2,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { icons } from 'lucide-react-native';
 
 import AudioFile from './AudioFile';
+import AudioPipelineStress from './AudioPipelineStress';
 import AudioVisualizer from './AudioVisualizer';
 import DrumMachine from './DrumMachine';
 import Metronome from './Metronome';
@@ -12,6 +13,8 @@ import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
+import AudioStream from './AudioTag/AudioTag';
+import ConvolverIR from './ConvolverIR';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -20,12 +23,15 @@ type NavigationParamList = {
   Piano: undefined;
   TextToSpeech: undefined;
   AudioFile: undefined;
+  AudioPipelineStress: undefined;
   PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
   Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
+  AudioTag: undefined;
+  ConvolverIR: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -61,6 +67,12 @@ export const Examples: Example[] = [
     title: 'Audio File',
     Icon: icons.Music,
     screen: AudioFile,
+  },
+  {
+    key: 'AudioPipelineStress',
+    title: 'Audio Pipeline Stress',
+    Icon: icons.Activity,
+    screen: AudioPipelineStress,
   },
   {
     key: 'PlaybackSpeed',
@@ -109,5 +121,17 @@ export const Examples: Example[] = [
     title: 'Streamer',
     Icon: icons.Radio,
     screen: Streaming,
+  },
+  {
+    key: 'AudioTag',
+    title: 'Audio Tag',
+    Icon: icons.Tag,
+    screen: AudioStream,
+  },
+  {
+    key: 'ConvolverIR',
+    title: 'Reverb Effect',
+    Icon: icons.AudioWaveform,
+    screen: ConvolverIR,
   },
 ] as const;

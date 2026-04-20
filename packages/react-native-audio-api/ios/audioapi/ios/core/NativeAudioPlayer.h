@@ -7,8 +7,6 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
 @interface NativeAudioPlayer : NSObject
 
-@property (nonatomic, strong) AVAudioFormat *format;
-@property (nonatomic, strong) AVAudioSourceNode *sourceNode;
 @property (nonatomic, copy) RenderAudioBlock renderAudio;
 @property (nonatomic, assign) float sampleRate;
 @property (nonatomic, assign) int channelCount;

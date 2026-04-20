@@ -1,5 +1,5 @@
 {
-  "preset": "react-native",
+  "preset": "@react-native/jest-preset",
   "rootDir": "..",
   "testMatch": ["**/tests/**/*.test.ts", "**/tests/**/*.test.tsx"],
   "collectCoverageFrom": ["src/mock/**/*.{ts,tsx}", "!src/mock/**/*.d.ts"],

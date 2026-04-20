@@ -2,33 +2,37 @@ import type { AudioEventSubscription } from '../events';
 import type { SystemEventCallback, SystemEventName } from '../events/types';
 
 export type IOSCategory =
-  | 'record'
   | 'ambient'
-  | 'playback'
   | 'multiRoute'
-  | 'soloAmbient'
-  | 'playAndRecord';
+  | 'playAndRecord'
+  | 'playback'
+  | 'record'
+  | 'soloAmbient';
 
 export type IOSMode =
   | 'default'
+  | 'dualRoute'
   | 'gameChat'
-  | 'videoChat'
-  | 'voiceChat'
   | 'measurement'
-  | 'voicePrompt'
-  | 'spokenAudio'
   | 'moviePlayback'
-  | 'videoRecording';
+  | 'shortFormVideo'
+  | 'spokenAudio'
+  | 'videoChat'
+  | 'videoRecording'
+  | 'voiceChat'
+  | 'voicePrompt';
 
 export type IOSOption =
-  | 'duckOthers'
   | 'allowAirPlay'
-  | 'mixWithOthers'
-  | 'defaultToSpeaker'
-  | 'allowBluetoothHFP'
   | 'allowBluetoothA2DP'
-  | 'overrideMutedMicrophoneInterruption'
-  | 'interruptSpokenAudioAndMixWithOthers';
+  | 'allowBluetoothHFP'
+  | 'bluetoothHighQualityRecording'
+  | 'defaultToSpeaker'
+  | 'duckOthers'
+  | 'farFieldInput'
+  | 'interruptSpokenAudioAndMixWithOthers'
+  | 'mixWithOthers'
+  | 'overrideMutedMicrophoneInterruption';
 
 export type AudioFocusType =
   | 'gain'

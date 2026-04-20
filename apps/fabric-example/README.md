@@ -58,6 +58,34 @@ npm run ios
 yarn ios
 ```
 
+## Run iOS Tests
+
+The Fabric example includes a native XCTest target, `FabricExampleTests`, with initial coverage for `AudioEngine` creation and teardown.
+
+From `apps/fabric-example`, make sure Pods are installed:
+
+```sh
+bundle exec pod install
+```
+
+Then run the tests from the repo root or from `apps/fabric-example`:
+
+```sh
+xcodebuild test \
+  -workspace ios/FabricExample.xcworkspace \
+  -scheme FabricExample \
+  -destination 'platform=iOS Simulator,name=iPhone 17 pro,OS=26.4' \
+  -parallelizeTargets
+```
+
+If that simulator is not available on your machine, list installed simulators and swap the destination:
+
+```sh
+xcrun simctl list devices available
+```
+
+Xcode script phases also require a valid `NODE_BINARY`. If Hermes or React Native pod scripts fail before tests start, update `ios/.xcode.env.local` to point at your current `node` executable.
+
 If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
 
 This is one way to run your app — you can also build it directly from Android Studio or Xcode.

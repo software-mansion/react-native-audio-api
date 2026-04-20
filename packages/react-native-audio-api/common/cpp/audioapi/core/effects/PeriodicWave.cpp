@@ -43,13 +43,13 @@ constexpr float interpolate3Point = 0.16;
 namespace audioapi {
 PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
     : sampleRate_(sampleRate),
-      disableNormalization_(disableNormalization),
       numberOfRanges_(
           static_cast<int>(
               round(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))))),
       lowestFundamentalFrequency_(
           static_cast<float>(sampleRate_ / 2) / static_cast<float>(getMaxNumberOfPartials())),
-      scale_(static_cast<float>(getPeriodicWaveSize()) / sampleRate_) {
+      scale_(static_cast<float>(getPeriodicWaveSize()) / sampleRate_),
+      disableNormalization_(disableNormalization) {
   bandLimitedTables_ =
       std::make_unique<DSPAudioBuffer>(getPeriodicWaveSize(), numberOfRanges_, sampleRate_);
 

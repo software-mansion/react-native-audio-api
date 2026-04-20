@@ -9,6 +9,7 @@
 #include <audioapi/utils/UnitConversion.h>
 
 namespace audioapi {
+
 IOSFileWriter::IOSFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties)
@@ -126,6 +127,8 @@ CloseFileResult IOSFileWriter::closeFile()
       return CloseFileResult::Err("file is not open: " + filePath);
     }
 
+    offloader_.reset();
+
     // AVAudioFile automatically finalizes the file when deallocated
     audioFile_ = nil;
 
@@ -143,7 +146,6 @@ CloseFileResult IOSFileWriter::closeFile()
 
     fileURL_ = nil;
     framesWritten_.store(0, std::memory_order_release);
-    offloader_.reset();
 
     return CloseFileResult::Ok(std::make_tuple(fileSizeBytesMb, fileDuration));
   }
@@ -253,6 +255,22 @@ double IOSFileWriter::getCurrentDuration() const
 std::string IOSFileWriter::getFilePath() const
 {
   return [[fileURL_ path] UTF8String];
+}
+
+size_t IOSFileWriter::getFileSizeBytes() const
+{
+  @autoreleasepool {
+    if (fileURL_ == nil) {
+      return 0;
+    }
+    NSError *error = nil;
+    NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:[fileURL_ path]
+                                                                           error:&error];
+    if (error != nil || attrs == nil) {
+      return 0;
+    }
+    return static_cast<size_t>([attrs fileSize]);
+  }
 }
 
 } // namespace audioapi

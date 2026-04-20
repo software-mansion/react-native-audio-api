@@ -32,18 +32,19 @@ class IOSFileWriter : public AudioFileWriter {
   IOSFileWriter(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties);
-  ~IOSFileWriter();
+  ~IOSFileWriter() override;
 
-  Result<std::string, std::string> openFile(
+  virtual OpenFileResult openFile(
       AVAudioFormat *bufferFormat,
       size_t maxInputBufferLength,
       const std::string &fileNameOverride);
-  Result<std::tuple<double, double>, std::string> closeFile() override;
+  CloseFileResult closeFile() override;
 
-  void writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
+  void writeAudioData(const AudioBufferList *audioBufferList, int numFrames) override;
   double getCurrentDuration() const override;
 
   std::string getFilePath() const override;
+  size_t getFileSizeBytes() const override;
 
  protected:
   size_t converterInputBufferSize_;

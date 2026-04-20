@@ -1,12 +1,8 @@
 import React, { useState } from "react";
 import AudioBufferSourceExample from "./AudioBufferSourceExample";
-import LocalMuiTheme from "../interactivePlaygroundMuiTheme";
-
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Slider from "@mui/material/Slider";
-import Switch from "@mui/material/Switch";
-import FormControlLabel from "@mui/material/FormControlLabel";
+import SliderInput from "@site/src/ui/SliderInput";
+import Switch from "@site/src/ui/Switch";
+import styles from "../styles.module.css";
 
 const initialState = {
   playbackRate: 1.0,
@@ -42,93 +38,71 @@ source.connect(ctx.destination);
 source.start();`;
 
   const controls = (
-    <LocalMuiTheme>
-      <Box
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          bgcolor: "background.paper",
-          border: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={pitchCorrection}
-              onChange={(e) => setPitchCorrection(e.target.checked)}
-            />
-          }
-          label="Enable pitch correction"
-        />
+    <div className={styles.controlsPanel}>
+      <Switch
+        ariaLabel="Enable pitch correction"
+        checked={pitchCorrection}
+        onChange={setPitchCorrection}
+        rightLabel="Enable pitch correction"
+      />
 
-        <Typography gutterBottom>
-          Playback Rate: {playbackRate.toFixed(2)}x
-        </Typography>
-        <Slider
-          value={playbackRate}
-          min={0.5}
-          max={2.0}
-          step={0.01}
-          onChange={(e, v) => setPlaybackRate(v as number)}
-          valueLabelDisplay="auto"
-        />
+      <SliderInput
+        label="Playback Rate"
+        value={playbackRate}
+        min={0.5}
+        max={2}
+        step={0.01}
+        unit="x"
+        onChange={setPlaybackRate}
+      />
 
-        <Typography gutterBottom>Detune: {detune} cents</Typography>
-        <Slider
-          value={detune}
-          min={-1200}
-          max={1200}
-          step={1}
-          onChange={(e, v) => setDetune(v as number)}
-          valueLabelDisplay="auto"
-        />
+      <SliderInput
+        label="Detune"
+        value={detune}
+        min={-1200}
+        max={1200}
+        step={1}
+        unit="cents"
+        onChange={setDetune}
+      />
 
-        <FormControlLabel
-          control={
-            <Switch
-              checked={loop}
-              onChange={(e) => setLoop(e.target.checked)}
-            />
-          }
-          label="Loop"
-        />
+      <Switch
+        ariaLabel="Toggle loop playback"
+        checked={loop}
+        onChange={setLoop}
+        rightLabel="Loop"
+      />
 
-        {loop && (
-          <Box sx={{ pl: 2, borderLeft: "2px solid", borderColor: "divider" }}>
-            <Typography gutterBottom>
-              Loop start: {loopStart.toFixed(2)}s
-            </Typography>
-            <Slider
-              value={loopStart}
-              min={0}
-              max={bufferDuration}
-              step={0.01}
-              onChange={(e, v) => {
-                const safe = Math.min(v as number, loopEnd - 0.01);
-                setLoopStart(Math.max(0, safe));
-              }}
-              valueLabelDisplay="auto"
-            />
+      {loop && (
+        <div className={styles.loopRows}>
+          <SliderInput
+            label="Loop start"
+            value={loopStart}
+            min={0}
+            max={bufferDuration}
+            step={0.01}
+            unit="s"
+            onChange={(value) => {
+              const safe = Math.min(value, loopEnd - 0.01);
+              setLoopStart(Math.max(0, safe));
+            }}
+          />
 
-            <Typography gutterBottom>
-              Loop stop: {loopEnd.toFixed(2)}s
-            </Typography>
-            <Slider
-              value={loopEnd}
-              min={0.01}
-              max={bufferDuration}
-              step={0.01}
-              onChange={(e, v) => {
-                const safe = Math.max(v as number, loopStart + 0.01);
-                setLoopEnd(safe);
-              }}
-              valueLabelDisplay="auto"
-            />
-          </Box>
-        )}
-      </Box>
-    </LocalMuiTheme>
+          <SliderInput
+            label="Loop stop"
+            value={loopEnd}
+            min={0.01}
+            max={bufferDuration}
+            step={0.01}
+            unit="s"
+            onChange={(value) => {
+              const safe = Math.max(value, loopStart + 0.01);
+              setLoopEnd(safe);
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 
   return {

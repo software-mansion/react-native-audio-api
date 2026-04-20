@@ -31,12 +31,16 @@
     notifyOthersOnDeactivation:(BOOL)notifyOthersOnDeactivation;
 
 - (bool)configureAudioSession;
+/// Ensures the library-managed session is active. In external owner mode this is a no-op.
+- (bool)ensureActive:(bool)force error:(NSError **)error;
 - (bool)setActive:(bool)active error:(NSError **)error;
+/// Drops the cached active-state flag without reclaiming external ownership.
 - (void)markInactive;
+/// Switches the manager into external owner mode and stops all session mutations.
 - (void)disableSessionManagement;
 
 - (NSNumber *)getDevicePreferredSampleRate;
-- (NSNumber *)getDevicePreferredInputChannelCount;
+- (NSString *)inputDiagnosticsSnapshot;
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
                              reject:(RCTPromiseRejectBlock)reject;
@@ -51,7 +55,5 @@
 - (void)setInputDevice:(NSString *)deviceId
                resolve:(RCTPromiseResolveBlock)resolve
                 reject:(RCTPromiseRejectBlock)reject;
-
-- (bool)isSessionActive;
 
 @end

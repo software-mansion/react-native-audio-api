@@ -146,7 +146,7 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | [`PeriodicWaveConstraints`](/docs/core/base-audio-context#periodicwaveconstraints) | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
+| `constraints` <Optional /> | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
 
 #### Errors
 
@@ -317,19 +317,17 @@ const buffer = await this.audioContext.decodeAudioData(data, 4800, 2, false);
 
 ### `ContextState`
 
-<details>
-<summary>Details</summary>
 
 **Acceptable values:**
-  - `suspended`
+- `suspended`
 
-  The audio context has been suspended (with one of [`suspend`](/docs/core/audio-context#suspend) or [`OfflineAudioContext.suspend`](/docs/core/offline-audio-context#suspend)).
+The audio context has been suspended (with one of [`suspend`](/docs/core/audio-context#suspend) or [`OfflineAudioContext.suspend`](/docs/core/offline-audio-context#suspend)).
 
-  - `running`
+- `running`
 
-  The audio context is running normally.
+The audio context is running normally.
 
-  - `closed`
+- `closed`
 
-  The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
-</details>
+The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
+

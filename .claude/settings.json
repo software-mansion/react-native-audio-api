@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "respectGitIgnore": true,
+  "permissions": {
+    "allow": [
+      "Bash(yarn build)",
+      "Bash(yarn lint*)",
+      "Bash(yarn format*)",
+      "Bash(yarn typecheck)",
+      "Bash(yarn test)",
+      "Bash(yarn check-audio-enum-sync)",
+      "Bash(yarn workspace *)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(cmake *)",
+      "Bash(clang-format *)",
+      "Bash(node *)",
+      "Bash(npx prettier*)",
+
+      "Bash(ls*)",
+      "Bash(pwd)",
+      "Bash(which *)",
+      "Bash(type *)",
+      "Bash(file *)",
+      "Bash(wc *)",
+      "Bash(bash scripts/collect-knowledge-changes.sh*)",
+      "Bash(printf '%s' * > .claude/last-knowledge-update)",
+      "Bash(> .claude/last-knowledge-update)",
+
+      "Read(**)",
+
+      "WebFetch(https://webaudio.github.io/*)",
+      "WebFetch(https://developer.mozilla.org/*)",
+      "WebFetch(https://en.cppreference.com/*)",
+      "WebFetch(https://reactnative.dev/*)",
+      "WebSearch(*)",
+
+      "Write(.claude/**)",
+      "Edit(.claude/**)",
+      "Write(CLAUDE.md)",
+      "Edit(CLAUDE.md)",
+      "Write(apps/CLAUDE.md)",
+      "Edit(apps/CLAUDE.md)",
+      "Write(packages/*/CLAUDE.md)",
+      "Edit(packages/*/CLAUDE.md)",
+      "Write(packages/react-native-audio-api/tests/CLAUDE.md)",
+      "Edit(packages/react-native-audio-api/tests/CLAUDE.md)"
+    ],
+    "ask": [
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git merge*)",
+      "Bash(git rebase*)",
+      "Bash(git reset*)",
+      "Bash(git checkout *)",
+      "Bash(git stash*)",
+      "Bash(yarn clean)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+
+      "Read(**/node_modules/**)",
+      "Read(**/Pods/**)",
+      "Read(**/vendor/bundle/**)",
+
+      "Read(**/build/**)",
+      "Read(**/lib/**)",
+      "Read(**/.turbo/**)",
+      "Read(**/.gradle/**)",
+      "Read(**/.cxx/**)",
+      "Read(**/.kotlin/**)",
+      "Read(**/DerivedData/**)",
+      "Read(**/*.xcuserstate)",
+      "Read(**/*.pbxuser)",
+      "Read(**/*.hmap)",
+      "Read(**/*.ipa)",
+
+      "Read(**/jniLibs/**)",
+      "Read(**/*.a)",
+      "Read(**/*.xcframework/**)",
+      "Read(**/ffmpeg_ios/**)",
+      "Read(**/openssl-prebuilt/**)",
+      "Read(**/prebuilt_libs/**)",
+      "Read(**/output/**)",
+
+      "Read(**/CMakeFiles/**)",
+
+      "Read(yarn.lock)",
+      "Read(**/Gemfile.lock)",
+      "Read(**/Podfile.lock)",
+
+      "Read(**/*.png)",
+      "Read(**/*.jpg)",
+      "Read(**/*.jpeg)",
+      "Read(**/*.gif)",
+      "Read(**/*.webp)",
+      "Read(**/*.ico)",
+      "Read(**/*.svg)",
+      "Read(**/*.ttf)",
+      "Read(**/*.otf)",
+      "Read(**/*.woff)",
+      "Read(**/*.woff2)",
+      "Read(**/*.mp3)",
+      "Read(**/*.wav)",
+      "Read(**/*.ogg)",
+      "Read(**/*.aac)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/double-prompt.js"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "lsp": {
+      "command": "npx",
+      "args": ["-y", "mcp-language-server", "--stdio"],
+      "env": {
+        "LSP_COMMAND": "typescript-language-server",
+        "LSP_ARGS": "--stdio"
+      }
+    }
+  }
+}

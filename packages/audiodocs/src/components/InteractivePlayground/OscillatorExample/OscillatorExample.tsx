@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback, FC } from "react";
+import React, { FC, useCallback, useEffect, useRef, useState } from "react";
 import {
+  AnalyserNode,
   AudioContext,
   GainNode,
-  AnalyserNode,
   OscillatorNode,
   OscillatorType,
 } from "react-native-audio-api";
@@ -49,6 +49,7 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
 
     const ctx = audioContextRef.current;
     if (!ctx) return;
+
     const osc = await ctx.createOscillator();
 
     osc.type = type;

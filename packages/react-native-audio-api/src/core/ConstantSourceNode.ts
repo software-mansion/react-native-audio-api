@@ -2,7 +2,7 @@ import { IConstantSourceNode } from '../interfaces';
 import { ConstantSourceOptions } from '../types';
 import AudioParam from './AudioParam';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 
 export default class ConstantSourceNode extends AudioScheduledSourceNode {
   readonly offset: AudioParam;

@@ -89,13 +89,7 @@ const OtherScreen: FC = () => {
   return <Container headless />;
 };
 
-const MainTabs = createBottomTabNavigator<MainStackProps>({
-  screens: {
-    Tests: TestsScreen,
-    DemoApps: DemoAppsScreen,
-    Other: OtherScreen,
-  },
-});
+const MainTabs = createBottomTabNavigator<MainStackProps>();
 
 const tabBarIcon = ({
   routeName,

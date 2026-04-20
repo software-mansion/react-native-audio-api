@@ -2,7 +2,7 @@ import { IStereoPannerNode } from '../interfaces';
 import { StereoPannerOptions } from '../types';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 
 export default class StereoPannerNode extends AudioNode {
   readonly pan: AudioParam;

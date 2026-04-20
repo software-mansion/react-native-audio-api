@@ -1,11 +1,13 @@
 #pragma once
 
 #include <audioapi/core/utils/graph/HostNode.h>
+#include <audioapi/core/utils/param/ParamControlQueue.h>
 #include <audioapi/jsi/JsiHostObject.h>
-
+#include <audioapi/utils/Result.hpp>
 #include <jsi/jsi.h>
 #include <cstddef>
 #include <memory>
+#include <string>
 
 namespace audioapi {
 using namespace facebook;
@@ -48,6 +50,7 @@ class AudioParamHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(setValueCurveAtTime);
   JSI_HOST_FUNCTION_DECL(cancelScheduledValues);
   JSI_HOST_FUNCTION_DECL(cancelAndHoldAtTime);
+  JSI_HOST_FUNCTION_DECL(checkCurveExclusion);
 
   /// @brief Returns the bridge node for this param (for source → bridge connections).
   [[nodiscard]] HNode *bridgeNode() const {
@@ -64,8 +67,13 @@ class AudioParamHostObject : public JsiHostObject {
   HNode *bridgeNode_ = nullptr;
   bool isConnectedToGraph_ = false;
   std::shared_ptr<AudioParam> param_;
+  ParamControlQueue controlQueue_;
   float defaultValue_;
   float minValue_;
   float maxValue_;
+
+  Result<NoneType, std::string> checkCurveExclusionFromJSI(
+      jsi::Runtime &runtime,
+      const jsi::Value *args);
 };
 } // namespace audioapi

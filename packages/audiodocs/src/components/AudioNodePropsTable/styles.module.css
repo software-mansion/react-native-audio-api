@@ -1,0 +1,35 @@
+
+.propsDetailBox {
+  --audiodocs-detail-box-bg: transparent;
+  --audiodocs-detail-box-shadow: transparent;
+  --audiodocs-detail-box-tag-bg: var(--swm-blue-light-20);
+  background: transparent;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+}
+
+:root[data-theme='dark'] {
+  .propsDetailBox {
+    --audiodocs-detail-box-tag-bg: var(--swm-blue-dark-120);
+  }
+}
+
+.propsDetailBox [class*='detailBoxContent'] {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+}
+
+.propsDetailBox [class*='detailBoxHeader'] {
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.audioNodeProps {
+  border-collapse: collapse;
+  padding: 0;
+  margin: 0;
+}

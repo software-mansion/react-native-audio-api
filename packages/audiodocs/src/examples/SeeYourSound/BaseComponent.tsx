@@ -1,15 +1,15 @@
 import React, {
-  useState,
+  createContext,
   useEffect,
   useRef,
-  createContext
+  useState
 } from 'react';
+import { ActivityIndicator, Button, View } from 'react-native';
 import {
-  AudioContext,
   AudioBuffer,
   AudioBufferSourceNode,
+  AudioContext,
 } from 'react-native-audio-api';
-import { ActivityIndicator, View, Button } from 'react-native';
 
 interface Size {
   width: number;
@@ -122,6 +122,7 @@ const AudioVisualizer: React.FC = () => {
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
+            color="#ff6259"
           />
         </View>
       </View>

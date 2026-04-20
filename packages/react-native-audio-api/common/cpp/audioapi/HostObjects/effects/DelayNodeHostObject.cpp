@@ -40,7 +40,8 @@ DelayNodeHostObject::DelayNodeHostObject(
   // the writer — and everything feeding the writer — is also marked
   // processable. The same link carries the transition back to NOT_PROCESSABLE
   // on disconnect.
-  audioapi::utils::graph::Graph::linkNodes(delayReaderHostNode_->rawNode(), delayWriterHostNode_->rawNode());
+  audioapi::utils::graph::Graph::linkNodes(
+      delayReaderHostNode_->rawNode(), delayWriterHostNode_->rawNode());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }

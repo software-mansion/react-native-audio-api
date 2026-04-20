@@ -215,8 +215,9 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
 // `graph->processEvents()` before inspecting `channelsOf(...)`.
 
 TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_SingleInput) {
-  auto *source = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::EXPLICIT});
-  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::MAX});
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
   graph->processEvents();
 
   ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
@@ -228,9 +229,9 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_SingleInput) {
 }
 
 TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_MultipleInputsTakeMax) {
-  auto *mono = addChannelCountNode(*graph, {.channelCount=1, .mode=ChannelCountMode::EXPLICIT});
-  auto *six = addChannelCountNode(*graph, {.channelCount=6, .mode=ChannelCountMode::EXPLICIT});
-  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::MAX});
+  auto *mono = addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *six = addChannelCountNode(*graph, {.channelCount = 6, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
   graph->processEvents();
 
   ASSERT_TRUE(graph->addEdge(mono, dest).is_ok());
@@ -242,8 +243,10 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_MultipleInputsTakeMax) {
 }
 
 TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_ClampsAboveAttribute) {
-  auto *source = addChannelCountNode(*graph, {.channelCount=6, .mode=ChannelCountMode::EXPLICIT});
-  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::CLAMPED_MAX});
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 6, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest =
+      addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::CLAMPED_MAX});
   graph->processEvents();
 
   ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
@@ -254,8 +257,10 @@ TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_ClampsAboveAttribute) {
 }
 
 TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_FollowsInputWhenBelowAttribute) {
-  auto *source = addChannelCountNode(*graph, {.channelCount=1, .mode=ChannelCountMode::EXPLICIT});
-  auto *dest = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::CLAMPED_MAX});
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest =
+      addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::CLAMPED_MAX});
   graph->processEvents();
 
   ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
@@ -266,21 +271,23 @@ TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_FollowsInputWhenBelowAt
 }
 
 TEST_F(GraphTest, ChannelCountNegotiation_ExplicitMode_IgnoresInput) {
-  auto *source = addChannelCountNode(*graph, {.channelCount=6, .mode=ChannelCountMode::EXPLICIT});
-  auto *dest = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::EXPLICIT});
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 6, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
   graph->processEvents();
 
   ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
   graph->processEvents();
 
-  EXPECT_EQ(channelsOf(dest), 4u)
-      << "EXPLICIT must always produce exactly channelCount channels";
+  EXPECT_EQ(channelsOf(dest), 4u) << "EXPLICIT must always produce exactly channelCount channels";
 }
 
 TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnSecondConnection) {
-  auto *stereoSource = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::EXPLICIT});
-  auto *quadSource = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::EXPLICIT});
-  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::MAX});
+  auto *stereoSource =
+      addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
+  auto *quadSource =
+      addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
   graph->processEvents();
 
   ASSERT_TRUE(graph->addEdge(stereoSource, dest).is_ok());
@@ -295,9 +302,11 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnSecondConnection) 
 }
 
 TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnDisconnection) {
-  auto *stereoSource = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::EXPLICIT});
-  auto *quadSource = addChannelCountNode(*graph, {.channelCount=4, .mode=ChannelCountMode::EXPLICIT});
-  auto *dest = addChannelCountNode(*graph, {.channelCount=2, .mode=ChannelCountMode::MAX});
+  auto *stereoSource =
+      addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
+  auto *quadSource =
+      addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
   graph->processEvents();
 
   ASSERT_TRUE(graph->addEdge(stereoSource, dest).is_ok());

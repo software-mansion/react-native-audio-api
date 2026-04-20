@@ -28,10 +28,10 @@ class AudioRecorder {
   AudioRecorder &operator=(AudioRecorder &&) = delete;
   virtual ~AudioRecorder() = default;
 
-  virtual Result<std::string, std::string> start(const std::string &fileNameOverride) = 0;
-  virtual Result<std::tuple<std::string, double, double>, std::string> stop() = 0;
+  virtual Result<NoneType, std::string> start(const std::string &fileNameOverride) = 0;
+  virtual Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() = 0;
 
-  virtual Result<std::string, std::string> enableFileOutput(
+  virtual Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) = 0;
   virtual void disableFileOutput() = 0;
 
@@ -62,14 +62,21 @@ class AudioRecorder {
   virtual bool isIdle() const = 0;
 
  protected:
+  bool wantsCallback() const;
+  bool wantsFileOutput() const;
+  bool wantsConnection() const;
+
   std::atomic<RecorderState> state_{RecorderState::Idle};
 
   std::atomic<bool> isConnected_{false};
   std::atomic<bool> fileOutputEnabled_{false};
   std::atomic<bool> callbackOutputEnabled_{false};
+  std::atomic<bool> connectedConfigured_{false};
+  std::atomic<bool> fileOutputConfigured_{false};
+  std::atomic<bool> callbackOutputConfigured_{false};
 
   std::mutex callbackMutex_;
-  std::mutex fileWriterMutex_;
+  mutable std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;
   mutable std::mutex adapterNodeMutex_;
 
@@ -80,6 +87,7 @@ class AudioRecorder {
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
 };
 
 } // namespace audioapi

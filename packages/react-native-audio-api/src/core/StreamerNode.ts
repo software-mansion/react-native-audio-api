@@ -1,7 +1,7 @@
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import { StreamerOptions } from '../types';
 import { NotSupportedError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 
 export default class StreamerNode extends AudioScheduledSourceNode {
   readonly streamPath: string;

@@ -50,7 +50,8 @@ interface Spec extends TurboModule {
   ): Promise<NotificationOpResponse>;
   hideNotification(key: string): Promise<NotificationOpResponse>;
   isNotificationActive(key: string): Promise<boolean>;
-  resolveAndroidReleaseAsset(assetPath: string): string;
+  // Android-only: reads bundled asset bytes and returns a Base64 string.
+  readAndroidReleaseAssetBytesAsBase64(assetPath: string): Promise<string>;
 }
 
 const NativeAudioAPIModule = TurboModuleRegistry.get<Spec>('AudioAPIModule')!;
