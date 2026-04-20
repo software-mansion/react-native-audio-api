@@ -42,7 +42,7 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 - **Audio tag 🏷️**<br />
   Simple ability to play and buffer audio, with all of the most commonly used functions, same as on the web, without the need to create and manipulate an audio graph.
 
-- **Recordings rotation 🎤**<br />
+- **Recording rotation 🎤**<br />
   Ability to chunk your recording into smaller files, increasing resilience to unpredictable events.
 
 ### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.11.0"><img src="https://img.shields.io/badge/Released_in-0.11.0-green" /></a>
