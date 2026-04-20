@@ -7,6 +7,9 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: npm-custom-node-generator-build
+  cancel-in-progress: false
 jobs:
   build:
     if: github.repository == 'software-mansion/react-native-audio-api'
