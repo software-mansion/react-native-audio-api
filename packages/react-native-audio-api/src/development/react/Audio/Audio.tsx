@@ -176,7 +176,15 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       setReady(false);
       onLoadStart();
       try {
-        if (
+        if (path.startsWith('http')) {
+          const arrayBuffer = await fetch(path, {
+            headers:
+              typeof source === 'object' && source && 'headers' in source
+                ? source.headers
+                : undefined,
+          }).then((response) => response.arrayBuffer());
+          sourceRef.current = arrayBuffer;
+        } else if (
           Platform.OS === 'android' &&
           !__DEV__ &&
           !path.startsWith('file://')
@@ -187,24 +195,10 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
             );
           const arrayBuffer = base64ToArrayBuffer(base64Payload);
           sourceRef.current = arrayBuffer;
+        } else if (path.startsWith('file://')) {
+          sourceRef.current = path.replace('file://', '');
         } else {
-          if (path.startsWith('http')) {
-            const arrayBuffer = await fetch(path, {
-              headers:
-                typeof source === 'object' && source && 'headers' in source
-                  ? source.headers
-                  : undefined,
-            }).then((response) => response.arrayBuffer());
-
-            if (isCancelled) {
-              return;
-            }
-            sourceRef.current = arrayBuffer;
-          } else if (path.startsWith('file://')) {
-            sourceRef.current = path.replace('file://', '');
-          } else {
-            sourceRef.current = path;
-          }
+          sourceRef.current = path;
         }
 
         if (!isCancelled) {
