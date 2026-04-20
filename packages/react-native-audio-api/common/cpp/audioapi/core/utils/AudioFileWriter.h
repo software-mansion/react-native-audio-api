@@ -8,6 +8,12 @@
 #include <string>
 #include <tuple>
 
+#ifdef __APPLE__
+typedef const struct AudioBufferList *AudioDataType;
+#else
+typedef void *AudioDataType;
+#endif
+
 namespace audioapi {
 
 class AudioFileProperties;
@@ -26,9 +32,12 @@ class AudioFileWriter {
   virtual ~AudioFileWriter() = default;
 
   virtual CloseFileResult closeFile() = 0;
-
   virtual std::string getFilePath() const = 0;
+
+  virtual void writeAudioData(AudioDataType data, int numFrames) = 0;
+
   virtual double getCurrentDuration() const = 0;
+  virtual size_t getFileSizeBytes() const = 0;
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();

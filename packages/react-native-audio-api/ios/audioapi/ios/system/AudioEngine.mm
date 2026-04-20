@@ -1,9 +1,87 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+@interface AudioEngineSourceRegistration : NSObject
+
+@property (nonatomic, copy) AVAudioSourceNodeRenderBlock renderBlock;
+@property (nonatomic, assign) float sampleRate;
+@property (nonatomic, assign) AVAudioChannelCount channelCount;
+
+@end
+
+@implementation AudioEngineSourceRegistration
+@end
+
+@interface AudioEngineInputRegistration : NSObject
+
+@property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverBlock;
+
+@end
+
+@implementation AudioEngineInputRegistration
+@end
+
+@interface AudioEngine ()
+
+@property (nonatomic, strong)
+    NSMutableDictionary<NSString *, AudioEngineSourceRegistration *> *sourceRegistrations;
+@property (nonatomic, strong) AudioEngineInputRegistration *inputRegistration;
+
+- (void)createAudioEngineIfNeeded;
+- (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState;
+- (BOOL)hasTrackedGraph;
+- (AVAudioFormat *)currentInputConnectionFormat;
+- (void)materializeSourceNodeWithId:(NSString *)sourceNodeId;
+- (BOOL)materializeInputNodeIfNeeded;
+- (void)materializeTrackedNodesIfNeeded;
+
+@end
+
 @implementation AudioEngine
 
 static AudioEngine *_sharedInstance = nil;
+
+- (void)createAudioEngineIfNeeded
+{
+  if (self.audioEngine != nil) {
+    return;
+  }
+
+  self.audioEngine = [[AVAudioEngine alloc] init];
+}
+
+- (void)destroyAudioEngine
+{
+  [self destroyAudioEnginePreservingSessionDeactivationState:NO];
+}
+
+- (BOOL)hasTrackedGraph
+{
+  return [self.sourceRegistrations count] > 0 || self.inputRegistration != nil;
+}
+
+- (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState
+{
+  BOOL hadGraph = [self hasTrackedGraph];
+
+  if (self.audioEngine != nil) {
+    if ([self.audioEngine isRunning]) {
+      [self.audioEngine stop];
+    }
+
+    [self.audioEngine reset];
+  }
+
+  self.audioEngine = nil;
+  self.sourceNodes = [[NSMutableDictionary alloc] init];
+  self.sourceFormats = [[NSMutableDictionary alloc] init];
+  self.inputNode = nil;
+  self.graphNeedsRebuild = hadGraph;
+
+  if (!preserveSessionDeactivationState) {
+    self.sessionDeactivationInvalidatedGraph = false;
+  }
+}
 
 + (instancetype)sharedInstance
 {
@@ -14,13 +92,18 @@ static AudioEngine *_sharedInstance = nil;
 {
   if (self = [super init]) {
     self.state = AudioEngineState::AudioEngineStateIdle;
-    self.audioEngine = [[AVAudioEngine alloc] init];
+    self.audioEngine = nil;
     self.inputNode = nil;
+    self.graphNeedsRebuild = false;
+    self.sessionDeactivationInvalidatedGraph = false;
 
+    self.sourceRegistrations = [[NSMutableDictionary alloc] init];
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
+    self.inputRegistration = nil;
 
     self.sessionManager = [AudioSessionManager sharedInstance];
+    [self createAudioEngineIfNeeded];
   }
 
   _sharedInstance = self;
@@ -29,73 +112,218 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)cleanup
 {
-  if ([self.audioEngine isRunning]) {
-    [self.audioEngine stop];
-  }
-
-  self.audioEngine = nil;
+  [self destroyAudioEngine];
+  self.state = AudioEngineState::AudioEngineStateIdle;
+  self.sourceRegistrations = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
+  self.inputRegistration = nil;
   self.inputNode = nil;
+  self.graphNeedsRebuild = false;
+  self.sessionDeactivationInvalidatedGraph = false;
 
   [self.sessionManager setActive:false error:nil];
   self.sessionManager = nil;
 }
 
-- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
+- (void)materializeSourceNodeWithId:(NSString *)sourceNodeId
 {
-  NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
+  AudioEngineSourceRegistration *registration = self.sourceRegistrations[sourceNodeId];
 
-  [self.sourceNodes setValue:sourceNode forKey:sourceNodeId];
-  [self.sourceFormats setValue:format forKey:sourceNodeId];
+  if (registration == nil || self.audioEngine == nil || self.sourceNodes[sourceNodeId] != nil) {
+    return;
+  }
+
+  AVAudioFormat *format =
+      [[AVAudioFormat alloc] initStandardFormatWithSampleRate:registration.sampleRate
+                                                     channels:registration.channelCount];
+  AVAudioSourceNode *sourceNode =
+      [[AVAudioSourceNode alloc] initWithFormat:format renderBlock:registration.renderBlock];
+
+  self.sourceNodes[sourceNodeId] = sourceNode;
+  self.sourceFormats[sourceNodeId] = format;
 
   [self.audioEngine attachNode:sourceNode];
   [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
+}
+
+- (AVAudioFormat *)currentInputConnectionFormat
+{
+  AVAudioFormat *inputFormat = [self getLiveInputFormat];
+
+  if (inputFormat == nil || inputFormat.sampleRate <= 0 || inputFormat.channelCount == 0) {
+    return nil;
+  }
+
+  return inputFormat;
+}
+
+- (BOOL)materializeInputNodeIfNeeded
+{
+  if (self.inputRegistration == nil) {
+    return YES;
+  }
+
+  if (self.audioEngine == nil) {
+    return NO;
+  }
+
+  if (self.inputNode != nil) {
+    return YES;
+  }
+
+  AVAudioFormat *inputFormat = [self currentInputConnectionFormat];
+
+  if (inputFormat == nil) {
+    return NO;
+  }
+
+  self.inputNode =
+      [[AVAudioSinkNode alloc] initWithReceiverBlock:self.inputRegistration.receiverBlock];
+  [self.audioEngine attachNode:self.inputNode];
+  [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:inputFormat];
+  return YES;
+}
+
+- (void)materializeTrackedNodesIfNeeded
+{
+  NSArray<NSString *> *sourceNodeIds =
+      [[self.sourceRegistrations allKeys] sortedArrayUsingSelector:@selector(compare:)];
+  for (NSString *sourceNodeId in sourceNodeIds) {
+    [self materializeSourceNodeWithId:sourceNodeId];
+  }
+
+  [self materializeInputNodeIfNeeded];
+}
+
+- (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
+                                   sampleRate:(float)sampleRate
+                                 channelCount:(AVAudioChannelCount)channelCount
+{
+  [self createAudioEngineIfNeeded];
+
+  NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
+  AudioEngineSourceRegistration *registration = [[AudioEngineSourceRegistration alloc] init];
+  registration.renderBlock = renderBlock;
+  registration.sampleRate = sampleRate;
+  registration.channelCount = channelCount;
+
+  self.sourceRegistrations[sourceNodeId] = registration;
+  [self materializeSourceNodeWithId:sourceNodeId];
 
   return sourceNodeId;
 }
 
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId
 {
-  AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
+  AVAudioSourceNode *sourceNode = self.sourceNodes[sourceNodeId];
 
-  if (sourceNode == nil) {
+  if (self.sourceRegistrations[sourceNodeId] == nil) {
     NSLog(@"[AudioEngine] No source node found with ID: %@", sourceNodeId);
     return;
   }
 
-  [self.audioEngine detachNode:sourceNode];
+  if (sourceNode != nil && self.audioEngine != nil) {
+    [self.audioEngine detachNode:sourceNode];
+  }
 
+  [self.sourceRegistrations removeObjectForKey:sourceNodeId];
   [self.sourceNodes removeObjectForKey:sourceNodeId];
   [self.sourceFormats removeObjectForKey:sourceNodeId];
+
+  if (![self hasTrackedGraph]) {
+    self.graphNeedsRebuild = false;
+  }
 }
 
-- (void)attachInputNode:(AVAudioSinkNode *)inputNode format:(AVAudioFormat *)format
+- (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
 {
-  self.inputNode = inputNode;
-  [self.audioEngine attachNode:inputNode];
-  [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:format];
+  [self createAudioEngineIfNeeded];
+
+  if (self.inputRegistration != nil || self.inputNode != nil) {
+    [self detachInputNode];
+  }
+
+  AudioEngineInputRegistration *registration = [[AudioEngineInputRegistration alloc] init];
+  registration.receiverBlock = receiverBlock;
+  self.inputRegistration = registration;
+
+  [self materializeInputNodeIfNeeded];
 }
 
 - (void)detachInputNode
 {
-  if (self.inputNode == nil) {
+  if (self.inputRegistration == nil && self.inputNode == nil) {
     return;
   }
 
-  [self.audioEngine detachNode:self.inputNode];
+  if (self.inputNode != nil && self.audioEngine != nil) {
+    [self.audioEngine detachNode:self.inputNode];
+  }
+
+  self.inputRegistration = nil;
   self.inputNode = nil;
+
+  if (![self hasTrackedGraph]) {
+    self.graphNeedsRebuild = false;
+  }
+}
+
+- (AVAudioFormat *)getLiveInputFormat
+{
+  if (self.audioEngine == nil) {
+    return nil;
+  }
+
+  AVAudioInputNode *engineInputNode = self.audioEngine.inputNode;
+
+  if (engineInputNode == nil) {
+    return nil;
+  }
+
+  AVAudioFormat *inputFormat = [engineInputNode outputFormatForBus:0];
+
+  if (inputFormat == nil || inputFormat.sampleRate <= 0 || inputFormat.channelCount == 0) {
+    return nil;
+  }
+
+  return inputFormat;
 }
 
 - (void)onInterruptionBegin
 {
   if (self.state != AudioEngineState::AudioEngineStateRunning) {
-    // If engine was not active, do nothing
     return;
   }
 
-  // If engine was active or paused (or interrupted :)) mark as interrupted
   self.state = AudioEngineState::AudioEngineStateInterrupted;
+}
+
+- (void)onSessionDeactivated
+{
+  BOOL hadTrackedGraph = [self hasTrackedGraph];
+  BOOL hadActiveState = self.state != AudioEngineState::AudioEngineStateIdle;
+
+  if (!hadActiveState && !hadTrackedGraph) {
+    return;
+  }
+
+  self.sessionDeactivationInvalidatedGraph = true;
+
+  if (hadTrackedGraph) {
+    self.graphNeedsRebuild = true;
+  }
+
+  if (self.audioEngine != nil && ![self.audioEngine isRunning]) {
+    self.state = AudioEngineState::AudioEngineStatePaused;
+    return;
+  }
+
+  if (self.audioEngine != nil) {
+    [self.audioEngine pause];
+  }
+
+  self.state = AudioEngineState::AudioEngineStatePaused;
 }
 
 - (void)onInterruptionEnd:(bool)shouldResume
@@ -103,19 +331,12 @@ static AudioEngine *_sharedInstance = nil;
   NSError *error = nil;
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
-    // If engine was not interrupted, do nothing
-    // Not a real condition, but better be safe than sorry :shrug:
     return;
   }
 
-  // Stop just in case, reset the engine and build it from scratch
   [self stopIfNecessary];
-  [self.audioEngine reset];
   [self rebuildAudioEngine];
 
-  // If shouldResume is false, mark the engine as paused and wait
-  // for JS-side resume command
-  // TODO: this should be notified to the user f.e. via Event Emitter
   if (!shouldResume) {
     self.state = AudioEngineState::AudioEngineStatePaused;
     return;
@@ -133,6 +354,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
+  self.sessionDeactivationInvalidatedGraph = false;
 }
 
 - (AudioEngineState)getState
@@ -140,56 +362,45 @@ static AudioEngine *_sharedInstance = nil;
   return self.state;
 }
 
-/// @brief Rebuilds the audio engine by re-attaching and re-connecting all source nodes and input node.
-- (void)rebuildAudioEngine
+- (bool)isEngineRunning
 {
-  if (self.audioEngine != nil) {
-    for (id sourceNodeId in self.sourceNodes) {
-      AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
-
-      [self.audioEngine detachNode:sourceNode];
-    }
-
-    if (self.inputNode) {
-      [self.audioEngine detachNode:self.inputNode];
-    }
-  }
-
-  self.audioEngine = [[AVAudioEngine alloc] init];
-
-  for (id sourceNodeId in self.sourceNodes) {
-    AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
-    AVAudioFormat *format = [self.sourceFormats valueForKey:sourceNodeId];
-
-    [self.audioEngine attachNode:sourceNode];
-    [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
-  }
-
-  if (self.inputNode) {
-    [self.audioEngine attachNode:self.inputNode];
-    [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:nil];
-  }
+  return self.audioEngine != nil && [self.audioEngine isRunning];
 }
 
-// @brief Starts the audio engine if not already running.
+- (void)rebuildAudioEngine
+{
+  [self destroyAudioEnginePreservingSessionDeactivationState:YES];
+  [self createAudioEngineIfNeeded];
+
+  [self materializeTrackedNodesIfNeeded];
+  self.graphNeedsRebuild = false;
+}
+
 - (bool)startEngine
 {
   NSError *error = nil;
 
-  if ([self.audioEngine isRunning] && self.state == AudioEngineState::AudioEngineStateRunning) {
+  if ([self isEngineRunning] && self.state == AudioEngineState::AudioEngineStateRunning) {
     return true;
   }
 
-  if (![self.sessionManager setActive:true error:&error]) {
-    // TODO: return user facing error
+  [self createAudioEngineIfNeeded];
+
+  if (![self.sessionManager ensureActive:true error:&error]) {
     NSLog(@"Error while activating audio session: %@", [error debugDescription]);
     return false;
   }
 
-  if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
-    [self.audioEngine stop];
-    [self.audioEngine reset];
-    [self rebuildAudioEngine];
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
+      self.sessionDeactivationInvalidatedGraph) {
+    [self restartAudioEngine];
+  } else {
+    [self materializeTrackedNodesIfNeeded];
+  }
+
+  if (self.inputRegistration != nil && self.inputNode == nil) {
+    NSLog(@"Error while materializing the audio input node: missing live input format");
+    return false;
   }
 
   [self.audioEngine prepare];
@@ -201,6 +412,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
+  self.sessionDeactivationInvalidatedGraph = false;
   return true;
 }
 
@@ -210,17 +422,20 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  [self.audioEngine stop];
+  if (self.audioEngine != nil && [self.audioEngine isRunning]) {
+    [self.audioEngine stop];
+  }
+
   self.state = AudioEngineState::AudioEngineStateIdle;
 }
 
 - (bool)startIfNecessary
 {
-  if (self.state == AudioEngineState::AudioEngineStateRunning) {
+  if (self.state == AudioEngineState::AudioEngineStateRunning && [self isEngineRunning]) {
     return true;
   }
 
-  if (([self.sourceNodes count] > 0) || self.inputNode != nil) {
+  if ([self hasTrackedGraph]) {
     return [self startEngine];
   }
 
@@ -233,7 +448,10 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  [self.audioEngine pause];
+  if (self.audioEngine != nil) {
+    [self.audioEngine pause];
+  }
+
   self.state = AudioEngineState::AudioEngineStatePaused;
 }
 
@@ -248,18 +466,16 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)stopIfPossible
 {
-  if (self.state == AudioEngineState::AudioEngineStateIdle) {
-    return;
-  }
-
-  bool hasInput = self.inputNode != nil;
-  bool hasSources = [self.sourceNodes count] > 0;
+  BOOL hasInput = self.inputRegistration != nil;
+  BOOL hasSources = [self.sourceRegistrations count] > 0;
 
   if (hasInput || hasSources) {
     return;
   }
 
-  [self stopEngine];
+  if (self.state != AudioEngineState::AudioEngineStateIdle) {
+    [self stopEngine];
+  }
 }
 
 - (void)restartAudioEngine
@@ -280,19 +496,16 @@ static AudioEngine *_sharedInstance = nil;
 
   NSLog(@"================ 🎧 AVAudioEngine STATE ================");
 
-  // AVAudioEngine state
   NSLog(@"➡️ engine.isRunning: %@", self.audioEngine.isRunning ? @"true" : @"false");
   NSLog(
       @"➡️ engine.isInManualRenderingMode: %@",
       self.audioEngine.isInManualRenderingMode ? @"true" : @"false");
 
-  // Session state
   NSLog(@"🎚️ Session category: %@", session.category);
   NSLog(@"🎚️ Session mode: %@", session.mode);
   NSLog(@"🎚️ Session sampleRate: %f Hz", session.sampleRate);
   NSLog(@"🎚️ Session IO buffer duration: %f s", session.IOBufferDuration);
 
-  // Current route
   AVAudioSessionRouteDescription *route = session.currentRoute;
 
   NSLog(@"🔊 Current audio route outputs:");
@@ -305,7 +518,6 @@ static AudioEngine *_sharedInstance = nil;
     NSLog(@"  Input: %@ (%@)", input.portType, input.portName);
   }
 
-  // Output node format
   AVAudioFormat *format = [self.audioEngine.outputNode inputFormatForBus:0];
   NSLog(@"📐 Engine output format: %.0f Hz, %u channels", format.sampleRate, format.channelCount);
 

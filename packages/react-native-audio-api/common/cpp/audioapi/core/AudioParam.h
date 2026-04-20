@@ -2,9 +2,9 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/types/ParamChangeEventType.h>
-#include <audioapi/core/utils/AudioParamEventQueue.h>
-#include <audioapi/core/utils/ParamChangeEvent.hpp>
+#include <audioapi/core/types/ParamEventType.h>
+#include <audioapi/core/utils/param/ParamRenderQueue.h>
+#include <audioapi/core/utils/param/RenderParamEvent.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
@@ -43,6 +43,14 @@ class AudioParam {
     value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
   }
 
+  /// @note JS Thread only
+  [[nodiscard]] double getCurrentTime() const noexcept {
+    if (auto context = context_.lock()) {
+      return context->getCurrentTime();
+    }
+    return 0.0;
+  }
+
   /// @note Audio Thread only
   void setValueAtTime(float value, double startTime);
 
@@ -68,10 +76,10 @@ class AudioParam {
   /// @note Audio Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
-  template <
-      typename F,
-      typename = std::enable_if_t<std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>>>
-  bool scheduleAudioEvent(F &&event) noexcept {
+  template <typename F>
+  bool scheduleAudioEvent(F &&event) noexcept
+    requires(std::is_invocable_r_v<void, std::decay_t<F>, BaseAudioContext &>)
+  {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       return context->scheduleAudioEvent(std::forward<F>(event));
     }
@@ -102,44 +110,21 @@ class AudioParam {
   float minValue_;
   float maxValue_;
 
-  AudioParamEventQueue eventsQueue_;
-
-  // Current automation state (cached for performance)
-  double startTime_;
-  double endTime_;
-  float startValue_;
-  float endValue_;
-  std::function<float(double, double, float, float, double)> calculateValue_;
+  ParamRenderQueue eventRenderQueue_;
 
   // Input modulation system
   std::vector<AudioNode *> inputNodes_;
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   std::vector<std::shared_ptr<DSPAudioBuffer>> inputBuffers_;
 
-  /// @brief Get the end time of the parameter queue.
-  /// @return The end time of the parameter queue or last endTime_ if queue is empty.
-  [[nodiscard]] double getQueueEndTime() const noexcept {
-    if (eventsQueue_.isEmpty()) {
-      return endTime_;
-    }
-    return eventsQueue_.back().getEndTime();
-  }
-
-  /// @brief Get the end value of the parameter queue.
-  /// @return The end value of the parameter queue or last endValue_ if queue is empty.
-  [[nodiscard]] float getQueueEndValue() const noexcept {
-    if (eventsQueue_.isEmpty()) {
-      return endValue_;
-    }
-    return eventsQueue_.back().getEndValue();
-  }
-
   /// @brief Update the parameter queue with a new event.
   /// @param event The new event to add to the queue.
-  /// @note Handles connecting start value of the new event to the end value of the previous event.
-  void updateQueue(ParamChangeEvent &&event) {
-    eventsQueue_.pushBack(std::move(event));
+  /// @note Resolves the event's startValue and startTime based on neighboring events,
+  // and adjusts neighboring events to maintain the invariant of non-overlapping events in the queue.
+  void updateQueue(RenderParamEvent &&event) {
+    eventRenderQueue_.push(std::move(event));
   }
+
   float getValueAtTime(double time);
   void processInputs(
       const std::shared_ptr<DSPAudioBuffer> &outputBuffer,

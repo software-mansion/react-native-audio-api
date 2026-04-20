@@ -141,7 +141,9 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
     dragState.current.isDragging = false;
     dragState.current.dragIndex = -1;
     canvasRect.current = null;
-    canvasRef.current!.style.cursor = 'pointer';
+    if (canvasRef?.current) {
+      canvasRef.current.style.cursor = 'pointer';
+    }
   }, []);
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
@@ -176,31 +178,46 @@ export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCan
   }, [handleEnd]);
 
   useEffect(() => {
-    if (!canvasRef?.current) {
-      return;
-    }
+    let rafId: number | null = null;
+    let cleanup: (() => void) | undefined;
 
-    const canvas = canvasRef.current;
+    const attachListeners = () => {
+      const canvas = canvasRef?.current;
+      if (!canvas) {
+        rafId = requestAnimationFrame(attachListeners);
+        return;
+      }
 
-    // TODO: those should be react params
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      // TODO: those should be react params
+      canvas.addEventListener('mousedown', handleMouseDown);
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.style.cursor = 'pointer';
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-    document.addEventListener('touchcancel', handleTouchEnd);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+      document.addEventListener('touchcancel', handleTouchEnd);
+
+      cleanup = () => {
+        canvas.removeEventListener('mousedown', handleMouseDown);
+        canvas.removeEventListener('touchstart', handleTouchStart);
+
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+        document.removeEventListener('touchcancel', handleTouchEnd);
+      };
+    };
+
+    attachListeners();
 
     return () => {
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      canvas.removeEventListener('touchstart', handleTouchStart);
-
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('touchcancel', handleTouchEnd);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      cleanup?.();
     };
   }, [canvasRef, handleMouseDown, handleMouseMove, handleMouseUp, handleTouchStart, handleTouchMove, handleTouchEnd]);
 

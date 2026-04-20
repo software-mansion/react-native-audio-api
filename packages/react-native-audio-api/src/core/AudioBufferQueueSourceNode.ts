@@ -2,7 +2,7 @@ import { IAudioBufferQueueSourceNode } from '../interfaces';
 import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { RangeError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { BaseAudioBufferSourceOptions } from '../types';
 import { AudioEventSubscription } from '../events';
 import { OnBufferEndEventType } from '../events/types';

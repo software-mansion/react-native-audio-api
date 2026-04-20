@@ -8,13 +8,10 @@ import type {
 } from './types';
 import { AudioApiError } from '../../errors';
 
-class RecordingNotificationManager
-  implements
-    NotificationManager<
-      RecordingNotificationInfo,
-      RecordingNotificationEventName
-    >
-{
+class RecordingNotificationManager implements NotificationManager<
+  RecordingNotificationInfo,
+  RecordingNotificationEventName
+> {
   private notificationKey = 'react-native-audio-api-recording';
   private audioEventEmitter: AudioEventEmitter;
 

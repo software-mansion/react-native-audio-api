@@ -1,5 +1,5 @@
-import { View, Text, Pressable } from 'react-native';
 import React, { FC, useEffect, useRef } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { AudioBuffer, AudioContext } from 'react-native-audio-api';
 
 type KeyName = 'A' | 'B' | 'C' | 'D' | 'E';
@@ -28,7 +28,7 @@ const Button = ({ onPressIn, onPressOut, keyName }: ButtonProps) => (
       margin: 4,
       padding: 12,
       borderRadius: 2,
-      backgroundColor: pressed ? '#d2e6ff' : '#abcdef',
+      backgroundColor: pressed ? '#ff6259' : '#fa7f7c',
     })}
   >
     <Text style={{ color: 'white' }}>{`${keyName}`}</Text>

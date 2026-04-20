@@ -2,7 +2,7 @@ import { InvalidAccessError } from '../errors';
 import { IBiquadFilterNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { BiquadFilterOptions } from '../types';
 
 export default class BiquadFilterNode extends AudioNode {

@@ -232,6 +232,24 @@ button[class*='DocSearch-Button'] {
   box-sizing: border-box;
 }
 
+[class*=alert--warning] {
+  background-color: var(--swm-admonition-color-caution) !important;
+  box-shadow: -8px 8px 0 var(--swm-admonition-color-caution-shadow) !important;
+}
+
+details.alert {
+  border-radius: 0 !important;
+}
+
 [class*='headerWithBadges'] {
   align-items: baseline;
+}
+
+[class*=admonition-warning] code {
+  background-color: var(--swm-yellow-light-40) !important;
+  border: none !important;
+}
+
+[data-theme='dark'] [class*=admonition-warning] code {
+  background-color: var(--swm-yellow-dark-140) !important;
 }

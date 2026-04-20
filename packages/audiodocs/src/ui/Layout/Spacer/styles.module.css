@@ -1,0 +1,16 @@
+.horizontal,
+.vertical {
+  display: block;
+}
+
+.horizontal {
+  flex: 0 0 var(--spacer-size);
+  min-width: var(--spacer-size);
+  width: var(--spacer-size);
+}
+
+.vertical {
+  flex: 0 0 var(--spacer-size);
+  height: var(--spacer-size);
+  min-height: var(--spacer-size);
+}

@@ -29,9 +29,9 @@ function withDefaultOptions(
     fileNamePrefix: 'recording',
     channelCount: 2,
     format: FileFormat.M4A,
-    batchDurationSeconds: 0,
     preset: FilePreset.High,
     androidFlushIntervalMs: 500,
+    rotateIntervalBytes: 0,
     ...inOptions,
   };
 }
@@ -51,10 +51,7 @@ export default class AudioRecorder {
     this.recorder = global.createAudioRecorder();
   }
 
-  enableFileOutput(
-    // TODO: Re-enable 'batchDurationSeconds' once supported
-    options?: Omit<AudioRecorderFileOptions, 'batchDurationSeconds'>
-  ): Result<{ path: string }> {
+  enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
     this.options_ = options || {};
     const parsedOptions = withDefaultOptions(this.options_);
     const result = this.recorder.enableFileOutput(parsedOptions);
@@ -74,10 +71,10 @@ export default class AudioRecorder {
   }
 
   /** Starts the audio recording process with configured output options */
-  start(options?: AudioRecorderStartOptions): Result<{ path: string }> {
+  start(options?: AudioRecorderStartOptions): Result<{}> {
     if (!this.isFileOutputEnabled) {
       this.recorder.start();
-      return { status: 'success', path: '' };
+      return { status: 'success' };
     }
 
     return this.recorder.start(options?.fileNameOverride);

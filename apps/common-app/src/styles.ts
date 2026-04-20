@@ -4,7 +4,7 @@ const { width } = Dimensions.get('screen');
 
 export const layout = {
   spacing: 8,
-  radius: 8,
+  radius: 4,
   knobSize: 24,
   indicatorSize: 48,
   screenWidth: width,

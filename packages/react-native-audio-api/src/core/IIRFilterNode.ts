@@ -6,7 +6,7 @@ import {
 import { IIIRFilterNode } from '../interfaces';
 import AudioNode from './AudioNode';
 import { IIRFilterOptions } from '../types';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 
 export default class IIRFilterNode extends AudioNode {
   constructor(context: BaseAudioContext, options: IIRFilterOptions) {

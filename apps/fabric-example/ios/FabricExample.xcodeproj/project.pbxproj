@@ -9,20 +9,49 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		37E5A2E11D84D7619ECAB4FD /* libPods-FabricExample.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E03ADA267568B5D61B986B06 /* libPods-FabricExample.a */; };
+		56A4D8FCA4F4A4F4D6931F91 /* libPods-FabricExampleTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CC5986FE0E14CB5D60FE16B1 /* libPods-FabricExampleTests.a */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		88485BE83AA320DC6673875F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		A1B2C3D41E00000100A0A001 /* AudioEngineTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */; };
+		A1B2C3E01E00000100A0A001 /* AudioSessionManagerTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3E11E00000100A0A001 /* AudioSessionManagerTests.mm */; };
+		A1B2C3F01E00000100A0A001 /* SystemNotificationManagerTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3F11E00000100A0A001 /* SystemNotificationManagerTests.mm */; };
+		A1B2C4001E00000100A0A001 /* AudioPlayerTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4011E00000100A0A001 /* AudioPlayerTests.mm */; };
+		A1B2C4101E00000100A0A001 /* NativeAudioRecorderTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4111E00000100A0A001 /* NativeAudioRecorderTests.mm */; };
+		A1B2C4201E00000100A0A001 /* IOSAudioRecorderTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4211E00000100A0A001 /* IOSAudioRecorderTests.mm */; };
+		A1B2C4301E00000100A0A001 /* AudioAPIModuleTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A1B2C3D91E00000100A0A001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
+			remoteInfo = FabricExample;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* FabricExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FabricExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = FabricExample/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = FabricExample/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = FabricExample/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1DBF465031DCC1262763C932 /* Pods-FabricExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FabricExampleTests.debug.xcconfig"; path = "Target Support Files/Pods-FabricExampleTests/Pods-FabricExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-FabricExample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FabricExample.debug.xcconfig"; path = "Target Support Files/Pods-FabricExample/Pods-FabricExample.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-FabricExample.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FabricExample.release.xcconfig"; path = "Target Support Files/Pods-FabricExample/Pods-FabricExample.release.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = FabricExample/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = FabricExample/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		83D4BF4645ED53746187231E /* Pods-FabricExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FabricExampleTests.release.xcconfig"; path = "Target Support Files/Pods-FabricExampleTests/Pods-FabricExampleTests.release.xcconfig"; sourceTree = "<group>"; };
+		A1B2C3D51E00000100A0A001 /* FabricExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FabricExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioEngineTests.mm; sourceTree = "<group>"; };
+		A1B2C3E11E00000100A0A001 /* AudioSessionManagerTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioSessionManagerTests.mm; sourceTree = "<group>"; };
+		A1B2C3F11E00000100A0A001 /* SystemNotificationManagerTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = SystemNotificationManagerTests.mm; sourceTree = "<group>"; };
+		A1B2C4011E00000100A0A001 /* AudioPlayerTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioPlayerTests.mm; sourceTree = "<group>"; };
+		A1B2C4111E00000100A0A001 /* NativeAudioRecorderTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = NativeAudioRecorderTests.mm; sourceTree = "<group>"; };
+		A1B2C4211E00000100A0A001 /* IOSAudioRecorderTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = IOSAudioRecorderTests.mm; sourceTree = "<group>"; };
+		A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioAPIModuleTests.mm; sourceTree = "<group>"; };
+		CC5986FE0E14CB5D60FE16B1 /* libPods-FabricExampleTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-FabricExampleTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E03ADA267568B5D61B986B06 /* libPods-FabricExample.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-FabricExample.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -33,6 +62,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				37E5A2E11D84D7619ECAB4FD /* libPods-FabricExample.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3D71E00000100A0A001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56A4D8FCA4F4A4F4D6931F91 /* libPods-FabricExampleTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -56,6 +93,7 @@
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				E03ADA267568B5D61B986B06 /* libPods-FabricExample.a */,
+				CC5986FE0E14CB5D60FE16B1 /* libPods-FabricExampleTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -71,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07FAE1A68108700A75B9A /* FabricExample */,
+				A1B2C3D81E00000100A0A001 /* FabricExampleTests */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -85,8 +124,23 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* FabricExample.app */,
+				A1B2C3D51E00000100A0A001 /* FabricExampleTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A1B2C3D81E00000100A0A001 /* FabricExampleTests */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C4211E00000100A0A001 /* IOSAudioRecorderTests.mm */,
+				A1B2C4311E00000100A0A001 /* AudioAPIModuleTests.mm */,
+				A1B2C4011E00000100A0A001 /* AudioPlayerTests.mm */,
+				A1B2C3D61E00000100A0A001 /* AudioEngineTests.mm */,
+				A1B2C4111E00000100A0A001 /* NativeAudioRecorderTests.mm */,
+				A1B2C3E11E00000100A0A001 /* AudioSessionManagerTests.mm */,
+				A1B2C3F11E00000100A0A001 /* SystemNotificationManagerTests.mm */,
+			);
+			path = FabricExampleTests;
 			sourceTree = "<group>";
 		};
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
@@ -94,6 +148,8 @@
 			children = (
 				3B4392A12AC88292D35C810B /* Pods-FabricExample.debug.xcconfig */,
 				5709B34CF0A7D63546082F79 /* Pods-FabricExample.release.xcconfig */,
+				1DBF465031DCC1262763C932 /* Pods-FabricExampleTests.debug.xcconfig */,
+				83D4BF4645ED53746187231E /* Pods-FabricExampleTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -101,6 +157,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		00E356ED1AD99517003FC87E /* FabricExampleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3DF1E00000100A0A001 /* Build configuration list for PBXNativeTarget "FabricExampleTests" */;
+			buildPhases = (
+				C06DC1B8C712A29FA16B0EA8 /* [CP] Check Pods Manifest.lock */,
+				A1B2C3DC1E00000100A0A001 /* Sources */,
+				A1B2C3D71E00000100A0A001 /* Frameworks */,
+				A1B2C3DB1E00000100A0A001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1B2C3DA1E00000100A0A001 /* PBXTargetDependency */,
+			);
+			name = FabricExampleTests;
+			productName = FabricExampleTests;
+			productReference = A1B2C3D51E00000100A0A001 /* FabricExampleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		13B07F861A680F5B00A75B9A /* FabricExample */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "FabricExample" */;
@@ -130,6 +205,10 @@
 			attributes = {
 				LastUpgradeCheck = 1210;
 				TargetAttributes = {
+					00E356ED1AD99517003FC87E = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 13B07F861A680F5B00A75B9A;
+					};
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1120;
 					};
@@ -149,6 +228,7 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* FabricExample */,
+				00E356ED1AD99517003FC87E /* FabricExampleTests */,
 			);
 		};
 /* End PBXProject section */
@@ -161,6 +241,13 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				88485BE83AA320DC6673875F /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3DB1E00000100A0A001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -198,6 +285,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-FabricExample/Pods-FabricExample-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C06DC1B8C712A29FA16B0EA8 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-FabricExampleTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
@@ -250,7 +359,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1B2C3DC1E00000100A0A001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C4201E00000100A0A001 /* IOSAudioRecorderTests.mm in Sources */,
+				A1B2C4301E00000100A0A001 /* AudioAPIModuleTests.mm in Sources */,
+				A1B2C4001E00000100A0A001 /* AudioPlayerTests.mm in Sources */,
+				A1B2C3D41E00000100A0A001 /* AudioEngineTests.mm in Sources */,
+				A1B2C4101E00000100A0A001 /* NativeAudioRecorderTests.mm in Sources */,
+				A1B2C3E01E00000100A0A001 /* AudioSessionManagerTests.mm in Sources */,
+				A1B2C3F01E00000100A0A001 /* SystemNotificationManagerTests.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1B2C3DA1E00000100A0A001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 13B07F861A680F5B00A75B9A /* FabricExample */;
+			targetProxy = A1B2C3D91E00000100A0A001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
@@ -261,7 +392,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 852ZJU38RC;
+				DEVELOPMENT_TEAM = WC59N2X3FV;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = FabricExample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -281,7 +412,7 @@
 					"-lc++",
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg333er.--PRODUCT-NAME-rfc1034identifier-";
+				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3222233er.--PRODUCT-NAME-rfc1034identifier-";
 				PRODUCT_NAME = FabricExample;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -300,7 +431,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 852ZJU38RC;
+				DEVELOPMENT_TEAM = WC59N2X3FV;
 				INFOPLIST_FILE = FabricExample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -319,7 +450,7 @@
 					"-lc++",
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg333er.--PRODUCT-NAME-rfc1034identifier-";
+				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3222233er.--PRODUCT-NAME-rfc1034identifier-";
 				PRODUCT_NAME = FabricExample;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -519,6 +650,61 @@
 			};
 			name = Release;
 		};
+		A1B2C3DD1E00000100A0A001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1DBF465031DCC1262763C932 /* Pods-FabricExampleTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WC59N2X3FV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@loader_path/Frameworks",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.reactnativeaudioapi.fabricexampleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FabricExample.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FabricExample";
+			};
+			name = Debug;
+		};
+		A1B2C3DE1E00000100A0A001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 83D4BF4645ED53746187231E /* Pods-FabricExampleTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WC59N2X3FV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@loader_path/Frameworks",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.reactnativeaudioapi.fabricexampleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FabricExample.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FabricExample";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -536,6 +722,15 @@
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
 				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B2C3DF1E00000100A0A001 /* Build configuration list for PBXNativeTarget "FabricExampleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3DD1E00000100A0A001 /* Debug */,
+				A1B2C3DE1E00000100A0A001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

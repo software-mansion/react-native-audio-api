@@ -20,7 +20,7 @@ function App() {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playback',
       iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+      iosOptions: ['allowBluetoothHFP', 'allowAirPlay'],
     })
     // enabling emission of events
     AudioManager.observeAudioInterruptions(true);
@@ -181,33 +181,37 @@ type AudioFocusType =
 <summary>Type definitions</summary>
 ```typescript
 type IOSCategory =
-  | 'record'
   | 'ambient'
-  | 'playback'
   | 'multiRoute'
-  | 'soloAmbient'
-  | 'playAndRecord';
+  | 'playAndRecord'
+  | 'playback'
+  | 'record'
+  | 'soloAmbient';
 
 type IOSMode =
   | 'default'
+  | 'dualRoute'
   | 'gameChat'
-  | 'videoChat'
-  | 'voiceChat'
   | 'measurement'
-  | 'voicePrompt'
-  | 'spokenAudio'
   | 'moviePlayback'
-  | 'videoRecording';
+  | 'shortFormVideo'
+  | 'spokenAudio'
+  | 'videoChat'
+  | 'videoRecording'
+  | 'voiceChat'
+  | 'voicePrompt';
 
 type IOSOption =
-  | 'duckOthers'
   | 'allowAirPlay'
-  | 'mixWithOthers'
-  | 'allowBluetoothHFP'
-  | 'defaultToSpeaker'
   | 'allowBluetoothA2DP'
-  | 'overrideMutedMicrophoneInterruption'
-  | 'interruptSpokenAudioAndMixWithOthers';
+  | 'allowBluetoothHFP'
+  | 'bluetoothHighQualityRecording'
+  | 'defaultToSpeaker'
+  | 'duckOthers'
+  | 'farFieldInput'
+  | 'interruptSpokenAudioAndMixWithOthers'
+  | 'mixWithOthers'
+  | 'overrideMutedMicrophoneInterruption';
 
 interface SessionOptions {
   iosMode?: IOSMode;

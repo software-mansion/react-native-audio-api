@@ -1,0 +1,8 @@
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.icon :global(path) {
+  vector-effect: non-scaling-stroke;
+}

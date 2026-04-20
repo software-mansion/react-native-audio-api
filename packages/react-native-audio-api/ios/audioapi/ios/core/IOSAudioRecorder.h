@@ -12,25 +12,27 @@ typedef struct objc_object NativeAudioRecorder;
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/utils/Result.hpp>
 
-#include <mutex>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace audioapi {
 
-class FileWriter;
 class RecorderCallback;
 class RecorderAdapterNode;
 class AudioFileProperties;
 class AudioEventHandlerRegistry;
+class AudioFileWriter;
 
 class IOSAudioRecorder : public AudioRecorder {
  public:
   IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
 
-  Result<std::string, std::string> start(const std::string &fileNameOverride = "") override;
-  Result<std::tuple<std::string, double, double>, std::string> stop() override;
+  Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
+  Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
 
-  Result<std::string, std::string> enableFileOutput(
+  Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
 
@@ -53,6 +55,15 @@ class IOSAudioRecorder : public AudioRecorder {
 
  protected:
   NativeAudioRecorder *nativeRecorder_;
+
+ private:
+  std::shared_ptr<AudioFileWriter> createFileWriter(
+      const std::shared_ptr<AudioFileProperties> &props);
+  Result<std::string, std::string> setupFileWriter(
+      const std::shared_ptr<AudioFileProperties> &properties,
+      const std::string &fileNameOverride = "");
+
+  std::vector<std::string> recordingSegmentPaths_;
 };
 
 } // namespace audioapi

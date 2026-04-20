@@ -2,24 +2,18 @@
 sidebar_position: 1
 ---
 
-import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import { Optional, ReadOnly } from '@site/src/components/Badges';
-import InteractiveExample from '@site/src/components/InteractiveExample';
-import AudioApiExample from '@site/src/components/AudioApiExample'
-import VinylPlayer from '@site/src/components/RecordPlayerExample/VinylAnimation';
-
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import FrequencyResponseGraph from '@site/src/examples/Biquad/FrequencyResponseGraph';
+import VinylPlayer from '@site/src/examples/VinylPlayer';
 
 # BiquadFilterNode
+
 
 The `BiquadFilterNode` interface represents a low-order filter. It is an [`AudioNode`](/docs/core/audio-node) used for tone controls, graphic equalizers, and other audio effects.
 Multiple `BiquadFilterNode` instances can be combined to create more complex filtering chains.
 
-
-<VinylPlayer/>
-
-
-#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
-<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+<VinylPlayer />
 
 ## Constructor
 
@@ -46,16 +40,30 @@ Or by using `BaseAudioContext` factory method:
 
 It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+
 | Name | Type |  Rate  | Description |
 | :--: | :--: | :----------: | :-- |
-| `frequency` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s cutoff or center frequency in hertz (Hz). |
-| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents. |
-| `Q` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s Q factor (quality factor). |
-| `gain` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB). |
-| `type` | [`BiquadFilterType`](#biquadfiltertype-enumeration-description) | — | Defines the kind of filtering algorithm the node applies (e.g. `"lowpass"`, `"highpass"`). |
+| `Q` | [`AudioParam`](/docs/core/audio-param) | [`k‑rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s Q factor (quality factor). |
+| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k‑rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents. |
+| `frequency` | [`AudioParam`](/docs/core/audio-param) | [`k‑rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter’s cutoff or center frequency in hertz (Hz). |
+| `gain` | [`AudioParam`](/docs/core/audio-param) | [`k‑rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB). |
+| `type` | [`BiquadFilterType`](#biquadfiltertype-enumeration-description) |   | Defines the kind of filtering algorithm the node applies (e.g. "lowpass", "highpass"). |
+
+<br />
+
+<br />
+
+<br />
 
 #### BiquadFilterType enumeration description
-Note: The detune parameter behaves the same way for all filter types, so it is not repeated below.
+
+<FrequencyResponseGraph />
+
+<br />
+
+<br />
+
 | `type` | Description | `frequency` | `Q` | `gain` |
 |:------:|:-----------:|:-----------:|:---:|:------:|
 | `lowpass` | Second-order resonant lowpass filter with 12dB/octave rolloff. Frequencies below the cutoff pass through; higher frequencies are attenuated. | The cutoff frequency. | Determines how peaked the frequency is around the cutoff. Higher values result in a sharper peak. | Not used |
@@ -67,10 +75,8 @@ Note: The detune parameter behaves the same way for all filter types, so it is n
 | `notch` | Notch (band-stop) filter. Opposite of a bandpass filter: frequencies around the center are attenuated; others remain unchanged. | The center of the frequency range where the notch is applied. | Controls the bandwidth. Higher values result in a narrower band. | Not used |
 | `allpass` | Second-order allpass filter. All frequencies pass through, but changes the phase relationship between the various frequencies. | The frequency where the center of the phase transition occurs (maximum group delay). | Controls how sharp the phase transition is at the center frequency. Higher values result in a sharper transition and a larger group delay. | Not used |
 
+Note: The detune parameter behaves the same way for all filter types, so it is not included above
 
-import FrequencyResponseGraph from '@site/src/examples/Biquad/FrequencyResponseGraph';
-
-<AudioApiExample component={FrequencyResponseGraph} />
 
 ## Methods
 

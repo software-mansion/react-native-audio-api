@@ -8,14 +8,17 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
+#include <android/log.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
 #include <audioapi/android/core/utils/ffmpegBackend/ptrs.hpp>
 #include <audioapi/android/core/utils/ffmpegBackend/utils.h>
+#include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
 
+#include <sys/stat.h>
 #include <algorithm>
 #include <cassert>
 #include <memory>
@@ -30,7 +33,10 @@ namespace audioapi::android::ffmpeg {
 
 FFmpegAudioFileWriter::FFmpegAudioFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<AudioFileProperties> &fileProperties)
+    const std::shared_ptr<AudioFileProperties> &fileProperties,
+    float streamSampleRate,
+    int32_t streamChannelCount,
+    int32_t streamMaxBufferSize)
     : AndroidFileWriterBackend(audioEventHandlerRegistry, fileProperties) {
   // Set flush interval from properties, limit minimum to 100ms
   // to avoid people hurting themselves too much
@@ -60,9 +66,7 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
   streamMaxBufferSize_ = streamMaxBufferSize;
   framesWritten_.store(0, std::memory_order_release);
   nextPts_ = 0;
-  Result<NoneType, std::string> result = Result<NoneType, std::string>::Ok(None);
-  Result<std::string, std::string> filePathResult =
-      fileoptions::getFilePath(fileProperties_, fileNameOverride);
+  auto filePathResult = fileoptions::getFilePath(fileProperties_, fileNameOverride);
 
   if (!filePathResult.is_ok()) {
     return OpenFileResult::Err(filePathResult.unwrap_err());
@@ -89,13 +93,12 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
       .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
       .and_then([this](auto) { return initializeStream(); })
       .and_then([this](auto) { return openIOAndWriteHeader(); })
-      .and_then([this, streamSampleRate, streamChannelCount](auto) {
-        return initializeResampler(streamSampleRate, streamChannelCount);
-      })
-      .and_then([this, streamMaxBufferSize, filePath = std::move(filePath_)](auto) {
-        initializeBuffers(streamMaxBufferSize);
+      .and_then(
+          [this](auto) { return initializeResampler(streamSampleRate_, streamChannelCount_); })
+      .and_then([this](auto) {
+        initializeBuffers(streamMaxBufferSize_);
         isFileOpen_.store(true, std::memory_order_release);
-        return OpenFileResult::Ok(filePath);
+        return OpenFileResult::Ok(filePath_);
       });
 }
 
@@ -112,11 +115,7 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
   result = processFifo(true);
 
   if (result < 0) {
-    auto finalStatus = finalizeOutput();
-
-    return CloseFileResult::Err(
-        "Failed to flush FIFO to encoder. error code: " + parseErrorCode(result) +
-        ", finalization status: " + (finalStatus.is_ok() ? "success" : finalStatus.unwrap_err()));
+    return finalizeOutput();
   }
 
   result = avcodec_send_frame(encoderCtx_.get(), nullptr);
@@ -247,6 +246,23 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::openIOAndWriteHeader() {
   return Result<NoneType, std::string>::Ok(None);
 }
 
+size_t FFmpegAudioFileWriter::getFileSizeBytes() const {
+  if (formatCtx_ == nullptr) {
+    return 0;
+  }
+
+  if (formatCtx_ != nullptr && formatCtx_->pb != nullptr) {
+    return static_cast<size_t>(avio_tell(formatCtx_->pb));
+  }
+
+  // Fallback
+  struct stat st;
+  if (stat(filePath_.c_str(), &st) == 0) {
+    return st.st_size;
+  }
+  return 0;
+}
+
 /// @brief Initializes the resampler context for audio conversion.
 /// @param inputRate The sample rate of the input audio.
 /// @param inputChannels The number of channels in the input audio.
@@ -358,9 +374,9 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
 }
 
 /// @brief pushes the audio data from FIFO to the encoder in chunks,
-// defined by the encoder (512 samples by default) or flushes the FIFO if requested.
+/// defined by the encoder (512 samples by default) or flushes the FIFO if requested.
 /// Note: flush might be called only when writing the final data batch, otherwise
-// the codec will crash (especially in case of defined size frames like AAC).
+/// the codec will crash (especially in case of defined size frames like AAC).
 /// @param flush Indicates whether to flush the FIFO.
 /// @returns 0 on success, -1 or AV_ERROR code on failure
 int FFmpegAudioFileWriter::processFifo(bool flush) {
@@ -369,8 +385,6 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
 
   while (av_audio_fifo_size(audioFifo_.get()) >= (flush ? 1 : frameSize)) {
     const int chunkSize = std::min(av_audio_fifo_size(audioFifo_.get()), frameSize);
-
-    assert(chunkSize <= writingFrame_->nb_samples);
 
     if (av_audio_fifo_read(
             audioFifo_.get(), reinterpret_cast<void **>(writingFrame_->data), chunkSize) !=

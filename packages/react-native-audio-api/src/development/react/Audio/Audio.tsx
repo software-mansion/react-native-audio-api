@@ -20,6 +20,7 @@ import { useStableAudioProps } from './utils';
 import { NotSupportedError } from '../../../errors';
 import { NativeAudioAPIModule } from '../../../specs';
 import { AudioControls } from '..';
+import { base64ToArrayBuffer } from '../../../utils';
 
 const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   const { children } = props;
@@ -53,12 +54,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       return '';
     }
     if (typeof source === 'string') {
-      if (source.startsWith('file://') || source.startsWith('http')) {
-        return source;
-      }
-      if (Platform.OS === 'android' && !__DEV__) {
-        return NativeAudioAPIModule.resolveAndroidReleaseAsset(source);
-      }
       return source;
     }
     // number
@@ -86,6 +81,9 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   const effectiveVolumeState = useMemo(() => {
     return effectiveMutedState ? 0 : (volumeState ?? volume);
   }, [effectiveMutedState, volumeState, volume]);
+
+  const effectiveVolumeRef = useRef(effectiveVolumeState);
+  effectiveVolumeRef.current = effectiveVolumeState;
 
   useEffect(() => {
     fileSourceRef.current?.setVolume(effectiveVolumeState);
@@ -127,10 +125,12 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     setDuration(0);
     setPlaybackState('idle');
 
+    const initialVolume = effectiveVolumeRef.current;
+
     const node = context.context.createFileSource({
       source: nextSource,
       loop,
-      volume: effectiveVolumeState,
+      volume: initialVolume,
     });
     if (!node) {
       onError(new NotSupportedError('This file format requires FFmpeg build'));
@@ -148,7 +148,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       },
     });
 
-    fileSource.setVolume(effectiveVolumeState);
+    fileSource.setVolume(initialVolume);
     fileSourceRef.current = fileSource;
     setDuration(nextDuration);
     onLoad();
@@ -158,16 +158,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       setPlaybackState('playing');
       onPlay();
     }
-  }, [
-    context,
-    loop,
-    onError,
-    onEndedCallback,
-    onLoad,
-    onPlay,
-    autoPlay,
-    effectiveVolumeState,
-  ]);
+  }, [context, loop, onError, onEndedCallback, onLoad, onPlay, autoPlay]);
 
   useEffect(() => {
     if (!path) {
@@ -192,11 +183,20 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
                 ? source.headers
                 : undefined,
           }).then((response) => response.arrayBuffer());
-
-          if (isCancelled) {
-            return;
-          }
           sourceRef.current = arrayBuffer;
+        } else if (
+          Platform.OS === 'android' &&
+          !__DEV__ &&
+          !path.startsWith('file://')
+        ) {
+          const base64Payload =
+            await NativeAudioAPIModule.readAndroidReleaseAssetBytesAsBase64(
+              path
+            );
+          const arrayBuffer = base64ToArrayBuffer(base64Payload);
+          sourceRef.current = arrayBuffer;
+        } else if (path.startsWith('file://')) {
+          sourceRef.current = path.replace('file://', '');
         } else {
           sourceRef.current = path;
         }

@@ -718,7 +718,7 @@ class AudioRecorderMock {
   constructor() {}
 
   enableFileOutput(
-    options?: Omit<AudioRecorderFileOptions, 'batchDurationSeconds'>
+    options?: AudioRecorderFileOptions
   ): Result<{ path: string }> {
     this._options = options || {};
     this.isFileOutputEnabled = true;
@@ -747,7 +747,7 @@ class AudioRecorderMock {
     this._currentDuration = 0;
     return {
       status: 'success',
-      path: '/mock/path/recording.m4a',
+      paths: ['/mock/path/recording.m4a'],
       size: 12345,
       duration: 5.0,
     };

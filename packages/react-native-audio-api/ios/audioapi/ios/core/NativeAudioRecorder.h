@@ -7,17 +7,18 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 
 @interface NativeAudioRecorder : NSObject
 
-@property (nonatomic, strong) AVAudioSinkNode *sinkNode;
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverSinkBlock;
 @property (nonatomic, copy) AudioReceiverBlock receiverBlock;
+@property (nonatomic, strong) AVAudioFormat *resolvedInputFormat;
+@property (nonatomic, assign) int resolvedBufferSize;
+@property (nonatomic, assign) BOOL inputArmed;
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock;
 
-- (AVAudioFormat *)getInputFormat;
-
 - (int)getBufferSize;
-
-- (void)start;
+- (AVAudioFormat *)getResolvedInputFormat;
+- (int)getResolvedBufferSize;
+- (BOOL)start:(NSError **)error;
 
 - (void)stop;
 

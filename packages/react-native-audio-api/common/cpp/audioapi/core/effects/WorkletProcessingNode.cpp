@@ -1,5 +1,6 @@
 #include <audioapi/core/effects/WorkletProcessingNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <algorithm>
 #include <memory>
 #include <utility>
 

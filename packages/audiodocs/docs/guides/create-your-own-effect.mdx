@@ -37,7 +37,7 @@ The most important file is `MyProcessorNode.cpp`, it contains main processing pa
 In this guide, we will edit files in order to achieve [`GainNode`](/docs/effects/gain-node) functionality.
 For the sake of a simplicity, we will use value as a raw `double` type, not wrapped in [`AudioParam`](/docs/core/audio-param).
 
-<details>
+<details open>
 <summary>MyProcessorNode.h</summary>
 
 ```cpp
@@ -49,7 +49,7 @@ namespace audioapi {
 
 class MyProcessorNode : public AudioNode {
 public:
-  explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context, );
+  explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context);
 
 protected:
   std::shared_ptr<DSPAudioBuffer>
@@ -61,11 +61,14 @@ private:
   double gain; // value responsible for gain value
 // highlight-end
 };
+
 } // namespace audioapi
 ```
 </details>
 
-<details>
+<br />
+
+<details open>
 <summary>MyProcessorNode.cpp</summary>
 
 ```cpp
@@ -96,7 +99,9 @@ namespace audioapi {
 ```
 </details>
 
-<details>
+<br />
+
+<details open>
 <summary>MyProcessorNodeHostObject.h</summary>
 
 ```cpp

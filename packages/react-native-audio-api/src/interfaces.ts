@@ -1,25 +1,26 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
 import type {
+  AnalyserOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
+  AutomationEventData,
+  BaseAudioBufferSourceOptions,
+  BiquadFilterOptions,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
-  ContextState,
-  FileInfo,
-  OscillatorType,
-  OverSampleType,
-  Result,
-  AnalyserOptions,
-  BaseAudioBufferSourceOptions,
-  BiquadFilterOptions,
   ConstantSourceOptions,
+  ContextState,
   DelayOptions,
+  FileInfo,
   GainOptions,
   IAudioBufferSourceOptions,
   IConvolverOptions,
   IIRFilterOptions,
   OscillatorOptions,
+  OscillatorType,
+  OverSampleType,
+  Result,
   StereoPannerOptions,
   StreamerOptions,
   WaveShaperOptions,
@@ -146,10 +147,10 @@ export interface IStereoPannerNode extends IAudioNode {
 }
 
 export interface IBiquadFilterNode extends IAudioNode {
-  readonly frequency: AudioParam;
-  readonly detune: AudioParam;
-  readonly Q: AudioParam;
-  readonly gain: AudioParam;
+  readonly frequency: IAudioParam;
+  readonly detune: IAudioParam;
+  readonly Q: IAudioParam;
+  readonly gain: IAudioParam;
   type: BiquadFilterType;
 
   getFrequencyResponse(
@@ -218,8 +219,7 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   onLoopEnded: string;
 }
 
-export interface IAudioBufferQueueSourceNode
-  extends IAudioBufferBaseSourceNode {
+export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode {
   dequeueBuffer: (bufferId: number) => void;
   clearBuffers: () => void;
 
@@ -291,6 +291,7 @@ export interface IAudioParam {
   ) => void;
   cancelScheduledValues: (cancelTime: number) => void;
   cancelAndHoldAtTime: (cancelTime: number) => void;
+  checkCurveExclusion: (eventData: AutomationEventData) => Result<void>;
 }
 
 export interface IPeriodicWave {}
@@ -322,21 +323,18 @@ export interface IWaveShaperNode extends IAudioNode {
 
   setCurve(curve: Float32Array | null): void;
 }
-export interface IAudioRecorderCallbackOptions
-  extends AudioRecorderCallbackOptions {
+export interface IAudioRecorderCallbackOptions extends AudioRecorderCallbackOptions {
   callbackId: string;
 }
 
 export interface IAudioRecorder {
   // default recorder methods
-  start: (fileNameOverride?: string) => Result<{ path: string }>;
+  start: (fileNameOverride?: string) => Result<{}>;
   stop: () => Result<FileInfo>;
   isRecording: () => boolean;
   isPaused: () => boolean;
 
-  enableFileOutput: (
-    options: AudioRecorderFileOptions
-  ) => Result<{ path: string }>;
+  enableFileOutput: (options: AudioRecorderFileOptions) => Result<{}>;
   disableFileOutput: () => void;
 
   // pause and resume methods for file recording

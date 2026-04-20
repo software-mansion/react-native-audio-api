@@ -38,6 +38,12 @@ using namespace worklets;
   std::weak_ptr<WorkletsModuleProxy> weakWorkletsModuleProxy_;
 }
 
+- (void)handleSessionDeactivation
+{
+  [self.audioSessionManager markInactive];
+  [self.audioEngine onSessionDeactivated];
+}
+
 #if defined(RCT_NEW_ARCH_ENABLED)
 @synthesize callInvoker = _callInvoker;
 @synthesize moduleRegistry = _moduleRegistry;
@@ -124,12 +130,18 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(resolveAndroidReleaseAsset : (NSString *)
 }
 
 RCT_EXPORT_METHOD(
+    readAndroidReleaseAssetBytesAsBase64 : (NSString *)assetPath resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  reject(@"E_PLATFORM", @"readAndroidReleaseAssetBytesAsBase64 is only available on Android", nil);
+}
+
+RCT_EXPORT_METHOD(
     setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     NSError *error = nil;
-
     auto success = [self.audioSessionManager setActive:enabled error:&error];
 
     if (!success) {
@@ -151,6 +163,14 @@ RCT_EXPORT_METHOD(
       return;
     }
 
+    if (!enabled) {
+      if ([NSThread isMainThread]) {
+        [self handleSessionDeactivation];
+      } else {
+        dispatch_sync(dispatch_get_main_queue(), ^{ [self handleSessionDeactivation]; });
+      }
+    }
+
     resolve(@(success));
   });
 }
@@ -163,6 +183,7 @@ RCT_EXPORT_METHOD(
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
   }
+
   [self.audioSessionManager setAudioSessionOptions:category
                                               mode:mode
                                            options:options

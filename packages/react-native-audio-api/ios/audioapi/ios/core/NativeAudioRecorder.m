@@ -1,6 +1,5 @@
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
-#import <audioapi/ios/system/AudioSessionManager.h>
 
 @implementation NativeAudioRecorder
 
@@ -21,42 +20,39 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   return x;
 }
 
+- (AVAudioFormat *)readLiveInputFormat
+{
+  return [[AudioEngine sharedInstance] getLiveInputFormat];
+}
+
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
 {
   if (self = [super init]) {
     self.receiverBlock = [receiverBlock copy];
+    self.inputArmed = NO;
+    self.resolvedBufferSize = 0;
 
     __weak typeof(self) weakSelf = self;
     self.receiverSinkBlock = ^OSStatus(
         const AudioTimeStamp *_Nonnull timestamp,
         AVAudioFrameCount frameCount,
         const AudioBufferList *_Nonnull inputData) {
+      if (!weakSelf.inputArmed || weakSelf.receiverBlock == nil) {
+        return kAudioServicesNoError;
+      }
+
       weakSelf.receiverBlock(inputData, frameCount);
 
       return kAudioServicesNoError;
     };
-
-    self.sinkNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:self.receiverSinkBlock];
   }
 
   return self;
 }
 
-// Note: this method should be called only after the session is activated
-- (AVAudioFormat *)getInputFormat
+- (AVAudioFormat *)getResolvedInputFormat
 {
-  AVAudioFormat *format = [AudioEngine.sharedInstance.audioEngine.inputNode inputFormatForBus:0];
-
-  if (format.sampleRate == 0 || format.channelCount == 0) {
-    AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
-
-    format = [[AVAudioFormat alloc]
-        initStandardFormatWithSampleRate:[[sessionManager getDevicePreferredSampleRate] doubleValue]
-                                channels:[[sessionManager getDevicePreferredInputChannelCount]
-                                             intValue]];
-  }
-
-  return format;
+  return self.resolvedInputFormat;
 }
 
 - (int)getBufferSize
@@ -74,7 +70,12 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   return nextPowerOfTwo(ceil(bufferDuration * audioSession.sampleRate));
 }
 
-- (void)start
+- (int)getResolvedBufferSize
+{
+  return self.resolvedBufferSize;
+}
+
+- (BOOL)start:(NSError **)error
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
@@ -87,24 +88,51 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   //
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop recorder very frequently
+  self.inputArmed = NO;
+  self.resolvedInputFormat = nil;
+  self.resolvedBufferSize = 0;
+
   [audioEngine stopIfNecessary];
-  [audioEngine attachInputNode:self.sinkNode format:self.getInputFormat];
-  [audioEngine startIfNecessary];
+  [audioEngine attachInputNodeWithReceiverBlock:self.receiverSinkBlock];
+
+  if (![audioEngine startIfNecessary]) {
+    [audioEngine detachInputNode];
+    [audioEngine stopIfPossible];
+
+    if (error != nil) {
+      *error = [NSError
+          errorWithDomain:@"NativeAudioRecorder"
+                     code:1
+                 userInfo:@{
+                   NSLocalizedDescriptionKey : @"Failed to start audio engine for recording",
+                 }];
+    }
+
+    return NO;
+  }
+
+  self.resolvedInputFormat = [self readLiveInputFormat];
+  self.resolvedBufferSize = [self getBufferSize];
+
+  if (error != nil) {
+    *error = nil;
+  }
+
+  return YES;
 }
 
 - (void)stop
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
+  self.inputArmed = NO;
   [audioEngine detachInputNode];
   [audioEngine stopIfPossible];
-
   // This makes sure that the engine releases the input properly when we no longer need it
   // (i.e. no more misleading dot)
-  // Restart only if is not running to avoid interruptions of playback
-  if ([audioEngine getState] != AudioEngineStateRunning) {
-    [audioEngine restartAudioEngine];
-  }
+  [audioEngine restartAudioEngine];
+  self.resolvedInputFormat = nil;
+  self.resolvedBufferSize = 0;
 }
 
 - (void)pause
@@ -112,6 +140,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
+  self.inputArmed = NO;
   [audioEngine pauseIfNecessary];
 }
 
@@ -120,12 +149,18 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  [audioEngine startIfNecessary];
+  if ([audioEngine startIfNecessary]) {
+    self.inputArmed = YES;
+  }
 }
 
 - (void)cleanup
 {
+  self.inputArmed = NO;
+  self.resolvedInputFormat = nil;
+  self.resolvedBufferSize = 0;
   self.receiverBlock = nil;
+  self.receiverSinkBlock = nil;
 }
 
 @end

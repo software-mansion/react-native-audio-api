@@ -20,22 +20,29 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 @property (nonatomic, strong) NSMutableDictionary *sourceFormats;
 @property (nonatomic, strong) AVAudioSinkNode *inputNode;
 @property (nonatomic, weak) AudioSessionManager *sessionManager;
+@property (nonatomic, assign) BOOL graphNeedsRebuild;
+@property (nonatomic, assign) BOOL sessionDeactivationInvalidatedGraph;
 
 - (instancetype)init;
 + (instancetype)sharedInstance;
 
 - (void)cleanup;
 
-- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
+- (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
+                                   sampleRate:(float)sampleRate
+                                 channelCount:(AVAudioChannelCount)channelCount;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
-- (void)attachInputNode:(AVAudioSinkNode *)inputNode format:(AVAudioFormat *)format;
+- (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock;
 - (void)detachInputNode;
+- (AVAudioFormat *)getLiveInputFormat;
 
 - (void)onInterruptionBegin;
 - (void)onInterruptionEnd:(bool)shouldResume;
+- (void)onSessionDeactivated;
 
 - (AudioEngineState)getState;
+- (bool)isEngineRunning;
 
 - (bool)startIfNecessary;
 - (void)pauseIfNecessary;

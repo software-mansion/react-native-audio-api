@@ -89,7 +89,7 @@ export interface FilePresetType {
 
 export interface AudioRecorderFileOptions {
   channelCount?: number;
-  batchDurationSeconds?: number;
+  rotateIntervalBytes?: number;
 
   format?: FileFormat;
   preset?: FilePresetType;
@@ -101,7 +101,7 @@ export interface AudioRecorderFileOptions {
 }
 
 export interface FileInfo {
-  path: string;
+  paths: string[];
   /** The size of the recorded file (in MB). */
   size: number;
   /** The duration of the recording (in seconds). */
@@ -164,8 +164,7 @@ export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
 }
 
 // options that are passed to c++ layer
-export interface IAudioBufferSourceOptions
-  extends BaseAudioBufferSourceOptions {
+export interface IAudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: IAudioBuffer;
   loop?: boolean;
   loopStart?: number;
@@ -255,3 +254,28 @@ export type DecodeDataInput = number | string | ArrayBuffer;
 export interface AudioRecorderStartOptions {
   fileNameOverride?: string;
 }
+
+export enum AutomationEventType {
+  LINEAR_RAMP,
+  EXPONENTIAL_RAMP,
+  SET_VALUE,
+  SET_TARGET,
+  SET_VALUE_CURVE,
+}
+
+export type AutomationEventData =
+  | { type: AutomationEventType.SET_VALUE; automationTime: number }
+  | { type: AutomationEventType.LINEAR_RAMP; automationTime: number }
+  | {
+      type: AutomationEventType.EXPONENTIAL_RAMP;
+      automationTime: number;
+    }
+  | {
+      type: AutomationEventType.SET_TARGET;
+      automationTime: number;
+    }
+  | {
+      type: AutomationEventType.SET_VALUE_CURVE;
+      automationTime: number;
+      duration: number;
+    };
