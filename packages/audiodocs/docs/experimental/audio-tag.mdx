@@ -43,7 +43,7 @@ export function Player() {
 
 ## Props (`AudioProps`)
 
-`AudioProps` is `Partial<AudioPropsBase>` with a **required** `source`. Callbacks default to no-ops if omitted.
+Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 
 | Name | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -72,25 +72,95 @@ export function Player() {
 - `number` — Result of `require('./file.mp3')` (bundled asset).
 - `AudioURISource` — `{ uri?: string; headers?: Record<string, string> }` for fetch with custom headers.
 
-## Ref handle (`AudioTagHandle`)
+## Ref handle (`AudioTagHandle`) methods
 
-| Method | Description |
-| :--- | :--- |
-| `play()` | Start or resume playback. |
-| `pause()` | Pause playback. |
-| `seekToTime(seconds)` | Seek to a time in seconds (clamped to duration when known). |
-| `setVolume(volume)` | Updates internal volume state (also forwarded to the file source). |
-| `setMuted(muted)` | Updates internal muted state. |
+### `play`
 
-### `useAudioTagContext`
+Start or resume playback.
 
-Must be used under `<Audio>`. Throws if used outside the provider.
+### `pause`
 
-Exposed fields include `play`, `pause`, `seekToTime`, `setVolume`, `setMuted`, `ready`, `volume`, `muted`, `playbackState` (`'idle' \| 'playing' \| 'paused'`), `currentTime`, `duration`, `autoPlay`, `loop`, `preload`, `playbackRate`, `preservesPitch`, and `audioContext` (native context used for file playback, or `null` on web).
+Pause playback.
 
-### `AudioControls`
+### `seekToTime`
 
-Default control strip rendered when `controls` is `true`. Compose your own UI by leaving `controls` false and consuming `useAudioTagContext()` instead.
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| seconds | `number` | Seek to a time in seconds (clamped to duration when known). |
+
+### `setVolume`
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| volume | `number` | Updates volume state . |
+
+### `setMuted`
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| muted | `boolean` | Updates muted state . |
+
+## `useAudioTagContext`
+
+<details>
+<summary>Types</summary>
+```typescript
+type AudioComponentContextType = {
+  play: () => void;
+  pause: () => void;
+  seekToTime: (seconds: number) => void;
+  setVolume: (volume: number) => void;
+  setMuted: (muted: boolean) => void;
+
+  ready: boolean;
+  volume: number;
+  muted: boolean;
+  playbackState: AudioTagPlaybackState;
+  currentTime: number;
+  duration: number;
+  autoPlay: boolean;
+  loop: boolean;
+  preload: PreloadType;
+  playbackRate: number;
+  preservesPitch: boolean;
+  audioContext: BaseAudioContext | null;
+};
+```
+</details>
+<br />
+
+Useful for creating your custom UI component. Must be used under `<Audio>`. Throws an `Error` if used outside the provider.
+
+```tsx
+import React from 'react';
+import { Button } from 'react-native';
+
+const AudioControls: React.FC = () => {
+  const {
+    play,
+    pause,
+    seekToTime,
+  } = useAudioTagContext();
+
+  return (
+    <>
+      <Button onPress={() => play()}>Play</Button>
+      <Button onPress={() => pause()}>Pause</Button>
+      <Button onPress={() => seekToTime(10)}>Seek to 10</Button>
+    </>
+  );
+}
+
+const MyAudioTagWrapper : React.FC = () => {
+  const URL = ...;
+
+  return (
+    <Audio source={URL}>
+      <AudioControls />
+    </Audio>
+  );
+}
+```
 
 ## Remarks
 
