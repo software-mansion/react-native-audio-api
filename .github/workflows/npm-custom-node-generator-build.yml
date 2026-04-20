@@ -1,7 +1,7 @@
 name: NPM[Custom Node Generator] Build and publish to npm
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
 
 permissions:
   id-token: write
