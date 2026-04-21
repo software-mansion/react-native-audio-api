@@ -28,6 +28,8 @@ import {
   audioBufferSourceLoopSkipTest,
   audioBufferSourcePlaybackRateTest,
   audioBufferSourceDetuneTest,
+  audioBufferSourceNegativePlaybackRateTest,
+  audioBufferSourceLongPlaybackTest,
 } from './AudioBufferSourceTest';
 
 import { View, Text, Button } from 'react-native';
@@ -153,7 +155,18 @@ const Test: FC = () => {
     await audioBufferSourceLoopSkipTest(ctx, buffer, setTestingInfo);
     await audioBufferSourcePlaybackRateTest(ctx, buffer, setTestingInfo);
     await audioBufferSourceDetuneTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourceNegativePlaybackRateTest(ctx, buffer, setTestingInfo);
     setTestingInfo('AudioBufferSourceNode test completed.');
+    setIsTesting(false);
+  };
+
+  const audioBufferSourceLongTest = async () => {
+    setupAudioContext();
+    setIsTesting(true);
+    const ctx = audioContextRef.current!;
+    const buffer = await loadAudioBuffer(ctx);
+    await audioBufferSourceLongPlaybackTest(ctx, buffer, setTestingInfo);
+    setTestingInfo('Long playback test completed.');
     setIsTesting(false);
   };
 
@@ -190,6 +203,11 @@ const Test: FC = () => {
         <Button
           title="audio buffer source"
           onPress={audioBufferSourceTest}
+          disabled={isTesting}
+        />
+        <Button
+          title="audio buffer source (long ~30s)"
+          onPress={audioBufferSourceLongTest}
           disabled={isTesting}
         />
         <Text style={{ color: 'white', paddingTop: 40 }}>

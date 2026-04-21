@@ -198,3 +198,45 @@ export const audioBufferSourceDetuneTest = async (
 
   setInfo('Detune: done.');
 };
+
+export const audioBufferSourceNegativePlaybackRateTest = async (
+  ctx: AudioContext,
+  buffer: AudioBuffer,
+  setInfo: (info: string) => void
+) => {
+  for (const rate of [-0.5, -1.0, -2.0]) {
+    setInfo(`Negative playback rate: ${rate}x (3s, reversed from end)...`);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = rate;
+    source.connect(ctx.destination);
+    // Start from the end of the buffer so there is content to read backwards
+    source.start(ctx.currentTime, buffer.duration);
+    await sleep(3000);
+    source.stop();
+    await sleep(300);
+  }
+
+  setInfo('Negative playback rate: done.');
+};
+
+export const audioBufferSourceLongPlaybackTest = async (
+  ctx: AudioContext,
+  buffer: AudioBuffer,
+  setInfo: (info: string) => void
+) => {
+  const playDuration = 30000;
+  setInfo(`Long playback: looping for ${playDuration / 1000}s...`);
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+
+  source.connect(ctx.destination);
+  source.start(ctx.currentTime);
+  await sleep(playDuration);
+  source.stop();
+  await sleep(300);
+
+  setInfo('Long playback: done.');
+};
