@@ -225,7 +225,7 @@ export const audioBufferSourceLongPlaybackTest = async (
   buffer: AudioBuffer,
   setInfo: (info: string) => void
 ) => {
-  const playDuration = 30000;
+  const playDuration = 60000;
   setInfo(`Long playback: looping for ${playDuration / 1000}s...`);
 
   const source = ctx.createBufferSource();
