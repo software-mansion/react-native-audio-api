@@ -24,7 +24,21 @@ DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext> &context, const Del
               channelCount_,
               context->getSampleRate())) {
   delayLine_ = std::make_shared<DelayLine>(delayBuffer_, delayTimeParam_);
-  delayReader_ = std::make_unique<DelayReader>(context, options, delayLine_);
+
+  // Tail processing belongs to the writer: when the writer's upstream goes
+  // silent, the writer must keep filling the ring with zeros for one full
+  // `maxDelayTime` so that the reader naturally drains to silence. The
+  // reader has no audio inputs (its data comes from the shared ring) and is
+  // GC'd via the linkNodes(reader, writer) propagation, so it sets
+  // `requiresTailProcessing = false` to opt out of the base-class state
+  // machine that would otherwise consider it permanently "silent".
+  AudioNodeOptions readerOptions = options;
+  // Reader has no audio inputs (its data comes from the shared ring) and
+  // does not own the tail — see comment above.
+  readerOptions.numberOfInputs = 0;
+  readerOptions.requiresTailProcessing = false;
+
+  delayReader_ = std::make_unique<DelayReader>(context, readerOptions, delayLine_);
   delayWriter_ = std::make_unique<DelayWriter>(context, options, delayLine_);
 }
 

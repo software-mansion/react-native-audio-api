@@ -15,9 +15,7 @@ ConvolverNode::ConvolverNode(
     const ConvolverOptions &options)
     : AudioNode(context, options),
       gainCalibrationSampleRate_(context->getSampleRate()),
-      remainingSegments_(0),
       internalBufferIndex_(0),
-      signalledToStop_(false),
       scaleFactor_(1.0f),
       intermediateBuffer_(nullptr),
       buffer_(nullptr),
@@ -43,8 +41,8 @@ void ConvolverNode::setBuffer(
     context->getDisposer()->dispose(std::move(threadPool_));
   }
 
-  for (auto it = convolvers_.begin(); it != convolvers_.end(); ++it) {
-    context->getDisposer()->dispose(std::move(*it));
+  for (auto &convolver : convolvers_) {
+    context->getDisposer()->dispose(std::move(convolver));
   }
 
   if (internalBuffer_ != nullptr) {
@@ -62,6 +60,13 @@ void ConvolverNode::setBuffer(
   intermediateBuffer_ = intermediateBuffer;
   scaleFactor_ = scaleFactor;
   internalBufferIndex_ = 0;
+
+  // Re-arm the tail: a brand-new IR may have a completely different length,
+  // and any pending tail countdown from the previous IR is now meaningless.
+  // The base-class state machine will recompute computeTailFrames() the next
+  // time the input goes silent.
+  tailState_ = TailState::ACTIVE;
+  tailFramesRemaining_ = 0;
 }
 
 float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) const {
@@ -99,14 +104,13 @@ void ConvolverNode::processNode(int framesToProcess) {
     printf(
         "[AUDIOAPI WARN] convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor\n");
   }
-  if (signalledToStop_) {
-    if (remainingSegments_ > 0) {
-      remainingSegments_--;
-    } else {
-      signalledToStop_ = false;
-      internalBufferIndex_ = 0;
-      return;
-    }
+
+  // Once the base-class tail counter has fully drained, stop convolving and
+  // emit silence; the IR's contribution has decayed beyond audibility.
+  if (tailState_ == TailState::FINISHED) {
+    audioBuffer_->zero();
+    internalBufferIndex_ = 0;
+    return;
   }
 
   if (internalBufferIndex_ < framesToProcess) {
@@ -132,6 +136,13 @@ void ConvolverNode::processNode(int framesToProcess) {
   for (int i = 0; i < audioBuffer_->getNumberOfChannels(); ++i) {
     audioBuffer_->getChannel(i)->scale(scaleFactor_);
   }
+}
+
+int ConvolverNode::computeTailFrames() const {
+  // The convolver's impulse response equals the IR buffer itself, so a full
+  // tail equals one IR length of samples. If no IR has been set yet, there
+  // is nothing to ring out.
+  return buffer_ ? static_cast<int>(buffer_->getSize()) : 0;
 }
 
 void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {

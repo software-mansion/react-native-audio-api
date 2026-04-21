@@ -29,12 +29,8 @@ class DelayNode : public AudioNode {
   };
 
  private:
-  enum class BufferAction : uint8_t { READ, WRITE };
   const std::shared_ptr<AudioParam> delayTimeParam_;
   std::shared_ptr<AudioBuffer> delayBuffer_;
-  size_t readIndex_ = 0;
-  bool signalledToStop_ = false;
-  int remainingFrames_ = 0;
 };
 
 } // namespace audioapi

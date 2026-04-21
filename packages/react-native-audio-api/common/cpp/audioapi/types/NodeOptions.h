@@ -88,6 +88,14 @@ struct BiquadFilterOptions : AudioNodeOptions {
   float detune = 0.0f;
   float Q = 1.0f;
   float gain = 0.0f;
+
+  BiquadFilterOptions() {
+    requiresTailProcessing = true;
+  }
+
+  explicit BiquadFilterOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
+    requiresTailProcessing = true;
+  }
 };
 
 struct OscillatorOptions : AudioScheduledSourceNodeOptions {

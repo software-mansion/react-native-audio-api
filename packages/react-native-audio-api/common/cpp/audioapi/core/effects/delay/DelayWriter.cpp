@@ -36,4 +36,12 @@ void DelayWriter::processNode(int framesToProcess) {
       delayBuffer, audioBuffer_, framesToProcess, writeIndex, delay_ring::BufferAction::WRITE);
 }
 
+int DelayWriter::computeTailFrames() const {
+  // `getMaxValue()` of the delayTime param was set to `maxDelayTime` by the
+  // owning DelayNode constructor.
+  const auto sampleRate = delayLine_->getBuffer() ? delayLine_->getBuffer()->getSampleRate() : 0.0f;
+  const float maxDelaySeconds = delayLine_->getDelayTimeParam()->getMaxValue();
+  return static_cast<int>(maxDelaySeconds * sampleRate);
+}
+
 } // namespace audioapi

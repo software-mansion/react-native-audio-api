@@ -70,12 +70,28 @@ class BiquadFilterNode : public AudioNode {
  protected:
   void processNode(int framesToProcess) override;
 
+  /// @brief IIR tail length, derived from the dominant pole magnitude of the
+  /// most recently applied filter coefficients (`r ≈ sqrt(|a2|)`). Returns
+  /// the number of frames until the impulse response decays below
+  /// `kTailEpsilon`, capped at `kMaxTailSeconds * sampleRate`.
+  /// @note Audio Thread only.
+  [[nodiscard]] int computeTailFrames() const override;
+
  private:
+  static constexpr double kTailEpsilon = 1e-4;   // -80 dB
+  static constexpr float kMaxTailSeconds = 0.5f; // safety cap
+
   const std::shared_ptr<AudioParam> frequencyParam_;
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> QParam_;
   const std::shared_ptr<AudioParam> gainParam_;
   BiquadFilterType type_;
+
+  /// Most recently applied `a2` coefficient, cached on the audio thread by
+  /// `processNode`. Used by `computeTailFrames` to estimate decay length.
+  /// `r = sqrt(|a2|)` is a conservative upper bound on the dominant pole
+  /// magnitude for stable biquads.
+  double lastA2_ = 0.0;
 
   // delayed samples, one per channel
   DSPAudioArray x1_;

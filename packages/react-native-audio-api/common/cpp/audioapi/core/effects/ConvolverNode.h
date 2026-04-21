@@ -38,11 +38,15 @@ class ConvolverNode : public AudioNode {
  protected:
   void processNode(int framesToProcess) override;
 
+  /// @brief Tail length equals the impulse-response length in frames. A
+  /// freshly loaded IR makes the convolver ring for at least its own length
+  /// after the input goes silent.
+  /// @note Audio Thread only.
+  [[nodiscard]] int computeTailFrames() const override;
+
  private:
   const float gainCalibrationSampleRate_;
-  size_t remainingSegments_;
   size_t internalBufferIndex_;
-  bool signalledToStop_;
   float scaleFactor_;
   std::shared_ptr<DSPAudioBuffer> intermediateBuffer_;
 

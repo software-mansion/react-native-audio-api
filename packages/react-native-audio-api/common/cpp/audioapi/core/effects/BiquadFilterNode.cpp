@@ -32,6 +32,8 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <memory>
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
@@ -389,6 +391,9 @@ void BiquadFilterNode::processNode(int framesToProcess) {
 
     auto coeffs = applyFilter(frequency, Q, gain, detune, type_);
 
+    // Cache for computeTailFrames(); read on the same thread.
+    lastA2_ = coeffs.a2;
+
     float x1, x2, y1, y2; // NOLINT(cppcoreguidelines-init-variables)
 
     auto numChannels = audioBuffer_->getNumberOfChannels();
@@ -427,6 +432,24 @@ void BiquadFilterNode::processNode(int framesToProcess) {
   } else {
     audioBuffer_->zero();
   }
+}
+
+int BiquadFilterNode::computeTailFrames() const {
+  // For a stable biquad H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2),
+  // the poles are roots of z^2 + a1 z + a2. Their product equals a2, so the
+  // larger pole magnitude is bounded by sqrt(|a2|). Using that as `r`, the
+  // impulse decays roughly like `r^n`; the number of frames until it drops
+  // below kTailEpsilon is `ceil(log(eps)/log(r))`.
+  const double r = std::min(std::sqrt(std::abs(lastA2_)), 0.999);
+  if (r <= 0.0) {
+    return 0;
+  }
+  const double frames = std::ceil(std::log(kTailEpsilon) / std::log(r));
+  const int cap = static_cast<int>(kMaxTailSeconds * getContextSampleRate());
+  if (!std::isfinite(frames) || frames <= 0.0) {
+    return 0;
+  }
+  return std::min(static_cast<int>(frames), cap);
 }
 
 } // namespace audioapi
