@@ -94,6 +94,11 @@ void ConvolverNode::processNode(int framesToProcess) {
   if (buffer_ == nullptr) {
     return;
   }
+
+  if (framesToProcess != RENDER_QUANTUM_SIZE) {
+    printf(
+        "[AUDIOAPI WARN] convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor\n");
+  }
   if (signalledToStop_) {
     if (remainingSegments_ > 0) {
       remainingSegments_--;
