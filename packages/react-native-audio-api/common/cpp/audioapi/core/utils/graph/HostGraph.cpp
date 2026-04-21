@@ -6,8 +6,8 @@
 #include <audioapi/core/utils/graph/GraphObject.h>
 #include <audioapi/core/utils/graph/HostGraph.h>
 #include <audioapi/utils/AudioBuffer.hpp>
-
 #include <algorithm>
+
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -59,9 +59,7 @@ size_t negotiateChannelCount(const HostGraph::Node *dest) {
       continue;
     }
     const auto c = static_cast<size_t>(inAudio->getChannelCount());
-    if (c > maxInputChannels) {
-      maxInputChannels = c;
-    }
+    maxInputChannels = std::max(c, maxInputChannels);
   }
 
   if (maxInputChannels == 0) {
@@ -139,6 +137,7 @@ HostGraph::Node::~Node() {
 HostGraph::HostGraph() = default;
 
 HostGraph::~HostGraph() {
+  std::scoped_lock lock(nodesMutex_);
   for (Node *n : nodes) {
     n->linkedNodes.clear();
   }
@@ -156,6 +155,7 @@ HostGraph::HostGraph(HostGraph &&other) noexcept
 
 auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
   if (this != &other) {
+    std::scoped_lock lock(nodesMutex_, other.nodesMutex_);
     for (Node *n : nodes) {
       n->linkedNodes.clear();
     }
@@ -172,18 +172,20 @@ auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
 }
 
 auto HostGraph::addNode(std::shared_ptr<NodeHandle> handle) -> std::pair<Node *, AGEvent> {
+  std::scoped_lock lock(nodesMutex_);
   Node *newNode = new Node();
   newNode->handle = handle;
   nodes.push_back(newNode);
 
   auto event = [h = std::move(handle)](auto &graph, auto &) {
-    graph.addNode(h);
+    graph.addNode(std::move(h));
   };
 
   return {newNode, std::move(event)};
 }
 
 auto HostGraph::removeNode(Node *node) -> Res {
+  std::scoped_lock lock(nodesMutex_);
   auto it = std::ranges::find(nodes, node);
   if (it == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
@@ -216,6 +218,7 @@ void HostGraph::markNodesAsProcessing(Node *node) {
 }
 
 auto HostGraph::addEdge(Node *from, Node *to) -> Res {
+  std::scoped_lock lock(nodesMutex_);
   if (std::ranges::find(nodes, from) == nodes.end() ||
       std::ranges::find(nodes, to) == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
@@ -285,6 +288,7 @@ void HostGraph::markNodesAsNotProcessing(Node *node) {
 }
 
 auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
+  std::scoped_lock lock(nodesMutex_);
   if (std::ranges::find(nodes, from) == nodes.end() ||
       std::ranges::find(nodes, to) == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
@@ -328,7 +332,7 @@ auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
     if (auto *toAudio = (toNode ? toNode->asAudioNode() : nullptr);
         toAudio != nullptr && negotiatedBuffer != nullptr) {
       auto oldBuffer = toAudio->getOutputBuffer();
-      toAudio->setOutputBuffer(std::move(negotiatedBuffer));
+      toAudio->setOutputBuffer(negotiatedBuffer);
       if (oldBuffer != nullptr) {
         disposer.dispose(std::move(oldBuffer));
       }
@@ -339,6 +343,7 @@ auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
 }
 
 auto HostGraph::removeAllEdges(Node *from) -> Res {
+  std::scoped_lock lock(nodesMutex_);
   if (std::ranges::find(nodes, from) == nodes.end() || from->ghost) {
     return Res::Err(ResultError::NODE_NOT_FOUND);
   }
@@ -410,14 +415,17 @@ void HostGraph::linkNodes(Node *from, Node *to) {
 }
 
 size_t HostGraph::edgeCount() const {
+  std::scoped_lock lock(nodesMutex_);
   return edgeCount_;
 }
 
 size_t HostGraph::nodeCount() const {
+  std::scoped_lock lock(nodesMutex_);
   return nodes.size();
 }
 
 void HostGraph::collectDisposedNodes() {
+  std::scoped_lock lock(nodesMutex_);
   for (auto it = nodes.begin(); it != nodes.end();) {
     Node *n = *it;
     if (n->ghost && n->handle.use_count() == 1) {

@@ -89,6 +89,19 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     return false;
   }
 
+  /// @brief Schedule an audio event from the JS runtime's finalizer (GC)
+  /// thread. Use this from `~HostObject` code paths — `scheduleAudioEvent`
+  /// would race because its SPSC channel's single producer is the JS
+  /// thread.
+  template <typename F>
+  bool scheduleGCEvent(F &&event) noexcept {
+    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      return context->scheduleGCEvent(std::forward<F>(event));
+    }
+
+    return false;
+  }
+
   bool canBeDestructed() const override;
 
   [[nodiscard]] AudioNode *asAudioNode() override {

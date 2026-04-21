@@ -173,7 +173,11 @@ void AudioBufferSourceNodeHostObject::setOnLoopEndedCallbackId(uint64_t callback
   };
 
   audioBufferSourceNode->unregisterOnLoopEndedCallback(onLoopEndedCallbackId_);
-  audioBufferSourceNode->scheduleAudioEvent(std::move(event));
+  if (callbackId == 0) {
+    audioBufferSourceNode->scheduleGCEvent(std::move(event));
+  } else {
+    audioBufferSourceNode->scheduleAudioEvent(std::move(event));
+  }
   onLoopEndedCallbackId_ = callbackId;
 }
 

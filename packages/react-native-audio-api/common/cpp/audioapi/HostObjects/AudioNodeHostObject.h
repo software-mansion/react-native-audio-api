@@ -35,6 +35,10 @@ class AudioNodeHostObject : public JsiHostObject, public utils::graph::HostNode 
   JSI_HOST_FUNCTION_DECL(connect);
   JSI_HOST_FUNCTION_DECL(disconnect);
 
+  virtual size_t getMemoryPressure() {
+    return 350'000;
+  }
+
  protected:
   const int numberOfInputs_;
   const int numberOfOutputs_;

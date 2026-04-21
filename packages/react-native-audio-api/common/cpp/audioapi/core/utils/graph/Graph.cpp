@@ -17,6 +17,11 @@ Graph::Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE
       channel<AGEvent, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(eventQueueCapacity);
   eventSender_ = std::move(es);
   eventReceiver_ = std::move(er);
+
+  auto [gs, gr] =
+      channel<AGEvent, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(eventQueueCapacity);
+  gcEventSender_ = std::move(gs);
+  gcEventReceiver_ = std::move(gr);
 }
 
 Graph::Graph(
@@ -37,7 +42,19 @@ Graph::Graph(
 
 void Graph::processEvents() {
   AGEvent event;
+  // Drain Channel A (JS thread producer: addNode / addEdge / grow / …)
+  // fully first — this guarantees that any `addNode(X)` pending here is
+  // applied to AudioGraph before we process a matching `orphan(X)` that
+  // may already be sitting in Channel B.
   while (eventReceiver_.try_receive(event) == audioapi::channels::spsc::ResponseStatus::SUCCESS) {
+    if (event) {
+      event(audioGraph, *disposer_);
+    }
+  }
+  // Drain Channel B (finalizer / GC thread producer: removeNode orphan
+  // events). These are idempotent w.r.t. each other and never require
+  // capacity growth (they only flip a boolean on an existing node).
+  while (gcEventReceiver_.try_receive(event) == audioapi::channels::spsc::ResponseStatus::SUCCESS) {
     if (event) {
       event(audioGraph, *disposer_);
     }
@@ -49,7 +66,7 @@ void Graph::process() {
 }
 
 Graph::HNode *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
-  collectDisposedNodes();
+  // collectDisposedNodes();
 
   auto handle = std::make_shared<NodeHandle>(0, std::move(audioNode));
   auto [hostNode, event] = hostGraph.addNode(handle);
@@ -61,15 +78,19 @@ Graph::HNode *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
 }
 
 Graph::Res Graph::removeNode(HNode *node) {
-  collectDisposedNodes();
+  // collectDisposedNodes();
+  // Routed through Channel B: HostNode destructors (and therefore this
+  // call) may fire on the JS runtime's finalizer thread (e.g. Hermes GC).
+  // Sending through the dedicated SPSC channel keeps the single-producer
+  // invariant for both channels.
   return hostGraph.removeNode(node).map([&](AGEvent event) {
-    eventSender_.send(std::move(event));
+    gcEventSender_.send(std::move(event));
     return NoneType{};
   });
 }
 
 Graph::Res Graph::addEdge(HNode *from, HNode *to) {
-  collectDisposedNodes();
+  // collectDisposedNodes();
   return hostGraph.addEdge(from, to).map([&](AGEvent event) {
     sendPoolGrowIfNeeded();
     eventSender_.send(std::move(event));
@@ -82,7 +103,7 @@ void Graph::linkNodes(HNode *from, HNode *to) {
 }
 
 Graph::Res Graph::removeEdge(HNode *from, HNode *to) {
-  collectDisposedNodes();
+  // collectDisposedNodes();
   return hostGraph.removeEdge(from, to).map([&](AGEvent event) {
     eventSender_.send(std::move(event));
     return NoneType{};
@@ -90,7 +111,7 @@ Graph::Res Graph::removeEdge(HNode *from, HNode *to) {
 }
 
 Graph::Res Graph::removeAllEdges(HNode *from) {
-  collectDisposedNodes();
+  // collectDisposedNodes();
   return hostGraph.removeAllEdges(from).map([&](AGEvent event) {
     eventSender_.send(std::move(event));
     return NoneType{};

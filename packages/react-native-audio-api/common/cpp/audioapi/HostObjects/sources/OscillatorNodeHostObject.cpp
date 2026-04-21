@@ -19,7 +19,7 @@ OscillatorNodeHostObject::OscillatorNodeHostObject(
           std::make_unique<OscillatorNode>(context, options),
           options),
       type_(options.type) {
-  auto oscillatorNode = static_cast<OscillatorNode *>(node_->handle->audioNode->asAudioNode());
+  auto *oscillatorNode = static_cast<OscillatorNode *>(node_->handle->audioNode->asAudioNode());
   frequencyParam_ =
       std::make_shared<AudioParamHostObject>(graph_, node_, oscillatorNode->getFrequencyParam());
   detuneParam_ =

@@ -8,6 +8,7 @@
 #include <audioapi/utils/Result.hpp>
 
 #include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -136,6 +137,10 @@ class HostGraph {
 
  private:
   std::vector<Node *> nodes;
+  /// Guards access to `nodes` and the per-node adjacency mutated by the
+  /// public API (inputs/outputs/ghost). Public API methods do not call one
+  /// another while holding the lock, so a plain mutex is sufficient.
+  mutable std::mutex nodesMutex_;
   size_t edgeCount_ = 0;
   size_t last_term = 0; // monotonic counter for traversal freshness
 

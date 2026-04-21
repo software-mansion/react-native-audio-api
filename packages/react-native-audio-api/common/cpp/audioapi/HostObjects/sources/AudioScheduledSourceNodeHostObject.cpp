@@ -67,7 +67,11 @@ void AudioScheduledSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackI
   };
 
   sourceNode->unregisterOnEndedCallback(onEndedCallbackId_);
-  sourceNode->scheduleAudioEvent(std::move(event));
+  if (callbackId == 0) {
+    sourceNode->scheduleGCEvent(std::move(event));
+  } else {
+    sourceNode->scheduleAudioEvent(std::move(event));
+  }
   onEndedCallbackId_ = callbackId;
 }
 

@@ -19,22 +19,11 @@ AudioParam::AudioParam(
       defaultValue_(defaultValue),
       minValue_(minValue),
       maxValue_(maxValue),
-      startTime_(0),
-      endTime_(0),
-      startValue_(defaultValue),
-      endValue_(defaultValue),
       inputBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
       outputBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
-      eventRenderQueue_(defaultValue) {
-  // Default calculation function just returns the static value
-  calculateValue_ = [this](double, double, float, float, double) {
-    return value_.load(std::memory_order_relaxed);
-  };
-  inputBuffers_.reserve(4);
-  inputNodes_.reserve(4);
-}
+      eventRenderQueue_(defaultValue) {}
 
 float AudioParam::getValueAtTime(double time) {
   auto value = eventRenderQueue_.computeValueAtTime(time);

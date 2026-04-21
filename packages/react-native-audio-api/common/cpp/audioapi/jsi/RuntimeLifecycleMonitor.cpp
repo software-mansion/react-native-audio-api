@@ -1,5 +1,6 @@
 #include <audioapi/jsi/RuntimeLifecycleMonitor.h>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -7,22 +8,30 @@
 namespace audioapi {
 
 static std::unordered_map<jsi::Runtime *, std::unordered_set<RuntimeLifecycleListener *>> listeners;
+static std::mutex listenersMutex;
 
 struct RuntimeLifecycleMonitorObject : public jsi::HostObject {
   jsi::Runtime *rt_;
   explicit RuntimeLifecycleMonitorObject(jsi::Runtime *rt) : rt_(rt) {}
   ~RuntimeLifecycleMonitorObject() override {
-    auto listenersSet = listeners.find(rt_);
-    if (listenersSet != listeners.end()) {
-      for (auto listener : listenersSet->second) {
-        listener->onRuntimeDestroyed(rt_);
+    std::unordered_set<RuntimeLifecycleListener *> toNotify;
+    {
+      std::scoped_lock lock(listenersMutex);
+      auto listenersSet = listeners.find(rt_);
+      if (listenersSet != listeners.end()) {
+        toNotify = std::move(listenersSet->second);
+        listeners.erase(listenersSet);
       }
-      listeners.erase(listenersSet);
+    }
+    // Notify outside the lock — listener callbacks may re-enter add/remove.
+    for (auto *listener : toNotify) {
+      listener->onRuntimeDestroyed(rt_);
     }
   }
 };
 
 void RuntimeLifecycleMonitor::addListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener) {
+  std::scoped_lock lock(listenersMutex);
   auto listenersSet = listeners.find(&rt);
   if (listenersSet == listeners.end()) {
     // We install a global host object in the provided runtime, this way we can
@@ -43,6 +52,7 @@ void RuntimeLifecycleMonitor::addListener(jsi::Runtime &rt, RuntimeLifecycleList
 }
 
 void RuntimeLifecycleMonitor::removeListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener) {
+  std::scoped_lock lock(listenersMutex);
   auto listenersSet = listeners.find(&rt);
   if (listenersSet == listeners.end()) {
     // nothing to do here

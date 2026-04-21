@@ -9,7 +9,8 @@ HostNode::HostNode(std::shared_ptr<GraphType> graph, std::unique_ptr<GraphObject
     : graph_(std::move(graph)), node_(graph_->addNode(std::move(graphObject))) {}
 
 HostNode::~HostNode() {
-  if (graph_ && node_) {
+  if (graph_ && (node_ != nullptr)) {
+    graph_->collectDisposedNodes();
     (void)graph_->removeNode(node_);
     node_ = nullptr;
   }
@@ -22,7 +23,7 @@ HostNode::HostNode(HostNode &&other) noexcept
 
 HostNode &HostNode::operator=(HostNode &&other) noexcept {
   if (this != &other) {
-    if (graph_ && node_) {
+    if (graph_ && (node_ != nullptr)) {
       (void)graph_->removeNode(node_);
     }
     graph_ = std::move(other.graph_);

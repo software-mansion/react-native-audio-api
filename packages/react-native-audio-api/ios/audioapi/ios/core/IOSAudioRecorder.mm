@@ -149,7 +149,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
     isConnected_.store(false, std::memory_order_release);
     dataCallback_ = nullptr;
     fileWriter_ = nullptr;
-    adapterNode_ = nullptr;
+    adapterNodeHandle_ = nullptr;
   }
 
   [nativeRecorder_ cleanup];
@@ -270,11 +270,12 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
     callbackOutputConfigured_.store(true, std::memory_order_release);
   }
 
-  if (wantsConnection() && adapterNode_ != nullptr) {
-    adapterNode_->init(
-        maxInputBufferLength,
-        recorderFormatChannelCount(inputFormat),
-        recorderFormatSampleRate(inputFormat));
+  if (wantsConnection() && adapterNodeHandle_ != nullptr) {
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
+        ->init(
+            maxInputBufferLength,
+            recorderFormatChannelCount(inputFormat),
+            recorderFormatSampleRate(inputFormat));
     connectedConfigured_.store(true, std::memory_order_release);
   }
 
@@ -291,7 +292,7 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
 {
   std::shared_ptr<AudioFileWriter> fileWriter;
   std::shared_ptr<AudioRecorderCallback> dataCallback;
-  std::shared_ptr<RecorderAdapterNode> adapterNode;
+  std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
   std::vector<std::string> outputPaths;
   std::string filePath;
 
@@ -328,7 +329,7 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
 
     if (hadConnection) {
       connectedConfigured_.store(false, std::memory_order_release);
-      adapterNode = std::move(adapterNode_);
+      adapterNodeHandle = std::move(adapterNodeHandle_);
     }
 
     for (const auto &raw : recordingSegmentPaths_) {
@@ -360,8 +361,8 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
     dataCallback->cleanup();
   }
 
-  if (adapterNode != nullptr) {
-    adapterNode->adapterCleanup();
+  if (adapterNodeHandle != nullptr) {
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get())->adapterCleanup();
   }
 
   return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Ok(
@@ -467,7 +468,7 @@ void IOSAudioRecorder::disableFileOutput()
 void IOSAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &node)
 {
   std::scoped_lock lock(adapterNodeMutex_);
-  adapterNode_ = node;
+  adapterNodeHandle_ = node;
   isConnected_.store(true, std::memory_order_release);
   connectedConfigured_.store(false, std::memory_order_release);
 
@@ -478,10 +479,11 @@ void IOSAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &
       return;
     }
 
-    adapterNode_->init(
-        [nativeRecorder_ getResolvedBufferSize],
-        resolvedInputFormat.channelCount,
-        resolvedInputFormat.sampleRate);
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
+        ->init(
+            [nativeRecorder_ getBufferSize],
+            resolvedInputFormat.channelCount,
+            resolvedInputFormat.sampleRate);
     connectedConfigured_.store(true, std::memory_order_release);
   }
 }
@@ -491,18 +493,18 @@ void IOSAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &
 /// This method should be called from the JS thread only.
 void IOSAudioRecorder::disconnect()
 {
-  std::shared_ptr<RecorderAdapterNode> adapterNode;
+  std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
   bool hadConnection = false;
   {
     std::scoped_lock lock(adapterNodeMutex_);
     hadConnection = isConnected();
     connectedConfigured_.store(false, std::memory_order_release);
     isConnected_.store(false, std::memory_order_release);
-    adapterNode = std::move(adapterNode_);
+    adapterNodeHandle = std::move(adapterNodeHandle_);
   }
 
-  if (hadConnection && adapterNode != nullptr) {
-    adapterNode->adapterCleanup();
+  if (hadConnection && adapterNodeHandle != nullptr) {
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get())->adapterCleanup();
   }
 }
 

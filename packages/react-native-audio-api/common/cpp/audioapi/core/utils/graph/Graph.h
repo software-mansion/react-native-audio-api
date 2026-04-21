@@ -17,17 +17,29 @@
 namespace audioapi::utils::graph {
 
 /// @brief Thread-safe graph coordinator that bridges HostGraph (main thread)
-/// and AudioGraph (audio thread) via a single SPSC event channel.
+/// and AudioGraph (audio thread) via two SPSC event channels.
+///
+/// Two producer threads are supported:
+///   - The JS thread produces structural mutations (`addNode`, `addEdge`,
+///     `removeEdge`, `removeAllEdges`) and pre-grow events on **Channel A**.
+///   - The JS runtime's finalizer / GC thread produces `removeNode`
+///     (orphan) events on **Channel B**. This is the path taken when a
+///     HostObject's destructor runs on the Hermes GC finalizer thread.
+///
+/// The audio thread drains Channel A fully before Channel B in every
+/// `processEvents()` call. That preserves the invariant
+/// `addNode(X) happens-before orphan(X)` on the audio side even though
+/// the two channels carry no cross-ordering by themselves.
 ///
 /// Memory pre-growth: the main thread tracks edge and node counts. When
 /// growth is needed it sends an inline grow AGEvent immediately followed
-/// by the graph-mutation AGEvent through the **same** channel, guaranteeing
-/// FIFO ordering: the audio thread always applies growth before the
-/// operation that needs it.
+/// by the graph-mutation AGEvent through Channel A, guaranteeing FIFO
+/// ordering: the audio thread always applies growth before the operation
+/// that needs it.
 ///
 /// ## Audio-thread call order
 /// ```
-/// graph.processEvents();       // apply pending graph mutations (if any) — in FIFO order
+/// graph.processEvents();       // drain Channel A, then Channel B (FIFO within each)
 /// graph.process();             // toposort + compaction
 /// for (auto&& [node, inputs] : graph.iter()) { ... }
 /// ```
@@ -130,10 +142,19 @@ class Graph {
   alignas(hardware_destructive_interference_size) AudioGraph audioGraph;
   alignas(hardware_destructive_interference_size) HostGraph hostGraph;
 
-  // ── Channel (immutable after construction — no false sharing) ───────────
+  // ── Channels (immutable after construction — no false sharing) ─────────
+  //
+  // Channel A: JS thread producer — addNode / addEdge / removeEdge /
+  //            removeAllEdges / grow events.
+  // Channel B: finalizer (GC) thread producer — removeNode (orphan) events.
+  //
+  // Each channel has a single producer, so SPSC invariants hold.
 
   EventSender eventSender_;
   EventReceiver eventReceiver_;
+
+  EventSender gcEventSender_;
+  EventReceiver gcEventReceiver_;
 
   // ── Disposer — destroys old pool buffers off the audio thread ───────────
 
