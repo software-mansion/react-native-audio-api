@@ -9,11 +9,10 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <algorithm>
 #include <memory>
 #include <utility>
-#include "audioapi/core/utils/buffer/BufferProcessor.hpp"
-#include "audioapi/core/utils/buffer/SingleBufferCursor.h"
 
 namespace audioapi {
 
@@ -140,7 +139,7 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     return;
   }
 
-  SingleBufferCursor cursor(
+  SingleBufferProcessor processor(
       buffer_.get(),
       &vReadIndex_,
       loop_,
@@ -148,11 +147,10 @@ void AudioBufferSourceNode::processWithoutInterpolation(
       static_cast<size_t>(getVirtualStartFrame(getContextSampleRate())),
       static_cast<size_t>(getVirtualEndFrame(getContextSampleRate())));
 
-  BufferProcessor<SingleBufferCursor>::process(
-      cursor, processingBuffer, startOffset, offsetLength, false);
+  processor.process(processingBuffer, startOffset, offsetLength, false);
 
-  if (cursor.atBoundary()) {
-    if (cursor.shouldStop()) {
+  if (processor.atBoundary()) {
+    if (processor.shouldStop()) {
       playbackState_ = PlaybackState::STOP_SCHEDULED;
     }
     sendOnLoopEndedEvent();
@@ -169,7 +167,7 @@ void AudioBufferSourceNode::processWithInterpolation(
     return;
   }
 
-  SingleBufferCursor cursor(
+  SingleBufferProcessor processor(
       buffer_.get(),
       &vReadIndex_,
       loop_,
@@ -177,11 +175,10 @@ void AudioBufferSourceNode::processWithInterpolation(
       static_cast<size_t>(getVirtualStartFrame(getContextSampleRate())),
       static_cast<size_t>(getVirtualEndFrame(getContextSampleRate())));
 
-  BufferProcessor<SingleBufferCursor>::process(
-      cursor, processingBuffer, startOffset, offsetLength, true);
+  processor.process(processingBuffer, startOffset, offsetLength, true);
 
-  if (cursor.atBoundary()) {
-    if (cursor.shouldStop()) {
+  if (processor.atBoundary()) {
+    if (processor.shouldStop()) {
       playbackState_ = PlaybackState::STOP_SCHEDULED;
     }
     sendOnLoopEndedEvent();

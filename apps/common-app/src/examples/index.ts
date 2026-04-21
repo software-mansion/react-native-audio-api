@@ -15,6 +15,7 @@ import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
+import { TestScreen } from '../../../../packages/test-app-screen';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -32,6 +33,7 @@ type NavigationParamList = {
   Streamer: undefined;
   AudioTag: undefined;
   ConvolverIR: undefined;
+  TestScreen: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -133,5 +135,11 @@ export const Examples: Example[] = [
     title: 'Reverb Effect',
     Icon: icons.AudioWaveform,
     screen: ConvolverIR,
+  },
+  {
+    key: 'TestScreen',
+    title: 'Tests',
+    Icon: icons.TestTube,
+    screen: TestScreen,
   },
 ] as const;
