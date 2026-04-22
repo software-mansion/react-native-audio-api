@@ -71,7 +71,7 @@ std::shared_ptr<DSPAudioBuffer> WorkletProcessingNode::processNode(
 
     if (result.has_value()) {
       // Copy processed output data
-      channelData->copy(*inputBuffsHandles_[ch], 0, 0, framesToProcess);
+      channelData->copy(*outputBuffsHandles_[ch], 0, 0, framesToProcess);
     } else {
       // Zero the output on worklet execution failure
       channelData->zero(0, framesToProcess);
