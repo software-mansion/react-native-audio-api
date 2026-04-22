@@ -1,6 +1,6 @@
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { DelayOptions } from '../types';
 
 export default class DelayNode extends AudioNode {

@@ -1,4 +1,5 @@
 #import <AVFAudio/AVFAudio.h>
+#import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 @interface AudioSessionManager ()
@@ -110,6 +111,11 @@ static AudioSessionManager *_sharedInstance = nil;
   if (category != self.desiredCategory || mode != self.desiredMode ||
       options != self.desiredOptions || allowHaptics != self.allowHapticsAndSounds) {
     configChanged = true;
+  }
+
+  if (configChanged) {
+    AudioEngine *audioEngine = [AudioEngine sharedInstance];
+    audioEngine.sessionDeactivationInvalidatedGraph = YES;
   }
 
   self.desiredCategory = category;

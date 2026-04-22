@@ -21,6 +21,7 @@ import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.turbomodule.core.interfaces.TurboModule;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public abstract class NativeAudioAPIModuleSpec extends ReactContextBaseJavaModule implements TurboModule {
   public static final String NAME = "AudioAPIModule";
@@ -101,4 +102,12 @@ public abstract class NativeAudioAPIModuleSpec extends ReactContextBaseJavaModul
   @ReactMethod
   @DoNotStrip
   public abstract void isNotificationActive(String key, Promise promise);
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  @DoNotStrip
+  public abstract @Nullable String resolveAndroidReleaseAsset(String assetPath);
+
+  @ReactMethod
+  @DoNotStrip
+  public abstract void readAndroidReleaseAssetBytesAsBase64(String assetPath, Promise promise);
 }

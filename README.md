@@ -28,9 +28,6 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 - **DynamicCompressorNode 〽️**<br />
   Reduce the volume of loud sounds and boost quieter nodes to balance the audio signal, avoid clipping or distorted sounds
 
-- **Audio tag 🏷️**<br />
-  Simple ability to play and buffer audio, with all of the most commonly used functions, same as on the web, without the need to create and manipulate an audio graph.
-
 - **MIDI support 🎸**<br />
   Complementary lib for react-native-audio-api, that will allow to communicate with MIDI devices or read/write MIDI files.
 
@@ -39,6 +36,14 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
 
 - **Noise Cancellation 🦇**<br />
   System-based active noise and echo cancellation support
+
+### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.12.0"><img src="https://img.shields.io/badge/Released_in-0.12.0-green" /></a>
+
+- **Audio tag 🏷️**<br />
+  Simple ability to play and buffer audio, with all of the most commonly used functions, same as on the web, without the need to create and manipulate an audio graph.
+
+- **Recording rotation 🎤**<br />
+  Ability to chunk your recording into smaller files, increasing resilience to unpredictable events.
 
 ### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.11.0"><img src="https://img.shields.io/badge/Released_in-0.11.0-green" /></a>
 

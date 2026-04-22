@@ -50,6 +50,7 @@ interface Spec extends TurboModule {
   ): Promise<NotificationOpResponse>;
   hideNotification(key: string): Promise<NotificationOpResponse>;
   isNotificationActive(key: string): Promise<boolean>;
+  readAndroidReleaseAssetBytesAsBase64(assetPath: string): Promise<string>;
 }
 
 const mockAsync =
@@ -84,6 +85,10 @@ const NativeAudioAPIModule: Spec = {
   showNotification: mockAsync({ success: true }),
   hideNotification: mockAsync({ success: true }),
   isNotificationActive: mockAsync(false),
+  readAndroidReleaseAssetBytesAsBase64: () =>
+    Promise.reject(
+      new Error('readAndroidReleaseAssetBytesAsBase64 is not supported on web')
+    ),
 };
 
 export { NativeAudioAPIModule };

@@ -18,7 +18,6 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     : AudioScheduledSourceNode(context, options),
       vReadIndex_(0.0),
       pitchCorrection_(options.pitchCorrection),
-      onPositionChangedIntervalInFrames_(static_cast<int>(context->getSampleRate())),
       detuneParam_(
           std::make_shared<AudioParam>(
               options.detune,
@@ -30,7 +29,8 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
               options.playbackRate,
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
-              context)) {
+              context)),
+      onPositionChangedIntervalInFrames_(static_cast<int>(context->getSampleRate())) {
   setOnPositionChangedInterval(options.onPositionChangedInterval);
 }
 

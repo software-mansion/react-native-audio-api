@@ -9,6 +9,7 @@ import {
   isDataBlobString,
   isRemoteSource,
 } from '../utils/paths';
+import { base64ToArrayBuffer } from '../utils';
 import AudioBuffer from './AudioBuffer';
 
 class AudioDecoder {
@@ -88,30 +89,31 @@ class AudioDecoder {
   }
 
   private resolveLocalFilePath(stringSource: string): string {
-    let filePath = stringSource.startsWith('file://')
+    return stringSource.startsWith('file://')
       ? stringSource.replace('file://', '')
       : stringSource;
-
-    if (
-      Platform.OS === 'android' &&
-      !__DEV__ &&
-      !stringSource.startsWith('file://')
-    ) {
-      filePath = NativeAudioAPIModule.resolveAndroidReleaseAsset(filePath);
-      if (!filePath) {
-        throw new AudioApiError(
-          'Failed to resolve asset for android release build.'
-        );
-      }
-    }
-
-    return filePath;
   }
 
   private async decodeFromLocalFile(
     stringSource: string,
     sampleRate: number
   ): Promise<AudioBuffer> {
+    const useAndroidBundledAssetReader =
+      Platform.OS === 'android' &&
+      !stringSource.startsWith('file://') &&
+      !__DEV__;
+
+    // special workaround, because android bundled assets are passed as f.e. asset_example_file
+    // which has to be handled on native side and extension is not passed with it so decode using memory
+    if (useAndroidBundledAssetReader) {
+      const base64Payload =
+        await NativeAudioAPIModule.readAndroidReleaseAssetBytesAsBase64(
+          stringSource
+        );
+      const arrayBuffer = base64ToArrayBuffer(base64Payload);
+      return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
+    }
+
     const filePath = this.resolveLocalFilePath(stringSource);
     const buffer = await this.decoder.decodeWithFilePath(filePath, sampleRate);
     return new AudioBuffer(buffer);

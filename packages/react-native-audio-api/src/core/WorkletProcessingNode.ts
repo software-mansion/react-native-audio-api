@@ -1,5 +1,5 @@
 import AudioNode from './AudioNode';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { AudioWorkletRuntime } from '../types';
 import AudioAPIModule from '../AudioAPIModule';
 

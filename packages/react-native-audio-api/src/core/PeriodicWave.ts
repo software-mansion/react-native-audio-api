@@ -1,5 +1,5 @@
 import { IPeriodicWave } from '../interfaces';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 import { PeriodicWaveOptions } from '../types';
 import { PeriodicWaveOptionsValidator } from '../options-validators';
 

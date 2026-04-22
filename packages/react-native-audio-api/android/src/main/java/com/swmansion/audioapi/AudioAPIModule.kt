@@ -2,6 +2,7 @@ package com.swmansion.audioapi
 
 import android.media.AudioManager
 import android.os.Build
+import android.util.Base64
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import com.facebook.jni.HybridData
@@ -19,6 +20,7 @@ import com.swmansion.audioapi.system.MediaSessionManager
 import com.swmansion.audioapi.system.NativeFileInfo
 import com.swmansion.audioapi.system.PermissionRequestListener
 import java.lang.ref.WeakReference
+import kotlin.concurrent.thread
 
 @OptIn(FrameworkAPI::class)
 @ReactModule(name = AudioAPIModule.NAME)
@@ -28,6 +30,7 @@ class AudioAPIModule(
   LifecycleEventListener {
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
+    private const val TAG = "AudioAPIModule"
   }
 
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
@@ -257,21 +260,47 @@ class AudioAPIModule(
     }
   }
 
-  override fun resolveAndroidReleaseAsset(assetPath: String?): String? {
-    val context = reactContext.get() ?: return null
+  override fun readAndroidReleaseAssetBytesAsBase64(
+    assetPath: String?,
+    promise: Promise?,
+  ) {
+    if (assetPath.isNullOrBlank()) {
+      promise?.reject("E_INVALID_ASSET", "Asset path is empty", null)
+      return
+    }
+    val appContext = reactContext.get()?.applicationContext
+    if (appContext == null) {
+      promise?.reject("E_NO_CONTEXT", "React context unavailable", null)
+      return
+    }
+    thread(name = "rnaa-read-release-asset") {
+      try {
+        val bytes = readAndroidBundledAssetBytes(appContext, assetPath)
+        if (bytes == null || bytes.isEmpty()) {
+          promise?.reject("E_READ_ASSET", "Could not read asset bytes", null)
+          return@thread
+        }
+        promise?.resolve(Base64.encodeToString(bytes, Base64.NO_WRAP))
+      } catch (e: Exception) {
+        promise?.reject("E_READ_ASSET", e.message, e)
+      }
+    }
+  }
+
+  private fun readAndroidBundledAssetBytes(
+    context: android.content.Context,
+    assetPath: String,
+  ): ByteArray? {
     val packageName = context.packageName
 
-    val resourceId =
-      context.resources.getIdentifier(
-        assetPath,
-        "raw",
-        packageName,
-      )
-
-    return if (resourceId != 0) {
-      "android.resource://$packageName/$resourceId"
-    } else {
-      null
+    var resId = context.resources.getIdentifier(assetPath, "raw", packageName)
+    if (resId == 0 && assetPath.contains('.')) {
+      val nameWithoutExt = assetPath.substringBeforeLast('.')
+      resId = context.resources.getIdentifier(nameWithoutExt, "raw", packageName)
     }
+    if (resId != 0) {
+      context.resources.openRawResource(resId).use { return it.readBytes() }
+    }
+    return null
   }
 }

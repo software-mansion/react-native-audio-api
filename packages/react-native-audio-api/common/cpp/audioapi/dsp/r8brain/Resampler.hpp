@@ -12,17 +12,33 @@
 namespace r8b {
 
 class BaseResampler {
+ public:
   BaseResampler(const BaseResampler &) = delete;
   BaseResampler &operator=(const BaseResampler &) = delete;
   BaseResampler(BaseResampler &&) noexcept = default;
   BaseResampler &operator=(BaseResampler &&) noexcept = default;
+  virtual ~BaseResampler() = default;
+
+  /** @return Maximum number of output samples per channel for one process() call (for the maxInLen passed to the constructor). */
+  [[nodiscard]] int getMaxOutLen() const {
+    if (resamplers_.empty()) {
+      return 0;
+    }
+    return resamplers_[0]->getMaxOutLen(0);
+  }
 
  private:
   std::vector<std::unique_ptr<CDSPResampler24>> resamplers_;
   std::vector<std::vector<double>> inputBuffers_;
 
  protected:
-  inline BaseResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048) {
+  static constexpr int DEFAULT_MAX_IN_LEN = 2048;
+
+  BaseResampler(
+      double srcRate,
+      double dstRate,
+      int numChannels,
+      int maxInLen = DEFAULT_MAX_IN_LEN) {
     resamplers_.reserve(static_cast<size_t>(numChannels));
     inputBuffers_.reserve(static_cast<size_t>(numChannels));
     for (int i = 0; i < numChannels; ++i) {
@@ -31,7 +47,7 @@ class BaseResampler {
     }
   }
 
-  inline int process(const std::vector<float *> &input, int l, std::vector<float *> &output) {
+  int process(const std::vector<float *> &input, int l, std::vector<float *> &output) {
     int outLen = 0;
     const size_t numChannels = resamplers_.size();
 
@@ -59,25 +75,16 @@ class BaseResampler {
 
     return outLen;
   }
-
- public:
-  virtual ~BaseResampler() = default;
-
-  /** @return Maximum number of output samples per channel for one process() call (for the maxInLen passed to the constructor). */
-  inline int getMaxOutLen() const {
-    if (resamplers_.empty()) {
-      return 0;
-    }
-    return resamplers_[0]->getMaxOutLen(0);
-  }
 };
 
 class MultiChannelResampler : public BaseResampler {
  public:
-  inline MultiChannelResampler(double srcRate, double dstRate, int numChannels, int maxInLen = 2048)
+  MultiChannelResampler(
+      double srcRate,
+      double dstRate,
+      int numChannels,
+      int maxInLen = DEFAULT_MAX_IN_LEN)
       : BaseResampler(srcRate, dstRate, numChannels, maxInLen) {}
-
-  ~MultiChannelResampler() = default;
 
   template <size_t Alignment>
   int process(
@@ -97,10 +104,8 @@ class MultiChannelResampler : public BaseResampler {
 
 class SingleChannelResampler : public BaseResampler {
  public:
-  inline SingleChannelResampler(double srcRate, double dstRate, int maxInLen = 2048)
+  SingleChannelResampler(double srcRate, double dstRate, int maxInLen = DEFAULT_MAX_IN_LEN)
       : BaseResampler(srcRate, dstRate, 1, maxInLen) {}
-
-  ~SingleChannelResampler() = default;
 
   template <size_t Alignment>
   int process(

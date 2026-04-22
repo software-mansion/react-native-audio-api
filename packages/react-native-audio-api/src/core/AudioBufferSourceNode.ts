@@ -5,7 +5,7 @@ import { InvalidStateError, RangeError } from '../errors';
 import { EventEmptyType } from '../events/types';
 import { AudioEventSubscription } from '../events';
 import { AudioBufferSourceOptions } from '../types';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 
 export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   private onLoopEndedSubscription?: AudioEventSubscription;

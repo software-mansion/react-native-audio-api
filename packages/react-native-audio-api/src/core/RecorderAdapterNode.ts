@@ -1,6 +1,6 @@
 import { IRecorderAdapterNode } from '../interfaces';
 import AudioNode from './AudioNode';
-import BaseAudioContext from './BaseAudioContext';
+import type BaseAudioContext from './BaseAudioContext';
 
 export default class RecorderAdapterNode extends AudioNode {
   /** @internal */

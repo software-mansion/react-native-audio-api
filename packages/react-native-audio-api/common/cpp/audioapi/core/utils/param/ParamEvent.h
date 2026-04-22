@@ -12,21 +12,21 @@ class ParamEvent {
 
   /// @brief Construct an event with explicit start and end times.
   explicit ParamEvent(ParamEventType type, double startTime, double endTime)
-      : type_(type), startTime_(startTime), endTime_(endTime) {}
+      : startTime_(startTime), endTime_(endTime), type_(type) {}
 
   /// @brief Construct from a single automationTime value, setting startTime or endTime based on type.
   /// Ramp events (LINEAR_RAMP, EXPONENTIAL_RAMP) store automationTime as endTime.
   /// All other types store it as startTime.
   explicit ParamEvent(ParamEventType type, double automationTime)
-      : type_(type),
-        startTime_(isRamp(type) ? 0.0 : automationTime),
-        endTime_(isRamp(type) ? automationTime : 0.0) {}
+      : startTime_(isRamp(type) ? 0.0 : automationTime),
+        endTime_(isRamp(type) ? automationTime : 0.0),
+        type_(type) {}
 
   ParamEvent(const ParamEvent &) = default;
   ParamEvent &operator=(const ParamEvent &) = default;
 
   ParamEvent(ParamEvent &&other) noexcept
-      : type_(other.type_), startTime_(other.startTime_), endTime_(other.endTime_) {}
+      : startTime_(other.startTime_), endTime_(other.endTime_), type_(other.type_) {}
 
   ParamEvent &operator=(ParamEvent &&other) noexcept {
     if (this != &other) {

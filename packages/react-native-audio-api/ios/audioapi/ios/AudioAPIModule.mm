@@ -130,6 +130,13 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(resolveAndroidReleaseAsset : (NSString *)
 }
 
 RCT_EXPORT_METHOD(
+    readAndroidReleaseAssetBytesAsBase64 : (NSString *)assetPath resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  reject(@"E_PLATFORM", @"readAndroidReleaseAssetBytesAsBase64 is only available on Android", nil);
+}
+
+RCT_EXPORT_METHOD(
     setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {

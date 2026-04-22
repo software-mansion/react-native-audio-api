@@ -27,7 +27,8 @@ packages/audiodocs/
 │   ├── worklets/          # AudioWorklet setup and nodes
 │   ├── types/             # Enum docs (OscillatorType, BiquadFilterType...)
 │   ├── utils/             # Utility functions (decoding, time-stretching)
-│   └── react/             # React-specific hooks and helpers
+│   ├── react/             # React-specific hooks and helpers
+│   └── experimental/      # Experimental APIs (Audio tag / development.react)
 ├── src/
 │   ├── components/        # Custom MDX components
 │   ├── examples/          # Standalone interactive demo implementations

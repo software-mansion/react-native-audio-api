@@ -386,14 +386,14 @@ static AudioEngine *_sharedInstance = nil;
 
   [self createAudioEngineIfNeeded];
 
-  if (![self.sessionManager ensureActive:false error:&error]) {
+  if (![self.sessionManager ensureActive:true error:&error]) {
     NSLog(@"Error while activating audio session: %@", [error debugDescription]);
     return false;
   }
 
   if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
       self.sessionDeactivationInvalidatedGraph) {
-    [self rebuildAudioEngine];
+    [self restartAudioEngine];
   } else {
     [self materializeTrackedNodesIfNeeded];
   }

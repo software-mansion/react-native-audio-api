@@ -1,0 +1,38 @@
+name: NPM[Custom Node Generator] Build and publish to npm
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: npm-custom-node-generator-build
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'software-mansion/react-native-audio-api'
+    runs-on: ubuntu-latest
+    environment: deployment
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PACKAGE_DIR: packages/custom-node-generator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+
+      - name: Update NPM
+        run: npm install -g npm@latest
+
+      - name: Publish package to npm
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: npm publish --provenance --access public
