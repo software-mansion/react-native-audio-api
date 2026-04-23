@@ -321,7 +321,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::setupFileWriter(
     const std::string &fileNameOverride) {
 #if RN_AUDIO_API_FFMPEG_DISABLED
   if (properties->format != AudioFileProperties::Format::WAV) {
-    return Result<std::string, std::string>::Err(
+    return Result<NoneType, std::string>::Err(
         "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV format instead.");
   }
 #endif
