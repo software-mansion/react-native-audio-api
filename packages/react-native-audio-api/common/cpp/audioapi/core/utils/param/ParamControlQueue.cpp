@@ -9,7 +9,12 @@ namespace audioapi {
 
 EventConflictResult ParamControlQueue::checkCurveExclusion(const ParamEvent &event) {
   if (event.getType() == ParamEventType::SET_VALUE_CURVE) {
-    // For curve events, check for any event that occurs at or within the curve's time interval
+    // Check if a new curve would start at a time that conflicts with an existing curve event
+    auto startConflict = isConflictAtTime(event, event.getStartTime());
+    if (startConflict.is_err()) {
+      return startConflict;
+    }
+    // Curve rule: events strictly in (T, T+D) are conflicts; events exactly at T are allowed.
     return isConflictInInterval(event, event.getStartTime(), event.getEndTime());
   }
   // For non-curve events check for curve events that conflict at the event's automationTime
@@ -23,7 +28,7 @@ void ParamControlQueue::purge(double currentTime) {
 EventConflictResult ParamControlQueue::isConflictAtTime(
     const ParamEvent &newEvent,
     double automationTime) {
-  // Check if a SET_VALUE_CURVE that starts before automationTime extends into it
+  // Per spec [T, T+D): events AT T are conflicts, so use upperBound to include the predecessor at T.
   auto it = eventQueue_.upperBound(automationTime);
   if (it != eventQueue_.begin()) {
     const auto &pred = *std::prev(it);
@@ -43,18 +48,17 @@ EventConflictResult ParamControlQueue::isConflictInInterval(
     const ParamEvent &newEvent,
     double startTime,
     double endTime) {
-  // Non-ramp events have automationTime == startTime, so lowerBound/lowerBound brackets them.
-  // Ramp events have startTime == 0 (unresolved on the control thread), so getStartTime() > startTime
-  // filters them out.
-  for (auto it = eventQueue_.lowerBound(startTime), hi = eventQueue_.lowerBound(endTime); it != hi;
-       ++it) {
-    if (it->getStartTime() > startTime) {
+  auto it = eventQueue_.upperBound(startTime);
+  // If there is an event in (T, T+D) then the new curve event is invalid
+  while (it != eventQueue_.end() && it->getAutomationTime() < endTime) {
+    if (it->getAutomationTime() > startTime) {
       std::stringstream ss;
       ss << "Cannot schedule curve event from time " << newEvent.getStartTime() << " to "
          << newEvent.getEndTime() << " because it conflicts with an existing event of type "
          << toString(it->getType()) << " at time " << it->getAutomationTime() << ".";
       return Err(ss.str());
     }
+    ++it;
   }
   return Ok(None);
 }
