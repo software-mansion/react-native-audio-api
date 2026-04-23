@@ -18,7 +18,6 @@ import {
   audioBufferChannelsTest,
   audioBufferBase64Test,
 } from './AudioBufferTest';
-import { audioParamTestSuite } from './AudioParamTest';
 
 import { View, Text, Button } from 'react-native';
 
@@ -130,18 +129,6 @@ const Test: FC = () => {
     }, 4000);
   };
 
-  const audioParamTest = async () => {
-    setIsTesting(true);
-    setupAudioContext();
-
-    setTestingInfo('AudioParam test');
-    await audioParamTestSuite(setTestingInfo);
-    setTimeout(() => {
-      setTestingInfo('AudioParam test completed.');
-      setIsTesting(false);
-    }, 4000);
-  };
-
   return (
     <View
       style={{
@@ -170,11 +157,6 @@ const Test: FC = () => {
         <Button
           title="worklet node"
           onPress={workletsTest}
-          disabled={isTesting}
-        />
-        <Button
-          title="audio param"
-          onPress={audioParamTest}
           disabled={isTesting}
         />
         <Text style={{ color: 'white', paddingTop: 40 }}>

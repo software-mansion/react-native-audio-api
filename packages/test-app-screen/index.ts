@@ -1,1 +1,1 @@
-export {default as TestScreen} from './src/Test';
+export { default as TestScreen } from './src/Test';
