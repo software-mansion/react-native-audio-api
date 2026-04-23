@@ -126,11 +126,11 @@ bool HostGraph::TraversalState::visit(size_t currentTerm) {
 HostGraph::Node::~Node() {
   for (Node *input : inputs) {
     auto &outs = input->outputs;
-    outs.erase(std::remove(outs.begin(), outs.end(), this), outs.end());
+    outs.erase(std::ranges::remove(outs, this).begin(), outs.end());
   }
   for (Node *output : outputs) {
     auto &inps = output->inputs;
-    inps.erase(std::remove(inps.begin(), inps.end(), this), inps.end());
+    inps.erase(std::ranges::remove(inps, this).begin(), inps.end());
   }
 }
 
@@ -432,7 +432,7 @@ void HostGraph::collectDisposedNodes() {
       edgeCount_ -= n->outputs.size();
       for (Node *m : nodes) {
         auto &ln = m->linkedNodes;
-        ln.erase(std::remove(ln.begin(), ln.end(), n), ln.end());
+        ln.erase(std::ranges::remove(ln, n).begin(), ln.end());
       }
       *it = nodes.back();
       nodes.pop_back();

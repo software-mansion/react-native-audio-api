@@ -329,7 +329,12 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::getNormalizedCoefficients
     float a1,
     float a2) {
   auto a0Inverted = 1.0f / a0;
-  return {b0 * a0Inverted, b1 * a0Inverted, b2 * a0Inverted, a1 * a0Inverted, a2 * a0Inverted};
+  return {
+      .b0 = b0 * a0Inverted,
+      .b1 = b1 * a0Inverted,
+      .b2 = b2 * a0Inverted,
+      .a1 = a1 * a0Inverted,
+      .a2 = a2 * a0Inverted};
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
@@ -391,7 +396,6 @@ void BiquadFilterNode::processNode(int framesToProcess) {
 
     auto coeffs = applyFilter(frequency, Q, gain, detune, type_);
 
-    // Cache for computeTailFrames(); read on the same thread.
     lastA2_ = coeffs.a2;
 
     float x1, x2, y1, y2; // NOLINT(cppcoreguidelines-init-variables)
@@ -435,20 +439,23 @@ void BiquadFilterNode::processNode(int framesToProcess) {
 }
 
 int BiquadFilterNode::computeTailFrames() const {
-  // For a stable biquad H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2),
-  // the poles are roots of z^2 + a1 z + a2. Their product equals a2, so the
-  // larger pole magnitude is bounded by sqrt(|a2|). Using that as `r`, the
-  // impulse decays roughly like `r^n`; the number of frames until it drops
-  // below kTailEpsilon is `ceil(log(eps)/log(r))`.
-  const double r = std::min(std::sqrt(std::abs(lastA2_)), 0.999);
+  // some ai math slop, but it matches web audio api, so I think it's correct
+  // Two safety bounds:
+  //   1. `r` is clamped to `1 - kPoleRadiusEpsilon` so that `log(r)` stays
+  //      bounded away from zero for poles sitting arbitrarily close to the
+  //      unit circle (very high Q).
+  //   2. The returned frame count is capped at `kMaxTailSeconds * sr` so a
+  //      pathological coefficient update cannot keep a node alive forever.
+  const double rRaw = std::sqrt(std::abs(lastA2_));
+  const double r = std::min(rRaw, 1.0 - kPoleRadiusEpsilon);
   if (r <= 0.0) {
     return 0;
   }
   const double frames = std::ceil(std::log(kTailEpsilon) / std::log(r));
-  const int cap = static_cast<int>(kMaxTailSeconds * getContextSampleRate());
   if (!std::isfinite(frames) || frames <= 0.0) {
     return 0;
   }
+  const int cap = static_cast<int>(kMaxTailSeconds * getContextSampleRate());
   return std::min(static_cast<int>(frames), cap);
 }
 

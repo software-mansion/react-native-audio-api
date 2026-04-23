@@ -71,15 +71,26 @@ class BiquadFilterNode : public AudioNode {
   void processNode(int framesToProcess) override;
 
   /// @brief IIR tail length, derived from the dominant pole magnitude of the
-  /// most recently applied filter coefficients (`r ≈ sqrt(|a2|)`). Returns
-  /// the number of frames until the impulse response decays below
-  /// `kTailEpsilon`, capped at `kMaxTailSeconds * sampleRate`.
+  /// most recently applied filter coefficients (`r = sqrt(|a2|)`). Returns
+  /// the number of frames until the impulse response envelope decays below
+  /// `kTailEpsilon`. `r` is clamped to `1 - kPoleRadiusEpsilon` to keep the
+  /// log bounded for poles near the unit circle, and the final result is
+  /// capped at `kMaxTailSeconds * sampleRate` for pathological high-Q cases.
   /// @note Audio Thread only.
   [[nodiscard]] int computeTailFrames() const override;
 
  private:
-  static constexpr double kTailEpsilon = 1e-4;   // -80 dB
-  static constexpr float kMaxTailSeconds = 0.5f; // safety cap
+  /// Envelope threshold at which the impulse response is considered inaudible (-80 dB).
+  static constexpr double kTailEpsilon = 1e-4;
+
+  /// Hard upper bound on the computed tail length (seconds).
+  static constexpr float kMaxTailSeconds = 30.0f;
+
+  /// Keeps `log(r)` bounded away from zero when the pole sits on the unit
+  /// circle. `r` is clamped to `1 - kPoleRadiusEpsilon`, so the epsilon alone
+  /// permits ≈ `log(kTailEpsilon) / log(1 - eps) ≈ 921 k frames` of tail at
+  /// `eps = 1e-5` (≈ 20 s at 44.1 kHz) before `kMaxTailSeconds` takes over.
+  static constexpr double kPoleRadiusEpsilon = 1e-5;
 
   const std::shared_ptr<AudioParam> frequencyParam_;
   const std::shared_ptr<AudioParam> detuneParam_;

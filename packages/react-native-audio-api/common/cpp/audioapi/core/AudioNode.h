@@ -87,12 +87,16 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// must be played out after its inputs go silent" behavior required by the
   /// Web Audio spec for nodes such as BiquadFilter, Delay and Convolver.
   ///
+  /// Initial state is `FINISHED` — a fresh node has no in-flight tail to
+  /// render; non-silent input re-arms it to `ACTIVE`.
+  ///
   /// Transitions (in `processInputs`, gated by `requiresTailProcessing_`):
   /// - any quantum with non-silent input        : * -> ACTIVE (re-arm)
   /// - first silent quantum after ACTIVE        : ACTIVE -> SIGNALLED_TO_STOP,
   ///                                              tailFramesRemaining_ = computeTailFrames()
   /// - subsequent silent quanta                 : tailFramesRemaining_ -= numFrames
   ///                                              once <= 0, SIGNALLED_TO_STOP -> FINISHED
+  /// - silent quantum while FINISHED            : stay FINISHED
   enum class TailState : std::uint8_t {
     ACTIVE,
     SIGNALLED_TO_STOP,
@@ -156,7 +160,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   /// @brief Tail-processing audio-thread state. Only mutated when
   /// `requiresTailProcessing_` is true.
-  TailState tailState_ = TailState::ACTIVE;
+  TailState tailState_ = TailState::FINISHED;
   int tailFramesRemaining_ = 0;
 
   /// @brief Implementation of processing logic for AudioNode.
