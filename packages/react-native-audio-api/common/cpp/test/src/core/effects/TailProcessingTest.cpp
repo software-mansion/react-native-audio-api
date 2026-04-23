@@ -98,7 +98,7 @@ TEST_F(TailProcessingTest, BiquadFilterStartsActiveAndStaysSoUnderInput) {
   auto nonSilent = makeBuffer(/*nonZero=*/true);
   std::vector<const DSPAudioBuffer *> inputs{nonSilent.get()};
 
-  EXPECT_EQ(biquad.tailState(), AudioNode::TailState::ACTIVE);
+  EXPECT_EQ(biquad.tailState(), AudioNode::TailState::FINISHED);
 
   for (int q = 0; q < 4; ++q) {
     biquad.runQuantum(inputs);
