@@ -47,8 +47,10 @@ JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
   if (args[0].isObject()) {
     auto arrayBuffer =
         args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-    // *2 because it is copied to internal curve array for processing
-    thisValue.asObject(runtime).setExternalMemoryPressure(runtime, arrayBuffer.size(runtime) * 2);
+    // *2 because the curve is copied into an internal AudioArray for processing.
+    // Include the node's own base footprint; otherwise we'd clobber it.
+    thisValue.asObject(runtime).setExternalMemoryPressure(
+        runtime, getMemoryPressure() + arrayBuffer.size(runtime) * 2);
 
     auto size = static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float));
     curve =

@@ -80,10 +80,12 @@ void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
     return;
   }
 
-  if (!pitchCorrection_) {
-    processWithoutPitchCorrection(audioBuffer_, framesToProcess);
-  } else {
+  // apply pitch correction only if the playback rate is not 1.0
+  if (pitchCorrection_ &&
+      getComputedPlaybackRateValue(framesToProcess, context_.lock()->getCurrentTime()) != 1.0f) {
     processWithPitchCorrection(audioBuffer_, framesToProcess);
+  } else {
+    processWithoutPitchCorrection(audioBuffer_, framesToProcess);
   }
 
   handleStopScheduled();

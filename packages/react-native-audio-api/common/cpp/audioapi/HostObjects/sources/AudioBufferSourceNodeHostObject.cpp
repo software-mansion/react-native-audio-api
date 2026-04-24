@@ -154,7 +154,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
   } else {
     auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
     thisValue.asObject(runtime).setExternalMemoryPressure(
-        runtime, bufferHostObject->getSizeInBytes());
+        runtime, getMemoryPressure() + bufferHostObject->getSizeInBytes());
 
     setBuffer(bufferHostObject->audioBuffer_);
   }

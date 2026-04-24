@@ -145,14 +145,18 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletProcessingNode) 
 
   auto workletProcessingNodeHostObject = std::make_shared<WorkletProcessingNodeHostObject>(
       context_->getGraph(), context_, workletRuntime, shareableWorklet, shouldUseUiRuntime);
-  return jsi::Object::createFromHostObject(runtime, workletProcessingNodeHostObject);
+  auto object = jsi::Object::createFromHostObject(runtime, workletProcessingNodeHostObject);
+  object.setExternalMemoryPressure(runtime, workletProcessingNodeHostObject->getMemoryPressure());
+  return object;
 #endif
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createRecorderAdapter) {
   auto recorderAdapterHostObject = std::make_shared<RecorderAdapterNodeHostObject>(context_);
-  return jsi::Object::createFromHostObject(runtime, recorderAdapterHostObject);
+  auto object = jsi::Object::createFromHostObject(runtime, recorderAdapterHostObject);
+  object.setExternalMemoryPressure(runtime, recorderAdapterHostObject->getMemoryPressure());
+  return object;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
@@ -247,7 +251,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
       audioapi::option_parser::parseAudioBufferSourceOptions(runtime, options);
   auto bufferSourceHostObject =
       std::make_shared<AudioBufferSourceNodeHostObject>(context_, audioBufferSourceOptions);
-  return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
+  auto object = jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
+  object.setExternalMemoryPressure(runtime, bufferSourceHostObject->getMemoryPressure());
+  return object;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
@@ -320,12 +326,8 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
   const auto convolverOptions = audioapi::option_parser::parseConvolverOptions(runtime, options);
   auto convolverHostObject = std::make_shared<ConvolverNodeHostObject>(context_, convolverOptions);
   auto jsiObject = jsi::Object::createFromHostObject(runtime, convolverHostObject);
-  if (convolverOptions.buffer != nullptr) {
-    auto bufferHostObject = options.getProperty(runtime, "buffer")
-                                .getObject(runtime)
-                                .asHostObject<AudioBufferHostObject>(runtime);
-    jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
-  }
+  // getMemoryPressure() already folds in the IR buffer if one was passed
+  // via options (the HO tracks `irBytes_` when `setBuffer` runs from its ctor).
   jsiObject.setExternalMemoryPressure(runtime, convolverHostObject->getMemoryPressure());
   return jsiObject;
 }

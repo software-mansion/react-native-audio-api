@@ -5,6 +5,7 @@
 #include <audioapi/core/effects/delay/DelayLine.h>
 #include <audioapi/core/effects/delay/host_nodes/DelayReaderHostNode.h>
 #include <audioapi/core/effects/delay/host_nodes/DelayWriterHostNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <memory>
@@ -50,10 +51,18 @@ JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
   return jsi::Object::createFromHostObject(runtime, delayTimeParam_);
 }
 
-size_t DelayNodeHostObject::getSizeInBytes() const {
+size_t DelayNodeHostObject::getMemoryPressure() const {
   auto *delayNode = static_cast<DelayNode *>(node_->handle->audioNode->asAudioNode());
-  auto base = sizeof(float) * delayNode->getDelayTimeParam()->getMaxValue();
-  return static_cast<size_t>(base * delayNode->getContextSampleRate());
+  const float maxDelaySeconds = delayNode->getDelayTimeParam()->getMaxValue();
+  const float sampleRate = delayNode->getContextSampleRate();
+  // The delay line ring buffer dominates: (maxDelay * sr + 1) frames * channels * float.
+  const size_t ringBytes =
+      static_cast<size_t>(maxDelaySeconds * sampleRate + 1) * channelCount_ * sizeof(float);
+  // Base `audioBuffer_` from AudioNodeHostObject::getMemoryPressure(), plus
+  // the reader/writer AudioNode sub-nodes (each owns its own RQ audioBuffer_)
+  // and the delayTime AudioParam.
+  return AudioNodeHostObject::getMemoryPressure() +
+      2 * RENDER_QUANTUM_SIZE * channelCount_ * sizeof(float) + kAudioParamBytes + ringBytes;
 }
 
 } // namespace audioapi

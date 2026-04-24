@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <memory>
 
@@ -26,6 +27,12 @@ class BiquadFilterNodeHostObject : public AudioNodeHostObject {
   JSI_PROPERTY_SETTER_DECL(type);
 
   JSI_HOST_FUNCTION_DECL(getFrequencyResponse);
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // 4 params + per-channel biquad state (x1,x2,y1,y2).
+    return AudioNodeHostObject::getMemoryPressure() + 4 * kAudioParamBytes +
+        channelCount_ * 4 * sizeof(float);
+  }
 
  private:
   std::shared_ptr<AudioParamHostObject> frequencyParam_;

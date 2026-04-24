@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 
 #include <memory>
@@ -25,6 +26,12 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
   JSI_HOST_FUNCTION_DECL(enqueueBuffer);
   JSI_HOST_FUNCTION_DECL(dequeueBuffer);
   JSI_HOST_FUNCTION_DECL(clearBuffers);
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // Same as AudioBufferSourceNode: playbackRate + detune. Enqueued buffers
+    // are individually tracked via their own AudioBufferHostObject pressure.
+    return AudioNodeHostObject::getMemoryPressure() + 2 * kAudioParamBytes;
+  }
 
  protected:
   size_t bufferId_ = 0;

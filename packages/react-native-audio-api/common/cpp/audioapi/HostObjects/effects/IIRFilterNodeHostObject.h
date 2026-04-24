@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 
+#include <cstddef>
 #include <memory>
 
 namespace audioapi {
@@ -17,5 +18,13 @@ class IIRFilterNodeHostObject : public AudioNodeHostObject {
       const IIRFilterOptions &options);
 
   JSI_HOST_FUNCTION_DECL(getFrequencyResponse);
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // Coefficient arrays (typically <= 20 floats each, 256B headroom) plus
+    // the two 32-frame history buffers (xBuffers_ / yBuffers_) per channel.
+    constexpr size_t kBufferLength = 32;
+    return AudioNodeHostObject::getMemoryPressure() +
+        /* coeff arrays */ 256 + 2 * kBufferLength * channelCount_ * sizeof(float);
+  }
 };
 } // namespace audioapi

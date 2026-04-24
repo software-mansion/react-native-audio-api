@@ -2,12 +2,14 @@
 
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/graph/HostNode.h>
 #include <audioapi/jsi/JsiHostObject.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <jsi/jsi.h>
+#include <cstddef>
 #include <memory>
 
 namespace audioapi {
@@ -35,8 +37,8 @@ class AudioNodeHostObject : public JsiHostObject, public utils::graph::HostNode 
   JSI_HOST_FUNCTION_DECL(connect);
   JSI_HOST_FUNCTION_DECL(disconnect);
 
-  virtual size_t getMemoryPressure() {
-    return 350'000;
+  [[nodiscard]] virtual size_t getMemoryPressure() const {
+    return 300'000; // magic number so node can be destroyed quite fast
   }
 
  protected:

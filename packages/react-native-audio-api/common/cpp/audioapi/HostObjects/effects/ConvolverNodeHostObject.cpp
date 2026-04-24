@@ -47,8 +47,8 @@ JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   }
 
   auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-  thisValue.asObject(runtime).setExternalMemoryPressure(
-      runtime, bufferHostObject->getSizeInBytes());
+  irBytes_ = bufferHostObject->getSizeInBytes();
+  thisValue.asObject(runtime).setExternalMemoryPressure(runtime, getMemoryPressure());
 
   setBuffer(bufferHostObject->audioBuffer_);
 
@@ -59,6 +59,8 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   if (buffer == nullptr) {
     return;
   }
+
+  irBytes_ = buffer->getSize() * buffer->getNumberOfChannels() * sizeof(float);
 
   auto handle = node_->handle;
   auto *convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());

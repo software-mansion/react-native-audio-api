@@ -20,8 +20,15 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
   JSI_PROPERTY_SETTER_DECL(normalize);
   JSI_HOST_FUNCTION_DECL(setBuffer);
 
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // Approximate IR-driven allocations: IR copy + partitioned convolver
+    // state + internal/intermediate DSP buffers ≈ 3 * IR bytes.
+    return AudioNodeHostObject::getMemoryPressure() + 3 * irBytes_;
+  }
+
  private:
   bool normalize_;
+  size_t irBytes_ = 0;
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 };
 } // namespace audioapi

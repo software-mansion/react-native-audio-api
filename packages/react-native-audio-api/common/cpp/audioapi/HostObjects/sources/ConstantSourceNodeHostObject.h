@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
 
 #include <memory>
@@ -18,6 +19,10 @@ class ConstantSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
       const ConstantSourceOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(offset);
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    return AudioNodeHostObject::getMemoryPressure() + kAudioParamBytes;
+  }
 
  private:
   std::shared_ptr<AudioParamHostObject> offsetParam_;

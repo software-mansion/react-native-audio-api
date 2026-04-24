@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
@@ -33,6 +34,13 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(setBuffer);
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // playbackRate + detune params (owned by the base source). The AudioBuffer
+    // itself is tracked separately as an AudioBufferHostObject and re-hinted
+    // via setExternalMemoryPressure in `setBuffer`.
+    return AudioNodeHostObject::getMemoryPressure() + 2 * kAudioParamBytes;
+  }
 
  protected:
   bool loop_;

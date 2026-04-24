@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/HostNode.h>
 #include <audioapi/core/utils/param/ParamControlQueue.h>
 #include <audioapi/jsi/JsiHostObject.h>
@@ -13,6 +14,10 @@ namespace audioapi {
 using namespace facebook;
 
 class AudioParam;
+
+/// Rough native footprint of an AudioParamHostObject:
+/// two DSPAudioBuffer(RQ) (k-rate + a-rate scratch) + control queue + atomics.
+inline constexpr size_t kAudioParamBytes = 2 * RENDER_QUANTUM_SIZE * sizeof(float) + 512;
 
 /// @brief Host object for AudioParam that owns its BridgeNode.
 ///

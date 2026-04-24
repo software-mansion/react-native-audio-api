@@ -22,5 +22,11 @@ class WorkletProcessingNodeHostObject : public AudioNodeHostObject {
             std::make_unique<WorkletProcessingNode>(
                 context,
                 WorkletsRunner(workletRuntime, shareableWorklet, shouldLockRuntime))) {}
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // 2 input + 2 output AudioArrayBuffer (RQ floats) wrapped as JS typed arrays.
+    // The worklet closure/captures live in JS and aren't tracked here.
+    return AudioNodeHostObject::getMemoryPressure() + 4 * RENDER_QUANTUM_SIZE * sizeof(float);
+  }
 };
 } // namespace audioapi

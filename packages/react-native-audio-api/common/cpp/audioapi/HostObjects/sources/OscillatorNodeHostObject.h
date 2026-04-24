@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
 #include <audioapi/core/types/OscillatorType.h>
 
@@ -25,6 +26,13 @@ class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
   JSI_HOST_FUNCTION_DECL(setPeriodicWave);
 
   JSI_PROPERTY_SETTER_DECL(type);
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // frequency + detune params. Wavetables (PeriodicWave) are owned by a
+    // separate PeriodicWaveHostObject when custom; default waveforms share
+    // static tables, so we don't account for them here.
+    return AudioNodeHostObject::getMemoryPressure() + 2 * kAudioParamBytes;
+  }
 
  private:
   std::shared_ptr<AudioParamHostObject> frequencyParam_;

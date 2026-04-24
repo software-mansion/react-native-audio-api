@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <memory>
 
@@ -18,6 +19,10 @@ class StereoPannerNodeHostObject : public AudioNodeHostObject {
       const StereoPannerOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(pan);
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    return AudioNodeHostObject::getMemoryPressure() + kAudioParamBytes;
+  }
 
  private:
   std::shared_ptr<AudioParamHostObject> panParam_;
