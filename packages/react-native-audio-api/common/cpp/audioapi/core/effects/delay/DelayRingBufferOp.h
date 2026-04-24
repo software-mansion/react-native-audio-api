@@ -27,6 +27,7 @@ inline void bufferOperation(
       delayBuffer->sum(*processingBuffer, processingBufferStartIndex, operationStartingIndex, tail);
     } else {
       processingBuffer->sum(*delayBuffer, operationStartingIndex, processingBufferStartIndex, tail);
+      delayBuffer->zero(operationStartingIndex, static_cast<size_t>(tail));
     }
 
     operationStartingIndex = 0;

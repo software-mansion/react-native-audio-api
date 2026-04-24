@@ -3,7 +3,6 @@ import {
   AudioBufferSourceNode,
   AudioBuffer,
   GainNode,
-  RecorderAdapterNode,
   AudioRecorder,
   AudioManager
 } from 'react-native-audio-api';
@@ -31,7 +30,7 @@ export default function PedalBoard() {
   const [isLoading, setIsLoading] = useState(false);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
-  const sourceNodeRef = useRef<AudioBufferSourceNode | RecorderAdapterNode>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | AudioRecorder>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const pedalInputNodesRef = useRef<GainNode[]>([]);
   const pedalOutputNodesRef = useRef<GainNode[]>([]);
@@ -84,7 +83,11 @@ export default function PedalBoard() {
       return;
     }
     const sourceNode = sourceNodeRef.current;
-    sourceNode.connect(pedalInputNodesRef.current[0]);
+    if (sourceNode instanceof AudioRecorder) {
+      sourceNode.connect(audioContext, pedalInputNodesRef.current[0]);
+    } else {
+      sourceNode.connect(pedalInputNodesRef.current[0]);
+    }
     for (let i = 0; i < PEDALS.length; i++) {
       pedalInputNodesRef.current[i].connect(pedalOutputNodesRef.current[i]);
     }
@@ -123,11 +126,9 @@ export default function PedalBoard() {
       }
       if (permissionsGranted) {
         const recorder = new AudioRecorder();
-        const adapter = audioContext.createRecorderAdapter();
-        recorder.connect(adapter);
+        sourceNodeRef.current = recorder;
         recorderRef.current = recorder;
-        sourceNodeRef.current = adapter;
-        sourceNodeRef.current.connect(pedalInputNodesRef.current[0]);
+        recorder.connect(audioContext, pedalInputNodesRef.current[0]);
         if (audioContext.state === 'suspended') {
           audioContext.resume();
         }

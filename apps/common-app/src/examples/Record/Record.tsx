@@ -71,9 +71,7 @@ const Record: FC = () => {
       return;
     }
 
-    const adapter = audioContext.createRecorderAdapter();
-    adapter.connect(audioContext.destination);
-    audioRecorder.connect(adapter);
+    audioRecorder.connect(audioContext, audioContext.destination);
 
     const result = audioRecorder.start();
 

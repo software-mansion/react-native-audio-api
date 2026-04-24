@@ -158,7 +158,11 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 
 ### `createRecorderAdapter`
 
-Creates [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node).
+Creates a `RecorderAdapterNode` — an [`AudioNode`](/docs/core/audio-node) that
+adapts an [`AudioRecorder`](/docs/inputs/audio-recorder) into the audio graph.
+Feed it using [`AudioRecorder.connect`](/docs/inputs/audio-recorder#connect) and
+connect it downstream like any other node. Produces silence until a recorder is
+connected to it.
 
 #### Returns `RecorderAdapterNode`
 

@@ -51,15 +51,14 @@ async function App() {
         // !VERY IMPORTANT: please read the Known Issue section below
     };
     const workletNode = audioContext.createWorkletNode(worklet, 1024, 2, 'UIRuntime');
-    const adapterNode = audioContext.createRecorderAdapter();
 
     const canSetAudioSessionActivity = await AudioManager.setAudioSessionActivity(true);
     if (!canSetAudioSessionActivity) {
         throw new Error("Could not activate the audio session");
     }
-    adapterNode.connect(workletNode);
-    workletNode.connect(audioContext.destination);
-    recorder.connect(adapterNode);
+    recorder
+      .connect(audioContext, workletNode)
+      .connect(audioContext.destination);
     recorder.start();
     audioContext.resume();
 }

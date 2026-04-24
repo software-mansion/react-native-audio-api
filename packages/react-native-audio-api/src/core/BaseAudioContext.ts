@@ -20,7 +20,6 @@ import GainNode from './GainNode';
 import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
-import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WaveShaperNode from './WaveShaperNode';
@@ -120,10 +119,6 @@ export default class BaseAudioContext {
   ): WorkletSourceNode {
     assertWorkletsEnabled();
     return new WorkletSourceNode(this, workletRuntime, callback);
-  }
-
-  createRecorderAdapter(): RecorderAdapterNode {
-    return new RecorderAdapterNode(this);
   }
 
   createOscillator(): OscillatorNode {
