@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AudioContext } from 'react-native-audio-api';
 import type { AudioParam } from 'react-native-audio-api';
 
-import { Button, Container } from '../../components';
+import { Button, Container, Spacer } from '../../components';
 import { colors, layout } from '../../styles';
 import {
   SectionTitle,
@@ -232,6 +232,8 @@ const ERROR_SUB_CASES: ErrorSubCase[] = [
 const AudioParamPipeline: FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const isUnmountedRef = useRef(false);
+  const stopRequestedRef = useRef(false);
+  const currentOscRef = useRef<ReturnType<AudioContext['createOscillator']> | null>(null);
 
   const [audioStatuses, setAudioStatuses] = useState<
     Record<string, PlayStatus>
@@ -270,11 +272,21 @@ const AudioParamPipeline: FC = () => {
     tc.setup(osc.frequency, t0);
     osc.start(t0);
     osc.stop(t0 + tc.duration);
+    currentOscRef.current = osc;
 
-    await new Promise<void>((resolve) =>
-      setTimeout(resolve, tc.duration * 1000 + 150)
-    );
+    const stepMs = 50;
+    const totalMs = tc.duration * 1000 + 150;
+    for (let elapsed = 0; elapsed < totalMs; elapsed += stepMs) {
+      if (stopRequestedRef.current || isUnmountedRef.current) {
+        try {
+          osc.stop();
+        } catch {}
+        break;
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, stepMs));
+    }
 
+    currentOscRef.current = null;
     setStatus(tc.key, 'done');
   }, []);
 
@@ -316,6 +328,7 @@ const AudioParamPipeline: FC = () => {
 
   const playAll = useCallback(async () => {
     if (isPlayingAll) return;
+    stopRequestedRef.current = false;
     setIsPlayingAll(true);
     setAudioStatuses(
       Object.fromEntries(AUDIO_TEST_CASES.map((tc) => [tc.key, 'idle']))
@@ -323,16 +336,28 @@ const AudioParamPipeline: FC = () => {
     setErrorSteps(null);
 
     for (const tc of AUDIO_TEST_CASES) {
+      if (stopRequestedRef.current) break;
       await playTestCase(tc);
+      if (stopRequestedRef.current) break;
       await new Promise<void>((resolve) => setTimeout(resolve, 300));
     }
 
-    await runErrorTest();
+    if (!stopRequestedRef.current) {
+      await runErrorTest();
+    }
 
     if (!isUnmountedRef.current) {
       setIsPlayingAll(false);
     }
+    stopRequestedRef.current = false;
   }, [isPlayingAll, playTestCase, runErrorTest]);
+
+  const stopAll = useCallback(() => {
+    stopRequestedRef.current = true;
+    try {
+      currentOscRef.current?.stop();
+    } catch {}
+  }, []);
 
   const reset = useCallback(() => {
     if (isPlayingAll) return;
@@ -348,6 +373,12 @@ const AudioParamPipeline: FC = () => {
       onPress: playAll,
       disabled: isPlayingAll,
       width: 110,
+    },
+    {
+      title: 'Stop',
+      onPress: stopAll,
+      disabled: !isPlayingAll,
+      width: 80,
     },
     {
       title: 'Reset',
@@ -370,26 +401,26 @@ const AudioParamPipeline: FC = () => {
   const playedCount = Object.values(audioStatuses).filter(
     (s) => s === 'done'
   ).length;
-  const errorPassCount = errorSteps?.filter((s) => s.status === 'pass').length;
-  const errorFailCount = errorSteps?.filter((s) => s.status === 'fail').length;
+  const errorPassCount = errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
+  const errorFailCount = errorSteps?.filter((s) => s.status === 'fail').length ?? 0;
+
+  const passedCount = playedCount + errorPassCount;
+  const failedCount = errorFailCount;
+  const totalCount = AUDIO_TEST_CASES.length + ERROR_SUB_CASES.length;
+  const hasAnyResults = playedCount > 0 || errorSteps !== null;
 
   const summaryItems: SummaryItem[] = [
     {
       label: 'Status',
-      value: isRunning
-        ? 'running'
-        : playedCount === 0 && errorSteps === null
-          ? 'idle'
-          : 'done',
+      value: isRunning ? 'running' : hasAnyResults ? 'done' : 'idle',
     },
-    { label: 'Played', value: `${playedCount} / ${AUDIO_TEST_CASES.length}` },
     {
       label: 'Passed',
-      value: errorPassCount != null ? String(errorPassCount) : '—',
+      value: hasAnyResults ? `${passedCount}/${totalCount}` : '—',
     },
     {
       label: 'Failed',
-      value: errorFailCount != null ? String(errorFailCount) : '—',
+      value: hasAnyResults ? String(failedCount) : '—',
     },
   ];
 
@@ -400,6 +431,7 @@ const AudioParamPipeline: FC = () => {
         subtitle="Tap Play on each card to hear the automation. Pitch (oscillator frequency) is the animated parameter."
       />
       <TestUI.Summary items={summaryItems} />
+      <Spacer.Vertical size={12} />
       <TestUI.ControlBar actions={controlActions} />
 
       <ScrollView
