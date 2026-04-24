@@ -32,6 +32,7 @@ export { default as WorkletSourceNode } from './core/WorkletSourceNode';
 export * from './errors';
 export * from './system/types';
 export * from './types';
+export type { default as AudioEventSubscription } from './events/AudioEventSubscription';
 export { default as FilePreset } from './utils/filePresets';
 
 // Notification System
