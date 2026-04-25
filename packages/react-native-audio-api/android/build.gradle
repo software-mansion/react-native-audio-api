@@ -308,9 +308,14 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
 }
 
 task downloadPrebuiltBinaries(type: Exec) {
-  commandLine 'chmod', '+x', '../scripts/download-prebuilt-binaries.sh'
-  commandLine 'bash', '../scripts/download-prebuilt-binaries.sh'
-  args 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
+  def isWindows = Os.isFamily(Os.FAMILY_WINDOWS)
+  if (isWindows) {
+    commandLine 'C:\\Program Files\\Git\\usr\\bin\\bash.exe', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
+  } else {
+    commandLine 'chmod', '+x', '../scripts/download-prebuilt-binaries.sh'
+    commandLine 'bash', '../scripts/download-prebuilt-binaries.sh'
+    args 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
+  }
 }
 
 // Make preBuild depend on the download task
