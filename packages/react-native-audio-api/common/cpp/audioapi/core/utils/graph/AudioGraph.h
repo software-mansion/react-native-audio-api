@@ -5,9 +5,7 @@
 #include <audioapi/core/utils/graph/InputPool.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 
-#include <cassert>
 #include <cstdint>
-#include <cstdio>
 #include <memory>
 #include <ranges>
 #include <utility>

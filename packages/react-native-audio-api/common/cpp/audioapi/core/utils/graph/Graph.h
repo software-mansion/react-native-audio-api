@@ -46,6 +46,17 @@ namespace audioapi::utils::graph {
 class Graph {
   using AGEvent = HostGraph::AGEvent;
 
+  /// Channel B payload: an orphan AGEvent plus a barrier — the value of
+  /// Channel A's `sendCursor()` snapshotted *after* the host-side ghost
+  /// flip but *before* the orphan is enqueued. The audio thread refuses to
+  /// apply the orphan until Channel A's `rcvCursor()` has reached the
+  /// barrier, guaranteeing every A event that existed at orphan-enqueue
+  /// time is applied first.
+  struct OrphanEnvelope {
+    std::uint64_t barrier{0};
+    AGEvent action;
+  };
+
   // ── Event channel (main → audio): grow + graph mutations ───────────────
 
   using EventReceiver = audioapi::channels::spsc::Receiver<
@@ -54,6 +65,15 @@ class Graph {
       audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
   using EventSender = audioapi::channels::spsc::Sender<
       AGEvent,
+      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
+
+  using GcEventReceiver = audioapi::channels::spsc::Receiver<
+      OrphanEnvelope,
+      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
+  using GcEventSender = audioapi::channels::spsc::Sender<
+      OrphanEnvelope,
       audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
       audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
 
@@ -153,8 +173,8 @@ class Graph {
   EventSender eventSender_;
   EventReceiver eventReceiver_;
 
-  EventSender gcEventSender_;
-  EventReceiver gcEventReceiver_;
+  GcEventSender gcEventSender_;
+  GcEventReceiver gcEventReceiver_;
 
   // ── Disposer — destroys old pool buffers off the audio thread ───────────
 

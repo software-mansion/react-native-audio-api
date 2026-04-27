@@ -18,8 +18,8 @@ Graph::Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE
   eventSender_ = std::move(es);
   eventReceiver_ = std::move(er);
 
-  auto [gs, gr] =
-      channel<AGEvent, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(eventQueueCapacity);
+  auto [gs, gr] = channel<OrphanEnvelope, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(
+      eventQueueCapacity);
   gcEventSender_ = std::move(gs);
   gcEventReceiver_ = std::move(gr);
 }
@@ -41,22 +41,39 @@ Graph::Graph(
 }
 
 void Graph::processEvents() {
-  AGEvent event;
-  // Drain Channel A (JS thread producer: addNode / addEdge / grow / …)
-  // fully first — this guarantees that any `addNode(X)` pending here is
-  // applied to AudioGraph before we process a matching `orphan(X)` that
-  // may already be sitting in Channel B.
-  while (eventReceiver_.try_receive(event) == audioapi::channels::spsc::ResponseStatus::SUCCESS) {
-    if (event) {
-      event(audioGraph, *disposer_);
+  using audioapi::channels::spsc::ResponseStatus;
+
+  auto drainA = [&] {
+    AGEvent ev;
+    while (eventReceiver_.try_receive(ev) == ResponseStatus::SUCCESS) {
+      if (ev) {
+        ev(audioGraph, *disposer_);
+      }
     }
-  }
-  // Drain Channel B (finalizer / GC thread producer: removeNode orphan
-  // events). These are idempotent w.r.t. each other and never require
-  // capacity growth (they only flip a boolean on an existing node).
-  while (gcEventReceiver_.try_receive(event) == audioapi::channels::spsc::ResponseStatus::SUCCESS) {
-    if (event) {
-      event(audioGraph, *disposer_);
+  };
+
+  // Steady-state: drain any A events queued since the last cycle.
+  drainA();
+
+  // For every pending orphan on Channel B: ensure Channel A's receive
+  // cursor has reached the barrier the GC thread snapshotted at orphan
+  // enqueue time. Until that barrier is met, every A event that the
+  // orphan happens-after must still be in flight; we drain A again to
+  // catch up. Only then do we consume and apply the orphan.
+  while (const OrphanEnvelope *front = gcEventReceiver_.try_peek()) {
+    if (eventReceiver_.rcvCursor() < front->barrier) {
+      drainA();
+      if (eventReceiver_.rcvCursor() < front->barrier) {
+        // Producer is mid-send on Channel A; the event will arrive
+        // imminently. Defer this orphan to the next processEvents()
+        // tick rather than burning audio-thread cycles spinning.
+        break;
+      }
+    }
+    OrphanEnvelope consumed;
+    gcEventReceiver_.try_receive(consumed);
+    if (consumed.action) {
+      consumed.action(audioGraph, *disposer_);
     }
   }
 }
@@ -84,7 +101,14 @@ Graph::Res Graph::removeNode(HNode *node) {
   // Sending through the dedicated SPSC channel keeps the single-producer
   // invariant for both channels.
   return hostGraph.removeNode(node).map([&](AGEvent event) {
-    gcEventSender_.send(std::move(event));
+    // Snapshot Channel A's send cursor *after* the host-side ghost flip
+    // performed inside `hostGraph.removeNode`. Any subsequent JS-thread
+    // attempt to enqueue an A event referencing this node is guaranteed
+    // to see ghost=true (the JS thread re-acquires nodesMutex_ in
+    // addEdge/removeEdge and bails out). Therefore every A event that
+    // could possibly reference this node lives at index < barrier.
+    auto barrier = eventSender_.sendCursor();
+    gcEventSender_.send(OrphanEnvelope{.barrier = barrier, .action = std::move(event)});
     return NoneType{};
   });
 }
