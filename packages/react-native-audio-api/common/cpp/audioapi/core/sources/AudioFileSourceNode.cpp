@@ -10,8 +10,6 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
-#include <string>
-#include <unordered_map>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
@@ -69,10 +67,10 @@ void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
   if (onPositionChangedCallbackId_ != 0 &&
       (onPositionChangedFlush_.load(std::memory_order_acquire) ||
        onPositionChangedTime_ > onPositionChangedInterval_)) {
-    std::unordered_map<std::string, EventValue> body = {{"value", getCurrentTime()}};
-
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId_, body);
+    audioEventHandlerRegistry_->dispatchEvent(
+        AudioEvent::POSITION_CHANGED,
+        onPositionChangedCallbackId_,
+        DoubleValuePayload{.value = getCurrentTime()});
 
     onPositionChangedTime_ = 0;
     onPositionChangedFlush_.store(false, std::memory_order_release);

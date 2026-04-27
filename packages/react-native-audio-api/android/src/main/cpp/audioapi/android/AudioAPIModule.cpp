@@ -1,7 +1,6 @@
 #include <audioapi/android/AudioAPIModule.h>
+#include <audioapi/android/JniEventPayloadParser.h>
 #include <memory>
-#include <string>
-#include <unordered_map>
 
 namespace audioapi {
 
@@ -66,34 +65,13 @@ void AudioAPIModule::injectJSIBindings() {
 void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
     jint eventOrdinal,
     jni::alias_ref<jni::JMap<jstring, jobject>> eventBody) {
-  std::unordered_map<std::string, EventValue> body = {};
-
-  for (const auto &entry : *eventBody) {
-    std::string name = entry.first->toStdString();
-    auto value = entry.second;
-
-    if (value->isInstanceOf(jni::JString::javaClassStatic())) {
-      body[name] = jni::static_ref_cast<jni::JString>(value)->toStdString();
-    } else if (value->isInstanceOf(jni::JInteger::javaClassStatic())) {
-      body[name] = jni::static_ref_cast<jni::JInteger>(value)->value();
-    } else if (value->isInstanceOf(jni::JDouble::javaClassStatic())) {
-      body[name] = jni::static_ref_cast<jni::JDouble>(value)->value();
-    } else if (value->isInstanceOf(jni::JFloat::javaClassStatic())) {
-      body[name] = jni::static_ref_cast<jni::JFloat>(value)->value();
-    } else if (value->isInstanceOf(jni::JBoolean::javaClassStatic())) {
-      auto booleanValue = jni::static_ref_cast<jni::JBoolean>(value)->value();
-
-      if (booleanValue) {
-        body[name] = true;
-      } else {
-        body[name] = false;
-      }
-    }
+  if (audioEventHandlerRegistry_ == nullptr) {
+    return;
   }
 
-  if (audioEventHandlerRegistry_ != nullptr) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        static_cast<audioapi::AudioEvent>(eventOrdinal), body);
-  }
+  auto event = static_cast<AudioEvent>(eventOrdinal);
+  audioEventHandlerRegistry_->dispatchEvent(
+      event, kBroadcastListenerId, buildPayloadFromJniMap(event, eventBody));
 }
+
 } // namespace audioapi
