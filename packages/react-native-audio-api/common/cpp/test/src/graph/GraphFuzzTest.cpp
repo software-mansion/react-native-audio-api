@@ -22,8 +22,6 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using PNode = ProcessableMockNode;
   using HNode = HostGraph::Node;
-  using Res = Graph::Res;
-  using ResultError = Graph::ResultError;
 
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
@@ -80,8 +78,9 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
           }
           // Sum inputs
           int sum = 0;
-          for (int v : inputs)
+          for (int v : inputs) {
             sum += v;
+          }
           return sum;
         },
         initialValue);
@@ -89,13 +88,15 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
   /// @brief Pick two distinct random nodes from the live set.
   std::pair<HNode *, HNode *> pickTwoNodes() {
-    if (nodes.size() < 2)
+    if (nodes.size() < 2) {
       return {nullptr, nullptr};
+    }
     auto dist = std::uniform_int_distribution<size_t>(0, nodes.size() - 1);
     size_t a = dist(rng);
     size_t b = dist(rng);
-    if (a == b)
+    if (a == b) {
       return {nullptr, nullptr};
+    }
     return {nodes[a], nodes[b]};
   }
 
