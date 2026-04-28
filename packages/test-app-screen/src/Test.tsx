@@ -31,6 +31,20 @@ import {
   audioBufferSourceNegativePlaybackRateTest,
   audioBufferSourceLongPlaybackTest,
 } from './AudioBufferSourceTest';
+import {
+  queueSourceBasicTest,
+  queueSourceMultipleBuffersTest,
+  queueSourceEnqueueWhilePlayingTest,
+  queueSourceDequeueTest,
+  queueSourceClearBuffersTest,
+  queueSourcePauseResumeTest,
+  queueSourceScheduledStartTest,
+  queueSourceStartOffsetTest,
+  queueSourcePlaybackRateTest,
+  queueSourceDetuneTest,
+  queueSourceLastFlagTest,
+  queueSourceLongPlaybackTest,
+} from './AudioBufferQueueSourceTest';
 
 import { View, Text, Button } from 'react-native';
 
@@ -170,6 +184,36 @@ const Test: FC = () => {
     setIsTesting(false);
   };
 
+  const audioBufferQueueSourceTest = async () => {
+    setupAudioContext();
+    setIsTesting(true);
+    const ctx = audioContextRef.current!;
+    const buffer = await loadAudioBuffer(ctx);
+    await queueSourceBasicTest(ctx, buffer, setTestingInfo);
+    await queueSourceMultipleBuffersTest(ctx, buffer, setTestingInfo);
+    await queueSourceEnqueueWhilePlayingTest(ctx, buffer, setTestingInfo);
+    await queueSourceDequeueTest(ctx, buffer, setTestingInfo);
+    await queueSourceClearBuffersTest(ctx, buffer, setTestingInfo);
+    await queueSourcePauseResumeTest(ctx, buffer, setTestingInfo);
+    await queueSourceScheduledStartTest(ctx, buffer, setTestingInfo);
+    await queueSourceStartOffsetTest(ctx, buffer, setTestingInfo);
+    await queueSourcePlaybackRateTest(ctx, buffer, setTestingInfo);
+    await queueSourceDetuneTest(ctx, buffer, setTestingInfo);
+    await queueSourceLastFlagTest(ctx, buffer, setTestingInfo);
+    setTestingInfo('AudioBufferQueueSourceNode test completed.');
+    setIsTesting(false);
+  };
+
+  const audioBufferQueueSourceLongTest = async () => {
+    setupAudioContext();
+    setIsTesting(true);
+    const ctx = audioContextRef.current!;
+    const buffer = await loadAudioBuffer(ctx);
+    await queueSourceLongPlaybackTest(ctx, buffer, setTestingInfo);
+    setTestingInfo('Queue long playback test completed.');
+    setIsTesting(false);
+  };
+
   return (
     <View
       style={{
@@ -208,6 +252,16 @@ const Test: FC = () => {
         <Button
           title="audio buffer source (long ~30s)"
           onPress={audioBufferSourceLongTest}
+          disabled={isTesting}
+        />
+        <Button
+          title="audio buffer queue source"
+          onPress={audioBufferQueueSourceTest}
+          disabled={isTesting}
+        />
+        <Button
+          title="audio buffer queue source (long ~60s)"
+          onPress={audioBufferQueueSourceLongTest}
           disabled={isTesting}
         />
         <Text style={{ color: 'white', paddingTop: 40 }}>

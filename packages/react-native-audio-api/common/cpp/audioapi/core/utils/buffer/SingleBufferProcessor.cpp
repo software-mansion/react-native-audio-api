@@ -1,6 +1,5 @@
-#pragma once
-
 #include "audioapi/core/utils/buffer/SingleBufferProcessor.h"
+#include <cstddef>
 
 namespace audioapi {
 
@@ -63,6 +62,10 @@ bool SingleBufferProcessor::shouldStop() {
 }
 
 void SingleBufferProcessor::handleBoundary() {
+  if (!loop_) {
+    return;
+  }
+
   auto range = static_cast<double>(endFrame_ - startFrame_);
 
   if (range <= 0) {

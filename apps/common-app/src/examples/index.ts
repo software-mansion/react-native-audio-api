@@ -9,7 +9,7 @@ import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
 import Piano from './Piano';
-import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
+import PlaybackSpeed from './PlaybackSpeed';
 import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
@@ -138,7 +138,7 @@ export const Examples: Example[] = [
   },
   {
     key: 'TestScreen',
-    title: 'Tests',
+    title: 'TestScreen',
     Icon: icons.TestTube,
     screen: TestScreen,
   },
