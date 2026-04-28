@@ -60,8 +60,9 @@ class MockGraphProcessor {
   /// @brief Signals the audio thread to stop and waits for it to finish.
   void stop() {
     running_.store(false, std::memory_order_release);
-    if (thread_.joinable())
+    if (thread_.joinable()) {
       thread_.join();
+    }
   }
 
   /// @brief Total allocation/deallocation violations across all cycles.
@@ -144,10 +145,7 @@ class MockGraphProcessor {
       if (!node) {
         continue;
       }
-
-      if constexpr (requires { node->process(inputs); }) {
-        node->process(inputs);
-      }
+      node->process(inputs);
     }
   }
 

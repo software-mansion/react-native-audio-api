@@ -57,25 +57,22 @@ class Graph {
     AGEvent action;
   };
 
+  constexpr static audioapi::channels::spsc::WaitStrategy EVENT_WAIT_STRATEGY =
+      audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
+  constexpr static audioapi::channels::spsc::OverflowStrategy EVENT_OVERFLOW_STRATEGY =
+      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
+
   // ── Event channel (main → audio): grow + graph mutations ───────────────
 
-  using EventReceiver = audioapi::channels::spsc::Receiver<
-      AGEvent,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
-  using EventSender = audioapi::channels::spsc::Sender<
-      AGEvent,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
+  using EventReceiver =
+      audioapi::channels::spsc::Receiver<AGEvent, EVENT_OVERFLOW_STRATEGY, EVENT_WAIT_STRATEGY>;
+  using EventSender =
+      audioapi::channels::spsc::Sender<AGEvent, EVENT_OVERFLOW_STRATEGY, EVENT_WAIT_STRATEGY>;
 
-  using GcEventReceiver = audioapi::channels::spsc::Receiver<
-      OrphanEnvelope,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
-  using GcEventSender = audioapi::channels::spsc::Sender<
-      OrphanEnvelope,
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      audioapi::channels::spsc::WaitStrategy::BUSY_LOOP>;
+  using GcEventReceiver = audioapi::channels::spsc::
+      Receiver<OrphanEnvelope, EVENT_OVERFLOW_STRATEGY, EVENT_WAIT_STRATEGY>;
+  using GcEventSender = audioapi::channels::spsc::
+      Sender<OrphanEnvelope, EVENT_OVERFLOW_STRATEGY, EVENT_WAIT_STRATEGY>;
 
   using HNode = HostGraph::Node;
 
@@ -125,7 +122,7 @@ class Graph {
   /// @brief Adds a new node to the graph and returns a pointer to it.
   /// @param audioNode the audio processing node to add (ownership transferred)
   /// @return pointer to the newly added HostGraph::Node
-  HNode *addNode(std::unique_ptr<GraphObject> audioNode = nullptr);
+  HNode *addNode(std::unique_ptr<GraphObject> audioNode);
 
   template <std::derived_from<GraphObject> TObject>
   HNode *addNode(std::unique_ptr<TObject> audioNode) {

@@ -30,13 +30,15 @@ size_t AudioThreadGuard::allocationViolations() {
 }
 
 void AudioThreadGuard::recordAllocation() {
-  if (g_armed)
+  if (g_armed) {
     ++g_violations;
+  }
 }
 
 void AudioThreadGuard::recordDeallocation() {
-  if (g_armed)
+  if (g_armed) {
     ++g_violations;
+  }
 }
 
 // ── Context switches ──────────────────────────────────────────────────────

@@ -177,7 +177,7 @@ auto HostGraph::addNode(std::shared_ptr<NodeHandle> handle) -> std::pair<Node *,
   newNode->handle = handle;
   nodes.push_back(newNode);
 
-  auto event = [h = std::move(handle)](auto &graph, auto &) {
+  auto event = [h = std::move(handle)](auto &graph, auto &) mutable {
     graph.addNode(std::move(h));
   };
 
@@ -194,7 +194,7 @@ auto HostGraph::removeNode(Node *node) -> Res {
   node->ghost = true;
 
   return Res::Ok(
-      [h = node->handle](AudioGraph &graph, auto &) { graph[h->index].orphaned = true; });
+      [h = node->handle](AudioGraph &graph, auto &) mutable { graph[h->index].orphaned = true; });
 }
 
 void HostGraph::markNodesAsProcessing(Node *node) {
@@ -239,31 +239,35 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
 
   from->outputs.push_back(to);
   to->inputs.push_back(from);
+  to->handle->audioNode->inputBuffers_.reserve(to->inputs.size());
   edgeCount_++;
 
   // Channel-count negotiation: computed + allocated on the host thread,
   // applied on the audio thread by the AGEvent below.
   auto negotiatedBuffer = buildNegotiatedBufferIfNeeded(to);
 
-  // could be problematic, since we are passing raw pointers to the lambda
-  return Res::Ok([from, to, negotiatedBuffer = std::move(negotiatedBuffer)](
-                     AudioGraph &graph, auto &disposer) mutable {
-    auto *fromNode = from->handle ? from->handle->audioNode.get() : nullptr;
-    auto *toNode = to->handle ? to->handle->audioNode.get() : nullptr;
-    if (fromNode && toNode && !fromNode->isProcessable() && toNode->isProcessable()) {
-      markNodesAsProcessing(from);
-    }
-    if (auto *toAudio = (toNode ? toNode->asAudioNode() : nullptr);
-        toAudio != nullptr && negotiatedBuffer != nullptr) {
-      auto oldBuffer = toAudio->getOutputBuffer();
-      toAudio->setOutputBuffer(std::move(negotiatedBuffer));
-      if (oldBuffer != nullptr) {
-        disposer.dispose(std::move(oldBuffer));
-      }
-    }
-    graph.pool().push(graph[to->handle->index].input_head, from->handle->index);
-    graph.markDirty();
-  });
+  // could be problematic, since we are passing raw pointer to the lambda
+  return Res::Ok(
+      [from,
+       hTo = to->handle,
+       hFrom = from->handle,
+       negotiatedBuffer = std::move(negotiatedBuffer)](AudioGraph &graph, auto &disposer) mutable {
+        auto *fromNode = hFrom->audioNode.get();
+        auto *toNode = hTo->audioNode.get();
+        if (!fromNode->isProcessable() && toNode->isProcessable()) {
+          markNodesAsProcessing(from);
+        }
+        auto *toAudio = toNode->asAudioNode();
+        if (toAudio != nullptr && negotiatedBuffer != nullptr) {
+          auto oldBuffer = toAudio->getOutputBuffer();
+          toAudio->setOutputBuffer(negotiatedBuffer);
+          if (oldBuffer) {
+            disposer.dispose(std::move(oldBuffer));
+          }
+        }
+        graph.pool().push(graph[hTo->index].input_head, from->handle->index);
+        graph.markDirty();
+      });
 }
 
 void HostGraph::markNodesAsNotProcessing(Node *node) {
@@ -313,31 +317,32 @@ auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
   // applied on the audio thread by the AGEvent below.
   auto negotiatedBuffer = buildNegotiatedBufferIfNeeded(to);
 
-  // could be problematic, since we are passing raw pointers to the lambda
-  return Res::Ok([from, to, negotiatedBuffer = std::move(negotiatedBuffer)](
+  // could be problematic, since we are passing raw pointer to the lambda
+  return Res::Ok([from,
+                  hTo = to->handle,
+                  hFrom = from->handle,
+                  negotiatedBuffer = std::move(negotiatedBuffer)](
                      AudioGraph &graph, auto &disposer) mutable {
-    auto *fromAudio = (from && from->handle) ? from->handle->audioNode.get() : nullptr;
+    auto *fromAudio = hFrom->audioNode.get();
 
-    if (fromAudio != nullptr &&
-        fromAudio->processableState_ == GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
+    if (fromAudio->processableState_ == GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
       bool updateProcessingNodes = std::ranges::all_of(from->outputs, [](Node *output) {
-        auto *outAudio = (output && output->handle) ? output->handle->audioNode.get() : nullptr;
-        return outAudio == nullptr || !outAudio->isProcessable();
+        auto *outAudio = output->handle->audioNode.get();
+        return !outAudio->isProcessable();
       });
       if (updateProcessingNodes) {
         HostGraph::markNodesAsNotProcessing(from);
       }
     }
-    auto *toNode = to->handle ? to->handle->audioNode.get() : nullptr;
-    if (auto *toAudio = (toNode ? toNode->asAudioNode() : nullptr);
+    if (auto *toAudio = hTo->audioNode->asAudioNode();
         toAudio != nullptr && negotiatedBuffer != nullptr) {
       auto oldBuffer = toAudio->getOutputBuffer();
       toAudio->setOutputBuffer(negotiatedBuffer);
-      if (oldBuffer != nullptr) {
+      if (oldBuffer) {
         disposer.dispose(std::move(oldBuffer));
       }
     }
-    graph.pool().remove(graph[to->handle->index].input_head, from->handle->index);
+    graph.pool().remove(graph[hTo->index].input_head, from->handle->index);
     graph.markDirty();
   });
 }

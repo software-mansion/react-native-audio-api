@@ -1,12 +1,21 @@
 #include "TestGraphUtils.h"
 
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <utility>
 #include <vector>
 
 namespace audioapi::utils::graph {
+
+class BasicAudioNode : public audioapi::AudioNode {
+ public:
+  BasicAudioNode(
+      const std::shared_ptr<audioapi::BaseAudioContext> &context,
+      const audioapi::AudioNodeOptions &options)
+      : AudioNode(context, options) {}
+
+  void processNode(int /*framesToProcess*/) override {}
+};
 
 std::pair<AudioGraph, HostGraph> TestGraphUtils::createTestGraph(
     std::vector<std::vector<size_t>> adjacencyList) {
@@ -18,14 +27,13 @@ std::pair<AudioGraph, HostGraph> TestGraphUtils::createTestGraph(
 std::vector<std::vector<size_t>> TestGraphUtils::convertAudioGraphToAdjacencyList(
     const AudioGraph &audioGraph) {
   std::vector<std::vector<size_t>> adjacencyList;
-  if (audioGraph.size() == 0)
+  if (audioGraph.size() == 0) {
     return {};
+  }
 
   size_t maxId = 0;
   for (uint32_t i = 0; i < audioGraph.size(); i++) {
-    if (audioGraph[i].test_node_identifier__ > maxId) {
-      maxId = audioGraph[i].test_node_identifier__;
-    }
+    maxId = std::max(audioGraph[i].test_node_identifier__, maxId);
   }
 
   adjacencyList.resize(maxId + 1);
@@ -52,14 +60,13 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertAudioGraphToAdjacencyLis
 std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList(
     const HostGraph &hostGraph) {
   std::vector<std::vector<size_t>> adjacencyList;
-  if (hostGraph.nodes.empty())
+  if (hostGraph.nodes.empty()) {
     return {};
+  }
 
   size_t maxId = 0;
   for (auto *n : hostGraph.nodes) {
-    if (n->test_node_identifier__ > maxId) {
-      maxId = n->test_node_identifier__;
-    }
+    maxId = std::max(n->test_node_identifier__, maxId);
   }
 
   adjacencyList.resize(maxId + 1);
@@ -84,7 +91,8 @@ HostGraph TestGraphUtils::makeFromAdjacencyList(
   nodesVec.reserve(adjacencyList.size());
 
   for (size_t i = 0; i < adjacencyList.size(); ++i) {
-    auto handle = std::make_shared<NodeHandle>(static_cast<uint32_t>(i), nullptr);
+    auto audioNode = std::make_unique<BasicAudioNode>(getGraphTestContext(), AudioNodeOptions());
+    auto handle = std::make_shared<NodeHandle>(static_cast<uint32_t>(i), std::move(audioNode));
     auto *node = new HostGraph::Node();
     node->handle = handle;
     node->test_node_identifier__ = i;
@@ -109,8 +117,9 @@ HostGraph TestGraphUtils::makeFromAdjacencyList(
 
 AudioGraph TestGraphUtils::createAudioGraphFromHostGraph(const HostGraph &hostGraph) {
   AudioGraph audioGraph;
-  if (hostGraph.nodes.empty())
+  if (hostGraph.nodes.empty()) {
     return audioGraph;
+  }
 
   for (auto *n : hostGraph.nodes) {
     audioGraph.addNode(n->handle);

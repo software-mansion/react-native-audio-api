@@ -14,12 +14,12 @@ Graph::Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE
   using namespace audioapi::channels::spsc;
 
   auto [es, er] =
-      channel<AGEvent, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(eventQueueCapacity);
+      channel<AGEvent, EVENT_OVERFLOW_STRATEGY, EVENT_WAIT_STRATEGY>(eventQueueCapacity);
   eventSender_ = std::move(es);
   eventReceiver_ = std::move(er);
 
-  auto [gs, gr] = channel<OrphanEnvelope, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::BUSY_LOOP>(
-      eventQueueCapacity);
+  auto [gs, gr] =
+      channel<OrphanEnvelope, EVENT_OVERFLOW_STRATEGY, EVENT_WAIT_STRATEGY>(eventQueueCapacity);
   gcEventSender_ = std::move(gs);
   gcEventReceiver_ = std::move(gr);
 }
@@ -41,6 +41,7 @@ Graph::Graph(
 }
 
 void Graph::processEvents() {
+  std::atomic_thread_fence(std::memory_order_acquire);
   using audioapi::channels::spsc::ResponseStatus;
 
   auto drainA = [&] {

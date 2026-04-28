@@ -5,6 +5,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/CircularArray.hpp>
+#include <test/src/graph/AudioThreadGuard.h>
 #include <memory>
 #include <vector>
 
@@ -106,6 +107,9 @@ utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *BaseAudioContext::getDisposer() cons
 }
 
 void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
+#ifdef DEBUG
+  test::AudioThreadGuard::Scope guard;
+#endif
   processAudioEvents();
   graph_->processEvents();
   graph_->process();
@@ -120,6 +124,11 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
   }
 
   currentSampleFrame_.fetch_add(numFrames, std::memory_order_release);
+#ifdef DEBUG
+  if (!guard.clean()) {
+    throw std::runtime_error("Allocations on audio thread detected");
+  }
+#endif
 }
 
 } // namespace audioapi

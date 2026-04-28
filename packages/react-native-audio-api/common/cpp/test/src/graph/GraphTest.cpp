@@ -15,6 +15,16 @@
 
 namespace audioapi::utils::graph {
 
+class BasicAudioNode : public audioapi::AudioNode {
+ public:
+  BasicAudioNode(
+      const std::shared_ptr<audioapi::BaseAudioContext> &context,
+      const audioapi::AudioNodeOptions &options)
+      : AudioNode(context, options) {}
+
+  void processNode(int /*framesToProcess*/) override {}
+};
+
 class GraphTest : public ::testing::Test {
  protected:
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
@@ -33,8 +43,6 @@ class GraphTest : public ::testing::Test {
     return graph->hostGraph;
   }
 };
-
-namespace {
 
 /// Minimal AudioNode used as both a "source" (configurable channel count on
 /// its output buffer) and a "destination" (configurable channelCount /
@@ -73,10 +81,9 @@ inline HostGraph::Node *addChannelCountNode(Graph &graph, const ChannelOpts &opt
   return graph.addNode(std::move(audioNode));
 }
 
-} // namespace
-
 TEST_F(GraphTest, EventsAreScheduledButNotExecutedUntilProcess) {
-  auto *node = graph->addNode();
+  auto audioNode = std::make_unique<BasicAudioNode>(getGraphTestContext(), AudioNodeOptions());
+  auto *node = graph->addNode(std::move(audioNode));
   ASSERT_NE(node, nullptr);
 
   // AudioGraph should not be aware of the node yet (event not processed)
@@ -94,8 +101,10 @@ TEST_F(GraphTest, EventsAreScheduledButNotExecutedUntilProcess) {
 }
 
 TEST_F(GraphTest, NoUselessEventsScheduled) {
-  auto *node1 = graph->addNode();
-  auto *node2 = graph->addNode();
+  auto audioNode1 = std::make_unique<BasicAudioNode>(getGraphTestContext(), AudioNodeOptions());
+  auto audioNode2 = std::make_unique<BasicAudioNode>(getGraphTestContext(), AudioNodeOptions());
+  auto *node1 = graph->addNode(std::move(audioNode1));
+  auto *node2 = graph->addNode(std::move(audioNode2));
   graph->processEvents();
 
   // Initial state
@@ -135,7 +144,8 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
 
   // Add initial nodes
   for (int i = 0; i < 10; ++i) {
-    nodes.push_back(graph->addNode());
+    auto audioNode = std::make_unique<BasicAudioNode>(getGraphTestContext(), AudioNodeOptions());
+    nodes.push_back(graph->addNode(std::move(audioNode)));
   }
   graph->processEvents(); // Setup
 
@@ -153,7 +163,8 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
     // Randomly add edge or remove edge or add node
     int op = rand_r(&seed) % 3;
     if (op == 0) {
-      auto *n = graph->addNode();
+      auto audioNode = std::make_unique<BasicAudioNode>(getGraphTestContext(), AudioNodeOptions());
+      auto *n = graph->addNode(std::move(audioNode));
       nodes.push_back(n);
     } else if (op == 1 && nodes.size() > 2) {
       // Add edge

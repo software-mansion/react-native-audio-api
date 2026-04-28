@@ -42,7 +42,7 @@ class HostGraph {
 
   /// Event that modifies AudioGraph to keep it consistent with HostGraph.
   /// The second argument is the Disposer used to offload buffer deallocation.
-  using AGEvent = FatFunction<32, void(AudioGraph &, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &)>;
+  using AGEvent = FatFunction<56, void(AudioGraph &, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &)>;
 
   using Res = Result<AGEvent, ResultError>;
 
