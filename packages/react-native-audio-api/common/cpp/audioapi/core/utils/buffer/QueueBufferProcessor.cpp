@@ -1,13 +1,23 @@
-#include <audioapi/core/utils/buffer/QueueBufferCursor.h>
+#include <audioapi/core/utils/buffer/QueueBufferProcessor.h>
 
-#include <cmath>
 #include <cstddef>
 #include <iterator>
+#include <list>
+#include <memory>
 #include <utility>
 
 namespace audioapi {
 
-CursorState QueueBufferCursor::advance() {
+QueueBufferProcessor::QueueBufferProcessor(
+    std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> *buffers,
+    double *vReadIndex,
+    float rate,
+    OnBufferConsumed onBufferConsumed)
+    : BufferProcessorBase(nullptr, vReadIndex, false, rate, 0, 0),
+      buffers_(buffers),
+      onBufferConsumed_(std::move(onBufferConsumed)) {}
+
+CursorState QueueBufferProcessor::advance() {
   if (buffers_->empty()) {
     return {
         .index = 0, .nextIndex = 0, .factor = 0.0f, .atEndOfBuffer = true, .isCrossBuffer = false};
@@ -33,11 +43,11 @@ CursorState QueueBufferCursor::advance() {
       isCrossBuffer = true;
     } else {
       nextIndex = index;
-      atEnd = (currentPos + std::fabs(rate_)) >= static_cast<double>(bufferSize);
+      atEnd = (currentPos + static_cast<double>(rate_)) >= static_cast<double>(bufferSize);
     }
   }
 
-  *vReadIndex_ += std::fabs(rate_);
+  *vReadIndex_ += static_cast<double>(rate_);
 
   return {
       .index = index,
@@ -47,7 +57,11 @@ CursorState QueueBufferCursor::advance() {
       .isCrossBuffer = isCrossBuffer};
 }
 
-size_t QueueBufferCursor::remainingInContiguousBlock() const {
+void QueueBufferProcessor::consume(size_t frames) {
+  *vReadIndex_ += static_cast<double>(frames);
+}
+
+size_t QueueBufferProcessor::remainingInContiguousBlock() {
   if (buffers_->empty()) {
     return 0;
   }
@@ -56,22 +70,18 @@ size_t QueueBufferCursor::remainingInContiguousBlock() const {
   return pos < size ? size - pos : 0;
 }
 
-void QueueBufferCursor::consume(size_t frames) {
-  *vReadIndex_ += static_cast<double>(frames);
-}
-
-size_t QueueBufferCursor::currentIndex() const {
+size_t QueueBufferProcessor::currentIndex() {
   return static_cast<size_t>(*vReadIndex_);
 }
 
-const AudioBuffer *QueueBufferCursor::getBuffer() const {
+const AudioBuffer *QueueBufferProcessor::getBuffer() {
   if (buffers_->empty()) {
     return nullptr;
   }
   return buffers_->front().second.get();
 }
 
-const AudioBuffer *QueueBufferCursor::getNextBuffer() const {
+const AudioBuffer *QueueBufferProcessor::getNextBuffer() {
   if (buffers_->empty()) {
     return pendingTailBuffer_ ? pendingTailBuffer_.get() : nullptr;
   }
@@ -85,18 +95,18 @@ const AudioBuffer *QueueBufferCursor::getNextBuffer() const {
   return buffers_->front().second.get();
 }
 
-bool QueueBufferCursor::atBoundary() const {
+bool QueueBufferProcessor::atBoundary() {
   if (buffers_->empty()) {
     return true;
   }
   return *vReadIndex_ >= static_cast<double>(buffers_->front().second->getSize());
 }
 
-bool QueueBufferCursor::shouldStop() const {
+bool QueueBufferProcessor::shouldStop() {
   return buffers_->empty();
 }
 
-void QueueBufferCursor::handleBoundary() {
+void QueueBufferProcessor::handleBoundary() {
   if (buffers_->empty()) {
     return;
   }
@@ -123,8 +133,4 @@ void QueueBufferCursor::handleBoundary() {
   }
 }
 
-double QueueBufferCursor::getVirtualReadIndex() const {
-  return *vReadIndex_;
-}
-
-}; // namespace audioapi
+} // namespace audioapi

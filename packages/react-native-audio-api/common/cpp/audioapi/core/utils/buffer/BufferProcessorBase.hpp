@@ -13,6 +13,7 @@ struct CursorState {
   size_t nextIndex;
   float factor;
   bool atEndOfBuffer;
+  bool isCrossBuffer;
 };
 
 class BufferProcessorBase {
@@ -91,17 +92,33 @@ class BufferProcessorBase {
     for (size_t i = 0; i < framesLeft; ++i) {
       CursorState state = advance();
       if (state.atEndOfBuffer) {
-        output->zero(writeIndex, framesLeft - 1);
-        break;
+        output->zero(writeIndex, framesLeft - i);
+        return;
       }
 
+      const AudioBuffer *currentBuffer = getBuffer();
       for (size_t ch = 0; ch < output->getNumberOfChannels(); ++ch) {
         auto destination = output->getChannel(ch)->span();
-        auto source = getBuffer()->getChannel(ch)->span();
-        destination[writeIndex] =
-            dsp::linearInterpolate(source, state.index, state.nextIndex, state.factor);
+        auto source = currentBuffer->getChannel(ch)->span();
+        if (state.isCrossBuffer) {
+          auto nextSource = getNextBuffer()->getChannel(ch)->span();
+          float currentSample = source[state.index];
+          float nextSample = nextSource[state.nextIndex];
+          destination[writeIndex] = currentSample + state.factor * (nextSample - currentSample);
+        } else {
+          destination[writeIndex] =
+              dsp::linearInterpolate(source, state.index, state.nextIndex, state.factor);
+        }
       }
       writeIndex++;
+
+      if (atBoundary()) {
+        handleBoundary();
+        if (shouldStop()) {
+          output->zero(writeIndex, framesLeft - i - 1);
+          return;
+        }
+      }
     }
   }
 

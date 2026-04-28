@@ -4,8 +4,7 @@
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/core/utils/buffer/BufferProcessor.hpp>
-#include <audioapi/core/utils/buffer/QueueBufferCursor.h>
+#include <audioapi/core/utils/buffer/QueueBufferProcessor.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
@@ -208,17 +207,16 @@ void AudioBufferQueueSourceNode::runCursorProcessing(
     graphManager->addAudioBufferForDestruction(std::move(buffer));
   };
 
-  QueueBufferCursor cursor(
+  QueueBufferProcessor processor(
       &buffers_, &vReadIndex_, std::fabs(playbackRate), std::move(onBufferConsumed));
 
   if (addExtraTailFrames_ && tailBuffer_ != nullptr) {
-    cursor.setPendingTail(tailBuffer_);
+    processor.setPendingTail(tailBuffer_);
   }
 
-  BufferProcessor<QueueBufferCursor>::process(
-      cursor, processingBuffer, startOffset, offsetLength, interpolate);
+  processor.process(processingBuffer, startOffset, offsetLength, interpolate);
 
-  if (cursor.didConsumeTail()) {
+  if (processor.didConsumeTail()) {
     addExtraTailFrames_ = false;
   }
 }
