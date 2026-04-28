@@ -123,6 +123,11 @@ if (RN_AUDIO_API_FFMPEG_DISABLED)
   )
 endif()
 
+target_compile_definitions(
+  react-native-audio-api
+  PRIVATE $<$<CONFIG:Debug>:DEBUG>
+)
+
 target_link_libraries(react-native-audio-api
   ${LINK_LIBRARIES}
   ${RN_VERSION_LINK_LIBRARIES}
