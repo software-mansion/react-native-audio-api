@@ -125,9 +125,7 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
 
   currentSampleFrame_.fetch_add(numFrames, std::memory_order_release);
 #ifdef DEBUG
-  if (!guard.clean()) {
-    throw std::runtime_error("Allocations on audio thread detected");
-  }
+  assert(guard.clean() && "Allocations on audio thread detected");
 #endif
 }
 

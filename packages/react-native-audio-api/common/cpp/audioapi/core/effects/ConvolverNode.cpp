@@ -24,7 +24,7 @@ ConvolverNode::ConvolverNode(
 void ConvolverNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
     std::vector<std::unique_ptr<Convolver>> convolvers,
-    const std::shared_ptr<ThreadPool> &threadPool,
+    const std::shared_ptr<ThreadPool<32>> &threadPool,
     const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
     const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
     float scaleFactor) {
@@ -154,20 +154,18 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
       });
     }
   } else if (processingBuffer->getNumberOfChannels() == 2) {
-    std::vector<int> inputChannelMap;
-    std::vector<int> outputChannelMap;
     if (convolvers_.size() == 2) {
-      inputChannelMap = {0, 1};
-      outputChannelMap = {0, 1};
+      inputChannelMap_ = {0, 1, 0, 0};
+      outputChannelMap_ = {0, 1, 0, 0};
     } else { // 4 channel IR
-      inputChannelMap = {0, 0, 1, 1};
-      outputChannelMap = {0, 3, 2, 1};
+      inputChannelMap_ = {0, 0, 1, 1};
+      outputChannelMap_ = {0, 3, 2, 1};
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threadPool_->schedule([this, i, inputChannelMap, outputChannelMap, &processingBuffer] {
+      threadPool_->schedule([this, i, &processingBuffer] {
         convolvers_[i]->process(
-            *processingBuffer->getChannel(inputChannelMap[i]),
-            *intermediateBuffer_->getChannel(outputChannelMap[i]));
+            *processingBuffer->getChannel(inputChannelMap_[i]),
+            *intermediateBuffer_->getChannel(outputChannelMap_[i]));
       });
     }
   }
