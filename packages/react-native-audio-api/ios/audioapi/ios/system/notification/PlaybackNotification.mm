@@ -338,21 +338,21 @@
 - (MPRemoteCommandHandlerStatus)onPlay:(MPRemoteCommandEvent *)event
 {
   [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_PLAY
-                                        eventBody:@{}];
+                                          payload:audioapi::EmptyPayload{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onPause:(MPRemoteCommandEvent *)event
 {
   [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_PAUSE
-                                        eventBody:@{}];
+                                          payload:audioapi::EmptyPayload{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onStop:(MPRemoteCommandEvent *)event
 {
   [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_STOP
-                                        eventBody:@{}];
+                                          payload:audioapi::EmptyPayload{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
@@ -360,7 +360,7 @@
 {
   [self.audioAPIModule
       invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_NEXT_TRACK
-                       eventBody:@{}];
+                         payload:audioapi::EmptyPayload{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
@@ -368,7 +368,7 @@
 {
   [self.audioAPIModule
       invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_PREVIOUS_TRACK
-                       eventBody:@{}];
+                         payload:audioapi::EmptyPayload{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
@@ -376,7 +376,7 @@
 {
   [self.audioAPIModule
       invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SEEK_FORWARD
-                       eventBody:@{}];
+                         payload:audioapi::EmptyPayload{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
@@ -384,35 +384,32 @@
 {
   [self.audioAPIModule
       invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SEEK_BACKWARD
-                       eventBody:@{}];
+                         payload:audioapi::EmptyPayload{}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipForward:(MPSkipIntervalCommandEvent *)event
 {
-  NSDictionary *body = @{@"value" : @(event.interval)};
   [self.audioAPIModule
       invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SKIP_FORWARD
-                       eventBody:body];
+                         payload:audioapi::DoubleValuePayload{.value = event.interval}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onSkipBackward:(MPSkipIntervalCommandEvent *)event
 {
-  NSDictionary *body = @{@"value" : @(event.interval)};
   [self.audioAPIModule
       invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SKIP_BACKWARD
-                       eventBody:body];
+                         payload:audioapi::DoubleValuePayload{.value = event.interval}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 
 - (MPRemoteCommandHandlerStatus)onChangePlaybackPosition:
     (MPChangePlaybackPositionCommandEvent *)event
 {
-  NSDictionary *body = @{@"value" : @(event.positionTime)};
   [self.audioAPIModule
       invokeHandlerWithEventName:audioapi::AudioEvent::PLAYBACK_NOTIFICATION_SEEK_TO
-                       eventBody:body];
+                         payload:audioapi::DoubleValuePayload{.value = event.positionTime}];
   return MPRemoteCommandHandlerStatusSuccess;
 }
 

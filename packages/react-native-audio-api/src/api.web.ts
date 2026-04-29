@@ -35,13 +35,14 @@ export type {
   PermissionStatus,
 } from './system/types';
 
+export * from './system/notification/types';
+export type { default as AudioEventSubscription } from './events/AudioEventSubscription';
+
 export {
   PlaybackNotificationManager,
   RecordingNotificationManager,
   AudioManager,
 } from './web-system';
-
-export * from './system/notification/types';
 
 export {
   IndexSizeError,

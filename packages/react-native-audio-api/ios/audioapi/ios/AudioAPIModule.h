@@ -8,6 +8,7 @@
 
 #import <React/RCTEventEmitter.h>
 #import <audioapi/events/AudioEvent.h>
+#include <audioapi/events/AudioEventPayload.h>
 
 @class AudioEngine;
 @class SystemNotificationManager;
@@ -27,6 +28,6 @@
 @property (nonatomic, strong) NotificationRegistry *notificationRegistry;
 
 - (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName
-                         eventBody:(NSDictionary *)eventBody;
+                           payload:(audioapi::AudioEventPayload)payload;
 
 @end

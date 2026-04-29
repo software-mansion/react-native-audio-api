@@ -318,34 +318,13 @@ RCT_EXPORT_METHOD(
 #endif // RCT_NEW_ARCH_ENABLED
 
 - (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName
-                         eventBody:(NSDictionary *)eventBody
+                           payload:(audioapi::AudioEventPayload)payload
 {
-  std::unordered_map<std::string, EventValue> body = {};
-
-  for (NSString *key in eventBody) {
-    id value = eventBody[key];
-    std::string stdKey = [key UTF8String];
-
-    if ([value isKindOfClass:[NSString class]]) {
-      std::string stdValue = [value UTF8String];
-      body[stdKey] = EventValue(stdValue);
-    } else if ([value isKindOfClass:[NSNumber class]]) {
-      const char *type = [value objCType];
-      if (strcmp(type, @encode(int)) == 0) {
-        body[stdKey] = EventValue([value intValue]);
-      } else if (strcmp(type, @encode(double)) == 0) {
-        body[stdKey] = EventValue([value doubleValue]);
-      } else if (strcmp(type, @encode(float)) == 0) {
-        body[stdKey] = EventValue([value floatValue]);
-      } else {
-        body[stdKey] = EventValue([value boolValue]);
-      }
-    }
+  if (_eventHandler == nullptr) {
+    return;
   }
 
-  if (_eventHandler != nullptr) {
-    _eventHandler->invokeHandlerWithEventBody(eventName, body);
-  }
+  _eventHandler->dispatchEvent(eventName, audioapi::kBroadcastListenerId, std::move(payload));
 }
 
 @end
