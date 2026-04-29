@@ -12,6 +12,7 @@
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include "audioapi/utils/Macros.h"
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
@@ -41,20 +42,15 @@ inline constexpr auto CHANNEL_CAPACITY = 32;
 
 struct StreamingData {
   audioapi::AudioBuffer buffer;
-  size_t size;
+  size_t size = 0;
   StreamingData() = default;
-  StreamingData(audioapi::AudioBuffer b, size_t s) : buffer(b), size(s) {}
-  StreamingData(const StreamingData &data) : buffer(data.buffer), size(data.size) {}
-  StreamingData(StreamingData &&data) noexcept : buffer(std::move(data.buffer)), size(data.size) {}
-  StreamingData &operator=(const StreamingData &data) {
-    if (this == &data) {
-      return *this;
-    }
-    buffer = data.buffer;
-    size = data.size;
-    return *this;
-  }
+  StreamingData(audioapi::AudioBuffer &&b, size_t s) : buffer(std::move(b)), size(s) {}
+
+  DELETE_COPY_AND_MOVE(StreamingData);
+  ~StreamingData() = default;
 };
+
+using StreamingDataPtr = std::unique_ptr<StreamingData>;
 
 namespace audioapi {
 
@@ -87,20 +83,21 @@ class StreamerNode : public AudioScheduledSourceNode {
   // --resampling--
   AudioBuffer resamplerInputBuffer_;
   AudioBuffer resamplerOutputBuffer_;
-  StreamingData bufferedAudioData_; // audio data for buffering hls frames
-  bool hasBufferedAudioData_;
-  int audio_stream_index_; // index of the audio stream channel in the input
+  StreamingDataPtr bufferedAudioData_; // audio data for buffering hls frames
+  int audio_stream_index_;             // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
 
   std::thread streamingThread_;
   std::atomic<bool> isNodeFinished_;                         // Flag to control the streaming thread
   static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
-  channels::spsc::
-      Sender<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY>
-          sender_;
+  channels::spsc::Sender<
+      StreamingDataPtr,
+      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
+      STREAMER_NODE_SPSC_WAIT_STRATEGY>
+      sender_;
   channels::spsc::Receiver<
-      StreamingData,
+      StreamingDataPtr,
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
       STREAMER_NODE_SPSC_WAIT_STRATEGY>
       receiver_;

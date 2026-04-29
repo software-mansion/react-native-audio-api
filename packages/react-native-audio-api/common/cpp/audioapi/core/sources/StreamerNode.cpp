@@ -35,7 +35,6 @@ StreamerNode::StreamerNode(
       pkt_(nullptr),
       frame_(nullptr),
       swrCtx_(nullptr),
-      hasBufferedAudioData_(false),
       audio_stream_index_(-1),
       maxResampledSamples_(0),
       processedSamples_(0) {
@@ -79,26 +78,24 @@ void StreamerNode::processNode(int framesToProcess) {
     return;
   }
 
-  auto bufferRemaining = static_cast<int>(bufferedAudioData_.size - processedSamples_);
+  auto bufferRemaining =
+      bufferedAudioData_ ? static_cast<int>(bufferedAudioData_->size - processedSamples_) : 0;
   int alreadyProcessed = 0;
   if (bufferRemaining < framesToProcess) {
-    if (hasBufferedAudioData_) {
-      audioBuffer_->copy(bufferedAudioData_.buffer, processedSamples_, 0, bufferRemaining);
+    if (bufferedAudioData_) {
+      audioBuffer_->copy(bufferedAudioData_->buffer, processedSamples_, 0, bufferRemaining);
       framesToProcess -= bufferRemaining;
       alreadyProcessed += bufferRemaining;
+      context->getDisposer()->dispose(std::move(bufferedAudioData_));
     }
-    StreamingData data;
-    auto res = receiver_.try_receive(data);
-    auto success = res == channels::spsc::ResponseStatus::SUCCESS;
-    hasBufferedAudioData_ = success;
-    if (success) {
-      bufferedAudioData_ = std::move(data);
+    receiver_.try_receive(bufferedAudioData_);
+    if (bufferedAudioData_) {
       processedSamples_ = 0;
     }
   }
-  if (hasBufferedAudioData_ && framesToProcess > 0) {
+  if (bufferedAudioData_ && framesToProcess > 0) {
     audioBuffer_->copy(
-        bufferedAudioData_.buffer, processedSamples_, alreadyProcessed, framesToProcess);
+        bufferedAudioData_->buffer, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -140,7 +137,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 
   auto [sender, receiver] = channels::spsc::channel<
-      StreamingData,
+      StreamingDataPtr,
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
       STREAMER_NODE_SPSC_WAIT_STRATEGY>(CHANNEL_CAPACITY);
   sender_ = std::move(sender);
@@ -261,7 +258,7 @@ void StreamerNode::processFrameWithResampler(
     buffer[ch].copy(resamplerOutputBuffer_[ch], 0, 0, outSamples);
   }
 
-  StreamingData data{std::move(buffer), static_cast<size_t>(outSamples)};
+  auto data = std::make_unique<StreamingData>(std::move(buffer), static_cast<size_t>(outSamples));
   sender_.send(std::move(data));
 }
 
@@ -309,9 +306,11 @@ void StreamerNode::cleanup() {
   this->playbackState_ = PlaybackState::FINISHED;
   isNodeFinished_.store(true, std::memory_order_release);
   if (streamingThread_.joinable()) {
-    StreamingData dummy;
-    while (receiver_.try_receive(dummy) == channels::spsc::ResponseStatus::SUCCESS)
-      ; // clear the receiver
+    StreamingDataPtr dummy;
+    while (receiver_.try_receive(dummy) == channels::spsc::ResponseStatus::SUCCESS) {
+      // clear the receiver; freed unique_ptrs destroy their payloads here
+      // (cleanup runs on the JS/audio-graph thread, not the audio thread).
+    }
     streamingThread_.join();
   }
   if (swrCtx_ != nullptr) {
