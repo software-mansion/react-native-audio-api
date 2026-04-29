@@ -28,11 +28,24 @@ JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, oversample) {
 
 JSI_PROPERTY_SETTER_IMPL(WaveShaperNodeHostObject, oversample) {
   auto handle = node_->handle;
-  auto waveShaperNode = static_cast<WaveShaperNode *>(handle->audioNode->asAudioNode());
+  auto *waveShaperNode = static_cast<WaveShaperNode *>(handle->audioNode->asAudioNode());
 
   auto oversample = js_enum_parser::overSampleTypeFromString(value.asString(runtime).utf8(runtime));
-  auto event = [handle, oversample](BaseAudioContext &) {
-    static_cast<WaveShaperNode *>(handle->audioNode->asAudioNode())->setOversample(oversample);
+
+  // Build all resamplers on the JS thread so the audio thread only does
+  // pointer swaps.
+  const auto sampleRate = waveShaperNode->getContextSampleRate();
+  const auto channelCount = waveShaperNode->getChannelCount();
+  auto update = std::make_unique<OversampleUpdate>();
+  update->type = oversample;
+  update->pairs.reserve(channelCount);
+  for (size_t i = 0; i < channelCount; ++i) {
+    update->pairs.emplace_back(WaveShaper::makeResamplers(oversample, sampleRate));
+  }
+
+  auto event = [handle, update = std::move(update)](BaseAudioContext &context) mutable {
+    static_cast<WaveShaperNode *>(handle->audioNode->asAudioNode())
+        ->setOversample(std::move(update), *context.getDisposer());
   };
   waveShaperNode->scheduleAudioEvent(std::move(event));
   oversample_ = oversample;

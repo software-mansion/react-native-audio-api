@@ -3,7 +3,9 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
 
+#include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -19,12 +21,20 @@ WaveShaperNode::WaveShaperNode(
   setCurve(options.curve);
 }
 
-void WaveShaperNode::setOversample(OverSampleType type) {
-  oversample_ = type;
+void WaveShaperNode::setOversample(
+    std::unique_ptr<OversampleUpdate> update,
+    utils::Disposer<DISPOSER_PAYLOAD_SIZE> &disposer) {
+  oversample_ = update->type;
 
-  for (int i = 0; i < waveShapers_.size(); i++) {
-    waveShapers_[i]->setOversample(type);
+  const size_t n = std::min(waveShapers_.size(), update->pairs.size());
+  for (size_t i = 0; i < n; i++) {
+    auto &[up, down] = update->pairs[i];
+    waveShapers_[i]->setOversample(update->type, std::move(up), std::move(down), disposer);
   }
+  // Ship the wrapper itself off the audio thread. Only the 8-byte
+  // unique_ptr crosses the disposer; ~OversampleUpdate (and its now-empty
+  // vector of moved-from unique_ptrs) runs on the worker thread.
+  disposer.dispose(std::move(update));
 }
 
 void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {

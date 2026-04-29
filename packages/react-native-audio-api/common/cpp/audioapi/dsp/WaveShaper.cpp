@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -13,31 +14,49 @@ WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRat
   tempBuffer2x_->zero();
   tempBuffer4x_ = std::make_shared<DSPAudioArray>(RENDER_QUANTUM_SIZE * 4);
   tempBuffer4x_->zero();
-
-  createResamplers(OverSampleType::OVERSAMPLE_NONE);
 }
 
-void WaveShaper::createResamplers(OverSampleType type) {
+std::pair<SingleChannelResamplerPtr, SingleChannelResamplerPtr> WaveShaper::makeResamplers(
+    OverSampleType type,
+    float sampleRate) {
   if (type == OverSampleType::OVERSAMPLE_2X) {
-    upSampler_ = std::make_unique<r8b::SingleChannelResampler>(
-        sampleRate_, sampleRate_ * 2, RENDER_QUANTUM_SIZE);
-    downSampler_ = std::make_unique<r8b::SingleChannelResampler>(
-        sampleRate_ * 2, sampleRate_, RENDER_QUANTUM_SIZE * 2);
-  } else if (type == OverSampleType::OVERSAMPLE_4X) {
-    upSampler_ = std::make_unique<r8b::SingleChannelResampler>(
-        sampleRate_, sampleRate_ * 4, RENDER_QUANTUM_SIZE * 2);
-    downSampler_ = std::make_unique<r8b::SingleChannelResampler>(
-        sampleRate_ * 4, sampleRate_, RENDER_QUANTUM_SIZE * 4);
+    return {
+        std::make_unique<r8b::SingleChannelResampler>(
+            sampleRate, sampleRate * 2, RENDER_QUANTUM_SIZE),
+        std::make_unique<r8b::SingleChannelResampler>(
+            sampleRate * 2, sampleRate, RENDER_QUANTUM_SIZE * 2)};
   }
+  if (type == OverSampleType::OVERSAMPLE_4X) {
+    return {
+        std::make_unique<r8b::SingleChannelResampler>(
+            sampleRate, sampleRate * 4, RENDER_QUANTUM_SIZE * 2),
+        std::make_unique<r8b::SingleChannelResampler>(
+            sampleRate * 4, sampleRate, RENDER_QUANTUM_SIZE * 4)};
+  }
+  return {nullptr, nullptr};
 }
 
 void WaveShaper::setCurve(const std::shared_ptr<AudioArray> &curve) {
   curve_ = curve;
 }
 
-void WaveShaper::setOversample(OverSampleType type) {
+void WaveShaper::setOversample(
+    OverSampleType type,
+    SingleChannelResamplerPtr upSampler,
+    SingleChannelResamplerPtr downSampler,
+    utils::Disposer<DISPOSER_PAYLOAD_SIZE> &disposer) {
   oversample_ = type;
-  createResamplers(type);
+  // Ship previous resamplers off the audio thread; only the 8-byte
+  // unique_ptr crosses the disposer's SPSC, the actual ~CDSPResampler24
+  // chain runs on the disposer worker thread.
+  if (upSampler_) {
+    disposer.dispose(std::move(upSampler_));
+  }
+  if (downSampler_) {
+    disposer.dispose(std::move(downSampler_));
+  }
+  upSampler_ = std::move(upSampler);
+  downSampler_ = std::move(downSampler);
 }
 
 void WaveShaper::process(DSPAudioArray &channelData, int framesToProcess) {

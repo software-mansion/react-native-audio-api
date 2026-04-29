@@ -1,7 +1,9 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <array>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -47,7 +49,9 @@ class BaseResampler {
     }
   }
 
-  int process(const std::vector<float *> &input, int l, std::vector<float *> &output) {
+  // Allocation-free: callers pass raw pointer arrays so the resampler can be
+  // driven from real-time / audio threads without heap traffic per call.
+  int process(const float *const *input, int l, float *const *output) {
     int outLen = 0;
     const size_t numChannels = resamplers_.size();
 
@@ -92,13 +96,13 @@ class MultiChannelResampler : public BaseResampler {
       int length,
       audioapi::AlignedAudioBuffer<Alignment> &output) {
     const size_t numChannels = input.getNumberOfChannels();
-    std::vector<float *> inputPtrs(numChannels);
-    std::vector<float *> outputPtrs(numChannels);
+    std::array<const float *, audioapi::MAX_CHANNEL_COUNT> inputPtrs{};
+    std::array<float *, audioapi::MAX_CHANNEL_COUNT> outputPtrs{};
     for (size_t i = 0; i < numChannels; ++i) {
       inputPtrs[i] = input.getChannel(i)->begin();
       outputPtrs[i] = output.getChannel(i)->begin();
     }
-    return BaseResampler::process(inputPtrs, length, outputPtrs);
+    return BaseResampler::process(inputPtrs.data(), length, outputPtrs.data());
   }
 };
 
@@ -112,11 +116,9 @@ class SingleChannelResampler : public BaseResampler {
       const audioapi::AlignedAudioArray<Alignment> &input,
       int length,
       audioapi::AlignedAudioArray<Alignment> &output) {
-    std::vector<float *> inputPtrs(1);
-    std::vector<float *> outputPtrs(1);
-    inputPtrs[0] = const_cast<float *>(input.begin());
-    outputPtrs[0] = output.begin();
-    return BaseResampler::process(inputPtrs, length, outputPtrs);
+    std::array<const float *, 1> inputPtrs{input.begin()};
+    std::array<float *, 1> outputPtrs{output.begin()};
+    return BaseResampler::process(inputPtrs.data(), length, outputPtrs.data());
   }
 };
 
