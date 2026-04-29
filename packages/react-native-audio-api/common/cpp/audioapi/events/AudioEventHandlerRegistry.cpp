@@ -136,8 +136,4 @@ void AudioEventHandlerRegistry::invokeHandler(
   }
 }
 
-jsi::Object AudioEventHandlerRegistry::buildJsiObject(const AudioEventPayload &payload) {
-  return std::visit([this](auto &&p) -> jsi::Object { return p.toJsiObject(*runtime_); }, payload);
-}
-
 } // namespace audioapi

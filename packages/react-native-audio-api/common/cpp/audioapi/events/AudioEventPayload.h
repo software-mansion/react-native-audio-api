@@ -39,12 +39,13 @@ struct InterruptionPayload {
   }
 };
 
-struct RouteChangePayload {
+struct StringPayload {
+  std::string name;
   std::string reason;
 
   facebook::jsi::Object toJsiObject(facebook::jsi::Runtime &rt) const {
     facebook::jsi::Object obj(rt);
-    obj.setProperty(rt, "reason", facebook::jsi::String::createFromUtf8(rt, reason));
+    obj.setProperty(rt, name.c_str(), facebook::jsi::String::createFromUtf8(rt, reason));
     return obj;
   }
 };
@@ -75,23 +76,12 @@ struct AudioReadyPayload {
   }
 };
 
-struct RecorderErrorPayload {
-  std::string message;
-
-  facebook::jsi::Object toJsiObject(facebook::jsi::Runtime &rt) const {
-    facebook::jsi::Object obj(rt);
-    obj.setProperty(rt, "message", facebook::jsi::String::createFromUtf8(rt, message));
-    return obj;
-  }
-};
-
 using AudioEventPayload = std::variant<
     EmptyPayload,
     DoubleValuePayload,
     InterruptionPayload,
-    RouteChangePayload,
+    StringPayload,
     BufferEndedPayload,
-    AudioReadyPayload,
-    RecorderErrorPayload>;
+    AudioReadyPayload>;
 
 } // namespace audioapi

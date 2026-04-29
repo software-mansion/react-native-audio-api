@@ -93,7 +93,7 @@ void AudioRecorderCallback::invokeOnErrorCallback(const std::string &message) {
   }
 
   audioEventHandlerRegistry_->dispatchEvent(
-      AudioEvent::RECORDER_ERROR, callbackId, RecorderErrorPayload{.message = message});
+      AudioEvent::RECORDER_ERROR, callbackId, StringPayload{.name = "message", .reason = message});
 }
 
 } // namespace audioapi
