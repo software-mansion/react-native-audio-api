@@ -252,12 +252,22 @@ void AudioBufferQueueSourceNode::processWithInterpolation(
         }
       }
 
+      // Source-channel index is clamped to the buffer's last channel so a
+      // mono buffer feeding a stereo destination is duplicated across the
+      // output channels (matches Web Audio's mono→stereo upmix). Without
+      // the clamp, `getChannel(i)` for `i >= srcChannels` walked past the
+      // channels_ vector and aborted the audio render thread on a mono
+      // queue at non-1.0 playback rates.
+      const size_t srcChannels = buffer->getNumberOfChannels();
+      const size_t nextSrcChannels = crossBufferInterpolation ? nextBuffer->getNumberOfChannels() : srcChannels;
       for (size_t i = 0; i < processingBuffer->getNumberOfChannels(); i += 1) {
         const auto destination = processingBuffer->getChannel(i)->span();
-        const auto currentSource = buffer->getChannel(i)->span();
+        const auto currentSource =
+            buffer->getChannel(std::min(i, srcChannels - 1))->span();
 
         if (crossBufferInterpolation) {
-          const auto nextSource = nextBuffer->getChannel(i)->span();
+          const auto nextSource =
+              nextBuffer->getChannel(std::min(i, nextSrcChannels - 1))->span();
           float currentSample = currentSource[readIndex];
           float nextSample = nextSource[nextReadIndex];
           destination[writeIndex] = currentSample + factor * (nextSample - currentSample);
