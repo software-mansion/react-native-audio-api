@@ -342,6 +342,21 @@ describe('React Native Audio API Mocks', () => {
 
       expect(outputBuffer).toBe(inputBuffer);
     });
+
+    it('should concatenate audio files', async () => {
+      const outputPath = await MockAPI.concatAudioFiles(
+        ['file:///tmp/recording-1.m4a', 'file:///tmp/recording-2.m4a'],
+        'file:///tmp/recording.m4a'
+      );
+
+      expect(outputPath).toBe('file:///tmp/recording.m4a');
+    });
+
+    it('should reject concatenation without input files', async () => {
+      await expect(
+        MockAPI.concatAudioFiles([], 'file:///tmp/recording.m4a')
+      ).rejects.toThrow('concatAudioFiles requires at least one input path.');
+    });
   });
 
   describe('System Classes', () => {
