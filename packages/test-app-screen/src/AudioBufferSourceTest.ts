@@ -220,6 +220,38 @@ export const audioBufferSourceNegativePlaybackRateTest = async (
   setInfo('Negative playback rate: done.');
 };
 
+export const audioBufferSourceNegativePlaybackRateLoopTest = async (
+  ctx: AudioContext,
+  buffer: AudioBuffer,
+  setInfo: (info: string) => void
+) => {
+  // Reverse + loop: playback runs backward inside [loopStart, loopEnd] and wraps to
+  // loopEnd again instead of stopping when it hits loopStart.
+  const loopStart = 2;
+  const loopEnd = 5;
+  const playDuration = 10000;
+
+  for (const rate of [-1.0, -0.75]) {
+    setInfo(
+      `Negative rate + loop: ${rate}x, loop [${loopStart}s, ${loopEnd}s], ${playDuration / 1000}s...`
+    );
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = rate;
+    source.loop = true;
+    source.loopStart = loopStart;
+    source.loopEnd = loopEnd;
+    source.connect(ctx.destination);
+    // Start at the end of the loop region so the cursor begins inside [loopStart, loopEnd]
+    source.start(ctx.currentTime, loopEnd);
+    await sleep(playDuration);
+    source.stop();
+    await sleep(300);
+  }
+
+  setInfo('Negative rate + loop: done.');
+};
+
 export const audioBufferSourceLongPlaybackTest = async (
   ctx: AudioContext,
   buffer: AudioBuffer,

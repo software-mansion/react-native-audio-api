@@ -29,6 +29,7 @@ import {
   audioBufferSourcePlaybackRateTest,
   audioBufferSourceDetuneTest,
   audioBufferSourceNegativePlaybackRateTest,
+  audioBufferSourceNegativePlaybackRateLoopTest,
   audioBufferSourceLongPlaybackTest,
 } from './AudioBufferSourceTest';
 import {
@@ -170,6 +171,11 @@ const Test: FC = () => {
     await audioBufferSourcePlaybackRateTest(ctx, buffer, setTestingInfo);
     await audioBufferSourceDetuneTest(ctx, buffer, setTestingInfo);
     await audioBufferSourceNegativePlaybackRateTest(
+      ctx,
+      buffer,
+      setTestingInfo
+    );
+    await audioBufferSourceNegativePlaybackRateLoopTest(
       ctx,
       buffer,
       setTestingInfo
