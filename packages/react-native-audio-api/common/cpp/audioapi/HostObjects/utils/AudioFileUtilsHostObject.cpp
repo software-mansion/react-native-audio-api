@@ -39,7 +39,7 @@ JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, concatAudioFiles) {
 
   auto promise = promiseVendor_->createAsyncPromise(
       [inputPaths = std::move(inputPaths), outputPath]() -> PromiseResolver {
-        auto result = AudioFileConcatenator::concatAudioFiles(inputPaths, outputPath);
+        auto result = audioapi::concatAudioFiles(inputPaths, outputPath);
 
         if (result.is_err()) {
           return [result = std::move(result)](

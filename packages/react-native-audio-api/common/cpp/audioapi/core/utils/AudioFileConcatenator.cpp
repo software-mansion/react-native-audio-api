@@ -22,6 +22,82 @@ extern "C" {
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 namespace audioapi {
+
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+AVDictionaryGuard::~AVDictionaryGuard() {
+  av_dict_free(&dictionary_);
+}
+
+AVDictionary **AVDictionaryGuard::ptr() {
+  return &dictionary_;
+}
+
+InputFormatContext::InputFormatContext(
+    std::string filePath,
+    AVFormatContext *context,
+    int audioStreamIndex)
+    : filePath_(std::move(filePath)), context_(context), audioStreamIndex_(audioStreamIndex) {}
+
+InputFormatContext::InputFormatContext(InputFormatContext &&other) noexcept
+    : filePath_(std::move(other.filePath_)),
+      context_(std::exchange(other.context_, nullptr)),
+      audioStreamIndex_(std::exchange(other.audioStreamIndex_, -1)) {}
+
+InputFormatContext &InputFormatContext::operator=(InputFormatContext &&other) noexcept {
+  if (this != &other) {
+    close();
+    filePath_ = std::move(other.filePath_);
+    context_ = std::exchange(other.context_, nullptr);
+    audioStreamIndex_ = std::exchange(other.audioStreamIndex_, -1);
+  }
+  return *this;
+}
+
+InputFormatContext::~InputFormatContext() {
+  close();
+}
+
+AVFormatContext *InputFormatContext::context() const {
+  return context_;
+}
+
+AVStream *InputFormatContext::audioStream() const {
+  return context_->streams[audioStreamIndex_];
+}
+
+int InputFormatContext::audioStreamIndex() const {
+  return audioStreamIndex_;
+}
+
+const std::string &InputFormatContext::filePath() const {
+  return filePath_;
+}
+
+void InputFormatContext::close() {
+  if (context_ != nullptr) {
+    avformat_close_input(&context_);
+  }
+}
+
+OutputFormatContext::OutputFormatContext(AVFormatContext *context) : context_(context) {}
+
+OutputFormatContext::~OutputFormatContext() {
+  if (context_ == nullptr) {
+    return;
+  }
+
+  if (!(context_->oformat->flags & AVFMT_NOFILE) && context_->pb != nullptr) {
+    avio_closep(&context_->pb);
+  }
+
+  avformat_free_context(context_);
+}
+
+AVFormatContext *OutputFormatContext::get() const {
+  return context_;
+}
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+
 namespace {
 
 constexpr const char *fileUrlPrefix = "file://";
@@ -153,106 +229,6 @@ bool hasUsableAudioParameters(const AVStream *stream) {
   return codecParameters->codec_id != AV_CODEC_ID_NONE && codecParameters->sample_rate > 0 &&
       codecParameters->ch_layout.nb_channels > 0;
 }
-
-class AVDictionaryGuard {
- public:
-  AVDictionaryGuard() = default;
-  AVDictionaryGuard(const AVDictionaryGuard &) = delete;
-  AVDictionaryGuard &operator=(const AVDictionaryGuard &) = delete;
-
-  ~AVDictionaryGuard() {
-    av_dict_free(&dictionary_);
-  }
-
-  [[nodiscard]] AVDictionary **ptr() {
-    return &dictionary_;
-  }
-
- private:
-  AVDictionary *dictionary_{nullptr};
-};
-
-class InputFormatContext {
- public:
-  InputFormatContext() = default;
-  InputFormatContext(std::string filePath, AVFormatContext *context, int audioStreamIndex)
-      : filePath_(std::move(filePath)), context_(context), audioStreamIndex_(audioStreamIndex) {}
-
-  InputFormatContext(const InputFormatContext &) = delete;
-  InputFormatContext &operator=(const InputFormatContext &) = delete;
-
-  InputFormatContext(InputFormatContext &&other) noexcept
-      : filePath_(std::move(other.filePath_)),
-        context_(std::exchange(other.context_, nullptr)),
-        audioStreamIndex_(std::exchange(other.audioStreamIndex_, -1)) {}
-
-  InputFormatContext &operator=(InputFormatContext &&other) noexcept {
-    if (this != &other) {
-      close();
-      filePath_ = std::move(other.filePath_);
-      context_ = std::exchange(other.context_, nullptr);
-      audioStreamIndex_ = std::exchange(other.audioStreamIndex_, -1);
-    }
-    return *this;
-  }
-
-  ~InputFormatContext() {
-    close();
-  }
-
-  [[nodiscard]] AVFormatContext *context() const {
-    return context_;
-  }
-
-  [[nodiscard]] AVStream *audioStream() const {
-    return context_->streams[audioStreamIndex_];
-  }
-
-  [[nodiscard]] int audioStreamIndex() const {
-    return audioStreamIndex_;
-  }
-
-  [[nodiscard]] const std::string &filePath() const {
-    return filePath_;
-  }
-
- private:
-  void close() {
-    if (context_ != nullptr) {
-      avformat_close_input(&context_);
-    }
-  }
-
-  std::string filePath_;
-  AVFormatContext *context_{nullptr};
-  int audioStreamIndex_{-1};
-};
-
-class OutputFormatContext {
- public:
-  explicit OutputFormatContext(AVFormatContext *context) : context_(context) {}
-  OutputFormatContext(const OutputFormatContext &) = delete;
-  OutputFormatContext &operator=(const OutputFormatContext &) = delete;
-
-  ~OutputFormatContext() {
-    if (context_ == nullptr) {
-      return;
-    }
-
-    if (!(context_->oformat->flags & AVFMT_NOFILE) && context_->pb != nullptr) {
-      avio_closep(&context_->pb);
-    }
-
-    avformat_free_context(context_);
-  }
-
-  [[nodiscard]] AVFormatContext *get() const {
-    return context_;
-  }
-
- private:
-  AVFormatContext *context_{nullptr};
-};
 
 using InputOpenResult = Result<InputFormatContext, std::string>;
 
@@ -535,7 +511,7 @@ AudioFileConcatResult appendInputPackets(
 
 } // namespace
 
-std::string AudioFileConcatenator::normalizeFilePath(const std::string &path) {
+std::string normalizeFilePath(const std::string &path) {
   if (path.starts_with(fileUrlPrefix)) {
     return percentDecode(path.substr(std::strlen(fileUrlPrefix)));
   }
@@ -543,7 +519,7 @@ std::string AudioFileConcatenator::normalizeFilePath(const std::string &path) {
   return percentDecode(path);
 }
 
-AudioFileConcatResult AudioFileConcatenator::concatAudioFiles(
+AudioFileConcatResult concatAudioFiles(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
   std::vector<std::string> normalizedInputPaths;
