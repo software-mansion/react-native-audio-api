@@ -1,15 +1,12 @@
 #pragma once
 
 #include <audioapi/events/AudioEvent.h>
+#include <audioapi/events/AudioEventPayload.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <gmock/gmock.h>
 #include <memory>
-#include <string>
-#include <unordered_map>
 
 using namespace audioapi;
-
-using EventMap = std::unordered_map<std::string, EventValue>;
 
 class MockAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
  public:
@@ -19,9 +16,9 @@ class MockAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
       (AudioEvent eventName, const std::shared_ptr<facebook::jsi::Function> &handler),
       (override));
   MOCK_METHOD(void, unregisterHandler, (AudioEvent eventName, uint64_t listenerId), (override));
-
-  MOCK_METHOD2(invokeHandlerWithEventBody, void(AudioEvent eventName, const EventMap &body));
-  MOCK_METHOD3(
-      invokeHandlerWithEventBody,
-      void(AudioEvent eventName, uint64_t listenerId, const EventMap &body));
+  MOCK_METHOD(
+      bool,
+      dispatchEvent,
+      (AudioEvent eventName, uint64_t listenerId, AudioEventPayload &&payload),
+      (noexcept, override));
 };

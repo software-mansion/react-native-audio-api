@@ -114,8 +114,8 @@ double AudioBufferSourceNode::getCurrentPosition() const {
 
 void AudioBufferSourceNode::sendOnLoopEndedEvent() {
   if (onLoopEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::LOOP_ENDED, onLoopEndedCallbackId_, {});
+    audioEventHandlerRegistry_->dispatchEvent(
+        AudioEvent::LOOP_ENDED, onLoopEndedCallbackId_, EmptyPayload{});
   }
 }
 
