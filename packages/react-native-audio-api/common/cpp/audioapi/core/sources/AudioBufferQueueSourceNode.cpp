@@ -130,6 +130,14 @@ void AudioBufferQueueSourceNode::unregisterOnBufferEndedCallback(uint64_t callba
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, callbackId);
 }
 
+void AudioBufferQueueSourceNode::setChannelCount(int channelCount) {
+  if (channelCount_ != channelCount) {
+    channelCount_ = channelCount;
+    audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+        RENDER_QUANTUM_SIZE, channelCount_, getContextSampleRate());
+  }
+}
+
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
   return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), getContextSampleRate()) +
       playedBuffersDuration_;
