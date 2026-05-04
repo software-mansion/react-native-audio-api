@@ -157,23 +157,7 @@ bool AudioBufferQueueSourceNode::isEmpty() const {
   return buffers_.empty();
 }
 
-void AudioBufferQueueSourceNode::processWithoutInterpolation(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    size_t startOffset,
-    size_t offsetLength,
-    float playbackRate) {
-  runCursorProcessing(processingBuffer, startOffset, offsetLength, playbackRate, false);
-}
-
-void AudioBufferQueueSourceNode::processWithInterpolation(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    size_t startOffset,
-    size_t offsetLength,
-    float playbackRate) {
-  runCursorProcessing(processingBuffer, startOffset, offsetLength, playbackRate, true);
-}
-
-void AudioBufferQueueSourceNode::runCursorProcessing(
+void AudioBufferQueueSourceNode::runBufferProcessor(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
@@ -208,7 +192,7 @@ void AudioBufferQueueSourceNode::runCursorProcessing(
   };
 
   QueueBufferProcessor processor(
-      &buffers_, &vReadIndex_, std::fabs(playbackRate), std::move(onBufferConsumed));
+      &buffers_, vReadIndex_, std::fabs(playbackRate), std::move(onBufferConsumed));
 
   if (addExtraTailFrames_ && tailBuffer_ != nullptr) {
     processor.setPendingTail(tailBuffer_);
@@ -219,6 +203,8 @@ void AudioBufferQueueSourceNode::runCursorProcessing(
   if (processor.didConsumeTail()) {
     addExtraTailFrames_ = false;
   }
+
+  vReadIndex_ = processor.getPosition();
 }
 
 } // namespace audioapi

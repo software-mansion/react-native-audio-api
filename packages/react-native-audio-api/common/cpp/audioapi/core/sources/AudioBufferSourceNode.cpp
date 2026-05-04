@@ -128,26 +128,29 @@ bool AudioBufferSourceNode::isEmpty() const {
   return buffer_ == nullptr;
 }
 
-// todo: refactor so its less complex and more readable
-void AudioBufferSourceNode::processWithoutInterpolation(
+void AudioBufferSourceNode::runBufferProcessor(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
-    float playbackRate) {
-
+    float playbackRate,
+    bool interpolate) {
   if (!processingBuffer) {
     return;
   }
 
-  SingleBufferProcessor processor(
-      buffer_.get(),
-      &vReadIndex_,
-      loop_,
-      playbackRate,
-      static_cast<size_t>(getVirtualStartFrame(getContextSampleRate())),
-      static_cast<size_t>(getVirtualEndFrame(getContextSampleRate())));
+  const float sampleRate = getContextSampleRate();
+  const double startFrame = getVirtualStartFrame(sampleRate);
+  const double endFrame = getVirtualEndFrame(sampleRate);
 
-  processor.process(processingBuffer, startOffset, offsetLength, false);
+  // start(when, offset=duration) sets vReadIndex_ to endFrame, so clamp it
+  if (playbackRate < 0 && vReadIndex_ >= endFrame && endFrame > startFrame) {
+    vReadIndex_ = endFrame - 1.0;
+  }
+
+  SingleBufferProcessor processor(
+      buffer_.get(), vReadIndex_, loop_, playbackRate, startFrame, endFrame);
+
+  processor.process(processingBuffer, startOffset, offsetLength, interpolate);
 
   if (processor.atBoundary()) {
     if (processor.shouldStop()) {
@@ -155,34 +158,8 @@ void AudioBufferSourceNode::processWithoutInterpolation(
     }
     sendOnLoopEndedEvent();
   }
-}
 
-void AudioBufferSourceNode::processWithInterpolation(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    size_t startOffset,
-    size_t offsetLength,
-    float playbackRate) {
-
-  if (!processingBuffer) {
-    return;
-  }
-
-  SingleBufferProcessor processor(
-      buffer_.get(),
-      &vReadIndex_,
-      loop_,
-      playbackRate,
-      static_cast<size_t>(getVirtualStartFrame(getContextSampleRate())),
-      static_cast<size_t>(getVirtualEndFrame(getContextSampleRate())));
-
-  processor.process(processingBuffer, startOffset, offsetLength, true);
-
-  if (processor.atBoundary()) {
-    if (processor.shouldStop()) {
-      playbackState_ = PlaybackState::STOP_SCHEDULED;
-    }
-    sendOnLoopEndedEvent();
-  }
+  vReadIndex_ = processor.getPosition();
 }
 
 double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) const {

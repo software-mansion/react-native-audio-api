@@ -134,7 +134,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     return;
   }
 
-  processWithoutInterpolation(playbackRateBuffer_, startOffset, offsetLength, playbackRate);
+  runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, playbackRate, false);
 
   stretch_->process(
       playbackRateBuffer_.get()[0],
@@ -178,9 +178,9 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   }
 
   if (std::fabs(computedPlaybackRate) == 1.0) {
-    processWithoutInterpolation(processingBuffer, startOffset, offsetLength, computedPlaybackRate);
+    runBufferProcessor(processingBuffer, startOffset, offsetLength, computedPlaybackRate, false);
   } else {
-    processWithInterpolation(processingBuffer, startOffset, offsetLength, computedPlaybackRate);
+    runBufferProcessor(processingBuffer, startOffset, offsetLength, computedPlaybackRate, true);
   }
 
   sendOnPositionChangedEvent();

@@ -79,8 +79,8 @@ export const queueSourceMultipleBuffersTest = async (
 ) => {
   const slices = [
     sliceBuffer(ctx, buffer, 0, 3),
+    sliceBuffer(ctx, buffer, 3, 3),
     sliceBuffer(ctx, buffer, 6, 3),
-    sliceBuffer(ctx, buffer, 12, 3),
   ];
   const source = ctx.createBufferQueueSource();
 

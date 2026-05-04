@@ -55,26 +55,14 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   bool isEmpty() const final;
 
-  void processWithoutInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) final;
-
-  void processWithInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) final;
-
- private:
-  void runCursorProcessing(
+  void runBufferProcessor(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
       float playbackRate,
-      bool interpolate);
+      bool interpolate) final;
 
+ private:
   // User provided buffers
   std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
 

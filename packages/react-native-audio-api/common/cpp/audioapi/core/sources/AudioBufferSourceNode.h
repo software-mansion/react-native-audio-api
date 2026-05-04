@@ -52,17 +52,12 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   bool isEmpty() const final;
 
-  void processWithoutInterpolation(
+  void runBufferProcessor(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
-      float playbackRate) final;
-
-  void processWithInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) final;
+      float playbackRate,
+      bool interpolate) final;
 
  private:
   // Looping related properties

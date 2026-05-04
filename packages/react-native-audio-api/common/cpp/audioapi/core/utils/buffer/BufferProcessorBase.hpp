@@ -1,109 +1,120 @@
 #pragma once
 
-#include <audioapi/core/utils/buffer/BufferProcessingDirection.hpp>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+
 namespace audioapi {
 
 struct CursorState {
-  size_t index;
-  size_t nextIndex;
-  float factor;
-  bool atEndOfBuffer;
-  bool isCrossBuffer;
+  size_t index = 0;
+  size_t nextIndex = 0;
+  float factor = 0.0f;
+  bool atEndOfBuffer = false;
+  bool isCrossBuffer = false;
 };
 
 class BufferProcessorBase {
-
  public:
   virtual ~BufferProcessorBase() = default;
   BufferProcessorBase() = delete;
-  BufferProcessorBase(const BufferProcessorBase &) = delete;
-  BufferProcessorBase &operator=(const BufferProcessorBase &) = delete;
-  BufferProcessorBase(BufferProcessorBase &&) = delete;
-  BufferProcessorBase &operator=(BufferProcessorBase &&) = delete;
-  BufferProcessorBase(
-      AudioBuffer *buffer,
-      double *vReadIndex,
-      bool loop,
-      float rate,
-      size_t startFrame,
-      size_t endFrame)
-      : buffer_(buffer),
-        vReadIndex_(vReadIndex),
-        loop_(loop),
-        rate_(rate),
-        startFrame_(startFrame),
-        endFrame_(endFrame),
-        direction_(
-            rate_ >= 0 ? BufferProcessingDirection::FORWARD : BufferProcessingDirection::REVERSE) {
-        };
+  DELETE_COPY_AND_MOVE(BufferProcessorBase);
 
-  virtual CursorState advance() = 0;
-  virtual void consume(size_t n) = 0;
-  virtual size_t remainingInContiguousBlock() = 0;
-  virtual size_t currentIndex() = 0;
-  virtual const AudioBuffer *getBuffer() = 0;
-  virtual const AudioBuffer *getNextBuffer() = 0;
-  virtual bool atBoundary() = 0;
-  virtual bool shouldStop() = 0;
-  virtual void handleBoundary() = 0;
+  BufferProcessorBase(double position, float rate) : position_(position), rate_(rate) {}
 
   void process(
       const std::shared_ptr<DSPAudioBuffer> &output,
-      size_t startOffset,
-      size_t length,
+      size_t writeIndex,
+      size_t framesLeft,
       bool interpolate) {
     if (interpolate) {
-      renderInterpolated(output, startOffset, length);
+      renderInterpolated(output, writeIndex, framesLeft);
     } else {
-      renderBlock(output, startOffset, length);
+      renderBlock(output, writeIndex, framesLeft);
     }
-  };
+  }
+
+  [[nodiscard]] double getPosition() const {
+    return position_;
+  }
+
+  [[nodiscard]] virtual bool atBoundary() const = 0;
+  [[nodiscard]] virtual bool shouldStop() const = 0;
+
+ protected:
+  virtual CursorState advance() = 0;
+  virtual void consume(size_t frames) = 0;
+  [[nodiscard]] virtual size_t remainingInContiguousBlock() const = 0;
+  [[nodiscard]] virtual size_t currentIndex() const = 0;
+  [[nodiscard]] virtual const AudioBuffer *getBuffer() const = 0;
+  [[nodiscard]] virtual const AudioBuffer *getNextBuffer() const = 0;
+  virtual void handleBoundary() = 0;
+  [[nodiscard]] virtual bool isReverse() const {
+    return false;
+  }
+
+  double position_;
+  float rate_;
+
+ private:
   void
   renderBlock(const std::shared_ptr<DSPAudioBuffer> &output, size_t writeIndex, size_t framesLeft) {
     while (framesLeft > 0) {
-      size_t available = remainingInContiguousBlock();
-      size_t toCopy = std::min(available, framesLeft);
+      const size_t toCopy = std::min(remainingInContiguousBlock(), framesLeft);
 
       if (toCopy > 0) {
-        output->copy(*getBuffer(), currentIndex(), writeIndex, toCopy);
+        const AudioBuffer *buffer = getBuffer();
+        const size_t readIndex = currentIndex();
+
+        if (isReverse()) {
+          for (size_t ch = 0; ch < output->getNumberOfChannels(); ++ch) {
+            output->getChannel(ch)->copyReverse(
+                *buffer->getChannel(ch), readIndex, writeIndex, toCopy);
+          }
+        } else {
+          output->copy(*buffer, readIndex, writeIndex, toCopy);
+        }
+
         consume(toCopy);
         writeIndex += toCopy;
         framesLeft -= toCopy;
       }
 
       if (atBoundary()) {
+        handleBoundary();
         if (shouldStop()) {
           output->zero(writeIndex, framesLeft);
           break;
         }
-        handleBoundary();
       }
     }
   }
+
   void renderInterpolated(
       const std::shared_ptr<DSPAudioBuffer> &output,
       size_t writeIndex,
       size_t framesLeft) {
+    const size_t numChannels = output->getNumberOfChannels();
     for (size_t i = 0; i < framesLeft; ++i) {
-      CursorState state = advance();
+      const CursorState state = advance();
       if (state.atEndOfBuffer) {
         output->zero(writeIndex, framesLeft - i);
         return;
       }
 
       const AudioBuffer *currentBuffer = getBuffer();
-      for (size_t ch = 0; ch < output->getNumberOfChannels(); ++ch) {
+      // If processing multiple buffers
+      const AudioBuffer *nextBuffer = state.isCrossBuffer ? getNextBuffer() : currentBuffer;
+      for (size_t ch = 0; ch < numChannels; ++ch) {
         auto destination = output->getChannel(ch)->span();
         auto source = currentBuffer->getChannel(ch)->span();
         if (state.isCrossBuffer) {
-          auto nextSource = getNextBuffer()->getChannel(ch)->span();
-          float currentSample = source[state.index];
-          float nextSample = nextSource[state.nextIndex];
+          auto nextSource = nextBuffer->getChannel(ch)->span();
+          const float currentSample = source[state.index];
+          const float nextSample = nextSource[state.nextIndex];
           destination[writeIndex] = currentSample + state.factor * (nextSample - currentSample);
         } else {
           destination[writeIndex] =
@@ -121,14 +132,6 @@ class BufferProcessorBase {
       }
     }
   }
-
- protected:
-  const AudioBuffer *buffer_;
-  double *vReadIndex_;
-  bool loop_;
-  float rate_;
-  size_t startFrame_, endFrame_;
-  BufferProcessingDirection direction_;
 };
 
 } // namespace audioapi

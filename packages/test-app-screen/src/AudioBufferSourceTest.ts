@@ -1,7 +1,7 @@
 import { AudioContext, AudioBuffer } from 'react-native-audio-api';
 
 const AUDIO_URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
+  'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

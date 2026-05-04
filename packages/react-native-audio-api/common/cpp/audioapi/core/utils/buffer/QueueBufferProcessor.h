@@ -21,7 +21,7 @@ class QueueBufferProcessor : public BufferProcessorBase {
 
   QueueBufferProcessor(
       std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> *buffers,
-      double *vReadIndex,
+      double position,
       float rate,
       OnBufferConsumed onBufferConsumed = {});
 
@@ -35,14 +35,16 @@ class QueueBufferProcessor : public BufferProcessorBase {
     return tailConsumed_;
   }
 
+  [[nodiscard]] bool atBoundary() const override;
+  [[nodiscard]] bool shouldStop() const override;
+
+ protected:
   CursorState advance() override;
   void consume(size_t frames) override;
-  size_t remainingInContiguousBlock() override;
-  size_t currentIndex() override;
-  const AudioBuffer *getBuffer() override;
-  const AudioBuffer *getNextBuffer() override;
-  bool atBoundary() override;
-  bool shouldStop() override;
+  [[nodiscard]] size_t remainingInContiguousBlock() const override;
+  [[nodiscard]] size_t currentIndex() const override;
+  [[nodiscard]] const AudioBuffer *getBuffer() const override;
+  [[nodiscard]] const AudioBuffer *getNextBuffer() const override;
   void handleBoundary() override;
 
  private:
