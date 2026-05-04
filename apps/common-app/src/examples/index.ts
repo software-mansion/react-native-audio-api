@@ -33,7 +33,6 @@ type NavigationParamList = {
   Streamer: undefined;
   AudioTag: undefined;
   ConvolverIR: undefined;
-  TestScreen: undefined;
   AudioParamPipeline: undefined;
 };
 
