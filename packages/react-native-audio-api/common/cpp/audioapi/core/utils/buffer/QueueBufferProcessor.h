@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/buffer/BufferProcessorBase.hpp>
+#include <audioapi/core/utils/buffer/BufferProcessorBase.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <cstddef>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/buffer/BufferProcessingDirection.hpp>
-#include <audioapi/core/utils/buffer/BufferProcessorBase.hpp>
+#include <audioapi/core/utils/buffer/BufferProcessorBase.h>
 
 #include <cstddef>
 
@@ -19,8 +19,8 @@ class SingleBufferProcessor : public BufferProcessorBase {
       : BufferProcessorBase(position, rate),
         buffer_(buffer),
         loop_(loop),
-        startFrame_(startFrame),
-        endFrame_(endFrame),
+        startFrame_(static_cast<size_t>(startFrame)),
+        endFrame_(static_cast<size_t>(endFrame)),
         direction_(
             rate >= 0 ? BufferProcessingDirection::FORWARD : BufferProcessingDirection::REVERSE) {}
 
@@ -42,8 +42,8 @@ class SingleBufferProcessor : public BufferProcessorBase {
  private:
   const AudioBuffer *buffer_;
   bool loop_;
-  double startFrame_;
-  double endFrame_;
+  size_t startFrame_;
+  size_t endFrame_;
   BufferProcessingDirection direction_;
 };
 
