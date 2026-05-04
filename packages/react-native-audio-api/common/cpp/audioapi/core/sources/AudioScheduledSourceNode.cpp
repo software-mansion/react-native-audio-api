@@ -159,8 +159,8 @@ void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 
   if (onEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::ENDED, onEndedCallbackId_, {});
+    audioEventHandlerRegistry_->dispatchEvent(
+        AudioEvent::ENDED, onEndedCallbackId_, EmptyPayload{});
   }
 }
 

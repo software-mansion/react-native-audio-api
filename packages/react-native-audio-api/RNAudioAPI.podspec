@@ -131,8 +131,6 @@ Pod::Spec.new do |s|
       -force_load #{lib_dir}/libvorbis.a
       -force_load #{lib_dir}/libvorbisenc.a
       -force_load #{lib_dir}/libvorbisfile.a
-      -force_load #{lib_dir}/libssl.a
-      -force_load #{lib_dir}/libcrypto.a
     ].join(" "),
   }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.

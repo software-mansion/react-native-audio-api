@@ -8,8 +8,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <string>
-#include <unordered_map>
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
@@ -85,10 +83,10 @@ std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
   if (onPositionChangedCallbackId_ != 0 &&
       onPositionChangedTimeInFrames_ > onPositionChangedIntervalInFrames_) {
-    std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
-
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId_, body);
+    audioEventHandlerRegistry_->dispatchEvent(
+        AudioEvent::POSITION_CHANGED,
+        onPositionChangedCallbackId_,
+        DoubleValuePayload{.value = getCurrentPosition()});
 
     onPositionChangedTimeInFrames_ = 0;
   }

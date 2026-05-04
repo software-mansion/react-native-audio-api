@@ -132,8 +132,6 @@ target_link_libraries(react-native-audio-api
   vorbis
   vorbisenc
   vorbisfile
-  crypto
-  ssl
   z
 )
 

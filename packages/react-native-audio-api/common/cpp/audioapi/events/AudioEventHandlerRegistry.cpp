@@ -1,18 +1,46 @@
-#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <cstdio>
 #include <memory>
-#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace audioapi {
 
 AudioEventHandlerRegistry::AudioEventHandlerRegistry(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker)
-    : IAudioEventHandlerRegistry(), callInvoker_(callInvoker), runtime_(runtime) {}
+    : callInvoker_(callInvoker), runtime_(runtime), isExiting_(false) {
+  auto [sender, receiver] = channels::spsc::channel<
+      DispatchEvent,
+      EVENT_DISPATCHER_SPSC_OVERFLOW_STRATEGY,
+      EVENT_DISPATCHER_SPSC_WAIT_STRATEGY>(kDispatchCapacity);
+  sender_ = std::move(sender);
+  receiver_ = std::move(receiver);
+
+  workerThread_ = std::thread([this]() {
+    while (!isExiting_.load(std::memory_order_acquire)) {
+      auto item = receiver_.receive();
+      if (isExiting_.load(std::memory_order_acquire)) {
+        break;
+      }
+
+      auto weak = weak_from_this();
+      callInvoker_->invokeAsync([weak, capturedItem = std::move(item)]() {
+        if (auto self = weak.lock()) {
+          self->handleEventOnJSThread(
+              capturedItem.event, capturedItem.listenerId, capturedItem.payload);
+        }
+      });
+    }
+  });
+}
 
 AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
+  isExiting_.store(true, std::memory_order_release);
+  sender_.send(DispatchEvent{});
+  if (workerThread_.joinable()) {
+    workerThread_.join();
+  }
   eventHandlers_.clear();
 }
 
@@ -22,13 +50,10 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
   auto listenerId = listenerIdCounter_.fetch_add(1, std::memory_order_relaxed);
 
   if (runtime_ == nullptr) {
-    // If runtime is not valid, we cannot register the handler
     return 0;
   }
 
   auto weakSelf = weak_from_this();
-
-  // Read/Write on eventHandlers_ map only on the JS thread
   callInvoker_->invokeAsync([weakSelf, eventName, listenerId, handler]() {
     if (auto self = weakSelf.lock()) {
       self->eventHandlers_[eventName][listenerId] = handler;
@@ -40,24 +65,19 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
 
 void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t listenerId) {
   if (runtime_ == nullptr) {
-    // If runtime is not valid, we cannot unregister the handler
     return;
   }
 
   auto weakSelf = weak_from_this();
-
-  // Read/Write on eventHandlers_ map only on the JS thread
   callInvoker_->invokeAsync([weakSelf, eventName, listenerId]() {
     if (auto self = weakSelf.lock()) {
       auto it = self->eventHandlers_.find(eventName);
-
       if (it == self->eventHandlers_.end()) {
         return;
       }
 
       auto &handlersMap = it->second;
       auto handlerIt = handlersMap.find(listenerId);
-
       if (handlerIt != handlersMap.end()) {
         handlersMap.erase(handlerIt);
       }
@@ -65,123 +85,55 @@ void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t
   });
 }
 
-jsi::Object AudioEventHandlerRegistry::makeEventObjectForDispatch(
+bool AudioEventHandlerRegistry::dispatchEvent(
     AudioEvent eventName,
-    const std::unordered_map<std::string, EventValue> &body) {
-  if (eventName != AudioEvent::AUDIO_READY) {
-    return createEventObject(body);
+    uint64_t listenerId,
+    AudioEventPayload &&payload) noexcept {
+  if (runtime_ == nullptr) {
+    return false;
   }
-  auto bufferIt = body.find("buffer");
-  if (bufferIt == body.end()) {
-    return createEventObject(body);
-  }
-  auto bufferHostObject = std::static_pointer_cast<AudioBufferHostObject>(
-      std::get<std::shared_ptr<jsi::HostObject>>(bufferIt->second));
-  return createEventObject(body, bufferHostObject->getSizeInBytes());
+  return sender_.try_send(
+             DispatchEvent{
+                 .event = eventName, .listenerId = listenerId, .payload = std::move(payload)}) ==
+      channels::spsc::ResponseStatus::SUCCESS;
 }
 
-void AudioEventHandlerRegistry::dispatchHandler(
+void AudioEventHandlerRegistry::handleEventOnJSThread(
     AudioEvent eventName,
+    uint64_t listenerId,
+    const AudioEventPayload &payload) {
+  auto it = eventHandlers_.find(eventName);
+  if (it == eventHandlers_.end()) {
+    return;
+  }
+
+  if (listenerId == kBroadcastListenerId) {
+    auto handlersCopy = it->second;
+    for (const auto &pair : handlersCopy) {
+      invokeHandler(pair.second, payload);
+    }
+  } else {
+    auto handlerIt = it->second.find(listenerId);
+    if (handlerIt != it->second.end()) {
+      invokeHandler(handlerIt->second, payload);
+    }
+  }
+}
+
+void AudioEventHandlerRegistry::invokeHandler(
     const std::shared_ptr<jsi::Function> &handler,
-    const std::unordered_map<std::string, EventValue> &body) {
-  if (handler == nullptr || !handler->isFunction(*runtime_)) {
+    const AudioEventPayload &payload) {
+  if (!handler || !handler->isFunction(*runtime_)) {
     return;
   }
   try {
-    jsi::Object eventObject = makeEventObjectForDispatch(eventName, body);
+    auto eventObject = buildJsiObject(payload);
     handler->call(*runtime_, eventObject);
   } catch (const std::exception &) {
     throw;
   } catch (...) {
-    printf("Unknown exception occurred while invoking handler for event: %d\n", eventName);
+    printf("Unknown exception occurred while invoking audio event handler\n");
   }
-}
-
-void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
-    AudioEvent eventName,
-    const std::unordered_map<std::string, EventValue> &body) {
-  if (runtime_ == nullptr) {
-    return;
-  }
-
-  auto weakSelf = weak_from_this();
-
-  callInvoker_->invokeAsync([weakSelf, eventName, body]() {
-    auto self = weakSelf.lock();
-    if (self == nullptr) {
-      return;
-    }
-    auto it = self->eventHandlers_.find(eventName);
-    if (it == self->eventHandlers_.end()) {
-      return;
-    }
-    for (const auto &pair : it->second) {
-      self->dispatchHandler(eventName, pair.second, body);
-    }
-  });
-}
-
-void AudioEventHandlerRegistry::invokeHandlerWithEventBody(
-    AudioEvent eventName,
-    uint64_t listenerId,
-    const std::unordered_map<std::string, EventValue> &body) {
-  if (runtime_ == nullptr) {
-    return;
-  }
-
-  auto weakSelf = weak_from_this();
-
-  callInvoker_->invokeAsync([weakSelf, eventName, listenerId, body]() {
-    auto self = weakSelf.lock();
-    if (self == nullptr) {
-      return;
-    }
-    auto it = self->eventHandlers_.find(eventName);
-    if (it == self->eventHandlers_.end()) {
-      return;
-    }
-    auto handlerIt = it->second.find(listenerId);
-    if (handlerIt == it->second.end()) {
-      return;
-    }
-    self->dispatchHandler(eventName, handlerIt->second, body);
-  });
-}
-
-jsi::Object AudioEventHandlerRegistry::createEventObject(
-    const std::unordered_map<std::string, EventValue> &body) {
-  auto eventObject = jsi::Object(*runtime_);
-
-  for (const auto &pair : body) {
-    const auto *name = pair.first.data();
-    const auto &value = pair.second;
-
-    if (std::holds_alternative<int>(value)) {
-      eventObject.setProperty(*runtime_, name, std::get<int>(value));
-    } else if (std::holds_alternative<double>(value)) {
-      eventObject.setProperty(*runtime_, name, std::get<double>(value));
-    } else if (std::holds_alternative<float>(value)) {
-      eventObject.setProperty(*runtime_, name, std::get<float>(value));
-    } else if (std::holds_alternative<bool>(value)) {
-      eventObject.setProperty(*runtime_, name, std::get<bool>(value));
-    } else if (std::holds_alternative<std::string>(value)) {
-      eventObject.setProperty(*runtime_, name, std::get<std::string>(value));
-    } else if (std::holds_alternative<std::shared_ptr<jsi::HostObject>>(value)) {
-      auto hostObject = jsi::Object::createFromHostObject(
-          *runtime_, std::get<std::shared_ptr<jsi::HostObject>>(value));
-      eventObject.setProperty(*runtime_, name, hostObject);
-    }
-  }
-
-  return eventObject;
-}
-
-jsi::Object AudioEventHandlerRegistry::createEventObject(
-    const std::unordered_map<std::string, EventValue> &body,
-    size_t memoryPressure) {
-  auto eventObject = createEventObject(body);
-  eventObject.setExternalMemoryPressure(*runtime_, memoryPressure);
-  return eventObject;
 }
 
 } // namespace audioapi

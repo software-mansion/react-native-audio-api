@@ -121,7 +121,7 @@ const Test: FC = () => {
     setupAudioContext();
     setIsTesting(true);
     setTestingInfo('Recording...');
-    let buffers: AudioBuffer[] = [];
+    const buffers: AudioBuffer[] = [];
     recorderTest(audioContextRef, buffers);
     setTimeout(() => {
       setTestingInfo('Stopping recording and playing back...');

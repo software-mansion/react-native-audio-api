@@ -13,8 +13,6 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
-#include <string>
-#include <unordered_map>
 #include <utility>
 
 namespace audioapi {
@@ -141,11 +139,10 @@ double AudioBufferQueueSourceNode::getCurrentPosition() const {
 
 void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue) {
   if (onBufferEndedCallbackId_ != 0) {
-    std::unordered_map<std::string, EventValue> body = {
-        {"bufferId", std::to_string(bufferId)}, {"isLastBufferInQueue", isLastBufferInQueue}};
-
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::BUFFER_ENDED, onBufferEndedCallbackId_, body);
+    audioEventHandlerRegistry_->dispatchEvent(
+        AudioEvent::BUFFER_ENDED,
+        onBufferEndedCallbackId_,
+        BufferEndedPayload{.bufferId = bufferId, .isLastBufferInQueue = isLastBufferInQueue});
   }
 }
 

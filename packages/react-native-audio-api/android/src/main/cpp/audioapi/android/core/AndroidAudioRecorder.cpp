@@ -321,7 +321,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::setupFileWriter(
     const std::string &fileNameOverride) {
 #if RN_AUDIO_API_FFMPEG_DISABLED
   if (properties->format != AudioFileProperties::Format::WAV) {
-    return Result<std::string, std::string>::Err(
+    return Result<NoneType, std::string>::Err(
         "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV format instead.");
   }
 #endif
@@ -575,9 +575,10 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       }
 
       std::string message = "Android recorder error: " + streamResult.unwrap_err();
-      std::unordered_map<std::string, EventValue> eventPayload{{"message", std::move(message)}};
-      audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-          AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
+      audioEventHandlerRegistry_->dispatchEvent(
+          AudioEvent::RECORDER_ERROR,
+          callbackId,
+          StringPayload{.name = "message", .reason = std::move(message)});
       return;
     }
 

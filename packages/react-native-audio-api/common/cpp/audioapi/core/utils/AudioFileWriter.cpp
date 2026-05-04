@@ -2,7 +2,6 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <memory>
 #include <string>
-#include <unordered_map>
 
 namespace audioapi {
 
@@ -29,9 +28,8 @@ void AudioFileWriter::invokeOnErrorCallback(const std::string &message) {
     return;
   }
 
-  std::unordered_map<std::string, EventValue> eventPayload = {{"message", message}};
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
+  audioEventHandlerRegistry_->dispatchEvent(
+      AudioEvent::RECORDER_ERROR, callbackId, StringPayload{.name = "message", .reason = message});
 }
 
 bool AudioFileWriter::isFileOpen() {

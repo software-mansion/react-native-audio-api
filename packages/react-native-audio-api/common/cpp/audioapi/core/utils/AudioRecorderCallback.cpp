@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <memory>
 #include <string>
-#include <unordered_map>
 
 namespace audioapi {
 
@@ -67,15 +66,12 @@ void AudioRecorderCallback::emitAudioData(bool flush) {
 void AudioRecorderCallback::invokeCallback(
     const std::shared_ptr<AudioBuffer> &buffer,
     int numFrames) {
-  auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
-
-  std::unordered_map<std::string, EventValue> eventPayload = {};
-  eventPayload.insert({"buffer", audioBufferHostObject});
-  eventPayload.insert({"numFrames", numFrames});
-
   if (audioEventHandlerRegistry_) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::AUDIO_READY, callbackId_, eventPayload);
+    audioEventHandlerRegistry_->dispatchEvent(
+        AudioEvent::AUDIO_READY,
+        callbackId_,
+        AudioReadyPayload{
+            .buffer = std::make_shared<AudioBufferHostObject>(buffer), .numFrames = numFrames});
   }
 }
 
@@ -96,9 +92,8 @@ void AudioRecorderCallback::invokeOnErrorCallback(const std::string &message) {
     return;
   }
 
-  std::unordered_map<std::string, EventValue> eventPayload = {{"message", message}};
-  audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-      AudioEvent::RECORDER_ERROR, callbackId, eventPayload);
+  audioEventHandlerRegistry_->dispatchEvent(
+      AudioEvent::RECORDER_ERROR, callbackId, StringPayload{.name = "message", .reason = message});
 }
 
 } // namespace audioapi
