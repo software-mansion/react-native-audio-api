@@ -161,14 +161,14 @@ const Test: FC = () => {
     setIsTesting(true);
     const ctx = audioContextRef.current!;
     const buffer = await loadAudioBuffer(ctx);
-    // await audioBufferSourceBasicTest(ctx, buffer, setTestingInfo);
-    // await audioBufferSourceNaturalEndTest(ctx, buffer, setTestingInfo);
-    // await audioBufferSourceOffsetDurationTest(ctx, buffer, setTestingInfo);
-    // await audioBufferSourceScheduledStartTest(ctx, buffer, setTestingInfo);
-    // await audioBufferSourceLoopTest(ctx, buffer, setTestingInfo);
-    // await audioBufferSourceLoopSkipTest(ctx, buffer, setTestingInfo);
-    // await audioBufferSourcePlaybackRateTest(ctx, buffer, setTestingInfo);
-    // await audioBufferSourceDetuneTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourceBasicTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourceNaturalEndTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourceOffsetDurationTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourceScheduledStartTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourceLoopTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourceLoopSkipTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourcePlaybackRateTest(ctx, buffer, setTestingInfo);
+    await audioBufferSourceDetuneTest(ctx, buffer, setTestingInfo);
     await audioBufferSourceNegativePlaybackRateTest(
       ctx,
       buffer,
