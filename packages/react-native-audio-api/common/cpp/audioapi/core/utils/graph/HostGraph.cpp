@@ -45,7 +45,7 @@ size_t negotiateChannelCount(const HostGraph::Node *dest) {
     return 0;
   }
 
-  const auto attr = static_cast<size_t>(destAudio->getChannelCount());
+  const auto attr = destAudio->getChannelCount();
   const auto mode = destAudio->getChannelCountMode();
 
   if (mode == audioapi::ChannelCountMode::EXPLICIT || dest->inputs.empty()) {
@@ -58,7 +58,7 @@ size_t negotiateChannelCount(const HostGraph::Node *dest) {
     if (inAudio == nullptr) {
       continue;
     }
-    const auto c = static_cast<size_t>(inAudio->getChannelCount());
+    const auto c = inAudio->getChannelCount();
     maxInputChannels = std::max(c, maxInputChannels);
   }
 

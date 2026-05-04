@@ -1,16 +1,17 @@
-// Graph coordinator implementation (formerly inline in Graph.hpp).
-
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 
-#include <algorithm>
 #include <memory>
 #include <utility>
 
 namespace audioapi::utils::graph {
 
-Graph::Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer)
-    : disposer_(disposer) {
+Graph::Graph(
+    size_t eventQueueCapacity,
+    Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer,
+    std::uint32_t initialNodeCapacity,
+    std::uint32_t initialEdgeCapacity)
+    : disposer_(disposer), poolCapacity_(initialEdgeCapacity), nodeCapacity_(initialNodeCapacity) {
   using namespace audioapi::channels::spsc;
 
   auto [es, er] =
@@ -22,21 +23,11 @@ Graph::Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE
       channel<OrphanEnvelope, EVENT_OVERFLOW_STRATEGY, EVENT_WAIT_STRATEGY>(eventQueueCapacity);
   gcEventSender_ = std::move(gs);
   gcEventReceiver_ = std::move(gr);
-}
-
-Graph::Graph(
-    size_t eventQueueCapacity,
-    Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer,
-    std::uint32_t initialNodeCapacity,
-    std::uint32_t initialEdgeCapacity)
-    : Graph(eventQueueCapacity, disposer) {
-  if (initialNodeCapacity > 0) {
-    audioGraph.reserveNodes(initialNodeCapacity);
-    nodeCapacity_ = initialNodeCapacity;
+  if (nodeCapacity_ > 0) {
+    audioGraph.reserveNodes(nodeCapacity_);
   }
-  if (initialEdgeCapacity > 0) {
-    audioGraph.pool().grow(initialEdgeCapacity);
-    poolCapacity_ = initialEdgeCapacity;
+  if (poolCapacity_ > 0) {
+    audioGraph.pool().grow(poolCapacity_);
   }
 }
 
@@ -151,7 +142,7 @@ void Graph::sendPoolGrowIfNeeded() {
   auto edges = static_cast<std::uint32_t>(hostGraph.edgeCount());
   // edges > poolCapacity_ / 2 || (poolCapacity_ == 0 && edges > 0) left for clarity
   if (edges > poolCapacity_ / 2) {
-    std::uint32_t newCap = std::max(static_cast<std::uint32_t>(edges * 2), std::uint32_t{64});
+    std::uint32_t newCap = edges * 2;
     auto buf = std::make_unique<InputPool::Slot[]>(newCap);
     eventSender_.send(
         [buf = std::move(buf), newCap](
@@ -168,7 +159,7 @@ void Graph::sendPoolGrowIfNeeded() {
 void Graph::sendNodeGrowIfNeeded() {
   auto nodes = static_cast<std::uint32_t>(hostGraph.nodeCount());
   if (nodes > nodeCapacity_) {
-    std::uint32_t newCap = std::max(static_cast<std::uint32_t>(nodes * 2), std::uint32_t{64});
+    std::uint32_t newCap = nodes * 2;
     auto buf = AudioGraph::makeNodeBuffer(newCap);
     eventSender_.send(
         [buf = std::move(buf)](

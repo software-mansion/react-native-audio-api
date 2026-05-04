@@ -39,6 +39,9 @@ inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE = 32;
 // Disposer payload size (= sizeof(std::vector<T>))
 inline constexpr size_t DISPOSER_PAYLOAD_SIZE = 24;
 
+inline constexpr size_t AUDIO_GRAPH_EVENT_SIZE = 56;
+inline constexpr std::uint32_t AUDIO_GRAPH_INITIAL_CAPACITY = 64;
+
 // Cache line size
 #ifdef __cpp_lib_hardware_interference_size
 using std::hardware_constructive_interference_size;

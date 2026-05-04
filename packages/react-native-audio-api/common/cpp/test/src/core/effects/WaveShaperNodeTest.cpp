@@ -61,7 +61,7 @@ TEST_F(WaveShaperNodeTest, NullCanBeAsignedToCurve) {
 TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
   static constexpr int FRAMES_TO_PROCESS = 5;
   auto waveShaper = std::make_shared<TestableWaveShaperNode>(context);
-  waveShaper->setOversample(OverSampleType::OVERSAMPLE_NONE);
+  waveShaper->setOversample(std::make_unique<OversampleUpdate>(), *context->getDisposer());
   waveShaper->setCurve(waveShaper->testCurve_);
 
   auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);

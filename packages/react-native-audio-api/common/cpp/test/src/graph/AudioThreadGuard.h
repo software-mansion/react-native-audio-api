@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <sys/resource.h>
 #include <cstddef>
 #include <cstdint>
@@ -77,8 +78,7 @@ class AudioThreadGuard {
    public:
     Scope();
     ~Scope();
-    Scope(const Scope &) = delete;
-    Scope &operator=(const Scope &) = delete;
+    DELETE_COPY_AND_MOVE(Scope);
 
     /// Number of allocation/deallocation violations within this scope.
     [[nodiscard]] size_t allocationViolations() const;

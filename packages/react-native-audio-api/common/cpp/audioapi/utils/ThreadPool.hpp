@@ -6,7 +6,7 @@
 #include <variant>
 #include <vector>
 
-#include <audioapi/libs/inplace_function/inplace_function.h>
+#include <audioapi/utils/FatFunction.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 
 namespace audioapi {
@@ -26,7 +26,7 @@ template <std::size_t TaskSize>
 class ThreadPool {
   struct StopEvent {};
   struct TaskEvent {
-    stdext::inplace_function<void(), TaskSize> task;
+    FatFunction<TaskSize, void()> task;
   };
   using Event = std::variant<TaskEvent, StopEvent>;
 

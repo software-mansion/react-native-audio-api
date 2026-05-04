@@ -68,7 +68,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   }
 
   template <typename F>
-  bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
+  bool scheduleAudioEvent(F &&event) noexcept {
     if (getState() != ContextState::RUNNING) {
       processAudioEvents();
       event(*this);
@@ -92,7 +92,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   /// event handler itself must be safe to skip if the audio thread never
   /// drains it (e.g. context already closed).
   template <typename F>
-  bool scheduleGCEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
+  bool scheduleGCEvent(F &&event) noexcept {
     return gcAudioEventScheduler_.scheduleEvent(std::forward<F>(event));
   }
 

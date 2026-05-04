@@ -5,7 +5,6 @@
 #include <audioapi/core/utils/graph/HostGraph.h>
 #include <audioapi/core/utils/graph/InputPool.h>
 
-#include <audioapi/utils/FatFunction.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 
@@ -80,13 +79,11 @@ class Graph {
   using ResultError = HostGraph::ResultError;
   using Res = Result<NoneType, ResultError>;
 
-  Graph(size_t eventQueueCapacity, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer);
-
   Graph(
       size_t eventQueueCapacity,
       Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> *disposer,
-      std::uint32_t initialNodeCapacity,
-      std::uint32_t initialEdgeCapacity);
+      std::uint32_t initialNodeCapacity = AUDIO_GRAPH_INITIAL_CAPACITY,
+      std::uint32_t initialEdgeCapacity = AUDIO_GRAPH_INITIAL_CAPACITY);
 
   // ── Audio-thread API ────────────────────────────────────────────────────
 
@@ -179,8 +176,8 @@ class Graph {
 
   // ── Main-thread tracking for pre-growth ─────────────────────────────────
 
-  std::uint32_t poolCapacity_ = 0; ///< Pool capacity we have ensured
-  std::uint32_t nodeCapacity_ = 0; ///< Node vector capacity we have ensured
+  std::uint32_t poolCapacity_; ///< Pool capacity we have ensured
+  std::uint32_t nodeCapacity_; ///< Node vector capacity we have ensured
 
   /// @brief Pre-grows the InputPool when the edge count approaches capacity.
   ///
