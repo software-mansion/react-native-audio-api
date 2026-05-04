@@ -578,7 +578,7 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       audioEventHandlerRegistry_->dispatchEvent(
           AudioEvent::RECORDER_ERROR,
           callbackId,
-          RecorderErrorPayload{.message = std::move(message)});
+          StringPayload{.name = "message", .reason = std::move(message)});
       return;
     }
 
