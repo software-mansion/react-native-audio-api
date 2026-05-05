@@ -85,22 +85,17 @@ void BufferProcessorBase::renderInterpolated(
     }
 
     const AudioBuffer *currentBuffer = getBuffer();
-    // If processing multiple buffers
-    const AudioBuffer *nextBuffer = state.isCrossBuffer ? getNextBuffer() : currentBuffer;
     for (size_t ch = 0; ch < numChannels; ++ch) {
       auto destination = output->getChannel(ch)->span();
       auto source = currentBuffer->getChannel(ch)->span();
       if (state.isCrossBuffer) {
-        auto nextSource = nextBuffer->getChannel(ch)->span();
+        auto nextSource = getNextBuffer()->getChannel(ch)->span();
         const float currentSample = source[state.index];
         const float nextSample = nextSource[state.nextIndex];
         destination[writeIndex] = currentSample + state.factor * (nextSample - currentSample);
-      } else {
-        destination[writeIndex] =
-            dsp::linearInterpolate(source, state.index, state.nextIndex, state.factor);
+        writeIndex++;
       }
     }
-    writeIndex++;
 
     if (!shouldProcessFurther()) {
       output->zero(writeIndex, framesLeft - i - 1);
