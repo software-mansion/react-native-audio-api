@@ -1,5 +1,3 @@
-#pragma once
-
 #include <audioapi/core/utils/buffer/BufferProcessorBase.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
