@@ -11,7 +11,6 @@
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <memory>
 #include <utility>
 
