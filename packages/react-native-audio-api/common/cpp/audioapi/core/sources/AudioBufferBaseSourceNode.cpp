@@ -117,7 +117,8 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 
   playbackRateBuffer_->zero();
 
-  auto framesNeededToStretch = static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+  auto framesNeededToStretch =
+      std::abs(static_cast<int>(playbackRate * static_cast<float>(framesToProcess)));
 
   updatePlaybackInfo(
       playbackRateBuffer_,
