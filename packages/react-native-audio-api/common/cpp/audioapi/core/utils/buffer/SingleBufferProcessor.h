@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/utils/buffer/BufferProcessingDirection.hpp>
+#include <audioapi/core/utils/buffer/BufferProcessingDirection.h>
 #include <audioapi/core/utils/buffer/BufferProcessorBase.h>
 
 #include <cstddef>
