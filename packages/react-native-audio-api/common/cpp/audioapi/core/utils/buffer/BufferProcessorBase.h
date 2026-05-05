@@ -68,6 +68,8 @@ class BufferProcessorBase {
       size_t writeIndex,
       size_t framesLeft,
       double rate);
+
+  [[nodiscard]] bool shouldProcessFurther();
 };
 
 } // namespace audioapi

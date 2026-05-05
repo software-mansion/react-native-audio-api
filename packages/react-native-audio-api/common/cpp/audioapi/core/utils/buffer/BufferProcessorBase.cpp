@@ -27,6 +27,17 @@ void BufferProcessorBase::setProcessingDirection(double rate) {
   direction_ = rate > 0.0 ? BufferProcessingDirection::FORWARD : BufferProcessingDirection::REVERSE;
 }
 
+bool BufferProcessorBase::shouldProcessFurther() {
+  if (!atBoundary()) {
+    return true; // Keep going
+  }
+
+  handleBoundary();
+
+  // Check if we should loop
+  return !shouldStop();
+}
+
 void BufferProcessorBase::renderBlock(
     const std::shared_ptr<DSPAudioBuffer> &output,
     size_t writeIndex,
@@ -53,12 +64,9 @@ void BufferProcessorBase::renderBlock(
       framesLeft -= toCopy;
     }
 
-    if (atBoundary()) {
-      handleBoundary();
-      if (shouldStop()) {
-        output->zero(writeIndex, framesLeft);
-        break;
-      }
+    if (!shouldProcessFurther()) {
+      output->zero(writeIndex, framesLeft);
+      break;
     }
   }
 }
@@ -94,12 +102,9 @@ void BufferProcessorBase::renderInterpolated(
     }
     writeIndex++;
 
-    if (atBoundary()) {
-      handleBoundary();
-      if (shouldStop()) {
-        output->zero(writeIndex, framesLeft - i - 1);
-        return;
-      }
+    if (!shouldProcessFurther()) {
+      output->zero(writeIndex, framesLeft - i - 1);
+      return;
     }
   }
 }
