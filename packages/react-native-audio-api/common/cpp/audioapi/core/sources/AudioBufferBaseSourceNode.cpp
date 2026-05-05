@@ -186,7 +186,10 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
 }
 
 float AudioBufferBaseSourceNode::getComputedPlaybackRateValue(int framesToProcess, double time) {
-  auto playbackRate = playbackRateParam_->processKRateParam(framesToProcess, time);
+  auto playbackRate = std::clamp(
+      playbackRateParam_->processKRateParam(framesToProcess, time),
+      MIN_PLAYBACK_RATE,
+      MAX_PLAYBACK_RATE);
   auto detune = std::pow(
       2.0f, //NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       detuneParam_->processKRateParam(framesToProcess, time) / static_cast<float>(OCTAVE_RANGE));
