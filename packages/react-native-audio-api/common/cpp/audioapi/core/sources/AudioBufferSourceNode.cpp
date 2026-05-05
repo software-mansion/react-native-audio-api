@@ -11,6 +11,7 @@
 
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <utility>
 
@@ -24,6 +25,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
+  processor_ = std::make_unique<SingleBufferProcessor>();
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -147,19 +149,21 @@ void AudioBufferSourceNode::runBufferProcessor(
     vReadIndex_ = endFrame - 1.0;
   }
 
-  SingleBufferProcessor processor(
-      buffer_.get(), vReadIndex_, loop_, playbackRate, startFrame, endFrame);
+  processor_->setPosition(vReadIndex_);
+  processor_->setEndFrame(static_cast<size_t>(endFrame));
+  processor_->setStartFrame(static_cast<size_t>(startFrame));
+  processor_->setBuffer(buffer_.get());
+  processor_->setLoop(loop_);
+  processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
 
-  processor.process(processingBuffer, startOffset, offsetLength, interpolate);
-
-  if (processor.atBoundary()) {
-    if (processor.shouldStop()) {
+  if (processor_->atBoundary()) {
+    if (processor_->shouldStop()) {
       playbackState_ = PlaybackState::STOP_SCHEDULED;
     }
     sendOnLoopEndedEvent();
   }
 
-  vReadIndex_ = processor.getPosition();
+  vReadIndex_ = processor_->getPosition();
 }
 
 double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) const {

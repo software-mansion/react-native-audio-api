@@ -16,6 +16,7 @@ import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
 import AudioParamPipeline from './AudioParamPipeline';
+import { TestScreen } from '../../../../packages/test-app-screen';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -34,6 +35,7 @@ type NavigationParamList = {
   AudioTag: undefined;
   ConvolverIR: undefined;
   AudioParamPipeline: undefined;
+  TestScreen: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -141,5 +143,11 @@ export const Examples: Example[] = [
     title: 'Audio Param',
     Icon: icons.SquareStack,
     screen: AudioParamPipeline,
+  },
+  {
+    key: 'TestScreen',
+    title: 'Test Screen',
+    Icon: icons.TestTube,
+    screen: TestScreen,
   },
 ] as const;

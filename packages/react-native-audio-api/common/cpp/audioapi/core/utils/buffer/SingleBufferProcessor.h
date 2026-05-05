@@ -4,47 +4,47 @@
 #include <audioapi/core/utils/buffer/BufferProcessorBase.h>
 
 #include <cstddef>
+#include "audioapi/utils/AudioBuffer.hpp"
 
 namespace audioapi {
 
 class SingleBufferProcessor : public BufferProcessorBase {
  public:
-  SingleBufferProcessor(
-      const AudioBuffer *buffer,
-      double position,
-      bool loop,
-      float rate,
-      double startFrame,
-      double endFrame)
-      : BufferProcessorBase(position, rate),
-        buffer_(buffer),
-        loop_(loop),
-        startFrame_(static_cast<size_t>(startFrame)),
-        endFrame_(static_cast<size_t>(endFrame)),
-        direction_(
-            rate >= 0 ? BufferProcessingDirection::FORWARD : BufferProcessingDirection::REVERSE) {}
+  SingleBufferProcessor() = default;
 
   [[nodiscard]] bool atBoundary() const override;
   [[nodiscard]] bool shouldStop() const override;
 
+  void setStartFrame(size_t startFrame) {
+    startFrame_ = startFrame;
+  }
+
+  void setEndFrame(size_t endFrame) {
+    endFrame_ = endFrame;
+  }
+
+  void setLoop(bool loop) {
+    loop_ = loop;
+  }
+
+  void setBuffer(const AudioBuffer *buffer) {
+    buffer_ = buffer;
+  }
+
  protected:
-  CursorState advance() override;
+  CursorState advance(double rate) override;
   void consume(size_t frames) override;
   [[nodiscard]] size_t remainingInContiguousBlock() const override;
   [[nodiscard]] size_t currentIndex() const override;
   [[nodiscard]] const AudioBuffer *getBuffer() const override;
   [[nodiscard]] const AudioBuffer *getNextBuffer() const override;
   void handleBoundary() override;
-  [[nodiscard]] bool isReverse() const override {
-    return direction_ == BufferProcessingDirection::REVERSE;
-  }
 
  private:
-  const AudioBuffer *buffer_;
-  bool loop_;
-  size_t startFrame_;
-  size_t endFrame_;
-  BufferProcessingDirection direction_;
+  const AudioBuffer *buffer_ = nullptr;
+  bool loop_ = false;
+  size_t startFrame_ = 0;
+  size_t endFrame_ = 0;
 };
 
 } // namespace audioapi

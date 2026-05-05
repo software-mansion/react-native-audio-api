@@ -5,7 +5,7 @@
 
 namespace audioapi {
 
-CursorState SingleBufferProcessor::advance() {
+CursorState SingleBufferProcessor::advance(double rate) {
   const double currentPosition = position_;
   const auto index = static_cast<size_t>(currentPosition);
   const auto factor = static_cast<float>(currentPosition - static_cast<double>(index));
@@ -24,7 +24,7 @@ CursorState SingleBufferProcessor::advance() {
     }
   }
 
-  position_ += rate_;
+  position_ += rate;
 
   const bool atEnd = shouldStop() &&
       (currentPosition >= static_cast<double>(endFrame_) ||

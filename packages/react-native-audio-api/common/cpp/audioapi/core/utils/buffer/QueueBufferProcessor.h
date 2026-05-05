@@ -4,25 +4,22 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <cstddef>
-#include <functional>
 #include <list>
 #include <memory>
 #include <utility>
+#include "audioapi/utils/FatFunction.hpp"
 
 namespace audioapi {
 
+using OnBufferConsumed = FatFunction<
+    ON_BUFFER_CONSUMED_CALLBACK_SIZE,
+    void(size_t &, const std::shared_ptr<AudioBuffer> &, bool &, bool &)>;
+
 class QueueBufferProcessor : public BufferProcessorBase {
  public:
-  using OnBufferConsumed = std::function<void(
-      size_t bufferId,
-      std::shared_ptr<AudioBuffer> buffer,
-      bool isLastInQueue,
-      bool fireBufferEndedEvent)>;
-
   QueueBufferProcessor(
       std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> *buffers,
-      double position,
-      float rate,
+      double *position,
       OnBufferConsumed onBufferConsumed = {});
 
   /// Arm an in-place tail buffer. When the main queue would drain during
@@ -39,7 +36,7 @@ class QueueBufferProcessor : public BufferProcessorBase {
   [[nodiscard]] bool shouldStop() const override;
 
  protected:
-  CursorState advance() override;
+  CursorState advance(double rate) override;
   void consume(size_t frames) override;
   [[nodiscard]] size_t remainingInContiguousBlock() const override;
   [[nodiscard]] size_t currentIndex() const override;

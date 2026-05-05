@@ -10,14 +10,11 @@ namespace audioapi {
 
 QueueBufferProcessor::QueueBufferProcessor(
     std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> *buffers,
-    double position,
-    float rate,
+    double *position,
     OnBufferConsumed onBufferConsumed)
-    : BufferProcessorBase(position, rate),
-      buffers_(buffers),
-      onBufferConsumed_(std::move(onBufferConsumed)) {}
+    : buffers_(buffers), onBufferConsumed_(std::move(onBufferConsumed)) {}
 
-CursorState QueueBufferProcessor::advance() {
+CursorState QueueBufferProcessor::advance(double rate) {
   if (buffers_->empty()) {
     return {.atEndOfBuffer = true};
   }
@@ -40,11 +37,11 @@ CursorState QueueBufferProcessor::advance() {
       isCrossBuffer = true;
     } else {
       nextIndex = index;
-      atEnd = (currentPos + static_cast<double>(rate_)) >= static_cast<double>(bufferSize);
+      atEnd = (currentPos + rate) >= static_cast<double>(bufferSize);
     }
   }
 
-  position_ += static_cast<double>(rate_);
+  position_ += rate;
 
   return {
       .index = index,
@@ -114,12 +111,12 @@ void QueueBufferProcessor::handleBoundary() {
   buffers_->pop_front();
   position_ -= consumedSize;
 
-  const bool queueEmptyAfterPop = buffers_->empty();
+  bool queueEmptyAfterPop = buffers_->empty();
   const bool willAppendTail = queueEmptyAfterPop && pendingTailBuffer_ != nullptr;
-  const bool fireBufferEndedEvent = !willAppendTail;
+  bool fireBufferEndedEvent = !willAppendTail;
 
   if (onBufferConsumed_) {
-    onBufferConsumed_(bufferId, std::move(buffer), queueEmptyAfterPop, fireBufferEndedEvent);
+    onBufferConsumed_(bufferId, buffer, queueEmptyAfterPop, fireBufferEndedEvent);
   }
 
   if (willAppendTail) {

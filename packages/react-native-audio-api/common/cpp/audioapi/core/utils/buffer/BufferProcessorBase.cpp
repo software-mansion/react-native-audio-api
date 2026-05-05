@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include "audioapi/core/utils/buffer/BufferProcessingDirection.h"
 
 namespace audioapi {
 
@@ -12,18 +13,25 @@ void BufferProcessorBase::process(
     const std::shared_ptr<DSPAudioBuffer> &output,
     size_t writeIndex,
     size_t framesLeft,
+    double rate,
     bool interpolate) {
+  setProcessingDirection(rate);
   if (interpolate) {
-    renderInterpolated(output, writeIndex, framesLeft);
+    renderInterpolated(output, writeIndex, framesLeft, rate);
   } else {
-    renderBlock(output, writeIndex, framesLeft);
+    renderBlock(output, writeIndex, framesLeft, rate);
   }
+}
+
+void BufferProcessorBase::setProcessingDirection(double rate) {
+  direction_ = rate > 0.0 ? BufferProcessingDirection::FORWARD : BufferProcessingDirection::REVERSE;
 }
 
 void BufferProcessorBase::renderBlock(
     const std::shared_ptr<DSPAudioBuffer> &output,
     size_t writeIndex,
-    size_t framesLeft) {
+    size_t framesLeft,
+    double rate) {
   while (framesLeft > 0) {
     const size_t toCopy = std::min(remainingInContiguousBlock(), framesLeft);
 
@@ -31,7 +39,7 @@ void BufferProcessorBase::renderBlock(
       const AudioBuffer *buffer = getBuffer();
       const size_t readIndex = currentIndex();
 
-      if (isReverse()) {
+      if (direction_ == BufferProcessingDirection::REVERSE) {
         for (size_t ch = 0; ch < output->getNumberOfChannels(); ++ch) {
           output->getChannel(ch)->copyReverse(
               *buffer->getChannel(ch), readIndex, writeIndex, toCopy);
@@ -58,10 +66,11 @@ void BufferProcessorBase::renderBlock(
 void BufferProcessorBase::renderInterpolated(
     const std::shared_ptr<DSPAudioBuffer> &output,
     size_t writeIndex,
-    size_t framesLeft) {
+    size_t framesLeft,
+    double rate) {
   const size_t numChannels = output->getNumberOfChannels();
   for (size_t i = 0; i < framesLeft; ++i) {
-    const CursorState state = advance();
+    const CursorState state = advance(rate);
     if (state.atEndOfBuffer) {
       output->zero(writeIndex, framesLeft - i);
       return;

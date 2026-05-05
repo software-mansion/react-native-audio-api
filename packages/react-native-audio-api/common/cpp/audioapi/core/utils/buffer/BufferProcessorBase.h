@@ -5,6 +5,7 @@
 #include <audioapi/utils/Macros.h>
 #include <cstddef>
 #include <memory>
+#include "audioapi/core/utils/buffer/BufferProcessingDirection.h"
 
 namespace audioapi {
 
@@ -19,47 +20,54 @@ struct CursorState {
 class BufferProcessorBase {
  public:
   virtual ~BufferProcessorBase() = default;
-  BufferProcessorBase() = delete;
   DELETE_COPY_AND_MOVE(BufferProcessorBase);
-
-  BufferProcessorBase(double position, float rate) : position_(position), rate_(rate) {}
 
   void process(
       const std::shared_ptr<DSPAudioBuffer> &output,
       size_t writeIndex,
       size_t framesLeft,
+      double rate,
       bool interpolate);
 
   [[nodiscard]] double getPosition() const {
     return position_;
   }
 
+  void setPosition(double position) {
+    position_ = position;
+  }
+
   [[nodiscard]] virtual bool atBoundary() const = 0;
   [[nodiscard]] virtual bool shouldStop() const = 0;
 
  protected:
-  virtual CursorState advance() = 0;
+  BufferProcessorBase() = default;
+
+  virtual CursorState advance(double rate) = 0;
   virtual void consume(size_t frames) = 0;
   [[nodiscard]] virtual size_t remainingInContiguousBlock() const = 0;
   [[nodiscard]] virtual size_t currentIndex() const = 0;
   [[nodiscard]] virtual const AudioBuffer *getBuffer() const = 0;
   [[nodiscard]] virtual const AudioBuffer *getNextBuffer() const = 0;
   virtual void handleBoundary() = 0;
-  [[nodiscard]] virtual bool isReverse() const {
-    return false;
-  }
 
-  double position_;
-  float rate_;
+  double position_ = 0;
+  BufferProcessingDirection direction_ = BufferProcessingDirection::FORWARD;
 
  private:
-  void
-  renderBlock(const std::shared_ptr<DSPAudioBuffer> &output, size_t writeIndex, size_t framesLeft);
+  void setProcessingDirection(double rate);
+
+  void renderBlock(
+      const std::shared_ptr<DSPAudioBuffer> &output,
+      size_t writeIndex,
+      size_t framesLeft,
+      double rate);
 
   void renderInterpolated(
       const std::shared_ptr<DSPAudioBuffer> &output,
       size_t writeIndex,
-      size_t framesLeft);
+      size_t framesLeft,
+      double rate);
 };
 
 } // namespace audioapi

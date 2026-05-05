@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <memory>
+#include "audioapi/core/utils/buffer/SingleBufferProcessor.h"
 
 namespace audioapi {
 
@@ -74,6 +75,8 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   double getVirtualStartFrame(float sampleRate) const;
   double getVirtualEndFrame(float sampleRate);
+
+  std::unique_ptr<SingleBufferProcessor> processor_;
 };
 
 } // namespace audioapi

@@ -28,6 +28,22 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
   }
 
   isInitialized_.store(true, std::memory_order_release);
+
+  auto graphManager = context->getGraphManager();
+
+  auto onBufferConsumed = [this, graphManager](
+                              size_t bufferId,
+                              std::shared_ptr<AudioBuffer> buffer,
+                              bool isLastInQueue,
+                              bool fireBufferEndedEvent) {
+    playedBuffersDuration_ += buffer->getDuration();
+    if (fireBufferEndedEvent) {
+      sendOnBufferEndedEvent(bufferId, isLastInQueue);
+    }
+    graphManager->addAudioBufferForDestruction(std::move(buffer));
+  };
+
+  processor_ = std::make_unique<QueueBufferProcessor>(&buffers_, &vReadIndex_, onBufferConsumed);
 }
 
 void AudioBufferQueueSourceNode::stop(double when) {
@@ -164,44 +180,23 @@ void AudioBufferQueueSourceNode::runBufferProcessor(
     return;
   }
 
-  auto context = context_.lock();
-  if (!context) {
-    return;
-  }
-
   if (buffers_.empty()) {
     processingBuffer->zero(startOffset, offsetLength);
     return;
   }
 
-  auto graphManager = context->getGraphManager();
-
-  auto onBufferConsumed = [this, graphManager](
-                              size_t bufferId,
-                              std::shared_ptr<AudioBuffer> buffer,
-                              bool isLastInQueue,
-                              bool fireBufferEndedEvent) {
-    playedBuffersDuration_ += buffer->getDuration();
-    if (fireBufferEndedEvent) {
-      sendOnBufferEndedEvent(bufferId, isLastInQueue);
-    }
-    graphManager->addAudioBufferForDestruction(std::move(buffer));
-  };
-
-  QueueBufferProcessor processor(
-      &buffers_, vReadIndex_, std::fabs(playbackRate), std::move(onBufferConsumed));
-
   if (addExtraTailFrames_ && tailBuffer_ != nullptr) {
-    processor.setPendingTail(tailBuffer_);
+    processor_->setPendingTail(tailBuffer_);
   }
 
-  processor.process(processingBuffer, startOffset, offsetLength, interpolate);
+  processor_->setPosition(vReadIndex_);
+  processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
 
-  if (processor.didConsumeTail()) {
+  if (processor_->didConsumeTail()) {
     addExtraTailFrames_ = false;
   }
 
-  vReadIndex_ = processor.getPosition();
+  vReadIndex_ = processor_->getPosition();
 }
 
 } // namespace audioapi

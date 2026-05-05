@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <list>
 #include <memory>
+#include "audioapi/core/utils/buffer/QueueBufferProcessor.h"
 
 namespace audioapi {
 
@@ -73,6 +74,8 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   double playedBuffersDuration_ = 0;
 
   uint64_t onBufferEndedCallbackId_ = 0; // 0 means no callback
+
+  std::unique_ptr<QueueBufferProcessor> processor_;
 };
 
 } // namespace audioapi
