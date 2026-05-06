@@ -7,7 +7,6 @@
 #include <charconv>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
 #include <limits>
 #include <memory>
 #include <string>
@@ -19,12 +18,10 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/audio_fifo.h>
 #include <libavutil/avutil.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/dict.h>
 #include <libavutil/mathematics.h>
-#include <libavutil/samplefmt.h>
 }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
@@ -111,9 +108,6 @@ constexpr const char *fileUrlPrefix = "file://";
 constexpr ma_uint64 miniaudioChunkFrames = 4096;
 constexpr ma_uint64 riffWaveHeaderBytes = 36;
 constexpr ma_uint64 maxRiffChunkSize = std::numeric_limits<uint32_t>::max();
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-constexpr int ffmpegFallbackFrameSize = 4096;
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 bool hasNonFileProtocol(const std::string &path) {
   const auto colon = path.find(':');
@@ -188,7 +182,7 @@ std::string lowercaseExtension(const std::string &path) {
   }
 
   std::string extension = path.substr(dotIndex + 1);
-  std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
+  std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
     return static_cast<char>(std::tolower(c));
   });
 
@@ -197,7 +191,7 @@ std::string lowercaseExtension(const std::string &path) {
 
 bool hasExtension(const std::string &path, const std::vector<std::string> &extensions) {
   const std::string extension = lowercaseExtension(path);
-  return std::find(extensions.begin(), extensions.end(), extension) != extensions.end();
+  return std::ranges::find(extensions, extension) != extensions.end();
 }
 
 bool isMiniaudioOutputPath(const std::string &path) {
@@ -208,155 +202,137 @@ bool isFFmpegRemuxOutputPath(const std::string &path) {
   return hasExtension(path, {"m4a", "mp4", "caf"});
 }
 
-bool isFFmpegEncodedOutputPath(const std::string &path) {
-  return hasExtension(path, {"flac"});
-}
-
 bool isFFmpegOutputPath(const std::string &path) {
-  return isFFmpegRemuxOutputPath(path) || isFFmpegEncodedOutputPath(path);
+  return isFFmpegRemuxOutputPath(path);
 }
 
 std::string parseMiniAudioError(ma_result errorCode) {
-  return std::string(ma_result_description(errorCode));
+  return {ma_result_description(errorCode)};
 }
 
-class MiniAudioDecoderGuard {
- public:
-  MiniAudioDecoderGuard() = default;
-  MiniAudioDecoderGuard(const MiniAudioDecoderGuard &) = delete;
-  MiniAudioDecoderGuard &operator=(const MiniAudioDecoderGuard &) = delete;
+} // namespace
 
-  MiniAudioDecoderGuard(MiniAudioDecoderGuard &&other) noexcept
-      : filePath_(std::move(other.filePath_)),
-        decoder_(std::move(other.decoder_)),
-        initialized_(std::exchange(other.initialized_, false)) {}
+MiniAudioDecoderGuard::MiniAudioDecoderGuard(MiniAudioDecoderGuard &&other) noexcept
+    : filePath_(std::move(other.filePath_)),
+      decoder_(std::move(other.decoder_)),
+      initialized_(std::exchange(other.initialized_, false)) {}
 
-  MiniAudioDecoderGuard &operator=(MiniAudioDecoderGuard &&other) noexcept {
-    if (this != &other) {
-      close();
-      filePath_ = std::move(other.filePath_);
-      decoder_ = std::move(other.decoder_);
-      initialized_ = std::exchange(other.initialized_, false);
-    }
-    return *this;
-  }
-
-  ~MiniAudioDecoderGuard() {
+MiniAudioDecoderGuard &MiniAudioDecoderGuard::operator=(MiniAudioDecoderGuard &&other) noexcept {
+  if (this != &other) {
     close();
+    filePath_ = std::move(other.filePath_);
+    decoder_ = std::move(other.decoder_);
+    initialized_ = std::exchange(other.initialized_, false);
+  }
+  return *this;
+}
+
+MiniAudioDecoderGuard::~MiniAudioDecoderGuard() {
+  close();
+}
+
+Result<MiniAudioDecoderGuard, std::string> MiniAudioDecoderGuard::open(
+    const std::string &filePath,
+    ma_format outputFormat) {
+  MiniAudioDecoderGuard input;
+  input.filePath_ = filePath;
+  input.decoder_ = std::make_unique<ma_decoder>();
+
+  ma_decoder_config config = ma_decoder_config_init(outputFormat, 0, 0);
+  const ma_result result = ma_decoder_init_file(filePath.c_str(), &config, input.decoder_.get());
+  if (result != MA_SUCCESS) {
+    return Err(
+        "Failed to open input file '" + filePath +
+        "' with miniaudio: " + parseMiniAudioError(result));
   }
 
-  [[nodiscard]] static Result<MiniAudioDecoderGuard, std::string> open(
-      const std::string &filePath,
-      ma_format outputFormat = ma_format_unknown) {
-    MiniAudioDecoderGuard input;
-    input.filePath_ = filePath;
-    input.decoder_ = std::make_unique<ma_decoder>();
-
-    ma_decoder_config config = ma_decoder_config_init(outputFormat, 0, 0);
-    const ma_result result = ma_decoder_init_file(filePath.c_str(), &config, input.decoder_.get());
-    if (result != MA_SUCCESS) {
-      return Err(
-          "Failed to open input file '" + filePath +
-          "' with miniaudio: " + parseMiniAudioError(result));
-    }
-
-    input.initialized_ = true;
-    if (input.decoder_->outputSampleRate == 0 || input.decoder_->outputChannels == 0) {
-      return Err("Input file '" + filePath + "' is missing required audio parameters.");
-    }
-
-    return Ok(std::move(input));
+  input.initialized_ = true;
+  if (input.decoder_->outputSampleRate == 0 || input.decoder_->outputChannels == 0) {
+    return Err("Input file '" + filePath + "' is missing required audio parameters.");
   }
 
-  [[nodiscard]] ma_decoder *get() {
-    return decoder_.get();
+  return Ok(std::move(input));
+}
+
+ma_decoder *MiniAudioDecoderGuard::get() {
+  return decoder_.get();
+}
+
+const std::string &MiniAudioDecoderGuard::filePath() const {
+  return filePath_;
+}
+
+ma_uint32 MiniAudioDecoderGuard::sampleRate() const {
+  return decoder_->outputSampleRate;
+}
+
+ma_uint32 MiniAudioDecoderGuard::channels() const {
+  return decoder_->outputChannels;
+}
+
+ma_format MiniAudioDecoderGuard::format() const {
+  return decoder_->outputFormat;
+}
+
+void MiniAudioDecoderGuard::close() {
+  if (initialized_ && decoder_ != nullptr) {
+    ma_decoder_uninit(decoder_.get());
+    initialized_ = false;
+  }
+  decoder_.reset();
+}
+
+MiniAudioEncoderGuard::~MiniAudioEncoderGuard() {
+  close();
+}
+
+AudioFileConcatResult MiniAudioEncoderGuard::open(
+    const std::string &outputPath,
+    ma_format format,
+    ma_uint32 sampleRate,
+    ma_uint32 channels) {
+  ma_encoder_config config =
+      ma_encoder_config_init(ma_encoding_format_wav, format, channels, sampleRate);
+
+  const ma_result result = ma_encoder_init_file(outputPath.c_str(), &config, &encoder_);
+  if (result != MA_SUCCESS) {
+    return Err(
+        "Failed to open output file '" + outputPath +
+        "' with miniaudio: " + parseMiniAudioError(result));
   }
 
-  [[nodiscard]] const std::string &filePath() const {
-    return filePath_;
+  initialized_ = true;
+  return Ok(outputPath);
+}
+
+AudioFileConcatResult MiniAudioEncoderGuard::write(
+    const std::string &inputPath,
+    const void *frames,
+    ma_uint64 frameCount) {
+  ma_uint64 framesWritten = 0;
+  const ma_result result =
+      ma_encoder_write_pcm_frames(&encoder_, frames, frameCount, &framesWritten);
+  if (result != MA_SUCCESS) {
+    return Err(
+        "Failed to write decoded frames from '" + inputPath +
+        "' with miniaudio: " + parseMiniAudioError(result));
   }
 
-  [[nodiscard]] ma_uint32 sampleRate() const {
-    return decoder_->outputSampleRate;
+  if (framesWritten != frameCount) {
+    return Err("Failed to write all decoded frames from '" + inputPath + "' with miniaudio.");
   }
 
-  [[nodiscard]] ma_uint32 channels() const {
-    return decoder_->outputChannels;
+  return Ok(inputPath);
+}
+
+void MiniAudioEncoderGuard::close() {
+  if (initialized_) {
+    ma_encoder_uninit(&encoder_);
+    initialized_ = false;
   }
+}
 
-  [[nodiscard]] ma_format format() const {
-    return decoder_->outputFormat;
-  }
-
- private:
-  void close() {
-    if (initialized_ && decoder_ != nullptr) {
-      ma_decoder_uninit(decoder_.get());
-      initialized_ = false;
-    }
-    decoder_.reset();
-  }
-
-  std::string filePath_;
-  std::unique_ptr<ma_decoder> decoder_{nullptr};
-  bool initialized_{false};
-};
-
-class MiniAudioEncoderGuard {
- public:
-  MiniAudioEncoderGuard() = default;
-  MiniAudioEncoderGuard(const MiniAudioEncoderGuard &) = delete;
-  MiniAudioEncoderGuard &operator=(const MiniAudioEncoderGuard &) = delete;
-
-  ~MiniAudioEncoderGuard() {
-    close();
-  }
-
-  [[nodiscard]] AudioFileConcatResult
-  open(const std::string &outputPath, ma_format format, ma_uint32 sampleRate, ma_uint32 channels) {
-    ma_encoder_config config =
-        ma_encoder_config_init(ma_encoding_format_wav, format, channels, sampleRate);
-
-    const ma_result result = ma_encoder_init_file(outputPath.c_str(), &config, &encoder_);
-    if (result != MA_SUCCESS) {
-      return Err(
-          "Failed to open output file '" + outputPath +
-          "' with miniaudio: " + parseMiniAudioError(result));
-    }
-
-    initialized_ = true;
-    return Ok(outputPath);
-  }
-
-  [[nodiscard]] AudioFileConcatResult
-  write(const std::string &inputPath, const void *frames, ma_uint64 frameCount) {
-    ma_uint64 framesWritten = 0;
-    const ma_result result =
-        ma_encoder_write_pcm_frames(&encoder_, frames, frameCount, &framesWritten);
-    if (result != MA_SUCCESS) {
-      return Err(
-          "Failed to write decoded frames from '" + inputPath +
-          "' with miniaudio: " + parseMiniAudioError(result));
-    }
-
-    if (framesWritten != frameCount) {
-      return Err("Failed to write all decoded frames from '" + inputPath + "' with miniaudio.");
-    }
-
-    return Ok(inputPath);
-  }
-
- private:
-  void close() {
-    if (initialized_) {
-      ma_encoder_uninit(&encoder_);
-      initialized_ = false;
-    }
-  }
-
-  ma_encoder encoder_{};
-  bool initialized_{false};
-};
+namespace {
 
 AudioFileConcatResult validateCompatibleMiniAudioInput(
     const MiniAudioDecoderGuard &input,
@@ -497,132 +473,6 @@ AudioFileConcatResult concatAudioFilesWithMiniAudio(
 }
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-bool supportsSampleFormat(const AVCodec *codec, AVSampleFormat sampleFormat) {
-  const void *configs = nullptr;
-  int configCount = 0;
-  const int result = avcodec_get_supported_config(
-      nullptr, codec, AV_CODEC_CONFIG_SAMPLE_FORMAT, 0, &configs, &configCount);
-  if (result < 0 || configs == nullptr) {
-    return true;
-  }
-
-  const auto *sampleFormats = static_cast<const AVSampleFormat *>(configs);
-  for (int i = 0; i < configCount; ++i) {
-    if (sampleFormats[i] == sampleFormat) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-Result<AVSampleFormat, std::string> getFLACSampleFormat(const AVCodec *codec, int bitDepth) {
-  if (bitDepth <= 0 || bitDepth > 32) {
-    return Err("Input FLAC files use an unsupported bit depth: " + std::to_string(bitDepth) + ".");
-  }
-
-  const AVSampleFormat sampleFormat = bitDepth <= 16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32;
-  if (!supportsSampleFormat(codec, sampleFormat)) {
-    return Err(
-        "FFmpeg FLAC encoder does not support the sample format required for " +
-        std::to_string(bitDepth) + "-bit input.");
-  }
-
-  return Ok(sampleFormat);
-}
-
-Result<int, std::string> readFLACBitDepth(const std::string &inputPath) {
-  std::ifstream input(inputPath, std::ios::binary);
-  if (!input.is_open()) {
-    return Err("Failed to open input file '" + inputPath + "' with FLAC metadata parser.");
-  }
-
-  std::array<uint8_t, 4> marker{};
-  input.read(reinterpret_cast<char *>(marker.data()), static_cast<std::streamsize>(marker.size()));
-  if (!input || marker != std::array<uint8_t, 4>{'f', 'L', 'a', 'C'}) {
-    return Err("Input file '" + inputPath + "' does not contain native FLAC audio.");
-  }
-
-  bool isLastMetadataBlock = false;
-  while (!isLastMetadataBlock) {
-    std::array<uint8_t, 4> metadataHeader{};
-    input.read(
-        reinterpret_cast<char *>(metadataHeader.data()),
-        static_cast<std::streamsize>(metadataHeader.size()));
-    if (!input) {
-      return Err("Input file '" + inputPath + "' is missing FLAC bit-depth metadata.");
-    }
-
-    isLastMetadataBlock = (metadataHeader[0] & 0x80) != 0;
-    const uint8_t metadataBlockType = metadataHeader[0] & 0x7F;
-    const uint32_t metadataBlockSize = (static_cast<uint32_t>(metadataHeader[1]) << 16) |
-        (static_cast<uint32_t>(metadataHeader[2]) << 8) | metadataHeader[3];
-
-    if (metadataBlockType != 0) {
-      input.seekg(static_cast<std::streamoff>(metadataBlockSize), std::ios::cur);
-      if (!input) {
-        return Err("Failed to read FLAC metadata from input file '" + inputPath + "'.");
-      }
-      continue;
-    }
-
-    if (metadataBlockSize < 34) {
-      return Err("Input file '" + inputPath + "' has invalid FLAC STREAMINFO metadata.");
-    }
-
-    std::array<uint8_t, 34> streamInfo{};
-    input.read(
-        reinterpret_cast<char *>(streamInfo.data()),
-        static_cast<std::streamsize>(streamInfo.size()));
-    if (!input) {
-      return Err("Failed to read FLAC STREAMINFO metadata from input file '" + inputPath + "'.");
-    }
-
-    uint64_t audioProperties = 0;
-    for (size_t i = 10; i < 18; ++i) {
-      audioProperties = (audioProperties << 8) | streamInfo[i];
-    }
-
-    return Ok(static_cast<int>(((audioProperties >> 36) & 0x1F) + 1));
-  }
-
-  return Err("Input file '" + inputPath + "' is missing FLAC bit-depth metadata.");
-}
-
-Result<int, std::string> getFLACInputBitDepth(const std::vector<std::string> &inputPaths) {
-  int referenceBitDepth = 0;
-
-  for (const auto &inputPath : inputPaths) {
-    auto bitDepthResult = readFLACBitDepth(inputPath);
-    if (bitDepthResult.is_err()) {
-      return bitDepthResult;
-    }
-
-    const int bitDepth = bitDepthResult.unwrap();
-    if (referenceBitDepth == 0) {
-      referenceBitDepth = bitDepth;
-      continue;
-    }
-
-    if (bitDepth != referenceBitDepth) {
-      return Err("Input file '" + inputPath + "' uses a different FLAC bit depth.");
-    }
-  }
-
-  return Ok(referenceBitDepth);
-}
-
-ma_format toMiniAudioFormat(AVSampleFormat sampleFormat) {
-  switch (sampleFormat) {
-    case AV_SAMPLE_FMT_S16:
-      return ma_format_s16;
-    case AV_SAMPLE_FMT_S32:
-      return ma_format_s32;
-    default:
-      return ma_format_s32;
-  }
-}
-
 const char *getMuxerNameForOutputPath(const std::string &outputPath) {
   const std::string extension = lowercaseExtension(outputPath);
 
@@ -630,16 +480,8 @@ const char *getMuxerNameForOutputPath(const std::string &outputPath) {
     return "mp4";
   }
 
-  if (extension == "wav") {
-    return "wav";
-  }
-
   if (extension == "caf") {
     return "caf";
-  }
-
-  if (extension == "flac") {
-    return "flac";
   }
 
   return nullptr;
@@ -654,237 +496,6 @@ std::string parseFFmpegError(int errorCode) {
 
   return {errorBuffer.data()};
 }
-
-class FFmpegEncodedOutputContext {
- public:
-  FFmpegEncodedOutputContext() = default;
-  FFmpegEncodedOutputContext(const FFmpegEncodedOutputContext &) = delete;
-  FFmpegEncodedOutputContext &operator=(const FFmpegEncodedOutputContext &) = delete;
-
-  ~FFmpegEncodedOutputContext() {
-    close();
-  }
-
-  [[nodiscard]] AudioFileConcatResult openFLAC(
-      const std::string &outputPath,
-      const AVCodec *codec,
-      AVSampleFormat sampleFormat,
-      int bitsPerRawSample,
-      int sampleRate,
-      int channels) {
-    int result =
-        avformat_alloc_output_context2(&formatContext_, nullptr, "flac", outputPath.c_str());
-    if (result < 0 || formatContext_ == nullptr) {
-      return Err("Failed to allocate FLAC output context: " + parseFFmpegError(result));
-    }
-
-    codecContext_ = avcodec_alloc_context3(codec);
-    if (codecContext_ == nullptr) {
-      return Err("Failed to allocate FLAC encoder context.");
-    }
-
-    av_channel_layout_default(&codecContext_->ch_layout, channels);
-    codecContext_->sample_rate = sampleRate;
-    codecContext_->sample_fmt = sampleFormat;
-    codecContext_->bits_per_raw_sample = bitsPerRawSample;
-    codecContext_->time_base = AVRational{.num = 1, .den = sampleRate};
-    if (bitsPerRawSample > 24) {
-      codecContext_->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
-    }
-
-    if ((formatContext_->oformat->flags & AVFMT_GLOBALHEADER) != 0) {
-      codecContext_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-    }
-
-    result = avcodec_open2(codecContext_, codec, nullptr);
-    if (result < 0) {
-      return Err("Failed to open FLAC encoder: " + parseFFmpegError(result));
-    }
-
-    stream_ = avformat_new_stream(formatContext_, nullptr);
-    if (stream_ == nullptr) {
-      return Err("Failed to create FLAC output stream.");
-    }
-
-    result = avcodec_parameters_from_context(stream_->codecpar, codecContext_);
-    if (result < 0) {
-      return Err("Failed to copy FLAC encoder parameters: " + parseFFmpegError(result));
-    }
-
-    stream_->time_base = codecContext_->time_base;
-
-    if ((formatContext_->oformat->flags & AVFMT_NOFILE) == 0) {
-      result = avio_open(&formatContext_->pb, outputPath.c_str(), AVIO_FLAG_WRITE);
-      if (result < 0) {
-        return Err("Failed to open output file '" + outputPath + "': " + parseFFmpegError(result));
-      }
-    }
-
-    result = avformat_write_header(formatContext_, nullptr);
-    if (result < 0) {
-      return Err("Failed to write FLAC output header: " + parseFFmpegError(result));
-    }
-
-    const int frameSize = std::max(codecContext_->frame_size, ffmpegFallbackFrameSize);
-    audioFifo_ = av_audio_fifo_alloc(sampleFormat, channels, 2 * frameSize);
-    frame_ = av_frame_alloc();
-    packet_ = av_packet_alloc();
-    if (audioFifo_ == nullptr || frame_ == nullptr || packet_ == nullptr) {
-      return Err("Failed to allocate FLAC encoding buffers.");
-    }
-
-    frame_->nb_samples = frameSize;
-    frame_->format = sampleFormat;
-    frame_->sample_rate = sampleRate;
-    av_channel_layout_copy(&frame_->ch_layout, &codecContext_->ch_layout);
-
-    result = av_frame_get_buffer(frame_, 0);
-    if (result < 0) {
-      return Err("Failed to allocate FLAC encoding frame: " + parseFFmpegError(result));
-    }
-
-    frameSize_ = frameSize;
-    return Ok(outputPath);
-  }
-
-  [[nodiscard]] AudioFileConcatResult
-  writeDecodedFrames(const std::string &inputPath, const void *decodedFrames, int frameCount) {
-    if (frameCount <= 0) {
-      return Ok(inputPath);
-    }
-
-    const int availableSpace = av_audio_fifo_space(audioFifo_);
-    if (availableSpace < frameCount) {
-      const int result = av_audio_fifo_realloc(
-          audioFifo_, av_audio_fifo_size(audioFifo_) + frameCount + frameSize_);
-      if (result < 0) {
-        return Err("Failed to grow FLAC encoding FIFO: " + parseFFmpegError(result));
-      }
-    }
-
-    void *inputData[1] = {const_cast<void *>(decodedFrames)};
-    const int written = av_audio_fifo_write(audioFifo_, inputData, frameCount);
-    if (written != frameCount) {
-      return Err("Failed to buffer decoded frames from '" + inputPath + "' for FLAC encoding.");
-    }
-
-    return processFifo(false);
-  }
-
-  [[nodiscard]] AudioFileConcatResult finish() {
-    auto flushResult = processFifo(true);
-    if (flushResult.is_err()) {
-      return flushResult;
-    }
-
-    int result = avcodec_send_frame(codecContext_, nullptr);
-    if (result < 0) {
-      return Err("Failed to flush FLAC encoder: " + parseFFmpegError(result));
-    }
-
-    auto packetResult = writeEncodedPackets();
-    if (packetResult.is_err()) {
-      return packetResult;
-    }
-
-    result = av_write_trailer(formatContext_);
-    if (result < 0) {
-      return Err("Failed to write FLAC output trailer: " + parseFFmpegError(result));
-    }
-
-    return Ok(std::string());
-  }
-
- private:
-  [[nodiscard]] AudioFileConcatResult processFifo(bool flush) {
-    while (av_audio_fifo_size(audioFifo_) >= (flush ? 1 : frameSize_)) {
-      const int chunkSize = std::min(av_audio_fifo_size(audioFifo_), frameSize_);
-      int result = av_frame_make_writable(frame_);
-      if (result < 0) {
-        return Err("Failed to make FLAC encoding frame writable: " + parseFFmpegError(result));
-      }
-
-      if (av_audio_fifo_read(audioFifo_, reinterpret_cast<void **>(frame_->data), chunkSize) !=
-          chunkSize) {
-        return Err("Failed to read decoded frames for FLAC encoding.");
-      }
-
-      frame_->nb_samples = chunkSize;
-      frame_->pts = nextPts_;
-      nextPts_ += chunkSize;
-
-      result = avcodec_send_frame(codecContext_, frame_);
-      if (result < 0) {
-        return Err("Failed to send frame to FLAC encoder: " + parseFFmpegError(result));
-      }
-
-      auto packetResult = writeEncodedPackets();
-      if (packetResult.is_err()) {
-        return packetResult;
-      }
-    }
-
-    return Ok(std::string());
-  }
-
-  [[nodiscard]] AudioFileConcatResult writeEncodedPackets() {
-    while (true) {
-      int result = avcodec_receive_packet(codecContext_, packet_);
-      if (result == AVERROR(EAGAIN) || result == AVERROR_EOF) {
-        return Ok(std::string());
-      }
-
-      if (result < 0) {
-        return Err("Failed to receive FLAC encoder packet: " + parseFFmpegError(result));
-      }
-
-      av_packet_rescale_ts(packet_, codecContext_->time_base, stream_->time_base);
-      packet_->stream_index = stream_->index;
-
-      result = av_interleaved_write_frame(formatContext_, packet_);
-      if (result < 0) {
-        av_packet_unref(packet_);
-        return Err("Failed to write FLAC encoder packet: " + parseFFmpegError(result));
-      }
-    }
-  }
-
-  void close() {
-    if (packet_ != nullptr) {
-      av_packet_free(&packet_);
-    }
-
-    if (frame_ != nullptr) {
-      av_frame_free(&frame_);
-    }
-
-    if (audioFifo_ != nullptr) {
-      av_audio_fifo_free(audioFifo_);
-      audioFifo_ = nullptr;
-    }
-
-    if (codecContext_ != nullptr) {
-      avcodec_free_context(&codecContext_);
-    }
-
-    if (formatContext_ != nullptr) {
-      if (formatContext_->pb != nullptr) {
-        avio_closep(&formatContext_->pb);
-      }
-      avformat_free_context(formatContext_);
-      formatContext_ = nullptr;
-    }
-  }
-
-  AVFormatContext *formatContext_{nullptr};
-  AVCodecContext *codecContext_{nullptr};
-  AVStream *stream_{nullptr};
-  AVAudioFifo *audioFifo_{nullptr};
-  AVFrame *frame_{nullptr};
-  AVPacket *packet_{nullptr};
-  int frameSize_{ffmpegFallbackFrameSize};
-  int64_t nextPts_{0};
-};
 
 int findAudioStreamIndex(AVFormatContext *formatContext) {
   for (unsigned int i = 0; i < formatContext->nb_streams; ++i) {
@@ -1206,90 +817,6 @@ AudioFileConcatResult concatAudioFilesWithFFmpeg(
 
   return Ok(outputPath);
 }
-
-AudioFileConcatResult concatFLACFilesWithMiniAudioAndFFmpeg(
-    const std::vector<std::string> &inputPaths,
-    const std::string &outputPath) {
-  for (const auto &inputPath : inputPaths) {
-    if (!hasExtension(inputPath, {"flac"})) {
-      return Err(
-          "concatAudioFiles FLAC output requires all input files to use the FLAC extension.");
-    }
-  }
-
-  const AVCodec *codec = avcodec_find_encoder(AV_CODEC_ID_FLAC);
-  if (codec == nullptr) {
-    return Err("FFmpeg FLAC encoder is unavailable.");
-  }
-
-  auto bitDepthResult = getFLACInputBitDepth(inputPaths);
-  if (bitDepthResult.is_err()) {
-    return Err(bitDepthResult.unwrap_err());
-  }
-
-  const int bitDepth = bitDepthResult.unwrap();
-  auto sampleFormatResult = getFLACSampleFormat(codec, bitDepth);
-  if (sampleFormatResult.is_err()) {
-    return Err(sampleFormatResult.unwrap_err());
-  }
-
-  const AVSampleFormat sampleFormat = sampleFormatResult.unwrap();
-  const ma_format miniAudioFormat = toMiniAudioFormat(sampleFormat);
-
-  std::vector<MiniAudioDecoderGuard> inputs;
-  auto inputValidationResult = openAndValidateMiniAudioInputs(inputPaths, inputs, miniAudioFormat);
-  if (inputValidationResult.is_err()) {
-    return inputValidationResult;
-  }
-
-  FFmpegEncodedOutputContext output;
-  auto outputResult = output.openFLAC(
-      outputPath,
-      codec,
-      sampleFormat,
-      bitDepth,
-      static_cast<int>(inputs.front().sampleRate()),
-      static_cast<int>(inputs.front().channels()));
-  if (outputResult.is_err()) {
-    return outputResult;
-  }
-
-  std::vector<uint8_t> buffer(
-      miniaudioChunkFrames * inputs.front().channels() * ma_get_bytes_per_sample(miniAudioFormat));
-  for (auto &input : inputs) {
-    while (true) {
-      ma_uint64 framesRead = 0;
-      const ma_result result =
-          ma_decoder_read_pcm_frames(input.get(), buffer.data(), miniaudioChunkFrames, &framesRead);
-      if (result != MA_SUCCESS && result != MA_AT_END) {
-        return Err(
-            "Failed to decode frames from '" + input.filePath() +
-            "' with miniaudio: " + parseMiniAudioError(result));
-      }
-
-      if (framesRead == 0) {
-        break;
-      }
-
-      auto writeResult =
-          output.writeDecodedFrames(input.filePath(), buffer.data(), static_cast<int>(framesRead));
-      if (writeResult.is_err()) {
-        return writeResult;
-      }
-
-      if (result == MA_AT_END) {
-        break;
-      }
-    }
-  }
-
-  auto finishResult = output.finish();
-  if (finishResult.is_err()) {
-    return finishResult;
-  }
-
-  return Ok(outputPath);
-}
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 } // namespace
@@ -1325,17 +852,12 @@ AudioFileConcatResult concatAudioFiles(
 
   if (!isFFmpegOutputPath(normalizedOutputPath)) {
     return Err(
-        "concatAudioFiles supports WAV output with miniaudio and M4A/MP4/CAF/FLAC output with FFmpeg.");
+        "concatAudioFiles supports WAV output with miniaudio and M4A/MP4/CAF output with FFmpeg.");
   }
 
 #if RN_AUDIO_API_FFMPEG_DISABLED
-  return Err("FFmpeg is disabled, cannot concatenate M4A/MP4/CAF/FLAC audio files.");
+  return Err("FFmpeg is disabled, cannot concatenate M4A/MP4/CAF audio files.");
 #else
-  if (isFFmpegEncodedOutputPath(normalizedOutputPath)) {
-    return concatFLACFilesWithMiniAudioAndFFmpeg(normalizedInputPaths, normalizedOutputPath)
-        .map([&outputPath](const std::string &) { return outputPath; });
-  }
-
   return concatAudioFilesWithFFmpeg(normalizedInputPaths, normalizedOutputPath)
       .map([&outputPath](const std::string &) { return outputPath; });
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
