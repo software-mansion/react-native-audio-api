@@ -39,7 +39,7 @@ struct MemoryIOContext {
  *   2) readPcmFrames repeatedly; 0 returned = end of stream
  *   3) close when done
  */
-class FFmpegDecoder : public decoding::IIncrementalAudioDecoder {
+class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
  public:
   FFmpegDecoder() = default;
   FFmpegDecoder(const FFmpegDecoder &) = delete;

@@ -8,12 +8,12 @@ namespace audioapi::decoding {
  * Incremental PCM decoder: openFile or openMemory → readPcmFrames in a loop → close.
  * Shared contract for FFmpeg-based and MiniAudio-based implementations.
  */
-class IIncrementalAudioDecoder {
+class IncrementalAudioDecoder {
  public:
   static constexpr size_t CHUNK_SIZE = 4096;
-  IIncrementalAudioDecoder() = default;
-  virtual ~IIncrementalAudioDecoder() = default;
-  DELETE_COPY_AND_MOVE(IIncrementalAudioDecoder);
+  IncrementalAudioDecoder() = default;
+  virtual ~IncrementalAudioDecoder() = default;
+  DELETE_COPY_AND_MOVE(IncrementalAudioDecoder);
 
   /// @brief Opens a file for decoding.
   /// @param outputSampleRate The output sample rate.

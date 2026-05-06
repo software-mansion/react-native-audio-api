@@ -17,7 +17,7 @@ namespace audioapi::miniaudio_decoder {
  * MiniAudio-backed incremental decoder (Vorbis/Opus/WAV, etc. via ma_decoder + custom backends).
  * Same usage contract as ffmpegdecoder::FFmpegDecoder.
  */
-class MiniAudioDecoder : public decoding::IIncrementalAudioDecoder {
+class MiniAudioDecoder : public decoding::IncrementalAudioDecoder {
  public:
   MiniAudioDecoder();
   ~MiniAudioDecoder() override;

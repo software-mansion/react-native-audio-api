@@ -1,28 +1,17 @@
 #pragma once
 
 #include <audioapi/core/types/AudioFormat.h>
-#include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <algorithm>
 #include <cstring>
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
 
 namespace audioapi {
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
-
-struct MemorySource {
-  const void *data;
-  size_t size;
-};
-
-using DecoderSource = std::variant<MemorySource, std::string>;
-
-static constexpr int CHUNK_SIZE = 4096;
 
 class AudioDecoder {
  public:
@@ -97,14 +86,6 @@ class AudioDecoder {
   }
 
  private:
-  static AudioBufferResult decodeWithMiniaudio(float sampleRate, DecoderSource source);
-  static Result<std::vector<float>, std::string> readAllPcmFrames(
-      ma_decoder &decoder,
-      int outputChannels);
-  static AudioBufferResult makeAudioBufferFromFloatBuffer(
-      const std::vector<float> &buffer,
-      float outputSampleRate,
-      int outputChannels);
   [[nodiscard]] static int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * INT16_MAX);
   }

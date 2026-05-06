@@ -208,9 +208,9 @@ std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sam
   }
   const int ch = std::max(1, dec.outputChannels());
   std::vector<float> acc;
-  std::vector<float> tmp(decoding::IIncrementalAudioDecoder::CHUNK_SIZE * static_cast<size_t>(ch));
+  std::vector<float> tmp(decoding::IncrementalAudioDecoder::CHUNK_SIZE * static_cast<size_t>(ch));
   while (true) {
-    const size_t n = dec.readPcmFrames(tmp.data(), decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
+    const size_t n = dec.readPcmFrames(tmp.data(), decoding::IncrementalAudioDecoder::CHUNK_SIZE);
     if (n == 0) {
       break;
     }
@@ -229,9 +229,9 @@ std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size
   }
   const int ch = std::max(1, dec.outputChannels());
   std::vector<float> acc;
-  std::vector<float> tmp(decoding::IIncrementalAudioDecoder::CHUNK_SIZE * static_cast<size_t>(ch));
+  std::vector<float> tmp(decoding::IncrementalAudioDecoder::CHUNK_SIZE * static_cast<size_t>(ch));
   while (true) {
-    const size_t n = dec.readPcmFrames(tmp.data(), decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
+    const size_t n = dec.readPcmFrames(tmp.data(), decoding::IncrementalAudioDecoder::CHUNK_SIZE);
     if (n == 0) {
       break;
     }

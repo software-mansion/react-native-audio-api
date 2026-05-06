@@ -152,12 +152,12 @@ bool FFmpegDecoder::setupSwr() {
           &resampled_data_,
           nullptr,
           output_channels_,
-          decoding::IIncrementalAudioDecoder::CHUNK_SIZE,
+          decoding::IncrementalAudioDecoder::CHUNK_SIZE,
           AV_SAMPLE_FMT_FLT,
           0) < 0) {
     return false;
   }
-  max_resampled_samples_ = static_cast<int>(decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
+  max_resampled_samples_ = static_cast<int>(decoding::IncrementalAudioDecoder::CHUNK_SIZE);
   return true;
 }
 
@@ -208,14 +208,14 @@ bool FFmpegDecoder::openMemory(
   mem_io_->pos = 0;
 
   auto* io_buf =
-      static_cast<uint8_t *>(av_malloc(decoding::IIncrementalAudioDecoder::CHUNK_SIZE));
+      static_cast<uint8_t *>(av_malloc(decoding::IncrementalAudioDecoder::CHUNK_SIZE));
   if (io_buf == nullptr) {
     close();
     return false;
   }
   avio_ctx_ = avio_alloc_context(
     io_buf,
-    static_cast<int>(decoding::IIncrementalAudioDecoder::CHUNK_SIZE),
+    static_cast<int>(decoding::IncrementalAudioDecoder::CHUNK_SIZE),
     0,
     mem_io_.get(),
     read_packet,
@@ -444,10 +444,10 @@ std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sam
   }
   std::vector<float> acc;
   std::vector<float> tmp(
-      decoding::IIncrementalAudioDecoder::CHUNK_SIZE *
+      decoding::IncrementalAudioDecoder::CHUNK_SIZE *
       static_cast<size_t>(std::max(1, dec.outputChannels())));
   while (true) {
-    size_t n = dec.readPcmFrames(tmp.data(), decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
+    size_t n = dec.readPcmFrames(tmp.data(), decoding::IncrementalAudioDecoder::CHUNK_SIZE);
     if (n == 0) {
       break;
     }
@@ -466,10 +466,10 @@ std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size
   }
   std::vector<float> acc;
   std::vector<float> tmp(
-      decoding::IIncrementalAudioDecoder::CHUNK_SIZE *
+      decoding::IncrementalAudioDecoder::CHUNK_SIZE *
       static_cast<size_t>(std::max(1, dec.outputChannels())));
   while (true) {
-    size_t n = dec.readPcmFrames(tmp.data(), decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
+    size_t n = dec.readPcmFrames(tmp.data(), decoding::IncrementalAudioDecoder::CHUNK_SIZE);
     if (n == 0) {
       break;
     }
