@@ -21,7 +21,9 @@ recording is finished.
 :::
 
 :::caution
-File concatenation requires FFmpeg to be available in the native build.
+FFmpeg-backed formats require FFmpeg to be available in the native build. WAV
+concatenation uses miniaudio and does not require FFmpeg. FLAC concatenation
+uses miniaudio for decoding and FFmpeg for encoding the output file.
 :::
 
 ### `concatAudioFiles`
@@ -50,7 +52,8 @@ come from the same recorder configuration:
 - compatible codec parameters.
 
 Use an output path with an extension that matches the input files, for example
-joining `.m4a` segments into an `.m4a` output file.
+joining `.m4a` segments into an `.m4a` output file or `.wav` segments into a
+`.wav` output file.
 
 <details>
 <summary>Example usage with rotated recordings</summary>
