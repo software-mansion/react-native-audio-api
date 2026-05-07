@@ -220,18 +220,32 @@ void AudioBufferSourceNode::processWithInterpolation(
 
   while (framesLeft > 0) {
     auto readIndex = static_cast<size_t>(vReadIndex_);
-    size_t nextReadIndex = readIndex + 1;
     auto factor = static_cast<float>(vReadIndex_ - static_cast<double>(readIndex));
-
-    if (nextReadIndex >= frameEnd) {
-      nextReadIndex = loop_ ? frameStart : readIndex;
-    }
 
     for (size_t i = 0; i < processingBuffer->getNumberOfChannels(); i++) {
       auto destination = processingBuffer->getChannel(i)->span();
       const auto source = buffer_->getChannel(i)->span();
 
-      destination[writeIndex] = dsp::linearInterpolate(source, readIndex, nextReadIndex, factor);
+      if (loop_) {
+        // Use Hermite 4-point interpolation with proper loop wrapping.
+        // Linear interpolation creates audible clicks at loop boundaries
+        // because it only ensures C0 (value) continuity. Hermite ensures
+        // C1 (slope) continuity, eliminating the click.
+        auto wrap = [&](int64_t idx) -> size_t {
+          int64_t len = static_cast<int64_t>(frameEnd - frameStart);
+          int64_t rel = static_cast<int64_t>(idx) - static_cast<int64_t>(frameStart);
+          return static_cast<size_t>(frameStart + ((rel % len) + len) % len);
+        };
+        size_t idx0 = wrap(static_cast<int64_t>(readIndex) - 1);
+        size_t idx1 = wrap(static_cast<int64_t>(readIndex));
+        size_t idx2 = wrap(static_cast<int64_t>(readIndex) + 1);
+        size_t idx3 = wrap(static_cast<int64_t>(readIndex) + 2);
+        destination[writeIndex] = dsp::hermiteInterpolate(source, idx0, idx1, idx2, idx3, factor);
+      } else {
+        size_t nextReadIndex = readIndex + 1;
+        if (nextReadIndex >= frameEnd) nextReadIndex = readIndex;
+        destination[writeIndex] = dsp::linearInterpolate(source, readIndex, nextReadIndex, factor);
+      }
     }
 
     writeIndex += 1;
