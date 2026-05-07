@@ -34,17 +34,7 @@ IOSRecorderCallback::IOSRecorderCallback(
 
 IOSRecorderCallback::~IOSRecorderCallback()
 {
-  @autoreleasepool {
-    converter_ = nil;
-    bufferFormat_ = nil;
-    callbackFormat_ = nil;
-    converterInputBuffer_ = nil;
-    converterOutputBuffer_ = nil;
-
-    for (size_t i = 0; i < channelCount_; ++i) {
-      circularBuffer_[i]->zero();
-    }
-  }
+  cleanup();
 }
 
 /// @brief Prepares the IOSRecorderCallback for receiving audio data.
@@ -106,6 +96,7 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
 /// This method should be called from the JS thread only.
 void IOSRecorderCallback::cleanup()
 {
+  std::scoped_lock(callbackMutex_);
   @autoreleasepool {
     if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
       emitAudioData(true);
@@ -117,7 +108,7 @@ void IOSRecorderCallback::cleanup()
     converterInputBuffer_ = nil;
     converterOutputBuffer_ = nil;
 
-    for (size_t i = 0; i < channelCount_; ++i) {
+    for (int i = 0; i < channelCount_; ++i) {
       circularBuffer_[i]->zero();
     }
     offloader_.reset();
@@ -178,9 +169,12 @@ static inline void freeOwnedAudioBufferList(const AudioBufferList *bufferList)
 void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
 {
   auto [inputBuffer, numFrames] = data;
-  // dummy data to wake up thread after cleanup, skip processing it
+
+  // The TaskOffloader destructor sends a default-constructed CallbackData
+  // (data == nullptr) to unblock the receiver; ignore it here.
   if (inputBuffer == nullptr)
     return;
+  std::scoped_lock(callbackMutex_);
   @autoreleasepool {
     NSError *error = nil;
 

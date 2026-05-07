@@ -36,20 +36,7 @@ AndroidRecorderCallback::AndroidRecorderCallback(
           callbackId) {}
 
 AndroidRecorderCallback::~AndroidRecorderCallback() {
-  if (converter_ != nullptr) {
-    ma_data_converter_uninit(converter_.get(), nullptr);
-    converter_.reset();
-  }
-
-  if (processingBuffer_ != nullptr) {
-    ma_free(processingBuffer_, nullptr);
-    processingBuffer_ = nullptr;
-    processingBufferLength_ = 0;
-  }
-
-  for (size_t i = 0; i < circularBuffer_.size(); ++i) {
-    circularBuffer_[i]->zero();
-  }
+  cleanup();
 }
 
 /// @brief Prepares the recorder callback by initializing the data converter and allocating necessary buffers.
@@ -112,6 +99,7 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
 }
 
 void AndroidRecorderCallback::cleanup() {
+  std::scoped_lock(callbackMutex_);
   if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
     emitAudioData(true);
   }
@@ -178,6 +166,7 @@ void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
   if (data == nullptr) {
     return;
   }
+  std::scoped_lock(callbackMutex_);
 
   ma_uint64 inputFrameCount = numFrames;
   ma_uint64 outputFrameCount = 0;

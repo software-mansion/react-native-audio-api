@@ -54,6 +54,7 @@ class IOSRecorderCallback : public AudioRecorderCallback {
       offloader_;
   // delay initialization of offloader until prepare is called
   void taskOffloaderFunction(CallbackData data);
+  std::mutex callbackMutex_;
 };
 
 } // namespace audioapi

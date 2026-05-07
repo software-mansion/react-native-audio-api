@@ -54,6 +54,7 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
       RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
       offloader_;
   void taskOffloaderFunction(CallbackData data);
+  std::mutex callbackMutex_;
 };
 
 } // namespace audioapi
