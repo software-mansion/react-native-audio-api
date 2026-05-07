@@ -11,6 +11,8 @@
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <algorithm>
+#include <cstdlib>
+#include <cstring>
 #include <utility>
 
 namespace audioapi {
@@ -132,7 +134,45 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
-  offloader_->getSender()->send({inputBuffer, numFrames});
+
+  // CoreAudio owns `inputBuffer` only for the duration of this synchronous
+  // callback. Copy into an owned AudioBufferList before handing off to the
+  // worker thread; the consumer in taskOffloaderFunction frees it.
+  UInt32 bufferCount = inputBuffer->mNumberBuffers;
+  size_t headerSize = offsetof(AudioBufferList, mBuffers) + sizeof(AudioBuffer) * bufferCount;
+  AudioBufferList *owned = static_cast<AudioBufferList *>(std::malloc(headerSize));
+  if (owned == nullptr) {
+    return;
+  }
+  owned->mNumberBuffers = bufferCount;
+  for (UInt32 i = 0; i < bufferCount; ++i) {
+    UInt32 byteSize = inputBuffer->mBuffers[i].mDataByteSize;
+    owned->mBuffers[i].mNumberChannels = inputBuffer->mBuffers[i].mNumberChannels;
+    owned->mBuffers[i].mDataByteSize = byteSize;
+    void *channelData = std::malloc(byteSize);
+    if (channelData == nullptr) {
+      for (UInt32 j = 0; j < i; ++j) {
+        std::free(owned->mBuffers[j].mData);
+      }
+      std::free(owned);
+      return;
+    }
+    std::memcpy(channelData, inputBuffer->mBuffers[i].mData, byteSize);
+    owned->mBuffers[i].mData = channelData;
+  }
+
+  offloader_->getSender()->send({owned, numFrames});
+}
+
+static inline void freeOwnedAudioBufferList(const AudioBufferList *bufferList)
+{
+  if (bufferList == nullptr) {
+    return;
+  }
+  for (UInt32 i = 0; i < bufferList->mNumberBuffers; ++i) {
+    std::free(bufferList->mBuffers[i].mData);
+  }
+  std::free(const_cast<AudioBufferList *>(bufferList));
 }
 
 void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
@@ -152,6 +192,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
         circularBuffer_[i]->push_back(data, numFrames);
       }
 
+      freeOwnedAudioBufferList(inputBuffer);
       inputBuffer = nullptr;
       if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
         emitAudioData();
@@ -168,6 +209,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
           inputBuffer->mBuffers[i].mDataByteSize);
     }
 
+    freeOwnedAudioBufferList(inputBuffer);
     inputBuffer = nullptr;
     converterInputBuffer_.frameLength = numFrames;
 
