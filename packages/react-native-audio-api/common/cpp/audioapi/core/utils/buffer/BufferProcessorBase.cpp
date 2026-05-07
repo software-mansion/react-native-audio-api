@@ -93,9 +93,14 @@ void BufferProcessorBase::renderInterpolated(
         const float currentSample = source[state.index];
         const float nextSample = nextSource[state.nextIndex];
         destination[writeIndex] = currentSample + state.factor * (nextSample - currentSample);
-        writeIndex++;
+
+      } else {
+        destination[writeIndex] =
+            dsp::linearInterpolate(source, state.index, state.nextIndex, state.factor);
       }
     }
+
+    writeIndex++;
 
     if (!shouldProcessFurther()) {
       output->zero(writeIndex, framesLeft - i - 1);
