@@ -99,7 +99,7 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
 }
 
 void AndroidRecorderCallback::cleanup() {
-  std::scoped_lock(callbackMutex_);
+  std::scoped_lock lock(callbackMutex_);
   if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
     emitAudioData(true);
   }
@@ -166,7 +166,7 @@ void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
   if (data == nullptr) {
     return;
   }
-  std::scoped_lock(callbackMutex_);
+  std::scoped_lock lock(callbackMutex_);
 
   ma_uint64 inputFrameCount = numFrames;
   ma_uint64 outputFrameCount = 0;

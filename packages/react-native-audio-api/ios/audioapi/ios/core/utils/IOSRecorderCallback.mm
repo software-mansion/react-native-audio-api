@@ -96,7 +96,7 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
 /// This method should be called from the JS thread only.
 void IOSRecorderCallback::cleanup()
 {
-  std::scoped_lock(callbackMutex_);
+  std::scoped_lock lock(callbackMutex_);
   @autoreleasepool {
     if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
       emitAudioData(true);
@@ -174,7 +174,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
   // (data == nullptr) to unblock the receiver; ignore it here.
   if (inputBuffer == nullptr)
     return;
-  std::scoped_lock(callbackMutex_);
+  std::scoped_lock lock(callbackMutex_);
   @autoreleasepool {
     NSError *error = nil;
 
