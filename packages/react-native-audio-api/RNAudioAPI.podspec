@@ -67,12 +67,8 @@ Pod::Spec.new do |s|
     scripts/download-prebuilt-binaries.sh ios #{skip_ffmpeg_argument}
   CMD
 
-  # Assumes Pods dir is nested under ios project dir
-  ios_dir = File.join(Pod::Config.instance.project_pods_root, '..')
-  rn_audio_dir_relative = Pathname.new(__dir__).relative_path_from(ios_dir).to_s
-
   external_dir_relative = "common/cpp/audioapi/external"
-  lib_dir = "$(PROJECT_DIR)/#{rn_audio_dir_relative}/#{external_dir_relative}/$(PLATFORM_NAME)"
+  lib_dir = "$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_audio_api_dir]}/#{external_dir_relative}/$(PLATFORM_NAME)"
 
   s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_DISABLED ? [] : [
     'common/cpp/audioapi/external/ffmpeg_ios/libavcodec.xcframework',
