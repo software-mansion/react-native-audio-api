@@ -21,15 +21,17 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
     int inputChannelCount,
     bool interleaved);
 
-AudioFormat detectAudioFormat(const void *data, size_t size);
+[[nodiscard]] AudioFormat detectAudioFormat(const void *data, size_t size);
 
-bool pathHasExtension(const std::string &path, const std::vector<std::string> &extensions);
+[[nodiscard]] bool pathHasExtension(
+    const std::string &path,
+    const std::vector<std::string> &extensions);
 
-inline bool needsFFmpeg(AudioFormat format) {
+[[nodiscard]] inline bool needsFFmpeg(AudioFormat format) {
   return format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
 }
 
-inline bool needsFFmpegByPath(const std::string &path) {
+[[nodiscard]] inline bool needsFFmpegByPath(const std::string &path) {
   return pathHasExtension(path, {".mp4", ".m4a", ".aac"});
 }
 

@@ -26,10 +26,12 @@ ma_decoder_config makeDecoderConfig(const int outputSampleRate) {
   const ma_uint32 outRate =
       outputSampleRate > 0 ? static_cast<ma_uint32>(outputSampleRate) : 0;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, outRate);
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays)
   static ma_decoding_backend_vtable *customBackends[] = {
       ma_decoding_backend_libvorbis,
       ma_decoding_backend_libopus,
   };
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount =
       sizeof(customBackends) / sizeof(customBackends[0]);
