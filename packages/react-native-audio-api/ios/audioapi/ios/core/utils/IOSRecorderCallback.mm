@@ -32,6 +32,14 @@ IOSRecorderCallback::IOSRecorderCallback(
 
 IOSRecorderCallback::~IOSRecorderCallback()
 {
+  // Stop new audio-thread enqueues, then join the worker, before releasing
+  // the ObjC fields the worker reads in taskOffloaderFunction. The
+  // unique_ptr<TaskOffloader> member would otherwise be destroyed only
+  // after this body returns, leaving a window where the worker can
+  // dereference already-nil ObjC fields.
+  isInitialized_.store(false, std::memory_order_release);
+  offloader_.reset();
+
   @autoreleasepool {
     converter_ = nil;
     bufferFormat_ = nil;
@@ -104,7 +112,22 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
 /// This method should be called from the JS thread only.
 void IOSRecorderCallback::cleanup()
 {
+  // Stop new audio-thread enqueues, then join the worker, before releasing
+  // the ObjC fields the worker reads in taskOffloaderFunction. Releasing
+  // the fields first leaves a window where the worker can dereference a
+  // now-nil converterInputBuffer_ / bufferFormat_ / converter_.
+  //
+  // ~TaskOffloader signals shutdown and joins; it does NOT drain queued
+  // items. Frames sitting in the SPSC channel at this point are dropped.
+  // Frames the worker had already pushed into circularBuffer_ before being
+  // joined remain present and are flushed below.
+  isInitialized_.store(false, std::memory_order_release);
+  offloader_.reset();
+
   @autoreleasepool {
+    // Flush frames already accumulated in circularBuffer_ to preserve the
+    // documented behaviour that remaining buffered callback data is emitted
+    // on cleanup.
     if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
       emitAudioData(true);
     }
@@ -118,7 +141,6 @@ void IOSRecorderCallback::cleanup()
     for (size_t i = 0; i < channelCount_; ++i) {
       circularBuffer_[i]->zero();
     }
-    offloader_.reset();
   }
 }
 
