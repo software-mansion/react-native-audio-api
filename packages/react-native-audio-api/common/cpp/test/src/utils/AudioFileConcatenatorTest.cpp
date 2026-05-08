@@ -168,7 +168,7 @@ TEST(AudioFileConcatenatorTest, ReturnsDisabledErrorForM4AWhenFFmpegIsUnavailabl
   auto result = concatAudioFiles({"/tmp/input.m4a"}, "/tmp/output.m4a");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot concatenate M4A/MP4/CAF audio files.");
+  EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot concatenate M4A/MP4 audio files.");
 }
 
 TEST(AudioFileConcatenatorTest, RejectsFLACOutputAsUnsupported) {
@@ -177,7 +177,7 @@ TEST(AudioFileConcatenatorTest, RejectsFLACOutputAsUnsupported) {
   EXPECT_TRUE(result.is_err());
   EXPECT_EQ(
       result.unwrap_err(),
-      "concatAudioFiles supports WAV output with miniaudio and M4A/MP4/CAF output with FFmpeg.");
+      "concatAudioFiles supports WAV output with miniaudio and M4A/MP4 output with FFmpeg.");
 }
 
 TEST(AudioFileConcatenatorTest, ConcatenatesWavFilesWithMiniaudioWhenFFmpegIsUnavailable) {
@@ -231,7 +231,7 @@ TEST(AudioFileConcatenatorTest, RejectsUnsupportedOutputFormatWhenFFmpegIsUnavai
   EXPECT_TRUE(result.is_err());
   EXPECT_EQ(
       result.unwrap_err(),
-      "concatAudioFiles supports WAV output with miniaudio and M4A/MP4/CAF output with FFmpeg.");
+      "concatAudioFiles supports WAV output with miniaudio and M4A/MP4 output with FFmpeg.");
 }
 
 // NOLINTEND

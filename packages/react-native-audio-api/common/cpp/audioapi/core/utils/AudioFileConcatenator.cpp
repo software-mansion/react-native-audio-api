@@ -199,7 +199,7 @@ bool isMiniaudioOutputPath(const std::string &path) {
 }
 
 bool isFFmpegRemuxOutputPath(const std::string &path) {
-  return hasExtension(path, {"m4a", "mp4", "caf"});
+  return hasExtension(path, {"m4a", "mp4"});
 }
 
 bool isFFmpegOutputPath(const std::string &path) {
@@ -478,10 +478,6 @@ const char *getMuxerNameForOutputPath(const std::string &outputPath) {
 
   if (extension == "m4a" || extension == "mp4") {
     return "mp4";
-  }
-
-  if (extension == "caf") {
-    return "caf";
   }
 
   return nullptr;
@@ -852,11 +848,11 @@ AudioFileConcatResult concatAudioFiles(
 
   if (!isFFmpegOutputPath(normalizedOutputPath)) {
     return Err(
-        "concatAudioFiles supports WAV output with miniaudio and M4A/MP4/CAF output with FFmpeg.");
+        "concatAudioFiles supports WAV output with miniaudio and M4A/MP4 output with FFmpeg.");
   }
 
 #if RN_AUDIO_API_FFMPEG_DISABLED
-  return Err("FFmpeg is disabled, cannot concatenate M4A/MP4/CAF audio files.");
+  return Err("FFmpeg is disabled, cannot concatenate M4A/MP4 audio files.");
 #else
   return concatAudioFilesWithFFmpeg(normalizedInputPaths, normalizedOutputPath)
       .map([&outputPath](const std::string &) { return outputPath; });
