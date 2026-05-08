@@ -48,11 +48,11 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   FFmpegDecoder &operator=(FFmpegDecoder &&other) = delete;
   ~FFmpegDecoder() override;
 
-  [[nodiscard]] bool openFile(
+  [[nodiscard]] decoding::DecoderResult openFile(
       int outputSampleRate,
       const std::string &path) override;
 
-  [[nodiscard]] bool openMemory(
+  [[nodiscard]] decoding::DecoderResult openMemory(
       int outputSampleRate,
       const void *data,
       size_t size) override;
@@ -71,11 +71,11 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
 
   [[nodiscard]] float getCurrentPositionInSeconds() const override;
 
-  [[nodiscard]] bool seekToTime(double seconds) override;
+  [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 
  private:
-  bool setupSwr();
-  bool feedPipeline();
+  [[nodiscard]] decoding::DecoderResult setupSwr();
+  [[nodiscard]] decoding::DecoderResult feedPipeline();
   void appendFrameResampled(AVFrame *frame);
 
   AVFormatContext *fmt_ctx_ = nullptr;
