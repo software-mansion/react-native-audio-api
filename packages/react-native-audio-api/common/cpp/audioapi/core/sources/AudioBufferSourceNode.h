@@ -4,9 +4,9 @@
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
+#include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <cstddef>
 #include <memory>
-#include "audioapi/core/utils/buffer/SingleBufferProcessor.h"
 
 namespace audioapi {
 

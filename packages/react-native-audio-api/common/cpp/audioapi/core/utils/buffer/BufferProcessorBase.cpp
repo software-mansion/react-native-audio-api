@@ -1,3 +1,4 @@
+#include <audioapi/core/utils/buffer/BufferProcessingDirection.h>
 #include <audioapi/core/utils/buffer/BufferProcessorBase.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -5,7 +6,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
-#include "audioapi/core/utils/buffer/BufferProcessingDirection.h"
 
 namespace audioapi {
 
@@ -93,7 +93,6 @@ void BufferProcessorBase::renderInterpolated(
         const float currentSample = source[state.index];
         const float nextSample = nextSource[state.nextIndex];
         destination[writeIndex] = currentSample + state.factor * (nextSample - currentSample);
-
       } else {
         destination[writeIndex] =
             dsp::linearInterpolate(source, state.index, state.nextIndex, state.factor);

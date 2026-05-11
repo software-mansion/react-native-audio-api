@@ -3,11 +3,11 @@
 #include <audioapi/core/utils/buffer/BufferProcessorBase.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
+#include <audioapi/utils/FatFunction.hpp>
 #include <cstddef>
 #include <list>
 #include <memory>
 #include <utility>
-#include "audioapi/utils/FatFunction.hpp"
 
 namespace audioapi {
 

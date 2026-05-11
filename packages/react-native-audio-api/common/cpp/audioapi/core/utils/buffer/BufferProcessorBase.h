@@ -1,11 +1,11 @@
 #pragma once
 
+#include <audioapi/core/utils/buffer/BufferProcessingDirection.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 #include <cstddef>
 #include <memory>
-#include "audioapi/core/utils/buffer/BufferProcessingDirection.h"
 
 namespace audioapi {
 
