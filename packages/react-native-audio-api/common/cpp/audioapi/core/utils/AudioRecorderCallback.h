@@ -60,7 +60,7 @@ class AudioRecorderCallback {
   static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =
       channels::spsc::WaitStrategy::ATOMIC_WAIT;
   static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = 64;
-  std::mutex callbackMutex_;
+  std::mutex destructionAudioGuard_; // eliminates race between deconstruction and audio thread
 };
 
 } // namespace audioapi

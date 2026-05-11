@@ -94,11 +94,14 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
 }
 
 /// @brief Cleans up resources used by the IOSRecorderCallback.
-/// This method should be called from the JS thread only.
+/// This method should be called from the JS GC thread only.
 void IOSRecorderCallback::cleanup()
 {
-  std::scoped_lock lock(callbackMutex_);
+  std::scoped_lock audioLock(destructionAudioGuard_);
   @autoreleasepool {
+    // join the worker
+    offloader_.reset();
+
     if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
       emitAudioData(true);
     }
@@ -112,8 +115,18 @@ void IOSRecorderCallback::cleanup()
     for (int i = 0; i < channelCount_; ++i) {
       circularBuffer_[i]->zero();
     }
-    offloader_.reset();
   }
+}
+
+static inline void freeOwnedAudioBufferList(const AudioBufferList *bufferList)
+{
+  if (bufferList == nullptr) {
+    return;
+  }
+  for (UInt32 i = 0; i < bufferList->mNumberBuffers; ++i) {
+    std::free(bufferList->mBuffers[i].mData);
+  }
+  std::free(const_cast<AudioBufferList *>(bufferList));
 }
 
 /// @brief Receives audio data from the recorder, processes it, and stores it in the circular buffer.
@@ -123,6 +136,11 @@ void IOSRecorderCallback::cleanup()
 /// @param numFrames Number of frames in the input buffer.
 void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
+  // if we wait here, we are in the middle of the destruction
+  std::scoped_lock lock(destructionAudioGuard_);
+  if (offloader_ == nullptr) {
+    return;
+  }
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
@@ -152,19 +170,7 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferLis
     std::memcpy(channelData, audioBufferList->mBuffers[i].mData, byteSize);
     owned->mBuffers[i].mData = channelData;
   }
-
-  offloader_->getSender()->send({owned, numFrames});
-}
-
-static inline void freeOwnedAudioBufferList(const AudioBufferList *bufferList)
-{
-  if (bufferList == nullptr) {
-    return;
-  }
-  for (UInt32 i = 0; i < bufferList->mNumberBuffers; ++i) {
-    std::free(bufferList->mBuffers[i].mData);
-  }
-  std::free(const_cast<AudioBufferList *>(bufferList));
+  offloader_->getSender()->send({.audioBufferList = owned, .numFrames = numFrames});
 }
 
 void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
@@ -177,10 +183,6 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
     return;
   }
 
-  std::scoped_lock lock(callbackMutex_); // object under destruction
-  if (bufferFormat_ == nullptr) {        // object has been deallocated
-    return;
-  }
   @autoreleasepool {
     NSError *error = nil;
 

@@ -99,7 +99,10 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
 }
 
 void AndroidRecorderCallback::cleanup() {
-  std::scoped_lock lock(callbackMutex_);
+  std::scoped_lock audioLock(destructionAudioGuard_);
+  // join the worker
+  offloader_.reset();
+
   if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
     emitAudioData(true);
   }
@@ -118,7 +121,6 @@ void AndroidRecorderCallback::cleanup() {
   for (const auto &arr : circularBuffer_) {
     arr->zero();
   }
-  offloader_.reset();
 }
 
 /// @brief Receives audio data from the recorder, processes it (resampling and deinterleaving if necessary),
@@ -126,6 +128,11 @@ void AndroidRecorderCallback::cleanup() {
 /// @param data Pointer to the incoming audio data.
 /// @param numFrames Number of frames in the incoming audio data.
 void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
+  // if we wait here, we are in the middle of the destruction
+  std::scoped_lock lock(destructionAudioGuard_);
+  if (offloader_ == nullptr) {
+    return;
+  }
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
@@ -164,10 +171,6 @@ void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
   // The TaskOffloader destructor sends a default-constructed CallbackData
   // (data == nullptr) to unblock the receiver; ignore it here.
   if (data == nullptr) {
-    return;
-  }
-  std::scoped_lock lock(callbackMutex_); // object under destruction
-  if (converter_ == nullptr) {           // object has been deallocated
     return;
   }
 
