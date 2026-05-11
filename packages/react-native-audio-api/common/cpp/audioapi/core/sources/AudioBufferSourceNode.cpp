@@ -71,6 +71,7 @@ void AudioBufferSourceNode::setBuffer(
     channelCount_ = 1;
 
     buffer_ = nullptr;
+    processor_->setBuffer(nullptr);
     return;
   }
 
@@ -78,7 +79,7 @@ void AudioBufferSourceNode::setBuffer(
   audioBuffer_ = audioBuffer;
   channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
   loopEnd_ = buffer_->getDuration();
-  processor_->setBuffer(buffer_.get());
+  processor_->setBuffer(buffer_);
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {

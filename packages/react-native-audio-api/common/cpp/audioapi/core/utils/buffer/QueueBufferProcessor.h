@@ -21,7 +21,6 @@ class QueueBufferProcessor : public BufferProcessorBase {
  public:
   QueueBufferProcessor(
       std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> *buffers,
-      double *position,
       OnBufferConsumed onBufferConsumed = {});
 
   /// Arm an in-place tail buffer. When the main queue would drain during
@@ -42,8 +41,8 @@ class QueueBufferProcessor : public BufferProcessorBase {
   void consume(size_t frames) override;
   [[nodiscard]] size_t remainingInContiguousBlock() const override;
   [[nodiscard]] size_t currentIndex() const override;
-  [[nodiscard]] const AudioBuffer *getBuffer() const override;
-  [[nodiscard]] const AudioBuffer *getNextBuffer() const override;
+  [[nodiscard]] std::shared_ptr<const AudioBuffer> getBuffer() const override;
+  [[nodiscard]] std::shared_ptr<const AudioBuffer> getNextBuffer() const override;
   void handleBoundary() override;
 
  private:

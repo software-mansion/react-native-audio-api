@@ -10,7 +10,6 @@ namespace audioapi {
 
 QueueBufferProcessor::QueueBufferProcessor(
     std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> *buffers,
-    double *position,
     OnBufferConsumed onBufferConsumed)
     : buffers_(buffers), onBufferConsumed_(std::move(onBufferConsumed)) {}
 
@@ -68,25 +67,25 @@ size_t QueueBufferProcessor::currentIndex() const {
   return static_cast<size_t>(position_);
 }
 
-const AudioBuffer *QueueBufferProcessor::getBuffer() const {
+std::shared_ptr<const AudioBuffer> QueueBufferProcessor::getBuffer() const {
   if (buffers_->empty()) {
     return nullptr;
   }
-  return buffers_->front().second.get();
+  return buffers_->front().second;
 }
 
-const AudioBuffer *QueueBufferProcessor::getNextBuffer() const {
+std::shared_ptr<const AudioBuffer> QueueBufferProcessor::getNextBuffer() const {
   if (buffers_->empty()) {
-    return pendingTailBuffer_ ? pendingTailBuffer_.get() : nullptr;
+    return pendingTailBuffer_;
   }
   auto it = std::next(buffers_->begin());
   if (it != buffers_->end()) {
-    return it->second.get();
+    return it->second;
   }
   if (pendingTailBuffer_ != nullptr) {
-    return pendingTailBuffer_.get();
+    return pendingTailBuffer_;
   }
-  return buffers_->front().second.get();
+  return buffers_->front().second;
 }
 
 bool QueueBufferProcessor::atBoundary() const {

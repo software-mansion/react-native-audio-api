@@ -47,7 +47,7 @@ void BufferProcessorBase::renderBlock(
     const size_t toCopy = std::min(remainingInContiguousBlock(), framesLeft);
 
     if (toCopy > 0) {
-      const AudioBuffer *buffer = getBuffer();
+      const AudioBuffer *buffer = getBuffer().get();
       const size_t readIndex = currentIndex();
 
       if (direction_ == BufferProcessingDirection::REVERSE) {
@@ -84,7 +84,7 @@ void BufferProcessorBase::renderInterpolated(
       return;
     }
 
-    const AudioBuffer *currentBuffer = getBuffer();
+    const AudioBuffer *currentBuffer = getBuffer().get();
     for (size_t ch = 0; ch < numChannels; ++ch) {
       auto destination = output->getChannel(ch)->span();
       auto source = currentBuffer->getChannel(ch)->span();

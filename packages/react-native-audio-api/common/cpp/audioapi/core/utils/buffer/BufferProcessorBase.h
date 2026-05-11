@@ -47,8 +47,8 @@ class BufferProcessorBase {
   virtual void consume(size_t frames) = 0;
   [[nodiscard]] virtual size_t remainingInContiguousBlock() const = 0;
   [[nodiscard]] virtual size_t currentIndex() const = 0;
-  [[nodiscard]] virtual const AudioBuffer *getBuffer() const = 0;
-  [[nodiscard]] virtual const AudioBuffer *getNextBuffer() const = 0;
+  [[nodiscard]] virtual std::shared_ptr<const AudioBuffer> getBuffer() const = 0;
+  [[nodiscard]] virtual std::shared_ptr<const AudioBuffer> getNextBuffer() const = 0;
   virtual void handleBoundary() = 0;
 
   double position_ = 0;

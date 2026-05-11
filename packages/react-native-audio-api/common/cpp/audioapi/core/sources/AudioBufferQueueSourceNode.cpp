@@ -42,7 +42,7 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     graphManager->addAudioBufferForDestruction(std::move(buffer));
   };
 
-  processor_ = std::make_unique<QueueBufferProcessor>(&buffers_, &vReadIndex_, onBufferConsumed);
+  processor_ = std::make_unique<QueueBufferProcessor>(&buffers_, onBufferConsumed);
 }
 
 void AudioBufferQueueSourceNode::stop(double when) {

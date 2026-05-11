@@ -5,6 +5,8 @@
 
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <cstddef>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -27,8 +29,8 @@ class SingleBufferProcessor : public BufferProcessorBase {
     loop_ = loop;
   }
 
-  void setBuffer(const AudioBuffer *buffer) {
-    buffer_ = buffer;
+  void setBuffer(std::shared_ptr<const AudioBuffer> buffer) {
+    buffer_ = std::move(buffer);
   }
 
  protected:
@@ -36,12 +38,12 @@ class SingleBufferProcessor : public BufferProcessorBase {
   void consume(size_t frames) override;
   [[nodiscard]] size_t remainingInContiguousBlock() const override;
   [[nodiscard]] size_t currentIndex() const override;
-  [[nodiscard]] const AudioBuffer *getBuffer() const override;
-  [[nodiscard]] const AudioBuffer *getNextBuffer() const override;
+  [[nodiscard]] std::shared_ptr<const AudioBuffer> getBuffer() const override;
+  [[nodiscard]] std::shared_ptr<const AudioBuffer> getNextBuffer() const override;
   void handleBoundary() override;
 
  private:
-  const AudioBuffer *buffer_ = nullptr;
+  std::shared_ptr<const AudioBuffer> buffer_ = nullptr;
   bool loop_ = false;
   size_t startFrame_ = 0;
   size_t endFrame_ = 0;

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <memory>
 
 namespace audioapi {
 
@@ -57,11 +58,11 @@ size_t SingleBufferProcessor::currentIndex() const {
   return static_cast<size_t>(std::floor(position_));
 }
 
-const AudioBuffer *SingleBufferProcessor::getBuffer() const {
+std::shared_ptr<const AudioBuffer> SingleBufferProcessor::getBuffer() const {
   return buffer_;
 }
 
-const AudioBuffer *SingleBufferProcessor::getNextBuffer() const {
+std::shared_ptr<const AudioBuffer> SingleBufferProcessor::getNextBuffer() const {
   return buffer_;
 }
 
