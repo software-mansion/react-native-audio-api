@@ -68,9 +68,24 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   auto audioBufferHostObject =
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   // TODO: add optimized memory management for buffer changes, e.g.
-  //  when the same buffer is reused across threads and
+  // when the same buffer is reused across threads and
   // buffer modification is not allowed on JS thread
-  auto copiedBuffer = std::make_shared<AudioBuffer>(*audioBufferHostObject->audioBuffer_);
+
+  auto swapBuffer = false; // whether to swap internal node buffer with the new buffer
+  if (!channelCountSet_) {
+    channelCount_ = static_cast<int>(audioBufferHostObject->audioBuffer_->getNumberOfChannels());
+    channelCountSet_ = true;
+    swapBuffer = true;
+  }
+
+  // first buffer defines channel count, rest of them is mixed to channel count of the first buffer
+  auto copiedBuffer = std::make_shared<AudioBuffer>(
+      audioBufferHostObject->audioBuffer_->getSize(),
+      channelCount_,
+      audioBufferHostObject->audioBuffer_->getSampleRate());
+
+  copiedBuffer->sum(*audioBufferHostObject->audioBuffer_);
+
   std::shared_ptr<AudioBuffer> tailBuffer = nullptr;
 
   if (pitchCorrection_ && !stretchHasBeenInit_) {
@@ -84,8 +99,15 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
     stretchHasBeenInit_ = true;
   }
 
-  auto event = [audioBufferQueueSourceNode, copiedBuffer, bufferId = bufferId_, tailBuffer](
-                   BaseAudioContext &) {
+  auto event = [audioBufferQueueSourceNode,
+                copiedBuffer,
+                bufferId = bufferId_,
+                tailBuffer,
+                swapBuffer,
+                channelCount = channelCount_](BaseAudioContext &) {
+    if (swapBuffer) {
+      audioBufferQueueSourceNode->setChannelCount(static_cast<int>(channelCount));
+    }
     audioBufferQueueSourceNode->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
   };
   audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
