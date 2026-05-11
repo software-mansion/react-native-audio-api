@@ -11,6 +11,8 @@
 
 namespace audioapi {
 
+inline constexpr size_t ON_BUFFER_CONSUMED_CALLBACK_SIZE = 64;
+
 using OnBufferConsumed = FatFunction<
     ON_BUFFER_CONSUMED_CALLBACK_SIZE,
     void(size_t &, const std::shared_ptr<AudioBuffer> &, bool &, bool &)>;

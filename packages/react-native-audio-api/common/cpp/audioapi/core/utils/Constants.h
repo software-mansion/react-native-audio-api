@@ -36,9 +36,6 @@ inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT = 4;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 32;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE = 32;
 
-// queue buffer source
-inline constexpr size_t ON_BUFFER_CONSUMED_CALLBACK_SIZE = 64;
-
 // Cache line size
 #ifdef __cpp_lib_hardware_interference_size
 using std::hardware_constructive_interference_size;
