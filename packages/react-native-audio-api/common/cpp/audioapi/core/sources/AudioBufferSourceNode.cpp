@@ -31,6 +31,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
 
 void AudioBufferSourceNode::setLoop(bool loop) {
   loop_ = loop;
+  processor_->setLoop(loop_);
 }
 
 void AudioBufferSourceNode::setLoopSkip(bool loopSkip) {
@@ -77,6 +78,7 @@ void AudioBufferSourceNode::setBuffer(
   audioBuffer_ = audioBuffer;
   channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
   loopEnd_ = buffer_->getDuration();
+  processor_->setBuffer(buffer_.get());
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
@@ -152,8 +154,6 @@ void AudioBufferSourceNode::runBufferProcessor(
   processor_->setPosition(vReadIndex_);
   processor_->setEndFrame(static_cast<size_t>(endFrame));
   processor_->setStartFrame(static_cast<size_t>(startFrame));
-  processor_->setBuffer(buffer_.get());
-  processor_->setLoop(loop_);
   processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
 
   if (processor_->atBoundary()) {
