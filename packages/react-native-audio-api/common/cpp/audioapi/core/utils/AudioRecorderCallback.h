@@ -8,6 +8,7 @@
 #include <audioapi/utils/TaskOffloader.hpp>
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -59,6 +60,7 @@ class AudioRecorderCallback {
   static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =
       channels::spsc::WaitStrategy::ATOMIC_WAIT;
   static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = 64;
+  std::mutex callbackMutex_;
 };
 
 } // namespace audioapi

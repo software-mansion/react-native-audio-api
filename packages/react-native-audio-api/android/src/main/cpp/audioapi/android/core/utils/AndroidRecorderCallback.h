@@ -29,7 +29,7 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
 
   Result<NoneType, std::string>
   prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
-  void cleanup() override;
+  void cleanup() final;
 
   void receiveAudioData(void *data, int numFrames);
 
@@ -54,7 +54,6 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
       RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>>
       offloader_;
   void taskOffloaderFunction(CallbackData data);
-  std::mutex callbackMutex_;
 };
 
 } // namespace audioapi
