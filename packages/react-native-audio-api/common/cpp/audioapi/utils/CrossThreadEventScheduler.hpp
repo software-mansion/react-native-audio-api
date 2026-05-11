@@ -23,7 +23,7 @@ using namespace channels::spsc;
 /// In this setup no locking happens and modifications can be seen by Audio thread.
 /// @note it is intended to be used for two threads one which schedules events and one which processes them
 /// @note it is not safe to be copied across two threads use std::shared_ptr if you need to share data
-template <typename T, int FunctionSize = 64>
+template <typename T, int FunctionSize = 72>
 class CrossThreadEventScheduler {
   using EventType = FatFunction<FunctionSize, void(T &)>;
 
