@@ -14,8 +14,8 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
     const AudioFileSourceOptions &options)
     : AudioScheduledSourceNodeHostObject(context->createFileSource(options), options),
       loop_(options.loop),
-      volume_(options.volume),
-      duration_(std::static_pointer_cast<AudioFileSourceNode>(node_)->getDuration()) {
+      duration_(std::static_pointer_cast<AudioFileSourceNode>(node_)->getDuration()),
+      volume_(options.volume) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, loop),

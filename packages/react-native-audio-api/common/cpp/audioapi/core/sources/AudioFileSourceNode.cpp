@@ -83,7 +83,7 @@ void AudioFileSourceNode::initDecoders(
     bool useFilePath,
     const std::shared_ptr<BaseAudioContext> &context,
     const std::shared_ptr<AudioFileDecoderState> &state) {
-  bool ok = false;
+  decoding::DecoderResult openResult = Ok(None);
   if (requiresFFmpeg_) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
     decoder_ = std::make_unique<ffmpegdecoder::FFmpegDecoder>();
@@ -92,14 +92,14 @@ void AudioFileSourceNode::initDecoders(
     decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
   }
   if (useFilePath) {
-    ok = decoder_->openFile(static_cast<int>(context->getSampleRate()), state->filePath);
+    openResult = decoder_->openFile(static_cast<int>(context->getSampleRate()), state->filePath);
   } else {
-    ok = decoder_->openMemory(
+    openResult = decoder_->openMemory(
         static_cast<int>(context->getSampleRate()),
         state->memoryData.data(),
         state->memoryData.size());
   }
-  if (ok) {
+  if (openResult.is_ok()) {
     state->channels = decoder_->outputChannels();
     state->sampleRate = static_cast<float>(decoder_->outputSampleRate());
     duration_ = static_cast<double>(decoder_->getDurationInSeconds());
@@ -140,7 +140,7 @@ size_t AudioFileSourceNode::readFrames(float *buf, size_t frameCount) {
 }
 
 bool AudioFileSourceNode::seekDecoderToTime(double seconds) {
-  return decoder_->seekToTime(seconds);
+  return decoder_->seekToTime(seconds).is_ok();
 }
 
 void AudioFileSourceNode::applyPlaybackStateAfterSuccessfulSeek(double seconds) {

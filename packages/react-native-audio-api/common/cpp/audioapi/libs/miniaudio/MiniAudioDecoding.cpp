@@ -7,20 +7,31 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <string>
 #include <vector>
 
 namespace audioapi::miniaudio_decoder {
 
 namespace {
 
+std::string parseMiniAudioError(ma_result result) {
+  const char *description = ma_result_description(result);
+  if (description == nullptr) {
+    return "Unknown MiniAudio error (" + std::to_string(result) + ")";
+  }
+  return std::string(description) + " (" + std::to_string(result) + ")";
+}
+
 ma_decoder_config makeDecoderConfig(const int outputSampleRate) {
   const ma_uint32 outRate =
       outputSampleRate > 0 ? static_cast<ma_uint32>(outputSampleRate) : 0;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, outRate);
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays)
   static ma_decoding_backend_vtable *customBackends[] = {
       ma_decoding_backend_libvorbis,
       ma_decoding_backend_libopus,
   };
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount =
       sizeof(customBackends) / sizeof(customBackends[0]);
@@ -79,12 +90,12 @@ float MiniAudioDecoder::getCurrentPositionInSeconds() const {
       static_cast<double>(outputSampleRate_));
 }
 
-bool MiniAudioDecoder::openFile(
+decoding::DecoderResult MiniAudioDecoder::openFile(
     int outputSampleRate,
     const std::string &path) {
   close();
   if (path.empty()) {
-    return false;
+    return Err("MiniAudioDecoder::openFile failed: path is empty");
   }
 
   ma_decoder_config config = makeDecoderConfig(outputSampleRate);
@@ -93,7 +104,7 @@ bool MiniAudioDecoder::openFile(
       ma_decoder_init_file(path.c_str(), &config, decoder_.get());
   if (result != MA_SUCCESS) {
     teardownDecoder();
-    return false;
+    return Err("MiniAudioDecoder::openFile failed: " + parseMiniAudioError(result));
   }
 
   outputChannels_ = static_cast<int>(decoder_->outputChannels);
@@ -106,16 +117,16 @@ bool MiniAudioDecoder::openFile(
     totalLengthFrames_ = 0;
   }
   totalOutputFrames_ = 0;
-  return true;
+  return Ok(None);
 }
 
-bool MiniAudioDecoder::openMemory(
+decoding::DecoderResult MiniAudioDecoder::openMemory(
     int outputSampleRate,
     const void *data,
     size_t size) {
   close();
   if (data == nullptr || size == 0) {
-    return false;
+    return Err("MiniAudioDecoder::openMemory failed: input data is empty");
   }
   memoryCopy_.assign(
       static_cast<const uint8_t *>(data),
@@ -130,7 +141,7 @@ bool MiniAudioDecoder::openMemory(
       decoder_.get());
   if (result != MA_SUCCESS) {
     teardownDecoder();
-    return false;
+    return Err("MiniAudioDecoder::openMemory failed: " + parseMiniAudioError(result));
   }
 
   outputChannels_ = static_cast<int>(decoder_->outputChannels);
@@ -143,7 +154,7 @@ bool MiniAudioDecoder::openMemory(
     totalLengthFrames_ = 0;
   }
   totalOutputFrames_ = 0;
-  return true;
+  return Ok(None);
 }
 
 size_t MiniAudioDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
@@ -160,9 +171,9 @@ size_t MiniAudioDecoder::readPcmFrames(float *outInterleaved, size_t frameCount)
   return static_cast<size_t>(framesRead);
 }
 
-bool MiniAudioDecoder::seekToTime(double seconds) {
+decoding::DecoderResult MiniAudioDecoder::seekToTime(double seconds) {
   if (!isOpen() || outputSampleRate_ <= 0) {
-    return false;
+    return Err("MiniAudioDecoder::seekToTime failed: decoder is not open");
   }
   const float dur = getDurationInSeconds();
   if (dur > 0 && std::isfinite(dur)) {
@@ -170,17 +181,18 @@ bool MiniAudioDecoder::seekToTime(double seconds) {
   } else {
     seconds = std::max(0.0, seconds);
     if (!std::isfinite(seconds)) {
-      return false;
+      return Err("MiniAudioDecoder::seekToTime failed: seconds is not finite");
     }
   }
 
   const ma_uint64 frame =
       static_cast<ma_uint64>(std::llround(seconds * static_cast<double>(outputSampleRate_)));
-  if (ma_decoder_seek_to_pcm_frame(decoder_.get(), frame) != MA_SUCCESS) {
-    return false;
+  const ma_result result = ma_decoder_seek_to_pcm_frame(decoder_.get(), frame);
+  if (result != MA_SUCCESS) {
+    return Err("MiniAudioDecoder::seekToTime failed: " + parseMiniAudioError(result));
   }
   totalOutputFrames_ = static_cast<size_t>(frame);
-  return true;
+  return Ok(None);
 }
 
 namespace {
@@ -203,14 +215,15 @@ std::shared_ptr<AudioBuffer> buildAudioBufferFromInterleaved(
 
 std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate) {
   MiniAudioDecoder dec;
-  if (!dec.openFile(sample_rate, path)) {
+  const auto openResult = dec.openFile(sample_rate, path);
+  if (openResult.is_err()) {
     return nullptr;
   }
   const int ch = std::max(1, dec.outputChannels());
   std::vector<float> acc;
-  std::vector<float> tmp(decoding::IIncrementalAudioDecoder::CHUNK_SIZE * static_cast<size_t>(ch));
+  std::vector<float> tmp(decoding::IncrementalAudioDecoder::CHUNK_SIZE * static_cast<size_t>(ch));
   while (true) {
-    const size_t n = dec.readPcmFrames(tmp.data(), decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
+    const size_t n = dec.readPcmFrames(tmp.data(), decoding::IncrementalAudioDecoder::CHUNK_SIZE);
     if (n == 0) {
       break;
     }
@@ -224,14 +237,15 @@ std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sam
 
 std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
   MiniAudioDecoder dec;
-  if (!dec.openMemory(sample_rate, data, size)) {
+  const auto openResult = dec.openMemory(sample_rate, data, size);
+  if (openResult.is_err()) {
     return nullptr;
   }
   const int ch = std::max(1, dec.outputChannels());
   std::vector<float> acc;
-  std::vector<float> tmp(decoding::IIncrementalAudioDecoder::CHUNK_SIZE * static_cast<size_t>(ch));
+  std::vector<float> tmp(decoding::IncrementalAudioDecoder::CHUNK_SIZE * static_cast<size_t>(ch));
   while (true) {
-    const size_t n = dec.readPcmFrames(tmp.data(), decoding::IIncrementalAudioDecoder::CHUNK_SIZE);
+    const size_t n = dec.readPcmFrames(tmp.data(), decoding::IncrementalAudioDecoder::CHUNK_SIZE);
     if (n == 0) {
       break;
     }

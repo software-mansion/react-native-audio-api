@@ -1,25 +1,27 @@
 #pragma once
 #include <cstddef>
 #include <string>
+#include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/Macros.h>
 
 namespace audioapi::decoding {
+using DecoderResult = Result<NoneType, std::string>;
 /**
  * Incremental PCM decoder: openFile or openMemory → readPcmFrames in a loop → close.
  * Shared contract for FFmpeg-based and MiniAudio-based implementations.
  */
-class IIncrementalAudioDecoder {
+class IncrementalAudioDecoder {
  public:
   static constexpr size_t CHUNK_SIZE = 4096;
-  IIncrementalAudioDecoder() = default;
-  virtual ~IIncrementalAudioDecoder() = default;
-  DELETE_COPY_AND_MOVE(IIncrementalAudioDecoder);
+  IncrementalAudioDecoder() = default;
+  virtual ~IncrementalAudioDecoder() = default;
+  DELETE_COPY_AND_MOVE(IncrementalAudioDecoder);
 
   /// @brief Opens a file for decoding.
   /// @param outputSampleRate The output sample rate.
   /// @param path The path to the file.
-  /// @return True if the file was opened successfully, false otherwise.
-  [[nodiscard]] virtual bool openFile(
+  /// @return Ok(None) on success or Err(message) on failure.
+  [[nodiscard]] virtual DecoderResult openFile(
       int outputSampleRate,
       const std::string &path) = 0;
 
@@ -27,8 +29,8 @@ class IIncrementalAudioDecoder {
   /// @param outputSampleRate The output sample rate.
   /// @param data The data to decode.
   /// @param size The size of the data.
-  /// @return True if the memory block was opened successfully, false otherwise.
-  [[nodiscard]] virtual bool openMemory(
+  /// @return Ok(None) on success or Err(message) on failure.
+  [[nodiscard]] virtual DecoderResult openMemory(
       int outputSampleRate,
       const void *data,
       size_t size) = 0;
@@ -64,7 +66,7 @@ class IIncrementalAudioDecoder {
 
   /// @brief Seeks to a specific time in the audio.
   /// @param seconds The time to seek to in seconds.
-  /// @return True if the seek was successful, false otherwise.
-  [[nodiscard]] virtual bool seekToTime(double seconds) = 0;
+  /// @return Ok(None) on success or Err(message) on failure.
+  [[nodiscard]] virtual DecoderResult seekToTime(double seconds) = 0;
 };
 } // namespace audioapi::decoding

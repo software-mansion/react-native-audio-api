@@ -1,119 +1,42 @@
 #pragma once
 
 #include <audioapi/core/types/AudioFormat.h>
-#include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
-#include <algorithm>
-#include <cstring>
+#include <cstddef>
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
 
-namespace audioapi {
+namespace audioapi::audiodecoder {
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
 
-struct MemorySource {
-  const void *data;
-  size_t size;
-};
+[[nodiscard]] AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate);
+[[nodiscard]] AudioBufferResult
+decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
+[[nodiscard]] AudioBufferResult decodeWithPCMInBase64(
+    const std::string &data,
+    float inputSampleRate,
+    int inputChannelCount,
+    bool interleaved);
 
-using DecoderSource = std::variant<MemorySource, std::string>;
+[[nodiscard]] AudioFormat detectAudioFormat(const void *data, size_t size);
 
-static constexpr int CHUNK_SIZE = 4096;
+[[nodiscard]] bool pathHasExtension(
+    const std::string &path,
+    const std::vector<std::string> &extensions);
 
-class AudioDecoder {
- public:
-  AudioDecoder() = delete;
+[[nodiscard]] inline bool needsFFmpeg(AudioFormat format) {
+  return format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
+}
 
-  [[nodiscard]] static AudioBufferResult decodeWithFilePath(
-      const std::string &path,
-      float sampleRate);
-  [[nodiscard]] static AudioBufferResult
-  decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
-  [[nodiscard]] static AudioBufferResult decodeWithPCMInBase64(
-      const std::string &data,
-      float inputSampleRate,
-      int inputChannelCount,
-      bool interleaved);
+[[nodiscard]] inline bool needsFFmpegByPath(const std::string &path) {
+  return pathHasExtension(path, {".mp4", ".m4a", ".aac"});
+}
 
-  // NOLINTBEGIN(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
-  static AudioFormat detectAudioFormat(const void *data, size_t size) {
-    if (size < 12) {
-      return AudioFormat::UNKNOWN;
-    }
-    const auto *bytes = static_cast<const unsigned char *>(data);
+[[nodiscard]] inline float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
+  return static_cast<float>(static_cast<int16_t>((byte2 << CHAR_BIT) | byte1)) / INT16_MAX;
+}
 
-    // WAV/RIFF
-    if (std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0) {
-      return AudioFormat::WAV;
-    }
-
-    // OGG
-    if (std::memcmp(bytes, "OggS", 4) == 0) {
-      return AudioFormat::OGG;
-    }
-
-    // FLAC
-    if (std::memcmp(bytes, "fLaC", 4) == 0) {
-      return AudioFormat::FLAC;
-    }
-
-    // AAC starts with 0xFF 0xF1 or 0xFF 0xF9
-    if (bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0) {
-      return AudioFormat::AAC;
-    }
-
-    // MP3: "ID3" or 11-bit frame sync (0xFF 0xE0)
-    if (std::memcmp(bytes, "ID3", 3) == 0) {
-      return AudioFormat::MP3;
-    }
-    if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0) {
-      return AudioFormat::MP3;
-    }
-
-    if (std::memcmp(bytes + 4, "ftyp", 4) == 0) {
-      if (std::memcmp(bytes + 8, "M4A ", 4) == 0) {
-        return AudioFormat::M4A;
-      }
-      if (std::memcmp(bytes + 8, "qt  ", 4) == 0) {
-        return AudioFormat::MOV;
-      }
-      return AudioFormat::MP4;
-    }
-    return AudioFormat::UNKNOWN;
-  }
-
-  // NOLINTEND(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
-  static bool pathHasExtension(
-      const std::string &path,
-      const std::vector<std::string> &extensions) {
-    std::string pathLower = path;
-    std::ranges::transform(pathLower, pathLower.begin(), ::tolower);
-    return std::ranges::any_of(
-        extensions, [&pathLower](const std::string &ext) { return pathLower.ends_with(ext); });
-  }
-
- private:
-  static AudioBufferResult decodeWithMiniaudio(float sampleRate, DecoderSource source);
-  static Result<std::vector<float>, std::string> readAllPcmFrames(
-      ma_decoder &decoder,
-      int outputChannels);
-  static AudioBufferResult makeAudioBufferFromFloatBuffer(
-      const std::vector<float> &buffer,
-      float outputSampleRate,
-      int outputChannels);
-  [[nodiscard]] static int16_t floatToInt16(float sample) {
-    return static_cast<int16_t>(sample * INT16_MAX);
-  }
-  [[nodiscard]] static float int16ToFloat(int16_t sample) {
-    return static_cast<float>(sample) / INT16_MAX;
-  }
-  [[nodiscard]] static float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
-    return static_cast<float>(static_cast<int16_t>((byte2 << CHAR_BIT) | byte1)) / INT16_MAX;
-  }
-};
-
-} // namespace audioapi
+} // namespace audioapi::audiodecoder

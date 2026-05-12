@@ -5,6 +5,7 @@
 #include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
+#include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
 #include <audioapi/HostObjects/utils/AudioStretcherHostObject.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
@@ -37,6 +38,7 @@ class AudioAPIModuleInstaller {
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
     auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
+    auto createAudioFileUtils = getCreateAudioFileUtilsFunction(jsiRuntime, jsCallInvoker);
     auto createAudioStretcher = getCreateAudioStretcherFunction(jsiRuntime, jsCallInvoker);
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
@@ -45,6 +47,7 @@ class AudioAPIModuleInstaller {
         *jsiRuntime, "createOfflineAudioContext", createOfflineAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioBuffer", createAudioBuffer);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioDecoder", createAudioDecoder);
+    jsiRuntime->global().setProperty(*jsiRuntime, "createAudioFileUtils", createAudioFileUtils);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioStretcher", createAudioStretcher);
 
     auto audioEventHandlerRegistryHostObject =
@@ -182,6 +185,24 @@ class AudioAPIModuleInstaller {
           auto audioStretcherHostObject =
               std::make_shared<AudioStretcherHostObject>(&runtime, jsCallInvoker);
           return jsi::Object::createFromHostObject(runtime, audioStretcherHostObject);
+        });
+  }
+
+  static jsi::Function getCreateAudioFileUtilsFunction(
+      jsi::Runtime *jsiRuntime,
+      const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioFileUtils"),
+        0,
+        [jsCallInvoker](
+            jsi::Runtime &runtime,
+            const jsi::Value &thisValue,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto audioFileUtilsHostObject =
+              std::make_shared<AudioFileUtilsHostObject>(&runtime, jsCallInvoker);
+          return jsi::Object::createFromHostObject(runtime, audioFileUtilsHostObject);
         });
   }
 

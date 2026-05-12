@@ -16,6 +16,14 @@ set_source_files_properties(
   COMPILE_FLAGS "-O3"
 )
 
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+  set_source_files_properties(
+    "${COMMON_CPP_DIR}/audioapi/dsp/r8brain/fft/pffft_double.c"
+    PROPERTIES
+    COMPILE_FLAGS "-Wno-#pragma-messages"
+  )
+endif()
+
 set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
 set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include_ffmpeg)
 set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external/android)

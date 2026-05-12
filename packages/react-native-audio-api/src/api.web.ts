@@ -20,6 +20,13 @@ export { default as WaveShaperNode } from './web-core/WaveShaperNode';
 
 export * from './web-core/custom';
 
+export function concatAudioFiles(
+  _inputPaths: string[],
+  _outputPath: string
+): Promise<string> {
+  return Promise.reject(new Error('concatAudioFiles is not supported on web.'));
+}
+
 export type {
   OscillatorType,
   ChannelCountMode,
