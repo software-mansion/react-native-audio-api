@@ -10,6 +10,8 @@
 
 namespace audioapi {
 
+/// @brief Buffer processor that handles a single audio buffer.
+/// @note Before processing, the buffer, start frame, and end frame must be set. Looping can also be enabled if desired.
 class SingleBufferProcessor : public BufferProcessorBase {
  public:
   SingleBufferProcessor() = default;
@@ -17,18 +19,26 @@ class SingleBufferProcessor : public BufferProcessorBase {
   [[nodiscard]] bool atBoundary() const override;
   [[nodiscard]] bool shouldStop() const override;
 
+  /// @brief Set the starting frame for processing.
+  /// @param startFrame The starting frame index.
   void setStartFrame(size_t startFrame) {
     startFrame_ = startFrame;
   }
 
+  /// @brief Set the ending frame for processing.
+  /// @param endFrame The ending frame index.
   void setEndFrame(size_t endFrame) {
     endFrame_ = endFrame;
   }
 
+  /// @brief Enable or disable looping for this buffer processor.
+  /// @param loop Whether to enable looping.
   void setLoop(bool loop) {
     loop_ = loop;
   }
 
+  /// @brief Set the audio buffer to process.
+  /// @param buffer The audio buffer to set.
   void setBuffer(std::shared_ptr<const AudioBuffer> buffer) {
     buffer_ = std::move(buffer);
   }

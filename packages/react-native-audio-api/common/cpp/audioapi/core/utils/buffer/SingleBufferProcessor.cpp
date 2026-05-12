@@ -42,7 +42,6 @@ size_t SingleBufferProcessor::remainingInContiguousBlock() const {
     // +1 because we read down to and including startFrame_
     return currentIndex() - startFrame_ + 1;
   }
-  // Pure size_t arithmetic — no double promotion, no fractional truncation.
   return endFrame_ - currentIndex();
 }
 

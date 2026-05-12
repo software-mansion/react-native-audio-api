@@ -17,18 +17,22 @@ using OnBufferConsumed = FatFunction<
     ON_BUFFER_CONSUMED_CALLBACK_SIZE,
     void(size_t &, const std::shared_ptr<AudioBuffer> &, bool &, bool &)>;
 
+/// @brief Buffer processor that handles a queue of audio buffers.
 class QueueBufferProcessor : public BufferProcessorBase {
  public:
   QueueBufferProcessor(
       std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> *buffers,
       OnBufferConsumed onBufferConsumed = {});
 
-  /// Arm an in-place tail buffer. When the main queue would drain during
+  /// @brief Arm an in-place tail buffer. When the main queue would drain during
   /// processing, handleBoundary() appends this tail instead of stopping.
+  /// @param tailBuffer The buffer to append when the main queue drains.
   void setPendingTail(std::shared_ptr<AudioBuffer> tailBuffer) {
     pendingTailBuffer_ = std::move(tailBuffer);
   }
 
+  /// @brief Check if the pending tail buffer has been consumed.
+  /// @return True if the tail buffer has been consumed, false otherwise.
   [[nodiscard]] bool didConsumeTail() const {
     return tailConsumed_;
   }
