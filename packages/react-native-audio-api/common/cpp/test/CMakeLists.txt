@@ -88,6 +88,9 @@ add_executable(
 add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
 add_compile_definitions(RN_AUDIO_API_FFMPEG_DISABLED=1)
+add_compile_definitions(RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1)
+add_compile_definitions(MA_NO_LIBOPUS=1)
+add_compile_definitions(MA_NO_LIBVORBIS=1)
 
 target_link_libraries(tests
   rnaudioapi

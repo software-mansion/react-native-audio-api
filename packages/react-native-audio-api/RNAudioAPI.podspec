@@ -6,6 +6,7 @@ $audio_api_config = find_audio_api_config()
 
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 $RN_AUDIO_API_FFMPEG_DISABLED = ENV['DISABLE_AUDIOAPI_FFMPEG'].nil? ? false : ENV['DISABLE_AUDIOAPI_FFMPEG'] == '1' # false by default
+$RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED = ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'].nil? ? false : ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] == '1' # false by default
 
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
@@ -15,7 +16,9 @@ worklets_enabled = $audio_api_config[:worklets_enabled]
 worklets_preprocessor_flag = worklets_enabled ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
 
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
+static_external_libs_flag = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? '-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1 -DMA_NO_LIBOPUS=1 -DMA_NO_LIBVORBIS=1' : ''
 skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_DISABLED ? 'skipffmpeg' : ''
+prepare_command_prefix = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS=1 ' : ''
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"
@@ -64,7 +67,7 @@ Pod::Spec.new do |s|
 
   s.prepare_command = <<-CMD
     chmod +x scripts/download-prebuilt-binaries.sh
-    scripts/download-prebuilt-binaries.sh ios #{skip_ffmpeg_argument}
+    #{prepare_command_prefix}scripts/download-prebuilt-binaries.sh ios #{skip_ffmpeg_argument}
   CMD
 
   # Assumes Pods dir is nested under ios project dir
@@ -94,15 +97,17 @@ Pod::Spec.new do |s|
       '"$(PODS_ROOT)/Headers/Private/React-Core"',
       '"$(PODS_ROOT)/Headers/Private/Yoga"',
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include\"",
-      "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus\"",
-      "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\"",
     ]
+    .concat($RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? [] : [
+      "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus\"",
+      "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\""
+    ])
     .concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include_ffmpeg\""])
     .concat(worklets_enabled ? ['"$(PODS_ROOT)/Headers/Public/RNWorklets"'] : [])
     .join(' '),
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
-    'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag}",
+    'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag} #{static_external_libs_flag}",
   }
 
   s.xcconfig = {
@@ -125,13 +130,16 @@ Pod::Spec.new do |s|
     .join(' '),
     'OTHER_LDFLAGS' => %W[
       $(inherited)
+    ]
+    .concat($RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? [] : %W[
       -force_load #{lib_dir}/libopusfile.a
       -force_load #{lib_dir}/libopus.a
       -force_load #{lib_dir}/libogg.a
       -force_load #{lib_dir}/libvorbis.a
       -force_load #{lib_dir}/libvorbisenc.a
       -force_load #{lib_dir}/libvorbisfile.a
-    ].join(" "),
+    ])
+    .join(" "),
   }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.

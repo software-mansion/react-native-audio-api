@@ -28,6 +28,12 @@ else
     SKIP_FFMPEG=false
 fi
 
+if [ "${DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS}" == "1" ]; then
+    SKIP_STATIC=true
+else
+    SKIP_STATIC=false
+fi
+
 JNILIBS_DESTINATION="${PROJECT_ROOT}/android/src/main"
 NORMAL_DESTINATION="${PROJECT_ROOT}/common/cpp/audioapi/external"
 
@@ -70,6 +76,10 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
     EXTRACTED_DIR_NAME="${name%.zip}"
 
     if [[ ("$EXTRACTED_DIR_NAME" == "ffmpeg_ios" || "$EXTRACTED_DIR_NAME" == "jniLibs") && "$SKIP_FFMPEG" == true ]]; then
+        continue
+    fi
+
+    if [[ ("$EXTRACTED_DIR_NAME" == "android" || "$EXTRACTED_DIR_NAME" == "iphoneos" || "$EXTRACTED_DIR_NAME" == "iphonesimulator" || "$EXTRACTED_DIR_NAME" == "macosx") && "$SKIP_STATIC" == true ]]; then
         continue
     fi
 
