@@ -97,7 +97,8 @@ std::shared_ptr<DSPAudioBuffer> StreamerNode::processNode(
     }
   }
   // sometimes valid buffer comes from spsc, but it could be empty (?), idk why, but skip those
-  if (hasBufferedAudioData_ && framesToProcess > 0 && bufferedAudioData_.size > framesToProcess) {
+  if (hasBufferedAudioData_ && framesToProcess > 0 &&
+      static_cast<int>(bufferedAudioData_.size - processedSamples_) >= framesToProcess) {
     processingBuffer->copy(
         bufferedAudioData_.buffer, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
