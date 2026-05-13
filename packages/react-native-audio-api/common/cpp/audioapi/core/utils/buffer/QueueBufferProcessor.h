@@ -26,7 +26,6 @@ class QueueBufferProcessor : public BufferProcessorBase {
 
   /// @brief Arm an in-place tail buffer. When the main queue would drain during
   /// processing, handleBoundary() appends this tail instead of stopping.
-  /// @param tailBuffer The buffer to append when the main queue drains.
   void setPendingTail(std::shared_ptr<AudioBuffer> tailBuffer) {
     pendingTailBuffer_ = std::move(tailBuffer);
   }

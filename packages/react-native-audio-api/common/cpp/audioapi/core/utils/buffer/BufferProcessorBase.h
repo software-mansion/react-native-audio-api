@@ -44,7 +44,6 @@ class BufferProcessorBase {
   }
 
   /// @brief Set the current position of the buffer cursor.
-  /// @param position The new position in frames.
   void setPosition(double position) {
     position_ = position;
   }
