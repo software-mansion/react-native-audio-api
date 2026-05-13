@@ -26,6 +26,10 @@ ma_decoder_config makeDecoderConfig(const int outputSampleRate) {
   const ma_uint32 outRate =
       outputSampleRate > 0 ? static_cast<ma_uint32>(outputSampleRate) : 0;
   ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, outRate);
+#if RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
+  config.ppCustomBackendVTables = nullptr;
+  config.customBackendCount = 0;
+#else
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays)
   static ma_decoding_backend_vtable *customBackends[] = {
       ma_decoding_backend_libvorbis,
@@ -35,6 +39,7 @@ ma_decoder_config makeDecoderConfig(const int outputSampleRate) {
   config.ppCustomBackendVTables = customBackends;
   config.customBackendCount =
       sizeof(customBackends) / sizeof(customBackends[0]);
+#endif
   return config;
 }
 

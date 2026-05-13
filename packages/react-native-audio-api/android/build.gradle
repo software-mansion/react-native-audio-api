@@ -25,6 +25,11 @@ def isFFmpegDisabled() {
   return rootProject.hasProperty("disableAudioapiFFmpeg") && rootProject.getProperty("disableAudioapiFFmpeg") == "true"
 }
 
+def isStaticExternalLibsDisabled() {
+  return rootProject.hasProperty("disableAudioapiStaticExternalLibs") &&
+      rootProject.getProperty("disableAudioapiStaticExternalLibs") == "true"
+}
+
 apply plugin: "com.android.library"
 apply plugin: 'org.jetbrains.kotlin.android'
 
@@ -129,11 +134,13 @@ def REACT_NATIVE_VERSION = reactProperties.getProperty("VERSION_NAME")
 def REACT_NATIVE_MINOR_VERSION = REACT_NATIVE_VERSION.startsWith("0.0.0-") ? 1000 : REACT_NATIVE_VERSION.split("\\.")[1].toInteger()
 def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
 def IS_RN_AUDIO_API_FFMPEG_DISABLED = isFFmpegDisabled()
+def IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED = isStaticExternalLibsDisabled()
 
 android {
   sourceSets {
       main {
-          jniLibs.srcDirs = ['src/main/jniLibs']
+        // if ffmpeg is disabled, don't include the jniLibs directory, where the ffmpeg .so files are located
+        jniLibs.srcDirs = IS_RN_AUDIO_API_FFMPEG_DISABLED ? [] : ['src/main/jniLibs']
       }
   }
   if (supportsNamespace()) {
@@ -157,6 +164,7 @@ android {
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
     buildConfigField "boolean", "RN_AUDIO_API_ENABLE_WORKLETS", "${isWorkletsAvailable}"
     buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_DISABLED", isFFmpegDisabled().toString()
+    buildConfigField "boolean", "RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED", isStaticExternalLibsDisabled().toString()
 
     externalNativeBuild {
       cmake {
@@ -170,7 +178,8 @@ android {
           "-DRN_AUDIO_API_WORKLETS_ENABLED=${isWorkletsAvailable}",
           "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
           "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
-          "-DRN_AUDIO_API_FFMPEG_DISABLED=${IS_RN_AUDIO_API_FFMPEG_DISABLED}"
+          "-DRN_AUDIO_API_FFMPEG_DISABLED=${IS_RN_AUDIO_API_FFMPEG_DISABLED}",
+          "-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=${IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED}"
         ]
 
         if (isWorkletsAvailable) {
@@ -310,6 +319,7 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
 task downloadPrebuiltBinaries(type: Exec) {
   commandLine 'chmod', '+x', '../scripts/download-prebuilt-binaries.sh'
   commandLine 'bash', '../scripts/download-prebuilt-binaries.sh'
+  environment 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS', isStaticExternalLibsDisabled() ? '1' : '0'
   args 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
 }
 
