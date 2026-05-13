@@ -14,8 +14,11 @@ using namespace oboe;
 
 class AudioContext;
 
-class AudioPlayer : public AudioStreamDataCallback, AudioStreamErrorCallback {
+class AudioPlayer : public AudioStreamDataCallback,
+                    public AudioStreamErrorCallback,
+                    public std::enable_shared_from_this<AudioPlayer> {
  public:
+  friend class AudioContext;
   AudioPlayer(
       const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
