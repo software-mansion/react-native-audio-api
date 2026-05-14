@@ -32,7 +32,7 @@ import {
   sleep,
   waitForCondition,
 } from './helpers';
-import staticAsset from '../AudioFile/voice-sample-landing.mp3';
+import staticAsset from '../../examples/AudioFile/voice-sample-landing.mp3';
 import type {
   PlaybackProgressStats,
   RecordingCapture,

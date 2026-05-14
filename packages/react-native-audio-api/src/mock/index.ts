@@ -853,6 +853,33 @@ const changePlaybackSpeed = (
   return Promise.resolve(buffer);
 };
 
+const concatAudioFiles = (
+  inputPaths: string[],
+  outputPath: string
+): Promise<string> => {
+  if (!Array.isArray(inputPaths) || inputPaths.length === 0) {
+    return Promise.reject(
+      new AudioApiErrorMock(
+        'concatAudioFiles requires at least one input path.'
+      )
+    );
+  }
+
+  if (inputPaths.some((inputPath) => typeof inputPath !== 'string')) {
+    return Promise.reject(
+      new TypeError('concatAudioFiles input paths must be strings.')
+    );
+  }
+
+  if (typeof outputPath !== 'string' || outputPath.length === 0) {
+    return Promise.reject(
+      new AudioApiErrorMock('concatAudioFiles requires an output path.')
+    );
+  }
+
+  return Promise.resolve(outputPath);
+};
+
 class AudioManagerMock {
   static getDevicePreferredSampleRate(): number {
     return 44100;
@@ -1017,6 +1044,7 @@ export const AudioApiError = AudioApiErrorMock;
 // Export functions
 export {
   changePlaybackSpeed,
+  concatAudioFiles,
   decodeAudioData,
   decodePCMInBase64,
   setMockSystemVolume,
@@ -1117,6 +1145,7 @@ export default {
   decodeAudioData,
   decodePCMInBase64,
   changePlaybackSpeed,
+  concatAudioFiles,
   useSystemVolume,
   setMockSystemVolume,
 

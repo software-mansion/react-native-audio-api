@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <cassert>
 #include <concepts>
@@ -16,7 +17,7 @@ namespace audioapi::task_offloader {
 template <std::default_initializable T, OverflowStrategy Strategy, WaitStrategy Wait>
 class TaskOffloader {
  public:
-  template <typename Func>
+  template <std::invocable<T> Func>
   explicit TaskOffloader(size_t capacity, Func &&task) : shouldRun_(true) {
     auto [sender, receiver] = channels::spsc::channel<T, Strategy, Wait>(capacity);
     sender_ = std::move(sender);
@@ -33,10 +34,7 @@ class TaskOffloader {
   }
 
   // delete other functions
-  TaskOffloader(const TaskOffloader &) = delete;
-  TaskOffloader &operator=(const TaskOffloader &) = delete;
-  TaskOffloader(TaskOffloader &&other) = delete;
-  TaskOffloader &operator=(TaskOffloader &&other) = delete;
+  DELETE_COPY_AND_MOVE(TaskOffloader);
 
   ~TaskOffloader() {
     shouldRun_.store(false, std::memory_order_release);

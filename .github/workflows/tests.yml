@@ -29,4 +29,4 @@ jobs:
 
       - name: Run JS integration tests
         working-directory: packages/react-native-audio-api
-        run: yarn test:js
+        run: yarn build && yarn test:js

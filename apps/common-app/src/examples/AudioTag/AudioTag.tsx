@@ -1,6 +1,9 @@
 import React, { useRef } from 'react';
 import { Button, View } from 'react-native';
-import { Audio, AudioTagHandle } from 'react-native-audio-api/development/react';
+import {
+  Audio,
+  AudioTagHandle,
+} from 'react-native-audio-api/development/react';
 
 import { Container } from '../../components';
 
@@ -35,18 +38,21 @@ const AudioTag: React.FC = () => {
     <Container disablePadding>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <View style={{ width: '90%' }}>
-          <Audio source={DEMO_AUDIO_URL} ref={audioRef} controls
-                 onLoadStart={() => console.log('onLoadStart')}
-                 onLoad={() => console.log('onLoad')}
-                 onError={(error) => console.log('onError', error)}
-                 onPositionChange={(seconds) =>
-                   console.log('onPositionChange', seconds)
-                 }
-                 onEnded={() => console.log('onEnded')}
-                 onPlay={() => console.log('onPlay')}
-                 onPause={() => console.log('onPause')}
-                 onVolumeChange={(volume) => console.log('onVolumeChange', volume)}
-                 />
+          <Audio
+            source={DEMO_AUDIO_URL}
+            ref={audioRef}
+            controls
+            onLoadStart={() => console.log('onLoadStart')}
+            onLoad={() => console.log('onLoad')}
+            onError={(error) => console.log('onError', error)}
+            onPositionChange={(seconds) =>
+              console.log('onPositionChange', seconds)
+            }
+            onEnded={() => console.log('onEnded')}
+            onPlay={() => console.log('onPlay')}
+            onPause={() => console.log('onPause')}
+            onVolumeChange={(volume) => console.log('onVolumeChange', volume)}
+          />
         </View>
       </View>
     </Container>

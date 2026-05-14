@@ -3,6 +3,7 @@
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/core/utils/buffer/QueueBufferProcessor.h>
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
@@ -23,6 +24,22 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
   }
+
+  auto *disposer = context->getDisposer();
+
+  auto onBufferConsumed = [this, disposer](
+                              size_t bufferId,
+                              std::shared_ptr<AudioBuffer> buffer,
+                              bool isLastInQueue,
+                              bool fireBufferEndedEvent) {
+    playedBuffersDuration_ += buffer->getDuration();
+    if (fireBufferEndedEvent) {
+      sendOnBufferEndedEvent(bufferId, isLastInQueue);
+    }
+    disposer->dispose(std::move(buffer));
+  };
+
+  processor_ = std::make_unique<QueueBufferProcessor>(&buffers_, onBufferConsumed);
 }
 
 void AudioBufferQueueSourceNode::stop(double when) {
@@ -125,6 +142,14 @@ void AudioBufferQueueSourceNode::unregisterOnBufferEndedCallback(uint64_t callba
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, callbackId);
 }
 
+void AudioBufferQueueSourceNode::setChannelCount(int channelCount) {
+  if (channelCount_ != channelCount) {
+    channelCount_ = channelCount;
+    audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+        RENDER_QUANTUM_SIZE, channelCount_, getContextSampleRate());
+  }
+}
+
 double AudioBufferQueueSourceNode::getCurrentPosition() const {
   return dsp::sampleFrameToTime(static_cast<int>(vReadIndex_), getContextSampleRate()) +
       playedBuffersDuration_;
@@ -147,147 +172,33 @@ bool AudioBufferQueueSourceNode::isEmpty() const {
   return buffers_.empty();
 }
 
-// todo: refactor so its less complex and more readable
-void AudioBufferQueueSourceNode::processWithoutInterpolation(
+void AudioBufferQueueSourceNode::runBufferProcessor(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
-    float playbackRate) {
-  if (auto context = context_.lock()) {
-    auto readIndex = static_cast<size_t>(vReadIndex_);
-    size_t writeIndex = startOffset;
-
-    auto data = buffers_.front();
-    auto bufferId = data.first;
-    auto buffer = data.second;
-
-    size_t framesLeft = offsetLength;
-
-    while (framesLeft > 0) {
-      size_t framesToEnd = buffer->getSize() - readIndex;
-      size_t framesToCopy = std::min(framesToEnd, framesLeft);
-      framesToCopy = framesToCopy > 0 ? framesToCopy : 0;
-
-      assert(readIndex >= 0);
-      assert(writeIndex >= 0);
-      assert(readIndex + framesToCopy <= buffer->getSize());
-      assert(writeIndex + framesToCopy <= processingBuffer->getSize());
-
-      processingBuffer->copy(*buffer, readIndex, writeIndex, framesToCopy);
-
-      writeIndex += framesToCopy;
-      readIndex += framesToCopy;
-      framesLeft -= framesToCopy;
-
-      if (readIndex >= buffer->getSize()) {
-        playedBuffersDuration_ += buffer->getDuration();
-        buffers_.pop_front();
-
-        if (!(buffers_.empty() && addExtraTailFrames_)) {
-          sendOnBufferEndedEvent(bufferId, buffers_.empty());
-        }
-
-        if (buffers_.empty()) {
-          if (addExtraTailFrames_) {
-            buffers_.emplace_back(bufferId, tailBuffer_);
-            addExtraTailFrames_ = false;
-          } else {
-            context->getDisposer()->dispose(std::move(buffer));
-            processingBuffer->zero(writeIndex, framesLeft);
-            readIndex = 0;
-
-            break;
-          }
-        }
-
-        context->getDisposer()->dispose(std::move(buffer));
-        data = buffers_.front();
-        bufferId = data.first;
-        buffer = data.second;
-        readIndex = 0;
-      }
-    }
-
-    // update reading index for next render quantum
-    vReadIndex_ = static_cast<double>(readIndex);
+    float playbackRate,
+    bool interpolate) {
+  if (!processingBuffer) {
+    return;
   }
-}
 
-// todo: refactor so its less complex and more readable
-void AudioBufferQueueSourceNode::processWithInterpolation(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    size_t startOffset,
-    size_t offsetLength,
-    float playbackRate) {
-  if (auto context = context_.lock()) {
-    size_t writeIndex = startOffset;
-    size_t framesLeft = offsetLength;
-
-    auto data = buffers_.front();
-    auto bufferId = data.first;
-    auto buffer = data.second;
-
-    while (framesLeft > 0) {
-      auto readIndex = static_cast<size_t>(vReadIndex_);
-      size_t nextReadIndex = readIndex + 1;
-      auto factor = static_cast<float>(vReadIndex_ - static_cast<double>(readIndex));
-
-      bool crossBufferInterpolation = false;
-      std::shared_ptr<AudioBuffer> nextBuffer = nullptr;
-
-      if (nextReadIndex >= buffer->getSize()) {
-        if (buffers_.size() > 1) {
-          auto tempQueue = buffers_;
-          tempQueue.pop_front();
-          nextBuffer = tempQueue.front().second;
-          nextReadIndex = 0;
-          crossBufferInterpolation = true;
-        } else {
-          nextReadIndex = readIndex;
-        }
-      }
-
-      for (size_t i = 0; i < processingBuffer->getNumberOfChannels(); i += 1) {
-        const auto destination = processingBuffer->getChannel(i)->span();
-        const auto currentSource = buffer->getChannel(i)->span();
-
-        if (crossBufferInterpolation) {
-          const auto nextSource = nextBuffer->getChannel(i)->span();
-          float currentSample = currentSource[readIndex];
-          float nextSample = nextSource[nextReadIndex];
-          destination[writeIndex] = currentSample + factor * (nextSample - currentSample);
-        } else {
-          destination[writeIndex] =
-              dsp::linearInterpolate(currentSource, readIndex, nextReadIndex, factor);
-        }
-      }
-
-      writeIndex += 1;
-      // queue source node always use positive playbackRate
-      vReadIndex_ += std::abs(playbackRate);
-      framesLeft -= 1;
-
-      if (vReadIndex_ >= static_cast<double>(buffer->getSize())) {
-        playedBuffersDuration_ += buffer->getDuration();
-        buffers_.pop_front();
-
-        sendOnBufferEndedEvent(bufferId, buffers_.empty());
-
-        if (buffers_.empty()) {
-          context->getDisposer()->dispose(std::move(buffer));
-          processingBuffer->zero(writeIndex, framesLeft);
-          vReadIndex_ = 0.0;
-          break;
-        }
-
-        vReadIndex_ = vReadIndex_ - static_cast<double>(buffer->getSize());
-        context->getDisposer()->dispose(std::move(buffer));
-        data = buffers_.front();
-        bufferId = data.first;
-        buffer = data.second;
-      }
-    }
+  if (buffers_.empty()) {
+    processingBuffer->zero(startOffset, offsetLength);
+    return;
   }
+
+  if (addExtraTailFrames_ && tailBuffer_ != nullptr) {
+    processor_->setPendingTail(tailBuffer_);
+  }
+
+  processor_->setPosition(vReadIndex_);
+  processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
+
+  if (processor_->didConsumeTail()) {
+    addExtraTailFrames_ = false;
+  }
+
+  vReadIndex_ = processor_->getPosition();
 }
 
 } // namespace audioapi

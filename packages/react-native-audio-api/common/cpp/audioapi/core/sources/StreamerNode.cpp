@@ -38,9 +38,7 @@ StreamerNode::StreamerNode(
       audio_stream_index_(-1),
       maxResampledSamples_(0),
       processedSamples_(0) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
   initialize(options.streamPath);
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 #else
 StreamerNode::StreamerNode(
@@ -93,7 +91,9 @@ void StreamerNode::processNode(int framesToProcess) {
       processedSamples_ = 0;
     }
   }
-  if (bufferedAudioData_ && framesToProcess > 0) {
+  // sometimes valid buffer comes from spsc, but it could be empty (?), idk why, but skip those
+  if (bufferedAudioData_ && framesToProcess > 0 &&
+      static_cast<int>(bufferedAudioData_->size - processedSamples_) >= framesToProcess) {
     audioBuffer_->copy(
         bufferedAudioData_->buffer, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
@@ -102,22 +102,24 @@ void StreamerNode::processNode(int framesToProcess) {
 }
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-bool StreamerNode::initialize(const std::string &input_url) {
-  streamPath_ = input_url;
+bool StreamerNode::initialize(const std::string &inputUrl) {
+  streamPath_ = inputUrl;
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
     return false;
   }
 
-  if (!openInput(input_url)) {
-    if (VERBOSE)
+  if (!openInput(inputUrl)) {
+    if (VERBOSE) {
       printf("Failed to open input\n");
+    }
     return false;
   }
 
   if (!findAudioStream() || !setupDecoder() || !setupResampler(context->getSampleRate())) {
-    if (VERBOSE)
+    if (VERBOSE) {
       printf("Failed to find/setup audio stream\n");
+    }
     cleanup();
     return false;
   }
@@ -126,8 +128,9 @@ bool StreamerNode::initialize(const std::string &input_url) {
   frame_ = av_frame_alloc();
 
   if (pkt_ == nullptr || frame_ == nullptr) {
-    if (VERBOSE)
+    if (VERBOSE) {
       printf("Failed to allocate packet or frame\n");
+    }
     cleanup();
     return false;
   }
@@ -155,7 +158,7 @@ bool StreamerNode::setupResampler(float outSampleRate) {
       codecCtx_->sample_rate, outSampleRate, n, maxInLen);
 
   const int maxOutLen = resampler_->getMaxOutLen();
-  const size_t outputBufferSize = static_cast<size_t>(std::max(maxInLen, maxOutLen));
+  const auto outputBufferSize = static_cast<size_t>(std::max(maxInLen, maxOutLen));
 
   resamplerInputBuffer_ = AudioBuffer(static_cast<size_t>(maxInLen), n, codecCtx_->sample_rate);
   resamplerOutputBuffer_ = AudioBuffer(outputBufferSize, n, outSampleRate);
@@ -195,28 +198,28 @@ static void extractChannelAsFloat(const AVFrame *frame, int channel, float *outp
       break;
     }
     case AV_SAMPLE_FMT_DBLP: {
-      auto *src = reinterpret_cast<const double *>(frame->data[channel]);
+      const auto *src = reinterpret_cast<const double *>(frame->data[channel]);
       for (int i = 0; i < nb; ++i) {
         output[i] = static_cast<float>(src[i]);
       }
       break;
     }
     case AV_SAMPLE_FMT_S16P: {
-      auto *src = reinterpret_cast<const int16_t *>(frame->data[channel]);
+      const auto *src = reinterpret_cast<const int16_t *>(frame->data[channel]);
       for (int i = 0; i < nb; ++i) {
         output[i] = src[i] / 32768.0f;
       }
       break;
     }
     case AV_SAMPLE_FMT_S32P: {
-      auto *src = reinterpret_cast<const int32_t *>(frame->data[channel]);
+      const auto *src = reinterpret_cast<const int32_t *>(frame->data[channel]);
       for (int i = 0; i < nb; ++i) {
         output[i] = src[i] / 2147483648.0f;
       }
       break;
     }
     case AV_SAMPLE_FMT_U8P: {
-      auto *src = frame->data[channel];
+      const auto *src = reinterpret_cast<const uint8_t *>(frame->data[channel]);
       for (int i = 0; i < nb; ++i) {
         output[i] = (src[i] - 128) / 128.0f;
       }
@@ -262,8 +265,8 @@ void StreamerNode::processFrameWithResampler(
   sender_.send(std::move(data));
 }
 
-bool StreamerNode::openInput(const std::string &input_url) {
-  if (avformat_open_input(&fmtCtx_, input_url.c_str(), nullptr, nullptr) < 0) {
+bool StreamerNode::openInput(const std::string &inputUrl) {
+  if (avformat_open_input(&fmtCtx_, inputUrl.c_str(), nullptr, nullptr) < 0) {
     return false;
   }
   return avformat_find_stream_info(fmtCtx_, nullptr) >= 0;

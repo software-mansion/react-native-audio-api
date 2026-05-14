@@ -1,0 +1,100 @@
+---
+sidebar_position: 3
+sidebar_label: File concatenation
+---
+
+import { MobileOnly } from '@site/src/components/Badges';
+
+# File concatenation <MobileOnly />
+
+You can concatenate existing audio files without creating an `AudioContext` using
+the exported [`concatAudioFiles`](#concataudiofiles) function.
+
+This is useful when recording with the
+[`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions)
+option. Rotation keeps long recordings split into smaller files while recording,
+and `concatAudioFiles` can join those files back into one file after the
+recording is finished.
+
+:::warning
+`concatAudioFiles` is not supported on web.
+:::
+
+:::caution
+**M4A and WAV concatenation is only supported.**
+
+M4A format requires FFmpeg to be available in the native build. WAV
+concatenation uses miniaudio and does not require FFmpeg.
+:::
+
+### `concatAudioFiles`
+
+Concatenates compatible local audio files into a single output file.
+
+|  Parameter   |    Type    | Description                                                                           |
+| :----------: | :--------: | :------------------------------------------------------------------------------------ |
+| `inputPaths` | `string[]` | Local filesystem paths or `file://` URLs to concatenate, in output order.             |
+| `outputPath` |  `string`  | Local filesystem path or `file://` URL where the joined audio file should be written. |
+
+#### Returns `Promise<string>`.
+
+The promise resolves with the provided `outputPath` when concatenation
+completes.
+
+#### Compatibility
+
+All input files must use compatible audio parameters. In practice, files should
+come from the same recorder configuration:
+
+- the same container format,
+- the same audio codec,
+- the same sample rate,
+- the same channel layout,
+- compatible codec parameters.
+
+Use an output path with an extension that matches the input files, for example
+joining `.m4a` segments into an `.m4a` output file or `.wav` segments into a
+`.wav` output file.
+
+<details>
+<summary>Example usage with rotated recordings</summary>
+
+```tsx
+import { AudioRecorder, FileDirectory, FileFormat, concatAudioFiles } from 'react-native-audio-api';
+
+const audioRecorder = new AudioRecorder();
+
+audioRecorder.enableFileOutput({
+  directory: FileDirectory.Cache,
+  fileNamePrefix: 'meeting',
+  format: FileFormat.M4A,
+  rotateIntervalBytes: 8 * 1024 * 1024,
+});
+
+// Start and stop the recorder as usual.
+const result = audioRecorder.stop();
+
+if (result.status === 'success') {
+  const outputPath = result.paths[0].replace(/[^/]+$/, 'meeting-complete.m4a');
+
+  await concatAudioFiles(result.paths, outputPath);
+}
+```
+
+</details>
+
+<details>
+<summary>Example usage with explicit paths</summary>
+
+```tsx
+import { concatAudioFiles } from 'react-native-audio-api';
+
+const outputPath = '/path/to/session.m4a';
+
+await concatAudioFiles(
+  ['/path/to/session-001.m4a', '/path/to/session-002.m4a', '/path/to/session-003.m4a'],
+  outputPath
+);
+```
+
+</details>

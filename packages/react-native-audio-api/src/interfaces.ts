@@ -379,6 +379,13 @@ export interface IAudioStretcher {
   ) => Promise<IAudioBuffer>;
 }
 
+export interface IAudioFileUtils {
+  concatAudioFiles: (
+    inputPaths: string[],
+    outputPath: string
+  ) => Promise<string>;
+}
+
 export interface IAudioEventEmitter {
   addAudioEventListener<Name extends AudioEventName>(
     name: Name,

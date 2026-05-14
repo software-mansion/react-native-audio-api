@@ -39,7 +39,7 @@ struct MemoryIOContext {
  *   2) readPcmFrames repeatedly; 0 returned = end of stream
  *   3) close when done
  */
-class FFmpegDecoder : public decoding::IIncrementalAudioDecoder {
+class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
  public:
   FFmpegDecoder() = default;
   FFmpegDecoder(const FFmpegDecoder &) = delete;
@@ -48,11 +48,11 @@ class FFmpegDecoder : public decoding::IIncrementalAudioDecoder {
   FFmpegDecoder &operator=(FFmpegDecoder &&other) = delete;
   ~FFmpegDecoder() override;
 
-  [[nodiscard]] bool openFile(
+  [[nodiscard]] decoding::DecoderResult openFile(
       int outputSampleRate,
       const std::string &path) override;
 
-  [[nodiscard]] bool openMemory(
+  [[nodiscard]] decoding::DecoderResult openMemory(
       int outputSampleRate,
       const void *data,
       size_t size) override;
@@ -71,11 +71,11 @@ class FFmpegDecoder : public decoding::IIncrementalAudioDecoder {
 
   [[nodiscard]] float getCurrentPositionInSeconds() const override;
 
-  [[nodiscard]] bool seekToTime(double seconds) override;
+  [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 
  private:
-  bool setupSwr();
-  bool feedPipeline();
+  [[nodiscard]] decoding::DecoderResult setupSwr();
+  [[nodiscard]] decoding::DecoderResult feedPipeline();
   void appendFrameResampled(AVFrame *frame);
 
   AVFormatContext *fmt_ctx_ = nullptr;

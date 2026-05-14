@@ -41,7 +41,6 @@ class OfflineAudioContext : public BaseAudioContext {
   OfflineAudioContextResultCallback resultCallback_;
 
   const size_t length_;
-  const int numberOfChannels_;
   size_t currentSampleFrame_;
 
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;

@@ -43,7 +43,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferQueueSourceNodeHostObject, onBufferEnded) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
   auto handle = node_->handle;
-  auto audioBufferQueueSourceNode =
+  auto *audioBufferQueueSourceNode =
       static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
 
   auto event =
@@ -58,7 +58,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, pause) {
   auto handle = node_->handle;
-  auto audioBufferQueueSourceNode =
+  auto *audioBufferQueueSourceNode =
       static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
 
   auto event = [handle](BaseAudioContext &) {
@@ -71,15 +71,30 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, pause) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   auto handle = node_->handle;
-  auto audioBufferQueueSourceNode =
+  auto *audioBufferQueueSourceNode =
       static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
 
   auto audioBufferHostObject =
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   // TODO: add optimized memory management for buffer changes, e.g.
-  //  when the same buffer is reused across threads and
+  // when the same buffer is reused across threads and
   // buffer modification is not allowed on JS thread
-  auto copiedBuffer = std::make_shared<AudioBuffer>(*audioBufferHostObject->audioBuffer_);
+
+  auto swapBuffer = false; // whether to swap internal node buffer with the new buffer
+  if (!channelCountSet_) {
+    channelCount_ = static_cast<int>(audioBufferHostObject->audioBuffer_->getNumberOfChannels());
+    channelCountSet_ = true;
+    swapBuffer = true;
+  }
+
+  // first buffer defines channel count, rest of them is mixed to channel count of the first buffer
+  auto copiedBuffer = std::make_shared<AudioBuffer>(
+      audioBufferHostObject->audioBuffer_->getSize(),
+      channelCount_,
+      audioBufferHostObject->audioBuffer_->getSampleRate());
+
+  copiedBuffer->sum(*audioBufferHostObject->audioBuffer_);
+
   std::shared_ptr<AudioBuffer> tailBuffer = nullptr;
 
   if (pitchCorrection_ && !stretchHasBeenInit_) {
@@ -93,9 +108,16 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
     stretchHasBeenInit_ = true;
   }
 
-  auto event = [handle, copiedBuffer, bufferId = bufferId_, tailBuffer](BaseAudioContext &) {
-    static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode())
-        ->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
+  auto event = [audioBufferQueueSourceNode,
+                copiedBuffer,
+                bufferId = bufferId_,
+                tailBuffer,
+                swapBuffer,
+                channelCount = channelCount_](BaseAudioContext &) {
+    if (swapBuffer) {
+      audioBufferQueueSourceNode->setChannelCount(static_cast<int>(channelCount));
+    }
+    audioBufferQueueSourceNode->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
   };
   audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
 
@@ -104,7 +126,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, dequeueBuffer) {
   auto handle = node_->handle;
-  auto audioBufferQueueSourceNode =
+  auto *audioBufferQueueSourceNode =
       static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
 
   auto event = [handle, bufferId = static_cast<size_t>(args[0].getNumber())](BaseAudioContext &) {
@@ -118,7 +140,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, dequeueBuffer) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, clearBuffers) {
   auto handle = node_->handle;
-  auto audioBufferQueueSourceNode =
+  auto *audioBufferQueueSourceNode =
       static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
 
   auto event = [handle](BaseAudioContext &) {
@@ -131,7 +153,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, clearBuffers) {
 
 void AudioBufferQueueSourceNodeHostObject::setOnBufferEndedCallbackId(uint64_t callbackId) {
   auto handle = node_->handle;
-  auto audioBufferQueueSourceNode =
+  auto *audioBufferQueueSourceNode =
       static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
 
   auto event = [handle, callbackId](BaseAudioContext &) {

@@ -16,6 +16,7 @@ interface Options {
   androidForegroundService: boolean;
   androidFSTypes: string[];
   disableFFmpeg: boolean;
+  disableStaticExternalLibs: boolean;
 }
 
 const withDefaultOptions = (options: Partial<Options>): Options => {
@@ -28,6 +29,7 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
     androidForegroundService: true,
     androidFSTypes: ['mediaPlayback'],
     disableFFmpeg: false,
+    disableStaticExternalLibs: false,
     ...options,
   };
 };
@@ -153,6 +155,65 @@ const withFFmpegConfig: ConfigPlugin<Options> = (config, options) => {
   return finalConf;
 };
 
+const withStaticExternalLibsConfig: ConfigPlugin<Options> = (
+  config,
+  options
+) => {
+  const iosConf = withPodfile(config, (mod) => {
+    let contents = mod.modResults.contents;
+    const staticLibsRegex =
+      /^.*ENV\['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'\].*$/gm;
+    const podfileString = options.disableStaticExternalLibs
+      ? `ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] = '1'`
+      : '';
+    // No existing setting
+    if (contents.search(staticLibsRegex) === -1) {
+      if (options.disableStaticExternalLibs) {
+        if (contents.endsWith('\n')) {
+          contents = `${contents}${podfileString}`;
+        } else {
+          contents = `${contents}\n${podfileString}`;
+        }
+        mod.modResults.contents = contents;
+      }
+    } else {
+      // Existing setting found, will replace
+      contents = contents.replace(staticLibsRegex, podfileString);
+    }
+
+    mod.modResults.contents = contents;
+    return mod;
+  });
+
+  const finalConf = withGradleProperties(iosConf, (mod) => {
+    const gradleProperties = mod.modResults;
+
+    const existingIndex = gradleProperties.findIndex(
+      (prop) =>
+        prop.type === 'property' &&
+        prop.key === 'disableAudioapiStaticExternalLibs'
+    );
+    if (existingIndex !== -1) {
+      gradleProperties.splice(existingIndex, 1);
+    } else if (!options.disableStaticExternalLibs) {
+      // No existing setting and static external libs are enabled, do nothing.
+      return mod;
+    }
+
+    if (options.disableStaticExternalLibs) {
+      gradleProperties.push({
+        type: 'property',
+        key: 'disableAudioapiStaticExternalLibs',
+        value: options.disableStaticExternalLibs ? 'true' : 'false',
+      });
+    }
+
+    return mod;
+  });
+
+  return finalConf;
+};
+
 const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
   const options = withDefaultOptions(optionsIn ?? {});
 
@@ -172,6 +233,10 @@ const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
 
   if (options.disableFFmpeg !== undefined) {
     config = withFFmpegConfig(config, options);
+  }
+
+  if (options.disableStaticExternalLibs !== undefined) {
+    config = withStaticExternalLibsConfig(config, options);
   }
 
   return config;

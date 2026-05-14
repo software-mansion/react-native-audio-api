@@ -397,6 +397,27 @@ TEST_F(AudioArrayTest, CopyReverse) {
   EXPECT_FLOAT_EQ(dst[3], 2.0f);
 }
 
+TEST_F(AudioArrayTest, CopyReverseFullSpan) {
+  AudioArray src(8);
+  AudioArray dst(8);
+  for (size_t i = 0; i < 8; ++i) {
+    src[i] = static_cast<float>(i + 1);
+  }
+
+  // length == sourceStart + 1: read all the way down to src[0].
+  dst.copyReverse(src, 7, 0, 8);
+  for (size_t i = 0; i < 8; ++i) {
+    EXPECT_FLOAT_EQ(dst[i], static_cast<float>(8 - i));
+  }
+}
+
+TEST_F(AudioArrayTest, CopyReverseRejectsUnderflow) {
+  AudioArray src(8);
+  AudioArray dst(8);
+  // length > sourceStart + 1 would read src[-1], must throw.
+  EXPECT_THROW(dst.copyReverse(src, 0, 0, 2), std::out_of_range);
+}
+
 // ---------------------------------------------------------------------------
 // CopyTo (raw float pointer)
 // ---------------------------------------------------------------------------

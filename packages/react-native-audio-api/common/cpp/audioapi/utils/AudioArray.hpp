@@ -195,13 +195,18 @@ class AlignedAudioArray {
 
   /// @brief Copies source array in reverse order into this array.
   /// @note Assumes source and this are in distinct, non-overlapping memory locations.
+  /// @note Precondition: length > 0. Reads source[sourceStart .. sourceStart-length+1].
   template <size_t OtherAlignment>
   void copyReverse(
       const AlignedAudioArray<OtherAlignment> &source,
       size_t sourceStart,
       size_t destinationStart,
       size_t length) {
-    if (size_ - destinationStart < length || source.size_ - sourceStart < length) [[unlikely]] {
+    // Reverse read walks from sourceStart down to sourceStart-length+1, so the source
+    // precondition is sourceStart < source.size_ on the high end and sourceStart+1 >= length
+    // on the low end. Caller must also pass length > 0.
+    if (size_ - destinationStart < length || sourceStart + 1 < length ||
+        sourceStart >= source.size_) [[unlikely]] {
       throw std::out_of_range("Not enough space to copy to destination or from source.");
     }
 
