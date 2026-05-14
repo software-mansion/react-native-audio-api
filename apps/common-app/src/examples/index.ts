@@ -2,20 +2,18 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { icons } from 'lucide-react-native';
 
 import AudioFile from './AudioFile';
-import AudioPipelineStress from './AudioPipelineStress';
 import AudioVisualizer from './AudioVisualizer';
 import DrumMachine from './DrumMachine';
 import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
 import Piano from './Piano';
-import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
+import PlaybackSpeed from './PlaybackSpeed';
 import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
-import AudioParamPipeline from './AudioParamPipeline';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -33,8 +31,8 @@ type NavigationParamList = {
   Streamer: undefined;
   AudioTag: undefined;
   ConvolverIR: undefined;
-  TestScreen: undefined;
   AudioParamPipeline: undefined;
+  TestScreen: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -70,12 +68,6 @@ export const Examples: Example[] = [
     title: 'Audio File',
     Icon: icons.Music,
     screen: AudioFile,
-  },
-  {
-    key: 'AudioPipelineStress',
-    title: 'Audio Pipeline Stress',
-    Icon: icons.Activity,
-    screen: AudioPipelineStress,
   },
   {
     key: 'PlaybackSpeed',
@@ -136,11 +128,5 @@ export const Examples: Example[] = [
     title: 'Reverb Effect',
     Icon: icons.AudioWaveform,
     screen: ConvolverIR,
-  },
-  {
-    key: 'AudioParamPipeline',
-    title: 'Audio Param',
-    Icon: icons.SquareStack,
-    screen: AudioParamPipeline,
   },
 ] as const;

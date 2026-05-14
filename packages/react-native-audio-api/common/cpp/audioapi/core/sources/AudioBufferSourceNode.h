@@ -4,6 +4,7 @@
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
+#include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <cstddef>
 #include <memory>
 
@@ -52,17 +53,12 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   bool isEmpty() const final;
 
-  void processWithoutInterpolation(
+  void runBufferProcessor(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
-      float playbackRate) final;
-
-  void processWithInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) final;
+      float playbackRate,
+      bool interpolate) final;
 
  private:
   // Looping related properties
@@ -79,6 +75,8 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   double getVirtualStartFrame(float sampleRate) const;
   double getVirtualEndFrame(float sampleRate);
+
+  std::unique_ptr<SingleBufferProcessor> processor_;
 };
 
 } // namespace audioapi

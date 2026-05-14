@@ -309,14 +309,14 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
   if (sourceValue.isString()) {
     options.filePath = sourceValue.asString(runtime).utf8(runtime);
     options.requiresFFmpeg =
-        AudioDecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
+        audiodecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
   } else if (sourceValue.isObject()) {
     auto sourceObj = sourceValue.asObject(runtime);
     if (sourceObj.isArrayBuffer(runtime)) {
       auto arrayBuffer = sourceObj.getArrayBuffer(runtime);
       auto *data = arrayBuffer.data(runtime);
       auto size = arrayBuffer.size(runtime);
-      auto format = AudioDecoder::detectAudioFormat(data, size);
+      auto format = audiodecoder::detectAudioFormat(data, size);
       options.requiresFFmpeg =
           format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
       options.data = std::vector<uint8_t>(data, data + size);

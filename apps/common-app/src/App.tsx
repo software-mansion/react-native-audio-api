@@ -17,7 +17,12 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Spacer } from './components';
 import Container from './components/Container';
 import { demos, DemoScreen } from './demos';
-import { Example, Examples, MainStackProps } from './examples';
+import {
+  Example,
+  Examples,
+  MainStackProps,
+} from './examples';
+import { otherScreens } from './other';
 import { colors, layout } from './styles';
 
 const Stack = createStackNavigator();
@@ -86,7 +91,33 @@ const DemoAppsScreen: FC = () => {
 };
 
 const OtherScreen: FC = () => {
-  return <Container headless />;
+  const navigation = useNavigation<MainStackProps>();
+
+  const renderItem: ListRenderItem<Example> = ({
+    item: { Icon, key, title },
+  }) => (
+    <Pressable
+      key={key}
+      style={styles.buttonSmall}
+      onPress={() => navigation.navigate(key)}
+    >
+      <Icon color={colors.white} size={18} />
+      <Text style={styles.titleSmall}>{title}</Text>
+    </Pressable>
+  );
+
+  return (
+    <Container headless>
+      <FlatList
+        data={otherScreens}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.key}
+        contentContainerStyle={styles.scrollView}
+        ItemSeparatorComponent={ItemSeparatorComponentSmall}
+        numColumns={2}
+      />
+    </Container>
+  );
 };
 
 const MainTabs = createBottomTabNavigator<MainStackProps>();
@@ -170,7 +201,7 @@ const App: FC = () => {
             component={MainTabsScreen}
             options={{ headerShown: false }}
           />
-          {Examples.map((item) => (
+          {[...Examples, ...otherScreens].map((item) => (
             <Stack.Screen
               key={item.key}
               name={item.key}

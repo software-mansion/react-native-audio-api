@@ -1,0 +1,76 @@
+---
+sidebar_position: 6
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Disabling prebuilt libraries
+
+`react-native-audio-api` ships with a number of prebuilt third-party libraries that are downloaded at install time and linked into the final binary. They enable a range of decoding/encoding and streaming features, but also add several megabytes to the resulting application binary. If you don't need those features (for example you only play short PCM/WAV assets, or you want to avoid symbol clashes with another library in your project), you can disable them with build flags to noticeably reduce your app's install size and download size.
+
+:::tip Reducing app size
+Disabling both flags below can shave several MB off the final app size across all ABIs / device slices. Pick the set of formats you actually need and turn the rest off.
+:::
+
+The available flags are independent and can be combined:
+
+| Flag | What it removes | What stops working |
+| :--- | :--- | :--- |
+| `disableFFmpeg` | FFmpeg shared libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | [`StreamerNode`](/docs/sources/streamer-node), decoding `aac`, `mp4`, `m4a` |
+| `disableStaticExternalLibs` | Static libs: `libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile` | Decoding `ogg`, `opus`, `oga` files |
+
+:::info
+Both options are disabled (i.e. libraries are enabled) by default.
+:::
+
+## Disabling FFmpeg
+
+<Tabs queryString="platform">
+  <TabItem value="expo" label="Expo" default>
+    Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional).
+
+    ```
+    "disableFFmpeg": true
+    ```
+  </TabItem>
+  <TabItem value="iOS" label="iOS">
+    Podfile
+    ```
+    ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android">
+    gradle.properties
+    ```
+    disableAudioapiFFmpeg=true
+    ```
+  </TabItem>
+</Tabs>
+
+
+## Disabling other external libraries
+
+This removes the bundled Opus / Ogg / Vorbis static libraries. With this flag enabled, attempts to decode `.ogg`, `.opus`, or `.oga` files through `AudioContext.decodeAudioData` (or any other decoding path) will return an error — those formats are handled inside miniaudio via the now-disabled custom backends.
+
+<Tabs queryString="platform">
+  <TabItem value="expo" label="Expo" default>
+    Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional).
+
+    ```
+    "disableStaticExternalLibs": true
+    ```
+  </TabItem>
+  <TabItem value="iOS" label="iOS">
+    Podfile
+    ```
+    ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] = '1'
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android">
+    gradle.properties
+    ```
+    disableAudioapiStaticExternalLibs=true
+    ```
+  </TabItem>
+</Tabs>

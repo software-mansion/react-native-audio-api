@@ -325,7 +325,6 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
       "fabric-example-tests",
       "ios-recorder-test",
       2,
-      1,
       0,
       AudioFileProperties::Format::WAV,
       44100,
@@ -588,6 +587,22 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   XCTAssertTrue(_recorder->connectionEnabledIntent());
   XCTAssertFalse(_recorder->connectionConfigured());
   XCTAssertFalse(_recorder->isConnected());
+}
+
+- (void)testRestartAfterStopReusesConfiguredCallback
+{
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.nativeRecorder.mockResolvedInputFormat = [self validMultichannelFormat];
+
+  XCTAssertTrue(_recorder->setOnAudioReadyCallback(48000, 256, 1, 99).is_ok());
+  XCTAssertTrue(_recorder->start("").is_ok());
+  XCTAssertTrue(_recorder->stop().is_ok());
+
+  auto restartResult = _recorder->start("");
+
+  XCTAssertTrue(restartResult.is_ok());
+  XCTAssertTrue(_recorder->callbackOutputEnabledIntent());
+  XCTAssertTrue(_recorder->callbackOutputConfigured());
 }
 
 - (void)testFileOutputSmokeTest

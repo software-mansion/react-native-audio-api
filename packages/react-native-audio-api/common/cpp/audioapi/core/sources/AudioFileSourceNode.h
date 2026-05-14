@@ -81,7 +81,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<AudioFileDecoderState> &state);
 
   std::shared_ptr<AudioFileDecoderState> decoderState_;
-  std::unique_ptr<decoding::IIncrementalAudioDecoder> decoder_;
+  std::unique_ptr<decoding::IncrementalAudioDecoder> decoder_;
   float volume_;
   bool requiresFFmpeg_;
   bool filePaused_{false};

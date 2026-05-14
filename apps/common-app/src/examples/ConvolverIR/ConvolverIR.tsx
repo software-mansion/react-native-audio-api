@@ -72,7 +72,7 @@ const ConvolverIR: FC = () => {
       return;
     }
     bufferSourceRef.current?.stop(0);
-    await AudioManager.setAudioSessionActivity(false);
+    // await AudioManager.setAudioSessionActivity(false);
     setIsPlaying(false);
   }, []);
 

@@ -13,6 +13,14 @@
 
 @end
 
+// Bit positions from AVAudioSessionTypes.h. Using masks instead of enum case names avoids build breaks when
+// earlier sdks shipped with Xcode do not see certain options
+// todo: remove when most common eas xcode images will be shipped with needed xcode versions
+// https://docs.expo.dev/build-reference/infrastructure/#ios-server-images
+static const AVAudioSessionCategoryOptions
+    RNAudioSessionCategoryOptionBluetoothHighQualityRecordingMask = 1 << 19;
+static const AVAudioSessionCategoryOptions RNAudioSessionCategoryOptionFarFieldInputMask = 1 << 18;
+
 @implementation AudioSessionManager
 
 static AudioSessionManager *_sharedInstance = nil;
@@ -451,7 +459,8 @@ static AudioSessionManager *_sharedInstance = nil;
     mode = AVAudioSessionModeDefault;
   } else if ([modeSTR isEqualToString:@"dualRoute"]) {
     if (@available(iOS 26.2, *)) {
-      mode = AVAudioSessionModeDualRoute;
+      // under the hood, its only string, refer to lines at the top of the file for more info
+      mode = (AVAudioSessionMode) @"AVAudioSessionModeDualRoute";
     } else {
       mode = AVAudioSessionModeDefault;
     }
@@ -462,8 +471,9 @@ static AudioSessionManager *_sharedInstance = nil;
   } else if ([modeSTR isEqualToString:@"moviePlayback"]) {
     mode = AVAudioSessionModeMoviePlayback;
   } else if ([modeSTR isEqualToString:@"shortFormVideo"]) {
-    if (@available(iOS 26, *)) {
-      mode = AVAudioSessionModeShortFormVideo;
+    if (@available(iOS 26.0, *)) {
+      // under the hood, its only string, refer to lines at the top of the file for more info
+      mode = (AVAudioSessionMode) @"AVAudioSessionModeShortFormVideo";
     } else {
       mode = AVAudioSessionModeDefault;
     }
@@ -503,8 +513,9 @@ static AudioSessionManager *_sharedInstance = nil;
     }
 
     if ([option isEqualToString:@"bluetoothHighQualityRecording"]) {
-      if (@available(iOS 26, *)) {
-        options |= AVAudioSessionCategoryOptionBluetoothHighQualityRecording;
+      if (@available(iOS 26.0, *)) {
+        // not available in the european union
+        options |= RNAudioSessionCategoryOptionBluetoothHighQualityRecordingMask;
       }
       continue;
     }
@@ -521,9 +532,9 @@ static AudioSessionManager *_sharedInstance = nil;
 
     if ([option isEqualToString:@"farFieldInput"]) {
       if (@available(iOS 26.2, *)) {
-        options |= AVAudioSessionCategoryOptionFarFieldInput;
-        continue;
+        options |= RNAudioSessionCategoryOptionFarFieldInputMask;
       }
+      continue;
     }
 
     if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {

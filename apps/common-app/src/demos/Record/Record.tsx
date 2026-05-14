@@ -2,6 +2,8 @@ import React, { FC, useCallback, useEffect, useState } from 'react';
 import {
   AudioBuffer,
   AudioManager,
+  concatAudioFiles,
+  FileFormat,
   RecordingNotificationManager,
 } from 'react-native-audio-api';
 
@@ -123,8 +125,12 @@ const Record: FC = () => {
       return;
     }
 
-    const audioBuffer = await audioContext.decodeAudioData(info.paths[0]);
+    const outputPath = info.paths[0].replace(/[^/]+$/, 'recording.m4a');
+
+    const finalPath = await concatAudioFiles(info.paths, outputPath);
+    const audioBuffer = await audioContext.decodeAudioData(finalPath);
     setRecordedBuffer(audioBuffer);
+
     setState(RecordingState.ReadyToPlay);
     currentPositionSV.value = 0;
   }, []);
@@ -240,7 +246,7 @@ const Record: FC = () => {
   }, [onPauseRecording, onResumeRecording]);
 
   useEffect(() => {
-    Recorder.enableFileOutput({ rotateIntervalBytes: 1_000_000 });
+    Recorder.enableFileOutput({ rotateIntervalBytes: 1_000_000, format: FileFormat.M4A });
 
     return () => {
       Recorder.disableFileOutput();

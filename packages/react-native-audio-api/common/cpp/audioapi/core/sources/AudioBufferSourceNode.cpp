@@ -9,7 +9,9 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <utility>
 
@@ -23,11 +25,13 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
+  processor_ = std::make_unique<SingleBufferProcessor>();
   isInitialized_.store(true, std::memory_order_release);
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
   loop_ = loop;
+  processor_->setLoop(loop_);
 }
 
 void AudioBufferSourceNode::setLoopSkip(bool loopSkip) {
@@ -67,6 +71,7 @@ void AudioBufferSourceNode::setBuffer(
     channelCount_ = 1;
 
     buffer_ = nullptr;
+    processor_->setBuffer(nullptr);
     return;
   }
 
@@ -74,6 +79,7 @@ void AudioBufferSourceNode::setBuffer(
   audioBuffer_ = audioBuffer;
   channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
   loopEnd_ = buffer_->getDuration();
+  processor_->setBuffer(buffer_);
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
@@ -127,129 +133,38 @@ bool AudioBufferSourceNode::isEmpty() const {
   return buffer_ == nullptr;
 }
 
-// todo: refactor so its less complex and more readable
-void AudioBufferSourceNode::processWithoutInterpolation(
+void AudioBufferSourceNode::runBufferProcessor(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
     size_t offsetLength,
-    float playbackRate) {
-  size_t direction = playbackRate < 0.0f ? -1 : 1;
-
-  auto readIndex = static_cast<size_t>(vReadIndex_);
-  size_t writeIndex = startOffset;
-
-  auto frameStart = static_cast<size_t>(getVirtualStartFrame(getContextSampleRate()));
-  auto frameEnd = static_cast<size_t>(getVirtualEndFrame(getContextSampleRate()));
-  size_t frameDelta = frameEnd - frameStart;
-
-  size_t framesLeft = offsetLength;
-
-  // if we are moving towards loop, we do nothing because we will achieve it
-  // otherwise, we wrap to the start of the loop if necessary
-  if (loop_ &&
-      ((readIndex >= frameEnd && direction == 1) || (readIndex < frameStart && direction == -1))) {
-    readIndex = frameStart +
-        (static_cast<int64_t>(readIndex) - static_cast<int64_t>(frameStart)) % frameDelta;
+    float playbackRate,
+    bool interpolate) {
+  if (!processingBuffer) {
+    return;
   }
 
-  while (framesLeft > 0) {
-    size_t framesToEnd = frameEnd - readIndex;
-    size_t framesToCopy = std::min(framesToEnd, framesLeft);
-    framesToCopy = framesToCopy > 0 ? framesToCopy : 0;
+  const float sampleRate = getContextSampleRate();
+  const double startFrame = getVirtualStartFrame(sampleRate);
+  const double endFrame = getVirtualEndFrame(sampleRate);
 
-    assert(readIndex >= 0);
-    assert(writeIndex >= 0);
-    assert(readIndex + framesToCopy <= buffer_->getSize());
-    assert(writeIndex + framesToCopy <= processingBuffer->getSize());
-
-    // Direction is forward, we can normally copy the data
-    if (direction == 1) {
-      processingBuffer->copy(*buffer_, readIndex, writeIndex, framesToCopy);
-    } else {
-      for (size_t ch = 0; ch < processingBuffer->getNumberOfChannels(); ch += 1) {
-        processingBuffer->getChannel(ch)->copyReverse(
-            *buffer_->getChannel(ch), readIndex, writeIndex, framesToCopy);
-      }
-    }
-
-    writeIndex += framesToCopy;
-    readIndex += framesToCopy * direction;
-    framesLeft -= framesToCopy;
-
-    // if we are moving towards loop, we do nothing because we will achieve it
-    // otherwise, we wrap to the start of the loop if necessary
-    if ((readIndex >= frameEnd && direction == 1) || (readIndex < frameStart && direction == -1)) {
-      readIndex -= direction * frameDelta;
-
-      if (!loop_) {
-        processingBuffer->zero(writeIndex, framesLeft);
-        playbackState_ = PlaybackState::STOP_SCHEDULED;
-        break;
-      }
-
-      sendOnLoopEndedEvent();
-    }
+  // start(when, offset=duration) sets vReadIndex_ to endFrame, so clamp it
+  if (playbackRate < 0 && vReadIndex_ >= endFrame && endFrame > startFrame) {
+    vReadIndex_ = endFrame - 1.0;
   }
 
-  // update reading index for next render quantum
-  vReadIndex_ = static_cast<double>(readIndex);
-}
+  processor_->setPosition(vReadIndex_);
+  processor_->setEndFrame(static_cast<size_t>(endFrame));
+  processor_->setStartFrame(static_cast<size_t>(startFrame));
+  processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
 
-void AudioBufferSourceNode::processWithInterpolation(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    size_t startOffset,
-    size_t offsetLength,
-    float playbackRate) {
-  size_t direction = playbackRate < 0.0f ? -1 : 1;
-
-  size_t writeIndex = startOffset;
-
-  auto vFrameStart = getVirtualStartFrame(getContextSampleRate());
-  auto vFrameEnd = getVirtualEndFrame(getContextSampleRate());
-  auto vFrameDelta = vFrameEnd - vFrameStart;
-
-  auto frameStart = static_cast<size_t>(vFrameStart);
-  auto frameEnd = static_cast<size_t>(vFrameEnd);
-
-  size_t framesLeft = offsetLength;
-
-  // Wrap to the start of the loop if necessary
-  if (loop_ && (vReadIndex_ >= vFrameEnd || vReadIndex_ < vFrameStart)) {
-    vReadIndex_ = vFrameStart + std::fmod(vReadIndex_ - vFrameStart, vFrameDelta);
+  if (processor_->atBoundary()) {
+    if (processor_->shouldStop()) {
+      playbackState_ = PlaybackState::STOP_SCHEDULED;
+    }
+    sendOnLoopEndedEvent();
   }
 
-  while (framesLeft > 0) {
-    auto readIndex = static_cast<size_t>(vReadIndex_);
-    size_t nextReadIndex = readIndex + 1;
-    auto factor = static_cast<float>(vReadIndex_ - static_cast<double>(readIndex));
-
-    if (nextReadIndex >= frameEnd) {
-      nextReadIndex = loop_ ? frameStart : readIndex;
-    }
-
-    for (size_t i = 0; i < processingBuffer->getNumberOfChannels(); i++) {
-      auto destination = processingBuffer->getChannel(i)->span();
-      const auto source = buffer_->getChannel(i)->span();
-
-      destination[writeIndex] = dsp::linearInterpolate(source, readIndex, nextReadIndex, factor);
-    }
-
-    writeIndex += 1;
-    vReadIndex_ += playbackRate * static_cast<double>(direction);
-    framesLeft -= 1;
-
-    if (vReadIndex_ < vFrameStart || vReadIndex_ >= vFrameEnd) {
-      vReadIndex_ -= static_cast<double>(direction) * vFrameDelta;
-
-      if (!loop_) {
-        processingBuffer->zero(writeIndex, framesLeft);
-        playbackState_ = PlaybackState::STOP_SCHEDULED;
-        break;
-      }
-
-      sendOnLoopEndedEvent();
-    }
-  }
+  vReadIndex_ = processor_->getPosition();
 }
 
 double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) const {

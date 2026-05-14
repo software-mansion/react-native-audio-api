@@ -12,6 +12,7 @@
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
@@ -41,11 +42,10 @@ inline constexpr auto CHANNEL_CAPACITY = 32;
 
 struct StreamingData {
   audioapi::AudioBuffer buffer;
-  size_t size;
+  size_t size{};
   StreamingData() = default;
-  StreamingData(audioapi::AudioBuffer b, size_t s) : buffer(b), size(s) {}
-  StreamingData(const StreamingData &data) : buffer(data.buffer), size(data.size) {}
-  StreamingData(StreamingData &&data) noexcept : buffer(std::move(data.buffer)), size(data.size) {}
+  StreamingData(audioapi::AudioBuffer b, size_t s) : buffer(std::move(b)), size(s) {}
+  StreamingData(const StreamingData &data) = default;
   StreamingData &operator=(const StreamingData &data) {
     if (this == &data) {
       return *this;
@@ -54,6 +54,17 @@ struct StreamingData {
     size = data.size;
     return *this;
   }
+
+  StreamingData(StreamingData &&data) noexcept : buffer(std::move(data.buffer)), size(data.size) {}
+  StreamingData &operator=(StreamingData &&data) noexcept {
+    if (this == &data) {
+      return *this;
+    }
+    buffer = std::move(data.buffer);
+    size = data.size;
+    return *this;
+  }
+  ~StreamingData() = default;
 };
 
 namespace audioapi {
@@ -66,6 +77,7 @@ class StreamerNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const StreamerOptions &options);
   ~StreamerNode() override;
+  DELETE_COPY_AND_MOVE(StreamerNode);
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(
