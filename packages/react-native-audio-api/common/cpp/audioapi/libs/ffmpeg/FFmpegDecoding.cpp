@@ -79,10 +79,8 @@ int findAudioStreamIndex(AVFormatContext *fmt_ctx) {
   return -1;
 }
 
-decoding::DecoderResult openCodec(
-    AVFormatContext *fmt_ctx,
-    int &audio_stream_index,
-    AVCodecContext **out_codec) {
+decoding::DecoderResult
+openCodec(AVFormatContext *fmt_ctx, int &audio_stream_index, AVCodecContext **out_codec) {
   audio_stream_index = findAudioStreamIndex(fmt_ctx);
   if (audio_stream_index < 0) {
     return Err("FFmpegDecoder::openCodec failed: no audio stream found");
@@ -106,7 +104,8 @@ decoding::DecoderResult openCodec(
   const int openResult = avcodec_open2(ctx, codec, nullptr);
   if (openResult < 0) {
     avcodec_free_context(&ctx);
-    return Err("FFmpegDecoder::openCodec failed: avcodec_open2 failed: " + parseFFmpegError(openResult));
+    return Err(
+        "FFmpegDecoder::openCodec failed: avcodec_open2 failed: " + parseFFmpegError(openResult));
   }
   *out_codec = ctx;
   return Ok(None);
@@ -214,8 +213,7 @@ decoding::DecoderResult FFmpegDecoder::openFile(int outputSampleRate, const std:
     return codecResult;
   }
   output_channels_ = codec_ctx_->ch_layout.nb_channels;
-  output_sample_rate_ =
-      (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
+  output_sample_rate_ = (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
 
   packet_ = av_packet_alloc();
   frame_ = av_frame_alloc();
@@ -236,10 +234,8 @@ decoding::DecoderResult FFmpegDecoder::openFile(int outputSampleRate, const std:
   return Ok(None);
 }
 
-decoding::DecoderResult FFmpegDecoder::openMemory(
-    int outputSampleRate,
-    const void *data,
-    size_t size) {
+decoding::DecoderResult
+FFmpegDecoder::openMemory(int outputSampleRate, const void *data, size_t size) {
   close();
   if (data == nullptr || size == 0) {
     return Err("FFmpegDecoder::openMemory failed: input data is empty");
@@ -249,20 +245,19 @@ decoding::DecoderResult FFmpegDecoder::openMemory(
   mem_io_->size = size;
   mem_io_->pos = 0;
 
-  auto* io_buf =
-      static_cast<uint8_t *>(av_malloc(decoding::IncrementalAudioDecoder::CHUNK_SIZE));
+  auto *io_buf = static_cast<uint8_t *>(av_malloc(decoding::IncrementalAudioDecoder::CHUNK_SIZE));
   if (io_buf == nullptr) {
     close();
     return Err("FFmpegDecoder::openMemory failed: av_malloc returned null");
   }
   avio_ctx_ = avio_alloc_context(
-    io_buf,
-    static_cast<int>(decoding::IncrementalAudioDecoder::CHUNK_SIZE),
-    0,
-    mem_io_.get(),
-    read_packet,
-    nullptr,
-    seek_packet);
+      io_buf,
+      static_cast<int>(decoding::IncrementalAudioDecoder::CHUNK_SIZE),
+      0,
+      mem_io_.get(),
+      read_packet,
+      nullptr,
+      seek_packet);
   if (avio_ctx_ == nullptr) {
     av_free(io_buf);
     mem_io_.reset();
@@ -296,8 +291,7 @@ decoding::DecoderResult FFmpegDecoder::openMemory(
     return codecResult;
   }
   output_channels_ = codec_ctx_->ch_layout.nb_channels;
-  output_sample_rate_ =
-      (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
+  output_sample_rate_ = (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
 
   packet_ = av_packet_alloc();
   frame_ = av_frame_alloc();
@@ -388,8 +382,7 @@ decoding::DecoderResult FFmpegDecoder::feedPipeline() {
     av_packet_unref(packet_);
     if (r < 0) {
       return Err(
-          "FFmpegDecoder::feedPipeline failed: avcodec_send_packet failed: " +
-          parseFFmpegError(r));
+          "FFmpegDecoder::feedPipeline failed: avcodec_send_packet failed: " + parseFFmpegError(r));
     }
   }
 }
@@ -403,7 +396,9 @@ float FFmpegDecoder::getDurationInSeconds() const {
     return 0;
   }
 
-  auto validSeconds = [](double s) -> bool { return s > 0 && std::isfinite(s); };
+  auto validSeconds = [](double s) -> bool {
+    return s > 0 && std::isfinite(s);
+  };
 
   // Prefer per-stream duration (e.g. MP4 mdhd) — often exact vs container-level
   // guesses that trigger AAC “bitrate duration” warnings.
@@ -457,8 +452,8 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double seconds) {
   avcodec_flush_buffers(codec_ctx_);
   leftover_.clear();
   leftover_offset_ = 0;
-  total_output_frames_ = static_cast<size_t>(
-      std::llround(seconds * static_cast<double>(output_sample_rate_)));
+  total_output_frames_ =
+      static_cast<size_t>(std::llround(seconds * static_cast<double>(output_sample_rate_)));
   return Ok(None);
 }
 
@@ -471,9 +466,8 @@ size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
 
   while (delivered < frameCount) {
     size_t need = frameCount - delivered;
-    size_t available_samples = leftover_.size() > leftover_offset_
-        ? leftover_.size() - leftover_offset_
-        : 0;
+    size_t available_samples =
+        leftover_.size() > leftover_offset_ ? leftover_.size() - leftover_offset_ : 0;
     size_t leftover_frames = available_samples / ch;
     if (leftover_frames > 0) {
       size_t take = std::min(need, leftover_frames);
@@ -496,10 +490,8 @@ size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   return delivered;
 }
 
-static std::shared_ptr<AudioBuffer> buildAudioBufferFromInterleaved(
-    std::vector<float> &interleaved,
-    int channels,
-    int sample_rate) {
+static std::shared_ptr<AudioBuffer>
+buildAudioBufferFromInterleaved(std::vector<float> &interleaved, int channels, int sample_rate) {
   if (interleaved.empty() || channels <= 0) {
     return nullptr;
   }

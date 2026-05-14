@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/Locker.h>
@@ -28,10 +26,9 @@ extern "C" {
 #include <string>
 #include <utility>
 
-// TODO: change names, prob move to constants.h (?)
-inline constexpr auto STREAMER_NODE_SPSC_OVERFLOW_STRATEGY =
+inline constexpr auto HLS_DECODER_SPSC_OVERFLOW_STRATEGY =
     audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
-inline constexpr auto STREAMER_NODE_SPSC_WAIT_STRATEGY =
+inline constexpr auto HLS_DECODER_SPSC_WAIT_STRATEGY =
     audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
 
 inline constexpr auto VERBOSE = false;
@@ -59,84 +56,8 @@ struct StreamingData {
 };
 
 namespace audioapi {
-
-class HLSDecoder : public decoding::IIncrementalAudioDecoder {
-  /// @brief Opens a file for decoding.
-  /// @param outputSampleRate The output sample rate.
-  /// @param path The path to the file.
-  /// @return True if the file was opened successfully, false otherwise.
-  [[nodiscard]] bool openFile(int outputSampleRate, const std::string &path) override;
-
-  /// @brief Opens a memory block for decoding.
-  /// @param outputSampleRate The output sample rate.
-  /// @param data The data to decode.
-  /// @param size The size of the data.
-  /// @return True if the memory block was opened successfully, false otherwise.
-  [[nodiscard]] bool openMemory(int outputSampleRate, const void *data, size_t size) override;
-
-  /// @brief Reads PCM frames from the decoder.
-  /// @param outInterleaved The output buffer for the decoded frames.
-  /// @param frameCount The number of frames to read.
-  /// @return The number of frames read.
-  [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
-
-  /// @brief Closes the decoder.
-  void close() override;
-
-  /// @brief Checks if the decoder is open.
-  /// @return True if the decoder is open, false otherwise.
-  [[nodiscard]] bool isOpen() const override;
-
-  /// @brief Gets the number of output channels.
-  /// @return The number of output channels.
-  [[nodiscard]] int outputChannels() const override;
-
-  /// @brief Gets the output sample rate.
-  /// @return The output sample rate.
-  [[nodiscard]] int outputSampleRate() const override;
-
-  /// @brief Gets the duration of the audio in seconds.
-  /// @return The duration of the audio in seconds.
-  [[nodiscard]] float getDurationInSeconds() const override;
-
-  /// @brief Gets the current position of the audio in seconds.
-  /// @return The current position of the audio in seconds.
-  [[nodiscard]] float getCurrentPositionInSeconds() const override;
-
-  /// @brief Seeks to a specific time in the audio.
-  /// @param seconds The time to seek to in seconds.
-  /// @return True if the seek was successful, false otherwise.
-  [[nodiscard]] bool seekToTime(double seconds) override;
-
+class HLSDecoder {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-  AVFormatContext *fmtCtx_;
-  AVCodecContext *codecCtx_;
-  const AVCodec *decoder_;
-  AVCodecParameters *codecpar_;
-  AVPacket *pkt_;
-  AVFrame *frame_; // Frame that is currently being processed
-  SwrContext *swrCtx_;
-
-  // --resampling--
-  AudioBuffer resamplerInputBuffer_;
-  AudioBuffer resamplerOutputBuffer_;
-  StreamingData bufferedAudioData_; // audio data for buffering hls frames
-  bool hasBufferedAudioData_;
-  int audio_stream_index_; // index of the audio stream channel in the input
-  int maxResampledSamples_;
-  size_t processedSamples_;
-
-  std::thread streamingThread_;
-  std::atomic<bool> isNodeFinished_;                         // Flag to control the streaming thread
-  static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
-  channels::spsc::
-      Sender<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY>
-          sender_;
-  channels::spsc::Receiver<
-      StreamingData,
-      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
-      STREAMER_NODE_SPSC_WAIT_STRATEGY>
-      receiver_;
 
   /// @brief Initialize the StreamerNode by opening the input stream,
   /// finding the audio stream, setting up the decoder, and starting the streaming thread.
@@ -188,6 +109,36 @@ class HLSDecoder : public decoding::IIncrementalAudioDecoder {
    * @return true if successful, false otherwise
    */
   bool setupDecoder();
+
+  //
+  AVFormatContext *fmtCtx_;
+  AVCodecContext *codecCtx_;
+  const AVCodec *decoder_;
+  AVCodecParameters *codecpar_;
+  AVPacket *pkt_;
+  AVFrame *frame_; // Frame that is currently being processed
+  SwrContext *swrCtx_;
+
+  // --resampling--
+  AudioBuffer resamplerInputBuffer_;
+  AudioBuffer resamplerOutputBuffer_;
+  StreamingData bufferedAudioData_; // audio data for buffering hls frames
+  bool hasBufferedAudioData_;
+  int audio_stream_index_; // index of the audio stream channel in the input
+  int maxResampledSamples_;
+  size_t processedSamples_;
+
+  std::thread streamingThread_;
+  std::atomic<bool> isNodeFinished_; // Flag to control the streaming thread
+
+  // spsc
+  static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
+  channels::spsc::
+      Sender<StreamingData, HLS_DECODER_SPSC_OVERFLOW_STRATEGY, HLS_DECODER_SPSC_WAIT_STRATEGY>
+          sender_;
+  channels::spsc::
+      Receiver<StreamingData, HLS_DECODER_SPSC_OVERFLOW_STRATEGY, HLS_DECODER_SPSC_WAIT_STRATEGY>
+          receiver_;
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 };
 } // namespace audioapi

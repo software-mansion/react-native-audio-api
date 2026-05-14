@@ -48,14 +48,11 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   FFmpegDecoder &operator=(FFmpegDecoder &&other) = delete;
   ~FFmpegDecoder() override;
 
-  [[nodiscard]] decoding::DecoderResult openFile(
-      int outputSampleRate,
-      const std::string &path) override;
+  [[nodiscard]] decoding::DecoderResult openFile(int outputSampleRate, const std::string &path)
+      override;
 
-  [[nodiscard]] decoding::DecoderResult openMemory(
-      int outputSampleRate,
-      const void *data,
-      size_t size) override;
+  [[nodiscard]] decoding::DecoderResult
+  openMemory(int outputSampleRate, const void *data, size_t size) override;
 
   [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
 
@@ -64,8 +61,12 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   [[nodiscard]] bool isOpen() const override {
     return fmt_ctx_ != nullptr && codec_ctx_ != nullptr;
   }
-  [[nodiscard]] int outputChannels() const override { return output_channels_; }
-  [[nodiscard]] int outputSampleRate() const override { return output_sample_rate_; }
+  [[nodiscard]] int outputChannels() const override {
+    return output_channels_;
+  }
+  [[nodiscard]] int outputSampleRate() const override {
+    return output_sample_rate_;
+  }
 
   [[nodiscard]] float getDurationInSeconds() const override;
 
