@@ -110,6 +110,9 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
+  createMediaElementSource: (
+    mediaElement: IAudioFileSourceNode
+  ) => IMediaElementAudioSourceNode;
   close(): Promise<void>;
   resume(): Promise<boolean>;
   suspend(): Promise<boolean>;
@@ -243,6 +246,8 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onPositionChanged: string;
 }
+
+export interface IMediaElementAudioSourceNode extends IAudioNode {}
 
 export interface IConvolverNode extends IAudioNode {
   readonly buffer: IAudioBuffer | null;

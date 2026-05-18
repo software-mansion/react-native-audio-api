@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <memory>
 
 namespace audioapi {
@@ -29,6 +30,10 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_HOST_FUNCTION_DECL(pause);
   JSI_HOST_FUNCTION_DECL(seekToStart);
   JSI_HOST_FUNCTION_DECL(seekToTime);
+
+  [[nodiscard]] std::shared_ptr<AudioFileSourceNode> getAudioFileSourceNode() const {
+    return std::static_pointer_cast<AudioFileSourceNode>(node_);
+  }
 
  private:
   uint64_t onPositionChangedCallbackId_ = 0;

@@ -19,6 +19,7 @@ using namespace audioapi::channels;
 namespace audioapi {
 
 struct AudioFileSourceOptions;
+class MediaElementAudioSourceNode;
 
 struct OffloadedSeekRequest {
   double seconds = 0;
@@ -35,6 +36,8 @@ struct AudioFileDecoderState {
 };
 
 class AudioFileSourceNode : public AudioScheduledSourceNode {
+  friend class MediaElementAudioSourceNode;
+
  public:
   explicit AudioFileSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
@@ -43,7 +46,23 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   void disable() override;
 
+  void connect(const std::shared_ptr<AudioNode> &node) override;
+  void disconnect() override;
+  void disconnect(const std::shared_ptr<AudioNode> &node) override;
+
   void start(double when) override;
+
+  /// Detaches from the graph output path and feeds only via MediaElementAudioSourceNode.
+  void routeThroughMediaElement();
+
+  [[nodiscard]] bool isRoutedThroughMediaElement() const {
+    return routedThroughMediaElement_;
+  }
+
+  /// @returns false if this file source is already bound to a media element source.
+  bool tryBindMediaElementSource(const std::shared_ptr<MediaElementAudioSourceNode> &mediaElement);
+
+  void onMediaElementSourceReleased();
 
   void setVolume(float v) {
     volume_ = v;
@@ -69,12 +88,20 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   void seekToTime(double seconds);
 
+  bool filePaused() const {
+    return filePaused_;
+  }
+
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess) override;
 
  private:
+  std::shared_ptr<DSPAudioBuffer> processDecodedOutput(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess);
+
   void initDecoders(
       bool useFilePath,
       const std::shared_ptr<BaseAudioContext> &context,
@@ -86,6 +113,9 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   bool requiresFFmpeg_;
   bool filePaused_{false};
   bool loop_{false};
+  bool routedThroughMediaElement_{false};
+  bool connectedToDestination_{false};
+  std::weak_ptr<MediaElementAudioSourceNode> mediaElementSource_;
   double duration_{0};
   std::atomic<double> currentTime_{0};
   double sampleRate_{0};

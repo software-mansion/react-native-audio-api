@@ -23,6 +23,7 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 
 #include <memory>
@@ -254,7 +255,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
-  auto makeFileSourceHostObject = [&](AudioFileSourceOptions opts) -> jsi::Value {
+  auto makeFileSourceHostObject = [&](const AudioFileSourceOptions &opts) -> jsi::Value {
 #if RN_AUDIO_API_FFMPEG_DISABLED
     if (opts.requiresFFmpeg) {
       return jsi::Value::undefined();

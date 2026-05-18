@@ -30,6 +30,7 @@ class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
 class AudioFileSourceNode;
+class MediaElementAudioSourceNode;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
 class ConvolverNode;
@@ -50,6 +51,7 @@ struct OscillatorOptions;
 struct BaseAudioBufferSourceOptions;
 struct AudioBufferSourceOptions;
 struct AudioFileSourceOptions;
+struct MediaElementAudioSourceOptions;
 struct StreamerOptions;
 struct DelayOptions;
 struct IIRFilterOptions;
@@ -100,6 +102,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       const AudioBufferSourceOptions &options);
 #if !RN_AUDIO_API_TEST
   std::shared_ptr<AudioFileSourceNode> createFileSource(const AudioFileSourceOptions &options);
+  std::shared_ptr<MediaElementAudioSourceNode> createMediaElementSource(
+      const std::shared_ptr<AudioFileSourceNode> &fileSource);
 #endif // RN_AUDIO_API_TEST
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       const BaseAudioBufferSourceOptions &options);
@@ -148,7 +152,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
-
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
 

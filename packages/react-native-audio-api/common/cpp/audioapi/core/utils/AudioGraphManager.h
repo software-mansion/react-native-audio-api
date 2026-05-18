@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <audioapi/core/utils/AudioDestructor.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -14,6 +15,7 @@ namespace audioapi {
 class AudioNode;
 class AudioScheduledSourceNode;
 class AudioParam;
+class MediaElementAudioSourceNode;
 
 #define AUDIO_GRAPH_MANAGER_SPSC_OPTIONS \
   std::unique_ptr<Event>, channels::spsc::OverflowStrategy::WAIT_ON_FULL, \
@@ -28,7 +30,14 @@ class AudioGraphManager {
  public:
   enum class ConnectionType : uint8_t { CONNECT, DISCONNECT, DISCONNECT_ALL, ADD };
   using EventType = ConnectionType; // for backwards compatibility
-  enum class EventPayloadType : uint8_t { NODES, PARAMS, SOURCE_NODE, AUDIO_PARAM, NODE };
+  enum class EventPayloadType : uint8_t {
+    NODES,
+    PARAMS,
+    SOURCE_NODE,
+    MEDIA_ELEMENT_SOURCE_NODE,
+    AUDIO_PARAM,
+    NODE
+  };
   union EventPayload {
     struct {
       std::shared_ptr<AudioNode> from;
@@ -39,6 +48,7 @@ class AudioGraphManager {
       std::shared_ptr<AudioParam> to;
     } params;
     std::shared_ptr<AudioScheduledSourceNode> sourceNode;
+    std::shared_ptr<MediaElementAudioSourceNode> mediaElementSourceNode;
     std::shared_ptr<AudioParam> audioParam;
     std::shared_ptr<AudioNode> node;
 
@@ -95,6 +105,11 @@ class AudioGraphManager {
   /// @note Should be only used from JavaScript/HostObjects thread
   void addSourceNode(const std::shared_ptr<AudioScheduledSourceNode> &node);
 
+  /// @brief Adds a media element source node to the manager.
+  /// @param node The media element source node to add.
+  /// @note Should be only used from JavaScript/HostObjects thread
+  void addMediaElementSourceNode(const std::shared_ptr<MediaElementAudioSourceNode> &node);
+
   /// @brief Adds an audio parameter to the manager.
   /// @param param The audio parameter to add.
   /// @note Should be only used from JavaScript/HostObjects thread
@@ -119,6 +134,7 @@ class AudioGraphManager {
   static constexpr size_t kChannelCapacity = 1024;
 
   std::vector<std::shared_ptr<AudioScheduledSourceNode>> sourceNodes_;
+  std::vector<std::shared_ptr<MediaElementAudioSourceNode>> mediaElementAudioSourceNodes_;
   std::vector<std::shared_ptr<AudioNode>> processingNodes_;
   std::vector<std::shared_ptr<AudioParam>> audioParams_;
   std::vector<std::shared_ptr<AudioBuffer>> audioBuffers_;
@@ -147,6 +163,11 @@ class AudioGraphManager {
       return node.use_count() == 1 && (node->isUnscheduled() || node->isFinished());
     }
 
+    if constexpr (std::is_same_v<MediaElementAudioSourceNode, U>) {
+      return node.use_count() == 1 && node->getFileSourceNodeUseCount() == 2 &&
+          node->fileSourceNodePaused();
+    }
+
     if (node->requiresTailProcessing()) {
       // if the node requires tail processing, its own implementation handles disabling it at the right time
       return node.use_count() == 1 && !node->isEnabled();
@@ -163,54 +184,28 @@ class AudioGraphManager {
     if (vec.empty()) {
       return;
     }
-    /// An example of input-output
-    /// for simplicity we will be considering vector where each value represents
-    /// use_count() of an element vec = [1, 2, 1, 3, 1] our end result will be vec
-    /// = [2, 3, 1, 1, 1] After this operation all nodes with use_count() == 1
-    /// will be at the end and we will try to send them. After sending, we will
-    /// only keep audio objects with use_count() > 1 or which failed vec = [2, 3, failed,
-    /// sent, sent] failed will be always before sents vec = [2, 3, failed] and
-    /// we resize
-    /// @note if there are no nodes with use_count() == 1 `begin` will be equal to
-    /// vec.size()
-    /// @note if all audio objects have use_count() == 1 `begin` will be 0
+    // Compact in place: try to queue each destructible element; keep the rest.
+    size_t keepIndex = 0;
+    for (size_t i = 0; i < vec.size(); ++i) {
+      if (AudioGraphManager::canBeDestructed(vec[i])) {
+        if constexpr (HasCleanupMethod<T>) {
+          if (vec[i]) {
+            vec[i]->cleanup();
+          }
+        }
 
-    int begin = 0;
-    int end = vec.size() - 1; // can be -1 (edge case)
-
-    // Moves all audio objects with use_count() == 1 to the end
-    // nodes in range [begin, vec.size()) should be deleted
-    // so new size of the vector will be `begin`
-    while (begin <= end) {
-      while (begin < end && AudioGraphManager::canBeDestructed(vec[end])) {
-        end--;
-      }
-      if (AudioGraphManager::canBeDestructed(vec[begin])) {
-        std::swap(vec[begin], vec[end]);
-        end--;
-      }
-      begin++;
-    }
-
-    for (int i = begin; i < vec.size(); i++) {
-      if constexpr (HasCleanupMethod<T>) {
-        if (vec[i]) {
-          vec[i]->cleanup();
+        /// @note vec[i] does NOT get moved out if it is not successfully added.
+        if (audioDestructor.tryAddForDeconstruction(std::move(vec[i]))) {
+          continue;
         }
       }
 
-      /// If we fail to add we can't safely remove the node from the vector
-      /// so we swap it and advance begin cursor
-      /// @note vec[i] does NOT get moved out if it is not successfully added.
-      if (!audioDestructor.tryAddForDeconstruction(std::move(vec[i]))) {
-        std::swap(vec[i], vec[begin]);
-        begin++;
+      if (keepIndex != i) {
+        vec[keepIndex] = std::move(vec[i]);
       }
+      ++keepIndex;
     }
-    if (begin < vec.size()) {
-      // it does not reallocate if newer size is < current size
-      vec.resize(begin);
-    }
+    vec.resize(keepIndex);
   }
 };
 

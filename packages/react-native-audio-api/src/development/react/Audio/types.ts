@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import type BaseAudioContext from '../../../core/BaseAudioContext';
+import type { IAudioFileSourceNode } from '../../../interfaces';
 
 export interface AudioURISource {
   uri?: string | undefined;
@@ -30,6 +31,15 @@ export interface AudioTagHandle {
   seekToTime: (seconds: number) => void;
   setVolume: (volume: number) => void;
   setMuted: (muted: boolean) => void;
+}
+
+/**
+ * Internal handle surface used by MediaElementAudioSourceNode to obtain the
+ * underlying file source. Routing is applied in native
+ * createMediaElementSource. Not exported from the package public API.
+ */
+export interface InternalAudioTagHandle extends AudioTagHandle {
+  getMediaElementSourceNode: () => IAudioFileSourceNode | null;
 }
 
 interface AudioControlProps {
