@@ -163,54 +163,28 @@ class AudioGraphManager {
     if (vec.empty()) {
       return;
     }
-    /// An example of input-output
-    /// for simplicity we will be considering vector where each value represents
-    /// use_count() of an element vec = [1, 2, 1, 3, 1] our end result will be vec
-    /// = [2, 3, 1, 1, 1] After this operation all nodes with use_count() == 1
-    /// will be at the end and we will try to send them. After sending, we will
-    /// only keep audio objects with use_count() > 1 or which failed vec = [2, 3, failed,
-    /// sent, sent] failed will be always before sents vec = [2, 3, failed] and
-    /// we resize
-    /// @note if there are no nodes with use_count() == 1 `begin` will be equal to
-    /// vec.size()
-    /// @note if all audio objects have use_count() == 1 `begin` will be 0
+    // Compact in place: try to queue each destructible element; keep the rest.
+    size_t keepIndex = 0;
+    for (size_t i = 0; i < vec.size(); ++i) {
+      if (AudioGraphManager::canBeDestructed(vec[i])) {
+        if constexpr (HasCleanupMethod<T>) {
+          if (vec[i]) {
+            vec[i]->cleanup();
+          }
+        }
 
-    int begin = 0;
-    int end = vec.size() - 1; // can be -1 (edge case)
-
-    // Moves all audio objects with use_count() == 1 to the end
-    // nodes in range [begin, vec.size()) should be deleted
-    // so new size of the vector will be `begin`
-    while (begin <= end) {
-      while (begin < end && AudioGraphManager::canBeDestructed(vec[end])) {
-        end--;
-      }
-      if (AudioGraphManager::canBeDestructed(vec[begin])) {
-        std::swap(vec[begin], vec[end]);
-        end--;
-      }
-      begin++;
-    }
-
-    for (int i = begin; i < vec.size(); i++) {
-      if constexpr (HasCleanupMethod<T>) {
-        if (vec[i]) {
-          vec[i]->cleanup();
+        // vec[i] does NOT get moved out if it is not successfully added.
+        if (audioDestructor.tryAddForDeconstruction(std::move(vec[i]))) {
+          continue;
         }
       }
 
-      /// If we fail to add we can't safely remove the node from the vector
-      /// so we swap it and advance begin cursor
-      /// @note vec[i] does NOT get moved out if it is not successfully added.
-      if (!audioDestructor.tryAddForDeconstruction(std::move(vec[i]))) {
-        std::swap(vec[i], vec[begin]);
-        begin++;
+      if (keepIndex != i) {
+        vec[keepIndex] = std::move(vec[i]);
       }
+      ++keepIndex;
     }
-    if (begin < vec.size()) {
-      // it does not reallocate if newer size is < current size
-      vec.resize(begin);
-    }
+    vec.resize(keepIndex);
   }
 };
 
