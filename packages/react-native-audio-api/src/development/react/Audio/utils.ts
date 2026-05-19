@@ -17,13 +17,18 @@ export function withPropsDefaults(
   props: AudioProps,
   resolvedContext: BaseAudioContext | undefined
 ): AudioPropsBase {
+  const normalizedPreload =
+    (props.preload as string | undefined) === ''
+      ? 'auto'
+      : (props.preload ?? 'auto');
+
   return {
     ...props,
     autoPlay: props.autoPlay ?? false,
     controls: props.controls ?? false,
     loop: props.loop ?? false,
     muted: props.muted ?? false,
-    preload: props.preload ?? 'auto',
+    preload: normalizedPreload,
     source: props.source ?? [],
     playbackRate: props.playbackRate ?? 1.0,
     preservesPitch: props.preservesPitch ?? true,

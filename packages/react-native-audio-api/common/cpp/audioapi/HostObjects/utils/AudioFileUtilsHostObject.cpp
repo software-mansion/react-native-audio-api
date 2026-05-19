@@ -1,20 +1,46 @@
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
 #include <audioapi/core/utils/AudioFileConcatenator.h>
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/jsi/JsiPromise.h>
+#include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 
 #include <jsi/jsi.h>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace audioapi {
 
+namespace {
+
+std::optional<double> probeDurationWithDecoder(const uint8_t *data, size_t size, int sampleRate) {
+  if (auto miniaudioDuration =
+          miniaudio_decoder::MiniAudioDecoder::probeDuration(data, size, sampleRate);
+      miniaudioDuration.has_value()) {
+    return miniaudioDuration;
+  }
+
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+  return ffmpegdecoder::FFmpegDecoder::probeDuration(data, size, sampleRate);
+#else
+  return std::nullopt;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+}
+
+} // namespace
+
 AudioFileUtilsHostObject::AudioFileUtilsHostObject(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker) {
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
-  addFunctions(JSI_EXPORT_FUNCTION(AudioFileUtilsHostObject, concatAudioFiles));
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioFileUtilsHostObject, concatAudioFiles),
+      JSI_EXPORT_FUNCTION(AudioFileUtilsHostObject, probeDuration));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, concatAudioFiles) {
@@ -51,6 +77,41 @@ JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, concatAudioFiles) {
         return [outputPath = std::move(outputPath)](
                    jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
           return jsi::String::createFromUtf8(runtime, outputPath);
+        };
+      });
+
+  return promise;
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, probeDuration) {
+  if (count < 1 || !args[0].isObject()) {
+    throw jsi::JSError(runtime, "probeDuration expects an ArrayBuffer.");
+  }
+
+  auto arrayBufferObject = args[0].asObject(runtime);
+  if (!arrayBufferObject.isArrayBuffer(runtime)) {
+    throw jsi::JSError(runtime, "probeDuration expects an ArrayBuffer.");
+  }
+
+  auto arrayBuffer = arrayBufferObject.getArrayBuffer(runtime);
+  const auto *data = arrayBuffer.data(runtime);
+  const auto size = arrayBuffer.size(runtime);
+
+  const auto sampleRate =
+      count > 1 && args[1].isNumber() ? static_cast<int>(args[1].getNumber()) : 0;
+
+  auto promise = promiseVendor_->createAsyncPromise(
+      [bytes = std::vector<uint8_t>(data, data + size), sampleRate]() -> PromiseResolver {
+        auto duration = probeDurationWithDecoder(bytes.data(), bytes.size(), sampleRate);
+        if (!duration.has_value()) {
+          return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+            return jsi::Value::null();
+          };
+        }
+
+        return [duration = duration.value()](
+                   jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+          return jsi::Value(duration);
         };
       });
 

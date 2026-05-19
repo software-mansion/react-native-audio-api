@@ -200,6 +200,24 @@ decoding::DecoderResult MiniAudioDecoder::seekToTime(double seconds) {
   return Ok(None);
 }
 
+std::optional<double> MiniAudioDecoder::probeDuration(
+    const void *data,
+    size_t size,
+    int outputSampleRate) {
+  MiniAudioDecoder decoder;
+  const auto openResult = decoder.openMemory(outputSampleRate, data, size);
+  if (openResult.is_err()) {
+    return std::nullopt;
+  }
+
+  const auto duration = static_cast<double>(decoder.getDurationInSeconds());
+  if (duration <= 0) {
+    return std::nullopt;
+  }
+
+  return duration;
+}
+
 namespace {
 
 std::shared_ptr<AudioBuffer> buildAudioBufferFromInterleaved(

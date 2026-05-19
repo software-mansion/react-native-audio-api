@@ -14,6 +14,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -72,6 +73,12 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   [[nodiscard]] float getCurrentPositionInSeconds() const override;
 
   [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
+
+  /// Opens only enough decoder state to probe media duration from memory and then closes.
+  [[nodiscard]] static std::optional<double> probeDuration(
+      const void *data,
+      size_t size,
+      int outputSampleRate = 0);
 
  private:
   [[nodiscard]] decoding::DecoderResult setupSwr();

@@ -36,6 +36,13 @@ class AudioFileUtils {
 
     return this.fileUtils.concatAudioFiles(inputPaths, outputPath);
   }
+
+  public async probeDurationInstance(
+    data: ArrayBuffer,
+    sampleRate?: number
+  ): Promise<number | null> {
+    return this.fileUtils.probeDuration(data, sampleRate);
+  }
 }
 
 export async function concatAudioFiles(
@@ -46,4 +53,11 @@ export async function concatAudioFiles(
     inputPaths,
     outputPath
   );
+}
+
+export async function probeDuration(
+  data: ArrayBuffer,
+  sampleRate?: number
+): Promise<number | null> {
+  return AudioFileUtils.getInstance().probeDurationInstance(data, sampleRate);
 }

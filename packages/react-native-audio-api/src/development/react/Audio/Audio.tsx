@@ -12,6 +12,7 @@ import type {
   AudioTagHandle,
   AudioProps,
   AudioTagPlaybackState,
+  PreloadType,
 } from './types';
 
 import { AudioComponentContext } from './AudioTagContext';
@@ -20,7 +21,9 @@ import { useStableAudioProps } from './utils';
 import { NotSupportedError } from '../../../errors';
 import { NativeAudioAPIModule } from '../../../specs';
 import { AudioControls } from '..';
+import { probeDuration } from '../../../core/AudioFileUtils';
 import { base64ToArrayBuffer } from '../../../utils';
+import { prefetchFileSegments } from './metadataPrefetching';
 
 const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   const { children } = props;
@@ -48,6 +51,10 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   const [volumeState, setVolumeState] = useState<number | null>(null);
   const [mutedState, setMutedState] = useState<boolean | null>(null);
   const [ready, setReady] = useState(false);
+  const [playbackState, setPlaybackState] =
+    useState<AudioTagPlaybackState>('idle');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const path = useMemo(() => {
     if (!source) {
@@ -64,15 +71,17 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     return source.uri ?? '';
   }, [source]);
 
+  const preloadMode: PreloadType =
+    preload === 'none' || preload === 'metadata' ? preload : 'auto';
   const fileSourceRef = useRef<AudioFileSourceNode>(null);
+  const fetchDataRef = useRef<(probe?: boolean) => Promise<void>>(
+    async () => {}
+  );
   const sourceRef = useRef<ArrayBuffer | string | null>(null);
 
+  const isFetchingCancelled = useRef(false);
+  const fullDataFetched = useRef(false);
   const lastEffectiveVolumeRef = useRef(muted ? 0 : volume);
-
-  const [playbackState, setPlaybackState] =
-    useState<AudioTagPlaybackState>('idle');
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
 
   const effectiveMutedState = useMemo(() => {
     return mutedState ?? muted;
@@ -89,11 +98,17 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     fileSourceRef.current?.setVolume(effectiveVolumeState);
   }, [effectiveVolumeState]);
 
-  const play = useCallback(() => {
+  const play = useCallback(async () => {
+    if (
+      (preloadMode === 'none' || preloadMode === 'metadata') &&
+      !fullDataFetched.current
+    ) {
+      await fetchDataRef.current(false);
+    }
     fileSourceRef.current?.play();
     setPlaybackState('playing');
     onPlay();
-  }, [onPlay]);
+  }, [onPlay, preloadMode]);
 
   const pause = useCallback(() => {
     fileSourceRef.current?.pause();
@@ -154,29 +169,46 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     onLoad();
 
     if (autoPlay) {
-      fileSource.play();
-      setPlaybackState('playing');
-      onPlay();
+      play();
     }
-  }, [context, loop, onError, onEndedCallback, onLoad, onPlay, autoPlay]);
+  }, [context, loop, onError, onEndedCallback, onLoad, autoPlay, play]);
 
-  useEffect(() => {
-    if (!path) {
-      fileSourceRef.current?.dispose();
-      sourceRef.current = null;
-      setPlaybackState('idle');
-      setCurrentTime(0);
-      setDuration(0);
-      return;
-    }
-
-    let isCancelled = false;
-
-    const run = async () => {
+  const fetchData = useCallback(
+    async (probe: boolean = false) => {
+      isFetchingCancelled.current = false;
       setReady(false);
       onLoadStart();
       try {
         if (path.startsWith('http')) {
+          if (
+            preloadMode === 'metadata' &&
+            probe &&
+            ['opus', 'mp4', 'm4a', 'wav', 'flac'].some((extension) =>
+              path.endsWith(extension)
+            )
+          ) {
+            // fetch only metadata for codec that supports it
+            const requestHeaders =
+              typeof source === 'object' && source && 'headers' in source
+                ? source.headers
+                : undefined;
+            const SEGMENT_SIZE = 1024 * 16;
+            const prefetchedData = await prefetchFileSegments({
+              url: path,
+              headers: requestHeaders,
+              startBytes: SEGMENT_SIZE,
+              endBytes: SEGMENT_SIZE,
+            });
+            const probedDuration = await probeDuration(
+              prefetchedData,
+              context?.sampleRate
+            );
+            if (probedDuration != null && probedDuration > 0) {
+              setDuration(probedDuration);
+            }
+            setReady(true);
+            return;
+          }
           const arrayBuffer = await fetch(path, {
             headers:
               typeof source === 'object' && source && 'headers' in source
@@ -200,27 +232,62 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
         } else {
           sourceRef.current = path;
         }
+        fullDataFetched.current = true;
+        setReady(true);
 
-        if (!isCancelled) {
+        if (!isFetchingCancelled.current) {
           spawnFileSource();
           setReady(true);
         }
       } catch (error) {
-        if (!isCancelled) {
+        if (!isFetchingCancelled.current) {
           onError(error as Error);
         }
         setReady(false);
       }
-    };
+    },
+    [
+      context?.sampleRate,
+      onError,
+      onLoadStart,
+      path,
+      preloadMode,
+      source,
+      spawnFileSource,
+    ]
+  );
+  fetchDataRef.current = fetchData;
 
-    run();
+  useEffect(() => {
+    isFetchingCancelled.current = false;
+    fullDataFetched.current = false;
+
+    if (!path) {
+      setPlaybackState('idle');
+      setCurrentTime(0);
+      setDuration(0);
+      fileSourceRef.current?.dispose();
+      sourceRef.current = null;
+      return;
+    }
+
+    if (preloadMode === 'none') {
+      setReady(true);
+      return;
+    }
+
+    if (preloadMode === 'metadata') {
+      fetchData(true);
+      return;
+    }
+    fetchData();
 
     return () => {
-      isCancelled = true;
+      isFetchingCancelled.current = true;
       fileSourceRef.current?.stopPositionTracking();
       fileSourceRef.current?.dispose();
     };
-  }, [path, source, spawnFileSource, onError, onLoadStart]);
+  }, [fetchData, path, preloadMode, source, spawnFileSource]);
 
   useEffect(() => {
     if (lastEffectiveVolumeRef.current !== effectiveVolumeState) {

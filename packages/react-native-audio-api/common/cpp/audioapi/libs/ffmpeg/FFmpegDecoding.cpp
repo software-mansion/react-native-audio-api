@@ -462,6 +462,24 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double seconds) {
   return Ok(None);
 }
 
+std::optional<double> FFmpegDecoder::probeDuration(
+    const void *data,
+    size_t size,
+    int outputSampleRate) {
+  FFmpegDecoder decoder;
+  const auto openResult = decoder.openMemory(outputSampleRate, data, size);
+  if (openResult.is_err()) {
+    return std::nullopt;
+  }
+
+  const auto duration = static_cast<double>(decoder.getDurationInSeconds());
+  if (duration <= 0) {
+    return std::nullopt;
+  }
+
+  return duration;
+}
+
 size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   if (!isOpen() || outInterleaved == nullptr || frameCount == 0 || output_channels_ <= 0) {
     return 0;
@@ -579,6 +597,9 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double) {
 }
 size_t FFmpegDecoder::readPcmFrames(float *, size_t) {
   return 0;
+}
+std::optional<double> FFmpegDecoder::probeDuration(const void *, size_t, int) {
+  return std::nullopt;
 }
 std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &, int) {
   return nullptr;
