@@ -33,7 +33,7 @@ AndroidAudioRecorder::AndroidAudioRecorder(
       streamMaxBufferSizeInFrames_(0) {}
 
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
-/// callable from the JS thread or hadnled by audio thread (if js dropped recorder first).
+/// callable from the JS thread or handled by audio thread (if js dropped recorder first).
 AndroidAudioRecorder::~AndroidAudioRecorder() {
   // there is no need to lock here, as there could be two threads that can destruct js gc and audio thread one (or one created by it)
   // if we are on js:
