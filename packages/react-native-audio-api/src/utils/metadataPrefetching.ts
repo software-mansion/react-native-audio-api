@@ -1,3 +1,13 @@
+export const METADATA_PROBE_EXTENSIONS = [
+  '.opus',
+  '.mp4',
+  '.m4a',
+  '.wav',
+  '.flac',
+] as const;
+
+export const DEFAULT_METADATA_SEGMENT_BYTES = 1024 * 16;
+
 type PrefetchConfig = {
   url: string;
   headers?: Record<string, string>;
@@ -10,11 +20,22 @@ type PrefetchedSegment = {
   status: number;
 };
 
+export function supportsMetadataProbe(path: string): boolean {
+  const normalizedPath = path.split('?')[0].toLowerCase();
+  return METADATA_PROBE_EXTENSIONS.some((extension) =>
+    normalizedPath.endsWith(extension)
+  );
+}
+
+/**
+ * Fetch small chunks at the start and end to probe duration without full
+ * download.
+ */
 export async function prefetchFileSegments({
   url,
-  headers,
   startBytes,
   endBytes,
+  headers,
 }: PrefetchConfig): Promise<ArrayBuffer> {
   const fetchSegment = async (
     range: string

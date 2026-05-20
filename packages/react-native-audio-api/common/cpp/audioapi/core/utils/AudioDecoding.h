@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace audioapi::audiodecoder {
+namespace audioapi::audiodecoding {
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
 
@@ -39,4 +39,8 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
   return static_cast<float>(static_cast<int16_t>((byte2 << CHAR_BIT) | byte1)) / INT16_MAX;
 }
 
-} // namespace audioapi::audiodecoder
+template <typename Decoder>
+[[nodiscard]] std::optional<double>
+probeDuration(const void *data, size_t size, int outputSampleRate);
+
+} // namespace audioapi::audiodecoding

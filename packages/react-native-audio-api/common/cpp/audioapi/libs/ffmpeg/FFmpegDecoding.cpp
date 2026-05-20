@@ -24,7 +24,7 @@ extern "C" {
 #include <libavutil/rational.h>
 }
 
-namespace audioapi::ffmpegdecoder {
+namespace audioapi::ffmpeg_decoder {
 
 namespace {
 
@@ -462,24 +462,6 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double seconds) {
   return Ok(None);
 }
 
-std::optional<double> FFmpegDecoder::probeDuration(
-    const void *data,
-    size_t size,
-    int outputSampleRate) {
-  FFmpegDecoder decoder;
-  const auto openResult = decoder.openMemory(outputSampleRate, data, size);
-  if (openResult.is_err()) {
-    return std::nullopt;
-  }
-
-  const auto duration = static_cast<double>(decoder.getDurationInSeconds());
-  if (duration <= 0) {
-    return std::nullopt;
-  }
-
-  return duration;
-}
-
 size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   if (!isOpen() || outInterleaved == nullptr || frameCount == 0 || output_channels_ <= 0) {
     return 0;
@@ -573,11 +555,11 @@ std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size
   return buildAudioBufferFromInterleaved(acc, dec.outputChannels(), dec.outputSampleRate());
 }
 
-} // namespace audioapi::ffmpegdecoder
+} // namespace audioapi::ffmpeg_decoder
 
 #else
 
-namespace audioapi::ffmpegdecoder {
+namespace audioapi::ffmpeg_decoder {
 FFmpegDecoder::~FFmpegDecoder() = default;
 void FFmpegDecoder::close() {}
 decoding::DecoderResult FFmpegDecoder::openFile(int, const std::string &) {
@@ -608,6 +590,6 @@ std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *, size_t, int) {
   return nullptr;
 }
 
-} // namespace audioapi::ffmpegdecoder
+} // namespace audioapi::ffmpeg_decoder
 
 #endif // !RN_AUDIO_API_FFMPEG_DISABLED

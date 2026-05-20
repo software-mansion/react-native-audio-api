@@ -3,6 +3,7 @@
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
+#include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 
@@ -19,14 +20,15 @@ namespace audioapi {
 namespace {
 
 std::optional<double> probeDurationWithDecoder(const uint8_t *data, size_t size, int sampleRate) {
-  if (auto miniaudioDuration =
-          miniaudio_decoder::MiniAudioDecoder::probeDuration(data, size, sampleRate);
-      miniaudioDuration.has_value()) {
-    return miniaudioDuration;
+  auto duration = std::optional<double>();
+  duration =
+      audiodecoding::probeDuration<miniaudio_decoder::MiniAudioDecoder>(data, size, sampleRate);
+  if (duration.has_value()) {
+    return duration;
   }
-
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-  return ffmpegdecoder::FFmpegDecoder::probeDuration(data, size, sampleRate);
+  duration = audiodecoding::probeDuration<ffmpeg_decoder::FFmpegDecoder>(data, size, sampleRate);
+  return duration;
 #else
   return std::nullopt;
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
