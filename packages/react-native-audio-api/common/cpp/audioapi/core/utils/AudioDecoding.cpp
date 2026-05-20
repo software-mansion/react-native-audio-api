@@ -210,14 +210,4 @@ std::optional<double> probeDuration(const void *data, size_t size, int outputSam
   return static_cast<double>(decoder.getDurationInSeconds());
 }
 
-template std::optional<double> probeDuration<miniaudio_decoder::MiniAudioDecoder>(
-    const void *data,
-    size_t size,
-    int outputSampleRate);
-
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-template std::optional<double>
-probeDuration<ffmpeg_decoder::FFmpegDecoder>(const void *data, size_t size, int outputSampleRate);
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-
 } // namespace audioapi::audiodecoding
