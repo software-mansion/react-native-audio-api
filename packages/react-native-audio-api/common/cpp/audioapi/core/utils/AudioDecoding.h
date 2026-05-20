@@ -5,6 +5,7 @@
 #include <audioapi/utils/Result.hpp>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
