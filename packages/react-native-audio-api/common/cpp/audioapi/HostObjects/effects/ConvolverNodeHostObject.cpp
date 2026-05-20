@@ -72,7 +72,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
     scaleFactor = convolverNode->calculateNormalizationScale(copiedBuffer);
   }
 
-  auto threadPool = std::make_shared<ThreadPool<32>>(4);
+  auto threadPool = std::make_shared<ConvolverThreadPool>(4);
   std::vector<std::unique_ptr<Convolver>> convolvers;
   for (size_t i = 0; i < copiedBuffer->getNumberOfChannels(); ++i) {
     AudioArray channelData(*copiedBuffer->getChannel(i));
@@ -94,7 +94,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   struct SetupData {
     std::shared_ptr<AudioBuffer> buffer;
     std::vector<std::unique_ptr<Convolver>> convolvers;
-    std::shared_ptr<ThreadPool<32>> threadPool;
+    std::shared_ptr<ConvolverThreadPool> threadPool;
     std::shared_ptr<DSPAudioBuffer> internalBuffer;
     std::shared_ptr<DSPAudioBuffer> intermediateBuffer;
     float scaleFactor;

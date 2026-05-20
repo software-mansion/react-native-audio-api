@@ -4,6 +4,10 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -24,7 +28,7 @@ ConvolverNode::ConvolverNode(
 void ConvolverNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
     std::vector<std::unique_ptr<Convolver>> convolvers,
-    const std::shared_ptr<ThreadPool<32>> &threadPool,
+    const std::shared_ptr<ConvolverThreadPool> &threadPool,
     const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
     const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
     float scaleFactor) {
@@ -101,8 +105,15 @@ void ConvolverNode::processNode(int framesToProcess) {
   }
 
   if (framesToProcess != RENDER_QUANTUM_SIZE) {
+#ifdef ANDROID
+    __android_log_print(
+        ANDROID_LOG_WARN,
+        "RN_AUDIOAPI",
+        "convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor");
+#else
     printf(
-        "[AUDIOAPI WARN] convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor\n");
+        "[RN_AUDIOAPI WARN] convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor\n");
+#endif
   }
 
   // Once the base-class tail counter has fully drained, stop convolving and

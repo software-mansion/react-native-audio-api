@@ -72,7 +72,7 @@ class PromiseVendor {
       : runtime_(runtime),
         callInvoker_(callInvoker),
         threadPool_(
-            std::make_shared<ThreadPool<96>>(
+            std::make_shared<PromiseVendorThreadPool>(
                 audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT,
                 audioapi::PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE,
                 audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE)) {}
@@ -108,7 +108,7 @@ class PromiseVendor {
  private:
   jsi::Runtime *runtime_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
-  std::shared_ptr<ThreadPool<96>> threadPool_;
+  std::shared_ptr<PromiseVendorThreadPool> threadPool_;
 
   static void asyncPromiseJob(
       std::shared_ptr<react::CallInvoker> callInvoker,
