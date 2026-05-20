@@ -194,7 +194,7 @@ class AudioGraphManager {
           }
         }
 
-        /// @note vec[i] does NOT get moved out if it is not successfully added.
+        // vec[i] does NOT get moved out if it is not successfully added.
         if (audioDestructor.tryAddForDeconstruction(std::move(vec[i]))) {
           continue;
         }

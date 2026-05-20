@@ -33,49 +33,24 @@ AndroidAudioRecorder::AndroidAudioRecorder(
       streamMaxBufferSizeInFrames_(0) {}
 
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
-/// TODO: Possibly locks here are not necessary, but we might have an issue with oboe having raw pointer to the
-/// recorder (and player) instances, thus creating race conditions during destruction.
-/// callable from the JS thread only (i hope).
+/// callable from the JS thread or handled by audio thread (if js dropped recorder first).
 AndroidAudioRecorder::~AndroidAudioRecorder() {
-  std::shared_ptr<AudioFileWriter> fileWriter;
-  std::shared_ptr<AudioRecorderCallback> dataCallback;
-  std::shared_ptr<RecorderAdapterNode> adapterNode;
-  {
-    std::scoped_lock dtorLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
-
-    if (usesFileOutput()) {
-      fileOutputConfigured_.store(false, std::memory_order_release);
-      fileWriter = std::move(fileWriter_);
-    }
-
-    if (usesCallback()) {
-      callbackOutputConfigured_.store(false, std::memory_order_release);
-      dataCallback = std::move(dataCallback_);
-    }
-
-    if (isConnected()) {
-      connectedConfigured_.store(false, std::memory_order_release);
-      adapterNode = std::move(adapterNode_);
-      deinterleavingBuffer_ = nullptr;
-    }
-
-    fileOutputEnabled_.store(false, std::memory_order_release);
-    callbackOutputEnabled_.store(false, std::memory_order_release);
-    isConnected_.store(false, std::memory_order_release);
+  // there is no need to lock here, as there could be two threads that can destruct js gc and audio thread one (or one created by it)
+  // if we are on js:
+  // audio thread dropped recorder so onAudioReady callback would not be called anymore
+  //
+  // if we are on audio thread:
+  // js dropped recorder and oboe states that "callback object cannot be deleted before the stream is deleted"
+  if (fileWriter_ != nullptr) {
+    fileWriter_->closeFile();
   }
-
-  if (fileWriter != nullptr) {
-    fileWriter->closeFile();
+  if (dataCallback_ != nullptr) {
+    dataCallback_->cleanup();
   }
-
-  if (dataCallback != nullptr) {
-    dataCallback->cleanup();
+  if (adapterNode_ != nullptr) {
+    adapterNode_->adapterCleanup();
   }
-
-  if (adapterNode != nullptr) {
-    adapterNode->adapterCleanup();
-  }
-
+  // oboe could be handling stopping and closing the stream, sanity check just in case
   if (mStream_ != nullptr) {
     mStream_->requestStop();
     mStream_->close();
@@ -100,8 +75,8 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(oboe::PerformanceMode::None)
       ->setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium)
-      ->setDataCallback(this)
-      ->setErrorCallback(this);
+      ->setDataCallback(shared_from_this())
+      ->setErrorCallback(shared_from_this());
 
   auto result = builder.openStream(mStream_);
 

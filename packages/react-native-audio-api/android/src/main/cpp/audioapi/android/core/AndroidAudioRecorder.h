@@ -17,7 +17,9 @@ class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
 class AudioEventHandlerRegistry;
 
-class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecorder {
+class AndroidAudioRecorder : public oboe::AudioStreamCallback,
+                             public AudioRecorder,
+                             public std::enable_shared_from_this<AndroidAudioRecorder> {
  public:
   explicit AndroidAudioRecorder(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
