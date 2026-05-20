@@ -19,6 +19,8 @@ class MediaElementAudioSourceNode : public AudioNode {
 
   size_t getFileSourceNodeUseCount() const;
   bool fileSourceNodePaused() const;
+  void disconnect(const std::shared_ptr<AudioNode> &node) override;
+  void disconnect() override;
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(

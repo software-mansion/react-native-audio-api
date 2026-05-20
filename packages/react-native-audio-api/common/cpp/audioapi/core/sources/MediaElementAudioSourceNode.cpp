@@ -46,4 +46,16 @@ bool MediaElementAudioSourceNode::fileSourceNodePaused() const {
   return fileSource_->filePaused();
 }
 
+void MediaElementAudioSourceNode::disconnect() {
+  fileSource_->onMediaElementSourceReleased();
+  AudioNode::disconnect();
+}
+
+void MediaElementAudioSourceNode::disconnect(const std::shared_ptr<AudioNode> &node) {
+  if (outputNodes_.empty()) {
+    fileSource_->onMediaElementSourceReleased();
+  }
+  AudioNode::disconnect(node);
+}
+
 } // namespace audioapi

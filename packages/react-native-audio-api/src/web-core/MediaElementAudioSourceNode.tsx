@@ -6,14 +6,11 @@ export interface MediaElementAudioSourceOptions {
 }
 
 export default class MediaElementAudioSourceNode extends AudioNode {
-  readonly mediaElement: HTMLMediaElement;
-
   constructor(
     context: BaseAudioContext,
     node: globalThis.MediaElementAudioSourceNode,
-    mediaElement: HTMLMediaElement
+    readonly mediaElement: HTMLMediaElement
   ) {
     super(context, node);
-    this.mediaElement = mediaElement;
   }
 }

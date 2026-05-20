@@ -5,7 +5,7 @@ import type {
   AudioTagHandle,
   InternalAudioTagHandle,
 } from '../development/react/Audio/types';
-import { NotSupportedError } from '../errors';
+import { InvalidStateError } from '../errors';
 
 export interface MediaElementAudioSourceOptions {
   mediaElement: AudioTagHandle;
@@ -16,10 +16,15 @@ export default class MediaElementAudioSourceNode extends AudioNode {
 
   constructor(context: AudioContext, options: MediaElementAudioSourceOptions) {
     const internalHandle = options.mediaElement as InternalAudioTagHandle;
-    const fileSourceNode = internalHandle.getMediaElementSourceNode();
+    const fileSourceNode = internalHandle.getFileSourceNode();
     if (fileSourceNode === null) {
-      throw new NotSupportedError(
+      throw new InvalidStateError(
         'Audio tag source is not ready yet. Wait for onLoad before creating MediaElementAudioSourceNode.'
+      );
+    }
+    if (fileSourceNode.routedThroughMediaElement) {
+      throw new InvalidStateError(
+        'Audio tag source is already routed through MediaElementAudioSourceNode.'
       );
     }
     const node = (context.context as IAudioContext).createMediaElementSource(

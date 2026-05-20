@@ -100,11 +100,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<BiquadFilterNode> createBiquadFilter(const BiquadFilterOptions &options);
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(
       const AudioBufferSourceOptions &options);
-#if !RN_AUDIO_API_TEST
   std::shared_ptr<AudioFileSourceNode> createFileSource(const AudioFileSourceOptions &options);
-  std::shared_ptr<MediaElementAudioSourceNode> createMediaElementSource(
-      const std::shared_ptr<AudioFileSourceNode> &fileSource);
-#endif // RN_AUDIO_API_TEST
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       const BaseAudioBufferSourceOptions &options);
   [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(
@@ -140,11 +136,11 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
  protected:
   std::shared_ptr<AudioDestinationNode> destination_;
+  std::shared_ptr<AudioGraphManager> graphManager_;
 
  private:
   std::atomic<ContextState> state_;
   std::atomic<float> sampleRate_;
-  std::shared_ptr<AudioGraphManager> graphManager_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   RuntimeRegistry runtimeRegistry_;
 

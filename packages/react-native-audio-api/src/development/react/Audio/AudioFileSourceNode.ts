@@ -58,7 +58,7 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     (this.node as IAudioFileSourceNode).loop = value;
   }
 
-  getMediaElementSourceNode(): IAudioFileSourceNode {
+  getFileSourceNode(): IAudioFileSourceNode {
     return this.node as IAudioFileSourceNode;
   }
 

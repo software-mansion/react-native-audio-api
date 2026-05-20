@@ -35,11 +35,10 @@ export interface AudioTagHandle {
 
 /**
  * Internal handle surface used by MediaElementAudioSourceNode to obtain the
- * underlying file source. Routing is applied in native
- * createMediaElementSource. Not exported from the package public API.
+ * underlying file source. Not exported from the package public API.
  */
 export interface InternalAudioTagHandle extends AudioTagHandle {
-  getMediaElementSourceNode: () => IAudioFileSourceNode | null;
+  getFileSourceNode: () => IAudioFileSourceNode | null;
 }
 
 interface AudioControlProps {

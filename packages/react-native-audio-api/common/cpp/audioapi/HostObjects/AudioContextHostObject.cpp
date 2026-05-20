@@ -63,8 +63,9 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
   auto sourceObject = args[0].asObject(runtime);
   auto fileSourceHostObject = sourceObject.getHostObject<AudioFileSourceNodeHostObject>(runtime);
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto mediaElementSourceNode =
-      context_->createMediaElementSource(fileSourceHostObject->getAudioFileSourceNode());
+      audioContext->createMediaElementSource(fileSourceHostObject->getAudioFileSourceNode());
 
   if (mediaElementSourceNode == nullptr) {
     throw jsi::JSError(runtime, "This media element is already connected to this AudioContext.");

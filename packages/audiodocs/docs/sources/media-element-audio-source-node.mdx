@@ -8,8 +8,8 @@ import { ReadOnly } from '@site/src/components/Badges';
 # MediaElementAudioSourceNode
 
 The `MediaElementAudioSourceNode` is an [`AudioNode`](/docs/core/audio-node) that routes media playback into the audio graph.
-On web it mirrors [`AudioContext.createMediaElementSource()`](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaElementSource) and accepts an `HTMLMediaElement`.
-On native it wraps a file-backed source created by the experimental [`<Audio>`](/docs/experimental/audio-tag) tag.
+On the web it mirrors [`AudioContext.createMediaElementSource()`](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaElementSource) and accepts an `HTMLMediaElement`.
+On the native it wraps a file-backed source created by the experimental [`<Audio>`](/docs/experimental/audio-tag) tag.
 
 ## Constructor
 
@@ -25,6 +25,12 @@ constructor(context: BaseAudioContext, options: MediaElementAudioSourceOptions)
 
 Or by using [`AudioContext`](/docs/core/audio-context) factory method:
 [`AudioContext.createMediaElementSource()`](/docs/core/audio-context#createmediaelementsource)
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `InvalidStateError` | Creating second node from the same media element. |
 
 ## Example
 
@@ -96,12 +102,7 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ## Remarks
 
-#### Binding
-
-- A single media element can be bound only once per [`AudioContext`](/docs/core/audio-context).
-- Calling `createMediaElementSource` again for the same element throws an error.
-
 #### Native routing
 
 - On native, the underlying file source is disconnected from the destination when this node is created so audio is not processed twice.
-- Use the same [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) for transport controls (`play`, `pause`, `seekToTime`, volume).
+- Use the same [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) for transport controls (`play`, `pause`, `seekToTime`, `volume`).

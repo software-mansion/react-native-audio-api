@@ -240,6 +240,7 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   loop: boolean;
   readonly currentTime: number;
   readonly duration: number;
+  readonly routedThroughMediaElement: boolean;
   pause: () => void;
   seekToTime: (seconds: number) => void;
 

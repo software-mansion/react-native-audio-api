@@ -122,30 +122,10 @@ void AudioFileSourceNode::connect(const std::shared_ptr<AudioNode> &node) {
   }
 
   AudioScheduledSourceNode::connect(node);
-
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    if (node == context->getDestination()) {
-      connectedToDestination_ = true;
-    }
-  }
-}
-
-void AudioFileSourceNode::disconnect() {
-  connectedToDestination_ = false;
-  AudioScheduledSourceNode::disconnect();
-}
-
-void AudioFileSourceNode::disconnect(const std::shared_ptr<AudioNode> &node) {
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    if (node == nullptr || node == context->getDestination()) {
-      connectedToDestination_ = false;
-    }
-  }
-  AudioScheduledSourceNode::disconnect(node);
 }
 
 void AudioFileSourceNode::start(double when) {
-  if (!routedThroughMediaElement_ && !connectedToDestination_) {
+  if (!routedThroughMediaElement_) {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       connect(context->getDestination());
     }
@@ -155,25 +135,19 @@ void AudioFileSourceNode::start(double when) {
   filePaused_ = false;
 }
 
-void AudioFileSourceNode::routeThroughMediaElement() {
-  disconnect();
-  routedThroughMediaElement_ = true;
-  connectedToDestination_ = false;
-}
-
 bool AudioFileSourceNode::tryBindMediaElementSource(
     const std::shared_ptr<MediaElementAudioSourceNode> &mediaElement) {
   if (mediaElementSource_.lock()) {
     return false;
   }
   mediaElementSource_ = mediaElement;
+  routedThroughMediaElement_ = true;
   return true;
 }
 
 void AudioFileSourceNode::onMediaElementSourceReleased() {
   routedThroughMediaElement_ = false;
   mediaElementSource_.reset();
-  playbackState_ = PlaybackState::FINISHED;
 }
 
 void AudioFileSourceNode::pause() {
@@ -273,13 +247,17 @@ size_t AudioFileSourceNode::handleEof(
 std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
+  if (routedThroughMediaElement_) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
   return processDecodedOutput(processingBuffer, framesToProcess);
 }
 
 std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  if (decoderState_ == nullptr || decoder_ == nullptr || !decoder_->isOpen()) {
+  if (decoderState_ == nullptr || decoder_ == nullptr || !decoder_->isOpen() || filePaused_) {
     processingBuffer->zero();
     return processingBuffer;
   }
@@ -291,11 +269,6 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   }
 
   if (pendingOffloadedSeeks_.load(std::memory_order_acquire) > 0) {
-    processingBuffer->zero();
-    return processingBuffer;
-  }
-
-  if (filePaused_) {
     processingBuffer->zero();
     return processingBuffer;
   }

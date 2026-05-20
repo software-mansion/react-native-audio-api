@@ -47,13 +47,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   void disable() override;
 
   void connect(const std::shared_ptr<AudioNode> &node) override;
-  void disconnect() override;
-  void disconnect(const std::shared_ptr<AudioNode> &node) override;
 
   void start(double when) override;
-
-  /// Detaches from the graph output path and feeds only via MediaElementAudioSourceNode.
-  void routeThroughMediaElement();
 
   [[nodiscard]] bool isRoutedThroughMediaElement() const {
     return routedThroughMediaElement_;
@@ -114,7 +109,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   bool filePaused_{false};
   bool loop_{false};
   bool routedThroughMediaElement_{false};
-  bool connectedToDestination_{false};
   std::weak_ptr<MediaElementAudioSourceNode> mediaElementSource_;
   double duration_{0};
   std::atomic<double> currentTime_{0};

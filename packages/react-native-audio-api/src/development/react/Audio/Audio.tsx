@@ -269,10 +269,10 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       seekToTime,
       setVolume: setVolumeState,
       setMuted: setMutedState,
-      getMediaElementSourceNode: () =>
-        fileSourceRef.current?.getMediaElementSourceNode() ?? null,
+      getFileSourceNode: () =>
+        fileSourceRef.current?.getFileSourceNode() ?? null,
     }),
-    [pause, play, seekToTime, setMutedState, setVolumeState]
+    [pause, play, seekToTime, setMutedState, setVolumeState, fileSourceRef]
   );
 
   const ctxValue = useMemo(
