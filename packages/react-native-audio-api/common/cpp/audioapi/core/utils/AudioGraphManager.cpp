@@ -37,9 +37,6 @@ AudioGraphManager::Event &AudioGraphManager::Event::operator=(Event &&other) noe
       case EventPayloadType::SOURCE_NODE:
         payload.sourceNode = std::move(other.payload.sourceNode);
         break;
-      case EventPayloadType::MEDIA_ELEMENT_SOURCE_NODE:
-        payload.mediaElementSourceNode = std::move(other.payload.mediaElementSourceNode);
-        break;
       case EventPayloadType::AUDIO_PARAM:
         payload.audioParam = std::move(other.payload.audioParam);
         break;
@@ -67,9 +64,6 @@ AudioGraphManager::Event::~Event() {
     case EventPayloadType::SOURCE_NODE:
       payload.sourceNode.~shared_ptr();
       break;
-    case EventPayloadType::MEDIA_ELEMENT_SOURCE_NODE:
-      payload.mediaElementSourceNode.~shared_ptr();
-      break;
     case EventPayloadType::AUDIO_PARAM:
       payload.audioParam.~shared_ptr();
       break;
@@ -81,7 +75,6 @@ AudioGraphManager::Event::~Event() {
 
 AudioGraphManager::AudioGraphManager() {
   sourceNodes_.reserve(kInitialCapacity);
-  mediaElementAudioSourceNodes_.reserve(kInitialCapacity);
   processingNodes_.reserve(kInitialCapacity);
   audioParams_.reserve(kInitialCapacity);
   audioBuffers_.reserve(kInitialCapacity);
@@ -128,7 +121,6 @@ void AudioGraphManager::addPendingParamConnection(
 void AudioGraphManager::preProcessGraph() {
   settlePendingConnections();
   AudioGraphManager::prepareForDestruction(sourceNodes_, nodeDestructor_);
-  AudioGraphManager::prepareForDestruction(mediaElementAudioSourceNodes_, nodeDestructor_);
   AudioGraphManager::prepareForDestruction(processingNodes_, nodeDestructor_);
   AudioGraphManager::prepareForDestruction(audioBuffers_, bufferDestructor_);
 }
@@ -147,16 +139,6 @@ void AudioGraphManager::addSourceNode(const std::shared_ptr<AudioScheduledSource
   event->type = ConnectionType::ADD;
   event->payloadType = EventPayloadType::SOURCE_NODE;
   event->payload.sourceNode = node;
-
-  sender_.send(std::move(event));
-}
-
-void AudioGraphManager::addMediaElementSourceNode(
-    const std::shared_ptr<MediaElementAudioSourceNode> &node) {
-  auto event = std::make_unique<Event>();
-  event->type = ConnectionType::ADD;
-  event->payloadType = EventPayloadType::MEDIA_ELEMENT_SOURCE_NODE;
-  event->payload.mediaElementSourceNode = node;
 
   sender_.send(std::move(event));
 }
@@ -207,7 +189,11 @@ void AudioGraphManager::handleConnectEvent(std::unique_ptr<Event> event) {
 
 void AudioGraphManager::handleDisconnectEvent(std::unique_ptr<Event> event) {
   if (event->payloadType == EventPayloadType::NODES) {
-    event->payload.nodes.from->disconnectNode(event->payload.nodes.to);
+    const auto &from = event->payload.nodes.from;
+    from->disconnectNode(event->payload.nodes.to);
+    if (auto *mediaElement = dynamic_cast<MediaElementAudioSourceNode *>(from.get())) {
+      mediaElement->onOutputsDisconnected();
+    }
   } else if (event->payloadType == EventPayloadType::PARAMS) {
     event->payload.params.from->disconnectParam(event->payload.params.to);
   } else {
@@ -217,11 +203,14 @@ void AudioGraphManager::handleDisconnectEvent(std::unique_ptr<Event> event) {
 
 void AudioGraphManager::handleDisconnectAllEvent(std::unique_ptr<Event> event) {
   assert(event->payloadType == EventPayloadType::NODES);
-  for (auto it = event->payload.nodes.from->outputNodes_.begin();
-       it != event->payload.nodes.from->outputNodes_.end();) {
+  const auto &from = event->payload.nodes.from;
+  for (auto it = from->outputNodes_.begin(); it != from->outputNodes_.end();) {
     auto next = std::next(it);
-    event->payload.nodes.from->disconnectNode(*it);
+    from->disconnectNode(*it);
     it = next;
+  }
+  if (auto *mediaElement = dynamic_cast<MediaElementAudioSourceNode *>(from.get())) {
+    mediaElement->onOutputsDisconnected();
   }
 }
 
@@ -232,9 +221,6 @@ void AudioGraphManager::handleAddToDeconstructionEvent(std::unique_ptr<Event> ev
       break;
     case EventPayloadType::SOURCE_NODE:
       sourceNodes_.push_back(event->payload.sourceNode);
-      break;
-    case EventPayloadType::MEDIA_ELEMENT_SOURCE_NODE:
-      mediaElementAudioSourceNodes_.push_back(event->payload.mediaElementSourceNode);
       break;
     case EventPayloadType::AUDIO_PARAM:
       audioParams_.push_back(event->payload.audioParam);
@@ -249,16 +235,11 @@ void AudioGraphManager::cleanup() {
     sourceNode->cleanup();
   }
 
-  for (auto &mediaElementAudioSourceNode : mediaElementAudioSourceNodes_) {
-    mediaElementAudioSourceNode->cleanup();
-  }
-
   for (auto &processingNode : processingNodes_) {
     processingNode->cleanup();
   }
 
   sourceNodes_.clear();
-  mediaElementAudioSourceNodes_.clear();
   processingNodes_.clear();
   audioParams_.clear();
   audioBuffers_.clear();

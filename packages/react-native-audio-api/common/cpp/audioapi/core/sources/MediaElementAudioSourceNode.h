@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <cstdint>
 #include <memory>
 
 namespace audioapi {
@@ -17,10 +18,15 @@ class MediaElementAudioSourceNode : public AudioNode {
 
   ~MediaElementAudioSourceNode() override;
 
+  [[nodiscard]] uint64_t getBindingId() const {
+    return bindingId_;
+  }
+
   size_t getFileSourceNodeUseCount() const;
   bool fileSourceNodePaused() const;
-  void disconnect(const std::shared_ptr<AudioNode> &node) override;
-  void disconnect() override;
+
+  /// @note Audio Thread only — called after graph disconnects are applied.
+  void onOutputsDisconnected();
 
  protected:
   std::shared_ptr<DSPAudioBuffer> processNode(
@@ -28,6 +34,9 @@ class MediaElementAudioSourceNode : public AudioNode {
       int framesToProcess) override;
 
  private:
+  static uint64_t generateBindingId();
+
+  const uint64_t bindingId_;
   std::shared_ptr<AudioFileSourceNode> fileSource_;
 };
 

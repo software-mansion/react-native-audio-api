@@ -76,13 +76,9 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
 
   useEffect(() => {
     return () => {
-      if (!fileSourceRef.current) {
-        console.error('File source ref is not ready yet.');
-        return;
-      }
-      fileSourceRef.current.disconnect();
-      fileSourceRef.current.pause();
-      fileSourceRef.current.dispose();
+      fileSourceRef.current?.disconnect();
+      fileSourceRef.current?.pause();
+      fileSourceRef.current?.dispose();
       fileSourceRef.current = null;
     };
   }, []);
@@ -230,8 +226,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
 
     return () => {
       isCancelled = true;
-      fileSourceRef.current?.stopPositionTracking();
-      fileSourceRef.current?.dispose();
     };
   }, [path, source, spawnFileSource, onError, onLoadStart]);
 

@@ -117,7 +117,7 @@ void AudioFileSourceNode::initDecoders(
 }
 
 void AudioFileSourceNode::connect(const std::shared_ptr<AudioNode> &node) {
-  if (routedThroughMediaElement_) {
+  if (isRoutedThroughMediaElement()) {
     return;
   }
 
@@ -125,7 +125,7 @@ void AudioFileSourceNode::connect(const std::shared_ptr<AudioNode> &node) {
 }
 
 void AudioFileSourceNode::start(double when) {
-  if (!routedThroughMediaElement_) {
+  if (!isRoutedThroughMediaElement()) {
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
       connect(context->getDestination());
     }
@@ -135,19 +135,36 @@ void AudioFileSourceNode::start(double when) {
   filePaused_ = false;
 }
 
-bool AudioFileSourceNode::tryBindMediaElementSource(
-    const std::shared_ptr<MediaElementAudioSourceNode> &mediaElement) {
-  if (mediaElementSource_.lock()) {
-    return false;
-  }
-  mediaElementSource_ = mediaElement;
-  routedThroughMediaElement_ = true;
-  return true;
+void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {
+  activeMediaBindingId_.store(bindingId, std::memory_order_release);
 }
 
-void AudioFileSourceNode::onMediaElementSourceReleased() {
-  routedThroughMediaElement_ = false;
-  mediaElementSource_.reset();
+void AudioFileSourceNode::releaseMediaElementSource(uint64_t bindingId) {
+  uint64_t expected = bindingId;
+  if (!activeMediaBindingId_.compare_exchange_strong(
+          expected, 0, std::memory_order_acq_rel, std::memory_order_acquire)) {
+    return;
+  }
+
+  ensureConnectedForDirectPlayback();
+}
+
+void AudioFileSourceNode::ensureConnectedForDirectPlayback() {
+  if (filePaused_ || isUnscheduled() || isFinished()) {
+    return;
+  }
+
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    connect(context->getDestination());
+  }
+}
+
+bool AudioFileSourceNode::isCurrentMediaElementSource(uint64_t bindingId) const {
+  if (bindingId == 0) {
+    return false;
+  }
+
+  return activeMediaBindingId_.load(std::memory_order_acquire) == bindingId;
 }
 
 void AudioFileSourceNode::pause() {
@@ -170,10 +187,6 @@ size_t AudioFileSourceNode::readFrames(float *buf, size_t frameCount) {
   return decoder_->readPcmFrames(buf, frameCount);
 }
 
-bool AudioFileSourceNode::seekDecoderToTime(double seconds) {
-  return decoder_->seekToTime(seconds).is_ok();
-}
-
 void AudioFileSourceNode::applyPlaybackStateAfterSuccessfulSeek(double seconds) {
   currentTime_.store(seconds, std::memory_order_release);
   onPositionChangedFlush_.store(true, std::memory_order_release);
@@ -184,7 +197,7 @@ void AudioFileSourceNode::runOffloadedSeekTask(OffloadedSeekRequest req) {
     pendingOffloadedSeeks_.fetch_sub(1, std::memory_order_acq_rel);
     return;
   }
-  if (seekDecoderToTime(req.seconds)) {
+  if (decoder_->seekToTime(req.seconds).is_ok()) {
     applyPlaybackStateAfterSuccessfulSeek(req.seconds);
   }
   pendingOffloadedSeeks_.fetch_sub(1, std::memory_order_acq_rel);
@@ -225,7 +238,7 @@ size_t AudioFileSourceNode::handleEof(
     return framesRead;
   }
 
-  if (!seekDecoderToTime(0)) {
+  if (!decoder_->seekToTime(0).is_ok()) {
     return framesRead;
   }
 
@@ -247,7 +260,7 @@ size_t AudioFileSourceNode::handleEof(
 std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  if (routedThroughMediaElement_) {
+  if (isRoutedThroughMediaElement()) {
     processingBuffer->zero();
     return processingBuffer;
   }

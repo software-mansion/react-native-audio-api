@@ -3,21 +3,27 @@
 #include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/types/NodeOptions.h>
 
+#include <atomic>
 #include <memory>
 
 namespace audioapi {
+
+uint64_t MediaElementAudioSourceNode::generateBindingId() {
+  static std::atomic<uint64_t> nextMediaElementBindingId{1};
+  return nextMediaElementBindingId.fetch_add(1, std::memory_order_relaxed);
+}
 
 MediaElementAudioSourceNode::MediaElementAudioSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const std::shared_ptr<AudioFileSourceNode> &fileSource,
     const MediaElementAudioSourceOptions &options)
-    : AudioNode(context, options), fileSource_(fileSource) {
+    : AudioNode(context, options), bindingId_(generateBindingId()), fileSource_(fileSource) {
   isInitialized_.store(true, std::memory_order_release);
 }
 
 MediaElementAudioSourceNode::~MediaElementAudioSourceNode() {
   if (fileSource_ != nullptr) {
-    fileSource_->onMediaElementSourceReleased();
+    fileSource_->releaseMediaElementSource(bindingId_);
   }
 }
 
@@ -25,6 +31,11 @@ std::shared_ptr<DSPAudioBuffer> MediaElementAudioSourceNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
   if (fileSource_ == nullptr) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
+
+  if (!fileSource_->isCurrentMediaElementSource(bindingId_)) {
     processingBuffer->zero();
     return processingBuffer;
   }
@@ -46,16 +57,14 @@ bool MediaElementAudioSourceNode::fileSourceNodePaused() const {
   return fileSource_->filePaused();
 }
 
-void MediaElementAudioSourceNode::disconnect() {
-  fileSource_->onMediaElementSourceReleased();
-  AudioNode::disconnect();
-}
-
-void MediaElementAudioSourceNode::disconnect(const std::shared_ptr<AudioNode> &node) {
-  if (outputNodes_.empty()) {
-    fileSource_->onMediaElementSourceReleased();
+void MediaElementAudioSourceNode::onOutputsDisconnected() {
+  if (fileSource_ == nullptr || !outputNodes_.empty()) {
+    return;
   }
-  AudioNode::disconnect(node);
+
+  if (fileSource_->isCurrentMediaElementSource(bindingId_)) {
+    fileSource_->releaseMediaElementSource(bindingId_);
+  }
 }
 
 } // namespace audioapi

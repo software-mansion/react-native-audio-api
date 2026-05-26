@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioFileSourceNode.h>
+#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/utils/AudioDestructor.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -15,8 +16,6 @@ namespace audioapi {
 class AudioNode;
 class AudioScheduledSourceNode;
 class AudioParam;
-class MediaElementAudioSourceNode;
-
 #define AUDIO_GRAPH_MANAGER_SPSC_OPTIONS \
   std::unique_ptr<Event>, channels::spsc::OverflowStrategy::WAIT_ON_FULL, \
       channels::spsc::WaitStrategy::BUSY_LOOP
@@ -30,14 +29,7 @@ class AudioGraphManager {
  public:
   enum class ConnectionType : uint8_t { CONNECT, DISCONNECT, DISCONNECT_ALL, ADD };
   using EventType = ConnectionType; // for backwards compatibility
-  enum class EventPayloadType : uint8_t {
-    NODES,
-    PARAMS,
-    SOURCE_NODE,
-    MEDIA_ELEMENT_SOURCE_NODE,
-    AUDIO_PARAM,
-    NODE
-  };
+  enum class EventPayloadType : uint8_t { NODES, PARAMS, SOURCE_NODE, AUDIO_PARAM, NODE };
   union EventPayload {
     struct {
       std::shared_ptr<AudioNode> from;
@@ -48,7 +40,6 @@ class AudioGraphManager {
       std::shared_ptr<AudioParam> to;
     } params;
     std::shared_ptr<AudioScheduledSourceNode> sourceNode;
-    std::shared_ptr<MediaElementAudioSourceNode> mediaElementSourceNode;
     std::shared_ptr<AudioParam> audioParam;
     std::shared_ptr<AudioNode> node;
 
@@ -105,11 +96,6 @@ class AudioGraphManager {
   /// @note Should be only used from JavaScript/HostObjects thread
   void addSourceNode(const std::shared_ptr<AudioScheduledSourceNode> &node);
 
-  /// @brief Adds a media element source node to the manager.
-  /// @param node The media element source node to add.
-  /// @note Should be only used from JavaScript/HostObjects thread
-  void addMediaElementSourceNode(const std::shared_ptr<MediaElementAudioSourceNode> &node);
-
   /// @brief Adds an audio parameter to the manager.
   /// @param param The audio parameter to add.
   /// @note Should be only used from JavaScript/HostObjects thread
@@ -134,7 +120,6 @@ class AudioGraphManager {
   static constexpr size_t kChannelCapacity = 1024;
 
   std::vector<std::shared_ptr<AudioScheduledSourceNode>> sourceNodes_;
-  std::vector<std::shared_ptr<MediaElementAudioSourceNode>> mediaElementAudioSourceNodes_;
   std::vector<std::shared_ptr<AudioNode>> processingNodes_;
   std::vector<std::shared_ptr<AudioParam>> audioParams_;
   std::vector<std::shared_ptr<AudioBuffer>> audioBuffers_;
@@ -157,15 +142,23 @@ class AudioGraphManager {
   template <typename U>
     requires std::derived_from<U, AudioNode>
   static bool canBeDestructed(std::shared_ptr<U> const &node) {
-    // If the node is an AudioScheduledSourceNode, we need to check if it is
-    // playing
+    // Scheduled sources need playback-state-aware cleanup rules.
     if constexpr (std::is_base_of_v<AudioScheduledSourceNode, U>) {
+      // AudioFileSourceNode instances are stored as AudioScheduledSourceNode in
+      // sourceNodes_, so detect them via RTTI without creating a new
+      // shared_ptr that would temporarily bump the refcount.
+      if (auto *fileNode = dynamic_cast<AudioFileSourceNode *>(node.get())) {
+        return node.use_count() == 1 && fileNode->filePaused();
+      }
+
       return node.use_count() == 1 && (node->isUnscheduled() || node->isFinished());
     }
 
-    if constexpr (std::is_same_v<MediaElementAudioSourceNode, U>) {
-      return node.use_count() == 1 && node->getFileSourceNodeUseCount() == 2 &&
-          node->fileSourceNodePaused();
+    // if underlying engine node has count of 2 it means that only manager and media element source node are holding a reference to it,
+    // thus this node can be destructed, decreasing count to 1 and enabling file source node to be destructed as well
+    if (auto *mediaElementNode = dynamic_cast<MediaElementAudioSourceNode *>(node.get())) {
+      return node.use_count() == 1 && mediaElementNode->getFileSourceNodeUseCount() == 2 &&
+          mediaElementNode->fileSourceNodePaused();
     }
 
     if (node->requiresTailProcessing()) {

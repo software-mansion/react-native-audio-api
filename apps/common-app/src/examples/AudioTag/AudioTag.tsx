@@ -1,10 +1,10 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import {
   Audio,
   AudioTagHandle,
 } from 'react-native-audio-api/development/react';
-import { AudioContext, GainNode, MediaElementAudioSourceNode } from 'react-native-audio-api';
+import { AudioContext, BiquadFilterNode, MediaElementAudioSourceNode } from 'react-native-audio-api';
 
 import { Button, Container, Slider, Spacer } from '../../components';
 
@@ -18,8 +18,8 @@ const AudioTag: React.FC = () => {
   const audioRef = useRef<AudioTagHandle>(null);
   const volumeRef = useRef(1);
   const audioContextRef = useRef<AudioContext>(new AudioContext());
-  const gainNodeRef = useRef<GainNode | null>(null);
-  const mediaElementSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const mediaElementSourceRef = useRef<MediaElementAudioSourceNode>(null);
+  const biquadRef = useRef<BiquadFilterNode>(null);
 
   const ensureMediaElementRoute = useCallback(() => {
     if (!audioRef.current) {
@@ -28,30 +28,30 @@ const AudioTag: React.FC = () => {
 
     const ctx = audioContextRef.current;
     mediaElementSourceRef.current = ctx.createMediaElementSource(audioRef.current);
-    gainNodeRef.current = ctx.createGain();
-    gainNodeRef.current.gain.value = volumeRef.current;
 
-    const biquad = ctx.createBiquadFilter();
-    biquad.type = 'lowpass';
-    biquad.frequency.value = 750;
-    mediaElementSourceRef.current.connect(biquad);
-    biquad.connect(gainNodeRef.current);
-    gainNodeRef.current.connect(ctx.destination);
-    audioRef.current?.play();
+    biquadRef.current = ctx.createBiquadFilter();
+    biquadRef.current.type = 'lowpass';
+    biquadRef.current.frequency.value = 750;
+    mediaElementSourceRef.current.connect(biquadRef.current);
+    biquadRef.current.connect(ctx.destination);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      mediaElementSourceRef.current = null;
+    };
   }, []);
 
   const ensureWithoutMediaElementRoute = useCallback(() => {
-    mediaElementSourceRef.current?.disconnect();
-    audioRef.current?.play();
+    if (biquadRef.current) {
+      mediaElementSourceRef.current?.disconnect(biquadRef.current);
+    }
   }, []);
 
   const handleVolumeChange = useCallback((nextVolume: number) => {
     setSliderVolume(nextVolume);
     volumeRef.current = nextVolume;
     audioRef.current?.setVolume(nextVolume);
-    if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = nextVolume;
-    }
   }, []);
 
   const handleLoadStart = useCallback(() => {

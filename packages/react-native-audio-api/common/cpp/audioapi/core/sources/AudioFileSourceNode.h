@@ -10,6 +10,7 @@
 #include <audioapi/utils/TaskOffloader.hpp>
 
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,13 +52,14 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   void start(double when) override;
 
   [[nodiscard]] bool isRoutedThroughMediaElement() const {
-    return routedThroughMediaElement_;
+    return activeMediaBindingId_.load(std::memory_order_acquire) != 0;
   }
 
-  /// @returns false if this file source is already bound to a media element source.
-  bool tryBindMediaElementSource(const std::shared_ptr<MediaElementAudioSourceNode> &mediaElement);
+  void bindMediaElementSource(uint64_t bindingId);
 
-  void onMediaElementSourceReleased();
+  void releaseMediaElementSource(uint64_t bindingId);
+
+  [[nodiscard]] bool isCurrentMediaElementSource(uint64_t bindingId) const;
 
   void setVolume(float v) {
     volume_ = v;
@@ -93,6 +95,9 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       int framesToProcess) override;
 
  private:
+#if RN_AUDIO_API_TEST
+  friend class TestableAudioFileSourceNode;
+#endif // RN_AUDIO_API_TEST
   std::shared_ptr<DSPAudioBuffer> processDecodedOutput(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
@@ -108,8 +113,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   bool requiresFFmpeg_;
   bool filePaused_{false};
   bool loop_{false};
-  bool routedThroughMediaElement_{false};
-  std::weak_ptr<MediaElementAudioSourceNode> mediaElementSource_;
+  std::atomic<uint64_t> activeMediaBindingId_{0};
   double duration_{0};
   std::atomic<double> currentTime_{0};
   double sampleRate_{0};
@@ -117,7 +121,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   static constexpr int SEEK_OFFLOADER_WORKER_COUNT = 16;
 
   size_t readFrames(float *buf, size_t frameCount);
-  bool seekDecoderToTime(double seconds);
   void writeInterleavedToBufferAtOffset(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       const AudioFileDecoderState &state,
@@ -133,6 +136,9 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   void applyPlaybackStateAfterSuccessfulSeek(double seconds);
   void runOffloadedSeekTask(OffloadedSeekRequest req);
+
+  /// @note Audio Thread only — wires the file source back to the destination after media routing ends.
+  void ensureConnectedForDirectPlayback();
 
   uint64_t onPositionChangedCallbackId_ = 0;
   int onPositionChangedInterval_;

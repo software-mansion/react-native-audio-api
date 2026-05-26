@@ -103,20 +103,15 @@ bool AudioContext::isDriverRunning() const {
 
 std::shared_ptr<MediaElementAudioSourceNode> AudioContext::createMediaElementSource(
     const std::shared_ptr<AudioFileSourceNode> &fileSource) {
-  if (fileSource == nullptr) {
-    return nullptr;
-  }
 
   auto mediaElementSource = std::make_shared<MediaElementAudioSourceNode>(
       shared_from_this(),
       fileSource,
       MediaElementAudioSourceOptions(static_cast<int>(fileSource->getChannelCount())));
 
-  if (!fileSource->tryBindMediaElementSource(mediaElementSource)) {
-    return nullptr;
-  }
+  fileSource->bindMediaElementSource(mediaElementSource->getBindingId());
 
-  graphManager_->addMediaElementSourceNode(mediaElementSource);
+  graphManager_->addProcessingNode(mediaElementSource);
   return mediaElementSource;
 }
 
