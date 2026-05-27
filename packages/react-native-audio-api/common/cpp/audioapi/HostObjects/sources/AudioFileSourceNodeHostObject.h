@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <memory>
 
 namespace audioapi {
@@ -21,6 +22,7 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_PROPERTY_GETTER_DECL(loop);
   JSI_PROPERTY_GETTER_DECL(currentTime);
   JSI_PROPERTY_GETTER_DECL(duration);
+  JSI_PROPERTY_GETTER_DECL(routedThroughMediaElement);
 
   JSI_PROPERTY_SETTER_DECL(volume);
   JSI_PROPERTY_SETTER_DECL(loop);
@@ -33,9 +35,12 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   [[nodiscard]] size_t getMemoryPressure() const override {
     // Interleaved decode scratch (RQ * channels) + file/streaming state.
     // FFmpeg decoder context (if enabled) adds more but is not tracked here;
-    // StreamerNode already accounts for the dominant FFmpeg footprint.
     return AudioNodeHostObject::getMemoryPressure() +
         RENDER_QUANTUM_SIZE * channelCount_ * sizeof(float) + 4 * 1024;
+  }
+
+  [[nodiscard]] AudioFileSourceNode *getAudioFileSourceNode() const {
+    return static_cast<AudioFileSourceNode *>(node_->handle->audioNode->asAudioNode());
   }
 
  private:

@@ -37,6 +37,14 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
   loopEnd_ = loopEnd;
 }
 
+void AudioBufferSourceNode::setLoop(bool loop) {
+  loop_ = loop;
+}
+
+void AudioBufferSourceNode::setLoopSkip(bool loopSkip) {
+  loopSkip_ = loopSkip;
+}
+
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
     const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {

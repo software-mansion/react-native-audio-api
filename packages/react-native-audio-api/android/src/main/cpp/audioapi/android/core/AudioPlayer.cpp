@@ -15,9 +15,10 @@ AudioPlayer::AudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount)
-    : renderAudio_(renderAudio), sampleRate_(sampleRate), channelCount_(channelCount) {
-  isInitialized_.store(openAudioStream(), std::memory_order_release);
-}
+    : renderAudio_(renderAudio),
+      sampleRate_(sampleRate),
+      channelCount_(channelCount),
+      isRunning_(false) {}
 
 bool AudioPlayer::openAudioStream() {
   AudioStreamBuilder builder;
@@ -29,9 +30,9 @@ bool AudioPlayer::openAudioStream() {
       ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)
-      ->setDataCallback(this)
-      ->setSampleRate(static_cast<int>(sampleRate_))
-      ->setErrorCallback(this);
+      ->setDataCallback(shared_from_this())
+      ->setErrorCallback(shared_from_this())
+      ->setSampleRate(static_cast<int>(sampleRate_));
 
   auto result = builder.openStream(mStream_);
   if (result != oboe::Result::OK || mStream_ == nullptr) {
@@ -41,6 +42,7 @@ bool AudioPlayer::openAudioStream() {
   }
 
   buffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
+  isInitialized_ = true;
   return true;
 }
 
@@ -102,7 +104,7 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
     return DataCallbackResult::Continue;
   }
 
-  auto buffer = static_cast<float *>(audioData);
+  auto *buffer = static_cast<float *>(audioData);
   int processedFrames = 0;
 
   while (processedFrames < numFrames) {

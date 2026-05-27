@@ -15,7 +15,7 @@ GainNodeHostObject::GainNodeHostObject(
           context->getGraph(),
           std::make_unique<GainNode>(context, options),
           options) {
-  auto gainNode = static_cast<GainNode *>(node_->handle->audioNode->asAudioNode());
+  auto *gainNode = static_cast<GainNode *>(node_->handle->audioNode->asAudioNode());
   gainParam_ = std::make_shared<AudioParamHostObject>(graph_, node_, gainNode->getGainParam());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(GainNodeHostObject, gain));

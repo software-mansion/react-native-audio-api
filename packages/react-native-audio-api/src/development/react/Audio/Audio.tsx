@@ -74,6 +74,15 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  useEffect(() => {
+    return () => {
+      fileSourceRef.current?.disconnect();
+      fileSourceRef.current?.pause();
+      fileSourceRef.current?.dispose();
+      fileSourceRef.current = null;
+    };
+  }, []);
+
   const effectiveMutedState = useMemo(() => {
     return mutedState ?? muted;
   }, [mutedState, muted]);
@@ -217,8 +226,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
 
     return () => {
       isCancelled = true;
-      fileSourceRef.current?.stopPositionTracking();
-      fileSourceRef.current?.dispose();
     };
   }, [path, source, spawnFileSource, onError, onLoadStart]);
 
@@ -256,8 +263,10 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       seekToTime,
       setVolume: setVolumeState,
       setMuted: setMutedState,
+      getFileSourceNode: () =>
+        fileSourceRef.current?.getFileSourceNode() ?? null,
     }),
-    [pause, play, seekToTime, setMutedState, setVolumeState]
+    [pause, play, seekToTime, setMutedState, setVolumeState, fileSourceRef]
   );
 
   const ctxValue = useMemo(

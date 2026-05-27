@@ -112,7 +112,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
-
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   static constexpr size_t GC_AUDIO_SCHEDULER_CAPACITY = 256;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;

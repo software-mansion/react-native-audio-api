@@ -11,6 +11,8 @@ export { default as BaseAudioContext } from './web-core/BaseAudioContext';
 export { default as BiquadFilterNode } from './web-core/BiquadFilterNode';
 export { default as DelayNode } from './web-core/DelayNode';
 export { default as GainNode } from './web-core/GainNode';
+export { default as MediaElementAudioSourceNode } from './web-core/MediaElementAudioSourceNode';
+export type { MediaElementAudioSourceOptions } from './web-core/MediaElementAudioSourceNode';
 export { default as OscillatorNode } from './web-core/OscillatorNode';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode';
 export { default as ConstantSourceNode } from './web-core/ConstantSourceNode';

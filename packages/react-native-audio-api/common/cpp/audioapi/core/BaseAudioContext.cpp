@@ -51,7 +51,7 @@ double BaseAudioContext::getCurrentTime() const {
   return static_cast<double>(getCurrentSampleFrame()) / getSampleRate();
 }
 
-void BaseAudioContext::setState(audioapi::ContextState state) {
+void BaseAudioContext::setState(ContextState state) {
   state_.store(state, std::memory_order_release);
 }
 

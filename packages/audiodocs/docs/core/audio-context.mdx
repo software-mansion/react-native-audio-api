@@ -33,6 +33,16 @@ It inherits all properties from [`BaseAudioContext`](/docs/core/base-audio-conte
 
 It inherits all methods from [`BaseAudioContext`](/docs/core/base-audio-context#methods).
 
+### `createMediaElementSource`
+
+Creates [`MediaElementAudioSourceNode`](/docs/sources/media-element-audio-source-node), routing media playback into the audio graph.
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) (native) | Media element to route into the graph. On native, wait for [`onLoad`](/docs/experimental/audio-tag#props-audioprops) on `<Audio>` before calling. |
+
+#### Returns [`MediaElementAudioSourceNode`](/docs/sources/media-element-audio-source-node).
+
 ### `close`
 
 Closes the audio context, releasing any system audio resources that it uses.

@@ -6,6 +6,8 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+#include <audioapi/core/sources/AudioFileSourceNode.h>
+#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <memory>
 
 namespace audioapi {

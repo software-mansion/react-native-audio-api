@@ -1,0 +1,108 @@
+---
+sidebar_position: 6
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { ReadOnly } from '@site/src/components/Badges';
+
+# MediaElementAudioSourceNode
+
+The `MediaElementAudioSourceNode` is an [`AudioNode`](/docs/core/audio-node) that routes media playback into the audio graph.
+On the web it mirrors [`AudioContext.createMediaElementSource()`](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaElementSource) and accepts an `HTMLMediaElement`.
+On the native it wraps a file-backed source created by the experimental [`<Audio>`](/docs/experimental/audio-tag) tag.
+
+## Constructor
+
+```tsx
+constructor(context: BaseAudioContext, options: MediaElementAudioSourceOptions)
+```
+
+### `MediaElementAudioSourceOptions`
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) (native) | — | Media element whose audio is routed into the graph. On native, wait for [`onLoad`](/docs/experimental/audio-tag#props-audioprops) before constructing this node. |
+
+Or by using [`AudioContext`](/docs/core/audio-context) factory method:
+[`AudioContext.createMediaElementSource()`](/docs/core/audio-context#createmediaelementsource)
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `InvalidStateError` | Creating second node from the same media element. |
+
+## Example
+
+```tsx
+import React, { useRef } from 'react';
+import {
+  AudioContext,
+  GainNode,
+} from 'react-native-audio-api';
+import { Audio, AudioTagHandle } from 'react-native-audio-api/development/react';
+
+function WebExample() {
+  const audioContextRef = useRef<AudioContext | null>(null);
+  if (!audioContextRef.current) {
+    audioContextRef.current = new AudioContext();
+  }
+
+  const audioElement = document.querySelector('audio')!;
+  const sourceNode = audioContextRef.current.createMediaElementSource(audioElement);
+  sourceNode.connect(audioContextRef.current.destination);
+}
+
+function NativeExample() {
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioRef = useRef<AudioTagHandle>(null);
+
+  if (!audioContextRef.current) {
+    audioContextRef.current = new AudioContext();
+  }
+
+  const routeThroughGraph = () => {
+    if (!audioRef.current || !audioContextRef.current) {
+      return;
+    }
+
+    const mediaElementSource = audioContextRef.current.createMediaElementSource(
+      audioRef.current
+    );
+    const gain = audioContextRef.current.createGain();
+    mediaElementSource.connect(gain);
+    gain.connect(audioContextRef.current.destination);
+    audioRef.current.play();
+  };
+
+  return (
+    <Audio
+      ref={audioRef}
+      source="https://example.com/audio.mp3"
+      context={audioContextRef.current}
+      onLoad={routeThroughGraph}
+    />
+  );
+}
+```
+
+## Properties
+
+It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated media element" channelCountMode="max" channelInterpretation="speakers" />
+
+| Name | Type | Default value | Description |
+| :----: | :----: | :-------- | :------- |
+| `mediaElement` <ReadOnly /> | `HTMLMediaElement` \| [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) | — | The media element routed into the audio graph. |
+
+## Methods
+
+It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+## Remarks
+
+#### Native routing
+
+- On native, the underlying file source is disconnected from the destination when this node is created so audio is not processed twice.
+- Use the same [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) for transport controls (`play`, `pause`, `seekToTime`, `volume`).

@@ -1,6 +1,7 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
+#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/GraphObject.h>
@@ -20,6 +21,17 @@ namespace {
 /// @brief Returns the AudioNode associated with `node`, or nullptr if the
 /// node has no audio payload (e.g. the lightweight `graph->addNode()` used
 /// in tests that exercise topology only).
+inline void notifyMediaElementOutputsDisconnected(
+    audioapi::AudioNode *fromAudio,
+    const HostGraph::Node *from) {
+  if (from == nullptr || !from->outputs.empty() || fromAudio == nullptr) {
+    return;
+  }
+  if (auto *media = dynamic_cast<audioapi::MediaElementAudioSourceNode *>(fromAudio)) {
+    media->onOutputsDisconnected();
+  }
+}
+
 inline audioapi::AudioNode *audioNodeOf(const HostGraph::Node *node) {
   if (node == nullptr || node->handle == nullptr || node->handle->audioNode == nullptr) {
     return nullptr;
@@ -313,6 +325,10 @@ auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
   from->outputs.erase(itOut);
   edgeCount_--;
 
+  if (auto *fromAudio = from->handle->audioNode->asAudioNode()) {
+    notifyMediaElementOutputsDisconnected(fromAudio, from);
+  }
+
   // Channel-count negotiation: computed + allocated on the host thread,
   // applied on the audio thread by the AGEvent below.
   auto negotiatedBuffer = buildNegotiatedBufferIfNeeded(to);
@@ -365,6 +381,10 @@ auto HostGraph::removeAllEdges(Node *from) -> Res {
     pairs.emplace_back(from->handle->index, to->handle->index);
   }
   from->outputs.clear();
+
+  if (auto *fromAudio = from->handle->audioNode->asAudioNode()) {
+    notifyMediaElementOutputsDisconnected(fromAudio, from);
+  }
 
   return Res::Ok([pairs = std::move(pairs), from](AudioGraph &graph, auto &disposer) mutable {
     auto *fromNode = from->handle->audioNode->asAudioNode();
