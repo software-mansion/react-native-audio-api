@@ -12,7 +12,6 @@ import type {
   AudioTagHandle,
   AudioProps,
   AudioTagPlaybackState,
-  PreloadType,
 } from './types';
 
 import { AudioComponentContext } from './AudioTagContext';
@@ -51,8 +50,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
 
   const path = useMemo(() => resolveSourcePath(source), [source]);
 
-  const preloadMode: PreloadType =
-    preload === 'none' || preload === 'metadata' ? preload : 'auto';
   const lastEffectiveVolumeRef = useRef(muted ? 0 : volume);
 
   const effectiveMutedState = useMemo(() => {
@@ -88,7 +85,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     context,
     path,
     source,
-    preloadMode,
+    preloadMode: preload,
     loop,
     autoPlay,
     effectiveVolumeRef,
@@ -108,7 +105,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   }, [effectiveVolumeState, fileSourceRef]);
 
   const play = useCallback(async () => {
-    if ((preloadMode === 'none' || preloadMode === 'metadata') && !ready) {
+    if ((preload === 'none' || preload === 'metadata') && !ready) {
       const loaded = await loadForPlayback();
       if (!loaded) {
         return;
@@ -122,7 +119,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     fileSourceRef.current.play();
     setPlaybackState('playing');
     onPlay();
-  }, [fileSourceRef, loadForPlayback, onPlay, preloadMode, ready]);
+  }, [fileSourceRef, loadForPlayback, onPlay, preload, ready]);
 
   playRef.current = () => {
     play();

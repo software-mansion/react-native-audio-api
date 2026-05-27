@@ -20,8 +20,7 @@ namespace audioapi {
 namespace {
 
 std::optional<double> probeDurationWithDecoder(const uint8_t *data, size_t size, int sampleRate) {
-  auto duration = std::optional<double>();
-  duration =
+  auto duration =
       audiodecoding::probeDuration<miniaudio_decoder::MiniAudioDecoder>(data, size, sampleRate);
   if (duration.has_value()) {
     return duration;

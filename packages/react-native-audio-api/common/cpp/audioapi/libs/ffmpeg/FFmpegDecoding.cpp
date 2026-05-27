@@ -580,9 +580,6 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double) {
 size_t FFmpegDecoder::readPcmFrames(float *, size_t) {
   return 0;
 }
-std::optional<double> FFmpegDecoder::probeDuration(const void *, size_t, int) {
-  return std::nullopt;
-}
 std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &, int) {
   return nullptr;
 }

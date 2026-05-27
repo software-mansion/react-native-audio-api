@@ -197,10 +197,8 @@ AudioBufferResult decodeWithPCMInBase64(
   return Ok(std::move(audioBuffer));
 }
 
-template <typename T>
-concept Decoder = std::is_base_of_v<decoding::IncrementalAudioDecoder, T>;
-
-template <Decoder D>
+template <typename D>
+  requires std::is_base_of_v<decoding::IncrementalAudioDecoder, D>
 std::optional<double> probeDuration(const void *data, size_t size, int outputSampleRate) {
   D decoder;
   const auto openResult = decoder.openMemory(outputSampleRate, data, size);
