@@ -107,8 +107,8 @@ void AudioNode::disable() {
 
   isEnabled_ = false;
 
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
-    it->get()->onInputDisabled();
+  for (const auto &outputNode : outputNodes_) {
+    outputNode.get()->onInputDisabled();
   }
 }
 
@@ -297,8 +297,8 @@ void AudioNode::onInputDisconnected(AudioNode *node) {
 void AudioNode::cleanup() {
   isInitialized_.store(false, std::memory_order_release);
 
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
-    it->get()->onInputDisconnected(this);
+  for (const auto &outputNode : outputNodes_) {
+    outputNode.get()->onInputDisconnected(this);
   }
 
   outputNodes_.clear();

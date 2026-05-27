@@ -21,7 +21,7 @@
 #include <audioapi/core/sources/StreamerNode.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/WorkletSourceNode.h>
-#include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/core/utils/AudioDecoding.hpp>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
@@ -76,7 +76,7 @@ std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
   return destination_;
 }
 
-void BaseAudioContext::setState(audioapi::ContextState state) {
+void BaseAudioContext::setState(ContextState state) {
   state_.store(state, std::memory_order_release);
 }
 
@@ -178,14 +178,12 @@ std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
   return bufferSource;
 }
 
-#if !RN_AUDIO_API_TEST
 std::shared_ptr<AudioFileSourceNode> BaseAudioContext::createFileSource(
     const AudioFileSourceOptions &options) {
   auto fileSource = std::make_shared<AudioFileSourceNode>(shared_from_this(), options);
   graphManager_->addSourceNode(fileSource);
   return fileSource;
 }
-#endif // RN_AUDIO_API_TEST
 
 std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(const IIRFilterOptions &options) {
   auto iirFilter = std::make_shared<IIRFilterNode>(shared_from_this(), options);

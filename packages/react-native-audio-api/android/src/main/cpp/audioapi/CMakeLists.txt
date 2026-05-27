@@ -102,19 +102,25 @@ if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
 endif()
 
 if(RN_AUDIO_API_WORKLETS_ENABLED)
-  # Import the worklets library (similar to how Reanimated does it)
-  add_library(worklets SHARED IMPORTED)
-  set_target_properties(
-    worklets
-    PROPERTIES
-      IMPORTED_LOCATION
-      "${REACT_NATIVE_WORKLETS_DIR}/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
-  )
   list(APPEND INCLUDE_LIBRARIES
     "${REACT_NATIVE_WORKLETS_DIR}/../Common/cpp"
     "${REACT_NATIVE_WORKLETS_DIR}/src/main/cpp"
   )
-  list(APPEND LINK_LIBRARIES worklets)
+
+  find_package(react-native-worklets CONFIG QUIET)
+  if(react-native-worklets_FOUND)
+    list(APPEND LINK_LIBRARIES react-native-worklets::worklets)
+  else()
+    # Fallback for environments without prefab publication (older worklets)
+    add_library(worklets SHARED IMPORTED)
+    set_target_properties(
+      worklets
+      PROPERTIES
+        IMPORTED_LOCATION
+        "${REACT_NATIVE_WORKLETS_DIR}/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
+    )
+    list(APPEND LINK_LIBRARIES worklets)
+  endif()
 endif()
 
 target_include_directories(

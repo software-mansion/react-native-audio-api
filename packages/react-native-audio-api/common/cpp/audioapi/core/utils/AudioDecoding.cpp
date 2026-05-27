@@ -1,4 +1,4 @@
-#include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/core/utils/AudioDecoding.hpp>
 #include <audioapi/libs/base64/base64.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
@@ -195,17 +195,6 @@ AudioBufferResult decodeWithPCMInBase64(
   }
 
   return Ok(std::move(audioBuffer));
-}
-
-template <typename D>
-  requires std::is_base_of_v<decoding::IncrementalAudioDecoder, D>
-std::optional<double> probeDuration(const void *data, size_t size, int outputSampleRate) {
-  D decoder;
-  const auto openResult = decoder.openMemory(outputSampleRate, data, size);
-  if (openResult.is_err()) {
-    return std::nullopt;
-  }
-  return static_cast<double>(decoder.getDurationInSeconds());
 }
 
 } // namespace audioapi::audiodecoding

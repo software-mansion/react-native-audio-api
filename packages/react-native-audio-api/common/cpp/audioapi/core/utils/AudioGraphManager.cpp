@@ -3,6 +3,7 @@
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Locker.h>
 
@@ -188,7 +189,11 @@ void AudioGraphManager::handleConnectEvent(std::unique_ptr<Event> event) {
 
 void AudioGraphManager::handleDisconnectEvent(std::unique_ptr<Event> event) {
   if (event->payloadType == EventPayloadType::NODES) {
-    event->payload.nodes.from->disconnectNode(event->payload.nodes.to);
+    const auto &from = event->payload.nodes.from;
+    from->disconnectNode(event->payload.nodes.to);
+    if (auto *mediaElement = dynamic_cast<MediaElementAudioSourceNode *>(from.get())) {
+      mediaElement->onOutputsDisconnected();
+    }
   } else if (event->payloadType == EventPayloadType::PARAMS) {
     event->payload.params.from->disconnectParam(event->payload.params.to);
   } else {
@@ -198,11 +203,14 @@ void AudioGraphManager::handleDisconnectEvent(std::unique_ptr<Event> event) {
 
 void AudioGraphManager::handleDisconnectAllEvent(std::unique_ptr<Event> event) {
   assert(event->payloadType == EventPayloadType::NODES);
-  for (auto it = event->payload.nodes.from->outputNodes_.begin();
-       it != event->payload.nodes.from->outputNodes_.end();) {
+  const auto &from = event->payload.nodes.from;
+  for (auto it = from->outputNodes_.begin(); it != from->outputNodes_.end();) {
     auto next = std::next(it);
-    event->payload.nodes.from->disconnectNode(*it);
+    from->disconnectNode(*it);
     it = next;
+  }
+  if (auto *mediaElement = dynamic_cast<MediaElementAudioSourceNode *>(from.get())) {
+    mediaElement->onOutputsDisconnected();
   }
 }
 
@@ -223,12 +231,12 @@ void AudioGraphManager::handleAddToDeconstructionEvent(std::unique_ptr<Event> ev
 }
 
 void AudioGraphManager::cleanup() {
-  for (auto it = sourceNodes_.begin(), end = sourceNodes_.end(); it != end; ++it) {
-    it->get()->cleanup();
+  for (auto &sourceNode : sourceNodes_) {
+    sourceNode->cleanup();
   }
 
-  for (auto it = processingNodes_.begin(), end = processingNodes_.end(); it != end; ++it) {
-    it->get()->cleanup();
+  for (auto &processingNode : processingNodes_) {
+    processingNode->cleanup();
   }
 
   sourceNodes_.clear();

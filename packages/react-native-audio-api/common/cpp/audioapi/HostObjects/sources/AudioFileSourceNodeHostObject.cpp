@@ -20,7 +20,8 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, currentTime),
-      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, duration));
+      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, duration),
+      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, routedThroughMediaElement));
   addSetters(
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onPositionChanged),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onEnded),
@@ -71,6 +72,11 @@ JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, currentTime) {
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, duration) {
   return {duration_};
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, routedThroughMediaElement) {
+  auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
+  return {node->isRoutedThroughMediaElement()};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, pause) {

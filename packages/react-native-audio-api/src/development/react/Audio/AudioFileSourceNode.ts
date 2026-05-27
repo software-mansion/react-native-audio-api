@@ -14,7 +14,6 @@ type AttachFileSourceOptions = {
 export class AudioFileSourceNode extends AudioScheduledSourceNode {
   private readonly emitter = new AudioEventEmitter(global.AudioEventEmitter);
 
-  private didConnectToDestination = false;
   private positionSubscription?: AudioEventSubscription;
   private endedSubscription?: AudioEventSubscription;
 
@@ -39,17 +38,7 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     this.resetNodeAndSubscriptions();
   }
 
-  /**
-   * First call: connect to destination + start. Later calls on the same node
-   * (e.g. resume after pause): only start — avoids duplicate edges and matches
-   * native file-source resume (unpause) semantics.
-   */
   play(): void {
-    if (!this.didConnectToDestination) {
-      // @ts-expect-error destination.node is the underlying graph node
-      this.node.connect(this.context.destination.node);
-      this.didConnectToDestination = true;
-    }
     (this.node as IAudioScheduledSourceNode).start(this.context.currentTime);
   }
 
@@ -67,6 +56,10 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
 
   setLoop(value: boolean): void {
     (this.node as IAudioFileSourceNode).loop = value;
+  }
+
+  getFileSourceNode(): IAudioFileSourceNode {
+    return this.node as IAudioFileSourceNode;
   }
 
   getDuration(): number {
@@ -111,6 +104,5 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
       (this.node as IAudioFileSourceNode).onEnded = '0';
       this.node.disconnect(undefined);
     }
-    this.didConnectToDestination = false;
   }
 }

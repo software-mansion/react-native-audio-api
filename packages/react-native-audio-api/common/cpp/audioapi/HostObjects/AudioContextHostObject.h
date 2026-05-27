@@ -24,5 +24,6 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
   JSI_HOST_FUNCTION_DECL(close);
   JSI_HOST_FUNCTION_DECL(resume);
   JSI_HOST_FUNCTION_DECL(suspend);
+  JSI_HOST_FUNCTION_DECL(createMediaElementSource);
 };
 } // namespace audioapi

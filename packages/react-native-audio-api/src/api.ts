@@ -19,6 +19,7 @@ export { default as ConstantSourceNode } from './core/ConstantSourceNode';
 export { default as ConvolverNode } from './core/ConvolverNode';
 export { default as DelayNode } from './core/DelayNode';
 export { default as GainNode } from './core/GainNode';
+export { default as MediaElementAudioSourceNode } from './core/MediaElementAudioSourceNode';
 export { default as OfflineAudioContext } from './core/OfflineAudioContext';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as PeriodicWave } from './core/PeriodicWave';
@@ -33,6 +34,7 @@ export { default as WorkletSourceNode } from './core/WorkletSourceNode';
 export * from './errors';
 export * from './system/types';
 export * from './types';
+export type { MediaElementAudioSourceOptions } from './core/MediaElementAudioSourceNode';
 export type { default as AudioEventSubscription } from './events/AudioEventSubscription';
 export { default as FilePreset } from './utils/filePresets';
 

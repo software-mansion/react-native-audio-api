@@ -3,7 +3,7 @@
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/core/utils/AudioDecoding.hpp>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 

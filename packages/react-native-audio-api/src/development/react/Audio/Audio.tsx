@@ -52,6 +52,15 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
 
   const lastEffectiveVolumeRef = useRef(muted ? 0 : volume);
 
+  useEffect(() => {
+    return () => {
+      fileSourceRef.current?.disconnect();
+      fileSourceRef.current?.pause();
+      fileSourceRef.current?.dispose();
+      fileSourceRef.current = null;
+    };
+  }, []);
+
   const effectiveMutedState = useMemo(() => {
     return mutedState ?? muted;
   }, [mutedState, muted]);
@@ -105,7 +114,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   }, [effectiveVolumeState, fileSourceRef]);
 
   const play = useCallback(async () => {
-    if ((preload === 'none' || preload === 'metadata') && !ready) {
+    if (!fileSourceRef.current) {
       const loaded = await loadForPlayback();
       if (!loaded) {
         return;
@@ -119,7 +128,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     fileSourceRef.current.play();
     setPlaybackState('playing');
     onPlay();
-  }, [fileSourceRef, loadForPlayback, onPlay, preload, ready]);
+  }, [fileSourceRef, loadForPlayback, onPlay]);
 
   playRef.current = () => {
     play();
@@ -186,8 +195,10 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       seekToTime,
       setVolume: setVolumeState,
       setMuted: setMutedState,
+      getFileSourceNode: () =>
+        fileSourceRef.current?.getFileSourceNode() ?? null,
     }),
-    [pause, play, seekToTime, setMutedState, setVolumeState]
+    [pause, play, seekToTime, setMutedState, setVolumeState, fileSourceRef]
   );
 
   const ctxValue = useMemo(
