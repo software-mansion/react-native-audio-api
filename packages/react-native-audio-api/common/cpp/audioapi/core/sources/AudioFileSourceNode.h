@@ -2,17 +2,17 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
+#include <cstddef>
+#include <thread>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
-#include <audioapi/utils/TaskOffloader.hpp>
 
 #include <atomic>
 #include <memory>
-#include <string>
-#include <vector>
 
 using namespace audioapi::channels;
 
@@ -20,19 +20,19 @@ namespace audioapi {
 
 struct AudioFileSourceOptions;
 
-struct OffloadedSeekRequest {
-  double seconds = 0;
-  OffloadedSeekRequest() = default;
-  explicit OffloadedSeekRequest(double t) : seconds(t) {}
-};
+inline constexpr auto FRAME_SPSC_OVERFLOW_STRATEGY =
+    audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
+inline constexpr auto FRAME_SPSC_WAIT_STRATEGY =
+    audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
+inline constexpr auto FRAME_SPSC_CHANNEL_CAPACITY = 32;
 
-struct AudioFileDecoderState {
-  std::vector<uint8_t> memoryData;
-  std::string filePath;
-  std::vector<float> interleavedBuffer;
-  int channels = 0;
-  float sampleRate = 0;
-};
+inline constexpr auto COMMAND_SPSC_OVERFLOW_STRATEGY =
+    audioapi::channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
+inline constexpr auto COMMAND_SPSC_WAIT_STRATEGY =
+    audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
+inline constexpr auto COMMAND_SPSC_CHANNEL_CAPACITY = 16;
+
+inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 
 class AudioFileSourceNode : public AudioScheduledSourceNode {
  public:
@@ -75,54 +75,40 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       int framesToProcess) override;
 
  private:
-  void initDecoders(
-      bool useFilePath,
-      const std::shared_ptr<BaseAudioContext> &context,
-      const std::shared_ptr<AudioFileDecoderState> &state);
-
   std::shared_ptr<AudioFileDecoderState> decoderState_;
-  std::unique_ptr<decoding::IncrementalAudioDecoder> decoder_;
   float volume_;
-  bool requiresFFmpeg_;
   bool filePaused_{false};
   bool loop_{false};
   double duration_{0};
-  std::atomic<double> currentTime_{0};
   double sampleRate_{0};
-  static constexpr double ON_POSITION_CHANGED_INTERVAL = 0.25f;
-  static constexpr int SEEK_OFFLOADER_WORKER_COUNT = 16;
+  std::atomic<double> currentTime_{0};
 
-  size_t readFrames(float *buf, size_t frameCount);
+  size_t readInterleavedFrames(
+      const std::shared_ptr<DSPAudioBuffer> &destBuffer,
+      size_t framesToRead);
+
   bool seekDecoderToTime(double seconds);
-  void writeInterleavedToBufferAtOffset(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      const AudioFileDecoderState &state,
-      size_t destFrameOffset,
-      size_t frameCount) const;
-  size_t handleEof(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t regionFrames,
-      size_t framesRead,
-      size_t destFrameOffset);
 
   void sendOnPositionChangedEvent(int framesPlayed);
 
   void applyPlaybackStateAfterSuccessfulSeek(double seconds);
-  void runOffloadedSeekTask(OffloadedSeekRequest req);
+
+  // Daemon thread for decoding and seeking
+  std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
+  std::thread seekDecoderThread_;
 
   uint64_t onPositionChangedCallbackId_ = 0;
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
   std::atomic<bool> onPositionChangedFlush_{true};
 
-  /// Pending offloaded seeks; while > 0 the audio thread must not read the decoder (outputs silence).
-  std::atomic<int> pendingOffloadedSeeks_{0};
+  /// SPSC for JS -> Daemon thread communication (seek event)
+  channels::spsc::Sender<SeekRequest, COMMAND_SPSC_OVERFLOW_STRATEGY, COMMAND_SPSC_WAIT_STRATEGY>
+      commandSender_;
 
-  std::unique_ptr<task_offloader::TaskOffloader<
-      OffloadedSeekRequest,
-      spsc::OverflowStrategy::OVERWRITE_ON_FULL,
-      spsc::WaitStrategy::ATOMIC_WAIT>>
-      seekOffloader_;
+  /// SPSC for Daemon thread -> Audio thread communication (decoded frames)
+  channels::spsc::Receiver<DecoderData, FRAME_SPSC_OVERFLOW_STRATEGY, FRAME_SPSC_WAIT_STRATEGY>
+      frameReceiver_;
 };
 
 } // namespace audioapi

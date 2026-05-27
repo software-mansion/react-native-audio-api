@@ -7,9 +7,14 @@
 
 #include <audioapi/core/AudioContext.h>
 
+#include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
+#include <audioapi/utils/SpscChannel.hpp>
 #include <algorithm>
+#include <atomic>
 #include <cassert>
+#include <cstddef>
 #include <memory>
+#include <utility>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
@@ -21,35 +26,52 @@ AudioFileSourceNode::AudioFileSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
+      decoderState_(std::make_shared<AudioFileDecoderState>()),
       volume_(options.volume),
-      requiresFFmpeg_(options.requiresFFmpeg),
       loop_(options.loop),
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
-  if (useFilePath || useData) {
-    auto state = std::make_shared<AudioFileDecoderState>();
-    if (useData) {
-      state->memoryData = options.data;
-    }
-    if (useFilePath) {
-      state->filePath = options.filePath;
-    }
-    initDecoders(useFilePath, context, state);
-  }
+  // todo: possibly check for file format, if hls and ffmpeg is not available, then fail to initialize
+  // ->> add to options parsing validation
 
-  if (decoderState_ == nullptr) {
-    assert(false && "cannot initialize decoder");
+  if (!useFilePath && !useData) {
+    assert(false && "AudioFileSourceNode requires either a file path or memory data to initialize");
     return;
   }
 
-  seekOffloader_ = std::make_unique<task_offloader::TaskOffloader<
-      OffloadedSeekRequest,
-      spsc::OverflowStrategy::OVERWRITE_ON_FULL,
-      spsc::WaitStrategy::ATOMIC_WAIT>>(
-      SEEK_OFFLOADER_WORKER_COUNT, [this](OffloadedSeekRequest req) { runOffloadedSeekTask(req); });
+  // todo: possibly move to an initialization function, and handle failure more gracefully
+  auto [frameSender, frameReceiver] =
+      channels::spsc::channel<DecoderData, FRAME_SPSC_OVERFLOW_STRATEGY, FRAME_SPSC_WAIT_STRATEGY>(
+          FRAME_SPSC_CHANNEL_CAPACITY);
+  frameReceiver_ = std::move(frameReceiver);
+
+  auto [commandSender, commandReceiver] = channels::spsc::
+      channel<SeekRequest, COMMAND_SPSC_OVERFLOW_STRATEGY, COMMAND_SPSC_WAIT_STRATEGY>(
+          COMMAND_SPSC_CHANNEL_CAPACITY);
+  commandSender_ = std::move(commandSender);
+
+  SeekDecoderDaemonOptions daemonOptions{
+      .requiresFFmpeg = options.requiresFFmpeg,
+      .filePath = options.filePath,
+      .memoryData = options.data,
+      .contextSampleRate = context->getSampleRate(),
+      .loop = options.loop};
+
+  seekDecoderDaemon_ = std::make_unique<SeekDecoderDaemon>(
+      daemonOptions, decoderState_, std::move(commandReceiver), std::move(frameSender));
+
+  // check if all this is needed or some may be accessed directly from the daemon thread
+  channelCount_ = decoderState_->channelCount;
+  sampleRate_ = decoderState_->sampleRate;
+  duration_ = decoderState_->duration;
+
+  isInitialized_.store(true, std::memory_order_release);
+
+  audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+      static_cast<size_t>(RENDER_QUANTUM_SIZE), channelCount_, context->getSampleRate());
 
   isInitialized_.store(true, std::memory_order_release);
 }
@@ -79,44 +101,14 @@ void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
   onPositionChangedTime_ += framesPlayed;
 }
 
-void AudioFileSourceNode::initDecoders(
-    bool useFilePath,
-    const std::shared_ptr<BaseAudioContext> &context,
-    const std::shared_ptr<AudioFileDecoderState> &state) {
-  decoding::DecoderResult openResult = Ok(None);
-  if (requiresFFmpeg_) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    decoder_ = std::make_unique<ffmpegdecoder::FFmpegDecoder>();
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-  } else {
-    decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
-  }
-  if (useFilePath) {
-    openResult = decoder_->openFile(static_cast<int>(context->getSampleRate()), state->filePath);
-  } else {
-    openResult = decoder_->openMemory(
-        static_cast<int>(context->getSampleRate()),
-        state->memoryData.data(),
-        state->memoryData.size());
-  }
-  if (openResult.is_ok()) {
-    state->channels = decoder_->outputChannels();
-    state->sampleRate = static_cast<float>(decoder_->outputSampleRate());
-    duration_ = static_cast<double>(decoder_->getDurationInSeconds());
-  } else {
-    decoder_->close();
-  }
-  state->interleavedBuffer.resize(static_cast<size_t>(RENDER_QUANTUM_SIZE) * state->channels);
-  decoderState_ = state;
-  channelCount_ = decoderState_->channels;
-  sampleRate_ = decoderState_->sampleRate;
-  audioBuffer_ = std::make_shared<DSPAudioBuffer>(
-      static_cast<size_t>(RENDER_QUANTUM_SIZE), channelCount_, context->getSampleRate());
-}
-
 void AudioFileSourceNode::start(double when) {
   AudioScheduledSourceNode::start(when);
   filePaused_ = false;
+
+  if (seekDecoderDaemon_) {
+    seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
+    seekDecoderDaemon_.reset();
+  }
 }
 
 void AudioFileSourceNode::pause() {
@@ -124,39 +116,20 @@ void AudioFileSourceNode::pause() {
 }
 
 void AudioFileSourceNode::disable() {
-  seekOffloader_.reset();
+  decoderState_->isDaemonRunning.store(false, std::memory_order_release);
+  commandSender_.send(
+      SeekRequest{0}); // send a dummy command to unblock the daemon thread if it's waiting
+  if (seekDecoderThread_.joinable()) {
+    seekDecoderThread_.join();
+  }
   filePaused_ = false;
-  if (decoder_ != nullptr) {
-    decoder_->close();
-  }
+
   AudioScheduledSourceNode::disable();
-}
-
-size_t AudioFileSourceNode::readFrames(float *buf, size_t frameCount) {
-  if (pendingOffloadedSeeks_.load(std::memory_order_acquire) > 0) {
-    return 0;
-  }
-  return decoder_->readPcmFrames(buf, frameCount);
-}
-
-bool AudioFileSourceNode::seekDecoderToTime(double seconds) {
-  return decoder_->seekToTime(seconds).is_ok();
 }
 
 void AudioFileSourceNode::applyPlaybackStateAfterSuccessfulSeek(double seconds) {
   currentTime_.store(seconds, std::memory_order_release);
   onPositionChangedFlush_.store(true, std::memory_order_release);
-}
-
-void AudioFileSourceNode::runOffloadedSeekTask(OffloadedSeekRequest req) {
-  if (decoderState_ == nullptr) {
-    pendingOffloadedSeeks_.fetch_sub(1, std::memory_order_acq_rel);
-    return;
-  }
-  if (seekDecoderToTime(req.seconds)) {
-    applyPlaybackStateAfterSuccessfulSeek(req.seconds);
-  }
-  pendingOffloadedSeeks_.fetch_sub(1, std::memory_order_acq_rel);
 }
 
 void AudioFileSourceNode::seekToTime(double seconds) {
@@ -169,54 +142,42 @@ void AudioFileSourceNode::seekToTime(double seconds) {
   } else {
     seconds = std::max(0.0, seconds);
   }
-  pendingOffloadedSeeks_.fetch_add(1, std::memory_order_acq_rel);
-  seekOffloader_->getSender()->send(OffloadedSeekRequest{seconds});
+  decoderState_->pendingOffloadedSeeks.fetch_add(1, std::memory_order_acq_rel);
+  commandSender_.send(SeekRequest{seconds});
 }
 
-void AudioFileSourceNode::writeInterleavedToBufferAtOffset(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    const AudioFileDecoderState &state,
-    size_t destFrameOffset,
-    size_t frameCount) const {
-  if (frameCount == 0 || volume_ == 0.0f) {
-    return;
-  }
-  processingBuffer->deinterleaveFrom(state.interleavedBuffer.data(), frameCount);
-  processingBuffer->scale(volume_);
-}
+size_t AudioFileSourceNode::readInterleavedFrames(
+    const std::shared_ptr<DSPAudioBuffer> &destBuffer,
+    size_t framesToRead) {
 
-size_t AudioFileSourceNode::handleEof(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    size_t regionFrames,
-    size_t framesRead,
-    size_t destFrameOffset) {
-  if (!loop_) {
-    return framesRead;
+  // 1. Sync Gate: If a seek is active, continuously drain the pipe and return silence
+  if (decoderState_->pendingOffloadedSeeks.load(std::memory_order_acquire) > 0) {
+    DecoderData drop;
+    while (frameReceiver_.try_receive(drop) == ResponseStatus::SUCCESS) {}
+    return 0;
   }
 
-  if (!seekDecoderToTime(0)) {
-    return framesRead;
+  // 2. Direct 1:1 Read: Try to grab exactly one chunk from the queue
+  DecoderData incoming;
+  if (frameReceiver_.try_receive(incoming) == ResponseStatus::SUCCESS) {
+    size_t framesToCopy = std::min(framesToRead, incoming.size);
+    destBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesToCopy);
+
+    if (volume_ != 1.0f && framesToCopy > 0) {
+      destBuffer->scale(volume_);
+    }
+
+    return framesToCopy;
   }
 
-  const size_t toFill = regionFrames - framesRead;
-  if (toFill == 0) {
-    return framesRead;
-  }
-
-  auto &state = *decoderState_;
-  const size_t extra = readFrames(state.interleavedBuffer.data(), toFill);
-
-  if (volume_ != 0.0f) {
-    writeInterleavedToBufferAtOffset(processingBuffer, state, destFrameOffset + framesRead, extra);
-  }
-
-  return framesRead + extra;
+  return 0; // Queue empty (connection starved or buffered behind network)
 }
 
 std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  if (decoderState_ == nullptr || decoder_ == nullptr || !decoder_->isOpen()) {
+
+  if (decoderState_ == nullptr) {
     processingBuffer->zero();
     return processingBuffer;
   }
@@ -227,16 +188,13 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     return processingBuffer;
   }
 
-  if (pendingOffloadedSeeks_.load(std::memory_order_acquire) > 0) {
+  // Handle running sync gate blocks or user pause interactions instantly
+  if (decoderState_->pendingOffloadedSeeks.load(std::memory_order_acquire) > 0 || filePaused_) {
     processingBuffer->zero();
     return processingBuffer;
   }
 
-  if (filePaused_) {
-    processingBuffer->zero();
-    return processingBuffer;
-  }
-
+  // Web Audio Timeline calculations
   size_t startOffset = 0;
   size_t offsetLength = 0;
   updatePlaybackInfo(
@@ -252,30 +210,29 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     return processingBuffer;
   }
 
-  auto &state = *decoderState_;
-
-  size_t framesRead = readFrames(state.interleavedBuffer.data(), offsetLength);
-  sendOnPositionChangedEvent(static_cast<int>(framesRead));
-
-  if (volume_ != 0.0f && framesRead > 0) {
-    writeInterleavedToBufferAtOffset(processingBuffer, state, startOffset, framesRead);
+  // Zero out optional leading sub-quantum scheduling padding space
+  if (startOffset > 0) {
+    processingBuffer->zero(0, startOffset);
   }
 
+  // Consume, deinterleave, and copy chunks safely across the thread line
+  size_t framesRead = readInterleavedFrames(processingBuffer, offsetLength);
+  sendOnPositionChangedEvent(static_cast<int>(framesRead));
+
+  // Handle End of Stream / End of File boundaries
   if (framesRead < offsetLength) {
-    if (!loop_) {
+    // Because the Daemon loop rewinds internally, a true short-read here means looping is off and song ended
+    if (!decoderState_->loop.load(std::memory_order_acquire)) {
       currentTime_.store(duration_, std::memory_order_release);
       onPositionChangedFlush_.store(true, std::memory_order_release);
       sendOnPositionChangedEvent(static_cast<int>(offsetLength - framesRead));
+
       filePaused_ = true;
       playbackState_ = PlaybackState::STOP_SCHEDULED;
-      processingBuffer->zero(startOffset + framesRead, offsetLength - framesRead);
-    } else {
-      const size_t totalFilled = handleEof(processingBuffer, offsetLength, framesRead, startOffset);
-      onPositionChangedFlush_.store(true, std::memory_order_release);
-      currentTime_.store(0, std::memory_order_release);
-      sendOnPositionChangedEvent(static_cast<int>(totalFilled));
-      processingBuffer->zero(startOffset + totalFilled, offsetLength - totalFilled);
     }
+
+    // Isolate hardware drivers completely from trailing garbage stack noise
+    processingBuffer->zero(startOffset + framesRead, offsetLength - framesRead);
   }
 
   if (isStopScheduled()) {

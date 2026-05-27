@@ -309,7 +309,7 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
   if (sourceValue.isString()) {
     options.filePath = sourceValue.asString(runtime).utf8(runtime);
     options.requiresFFmpeg =
-        audiodecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
+        audiodecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac", ".m3u8"});
   } else if (sourceValue.isObject()) {
     auto sourceObj = sourceValue.asObject(runtime);
     if (sourceObj.isArrayBuffer(runtime)) {
@@ -317,8 +317,8 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
       auto *data = arrayBuffer.data(runtime);
       auto size = arrayBuffer.size(runtime);
       auto format = audiodecoder::detectAudioFormat(data, size);
-      options.requiresFFmpeg =
-          format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
+      options.requiresFFmpeg = format == AudioFormat::MP4 || format == AudioFormat::M4A ||
+          format == AudioFormat::AAC || format == AudioFormat::M3U8;
       options.data = std::vector<uint8_t>(data, data + size);
     }
   }
