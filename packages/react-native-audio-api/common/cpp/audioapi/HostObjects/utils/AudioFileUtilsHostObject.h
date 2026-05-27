@@ -16,6 +16,7 @@ class AudioFileUtilsHostObject : public JsiHostObject {
       const std::shared_ptr<react::CallInvoker> &callInvoker);
 
   JSI_HOST_FUNCTION_DECL(concatAudioFiles);
+  JSI_HOST_FUNCTION_DECL(probeDuration);
 
  private:
   std::shared_ptr<PromiseVendor> promiseVendor_;

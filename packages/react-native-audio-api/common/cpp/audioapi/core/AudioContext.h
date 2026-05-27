@@ -30,6 +30,9 @@ class AudioContext : public BaseAudioContext {
   bool start();
   void initialize() override;
 
+  std::shared_ptr<MediaElementAudioSourceNode> createMediaElementSource(
+      const std::shared_ptr<AudioFileSourceNode> &fileSource);
+
  private:
 #ifdef ANDROID
   std::shared_ptr<AudioPlayer> audioPlayer_;

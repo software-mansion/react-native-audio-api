@@ -29,10 +29,10 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   DELETE_COPY_AND_MOVE(AudioNode);
 
   [[nodiscard]] size_t getChannelCount() const;
-  void connect(const std::shared_ptr<AudioNode> &node);
+  virtual void connect(const std::shared_ptr<AudioNode> &node);
   void connect(const std::shared_ptr<AudioParam> &param);
-  void disconnect();
-  void disconnect(const std::shared_ptr<AudioNode> &node);
+  virtual void disconnect();
+  virtual void disconnect(const std::shared_ptr<AudioNode> &node);
   void disconnect(const std::shared_ptr<AudioParam> &param);
   virtual std::shared_ptr<DSPAudioBuffer> processAudio(
       const std::shared_ptr<DSPAudioBuffer> &outputBuffer,

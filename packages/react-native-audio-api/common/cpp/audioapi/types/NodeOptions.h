@@ -126,6 +126,14 @@ struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
   float volume = 1.0f;
 };
 
+struct MediaElementAudioSourceOptions : AudioNodeOptions {
+  explicit MediaElementAudioSourceOptions(int mediaChannelCount = 2) {
+    numberOfInputs = 0;
+    numberOfOutputs = 1;
+    channelCount = mediaChannelCount;
+  }
+};
+
 struct StreamerOptions : AudioScheduledSourceNodeOptions {
   std::string streamPath;
 };

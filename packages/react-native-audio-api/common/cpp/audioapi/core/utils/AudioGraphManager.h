@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/core/sources/AudioFileSourceNode.h>
+#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/utils/AudioDestructor.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -14,7 +16,6 @@ namespace audioapi {
 class AudioNode;
 class AudioScheduledSourceNode;
 class AudioParam;
-
 #define AUDIO_GRAPH_MANAGER_SPSC_OPTIONS \
   std::unique_ptr<Event>, channels::spsc::OverflowStrategy::WAIT_ON_FULL, \
       channels::spsc::WaitStrategy::BUSY_LOOP
@@ -141,10 +142,23 @@ class AudioGraphManager {
   template <typename U>
     requires std::derived_from<U, AudioNode>
   static bool canBeDestructed(std::shared_ptr<U> const &node) {
-    // If the node is an AudioScheduledSourceNode, we need to check if it is
-    // playing
+    // Scheduled sources need playback-state-aware cleanup rules.
     if constexpr (std::is_base_of_v<AudioScheduledSourceNode, U>) {
+      // AudioFileSourceNode instances are stored as AudioScheduledSourceNode in
+      // sourceNodes_, so detect them via RTTI without creating a new
+      // shared_ptr that would temporarily bump the refcount.
+      if (auto *fileNode = dynamic_cast<AudioFileSourceNode *>(node.get())) {
+        return node.use_count() == 1 && fileNode->filePaused();
+      }
+
       return node.use_count() == 1 && (node->isUnscheduled() || node->isFinished());
+    }
+
+    // if underlying engine node has count of 2 it means that only manager and media element source node are holding a reference to it,
+    // thus this node can be destructed, decreasing count to 1 and enabling file source node to be destructed as well
+    if (auto *mediaElementNode = dynamic_cast<MediaElementAudioSourceNode *>(node.get())) {
+      return node.use_count() == 1 && mediaElementNode->getFileSourceNodeUseCount() == 2 &&
+          mediaElementNode->fileSourceNodePaused();
     }
 
     if (node->requiresTailProcessing()) {
@@ -163,54 +177,28 @@ class AudioGraphManager {
     if (vec.empty()) {
       return;
     }
-    /// An example of input-output
-    /// for simplicity we will be considering vector where each value represents
-    /// use_count() of an element vec = [1, 2, 1, 3, 1] our end result will be vec
-    /// = [2, 3, 1, 1, 1] After this operation all nodes with use_count() == 1
-    /// will be at the end and we will try to send them. After sending, we will
-    /// only keep audio objects with use_count() > 1 or which failed vec = [2, 3, failed,
-    /// sent, sent] failed will be always before sents vec = [2, 3, failed] and
-    /// we resize
-    /// @note if there are no nodes with use_count() == 1 `begin` will be equal to
-    /// vec.size()
-    /// @note if all audio objects have use_count() == 1 `begin` will be 0
+    // Compact in place: try to queue each destructible element; keep the rest.
+    size_t keepIndex = 0;
+    for (size_t i = 0; i < vec.size(); ++i) {
+      if (AudioGraphManager::canBeDestructed(vec[i])) {
+        if constexpr (HasCleanupMethod<T>) {
+          if (vec[i]) {
+            vec[i]->cleanup();
+          }
+        }
 
-    int begin = 0;
-    int end = vec.size() - 1; // can be -1 (edge case)
-
-    // Moves all audio objects with use_count() == 1 to the end
-    // nodes in range [begin, vec.size()) should be deleted
-    // so new size of the vector will be `begin`
-    while (begin <= end) {
-      while (begin < end && AudioGraphManager::canBeDestructed(vec[end])) {
-        end--;
-      }
-      if (AudioGraphManager::canBeDestructed(vec[begin])) {
-        std::swap(vec[begin], vec[end]);
-        end--;
-      }
-      begin++;
-    }
-
-    for (int i = begin; i < vec.size(); i++) {
-      if constexpr (HasCleanupMethod<T>) {
-        if (vec[i]) {
-          vec[i]->cleanup();
+        // vec[i] does NOT get moved out if it is not successfully added.
+        if (audioDestructor.tryAddForDeconstruction(std::move(vec[i]))) {
+          continue;
         }
       }
 
-      /// If we fail to add we can't safely remove the node from the vector
-      /// so we swap it and advance begin cursor
-      /// @note vec[i] does NOT get moved out if it is not successfully added.
-      if (!audioDestructor.tryAddForDeconstruction(std::move(vec[i]))) {
-        std::swap(vec[i], vec[begin]);
-        begin++;
+      if (keepIndex != i) {
+        vec[keepIndex] = std::move(vec[i]);
       }
+      ++keepIndex;
     }
-    if (begin < vec.size()) {
-      // it does not reallocate if newer size is < current size
-      vec.resize(begin);
-    }
+    vec.resize(keepIndex);
   }
 };
 

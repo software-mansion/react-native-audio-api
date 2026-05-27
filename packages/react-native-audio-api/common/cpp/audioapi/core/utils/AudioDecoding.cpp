@@ -1,4 +1,4 @@
-#include <audioapi/core/utils/AudioDecoder.h>
+#include <audioapi/core/utils/AudioDecoding.hpp>
 #include <audioapi/libs/base64/base64.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace audioapi::audiodecoder {
+namespace audioapi::audiodecoding {
 
 // Drains an incremental decoder into an AudioBuffer. Total frame count is not
 // known up front for some formats (e.g. Vorbis), so we read in fixed-size
@@ -113,7 +113,7 @@ AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) 
 
   if (needsFFmpegByPath(path)) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-    ffmpegdecoder::FFmpegDecoder decoder;
+    ffmpeg_decoder::FFmpegDecoder decoder;
     const auto openResult = decoder.openFile(sr, path);
     if (openResult.is_err()) {
       return Err("Failed to open file with FFmpeg decoder: " + openResult.unwrap_err());
@@ -142,7 +142,7 @@ AudioBufferResult decodeWithMemoryBlock(const void *data, size_t size, float sam
 
   if (needsFFmpeg(format)) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-    ffmpegdecoder::FFmpegDecoder decoder;
+    ffmpeg_decoder::FFmpegDecoder decoder;
     const auto openResult = decoder.openMemory(sr, data, size);
     if (openResult.is_err()) {
       return Err("Failed to open memory block with FFmpeg decoder: " + openResult.unwrap_err());
@@ -197,4 +197,4 @@ AudioBufferResult decodeWithPCMInBase64(
   return Ok(std::move(audioBuffer));
 }
 
-} // namespace audioapi::audiodecoder
+} // namespace audioapi::audiodecoding

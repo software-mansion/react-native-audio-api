@@ -1,5 +1,6 @@
 import { AudioApiError } from '../errors';
 import { IAudioFileUtils } from '../interfaces';
+import { prefetchFileSegments } from '../utils/metadataPrefetching';
 
 class AudioFileUtils {
   private static instance: AudioFileUtils | null = null;
@@ -36,6 +37,13 @@ class AudioFileUtils {
 
     return this.fileUtils.concatAudioFiles(inputPaths, outputPath);
   }
+
+  public async probeDurationInstance(
+    data: ArrayBuffer,
+    sampleRate?: number
+  ): Promise<number | null> {
+    return this.fileUtils.probeDuration(data, sampleRate);
+  }
 }
 
 export async function concatAudioFiles(
@@ -45,5 +53,24 @@ export async function concatAudioFiles(
   return AudioFileUtils.getInstance().concatAudioFilesInstance(
     inputPaths,
     outputPath
+  );
+}
+
+export async function probeDuration(
+  url: string,
+  startBytes: number,
+  endBytes: number,
+  sampleRate?: number,
+  headers?: { [key: string]: string }
+): Promise<number | null> {
+  const prefetchedData = await prefetchFileSegments({
+    url,
+    startBytes,
+    endBytes,
+    headers,
+  });
+  return AudioFileUtils.getInstance().probeDurationInstance(
+    prefetchedData,
+    sampleRate
   );
 }

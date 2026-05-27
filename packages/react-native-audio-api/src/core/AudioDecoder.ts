@@ -89,9 +89,16 @@ class AudioDecoder {
   }
 
   private resolveLocalFilePath(stringSource: string): string {
-    return stringSource.startsWith('file://')
-      ? stringSource.replace('file://', '')
+    const stripped = stringSource.startsWith('file://')
+      ? stringSource.slice('file://'.length)
       : stringSource;
+    try {
+      // Unescape percent-encoded tokens.
+      return decodeURIComponent(stripped);
+    } catch {
+      // Fall back to the stripped path if encoding is malformed.
+      return stripped;
+    }
   }
 
   private async decodeFromLocalFile(

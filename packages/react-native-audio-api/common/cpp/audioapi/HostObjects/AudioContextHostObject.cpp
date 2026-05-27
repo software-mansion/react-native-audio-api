@@ -1,5 +1,7 @@
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 
+#include <audioapi/HostObjects/sources/AudioFileSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/MediaElementAudioSourceNodeHostObject.h>
 #include <audioapi/core/AudioContext.h>
 #include <memory>
 #include <utility>
@@ -19,7 +21,8 @@ AudioContextHostObject::AudioContextHostObject(
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
-      JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend));
+      JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend),
+      JSI_EXPORT_FUNCTION(AudioContextHostObject, createMediaElementSource));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
@@ -55,6 +58,22 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   });
 
   return promise;
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
+  auto sourceObject = args[0].asObject(runtime);
+  auto fileSourceHostObject = sourceObject.getHostObject<AudioFileSourceNodeHostObject>(runtime);
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+  auto mediaElementSourceNode =
+      audioContext->createMediaElementSource(fileSourceHostObject->getAudioFileSourceNode());
+
+  if (mediaElementSourceNode == nullptr) {
+    throw jsi::JSError(runtime, "This media element is already connected to this AudioContext.");
+  }
+
+  auto mediaElementSourceHostObject =
+      std::make_shared<MediaElementAudioSourceNodeHostObject>(mediaElementSourceNode);
+  return jsi::Object::createFromHostObject(runtime, mediaElementSourceHostObject);
 }
 
 } // namespace audioapi

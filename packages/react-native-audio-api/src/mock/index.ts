@@ -469,6 +469,19 @@ class StreamerNodeMock extends AudioScheduledSourceNodeMock {
   resume(): void {}
 }
 
+class MediaElementAudioSourceNodeMock extends AudioNodeMock {
+  readonly mediaElement: HTMLMediaElement | AudioNodeMock;
+
+  constructor(
+    context: BaseAudioContextMock,
+    mediaElement: HTMLMediaElement | AudioNodeMock
+  ) {
+    super(context, {});
+    this.mediaElement = mediaElement;
+    this.numberOfInputs = 0;
+  }
+}
+
 class WorkletNodeMock extends AudioNodeMock {
   constructor(
     context: BaseAudioContextMock,
@@ -683,6 +696,12 @@ class AudioContextMock extends BaseAudioContextMock {
   suspend(): Promise<void> {
     this._state = 'suspended';
     return Promise.resolve();
+  }
+
+  createMediaElementSource(
+    mediaElement: HTMLMediaElement | AudioNodeMock
+  ): MediaElementAudioSourceNodeMock {
+    return new MediaElementAudioSourceNodeMock(this, mediaElement);
   }
 }
 
@@ -1016,6 +1035,7 @@ export const ConstantSourceNode = ConstantSourceNodeMock;
 export const ConvolverNode = ConvolverNodeMock;
 export const DelayNode = DelayNodeMock;
 export const GainNode = GainNodeMock;
+export const MediaElementAudioSourceNode = MediaElementAudioSourceNodeMock;
 export const OfflineAudioContext = OfflineAudioContextMock;
 export const OscillatorNode = OscillatorNodeMock;
 export const RecorderAdapterNode = RecorderAdapterNodeMock;
@@ -1068,6 +1088,7 @@ export type ConstantSourceNode = ConstantSourceNodeMock;
 export type ConvolverNode = ConvolverNodeMock;
 export type DelayNode = DelayNodeMock;
 export type GainNode = GainNodeMock;
+export type MediaElementAudioSourceNode = MediaElementAudioSourceNodeMock;
 export type OfflineAudioContext = OfflineAudioContextMock;
 export type OscillatorNode = OscillatorNodeMock;
 export type RecorderAdapterNode = RecorderAdapterNodeMock;
@@ -1130,6 +1151,7 @@ export default {
   ConvolverNode: ConvolverNodeMock,
   DelayNode: DelayNodeMock,
   GainNode: GainNodeMock,
+  MediaElementAudioSourceNode: MediaElementAudioSourceNodeMock,
   OfflineAudioContext: OfflineAudioContextMock,
   OscillatorNode: OscillatorNodeMock,
   RecorderAdapterNode: RecorderAdapterNodeMock,

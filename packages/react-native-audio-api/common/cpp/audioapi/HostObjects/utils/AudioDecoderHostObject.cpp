@@ -1,6 +1,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
-#include <audioapi/core/utils/AudioDecoder.h>
+#include <audioapi/core/utils/AudioDecoding.hpp>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
@@ -28,7 +28,7 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
   auto sampleRate = static_cast<float>(args[1].getNumber());
 
   auto promise = promiseVendor_->createAsyncPromise([data, size, sampleRate]() -> PromiseResolver {
-    auto result = audiodecoder::decodeWithMemoryBlock(data, size, sampleRate);
+    auto result = audiodecoding::decodeWithMemoryBlock(data, size, sampleRate);
 
     if (result.is_err()) {
       return [result = std::move(result)](
@@ -54,7 +54,7 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
   auto sampleRate = static_cast<float>(args[1].getNumber());
 
   auto promise = promiseVendor_->createAsyncPromise([sourcePath, sampleRate]() -> PromiseResolver {
-    auto result = audiodecoder::decodeWithFilePath(sourcePath, sampleRate);
+    auto result = audiodecoding::decodeWithFilePath(sourcePath, sampleRate);
 
     if (result.is_err()) {
       return [result = std::move(result)](
@@ -84,7 +84,7 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
 
   auto promise = promiseVendor_->createAsyncPromise(
       [b64, inputSampleRate, inputChannelCount, interleaved]() -> PromiseResolver {
-        auto result = audiodecoder::decodeWithPCMInBase64(
+        auto result = audiodecoding::decodeWithPCMInBase64(
             b64, inputSampleRate, inputChannelCount, interleaved);
 
         if (result.is_err()) {
