@@ -47,8 +47,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   explicit AudioFileSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioFileSourceOptions &options);
-  ~AudioFileSourceNode() override = default;
-  DELETE_COPY_AND_MOVE(AudioFileSourceNode);
 
   /// @brief Closes the decoder and tears down offloaded seek workers.
   void disable() override;
@@ -106,6 +104,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief True when paused or stopped after natural end-of-file (non-looping).
   bool filePaused() const {
     return filePaused_;
+  }
+
+  bool canBeDestructed() const override {
+    return filePaused() || AudioScheduledSourceNode::canBeDestructed();
   }
 
  protected:

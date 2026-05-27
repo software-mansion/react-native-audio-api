@@ -29,6 +29,10 @@ MediaElementAudioSourceNode::~MediaElementAudioSourceNode() {
   }
 }
 
+bool MediaElementAudioSourceNode::canBeDestructed() const {
+  return fileSourceNodePaused();
+}
+
 void MediaElementAudioSourceNode::onOutputsDisconnected() {
   if (fileSource_ != nullptr) {
     fileSource_->releaseMediaElementSource(bindingId_);
@@ -55,7 +59,7 @@ size_t MediaElementAudioSourceNode::getFileSourceNodeUseCount() const {
 
 bool MediaElementAudioSourceNode::fileSourceNodePaused() const {
   if (fileSource_ == nullptr) {
-    return false;
+    return true;
   }
   return fileSource_->filePaused();
 }

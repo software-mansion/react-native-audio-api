@@ -24,6 +24,7 @@ class MediaElementAudioSourceNode : public AudioNode {
 
   size_t getFileSourceNodeUseCount() const;
   bool fileSourceNodePaused() const;
+  bool canBeDestructed() const override;
 
   /// @note Audio Thread only — called after graph disconnects are applied.
   void onOutputsDisconnected();
