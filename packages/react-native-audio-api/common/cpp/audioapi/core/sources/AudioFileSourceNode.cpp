@@ -217,18 +217,6 @@ void AudioFileSourceNode::seekToTime(double seconds) {
   seekOffloader_->getSender()->send(OffloadedSeekRequest{seconds});
 }
 
-void AudioFileSourceNode::writeInterleavedToBufferAtOffset(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    const AudioFileDecoderState &state,
-    size_t destFrameOffset,
-    size_t frameCount) const {
-  if (frameCount == 0 || volume_ == 0.0f) {
-    return;
-  }
-  processingBuffer->deinterleaveFrom(state.interleavedBuffer.data(), frameCount);
-  processingBuffer->scale(volume_);
-}
-
 size_t AudioFileSourceNode::handleEof(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t regionFrames,
@@ -251,7 +239,8 @@ size_t AudioFileSourceNode::handleEof(
   const size_t extra = readFrames(state.interleavedBuffer.data(), toFill);
 
   if (volume_ != 0.0f) {
-    writeInterleavedToBufferAtOffset(processingBuffer, state, destFrameOffset + framesRead, extra);
+    processingBuffer->deinterleaveFrom(state.interleavedBuffer.data(), extra);
+    processingBuffer->scale(volume_);
   }
 
   return framesRead + extra;
@@ -307,7 +296,8 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   sendOnPositionChangedEvent(static_cast<int>(framesRead));
 
   if (volume_ != 0.0f && framesRead > 0) {
-    writeInterleavedToBufferAtOffset(processingBuffer, state, startOffset, framesRead);
+    processingBuffer->deinterleaveFrom(state.interleavedBuffer.data(), framesRead);
+    processingBuffer->scale(volume_);
   }
 
   if (framesRead < offsetLength) {
