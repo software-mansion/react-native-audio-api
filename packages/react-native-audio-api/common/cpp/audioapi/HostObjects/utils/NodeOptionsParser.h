@@ -8,7 +8,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/core/utils/AudioDecoder.h>
+#include <audioapi/core/utils/AudioDecoding.hpp>
 #include <audioapi/types/NodeOptions.h>
 
 namespace audioapi::option_parser {
@@ -309,14 +309,14 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
   if (sourceValue.isString()) {
     options.filePath = sourceValue.asString(runtime).utf8(runtime);
     options.requiresFFmpeg =
-        audiodecoder::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
+        audiodecoding::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
   } else if (sourceValue.isObject()) {
     auto sourceObj = sourceValue.asObject(runtime);
     if (sourceObj.isArrayBuffer(runtime)) {
       auto arrayBuffer = sourceObj.getArrayBuffer(runtime);
       auto *data = arrayBuffer.data(runtime);
       auto size = arrayBuffer.size(runtime);
-      auto format = audiodecoder::detectAudioFormat(data, size);
+      auto format = audiodecoding::detectAudioFormat(data, size);
       options.requiresFFmpeg =
           format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
       options.data = std::vector<uint8_t>(data, data + size);

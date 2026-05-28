@@ -86,7 +86,7 @@ void AudioFileSourceNode::initDecoders(
   decoding::DecoderResult openResult = Ok(None);
   if (requiresFFmpeg_) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-    decoder_ = std::make_unique<ffmpegdecoder::FFmpegDecoder>();
+    decoder_ = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
   } else {
     decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();

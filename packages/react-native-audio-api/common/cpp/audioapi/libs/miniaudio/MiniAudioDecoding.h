@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -15,11 +16,11 @@ namespace audioapi::miniaudio_decoder {
 
 /**
  * MiniAudio-backed incremental decoder (Vorbis/Opus/WAV, etc. via ma_decoder + custom backends).
- * Same usage contract as ffmpegdecoder::FFmpegDecoder.
+ * Same usage contract as ffmpeg_decoder::FFmpegDecoder.
  */
 class MiniAudioDecoder : public decoding::IncrementalAudioDecoder {
  public:
-  MiniAudioDecoder();
+  MiniAudioDecoder() = default;
   ~MiniAudioDecoder() override;
   DELETE_COPY_AND_MOVE(MiniAudioDecoder);
 

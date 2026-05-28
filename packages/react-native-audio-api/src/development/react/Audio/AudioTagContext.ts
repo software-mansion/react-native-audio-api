@@ -1,5 +1,4 @@
 import { createContext, useContext } from 'react';
-import type BaseAudioContext from '../../../core/BaseAudioContext';
 import type { AudioTagPlaybackState, PreloadType } from './types';
 
 export type AudioComponentContextType = {
@@ -20,7 +19,6 @@ export type AudioComponentContextType = {
   preload: PreloadType;
   playbackRate: number;
   preservesPitch: boolean;
-  audioContext: BaseAudioContext | null;
 };
 
 export const AudioComponentContext = createContext<

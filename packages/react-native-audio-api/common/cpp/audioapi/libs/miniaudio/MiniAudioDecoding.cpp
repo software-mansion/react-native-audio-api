@@ -45,8 +45,6 @@ ma_decoder_config makeDecoderConfig(const int outputSampleRate) {
 
 } // namespace
 
-MiniAudioDecoder::MiniAudioDecoder() = default;
-
 MiniAudioDecoder::~MiniAudioDecoder() {
   close();
 }

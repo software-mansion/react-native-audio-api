@@ -23,8 +23,7 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/OfflineAudioContext.h>
-#include <audioapi/core/utils/AudioDecoder.h>
+#include <audioapi/core/utils/AudioDecoding.hpp>
 
 #include <memory>
 #include <vector>

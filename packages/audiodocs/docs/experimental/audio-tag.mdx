@@ -54,7 +54,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `loop` | `boolean` | `false` | Loop playback. |
 | `muted` | `boolean` | `false` | Muted state. |
 | `volume` | `number` | `1` | Linear volume passed to the underlying source. |
-| `preload` | `PreloadType` | `'auto'` | *Web support only* |
+| `preload` | `PreloadType` | `'auto'` | Loading strategy for the source (`'none'`, `'metadata'`, `'auto'`). |
 | `playbackRate` | `number` | `1` | *Web support only*  |
 | `preservesPitch` | `boolean` | `true` | *Web support only* |
 | `onLoadStart` | `() => void` | no-op | Load started. |
@@ -71,6 +71,24 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 - `string` — URI or path (`http(s):`, `file://`, or platform-specific asset path).
 - `number` — Result of `require('./file.mp3')` (bundled asset).
 - `AudioURISource` — `{ uri?: string; headers?: Record<string, string> }` for fetch with custom headers.
+
+### `preload`
+
+- `none` - Do not load on mount.
+- `metadata` - Load enough to probe duration.
+- `auto` (and empty string) - Load source immediately on mount (default behavior).
+
+#### `metadata` format support (native)
+
+Metadata preload without a full download is only supported for remote sources whose path ends with one of these extensions:
+
+| Extension | Codec / container |
+| :--- | :--- |
+| `.opus` | Opus |
+| `.mp4` | MP4 |
+| `.m4a` | M4A |
+| `.wav` | WAV |
+| `.flac` | FLAC |
 
 ## Ref handle (`AudioTagHandle`) methods
 
@@ -123,7 +141,6 @@ type AudioComponentContextType = {
   preload: PreloadType;
   playbackRate: number;
   preservesPitch: boolean;
-  audioContext: BaseAudioContext | null;
 };
 ```
 </details>

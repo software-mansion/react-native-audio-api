@@ -390,6 +390,10 @@ export interface IAudioFileUtils {
     inputPaths: string[],
     outputPath: string
   ) => Promise<string>;
+  probeDuration: (
+    data: ArrayBuffer,
+    sampleRate?: number
+  ) => Promise<number | null>;
 }
 
 export interface IAudioEventEmitter {

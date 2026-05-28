@@ -12,6 +12,7 @@
 
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -24,7 +25,7 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
-namespace audioapi::ffmpegdecoder {
+namespace audioapi::ffmpeg_decoder {
 
 /// Opaque IO state for openMemory (must outlive decode until close).
 struct MemoryIOContext {
@@ -42,11 +43,8 @@ struct MemoryIOContext {
 class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
  public:
   FFmpegDecoder() = default;
-  FFmpegDecoder(const FFmpegDecoder &) = delete;
-  FFmpegDecoder &operator=(const FFmpegDecoder &) = delete;
-  FFmpegDecoder(FFmpegDecoder &&other) = delete;
-  FFmpegDecoder &operator=(FFmpegDecoder &&other) = delete;
   ~FFmpegDecoder() override;
+  DELETE_COPY_AND_MOVE(FFmpegDecoder);
 
   [[nodiscard]] decoding::DecoderResult openFile(
       int outputSampleRate,
@@ -101,4 +99,4 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
 std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
 std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate);
 
-} // namespace audioapi::ffmpegdecoder
+} // namespace audioapi::ffmpeg_decoder

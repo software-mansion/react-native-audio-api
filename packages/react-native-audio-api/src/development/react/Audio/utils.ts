@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { Platform } from 'react-native';
+import { Image, Platform } from 'react-native';
 import AudioContext from '../../../core/AudioContext';
 import type BaseAudioContext from '../../../core/BaseAudioContext';
-import { AudioProps, AudioPropsBase } from './types';
+import { AudioProps, AudioPropsBase, AudioSource } from './types';
 
 const noop = () => {};
 const noopError = (_error: Error) => {};
@@ -23,7 +23,7 @@ export function withPropsDefaults(
     controls: props.controls ?? false,
     loop: props.loop ?? false,
     muted: props.muted ?? false,
-    preload: props.preload ?? 'auto',
+    preload: props.preload || 'auto',
     source: props.source ?? [],
     playbackRate: props.playbackRate ?? 1.0,
     preservesPitch: props.preservesPitch ?? true,
@@ -117,4 +117,26 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       onVolumeChange,
     ]
   );
+}
+
+export function resolveSourcePath(source: AudioSource): string {
+  if (typeof source === 'string') {
+    return source;
+  }
+
+  if (typeof source === 'number') {
+    return Image.resolveAssetSource(source).uri;
+  }
+
+  return source.uri ?? '';
+}
+
+export function getSourceHeaders(
+  source: AudioSource
+): Record<string, string> | undefined {
+  if (typeof source === 'object' && source && 'headers' in source) {
+    return source.headers;
+  }
+
+  return undefined;
 }

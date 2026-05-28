@@ -1,14 +1,17 @@
 #pragma once
 
 #include <audioapi/core/types/AudioFormat.h>
+#include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
-namespace audioapi::audiodecoder {
+namespace audioapi::audiodecoding {
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
 
@@ -39,4 +42,15 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
   return static_cast<float>(static_cast<int16_t>((byte2 << CHAR_BIT) | byte1)) / INT16_MAX;
 }
 
-} // namespace audioapi::audiodecoder
+template <typename D>
+  requires std::is_base_of_v<decoding::IncrementalAudioDecoder, D>
+std::optional<double> probeDuration(const void *data, size_t size, int outputSampleRate) {
+  D decoder;
+  const auto openResult = decoder.openMemory(outputSampleRate, data, size);
+  if (openResult.is_err()) {
+    return std::nullopt;
+  }
+  return static_cast<double>(decoder.getDurationInSeconds());
+}
+
+} // namespace audioapi::audiodecoding
