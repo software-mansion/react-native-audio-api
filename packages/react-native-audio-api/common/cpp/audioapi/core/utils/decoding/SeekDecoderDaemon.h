@@ -22,11 +22,13 @@ struct SeekDecoderDaemonOptions {
   bool loop;
 };
 
+// TODO: check if all those fields are necessary or even used
 struct AudioFileDecoderState {
   // Lifecycle and Sync
   std::atomic<bool> isDaemonRunning{true};
   std::atomic<bool> isReady{false}; // True once the decoder opens the file/URL
   std::atomic<int> pendingOffloadedSeeks{0};
+  std::atomic<bool> isEof{false};
 
   // Metadata
   std::atomic<int> channelCount{0};
@@ -58,7 +60,7 @@ using CommandReceiver =
 using FrameSender = Sender<DecoderData, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
 
 /// @brief SeekDecoderDaemon is a dedicated thread worker that manages an audio decoder instance (FFmpeg or MiniAudio).
-/// It listens for seek commands from the audio thread, performs seeks on the decoder,
+/// It listens for seek commands from the JS thread, performs seeks on the decoder,
 /// decodes audio frames, and sends decoded planar audio data back to the audio thread via a lock-free SPSC channel.
 class SeekDecoderDaemon {
  public:

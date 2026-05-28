@@ -135,7 +135,7 @@ export function useAudioSourceLoader({
     const headers = getSourceHeaders(source);
 
     try {
-      if (path.startsWith('http')) {
+      if (path.startsWith('http') && !path.endsWith('.m3u8')) {
         const arrayBuffer = await fetch(path, { headers }).then((response) =>
           response.arrayBuffer()
         );

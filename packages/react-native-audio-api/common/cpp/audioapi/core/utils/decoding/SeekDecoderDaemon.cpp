@@ -19,7 +19,7 @@ SeekDecoderDaemon::SeekDecoderDaemon(
       frameSender_(std::move(frameSender)) {
   if (options.requiresFFmpeg) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-    decoder_ = std::make_unique<ffmpegdecoder::FFmpegDecoder>();
+    decoder_ = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
 #endif
   } else {
     decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
@@ -48,7 +48,7 @@ SeekDecoderDaemon::SeekDecoderDaemon(
 
 void SeekDecoderDaemon::operator()() {
   const size_t chunkSize = RENDER_QUANTUM_SIZE;
-  const size_t chCount = static_cast<size_t>(sharedState_->channelCount);
+  const auto chCount = static_cast<size_t>(sharedState_->channelCount);
 
   DecoderData localData;
   localData.interleavedBuffer.resize(chunkSize * chCount);
@@ -76,7 +76,6 @@ void SeekDecoderDaemon::operator()() {
 
     if (!hasPendingChunk) {
       if (!decoder_ || !decoder_->isOpen()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
         continue;
       }
 
@@ -87,11 +86,15 @@ void SeekDecoderDaemon::operator()() {
           if (decoder_->seekToTime(0).is_ok()) {
             sharedState_->currentTime.store(0.0, std::memory_order_release);
             sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
-            continue; // Loop back immediately to start
+            continue;
           }
+        } else {
+          sharedState_->isEof.store(true, std::memory_order_release);
+          continue;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        continue;
+      } else {
+        // If we read actual frames, ensure the EOF flag remains false
+        sharedState_->isEof.store(false, std::memory_order_release);
       }
 
       localData.size = framesRead;

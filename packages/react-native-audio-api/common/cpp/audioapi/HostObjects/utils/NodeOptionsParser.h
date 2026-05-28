@@ -3,6 +3,7 @@
 #include <audioapi/jsi/RuntimeLifecycleMonitor.h>
 #include <jsi/jsi.h>
 #include <cstddef>
+#include <cstdio>
 #include <memory>
 #include <vector>
 
@@ -297,7 +298,7 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
 
   auto loopValue = optionsObject.getProperty(runtime, "loop");
   if (loopValue.isBool()) {
-    options.loop = static_cast<bool>(loopValue.getBool());
+    options.loop = loopValue.getBool();
   }
 
   auto volumeValue = optionsObject.getProperty(runtime, "volume");

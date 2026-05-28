@@ -26,7 +26,7 @@ inline constexpr auto FRAME_SPSC_OVERFLOW_STRATEGY =
     audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
 inline constexpr auto FRAME_SPSC_WAIT_STRATEGY =
     audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
-inline constexpr auto FRAME_SPSC_CHANNEL_CAPACITY = 32;
+inline constexpr auto FRAME_SPSC_CHANNEL_CAPACITY = 64;
 
 inline constexpr auto COMMAND_SPSC_OVERFLOW_STRATEGY =
     audioapi::channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
@@ -38,6 +38,8 @@ inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
+/// @note Seek commands are executed from the JS thread and delegated to @ref SeekDecoderDaemon, which performs the seek and decoding on a worker thread,
+// then sends decoded frames back to the audio thread via SPSC channels.
 class AudioFileSourceNode : public AudioScheduledSourceNode {
   friend class MediaElementAudioSourceNode;
 
@@ -138,11 +140,12 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Updates playback clock after a successful offloaded seek.
   void applyPlaybackStateAfterSuccessfulSeek(double seconds);
 
-  size_t readInterleavedFrames(
+  /// @brief Reads decoded interleaved frames from the SPSC channel, deinterleaves them into @p destBuffer, and applies volume.
+  [[nodiscard]] size_t readInterleavedFrames(
       const std::shared_ptr<DSPAudioBuffer> &destBuffer,
       size_t framesToRead);
 
-  // Daemon thread for decoding and seeking
+  /// @brief Daemon thread for decoding and seeking
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
   std::thread seekDecoderThread_;
 
@@ -153,13 +156,12 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   uint64_t onPositionChangedCallbackId_ = 0;
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
-  std::atomic<bool> onPositionChangedFlush_{true};
 
-  /// SPSC for JS -> Daemon thread communication (seek event)
+  /// @brief SPSC for JS -> Daemon thread communication (seek event)
   channels::spsc::Sender<SeekRequest, COMMAND_SPSC_OVERFLOW_STRATEGY, COMMAND_SPSC_WAIT_STRATEGY>
       commandSender_;
 
-  /// SPSC for Daemon thread -> Audio thread communication (decoded frames)
+  /// @brief SPSC for Daemon thread -> Audio thread communication (decoded frames)
   channels::spsc::Receiver<DecoderData, FRAME_SPSC_OVERFLOW_STRATEGY, FRAME_SPSC_WAIT_STRATEGY>
       frameReceiver_;
 };
