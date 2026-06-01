@@ -74,7 +74,7 @@ PeriodicWave::PeriodicWave(
 }
 
 int PeriodicWave::getPeriodicWaveSize() const {
-  if (sampleRate_ <= 24000) {
+  if (sampleRate_ < 24000) {
     return 2048;
   }
 
