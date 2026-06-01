@@ -9,8 +9,8 @@ import type BaseAudioContext from './BaseAudioContext';
  * source. Note: This node requires the build to use FFmpeg, and will throw an
  * error if FFmpeg is not available.
  *
- * @deprecated Use the `<Audio>` element for streaming audio instead. This node
- *   will be removed in a future major release.
+ * @deprecated Use the `<Audio>` element with MediaElementAudioSourceNode for
+ *   streaming audio instead to achieve the same functionality.
  */
 export default class StreamerNode extends AudioScheduledSourceNode {
   readonly streamPath: string;
