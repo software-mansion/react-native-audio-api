@@ -108,7 +108,7 @@ void SeekDecoderDaemon::operator()() {
     if (frameSender_.try_send(localData) == ResponseStatus::SUCCESS) {
       hasPendingChunk = false;
     } else {
-      std::this_thread::yield();
+      std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_DURATION_ON_FULL));
     }
   }
 

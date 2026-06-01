@@ -71,6 +71,8 @@ inline constexpr auto FRAME_CHANNEL_CAPACITY = 64;
 using FrameSender = Sender<DecoderData, FRAME_OVERFLOW_STRATEGY, FRAME_WAIT_STRATEGY>;
 using FrameReceiver = Receiver<DecoderData, FRAME_OVERFLOW_STRATEGY, FRAME_WAIT_STRATEGY>;
 
+inline constexpr auto SLEEP_DURATION_ON_FULL = std::chrono::milliseconds(10);
+
 namespace audioapi {
 
 /// @brief SeekDecoderDaemon is a dedicated thread worker that manages an audio decoder instance (FFmpeg or MiniAudio).
