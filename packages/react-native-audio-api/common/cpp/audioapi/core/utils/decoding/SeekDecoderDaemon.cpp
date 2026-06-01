@@ -53,6 +53,7 @@ bool SeekDecoderDaemon::processSeekCommands() {
     if (decoder_ && decoder_->isOpen() && decoder_->seekToTime(seekReq.seconds).is_ok()) {
       sharedState_->currentTime.store(seekReq.seconds, std::memory_order_release);
       sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
+      sharedState_->pendingOffloadedSeeks.fetch_sub(1, std::memory_order_release);
     }
     seekHappened = true;
   }
@@ -60,7 +61,6 @@ bool SeekDecoderDaemon::processSeekCommands() {
     // Drain stale pre-seek frames before releasing the seek gate on the audio thread
     DecoderData drop;
     while (frameReceiverForDrain_->try_receive(drop) == ResponseStatus::SUCCESS) {}
-    sharedState_->pendingOffloadedSeeks.fetch_sub(1, std::memory_order_release);
   }
   return seekHappened;
 }
