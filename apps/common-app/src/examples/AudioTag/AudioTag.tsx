@@ -1,10 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import {
   Audio,
   AudioTagHandle,
 } from 'react-native-audio-api/development/react';
-import { AudioContext, BiquadFilterNode, MediaElementAudioSourceNode } from 'react-native-audio-api';
+import {
+  AudioContext,
+  BiquadFilterNode,
+  MediaElementAudioSourceNode,
+} from 'react-native-audio-api';
 
 import { Button, Container, Slider, Spacer } from '../../components';
 
@@ -28,7 +38,9 @@ const AudioTag: React.FC = () => {
     }
 
     const ctx = audioContextRef.current;
-    mediaElementSourceRef.current = ctx.createMediaElementSource(audioRef.current);
+    mediaElementSourceRef.current = ctx.createMediaElementSource(
+      audioRef.current
+    );
 
     biquadRef.current = ctx.createBiquadFilter();
     biquadRef.current.type = 'lowpass';
@@ -64,12 +76,9 @@ const AudioTag: React.FC = () => {
   const handleError = useCallback((error: Error) => {
     // console.log('onError', error);
   }, []);
-  const handlePositionChange = useCallback(
-    (seconds: number) => {
-      // console.log('onPositionChange', seconds);
-    },
-    []
-  );
+  const handlePositionChange = useCallback((seconds: number) => {
+    // console.log('onPositionChange', seconds);
+  }, []);
   const handleEnded = useCallback(() => {
     // console.log('onEnded');
   }, []);
@@ -79,12 +88,9 @@ const AudioTag: React.FC = () => {
   const handlePause = useCallback(() => {
     // console.log('onPause');
   }, []);
-  const handleVolumeEvent = useCallback(
-    (volume: number) => {
-      // console.log('onVolumeChange', volume);
-    },
-    []
-  );
+  const handleVolumeEvent = useCallback((volume: number) => {
+    // console.log('onVolumeChange', volume);
+  }, []);
 
   const audioTagElement = useMemo(
     () => (

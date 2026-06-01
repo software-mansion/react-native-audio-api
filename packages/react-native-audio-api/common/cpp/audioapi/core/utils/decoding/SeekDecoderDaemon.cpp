@@ -14,10 +14,12 @@ SeekDecoderDaemon::SeekDecoderDaemon(
     channels::spsc::Sender<
         DecoderData,
         channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-        channels::spsc::WaitStrategy::ATOMIC_WAIT> frameSender)
+        channels::spsc::WaitStrategy::ATOMIC_WAIT> frameSender,
+    std::shared_ptr<FrameReceiver> frameReceiver)
     : sharedState_(std::move(sharedState)),
       commandReceiver_(std::move(commandReceiver)),
-      frameSender_(std::move(frameSender)) {
+      frameSender_(std::move(frameSender)),
+      frameReceiverForDrain_(std::move(frameReceiver)) {
   if (options.requiresFFmpeg) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
     decoder_ = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
@@ -50,62 +52,68 @@ SeekDecoderDaemon::SeekDecoderDaemon(
   sharedState_->isReady.store(true, std::memory_order_release);
 }
 
+bool SeekDecoderDaemon::processSeekCommands() {
+  SeekRequest seekReq;
+  bool seekHappened = false;
+  while (commandReceiver_.try_receive(seekReq) == ResponseStatus::SUCCESS) {
+    if (decoder_ && decoder_->isOpen() && decoder_->seekToTime(seekReq.seconds).is_ok()) {
+      sharedState_->currentTime.store(seekReq.seconds, std::memory_order_release);
+      sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
+    }
+    seekHappened = true;
+  }
+  if (seekHappened) {
+    // Drain stale pre-seek frames before releasing the seek gate on the audio thread
+    DecoderData drop;
+    while (frameReceiverForDrain_->try_receive(drop) == ResponseStatus::SUCCESS) {}
+    sharedState_->pendingOffloadedSeeks.fetch_sub(1, std::memory_order_release);
+  }
+  return seekHappened;
+}
+
+bool SeekDecoderDaemon::decodeNextChunk(DecoderData &data) {
+  if (!decoder_ || !decoder_->isOpen()) {
+    return false;
+  }
+
+  size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
+
+  if (framesRead == 0) {
+    if (sharedState_->loop.load(std::memory_order_acquire) && decoder_->seekToTime(0).is_ok()) {
+      sharedState_->currentTime.store(0.0, std::memory_order_release);
+      sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
+    } else {
+      sharedState_->isEof.store(true, std::memory_order_release);
+    }
+    return false;
+  }
+
+  sharedState_->isEof.store(false, std::memory_order_release);
+  data.size = framesRead;
+  return true;
+}
+
 void SeekDecoderDaemon::operator()() {
   DecoderData localData;
   bool hasPendingChunk = false;
 
   while (sharedState_->isDaemonRunning.load(std::memory_order_acquire)) {
-    SeekRequest seekReq;
-    bool seekHappened = false;
-
-    while (commandReceiver_.try_receive(seekReq) == ResponseStatus::SUCCESS) {
-      if (decoder_ && decoder_->isOpen()) {
-        if (decoder_->seekToTime(seekReq.seconds).is_ok()) {
-          sharedState_->currentTime.store(seekReq.seconds, std::memory_order_release);
-          sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
-        }
-      }
-      seekHappened = true;
-    }
-
-    if (seekHappened) {
-      hasPendingChunk = false; // Dump old timeline data
-      sharedState_->pendingOffloadedSeeks.fetch_sub(1, std::memory_order_release);
+    if (processSeekCommands()) {
+      hasPendingChunk = false;
       continue;
     }
 
     if (!hasPendingChunk) {
-      if (!decoder_ || !decoder_->isOpen()) {
-        continue;
-      }
+      hasPendingChunk = decodeNextChunk(localData);
+    }
 
-      size_t framesRead =
-          decoder_->readPcmFrames(localData.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
-
-      if (framesRead == 0) {
-        if (sharedState_->loop.load(std::memory_order_acquire)) {
-          if (decoder_->seekToTime(0).is_ok()) {
-            sharedState_->currentTime.store(0.0, std::memory_order_release);
-            sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
-            continue;
-          }
-        } else {
-          sharedState_->isEof.store(true, std::memory_order_release);
-          continue;
-        }
-      } else {
-        // If we read actual frames, ensure the EOF flag remains false
-        sharedState_->isEof.store(false, std::memory_order_release);
-      }
-
-      localData.size = framesRead;
-      hasPendingChunk = true;
+    if (!hasPendingChunk) {
+      continue;
     }
 
     if (frameSender_.try_send(localData) == ResponseStatus::SUCCESS) {
       hasPendingChunk = false;
     } else {
-      // Audio thread queue is packed. Yield current time slice
       std::this_thread::yield();
     }
   }

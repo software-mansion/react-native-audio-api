@@ -62,6 +62,8 @@ namespace audioapi {
 using CommandReceiver =
     Receiver<SeekRequest, OverflowStrategy::OVERWRITE_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
 using FrameSender = Sender<DecoderData, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
+using FrameReceiver =
+    Receiver<DecoderData, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
 
 /// @brief SeekDecoderDaemon is a dedicated thread worker that manages an audio decoder instance (FFmpeg or MiniAudio).
 /// It listens for seek commands from the JS thread, performs seeks on the decoder,
@@ -72,7 +74,8 @@ class SeekDecoderDaemon {
       SeekDecoderDaemonOptions options,
       std::shared_ptr<AudioFileDecoderState> sharedState,
       CommandReceiver commandReceiver,
-      FrameSender frameSender);
+      FrameSender frameSender,
+      std::shared_ptr<FrameReceiver> frameReceiver);
 
   /// @brief Main loop of the daemon thread. Listens for seek commands,
   /// decodes audio frames, and sends decoded data back to the audio thread
@@ -80,10 +83,25 @@ class SeekDecoderDaemon {
   void operator()();
 
  private:
-  std::shared_ptr<AudioFileDecoderState> sharedState_;
   std::unique_ptr<decoding::IncrementalAudioDecoder> decoder_;
+
+  /// @brief Shared state with the AudioFileSourceNode, used for communicating decoder status, metadata, and playback position.
+  std::shared_ptr<AudioFileDecoderState> sharedState_;
+  /// @brief Receiving end of seek commands from the JS thread
   CommandReceiver commandReceiver_;
+  /// @brief Sending end for decoded audio frames back to the audio thread
   FrameSender frameSender_;
+  /// @brief Pointer to the audio thread's receiver — used only during seek to drain stale frames.
+  /// Safe because the daemon thread is joined before AudioFileSourceNode is destroyed.
+  std::shared_ptr<FrameReceiver> frameReceiverForDrain_;
+
+  /// @brief Drains the command queue and performs all pending seeks.
+  /// @return true if at least one seek command was processed.
+  bool processSeekCommands();
+
+  /// @brief Reads one quantum of frames from the decoder into @p data, handling EOF and loop-back.
+  /// @return true if @p data is filled and ready to send; false if the decoder stalled or looped.
+  bool decodeNextChunk(DecoderData &data);
 };
 
 } // namespace audioapi

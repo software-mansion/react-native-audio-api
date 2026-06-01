@@ -169,8 +169,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       commandSender_;
 
   /// @brief SPSC for Daemon thread -> Audio thread communication (decoded frames)
-  channels::spsc::Receiver<DecoderData, FRAME_SPSC_OVERFLOW_STRATEGY, FRAME_SPSC_WAIT_STRATEGY>
-      frameReceiver_;
+  std::shared_ptr<FrameReceiver> frameReceiver_;
 };
 
 } // namespace audioapi

@@ -324,6 +324,15 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     }
   }
 
+#if RN_AUDIO_API_FFMPEG_DISABLED
+  if (options.requiresFFmpeg) {
+    throw jsi::JSError(
+        runtime,
+        "AudioFileSourceNode: source format (.mp4, .m4a, .aac, .m3u8) requires FFmpeg, "
+        "which is disabled in this build.");
+  }
+#endif
+
   return options;
 }
 

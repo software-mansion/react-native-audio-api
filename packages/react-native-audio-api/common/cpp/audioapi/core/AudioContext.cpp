@@ -104,6 +104,10 @@ bool AudioContext::isDriverRunning() const {
 std::shared_ptr<MediaElementAudioSourceNode> AudioContext::createMediaElementSource(
     const std::shared_ptr<AudioFileSourceNode> &fileSource) {
 
+  if (fileSource->isRoutedThroughMediaElement()) {
+    return nullptr;
+  }
+
   auto mediaElementSource = std::make_shared<MediaElementAudioSourceNode>(
       shared_from_this(),
       fileSource,

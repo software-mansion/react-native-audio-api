@@ -36,13 +36,6 @@ AudioFileSourceNode::AudioFileSourceNode(
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
-#if RN_AUDIO_API_FFMPEG_DISABLED
-  if (options.requiresFFmpeg) {
-    // HLS and FFmpeg-only formats (.m3u8, .mp4, .m4a, .aac) are not supported in this build.
-    return;
-  }
-#endif
-
   if (!useFilePath && !useData) {
     assert(false && "AudioFileSourceNode requires either a file path or memory data to initialize");
     return;
@@ -61,7 +54,7 @@ bool AudioFileSourceNode::initDecoder(
   auto [frameSender, frameReceiver] =
       channels::spsc::channel<DecoderData, FRAME_SPSC_OVERFLOW_STRATEGY, FRAME_SPSC_WAIT_STRATEGY>(
           FRAME_SPSC_CHANNEL_CAPACITY);
-  frameReceiver_ = std::move(frameReceiver);
+  frameReceiver_ = std::make_shared<FrameReceiver>(std::move(frameReceiver));
 
   auto [commandSender, commandReceiver] = channels::spsc::
       channel<SeekRequest, COMMAND_SPSC_OVERFLOW_STRATEGY, COMMAND_SPSC_WAIT_STRATEGY>(
@@ -76,7 +69,11 @@ bool AudioFileSourceNode::initDecoder(
       .loop = options.loop};
 
   seekDecoderDaemon_ = std::make_unique<SeekDecoderDaemon>(
-      daemonOptions, decoderState_, std::move(commandReceiver), std::move(frameSender));
+      daemonOptions,
+      decoderState_,
+      std::move(commandReceiver),
+      std::move(frameSender),
+      frameReceiver_);
 
   if (!decoderState_->isReady.load(std::memory_order_acquire)) {
     return false;
@@ -217,16 +214,13 @@ void AudioFileSourceNode::seekToTime(double seconds) {
 size_t AudioFileSourceNode::readInterleavedFrames(
     const std::shared_ptr<DSPAudioBuffer> &destBuffer,
     size_t framesToRead) {
-  // If a seek is active, continuously drain the pipe and return silence
   if (decoderState_->pendingOffloadedSeeks.load(std::memory_order_acquire) > 0) {
-    DecoderData drop;
-    while (frameReceiver_.try_receive(drop) == ResponseStatus::SUCCESS) {}
     return 0;
   }
 
   // Read from the decoder daemon thread via the SPSC channel
   DecoderData incoming;
-  if (frameReceiver_.try_receive(incoming) == ResponseStatus::SUCCESS) {
+  if (frameReceiver_->try_receive(incoming) == ResponseStatus::SUCCESS) {
     size_t framesToCopy = std::min(framesToRead, incoming.size);
     destBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesToCopy);
 
