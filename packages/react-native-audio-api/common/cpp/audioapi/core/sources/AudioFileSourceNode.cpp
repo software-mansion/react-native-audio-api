@@ -48,6 +48,23 @@ AudioFileSourceNode::AudioFileSourceNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
+AudioFileSourceNode::~AudioFileSourceNode() {
+  // AudioNode::~AudioNode() -> cleanup() does not call the virtual disable(),
+  // so the daemon thread is not guaranteed to have been joined yet. A still
+  // joinable std::thread would call std::terminate() on destruction.
+  stopDaemonThread();
+}
+
+void AudioFileSourceNode::stopDaemonThread() {
+  decoderState_->isDaemonRunning.store(false, std::memory_order_release);
+  // Send a dummy command to unblock the daemon thread if it's waiting.
+  // The command channel uses OVERWRITE_ON_FULL, so this never blocks.
+  commandSender_.send(SeekRequest{0});
+  if (seekDecoderThread_.joinable()) {
+    seekDecoderThread_.join();
+  }
+}
+
 bool AudioFileSourceNode::initDecoder(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options) {
@@ -186,12 +203,7 @@ void AudioFileSourceNode::pause() {
 }
 
 void AudioFileSourceNode::disable() {
-  decoderState_->isDaemonRunning.store(false, std::memory_order_release);
-  commandSender_.send(
-      SeekRequest{0}); // send a dummy command to unblock the daemon thread if it's waiting
-  if (seekDecoderThread_.joinable()) {
-    seekDecoderThread_.join();
-  }
+  stopDaemonThread();
   filePaused_ = false;
 
   AudioScheduledSourceNode::disable();

@@ -35,7 +35,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   explicit AudioFileSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioFileSourceOptions &options);
-  ~AudioFileSourceNode() override = default;
+  ~AudioFileSourceNode() override;
   DELETE_COPY_AND_MOVE(AudioFileSourceNode);
 
   /// @brief Closes the decoder and tears down offloaded seek workers.
@@ -140,6 +140,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Daemon thread for decoding and seeking
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
   std::thread seekDecoderThread_;
+
+  /// @brief Signals the daemon to stop and joins its thread. Idempotent; safe
+  /// to call from both disable() and the destructor.
+  void stopDaemonThread();
 
   /// @brief Connects to the destination when leaving media routing while playback is active.
   /// @note Audio thread only.
