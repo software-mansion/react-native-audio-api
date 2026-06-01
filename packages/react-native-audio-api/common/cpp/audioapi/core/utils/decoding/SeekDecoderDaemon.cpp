@@ -1,6 +1,7 @@
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <memory>
 #include <utility>
+
 namespace audioapi {
 
 SeekDecoderDaemon::SeekDecoderDaemon(
@@ -26,11 +27,13 @@ SeekDecoderDaemon::SeekDecoderDaemon(
   }
 
   decoding::DecoderResult openResult = Ok(None);
+
+  int contextSampleRate = static_cast<int>(options.contextSampleRate);
   if (!options.filePath.empty()) {
-    openResult = decoder_->openFile(options.contextSampleRate, options.filePath);
+    openResult = decoder_->openFile(contextSampleRate, options.filePath);
   } else if (!options.memoryData.empty()) {
     openResult = decoder_->openMemory(
-        options.contextSampleRate, options.memoryData.data(), options.memoryData.size());
+        contextSampleRate, options.memoryData.data(), options.memoryData.size());
   }
 
   if (!openResult.is_ok()) {
@@ -43,15 +46,12 @@ SeekDecoderDaemon::SeekDecoderDaemon(
   sharedState_->sampleRate.store(
       static_cast<float>(decoder_->outputSampleRate()), std::memory_order_release);
   sharedState_->duration.store(decoder_->getDurationInSeconds(), std::memory_order_release);
+  sharedState_->loop.store(options.loop, std::memory_order_release);
   sharedState_->isReady.store(true, std::memory_order_release);
 }
 
 void SeekDecoderDaemon::operator()() {
-  const size_t chunkSize = RENDER_QUANTUM_SIZE;
-  const auto chCount = static_cast<size_t>(sharedState_->channelCount);
-
   DecoderData localData;
-  localData.interleavedBuffer.resize(chunkSize * chCount);
   bool hasPendingChunk = false;
 
   while (sharedState_->isDaemonRunning.load(std::memory_order_acquire)) {
@@ -79,7 +79,8 @@ void SeekDecoderDaemon::operator()() {
         continue;
       }
 
-      size_t framesRead = decoder_->readPcmFrames(localData.interleavedBuffer.data(), chunkSize);
+      size_t framesRead =
+          decoder_->readPcmFrames(localData.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
 
       if (framesRead == 0) {
         if (sharedState_->loop.load(std::memory_order_acquire)) {
@@ -101,12 +102,10 @@ void SeekDecoderDaemon::operator()() {
       hasPendingChunk = true;
     }
 
-    if (frameSender_.try_send(std::move(localData)) == ResponseStatus::SUCCESS) {
+    if (frameSender_.try_send(localData) == ResponseStatus::SUCCESS) {
       hasPendingChunk = false;
-      localData = DecoderData{};
-      localData.interleavedBuffer.resize(chunkSize * chCount);
     } else {
-      // Audio thread queue is packed. Yield current time slice.
+      // Audio thread queue is packed. Yield current time slice
       std::this_thread::yield();
     }
   }

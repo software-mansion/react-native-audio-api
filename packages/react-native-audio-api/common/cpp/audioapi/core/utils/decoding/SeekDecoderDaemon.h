@@ -1,11 +1,13 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 #include <audioapi/utils/SpscChannel.hpp>
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
@@ -22,20 +24,18 @@ struct SeekDecoderDaemonOptions {
   bool loop;
 };
 
-// TODO: check if all those fields are necessary or even used
 struct AudioFileDecoderState {
   // Lifecycle and Sync
   std::atomic<bool> isDaemonRunning{true};
   std::atomic<bool> isReady{false}; // True once the decoder opens the file/URL
   std::atomic<int> pendingOffloadedSeeks{0};
   std::atomic<bool> isEof{false};
+  std::atomic<bool> onPositionChangedFlush{false};
 
   // Metadata
   std::atomic<int> channelCount{0};
   std::atomic<float> sampleRate{0.0f};
   std::atomic<double> duration{0.0};
-
-  std::atomic<bool> onPositionChangedFlush{false};
 
   // Playback state
   std::atomic<double> currentTime{0.0};
@@ -49,7 +49,11 @@ struct SeekRequest {
 };
 
 struct DecoderData {
-  std::vector<float> interleavedBuffer;
+  std::array<
+      float,
+      static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) *
+          static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT)>
+      interleavedBuffer{};
   size_t size{};
 };
 

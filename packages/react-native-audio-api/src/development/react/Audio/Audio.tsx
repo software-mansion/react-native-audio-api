@@ -59,7 +59,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       fileSourceRef.current?.dispose();
       fileSourceRef.current = null;
     };
-  }, []);
+  });
 
   const effectiveMutedState = useMemo(() => {
     return mutedState ?? muted;

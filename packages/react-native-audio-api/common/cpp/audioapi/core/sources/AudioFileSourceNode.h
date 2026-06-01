@@ -91,6 +91,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Enables looping at end-of-file.
   void setLoop(bool v) {
     loop_ = v;
+    decoderState_->loop.store(v, std::memory_order_release);
   }
 
   /// @brief File duration in seconds (zero if unknown).
@@ -137,8 +138,11 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @note Audio thread only.
   void sendOnPositionChangedEvent(int framesPlayed);
 
-  /// @brief Updates playback clock after a successful offloaded seek.
-  void applyPlaybackStateAfterSuccessfulSeek(double seconds);
+  /// @brief Sets up SPSC channels, constructs the SeekDecoderDaemon, and initialises metadata from the opened decoder.
+  /// @return false if the source could not be opened; caller must not set isInitialized_.
+  [[nodiscard]] bool initDecoder(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioFileSourceOptions &options);
 
   /// @brief Reads decoded interleaved frames from the SPSC channel, deinterleaves them into @p destBuffer, and applies volume.
   [[nodiscard]] size_t readInterleavedFrames(
@@ -156,6 +160,9 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   uint64_t onPositionChangedCallbackId_ = 0;
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
+  // True when the audio thread itself wrote onPositionChangedFlush (e.g. EOF),
+  // so sendOnPositionChangedEvent knows not to sync currentTime_ from the daemon.
+  bool audioThreadSetFlush_{false};
 
   /// @brief SPSC for JS -> Daemon thread communication (seek event)
   channels::spsc::Sender<SeekRequest, COMMAND_SPSC_OVERFLOW_STRATEGY, COMMAND_SPSC_WAIT_STRATEGY>
