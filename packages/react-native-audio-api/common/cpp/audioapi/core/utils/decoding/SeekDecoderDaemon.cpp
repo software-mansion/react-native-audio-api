@@ -7,14 +7,8 @@ namespace audioapi {
 SeekDecoderDaemon::SeekDecoderDaemon(
     SeekDecoderDaemonOptions options,
     std::shared_ptr<AudioFileDecoderState> sharedState,
-    channels::spsc::Receiver<
-        SeekRequest,
-        channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL,
-        channels::spsc::WaitStrategy::ATOMIC_WAIT> commandReceiver,
-    channels::spsc::Sender<
-        DecoderData,
-        channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-        channels::spsc::WaitStrategy::ATOMIC_WAIT> frameSender,
+    CommandReceiver commandReceiver,
+    FrameSender frameSender,
     std::shared_ptr<FrameReceiver> frameReceiver)
     : sharedState_(std::move(sharedState)),
       commandReceiver_(std::move(commandReceiver)),
