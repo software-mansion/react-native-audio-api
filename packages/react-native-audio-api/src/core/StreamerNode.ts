@@ -6,8 +6,8 @@ import type BaseAudioContext from './BaseAudioContext';
 /**
  * StreamerNode is an AudioNode that allows you to stream audio from a file or
  * URL. It uses FFmpeg to decode the audio data and provides it as an audio
- * source. Note: This node requires a custom FFmpeg build that supports
- * streaming.
+ * source. Note: This node requires the build to use FFmpeg, and will throw an
+ * error if FFmpeg is not available.
  *
  * @deprecated Use the `<Audio>` element for streaming audio instead. This node
  *   will be removed in a future major release.
