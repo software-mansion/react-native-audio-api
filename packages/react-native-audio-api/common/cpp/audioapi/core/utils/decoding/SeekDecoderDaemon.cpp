@@ -48,21 +48,36 @@ SeekDecoderDaemon::SeekDecoderDaemon(
 
 bool SeekDecoderDaemon::processSeekCommands() {
   SeekRequest seekReq;
+  SeekRequest latestReq;
   bool seekHappened = false;
+  int drainedCount = 0;
+
+  // Fast-drain the command SPSC pipe to grab ONLY the final target position
   while (commandReceiver_.try_receive(seekReq) == ResponseStatus::SUCCESS) {
-    if (decoder_ && decoder_->isOpen() && decoder_->seekToTime(seekReq.seconds).is_ok()) {
-      sharedState_->currentTime.store(seekReq.seconds, std::memory_order_release);
-      sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
-      sharedState_->pendingOffloadedSeeks.fetch_sub(1, std::memory_order_release);
-    }
+    latestReq = seekReq;
     seekHappened = true;
+    drainedCount++; // Track exactly how many commands we are skipping/consuming
   }
-  if (seekHappened) {
-    // Drain stale pre-seek frames before releasing the seek gate on the audio thread
-    DecoderData drop;
-    while (frameReceiverForDrain_->try_receive(drop) == ResponseStatus::SUCCESS) {}
+
+  if (!seekHappened) {
+    return false; // No seek commands to process
   }
-  return seekHappened;
+
+  if (decoder_ && decoder_->isOpen()) {
+    if (decoder_->seekToTime(latestReq.seconds).is_ok()) {
+      sharedState_->currentTime.store(latestReq.seconds, std::memory_order_release);
+      sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
+    }
+  }
+
+  // Decrement the atomic gate by the total number of items pulled
+  sharedState_->pendingOffloadedSeeks.fetch_sub(drainedCount, std::memory_order_release);
+
+  // Drain stale pre-seek frames out of the pipe so old audio doesn't play
+  DecoderData drop;
+  while (frameReceiverForDrain_->try_receive(drop) == ResponseStatus::SUCCESS) {}
+
+  return true;
 }
 
 bool SeekDecoderDaemon::decodeNextChunk(DecoderData &data) {
