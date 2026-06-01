@@ -22,18 +22,6 @@ namespace audioapi {
 struct AudioFileSourceOptions;
 class MediaElementAudioSourceNode;
 
-inline constexpr auto FRAME_SPSC_OVERFLOW_STRATEGY =
-    audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
-inline constexpr auto FRAME_SPSC_WAIT_STRATEGY =
-    audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
-inline constexpr auto FRAME_SPSC_CHANNEL_CAPACITY = 64;
-
-inline constexpr auto COMMAND_SPSC_OVERFLOW_STRATEGY =
-    audioapi::channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
-inline constexpr auto COMMAND_SPSC_WAIT_STRATEGY =
-    audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
-inline constexpr auto COMMAND_SPSC_CHANNEL_CAPACITY = 16;
-
 inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
@@ -165,8 +153,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   bool audioThreadSetFlush_{false};
 
   /// @brief SPSC for JS -> Daemon thread communication (seek event)
-  channels::spsc::Sender<SeekRequest, COMMAND_SPSC_OVERFLOW_STRATEGY, COMMAND_SPSC_WAIT_STRATEGY>
-      commandSender_;
+  CommandSender commandSender_;
 
   /// @brief SPSC for Daemon thread -> Audio thread communication (decoded frames)
   std::shared_ptr<FrameReceiver> frameReceiver_;

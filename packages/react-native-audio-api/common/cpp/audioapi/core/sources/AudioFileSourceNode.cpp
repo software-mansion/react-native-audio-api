@@ -52,13 +52,13 @@ bool AudioFileSourceNode::initDecoder(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options) {
   auto [frameSender, frameReceiver] =
-      channels::spsc::channel<DecoderData, FRAME_SPSC_OVERFLOW_STRATEGY, FRAME_SPSC_WAIT_STRATEGY>(
-          FRAME_SPSC_CHANNEL_CAPACITY);
+      channels::spsc::channel<DecoderData, FRAME_OVERFLOW_STRATEGY, FRAME_WAIT_STRATEGY>(
+          FRAME_CHANNEL_CAPACITY);
   frameReceiver_ = std::make_shared<FrameReceiver>(std::move(frameReceiver));
 
-  auto [commandSender, commandReceiver] = channels::spsc::
-      channel<SeekRequest, COMMAND_SPSC_OVERFLOW_STRATEGY, COMMAND_SPSC_WAIT_STRATEGY>(
-          COMMAND_SPSC_CHANNEL_CAPACITY);
+  auto [commandSender, commandReceiver] =
+      channels::spsc::channel<SeekRequest, COMMAND_OVERFLOW_STRATEGY, COMMAND_WAIT_STRATEGY>(
+          COMMAND_CHANNEL_CAPACITY);
   commandSender_ = std::move(commandSender);
 
   SeekDecoderDaemonOptions daemonOptions{

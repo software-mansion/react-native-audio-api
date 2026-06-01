@@ -57,13 +57,21 @@ struct DecoderData {
   size_t size{};
 };
 
-namespace audioapi {
+inline constexpr auto COMMAND_OVERFLOW_STRATEGY = OverflowStrategy::OVERWRITE_ON_FULL;
+inline constexpr auto COMMAND_WAIT_STRATEGY = WaitStrategy::ATOMIC_WAIT;
+inline constexpr auto COMMAND_CHANNEL_CAPACITY = 16;
 
-using CommandReceiver =
-    Receiver<SeekRequest, OverflowStrategy::OVERWRITE_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
-using FrameSender = Sender<DecoderData, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
-using FrameReceiver =
-    Receiver<DecoderData, OverflowStrategy::WAIT_ON_FULL, WaitStrategy::ATOMIC_WAIT>;
+using CommandSender = Sender<SeekRequest, COMMAND_OVERFLOW_STRATEGY, COMMAND_WAIT_STRATEGY>;
+using CommandReceiver = Receiver<SeekRequest, COMMAND_OVERFLOW_STRATEGY, COMMAND_WAIT_STRATEGY>;
+
+inline constexpr auto FRAME_OVERFLOW_STRATEGY = OverflowStrategy::WAIT_ON_FULL;
+inline constexpr auto FRAME_WAIT_STRATEGY = WaitStrategy::ATOMIC_WAIT;
+inline constexpr auto FRAME_CHANNEL_CAPACITY = 64;
+
+using FrameSender = Sender<DecoderData, FRAME_OVERFLOW_STRATEGY, FRAME_WAIT_STRATEGY>;
+using FrameReceiver = Receiver<DecoderData, FRAME_OVERFLOW_STRATEGY, FRAME_WAIT_STRATEGY>;
+
+namespace audioapi {
 
 /// @brief SeekDecoderDaemon is a dedicated thread worker that manages an audio decoder instance (FFmpeg or MiniAudio).
 /// It listens for seek commands from the JS thread, performs seeks on the decoder,
