@@ -10,7 +10,6 @@ import Oscillator from './Oscillator';
 import Piano from './Piano';
 import PlaybackSpeed from './PlaybackSpeed';
 import Record from './Record/Record';
-import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
@@ -28,7 +27,6 @@ type NavigationParamList = {
   OfflineRendering: undefined;
   Record: undefined;
   Worklets: undefined;
-  Streamer: undefined;
   AudioTag: undefined;
   ConvolverIR: undefined;
   AudioParamPipeline: undefined;
@@ -110,12 +108,6 @@ export const Examples: Example[] = [
     title: 'Worklets',
     Icon: icons.Code,
     screen: Worklets,
-  },
-  {
-    key: 'Streamer',
-    title: 'Streamer',
-    Icon: icons.Radio,
-    screen: Streaming,
   },
   {
     key: 'AudioTag',
