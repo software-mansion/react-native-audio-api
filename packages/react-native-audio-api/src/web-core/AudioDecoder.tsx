@@ -2,6 +2,7 @@ import { AudioApiError } from '../errors';
 import { DecodeDataInput } from '../types';
 import { base64ToArrayBuffer } from '../utils';
 import { isRemoteSource } from '../utils/paths';
+import AudioBuffer from './AudioBuffer';
 
 const MAX_INT16_VALUE = 32768.0;
 
@@ -45,7 +46,7 @@ export default class AudioDecoder {
   ): Promise<AudioBuffer> {
     const targetRate = sampleRate > 0 ? sampleRate : 44100;
     const context = new OfflineAudioContext(1, 1, targetRate);
-    return context.decodeAudioData(arrayBuffer);
+    return new AudioBuffer(await context.decodeAudioData(arrayBuffer));
   }
 
   private async decodeFromRemoteUrl(
@@ -115,7 +116,7 @@ export default class AudioDecoder {
           channelData[frameIndex] = int16samples[outIndex] / MAX_INT16_VALUE;
         }
       }
-      return new Promise((resolve) => resolve(buffer));
+      return Promise.resolve(new AudioBuffer(buffer));
     } catch {
       throw new AudioApiError('Failed to decode PCM data.');
     }
