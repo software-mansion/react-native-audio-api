@@ -49,9 +49,6 @@ AudioFileSourceNode::AudioFileSourceNode(
 }
 
 AudioFileSourceNode::~AudioFileSourceNode() {
-  // AudioNode::~AudioNode() -> cleanup() does not call the virtual disable(),
-  // so the daemon thread is not guaranteed to have been joined yet. A still
-  // joinable std::thread would call std::terminate() on destruction.
   stopDaemonThread();
 }
 

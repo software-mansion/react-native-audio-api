@@ -71,8 +71,6 @@ namespace audioapi {
 
 struct StreamerOptions;
 
-[[deprecated(
-    "StreamerNode is legacy and will be removed. Use AudioFileSourceNode via the <Audio> component instead.")]];
 class StreamerNode : public AudioScheduledSourceNode {
  public:
   explicit StreamerNode(

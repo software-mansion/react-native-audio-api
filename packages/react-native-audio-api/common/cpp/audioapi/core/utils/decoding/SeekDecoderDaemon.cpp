@@ -22,17 +22,20 @@ SeekDecoderDaemon::SeekDecoderDaemon(
     decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
   }
 
-  decoding::DecoderResult openResult = Ok(None);
+  decoding::DecoderResult openResult = Err("Failed to initialize decoder");
 
   int contextSampleRate = static_cast<int>(options.contextSampleRate);
+
+  // Check in AudioFileSourceNode constructor ensures that at least one of filePath or memoryData is provided,
+  // so we can attempt to open the decoder with either without additional checks here.
   if (!options.filePath.empty()) {
     openResult = decoder_->openFile(contextSampleRate, options.filePath);
-  } else if (!options.memoryData.empty()) {
+  } else {
     openResult = decoder_->openMemory(
         contextSampleRate, options.memoryData.data(), options.memoryData.size());
   }
 
-  if (!openResult.is_ok()) {
+  if (openResult.is_err()) {
     decoder_->close();
     sharedState_->isDaemonRunning.store(false, std::memory_order_release);
     return;
