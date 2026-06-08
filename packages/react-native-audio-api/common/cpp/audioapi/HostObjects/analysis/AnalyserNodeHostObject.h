@@ -9,6 +9,7 @@ using namespace facebook;
 
 struct AnalyserOptions;
 class BaseAudioContext;
+class AnalyserNode;
 
 class AnalyserNodeHostObject : public AudioNodeHostObject {
  public:
@@ -40,6 +41,9 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
     return AudioNodeHostObject::getMemoryPressure() + 2 * MAX_FFT_SIZE * sizeof(float) +
         3 * MAX_FFT_SIZE * sizeof(float) + 3 * MAX_FFT_SIZE * sizeof(float);
   }
+
+ private:
+  AnalyserNode *analyserNode_ = nullptr;
 };
 
 } // namespace audioapi

@@ -10,6 +10,7 @@ using namespace facebook;
 
 struct IIRFilterOptions;
 class BaseAudioContext;
+class IIRFilterNode;
 
 class IIRFilterNodeHostObject : public AudioNodeHostObject {
  public:
@@ -26,5 +27,8 @@ class IIRFilterNodeHostObject : public AudioNodeHostObject {
     return AudioNodeHostObject::getMemoryPressure() +
         /* coeff arrays */ 256 + 2 * kBufferLength * channelCount_ * sizeof(float);
   }
+
+ private:
+  IIRFilterNode *iirFilterNode_ = nullptr;
 };
 } // namespace audioapi

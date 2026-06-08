@@ -10,6 +10,7 @@ using namespace facebook;
 
 struct BaseAudioBufferSourceOptions;
 class BaseAudioContext;
+class AudioBufferQueueSourceNode;
 
 class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObject {
  public:
@@ -34,6 +35,8 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
   }
 
  protected:
+  AudioBufferQueueSourceNode *bufferQueueSourceNode_ = nullptr;
+
   size_t bufferId_ = 0;
   uint64_t onBufferEndedCallbackId_ = 0;
   bool stretchHasBeenInit_ = false;

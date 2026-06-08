@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
@@ -12,7 +13,8 @@ IIRFilterNodeHostObject::IIRFilterNodeHostObject(
     : AudioNodeHostObject(
           context->getGraph(),
           std::make_unique<IIRFilterNode>(context, options),
-          options) {
+          options),
+      iirFilterNode_(typedAudioNode<IIRFilterNode>(node_)) {
 
   addFunctions(JSI_EXPORT_FUNCTION(IIRFilterNodeHostObject, getFrequencyResponse));
 }
@@ -20,19 +22,18 @@ IIRFilterNodeHostObject::IIRFilterNodeHostObject(
 JSI_HOST_FUNCTION_IMPL(IIRFilterNodeHostObject, getFrequencyResponse) {
   auto arrayBufferFrequency =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto frequencyArray = reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
+  auto *frequencyArray = reinterpret_cast<float *>(arrayBufferFrequency.data(runtime));
   auto length = static_cast<size_t>(arrayBufferFrequency.size(runtime) / sizeof(float));
 
   auto arrayBufferMag =
       args[1].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto magResponseOut = reinterpret_cast<float *>(arrayBufferMag.data(runtime));
+  auto *magResponseOut = reinterpret_cast<float *>(arrayBufferMag.data(runtime));
 
   auto arrayBufferPhase =
       args[2].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto phaseResponseOut = reinterpret_cast<float *>(arrayBufferPhase.data(runtime));
+  auto *phaseResponseOut = reinterpret_cast<float *>(arrayBufferPhase.data(runtime));
 
-  auto iirFilterNode = static_cast<IIRFilterNode *>(node_->handle->audioNode->asAudioNode());
-  iirFilterNode->getFrequencyResponse(frequencyArray, magResponseOut, phaseResponseOut, length);
+  iirFilterNode_->getFrequencyResponse(frequencyArray, magResponseOut, phaseResponseOut, length);
 
   return jsi::Value::undefined();
 }

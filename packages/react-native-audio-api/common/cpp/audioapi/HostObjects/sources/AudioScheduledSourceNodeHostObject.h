@@ -8,6 +8,8 @@
 namespace audioapi {
 using namespace facebook;
 
+class AudioScheduledSourceNode;
+
 class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit AudioScheduledSourceNodeHostObject(
@@ -22,9 +24,12 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);
 
+ protected:
+  AudioScheduledSourceNode *scheduledSourceNode_ = nullptr;
+
  private:
   uint64_t onEndedCallbackId_ = 0;
 
-  void setOnEndedCallbackId(uint64_t callbackId);
+  void setOnEndedCallbackId(uint64_t callbackId, bool gcEvent = false);
 };
 } // namespace audioapi

@@ -10,6 +10,7 @@ using namespace facebook;
 struct DelayOptions;
 class BaseAudioContext;
 class AudioParamHostObject;
+class DelayNode;
 class DelayLine;
 class DelayWriterHostNode;
 class DelayReaderHostNode;
@@ -27,6 +28,8 @@ class DelayNodeHostObject : public AudioNodeHostObject {
   std::shared_ptr<DelayReaderHostNode> delayReaderHostNode_;
 
  private:
+  DelayNode *delayNode_ = nullptr;
+
   std::shared_ptr<AudioParamHostObject> delayTimeParam_;
   std::shared_ptr<DelayLine> delayLine_;
 };

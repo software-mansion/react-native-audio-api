@@ -11,6 +11,7 @@ using namespace facebook;
 struct ConstantSourceOptions;
 class BaseAudioContext;
 class AudioParamHostObject;
+class ConstantSourceNode;
 
 class ConstantSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
@@ -25,6 +26,8 @@ class ConstantSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
   }
 
  private:
+  ConstantSourceNode *constantSourceNode_ = nullptr;
+
   std::shared_ptr<AudioParamHostObject> offsetParam_;
 };
 } // namespace audioapi

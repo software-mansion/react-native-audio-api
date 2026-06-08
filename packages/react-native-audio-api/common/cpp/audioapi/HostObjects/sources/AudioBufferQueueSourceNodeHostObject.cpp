@@ -1,5 +1,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
@@ -16,7 +17,8 @@ AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
     : AudioBufferBaseSourceNodeHostObject(
           context->getGraph(),
           std::make_unique<AudioBufferQueueSourceNode>(context, options),
-          options) {
+          options),
+      bufferQueueSourceNode_(typedAudioNode<AudioBufferQueueSourceNode>(node_)) {
   functions_->erase("start");
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onBufferEnded));
@@ -43,37 +45,28 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferQueueSourceNodeHostObject, onBufferEnded) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
   auto handle = node_->handle;
-  auto *audioBufferQueueSourceNode =
-      static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
-
-  auto event =
-      [handle, when = args[0].getNumber(), offset = args[1].getNumber()](BaseAudioContext &) {
-        static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode())
-            ->start(when, offset);
-      };
-  audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
+  auto event = [handle,
+                node = bufferQueueSourceNode_,
+                when = args[0].getNumber(),
+                offset = args[1].getNumber()](BaseAudioContext &) {
+    node->start(when, offset);
+  };
+  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, pause) {
   auto handle = node_->handle;
-  auto *audioBufferQueueSourceNode =
-      static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
-
-  auto event = [handle](BaseAudioContext &) {
-    static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode())->pause();
+  auto event = [handle, node = bufferQueueSourceNode_](BaseAudioContext &) {
+    node->pause();
   };
-  audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
+  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
-  auto handle = node_->handle;
-  auto *audioBufferQueueSourceNode =
-      static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
-
   auto audioBufferHostObject =
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
   // TODO: add optimized memory management for buffer changes, e.g.
@@ -108,61 +101,52 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
     stretchHasBeenInit_ = true;
   }
 
-  auto event = [audioBufferQueueSourceNode,
+  auto event = [node = bufferQueueSourceNode_,
                 copiedBuffer,
                 bufferId = bufferId_,
                 tailBuffer,
                 swapBuffer,
                 channelCount = channelCount_](BaseAudioContext &) {
     if (swapBuffer) {
-      audioBufferQueueSourceNode->setChannelCount(static_cast<int>(channelCount));
+      node->setChannelCount(static_cast<int>(channelCount));
     }
-    audioBufferQueueSourceNode->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
+    node->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
   };
-  audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
+  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::String::createFromUtf8(runtime, std::to_string(bufferId_++));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, dequeueBuffer) {
   auto handle = node_->handle;
-  auto *audioBufferQueueSourceNode =
-      static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
-
-  auto event = [handle, bufferId = static_cast<size_t>(args[0].getNumber())](BaseAudioContext &) {
-    static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode())
-        ->dequeueBuffer(bufferId);
+  auto event = [handle,
+                node = bufferQueueSourceNode_,
+                bufferId = static_cast<size_t>(args[0].getNumber())](BaseAudioContext &) {
+    node->dequeueBuffer(bufferId);
   };
-  audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
+  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, clearBuffers) {
   auto handle = node_->handle;
-  auto *audioBufferQueueSourceNode =
-      static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
-
-  auto event = [handle](BaseAudioContext &) {
-    static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode())->clearBuffers();
+  auto event = [handle, node = bufferQueueSourceNode_](BaseAudioContext &) {
+    node->clearBuffers();
   };
-  audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
+  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
 }
 
 void AudioBufferQueueSourceNodeHostObject::setOnBufferEndedCallbackId(uint64_t callbackId) {
   auto handle = node_->handle;
-  auto *audioBufferQueueSourceNode =
-      static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode());
-
-  auto event = [handle, callbackId](BaseAudioContext &) {
-    static_cast<AudioBufferQueueSourceNode *>(handle->audioNode->asAudioNode())
-        ->setOnBufferEndedCallbackId(callbackId);
+  auto event = [handle, node = bufferQueueSourceNode_, callbackId](BaseAudioContext &) {
+    node->setOnBufferEndedCallbackId(callbackId);
   };
 
-  audioBufferQueueSourceNode->unregisterOnBufferEndedCallback(onBufferEndedCallbackId_);
-  audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
+  bufferQueueSourceNode_->unregisterOnBufferEndedCallback(onBufferEndedCallbackId_);
+  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
   onBufferEndedCallbackId_ = callbackId;
 }
 

@@ -355,7 +355,7 @@ class InnerChannel {
     // Monotonic sequence: paired with sendSeq_ so external code can compare
     // "events received" against a snapshot of "events sent" without having
     // to reason about wrap-around in the masked cursors above.
-    rcvSeq_.store(rcvSeq_.load(std::memory_order_relaxed) + 1, std::memory_order_release);
+    rcvSeq_.fetch_add(1, std::memory_order_release);
 
     if constexpr (Wait == WaitStrategy::ATOMIC_WAIT) {
       rcvCursor_.notify_one(); // Notify sender that a value has been received
@@ -403,7 +403,7 @@ class InnerChannel {
     new (&buffer_[sendCursor]) T(std::forward<U>(value));
 
     sendCursor_.store(next_sendCursor, std::memory_order_release);
-    sendSeq_.store(sendSeq_.load(std::memory_order_relaxed) + 1, std::memory_order_release);
+    sendSeq_.fetch_add(1, std::memory_order_release);
 
     if constexpr (Wait == WaitStrategy::ATOMIC_WAIT) {
       sendCursor_.notify_one(); // Notify receiver that a value has been sent

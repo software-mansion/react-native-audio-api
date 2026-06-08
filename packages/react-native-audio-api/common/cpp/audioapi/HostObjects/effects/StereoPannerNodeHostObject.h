@@ -11,6 +11,7 @@ using namespace facebook;
 struct StereoPannerOptions;
 class BaseAudioContext;
 class AudioParamHostObject;
+class StereoPannerNode;
 
 class StereoPannerNodeHostObject : public AudioNodeHostObject {
  public:
@@ -25,6 +26,8 @@ class StereoPannerNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
+  StereoPannerNode *stereoPannerNode_ = nullptr;
+
   std::shared_ptr<AudioParamHostObject> panParam_;
 };
 } // namespace audioapi

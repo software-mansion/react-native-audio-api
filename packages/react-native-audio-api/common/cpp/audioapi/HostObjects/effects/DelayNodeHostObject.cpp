@@ -1,4 +1,5 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
@@ -19,10 +20,10 @@ DelayNodeHostObject::DelayNodeHostObject(
     : AudioNodeHostObject(
           context->getGraph(),
           std::make_unique<DelayNode>(context, options),
-          options) {
-  auto *delayNode = static_cast<DelayNode *>(node_->handle->audioNode->asAudioNode());
+          options),
+      delayNode_(typedAudioNode<DelayNode>(node_)) {
   delayTimeParam_ =
-      std::make_shared<AudioParamHostObject>(graph_, node_, delayNode->getDelayTimeParam());
+      std::make_shared<AudioParamHostObject>(graph_, node_, delayNode_->getDelayTimeParam());
 
   auto delayBuffer = std::make_shared<AudioBuffer>(
       static_cast<size_t>(options.maxDelayTime * context->getSampleRate() + 1),
@@ -31,9 +32,9 @@ DelayNodeHostObject::DelayNodeHostObject(
 
   // order has to be preserved because adding cycle would not change their order in the graph
   delayReaderHostNode_ =
-      std::make_shared<DelayReaderHostNode>(graph_, std::move(delayNode->delayReader_));
+      std::make_shared<DelayReaderHostNode>(graph_, std::move(delayNode_->delayReader_));
   delayWriterHostNode_ =
-      std::make_shared<DelayWriterHostNode>(graph_, std::move(delayNode->delayWriter_));
+      std::make_shared<DelayWriterHostNode>(graph_, std::move(delayNode_->delayWriter_));
 
   // Reader and writer communicate via the delay line (a ring buffer), not via
   // an audio edge. Linking their processable state ensures that when the
@@ -52,9 +53,8 @@ JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
 }
 
 size_t DelayNodeHostObject::getMemoryPressure() const {
-  auto *delayNode = static_cast<DelayNode *>(node_->handle->audioNode->asAudioNode());
-  const float maxDelaySeconds = delayNode->getDelayTimeParam()->getMaxValue();
-  const float sampleRate = delayNode->getContextSampleRate();
+  const float maxDelaySeconds = delayNode_->getDelayTimeParam()->getMaxValue();
+  const float sampleRate = delayNode_->getContextSampleRate();
   // The delay line ring buffer dominates: (maxDelay * sr + 1) frames * channels * float.
   const size_t ringBytes =
       static_cast<size_t>(maxDelaySeconds * sampleRate + 1) * channelCount_ * sizeof(float);

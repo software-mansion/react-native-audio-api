@@ -12,6 +12,7 @@ using namespace facebook;
 struct OscillatorOptions;
 class BaseAudioContext;
 class AudioParamHostObject;
+class OscillatorNode;
 
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
@@ -35,6 +36,8 @@ class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
   }
 
  private:
+  OscillatorNode *oscillatorNode_ = nullptr;
+
   std::shared_ptr<AudioParamHostObject> frequencyParam_;
   std::shared_ptr<AudioParamHostObject> detuneParam_;
   OscillatorType type_;

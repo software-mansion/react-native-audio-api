@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
@@ -22,6 +23,7 @@ ConvolverNodeHostObject::ConvolverNodeHostObject(
           context->getGraph(),
           std::make_unique<ConvolverNode>(context, options),
           options),
+      convolverNode_(typedAudioNode<ConvolverNode>(node_)),
       normalize_(!options.disableNormalization) {
   if (options.buffer != nullptr) {
     setBuffer(options.buffer);
@@ -62,14 +64,11 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
 
   irBytes_ = buffer->getSize() * buffer->getNumberOfChannels() * sizeof(float);
 
-  auto handle = node_->handle;
-  auto *convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());
-
   auto copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
 
   float scaleFactor = 1.0f;
   if (normalize_) {
-    scaleFactor = convolverNode->calculateNormalizationScale(copiedBuffer);
+    scaleFactor = convolverNode_->calculateNormalizationScale(copiedBuffer);
   }
 
   auto threadPool = std::make_shared<ConvolverThreadPool>(4);
@@ -87,7 +86,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   }
 
   auto internalBuffer = std::make_shared<DSPAudioBuffer>(
-      RENDER_QUANTUM_SIZE * 2, convolverNode->getChannelCount(), copiedBuffer->getSampleRate());
+      RENDER_QUANTUM_SIZE * 2, convolverNode_->getChannelCount(), copiedBuffer->getSampleRate());
   auto intermediateBuffer = std::make_shared<DSPAudioBuffer>(
       RENDER_QUANTUM_SIZE, convolvers.size(), copiedBuffer->getSampleRate());
 
@@ -108,9 +107,8 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
       .intermediateBuffer = intermediateBuffer,
       .scaleFactor = scaleFactor});
 
-  auto event = [handle, setupData](BaseAudioContext &context) {
-    auto *convolverNode = static_cast<ConvolverNode *>(handle->audioNode->asAudioNode());
-    convolverNode->setBuffer(
+  auto event = [node = convolverNode_, setupData](BaseAudioContext &context) {
+    node->setBuffer(
         setupData->buffer,
         std::move(setupData->convolvers),
         setupData->threadPool,
@@ -119,6 +117,6 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
         setupData->scaleFactor);
     context.getDisposer()->dispose(std::move(setupData));
   };
-  convolverNode->scheduleAudioEvent(std::move(event));
+  convolverNode_->scheduleAudioEvent(std::move(event));
 }
 } // namespace audioapi

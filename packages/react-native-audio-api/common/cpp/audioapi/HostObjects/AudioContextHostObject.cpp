@@ -66,7 +66,7 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
   auto sourceObject = args[0].asObject(runtime);
   auto fileSourceHostObject = sourceObject.getHostObject<AudioFileSourceNodeHostObject>(runtime);
-  auto *fileSourceRaw = fileSourceHostObject->getAudioFileSourceNode();
+  auto *fileSourceRaw = fileSourceHostObject->audioFileSourceNode();
   auto mediaElementHostObject = std::make_shared<MediaElementAudioSourceNodeHostObject>(
       std::static_pointer_cast<AudioContext>(context_), fileSourceRaw);
   auto object = jsi::Object::createFromHostObject(runtime, mediaElementHostObject);

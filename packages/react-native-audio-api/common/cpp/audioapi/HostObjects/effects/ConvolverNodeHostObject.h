@@ -10,6 +10,7 @@ using namespace facebook;
 
 struct ConvolverOptions;
 class BaseAudioContext;
+class ConvolverNode;
 
 class ConvolverNodeHostObject : public AudioNodeHostObject {
  public:
@@ -27,6 +28,8 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
+  ConvolverNode *convolverNode_ = nullptr;
+
   bool normalize_;
   size_t irBytes_ = 0;
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);

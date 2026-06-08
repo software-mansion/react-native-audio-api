@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/types/NodeOptions.h>
@@ -14,10 +15,10 @@ StereoPannerNodeHostObject::StereoPannerNodeHostObject(
     : AudioNodeHostObject(
           context->getGraph(),
           std::make_unique<StereoPannerNode>(context, options),
-          options) {
-  auto stereoPannerNode = static_cast<StereoPannerNode *>(node_->handle->audioNode->asAudioNode());
+          options),
+      stereoPannerNode_(typedAudioNode<StereoPannerNode>(node_)) {
   panParam_ =
-      std::make_shared<AudioParamHostObject>(graph_, node_, stereoPannerNode->getPanParam());
+      std::make_shared<AudioParamHostObject>(graph_, node_, stereoPannerNode_->getPanParam());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(StereoPannerNodeHostObject, pan));
 }

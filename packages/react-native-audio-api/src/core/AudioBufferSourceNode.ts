@@ -118,7 +118,6 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
       this.onLoopEndedSubscription?.remove();
       this.onLoopEndedSubscription = undefined;
       this.onLoopEndedCallback = undefined;
-
       return;
     }
 

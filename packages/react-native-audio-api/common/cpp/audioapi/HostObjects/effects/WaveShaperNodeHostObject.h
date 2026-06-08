@@ -10,6 +10,7 @@ using namespace facebook;
 
 struct WaveShaperOptions;
 class BaseAudioContext;
+class WaveShaperNode;
 
 class WaveShaperNodeHostObject : public AudioNodeHostObject {
  public:
@@ -30,6 +31,8 @@ class WaveShaperNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
+  WaveShaperNode *waveShaperNode_ = nullptr;
+
   OverSampleType oversample_;
 };
 } // namespace audioapi

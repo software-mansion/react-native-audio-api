@@ -28,7 +28,7 @@ void DelayWriter::processNode(int framesToProcess) {
   auto delayTime = delayLine_->getDelayTimeParam()->processKRateParam(
       framesToProcess, context->getCurrentTime());
   const size_t readForWrite = delayLine_->readSnapshotForWrite();
-  size_t writeIndex =
+  auto writeIndex =
       static_cast<size_t>(static_cast<float>(readForWrite) + delayTime * context->getSampleRate()) %
       delayBuffer->getSize();
 

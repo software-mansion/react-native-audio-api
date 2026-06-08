@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/types/NodeOptions.h>
 
@@ -17,9 +18,13 @@ class AudioDestinationNodeHostObject : public AudioNodeHostObject {
       : AudioNodeHostObject(
             context->getGraph(),
             std::make_unique<AudioDestinationNode>(context),
-            options) {
-    context->initialize(static_cast<AudioDestinationNode *>(node_->handle->audioNode.get()));
+            options),
+        destinationNode_(typedAudioNode<AudioDestinationNode>(node_)) {
+    context->initialize(destinationNode_);
   }
+
+ private:
+  AudioDestinationNode *destinationNode_ = nullptr;
 };
 
 } // namespace audioapi

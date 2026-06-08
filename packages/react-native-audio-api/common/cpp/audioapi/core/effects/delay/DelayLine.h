@@ -15,8 +15,6 @@ namespace audioapi {
 /// Two logical read positions:
 /// - `readIndex_` — advanced by DelayReader after each READ (live read head).
 /// - `writeIndex_` — copy of `readIndex_` at the start of each audio quantum
-///   (`syncReadSnapshotForQuantum` keyed by context sample frame). DelayWriter uses this to
-///   compute write position so writer/reader order in the graph does not matter.
 class DelayLine {
  public:
   DelayLine(std::shared_ptr<AudioBuffer> buffer, const std::shared_ptr<AudioParam> &delayTimeParam)
@@ -30,9 +28,8 @@ class DelayLine {
     return delayTimeParam_;
   }
 
-  /// Call at the start of DelayReader/DelayWriter `processNode` (same `currentSampleFrame` for
-  /// the whole graph pass). First touch each quantum refreshes `readSnapshotForWrite_` from
-  /// `readIndex_`.
+  /// @brief Sync the write index to the read index at the start of each audio quantum.
+  /// @note By keeping it this way, we don't have to worry about the order of the writer/reader nodes in the graph.
   void syncReadSnapshotForQuantum(size_t currentSampleFrame) {
     if (currentSampleFrame != quantumSampleFrame_) {
       writeIndex_ = readIndex_;

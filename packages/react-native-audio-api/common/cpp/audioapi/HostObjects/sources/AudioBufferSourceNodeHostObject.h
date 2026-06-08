@@ -12,6 +12,7 @@ using namespace facebook;
 struct AudioBufferSourceOptions;
 class BaseAudioContext;
 class AudioBufferHostObject;
+class AudioBufferSourceNode;
 
 class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObject {
  public:
@@ -43,13 +44,15 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   }
 
  protected:
+  AudioBufferSourceNode *audioBufferSourceNode_ = nullptr;
+
   bool loop_;
   bool loopSkip_;
   double loopStart_;
   double loopEnd_;
   uint64_t onLoopEndedCallbackId_ = 0;
 
-  void setOnLoopEndedCallbackId(uint64_t callbackId);
+  void setOnLoopEndedCallbackId(uint64_t callbackId, bool gcEvent = false);
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 };
 
