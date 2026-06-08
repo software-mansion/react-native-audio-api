@@ -20,24 +20,24 @@
 // buffer, node recycling, and no heap allocation (audio-thread / real-time
 // safe). Define AUDIOAPI_HAS_PMR before including this header to override.
 #if !defined(AUDIOAPI_HAS_PMR)
-#  if defined(_LIBCPP_VERSION) && defined(_LIBCPP_AVAILABILITY_HAS_PMR) && \
-      !_LIBCPP_AVAILABILITY_HAS_PMR
-#    define AUDIOAPI_HAS_PMR 0
-#  else
-#    define AUDIOAPI_HAS_PMR 1
-#  endif
+#if defined(_LIBCPP_VERSION) && defined(_LIBCPP_AVAILABILITY_HAS_PMR) && \
+    !_LIBCPP_AVAILABILITY_HAS_PMR
+#define AUDIOAPI_HAS_PMR 0
+#else
+#define AUDIOAPI_HAS_PMR 1
+#endif
 #endif
 
 #if AUDIOAPI_HAS_PMR
-#  include <memory_resource>
+#include <memory_resource>
 #else
-#  include <new>
+#include <new>
 #endif
 
 namespace audioapi {
 
 #if !AUDIOAPI_HAS_PMR
-namespace bpq_detail {
+namespace no_pmr {
 
 /// @brief Fixed-capacity, in-object block pool with an intrusive free list.
 /// Hands out fixed-size slots and recycles freed ones; never touches the heap.
@@ -46,10 +46,6 @@ namespace bpq_detail {
 template <std::size_t Capacity, std::size_t BlockSize, std::size_t Align>
 class FixedBlockPool {
  public:
-  FixedBlockPool() = default;
-  FixedBlockPool(const FixedBlockPool &) = delete;
-  FixedBlockPool &operator=(const FixedBlockPool &) = delete;
-
   void *allocate(std::size_t bytes) {
     // The multiset allocates tree nodes one at a time, all the same size.
     if (bytes > kSlotSize) [[unlikely]] {
@@ -74,8 +70,7 @@ class FixedBlockPool {
  private:
   // Round the requested block size up to the pool alignment. A slot is always
   // >= sizeof(void*), so the free list is stored intrusively in freed slots.
-  static constexpr std::size_t kSlotSize =
-      ((BlockSize + Align - 1) / Align) * Align;
+  static constexpr std::size_t kSlotSize = ((BlockSize + Align - 1) / Align) * Align;
 
   static void *&nextOf(void *block) noexcept {
     return *static_cast<void **>(block);
@@ -102,7 +97,7 @@ class PoolAllocator {
 
   template <typename U>
   PoolAllocator(const PoolAllocator<U, Pool> &other) noexcept // NOLINT(runtime/explicit)
-      : pool_(other.pool_) {}
+      : pool_(other.pool()) {}
 
   T *allocate(std::size_t n) {
     return static_cast<T *>(pool_->allocate(n * sizeof(T)));
@@ -112,23 +107,24 @@ class PoolAllocator {
     pool_->deallocate(p);
   }
 
+  [[nodiscard]] Pool *pool() const noexcept {
+    return pool_;
+  }
+
   template <typename U>
   bool operator==(const PoolAllocator<U, Pool> &o) const noexcept {
-    return pool_ == o.pool_;
+    return pool_ == o.pool();
   }
   template <typename U>
   bool operator!=(const PoolAllocator<U, Pool> &o) const noexcept {
-    return pool_ != o.pool_;
+    return pool_ != o.pool();
   }
 
  private:
-  template <typename, typename>
-  friend class PoolAllocator;
-
   Pool *pool_;
 };
 
-} // namespace bpq_detail
+} // namespace no_pmr
 #endif // !AUDIOAPI_HAS_PMR
 
 /// @brief A bounded priority queue with fixed capacity backed by a static pool allocator.
@@ -167,9 +163,8 @@ class BoundedPriorityQueue {
   // tree links/color). Generous headroom, matching the std::pmr path above.
   static constexpr size_t kBlockSize = sizeof(T) + kNodeOverhead;
 
-  using PoolType =
-      bpq_detail::FixedBlockPool<Capacity, kBlockSize, alignof(std::max_align_t)>;
-  using AllocType = bpq_detail::PoolAllocator<T, PoolType>;
+  using PoolType = no_pmr::FixedBlockPool<Capacity, kBlockSize, alignof(std::max_align_t)>;
+  using AllocType = no_pmr::PoolAllocator<T, PoolType>;
   using SetType = std::multiset<T, Compare, AllocType>;
 
   // Members must be declared in this order: pool_ → set_.

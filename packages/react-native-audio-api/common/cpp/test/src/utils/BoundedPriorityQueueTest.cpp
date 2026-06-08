@@ -25,9 +25,15 @@ struct Event {
 // param queues use lowerBound/upperBound with a raw time key.
 struct ByTime {
   using is_transparent = void;
-  bool operator()(const Event &a, const Event &b) const { return a.time < b.time; }
-  bool operator()(const Event &a, int64_t b) const { return a.time < b; }
-  bool operator()(int64_t a, const Event &b) const { return a < b.time; }
+  bool operator()(const Event &a, const Event &b) const {
+    return a.time < b.time;
+  }
+  bool operator()(const Event &a, int64_t b) const {
+    return a.time < b;
+  }
+  bool operator()(int64_t a, const Event &b) const {
+    return a < b.time;
+  }
 };
 
 } // namespace
@@ -96,8 +102,8 @@ TEST(BoundedPriorityQueueTest, BoundsExtractMutateAndReinsert) {
   ASSERT_NE(it, q.end());
   EXPECT_EQ(it->time, 20);
 
-  auto node = q.extract(it);     // detach node holding 20
-  node.value().time = 25;        // mutate key while detached (no reallocation)
+  auto node = q.extract(it); // detach node holding 20
+  node.value().time = 25;    // mutate key while detached (no reallocation)
   q.insert(q.upperBound(static_cast<int64_t>(25)), std::move(node));
   EXPECT_EQ(q.size(), 5u);
 
