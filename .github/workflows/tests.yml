@@ -8,9 +8,6 @@ jobs:
   cpp-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup
         uses: ./.github/actions/setup
 
@@ -21,9 +18,6 @@ jobs:
   js-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup
         uses: ./.github/actions/setup
 

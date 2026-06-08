@@ -8,44 +8,28 @@ on:
       - checks_requested
 
 jobs:
+  format-check:
+    uses: ./.github/workflows/ci-check.yml
+    with:
+      name: Format check
+      run: yarn format:check
+
   lint:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      - name: Lint files
-        run: yarn lint
-
-      - name: Typecheck files
-        run: yarn typecheck
+    uses: ./.github/workflows/ci-check.yml
+    with:
+      name: Lint and typecheck
+      run: |
+        yarn lint
+        yarn typecheck
 
   check-audio-enum-sync:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      - name: Check AudioEvent enum sync
-        run: yarn check-audio-enum-sync
+    uses: ./.github/workflows/ci-check.yml
+    with:
+      name: Check AudioEvent enum sync
+      run: yarn check-audio-enum-sync
 
   build-library:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      - name: Build package
-        run: yarn build
+    uses: ./.github/workflows/ci-check.yml
+    with:
+      name: Build package
+      run: yarn build
