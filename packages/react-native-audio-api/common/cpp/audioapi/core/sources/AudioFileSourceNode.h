@@ -151,12 +151,12 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @note Audio thread only.
   void ensureConnectedForDirectPlayback();
 
+  /// @brief Id of the registered position-changed callback in JS; used to dispatch events and unregister.
   uint64_t onPositionChangedCallbackId_ = 0;
+  /// @brief Interval in seconds for dispatching position-changed events.
   int onPositionChangedInterval_;
+  /// @brief Accumulator for time since the last position-changed event; used to determine when to dispatch the next event.
   int onPositionChangedTime_ = 0;
-  // True when the audio thread itself wrote onPositionChangedFlush (e.g. EOF),
-  // so sendOnPositionChangedEvent knows not to sync currentTime_ from the daemon.
-  bool audioThreadSetFlush_{false};
 
   /// @brief SPSC for JS -> Daemon thread communication (seek event)
   CommandSender commandSender_;
