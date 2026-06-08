@@ -111,29 +111,20 @@ void AudioFileSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackI
   audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
 }
 
-void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
-  const bool flush = decoderState_->onPositionChangedFlush.load(std::memory_order_acquire);
-
-  if (flush && !audioThreadSetFlush_) {
-    // Daemon completed a seek or loop-back - sync audio thread's position to decoder's actual position
-    currentTime_.store(
-        decoderState_->currentTime.load(std::memory_order_acquire) +
-            static_cast<double>(framesPlayed) / sampleRate_,
-        std::memory_order_release);
-  } else {
+void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed, bool forceFlush) {
+  if (!forceFlush) {
     currentTime_.fetch_add(static_cast<double>(framesPlayed) / sampleRate_);
   }
 
   if (onPositionChangedCallbackId_ != 0 &&
-      (flush || onPositionChangedTime_ > onPositionChangedInterval_)) {
+      (forceFlush || onPositionChangedTime_ > onPositionChangedInterval_)) {
+
     audioEventHandlerRegistry_->dispatchEvent(
         AudioEvent::POSITION_CHANGED,
         onPositionChangedCallbackId_,
         DoubleValuePayload{.value = getCurrentTime()});
 
     onPositionChangedTime_ = 0;
-    audioThreadSetFlush_ = false;
-    decoderState_->onPositionChangedFlush.store(false, std::memory_order_release);
   }
 
   onPositionChangedTime_ += framesPlayed;
@@ -220,27 +211,11 @@ void AudioFileSourceNode::seekToTime(double seconds) {
   commandSender_.send(SeekRequest{seconds});
 }
 
-size_t AudioFileSourceNode::readInterleavedFrames(
-    const std::shared_ptr<DSPAudioBuffer> &destBuffer,
-    size_t framesToRead) {
+bool AudioFileSourceNode::readNextFrameChunk(DecoderData &outData) {
   if (decoderState_->pendingOffloadedSeeks.load(std::memory_order_acquire) > 0) {
-    return 0;
+    return false;
   }
-
-  // Read from the decoder daemon thread via the SPSC channel
-  DecoderData incoming;
-  if (frameReceiver_->try_receive(incoming) == ResponseStatus::SUCCESS) {
-    size_t framesToCopy = std::min(framesToRead, incoming.size);
-    destBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesToCopy);
-
-    if (volume_ != 1.0f && framesToCopy > 0) {
-      destBuffer->scale(volume_);
-    }
-
-    return framesToCopy;
-  }
-
-  return 0;
+  return frameReceiver_->try_receive(outData) == ResponseStatus::SUCCESS;
 }
 
 std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
@@ -291,25 +266,42 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
     processingBuffer->zero(0, startOffset);
   }
 
-  size_t framesRead = readInterleavedFrames(processingBuffer, offsetLength);
-  sendOnPositionChangedEvent(static_cast<int>(framesRead));
+  DecoderData incoming;
+  if (!readNextFrameChunk(incoming)) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
 
-  // Handle End of Stream / End of File boundaries
-  if (framesRead < offsetLength) {
-    if (decoderState_->isEof.load(std::memory_order_acquire) &&
-        !decoderState_->loop.load(std::memory_order_acquire)) {
+  if (incoming.state == StreamState::END_OF_STREAM) {
+    currentTime_.store(duration_, std::memory_order_release);
+    sendOnPositionChangedEvent(0, true);
 
-      currentTime_.store(duration_, std::memory_order_release);
-      audioThreadSetFlush_ = true;
-      decoderState_->onPositionChangedFlush.store(true, std::memory_order_release);
-      sendOnPositionChangedEvent(static_cast<int>(offsetLength - framesRead));
+    filePaused_ = true;
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
+    handleStopScheduled();
 
-      filePaused_ = true;
-      playbackState_ = PlaybackState::STOP_SCHEDULED;
-    }
+    processingBuffer->zero();
+    return processingBuffer;
+  }
 
-    // fill the rest of the buffer with silence
-    processingBuffer->zero(startOffset + framesRead, offsetLength - framesRead);
+  bool forceFlushEvent = false;
+  if (incoming.state == StreamState::DISCONTINUOUS) {
+    currentTime_.store(incoming.timestamp, std::memory_order_release);
+    forceFlushEvent = true;
+  }
+
+  size_t framesToCopy = std::min(static_cast<size_t>(framesToProcess), incoming.size);
+  processingBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesToCopy);
+
+  if (volume_ != 1.0f && framesToCopy > 0) {
+    processingBuffer->scale(volume_);
+  }
+
+  sendOnPositionChangedEvent(static_cast<int>(framesToCopy), forceFlushEvent);
+
+  // Fill tail end with silence if the chunk returned short
+  if (std::cmp_less(framesToCopy, framesToProcess)) {
+    processingBuffer->zero(framesToCopy, framesToProcess - framesToCopy);
   }
 
   if (isStopScheduled()) {

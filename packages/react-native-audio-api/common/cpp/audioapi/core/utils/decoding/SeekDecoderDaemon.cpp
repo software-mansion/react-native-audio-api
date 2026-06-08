@@ -49,7 +49,7 @@ SeekDecoderDaemon::SeekDecoderDaemon(
   sharedState_->isReady.store(true, std::memory_order_release);
 }
 
-bool SeekDecoderDaemon::processSeekCommands() {
+std::optional<SeekRequest> SeekDecoderDaemon::processSeekCommands() {
   SeekRequest seekReq;
   SeekRequest latestReq;
   bool seekHappened = false;
@@ -59,49 +59,64 @@ bool SeekDecoderDaemon::processSeekCommands() {
   while (commandReceiver_.try_receive(seekReq) == ResponseStatus::SUCCESS) {
     latestReq = seekReq;
     seekHappened = true;
-    drainedCount++; // Track exactly how many commands we are skipping/consuming
+    drainedCount++;
   }
 
   if (!seekHappened) {
-    return false; // No seek commands to process
+    return std::nullopt;
   }
 
-  if (decoder_ && decoder_->isOpen()) {
-    if (decoder_->seekToTime(latestReq.seconds).is_ok()) {
-      sharedState_->currentTime.store(latestReq.seconds, std::memory_order_release);
-      sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
-    }
-  }
+  bool seekSucceeded =
+      decoder_ && decoder_->isOpen() && decoder_->seekToTime(latestReq.seconds).is_ok();
 
-  // Decrement the atomic gate by the total number of items pulled
+  // Always release the gate — we consumed the commands regardless of seek outcome
   sharedState_->pendingOffloadedSeeks.fetch_sub(drainedCount, std::memory_order_release);
+
+  if (!seekSucceeded) {
+    return std::nullopt;
+  }
 
   // Drain stale pre-seek frames out of the pipe so old audio doesn't play
   DecoderData drop;
   while (frameReceiverForDrain_->try_receive(drop) == ResponseStatus::SUCCESS) {}
 
-  return true;
+  return latestReq;
 }
 
-bool SeekDecoderDaemon::decodeNextChunk(DecoderData &data) {
+bool SeekDecoderDaemon::decodeNextChunk(
+    DecoderData &data,
+    const std::optional<SeekRequest> &seekRequest) {
   if (!decoder_ || !decoder_->isOpen()) {
     return false;
   }
 
   size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
 
-  if (framesRead == 0) {
-    if (sharedState_->loop.load(std::memory_order_acquire) && decoder_->seekToTime(0).is_ok()) {
-      sharedState_->currentTime.store(0.0, std::memory_order_release);
-      sharedState_->onPositionChangedFlush.store(true, std::memory_order_release);
+  if (framesRead > 0) {
+    data.size = framesRead;
+    // After seeks mark the chunk as discontinuous with the target seek time
+    if (seekRequest.has_value()) {
+      data.state = StreamState::DISCONTINUOUS;
+      data.timestamp = seekRequest->seconds;
     } else {
-      sharedState_->isEof.store(true, std::memory_order_release);
+      data.state = StreamState::PLAYING;
+      data.timestamp = decoder_->getCurrentPositionInSeconds();
     }
-    return false;
+    return true;
   }
 
-  sharedState_->isEof.store(false, std::memory_order_release);
-  data.size = framesRead;
+  // If loop is enabled and we hit EOF, attempt to seek back to the start and read again
+  if (sharedState_->loop.load(std::memory_order_acquire) && decoder_->seekToTime(0).is_ok()) {
+    data.state = StreamState::DISCONTINUOUS;
+    data.timestamp = 0.0;
+    framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
+    data.size = framesRead;
+    return true;
+  }
+
+  // EOF reached without loop - end of stream
+  data.size = 0;
+  data.state = StreamState::END_OF_STREAM;
   return true;
 }
 
@@ -110,13 +125,14 @@ void SeekDecoderDaemon::operator()() {
   bool hasPendingChunk = false;
 
   while (sharedState_->isDaemonRunning.load(std::memory_order_acquire)) {
-    if (processSeekCommands()) {
+
+    auto seekResult = processSeekCommands();
+    if (seekResult.has_value()) {
       hasPendingChunk = false;
-      continue;
     }
 
     if (!hasPendingChunk) {
-      hasPendingChunk = decodeNextChunk(localData);
+      hasPendingChunk = decodeNextChunk(localData, seekResult);
     }
 
     if (!hasPendingChunk) {
@@ -126,7 +142,7 @@ void SeekDecoderDaemon::operator()() {
     if (frameSender_.try_send(localData) == ResponseStatus::SUCCESS) {
       hasPendingChunk = false;
     } else {
-      std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_DURATION_ON_FULL));
+      std::this_thread::sleep_for(SLEEP_DURATION_ON_FULL);
     }
   }
 

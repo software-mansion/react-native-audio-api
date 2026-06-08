@@ -123,8 +123,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   std::atomic<uint64_t> activeMediaBindingId_{0};
 
   /// @brief Dispatches position-changed events at the configured interval.
+  /// @param framesPlayed number of frames played since the last event; used to calculate the new position.
+  /// @param forceFlush if true, the event is dispatched regardless of the configured interval (used to flush position immediately on seeks and end-of-file).
   /// @note Audio thread only.
-  void sendOnPositionChangedEvent(int framesPlayed);
+  void sendOnPositionChangedEvent(int framesPlayed, bool forceFlush);
 
   /// @brief Sets up SPSC channels, constructs the SeekDecoderDaemon, and initialises metadata from the opened decoder.
   /// @return false if the source could not be opened; caller must not set isInitialized_.
@@ -132,10 +134,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioFileSourceOptions &options);
 
-  /// @brief Reads decoded interleaved frames from the SPSC channel, deinterleaves them into @p destBuffer, and applies volume.
-  [[nodiscard]] size_t readInterleavedFrames(
-      const std::shared_ptr<DSPAudioBuffer> &destBuffer,
-      size_t framesToRead);
+  /// @brief Attempts to read the next chunk of decoded frames from the daemon.
+  /// @param outData decoded frames and metadata; only valid if return value is true.
+  /// @return false if no decoded frames are available; true if @p outData is filled and ready to process.
+  [[nodiscard]] bool readNextFrameChunk(DecoderData &outData);
 
   /// @brief Daemon thread for decoding and seeking
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;

@@ -9,6 +9,7 @@
 #include <audioapi/utils/SpscChannel.hpp>
 #include <array>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -29,8 +30,6 @@ struct AudioFileDecoderState {
   std::atomic<bool> isDaemonRunning{true};
   std::atomic<bool> isReady{false}; // True once the decoder opens the file/URL
   std::atomic<int> pendingOffloadedSeeks{0};
-  std::atomic<bool> isEof{false};
-  std::atomic<bool> onPositionChangedFlush{false};
 
   // Metadata
   std::atomic<int> channelCount{0};
@@ -48,6 +47,8 @@ struct SeekRequest {
   explicit SeekRequest(double t) : seconds(t) {}
 };
 
+enum class StreamState : std::uint8_t { PLAYING, DISCONTINUOUS, END_OF_STREAM };
+
 struct DecoderData {
   std::array<
       float,
@@ -55,6 +56,8 @@ struct DecoderData {
           static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT)>
       interleavedBuffer{};
   size_t size{};
+  double timestamp{0.0};
+  StreamState state{StreamState::PLAYING};
 };
 
 inline constexpr auto COMMAND_OVERFLOW_STRATEGY = OverflowStrategy::OVERWRITE_ON_FULL;
@@ -106,12 +109,13 @@ class SeekDecoderDaemon {
   std::shared_ptr<FrameReceiver> frameReceiverForDrain_;
 
   /// @brief Drains the command queue and performs all pending seeks.
-  /// @return true if at least one seek command was processed.
-  bool processSeekCommands();
+  /// @return Latest seek request if any were processed; @c std::nullopt if no seek commands were pending.
+  std::optional<SeekRequest> processSeekCommands();
 
   /// @brief Reads one quantum of frames from the decoder into @p data, handling EOF and loop-back.
-  /// @return true if @p data is filled and ready to send; false if the decoder stalled or looped.
-  bool decodeNextChunk(DecoderData &data);
+  /// @param seekRequest if present, marks the chunk as @c StreamState::DISCONTINUOUS with that target.
+  /// @return true if @p data is filled and ready to send; false if the decoder is not open or not initialized.
+  bool decodeNextChunk(DecoderData &data, const std::optional<SeekRequest> &seekRequest);
 };
 
 } // namespace audioapi
