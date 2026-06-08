@@ -40,17 +40,19 @@ std::string parseFFmpegError(int errorCode) {
 
 int read_packet(void *opaque, uint8_t *buf, int buf_size) {
   auto *ctx = static_cast<MemoryIOContext *>(opaque);
-  if (ctx->pos >= ctx->size) {
+  const size_t size = ctx->data.size();
+  if (ctx->pos >= size) {
     return AVERROR_EOF;
   }
-  int n = std::min(buf_size, static_cast<int>(ctx->size - ctx->pos));
-  memcpy(buf, ctx->data + ctx->pos, n);
+  int n = std::min(buf_size, static_cast<int>(size - ctx->pos));
+  memcpy(buf, ctx->data.data() + ctx->pos, n);
   ctx->pos += static_cast<size_t>(n);
   return n;
 }
 
 int64_t seek_packet(void *opaque, int64_t offset, int whence) {
   auto *ctx = static_cast<MemoryIOContext *>(opaque);
+  const size_t size = ctx->data.size();
   switch (whence) {
     case SEEK_SET:
       ctx->pos = static_cast<size_t>(offset);
@@ -59,14 +61,14 @@ int64_t seek_packet(void *opaque, int64_t offset, int whence) {
       ctx->pos += static_cast<size_t>(offset);
       break;
     case SEEK_END:
-      ctx->pos = ctx->size + static_cast<size_t>(offset);
+      ctx->pos = size + static_cast<size_t>(offset);
       break;
     case AVSEEK_SIZE:
-      return static_cast<int64_t>(ctx->size);
+      return static_cast<int64_t>(size);
     default:
       return AVERROR(EINVAL);
   }
-  ctx->pos = std::min(ctx->pos, ctx->size);
+  ctx->pos = std::min(ctx->pos, size);
   return static_cast<int64_t>(ctx->pos);
 }
 
@@ -241,8 +243,8 @@ FFmpegDecoder::openMemory(int outputSampleRate, const void *data, size_t size) {
     return Err("FFmpegDecoder::openMemory failed: input data is empty");
   }
   mem_io_ = std::make_unique<MemoryIOContext>();
-  mem_io_->data = static_cast<const uint8_t *>(data);
-  mem_io_->size = size;
+  mem_io_->data.assign(
+      static_cast<const uint8_t *>(data), static_cast<const uint8_t *>(data) + size);
   mem_io_->pos = 0;
 
   auto *io_buf = static_cast<uint8_t *>(av_malloc(decoding::IncrementalAudioDecoder::CHUNK_SIZE));

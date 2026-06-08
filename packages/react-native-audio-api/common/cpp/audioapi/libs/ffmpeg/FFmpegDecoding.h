@@ -27,10 +27,9 @@ extern "C" {
 
 namespace audioapi::ffmpeg_decoder {
 
-/// Opaque IO state for openMemory (must outlive decode until close).
+/// Opaque IO state for openMemory — owns the audio bytes for the decoder's lifetime.
 struct MemoryIOContext {
-  const uint8_t *data = nullptr;
-  size_t size = 0;
+  std::vector<uint8_t> data;
   size_t pos = 0;
 };
 
