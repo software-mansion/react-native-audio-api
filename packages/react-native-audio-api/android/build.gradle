@@ -322,8 +322,7 @@ task downloadPrebuiltBinaries(type: Exec) {
     commandLine 'C:\\Program Files\\Git\\usr\\bin\\bash.exe', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
   } else {
     commandLine 'chmod', '+x', '../scripts/download-prebuilt-binaries.sh'
-    commandLine 'bash', '../scripts/download-prebuilt-binaries.sh'
-    args 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
+    commandLine 'bash', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
   }
   environment 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS', isStaticExternalLibsDisabled() ? '1' : '0'
 }
