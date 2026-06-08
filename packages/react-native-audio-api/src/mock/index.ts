@@ -469,6 +469,19 @@ class StreamerNodeMock extends AudioScheduledSourceNodeMock {
   resume(): void {}
 }
 
+class MediaElementAudioSourceNodeMock extends AudioNodeMock {
+  readonly mediaElement: HTMLMediaElement | AudioNodeMock;
+
+  constructor(
+    context: BaseAudioContextMock,
+    mediaElement: HTMLMediaElement | AudioNodeMock
+  ) {
+    super(context, {});
+    this.mediaElement = mediaElement;
+    this.numberOfInputs = 0;
+  }
+}
+
 class WorkletNodeMock extends AudioNodeMock {
   constructor(
     context: BaseAudioContextMock,
@@ -684,6 +697,12 @@ class AudioContextMock extends BaseAudioContextMock {
     this._state = 'suspended';
     return Promise.resolve();
   }
+
+  createMediaElementSource(
+    mediaElement: HTMLMediaElement | AudioNodeMock
+  ): MediaElementAudioSourceNodeMock {
+    return new MediaElementAudioSourceNodeMock(this, mediaElement);
+  }
 }
 
 class OfflineAudioContextMock extends BaseAudioContextMock {
@@ -853,6 +872,33 @@ const changePlaybackSpeed = (
   return Promise.resolve(buffer);
 };
 
+const concatAudioFiles = (
+  inputPaths: string[],
+  outputPath: string
+): Promise<string> => {
+  if (!Array.isArray(inputPaths) || inputPaths.length === 0) {
+    return Promise.reject(
+      new AudioApiErrorMock(
+        'concatAudioFiles requires at least one input path.'
+      )
+    );
+  }
+
+  if (inputPaths.some((inputPath) => typeof inputPath !== 'string')) {
+    return Promise.reject(
+      new TypeError('concatAudioFiles input paths must be strings.')
+    );
+  }
+
+  if (typeof outputPath !== 'string' || outputPath.length === 0) {
+    return Promise.reject(
+      new AudioApiErrorMock('concatAudioFiles requires an output path.')
+    );
+  }
+
+  return Promise.resolve(outputPath);
+};
+
 class AudioManagerMock {
   static getDevicePreferredSampleRate(): number {
     return 44100;
@@ -989,6 +1035,7 @@ export const ConstantSourceNode = ConstantSourceNodeMock;
 export const ConvolverNode = ConvolverNodeMock;
 export const DelayNode = DelayNodeMock;
 export const GainNode = GainNodeMock;
+export const MediaElementAudioSourceNode = MediaElementAudioSourceNodeMock;
 export const OfflineAudioContext = OfflineAudioContextMock;
 export const OscillatorNode = OscillatorNodeMock;
 export const RecorderAdapterNode = RecorderAdapterNodeMock;
@@ -1017,6 +1064,7 @@ export const AudioApiError = AudioApiErrorMock;
 // Export functions
 export {
   changePlaybackSpeed,
+  concatAudioFiles,
   decodeAudioData,
   decodePCMInBase64,
   setMockSystemVolume,
@@ -1040,6 +1088,7 @@ export type ConstantSourceNode = ConstantSourceNodeMock;
 export type ConvolverNode = ConvolverNodeMock;
 export type DelayNode = DelayNodeMock;
 export type GainNode = GainNodeMock;
+export type MediaElementAudioSourceNode = MediaElementAudioSourceNodeMock;
 export type OfflineAudioContext = OfflineAudioContextMock;
 export type OscillatorNode = OscillatorNodeMock;
 export type RecorderAdapterNode = RecorderAdapterNodeMock;
@@ -1102,6 +1151,7 @@ export default {
   ConvolverNode: ConvolverNodeMock,
   DelayNode: DelayNodeMock,
   GainNode: GainNodeMock,
+  MediaElementAudioSourceNode: MediaElementAudioSourceNodeMock,
   OfflineAudioContext: OfflineAudioContextMock,
   OscillatorNode: OscillatorNodeMock,
   RecorderAdapterNode: RecorderAdapterNodeMock,
@@ -1117,6 +1167,7 @@ export default {
   decodeAudioData,
   decodePCMInBase64,
   changePlaybackSpeed,
+  concatAudioFiles,
   useSystemVolume,
   setMockSystemVolume,
 

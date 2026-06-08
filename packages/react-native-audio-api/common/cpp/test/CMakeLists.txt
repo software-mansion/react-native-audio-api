@@ -38,7 +38,6 @@ list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/AudioContext.cpp"
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/sources/AudioFileSourceNode.cpp"
 )
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS
@@ -88,6 +87,9 @@ add_executable(
 add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
 add_compile_definitions(RN_AUDIO_API_FFMPEG_DISABLED=1)
+add_compile_definitions(RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1)
+add_compile_definitions(MA_NO_LIBOPUS=1)
+add_compile_definitions(MA_NO_LIBVORBIS=1)
 
 target_link_libraries(tests
   rnaudioapi

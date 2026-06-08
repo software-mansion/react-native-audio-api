@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import * as MockAPI from '../src/mock';
+import * as MockAPI from 'react-native-audio-api/mock';
 
 describe('React Native Audio API Mocks', () => {
   describe('AudioContext', () => {
@@ -283,6 +283,7 @@ describe('React Native Audio API Mocks', () => {
 
       const stopResult = recorder.stop();
       expect(stopResult.status).toBe('success');
+      // @ts-ignore - paths is not seen as the correct type
       expect(stopResult.paths?.length).toBeGreaterThan(0);
       expect(recorder.isRecording()).toBe(false);
     });
@@ -341,6 +342,21 @@ describe('React Native Audio API Mocks', () => {
       const outputBuffer = await MockAPI.changePlaybackSpeed(inputBuffer, 1.5);
 
       expect(outputBuffer).toBe(inputBuffer);
+    });
+
+    it('should concatenate audio files', async () => {
+      const outputPath = await MockAPI.concatAudioFiles(
+        ['file:///tmp/recording-1.m4a', 'file:///tmp/recording-2.m4a'],
+        'file:///tmp/recording.m4a'
+      );
+
+      expect(outputPath).toBe('file:///tmp/recording.m4a');
+    });
+
+    it('should reject concatenation without input files', async () => {
+      await expect(
+        MockAPI.concatAudioFiles([], 'file:///tmp/recording.m4a')
+      ).rejects.toThrow('concatAudioFiles requires at least one input path.');
     });
   });
 

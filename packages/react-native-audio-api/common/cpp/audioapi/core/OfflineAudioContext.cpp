@@ -23,7 +23,6 @@ OfflineAudioContext::OfflineAudioContext(
     const RuntimeRegistry &runtimeRegistry)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
       length_(length),
-      numberOfChannels_(numberOfChannels),
       currentSampleFrame_(0),
       audioBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels, sampleRate)),

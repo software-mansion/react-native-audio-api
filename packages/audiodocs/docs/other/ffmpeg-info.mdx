@@ -5,7 +5,7 @@ sidebar_position: 5
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# FFmpeg additional information
+# FFmpeg
 
 We use [`ffmpeg`](https://github.com/FFmpeg/FFmpeg) for few components:
 - [`StreamerNode`](/docs/sources/streamer-node)
@@ -14,30 +14,8 @@ We use [`ffmpeg`](https://github.com/FFmpeg/FFmpeg) for few components:
 ## Disabling FFmpeg
 
 The ffmpeg usage is enabled by default, however if you would like not to use it, f.e. there are some name clashes with other ffmpeg
-binaries in your project, you can easily disable it. Just add one flag in corresponding file.
+binaries in your project, you can easily disable it. See [Disabling prebuilt libraries](/docs/other/disabling-prebuilt-libraries) for the full overview.
 
 :::info
 FFmpeg is enabled by default
 :::
-
-<Tabs queryString="platform">
-  <TabItem value="expo" label="Expo" default>
-    Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional).
-
-    ```
-    "disableFFmpeg": true
-    ```
-  </TabItem>
-  <TabItem value="iOS" label="iOS">
-    Podfile
-    ```
-    ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'
-    ```
-  </TabItem>
-  <TabItem value="android" label="Android">
-    gradle.properties
-    ```
-    disableAudioapiFFmpeg=true
-    ```
-  </TabItem>
-</Tabs>

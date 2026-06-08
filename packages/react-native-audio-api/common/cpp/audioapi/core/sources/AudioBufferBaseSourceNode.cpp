@@ -8,8 +8,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <string>
-#include <unordered_map>
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
@@ -85,10 +83,10 @@ std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
   if (onPositionChangedCallbackId_ != 0 &&
       onPositionChangedTimeInFrames_ > onPositionChangedIntervalInFrames_) {
-    std::unordered_map<std::string, EventValue> body = {{"value", getCurrentPosition()}};
-
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        AudioEvent::POSITION_CHANGED, onPositionChangedCallbackId_, body);
+    audioEventHandlerRegistry_->dispatchEvent(
+        AudioEvent::POSITION_CHANGED,
+        onPositionChangedCallbackId_,
+        DoubleValuePayload{.value = getCurrentPosition()});
 
     onPositionChangedTimeInFrames_ = 0;
   }
@@ -119,7 +117,8 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 
   playbackRateBuffer_->zero();
 
-  auto framesNeededToStretch = static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
+  auto framesNeededToStretch =
+      std::abs(static_cast<int>(playbackRate * static_cast<float>(framesToProcess)));
 
   updatePlaybackInfo(
       playbackRateBuffer_,
@@ -134,7 +133,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     return;
   }
 
-  processWithoutInterpolation(playbackRateBuffer_, startOffset, offsetLength, playbackRate);
+  runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, playbackRate, false);
 
   stretch_->process(
       playbackRateBuffer_.get()[0],
@@ -178,16 +177,19 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   }
 
   if (std::fabs(computedPlaybackRate) == 1.0) {
-    processWithoutInterpolation(processingBuffer, startOffset, offsetLength, computedPlaybackRate);
+    runBufferProcessor(processingBuffer, startOffset, offsetLength, computedPlaybackRate, false);
   } else {
-    processWithInterpolation(processingBuffer, startOffset, offsetLength, computedPlaybackRate);
+    runBufferProcessor(processingBuffer, startOffset, offsetLength, computedPlaybackRate, true);
   }
 
   sendOnPositionChangedEvent();
 }
 
 float AudioBufferBaseSourceNode::getComputedPlaybackRateValue(int framesToProcess, double time) {
-  auto playbackRate = playbackRateParam_->processKRateParam(framesToProcess, time);
+  auto playbackRate = std::clamp(
+      playbackRateParam_->processKRateParam(framesToProcess, time),
+      MIN_PLAYBACK_RATE,
+      MAX_PLAYBACK_RATE);
   auto detune = std::pow(
       2.0f, //NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       detuneParam_->processKRateParam(framesToProcess, time) / static_cast<float>(OCTAVE_RANGE));

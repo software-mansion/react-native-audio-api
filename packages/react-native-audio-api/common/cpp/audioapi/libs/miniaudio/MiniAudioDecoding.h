@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -15,18 +16,18 @@ namespace audioapi::miniaudio_decoder {
 
 /**
  * MiniAudio-backed incremental decoder (Vorbis/Opus/WAV, etc. via ma_decoder + custom backends).
- * Same usage contract as ffmpegdecoder::FFmpegDecoder.
+ * Same usage contract as ffmpeg_decoder::FFmpegDecoder.
  */
-class MiniAudioDecoder : public decoding::IIncrementalAudioDecoder {
+class MiniAudioDecoder : public decoding::IncrementalAudioDecoder {
  public:
-  MiniAudioDecoder();
+  MiniAudioDecoder() = default;
   ~MiniAudioDecoder() override;
   DELETE_COPY_AND_MOVE(MiniAudioDecoder);
 
-  [[nodiscard]] bool openFile(
+  [[nodiscard]] decoding::DecoderResult openFile(
       int outputSampleRate,
       const std::string &path) override;
-  [[nodiscard]] bool openMemory(
+  [[nodiscard]] decoding::DecoderResult openMemory(
       int outputSampleRate,
       const void *data,
       size_t size) override;
@@ -37,7 +38,7 @@ class MiniAudioDecoder : public decoding::IIncrementalAudioDecoder {
   [[nodiscard]] int outputSampleRate() const override;
   [[nodiscard]] float getDurationInSeconds() const override;
   [[nodiscard]] float getCurrentPositionInSeconds() const override;
-  [[nodiscard]] bool seekToTime(double seconds) override;
+  [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 
  private:
   void teardownDecoder();

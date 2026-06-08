@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <list>
 #include <memory>
+#include "audioapi/core/utils/buffer/QueueBufferProcessor.h"
 
 namespace audioapi {
 
@@ -48,6 +49,11 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   void unregisterOnBufferEndedCallback(uint64_t callbackId);
 
+  /// @brief Set the channel count of the node. Channel count is set only once when the first buffer is enqueued.
+  /// @param channelCount The channel count to set.
+  /// @note Audio Thread only
+  void setChannelCount(int channelCount);
+
  protected:
   double getCurrentPosition() const override;
 
@@ -55,17 +61,12 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   bool isEmpty() const final;
 
-  void processWithoutInterpolation(
+  void runBufferProcessor(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
       size_t offsetLength,
-      float playbackRate) final;
-
-  void processWithInterpolation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      size_t startOffset,
-      size_t offsetLength,
-      float playbackRate) final;
+      float playbackRate,
+      bool interpolate) final;
 
  private:
   // User provided buffers
@@ -78,6 +79,8 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   double playedBuffersDuration_ = 0;
 
   uint64_t onBufferEndedCallbackId_ = 0; // 0 means no callback
+
+  std::unique_ptr<QueueBufferProcessor> processor_;
 };
 
 } // namespace audioapi

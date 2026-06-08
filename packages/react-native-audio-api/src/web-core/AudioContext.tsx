@@ -10,6 +10,7 @@ import ConvolverNode from './ConvolverNode';
 import DelayNode from './DelayNode';
 import GainNode from './GainNode';
 import IIRFilterNode from './IIRFilterNode';
+import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
@@ -81,6 +82,16 @@ export default class AudioContext implements BaseAudioContext {
 
   createBufferSource(pitchCorrection?: boolean): AudioBufferSourceNode {
     return new AudioBufferSourceNode(this, { pitchCorrection });
+  }
+
+  createMediaElementSource(
+    mediaElement: HTMLMediaElement
+  ): MediaElementAudioSourceNode {
+    return new MediaElementAudioSourceNode(
+      this,
+      this.context.createMediaElementSource(mediaElement),
+      mediaElement
+    );
   }
 
   createBuffer(

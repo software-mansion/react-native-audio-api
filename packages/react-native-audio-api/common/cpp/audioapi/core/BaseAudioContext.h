@@ -30,6 +30,7 @@ class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
 class AudioFileSourceNode;
+class MediaElementAudioSourceNode;
 class AnalyserNode;
 class AudioEventHandlerRegistry;
 class ConvolverNode;
@@ -50,6 +51,7 @@ struct OscillatorOptions;
 struct BaseAudioBufferSourceOptions;
 struct AudioBufferSourceOptions;
 struct AudioFileSourceOptions;
+struct MediaElementAudioSourceOptions;
 struct StreamerOptions;
 struct DelayOptions;
 struct IIRFilterOptions;
@@ -98,9 +100,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<BiquadFilterNode> createBiquadFilter(const BiquadFilterOptions &options);
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(
       const AudioBufferSourceOptions &options);
-#if !RN_AUDIO_API_TEST
   std::shared_ptr<AudioFileSourceNode> createFileSource(const AudioFileSourceOptions &options);
-#endif // RN_AUDIO_API_TEST
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       const BaseAudioBufferSourceOptions &options);
   [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(
@@ -136,11 +136,11 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
  protected:
   std::shared_ptr<AudioDestinationNode> destination_;
+  std::shared_ptr<AudioGraphManager> graphManager_;
 
  private:
   std::atomic<ContextState> state_;
   std::atomic<float> sampleRate_;
-  std::shared_ptr<AudioGraphManager> graphManager_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   RuntimeRegistry runtimeRegistry_;
 
@@ -148,7 +148,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
-
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
 

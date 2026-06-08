@@ -11,6 +11,8 @@ export { default as BaseAudioContext } from './web-core/BaseAudioContext';
 export { default as BiquadFilterNode } from './web-core/BiquadFilterNode';
 export { default as DelayNode } from './web-core/DelayNode';
 export { default as GainNode } from './web-core/GainNode';
+export { default as MediaElementAudioSourceNode } from './web-core/MediaElementAudioSourceNode';
+export type { MediaElementAudioSourceOptions } from './web-core/MediaElementAudioSourceNode';
 export { default as OscillatorNode } from './web-core/OscillatorNode';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode';
 export { default as ConstantSourceNode } from './web-core/ConstantSourceNode';
@@ -19,6 +21,13 @@ export { default as PeriodicWave } from './web-core/PeriodicWave';
 export { default as WaveShaperNode } from './web-core/WaveShaperNode';
 
 export * from './web-core/custom';
+
+export function concatAudioFiles(
+  _inputPaths: string[],
+  _outputPath: string
+): Promise<string> {
+  return Promise.reject(new Error('concatAudioFiles is not supported on web.'));
+}
 
 export type {
   OscillatorType,

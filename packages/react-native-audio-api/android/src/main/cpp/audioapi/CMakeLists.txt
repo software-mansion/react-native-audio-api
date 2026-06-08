@@ -29,6 +29,14 @@ set_source_files_properties(
   COMPILE_FLAGS "-O3"
 )
 
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+  set_source_files_properties(
+    "${COMMON_CPP_DIR}/audioapi/dsp/r8brain/fft/pffft_double.c"
+    PROPERTIES
+    COMPILE_FLAGS "-Wno-#pragma-messages"
+  )
+endif()
+
 set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
 set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include_ffmpeg)
 set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external/android)
@@ -36,10 +44,12 @@ set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs)
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
 
-foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)
-  add_library(${lib} STATIC IMPORTED)
-  set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${EXTERNAL_DIR}/${ANDROID_ABI}/lib${lib}.a)
-endforeach()
+if (NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
+  foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)
+    add_library(${lib} STATIC IMPORTED)
+    set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${EXTERNAL_DIR}/${ANDROID_ABI}/lib${lib}.a)
+  endforeach()
+endif()
 
 if (NOT RN_AUDIO_API_FFMPEG_DISABLED)
   foreach (lib IN ITEMS avcodec avformat avutil swresample)
@@ -64,12 +74,20 @@ target_include_directories(
   "${COMMON_CPP_DIR}"
   "${ANDROID_CPP_DIR}"
   "${INCLUDE_DIR}"
-  "${INCLUDE_DIR}/opus"
   "${FFMPEG_INCLUDE_DIR}"
   "${REACT_NATIVE_DIR}/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
 )
+
+if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
+  target_include_directories(
+    react-native-audio-api
+    PRIVATE
+    "${INCLUDE_DIR}/opus"
+    "${INCLUDE_DIR}/vorbis"
+  )
+endif()
 
 set(LINK_LIBRARIES
   ReactAndroid::jsi
@@ -83,28 +101,39 @@ set(INCLUDE_LIBRARIES
   "${COMMON_CPP_DIR}"
   "${ANDROID_CPP_DIR}"
   "${INCLUDE_DIR}"
-  "${INCLUDE_DIR}/opus"
-  "${INCLUDE_DIR}/vorbis"
   "${REACT_NATIVE_DIR}/ReactCommon"
   "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
 )
 
-if(RN_AUDIO_API_WORKLETS_ENABLED)
-  # Import the worklets library (similar to how Reanimated does it)
-  add_library(worklets SHARED IMPORTED)
-  set_target_properties(
-    worklets
-    PROPERTIES
-      IMPORTED_LOCATION
-      "${REACT_NATIVE_WORKLETS_DIR}/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
+if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
+  list(APPEND INCLUDE_LIBRARIES
+    "${INCLUDE_DIR}/opus"
+    "${INCLUDE_DIR}/vorbis"
   )
+endif()
+
+if(RN_AUDIO_API_WORKLETS_ENABLED)
   list(APPEND INCLUDE_LIBRARIES
     "${REACT_NATIVE_WORKLETS_DIR}/../Common/cpp"
     "${REACT_NATIVE_WORKLETS_DIR}/src/main/cpp"
   )
-  list(APPEND LINK_LIBRARIES worklets)
+
+  find_package(react-native-worklets CONFIG QUIET)
+  if(react-native-worklets_FOUND)
+    list(APPEND LINK_LIBRARIES react-native-worklets::worklets)
+  else()
+    # Fallback for environments without prefab publication (older worklets)
+    add_library(worklets SHARED IMPORTED)
+    set_target_properties(
+      worklets
+      PROPERTIES
+        IMPORTED_LOCATION
+        "${REACT_NATIVE_WORKLETS_DIR}/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
+    )
+    list(APPEND LINK_LIBRARIES worklets)
+  endif()
 endif()
 
 target_include_directories(
@@ -136,19 +165,32 @@ if (RN_AUDIO_API_FFMPEG_DISABLED)
   )
 endif()
 
+if (RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
+  target_compile_definitions(
+    react-native-audio-api
+    PRIVATE
+    RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1
+    MA_NO_LIBOPUS=1
+    MA_NO_LIBVORBIS=1
+  )
+endif()
+
 target_link_libraries(react-native-audio-api
   ${LINK_LIBRARIES}
   ${RN_VERSION_LINK_LIBRARIES}
-  opusfile
-  opus
-  ogg
-  vorbis
-  vorbisenc
-  vorbisfile
-  crypto
-  ssl
   z
 )
+
+if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
+  target_link_libraries(react-native-audio-api
+    opusfile
+    opus
+    ogg
+    vorbis
+    vorbisenc
+    vorbisfile
+  )
+endif()
 
 if(NOT RN_AUDIO_API_FFMPEG_DISABLED)
   target_link_libraries(react-native-audio-api

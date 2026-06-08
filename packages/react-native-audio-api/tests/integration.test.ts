@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import * as MockAPI from '../src/mock';
+import * as MockAPI from 'react-native-audio-api/mock';
 
 describe('Mock Integration Tests', () => {
   describe('Audio Graph Creation', () => {
@@ -86,6 +86,7 @@ describe('Mock Integration Tests', () => {
       // Stop recording
       const stopResult = recorder.stop();
       expect(stopResult.status).toBe('success');
+      // @ts-ignore - paths is not seen as the correct type
       expect(stopResult.paths?.length).toBeGreaterThan(0);
       expect(recorder.isRecording()).toBe(false);
     });

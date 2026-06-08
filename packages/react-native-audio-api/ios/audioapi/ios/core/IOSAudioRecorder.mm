@@ -322,7 +322,7 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
 
     if (hadCallback) {
       callbackOutputConfigured_.store(false, std::memory_order_release);
-      dataCallback = std::move(dataCallback_);
+      dataCallback = dataCallback_;
     }
 
     if (hadConnection) {

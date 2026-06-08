@@ -29,7 +29,7 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
 
   Result<NoneType, std::string>
   prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
-  void cleanup() override;
+  void cleanup() final;
 
   void receiveAudioData(void *data, int numFrames);
 
