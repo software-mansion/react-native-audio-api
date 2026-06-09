@@ -39,6 +39,9 @@ struct AudioFileDecoderState {
   // Playback state
   std::atomic<double> currentTime{0.0};
   std::atomic<bool> loop{false};
+
+  /// True when the opened source is an FFmpeg HLS live/indefinite stream.
+  std::atomic<bool> isHlsStreaming{false};
 };
 
 struct SeekRequest {

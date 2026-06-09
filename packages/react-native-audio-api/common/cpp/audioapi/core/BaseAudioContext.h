@@ -100,7 +100,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<BiquadFilterNode> createBiquadFilter(const BiquadFilterOptions &options);
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(
       const AudioBufferSourceOptions &options);
-  std::shared_ptr<AudioFileSourceNode> createFileSource(const AudioFileSourceOptions &options);
+  std::shared_ptr<AudioFileSourceNode> createFileSource(AudioFileSourceOptions &options);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       const BaseAudioBufferSourceOptions &options);
   [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(

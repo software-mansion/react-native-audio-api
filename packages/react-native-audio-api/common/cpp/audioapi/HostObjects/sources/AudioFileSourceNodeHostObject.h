@@ -14,7 +14,7 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
  public:
   explicit AudioFileSourceNodeHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
-      const AudioFileSourceOptions &options);
+      AudioFileSourceOptions &options);
 
   ~AudioFileSourceNodeHostObject() override;
 

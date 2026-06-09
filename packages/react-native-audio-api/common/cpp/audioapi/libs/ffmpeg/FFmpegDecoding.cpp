@@ -13,8 +13,11 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cerrno>
 #include <cstring>
+#include <thread>
 
 extern "C" {
 #include <libavutil/avutil.h>
@@ -34,6 +37,14 @@ std::string parseFFmpegError(int errorCode) {
     return std::string(errorBuffer.data()) + " (" + std::to_string(errorCode) + ")";
   }
   return "Unknown FFmpeg error (" + std::to_string(errorCode) + ")";
+}
+
+inline constexpr auto HLS_READ_RETRY_DELAY = std::chrono::milliseconds(10);
+inline constexpr int HLS_MAX_READ_RETRIES = 100;
+
+bool isTransientReadError(int errorCode) {
+  return errorCode == AVERROR(EIO) || errorCode == AVERROR(ECONNRESET) ||
+      errorCode == AVERROR(ETIMEDOUT) || errorCode == AVERROR(EPIPE);
 }
 
 } // namespace
@@ -148,6 +159,12 @@ void FFmpegDecoder::close() {
   output_channels_ = 0;
   output_sample_rate_ = 0;
   total_output_frames_ = 0;
+  is_hls_streaming_ = false;
+}
+
+void FFmpegDecoder::detectHlsStreamingMode() {
+  is_hls_streaming_ = fmt_ctx_ != nullptr && fmt_ctx_->iformat != nullptr &&
+      fmt_ctx_->iformat->name != nullptr && std::strcmp(fmt_ctx_->iformat->name, "hls") == 0;
 }
 
 decoding::DecoderResult FFmpegDecoder::setupSwr() {
@@ -208,6 +225,7 @@ decoding::DecoderResult FFmpegDecoder::openFile(int outputSampleRate, const std:
         "FFmpegDecoder::openFile failed: avformat_find_stream_info failed: " +
         parseFFmpegError(streamInfoResult));
   }
+  detectHlsStreamingMode();
   auto codecResult = openCodec(fmt_ctx_, audio_stream_index_, &codec_ctx_);
   if (codecResult.is_err()) {
     avformat_close_input(&fmt_ctx_);
@@ -287,6 +305,7 @@ FFmpegDecoder::openMemory(int outputSampleRate, const void *data, size_t size) {
         "FFmpegDecoder::openMemory failed: avformat_find_stream_info failed: " +
         parseFFmpegError(streamInfoResult));
   }
+  detectHlsStreamingMode();
   auto codecResult = openCodec(fmt_ctx_, audio_stream_index_, &codec_ctx_);
   if (codecResult.is_err()) {
     close();
@@ -344,19 +363,24 @@ void FFmpegDecoder::appendFrameResampled(AVFrame *frame) {
 }
 
 decoding::DecoderResult FFmpegDecoder::feedPipeline() {
+  int readRetries = 0;
+
   for (;;) {
     int r = avcodec_receive_frame(codec_ctx_, frame_);
     if (r == 0) {
+      readRetries = 0;
       appendFrameResampled(frame_);
       return Ok(None);
     }
     if (r == AVERROR_EOF) {
-      if (leftover_.empty()) {
+      if (!leftover_.empty()) {
+        return Ok(None);
+      }
+      if (!is_hls_streaming_) {
         return Err("FFmpegDecoder::feedPipeline reached end of stream");
       }
-      return Ok(None);
-    }
-    if (r != AVERROR(EAGAIN)) {
+      // HLS live: need more segment data — fall through to av_read_frame.
+    } else if (r != AVERROR(EAGAIN)) {
       return Err(
           "FFmpegDecoder::feedPipeline failed: avcodec_receive_frame failed: " +
           parseFFmpegError(r));
@@ -364,6 +388,10 @@ decoding::DecoderResult FFmpegDecoder::feedPipeline() {
 
     r = av_read_frame(fmt_ctx_, packet_);
     if (r == AVERROR_EOF) {
+      if (is_hls_streaming_) {
+        std::this_thread::sleep_for(HLS_READ_RETRY_DELAY);
+        continue;
+      }
       const int flushResult = avcodec_send_packet(codec_ctx_, nullptr);
       if (flushResult < 0) {
         return Err(
@@ -373,9 +401,15 @@ decoding::DecoderResult FFmpegDecoder::feedPipeline() {
       continue;
     }
     if (r < 0) {
+      if (is_hls_streaming_ && isTransientReadError(r) && readRetries < HLS_MAX_READ_RETRIES) {
+        readRetries++;
+        std::this_thread::sleep_for(HLS_READ_RETRY_DELAY);
+        continue;
+      }
       return Err(
           "FFmpegDecoder::feedPipeline failed: av_read_frame failed: " + parseFFmpegError(r));
     }
+    readRetries = 0;
     if (packet_->stream_index != audio_stream_index_) {
       av_packet_unref(packet_);
       continue;

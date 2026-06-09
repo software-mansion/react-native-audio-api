@@ -65,6 +65,10 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
     return output_sample_rate_;
   }
 
+  [[nodiscard]] bool isHlsStreaming() const override {
+    return is_hls_streaming_;
+  }
+
   [[nodiscard]] float getDurationInSeconds() const override;
 
   [[nodiscard]] float getCurrentPositionInSeconds() const override;
@@ -75,6 +79,9 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   [[nodiscard]] decoding::DecoderResult setupSwr();
   [[nodiscard]] decoding::DecoderResult feedPipeline();
   void appendFrameResampled(AVFrame *frame);
+  void detectHlsStreamingMode();
+
+  bool is_hls_streaming_ = false;
 
   AVFormatContext *fmt_ctx_ = nullptr;
   AVCodecContext *codec_ctx_ = nullptr;

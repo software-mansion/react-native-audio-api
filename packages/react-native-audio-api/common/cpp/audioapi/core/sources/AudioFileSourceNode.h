@@ -34,7 +34,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioFileSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
-      const AudioFileSourceOptions &options);
+      AudioFileSourceOptions &options);
   ~AudioFileSourceNode() override;
   DELETE_COPY_AND_MOVE(AudioFileSourceNode);
 
@@ -132,7 +132,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @return false if the source could not be opened; caller must not set isInitialized_.
   [[nodiscard]] bool initDecoder(
       const std::shared_ptr<BaseAudioContext> &context,
-      const AudioFileSourceOptions &options);
+      AudioFileSourceOptions &options);
 
   /// @brief Attempts to read the next chunk of decoded frames from the daemon.
   /// @param outData decoded frames and metadata; only valid if return value is true.

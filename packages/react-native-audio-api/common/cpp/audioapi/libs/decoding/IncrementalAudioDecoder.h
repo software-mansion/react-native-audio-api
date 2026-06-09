@@ -53,6 +53,11 @@ class IncrementalAudioDecoder {
   /// @return The output sample rate.
   [[nodiscard]] virtual int outputSampleRate() const = 0;
 
+  /// @brief True when the source uses FFmpeg's live HLS demuxer (indefinite stream).
+  [[nodiscard]] virtual bool isHlsStreaming() const {
+    return false;
+  }
+
   /// @brief Gets the duration of the audio in seconds.
   /// @return The duration of the audio in seconds.
   [[nodiscard]] virtual float getDurationInSeconds() const = 0;

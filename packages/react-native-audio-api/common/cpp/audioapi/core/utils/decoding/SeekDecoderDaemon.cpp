@@ -1,5 +1,6 @@
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <memory>
+#include <thread>
 #include <utility>
 
 namespace audioapi {
@@ -46,6 +47,7 @@ SeekDecoderDaemon::SeekDecoderDaemon(
       static_cast<float>(decoder_->outputSampleRate()), std::memory_order_release);
   sharedState_->duration.store(decoder_->getDurationInSeconds(), std::memory_order_release);
   sharedState_->loop.store(options.loop, std::memory_order_release);
+  sharedState_->isHlsStreaming.store(decoder_->isHlsStreaming(), std::memory_order_release);
   sharedState_->isReady.store(true, std::memory_order_release);
 }
 
@@ -105,6 +107,11 @@ bool SeekDecoderDaemon::decodeNextChunk(
     return true;
   }
 
+  // HLS live streams have no true EOF — wait for the next segment instead of stopping.
+  if (sharedState_->isHlsStreaming.load(std::memory_order_acquire)) {
+    return false;
+  }
+
   // If loop is enabled and we hit EOF, attempt to seek back to the start and read again
   if (sharedState_->loop.load(std::memory_order_acquire) && decoder_->seekToTime(0).is_ok()) {
     data.state = StreamState::DISCONTINUOUS;
@@ -136,6 +143,9 @@ void SeekDecoderDaemon::operator()() {
     }
 
     if (!hasPendingChunk) {
+      if (sharedState_->isHlsStreaming.load(std::memory_order_acquire)) {
+        std::this_thread::sleep_for(SLEEP_DURATION_ON_FULL);
+      }
       continue;
     }
 

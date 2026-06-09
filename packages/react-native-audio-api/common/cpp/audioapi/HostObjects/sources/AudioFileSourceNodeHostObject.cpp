@@ -11,7 +11,7 @@ namespace audioapi {
 
 AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
-    const AudioFileSourceOptions &options)
+    AudioFileSourceOptions &options)
     : AudioScheduledSourceNodeHostObject(context->createFileSource(options), options),
       loop_(options.loop),
       duration_(std::static_pointer_cast<AudioFileSourceNode>(node_)->getDuration()),

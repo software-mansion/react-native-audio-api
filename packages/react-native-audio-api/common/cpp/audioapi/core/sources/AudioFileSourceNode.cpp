@@ -26,7 +26,7 @@ namespace audioapi {
 
 AudioFileSourceNode::AudioFileSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
-    const AudioFileSourceOptions &options)
+    AudioFileSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
       decoderState_(std::make_shared<AudioFileDecoderState>()),
       volume_(options.volume),
@@ -54,6 +54,13 @@ AudioFileSourceNode::~AudioFileSourceNode() {
 
 void AudioFileSourceNode::stopDaemonThread() {
   decoderState_->isDaemonRunning.store(false, std::memory_order_release);
+
+  // commandSender_ is only created in initDecoder(); skip if construction failed early
+  // (e.g. neither filePath nor data provided) or teardown already completed.
+  if (!seekDecoderThread_.joinable() && seekDecoderDaemon_ == nullptr) {
+    return;
+  }
+
   // Send a dummy command to unblock the daemon thread if it's waiting.
   // The command channel uses OVERWRITE_ON_FULL, so this never blocks.
   commandSender_.send(SeekRequest{0});
@@ -64,7 +71,7 @@ void AudioFileSourceNode::stopDaemonThread() {
 
 bool AudioFileSourceNode::initDecoder(
     const std::shared_ptr<BaseAudioContext> &context,
-    const AudioFileSourceOptions &options) {
+    AudioFileSourceOptions &options) {
   auto [frameSender, frameReceiver] =
       channels::spsc::channel<DecoderData, FRAME_OVERFLOW_STRATEGY, FRAME_WAIT_STRATEGY>(
           FRAME_CHANNEL_CAPACITY);
@@ -77,13 +84,13 @@ bool AudioFileSourceNode::initDecoder(
 
   SeekDecoderDaemonOptions daemonOptions{
       .requiresFFmpeg = options.requiresFFmpeg,
-      .filePath = options.filePath,
-      .memoryData = options.data,
+      .filePath = std::move(options.filePath),
+      .memoryData = std::move(options.data),
       .contextSampleRate = context->getSampleRate(),
       .loop = options.loop};
 
   seekDecoderDaemon_ = std::make_unique<SeekDecoderDaemon>(
-      daemonOptions,
+      std::move(daemonOptions),
       decoderState_,
       std::move(commandReceiver),
       std::move(frameSender),
@@ -198,7 +205,7 @@ void AudioFileSourceNode::disable() {
 }
 
 void AudioFileSourceNode::seekToTime(double seconds) {
-  if (decoderState_ == nullptr) {
+  if (decoderState_ == nullptr || !isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
   const double dur = duration_;

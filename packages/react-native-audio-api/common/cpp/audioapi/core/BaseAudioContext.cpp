@@ -179,7 +179,7 @@ std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
 }
 
 std::shared_ptr<AudioFileSourceNode> BaseAudioContext::createFileSource(
-    const AudioFileSourceOptions &options) {
+    AudioFileSourceOptions &options) {
   auto fileSource = std::make_shared<AudioFileSourceNode>(shared_from_this(), options);
   graphManager_->addSourceNode(fileSource);
   return fileSource;
