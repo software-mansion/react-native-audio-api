@@ -1,9 +1,9 @@
 import { OscillatorType, OscillatorOptions } from '../types';
 import { InvalidStateError } from '../errors';
-import AudioScheduledSourceNode from './AudioScheduledSourceNode';
-import BaseAudioContext from './BaseAudioContext';
-import AudioParam from './AudioParam';
-import PeriodicWave from './PeriodicWave';
+import AudioScheduledSourceNode from './AudioScheduledSourceNode.web';
+import BaseAudioContext from './BaseAudioContext.web';
+import AudioParam from './AudioParam.web';
+import PeriodicWave from './PeriodicWave.web';
 
 export default class OscillatorNode extends AudioScheduledSourceNode {
   readonly frequency: AudioParam;

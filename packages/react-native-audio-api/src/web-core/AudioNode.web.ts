@@ -1,6 +1,6 @@
-import BaseAudioContext from './BaseAudioContext';
+import BaseAudioContext from './BaseAudioContext.web';
 import { ChannelCountMode, ChannelInterpretation } from '../types';
-import AudioParam from './AudioParam';
+import AudioParam from './AudioParam.web';
 
 export default class AudioNode {
   readonly context: BaseAudioContext;

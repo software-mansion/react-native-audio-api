@@ -1,5 +1,5 @@
 import { RangeError, InvalidStateError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
+import BaseAudioContext from './BaseAudioContext.web';
 
 export default class AudioParam {
   readonly defaultValue: number;

@@ -1,6 +1,6 @@
-import AudioNode from './AudioNode';
+import AudioNode from './AudioNode.web';
 import { AnalyserOptions } from '../types';
-import BaseAudioContext from './BaseAudioContext';
+import BaseAudioContext from './BaseAudioContext.web';
 
 export default class AnalyserNode extends AudioNode {
   fftSize: number;

@@ -1,4 +1,4 @@
-import AudioNode from './AudioNode';
+import AudioNode from './AudioNode.web';
 import { EventEmptyType } from '../events/types';
 import { RangeError, InvalidStateError } from '../errors';
 

@@ -1,5 +1,5 @@
 import { InvalidStateError } from '../errors';
-import AudioNode from './AudioNode';
+import AudioNode from './AudioNode.web';
 
 export default class WaveShaperNode extends AudioNode {
   private isCurveSet: boolean = false;

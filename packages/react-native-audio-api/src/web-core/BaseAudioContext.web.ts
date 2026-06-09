@@ -1,18 +1,18 @@
 import { ContextState } from '../types';
-import AnalyserNode from './AnalyserNode';
-import AudioBuffer from './AudioBuffer';
-import AudioBufferSourceNode from './AudioBufferSourceNode';
-import AudioDestinationNode from './AudioDestinationNode';
-import BiquadFilterNode from './BiquadFilterNode';
-import ConstantSourceNode from './ConstantSourceNode';
-import ConvolverNode from './ConvolverNode';
-import DelayNode from './DelayNode';
-import GainNode from './GainNode';
-import IIRFilterNode from './IIRFilterNode';
-import OscillatorNode from './OscillatorNode';
-import PeriodicWave from './PeriodicWave';
-import StereoPannerNode from './StereoPannerNode';
-import WaveShaperNode from './WaveShaperNode';
+import AnalyserNode from './AnalyserNode.web';
+import AudioBuffer from './AudioBuffer.web';
+import AudioBufferSourceNode from './AudioBufferSourceNode.web';
+import AudioDestinationNode from './AudioDestinationNode.web';
+import BiquadFilterNode from './BiquadFilterNode.web';
+import ConstantSourceNode from './ConstantSourceNode.web';
+import ConvolverNode from './ConvolverNode.web';
+import DelayNode from './DelayNode.web';
+import GainNode from './GainNode.web';
+import IIRFilterNode from './IIRFilterNode.web';
+import OscillatorNode from './OscillatorNode.web';
+import PeriodicWave from './PeriodicWave.web';
+import StereoPannerNode from './StereoPannerNode.web';
+import WaveShaperNode from './WaveShaperNode.web';
 
 export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
