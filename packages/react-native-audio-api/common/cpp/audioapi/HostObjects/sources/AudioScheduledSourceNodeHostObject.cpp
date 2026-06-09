@@ -54,11 +54,6 @@ JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, stop) {
 
 void AudioScheduledSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackId) {
   auto sourceNode = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-
-  if (onEndedCallbackId_ != 0) {
-    sourceNode->unregisterOnEndedCallback(onEndedCallbackId_);
-  }
-
   sourceNode->assignOnEndedCallbackId(callbackId);
   onEndedCallbackId_ = callbackId;
 }

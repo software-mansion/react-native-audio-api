@@ -36,7 +36,6 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
 
 AudioFileSourceNodeHostObject::~AudioFileSourceNodeHostObject() {
   setOnPositionChangedCallbackId(0);
-  setOnEndedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
@@ -117,17 +116,6 @@ void AudioFileSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t call
 
   sourceNode->assignOnPositionChangedCallbackId(callbackId);
   onPositionChangedCallbackId_ = callbackId;
-}
-
-void AudioFileSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackId) {
-  auto sourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
-
-  if (onEndedCallbackId_ != 0) {
-    sourceNode->unregisterOnEndedCallback(onEndedCallbackId_);
-  }
-
-  sourceNode->assignOnEndedCallbackId(callbackId);
-  onEndedCallbackId_ = callbackId;
 }
 
 } // namespace audioapi
