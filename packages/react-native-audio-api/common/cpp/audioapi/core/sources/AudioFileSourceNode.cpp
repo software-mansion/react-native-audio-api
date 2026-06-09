@@ -56,8 +56,8 @@ AudioFileSourceNode::AudioFileSourceNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-void AudioFileSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  onPositionChangedCallbackId_ = callbackId;
+void AudioFileSourceNode::assignOnPositionChangedCallbackId(uint64_t callbackId) {
+  onPositionChangedCallbackId_.store(callbackId, std::memory_order_release);
 }
 
 void AudioFileSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {
@@ -66,13 +66,18 @@ void AudioFileSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackI
 
 void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
   currentTime_.fetch_add(framesPlayed / sampleRate_);
-  if (onPositionChangedCallbackId_ != 0 &&
+
+  if (!isPlaying()) {
+    onPositionChangedTime_ += framesPlayed;
+    return;
+  }
+
+  const auto callbackId = onPositionChangedCallbackId_.load(std::memory_order_acquire);
+  if (callbackId != 0 &&
       (onPositionChangedFlush_.load(std::memory_order_acquire) ||
        onPositionChangedTime_ > onPositionChangedInterval_)) {
     audioEventHandlerRegistry_->dispatchEvent(
-        AudioEvent::POSITION_CHANGED,
-        onPositionChangedCallbackId_,
-        DoubleValuePayload{.value = getCurrentTime()});
+        AudioEvent::POSITION_CHANGED, callbackId, DoubleValuePayload{.value = getCurrentTime()});
 
     onPositionChangedTime_ = 0;
     onPositionChangedFlush_.store(false, std::memory_order_release);

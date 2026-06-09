@@ -25,7 +25,7 @@ AudioEventHandlerRegistry::AudioEventHandlerRegistry(
       }
 
       auto weak = weak_from_this();
-      callInvoker_->invokeAsync([weak, capturedItem = std::move(item)]() {
+      callInvoker_->invokeAsync([weak, capturedItem = std::move(item)](jsi::Runtime &runtime) {
         if (auto self = weak.lock()) {
           self->handleEventOnJSThread(
               capturedItem.event, capturedItem.listenerId, capturedItem.payload);
@@ -52,37 +52,16 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
   if (runtime_ == nullptr) {
     return 0;
   }
-
-  auto weakSelf = weak_from_this();
-  callInvoker_->invokeAsync([weakSelf, eventName, listenerId, handler]() {
-    if (auto self = weakSelf.lock()) {
-      self->eventHandlers_[eventName][listenerId] = handler;
-    }
-  });
+  this->eventHandlers_[eventName][listenerId] = handler;
 
   return listenerId;
 }
 
 void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t listenerId) {
-  if (runtime_ == nullptr) {
+  if (runtime_ == nullptr || listenerId == 0) {
     return;
   }
-
-  auto weakSelf = weak_from_this();
-  callInvoker_->invokeAsync([weakSelf, eventName, listenerId]() {
-    if (auto self = weakSelf.lock()) {
-      auto it = self->eventHandlers_.find(eventName);
-      if (it == self->eventHandlers_.end()) {
-        return;
-      }
-
-      auto &handlersMap = it->second;
-      auto handlerIt = handlersMap.find(listenerId);
-      if (handlerIt != handlersMap.end()) {
-        handlersMap.erase(handlerIt);
-      }
-    }
-  });
+  this->eventHandlers_[eventName].erase(listenerId);
 }
 
 bool AudioEventHandlerRegistry::dispatchEvent(
@@ -102,6 +81,10 @@ void AudioEventHandlerRegistry::handleEventOnJSThread(
     AudioEvent eventName,
     uint64_t listenerId,
     const AudioEventPayload &payload) {
+  if (listenerId == 0) {
+    return;
+  }
+
   auto it = eventHandlers_.find(eventName);
   if (it == eventHandlers_.end()) {
     return;
@@ -129,10 +112,12 @@ void AudioEventHandlerRegistry::invokeHandler(
   try {
     auto eventObject = buildJsiObject(payload);
     handler->call(*runtime_, eventObject);
-  } catch (const std::exception &) {
-    throw;
+  } catch (const jsi::JSError &) {
+    fprintf(stderr, "JSError while invoking audio event handler\n");
+  } catch (const std::exception &e) {
+    fprintf(stderr, "Exception while invoking audio event handler: %s\n", e.what());
   } catch (...) {
-    printf("Unknown exception occurred while invoking audio event handler\n");
+    fprintf(stderr, "Unknown exception while invoking audio event handler\n");
   }
 }
 

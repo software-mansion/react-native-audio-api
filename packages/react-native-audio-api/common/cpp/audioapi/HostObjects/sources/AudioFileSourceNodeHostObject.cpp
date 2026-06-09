@@ -111,24 +111,22 @@ JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, onPositionChanged) {
 void AudioFileSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t callbackId) {
   auto sourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
 
-  auto event = [sourceNode, callbackId](BaseAudioContext &) {
-    sourceNode->setOnPositionChangedCallbackId(callbackId);
-  };
+  if (onPositionChangedCallbackId_ != 0) {
+    sourceNode->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
+  }
 
-  sourceNode->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
-  sourceNode->scheduleAudioEvent(std::move(event));
+  sourceNode->assignOnPositionChangedCallbackId(callbackId);
   onPositionChangedCallbackId_ = callbackId;
 }
 
 void AudioFileSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackId) {
   auto sourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
 
-  auto event = [sourceNode, callbackId](BaseAudioContext &) {
-    sourceNode->setOnEndedCallbackId(callbackId);
-  };
+  if (onEndedCallbackId_ != 0) {
+    sourceNode->unregisterOnEndedCallback(onEndedCallbackId_);
+  }
 
-  sourceNode->unregisterOnEndedCallback(onEndedCallbackId_);
-  sourceNode->scheduleAudioEvent(std::move(event));
+  sourceNode->assignOnEndedCallbackId(callbackId);
   onEndedCallbackId_ = callbackId;
 }
 

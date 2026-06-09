@@ -81,9 +81,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Stops decoding on the audio thread until playback is started again.
   void pause();
 
-  /// @brief Registers the JS callback id for position-changed events.
-  /// @note Audio thread only.
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
+  /// @brief Updates the position-changed listener id (JS or audio thread).
+  void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
   /// @brief Unregisters a position-changed handler.
   void unregisterOnPositionChangedCallback(uint64_t callbackId);
@@ -172,7 +171,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @note Audio thread only.
   void ensureConnectedForDirectPlayback();
 
-  uint64_t onPositionChangedCallbackId_ = 0;
+  std::atomic<uint64_t> onPositionChangedCallbackId_{0};
   int onPositionChangedInterval_;
   int onPositionChangedTime_ = 0;
   std::atomic<bool> onPositionChangedFlush_{true};

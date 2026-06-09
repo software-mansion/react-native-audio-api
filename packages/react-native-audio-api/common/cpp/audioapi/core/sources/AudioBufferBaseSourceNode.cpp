@@ -47,8 +47,8 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam() co
   return playbackRateParam_;
 }
 
-void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  onPositionChangedCallbackId_ = callbackId;
+void AudioBufferBaseSourceNode::assignOnPositionChangedCallbackId(uint64_t callbackId) {
+  onPositionChangedCallbackId_.store(callbackId, std::memory_order_release);
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
@@ -81,11 +81,15 @@ std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
 }
 
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  if (onPositionChangedCallbackId_ != 0 &&
-      onPositionChangedTimeInFrames_ > onPositionChangedIntervalInFrames_) {
+  if (!isPlaying()) {
+    return;
+  }
+
+  const auto callbackId = onPositionChangedCallbackId_.load(std::memory_order_acquire);
+  if (callbackId != 0 && onPositionChangedTimeInFrames_ > onPositionChangedIntervalInFrames_) {
     audioEventHandlerRegistry_->dispatchEvent(
         AudioEvent::POSITION_CHANGED,
-        onPositionChangedCallbackId_,
+        callbackId,
         DoubleValuePayload{.value = getCurrentPosition()});
 
     onPositionChangedTimeInFrames_ = 0;

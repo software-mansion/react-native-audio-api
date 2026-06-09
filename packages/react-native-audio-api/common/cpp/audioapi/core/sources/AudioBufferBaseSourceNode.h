@@ -4,6 +4,7 @@
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
+#include <atomic>
 #include <memory>
 
 namespace audioapi {
@@ -25,8 +26,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
-  /// @note Audio Thread only
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
+  /// @brief Updates the position-changed listener id (JS or audio thread).
+  void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
   /// @note Audio Thread only
   void setOnPositionChangedInterval(int interval);
@@ -65,7 +66,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;
 
-  uint64_t onPositionChangedCallbackId_ = 0; // 0 means no callback
+  std::atomic<uint64_t> onPositionChangedCallbackId_{0}; // 0 means no callback
   int onPositionChangedIntervalInFrames_;
   int onPositionChangedTimeInFrames_ = 0;
 

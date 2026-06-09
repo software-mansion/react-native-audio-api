@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/types/NodeOptions.h>
 
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -48,8 +49,8 @@ class AudioScheduledSourceNode : public AudioNode {
   /// @note Audio Thread only
   bool isStopScheduled();
 
-  /// @note Audio Thread only
-  void setOnEndedCallbackId(uint64_t callbackId);
+  /// @brief Updates the ended listener id (JS or audio thread).
+  void assignOnEndedCallbackId(uint64_t callbackId);
 
   void disable() override;
 
@@ -61,7 +62,7 @@ class AudioScheduledSourceNode : public AudioNode {
 
   PlaybackState playbackState_;
 
-  uint64_t onEndedCallbackId_ = 0;
+  std::atomic<uint64_t> onEndedCallbackId_{0};
   const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(

@@ -32,7 +32,6 @@ export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode 
       this.onPositionChangedSubscription?.remove();
       this.onPositionChangedSubscription = undefined;
       this.onPositionChangedCallback = undefined;
-
       return;
     }
 
