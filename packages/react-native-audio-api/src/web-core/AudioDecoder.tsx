@@ -1,7 +1,6 @@
 import { AudioApiError } from '../errors';
 import { DecodeDataInput } from '../types';
 import { base64ToArrayBuffer } from '../utils';
-import { isRemoteSource } from '../utils/paths';
 import AudioBuffer from './AudioBuffer';
 
 const MAX_INT16_VALUE = 32768.0;
@@ -32,9 +31,10 @@ export default class AudioDecoder {
       return this.decodeFromArrayBuffer(input, rate);
     }
 
-    const isUri = typeof input === 'string' && isRemoteSource(input);
-    if (!isUri) {
-      throw new TypeError('Input must be a an uri or ArrayBuffer');
+    if (typeof input !== 'string') {
+      throw TypeError(
+        'Input must be either an ArrayBuffer or a valid string URL path'
+      );
     }
 
     return this.decodeFromRemoteUrl(input, rate, fetchOptions);
