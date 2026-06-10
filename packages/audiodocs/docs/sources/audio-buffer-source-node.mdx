@@ -30,6 +30,10 @@ interface AudioBufferBaseSourceNodeOptions {
 }
 ```
 
+:::info
+To use pitchCorrection option in the web environment, you need to call `npx setup-rn-audio-web react-native-audio-api` command and paste its result to your own bundler public directory".
+:::
+
 :::caution
 The pitch correction algorithm introduces processing latency.
 As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.

@@ -130,7 +130,7 @@ class PoolAllocator {
 /// @brief A bounded priority queue with fixed capacity backed by a static pool allocator.
 /// Elements are kept in ascending sorted order (smallest element at front).
 /// All operations avoid heap allocation. Uses std::multiset under the hood
-// to maintain sorted order and provide efficient insertion and removal.
+/// to maintain sorted order and provide efficient insertion and removal.
 /// @tparam T The type of elements stored. Must be move-constructible.
 /// @tparam Capacity The maximum number of elements.
 /// @tparam Compare Comparator type. Defaults to std::less<T> (smallest element at front).

@@ -6,8 +6,9 @@ import BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 
 import { clamp } from '../utils';
-import { AudioBufferSourceOptions } from '../types';
+import { AudioBufferSourceOptionsWeb } from '../types';
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
+import { LoadCustomWasm } from './custom';
 
 interface ScheduleOptions {
   rate?: number;
@@ -214,10 +215,11 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
   private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
 
-  constructor(context: BaseAudioContext) {
+  constructor(context: BaseAudioContext, options: AudioBufferSourceOptionsWeb) {
     const promise = async () => {
+      await LoadCustomWasm('/react-native-audio-api');
       await globalWasmPromise;
-      return window[globalTag](new window.AudioContext());
+      return window[globalTag](context.context);
     };
     this.context = context;
     this.stretcherPromise = promise();
@@ -227,7 +229,7 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
 
     this.detune = new AudioParam(
       new IStretcherNodeAudioParam(
-        0,
+        options.detune ?? 0,
         this.setDetune.bind(this),
         'a-rate',
         -1200,
@@ -239,7 +241,7 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
 
     this.playbackRate = new AudioParam(
       new IStretcherNodeAudioParam(
-        1,
+        options.playbackRate ?? 1,
         this.setPlaybackRate.bind(this),
         'a-rate',
         0,
@@ -248,6 +250,8 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
       ),
       context
     );
+
+    this.buffer = options.buffer ?? null;
   }
 
   connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
@@ -489,10 +493,14 @@ class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
-  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
+  constructor(
+    context: BaseAudioContext,
+    options?: AudioBufferSourceOptionsWeb
+  ) {
+    const { buffer, ...rest } = options ?? {};
     this.node = new globalThis.AudioBufferSourceNode(context.context, {
-      ...options,
-      ...(options?.buffer ? { buffer: options.buffer.buffer } : {}),
+      ...rest,
+      ...(buffer ? { buffer: buffer.buffer } : {}),
     });
     this.detune = new AudioParam(this.node.detune, context);
     this.playbackRate = new AudioParam(this.node.playbackRate, context);
@@ -619,9 +627,12 @@ class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
 
 export default class AudioBufferSourceNode implements IAudioAPIBufferSourceNodeWeb {
   private node: AudioBufferSourceNodeStretcher | AudioBufferSourceNodeWeb;
-  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
+  constructor(
+    context: BaseAudioContext,
+    options?: AudioBufferSourceOptionsWeb
+  ) {
     this.node = options?.pitchCorrection
-      ? new AudioBufferSourceNodeStretcher(context)
+      ? new AudioBufferSourceNodeStretcher(context, options)
       : new AudioBufferSourceNodeWeb(context, options);
   }
 

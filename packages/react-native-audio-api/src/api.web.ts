@@ -19,6 +19,7 @@ export { default as ConstantSourceNode } from './web-core/ConstantSourceNode';
 export { default as ConvolverNode } from './web-core/ConvolverNode';
 export { default as PeriodicWave } from './web-core/PeriodicWave';
 export { default as WaveShaperNode } from './web-core/WaveShaperNode';
+export { decodeAudioData, decodePCMInBase64 } from './web-core/AudioDecoder';
 
 export * from './web-core/custom';
 

@@ -59,7 +59,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       fileSourceRef.current?.dispose();
       fileSourceRef.current = null;
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const effectiveMutedState = useMemo(() => {
     return mutedState ?? muted;

@@ -1,6 +1,7 @@
 import AudioBuffer from './core/AudioBuffer';
 import PeriodicWave from './core/PeriodicWave';
 import { IAudioBuffer } from './interfaces';
+import AudioBufferWeb from './web-core/AudioBuffer';
 
 export type Result<T> =
   | ({ status: 'success' } & T)
@@ -158,6 +159,13 @@ export interface BaseAudioBufferSourceOptions {
 
 export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: AudioBuffer;
+  loop?: boolean;
+  loopStart?: number;
+  loopEnd?: number;
+}
+
+export interface AudioBufferSourceOptionsWeb extends BaseAudioBufferSourceOptions {
+  buffer?: AudioBufferWeb;
   loop?: boolean;
   loopStart?: number;
   loopEnd?: number;
