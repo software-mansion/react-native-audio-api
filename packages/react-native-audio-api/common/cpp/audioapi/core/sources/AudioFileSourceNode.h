@@ -2,6 +2,7 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/sources/OnPositionChangedNode.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
@@ -40,7 +41,7 @@ struct AudioFileDecoderState {
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
-class AudioFileSourceNode : public AudioScheduledSourceNode {
+class AudioFileSourceNode : public AudioScheduledSourceNode, public OnPositionChangedNode {
   friend class MediaElementAudioSourceNode;
 
  public:
@@ -80,12 +81,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   /// @brief Stops decoding on the audio thread until playback is started again.
   void pause();
-
-  /// @brief Updates the position-changed listener id (JS or audio thread).
-  void assignOnPositionChangedCallbackId(uint64_t callbackId);
-
-  /// @brief Unregisters a position-changed handler.
-  void unregisterOnPositionChangedCallback(uint64_t callbackId);
 
   /// @brief Enables looping at end-of-file.
   void setLoop(bool v) {
@@ -170,11 +165,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Connects to the destination when leaving media routing while playback is active.
   /// @note Audio thread only.
   void ensureConnectedForDirectPlayback();
-
-  std::atomic<uint64_t> onPositionChangedCallbackId_{0};
-  int onPositionChangedInterval_;
-  int onPositionChangedTime_ = 0;
-  std::atomic<bool> onPositionChangedFlush_{true};
 
   /// Pending offloaded seeks; while > 0 the audio thread must not read the decoder (outputs silence).
   std::atomic<int> pendingOffloadedSeeks_{0};

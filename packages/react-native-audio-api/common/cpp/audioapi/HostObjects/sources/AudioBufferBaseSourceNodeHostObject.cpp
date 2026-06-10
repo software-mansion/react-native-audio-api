@@ -15,6 +15,7 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNodeHostObject(node, options),
       onPositionChangedInterval_(options.onPositionChangedInterval),
+      onPositionChangedListenerHostObject_(*node),
       pitchCorrection_(options.pitchCorrection) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
   detuneParam_ = std::make_shared<AudioParamHostObject>(sourceNode->getDetuneParam());
@@ -34,13 +35,6 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
       JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getOutputLatency));
 }
 
-AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {
-  // When JSI object is garbage collected (together with the eventual callback),
-  // underlying source node might still be active and try to call the
-  // non-existing callback.
-  setOnPositionChangedCallbackId(0);
-}
-
 JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, detune) {
   return jsi::Object::createFromHostObject(runtime, detuneParam_);
 }
@@ -54,8 +48,7 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedI
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChanged) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnPositionChangedCallbackId(callbackId);
+  onPositionChangedListenerHostObject_.setCallbackIdFromJsi(runtime, value);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval) {
@@ -76,13 +69,6 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getInputLatency) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getOutputLatency) {
   return {outputLatency_};
-}
-
-void AudioBufferBaseSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
-
-  sourceNode->assignOnPositionChangedCallbackId(callbackId);
-  onPositionChangedCallbackId_ = callbackId;
 }
 
 void AudioBufferBaseSourceNodeHostObject::initStretch(int channelCount, float sampleRate) {

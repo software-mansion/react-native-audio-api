@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/HostObjects/utils/OnPositionChangedListenerHostObject.h>
 #include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <memory>
 
@@ -15,8 +16,6 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   explicit AudioFileSourceNodeHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
       const AudioFileSourceOptions &options);
-
-  ~AudioFileSourceNodeHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(volume);
   JSI_PROPERTY_GETTER_DECL(loop);
@@ -37,12 +36,7 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   }
 
  private:
-  uint64_t onPositionChangedCallbackId_ = 0;
-  uint64_t onEndedCallbackId_ = 0;
-
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
-  void setOnEndedCallbackId(uint64_t callbackId);
-
+  OnPositionChangedListenerHostObject onPositionChangedListenerHostObject_;
   bool loop_;
   double duration_;
   float volume_;

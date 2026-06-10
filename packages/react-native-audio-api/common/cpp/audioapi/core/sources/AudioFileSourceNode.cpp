@@ -3,7 +3,6 @@
 #include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
 
@@ -23,11 +22,13 @@ AudioFileSourceNode::AudioFileSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioFileSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
+      OnPositionChangedNode(
+          audioEventHandlerRegistry_,
+          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL),
+          true),
       volume_(options.volume),
       requiresFFmpeg_(options.requiresFFmpeg),
-      loop_(options.loop),
-      onPositionChangedInterval_(
-          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
+      loop_(options.loop) {
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
@@ -56,34 +57,9 @@ AudioFileSourceNode::AudioFileSourceNode(
   isInitialized_.store(true, std::memory_order_release);
 }
 
-void AudioFileSourceNode::assignOnPositionChangedCallbackId(uint64_t callbackId) {
-  onPositionChangedCallbackId_.store(callbackId, std::memory_order_release);
-}
-
-void AudioFileSourceNode::unregisterOnPositionChangedCallback(uint64_t callbackId) {
-  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::POSITION_CHANGED, callbackId);
-}
-
 void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
   currentTime_.fetch_add(framesPlayed / sampleRate_);
-
-  if (!isPlaying()) {
-    onPositionChangedTime_ += framesPlayed;
-    return;
-  }
-
-  const auto callbackId = onPositionChangedCallbackId_.load(std::memory_order_acquire);
-  if (callbackId != 0 &&
-      (onPositionChangedFlush_.load(std::memory_order_acquire) ||
-       onPositionChangedTime_ > onPositionChangedInterval_)) {
-    audioEventHandlerRegistry_->dispatchEvent(
-        AudioEvent::POSITION_CHANGED, callbackId, DoubleValuePayload{.value = getCurrentTime()});
-
-    onPositionChangedTime_ = 0;
-    onPositionChangedFlush_.store(false, std::memory_order_release);
-  }
-
-  onPositionChangedTime_ += framesPlayed;
+  onPositionChangedDriver_.advance(framesPlayed, getCurrentTime());
 }
 
 void AudioFileSourceNode::initDecoders(
@@ -138,6 +114,7 @@ void AudioFileSourceNode::start(double when) {
 
   AudioScheduledSourceNode::start(when);
   filePaused_ = false;
+  onPositionChangedDriver_.requestFlush();
 }
 
 void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {
@@ -194,7 +171,7 @@ size_t AudioFileSourceNode::readFrames(float *buf, size_t frameCount) {
 
 void AudioFileSourceNode::applyPlaybackStateAfterSuccessfulSeek(double seconds) {
   currentTime_.store(seconds, std::memory_order_release);
-  onPositionChangedFlush_.store(true, std::memory_order_release);
+  onPositionChangedDriver_.requestFlush();
 }
 
 void AudioFileSourceNode::runOffloadedSeekTask(OffloadedSeekRequest req) {
@@ -308,14 +285,14 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   if (framesRead < offsetLength) {
     if (!loop_) {
       currentTime_.store(duration_, std::memory_order_release);
-      onPositionChangedFlush_.store(true, std::memory_order_release);
+      onPositionChangedDriver_.requestFlush();
       sendOnPositionChangedEvent(static_cast<int>(offsetLength - framesRead));
       filePaused_ = true;
       playbackState_ = PlaybackState::STOP_SCHEDULED;
       processingBuffer->zero(startOffset + framesRead, offsetLength - framesRead);
     } else {
       const size_t totalFilled = handleEof(processingBuffer, offsetLength, framesRead, startOffset);
-      onPositionChangedFlush_.store(true, std::memory_order_release);
+      onPositionChangedDriver_.requestFlush();
       currentTime_.store(0, std::memory_order_release);
       sendOnPositionChangedEvent(static_cast<int>(totalFilled));
       processingBuffer->zero(startOffset + totalFilled, offsetLength - totalFilled);
