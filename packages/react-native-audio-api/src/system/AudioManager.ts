@@ -13,7 +13,9 @@ import {
 class AudioManager implements IAudioManager {
   private readonly audioEventEmitter: AudioEventEmitter;
   constructor() {
-    this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
+    this.audioEventEmitter = new AudioEventEmitter(
+      globalThis.AudioEventEmitter
+    );
   }
 
   getDevicePreferredSampleRate(): number {

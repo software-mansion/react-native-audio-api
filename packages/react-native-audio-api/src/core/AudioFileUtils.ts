@@ -7,7 +7,7 @@ class AudioFileUtils {
   protected readonly fileUtils: IAudioFileUtils;
 
   private constructor() {
-    this.fileUtils = global.createAudioFileUtils();
+    this.fileUtils = globalThis.createAudioFileUtils();
   }
 
   public static getInstance(): AudioFileUtils {

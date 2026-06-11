@@ -16,7 +16,9 @@ class RecordingNotificationManager implements NotificationManager<
   private audioEventEmitter: AudioEventEmitter;
 
   constructor() {
-    this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
+    this.audioEventEmitter = new AudioEventEmitter(
+      globalThis.AudioEventEmitter
+    );
   }
 
   /**

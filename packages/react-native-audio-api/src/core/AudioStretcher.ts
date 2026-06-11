@@ -7,7 +7,7 @@ class AudioStretcher {
   protected readonly stretcher: IAudioStretcher;
 
   private constructor() {
-    this.stretcher = global.createAudioStretcher();
+    this.stretcher = globalThis.createAudioStretcher();
   }
 
   public static getInstance(): AudioStretcher {

@@ -22,7 +22,7 @@ export default class AudioContext extends BaseAudioContext {
     const audioRuntime = AudioAPIModule.createAudioRuntime();
 
     super(
-      global.createAudioContext(
+      globalThis.createAudioContext(
         options?.sampleRate || AudioManager.getDevicePreferredSampleRate(),
         audioRuntime
       )

@@ -12,7 +12,9 @@ type AttachFileSourceOptions = {
 };
 
 export class AudioFileSourceNode extends AudioScheduledSourceNode {
-  private readonly emitter = new AudioEventEmitter(global.AudioEventEmitter);
+  private readonly emitter = new AudioEventEmitter(
+    globalThis.AudioEventEmitter
+  );
 
   private positionSubscription?: AudioEventSubscription;
   private endedSubscription?: AudioEventSubscription;

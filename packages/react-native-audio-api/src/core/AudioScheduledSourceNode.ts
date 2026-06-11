@@ -7,7 +7,7 @@ import { AudioEventEmitter, AudioEventSubscription } from '../events';
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
   protected readonly audioEventEmitter = new AudioEventEmitter(
-    global.AudioEventEmitter
+    globalThis.AudioEventEmitter
   );
 
   private onEndedSubscription?: AudioEventSubscription;

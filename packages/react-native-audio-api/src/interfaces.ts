@@ -263,14 +263,14 @@ export interface IAudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
 
-  getChannelData(channel: number): Float32Array;
+  getChannelData(channel: number): Float32Array<ArrayBuffer>;
   copyFromChannel(
-    destination: Float32Array,
+    destination: Float32Array<ArrayBuffer>,
     channelNumber: number,
     startInChannel: number
   ): void;
   copyToChannel(
-    source: Float32Array,
+    source: Float32Array<ArrayBuffer>,
     channelNumber: number,
     startInChannel: number
   ): void;

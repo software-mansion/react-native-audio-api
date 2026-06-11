@@ -13,7 +13,9 @@ class RecordingNotificationManager implements NotificationManager<
   private audioEventEmitter: AudioEventEmitter;
 
   constructor() {
-    this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
+    this.audioEventEmitter = new AudioEventEmitter(
+      globalThis.AudioEventEmitter
+    );
     console.warn(
       'RecordingNotificationManager is not implemented on iOS. Any calls to it will be no-ops.'
     );

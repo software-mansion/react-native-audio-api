@@ -17,7 +17,7 @@ class AudioDecoder {
   protected readonly decoder: IAudioDecoder;
 
   private constructor() {
-    this.decoder = global.createAudioDecoder();
+    this.decoder = globalThis.createAudioDecoder();
   }
 
   private async decodeAudioDataImplementation(
