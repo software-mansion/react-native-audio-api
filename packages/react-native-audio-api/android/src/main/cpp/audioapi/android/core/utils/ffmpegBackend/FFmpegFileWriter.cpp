@@ -112,6 +112,8 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
     return CloseFileResult::Err("File is not open");
   }
 
+  offloader_.reset();
+
   result = processFifo(true);
 
   if (result < 0) {
@@ -127,7 +129,6 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
   if (writeEncodedPackets() < 0) {
     return CloseFileResult::Err("Failed to drain encoder packets");
   }
-  offloader_.reset();
 
   return finalizeOutput();
 }
