@@ -135,11 +135,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 
   runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, playbackRate, false);
 
-  // Apply the transpose before processing and unconditionally: setting it
-  // after process() and only when detune != 0 made a freshly created source
-  // play its first render quantum untransposed (audible pitch glitch on every
-  // play/seek while detuned) and left a stale transpose applied after detune
-  // returned to 0.
+  // Apply the transpose before processing and unconditionally
   stretch_->setTransposeSemitones(detune);
 
   stretch_->process(
