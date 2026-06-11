@@ -1,25 +1,30 @@
-export { default as AudioBuffer } from './web-core/AudioBuffer';
-export { default as AudioBufferSourceNode } from './web-core/AudioBufferSourceNode';
-export { default as AudioContext } from './web-core/AudioContext';
-export { default as OfflineAudioContext } from './web-core/OfflineAudioContext';
-export { default as AudioDestinationNode } from './web-core/AudioDestinationNode';
-export { default as AudioNode } from './web-core/AudioNode';
-export { default as AnalyserNode } from './web-core/AnalyserNode';
-export { default as AudioParam } from './web-core/AudioParam';
-export { default as AudioScheduledSourceNode } from './web-core/AudioScheduledSourceNode';
-export { default as BaseAudioContext } from './web-core/BaseAudioContext';
-export { default as BiquadFilterNode } from './web-core/BiquadFilterNode';
-export { default as DelayNode } from './web-core/DelayNode';
-export { default as GainNode } from './web-core/GainNode';
-export { default as MediaElementAudioSourceNode } from './web-core/MediaElementAudioSourceNode';
-export type { MediaElementAudioSourceOptions } from './web-core/MediaElementAudioSourceNode';
-export { default as OscillatorNode } from './web-core/OscillatorNode';
-export { default as StereoPannerNode } from './web-core/StereoPannerNode';
-export { default as ConstantSourceNode } from './web-core/ConstantSourceNode';
-export { default as ConvolverNode } from './web-core/ConvolverNode';
-export { default as PeriodicWave } from './web-core/PeriodicWave';
-export { default as WaveShaperNode } from './web-core/WaveShaperNode';
-export { decodeAudioData, decodePCMInBase64 } from './web-core/AudioDecoder';
+export { default as AudioBuffer } from './web-core/AudioBuffer.web';
+export { default as AudioBufferSourceNode } from './web-core/AudioBufferSourceNode.web';
+export { default as AudioContext } from './web-core/AudioContext.web';
+export { default as OfflineAudioContext } from './web-core/OfflineAudioContext.web';
+export { default as AudioDestinationNode } from './web-core/AudioDestinationNode.web';
+export { default as AudioNode } from './web-core/AudioNode.web';
+export { default as AnalyserNode } from './web-core/AnalyserNode.web';
+export { default as AudioParam } from './web-core/AudioParam.web';
+export { default as AudioScheduledSourceNode } from './web-core/AudioScheduledSourceNode.web';
+export { default as BaseAudioContext } from './web-core/BaseAudioContext.web';
+export { default as BiquadFilterNode } from './web-core/BiquadFilterNode.web';
+export { default as DelayNode } from './web-core/DelayNode.web';
+export { default as GainNode } from './web-core/GainNode.web';
+export { default as MediaElementAudioSourceNode } from './web-core/MediaElementAudioSourceNode.web';
+export type { MediaElementAudioSourceOptions } from './web-core/MediaElementAudioSourceNode.web';
+export { default as OscillatorNode } from './web-core/OscillatorNode.web';
+export { default as StereoPannerNode } from './web-core/StereoPannerNode.web';
+export { default as ConstantSourceNode } from './web-core/ConstantSourceNode.web';
+export { default as ConvolverNode } from './web-core/ConvolverNode.web';
+export { default as PeriodicWave } from './web-core/PeriodicWave.web';
+export { default as WaveShaperNode } from './web-core/WaveShaperNode.web';
+export { default as IIRFilterNode } from './web-core/IIRFilterNode.web';
+export {
+  default as AudioDecoder,
+  decodeAudioData,
+  decodePCMInBase64,
+} from './web-core/AudioDecoder.web';
 
 export * from './web-core/custom';
 

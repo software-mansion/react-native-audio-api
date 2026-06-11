@@ -1,5 +1,5 @@
-import AudioNode from './AudioNode';
-import type BaseAudioContext from './BaseAudioContext';
+import AudioNode from './AudioNode.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 
 export interface MediaElementAudioSourceOptions {
   mediaElement: HTMLMediaElement;

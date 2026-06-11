@@ -1,6 +1,6 @@
-import BaseAudioContext from './BaseAudioContext';
-import AudioNode from './AudioNode';
-import AudioParam from './AudioParam';
+import BaseAudioContext from './BaseAudioContext.web';
+import AudioNode from './AudioNode.web';
+import AudioParam from './AudioParam.web';
 import { GainOptions } from '../types';
 
 export default class GainNode extends AudioNode {

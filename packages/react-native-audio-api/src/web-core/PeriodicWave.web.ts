@@ -1,4 +1,4 @@
-import BaseAudioContext from './BaseAudioContext';
+import BaseAudioContext from './BaseAudioContext.web';
 import { PeriodicWaveOptions } from '../types';
 import { generateRealAndImag } from '../core/PeriodicWave';
 

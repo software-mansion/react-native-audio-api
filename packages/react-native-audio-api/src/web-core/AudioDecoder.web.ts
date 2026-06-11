@@ -1,8 +1,8 @@
 import { AudioApiError } from '../errors';
 import { DecodeDataInput } from '../types';
 import { base64ToArrayBuffer } from '../utils';
-import AudioBuffer from './AudioBuffer';
-import OfflineAudioContext from './OfflineAudioContext';
+import AudioBuffer from './AudioBuffer.web';
+import OfflineAudioContext from './OfflineAudioContext.web';
 
 const MAX_INT16_VALUE = 32768.0;
 

@@ -1,21 +1,21 @@
 import { ContextState, OfflineAudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
-import AnalyserNode from './AnalyserNode';
-import AudioDestinationNode from './AudioDestinationNode';
-import AudioBuffer from './AudioBuffer';
-import AudioBufferSourceNode from './AudioBufferSourceNode';
-import BiquadFilterNode from './BiquadFilterNode';
-import IIRFilterNode from './IIRFilterNode';
-import GainNode from './GainNode';
-import OscillatorNode from './OscillatorNode';
-import PeriodicWave from './PeriodicWave';
-import StereoPannerNode from './StereoPannerNode';
-import ConstantSourceNode from './ConstantSourceNode';
-import WaveShaperNode from './WaveShaperNode';
+import BaseAudioContext from './BaseAudioContext.web';
+import AnalyserNode from './AnalyserNode.web';
+import AudioDestinationNode from './AudioDestinationNode.web';
+import AudioBuffer from './AudioBuffer.web';
+import AudioBufferSourceNode from './AudioBufferSourceNode.web';
+import BiquadFilterNode from './BiquadFilterNode.web';
+import IIRFilterNode from './IIRFilterNode.web';
+import GainNode from './GainNode.web';
+import OscillatorNode from './OscillatorNode.web';
+import PeriodicWave from './PeriodicWave.web';
+import StereoPannerNode from './StereoPannerNode.web';
+import ConstantSourceNode from './ConstantSourceNode.web';
+import WaveShaperNode from './WaveShaperNode.web';
 
-import ConvolverNode from './ConvolverNode';
-import DelayNode from './DelayNode';
+import ConvolverNode from './ConvolverNode.web';
+import DelayNode from './DelayNode.web';
 
 export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;

@@ -1,7 +1,7 @@
 import { NotSupportedError } from '../errors';
-import AudioNode from './AudioNode';
+import AudioNode from './AudioNode.web';
 import { IIRFilterOptions } from '../types';
-import BaseAudioContext from './BaseAudioContext';
+import BaseAudioContext from './BaseAudioContext.web';
 
 export default class IIRFilterNode extends AudioNode {
   constructor(context: BaseAudioContext, options: IIRFilterOptions) {

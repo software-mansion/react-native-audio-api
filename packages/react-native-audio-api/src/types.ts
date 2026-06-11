@@ -1,7 +1,7 @@
 import AudioBuffer from './core/AudioBuffer';
 import PeriodicWave from './core/PeriodicWave';
 import { IAudioBuffer } from './interfaces';
-import AudioBufferWeb from './web-core/AudioBuffer';
+import AudioBufferWeb from './web-core/AudioBuffer.web';
 
 export type Result<T> =
   | ({ status: 'success' } & T)

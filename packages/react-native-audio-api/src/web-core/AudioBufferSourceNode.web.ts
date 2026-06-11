@@ -1,9 +1,9 @@
 import { InvalidStateError, RangeError } from '../errors';
 
-import AudioParam from './AudioParam';
-import AudioBuffer from './AudioBuffer';
-import BaseAudioContext from './BaseAudioContext';
-import AudioNode from './AudioNode';
+import AudioParam from './AudioParam.web';
+import AudioBuffer from './AudioBuffer.web';
+import BaseAudioContext from './BaseAudioContext.web';
+import AudioNode from './AudioNode.web';
 
 import { clamp } from '../utils';
 import { AudioBufferSourceOptionsWeb } from '../types';

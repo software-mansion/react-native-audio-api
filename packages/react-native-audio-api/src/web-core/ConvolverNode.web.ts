@@ -1,6 +1,6 @@
-import BaseAudioContext from './BaseAudioContext';
-import AudioNode from './AudioNode';
-import AudioBuffer from './AudioBuffer';
+import BaseAudioContext from './BaseAudioContext.web';
+import AudioNode from './AudioNode.web';
+import AudioBuffer from './AudioBuffer.web';
 import { ConvolverOptions } from '../types';
 
 export default class ConvolverNode extends AudioNode {
