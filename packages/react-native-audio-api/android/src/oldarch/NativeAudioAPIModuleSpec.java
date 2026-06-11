@@ -103,10 +103,6 @@ public abstract class NativeAudioAPIModuleSpec extends ReactContextBaseJavaModul
   @DoNotStrip
   public abstract void isNotificationActive(String key, Promise promise);
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
-  @DoNotStrip
-  public abstract @Nullable String resolveAndroidReleaseAsset(String assetPath);
-
   @ReactMethod
   @DoNotStrip
   public abstract void readAndroidReleaseAssetBytesAsBase64(String assetPath, Promise promise);
