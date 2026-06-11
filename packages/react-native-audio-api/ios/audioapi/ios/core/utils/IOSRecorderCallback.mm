@@ -202,8 +202,6 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       return;
     }
 
-    size_t outputFrameCount = ceil(numFrames * (sampleRate_ / bufferFormat_.sampleRate));
-
     for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
       memcpy(
           converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
@@ -230,7 +228,6 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
     };
 
     [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
-    converterOutputBuffer_.frameLength = sampleRate_ / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
       invokeOnErrorCallback(
@@ -239,9 +236,21 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       return;
     }
 
+    // `convertToBuffer` sets `frameLength` to the number of frames it actually
+    // produced. The sample-rate converter's filter phase makes this fluctuate
+    // around `numFrames * ratio` from call to call, so pushing a computed
+    // estimate (the previous `ceil(...)`) reads stale samples from the end of
+    // the output buffer whenever the converter produced fewer frames —
+    // an audible click at the boundary of nearly every render block when the
+    // hardware rate differs from the requested callback rate.
+    AVAudioFrameCount producedFrames = converterOutputBuffer_.frameLength;
+    if (producedFrames == 0) {
+      return;
+    }
+
     for (int i = 0; i < channelCount_; ++i) {
       auto *data = static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
-      circularBuffer_[i]->push_back(data, outputFrameCount);
+      circularBuffer_[i]->push_back(data, producedFrames);
     }
 
     if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
