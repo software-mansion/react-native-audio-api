@@ -1,10 +1,11 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/sources/OnPositionChangedNode.h>
 #include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/events/PositionChangedDispatcher.h>
 
+#include <cstdint>
 #include <memory>
 
 namespace audioapi {
@@ -12,7 +13,7 @@ namespace audioapi {
 class AudioParam;
 struct BaseAudioBufferSourceOptions;
 
-class AudioBufferBaseSourceNode : public AudioScheduledSourceNode, public OnPositionChangedNode {
+class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
   explicit AudioBufferBaseSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
@@ -28,6 +29,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode, public OnPosi
 
   /// @note Audio Thread only
   void setOnPositionChangedInterval(int interval);
+
+  void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
  protected:
   // internal helper
@@ -60,6 +63,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode, public OnPosi
   // k-rate params
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;
+
+  PositionChangedDispatcher positionChanged_;
 
   void processWithPitchCorrection(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,

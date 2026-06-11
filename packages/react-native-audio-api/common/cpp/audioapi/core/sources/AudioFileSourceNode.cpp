@@ -27,13 +27,13 @@ AudioFileSourceNode::AudioFileSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     AudioFileSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
-      OnPositionChangedNode(
-          audioEventHandlerRegistry_,
-          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL),
-          true),
       decoderState_(std::make_shared<AudioFileDecoderState>()),
       volume_(options.volume),
-      loop_(options.loop) {
+      loop_(options.loop),
+      positionChanged_(
+          context->getAudioEventHandlerRegistry(),
+          static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL),
+          true) {
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
@@ -72,7 +72,11 @@ void AudioFileSourceNode::stopDaemonThread() {
 
 void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
   auto time = currentTime_.fetch_add(framesPlayed / sampleRate_);
-  onPositionChangedDriver_.advance(framesPlayed, time);
+  positionChanged_.advance(framesPlayed, time);
+}
+
+void AudioFileSourceNode::assignOnPositionChangedCallbackId(uint64_t callbackId) {
+  positionChanged_.assignCallbackId(callbackId);
 }
 
 bool AudioFileSourceNode::initDecoder(
@@ -133,7 +137,7 @@ void AudioFileSourceNode::start(double when) {
 
   AudioScheduledSourceNode::start(when);
   filePaused_ = false;
-  onPositionChangedDriver_.requestFlush();
+  positionChanged_.requestFlush();
 
   if (seekDecoderDaemon_) {
     seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
@@ -285,7 +289,7 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   }
 
   if (forceFlushEvent) {
-    onPositionChangedDriver_.requestFlush();
+    positionChanged_.requestFlush();
   }
   sendOnPositionChangedEvent(static_cast<int>(framesToCopy));
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/events/IAudioEventHandlerRegistry.h>
+#include <audioapi/events/EventCaller.hpp>
 
 #include <atomic>
 #include <cstdint>
@@ -8,16 +8,18 @@
 
 namespace audioapi {
 
-class OnPositionChangedDriver {
+/// @brief Wrapper around EventCaller that dispatches position changed events
+/// with interval throttling and optional flush-on-seek behavior.
+class PositionChangedDispatcher {
  public:
-  explicit OnPositionChangedDriver(
+  PositionChangedDispatcher(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       int intervalInFrames,
       bool shouldFlush = false);
 
-  void assignCallbackId(uint64_t callbackId);
-  [[nodiscard]] uint64_t getCallbackId() const;
-  void unregisterCallback(uint64_t callbackId);
+  void assignCallbackId(uint64_t callbackId) noexcept;
+  [[nodiscard]] uint64_t getCallbackId() const noexcept;
+  [[nodiscard]] bool hasCallback() const noexcept;
 
   void setIntervalInFrames(int intervalInFrames);
   void setIntervalMs(int intervalInMs, float sampleRate);
@@ -28,8 +30,7 @@ class OnPositionChangedDriver {
  private:
   void tryDispatch(double position, bool forceFlush);
 
-  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
-  std::atomic<uint64_t> callbackId_{0};
+  EventCaller<AudioEvent::POSITION_CHANGED> positionChangedEvent_;
   std::atomic<bool> shouldFlush_{false};
   int intervalInFrames_;
   int accumulatedFrames_ = 0;

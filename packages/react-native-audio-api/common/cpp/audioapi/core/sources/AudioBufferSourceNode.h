@@ -43,10 +43,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   /// @note Audio Thread only
   void disable() override;
 
-  /// @note Audio Thread only
-  void setOnLoopEndedCallbackId(uint64_t callbackId);
-
-  void unregisterOnLoopEndedCallback(uint64_t callbackId);
+  void assignOnLoopEndedCallbackId(uint64_t callbackId);
 
  protected:
   double getCurrentPosition() const final;
@@ -70,7 +67,7 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
 
-  uint64_t onLoopEndedCallbackId_ = 0; // 0 means no callback
+  EventCaller<AudioEvent::LOOP_ENDED> onLoopEndedEvent_;
   void sendOnLoopEndedEvent();
 
   double getVirtualStartFrame(float sampleRate) const;

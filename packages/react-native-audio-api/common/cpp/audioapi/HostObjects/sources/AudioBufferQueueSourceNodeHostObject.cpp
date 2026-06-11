@@ -27,15 +27,13 @@ AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
 }
 
 AudioBufferQueueSourceNodeHostObject::~AudioBufferQueueSourceNodeHostObject() {
-  // When JSI object is garbage collected (together with the eventual callback),
-  // underlying source node might still be active and try to call the
-  // non-existing callback.
-  setOnBufferEndedCallbackId(0);
+  auto node = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+  node->assignOnBufferEndedCallbackId(0);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferQueueSourceNodeHostObject, onBufferEnded) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnBufferEndedCallbackId(callbackId);
+  auto sourceNode = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
+  sourceNode->assignOnBufferEndedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
@@ -136,18 +134,6 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, clearBuffers) {
   audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
-}
-
-void AudioBufferQueueSourceNodeHostObject::setOnBufferEndedCallbackId(uint64_t callbackId) {
-  auto audioBufferQueueSourceNode = std::static_pointer_cast<AudioBufferQueueSourceNode>(node_);
-
-  auto event = [audioBufferQueueSourceNode, callbackId](BaseAudioContext &) {
-    audioBufferQueueSourceNode->setOnBufferEndedCallbackId(callbackId);
-  };
-
-  audioBufferQueueSourceNode->unregisterOnBufferEndedCallback(onBufferEndedCallbackId_);
-  audioBufferQueueSourceNode->scheduleAudioEvent(std::move(event));
-  onBufferEndedCallbackId_ = callbackId;
 }
 
 } // namespace audioapi

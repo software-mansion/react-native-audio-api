@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
@@ -39,8 +40,13 @@ class AudioFileWriter {
   virtual double getCurrentDuration() const = 0;
   virtual size_t getFileSizeBytes() const = 0;
 
-  void setOnErrorCallback(uint64_t callbackId);
-  void clearOnErrorCallback();
+  void setOnErrorCallback(uint64_t callbackId) {
+    assignOnErrorCallbackId(callbackId);
+  }
+  void clearOnErrorCallback() {
+    assignOnErrorCallbackId(0);
+  }
+  void assignOnErrorCallbackId(uint64_t callbackId);
   void invokeOnErrorCallback(const std::string &message);
 
  protected:
@@ -48,10 +54,9 @@ class AudioFileWriter {
 
   std::atomic<bool> isFileOpen_{false};
   std::atomic<size_t> framesWritten_{0};
-  std::atomic<uint64_t> errorCallbackId_{0};
+  EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
 
   std::shared_ptr<AudioFileProperties> fileProperties_;
-  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   static constexpr auto FILE_WRITER_SPSC_OVERFLOW_STRATEGY =
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
-#include <audioapi/HostObjects/utils/OnPositionChangedListenerHostObject.h>
 
 #include <memory>
 
@@ -17,6 +16,8 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   explicit AudioBufferBaseSourceNodeHostObject(
       const std::shared_ptr<AudioBufferBaseSourceNode> &node,
       const BaseAudioBufferSourceOptions &options);
+  ~AudioBufferBaseSourceNodeHostObject() override;
+  DELETE_COPY_AND_MOVE(AudioBufferBaseSourceNodeHostObject);
 
   JSI_PROPERTY_GETTER_DECL(detune);
   JSI_PROPERTY_GETTER_DECL(playbackRate);
@@ -33,8 +34,6 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   std::shared_ptr<AudioParamHostObject> playbackRateParam_;
 
   int onPositionChangedInterval_;
-  OnPositionChangedListenerHostObject onPositionChangedListenerHostObject_;
-
   double inputLatency_ = 0;
   double outputLatency_ = 0;
   bool pitchCorrection_;

@@ -135,7 +135,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
       return Result<NoneType, std::string>::Err("Callback output is unavailable.");
     }
 
-    dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+    dataCallback_->assignOnErrorCallbackId(errorEvent().getCallbackId());
     std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
         ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
     callbackOutputConfigured_.store(true, std::memory_order_release);
@@ -316,7 +316,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::setupFileWriter(
     fileWriter_ = createFileWriter(properties);
   }
 
-  fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+  fileWriter_->assignOnErrorCallbackId(errorEvent().getCallbackId());
 
   auto backend = std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_);
   auto fileResult = backend->openFile(
@@ -393,7 +393,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::setOnAudioReadyCallback(
   std::scoped_lock callbackLock(callbackMutex_, errorCallbackMutex_);
   dataCallback_ = std::make_shared<AndroidRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
-  dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+  dataCallback_->setOnErrorCallback(errorEvent().getCallbackId());
   callbackOutputEnabled_.store(true, std::memory_order_release);
   callbackOutputConfigured_.store(false, std::memory_order_release);
 
@@ -543,17 +543,8 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     auto streamResult = openAudioStream();
 
     if (!streamResult.is_ok()) {
-      uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
-
-      if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
-        return;
-      }
-
       std::string message = "Android recorder error: " + streamResult.unwrap_err();
-      audioEventHandlerRegistry_->dispatchEvent(
-          AudioEvent::RECORDER_ERROR,
-          callbackId,
-          StringPayload{.name = "message", .reason = std::move(message)});
+      errorEvent().dispatch(StringPayload{.name = "message", .reason = std::move(message)});
       return;
     }
 

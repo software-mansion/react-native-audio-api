@@ -22,10 +22,5 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);
-
- private:
-  uint64_t onEndedCallbackId_ = 0;
-
-  void setOnEndedCallbackId(uint64_t callbackId);
 };
 } // namespace audioapi

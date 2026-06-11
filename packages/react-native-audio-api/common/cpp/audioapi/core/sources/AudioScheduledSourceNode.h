@@ -1,9 +1,9 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/types/NodeOptions.h>
 
-#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -49,21 +49,15 @@ class AudioScheduledSourceNode : public AudioNode {
   /// @note Audio Thread only
   bool isStopScheduled();
 
-  /// @brief Updates the ended listener id (JS or audio thread).
-  void assignOnEndedCallbackId(uint64_t callbackId);
-
   void disable() override;
 
-  void unregisterOnEndedCallback(uint64_t callbackId);
+  void assignOnEndedCallbackId(uint64_t callbackId);
 
  protected:
   double startTime_;
   double stopTime_;
 
   PlaybackState playbackState_;
-
-  std::atomic<uint64_t> onEndedCallbackId_{0};
-  const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
@@ -74,6 +68,9 @@ class AudioScheduledSourceNode : public AudioNode {
       size_t currentSampleFrame);
 
   void handleStopScheduled();
+
+ private:
+  EventCaller<AudioEvent::ENDED> onEndedEvent_;
 };
 
 } // namespace audioapi

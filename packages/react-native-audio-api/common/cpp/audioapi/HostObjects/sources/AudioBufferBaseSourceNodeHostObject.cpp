@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace audioapi {
@@ -15,7 +16,6 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNodeHostObject(node, options),
       onPositionChangedInterval_(options.onPositionChangedInterval),
-      onPositionChangedListenerHostObject_(*node),
       pitchCorrection_(options.pitchCorrection) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
   detuneParam_ = std::make_shared<AudioParamHostObject>(sourceNode->getDetuneParam());
@@ -35,6 +35,11 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
       JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getOutputLatency));
 }
 
+AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {
+  auto node = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+  node->assignOnPositionChangedCallbackId(0);
+}
+
 JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, detune) {
   return jsi::Object::createFromHostObject(runtime, detuneParam_);
 }
@@ -48,7 +53,9 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedI
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChanged) {
-  onPositionChangedListenerHostObject_.setCallbackIdFromJsi(runtime, value);
+  auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+  sourceNode->assignOnPositionChangedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval) {

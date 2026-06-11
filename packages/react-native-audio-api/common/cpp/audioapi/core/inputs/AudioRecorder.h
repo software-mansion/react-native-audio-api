@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <atomic>
@@ -14,14 +16,14 @@ class AudioFileWriter;
 class RecorderAdapterNode;
 class AudioFileProperties;
 class AudioRecorderCallback;
-class AudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
   enum class RecorderState : uint8_t { Idle = 0, Recording, Paused };
   explicit AudioRecorder(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-      : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
+      : audioEventHandlerRegistry_(audioEventHandlerRegistry),
+        errorEvent_(audioEventHandlerRegistry) {}
   AudioRecorder(const AudioRecorder &) = delete;
   AudioRecorder(AudioRecorder &&) = delete;
   AudioRecorder &operator=(const AudioRecorder &) = delete;
@@ -50,6 +52,7 @@ class AudioRecorder {
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
+  void assignOnErrorCallbackId(uint64_t callbackId);
 
   virtual double getCurrentDuration() const;
 
@@ -65,6 +68,12 @@ class AudioRecorder {
   bool wantsCallback() const;
   bool wantsFileOutput() const;
   bool wantsConnection() const;
+  [[nodiscard]] EventCaller<AudioEvent::RECORDER_ERROR> &errorEvent() noexcept {
+    return errorEvent_;
+  }
+  [[nodiscard]] const EventCaller<AudioEvent::RECORDER_ERROR> &errorEvent() const noexcept {
+    return errorEvent_;
+  }
 
   std::atomic<RecorderState> state_{RecorderState::Idle};
 
@@ -80,13 +89,12 @@ class AudioRecorder {
   std::mutex errorCallbackMutex_;
   mutable std::mutex adapterNodeMutex_;
 
-  std::atomic<uint64_t> errorCallbackId_{0};
-
   std::string filePath_;
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
 };
 

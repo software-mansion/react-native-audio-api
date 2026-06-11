@@ -2,9 +2,9 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/sources/OnPositionChangedNode.h>
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/utils/events/PositionChangedDispatcher.h>
 #include <cstddef>
 #include <thread>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -27,7 +27,7 @@ inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
-class AudioFileSourceNode : public AudioScheduledSourceNode, public OnPositionChangedNode {
+class AudioFileSourceNode : public AudioScheduledSourceNode {
   friend class MediaElementAudioSourceNode;
 
  public:
@@ -96,6 +96,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode, public OnPositionCh
     return filePaused_;
   }
 
+  void assignOnPositionChangedCallbackId(uint64_t callbackId);
+
  protected:
   /// @brief Outputs silence when media-routed; otherwise decodes into @p processingBuffer.
   std::shared_ptr<DSPAudioBuffer> processNode(
@@ -117,6 +119,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode, public OnPositionCh
   double sampleRate_{0};
   std::atomic<double> currentTime_{0};
   std::atomic<uint64_t> activeMediaBindingId_{0};
+
+  PositionChangedDispatcher positionChanged_;
 
   /// @brief Sets up SPSC channels, constructs the SeekDecoderDaemon, and initialises metadata from the opened decoder.
   /// @return false if the source could not be opened; caller must not set isInitialized_.

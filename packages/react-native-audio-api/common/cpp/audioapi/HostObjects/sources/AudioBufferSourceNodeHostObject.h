@@ -39,9 +39,7 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   bool loopSkip_;
   double loopStart_;
   double loopEnd_;
-  uint64_t onLoopEndedCallbackId_ = 0;
 
-  void setOnLoopEndedCallbackId(uint64_t callbackId);
   void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
 };
 

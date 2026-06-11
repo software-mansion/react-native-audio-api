@@ -13,7 +13,6 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
     : AudioScheduledSourceNode(context, options),
-      OnPositionChangedNode(audioEventHandlerRegistry_, static_cast<int>(context->getSampleRate())),
       vReadIndex_(0.0),
       pitchCorrection_(options.pitchCorrection),
       detuneParam_(
@@ -27,7 +26,10 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
               options.playbackRate,
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
-              context)) {
+              context)),
+      positionChanged_(
+          context->getAudioEventHandlerRegistry(),
+          static_cast<int>(context->getSampleRate())) {
   setOnPositionChangedInterval(options.onPositionChangedInterval);
 }
 
@@ -47,7 +49,11 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam() co
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
-  onPositionChangedDriver_.setIntervalMs(interval, getContextSampleRate());
+  positionChanged_.setIntervalMs(interval, getContextSampleRate());
+}
+
+void AudioBufferBaseSourceNode::assignOnPositionChangedCallbackId(uint64_t callbackId) {
+  positionChanged_.assignCallbackId(callbackId);
 }
 
 std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
@@ -120,7 +126,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     stretch_->setTransposeSemitones(detune);
   }
   if (isPlaying()) {
-    onPositionChangedDriver_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
+    positionChanged_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
   }
 }
 
@@ -159,7 +165,7 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   }
 
   if (isPlaying()) {
-    onPositionChangedDriver_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
+    positionChanged_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
   }
 }
 

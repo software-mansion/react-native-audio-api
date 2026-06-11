@@ -24,7 +24,8 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loop_(options.loop),
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
-      loopEnd_(options.loopEnd) {
+      loopEnd_(options.loopEnd),
+      onLoopEndedEvent_(context->getAudioEventHandlerRegistry()) {
   processor_ = std::make_unique<SingleBufferProcessor>();
   isInitialized_.store(true, std::memory_order_release);
 }
@@ -106,12 +107,8 @@ void AudioBufferSourceNode::disable() {
   AudioScheduledSourceNode::disable();
 }
 
-void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
-  onLoopEndedCallbackId_ = callbackId;
-}
-
-void AudioBufferSourceNode::unregisterOnLoopEndedCallback(uint64_t callbackId) {
-  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::LOOP_ENDED, callbackId);
+void AudioBufferSourceNode::assignOnLoopEndedCallbackId(uint64_t callbackId) {
+  onLoopEndedEvent_.assignCallbackId(callbackId);
 }
 
 double AudioBufferSourceNode::getCurrentPosition() const {
@@ -119,10 +116,7 @@ double AudioBufferSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferSourceNode::sendOnLoopEndedEvent() {
-  if (onLoopEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->dispatchEvent(
-        AudioEvent::LOOP_ENDED, onLoopEndedCallbackId_, EmptyPayload{});
-  }
+  onLoopEndedEvent_.dispatchEmpty();
 }
 
 /**
