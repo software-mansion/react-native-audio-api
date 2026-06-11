@@ -99,7 +99,11 @@ Pod::Spec.new do |s|
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\""
     ])
     .concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include_ffmpeg\""])
-    .concat(worklets_enabled ? ['"$(PODS_ROOT)/Headers/Public/RNWorklets"'] : [])
+    .concat(worklets_enabled ? [
+      '"$(PODS_ROOT)/Headers/Public/RNWorklets"',
+      '"$(PODS_ROOT)/Headers/Private/ReactCodegen"',
+      '"$(PODS_ROOT)/../build/generated/ios/ReactCodegen"',
+    ] : [])
     .join(' '),
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
@@ -120,6 +124,8 @@ Pod::Spec.new do |s|
     ]
     .concat(worklets_enabled ? [
       '"$(PODS_ROOT)/Headers/Public/RNWorklets"',
+      '"$(PODS_ROOT)/Headers/Private/ReactCodegen"',
+      '"$(PODS_ROOT)/../build/generated/ios/ReactCodegen"',
       "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_worklets_dir]}/apple\"",
       "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_worklets_dir]}/Common/cpp\""
     ] : [])
