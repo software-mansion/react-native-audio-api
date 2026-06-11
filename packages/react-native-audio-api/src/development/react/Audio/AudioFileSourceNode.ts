@@ -1,4 +1,4 @@
-import { AudioEventEmitter, AudioEventSubscription } from '../../../events';
+import { AudioEventEmitter } from '../../../events';
 import type { EventEmptyType } from '../../../events/types';
 import type {
   IAudioFileSourceNode,
@@ -14,20 +14,16 @@ type AttachFileSourceOptions = {
 export class AudioFileSourceNode extends AudioScheduledSourceNode {
   private readonly emitter = new AudioEventEmitter(global.AudioEventEmitter);
 
-  private positionSubscription?: AudioEventSubscription;
-  private endedSubscription?: AudioEventSubscription;
-
   attach(options: AttachFileSourceOptions): { duration: number } {
     this.resetNodeAndSubscriptions();
 
-    this.endedSubscription = this.emitter.addAudioEventListener(
+    const sub = this.emitter.addAudioEventListener(
       'ended',
       (_event: EventEmptyType) => {
         options.onEnded();
       }
     );
-    (this.node as IAudioFileSourceNode).onEnded =
-      this.endedSubscription.subscriptionId;
+    (this.node as IAudioFileSourceNode).onEnded = sub.subscriptionId;
 
     return {
       duration: (this.node as IAudioFileSourceNode).duration,
@@ -75,21 +71,19 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
       return;
     }
     this.stopPositionTracking();
-    this.positionSubscription = this.emitter.addAudioEventListener(
+    const sub = this.emitter.addAudioEventListener(
       'positionChanged',
       (event) => {
         onTime(event.value);
       }
     );
-    (this.node as IAudioFileSourceNode).onPositionChanged =
-      this.positionSubscription.subscriptionId;
+    (this.node as IAudioFileSourceNode).onPositionChanged = sub.subscriptionId;
   }
 
   stopPositionTracking(): void {
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';
     }
-    this.positionSubscription = undefined;
   }
 
   private resetNodeAndSubscriptions(): void {
@@ -98,7 +92,5 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
       (this.node as IAudioFileSourceNode).onEnded = '0';
       this.node.disconnect(undefined);
     }
-    this.positionSubscription = undefined;
-    this.endedSubscription = undefined;
   }
 }

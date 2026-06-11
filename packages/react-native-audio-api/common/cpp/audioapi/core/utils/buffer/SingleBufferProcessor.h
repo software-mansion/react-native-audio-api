@@ -39,6 +39,14 @@ class SingleBufferProcessor : public BufferProcessorBase {
     buffer_ = std::move(buffer);
   }
 
+  [[nodiscard]] bool didCrossLoopBoundary() const {
+    return loopBoundaryCrossed_;
+  }
+
+  void resetLoopBoundaryCrossed() {
+    loopBoundaryCrossed_ = false;
+  }
+
  protected:
   CursorState advance(double rate) override;
   void consume(size_t frames) override;
@@ -51,6 +59,7 @@ class SingleBufferProcessor : public BufferProcessorBase {
  private:
   std::shared_ptr<const AudioBuffer> buffer_ = nullptr;
   bool loop_ = false;
+  bool loopBoundaryCrossed_ = false;
   size_t startFrame_ = 0;
   size_t endFrame_ = 0;
 };
