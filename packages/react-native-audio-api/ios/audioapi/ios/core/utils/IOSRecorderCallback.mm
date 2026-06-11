@@ -6,17 +6,18 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
+#include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Result.hpp>
-#include <algorithm>
-#include <cstdlib>
-#include <cstring>
 #include <memory>
 #include <utility>
 
 namespace audioapi {
+
+using ios::copyAudioBufferList;
+using ios::freeOwnedAudioBufferList;
 
 IOSRecorderCallback::IOSRecorderCallback(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -118,17 +119,6 @@ void IOSRecorderCallback::cleanup()
   }
 }
 
-static inline void freeOwnedAudioBufferList(const AudioBufferList *bufferList)
-{
-  if (bufferList == nullptr) {
-    return;
-  }
-  for (UInt32 i = 0; i < bufferList->mNumberBuffers; ++i) {
-    std::free(bufferList->mBuffers[i].mData);
-  }
-  std::free(const_cast<AudioBufferList *>(bufferList));
-}
-
 /// @brief Receives audio data from the recorder, processes it, and stores it in the circular buffer.
 /// The data is converted using AVAudioConverter if the input format differs from the user desired callback format.
 /// This method runs on the audio thread.
@@ -148,27 +138,9 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferLis
   // CoreAudio owns `audioBufferList` only for the duration of this synchronous
   // callback. Copy into an owned AudioBufferList before handing off to the
   // worker thread; the consumer in taskOffloaderFunction frees it.
-  UInt32 bufferCount = audioBufferList->mNumberBuffers;
-  size_t headerSize = offsetof(AudioBufferList, mBuffers) + sizeof(AudioBuffer) * bufferCount;
-  AudioBufferList *owned = static_cast<AudioBufferList *>(std::malloc(headerSize));
+  AudioBufferList *owned = copyAudioBufferList(audioBufferList);
   if (owned == nullptr) {
     return;
-  }
-  owned->mNumberBuffers = bufferCount;
-  for (UInt32 i = 0; i < bufferCount; ++i) {
-    UInt32 byteSize = audioBufferList->mBuffers[i].mDataByteSize;
-    owned->mBuffers[i].mNumberChannels = audioBufferList->mBuffers[i].mNumberChannels;
-    owned->mBuffers[i].mDataByteSize = byteSize;
-    void *channelData = std::malloc(byteSize);
-    if (channelData == nullptr) {
-      for (UInt32 j = 0; j < i; ++j) {
-        std::free(owned->mBuffers[j].mData);
-      }
-      std::free(owned);
-      return;
-    }
-    std::memcpy(channelData, audioBufferList->mBuffers[i].mData, byteSize);
-    owned->mBuffers[i].mData = channelData;
   }
   offloader_->getSender()->send({.audioBufferList = owned, .numFrames = numFrames});
 }
@@ -236,13 +208,6 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       return;
     }
 
-    // `convertToBuffer` sets `frameLength` to the number of frames it actually
-    // produced. The sample-rate converter's filter phase makes this fluctuate
-    // around `numFrames * ratio` from call to call, so pushing a computed
-    // estimate (the previous `ceil(...)`) reads stale samples from the end of
-    // the output buffer whenever the converter produced fewer frames —
-    // an audible click at the boundary of nearly every render block when the
-    // hardware rate differs from the requested callback rate.
     AVAudioFrameCount producedFrames = converterOutputBuffer_.frameLength;
     if (producedFrames == 0) {
       return;
