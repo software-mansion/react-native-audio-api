@@ -20,7 +20,6 @@ export { default as ConvolverNode } from './web-core/ConvolverNode.web';
 export { default as PeriodicWave } from './web-core/PeriodicWave.web';
 export { default as WaveShaperNode } from './web-core/WaveShaperNode.web';
 export { default as IIRFilterNode } from './web-core/IIRFilterNode.web';
-export { default as ConvolverNodeOptions } from './web-core/ConvolverNodeOptions.web';
 export {
   default as AudioDecoder,
   decodeAudioData,
