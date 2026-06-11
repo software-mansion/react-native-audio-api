@@ -86,23 +86,19 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
   }
 
   stopPositionTracking(): void {
-    this.positionSubscription?.remove();
-    this.positionSubscription = undefined;
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';
     }
+    this.positionSubscription = undefined;
   }
 
   private resetNodeAndSubscriptions(): void {
-    this.positionSubscription?.remove();
-    this.positionSubscription = undefined;
-    this.endedSubscription?.remove();
-    this.endedSubscription = undefined;
-
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';
       (this.node as IAudioFileSourceNode).onEnded = '0';
       this.node.disconnect(undefined);
     }
+    this.positionSubscription = undefined;
+    this.endedSubscription = undefined;
   }
 }

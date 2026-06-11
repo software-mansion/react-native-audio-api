@@ -49,7 +49,6 @@ export default class AudioScheduledSourceNode extends AudioNode {
   }
 
   public set onEnded(callback: ((event: EventEmptyType) => void) | null) {
-    this.onEndedSubscription?.remove();
     if (!callback) {
       (this.node as IAudioScheduledSourceNode).onEnded = '0';
       this.onEndedSubscription = undefined;

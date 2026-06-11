@@ -76,10 +76,8 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
   ) {
     if (!callback) {
       (this.node as IAudioBufferQueueSourceNode).onBufferEnded = '0';
-      this.onBufferEndedSubscription?.remove();
       this.onBufferEndedSubscription = undefined;
       this.onBufferEndedCallback = undefined;
-
       return;
     }
 
