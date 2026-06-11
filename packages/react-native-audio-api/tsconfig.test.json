@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src", "tests"]
+  "include": ["src", "tests"],
+  "compilerOptions": {
+    "types": ["jest", "raf"]
+  }
 }

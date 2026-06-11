@@ -2,9 +2,9 @@
 import type { IAudioEventEmitter } from '../src/interfaces';
 
 // Mock global objects that might be needed
-global.createAudioContext = jest.fn();
-global.createAudioRecorder = jest.fn();
-global.AudioEventEmitter = {} as IAudioEventEmitter;
+globalThis.createAudioContext = jest.fn();
+globalThis.createAudioRecorder = jest.fn();
+globalThis.AudioEventEmitter = {} as IAudioEventEmitter;
 
 // Set up global test environment
 beforeAll(() => {
