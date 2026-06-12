@@ -73,7 +73,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
       ->setDirection(oboe::Direction::Input)
       ->setFormat(oboe::AudioFormat::Float)
       ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(oboe::PerformanceMode::None)
+      ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
       ->setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium)
       ->setDataCallback(shared_from_this())
       ->setErrorCallback(shared_from_this());
