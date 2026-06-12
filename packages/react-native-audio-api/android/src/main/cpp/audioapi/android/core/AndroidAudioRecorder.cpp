@@ -548,20 +548,26 @@ void AndroidAudioRecorder::cleanup() {
 /// @param error The oboe::Result error code.
 void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
   if (error != oboe::Result::ErrorDisconnected) {
+    std::string message = "Android recorder error: " + std::string(oboe::convertToText(error));
+    auto callbackId = errorCallbackId_.load(std::memory_order_acquire);
+    audioEventHandlerRegistry_->dispatchEvent(
+        AudioEvent::RECORDER_ERROR,
+        callbackId,
+        StringPayload{.name = "message", .reason = std::move(message)});
+    return;
+  }
+
+  // Only restart if the recorder is still supposed to be running. Restarting
+  // unconditionally resurrected stopped recorders, so any audio route change
+  // (e.g. a Bluetooth headset connecting or disconnecting) turned the mic
+  // back on after stop().
+  if (isIdle() || isPaused()) {
     return;
   }
 
   // Serialize with start()/stop(): they mutate mStream_ under these locks on
   // the JS thread while this runs on oboe's (detached) error thread.
   std::scoped_lock restartLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
-
-  // Only restart if the recorder is still supposed to be running. Restarting
-  // unconditionally resurrected stopped recorders, so any audio route change
-  // (e.g. a Bluetooth headset connecting or disconnecting) turned the mic
-  // back on after stop().
-  if (isIdle()) {
-    return;
-  }
 
   // The error thread is detached and can arrive late: if stop()/start() have
   // already replaced the stream this error belongs to, don't tear down the
