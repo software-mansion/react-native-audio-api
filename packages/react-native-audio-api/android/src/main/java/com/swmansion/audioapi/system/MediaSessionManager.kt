@@ -211,7 +211,7 @@ object MediaSessionManager {
       val deviceInfo = Arguments.createMap()
       deviceInfo.putString("id", inputDevice.getId().toString())
       deviceInfo.putString("name", inputDevice.productName.toString())
-      deviceInfo.putString("type", parseDeviceType(inputDevice))
+      deviceInfo.putString("category", parseDeviceCategory(inputDevice))
 
       availableInputs.pushMap(deviceInfo)
     }
@@ -220,7 +220,7 @@ object MediaSessionManager {
       val deviceInfo = Arguments.createMap()
       deviceInfo.putString("id", outputDevice.getId().toString())
       deviceInfo.putString("name", outputDevice.productName.toString())
-      deviceInfo.putString("type", parseDeviceType(outputDevice))
+      deviceInfo.putString("category", parseDeviceCategory(outputDevice))
 
       availableOutputs.pushMap(deviceInfo)
     }
@@ -236,7 +236,7 @@ object MediaSessionManager {
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
-  fun parseDeviceType(device: AudioDeviceInfo): String =
+  fun parseDeviceCategory(device: AudioDeviceInfo): String =
     when (device.type) {
       AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Mic"
       AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "Built-in Earpiece"
