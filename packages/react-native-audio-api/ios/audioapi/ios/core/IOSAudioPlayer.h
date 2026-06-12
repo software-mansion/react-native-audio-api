@@ -32,6 +32,9 @@ class IOSAudioPlayer {
 
   bool isRunning() const;
 
+  [[nodiscard]] double getBaseLatency() const;
+  [[nodiscard]] double getOutputLatency() const;
+
  private:
   void clearPendingSaved();
   /// Audio-thread only. Always pulls the graph in steps of RENDER_QUANTUM_SIZE; if the system
@@ -42,8 +45,11 @@ class IOSAudioPlayer {
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
   std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
+  float sampleRate_;
   int channelCount_;
   std::atomic<bool> isRunning_;
+  /// Updated on the audio thread from each render callback `numFrames` (e.g. 512 at 48 kHz).
+  std::atomic<int32_t> lastCallbackFrameCount_{0};
   /// Set from main thread on start/resume; consumed on audio thread to drop stale pending audio.
   std::atomic<bool> flushOverflowNextPull_{false};
   /// Frames valid at the front of each `pendingSaved_[ch]` (0 … RENDER_QUANTUM_SIZE).

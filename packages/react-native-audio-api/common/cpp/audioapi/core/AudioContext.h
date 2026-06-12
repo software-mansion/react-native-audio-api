@@ -30,6 +30,9 @@ class AudioContext : public BaseAudioContext {
   bool start();
   void initialize() override;
 
+  [[nodiscard]] double getBaseLatency() const override;
+  [[nodiscard]] double getOutputLatency() const;
+
   std::shared_ptr<MediaElementAudioSourceNode> createMediaElementSource(
       const std::shared_ptr<AudioFileSourceNode> &fileSource);
 

@@ -101,6 +101,22 @@ bool AudioContext::isDriverRunning() const {
   return audioPlayer_->isRunning();
 }
 
+double AudioContext::getBaseLatency() const {
+  if (audioPlayer_ == nullptr) {
+    return 0.0;
+  }
+
+  return audioPlayer_->getBaseLatency();
+}
+
+double AudioContext::getOutputLatency() const {
+  if (audioPlayer_ == nullptr) {
+    return 0.0;
+  }
+
+  return audioPlayer_->getOutputLatency();
+}
+
 std::shared_ptr<MediaElementAudioSourceNode> AudioContext::createMediaElementSource(
     const std::shared_ptr<AudioFileSourceNode> &fileSource) {
 

@@ -39,7 +39,8 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnAudioReady),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnError),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration));
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getInputLatency));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
@@ -194,6 +195,10 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getCurrentDuration) {
   double duration = audioRecorder_->getCurrentDuration();
   return jsi::Value(duration);
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getInputLatency) {
+  return jsi::Value(audioRecorder_->getInputLatency());
 }
 
 } // namespace audioapi

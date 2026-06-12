@@ -40,6 +40,7 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
 | `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
+| `baseLatency` | `number` | Processing latency in seconds from the audio destination to the platform audio subsystem. Returns `0` when the context is not running. On iOS and Android this uses the measured render callback frame count divided by `sampleRate` (falls back to platform defaults before the first callback). [`outputLatency`](/docs/core/audio-context#properties) is always greater than or equal to this value. | <ReadOnly /> |
 | `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
 | `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |

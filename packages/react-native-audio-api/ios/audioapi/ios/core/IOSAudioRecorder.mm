@@ -107,6 +107,10 @@ IOSAudioRecorder::IOSAudioRecorder(
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
+    if (numFrames > 0) {
+      lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
+    }
+
     if (usesFileOutput()) {
       if (auto lock = Locker::tryLock(fileWriterMutex_)) {
         fileWriter_->writeAudioData(inputBuffer, numFrames);
@@ -227,6 +231,8 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
 
   // Estimate the maximum input buffer lengths that can be expected from the sink node
   size_t maxInputBufferLength = [nativeRecorder_ getResolvedBufferSize];
+  streamSampleRate_ = static_cast<float>(recorderFormatSampleRate(inputFormat));
+  lastCallbackFrameCount_.store(0, std::memory_order_release);
   bool fileWasOpened = false;
 
   if (wantsFileOutput()) {
@@ -308,6 +314,8 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
 
     [nativeRecorder_ setInputArmed:false];
     state_.store(RecorderState::Idle, std::memory_order_release);
+    lastCallbackFrameCount_.store(0, std::memory_order_release);
+    streamSampleRate_ = 0.0f;
     [nativeRecorder_ stop];
 
     hadFileOutput = usesFileOutput();
@@ -616,6 +624,25 @@ void IOSAudioRecorder::clearOnAudioReadyCallback()
   callbackOutputConfigured_.store(false, std::memory_order_release);
   callbackOutputEnabled_.store(false, std::memory_order_release);
   dataCallback_ = nullptr;
+}
+
+double IOSAudioRecorder::getInputLatency() const
+{
+  if (isIdle()) {
+    return 0.0;
+  }
+
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
+
+  double baseLatency = 0.0;
+  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
+  if (callbackFrames > 0 && streamSampleRate_ > 0.0f) {
+    baseLatency = static_cast<double>(callbackFrames) / static_cast<double>(streamSampleRate_);
+  } else {
+    baseLatency = [sessionManager ioBufferDurationSeconds];
+  }
+
+  return baseLatency + [sessionManager inputLatencySeconds];
 }
 
 } // namespace audioapi

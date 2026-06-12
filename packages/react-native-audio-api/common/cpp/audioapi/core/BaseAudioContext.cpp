@@ -72,6 +72,10 @@ double BaseAudioContext::getCurrentTime() const {
   return destination_->getCurrentTime();
 }
 
+double BaseAudioContext::getBaseLatency() const {
+  return 0.0;
+}
+
 std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
   return destination_;
 }

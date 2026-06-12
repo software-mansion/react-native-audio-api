@@ -70,6 +70,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   ContextState getState();
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
+  [[nodiscard]] virtual double getBaseLatency() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
   [[nodiscard]] std::shared_ptr<AudioDestinationNode> getDestination() const;
 

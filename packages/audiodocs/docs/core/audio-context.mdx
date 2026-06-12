@@ -25,8 +25,11 @@ interface AudioContextOptions {
 
 ## Properties
 
-`AudioContext` does not define any additional properties.
-It inherits all properties from [`BaseAudioContext`](/docs/core/base-audio-context#properties).
+| Name | Type | Description | |
+| :----: | :----: | :-------- | :-: |
+| `outputLatency` | `number` | Estimated output latency in seconds — the full interval from when the engine requests a buffer to when the first sample reaches the output device. Always greater than or equal to [`baseLatency`](/docs/core/base-audio-context#properties). Re-query before sync-sensitive work; the value can change when the audio route changes. Returns `0` when the context is not running. On iOS this is `baseLatency` plus `AVAudioSession.outputLatency`. On Android it is `baseLatency` plus a hardware tail derived from Oboe timestamps (full-buffer Oboe readings are excluded). | <ReadOnly /> |
+
+`AudioContext` inherits all properties from [`BaseAudioContext`](/docs/core/base-audio-context#properties), including `baseLatency`.
 
 
 ## Methods

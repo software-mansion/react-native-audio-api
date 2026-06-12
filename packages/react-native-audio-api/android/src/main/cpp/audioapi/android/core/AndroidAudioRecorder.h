@@ -6,6 +6,8 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -49,6 +51,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
   void disconnect() override;
 
+  [[nodiscard]] double getInputLatency() const override;
+
   oboe::DataCallbackResult
   onAudioReady(oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) override;
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
@@ -64,6 +68,10 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
 
   std::shared_ptr<oboe::AudioStream> mStream_;
   std::vector<std::string> recordingSegmentPaths_;
+  /// Updated on the audio thread from each input callback `numFrames`.
+  std::atomic<int32_t> lastCallbackFrameCount_{0};
+  /// Full input latency (seconds) sampled at callback start via Oboe timestamps.
+  std::atomic<double> lastInputLatencySeconds_{0.0};
   Result<NoneType, std::string> openAudioStream();
   std::shared_ptr<AudioFileWriter> createFileWriter(
       const std::shared_ptr<AudioFileProperties> &props);

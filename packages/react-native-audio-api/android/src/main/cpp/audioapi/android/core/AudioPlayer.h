@@ -1,7 +1,9 @@
 #pragma once
 
 #include <oboe/Oboe.h>
+#include <atomic>
 #include <cassert>
+#include <cstdint>
 #include <functional>
 #include <memory>
 
@@ -37,6 +39,9 @@ class AudioPlayer : public AudioStreamDataCallback,
 
   [[nodiscard]] bool isRunning() const;
 
+  [[nodiscard]] double getBaseLatency() const;
+  [[nodiscard]] double getOutputLatency() const;
+
   DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;
 
@@ -50,6 +55,10 @@ class AudioPlayer : public AudioStreamDataCallback,
   float sampleRate_;
   int channelCount_;
   std::atomic<bool> isRunning_;
+  /// Updated on the audio thread from each Oboe callback `numFrames`.
+  std::atomic<int32_t> lastCallbackFrameCount_{0};
+  /// Full output latency (seconds) sampled at callback start via Oboe timestamps.
+  std::atomic<double> lastOutputLatencySeconds_{0.0};
 
   bool openAudioStream();
 

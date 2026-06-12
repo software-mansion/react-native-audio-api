@@ -566,6 +566,26 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### inputLatency <MobileOnly />
+      </div></td>
+      <td>
+        <div class="text-content">
+          **React Native extension (not in the Web Audio spec).** Returns the estimated **full** input latency in seconds — from the analog input through the platform to when samples are delivered to the app. Mirrors [`AudioContext.outputLatency`](/docs/core/audio-context#properties) semantics for capture. On Android this is sampled at input callback start via Oboe timestamps; on iOS it is the measured input callback duration plus `AVAudioSession.inputLatency`. Re-query before sync-sensitive work; the value can change when the audio route changes. Returns `0` when the recorder is idle or when recording from a graph tap without an open input stream.
+
+          Use together with [`AudioContext.outputLatency`](/docs/core/audio-context#properties) to compensate overdub placement:
+
+          ```tsx
+          const shift = -(context.outputLatency + recorder.inputLatency);
+          ```
+        </div>
+        ```tsx
+          const inputLatency = recorder.inputLatency;
+        ```
+      </td>
+    </tr>
 
   </tbody>
 </table>

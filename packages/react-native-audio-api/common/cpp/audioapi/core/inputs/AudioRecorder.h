@@ -61,6 +61,8 @@ class AudioRecorder {
   virtual bool isPaused() const = 0;
   virtual bool isIdle() const = 0;
 
+  [[nodiscard]] virtual double getInputLatency() const = 0;
+
  protected:
   bool wantsCallback() const;
   bool wantsFileOutput() const;

@@ -59,6 +59,8 @@ bool AudioPlayer::start() {
 void AudioPlayer::stop() {
   if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
+    lastCallbackFrameCount_.store(0, std::memory_order_release);
+    lastOutputLatencySeconds_.store(0.0, std::memory_order_release);
     mStream_->requestStop();
   }
 }
@@ -104,6 +106,16 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
     return DataCallbackResult::Continue;
   }
 
+  if (numFrames > 0) {
+    lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
+
+    // Sample at callback start (minimum of the output latency sawtooth).
+    const auto latencyResult = oboeStream->calculateLatencyMillis();
+    if (latencyResult) {
+      lastOutputLatencySeconds_.store(latencyResult.value() / 1000.0, std::memory_order_release);
+    }
+  }
+
   auto *buffer = static_cast<float *>(audioData);
   int processedFrames = 0;
 
@@ -133,5 +145,30 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
       resume();
     }
   }
+}
+
+double AudioPlayer::getBaseLatency() const {
+  if (mStream_ == nullptr || !isInitialized_ || !isRunning()) {
+    return 0.0;
+  }
+
+  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
+  if (callbackFrames > 0 && sampleRate_ > 0.0f) {
+    return static_cast<double>(callbackFrames) / static_cast<double>(sampleRate_);
+  }
+
+  const int32_t framesPerBurst = mStream_->getFramesPerBurst();
+  if (framesPerBurst > 0) {
+    return static_cast<double>(framesPerBurst) / static_cast<double>(sampleRate_);
+  }
+
+  return static_cast<double>(RENDER_QUANTUM_SIZE) / static_cast<double>(sampleRate_);
+}
+
+double AudioPlayer::getOutputLatency() const {
+  if (mStream_ == nullptr || !isInitialized_ || !isRunning()) {
+    return 0.0;
+  }
+  return lastOutputLatencySeconds_.load(std::memory_order_acquire);
 }
 } // namespace audioapi

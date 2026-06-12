@@ -17,6 +17,7 @@
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -183,6 +184,8 @@ AndroidAudioRecorder::stop() {
     }
 
     state_.store(RecorderState::Idle, std::memory_order_release);
+    lastCallbackFrameCount_.store(0, std::memory_order_release);
+    lastInputLatencySeconds_.store(0.0, std::memory_order_release);
 
     // Fully close the stream rather than just stopping it. A stopped-but-open
     // stream keeps the data/error callbacks registered, so a later device
@@ -481,6 +484,16 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
     return oboe::DataCallbackResult::Continue;
   }
 
+  if (numFrames > 0) {
+    lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
+
+    // Sample at callback start (maximum of the input latency sawtooth).
+    const auto latencyResult = oboeStream->calculateLatencyMillis();
+    if (latencyResult) {
+      lastInputLatencySeconds_.store(latencyResult.value() / 1000.0, std::memory_order_release);
+    }
+  }
+
   if (usesFileOutput()) {
     if (auto fileWriterLock = Locker::tryLock(fileWriterMutex_)) {
       auto fileWriter = fileWriter_;
@@ -597,6 +610,36 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 
   mStream_->requestStart();
   state_.store(RecorderState::Recording, std::memory_order_release);
+}
+
+double AndroidAudioRecorder::getInputLatency() const {
+  if (mStream_ == nullptr || isIdle()) {
+    return 0.0;
+  }
+
+  double baseLatency = 0.0;
+  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
+  if (callbackFrames > 0 && streamSampleRate_ > 0.0f) {
+    baseLatency = static_cast<double>(callbackFrames) / static_cast<double>(streamSampleRate_);
+  } else {
+    const int32_t framesPerBurst = mStream_->getFramesPerBurst();
+    if (framesPerBurst > 0) {
+      baseLatency = static_cast<double>(framesPerBurst) / static_cast<double>(streamSampleRate_);
+    }
+  }
+
+  const double measuredTotal = lastInputLatencySeconds_.load(std::memory_order_acquire);
+  if (measuredTotal > 0.0) {
+    return std::max(measuredTotal, baseLatency);
+  }
+
+  const int32_t framesPerBurst = mStream_->getFramesPerBurst();
+  if (framesPerBurst > 0 && streamSampleRate_ > 0.0f) {
+    return baseLatency +
+        static_cast<double>(framesPerBurst) / static_cast<double>(streamSampleRate_);
+  }
+
+  return baseLatency;
 }
 
 } // namespace audioapi

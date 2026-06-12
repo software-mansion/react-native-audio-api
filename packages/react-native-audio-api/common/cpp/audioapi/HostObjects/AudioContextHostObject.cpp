@@ -18,6 +18,8 @@ AudioContextHostObject::AudioContextHostObject(
           std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
           runtime,
           callInvoker) {
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, outputLatency));
+
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
@@ -58,6 +60,11 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   });
 
   return promise;
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, outputLatency) {
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+  return {audioContext->getOutputLatency()};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {

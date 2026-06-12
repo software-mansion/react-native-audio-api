@@ -44,7 +44,8 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, baseLatency));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletSourceNode),
@@ -89,6 +90,10 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, currentTime) {
   return {context_->getCurrentTime()};
+}
+
+JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, baseLatency) {
+  return {context_->getBaseLatency()};
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletSourceNode) {

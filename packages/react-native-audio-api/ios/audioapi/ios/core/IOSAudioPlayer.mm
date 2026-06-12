@@ -6,6 +6,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #include <audioapi/ios/system/AudioEngine.h>
+#include <audioapi/ios/system/AudioSessionManager.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
@@ -17,6 +18,7 @@ IOSAudioPlayer::IOSAudioPlayer(
     : audioBuffer_(nullptr),
       audioPlayer_(nullptr),
       renderAudio_(renderAudio),
+      sampleRate_(sampleRate),
       channelCount_(channelCount),
       isRunning_(false),
       pendingSaved_(RENDER_QUANTUM_SIZE, channelCount_, sampleRate)
@@ -44,6 +46,10 @@ void IOSAudioPlayer::clearPendingSaved()
 
 void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFrames)
 {
+  if (numFrames > 0) {
+    lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
+  }
+
   // If requested, clear any saved overflow before continuing normal rendering.
   if (flushOverflowNextPull_.exchange(false, std::memory_order_acq_rel)) {
     clearPendingSaved();
@@ -127,6 +133,7 @@ bool IOSAudioPlayer::start()
 void IOSAudioPlayer::stop()
 {
   isRunning_.store(false, std::memory_order_release);
+  lastCallbackFrameCount_.store(0, std::memory_order_release);
   [audioPlayer_ stop];
 }
 
@@ -163,6 +170,31 @@ void IOSAudioPlayer::cleanup()
   stop();
   [audioPlayer_ cleanup];
   audioBuffer_ = nullptr;
+}
+
+double IOSAudioPlayer::getBaseLatency() const
+{
+  if (!isRunning()) {
+    return 0.0;
+  }
+
+  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
+  if (callbackFrames > 0 && sampleRate_ > 0.0f) {
+    return static_cast<double>(callbackFrames) / static_cast<double>(sampleRate_);
+  }
+
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
+  return [sessionManager ioBufferDurationSeconds];
+}
+
+double IOSAudioPlayer::getOutputLatency() const
+{
+  if (!isRunning()) {
+    return 0.0;
+  }
+
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
+  return [sessionManager outputLatencySeconds];
 }
 
 } // namespace audioapi

@@ -562,6 +562,10 @@ class BaseAudioContextMock {
     return this._state;
   }
 
+  get baseLatency(): number {
+    return 0.005;
+  }
+
   createBuffer(
     numberOfChannels: number,
     length: number,
@@ -681,6 +685,10 @@ class BaseAudioContextMock {
 class AudioContextMock extends BaseAudioContextMock {
   constructor(options?: AudioContextOptions) {
     super(options);
+  }
+
+  get outputLatency(): number {
+    return 0.01;
   }
 
   close(): Promise<void> {
@@ -822,6 +830,10 @@ class AudioRecorderMock {
 
   getCurrentDuration(): number {
     return this._currentDuration;
+  }
+
+  getInputLatency(): number {
+    return 0.01;
   }
 
   onError(
