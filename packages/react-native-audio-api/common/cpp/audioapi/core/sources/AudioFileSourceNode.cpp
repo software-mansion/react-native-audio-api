@@ -37,7 +37,9 @@ AudioFileSourceNode::AudioFileSourceNode(
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
   decoderState_->playbackRate.store(
-      std::clamp(options.playbackRate, 0.5f, 2.0f), std::memory_order_release);
+      std::isfinite(options.playbackRate) && options.playbackRate >= 0.0f ? options.playbackRate
+                                                                          : 1.0f,
+      std::memory_order_release);
   decoderState_->preservesPitch.store(options.preservesPitch, std::memory_order_release);
 
   const bool useFilePath = !options.filePath.empty();
@@ -125,9 +127,12 @@ void AudioFileSourceNode::setPlaybackRate(float v) {
     return;
   }
 
-  const float next = std::clamp(v, 0.5f, 2.0f);
-  const float previous = decoderState_->playbackRate.exchange(next, std::memory_order_acq_rel);
-  if (std::abs(previous - next) > 0.0001f) {
+  if (!std::isfinite(v) || v < 0.0f) {
+    return;
+  }
+
+  const float previous = decoderState_->playbackRate.exchange(v, std::memory_order_acq_rel);
+  if (std::abs(previous - v) > 0.0001f) {
     handlePlaybackSettingsChanged();
   }
 }
@@ -158,6 +163,20 @@ void AudioFileSourceNode::handlePlaybackSettingsChanged() {
     stretch_->reset();
   }
   playbackFadeInRemainingFrames_ = PLAYBACK_TRANSITION_FADE_FRAMES;
+}
+
+bool AudioFileSourceNode::ensurePlaybackRateBufferSize(size_t frames) {
+  if (frames == 0) {
+    return true;
+  }
+
+  if (playbackRateBuffer_ == nullptr || playbackRateBuffer_->getSize() < frames) {
+    const float bufferSampleRate =
+        audioBuffer_ != nullptr ? audioBuffer_->getSampleRate() : static_cast<float>(sampleRate_);
+    playbackRateBuffer_ = std::make_shared<DSPAudioBuffer>(frames, channelCount_, bufferSampleRate);
+  }
+
+  return playbackRateBuffer_ != nullptr;
 }
 
 void AudioFileSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
@@ -279,7 +298,7 @@ void AudioFileSourceNode::renderWithPitchPreservation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     const DecoderData &incoming,
     int framesToProcess) {
-  if (stretch_ == nullptr || playbackRateBuffer_ == nullptr || incoming.size == 0) {
+  if (stretch_ == nullptr || incoming.size == 0 || !ensurePlaybackRateBufferSize(incoming.size)) {
     processingBuffer->zero();
     return;
   }
@@ -300,7 +319,7 @@ void AudioFileSourceNode::renderWithoutPitchPreservation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     const DecoderData &incoming,
     int framesToProcess) {
-  if (playbackRateBuffer_ == nullptr || incoming.size == 0 || framesToProcess <= 0) {
+  if (incoming.size == 0 || framesToProcess <= 0 || !ensurePlaybackRateBufferSize(incoming.size)) {
     processingBuffer->zero();
     return;
   }

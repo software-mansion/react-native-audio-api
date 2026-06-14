@@ -169,6 +169,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @note Audio thread only.
   void handlePlaybackSettingsChanged();
 
+  /// @brief Ensures the planar playback-rate buffer can hold @p frames.
+  /// @note Audio thread only.
+  bool ensurePlaybackRateBufferSize(size_t frames);
+
   /// @brief Renders a speed-changed chunk while keeping pitch unchanged.
   /// @note Audio thread only.
   void renderWithPitchPreservation(

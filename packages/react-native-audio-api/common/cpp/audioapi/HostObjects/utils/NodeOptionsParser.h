@@ -2,8 +2,10 @@
 
 #include <audioapi/jsi/RuntimeLifecycleMonitor.h>
 #include <jsi/jsi.h>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -308,7 +310,13 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
 
   auto playbackRateValue = optionsObject.getProperty(runtime, "playbackRate");
   if (playbackRateValue.isNumber()) {
-    options.playbackRate = static_cast<float>(playbackRateValue.getNumber());
+    const double playbackRate = playbackRateValue.getNumber();
+    if (!std::isfinite(playbackRate) || playbackRate < 0.0 ||
+        playbackRate > static_cast<double>(std::numeric_limits<float>::max())) {
+      throw jsi::JSError(
+          runtime, "AudioFileSourceNode: playbackRate must be a finite, non-negative number.");
+    }
+    options.playbackRate = static_cast<float>(playbackRate);
   }
 
   auto preservesPitchValue = optionsObject.getProperty(runtime, "preservesPitch");

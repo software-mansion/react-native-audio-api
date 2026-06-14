@@ -95,12 +95,26 @@ bool SeekDecoderDaemon::decodeNextChunk(
     return false;
   }
 
-  const float playbackRate =
-      std::clamp(sharedState_->playbackRate.load(std::memory_order_acquire), 0.5f, 2.0f);
+  const float playbackRate = sharedState_->playbackRate.load(std::memory_order_acquire);
+  data.playbackRate = playbackRate;
+
+  if (playbackRate == 0.0f) {
+    data.interleavedBuffer.clear();
+    data.size = 0;
+    if (seekRequest.has_value()) {
+      data.state = StreamState::DISCONTINUOUS;
+      data.timestamp = seekRequest->seconds;
+    } else {
+      data.state = StreamState::PLAYING;
+      data.timestamp = decoder_->getCurrentPositionInSeconds();
+    }
+    return true;
+  }
+
   const size_t framesRequested =
       static_cast<size_t>(std::ceil(static_cast<float>(RENDER_QUANTUM_SIZE) * playbackRate));
+  data.interleavedBuffer.resize(framesRequested * static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
   size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
-  data.playbackRate = playbackRate;
 
   if (framesRead > 0) {
     data.size = framesRead;
@@ -125,7 +139,6 @@ bool SeekDecoderDaemon::decodeNextChunk(
     data.state = StreamState::DISCONTINUOUS;
     data.timestamp = 0.0;
     framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
-    data.playbackRate = playbackRate;
     data.size = framesRead;
     return true;
   }
