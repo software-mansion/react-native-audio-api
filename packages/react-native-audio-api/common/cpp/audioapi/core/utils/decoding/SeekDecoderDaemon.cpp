@@ -100,6 +100,7 @@ bool SeekDecoderDaemon::decodeNextChunk(
   const size_t framesRequested =
       static_cast<size_t>(std::ceil(static_cast<float>(RENDER_QUANTUM_SIZE) * playbackRate));
   size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
+  data.playbackRate = playbackRate;
 
   if (framesRead > 0) {
     data.size = framesRead;
@@ -124,6 +125,7 @@ bool SeekDecoderDaemon::decodeNextChunk(
     data.state = StreamState::DISCONTINUOUS;
     data.timestamp = 0.0;
     framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
+    data.playbackRate = playbackRate;
     data.size = framesRead;
     return true;
   }

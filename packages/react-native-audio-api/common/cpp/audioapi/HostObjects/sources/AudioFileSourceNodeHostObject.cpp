@@ -16,10 +16,12 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       loop_(options.loop),
       duration_(std::static_pointer_cast<AudioFileSourceNode>(node_)->getDuration()),
       volume_(options.volume),
-      playbackRate_(options.playbackRate) {
+      playbackRate_(options.playbackRate),
+      preservesPitch_(options.preservesPitch) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, playbackRate),
+      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, preservesPitch),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, currentTime),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, duration),
@@ -29,6 +31,7 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onEnded),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, playbackRate),
+      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, preservesPitch),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, loop));
 
   addFunctions(
@@ -64,6 +67,19 @@ JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, playbackRate) {
   playbackRate_ = std::clamp(static_cast<float>(value.getNumber()), 0.5f, 2.0f);
   auto event = [node, playbackRate = this->playbackRate_](BaseAudioContext &ctx) {
     node->setPlaybackRate(playbackRate);
+  };
+  node->scheduleAudioEvent(std::move(event));
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, preservesPitch) {
+  return {preservesPitch_};
+}
+
+JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, preservesPitch) {
+  auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
+  preservesPitch_ = value.getBool();
+  auto event = [node, preservesPitch = this->preservesPitch_](BaseAudioContext &ctx) {
+    node->setPreservesPitch(preservesPitch);
   };
   node->scheduleAudioEvent(std::move(event));
 }

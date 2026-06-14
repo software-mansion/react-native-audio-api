@@ -56,7 +56,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `volume` | `number` | `1` | Linear volume passed to the underlying source. |
 | `preload` | `PreloadType` | `'auto'` | Loading strategy for the source (`'none'`, `'metadata'`, `'auto'`). |
 | `playbackRate` | `number` | `1` | Playback speed. Native file playback clamps to `0.5`–`2.0`. |
-| `preservesPitch` | `boolean` | `true` | *Web support only* |
+| `preservesPitch` | `boolean` | `true` | Preserve pitch when `playbackRate` changes. Set to `false` to let pitch change with playback speed. |
 | `onLoadStart` | `() => void` | no-op | Load started. |
 | `onLoad` | `() => void` | no-op | Source decoded / graph attached. |
 | `onError` | `(error: Error) => void` | no-op | Network, decode, or unsupported format (e.g. missing FFmpeg) errors. |

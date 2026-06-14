@@ -311,6 +311,11 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     options.playbackRate = static_cast<float>(playbackRateValue.getNumber());
   }
 
+  auto preservesPitchValue = optionsObject.getProperty(runtime, "preservesPitch");
+  if (preservesPitchValue.isBool()) {
+    options.preservesPitch = preservesPitchValue.getBool();
+  }
+
   auto sourceValue = optionsObject.getProperty(runtime, "source");
   if (sourceValue.isString()) {
     options.filePath = sourceValue.asString(runtime).utf8(runtime);

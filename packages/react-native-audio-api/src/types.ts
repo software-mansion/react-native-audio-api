@@ -195,6 +195,7 @@ export interface AudioFileSourceOptions extends AudioNodeOptions {
   loop?: boolean;
   volume?: number;
   playbackRate?: number;
+  preservesPitch?: boolean;
 }
 
 export interface ConstantSourceOptions {

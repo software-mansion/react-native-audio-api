@@ -97,6 +97,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     preloadMode: preload,
     loop,
     playbackRate,
+    preservesPitch,
     autoPlay,
     effectiveVolumeRef,
     onLoadStart,
@@ -175,6 +176,10 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   useEffect(() => {
     fileSourceRef.current?.setPlaybackRate(playbackRate);
   }, [playbackRate, fileSourceRef]);
+
+  useEffect(() => {
+    fileSourceRef.current?.setPreservesPitch(preservesPitch);
+  }, [preservesPitch, fileSourceRef]);
 
   useEffect(() => {
     if (playbackState !== 'playing') {

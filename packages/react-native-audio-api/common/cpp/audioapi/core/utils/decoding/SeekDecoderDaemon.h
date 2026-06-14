@@ -41,6 +41,7 @@ struct AudioFileDecoderState {
   std::atomic<double> currentTime{0.0};
   std::atomic<bool> loop{false};
   std::atomic<float> playbackRate{1.0f};
+  std::atomic<bool> preservesPitch{true};
 
   /// True when the opened source is an FFmpeg HLS live/indefinite stream.
   std::atomic<bool> isHlsStreaming{false};
@@ -61,6 +62,7 @@ struct DecoderData {
           static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT)>
       interleavedBuffer{};
   size_t size{};
+  float playbackRate{1.0f};
   double timestamp{0.0};
   StreamState state{StreamState::PLAYING};
 };

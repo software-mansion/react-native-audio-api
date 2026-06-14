@@ -25,6 +25,7 @@ struct AudioFileSourceOptions;
 class MediaElementAudioSourceNode;
 
 inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
+inline constexpr auto PLAYBACK_TRANSITION_FADE_FRAMES = 2 * RENDER_QUANTUM_SIZE;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
@@ -69,13 +70,19 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   }
 
   /// @brief Sets time-stretched playback speed for decoded file sources.
-  void setPlaybackRate(float v) {
-    decoderState_->playbackRate.store(std::clamp(v, 0.5f, 2.0f), std::memory_order_release);
-  }
+  void setPlaybackRate(float v);
 
   /// @brief Current playback speed multiplier.
   float getPlaybackRate() const {
     return decoderState_->playbackRate.load(std::memory_order_acquire);
+  }
+
+  /// @brief When true, playback speed changes preserve the original pitch.
+  void setPreservesPitch(bool v);
+
+  /// @brief Current pitch-preservation mode.
+  bool getPreservesPitch() const {
+    return decoderState_->preservesPitch.load(std::memory_order_acquire);
   }
 
   /// @brief Stops decoding on the audio thread until playback is started again.
@@ -129,6 +136,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   float volume_;
   std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
+  int playbackFadeInRemainingFrames_{0};
   bool filePaused_{false};
   bool loop_{false};
   double duration_{0};
@@ -152,6 +160,34 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @param outData decoded frames and metadata; only valid if return value is true.
   /// @return false if no decoded frames are available; true if @p outData is filled and ready to process.
   [[nodiscard]] bool readNextFrameChunk(DecoderData &outData);
+
+  /// @brief Clears decoded chunks generated with stale playback settings.
+  /// @note Audio thread only.
+  void drainPendingFrames();
+
+  /// @brief Resets playback-rate processing state after rate or pitch-mode changes.
+  /// @note Audio thread only.
+  void handlePlaybackSettingsChanged();
+
+  /// @brief Renders a speed-changed chunk while keeping pitch unchanged.
+  /// @note Audio thread only.
+  void renderWithPitchPreservation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      const DecoderData &incoming,
+      int framesToProcess);
+
+  /// @brief Renders a speed-changed chunk with pitch following playback speed.
+  /// @note Audio thread only.
+  void renderWithoutPitchPreservation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      const DecoderData &incoming,
+      int framesToProcess);
+
+  /// @brief Applies a short fade-in after playback-rate mode changes to avoid hard discontinuities.
+  /// @note Audio thread only.
+  void applyPlaybackTransitionFade(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess);
 
   /// @brief Daemon thread for decoding and seeking
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;

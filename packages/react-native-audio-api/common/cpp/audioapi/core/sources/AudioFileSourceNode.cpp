@@ -36,7 +36,9 @@ AudioFileSourceNode::AudioFileSourceNode(
       loop_(options.loop),
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
-  setPlaybackRate(options.playbackRate);
+  decoderState_->playbackRate.store(
+      std::clamp(options.playbackRate, 0.5f, 2.0f), std::memory_order_release);
+  decoderState_->preservesPitch.store(options.preservesPitch, std::memory_order_release);
 
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
@@ -116,6 +118,46 @@ bool AudioFileSourceNode::initDecoder(
   stretch_->presetDefault(channelCount_, sampleRate_);
 
   return true;
+}
+
+void AudioFileSourceNode::setPlaybackRate(float v) {
+  if (decoderState_ == nullptr) {
+    return;
+  }
+
+  const float next = std::clamp(v, 0.5f, 2.0f);
+  const float previous = decoderState_->playbackRate.exchange(next, std::memory_order_acq_rel);
+  if (std::abs(previous - next) > 0.0001f) {
+    handlePlaybackSettingsChanged();
+  }
+}
+
+void AudioFileSourceNode::setPreservesPitch(bool v) {
+  if (decoderState_ == nullptr) {
+    return;
+  }
+
+  const bool previous = decoderState_->preservesPitch.exchange(v, std::memory_order_acq_rel);
+  if (previous != v) {
+    handlePlaybackSettingsChanged();
+  }
+}
+
+void AudioFileSourceNode::drainPendingFrames() {
+  if (frameReceiver_ == nullptr) {
+    return;
+  }
+
+  DecoderData drop;
+  while (frameReceiver_->try_receive(drop) == ResponseStatus::SUCCESS) {}
+}
+
+void AudioFileSourceNode::handlePlaybackSettingsChanged() {
+  drainPendingFrames();
+  if (stretch_ != nullptr) {
+    stretch_->reset();
+  }
+  playbackFadeInRemainingFrames_ = PLAYBACK_TRANSITION_FADE_FRAMES;
 }
 
 void AudioFileSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
@@ -233,6 +275,82 @@ bool AudioFileSourceNode::readNextFrameChunk(DecoderData &outData) {
   return frameReceiver_->try_receive(outData) == ResponseStatus::SUCCESS;
 }
 
+void AudioFileSourceNode::renderWithPitchPreservation(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    const DecoderData &incoming,
+    int framesToProcess) {
+  if (stretch_ == nullptr || playbackRateBuffer_ == nullptr || incoming.size == 0) {
+    processingBuffer->zero();
+    return;
+  }
+
+  playbackRateBuffer_->zero();
+  playbackRateBuffer_->deinterleaveFrom(incoming.interleavedBuffer.data(), incoming.size);
+  playbackRateBuffer_->scale(volume_);
+
+  processingBuffer->zero();
+  stretch_->process(
+      playbackRateBuffer_.get()[0],
+      static_cast<int>(incoming.size),
+      processingBuffer.get()[0],
+      framesToProcess);
+}
+
+void AudioFileSourceNode::renderWithoutPitchPreservation(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    const DecoderData &incoming,
+    int framesToProcess) {
+  if (playbackRateBuffer_ == nullptr || incoming.size == 0 || framesToProcess <= 0) {
+    processingBuffer->zero();
+    return;
+  }
+
+  playbackRateBuffer_->zero();
+  playbackRateBuffer_->deinterleaveFrom(incoming.interleavedBuffer.data(), incoming.size);
+  processingBuffer->zero();
+
+  const auto sourceFrames = incoming.size;
+  const auto outputFrames = static_cast<size_t>(framesToProcess);
+  const float step = sourceFrames > 1 && outputFrames > 1
+      ? static_cast<float>(sourceFrames - 1) / static_cast<float>(outputFrames - 1)
+      : 0.0f;
+
+  for (size_t channel = 0; channel < static_cast<size_t>(channelCount_); ++channel) {
+    const float *input = playbackRateBuffer_->getChannel(channel)->begin();
+    float *output = processingBuffer->getChannel(channel)->begin();
+
+    for (size_t frame = 0; frame < outputFrames; ++frame) {
+      const float position = static_cast<float>(frame) * step;
+      const auto index = static_cast<size_t>(position);
+      const auto nextIndex = std::min(index + 1, sourceFrames - 1);
+      const float fraction = position - static_cast<float>(index);
+      output[frame] = (input[index] + (input[nextIndex] - input[index]) * fraction) * volume_;
+    }
+  }
+}
+
+void AudioFileSourceNode::applyPlaybackTransitionFade(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    int framesToProcess) {
+  if (playbackFadeInRemainingFrames_ <= 0 || framesToProcess <= 0) {
+    return;
+  }
+
+  const int framesToFade = std::min(framesToProcess, playbackFadeInRemainingFrames_);
+  const int fadeStart = PLAYBACK_TRANSITION_FADE_FRAMES - playbackFadeInRemainingFrames_;
+
+  for (size_t channel = 0; channel < static_cast<size_t>(channelCount_); ++channel) {
+    float *output = processingBuffer->getChannel(channel)->begin();
+    for (int frame = 0; frame < framesToFade; ++frame) {
+      const float gain = static_cast<float>(fadeStart + frame + 1) /
+          static_cast<float>(PLAYBACK_TRANSITION_FADE_FRAMES);
+      output[frame] *= gain;
+    }
+  }
+
+  playbackFadeInRemainingFrames_ -= framesToFade;
+}
+
 std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
@@ -308,21 +426,19 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
     forceFlushEvent = true;
   }
 
-  const float playbackRate = decoderState_->playbackRate.load(std::memory_order_acquire);
-  const bool shouldStretch = playbackRate != 1.0f && stretch_ != nullptr &&
+  const bool preservesPitch = decoderState_->preservesPitch.load(std::memory_order_acquire);
+  const bool hasPlaybackRateChange = std::abs(incoming.playbackRate - 1.0f) > 0.0001f ||
+      std::cmp_not_equal(incoming.size, framesToProcess);
+  const bool shouldStretch = preservesPitch && hasPlaybackRateChange && stretch_ != nullptr &&
+      playbackRateBuffer_ != nullptr && incoming.size > 0;
+  const bool shouldResample = !preservesPitch && hasPlaybackRateChange &&
       playbackRateBuffer_ != nullptr && incoming.size > 0;
 
   size_t framesPlayed = std::min(static_cast<size_t>(framesToProcess), incoming.size);
   if (shouldStretch) {
-    playbackRateBuffer_->zero();
-    playbackRateBuffer_->deinterleaveFrom(incoming.interleavedBuffer.data(), incoming.size);
-    playbackRateBuffer_->scale(volume_);
-    processingBuffer->zero();
-    stretch_->process(
-        playbackRateBuffer_.get()[0],
-        static_cast<int>(incoming.size),
-        processingBuffer.get()[0],
-        framesToProcess);
+    renderWithPitchPreservation(processingBuffer, incoming, framesToProcess);
+  } else if (shouldResample) {
+    renderWithoutPitchPreservation(processingBuffer, incoming, framesToProcess);
   } else {
     processingBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesPlayed);
 
@@ -331,10 +447,12 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
     }
   }
 
+  applyPlaybackTransitionFade(processingBuffer, framesToProcess);
+
   sendOnPositionChangedEvent(static_cast<int>(incoming.size), forceFlushEvent);
 
   // Fill tail end with silence if the chunk returned short
-  if (!shouldStretch && std::cmp_less(framesPlayed, framesToProcess)) {
+  if (!shouldStretch && !shouldResample && std::cmp_less(framesPlayed, framesToProcess)) {
     processingBuffer->zero(framesPlayed, framesToProcess - framesPlayed);
   }
 

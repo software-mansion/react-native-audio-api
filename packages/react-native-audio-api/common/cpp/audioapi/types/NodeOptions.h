@@ -125,6 +125,7 @@ struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
   bool loop = false;
   float volume = 1.0f;
   float playbackRate = 1.0f;
+  bool preservesPitch = true;
 };
 
 struct MediaElementAudioSourceOptions : AudioNodeOptions {

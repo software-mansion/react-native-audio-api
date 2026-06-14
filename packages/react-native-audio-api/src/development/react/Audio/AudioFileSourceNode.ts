@@ -62,6 +62,10 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     (this.node as IAudioFileSourceNode).playbackRate = value;
   }
 
+  setPreservesPitch(value: boolean): void {
+    (this.node as IAudioFileSourceNode).preservesPitch = value;
+  }
+
   getFileSourceNode(): IAudioFileSourceNode {
     return this.node as IAudioFileSourceNode;
   }
