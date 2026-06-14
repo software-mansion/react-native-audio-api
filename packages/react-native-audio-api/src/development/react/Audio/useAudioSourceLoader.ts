@@ -28,6 +28,7 @@ type UseAudioSourceLoaderParams = {
   source: AudioSource;
   preloadMode: PreloadType;
   loop: boolean;
+  playbackRate: number;
   autoPlay: boolean;
   effectiveVolumeRef: RefObject<number>;
   onLoadStart: () => void;
@@ -52,6 +53,7 @@ export function useAudioSourceLoader({
   source,
   preloadMode,
   loop,
+  playbackRate,
   autoPlay,
   effectiveVolumeRef,
   onLoadStart,
@@ -83,11 +85,13 @@ export function useAudioSourceLoader({
 
     fileSourceRef.current?.dispose();
     const initialVolume = effectiveVolumeRef.current;
+    const initialPlaybackRate = playbackRate;
 
     const node = context.context.createFileSource({
       source: nextSource,
       loop,
       volume: initialVolume,
+      playbackRate: initialPlaybackRate,
     });
     if (!node) {
       onError(new NotSupportedError('This file format requires FFmpeg build'));
@@ -104,6 +108,7 @@ export function useAudioSourceLoader({
     });
 
     fileSource.setVolume(initialVolume);
+    fileSource.setPlaybackRate(initialPlaybackRate);
     fileSourceRef.current = fileSource;
     setDuration(nextDuration);
     onLoad();
@@ -118,6 +123,7 @@ export function useAudioSourceLoader({
     context,
     effectiveVolumeRef,
     loop,
+    playbackRate,
     onAutoPlay,
     onEnded,
     onError,

@@ -58,6 +58,10 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     (this.node as IAudioFileSourceNode).loop = value;
   }
 
+  setPlaybackRate(value: number): void {
+    (this.node as IAudioFileSourceNode).playbackRate = value;
+  }
+
   getFileSourceNode(): IAudioFileSourceNode {
     return this.node as IAudioFileSourceNode;
   }

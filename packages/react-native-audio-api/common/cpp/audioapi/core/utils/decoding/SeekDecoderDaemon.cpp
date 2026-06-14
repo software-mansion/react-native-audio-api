@@ -1,4 +1,7 @@
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
+
+#include <algorithm>
+#include <cmath>
 #include <memory>
 #include <thread>
 #include <utility>
@@ -92,7 +95,11 @@ bool SeekDecoderDaemon::decodeNextChunk(
     return false;
   }
 
-  size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
+  const float playbackRate =
+      std::clamp(sharedState_->playbackRate.load(std::memory_order_acquire), 0.5f, 2.0f);
+  const size_t framesRequested =
+      static_cast<size_t>(std::ceil(static_cast<float>(RENDER_QUANTUM_SIZE) * playbackRate));
+  size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
 
   if (framesRead > 0) {
     data.size = framesRead;
@@ -116,7 +123,7 @@ bool SeekDecoderDaemon::decodeNextChunk(
   if (sharedState_->loop.load(std::memory_order_acquire) && decoder_->seekToTime(0).is_ok()) {
     data.state = StreamState::DISCONTINUOUS;
     data.timestamp = 0.0;
-    framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
+    framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
     data.size = framesRead;
     return true;
   }

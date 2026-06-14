@@ -4,6 +4,7 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <cstddef>
 #include <thread>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -11,6 +12,7 @@
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <memory>
@@ -66,6 +68,16 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
     volume_ = v;
   }
 
+  /// @brief Sets time-stretched playback speed for decoded file sources.
+  void setPlaybackRate(float v) {
+    decoderState_->playbackRate.store(std::clamp(v, 0.5f, 2.0f), std::memory_order_release);
+  }
+
+  /// @brief Current playback speed multiplier.
+  float getPlaybackRate() const {
+    return decoderState_->playbackRate.load(std::memory_order_acquire);
+  }
+
   /// @brief Stops decoding on the audio thread until playback is started again.
   void pause();
 
@@ -115,6 +127,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       int framesToProcess);
 
   float volume_;
+  std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
+  std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
   bool filePaused_{false};
   bool loop_{false};
   double duration_{0};

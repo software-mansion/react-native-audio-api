@@ -306,6 +306,11 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     options.volume = static_cast<float>(volumeValue.getNumber());
   }
 
+  auto playbackRateValue = optionsObject.getProperty(runtime, "playbackRate");
+  if (playbackRateValue.isNumber()) {
+    options.playbackRate = static_cast<float>(playbackRateValue.getNumber());
+  }
+
   auto sourceValue = optionsObject.getProperty(runtime, "source");
   if (sourceValue.isString()) {
     options.filePath = sourceValue.asString(runtime).utf8(runtime);

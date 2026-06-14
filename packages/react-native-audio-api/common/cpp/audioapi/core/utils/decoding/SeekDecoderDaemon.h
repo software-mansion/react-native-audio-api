@@ -8,6 +8,7 @@
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <array>
+#include <atomic>
 #include <memory>
 #include <optional>
 #include <string>
@@ -39,6 +40,7 @@ struct AudioFileDecoderState {
   // Playback state
   std::atomic<double> currentTime{0.0};
   std::atomic<bool> loop{false};
+  std::atomic<float> playbackRate{1.0f};
 
   /// True when the opened source is an FFmpeg HLS live/indefinite stream.
   std::atomic<bool> isHlsStreaming{false};
@@ -55,7 +57,7 @@ enum class StreamState : std::uint8_t { PLAYING, DISCONTINUOUS, END_OF_STREAM };
 struct DecoderData {
   std::array<
       float,
-      static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) *
+      static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) * 2 *
           static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT)>
       interleavedBuffer{};
   size_t size{};

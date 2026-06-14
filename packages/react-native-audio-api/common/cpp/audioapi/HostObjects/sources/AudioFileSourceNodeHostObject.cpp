@@ -15,9 +15,11 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
     : AudioScheduledSourceNodeHostObject(context->createFileSource(options), options),
       loop_(options.loop),
       duration_(std::static_pointer_cast<AudioFileSourceNode>(node_)->getDuration()),
-      volume_(options.volume) {
+      volume_(options.volume),
+      playbackRate_(options.playbackRate) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, volume),
+      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, playbackRate),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, currentTime),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, duration),
@@ -26,6 +28,7 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onPositionChanged),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onEnded),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, volume),
+      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, playbackRate),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, loop));
 
   addFunctions(
@@ -48,6 +51,19 @@ JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
   volume_ = static_cast<float>(value.getNumber());
   auto event = [node, volume = this->volume_](BaseAudioContext &ctx) {
     node->setVolume(volume);
+  };
+  node->scheduleAudioEvent(std::move(event));
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, playbackRate) {
+  return {playbackRate_};
+}
+
+JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, playbackRate) {
+  auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
+  playbackRate_ = std::clamp(static_cast<float>(value.getNumber()), 0.5f, 2.0f);
+  auto event = [node, playbackRate = this->playbackRate_](BaseAudioContext &ctx) {
+    node->setPlaybackRate(playbackRate);
   };
   node->scheduleAudioEvent(std::move(event));
 }

@@ -6,6 +6,7 @@
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/core/AudioContext.h>
 
@@ -14,6 +15,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -30,9 +32,12 @@ AudioFileSourceNode::AudioFileSourceNode(
     : AudioScheduledSourceNode(context, options),
       decoderState_(std::make_shared<AudioFileDecoderState>()),
       volume_(options.volume),
+      stretch_(std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>()),
       loop_(options.loop),
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
+  setPlaybackRate(options.playbackRate);
+
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
@@ -106,6 +111,9 @@ bool AudioFileSourceNode::initDecoder(
 
   audioBuffer_ = std::make_shared<DSPAudioBuffer>(
       static_cast<size_t>(RENDER_QUANTUM_SIZE), channelCount_, context->getSampleRate());
+  playbackRateBuffer_ = std::make_shared<DSPAudioBuffer>(
+      static_cast<size_t>(2 * RENDER_QUANTUM_SIZE), channelCount_, context->getSampleRate());
+  stretch_->presetDefault(channelCount_, sampleRate_);
 
   return true;
 }
@@ -294,21 +302,40 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   bool forceFlushEvent = false;
   if (incoming.state == StreamState::DISCONTINUOUS) {
     currentTime_.store(incoming.timestamp, std::memory_order_release);
+    if (stretch_ != nullptr) {
+      stretch_->reset();
+    }
     forceFlushEvent = true;
   }
 
-  size_t framesToCopy = std::min(static_cast<size_t>(framesToProcess), incoming.size);
-  processingBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesToCopy);
+  const float playbackRate = decoderState_->playbackRate.load(std::memory_order_acquire);
+  const bool shouldStretch = playbackRate != 1.0f && stretch_ != nullptr &&
+      playbackRateBuffer_ != nullptr && incoming.size > 0;
 
-  if (volume_ != 1.0f && framesToCopy > 0) {
-    processingBuffer->scale(volume_);
+  size_t framesPlayed = std::min(static_cast<size_t>(framesToProcess), incoming.size);
+  if (shouldStretch) {
+    playbackRateBuffer_->zero();
+    playbackRateBuffer_->deinterleaveFrom(incoming.interleavedBuffer.data(), incoming.size);
+    playbackRateBuffer_->scale(volume_);
+    processingBuffer->zero();
+    stretch_->process(
+        playbackRateBuffer_.get()[0],
+        static_cast<int>(incoming.size),
+        processingBuffer.get()[0],
+        framesToProcess);
+  } else {
+    processingBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesPlayed);
+
+    if (volume_ != 1.0f && framesPlayed > 0) {
+      processingBuffer->scale(volume_);
+    }
   }
 
-  sendOnPositionChangedEvent(static_cast<int>(framesToCopy), forceFlushEvent);
+  sendOnPositionChangedEvent(static_cast<int>(incoming.size), forceFlushEvent);
 
   // Fill tail end with silence if the chunk returned short
-  if (std::cmp_less(framesToCopy, framesToProcess)) {
-    processingBuffer->zero(framesToCopy, framesToProcess - framesToCopy);
+  if (!shouldStretch && std::cmp_less(framesPlayed, framesToProcess)) {
+    processingBuffer->zero(framesPlayed, framesToProcess - framesPlayed);
   }
 
   if (isStopScheduled()) {
