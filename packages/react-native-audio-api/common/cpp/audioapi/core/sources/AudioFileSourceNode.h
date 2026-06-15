@@ -2,9 +2,9 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
-#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <cstddef>
 #include <thread>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -134,7 +134,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       int framesToProcess);
 
   float volume_;
-  std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
+  WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
   int playbackFadeInRemainingFrames_{0};
   bool filePaused_{false};
