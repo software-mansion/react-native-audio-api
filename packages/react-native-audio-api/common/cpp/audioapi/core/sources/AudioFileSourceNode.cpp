@@ -32,6 +32,7 @@ AudioFileSourceNode::AudioFileSourceNode(
     : AudioScheduledSourceNode(context, options),
       decoderState_(std::make_shared<AudioFileDecoderState>()),
       volume_(options.volume),
+      pitchPreservationAlgorithm_(options.pitchPreservationAlgorithm),
       loop_(options.loop),
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
@@ -117,6 +118,7 @@ bool AudioFileSourceNode::initDecoder(
   playbackRateBuffer_ = std::make_shared<DSPAudioBuffer>(
       static_cast<size_t>(2 * RENDER_QUANTUM_SIZE), channelCount_, context->getSampleRate());
   wsolaStretcher_.configure(static_cast<size_t>(channelCount_), sampleRate_);
+  signalsmithStretcher_.presetCheaper(static_cast<int>(channelCount_), sampleRate_, true);
 
   return true;
 }
@@ -147,6 +149,16 @@ void AudioFileSourceNode::setPreservesPitch(bool v) {
   }
 }
 
+void AudioFileSourceNode::setPitchPreservationAlgorithm(
+    AudioFileSourceOptions::PitchPreservationAlgorithm algorithm) {
+  if (pitchPreservationAlgorithm_ == algorithm) {
+    return;
+  }
+
+  pitchPreservationAlgorithm_ = algorithm;
+  handlePlaybackSettingsChanged();
+}
+
 void AudioFileSourceNode::drainPendingFrames() {
   if (frameReceiver_ == nullptr) {
     return;
@@ -156,9 +168,14 @@ void AudioFileSourceNode::drainPendingFrames() {
   while (frameReceiver_->try_receive(drop) == ResponseStatus::SUCCESS) {}
 }
 
+void AudioFileSourceNode::resetPitchPreservationState() {
+  wsolaStretcher_.reset();
+  signalsmithStretcher_.reset();
+}
+
 void AudioFileSourceNode::handlePlaybackSettingsChanged() {
   drainPendingFrames();
-  wsolaStretcher_.reset();
+  resetPitchPreservationState();
   playbackFadeInRemainingFrames_ = PLAYBACK_TRANSITION_FADE_FRAMES;
 }
 
@@ -295,6 +312,21 @@ void AudioFileSourceNode::renderWithPitchPreservation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     const DecoderData &incoming,
     int framesToProcess) {
+  switch (pitchPreservationAlgorithm_) {
+    case AudioFileSourceOptions::PitchPreservationAlgorithm::SIGNALSMITH:
+      renderWithSignalsmithPitchPreservation(processingBuffer, incoming, framesToProcess);
+      return;
+    case AudioFileSourceOptions::PitchPreservationAlgorithm::WSOLA:
+      renderWithWsolaPitchPreservation(processingBuffer, incoming, framesToProcess);
+      return;
+  }
+  renderWithSignalsmithPitchPreservation(processingBuffer, incoming, framesToProcess);
+}
+
+void AudioFileSourceNode::renderWithWsolaPitchPreservation(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    const DecoderData &incoming,
+    int framesToProcess) {
   if (incoming.size == 0 || !ensurePlaybackRateBufferSize(incoming.size)) {
     processingBuffer->zero();
     return;
@@ -310,6 +342,23 @@ void AudioFileSourceNode::renderWithPitchPreservation(
       *processingBuffer,
       static_cast<size_t>(framesToProcess),
       incoming.playbackRate);
+}
+
+void AudioFileSourceNode::renderWithSignalsmithPitchPreservation(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    const DecoderData &incoming,
+    int framesToProcess) {
+  if (incoming.size == 0 || !ensurePlaybackRateBufferSize(incoming.size)) {
+    processingBuffer->zero();
+    return;
+  }
+
+  playbackRateBuffer_->zero();
+  playbackRateBuffer_->deinterleaveFrom(incoming.interleavedBuffer.data(), incoming.size);
+  playbackRateBuffer_->scale(volume_);
+
+  signalsmithStretcher_.process(
+      *playbackRateBuffer_, static_cast<int>(incoming.size), *processingBuffer, framesToProcess);
 }
 
 void AudioFileSourceNode::renderWithoutPitchPreservation(
@@ -436,7 +485,7 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   bool forceFlushEvent = false;
   if (incoming.state == StreamState::DISCONTINUOUS) {
     currentTime_.store(incoming.timestamp, std::memory_order_release);
-    wsolaStretcher_.reset();
+    resetPitchPreservationState();
     forceFlushEvent = true;
   }
 

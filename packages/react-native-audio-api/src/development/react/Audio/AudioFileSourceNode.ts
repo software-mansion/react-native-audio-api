@@ -66,6 +66,10 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     (this.node as IAudioFileSourceNode).preservesPitch = value;
   }
 
+  setPitchPreservationAlgorithm(value: 'signalsmith' | 'wsola'): void {
+    (this.node as IAudioFileSourceNode).pitchPreservationAlgorithm = value;
+  }
+
   getFileSourceNode(): IAudioFileSourceNode {
     return this.node as IAudioFileSourceNode;
   }

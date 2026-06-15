@@ -239,6 +239,7 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   volume?: number;
   playbackRate: number;
   preservesPitch: boolean;
+  pitchPreservationAlgorithm: 'signalsmith' | 'wsola';
   loop: boolean;
   readonly currentTime: number;
   readonly duration: number;

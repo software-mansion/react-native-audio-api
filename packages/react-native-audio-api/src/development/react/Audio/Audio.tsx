@@ -30,6 +30,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     source,
     playbackRate,
     preservesPitch,
+    pitchPreservationAlgorithm,
     volume,
     context,
     onLoadStart,
@@ -98,6 +99,7 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     loop,
     playbackRate,
     preservesPitch,
+    pitchPreservationAlgorithm,
     autoPlay,
     effectiveVolumeRef,
     onLoadStart,
@@ -180,6 +182,12 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   useEffect(() => {
     fileSourceRef.current?.setPreservesPitch(preservesPitch);
   }, [preservesPitch, fileSourceRef]);
+
+  useEffect(() => {
+    fileSourceRef.current?.setPitchPreservationAlgorithm(
+      pitchPreservationAlgorithm
+    );
+  }, [pitchPreservationAlgorithm, fileSourceRef]);
 
   useEffect(() => {
     if (playbackState !== 'playing') {

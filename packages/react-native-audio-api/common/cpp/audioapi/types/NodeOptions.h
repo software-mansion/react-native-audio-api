@@ -119,6 +119,8 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
 };
 
 struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
+  enum class PitchPreservationAlgorithm { SIGNALSMITH, WSOLA };
+
   std::vector<uint8_t> data;
   std::string filePath;
   bool requiresFFmpeg = false;
@@ -126,6 +128,7 @@ struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
   float volume = 1.0f;
   float playbackRate = 1.0f;
   bool preservesPitch = true;
+  PitchPreservationAlgorithm pitchPreservationAlgorithm = PitchPreservationAlgorithm::SIGNALSMITH;
 };
 
 struct MediaElementAudioSourceOptions : AudioNodeOptions {

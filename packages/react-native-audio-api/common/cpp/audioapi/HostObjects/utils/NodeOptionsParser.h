@@ -324,6 +324,24 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     options.preservesPitch = preservesPitchValue.getBool();
   }
 
+  auto pitchPreservationAlgorithmValue =
+      optionsObject.getProperty(runtime, "pitchPreservationAlgorithm");
+  if (pitchPreservationAlgorithmValue.isString()) {
+    const auto pitchPreservationAlgorithm =
+        pitchPreservationAlgorithmValue.asString(runtime).utf8(runtime);
+    if (pitchPreservationAlgorithm == "signalsmith") {
+      options.pitchPreservationAlgorithm =
+          AudioFileSourceOptions::PitchPreservationAlgorithm::SIGNALSMITH;
+    } else if (pitchPreservationAlgorithm == "wsola") {
+      options.pitchPreservationAlgorithm =
+          AudioFileSourceOptions::PitchPreservationAlgorithm::WSOLA;
+    } else {
+      throw jsi::JSError(
+          runtime,
+          "AudioFileSourceNode: pitchPreservationAlgorithm must be 'signalsmith' or 'wsola'.");
+    }
+  }
+
   auto sourceValue = optionsObject.getProperty(runtime, "source");
   if (sourceValue.isString()) {
     options.filePath = sourceValue.asString(runtime).utf8(runtime);

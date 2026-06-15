@@ -24,6 +24,7 @@ export type AudioSource = AudioURISource | AudioRequireSource | string;
 export type PreloadType = 'auto' | 'metadata' | 'none';
 
 export type AudioTagPlaybackState = 'idle' | 'playing' | 'paused';
+export type PitchPreservationAlgorithm = 'signalsmith' | 'wsola';
 
 export interface AudioTagHandle {
   play: () => void;
@@ -50,6 +51,7 @@ interface AudioControlProps {
   source: AudioSource;
   playbackRate: number;
   preservesPitch: boolean;
+  pitchPreservationAlgorithm: PitchPreservationAlgorithm;
   volume: number;
   children?: ReactNode;
   context?: BaseAudioContext; // optional on web, since web do not use AudioContext for audio tag
