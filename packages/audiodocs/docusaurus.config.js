@@ -4,6 +4,27 @@
 const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
 
+// Docusaurus loads this config through a transpiler.
+// @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
+import { topBarBannerReservationScript } from './src/components/TopBarBanner/shared.ts'; // eslint-disable-line import/first
+// @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
+import { TOP_BAR_BANNER } from './src/components/TopBarBanner/config.ts'; // eslint-disable-line import/first
+
+const firstBannerZone = TOP_BAR_BANNER.zones[0];
+const bannerReservationHeadTags = firstBannerZone
+  ? [
+      {
+        tagName: 'script',
+        attributes: { type: 'text/javascript' },
+        innerHTML: topBarBannerReservationScript(
+          firstBannerZone.zoneId,
+          firstBannerZone.contentId,
+          TOP_BAR_BANNER.hiddenPaths
+        ),
+      },
+    ]
+  : [];
+
 // eslint-disable-next-line import/first
 import remarkMath from 'remark-math';
 // eslint-disable-next-line import/first
@@ -59,6 +80,8 @@ const config = {
     ],
     require.resolve('@swmansion/t-rex-ui/preset'),
   ],
+
+  headTags: bannerReservationHeadTags,
 
   stylesheets: [
     {
