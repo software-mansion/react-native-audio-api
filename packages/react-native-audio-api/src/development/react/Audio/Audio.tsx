@@ -30,7 +30,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     source,
     playbackRate,
     preservesPitch,
-    pitchPreservationAlgorithm,
     volume,
     context,
     onLoadStart,
@@ -99,7 +98,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     loop,
     playbackRate,
     preservesPitch,
-    pitchPreservationAlgorithm,
     autoPlay,
     effectiveVolumeRef,
     onLoadStart,
@@ -144,6 +142,13 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     onPause();
   }, [onPause, fileSourceRef]);
 
+  const setPlaybackRate = useCallback(
+    (nextPlaybackRate: number) => {
+      fileSourceRef.current?.setPlaybackRate(nextPlaybackRate);
+    },
+    [fileSourceRef]
+  );
+
   const seekToTime = useCallback(
     (seconds: number) => {
       fileSourceRef.current?.seekToTime(seconds);
@@ -184,12 +189,6 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
   }, [preservesPitch, fileSourceRef]);
 
   useEffect(() => {
-    fileSourceRef.current?.setPitchPreservationAlgorithm(
-      pitchPreservationAlgorithm
-    );
-  }, [pitchPreservationAlgorithm, fileSourceRef]);
-
-  useEffect(() => {
     if (playbackState !== 'playing') {
       return;
     }
@@ -213,10 +212,19 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       seekToTime,
       setVolume: setVolumeState,
       setMuted: setMutedState,
+      setPlaybackRate,
       getFileSourceNode: () =>
         fileSourceRef.current?.getFileSourceNode() ?? null,
     }),
-    [pause, play, seekToTime, setMutedState, setVolumeState, fileSourceRef]
+    [
+      pause,
+      play,
+      seekToTime,
+      setMutedState,
+      setVolumeState,
+      setPlaybackRate,
+      fileSourceRef,
+    ]
   );
 
   const ctxValue = useMemo(

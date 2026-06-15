@@ -196,7 +196,6 @@ export interface AudioFileSourceOptions extends AudioNodeOptions {
   volume?: number;
   playbackRate?: number;
   preservesPitch?: boolean;
-  pitchPreservationAlgorithm?: 'signalsmith' | 'wsola';
 }
 
 export interface ConstantSourceOptions {

@@ -19,7 +19,12 @@ class WsolaTimeStretcher {
       size_t inputFrames,
       DSPAudioBuffer &output,
       size_t outputFrames,
-      float playbackRate);
+      float playbackRate,
+      float pitchFactor = 1.0f);
+
+  /// Rough latency estimates for buffer tail padding (seconds).
+  static constexpr float INPUT_LATENCY_MS = 20.0f;
+  static constexpr float OUTPUT_LATENCY_MS = 10.0f;
 
  private:
   static constexpr float OLA_WINDOW_MS = 20.0f;
@@ -39,6 +44,8 @@ class WsolaTimeStretcher {
   size_t searchCenterOffset_{0};
   size_t maxInputFrames_{0};
   size_t excludeIntervalFrames_{0};
+
+  float pitchFactor_{1.0f};
 
   double outputTime_{0.0};
   int targetBlockIndex_{0};
@@ -63,12 +70,13 @@ class WsolaTimeStretcher {
   bool targetIsWithinSearchRegion() const;
   int findOptimalBlockIndex();
   float similarityAt(int candidateIndex) const;
+  [[nodiscard]] int maxSourceIndexForBlock(int blockStartFrame) const;
   float sampleAt(size_t channel, int frameIndex) const;
   void fillBlock(std::vector<std::vector<float>> &block, int frameIndex) const;
   void computeTargetEnergy();
   void updateOutputTime(float playbackRate, double timeChange);
   void removeOldInputFrames(float playbackRate);
-  void compactInputQueue(size_t framesToRemove, float playbackRate);
+  void compactInputQueue(size_t synthesisFramesToRemove, float playbackRate);
 };
 
 } // namespace audioapi

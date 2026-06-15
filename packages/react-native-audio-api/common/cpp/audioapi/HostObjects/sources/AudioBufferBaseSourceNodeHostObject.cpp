@@ -1,7 +1,8 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <algorithm>
@@ -92,18 +93,14 @@ void AudioBufferBaseSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_
 
 void AudioBufferBaseSourceNodeHostObject::initStretch(int channelCount, float sampleRate) {
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
-  auto stretch = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
-  stretch->presetDefault(channelCount, sampleRate);
-  inputLatency_ =
-      std::max(dsp::sampleFrameToTime(stretch->inputLatency(), node_->getContextSampleRate()), 0.0);
-  outputLatency_ = std::max(
-      dsp::sampleFrameToTime(stretch->outputLatency(), node_->getContextSampleRate()), 0.0);
+  inputLatency_ = WsolaTimeStretcher::INPUT_LATENCY_MS / 1000.0;
+  outputLatency_ = WsolaTimeStretcher::OUTPUT_LATENCY_MS / 1000.0;
 
   auto playbackRateBuffer =
       std::make_shared<DSPAudioBuffer>(3 * RENDER_QUANTUM_SIZE, channelCount, sampleRate);
 
-  auto event = [sourceNode, stretch, playbackRateBuffer](BaseAudioContext &) {
-    sourceNode->initStretch(stretch, playbackRateBuffer);
+  auto event = [sourceNode, playbackRateBuffer, channelCount, sampleRate](BaseAudioContext &) {
+    sourceNode->initStretch(static_cast<size_t>(channelCount), sampleRate, playbackRateBuffer);
   };
   sourceNode->scheduleAudioEvent(std::move(event));
 }

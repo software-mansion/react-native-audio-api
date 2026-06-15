@@ -83,8 +83,11 @@ void WsolaTimeStretcher::process(
     size_t inputFrames,
     DSPAudioBuffer &output,
     size_t outputFrames,
-    float playbackRate) {
+    float playbackRate,
+    float pitchFactor) {
   output.zero();
+
+  pitchFactor_ = pitchFactor > 0.0f ? pitchFactor : 1.0f;
 
   if (channels_ == 0 || windowSize_ == 0 || playbackRate <= 0.0f || outputFrames == 0) {
     return;
@@ -230,7 +233,7 @@ bool WsolaTimeStretcher::canRunIteration() const {
   const int inputFrames = static_cast<int>(inputQueue_[0].size());
   const int searchBlockSize = static_cast<int>(searchIntervalFrames_ + windowSize_ - 1);
 
-  if (targetBlockIndex_ + static_cast<int>(windowSize_) > inputFrames) {
+  if (maxSourceIndexForBlock(targetBlockIndex_) >= inputFrames) {
     return false;
   }
 
@@ -238,7 +241,7 @@ bool WsolaTimeStretcher::canRunIteration() const {
     return true;
   }
 
-  return searchBlockIndex_ + searchBlockSize <= inputFrames;
+  return maxSourceIndexForBlock(searchBlockIndex_ + searchBlockSize - 1) < inputFrames;
 }
 
 bool WsolaTimeStretcher::targetIsWithinSearchRegion() const {
@@ -322,14 +325,40 @@ float WsolaTimeStretcher::similarityAt(int candidateIndex) const {
   return score;
 }
 
+int WsolaTimeStretcher::maxSourceIndexForBlock(int blockStartFrame) const {
+  if (windowSize_ == 0) {
+    return blockStartFrame;
+  }
+
+  const float lastFrame =
+      static_cast<float>(blockStartFrame + static_cast<int>(windowSize_) - 1) * pitchFactor_;
+  return static_cast<int>(std::ceil(lastFrame));
+}
+
 float WsolaTimeStretcher::sampleAt(size_t channel, int frameIndex) const {
   if (frameIndex < 0 || channel >= inputQueue_.size()) {
     return 0.0f;
   }
 
   const auto &queue = inputQueue_[channel];
-  const auto index = static_cast<size_t>(frameIndex);
-  return index < queue.size() ? queue[index] : 0.0f;
+  if (queue.empty()) {
+    return 0.0f;
+  }
+
+  const float sourceIndex = static_cast<float>(frameIndex) * pitchFactor_;
+  if (sourceIndex < 0.0f) {
+    return 0.0f;
+  }
+
+  const float maxIndex = static_cast<float>(queue.size() - 1);
+  if (sourceIndex >= maxIndex) {
+    return queue.back();
+  }
+
+  const auto i0 = static_cast<size_t>(sourceIndex);
+  const auto i1 = i0 + 1;
+  const float frac = sourceIndex - static_cast<float>(i0);
+  return queue[i0] * (1.0f - frac) + queue[i1] * frac;
 }
 
 void WsolaTimeStretcher::fillBlock(std::vector<std::vector<float>> &block, int frameIndex) const {
@@ -353,8 +382,13 @@ void WsolaTimeStretcher::computeTargetEnergy() {
 
 void WsolaTimeStretcher::updateOutputTime(float playbackRate, double timeChange) {
   outputTime_ += timeChange;
-  const int searchBlockCenterIndex =
-      static_cast<int>(outputTime_ * static_cast<double>(playbackRate) + 0.5);
+  // The analysis pointer walks the input in block-index frames, where one block
+  // frame maps to pitchFactor_ real input frames (the resample folded into
+  // sampleAt). Dividing the advance rate by pitchFactor_ keeps the real input
+  // consumed per output frame equal to playbackRate, independent of pitch.
+  const double effectiveRate =
+      static_cast<double>(playbackRate) / static_cast<double>(pitchFactor_);
+  const int searchBlockCenterIndex = static_cast<int>(outputTime_ * effectiveRate + 0.5);
   searchBlockIndex_ = searchBlockCenterIndex - static_cast<int>(searchCenterOffset_);
 }
 
@@ -372,24 +406,31 @@ void WsolaTimeStretcher::removeOldInputFrames(float playbackRate) {
   compactInputQueue(framesToRemove, playbackRate);
 }
 
-void WsolaTimeStretcher::compactInputQueue(size_t framesToRemove, float playbackRate) {
-  if (inputQueue_.empty() || framesToRemove == 0) {
+void WsolaTimeStretcher::compactInputQueue(size_t synthesisFramesToRemove, float playbackRate) {
+  if (inputQueue_.empty() || synthesisFramesToRemove == 0) {
     return;
   }
 
-  framesToRemove = std::min(framesToRemove, inputQueue_[0].size());
+  const size_t queueFramesToRemove = std::min(
+      inputQueue_[0].size(),
+      static_cast<size_t>(std::floor(static_cast<float>(synthesisFramesToRemove) * pitchFactor_)));
+
   for (auto &queue : inputQueue_) {
-    if (framesToRemove >= queue.size()) {
+    if (queueFramesToRemove >= queue.size()) {
       queue.clear();
     } else {
-      queue.erase(queue.begin(), queue.begin() + static_cast<std::ptrdiff_t>(framesToRemove));
+      queue.erase(queue.begin(), queue.begin() + static_cast<std::ptrdiff_t>(queueFramesToRemove));
     }
   }
 
-  const int removedFrames = static_cast<int>(framesToRemove);
+  const int removedFrames = static_cast<int>(synthesisFramesToRemove);
   targetBlockIndex_ -= removedFrames;
   searchBlockIndex_ -= removedFrames;
-  outputTime_ = std::max(0.0, outputTime_ - static_cast<double>(removedFrames) / playbackRate);
+  // Keep outputTime_ consistent with the effective rate used in updateOutputTime,
+  // otherwise searchBlockIndex_ jumps after each compaction when pitch != 1.
+  const double effectiveRate =
+      static_cast<double>(playbackRate) / static_cast<double>(pitchFactor_);
+  outputTime_ = std::max(0.0, outputTime_ - static_cast<double>(removedFrames) / effectiveRate);
 }
 
 } // namespace audioapi

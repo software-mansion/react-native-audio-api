@@ -21,7 +21,6 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_PROPERTY_GETTER_DECL(volume);
   JSI_PROPERTY_GETTER_DECL(playbackRate);
   JSI_PROPERTY_GETTER_DECL(preservesPitch);
-  JSI_PROPERTY_GETTER_DECL(pitchPreservationAlgorithm);
   JSI_PROPERTY_GETTER_DECL(loop);
   JSI_PROPERTY_GETTER_DECL(currentTime);
   JSI_PROPERTY_GETTER_DECL(duration);
@@ -30,7 +29,6 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_PROPERTY_SETTER_DECL(volume);
   JSI_PROPERTY_SETTER_DECL(playbackRate);
   JSI_PROPERTY_SETTER_DECL(preservesPitch);
-  JSI_PROPERTY_SETTER_DECL(pitchPreservationAlgorithm);
   JSI_PROPERTY_SETTER_DECL(loop);
   JSI_PROPERTY_SETTER_DECL(onPositionChanged);
 
@@ -54,7 +52,6 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   float volume_;
   float playbackRate_;
   bool preservesPitch_;
-  AudioFileSourceOptions::PitchPreservationAlgorithm pitchPreservationAlgorithm_;
 };
 
 } // namespace audioapi

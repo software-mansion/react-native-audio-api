@@ -49,6 +49,37 @@ TEST(WsolaTimeStretcherTest, ProducesOutputAfterInputIsBuffered) {
   EXPECT_GT(totalOutput, 0.0f);
 }
 
+TEST(WsolaTimeStretcherTest, PitchShiftChangesOutputEnergy) {
+  static constexpr float sampleRate = 48000.0f;
+  static constexpr size_t inputFrames = 512;
+  static constexpr size_t outputFrames = RENDER_QUANTUM_SIZE;
+
+  WsolaTimeStretcher stretcherUnity;
+  WsolaTimeStretcher stretcherShifted;
+  stretcherUnity.configure(1, sampleRate);
+  stretcherShifted.configure(1, sampleRate);
+
+  DSPAudioBuffer input(inputFrames, 1, sampleRate);
+  DSPAudioBuffer outputUnity(outputFrames, 1, sampleRate);
+  DSPAudioBuffer outputShifted(outputFrames, 1, sampleRate);
+
+  float *inputData = input.getChannel(0)->begin();
+  for (size_t frame = 0; frame < inputFrames; ++frame) {
+    inputData[frame] = std::sin(2.0f * PI * 440.0f * static_cast<float>(frame) / sampleRate);
+  }
+
+  for (size_t chunk = 0; chunk < 24; ++chunk) {
+    stretcherUnity.process(input, inputFrames, outputUnity, outputFrames, 1.0f, 1.0f);
+    stretcherShifted.process(input, inputFrames, outputShifted, outputFrames, 1.0f, 2.0f);
+  }
+
+  const float unityEnergy = sumAbs(outputUnity);
+  const float shiftedEnergy = sumAbs(outputShifted);
+  EXPECT_GT(unityEnergy, 0.0f);
+  EXPECT_GT(shiftedEnergy, 0.0f);
+  EXPECT_NE(unityEnergy, shiftedEnergy);
+}
+
 TEST(WsolaTimeStretcherTest, ResetClearsBufferedOutput) {
   static constexpr float sampleRate = 48000.0f;
   static constexpr size_t outputFrames = RENDER_QUANTUM_SIZE;

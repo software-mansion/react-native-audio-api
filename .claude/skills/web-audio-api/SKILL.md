@@ -97,7 +97,7 @@ public set type(value: OscillatorType) {
 
 Nodes or features that don't exist in the Web Audio API spec but are in this library as mobile extensions. The `custom/index.ts` re-exports them and `api.web.ts` re-exports the custom barrel.
 
-Currently: signalsmith-stretch WASM wrapper (`LoadCustomWasm.ts`, `signalsmithStretch/`) for time-stretch on web.
+Currently: signalsmith-stretch WASM wrapper (`LoadCustomWasm.ts`, `signalsmithStretch/`) for time-stretch on web. Native pitch correction uses WSOLA in the C++ engine.
 
 When adding a new RN-specific feature that should also work on web, implement the web version here.
 

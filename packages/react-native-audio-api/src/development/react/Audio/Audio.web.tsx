@@ -173,6 +173,14 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     setMutedState(next);
   }, []);
 
+  const setPlaybackRate = useCallback((nextPlaybackRate: number) => {
+    const el = audioRef.current;
+    if (!el) {
+      return;
+    }
+    el.playbackRate = nextPlaybackRate;
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -181,8 +189,9 @@ const Audio = React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
       seekToTime,
       setVolume,
       setMuted,
+      setPlaybackRate,
     }),
-    [pause, play, seekToTime, setMuted, setVolume]
+    [pause, play, seekToTime, setMuted, setVolume, setPlaybackRate]
   );
 
   const ctxValue = useMemo(

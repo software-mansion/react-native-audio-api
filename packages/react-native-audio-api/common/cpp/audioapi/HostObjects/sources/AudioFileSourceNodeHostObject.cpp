@@ -11,35 +11,6 @@
 #include <utility>
 
 namespace audioapi {
-namespace {
-
-std::string pitchPreservationAlgorithmToString(
-    AudioFileSourceOptions::PitchPreservationAlgorithm algorithm) {
-  switch (algorithm) {
-    case AudioFileSourceOptions::PitchPreservationAlgorithm::SIGNALSMITH:
-      return "signalsmith";
-    case AudioFileSourceOptions::PitchPreservationAlgorithm::WSOLA:
-      return "wsola";
-  }
-  return "signalsmith";
-}
-
-AudioFileSourceOptions::PitchPreservationAlgorithm parsePitchPreservationAlgorithm(
-    jsi::Runtime &runtime,
-    const jsi::Value &value) {
-  const auto algorithm = value.getString(runtime).utf8(runtime);
-  if (algorithm == "signalsmith") {
-    return AudioFileSourceOptions::PitchPreservationAlgorithm::SIGNALSMITH;
-  }
-  if (algorithm == "wsola") {
-    return AudioFileSourceOptions::PitchPreservationAlgorithm::WSOLA;
-  }
-
-  throw jsi::JSError(
-      runtime, "AudioFileSourceNode: pitchPreservationAlgorithm must be 'signalsmith' or 'wsola'.");
-}
-
-} // namespace
 
 AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
@@ -49,13 +20,11 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       duration_(std::static_pointer_cast<AudioFileSourceNode>(node_)->getDuration()),
       volume_(options.volume),
       playbackRate_(options.playbackRate),
-      preservesPitch_(options.preservesPitch),
-      pitchPreservationAlgorithm_(options.pitchPreservationAlgorithm) {
+      preservesPitch_(options.preservesPitch) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, playbackRate),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, preservesPitch),
-      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, pitchPreservationAlgorithm),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, currentTime),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, duration),
@@ -66,7 +35,6 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, playbackRate),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, preservesPitch),
-      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, pitchPreservationAlgorithm),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, loop));
 
   addFunctions(
@@ -121,20 +89,6 @@ JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, preservesPitch) {
   preservesPitch_ = value.getBool();
   auto event = [node, preservesPitch = this->preservesPitch_](BaseAudioContext &ctx) {
     node->setPreservesPitch(preservesPitch);
-  };
-  node->scheduleAudioEvent(std::move(event));
-}
-
-JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, pitchPreservationAlgorithm) {
-  return jsi::String::createFromUtf8(
-      runtime, pitchPreservationAlgorithmToString(pitchPreservationAlgorithm_));
-}
-
-JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, pitchPreservationAlgorithm) {
-  auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
-  pitchPreservationAlgorithm_ = parsePitchPreservationAlgorithm(runtime, value);
-  auto event = [node, algorithm = this->pitchPreservationAlgorithm_](BaseAudioContext &ctx) {
-    node->setPitchPreservationAlgorithm(algorithm);
   };
   node->scheduleAudioEvent(std::move(event));
 }

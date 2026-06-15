@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
+#include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <memory>
@@ -19,7 +19,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   /// @note Audio Thread only
   void initStretch(
-      const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch,
+      size_t channelCount,
+      float sampleRate,
       const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
@@ -56,7 +57,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   // pitch correction parameters
   // late init to avoid unnecessary allocation when pitch correction is not used.
   const bool pitchCorrection_;
-  std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch_;
+  WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
   static constexpr float MAX_PLAYBACK_RATE = 3.0f;
   static constexpr float MIN_PLAYBACK_RATE = -3.0f;

@@ -18,14 +18,14 @@ import {
 
 import { Button, Container, Slider, Spacer } from '../../components';
 
-// const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/m4a/sample4.m4a';
-const DEMO_AUDIO_URL = 'https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8';
+const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/m4a/sample4.m4a';
+// const DEMO_AUDIO_URL = 'https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8';
 // const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/mp3/sample4.mp3';
 
 const AudioTag: React.FC = () => {
   const { width: screenWidth } = useWindowDimensions();
   const [sliderVolume, setSliderVolume] = useState(1);
-
+  const [sliderPlaybackRate, setSliderPlaybackRate] = useState(1);
   const audioRef = useRef<AudioTagHandle>(null);
   const volumeRef = useRef(1);
   const audioContextRef = useRef<AudioContext>(new AudioContext());
@@ -65,6 +65,11 @@ const AudioTag: React.FC = () => {
     setSliderVolume(nextVolume);
     volumeRef.current = nextVolume;
     audioRef.current?.setVolume(nextVolume);
+  }, []);
+
+  const handlePlaybackRateChange = useCallback((nextPlaybackRate: number) => {
+    setSliderPlaybackRate(nextPlaybackRate);
+    audioRef.current?.setPlaybackRate(nextPlaybackRate);
   }, []);
 
   const handleLoadStart = useCallback(() => {
@@ -137,6 +142,12 @@ const AudioTag: React.FC = () => {
             minLabelWidth={70}
           />
           <Spacer.Vertical size={20} />
+          <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20 }}>
+            <Button title="x0.5" onPress={() => handlePlaybackRateChange(0.5)} />
+            <Button title="x1.0" onPress={() => handlePlaybackRateChange(1)} />
+            <Button title="x1.5" onPress={() => handlePlaybackRateChange(1.5)} />
+          </View>
+          <Spacer.Vertical size={12} />
         </View>
         <Button
           title="Route via MediaElement node"

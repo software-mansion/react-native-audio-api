@@ -27,8 +27,6 @@ export function withPropsDefaults(
     source: props.source ?? [],
     playbackRate: props.playbackRate ?? 1.0,
     preservesPitch: props.preservesPitch ?? true,
-    pitchPreservationAlgorithm:
-      props.pitchPreservationAlgorithm ?? 'signalsmith',
     volume: props.volume ?? 1.0,
     context: resolvedContext,
     onLoadStart: props.onLoadStart ?? noop,
@@ -60,7 +58,6 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
     source,
     playbackRate,
     preservesPitch,
-    pitchPreservationAlgorithm,
     volume,
     context,
 
@@ -86,7 +83,6 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       source,
       playbackRate,
       preservesPitch,
-      pitchPreservationAlgorithm,
       volume,
       context,
 
@@ -109,7 +105,6 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       source,
       playbackRate,
       preservesPitch,
-      pitchPreservationAlgorithm,
       volume,
       context,
       onLoadStart,

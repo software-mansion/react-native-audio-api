@@ -5,7 +5,6 @@
 #include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
-#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/types/NodeOptions.h>
 #include <cstddef>
 #include <thread>
@@ -87,14 +86,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
     return decoderState_->preservesPitch.load(std::memory_order_acquire);
   }
 
-  /// @brief Selects the algorithm used when preservesPitch is enabled.
-  void setPitchPreservationAlgorithm(AudioFileSourceOptions::PitchPreservationAlgorithm algorithm);
-
-  /// @brief Current pitch-preservation algorithm.
-  AudioFileSourceOptions::PitchPreservationAlgorithm getPitchPreservationAlgorithm() const {
-    return pitchPreservationAlgorithm_;
-  }
-
   /// @brief Stops decoding on the audio thread until playback is started again.
   void pause();
 
@@ -145,8 +136,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   float volume_;
   WsolaTimeStretcher wsolaStretcher_;
-  signalsmith::stretch::SignalsmithStretch<float> signalsmithStretcher_;
-  AudioFileSourceOptions::PitchPreservationAlgorithm pitchPreservationAlgorithm_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
   int playbackFadeInRemainingFrames_{0};
   bool filePaused_{false};
@@ -187,26 +176,12 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   /// @brief Renders a speed-changed chunk while keeping pitch unchanged.
   /// @note Audio thread only.
-  void renderWithPitchPreservation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      const DecoderData &incoming,
-      int framesToProcess);
-
-  /// @brief Renders a speed-changed chunk using WSOLA pitch preservation.
-  /// @note Audio thread only.
   void renderWithWsolaPitchPreservation(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       const DecoderData &incoming,
       int framesToProcess);
 
-  /// @brief Renders a speed-changed chunk using Signalsmith pitch preservation.
-  /// @note Audio thread only.
-  void renderWithSignalsmithPitchPreservation(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      const DecoderData &incoming,
-      int framesToProcess);
-
-  /// @brief Resets all pitch-preservation algorithms.
+  /// @brief Resets pitch-preservation state.
   /// @note Audio thread only.
   void resetPitchPreservationState();
 

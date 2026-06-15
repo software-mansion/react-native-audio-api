@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
-#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>

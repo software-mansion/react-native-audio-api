@@ -33,9 +33,10 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
 }
 
 void AudioBufferBaseSourceNode::initStretch(
-    const std::shared_ptr<signalsmith::stretch::SignalsmithStretch<float>> &stretch,
+    size_t channelCount,
+    float sampleRate,
     const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer) {
-  stretch_ = stretch;
+  wsolaStretcher_.configure(channelCount, sampleRate);
   playbackRateBuffer_ = playbackRateBuffer;
 }
 
@@ -114,6 +115,9 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
       static_cast<float>(-SEMITONES_PER_OCTAVE),
       static_cast<float>(SEMITONES_PER_OCTAVE));
+  const float pitchFactor = std::pow(
+      2.0f, // NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+      detune / static_cast<float>(SEMITONES_PER_OCTAVE));
 
   playbackRateBuffer_->zero();
 
@@ -128,21 +132,20 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       context->getSampleRate(),
       context->getCurrentSampleFrame());
 
-  if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled()) || stretch_ == nullptr) {
+  if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBuffer->zero();
     return;
   }
 
   runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, playbackRate, false);
 
-  // Apply the transpose before processing and unconditionally
-  stretch_->setTransposeSemitones(detune);
-
-  stretch_->process(
-      playbackRateBuffer_.get()[0],
+  wsolaStretcher_.process(
+      *playbackRateBuffer_,
       framesNeededToStretch,
-      processingBuffer.get()[0],
-      framesToProcess);
+      *processingBuffer,
+      static_cast<size_t>(framesToProcess),
+      playbackRate,
+      pitchFactor);
 
   sendOnPositionChangedEvent();
 }

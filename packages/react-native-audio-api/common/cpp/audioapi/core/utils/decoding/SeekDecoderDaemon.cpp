@@ -99,7 +99,6 @@ bool SeekDecoderDaemon::decodeNextChunk(
   data.playbackRate = playbackRate;
 
   if (playbackRate == 0.0f) {
-    data.interleavedBuffer.clear();
     data.size = 0;
     if (seekRequest.has_value()) {
       data.state = StreamState::DISCONTINUOUS;
@@ -111,9 +110,9 @@ bool SeekDecoderDaemon::decodeNextChunk(
     return true;
   }
 
-  const size_t framesRequested =
-      static_cast<size_t>(std::ceil(static_cast<float>(RENDER_QUANTUM_SIZE) * playbackRate));
-  data.interleavedBuffer.resize(framesRequested * static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
+  const size_t framesRequested = std::min(
+      static_cast<size_t>(std::ceil(static_cast<float>(RENDER_QUANTUM_SIZE) * playbackRate)),
+      DecoderData::MAX_FRAMES);
   size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
 
   if (framesRead > 0) {

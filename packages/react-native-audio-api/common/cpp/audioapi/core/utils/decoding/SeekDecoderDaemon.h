@@ -7,6 +7,7 @@
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 #include <audioapi/utils/SpscChannel.hpp>
+#include <array>
 #include <atomic>
 #include <memory>
 #include <optional>
@@ -55,7 +56,13 @@ struct SeekRequest {
 enum class StreamState : std::uint8_t { PLAYING, DISCONTINUOUS, END_OF_STREAM };
 
 struct DecoderData {
-  std::vector<float> interleavedBuffer{};
+  /// Fixed inline storage — no heap alloc/free when chunks cross the SPSC channel to the audio
+  /// thread. Sized for ceil(RENDER_QUANTUM_SIZE * maxPlaybackRate) interleaved frames.
+  static constexpr size_t MAX_FRAMES = static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) * 3U;
+  static constexpr size_t INTERLEAVED_BUFFER_CAPACITY =
+      MAX_FRAMES * static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT);
+
+  std::array<float, INTERLEAVED_BUFFER_CAPACITY> interleavedBuffer{};
   size_t size{};
   float playbackRate{1.0f};
   double timestamp{0.0};

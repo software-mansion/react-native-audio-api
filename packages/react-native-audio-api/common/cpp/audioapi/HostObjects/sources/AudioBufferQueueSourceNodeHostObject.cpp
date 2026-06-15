@@ -94,7 +94,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
     auto extraTailFrames =
         static_cast<size_t>((inputLatency_ + outputLatency_) * copiedBuffer->getSampleRate());
     tailBuffer = std::make_shared<AudioBuffer>(
-        copiedBuffer->getNumberOfChannels(), extraTailFrames, copiedBuffer->getSampleRate());
+        extraTailFrames, copiedBuffer->getNumberOfChannels(), copiedBuffer->getSampleRate());
     tailBuffer->zero();
     stretchHasBeenInit_ = true;
   }

@@ -32,7 +32,6 @@ AudioFileSourceNode::AudioFileSourceNode(
     : AudioScheduledSourceNode(context, options),
       decoderState_(std::make_shared<AudioFileDecoderState>()),
       volume_(options.volume),
-      pitchPreservationAlgorithm_(options.pitchPreservationAlgorithm),
       loop_(options.loop),
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
@@ -118,7 +117,6 @@ bool AudioFileSourceNode::initDecoder(
   playbackRateBuffer_ = std::make_shared<DSPAudioBuffer>(
       static_cast<size_t>(2 * RENDER_QUANTUM_SIZE), channelCount_, context->getSampleRate());
   wsolaStretcher_.configure(static_cast<size_t>(channelCount_), sampleRate_);
-  signalsmithStretcher_.presetCheaper(static_cast<int>(channelCount_), sampleRate_, true);
 
   return true;
 }
@@ -149,14 +147,8 @@ void AudioFileSourceNode::setPreservesPitch(bool v) {
   }
 }
 
-void AudioFileSourceNode::setPitchPreservationAlgorithm(
-    AudioFileSourceOptions::PitchPreservationAlgorithm algorithm) {
-  if (pitchPreservationAlgorithm_ == algorithm) {
-    return;
-  }
-
-  pitchPreservationAlgorithm_ = algorithm;
-  handlePlaybackSettingsChanged();
+void AudioFileSourceNode::resetPitchPreservationState() {
+  wsolaStretcher_.reset();
 }
 
 void AudioFileSourceNode::drainPendingFrames() {
@@ -166,11 +158,6 @@ void AudioFileSourceNode::drainPendingFrames() {
 
   DecoderData drop;
   while (frameReceiver_->try_receive(drop) == ResponseStatus::SUCCESS) {}
-}
-
-void AudioFileSourceNode::resetPitchPreservationState() {
-  wsolaStretcher_.reset();
-  signalsmithStretcher_.reset();
 }
 
 void AudioFileSourceNode::handlePlaybackSettingsChanged() {
@@ -308,21 +295,6 @@ bool AudioFileSourceNode::readNextFrameChunk(DecoderData &outData) {
   return frameReceiver_->try_receive(outData) == ResponseStatus::SUCCESS;
 }
 
-void AudioFileSourceNode::renderWithPitchPreservation(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    const DecoderData &incoming,
-    int framesToProcess) {
-  switch (pitchPreservationAlgorithm_) {
-    case AudioFileSourceOptions::PitchPreservationAlgorithm::SIGNALSMITH:
-      renderWithSignalsmithPitchPreservation(processingBuffer, incoming, framesToProcess);
-      return;
-    case AudioFileSourceOptions::PitchPreservationAlgorithm::WSOLA:
-      renderWithWsolaPitchPreservation(processingBuffer, incoming, framesToProcess);
-      return;
-  }
-  renderWithSignalsmithPitchPreservation(processingBuffer, incoming, framesToProcess);
-}
-
 void AudioFileSourceNode::renderWithWsolaPitchPreservation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     const DecoderData &incoming,
@@ -342,23 +314,6 @@ void AudioFileSourceNode::renderWithWsolaPitchPreservation(
       *processingBuffer,
       static_cast<size_t>(framesToProcess),
       incoming.playbackRate);
-}
-
-void AudioFileSourceNode::renderWithSignalsmithPitchPreservation(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    const DecoderData &incoming,
-    int framesToProcess) {
-  if (incoming.size == 0 || !ensurePlaybackRateBufferSize(incoming.size)) {
-    processingBuffer->zero();
-    return;
-  }
-
-  playbackRateBuffer_->zero();
-  playbackRateBuffer_->deinterleaveFrom(incoming.interleavedBuffer.data(), incoming.size);
-  playbackRateBuffer_->scale(volume_);
-
-  signalsmithStretcher_.process(
-      *playbackRateBuffer_, static_cast<int>(incoming.size), *processingBuffer, framesToProcess);
 }
 
 void AudioFileSourceNode::renderWithoutPitchPreservation(
@@ -489,9 +444,13 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
     forceFlushEvent = true;
   }
 
+  const float activePlaybackRate = decoderState_->playbackRate.load(std::memory_order_acquire);
+  DecoderData processingData = incoming;
+  processingData.playbackRate = activePlaybackRate;
+
   const bool preservesPitch = decoderState_->preservesPitch.load(std::memory_order_acquire);
-  const bool hasPlaybackRateChange = std::abs(incoming.playbackRate - 1.0f) > 0.0001f ||
-      std::cmp_not_equal(incoming.size, framesToProcess);
+  const bool hasPlaybackRateChange = std::abs(activePlaybackRate - 1.0f) > 0.0001f ||
+      std::cmp_not_equal(incoming.size, static_cast<size_t>(framesToProcess));
   const bool shouldStretch = preservesPitch && hasPlaybackRateChange &&
       playbackRateBuffer_ != nullptr && incoming.size > 0;
   const bool shouldResample = !preservesPitch && hasPlaybackRateChange &&
@@ -499,9 +458,9 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
 
   size_t framesPlayed = std::min(static_cast<size_t>(framesToProcess), incoming.size);
   if (shouldStretch) {
-    renderWithPitchPreservation(processingBuffer, incoming, framesToProcess);
+    renderWithWsolaPitchPreservation(processingBuffer, processingData, framesToProcess);
   } else if (shouldResample) {
-    renderWithoutPitchPreservation(processingBuffer, incoming, framesToProcess);
+    renderWithoutPitchPreservation(processingBuffer, processingData, framesToProcess);
   } else {
     processingBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesPlayed);
 

@@ -19,11 +19,7 @@ import {
   supportsMetadataProbe,
 } from '../../../utils/metadataPrefetching';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
-import type {
-  AudioSource,
-  PitchPreservationAlgorithm,
-  PreloadType,
-} from './types';
+import type { AudioSource, PreloadType } from './types';
 import { getSourceHeaders } from './utils';
 
 type UseAudioSourceLoaderParams = {
@@ -34,7 +30,6 @@ type UseAudioSourceLoaderParams = {
   loop: boolean;
   playbackRate: number;
   preservesPitch: boolean;
-  pitchPreservationAlgorithm: PitchPreservationAlgorithm;
   autoPlay: boolean;
   effectiveVolumeRef: RefObject<number>;
   onLoadStart: () => void;
@@ -61,7 +56,6 @@ export function useAudioSourceLoader({
   loop,
   playbackRate,
   preservesPitch,
-  pitchPreservationAlgorithm,
   autoPlay,
   effectiveVolumeRef,
   onLoadStart,
@@ -95,7 +89,6 @@ export function useAudioSourceLoader({
     const initialVolume = effectiveVolumeRef.current;
     const initialPlaybackRate = playbackRate;
     const initialPreservesPitch = preservesPitch;
-    const initialPitchPreservationAlgorithm = pitchPreservationAlgorithm;
 
     const node = context.context.createFileSource({
       source: nextSource,
@@ -103,7 +96,6 @@ export function useAudioSourceLoader({
       volume: initialVolume,
       playbackRate: initialPlaybackRate,
       preservesPitch: initialPreservesPitch,
-      pitchPreservationAlgorithm: initialPitchPreservationAlgorithm,
     });
     if (!node) {
       onError(new NotSupportedError('This file format requires FFmpeg build'));
@@ -122,7 +114,6 @@ export function useAudioSourceLoader({
     fileSource.setVolume(initialVolume);
     fileSource.setPlaybackRate(initialPlaybackRate);
     fileSource.setPreservesPitch(initialPreservesPitch);
-    fileSource.setPitchPreservationAlgorithm(initialPitchPreservationAlgorithm);
     fileSourceRef.current = fileSource;
     setDuration(nextDuration);
     onLoad();
@@ -139,7 +130,6 @@ export function useAudioSourceLoader({
     loop,
     playbackRate,
     preservesPitch,
-    pitchPreservationAlgorithm,
     onAutoPlay,
     onEnded,
     onError,
