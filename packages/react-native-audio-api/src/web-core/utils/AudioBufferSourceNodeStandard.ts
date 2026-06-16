@@ -8,6 +8,8 @@ import { AudioBufferSourceNodeBackend } from '../types.web';
 export default class AudioBufferSourceNodeStandard implements AudioBufferSourceNodeBackend {
   private node: globalThis.AudioBufferSourceNode;
   private hasBeenStarted: boolean = false;
+  private _loopSkip: boolean = false;
+  private _onLoopEnded: ((event: object) => void) | undefined = undefined;
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
@@ -88,18 +90,6 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
     this.node.disconnect(destination.node);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public setDetune(value: number, when?: number): void {
-    console.warn('setDetune is not implemented for non-pitch-correction mode');
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public setPlaybackRate(value: number, when?: number): void {
-    console.warn(
-      'setPlaybackRate is not implemented for non-pitch-correction mode'
-    );
-  }
-
   public get buffer(): AudioBuffer | null {
     const buffer = this.node.buffer;
     if (!buffer) {
@@ -140,5 +130,22 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
 
   public set loopEnd(value: number) {
     this.node.loopEnd = value;
+  }
+
+  public get loopSkip(): boolean {
+    return this._loopSkip;
+  }
+
+  public set loopSkip(value: boolean) {
+    this._loopSkip = value;
+  }
+
+  public get onLoopEnded(): ((event: object) => void) | undefined {
+    return this._onLoopEnded;
+  }
+
+  // The browser Web Audio API has no per-loop event; callback is stored but never fired.
+  public set onLoopEnded(callback: ((event: object) => void) | null) {
+    this._onLoopEnded = callback ?? undefined;
   }
 }

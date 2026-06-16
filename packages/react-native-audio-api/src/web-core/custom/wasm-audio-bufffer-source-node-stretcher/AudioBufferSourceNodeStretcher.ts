@@ -7,13 +7,10 @@ import AudioNode from '../../AudioNode.web';
 
 import { clamp } from '../../../utils';
 import { AudioBufferSourceOptions } from '../../../types';
-import LoadCustomWasm, { globalWasmPromise, globalTag } from './LoadCustomWasm';
+import SignalsmithStretch from './signalsmithStretch/SignalsmithStretch.js';
 
 import { AudioBufferSourceNodeBackend } from '../../types.web';
-import {
-  WasmAudioBufferSourceStretcherNode,
-  WasmAudioBufferSourceStretcherNodeFactory,
-} from './types';
+import { WasmAudioBufferSourceStretcherNode } from './types';
 import AudioStretcherParam from './AudioStretcherParam';
 
 export default class AudioBufferSourceNodeStretcher implements AudioBufferSourceNodeBackend {
@@ -29,25 +26,17 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   private _loop: boolean = false;
   private _loopStart: number = -1;
   private _loopEnd: number = -1;
+  private _loopSkip: boolean = false;
+  private _onLoopEnded: ((event: object) => void) | undefined = undefined;
 
   private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
 
   constructor(context: BaseAudioContext, options: AudioBufferSourceOptions) {
-    const promise = async () => {
-      await LoadCustomWasm('/react-native-audio-api');
-      await globalWasmPromise;
-      const factory = (
-        window as unknown as Record<
-          string,
-          WasmAudioBufferSourceStretcherNodeFactory
-        >
-      )[globalTag];
-      return factory(context.context);
-    };
     this.context = context;
-    this.stretcherPromise = promise();
-    this.stretcherPromise.then((node) => {
+    const stretcherPromise = SignalsmithStretch(context.context);
+    this.stretcherPromise = stretcherPromise;
+    stretcherPromise.then((node) => {
       this.node = node;
     });
 
@@ -56,14 +45,39 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       options.detune ?? 0,
       0,
       -1200,
-      1200
+      1200,
+      (value, time) => {
+        if (!this.hasBeenStarted) return;
+        const action = (node: WasmAudioBufferSourceStretcherNode) => {
+          node.schedule({
+            semitones: Math.floor(clamp(value / 100, -12, 12)),
+            output: time,
+          });
+        };
+        if (!this.node) {
+          this.stretcherPromise!.then(action);
+        } else {
+          action(this.node);
+        }
+      }
     );
     this.playbackRate = new AudioStretcherParam(
       context,
       options.playbackRate ?? 1,
       1,
       0,
-      Infinity
+      Infinity,
+      (value, time) => {
+        if (!this.hasBeenStarted) return;
+        const action = (node: WasmAudioBufferSourceStretcherNode) => {
+          node.schedule({ rate: value, output: time });
+        };
+        if (!this.node) {
+          this.stretcherPromise!.then(action);
+        } else {
+          action(this.node);
+        }
+      }
     );
     this.buffer = (options.buffer as AudioBuffer) ?? null;
   }
@@ -193,58 +207,6 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     action(this.node);
   }
 
-  setDetune(value: number, when?: number): void {
-    if (when !== undefined) {
-      this.detune.setValueAtTime(value, when);
-    } else {
-      this.detune.value = value;
-    }
-    if (!this.hasBeenStarted) {
-      return;
-    }
-    const action = (node: WasmAudioBufferSourceStretcherNode) => {
-      node.schedule({
-        semitones: Math.floor(clamp(value / 100, -12, 12)),
-        output: when,
-      });
-    };
-
-    if (!this.node) {
-      this.stretcherPromise!.then((node) => {
-        action(node);
-      });
-      return;
-    }
-
-    action(this.node);
-  }
-
-  setPlaybackRate(value: number, when?: number): void {
-    if (when !== undefined) {
-      this.playbackRate.setValueAtTime(value, when);
-    } else {
-      this.playbackRate.value = value;
-    }
-    if (!this.hasBeenStarted) {
-      return;
-    }
-    const action = (node: WasmAudioBufferSourceStretcherNode) => {
-      node.schedule({
-        rate: value,
-        output: when,
-      });
-    };
-
-    if (!this.node) {
-      this.stretcherPromise!.then((node) => {
-        action(node);
-      });
-      return;
-    }
-
-    action(this.node);
-  }
-
   get buffer(): AudioBuffer | null {
     return this._buffer;
   }
@@ -308,5 +270,22 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
 
   set loopEnd(value: number) {
     this._loopEnd = value;
+  }
+
+  get loopSkip(): boolean {
+    return this._loopSkip;
+  }
+
+  set loopSkip(value: boolean) {
+    this._loopSkip = value;
+  }
+
+  get onLoopEnded(): ((event: object) => void) | undefined {
+    return this._onLoopEnded;
+  }
+
+  // The WASM stretcher has no per-loop event; callback is stored but never fired.
+  set onLoopEnded(callback: ((event: object) => void) | null) {
+    this._onLoopEnded = callback ?? undefined;
   }
 }

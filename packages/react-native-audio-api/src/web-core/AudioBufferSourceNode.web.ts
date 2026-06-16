@@ -32,12 +32,12 @@ export default class AudioBufferSourceNode {
     this.node.stop(when);
   }
 
-  setDetune(value: number, when?: number): void {
-    this.node.setDetune(value, when);
+  get detune(): AudioParam {
+    return this.node.detune;
   }
 
-  setPlaybackRate(value: number, when?: number): void {
-    this.node.setPlaybackRate(value, when);
+  get playbackRate(): AudioParam {
+    return this.node.playbackRate;
   }
 
   get buffer(): AudioBuffer | null {
@@ -70,5 +70,21 @@ export default class AudioBufferSourceNode {
 
   set loopEnd(value: number) {
     this.node.loopEnd = value;
+  }
+
+  get loopSkip(): boolean {
+    return this.node.loopSkip;
+  }
+
+  set loopSkip(value: boolean) {
+    this.node.loopSkip = value;
+  }
+
+  get onLoopEnded(): ((event: object) => void) | undefined {
+    return this.node.onLoopEnded;
+  }
+
+  set onLoopEnded(callback: ((event: object) => void) | null) {
+    this.node.onLoopEnded = callback;
   }
 }

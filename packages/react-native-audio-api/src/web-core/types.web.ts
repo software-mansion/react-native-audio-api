@@ -12,9 +12,6 @@ export interface AudioBufferSourceNodeBackend {
   start(when?: number, offset?: number, duration?: number): void;
   stop(when: number): void;
 
-  setDetune(value: number, when?: number): void;
-  setPlaybackRate(value: number, when?: number): void;
-
   get buffer(): AudioBuffer | null;
   set buffer(buffer: AudioBuffer | null);
 
@@ -26,4 +23,10 @@ export interface AudioBufferSourceNodeBackend {
 
   get loopEnd(): number;
   set loopEnd(value: number);
+
+  get loopSkip(): boolean;
+  set loopSkip(value: boolean);
+
+  get onLoopEnded(): ((event: object) => void) | undefined;
+  set onLoopEnded(callback: ((event: object) => void) | null);
 }
