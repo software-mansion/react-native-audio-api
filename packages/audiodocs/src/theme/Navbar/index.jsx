@@ -3,12 +3,8 @@ import React from 'react';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 // eslint-disable-next-line import/no-unresolved
 import { useLocation } from '@docusaurus/router';
-import { Navbar } from '@swmansion/t-rex-ui';
-import {
-  TopBarBanner,
-  isBannerHidden,
-  TOP_BAR_BANNER,
-} from '@site/src/components/TopBarBanner';
+import { Navbar, TopbarBanner, isBannerHidden } from '@swmansion/t-rex-ui';
+import { TOP_BAR_BANNER } from '@site/src/components/topbarBanner.config';
 import './styles.css';
 
 export default function NavbarWrapper(props) {
@@ -30,7 +26,7 @@ export default function NavbarWrapper(props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
       {!bannerHidden && (
-        <TopBarBanner
+        <TopbarBanner
           zones={TOP_BAR_BANNER.zones}
           rotateIntervalMs={TOP_BAR_BANNER.rotateIntervalMs}
         />
