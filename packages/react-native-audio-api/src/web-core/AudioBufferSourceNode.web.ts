@@ -6,7 +6,7 @@ import BaseAudioContext from './BaseAudioContext.web';
 import AudioNode from './AudioNode.web';
 
 import { clamp } from '../utils';
-import { AudioBufferSourceOptionsWeb } from '../types';
+import { AudioBufferSourceOptions } from '../types';
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 import { LoadCustomWasm } from './custom';
 
@@ -215,7 +215,7 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
   private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
 
-  constructor(context: BaseAudioContext, options: AudioBufferSourceOptionsWeb) {
+  constructor(context: BaseAudioContext, options: AudioBufferSourceOptions) {
     const promise = async () => {
       await LoadCustomWasm('/react-native-audio-api');
       await globalWasmPromise;
@@ -251,7 +251,7 @@ class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
       context
     );
 
-    this.buffer = options.buffer ?? null;
+    this.buffer = (options.buffer as AudioBuffer) ?? null;
   }
 
   connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
@@ -493,14 +493,11 @@ class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
-  constructor(
-    context: BaseAudioContext,
-    options?: AudioBufferSourceOptionsWeb
-  ) {
+  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
     const { buffer, ...rest } = options ?? {};
     this.node = new globalThis.AudioBufferSourceNode(context.context, {
       ...rest,
-      ...(buffer ? { buffer: buffer.buffer } : {}),
+      ...(buffer ? { buffer: (buffer as AudioBuffer).buffer } : {}),
     });
     this.detune = new AudioParam(this.node.detune, context);
     this.playbackRate = new AudioParam(this.node.playbackRate, context);
@@ -627,10 +624,7 @@ class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
 
 export default class AudioBufferSourceNode implements IAudioAPIBufferSourceNodeWeb {
   private node: AudioBufferSourceNodeStretcher | AudioBufferSourceNodeWeb;
-  constructor(
-    context: BaseAudioContext,
-    options?: AudioBufferSourceOptionsWeb
-  ) {
+  constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
     this.node = options?.pitchCorrection
       ? new AudioBufferSourceNodeStretcher(context, options)
       : new AudioBufferSourceNodeWeb(context, options);

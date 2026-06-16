@@ -1,4 +1,4 @@
-import type { ShareableWorkletCallback } from '../interfaces';
+import type { ShareableWorkletCallback } from '../interfaces.jsi';
 
 // Hint: Copied from react-native-worklets
 // Doesn't really matter what is inside, just need a unique type

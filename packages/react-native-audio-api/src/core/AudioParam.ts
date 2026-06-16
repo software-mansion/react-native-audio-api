@@ -1,6 +1,6 @@
 import { AutomationEventData, AutomationEventType } from '../types';
 import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
-import { IAudioParam } from '../interfaces';
+import { IAudioParam } from '../interfaces.jsi';
 import type BaseAudioContext from './BaseAudioContext';
 
 export default class AudioParam {

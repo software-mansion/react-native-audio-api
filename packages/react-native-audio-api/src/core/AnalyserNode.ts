@@ -1,6 +1,6 @@
 import type BaseAudioContext from './BaseAudioContext';
 import { IndexSizeError } from '../errors';
-import { IAnalyserNode } from '../interfaces';
+import { IAnalyserNode } from '../interfaces.jsi';
 import { AnalyserOptions } from '../types';
 import AudioNode from './AudioNode';
 import { AnalyserOptionsValidator } from '../options-validators';

@@ -7,7 +7,7 @@ import type {
   IAudioBuffer,
   IAudioStretcher,
   IOfflineAudioContext,
-} from '../interfaces';
+} from '../interfaces.jsi';
 
 /* eslint-disable no-var */
 declare global {

@@ -2,7 +2,7 @@ import { Image, Platform } from 'react-native';
 import { NativeAudioAPIModule } from '../specs';
 
 import { AudioApiError } from '../errors';
-import { IAudioDecoder } from '../interfaces';
+import { IAudioDecoder } from '../interfaces.jsi';
 import { DecodeDataInput } from '../types';
 import {
   isBase64Source,

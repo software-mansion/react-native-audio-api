@@ -1,5 +1,5 @@
 import { AudioApiError } from '../errors';
-import { IAudioFileUtils } from '../interfaces';
+import { IAudioFileUtils } from '../interfaces.jsi';
 import { prefetchFileSegments } from '../utils/metadataPrefetching';
 
 class AudioFileUtils {

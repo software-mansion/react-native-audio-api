@@ -1,7 +1,22 @@
-import AudioBuffer from './core/AudioBuffer';
-import PeriodicWave from './core/PeriodicWave';
-import { IAudioBuffer } from './interfaces';
-import AudioBufferWeb from './web-core/AudioBuffer.web';
+import type PeriodicWave from './core/PeriodicWave';
+
+export interface AudioBufferLike {
+  readonly length: number;
+  readonly duration: number;
+  readonly sampleRate: number;
+  readonly numberOfChannels: number;
+  getChannelData(channel: number): Float32Array;
+  copyFromChannel(
+    dest: Float32Array,
+    channelNumber: number,
+    startInChannel?: number
+  ): void;
+  copyToChannel(
+    source: Float32Array,
+    channelNumber: number,
+    startInChannel?: number
+  ): void;
+}
 
 export type Result<T> =
   | ({ status: 'success' } & T)
@@ -158,37 +173,20 @@ export interface BaseAudioBufferSourceOptions {
 }
 
 export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
-  buffer?: AudioBuffer;
+  buffer?: AudioBufferLike;
   loop?: boolean;
   loopStart?: number;
   loopEnd?: number;
 }
 
-export interface AudioBufferSourceOptionsWeb extends BaseAudioBufferSourceOptions {
-  buffer?: AudioBufferWeb;
-  loop?: boolean;
-  loopStart?: number;
-  loopEnd?: number;
-}
-
-// options that are passed to c++ layer
-export interface IAudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
-  buffer?: IAudioBuffer;
-  loop?: boolean;
-  loopStart?: number;
-  loopEnd?: number;
-}
+export type IAudioBufferSourceOptions = AudioBufferSourceOptions;
 
 export interface ConvolverOptions extends AudioNodeOptions {
-  buffer?: AudioBuffer;
+  buffer?: AudioBufferLike;
   disableNormalization?: boolean;
 }
 
-// options that are passed to c++ layer
-export interface IConvolverOptions extends AudioNodeOptions {
-  buffer?: IAudioBuffer;
-  disableNormalization?: boolean;
-}
+export type IConvolverOptions = ConvolverOptions;
 
 export interface AudioFileSourceOptions extends AudioNodeOptions {
   source: ArrayBuffer | string;

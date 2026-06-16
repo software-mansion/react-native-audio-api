@@ -1,6 +1,6 @@
 import AudioNode from './AudioNode';
 import type AudioContext from './AudioContext';
-import { IAudioContext } from '../interfaces';
+import { IAudioContext } from '../interfaces.jsi';
 import type {
   AudioTagHandle,
   InternalAudioTagHandle,

@@ -1,4 +1,4 @@
-import { IRecorderAdapterNode } from '../interfaces';
+import { IRecorderAdapterNode } from '../interfaces.jsi';
 import AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
 

@@ -1,7 +1,7 @@
 import AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
 import { InvalidStateError } from '../errors';
-import { IWaveShaperNode } from '../interfaces';
+import { IWaveShaperNode } from '../interfaces.jsi';
 import { WaveShaperOptions } from '../types';
 
 export default class WaveShaperNode extends AudioNode {

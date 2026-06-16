@@ -3,7 +3,7 @@ import type { EventEmptyType } from '../../../events/types';
 import type {
   IAudioFileSourceNode,
   IAudioScheduledSourceNode,
-} from '../../../interfaces';
+} from '../../../interfaces.jsi';
 import AudioScheduledSourceNode from '../../../core/AudioScheduledSourceNode';
 
 type AttachFileSourceOptions = {
