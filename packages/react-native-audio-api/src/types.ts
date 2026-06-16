@@ -5,14 +5,14 @@ export interface AudioBufferLike {
   readonly duration: number;
   readonly sampleRate: number;
   readonly numberOfChannels: number;
-  getChannelData(channel: number): Float32Array;
+  getChannelData(channel: number): Float32Array<ArrayBuffer>;
   copyFromChannel(
-    dest: Float32Array,
+    dest: Float32Array<ArrayBuffer>,
     channelNumber: number,
     startInChannel?: number
   ): void;
   copyToChannel(
-    source: Float32Array,
+    source: Float32Array<ArrayBuffer>,
     channelNumber: number,
     startInChannel?: number
   ): void;
@@ -179,14 +179,10 @@ export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   loopEnd?: number;
 }
 
-export type IAudioBufferSourceOptions = AudioBufferSourceOptions;
-
 export interface ConvolverOptions extends AudioNodeOptions {
   buffer?: AudioBufferLike;
   disableNormalization?: boolean;
 }
-
-export type IConvolverOptions = ConvolverOptions;
 
 export interface AudioFileSourceOptions extends AudioNodeOptions {
   source: ArrayBuffer | string;
