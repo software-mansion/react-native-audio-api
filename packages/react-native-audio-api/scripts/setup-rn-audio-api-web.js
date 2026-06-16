@@ -13,7 +13,7 @@ const args = process.argv.slice(2);
 function getInputFilePath() {
   return path.resolve(
     __dirname,
-    '../lib/module/web-core/custom/signalsmithStretch/SignalsmithStretch.mjs'
+    '../lib/module/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch/SignalsmithStretch.mjs'
   );
 }
 
@@ -24,9 +24,7 @@ function getInputFilePath() {
  * @returns {string} The resolved output file path.
  */
 function getOutputFilePath() {
-  const publicFolder = path.resolve(
-    args[0] || 'public'
-  );
+  const publicFolder = path.resolve(args[0] || 'public');
 
   const publicFile = './signalsmithStretch.mjs';
   const outputPath = path.join(publicFolder, publicFile);
