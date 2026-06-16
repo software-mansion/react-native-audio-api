@@ -7,6 +7,10 @@
 #include <cstdint>
 #include <memory>
 
+// interface exists only for the sake of testing
+// in every other case, AudioEventHandlerRegistry is used
+// when looking for implementations, look for AudioEventHandlerRegistry
+
 namespace audioapi {
 
 class IAudioEventHandlerRegistry {
@@ -22,17 +26,11 @@ class IAudioEventHandlerRegistry {
 
   virtual void unregisterHandler(AudioEvent eventName, uint64_t listenerId) = 0;
 
-  /// @brief Enqueue an event for dispatch to JS handlers. For non-audio threads only.
-  /// @param listenerId Target handler. Pass kBroadcastListenerId (0) to invoke all handlers.
-  /// @return true if enqueued; false if the internal queue is full (event dropped).
   virtual bool dispatchEvent(
       AudioEvent eventName,
       uint64_t listenerId,
       AudioEventPayload &&payload) noexcept = 0;
 
-  /// @brief Offload an event from the audio thread via SPSC, then dispatch to JS handlers.
-  /// Lock-free and allocation-free on the audio thread (may drop when the offload channel is full).
-  /// @return true if accepted by the offload channel; false if dropped.
   virtual bool dispatchEventFromAudioThread(
       AudioEvent eventName,
       uint64_t listenerId,
