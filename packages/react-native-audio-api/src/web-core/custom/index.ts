@@ -1,1 +1,1 @@
-export { default as LoadCustomWasm } from './LoadCustomWasm';
+export { default as AudioBufferSourceNodeStretcher } from './wasm-audio-bufffer-source-node-stretcher/AudioBufferSourceNodeStretcher';
