@@ -85,20 +85,20 @@ const Record: FC = () => {
       return;
     }
 
-    const result = Recorder.start({
+    const result = await Recorder.start({
       fileNameOverride: `overridden_name_${Date.now()}`,
     });
 
     setupNotification(false);
-    result.then((result) => {
-      if (result.status === 'success') {
-        setState(RecordingState.Recording);
-        return;
-      }
-      console.log('Recording start error:', result);
-      Alert.alert('Error', `Failed to start recording: ${result.message}`);
-      setState(RecordingState.Idle);
-    });
+
+    if (result.status === 'success') {
+      setState(RecordingState.Recording);
+      return;
+    }
+
+    console.log('Recording start error:', result);
+    Alert.alert('Error', `Failed to start recording: ${result.message}`);
+    setState(RecordingState.Idle);
   }, [state, hasPermissions]);
 
   const onPauseRecording = useCallback(() => {
