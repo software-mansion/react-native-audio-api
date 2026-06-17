@@ -90,15 +90,15 @@ const Record: FC = () => {
     });
 
     setupNotification(false);
-
-    if (result.status === 'success') {
-      setState(RecordingState.Recording);
-      return;
-    }
-
-    console.log('Recording start error:', result);
-    Alert.alert('Error', `Failed to start recording: ${result.message}`);
-    setState(RecordingState.Idle);
+    result.then((result) => {
+      if (result.status === 'success') {
+        setState(RecordingState.Recording);
+        return;
+      }
+      console.log('Recording start error:', result);
+      Alert.alert('Error', `Failed to start recording: ${result.message}`);
+      setState(RecordingState.Idle);
+    });
   }, [state, hasPermissions]);
 
   const onPauseRecording = useCallback(() => {
@@ -114,7 +114,7 @@ const Record: FC = () => {
   }, []);
 
   const onStopRecording = useCallback(async () => {
-    const info = Recorder.stop();
+    const info = await Recorder.stop();
     RecordingNotificationManager.hide();
     setState(RecordingState.Loading);
 

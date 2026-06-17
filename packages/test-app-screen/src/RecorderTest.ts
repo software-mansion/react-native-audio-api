@@ -22,9 +22,9 @@ export const recorderTest = (
       buffers.push(buffer);
     }
   );
-  recorder.start();
+  void recorder.start();
   setTimeout(() => {
-    recorder.stop();
+    void recorder.stop();
   }, 5000);
 };
 
