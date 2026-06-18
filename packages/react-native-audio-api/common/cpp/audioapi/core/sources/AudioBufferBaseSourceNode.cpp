@@ -125,9 +125,6 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       processingBuffer.get()[0],
       framesToProcess);
 
-  if (detune != 0.0f) {
-    stretch_->setTransposeSemitones(detune);
-  }
   if (isPlaying()) {
     positionChanged_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
   }

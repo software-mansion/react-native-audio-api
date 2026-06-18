@@ -29,6 +29,7 @@
 
   id<BaseNotification> notification = _notifications[key];
 
+  bool created = false;
   // Create if doesn't exist
   if (!notification) {
     if (!type) {
@@ -45,6 +46,7 @@
 
     _notifications[key] = notification;
     NSLog(@"[NotificationRegistry] Created notification type '%@' with key '%@'", type, key);
+    created = true;
   }
 
   // Initialize if first time showing
@@ -57,10 +59,12 @@
 
   BOOL success = [notification showWithOptions:options];
 
-  if (success) {
-    NSLog(@"[NotificationRegistry] Showed/Updated notification: %@", key);
-  } else {
-    NSLog(@"[NotificationRegistry] Failed to show notification: %@", key);
+  if (created) {
+    if (success) {
+      NSLog(@"[NotificationRegistry] Showed notification: %@", key);
+    } else {
+      NSLog(@"[NotificationRegistry] Failed to show notification: %@", key);
+    }
   }
 
   return success;

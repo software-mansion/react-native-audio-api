@@ -1,3 +1,4 @@
+#include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 
 #include <algorithm>
@@ -30,8 +31,7 @@ void PositionChangedDispatcher::setIntervalInFrames(int intervalInFrames) {
 }
 
 void PositionChangedDispatcher::setIntervalMs(int intervalInMs, float sampleRate) {
-  //NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
-  setIntervalInFrames(static_cast<int>(sampleRate * static_cast<float>(intervalInMs) / 1000.0f));
+  setIntervalInFrames(static_cast<int>(dsp::timeToSampleFrame(intervalInMs * 0.001, sampleRate)));
 }
 
 void PositionChangedDispatcher::requestFlush() {

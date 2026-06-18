@@ -71,8 +71,9 @@ void AudioFileSourceNode::stopDaemonThread() {
 }
 
 void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
-  auto time = currentTime_.fetch_add(framesPlayed / sampleRate_);
-  positionChanged_.advance(framesPlayed, time);
+  const double delta = static_cast<double>(framesPlayed) / sampleRate_;
+  const double position = currentTime_.fetch_add(delta) + delta;
+  positionChanged_.advance(framesPlayed, position);
 }
 
 void AudioFileSourceNode::assignOnPositionChangedCallbackId(uint64_t callbackId) {

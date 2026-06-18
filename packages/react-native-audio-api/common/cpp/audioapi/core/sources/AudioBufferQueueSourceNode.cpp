@@ -117,8 +117,8 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
 
 void AudioBufferQueueSourceNode::clearBuffers() {
   if (auto context = context_.lock()) {
-    for (auto it = buffers_.begin(); it != buffers_.end(); ++it) {
-      context->getGraphManager()->addAudioBufferForDestruction(std::move(it->second));
+    for (auto &buffer : buffers_) {
+      context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer.second));
     }
 
     buffers_.clear();

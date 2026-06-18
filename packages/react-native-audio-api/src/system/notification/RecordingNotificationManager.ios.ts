@@ -14,9 +14,6 @@ class RecordingNotificationManager implements NotificationManager<
 
   constructor() {
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
-    console.warn(
-      'RecordingNotificationManager is not implemented on iOS. Any calls to it will be no-ops.'
-    );
   }
 
   /**
@@ -25,7 +22,12 @@ class RecordingNotificationManager implements NotificationManager<
    * @param info - The info to be displayed.
    * @returns Promise that resolves after creating notification.
    */
-  async show(_info: RecordingNotificationInfo): Promise<void> {}
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async show(_info: RecordingNotificationInfo): Promise<void> {
+    console.warn(
+      'RecordingNotificationManager is not implemented on iOS. Any calls to it will be no-ops.'
+    );
+  }
 
   /**
    * Hide the notification.

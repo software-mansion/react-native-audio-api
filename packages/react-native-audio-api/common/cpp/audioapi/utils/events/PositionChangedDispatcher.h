@@ -31,7 +31,7 @@ class PositionChangedDispatcher {
   void tryDispatch(double position, bool forceFlush);
 
   EventCaller<AudioEvent::POSITION_CHANGED> positionChangedEvent_;
-  std::atomic<bool> shouldFlush_{false};
+  std::atomic<bool> shouldFlush_;
   int intervalInFrames_;
   int accumulatedFrames_ = 0;
 };
