@@ -60,7 +60,6 @@ void IOSRotatingFileWriter::writeAudioData(AudioDataType data, int numFrames)
       rotateFiles();
     }
   }
-  framesWritten_.fetch_add(numFrames, std::memory_order_relaxed);
 }
 
 CloseFileResult IOSRotatingFileWriter::closeFile()
@@ -76,8 +75,11 @@ void IOSRotatingFileWriter::rotateFiles()
 
 double IOSRotatingFileWriter::getCurrentDuration() const
 {
-  return static_cast<double>(framesWritten_.load(std::memory_order_relaxed)) /
-      fileProperties_->sampleRate;
+  double currentSegmentDuration = 0.0;
+  if (currentWriter_ != nullptr) {
+    currentSegmentDuration = currentWriter_->getCurrentDuration();
+  }
+  return cumulativeDurationSec_ + currentSegmentDuration;
 }
 
 OpenFileResult IOSRotatingFileWriter::openInnerWriter()

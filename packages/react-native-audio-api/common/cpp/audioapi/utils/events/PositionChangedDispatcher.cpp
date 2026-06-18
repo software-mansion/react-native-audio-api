@@ -45,7 +45,7 @@ void PositionChangedDispatcher::advance(int framesPlayed, double position) {
 
 void PositionChangedDispatcher::tryDispatch(double position, bool forceFlush) {
   if (hasCallback() && (forceFlush || accumulatedFrames_ > intervalInFrames_)) {
-    positionChangedEvent_.dispatch(DoubleValuePayload{.value = position});
+    positionChangedEvent_.dispatchFromAudioThread(DoubleValuePayload{.value = position});
 
     accumulatedFrames_ = 0;
     if (forceFlush) {

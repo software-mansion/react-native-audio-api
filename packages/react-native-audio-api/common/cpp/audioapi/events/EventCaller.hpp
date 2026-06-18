@@ -62,6 +62,12 @@ class EventCaller {
     return dispatch(EmptyPayload{});
   }
 
+  bool dispatchEmptyFromAudioThread() const noexcept
+    requires EventPayloadFor<Event, EmptyPayload>
+  {
+    return dispatchFromAudioThread(EmptyPayload{});
+  }
+
   template <typename Payload>
     requires EventPayloadFor<Event, Payload>
   bool dispatch(Payload &&payload) const noexcept {
@@ -71,6 +77,18 @@ class EventCaller {
     }
 
     return eventHandlerRegistry_->dispatchEvent(
+        Event, callbackId, AudioEventPayload{std::forward<Payload>(payload)});
+  }
+
+  template <typename Payload>
+    requires EventPayloadFor<Event, Payload>
+  bool dispatchFromAudioThread(Payload &&payload) const noexcept {
+    const auto callbackId = getCallbackId();
+    if (eventHandlerRegistry_ == nullptr || callbackId == 0) {
+      return false;
+    }
+
+    return eventHandlerRegistry_->dispatchEventFromAudioThread(
         Event, callbackId, AudioEventPayload{std::forward<Payload>(payload)});
   }
 

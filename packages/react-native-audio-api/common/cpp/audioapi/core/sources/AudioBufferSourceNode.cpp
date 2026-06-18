@@ -116,7 +116,7 @@ double AudioBufferSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferSourceNode::sendOnLoopEndedEvent() {
-  onLoopEndedEvent_.dispatchEmpty();
+  onLoopEndedEvent_.dispatchEmptyFromAudioThread();
 }
 
 /**

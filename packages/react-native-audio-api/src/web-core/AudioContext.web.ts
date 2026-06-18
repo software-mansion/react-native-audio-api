@@ -1,21 +1,21 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import { AudioContextOptions, ContextState, DecodeDataInput } from '../types';
-import AnalyserNode from './AnalyserNode';
-import AudioBuffer from './AudioBuffer';
-import AudioBufferSourceNode from './AudioBufferSourceNode';
-import AudioDestinationNode from './AudioDestinationNode';
-import BaseAudioContext from './BaseAudioContext';
-import BiquadFilterNode from './BiquadFilterNode';
-import ConvolverNode from './ConvolverNode';
-import DelayNode from './DelayNode';
-import GainNode from './GainNode';
-import IIRFilterNode from './IIRFilterNode';
-import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
-import OscillatorNode from './OscillatorNode';
-import PeriodicWave from './PeriodicWave';
-import StereoPannerNode from './StereoPannerNode';
-import ConstantSourceNode from './ConstantSourceNode';
-import WaveShaperNode from './WaveShaperNode';
+import AnalyserNode from './AnalyserNode.web';
+import AudioBuffer from './AudioBuffer.web';
+import AudioBufferSourceNode from './AudioBufferSourceNode.web';
+import AudioDestinationNode from './AudioDestinationNode.web';
+import BaseAudioContext from './BaseAudioContext.web';
+import BiquadFilterNode from './BiquadFilterNode.web';
+import ConvolverNode from './ConvolverNode.web';
+import DelayNode from './DelayNode.web';
+import GainNode from './GainNode.web';
+import IIRFilterNode from './IIRFilterNode.web';
+import MediaElementAudioSourceNode from './MediaElementAudioSourceNode.web';
+import OscillatorNode from './OscillatorNode.web';
+import PeriodicWave from './PeriodicWave.web';
+import StereoPannerNode from './StereoPannerNode.web';
+import ConstantSourceNode from './ConstantSourceNode.web';
+import WaveShaperNode from './WaveShaperNode.web';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;

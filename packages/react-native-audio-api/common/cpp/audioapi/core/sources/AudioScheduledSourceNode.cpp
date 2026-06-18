@@ -19,10 +19,10 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioScheduledSourceNodeOptions &options)
     : AudioNode(context, options),
-      onEndedEvent_(context->getAudioEventHandlerRegistry()),
       startTime_(-1.0),
       stopTime_(-1.0),
-      playbackState_(PlaybackState::UNSCHEDULED) {}
+      playbackState_(PlaybackState::UNSCHEDULED),
+      onEndedEvent_(context->getAudioEventHandlerRegistry()) {}
 
 void AudioScheduledSourceNode::start(double when) {
 #if !RN_AUDIO_API_TEST
@@ -148,7 +148,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 }
 
 void AudioScheduledSourceNode::disable() {
-  onEndedEvent_.dispatchEmpty();
+  onEndedEvent_.dispatchEmptyFromAudioThread();
   AudioNode::disable();
 }
 

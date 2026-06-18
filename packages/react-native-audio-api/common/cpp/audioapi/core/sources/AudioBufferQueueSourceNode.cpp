@@ -158,7 +158,7 @@ double AudioBufferQueueSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue) {
-  onBufferEndedEvent_.dispatch(
+  onBufferEndedEvent_.dispatchFromAudioThread(
       BufferEndedPayload{.bufferId = bufferId, .isLastBufferInQueue = isLastBufferInQueue});
 }
 

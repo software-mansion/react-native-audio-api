@@ -69,9 +69,17 @@ struct AudioReadyPayload {
 
   facebook::jsi::Object toJsiObject(facebook::jsi::Runtime &rt) const {
     facebook::jsi::Object obj(rt);
-    obj.setProperty(rt, "buffer", facebook::jsi::Object::createFromHostObject(rt, buffer));
-    obj.setProperty(rt, "numFrames", numFrames);
-    obj.setExternalMemoryPressure(rt, buffer->getSizeInBytes());
+    const bool hasBuffer = buffer != nullptr && buffer->audioBuffer_ != nullptr;
+
+    if (hasBuffer) {
+      obj.setProperty(rt, "buffer", facebook::jsi::Object::createFromHostObject(rt, buffer));
+      obj.setProperty(rt, "numFrames", numFrames);
+      obj.setExternalMemoryPressure(rt, buffer->getSizeInBytes());
+    } else {
+      obj.setProperty(rt, "buffer", facebook::jsi::Value::null());
+      obj.setProperty(rt, "numFrames", 0);
+    }
+
     return obj;
   }
 };
