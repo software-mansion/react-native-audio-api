@@ -86,7 +86,7 @@ describe('Audio Graph Tests', () => {
 import { AudioContext, AudioRecorder, FileFormat, FileDirectory } from 'react-native-audio-api/mock';
 
 describe('Audio Recording Tests', () => {
-  it('should configure and control recording', () => {
+  it('should configure and control recording', async () => {
     const context = new AudioContext();
     const recorder = new AudioRecorder();
 
@@ -107,11 +107,11 @@ describe('Audio Recording Tests', () => {
     recorder.connect(recorderAdapter);
 
     // Test recording workflow
-    const startResult = recorder.start();
+    const startResult = await recorder.start();
     expect(startResult.status).toBe('success');
     expect(recorder.isRecording()).toBe(true);
 
-    const stopResult = recorder.stop();
+    const stopResult = await recorder.stop();
     expect(stopResult.status).toBe('success');
     expect(recorder.isRecording()).toBe(false);
   });

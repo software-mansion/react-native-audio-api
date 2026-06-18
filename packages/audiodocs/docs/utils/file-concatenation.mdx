@@ -62,22 +62,24 @@ joining `.m4a` segments into an `.m4a` output file or `.wav` segments into a
 ```tsx
 import { AudioRecorder, FileDirectory, FileFormat, concatAudioFiles } from 'react-native-audio-api';
 
-const audioRecorder = new AudioRecorder();
+async function finalizeRotatedRecording() {
+  const audioRecorder = new AudioRecorder();
 
-audioRecorder.enableFileOutput({
-  directory: FileDirectory.Cache,
-  fileNamePrefix: 'meeting',
-  format: FileFormat.M4A,
-  rotateIntervalBytes: 8 * 1024 * 1024,
-});
+  audioRecorder.enableFileOutput({
+    directory: FileDirectory.Cache,
+    fileNamePrefix: 'meeting',
+    format: FileFormat.M4A,
+    rotateIntervalBytes: 8 * 1024 * 1024,
+  });
 
-// Start and stop the recorder as usual.
-const result = audioRecorder.stop();
+  // Start and stop the recorder as usual.
+  const result = await audioRecorder.stop();
 
-if (result.status === 'success') {
-  const outputPath = result.paths[0].replace(/[^/]+$/, 'meeting-complete.m4a');
+  if (result.status === 'success') {
+    const outputPath = result.paths[0].replace(/[^/]+$/, 'meeting-complete.m4a');
 
-  await concatAudioFiles(result.paths, outputPath);
+    await concatAudioFiles(result.paths, outputPath);
+  }
 }
 ```
 
