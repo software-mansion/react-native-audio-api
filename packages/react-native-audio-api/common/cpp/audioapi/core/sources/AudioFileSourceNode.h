@@ -187,10 +187,22 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       int framesToProcess,
       float activeRate);
 
-  /// @brief Pulls enough decoded PCM for one WSOLA quantum (may read multiple SPSC chunks).
+  /// @brief Pulls enough decoded PCM for one WSOLA/resample quantum (may read multiple SPSC chunks).
   /// @return Number of input frames accumulated, or 0 on failure.
   /// @note Audio thread only.
   size_t accumulateStretchInput(DecoderData &incoming, float activeRate, int framesToProcess);
+
+  /// @brief Drops any partially consumed decoder chunk retained for sub-1.0x playback.
+  /// @note Audio thread only.
+  void clearPendingDecoderChunk();
+
+  /// @brief Retains the unconsumed tail of @p chunk for the next render quantum.
+  /// @note Audio thread only.
+  void stashPendingDecoderChunk(const DecoderData &chunk, size_t consumedFrames);
+
+  /// @brief Removes @p consumedFrames from the front of the pending chunk buffer.
+  /// @note Audio thread only.
+  void consumePendingDecoderChunkFront(size_t consumedFrames);
 
   /// @brief Resets pitch-preservation state.
   /// @note Audio thread only.
@@ -198,10 +210,12 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   /// @brief Renders a speed-changed chunk with pitch following playback speed.
   /// @note Audio thread only.
-  void renderWithoutPitchPreservation(
+  /// @return Number of source frames consumed from the decoder pipeline.
+  size_t renderWithoutPitchPreservation(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      const DecoderData &incoming,
-      int framesToProcess);
+      DecoderData &incoming,
+      int framesToProcess,
+      float playbackRate);
 
   /// @brief Daemon thread for decoding and seeking
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
@@ -227,6 +241,9 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   /// @brief SPSC for Daemon thread -> Audio thread communication (decoded frames)
   std::shared_ptr<FrameReceiver> frameReceiver_;
+
+  /// @brief Tail of a decoder chunk not yet consumed (needed when playbackRate < 1.0).
+  DecoderData pendingDecoderChunk_;
 };
 
 } // namespace audioapi
