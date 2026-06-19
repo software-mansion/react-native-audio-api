@@ -80,6 +80,34 @@ TEST(WsolaTimeStretcherTest, PitchShiftChangesOutputEnergy) {
   EXPECT_NE(unityEnergy, shiftedEnergy);
 }
 
+TEST(WsolaTimeStretcherTest, VaryingPlaybackRateProducesOutput) {
+  static constexpr float sampleRate = 48000.0f;
+  static constexpr size_t inputFrames = 256;
+  static constexpr size_t outputFrames = RENDER_QUANTUM_SIZE;
+
+  WsolaTimeStretcher stretcher;
+  stretcher.configure(1, sampleRate);
+
+  DSPAudioBuffer input(inputFrames, 1, sampleRate);
+  DSPAudioBuffer output(outputFrames, 1, sampleRate);
+
+  float totalOutput = 0.0f;
+  size_t absoluteFrame = 0;
+  for (size_t chunk = 0; chunk < 24; ++chunk) {
+    float *inputData = input.getChannel(0)->begin();
+    for (size_t frame = 0; frame < inputFrames; ++frame) {
+      inputData[frame] =
+          std::sin(2.0f * PI * 440.0f * static_cast<float>(absoluteFrame++) / sampleRate);
+    }
+
+    const float playbackRate = 1.0f + static_cast<float>(chunk) * 0.25f;
+    stretcher.process(input, inputFrames, output, outputFrames, playbackRate);
+    totalOutput += sumAbs(output);
+  }
+
+  EXPECT_GT(totalOutput, 0.0f);
+}
+
 TEST(WsolaTimeStretcherTest, ResetClearsBufferedOutput) {
   static constexpr float sampleRate = 48000.0f;
   static constexpr size_t outputFrames = RENDER_QUANTUM_SIZE;

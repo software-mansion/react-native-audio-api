@@ -63,6 +63,7 @@ void WsolaTimeStretcher::configure(size_t channels, float sampleRate) {
 
 void WsolaTimeStretcher::reset() {
   outputTime_ = 0.0;
+  synthesisPosition_ = 0.0;
   targetBlockIndex_ = 0;
   searchBlockIndex_ = 0;
   outputReadIndex_ = 0;
@@ -388,7 +389,8 @@ void WsolaTimeStretcher::updateOutputTime(float playbackRate, double timeChange)
   // consumed per output frame equal to playbackRate, independent of pitch.
   const double effectiveRate =
       static_cast<double>(playbackRate) / static_cast<double>(pitchFactor_);
-  const int searchBlockCenterIndex = static_cast<int>(outputTime_ * effectiveRate + 0.5);
+  synthesisPosition_ += timeChange * effectiveRate;
+  const int searchBlockCenterIndex = static_cast<int>(synthesisPosition_ + 0.5);
   searchBlockIndex_ = searchBlockCenterIndex - static_cast<int>(searchCenterOffset_);
 }
 
@@ -426,11 +428,12 @@ void WsolaTimeStretcher::compactInputQueue(size_t synthesisFramesToRemove, float
   const int removedFrames = static_cast<int>(synthesisFramesToRemove);
   targetBlockIndex_ -= removedFrames;
   searchBlockIndex_ -= removedFrames;
-  // Keep outputTime_ consistent with the effective rate used in updateOutputTime,
-  // otherwise searchBlockIndex_ jumps after each compaction when pitch != 1.
+  synthesisPosition_ = std::max(0.0, synthesisPosition_ - static_cast<double>(removedFrames));
   const double effectiveRate =
       static_cast<double>(playbackRate) / static_cast<double>(pitchFactor_);
-  outputTime_ = std::max(0.0, outputTime_ - static_cast<double>(removedFrames) / effectiveRate);
+  if (effectiveRate > 0.0) {
+    outputTime_ = std::max(0.0, outputTime_ - static_cast<double>(removedFrames) / effectiveRate);
+  }
 }
 
 } // namespace audioapi

@@ -48,6 +48,9 @@ class WsolaTimeStretcher {
   float pitchFactor_{1.0f};
 
   double outputTime_{0.0};
+  /// Cumulative synthesis-timeline position; advanced incrementally so rate changes do not
+  /// rewrite history via outputTime_ * playbackRate.
+  double synthesisPosition_{0.0};
   int targetBlockIndex_{0};
   int searchBlockIndex_{0};
   size_t outputReadIndex_{0};
