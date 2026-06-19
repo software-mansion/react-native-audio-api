@@ -26,7 +26,6 @@ struct AudioFileSourceOptions;
 class MediaElementAudioSourceNode;
 
 inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
-inline constexpr auto PLAYBACK_TRANSITION_FADE_FRAMES = 2 * RENDER_QUANTUM_SIZE;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
@@ -137,13 +136,18 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   float volume_;
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
-  int playbackFadeInRemainingFrames_{0};
   bool filePaused_{false};
   bool loop_{false};
   double duration_{0};
   double sampleRate_{0};
   std::atomic<double> currentTime_{0};
   std::atomic<uint64_t> activeMediaBindingId_{0};
+
+  // Target rate from JS; applied immediately on the audio thread (Chromium does not smooth rate).
+  float targetPlaybackRate_{1.0f};
+  // Once WSOLA pitch preservation has been engaged, stay on that path (even at 1.0x).
+  bool usingWsolaPath_{false};
+  static constexpr float RATE_SETTLE_EPSILON = 1e-2f;
 
   /// @brief Dispatches position-changed events at the configured interval.
   /// @param framesPlayed number of frames played since the last event; used to calculate the new position.
@@ -163,12 +167,12 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] bool readNextFrameChunk(DecoderData &outData);
 
   /// @brief Clears decoded chunks generated with stale playback settings.
-  /// @note Audio thread only.
+  /// @note Audio thread only. Used when toggling pitch-preservation mode.
   void drainPendingFrames();
 
-  /// @brief Resets playback-rate processing state after rate or pitch-mode changes.
+  /// @brief Resets stretch/resample state after pitch-preservation mode changes.
   /// @note Audio thread only.
-  void handlePlaybackSettingsChanged();
+  void handlePitchPreservationModeChanged();
 
   /// @brief Ensures the planar playback-rate buffer can hold @p frames.
   /// @note Audio thread only.
@@ -176,10 +180,17 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   /// @brief Renders a speed-changed chunk while keeping pitch unchanged.
   /// @note Audio thread only.
-  void renderWithWsolaPitchPreservation(
+  /// @return Number of source frames consumed from the decoder pipeline.
+  size_t renderWithWsolaPitchPreservation(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      const DecoderData &incoming,
-      int framesToProcess);
+      DecoderData &incoming,
+      int framesToProcess,
+      float activeRate);
+
+  /// @brief Pulls enough decoded PCM for one WSOLA quantum (may read multiple SPSC chunks).
+  /// @return Number of input frames accumulated, or 0 on failure.
+  /// @note Audio thread only.
+  size_t accumulateStretchInput(DecoderData &incoming, float activeRate, int framesToProcess);
 
   /// @brief Resets pitch-preservation state.
   /// @note Audio thread only.
@@ -190,12 +201,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   void renderWithoutPitchPreservation(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       const DecoderData &incoming,
-      int framesToProcess);
-
-  /// @brief Applies a short fade-in after playback-rate mode changes to avoid hard discontinuities.
-  /// @note Audio thread only.
-  void applyPlaybackTransitionFade(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
 
   /// @brief Daemon thread for decoding and seeking

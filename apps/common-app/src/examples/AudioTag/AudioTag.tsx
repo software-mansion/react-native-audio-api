@@ -142,11 +142,15 @@ const AudioTag: React.FC = () => {
             minLabelWidth={70}
           />
           <Spacer.Vertical size={20} />
-          <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20 }}>
-            <Button title="x0.5" onPress={() => handlePlaybackRateChange(0.5)} />
-            <Button title="x1.0" onPress={() => handlePlaybackRateChange(1)} />
-            <Button title="x1.5" onPress={() => handlePlaybackRateChange(1.5)} />
-          </View>
+          <Slider
+            label="Playback Rate"
+            value={sliderPlaybackRate}
+            onValueChange={handlePlaybackRateChange}
+            min={0.25}
+            max={4}
+            step={0.25}
+            minLabelWidth={70}
+          />
           <Spacer.Vertical size={12} />
         </View>
         <Button

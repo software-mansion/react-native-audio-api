@@ -41,6 +41,15 @@ AudioFileSourceNode::AudioFileSourceNode(
       std::memory_order_release);
   decoderState_->preservesPitch.store(options.preservesPitch, std::memory_order_release);
 
+  const float initialRate = std::isfinite(options.playbackRate) && options.playbackRate >= 0.0f
+      ? options.playbackRate
+      : 1.0f;
+  targetPlaybackRate_ = initialRate;
+  // Keep WSOLA in the pipeline whenever pitch is preserved so the stretcher stays
+  // warmed up at 1.0x. Switching from passthrough to WSOLA on the first rate
+  // change resets overlap state and causes audible buzzing.
+  usingWsolaPath_ = options.preservesPitch;
+
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
 
@@ -130,10 +139,8 @@ void AudioFileSourceNode::setPlaybackRate(float v) {
     return;
   }
 
-  const float previous = decoderState_->playbackRate.exchange(v, std::memory_order_acq_rel);
-  if (std::abs(previous - v) > 0.0001f) {
-    handlePlaybackSettingsChanged();
-  }
+  decoderState_->playbackRate.store(v, std::memory_order_release);
+  targetPlaybackRate_ = v;
 }
 
 void AudioFileSourceNode::setPreservesPitch(bool v) {
@@ -143,7 +150,7 @@ void AudioFileSourceNode::setPreservesPitch(bool v) {
 
   const bool previous = decoderState_->preservesPitch.exchange(v, std::memory_order_acq_rel);
   if (previous != v) {
-    handlePlaybackSettingsChanged();
+    handlePitchPreservationModeChanged();
   }
 }
 
@@ -160,10 +167,10 @@ void AudioFileSourceNode::drainPendingFrames() {
   while (frameReceiver_->try_receive(drop) == ResponseStatus::SUCCESS) {}
 }
 
-void AudioFileSourceNode::handlePlaybackSettingsChanged() {
+void AudioFileSourceNode::handlePitchPreservationModeChanged() {
   drainPendingFrames();
   resetPitchPreservationState();
-  playbackFadeInRemainingFrames_ = PLAYBACK_TRANSITION_FADE_FRAMES;
+  usingWsolaPath_ = decoderState_->preservesPitch.load(std::memory_order_acquire);
 }
 
 bool AudioFileSourceNode::ensurePlaybackRateBufferSize(size_t frames) {
@@ -295,25 +302,93 @@ bool AudioFileSourceNode::readNextFrameChunk(DecoderData &outData) {
   return frameReceiver_->try_receive(outData) == ResponseStatus::SUCCESS;
 }
 
-void AudioFileSourceNode::renderWithWsolaPitchPreservation(
+size_t AudioFileSourceNode::renderWithWsolaPitchPreservation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    const DecoderData &incoming,
-    int framesToProcess) {
-  if (incoming.size == 0 || !ensurePlaybackRateBufferSize(incoming.size)) {
+    DecoderData &incoming,
+    int framesToProcess,
+    float activeRate) {
+  const size_t inputFrames = accumulateStretchInput(incoming, activeRate, framesToProcess);
+  if (inputFrames == 0) {
     processingBuffer->zero();
-    return;
+    return 0;
   }
-
-  playbackRateBuffer_->zero();
-  playbackRateBuffer_->deinterleaveFrom(incoming.interleavedBuffer.data(), incoming.size);
-  playbackRateBuffer_->scale(volume_);
 
   wsolaStretcher_.process(
       *playbackRateBuffer_,
-      incoming.size,
+      inputFrames,
       *processingBuffer,
       static_cast<size_t>(framesToProcess),
-      incoming.playbackRate);
+      activeRate);
+
+  return inputFrames;
+}
+
+size_t AudioFileSourceNode::accumulateStretchInput(
+    DecoderData &incoming,
+    float activeRate,
+    int framesToProcess) {
+  const size_t framesNeeded =
+      static_cast<size_t>(std::ceil(activeRate * static_cast<float>(framesToProcess)));
+
+  // The decoder delivers fixed-size chunks, so the final chunk may overshoot
+  // framesNeeded by up to one chunk. Reserve that headroom to avoid writing
+  // past the buffer (heap overflow) when accumulating multiple chunks.
+  const size_t bufferCapacity =
+      std::max(framesNeeded, incoming.size) + static_cast<size_t>(RENDER_QUANTUM_SIZE);
+  if (!ensurePlaybackRateBufferSize(bufferCapacity)) {
+    return 0;
+  }
+
+  playbackRateBuffer_->zero();
+  const size_t capacity = playbackRateBuffer_->getSize();
+  size_t totalInputFrames = 0;
+  const size_t channels = static_cast<size_t>(channelCount_);
+
+  auto appendChunk = [&](const DecoderData &chunk) {
+    if (chunk.size == 0 || totalInputFrames >= capacity) {
+      return;
+    }
+
+    const size_t framesToCopy = std::min(chunk.size, capacity - totalInputFrames);
+    for (size_t ch = 0; ch < channels; ++ch) {
+      float *dest = playbackRateBuffer_->getChannel(ch)->begin() + totalInputFrames;
+      const float *src = chunk.interleavedBuffer.data() + ch;
+      for (size_t frame = 0; frame < framesToCopy; ++frame) {
+        dest[frame] = src[frame * channels];
+      }
+    }
+    totalInputFrames += framesToCopy;
+  };
+
+  appendChunk(incoming);
+
+  DecoderData extra;
+  while (totalInputFrames < framesNeeded && readNextFrameChunk(extra)) {
+    if (extra.state == StreamState::END_OF_STREAM) {
+      break;
+    }
+    if (extra.state == StreamState::DISCONTINUOUS) {
+      currentTime_.store(extra.timestamp, std::memory_order_release);
+      resetPitchPreservationState();
+      break;
+    }
+    appendChunk(extra);
+  }
+
+  if (totalInputFrames == 0) {
+    return 0;
+  }
+
+  if (volume_ != 1.0f) {
+    for (size_t ch = 0; ch < channels; ++ch) {
+      float *data = playbackRateBuffer_->getChannel(ch)->begin();
+      for (size_t frame = 0; frame < totalInputFrames; ++frame) {
+        data[frame] *= volume_;
+      }
+    }
+  }
+
+  return totalInputFrames;
 }
 
 void AudioFileSourceNode::renderWithoutPitchPreservation(
@@ -347,28 +422,6 @@ void AudioFileSourceNode::renderWithoutPitchPreservation(
       output[frame] = (input[index] + (input[nextIndex] - input[index]) * fraction) * volume_;
     }
   }
-}
-
-void AudioFileSourceNode::applyPlaybackTransitionFade(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
-  if (playbackFadeInRemainingFrames_ <= 0 || framesToProcess <= 0) {
-    return;
-  }
-
-  const int framesToFade = std::min(framesToProcess, playbackFadeInRemainingFrames_);
-  const int fadeStart = PLAYBACK_TRANSITION_FADE_FRAMES - playbackFadeInRemainingFrames_;
-
-  for (size_t channel = 0; channel < static_cast<size_t>(channelCount_); ++channel) {
-    float *output = processingBuffer->getChannel(channel)->begin();
-    for (int frame = 0; frame < framesToFade; ++frame) {
-      const float gain = static_cast<float>(fadeStart + frame + 1) /
-          static_cast<float>(PLAYBACK_TRANSITION_FADE_FRAMES);
-      output[frame] *= gain;
-    }
-  }
-
-  playbackFadeInRemainingFrames_ -= framesToFade;
 }
 
 std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
@@ -444,23 +497,26 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
     forceFlushEvent = true;
   }
 
-  const float activePlaybackRate = decoderState_->playbackRate.load(std::memory_order_acquire);
-  DecoderData processingData = incoming;
-  processingData.playbackRate = activePlaybackRate;
-
   const bool preservesPitch = decoderState_->preservesPitch.load(std::memory_order_acquire);
-  const bool hasPlaybackRateChange = std::abs(activePlaybackRate - 1.0f) > 0.0001f ||
+  const float activeRate = targetPlaybackRate_;
+
+  const bool hasPlaybackRateChange = std::abs(activeRate - 1.0f) > RATE_SETTLE_EPSILON ||
       std::cmp_not_equal(incoming.size, static_cast<size_t>(framesToProcess));
-  const bool shouldStretch = preservesPitch && hasPlaybackRateChange &&
-      playbackRateBuffer_ != nullptr && incoming.size > 0;
-  const bool shouldResample = !preservesPitch && hasPlaybackRateChange &&
+  const bool shouldStretch =
+      preservesPitch && usingWsolaPath_ && playbackRateBuffer_ != nullptr && incoming.size > 0;
+  const bool targetResampleRate = decoderState_->playbackRate.load(std::memory_order_acquire);
+  const bool shouldResample = !preservesPitch &&
+      (std::abs(targetResampleRate - 1.0f) > RATE_SETTLE_EPSILON ||
+       std::cmp_not_equal(incoming.size, static_cast<size_t>(framesToProcess))) &&
       playbackRateBuffer_ != nullptr && incoming.size > 0;
 
   size_t framesPlayed = std::min(static_cast<size_t>(framesToProcess), incoming.size);
+  size_t sourceFramesConsumed = incoming.size;
   if (shouldStretch) {
-    renderWithWsolaPitchPreservation(processingBuffer, processingData, framesToProcess);
+    sourceFramesConsumed =
+        renderWithWsolaPitchPreservation(processingBuffer, incoming, framesToProcess, activeRate);
   } else if (shouldResample) {
-    renderWithoutPitchPreservation(processingBuffer, processingData, framesToProcess);
+    renderWithoutPitchPreservation(processingBuffer, incoming, framesToProcess);
   } else {
     processingBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesPlayed);
 
@@ -469,9 +525,7 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
     }
   }
 
-  applyPlaybackTransitionFade(processingBuffer, framesToProcess);
-
-  sendOnPositionChangedEvent(static_cast<int>(incoming.size), forceFlushEvent);
+  sendOnPositionChangedEvent(static_cast<int>(sourceFramesConsumed), forceFlushEvent);
 
   // Fill tail end with silence if the chunk returned short
   if (!shouldStretch && !shouldResample && std::cmp_less(framesPlayed, framesToProcess)) {

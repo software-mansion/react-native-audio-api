@@ -110,9 +110,9 @@ bool SeekDecoderDaemon::decodeNextChunk(
     return true;
   }
 
-  const size_t framesRequested = std::min(
-      static_cast<size_t>(std::ceil(static_cast<float>(RENDER_QUANTUM_SIZE) * playbackRate)),
-      DecoderData::MAX_FRAMES);
+  // Decode at a fixed rate into the pipeline. Playback speed is applied later by WSOLA/resampling
+  // on the audio thread (same model as Chromium's AudioRendererAlgorithm buffer + FillBuffer).
+  const size_t framesRequested = static_cast<size_t>(RENDER_QUANTUM_SIZE);
   size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
 
   if (framesRead > 0) {
