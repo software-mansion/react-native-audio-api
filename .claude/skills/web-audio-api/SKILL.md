@@ -135,7 +135,6 @@ These are exported from `api.ts` but **not** from `api.web.ts` (or have a stub/c
 | `RecorderAdapterNode` | Connects recorder to the audio graph |
 | `WorkletNode` / `WorkletSourceNode` / `WorkletProcessingNode` | JS-on-audio-thread via React Native Worklets — different from browser `AudioWorkletNode` |
 | `AudioManager` | iOS/Android audio session management (permissions, routing, interruption handling) |
-| `changePlaybackSpeed` (`AudioStretcher`) | Time-stretch without pitch change |
 | `decodeAudioData` (standalone) | Standalone decode utility (not on context) |
 | `decodePCMInBase64` | Decode raw PCM from base64 |
 

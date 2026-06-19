@@ -865,13 +865,6 @@ const decodePCMInBase64 = (_base64Data: string): Promise<AudioBufferMock> => {
   );
 };
 
-const changePlaybackSpeed = (
-  buffer: AudioBufferMock,
-  _speed: number
-): Promise<AudioBufferMock> => {
-  return Promise.resolve(buffer);
-};
-
 const concatAudioFiles = (
   inputPaths: string[],
   outputPath: string
@@ -1063,7 +1056,6 @@ export const AudioApiError = AudioApiErrorMock;
 
 // Export functions
 export {
-  changePlaybackSpeed,
   concatAudioFiles,
   decodeAudioData,
   decodePCMInBase64,
@@ -1166,7 +1158,6 @@ export default {
   // Functions
   decodeAudioData,
   decodePCMInBase64,
-  changePlaybackSpeed,
   concatAudioFiles,
   useSystemVolume,
   setMockSystemVolume,

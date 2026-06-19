@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Container, Button, Spacer, Slider, Select } from '../../components';
-import { AudioContext, changePlaybackSpeed } from 'react-native-audio-api';
+import { AudioContext } from 'react-native-audio-api';
 import type { AudioBufferSourceNode } from 'react-native-audio-api';
 import {
   PCM_DATA,
@@ -49,19 +49,19 @@ const PlaybackSpeed: FC = () => {
     setIsLoading(true);
 
     try {
-      const buffer = await audioContext
-        .decodePCMInBase64(PCM_DATA, 48000, 1, true)
-        .then((audioBuffer) =>
-          changePlaybackSpeed(
-            audioBuffer,
-            audioSettings.PSOLA ? playbackSpeed : 1
-          )
-        );
+      const buffer = await audioContext.decodePCMInBase64(
+        PCM_DATA,
+        48000,
+        1,
+        true
+      );
 
-      const source = audioContext.createBufferSource(audioSettings.PSOLA ? { pitchCorrection: false } : { pitchCorrection: audioSettings.pitchCorrection });
+      const source = audioContext.createBufferSource({
+        pitchCorrection: audioSettings.pitchCorrection,
+      });
 
       source.buffer = buffer;
-      source.playbackRate.value = audioSettings.PSOLA ? 1 : playbackSpeed;
+      source.playbackRate.value = playbackSpeed;
       source.loop = true;
 
       return source;
@@ -114,12 +114,10 @@ const PlaybackSpeed: FC = () => {
 
   const handlePlaybackSpeedChange = useCallback(
     (newSpeed: number) => {
-      if (audioSettings.PSOLA) {
+      if (audioSettings.pitchCorrection) {
         stopPlayback();
-      } else {
-        if (aCtxRef.current && sourceRef.current) {
-          sourceRef.current.playbackRate.value = newSpeed;
-        }
+      } else if (aCtxRef.current && sourceRef.current) {
+        sourceRef.current.playbackRate.value = newSpeed;
       }
 
       setPlaybackSpeed(newSpeed);

@@ -26,7 +26,7 @@ packages/audiodocs/
 │   ├── system/            # AudioManager, PlaybackNotificationManager
 │   ├── worklets/          # AudioWorklet setup and nodes
 │   ├── types/             # Enum docs (OscillatorType, BiquadFilterType...)
-│   ├── utils/             # Utility functions (decoding, time-stretching)
+│   ├── utils/             # Utility functions (decoding, file utils)
 │   ├── react/             # React-specific hooks and helpers
 │   └── experimental/      # Experimental APIs (Audio tag / development.react)
 ├── src/

@@ -336,14 +336,6 @@ describe('React Native Audio API Mocks', () => {
       expect(buffer).toBeInstanceOf(MockAPI.AudioBuffer);
     });
 
-    it('should change playback speed', async () => {
-      const context = new MockAPI.AudioContext();
-      const inputBuffer = context.createBuffer(2, 1024, 44100);
-      const outputBuffer = await MockAPI.changePlaybackSpeed(inputBuffer, 1.5);
-
-      expect(outputBuffer).toBe(inputBuffer);
-    });
-
     it('should concatenate audio files', async () => {
       const outputPath = await MockAPI.concatAudioFiles(
         ['file:///tmp/recording-1.m4a', 'file:///tmp/recording-2.m4a'],
