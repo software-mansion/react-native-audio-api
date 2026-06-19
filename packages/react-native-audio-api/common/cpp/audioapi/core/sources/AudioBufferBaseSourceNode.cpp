@@ -111,10 +111,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       playbackRateParam_->processKRateParam(framesToProcess, time),
       MIN_PLAYBACK_RATE,
       MAX_PLAYBACK_RATE);
-  auto detune = std::clamp(
-      detuneParam_->processKRateParam(framesToProcess, time) / 100.0f,
-      static_cast<float>(-SEMITONES_PER_OCTAVE),
-      static_cast<float>(SEMITONES_PER_OCTAVE));
+  auto detune = detuneParam_->processKRateParam(framesToProcess, time) / 100.0f;
   const float pitchFactor = std::pow(
       2.0f, // NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       detune / static_cast<float>(SEMITONES_PER_OCTAVE));
