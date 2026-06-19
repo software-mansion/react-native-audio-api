@@ -13,7 +13,7 @@
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 
-#include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <memory>
@@ -145,9 +145,19 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   // Target rate from JS; applied immediately on the audio thread (Chromium does not smooth rate).
   float targetPlaybackRate_{1.0f};
-  // Once WSOLA pitch preservation has been engaged, stay on that path (even at 1.0x).
-  bool usingWsolaPath_{false};
   static constexpr float RATE_SETTLE_EPSILON = 1e-2f;
+
+  enum class FillMode : std::uint8_t { Passthrough, Resample, Wsola };
+  FillMode lastFillMode_{FillMode::Passthrough};
+  std::array<float, MAX_CHANNEL_COUNT> previousOutputFrame_{};
+  bool hasPreviousOutputFrame_{false};
+  size_t transitionFadeFramesRemaining_{0};
+  static constexpr size_t MODE_TRANSITION_FADE_FRAMES = RENDER_QUANTUM_SIZE;
+
+  [[nodiscard]] static FillMode chooseFillMode(bool preservesPitch, bool rateAffectsOutput);
+  void setFillMode(FillMode mode);
+  void applyModeTransitionFade(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+  void captureLastOutputFrame(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
 
   /// @brief Dispatches position-changed events at the configured interval.
   /// @param framesPlayed number of frames played since the last event; used to calculate the new position.
@@ -190,7 +200,11 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Pulls enough decoded PCM for one WSOLA/resample quantum (may read multiple SPSC chunks).
   /// @return Number of input frames accumulated, or 0 on failure.
   /// @note Audio thread only.
-  size_t accumulateStretchInput(DecoderData &incoming, float activeRate, int framesToProcess);
+  size_t accumulateStretchInput(
+      DecoderData &incoming,
+      float activeRate,
+      int framesToProcess,
+      size_t minFramesNeeded = 0);
 
   /// @brief Drops any partially consumed decoder chunk retained for sub-1.0x playback.
   /// @note Audio thread only.

@@ -238,10 +238,6 @@ bool WsolaTimeStretcher::canRunIteration() const {
     return false;
   }
 
-  if (targetIsWithinSearchRegion()) {
-    return true;
-  }
-
   return maxSourceIndexForBlock(searchBlockIndex_ + searchBlockSize - 1) < inputFrames;
 }
 

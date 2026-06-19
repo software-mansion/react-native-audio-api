@@ -14,6 +14,14 @@ class WsolaTimeStretcher {
   void configure(size_t channels, float sampleRate);
   void reset();
 
+  [[nodiscard]] size_t getRequiredInputFrames() const {
+    return searchIntervalFrames_ + windowSize_;
+  }
+
+  [[nodiscard]] size_t getBufferedInputFrames() const {
+    return inputQueue_.empty() ? 0 : inputQueue_[0].size();
+  }
+
   void process(
       const DSPAudioBuffer &input,
       size_t inputFrames,
