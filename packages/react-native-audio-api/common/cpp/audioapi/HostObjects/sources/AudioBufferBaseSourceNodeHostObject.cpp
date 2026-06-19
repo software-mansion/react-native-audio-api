@@ -97,7 +97,7 @@ void AudioBufferBaseSourceNodeHostObject::initStretch(int channelCount, float sa
   outputLatency_ = WsolaTimeStretcher::OUTPUT_LATENCY_MS / 1000.0;
 
   auto playbackRateBuffer =
-      std::make_shared<DSPAudioBuffer>(3 * RENDER_QUANTUM_SIZE, channelCount, sampleRate);
+      std::make_shared<DSPAudioBuffer>(4 * RENDER_QUANTUM_SIZE, channelCount, sampleRate);
 
   auto event = [sourceNode, playbackRateBuffer, channelCount, sampleRate](BaseAudioContext &) {
     sourceNode->initStretch(static_cast<size_t>(channelCount), sampleRate, playbackRateBuffer);
