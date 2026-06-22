@@ -126,7 +126,7 @@ void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed, bool forc
   if (onPositionChangedCallbackId_ != 0 &&
       (forceFlush || onPositionChangedTime_ > onPositionChangedInterval_)) {
 
-    audioEventHandlerRegistry_->dispatchEvent(
+    audioEventHandlerRegistry_->dispatchEventFromAudioThread(
         AudioEvent::POSITION_CHANGED,
         onPositionChangedCallbackId_,
         DoubleValuePayload{.value = getCurrentTime()});

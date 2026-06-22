@@ -55,7 +55,7 @@ describe('Mock Integration Tests', () => {
   });
 
   describe('Audio Recording Workflow', () => {
-    it('should set up recording with adapter node', () => {
+    it('should set up recording with adapter node', async () => {
       const context = new MockAPI.AudioContext();
       const recorder = new MockAPI.AudioRecorder();
 
@@ -77,14 +77,14 @@ describe('Mock Integration Tests', () => {
       recorder.connect(recorderAdapter);
 
       // Start recording
-      const startResult = recorder.start({
+      const startResult = await recorder.start({
         fileNameOverride: 'test-recording.m4a',
       });
       expect(startResult.status).toBe('success');
       expect(recorder.isRecording()).toBe(true);
 
       // Stop recording
-      const stopResult = recorder.stop();
+      const stopResult = await recorder.stop();
       expect(stopResult.status).toBe('success');
       // @ts-ignore - paths is not seen as the correct type
       expect(stopResult.paths?.length).toBeGreaterThan(0);

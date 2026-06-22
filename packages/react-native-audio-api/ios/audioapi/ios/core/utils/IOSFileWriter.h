@@ -18,6 +18,7 @@ typedef struct objc_object AVAudioConverter;
 #endif // __OBJC__
 
 struct WriterData {
+  // Owned by the worker thread; freed in IOSFileWriter::taskOffloaderFunction.
   const AudioBufferList *audioBufferList;
   int numFrames;
 };

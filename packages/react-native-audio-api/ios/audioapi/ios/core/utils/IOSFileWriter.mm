@@ -4,11 +4,15 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
+#include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/UnitConversion.h>
 
 namespace audioapi {
+
+using ios::copyAudioBufferList;
+using ios::freeOwnedAudioBufferList;
 
 IOSFileWriter::IOSFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -157,34 +161,45 @@ void IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
 {
   if (audioFile_ == nil) {
     invokeOnErrorCallback("Attempted to write audio data when file is not open");
-  } else {
-    offloader_->getSender()->send({audioBufferList, numFrames});
+    return;
   }
+
+  // CoreAudio owns `audioBufferList` only for the duration of this synchronous
+  // callback. Copy into an owned AudioBufferList before handing off to the
+  // worker thread; the consumer in taskOffloaderFunction frees it.
+  AudioBufferList *owned = copyAudioBufferList(audioBufferList);
+  if (owned == nullptr) {
+    return;
+  }
+
+  offloader_->getSender()->send({.audioBufferList = owned, .numFrames = numFrames});
 }
 
 void IOSFileWriter::taskOffloaderFunction(WriterData data)
 {
   auto [audioBufferList, numFrames] = data;
-  if (audioBufferList == nullptr)
+  if (audioBufferList == nullptr) {
     return;
+  }
   @autoreleasepool {
     NSError *error = nil;
+
+    for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
+      memcpy(
+          converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
+          audioBufferList->mBuffers[i].mData,
+          audioBufferList->mBuffers[i].mDataByteSize);
+    }
+
+    freeOwnedAudioBufferList(audioBufferList);
+    audioBufferList = nullptr;
+    converterInputBuffer_.frameLength = numFrames;
+
     AVAudioFormat *fileFormat = [audioFile_ processingFormat];
 
     if (bufferFormat_.sampleRate == fileFormat.sampleRate &&
         bufferFormat_.channelCount == fileFormat.channelCount &&
         bufferFormat_.isInterleaved == fileFormat.isInterleaved) {
-      // We can use the converter input buffer as a "transport" layer to the file
-      for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
-        memcpy(
-            converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
-            audioBufferList->mBuffers[i].mData,
-            audioBufferList->mBuffers[i].mDataByteSize);
-      }
-
-      audioBufferList = nullptr;
-      converterInputBuffer_.frameLength = numFrames;
-
       [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
 
       if (error != nil) {
@@ -197,16 +212,6 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
       framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
       return;
     }
-
-    for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
-      memcpy(
-          converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
-          audioBufferList->mBuffers[i].mData,
-          audioBufferList->mBuffers[i].mDataByteSize);
-    }
-
-    audioBufferList = nullptr;
-    converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;
     AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
@@ -223,13 +228,16 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
     };
 
     [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
-    converterOutputBuffer_.frameLength =
-        fileProperties_->sampleRate / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
       invokeOnErrorCallback(
           std::string("Error during audio conversion, native error: ") +
           [[error debugDescription] UTF8String]);
+      return;
+    }
+
+    AVAudioFrameCount producedFrames = converterOutputBuffer_.frameLength;
+    if (producedFrames == 0) {
       return;
     }
 
@@ -242,14 +250,14 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
       return;
     }
 
-    framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
+    framesWritten_.fetch_add(producedFrames, std::memory_order_acq_rel);
   }
 }
 
 double IOSFileWriter::getCurrentDuration() const
 {
   return static_cast<double>(framesWritten_.load(std::memory_order_acquire)) /
-      bufferFormat_.sampleRate;
+      fileProperties_->sampleRate;
 }
 
 std::string IOSFileWriter::getFilePath() const

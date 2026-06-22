@@ -335,8 +335,8 @@ export interface IAudioRecorderCallbackOptions extends AudioRecorderCallbackOpti
 
 export interface IAudioRecorder {
   // default recorder methods
-  start: (fileNameOverride?: string) => Result<{}>;
-  stop: () => Result<FileInfo>;
+  start: (fileNameOverride?: string) => Promise<Result<{}>>;
+  stop: () => Promise<Result<FileInfo>>;
   isRecording: () => boolean;
   isPaused: () => boolean;
 

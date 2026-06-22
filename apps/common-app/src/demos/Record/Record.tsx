@@ -85,7 +85,7 @@ const Record: FC = () => {
       return;
     }
 
-    const result = Recorder.start({
+    const result = await Recorder.start({
       fileNameOverride: `overridden_name_${Date.now()}`,
     });
 
@@ -114,7 +114,7 @@ const Record: FC = () => {
   }, []);
 
   const onStopRecording = useCallback(async () => {
-    const info = Recorder.stop();
+    const info = await Recorder.stop();
     RecordingNotificationManager.hide();
     setState(RecordingState.Loading);
 

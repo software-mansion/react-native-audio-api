@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <tuple>
+#include <vector>
 
 namespace audioapi {
 
@@ -16,8 +17,17 @@ class AudioFileProperties;
 class AudioRecorderCallback;
 class AudioEventHandlerRegistry;
 
+struct AudioReadyCallbackMetadata {
+  float sampleRate = 0.0f;
+  size_t bufferLength = 0;
+  int channelCount = 0;
+  uint64_t callbackId = 0;
+};
+
 class AudioRecorder {
  public:
+  using StopResult = Result<std::tuple<std::vector<std::string>, double, double>, std::string>;
+
   enum class RecorderState : uint8_t { Idle = 0, Recording, Paused };
   explicit AudioRecorder(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
@@ -29,24 +39,33 @@ class AudioRecorder {
   virtual ~AudioRecorder() = default;
 
   virtual Result<NoneType, std::string> start(const std::string &fileNameOverride) = 0;
-  virtual Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() = 0;
+  virtual StopResult stop() = 0;
 
   virtual Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) = 0;
-  virtual void disableFileOutput() = 0;
+
+  /// @brief Detaches and closes the active file writer. The actual close runs
+  /// outside the recorder lock. Shared by both platforms.
+  void disableFileOutput();
 
   virtual void pause() = 0;
   virtual void resume() = 0;
 
   virtual void connect(const std::shared_ptr<RecorderAdapterNode> &node) = 0;
-  virtual void disconnect() = 0;
+
+  /// @brief Tears down the connected adapter node. Shared by both platforms;
+  /// platform-specific scratch state is released via clearAdapterScratchState().
+  void disconnect();
 
   virtual Result<NoneType, std::string> setOnAudioReadyCallback(
       float sampleRate,
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId) = 0;
-  virtual void clearOnAudioReadyCallback() = 0;
+
+  /// @brief Clears the audio-ready callback and its enabled/configured flags.
+  /// Shared by both platforms.
+  void clearOnAudioReadyCallback();
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
@@ -59,12 +78,35 @@ class AudioRecorder {
 
   virtual bool isRecording() const = 0;
   virtual bool isPaused() const = 0;
-  virtual bool isIdle() const = 0;
+
+  /// @brief Whether the recorder is idle (not recording or paused). Shared by
+  /// both platforms.
+  bool isIdle() const;
 
  protected:
   bool wantsCallback() const;
   bool wantsFileOutput() const;
   bool wantsConnection() const;
+
+  /// @brief Hook for releasing platform-specific scratch state tied to a
+  /// connected adapter node (e.g. Android's deinterleaving buffer). Called from
+  /// disconnect() while holding adapterNodeMutex_. Default no-op.
+  virtual void clearAdapterScratchState() {}
+
+  /// @brief Builds the list of `file://` output URIs from the recorded segment
+  /// paths, falling back to the single file path when no segments were tracked.
+  /// Shared by the platform stop() implementations.
+  static std::vector<std::string> buildOutputPaths(
+      const std::vector<std::string> &segmentPaths,
+      const std::string &filePath);
+
+  /// @brief Closes the detached file writer and tears down the callback / adapter
+  /// node. Must be called without holding the recorder locks.
+  static StopResult finalizeStoppedOutputs(
+      std::shared_ptr<AudioFileWriter> &fileWriter,
+      std::shared_ptr<AudioRecorderCallback> &dataCallback,
+      std::shared_ptr<RecorderAdapterNode> &adapterNode,
+      std::vector<std::string> outputPaths);
 
   std::atomic<RecorderState> state_{RecorderState::Idle};
 
@@ -80,6 +122,7 @@ class AudioRecorder {
   std::mutex errorCallbackMutex_;
   mutable std::mutex adapterNodeMutex_;
 
+  AudioReadyCallbackMetadata dataCallbackMetadata_;
   std::atomic<uint64_t> errorCallbackId_{0};
 
   std::string filePath_;

@@ -162,7 +162,7 @@ double AudioBufferQueueSourceNode::getCurrentPosition() const {
 
 void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue) {
   if (onBufferEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->dispatchEvent(
+    audioEventHandlerRegistry_->dispatchEventFromAudioThread(
         AudioEvent::BUFFER_ENDED,
         onBufferEndedCallbackId_,
         BufferEndedPayload{.bufferId = bufferId, .isLastBufferInQueue = isLastBufferInQueue});

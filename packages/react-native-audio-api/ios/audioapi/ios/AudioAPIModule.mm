@@ -3,7 +3,13 @@
 
 #import <audioapi/core/utils/worklets/SafeIncludes.h>
 #if RN_AUDIO_API_ENABLE_WORKLETS
-#import <worklets/apple/WorkletsModule.h>
+// Forward-declare the single method used from WorkletsModule instead of importing
+// <worklets/apple/WorkletsModule.h>, which transitively includes the codegen-generated
+// <rnworklets/rnworklets.h> that is not visible to this compile unit in all build setups
+// (e.g. prebuilt RNWorklets in EAS builds).
+@interface WorkletsModule : NSObject
+- (std::shared_ptr<worklets::WorkletsModuleProxy>)getWorkletsModuleProxy;
+@end
 #endif
 #ifdef RCT_NEW_ARCH_ENABLED
 #import <React/RCTCallInvoker.h>

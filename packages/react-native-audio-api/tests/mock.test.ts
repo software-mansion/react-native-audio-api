@@ -268,10 +268,10 @@ describe('React Native Audio API Mocks', () => {
       expect(recorder.options).toBeDefined();
     });
 
-    it('should support recording workflow', () => {
+    it('should support recording workflow', async () => {
       recorder.enableFileOutput();
 
-      const startResult = recorder.start();
+      const startResult = await recorder.start();
       expect(startResult.status).toBe('success');
       expect(recorder.isRecording()).toBe(true);
 
@@ -281,7 +281,7 @@ describe('React Native Audio API Mocks', () => {
       recorder.resume();
       expect(recorder.isPaused()).toBe(false);
 
-      const stopResult = recorder.stop();
+      const stopResult = await recorder.stop();
       expect(stopResult.status).toBe('success');
       // @ts-ignore - paths is not seen as the correct type
       expect(stopResult.paths?.length).toBeGreaterThan(0);

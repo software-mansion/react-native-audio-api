@@ -3,25 +3,18 @@
 #import <AudioSessionManager.h>
 #import <Foundation/Foundation.h>
 
-#include <unordered_map>
 #include <vector>
 
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
-#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/ios/core/utils/IOSRotatingFileWriter.h>
 #include <audioapi/ios/system/AudioEngine.h>
-#include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
-#include <audioapi/utils/CircularArray.hpp>
-#include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <audioapi/utils/Result.hpp>
 
 namespace audioapi {
@@ -84,17 +77,20 @@ static std::string describeRecorderFormat(id format)
       ", interleaved=" + std::string(recorderFormatInterleaved(format) ? "true" : "false") + "}";
 }
 
-static void cleanupStartedRecorder(
-    NativeAudioRecorder *nativeRecorder,
-    const std::shared_ptr<AudioFileWriter> &fileWriter,
-    bool fileWasOpened)
+/// @brief Appends the shared input diagnostics (and, on the simulator, the host-mic hint)
+/// to a start() failure message so every early-return path reports the same context.
+static std::string withStartDiagnostics(
+    std::string message,
+    AudioSessionManager *audioSessionManager)
 {
-  [nativeRecorder setInputArmed:false];
-  [nativeRecorder stop];
+  message += "; ";
+  message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
 
-  if (fileWasOpened && fileWriter != nullptr) {
-    fileWriter->closeFile();
-  }
+#if TARGET_OS_SIMULATOR
+  message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
+#endif
+
+  return message;
 }
 
 /// @brief Constructs an IOSAudioRecorder instance.
@@ -136,7 +132,9 @@ IOSAudioRecorder::IOSAudioRecorder(
 
 IOSAudioRecorder::~IOSAudioRecorder()
 {
-  stop();
+  if (!isIdle()) {
+    stop();
+  }
 
   {
     std::scoped_lock lock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
@@ -154,8 +152,30 @@ IOSAudioRecorder::~IOSAudioRecorder()
   [nativeRecorder_ cleanup];
 }
 
+// Must be called while holding the recorder locks (start() rollback paths only).
+void IOSAudioRecorder::rollbackFailedStart()
+{
+  [nativeRecorder_ setInputArmed:false];
+  [nativeRecorder_ stop];
+
+  if (fileWriter_ != nullptr) {
+    fileWriter_->closeFile();
+    fileWriter_ = nullptr;
+    fileOutputConfigured_.store(false, std::memory_order_release);
+    filePath_ = "";
+  }
+
+  if (connectedConfigured_.load(std::memory_order_acquire)) {
+    if (adapterNode_ != nullptr) {
+      adapterNode_->adapterCleanup();
+    }
+    connectedConfigured_.store(false, std::memory_order_release);
+  }
+}
+
 /// @brief Starts the audio recording process and prepares necessary resources.
-/// This method should be called from the JS thread only.
+/// Invoked asynchronously from the PromiseVendor thread pool (not the JS thread);
+/// all shared state is guarded by the recorder locks and atomics.
 /// @returns Result containing the file path if recording started successfully, or an error message.
 Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNameOverride)
 {
@@ -176,21 +196,16 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
   @try {
     didStartNativeRecorder = [nativeRecorder_ start:&nativeStartError];
   } @catch (NSException *exception) {
-    cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
+    rollbackFailedStart();
 
     std::string message = "Failed to start native recorder";
     message += ": exception={name=";
     message += [[exception.name description] UTF8String];
     message += ", reason=";
     message += [[(exception.reason ?: @"<none>") description] UTF8String];
-    message += "}; ";
-    message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
+    message += "}";
 
-#if TARGET_OS_SIMULATOR
-    message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
-#endif
-
-    return Result<NoneType, std::string>::Err(message);
+    return Result<NoneType, std::string>::Err(withStartDiagnostics(message, audioSessionManager));
   }
 
   if (!didStartNativeRecorder) {
@@ -201,67 +216,49 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
       message += [[nativeStartError debugDescription] UTF8String];
     }
 
-    message += "; ";
-    message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
-
-#if TARGET_OS_SIMULATOR
-    message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
-#endif
-
-    return Result<NoneType, std::string>::Err(message);
+    return Result<NoneType, std::string>::Err(withStartDiagnostics(message, audioSessionManager));
   }
 
   AVAudioFormat *inputFormat = [nativeRecorder_ getResolvedInputFormat];
 
   if (!hasUsableRecorderFormat(inputFormat)) {
-    std::string message = "Audio input format is unavailable. " +
-        describeRecorderFormat(inputFormat) + "; " +
-        [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
-#if TARGET_OS_SIMULATOR
-    message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
-#endif
+    std::string message =
+        "Audio input format is unavailable. " + describeRecorderFormat(inputFormat);
 
-    cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
-    return Result<NoneType, std::string>::Err(message);
+    rollbackFailedStart();
+    return Result<NoneType, std::string>::Err(withStartDiagnostics(message, audioSessionManager));
   }
 
   // Estimate the maximum input buffer lengths that can be expected from the sink node
   size_t maxInputBufferLength = [nativeRecorder_ getResolvedBufferSize];
-  bool fileWasOpened = false;
 
   if (wantsFileOutput()) {
     recordingSegmentPaths_.clear();
     auto writerResult = setupFileWriter(fileProperties_, fileNameOverride);
     if (writerResult.is_err()) {
-      cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
-      fileOutputConfigured_.store(false, std::memory_order_release);
-      fileWriter_ = nullptr;
+      rollbackFailedStart();
       return Result<NoneType, std::string>::Err(writerResult.unwrap_err());
     }
     filePath_ = writerResult.unwrap();
-    fileWasOpened = true;
   }
 
   if (wantsCallback()) {
     if (dataCallback_ == nullptr) {
-      cleanupStartedRecorder(nativeRecorder_, fileWriter_, fileWasOpened);
-      fileOutputConfigured_.store(false, std::memory_order_release);
-      fileWriter_ = nullptr;
-      filePath_ = "";
-      return Result<NoneType, std::string>::Err(
-          "Failed to prepare callback: callback is unavailable");
-    }
+      dataCallback_ = std::make_shared<IOSRecorderCallback>(
+          audioEventHandlerRegistry_,
+          dataCallbackMetadata_.sampleRate,
+          dataCallbackMetadata_.bufferLength,
+          dataCallbackMetadata_.channelCount,
+          dataCallbackMetadata_.callbackId);
 
-    dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+      dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+    }
     auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
                               ->prepare(inputFormat, maxInputBufferLength);
 
     if (callbackResult.is_err()) {
-      cleanupStartedRecorder(nativeRecorder_, fileWriter_, fileWasOpened);
+      rollbackFailedStart();
       callbackOutputConfigured_.store(false, std::memory_order_release);
-      fileOutputConfigured_.store(false, std::memory_order_release);
-      fileWriter_ = nullptr;
-      filePath_ = "";
       return Result<NoneType, std::string>::Err(
           "Failed to prepare callback: " + callbackResult.unwrap_err());
     }
@@ -284,87 +281,49 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
 
 /// @brief Stops the audio recording process and releases resources.
 /// It finalizes any data receiver and closes the stream.
-/// This method should be called from the JS thread only.
+/// Invoked asynchronously from the PromiseVendor thread pool (not the JS thread);
+/// all shared state is guarded by the recorder locks and atomics.
 /// @returns Result containing paths, size, and duration if stopped successfully, or an error message.
-Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAudioRecorder::stop()
+AudioRecorder::StopResult IOSAudioRecorder::stop()
 {
   std::shared_ptr<AudioFileWriter> fileWriter;
   std::shared_ptr<AudioRecorderCallback> dataCallback;
   std::shared_ptr<RecorderAdapterNode> adapterNode;
   std::vector<std::string> outputPaths;
-  std::string filePath;
-
-  double outputFileSize = 0;
-  double outputDuration = 0;
-  bool hadFileOutput = false;
 
   {
     std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
     if (isIdle()) {
-      return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
-          "Recorder is not in recording state.");
+      return StopResult::Err("Recorder is not in recording state.");
     }
 
     [nativeRecorder_ setInputArmed:false];
     state_.store(RecorderState::Idle, std::memory_order_release);
     [nativeRecorder_ stop];
 
-    hadFileOutput = usesFileOutput();
-    bool hadCallback = usesCallback();
-    bool hadConnection = isConnected();
-    filePath = filePath_;
-
-    if (hadFileOutput) {
+    if (usesFileOutput()) {
       fileOutputConfigured_.store(false, std::memory_order_release);
       fileWriter = std::move(fileWriter_);
+      outputPaths = buildOutputPaths(recordingSegmentPaths_, filePath_);
     }
 
-    if (hadCallback) {
+    if (usesCallback()) {
       callbackOutputConfigured_.store(false, std::memory_order_release);
-      dataCallback = dataCallback_;
+      dataCallback = std::move(dataCallback_);
     }
 
-    if (hadConnection) {
+    if (isConnected()) {
       connectedConfigured_.store(false, std::memory_order_release);
+      isConnected_.store(false, std::memory_order_release);
       adapterNode = std::move(adapterNode_);
-    }
-
-    for (const auto &raw : recordingSegmentPaths_) {
-      if (!raw.empty()) {
-        outputPaths.push_back(std::string("file://") + raw);
-      }
-    }
-    if (hadFileOutput && outputPaths.empty() && !filePath.empty()) {
-      outputPaths.push_back(std::string("file://") + filePath);
     }
 
     recordingSegmentPaths_.clear();
     filePath_ = "";
   }
 
-  if (fileWriter != nullptr) {
-    auto fileResult = fileWriter->closeFile();
-
-    if (fileResult.is_err()) {
-      return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
-          "Failed to close file: " + fileResult.unwrap_err());
-    }
-
-    outputFileSize = std::get<0>(fileResult.unwrap());
-    outputDuration = std::get<1>(fileResult.unwrap());
-  }
-
-  if (dataCallback != nullptr) {
-    dataCallback->cleanup();
-  }
-
-  if (adapterNode != nullptr) {
-    adapterNode->adapterCleanup();
-  }
-
-  return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Ok(
-      std::make_tuple(std::move(outputPaths), outputFileSize, outputDuration));
+  return finalizeStoppedOutputs(fileWriter, dataCallback, adapterNode, std::move(outputPaths));
 }
 
 /// @brief Enables file output for the recorder with specified properties.
@@ -448,17 +407,6 @@ Result<std::string, std::string> IOSAudioRecorder::setupFileWriter(
   return Result<std::string, std::string>::Ok(filePath_);
 }
 
-void IOSAudioRecorder::disableFileOutput()
-{
-  std::scoped_lock lock(fileWriterMutex_);
-  fileOutputConfigured_.store(false, std::memory_order_release);
-  fileOutputEnabled_.store(false, std::memory_order_release);
-
-  if (fileWriter_ != nullptr) {
-    fileWriter_->closeFile();
-  }
-}
-
 /// @brief Connects a RecorderAdapterNode to the recorder for audio data routing.
 /// If the recorder is already active, it will initialize the adapter node immediately.
 /// This method should be called from the JS thread only.
@@ -482,26 +430,6 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
         resolvedInputFormat.channelCount,
         resolvedInputFormat.sampleRate);
     connectedConfigured_.store(true, std::memory_order_release);
-  }
-}
-
-/// @brief Disconnects the currently connected RecorderAdapterNode from the recorder.
-/// If the recorder is currently active, it will stop routing audio data immediately.
-/// This method should be called from the JS thread only.
-void IOSAudioRecorder::disconnect()
-{
-  std::shared_ptr<RecorderAdapterNode> adapterNode;
-  bool hadConnection = false;
-  {
-    std::scoped_lock lock(adapterNodeMutex_);
-    hadConnection = isConnected();
-    connectedConfigured_.store(false, std::memory_order_release);
-    isConnected_.store(false, std::memory_order_release);
-    adapterNode = std::move(adapterNode_);
-  }
-
-  if (hadConnection && adapterNode != nullptr) {
-    adapterNode->adapterCleanup();
   }
 }
 
@@ -555,14 +483,6 @@ bool IOSAudioRecorder::isPaused() const
       [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
 }
 
-/// @brief Checks if the recorder is currently idle (not recording or paused).
-/// This method can be called from any thread.
-/// @returns True if idle, false otherwise.
-bool IOSAudioRecorder::isIdle() const
-{
-  return state_.load(std::memory_order_acquire) == RecorderState::Idle;
-}
-
 /// @brief Sets the callback to be invoked when audio data is ready.
 /// If the recorder is already active, it will prepare the callback for receiving audio data immediately.
 /// This method should be called from the JS thread only.
@@ -578,6 +498,12 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
     uint64_t callbackId)
 {
   std::scoped_lock lock(callbackMutex_, errorCallbackMutex_);
+
+  dataCallbackMetadata_ = {
+      .sampleRate = sampleRate,
+      .bufferLength = bufferLength,
+      .channelCount = channelCount,
+      .callbackId = callbackId};
 
   dataCallback_ = std::make_shared<IOSRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
@@ -605,17 +531,6 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
     callbackOutputConfigured_.store(true, std::memory_order_release);
   }
   return Result<NoneType, std::string>::Ok(None);
-}
-
-/// @brief Clears the audio data callback.
-/// If the recorder is currently active, it will stop invoking the callback immediately.
-/// This method should be called from the JS thread only.
-void IOSAudioRecorder::clearOnAudioReadyCallback()
-{
-  std::scoped_lock lock(callbackMutex_);
-  callbackOutputConfigured_.store(false, std::memory_order_release);
-  callbackOutputEnabled_.store(false, std::memory_order_release);
-  dataCallback_ = nullptr;
 }
 
 } // namespace audioapi

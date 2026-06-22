@@ -6,17 +6,18 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
+#include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Result.hpp>
-#include <algorithm>
-#include <cstdlib>
-#include <cstring>
 #include <memory>
 #include <utility>
 
 namespace audioapi {
+
+using ios::copyAudioBufferList;
+using ios::freeOwnedAudioBufferList;
 
 IOSRecorderCallback::IOSRecorderCallback(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -118,21 +119,10 @@ void IOSRecorderCallback::cleanup()
   }
 }
 
-static inline void freeOwnedAudioBufferList(const AudioBufferList *bufferList)
-{
-  if (bufferList == nullptr) {
-    return;
-  }
-  for (UInt32 i = 0; i < bufferList->mNumberBuffers; ++i) {
-    std::free(bufferList->mBuffers[i].mData);
-  }
-  std::free(const_cast<AudioBufferList *>(bufferList));
-}
-
 /// @brief Receives audio data from the recorder, processes it, and stores it in the circular buffer.
 /// The data is converted using AVAudioConverter if the input format differs from the user desired callback format.
 /// This method runs on the audio thread.
-/// @param inputBuffer Pointer to the AudioBufferList containing the incoming audio data.
+/// @param audioBufferList Pointer to the AudioBufferList containing the incoming audio data.
 /// @param numFrames Number of frames in the input buffer.
 void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
@@ -148,27 +138,9 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferLis
   // CoreAudio owns `audioBufferList` only for the duration of this synchronous
   // callback. Copy into an owned AudioBufferList before handing off to the
   // worker thread; the consumer in taskOffloaderFunction frees it.
-  UInt32 bufferCount = audioBufferList->mNumberBuffers;
-  size_t headerSize = offsetof(AudioBufferList, mBuffers) + sizeof(AudioBuffer) * bufferCount;
-  AudioBufferList *owned = static_cast<AudioBufferList *>(std::malloc(headerSize));
+  AudioBufferList *owned = copyAudioBufferList(audioBufferList);
   if (owned == nullptr) {
     return;
-  }
-  owned->mNumberBuffers = bufferCount;
-  for (UInt32 i = 0; i < bufferCount; ++i) {
-    UInt32 byteSize = audioBufferList->mBuffers[i].mDataByteSize;
-    owned->mBuffers[i].mNumberChannels = audioBufferList->mBuffers[i].mNumberChannels;
-    owned->mBuffers[i].mDataByteSize = byteSize;
-    void *channelData = std::malloc(byteSize);
-    if (channelData == nullptr) {
-      for (UInt32 j = 0; j < i; ++j) {
-        std::free(owned->mBuffers[j].mData);
-      }
-      std::free(owned);
-      return;
-    }
-    std::memcpy(channelData, audioBufferList->mBuffers[i].mData, byteSize);
-    owned->mBuffers[i].mData = channelData;
   }
   offloader_->getSender()->send({.audioBufferList = owned, .numFrames = numFrames});
 }
@@ -202,8 +174,6 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       return;
     }
 
-    size_t outputFrameCount = ceil(numFrames * (sampleRate_ / bufferFormat_.sampleRate));
-
     for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
       memcpy(
           converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
@@ -230,7 +200,6 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
     };
 
     [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
-    converterOutputBuffer_.frameLength = sampleRate_ / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
       invokeOnErrorCallback(
@@ -239,9 +208,14 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
       return;
     }
 
+    AVAudioFrameCount producedFrames = converterOutputBuffer_.frameLength;
+    if (producedFrames == 0) {
+      return;
+    }
+
     for (int i = 0; i < channelCount_; ++i) {
       auto *data = static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
-      circularBuffer_[i]->push_back(data, outputFrameCount);
+      circularBuffer_[i]->push_back(data, producedFrames);
     }
 
     if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {

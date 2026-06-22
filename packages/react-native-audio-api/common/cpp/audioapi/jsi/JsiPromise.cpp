@@ -1,4 +1,9 @@
 #include <audioapi/jsi/JsiPromise.h>
+
+#ifdef ANDROID
+#include <fbjni/fbjni.h>
+#endif
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -54,7 +59,13 @@ jsi::Value PromiseVendor::createAsyncPromise(std::function<void(Promise &&)> &&f
 
     Promise promise(std::move(callInvoker), std::move(resolveLocal), std::move(rejectLocal));
 
-    threadPool->schedule(std::move(function), std::move(promise));
+    threadPool->schedule([function = std::move(function), promise = std::move(promise)]() mutable {
+#ifdef ANDROID
+      facebook::jni::ThreadScope::WithClassLoader([&]() { function(std::move(promise)); });
+#else
+      function(std::move(promise));
+#endif
+    });
 
     return jsi::Value::undefined();
   };
@@ -68,7 +79,14 @@ void PromiseVendor::asyncPromiseJob(
     std::function<PromiseResolver()> &&function,
     std::shared_ptr<jsi::Function> &&resolve,
     std::shared_ptr<jsi::Function> &&reject) {
-  auto resolver = function();
+  PromiseResolver resolver;
+#ifdef ANDROID
+  // Background threads are not JNI-attached and lack the app class loader,
+  // which breaks fbjni lookups (e.g. NativeFileInfo during recorder start).
+  facebook::jni::ThreadScope::WithClassLoader([&]() { resolver = function(); });
+#else
+  resolver = function();
+#endif
   callInvoker->invokeAsync(
       [resolver = std::move(resolver), reject = std::move(reject), resolve = std::move(resolve)](
           jsi::Runtime &runtime) -> void {
