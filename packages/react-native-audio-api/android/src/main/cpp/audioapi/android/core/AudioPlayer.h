@@ -24,7 +24,8 @@ class AudioPlayer : public AudioStreamDataCallback,
       const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
       int channelCount,
-      std::mutex *driverMutex);
+      std::mutex *driverMutex,
+      const std::shared_ptr<AudioContext> &context);
 
   ~AudioPlayer() override {
     nativeAudioPlayer_.release();
@@ -42,7 +43,7 @@ class AudioPlayer : public AudioStreamDataCallback,
   DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;
 
-  void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */) override;
+  void onErrorAfterClose(AudioStream *audioStream, Result error) override;
 
  private:
   std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
@@ -53,6 +54,7 @@ class AudioPlayer : public AudioStreamDataCallback,
   int channelCount_;
   std::atomic<bool> isRunning_;
   std::mutex *driverMutex_;
+  std::weak_ptr<AudioContext> context_;
 
   bool openAudioStream();
 

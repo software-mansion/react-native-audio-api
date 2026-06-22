@@ -16,12 +16,14 @@ AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
     float sampleRate,
     int channelCount,
-    std::mutex *driverMutex)
+    std::mutex *driverMutex,
+    const std::shared_ptr<AudioContext> &context)
     : renderAudio_(renderAudio),
       sampleRate_(sampleRate),
       channelCount_(channelCount),
       isRunning_(false),
-      driverMutex_(driverMutex) {}
+      driverMutex_(driverMutex),
+      context_(context) {}
 
 bool AudioPlayer::openAudioStream() {
   AudioStreamBuilder builder;
@@ -129,12 +131,27 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
 }
 
 void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
-  if (error == oboe::Result::ErrorDisconnected && driverMutex_ != nullptr) {
-    std::scoped_lock lock(*driverMutex_);
-    cleanup();
-    if (openAudioStream()) {
-      resume();
-    }
+  if (error != oboe::Result::ErrorDisconnected || driverMutex_ == nullptr) {
+    return;
+  }
+
+  // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
+  std::scoped_lock lock(*driverMutex_);
+
+  auto context = context_.lock();
+  if (context == nullptr || context->isClosed()) {
+    return;
+  }
+
+  // The error thread is detached and can arrive late: if close() or a concurrent
+  // recovery already replaced the stream, don't tear down the healthy new stream.
+  if (stream != mStream_.get()) {
+    return;
+  }
+
+  cleanup();
+  if (openAudioStream()) {
+    resume();
   }
 }
 } // namespace audioapi

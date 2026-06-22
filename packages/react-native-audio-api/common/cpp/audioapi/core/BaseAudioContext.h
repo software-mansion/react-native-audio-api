@@ -68,6 +68,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   virtual ~BaseAudioContext() = default;
 
   ContextState getState();
+  [[nodiscard]] bool isClosed() const {
+    return state_.load(std::memory_order_acquire) == ContextState::CLOSED;
+  }
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;

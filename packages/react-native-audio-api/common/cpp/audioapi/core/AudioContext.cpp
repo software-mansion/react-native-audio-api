@@ -28,7 +28,11 @@ void AudioContext::initialize() {
   BaseAudioContext::initialize();
 #ifdef ANDROID
   audioPlayer_ = std::make_shared<AudioPlayer>(
-      this->renderAudio(), getSampleRate(), destination_->getChannelCount(), &driverMutex_);
+      this->renderAudio(),
+      getSampleRate(),
+      destination_->getChannelCount(),
+      &driverMutex_,
+      std::static_pointer_cast<AudioContext>(shared_from_this()));
   audioPlayer_->openAudioStream();
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(
