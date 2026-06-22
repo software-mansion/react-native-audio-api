@@ -26,7 +26,7 @@ bool AudioPlayer::openAudioStream() {
   builder.setSharingMode(SharingMode::Exclusive)
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::None)
+      ->setPerformanceMode(PerformanceMode::LowLatency)
       ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)

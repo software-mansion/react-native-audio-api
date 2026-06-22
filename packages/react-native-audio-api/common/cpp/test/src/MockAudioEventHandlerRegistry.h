@@ -21,4 +21,9 @@ class MockAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
       dispatchEvent,
       (AudioEvent eventName, uint64_t listenerId, AudioEventPayload &&payload),
       (noexcept, override));
+  MOCK_METHOD(
+      bool,
+      dispatchEventFromAudioThread,
+      (AudioEvent eventName, uint64_t listenerId, AudioEventPayload &&payload),
+      (noexcept, override));
 };

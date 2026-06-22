@@ -83,7 +83,7 @@ std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
   if (onPositionChangedCallbackId_ != 0 &&
       onPositionChangedTimeInFrames_ > onPositionChangedIntervalInFrames_) {
-    audioEventHandlerRegistry_->dispatchEvent(
+    audioEventHandlerRegistry_->dispatchEventFromAudioThread(
         AudioEvent::POSITION_CHANGED,
         onPositionChangedCallbackId_,
         DoubleValuePayload{.value = getCurrentPosition()});

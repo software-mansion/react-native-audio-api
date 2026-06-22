@@ -139,7 +139,7 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = audioRecorder.start();
+    const result = await audioRecorder.start();
     if (result.status === 'error') {
       console.warn(result.message);
       return;
@@ -149,15 +149,15 @@ const MyRecorder: React.FC = () => {
     setIsRecording(true);
   };
 
-  const onStop = () => {
+  const onStop = async () => {
     if (!isRecording) {
       return;
     }
 
-    const result = audioRecorder.stop();
+    const result = await audioRecorder.stop();
     console.log(result);
     setIsRecording(false);
-    AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setAudioSessionActivity(false);
   };
 
   return (
@@ -230,7 +230,7 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = audioRecorder.start();
+    const result = await audioRecorder.start();
 
     if (result.status === 'error') {
       console.warn(result.message);
@@ -240,14 +240,14 @@ const MyRecorder: React.FC = () => {
     setIsRecording(true);
   };
 
-  const onStop = () => {
+  const onStop = async () => {
     if (!isRecording) {
       return;
     }
 
-    audioRecorder.stop();
+    await audioRecorder.stop();
     setIsRecording(false);
-    AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setAudioSessionActivity(false);
   };
 
   return (
@@ -311,7 +311,7 @@ const MyRecorder: React.FC = () => {
       await audioContext.resume();
     }
 
-    const result = audioRecorder.start();
+    const result = await audioRecorder.start();
 
     if (result.status === 'error') {
       console.warn(result.message);
@@ -321,15 +321,15 @@ const MyRecorder: React.FC = () => {
     setIsRecording(true);
   };
 
-  const onStop = () => {
+  const onStop = async () => {
     if (!isRecording) {
       return;
     }
 
-    audioRecorder.stop();
+    await audioRecorder.stop();
     audioContext.suspend();
     setIsRecording(false);
-    AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setAudioSessionActivity(false);
   };
 
   return (
@@ -372,14 +372,16 @@ export default MyRecorder;
     <tr>
       <td><div class="text-content">
         ##### start
+        <br />
+        (asynchronous)
       </div></td>
       <td>
         <div class="text-content">
-          Starts the stream from system audio input device.
+          Starts the stream from system audio input device. Returns a `Promise` that resolves when recording has started.
           You can pass optional object with `fileNameOverride` string, to provide your own fileName generation.
         </div>
         ```tsx
-        const result = audioRecorder.start({
+        const result = await audioRecorder.start({
           fileNameOverride: `my_audio_${mySessionId}`
         });
 
@@ -393,15 +395,17 @@ export default MyRecorder;
     <tr>
       <td><div class="text-content">
         ##### stop
+        <br />
+        (asynchronous)
       </div></td>
       <td>
         <div class="text-content">
-        Stops the input stream and cleans up each input access method.
+        Stops the input stream and cleans up each input access method. Returns a `Promise` that resolves when recording has stopped.
 
         For details on the returned file information check: [FileInfo](#fileinfo)
         </div>
         ```tsx
-        const result = audioRecorder.stop();
+        const result = await audioRecorder.stop();
 
         if (result.status === 'success') {
           const { paths, duration, size } = result;

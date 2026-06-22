@@ -122,7 +122,7 @@ void IOSRecorderCallback::cleanup()
 /// @brief Receives audio data from the recorder, processes it, and stores it in the circular buffer.
 /// The data is converted using AVAudioConverter if the input format differs from the user desired callback format.
 /// This method runs on the audio thread.
-/// @param inputBuffer Pointer to the AudioBufferList containing the incoming audio data.
+/// @param audioBufferList Pointer to the AudioBufferList containing the incoming audio data.
 /// @param numFrames Number of frames in the input buffer.
 void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
