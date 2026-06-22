@@ -1,4 +1,4 @@
-import { IPeriodicWave } from '../interfaces.jsi';
+import { IPeriodicWave } from '../jsi-interfaces';
 import type BaseAudioContext from './BaseAudioContext';
 import { PeriodicWaveOptions } from '../types';
 import { PeriodicWaveOptionsValidator } from '../options-validators';

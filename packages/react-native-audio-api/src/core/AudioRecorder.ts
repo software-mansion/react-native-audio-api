@@ -4,7 +4,7 @@ import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
 } from '../events/types';
-import { IAudioRecorder } from '../interfaces.jsi';
+import { IAudioRecorder } from '../jsi-interfaces';
 import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,

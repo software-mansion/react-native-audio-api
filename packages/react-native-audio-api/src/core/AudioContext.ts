@@ -1,7 +1,7 @@
 import AudioAPIModule from '../AudioAPIModule';
 import { NotSupportedError } from '../errors';
 import { AudioTagHandle } from '../development/react/Audio/types';
-import { IAudioContext } from '../interfaces.jsi';
+import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
 import { AudioContextOptions } from '../types';
 import BaseAudioContext from './BaseAudioContext';

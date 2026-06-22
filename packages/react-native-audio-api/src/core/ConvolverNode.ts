@@ -1,4 +1,4 @@
-import { IConvolverNode } from '../interfaces.jsi';
+import { IConvolverNode } from '../jsi-interfaces';
 import { ConvolverOptions } from '../types';
 import type BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';

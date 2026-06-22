@@ -1,5 +1,5 @@
 import { AudioBufferLike, AudioBufferOptions } from '../types';
-import { IAudioBuffer } from '../interfaces.jsi';
+import { IAudioBuffer } from '../jsi-interfaces';
 import { IndexSizeError, NotSupportedError } from '../errors';
 
 export default class AudioBuffer implements AudioBufferLike {

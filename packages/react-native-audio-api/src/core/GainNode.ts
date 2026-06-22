@@ -1,4 +1,4 @@
-import { IGainNode } from '../interfaces.jsi';
+import { IGainNode } from '../jsi-interfaces';
 import { GainOptions } from '../types';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';

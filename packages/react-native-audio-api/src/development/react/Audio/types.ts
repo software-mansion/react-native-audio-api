@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import type BaseAudioContext from '../../../core/BaseAudioContext';
-import type { IAudioFileSourceNode } from '../../../interfaces.jsi';
+import type { IAudioFileSourceNode } from '../../../jsi-interfaces';
 
 export interface AudioURISource {
   uri?: string | undefined;

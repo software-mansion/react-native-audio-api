@@ -1,4 +1,4 @@
-import { IConstantSourceNode } from '../interfaces.jsi';
+import { IConstantSourceNode } from '../jsi-interfaces';
 import { ConstantSourceOptions } from '../types';
 import AudioParam from './AudioParam';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';

@@ -1,4 +1,4 @@
-import { IAudioScheduledSourceNode } from '../interfaces.jsi';
+import { IAudioScheduledSourceNode } from '../jsi-interfaces';
 import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
 import { EventEmptyType } from '../events/types';

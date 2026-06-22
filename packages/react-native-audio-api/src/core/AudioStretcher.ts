@@ -1,4 +1,4 @@
-import { IAudioStretcher } from '../interfaces.jsi';
+import { IAudioStretcher } from '../jsi-interfaces';
 import AudioBuffer from './AudioBuffer';
 import { AudioApiError } from '../errors';
 

@@ -1,4 +1,4 @@
-import { IAudioBufferSourceNode } from '../interfaces.jsi';
+import { IAudioBufferSourceNode } from '../jsi-interfaces';
 import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { InvalidStateError, RangeError } from '../errors';

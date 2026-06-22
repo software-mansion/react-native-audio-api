@@ -1,4 +1,4 @@
-import { IStereoPannerNode } from '../interfaces.jsi';
+import { IStereoPannerNode } from '../jsi-interfaces';
 import { StereoPannerOptions } from '../types';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';

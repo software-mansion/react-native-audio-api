@@ -1,6 +1,6 @@
 import AudioAPIModule from '../AudioAPIModule';
 import { InvalidStateError, NotSupportedError } from '../errors';
-import { IOfflineAudioContext } from '../interfaces.jsi';
+import { IOfflineAudioContext } from '../jsi-interfaces';
 import { OfflineAudioContextOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
 import BaseAudioContext from './BaseAudioContext';
