@@ -608,7 +608,7 @@ struct TestAudioOutput {
   XCTAssertEqual(renderedFrameSizes.size(), 3UL);
   XCTAssertEqual(renderedFrameSizes[0], RENDER_QUANTUM_SIZE);
   XCTAssertEqual(renderedFrameSizes[1], RENDER_QUANTUM_SIZE);
-  XCTAssertEqual(renderedFrameSizes[2], 44);
+  XCTAssertEqual(renderedFrameSizes[2], RENDER_QUANTUM_SIZE);
 
   for (int frame = 0; frame < 128; frame += 1) {
     XCTAssertEqualWithAccuracy(output.channels[0][frame], 1.0f, 0.0001f);

@@ -8,17 +8,20 @@
 
 #include <algorithm>
 #include <memory>
+#include <mutex>
 
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
     float sampleRate,
-    int channelCount)
+    int channelCount,
+    std::mutex *driverMutex)
     : renderAudio_(renderAudio),
       sampleRate_(sampleRate),
       channelCount_(channelCount),
-      isRunning_(false) {}
+      isRunning_(false),
+      driverMutex_(driverMutex) {}
 
 bool AudioPlayer::openAudioStream() {
   AudioStreamBuilder builder;
@@ -42,7 +45,7 @@ bool AudioPlayer::openAudioStream() {
   }
 
   buffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
   return true;
 }
 
@@ -85,7 +88,7 @@ void AudioPlayer::suspend() {
 }
 
 void AudioPlayer::cleanup() {
-  isInitialized_ = false;
+  isInitialized_.store(false, std::memory_order_release);
 
   if (mStream_ != nullptr) {
     mStream_->close();
@@ -94,13 +97,13 @@ void AudioPlayer::cleanup() {
 }
 
 bool AudioPlayer::isRunning() const {
-  return mStream_ && mStream_->getState() == oboe::StreamState::Started &&
+  return mStream_ != nullptr && mStream_->getState() == oboe::StreamState::Started &&
       isRunning_.load(std::memory_order_acquire);
 }
 
 DataCallbackResult
 AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return DataCallbackResult::Continue;
   }
 
@@ -126,10 +129,10 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
 }
 
 void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
-  if (error == oboe::Result::ErrorDisconnected) {
+  if (error == oboe::Result::ErrorDisconnected && driverMutex_ != nullptr) {
+    std::scoped_lock lock(*driverMutex_);
     cleanup();
     if (openAudioStream()) {
-      isInitialized_ = true;
       resume();
     }
   }

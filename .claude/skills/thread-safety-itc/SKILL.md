@@ -136,6 +136,21 @@ See the `utilities` skill for full API.
 
 ---
 
+## Driver synchronization (layered model)
+
+Control-plane synchronization uses two layers — both are non-recursive `std::mutex`, never held on the audio thread.
+
+| Layer | Location | Protects |
+|---|---|---|
+| Context | `AudioContext::driverMutex_` (iOS + Android) | `start` / `resume` / `suspend` / `close` only — JS-thread `source.start()` vs promise-pool `resume()` / `suspend()` / `close()` |
+| Engine | `AudioEngine` mutex (iOS only) | Process-wide `AVAudioEngine` graph: attach/detach, engine start/stop, interruptions, recorder paths |
+
+`AudioContext::initialize()`, `createMediaElementSource()`, and `isDriverRunning()` are JS-thread-only — do not take `driverMutex_`. `getState()` reads atomics and `isDriverRunning()` lock-free; do not acquire `driverMutex_` from there.
+
+On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because Oboe error callbacks bypass `AudioContext`.
+
+---
+
 ## Common Mistakes
 
 - **Reading `node_->field_` in a getter** when that field is written by the audio thread → use shadow state or atomics.
@@ -144,6 +159,9 @@ See the `utilities` skill for full API.
 - **`std::vector::push_back` in `processNode()`** → may allocate; preallocate in constructor.
 - **`std::mutex` anywhere in `processNode()`** → deadlock risk and real-time violation.
 - **Copying `shared_ptr` inside `processNode()`** — increments atomic refcount; capture before entering hot path.
+- **Locking `initialize()` or graph factory methods** — `initialize()` runs synchronously during HostObject construction on the JS thread; node factories and `createMediaElementSource()` are synchronous JS calls. Only `start` / `resume` / `suspend` / `close` need `driverMutex_`.
+- **Locking only `AudioContext`** — iOS recorder, session, and interruption paths mutate the shared `AVAudioEngine` outside `AudioContext`; keep the `AudioEngine` mutex on those entry points.
+- **Re-entering `driverMutex_` or the `AudioEngine` mutex on the same thread** — call `tryStartDriver()` directly from `resume()` instead of `start()`; use lock-free `isStreamRunning()` from `isDriverRunning()`.
 
 ---
 

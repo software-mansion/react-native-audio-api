@@ -33,24 +33,20 @@ class IOSAudioRecorder : public AudioRecorder {
 
   Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
-  void disableFileOutput() override;
 
   void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
-  void disconnect() override;
 
   void pause() override;
   void resume() override;
 
   bool isRecording() const override;
   bool isPaused() const override;
-  bool isIdle() const override;
 
   Result<NoneType, std::string> setOnAudioReadyCallback(
       float sampleRate,
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId) override;
-  void clearOnAudioReadyCallback() override;
 
  protected:
   NativeAudioRecorder *nativeRecorder_;

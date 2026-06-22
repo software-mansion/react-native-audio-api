@@ -1,9 +1,10 @@
 #pragma once
 
 #include <oboe/Oboe.h>
-#include <cassert>
+#include <atomic>
 #include <functional>
 #include <memory>
+#include <mutex>
 
 #include <audioapi/android/core/NativeAudioPlayer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -22,7 +23,8 @@ class AudioPlayer : public AudioStreamDataCallback,
   AudioPlayer(
       const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
-      int channelCount);
+      int channelCount,
+      std::mutex *driverMutex);
 
   ~AudioPlayer() override {
     nativeAudioPlayer_.release();
@@ -46,10 +48,11 @@ class AudioPlayer : public AudioStreamDataCallback,
   std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
   std::shared_ptr<AudioStream> mStream_;
   std::shared_ptr<DSPAudioBuffer> buffer_;
-  bool isInitialized_ = false;
+  std::atomic<bool> isInitialized_{false};
   float sampleRate_;
   int channelCount_;
   std::atomic<bool> isRunning_;
+  std::mutex *driverMutex_;
 
   bool openAudioStream();
 
