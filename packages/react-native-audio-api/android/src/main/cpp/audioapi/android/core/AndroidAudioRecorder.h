@@ -27,31 +27,30 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   void cleanup();
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride) override;
-  Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
+  StopResult stop() override;
 
   Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
-  void disableFileOutput() override;
 
   void pause() override;
   void resume() override;
   bool isRecording() const override;
   bool isPaused() const override;
-  bool isIdle() const override;
 
   Result<NoneType, std::string> setOnAudioReadyCallback(
       float sampleRate,
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId) override;
-  void clearOnAudioReadyCallback() override;
 
   void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
-  void disconnect() override;
 
   oboe::DataCallbackResult
   onAudioReady(oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) override;
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
+
+ protected:
+  void clearAdapterScratchState() override;
 
  private:
   std::shared_ptr<AudioBuffer> deinterleavingBuffer_;

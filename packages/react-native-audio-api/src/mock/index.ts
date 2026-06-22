@@ -753,23 +753,25 @@ class AudioRecorderMock {
     this.isFileOutputEnabled = false;
   }
 
-  start(options?: AudioRecorderStartOptions): Result<{ path: string }> {
+  start(
+    options?: AudioRecorderStartOptions
+  ): Promise<Result<{ path: string }>> {
     this._isRecording = true;
     this._isPaused = false;
     const path = options?.fileNameOverride || 'recording.m4a';
-    return { status: 'success', path };
+    return Promise.resolve({ status: 'success', path });
   }
 
-  stop(): Result<FileInfo> {
+  stop(): Promise<Result<FileInfo>> {
     this._isRecording = false;
     this._isPaused = false;
     this._currentDuration = 0;
-    return {
+    return Promise.resolve({
       status: 'success',
       paths: ['/mock/path/recording.m4a'],
       size: 12345,
       duration: 5.0,
-    };
+    });
   }
 
   pause(): void {

@@ -9,19 +9,21 @@ namespace audioapi {
 AudioEventHandlerRegistry::AudioEventHandlerRegistry(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker)
-    : callInvoker_(callInvoker), runtime_(runtime), isExiting_(false) {
-  auto [sender, receiver] = channels::spsc::channel<
-      DispatchEvent,
-      EVENT_DISPATCHER_SPSC_OVERFLOW_STRATEGY,
-      EVENT_DISPATCHER_SPSC_WAIT_STRATEGY>(kDispatchCapacity);
-  sender_ = std::move(sender);
-  receiver_ = std::move(receiver);
-
+    : callInvoker_(callInvoker),
+      runtime_(runtime),
+      dispatchQueue_(kDispatchCapacity),
+      audioProducerToken_(dispatchQueue_) {
+  // Dispatch worker: wait for an item, dequeue it, then hop to the JS thread.
   workerThread_ = std::thread([this]() {
-    while (!isExiting_.load(std::memory_order_acquire)) {
-      auto item = receiver_.receive();
+    while (true) {
+      itemsAvailable_.wait();
       if (isExiting_.load(std::memory_order_acquire)) {
         break;
+      }
+
+      DispatchEvent item;
+      if (!dispatchQueue_.try_dequeue(item)) {
+        continue;
       }
 
       auto weak = weak_from_this();
@@ -37,7 +39,7 @@ AudioEventHandlerRegistry::AudioEventHandlerRegistry(
 
 AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
   isExiting_.store(true, std::memory_order_release);
-  sender_.send(DispatchEvent{});
+  itemsAvailable_.signal(); // wake the worker so it observes isExiting_
   if (workerThread_.joinable()) {
     workerThread_.join();
   }
@@ -92,10 +94,30 @@ bool AudioEventHandlerRegistry::dispatchEvent(
   if (runtime_ == nullptr) {
     return false;
   }
-  return sender_.try_send(
-             DispatchEvent{
-                 .event = eventName, .listenerId = listenerId, .payload = std::move(payload)}) ==
-      channels::spsc::ResponseStatus::SUCCESS;
+  if (!dispatchQueue_.try_enqueue(
+          DispatchEvent{
+              .event = eventName, .listenerId = listenerId, .payload = std::move(payload)})) {
+    return false;
+  }
+  itemsAvailable_.signal();
+  return true;
+}
+
+bool AudioEventHandlerRegistry::dispatchEventFromAudioThread(
+    AudioEvent eventName,
+    uint64_t listenerId,
+    AudioEventPayload &&payload) noexcept {
+  if (runtime_ == nullptr) {
+    return false;
+  }
+  if (!dispatchQueue_.try_enqueue(
+          audioProducerToken_,
+          DispatchEvent{
+              .event = eventName, .listenerId = listenerId, .payload = std::move(payload)})) {
+    return false;
+  }
+  itemsAvailable_.signal();
+  return true;
 }
 
 void AudioEventHandlerRegistry::handleEventOnJSThread(
