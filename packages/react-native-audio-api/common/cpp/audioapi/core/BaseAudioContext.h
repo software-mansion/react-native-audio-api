@@ -12,6 +12,7 @@
 #include <complex>
 #include <cstddef>
 #include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -67,7 +68,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
 
-  ContextState getState();
+  ContextState getState() const;
   [[nodiscard]] bool isClosed() const {
     return state_.load(std::memory_order_acquire) == ContextState::CLOSED;
   }
@@ -128,8 +129,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   template <typename F>
   bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
-    if (getState() != ContextState::RUNNING) {
-      processAudioEvents();
+    std::scoped_lock lock(driverMutex_);
+    if (!isDriverRunning()) {
       event(*this);
       return true;
     }
@@ -141,8 +142,22 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<AudioDestinationNode> destination_;
   std::shared_ptr<AudioGraphManager> graphManager_;
 
- private:
+  /// Serializes context lifecycle and driver control across the JS thread and the
+  /// promise-vendor thread pool (`resume` / `suspend` / `close` / offline render).
+  mutable std::mutex driverMutex_;
   std::atomic<ContextState> state_;
+
+  /// Debug-only: `driverMutex_` must already be held by the calling thread.
+  void assertDriverMutexHeld() const {
+#ifndef NDEBUG
+    if (driverMutex_.try_lock()) {
+      driverMutex_.unlock();
+      assert(false && "driverMutex_ must be held by the current thread");
+    }
+#endif
+  }
+
+ private:
   std::atomic<float> sampleRate_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   RuntimeRegistry runtimeRegistry_;

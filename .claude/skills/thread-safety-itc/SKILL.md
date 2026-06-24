@@ -142,12 +142,14 @@ Control-plane synchronization uses two layers — both are non-recursive `std::m
 
 | Layer | Location | Protects |
 |---|---|---|
-| Context | `AudioContext::driverMutex_` (iOS + Android) | `start` / `resume` / `suspend` / `close` only — JS-thread `source.start()` vs promise-pool `resume()` / `suspend()` / `close()` |
+| Context | `BaseAudioContext::driverMutex_` (`AudioContext` + `OfflineAudioContext`) | `start` / `resume` / `suspend` / `close` (live); `resume` / `suspend` / `startRendering` (offline) — JS thread vs promise-pool |
 | Engine | `AudioEngine` mutex (iOS only) | Process-wide `AVAudioEngine` graph: attach/detach, engine start/stop, interruptions, recorder paths |
 
 `AudioContext::initialize()`, `createMediaElementSource()`, and `isDriverRunning()` are JS-thread-only — do not take `driverMutex_`. `getState()` reads atomics and `isDriverRunning()` lock-free; do not acquire `driverMutex_` from there.
 
 On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because Oboe error callbacks bypass `AudioContext`.
+
+**Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`.
 
 ---
 
@@ -159,9 +161,9 @@ On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because O
 - **`std::vector::push_back` in `processNode()`** → may allocate; preallocate in constructor.
 - **`std::mutex` anywhere in `processNode()`** → deadlock risk and real-time violation.
 - **Copying `shared_ptr` inside `processNode()`** — increments atomic refcount; capture before entering hot path.
-- **Locking `initialize()` or graph factory methods** — `initialize()` runs synchronously during HostObject construction on the JS thread; node factories and `createMediaElementSource()` are synchronous JS calls. Only `start` / `resume` / `suspend` / `close` need `driverMutex_`.
-- **Locking only `AudioContext`** — iOS recorder, session, and interruption paths mutate the shared `AVAudioEngine` outside `AudioContext`; keep the `AudioEngine` mutex on those entry points.
-- **Re-entering `driverMutex_` or the `AudioEngine` mutex on the same thread** — call `tryStartDriver()` directly from `resume()` instead of `start()`; use lock-free `isStreamRunning()` from `isDriverRunning()`.
+- **Locking `initialize()` or graph factory methods** — `initialize()` runs synchronously during HostObject construction on the JS thread; node factories and `createMediaElementSource()` are synchronous JS calls. Only lifecycle methods that touch the driver or offline render thread need `driverMutex_`.
+- **Locking only `AudioContext`** — iOS recorder, session, and interruption paths mutate the shared `AVAudioEngine` outside `AudioContext`; keep the `AudioEngine` mutex on those entry points. Offline render uses the same `driverMutex_` on `BaseAudioContext`.
+- **Re-entering `driverMutex_` or the `AudioEngine` mutex on the same thread** — call `tryStartDriver()` directly from `resume()` instead of `start()`; use lock-free `isStreamRunning()` from `isDriverRunning()`. `AudioContext::start()` does not acquire `driverMutex_`; it asserts the lock is already held when the driver is not initialized (via `scheduleAudioEvent` synchronous path). When already initialized, `start()` is a lock-free no-op so `source.start()` on the audio thread does not take the mutex.
 
 ---
 

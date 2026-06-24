@@ -2,6 +2,7 @@
 #include <audioapi/android/core/AudioPlayer.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <jni.h>
@@ -17,8 +18,10 @@ AudioPlayer::AudioPlayer(
     float sampleRate,
     int channelCount,
     std::mutex *driverMutex,
-    const std::shared_ptr<AudioContext> &context)
+    const std::shared_ptr<AudioContext> &context,
+    std::atomic<uint32_t> &currentRenders)
     : renderAudio_(renderAudio),
+      currentRenders_(currentRenders),
       sampleRate_(sampleRate),
       channelCount_(channelCount),
       isRunning_(false),
@@ -108,6 +111,8 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return DataCallbackResult::Continue;
   }
+
+  const CurrentRenderScope renderScope(currentRenders_);
 
   auto *buffer = static_cast<float *>(audioData);
   int processedFrames = 0;

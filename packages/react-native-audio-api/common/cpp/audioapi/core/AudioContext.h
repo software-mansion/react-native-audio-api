@@ -5,9 +5,9 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
+#include <atomic>
 #include <functional>
 #include <memory>
-#include <mutex>
 
 namespace audioapi {
 #ifdef ANDROID
@@ -42,9 +42,10 @@ class AudioContext : public BaseAudioContext {
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
-  /// Serializes `start` / `resume` / `suspend` / `close` across JS and promise-pool threads.
-  mutable std::mutex driverMutex_;
   std::atomic<bool> isInitialized_{false};
+  /// Audio I/O callback thread increments around each platform render callback;
+  /// control thread waits on suspend/close.
+  std::atomic<uint32_t> currentRenders_{0};
 
   bool isDriverRunning() const override;
 
@@ -52,6 +53,9 @@ class AudioContext : public BaseAudioContext {
 
   /// Caller must hold `driverMutex_`.
   bool tryStartDriver();
+
+  /// Blocks until no audio I/O callback is in flight. Caller must hold `driverMutex_`.
+  void waitForRenderQuiescence() const;
 };
 
 } // namespace audioapi

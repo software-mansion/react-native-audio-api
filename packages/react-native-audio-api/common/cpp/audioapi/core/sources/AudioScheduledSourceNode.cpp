@@ -78,8 +78,13 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     size_t currentSampleFrame) {
   auto firstFrame = currentSampleFrame;
   size_t lastFrame = firstFrame + framesToProcess - 1;
-
-  size_t startFrame = std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
+  size_t startFrame;
+  // initial call
+  if (startTime_ == -1) {
+    startFrame = firstFrame;
+  } else {
+    startFrame = std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
+  }
   size_t stopFrame = stopTime_ == -1.0 ? std::numeric_limits<size_t>::max()
                                        : dsp::timeToSampleFrame(stopTime_, sampleRate);
   if (isFinished()) {

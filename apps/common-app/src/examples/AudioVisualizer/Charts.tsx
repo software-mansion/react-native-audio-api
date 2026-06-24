@@ -22,7 +22,7 @@ function buildTimePath(
   fftSize: number,
   layout: ReturnType<typeof getVisualizerLayout>
 ) {
-  const path = Skia.Path.Make();
+  const path = Skia.PathBuilder.Make().build();
   const { cx, cy, innerRadius } = layout;
   const span = innerRadius * 2;
   const startX = cx - innerRadius;
@@ -46,7 +46,7 @@ function buildFrequencyPath(
   frequencyBinCount: number,
   layout: ReturnType<typeof getVisualizerLayout>
 ) {
-  const path = Skia.Path.Make();
+  const path = Skia.PathBuilder.Make().build();
   const { cx, cy, outerRadius } = layout;
   const maxSteps = 2 * (frequencyBinCount - 64);
 
