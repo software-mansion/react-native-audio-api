@@ -9,7 +9,7 @@ export interface ScheduleOptions {
 }
 
 export interface WasmAudioBufferSourceStretcherNode
-  extends globalThis.AudioNode {
+  extends globalThis.AudioBufferSourceNode {
   onEnded:
     | ((this: globalThis.AudioScheduledSourceNode, ev: Event) => unknown)
     | null;
@@ -27,6 +27,10 @@ export interface WasmAudioBufferSourceStretcherNode
   ): void;
 
   stop(when?: number): void;
+
+  cancelScheduledValues(cancelTime: number): void;
+
+  cancelAndHoldAtTime(cancelTime: number): void;
 }
 
 export type WasmAudioBufferSourceStretcherNodeFactory = (

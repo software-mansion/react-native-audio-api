@@ -10,8 +10,31 @@ import { AudioBufferSourceOptions } from '../../../types';
 import SignalsmithStretch from './signalsmithStretch/SignalsmithStretch.js';
 
 import { AudioBufferSourceNodeBackend } from '../../types.web';
-import { WasmAudioBufferSourceStretcherNode } from './types';
-import AudioStretcherParam from './AudioStretcherParam';
+import { ScheduleOptions, WasmAudioBufferSourceStretcherNode } from './types';
+import AudioStretcherParam, {
+  StretcherAutomationEvent,
+} from './AudioStretcherParam';
+
+function buildScheduleOptions(
+  options: Omit<ScheduleOptions, 'output'>,
+  time?: number
+): ScheduleOptions {
+  if (time === undefined) {
+    return options;
+  }
+
+  return { ...options, output: time };
+}
+
+function detuneCentsToSemitones(cents: number): number {
+  return clamp(cents / 100, -12, 12);
+}
+
+type PendingParamEvent = {
+  param: AudioStretcherParam;
+  event: StretcherAutomationEvent;
+  mapOptions: (value: number) => Omit<ScheduleOptions, 'output'>;
+};
 
 export default class AudioBufferSourceNodeStretcher implements AudioBufferSourceNodeBackend {
   private stretcherPromise: Promise<WasmAudioBufferSourceStretcherNode> | null =
@@ -20,8 +43,8 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   private node: WasmAudioBufferSourceStretcherNode | null = null;
   private hasBeenStarted: boolean = false;
   private context: BaseAudioContext;
-  readonly detune: AudioParam;
-  readonly playbackRate: AudioParam;
+  readonly detune: AudioStretcherParam;
+  readonly playbackRate: AudioStretcherParam;
 
   private _loop: boolean = false;
   private _loopStart: number = -1;
@@ -31,6 +54,8 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
 
   private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
+  private _operationChain: Promise<void> = Promise.resolve();
+  private _pendingParamEvents: PendingParamEvent[] = [];
 
   constructor(context: BaseAudioContext, options: AudioBufferSourceOptions) {
     this.context = context;
@@ -46,19 +71,13 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       0,
       -1200,
       1200,
-      (value, time) => {
-        if (!this.hasBeenStarted) return;
-        const action = (node: WasmAudioBufferSourceStretcherNode) => {
-          node.schedule({
-            semitones: Math.floor(clamp(value / 100, -12, 12)),
-            output: time,
-          });
-        };
-        if (!this.node) {
-          this.stretcherPromise!.then(action);
-        } else {
-          action(this.node);
-        }
+      (event) => {
+        this.handleParamEvent(this.detune, event, (value) => ({
+          semitones: detuneCentsToSemitones(value),
+        }));
+      },
+      (cancelTime) => {
+        this.cancelStretcherAutomation(cancelTime);
       }
     );
     this.playbackRate = new AudioStretcherParam(
@@ -67,19 +86,80 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       1,
       0,
       Infinity,
-      (value, time) => {
-        if (!this.hasBeenStarted) return;
-        const action = (node: WasmAudioBufferSourceStretcherNode) => {
-          node.schedule({ rate: value, output: time });
-        };
-        if (!this.node) {
-          this.stretcherPromise!.then(action);
-        } else {
-          action(this.node);
-        }
+      (event) => {
+        this.handleParamEvent(this.playbackRate, event, (value) => ({
+          rate: value,
+        }));
+      },
+      (cancelTime) => {
+        this.cancelStretcherAutomation(cancelTime);
       }
     );
     this.buffer = (options.buffer as AudioBuffer) ?? null;
+  }
+
+  private runOnStretcher(
+    action: (node: WasmAudioBufferSourceStretcherNode) => void
+  ): Promise<void> {
+    this._operationChain = this._operationChain.then(() =>
+      this.stretcherPromise!.then(action)
+    );
+    return this._operationChain;
+  }
+
+  private scheduleStretcher(
+    options: Omit<ScheduleOptions, 'output'>,
+    time?: number
+  ): void {
+    const scheduleOptions = buildScheduleOptions(options, time);
+    this.runOnStretcher((node) => {
+      node.schedule(scheduleOptions);
+    });
+  }
+
+  private cancelStretcherAutomation(cancelTime: number): void {
+    this._pendingParamEvents = this._pendingParamEvents.filter(
+      (pending) => pending.event.time < cancelTime
+    );
+    this.runOnStretcher((node) => {
+      node.cancelScheduledValues(cancelTime);
+    });
+  }
+
+  private handleParamEvent(
+    param: AudioStretcherParam,
+    event: StretcherAutomationEvent,
+    mapOptions: (value: number) => Omit<ScheduleOptions, 'output'>
+  ): void {
+    if (!this.hasBeenStarted) {
+      this._pendingParamEvents.push({
+        param,
+        event,
+        mapOptions,
+      });
+      return;
+    }
+
+    this.applyParamEvent(param, event, mapOptions);
+  }
+
+  private applyParamEvent(
+    param: AudioStretcherParam,
+    event: StretcherAutomationEvent,
+    mapOptions: (value: number) => Omit<ScheduleOptions, 'output'>
+  ): void {
+    const samples = param.sampleAutomation(event, (value) => value);
+    for (const sample of samples) {
+      this.scheduleStretcher(mapOptions(sample.value), sample.time);
+    }
+  }
+
+  private flushPendingParamEvents(): void {
+    const pending = this._pendingParamEvents;
+    this._pendingParamEvents = [];
+    for (const { param, event, mapOptions } of pending) {
+      this.applyParamEvent(param, event, mapOptions);
+    }
   }
 
   connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
@@ -91,14 +171,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       node.connect(destination.node);
     };
 
-    if (!this.node) {
-      this.stretcherPromise!.then((node) => {
-        action(node);
-      });
-    } else {
-      action(this.node);
-    }
-
+    this.runOnStretcher(action);
     return destination;
   }
 
@@ -116,13 +189,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       node.disconnect(destination.node);
     };
 
-    if (!this.node) {
-      this.stretcherPromise!.then((node) => {
-        action(node);
-      });
-    } else {
-      action(this.node);
-    }
+    this.runOnStretcher(action);
   }
 
   start(when?: number, offset?: number, duration?: number): void {
@@ -154,39 +221,25 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
         ? this.context.currentTime
         : when;
 
-    const scheduleAction = (node: WasmAudioBufferSourceStretcherNode) => {
-      node.schedule({
-        loopStart: this._loopStart,
-        loopEnd: this._loopEnd,
-      });
-    };
-
-    if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
-      if (!this.node) {
-        this.stretcherPromise!.then((node) => {
-          scheduleAction(node);
+    this.runOnStretcher((node) => {
+      if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
+        node.schedule({
+          loopStart: this._loopStart,
+          loopEnd: this._loopEnd,
         });
-      } else {
-        scheduleAction(this.node);
       }
-    }
 
-    const startAction = (node: WasmAudioBufferSourceStretcherNode) => {
+      const playbackRate = this.playbackRate.getValueAtTime(startAt);
+      const detune = this.detune.getValueAtTime(startAt);
       node.start(
         startAt,
         offset,
         duration,
-        this.playbackRate.value,
-        Math.floor(clamp(this.detune.value / 100, -12, 12))
+        playbackRate,
+        detuneCentsToSemitones(detune)
       );
-    };
-    if (!this.node) {
-      this.stretcherPromise!.then((node) => {
-        startAction(node);
-      });
-    } else {
-      startAction(this.node);
-    }
+      this.flushPendingParamEvents();
+    });
   }
 
   stop(when: number): void {
@@ -195,16 +248,9 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
         `when must be a finite non-negative number: ${when}`
       );
     }
-    const action = (node: WasmAudioBufferSourceStretcherNode) => {
+    this.runOnStretcher((node) => {
       node.stop(when);
-    };
-    if (!this.node) {
-      this.stretcherPromise!.then((node) => {
-        action(node);
-      });
-      return;
-    }
-    action(this.node);
+    });
   }
 
   get buffer(): AudioBuffer | null {
@@ -223,7 +269,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       this.bufferHasBeenSet = true;
     }
 
-    const action = (node: WasmAudioBufferSourceStretcherNode) => {
+    this.runOnStretcher((node) => {
       node.dropBuffers();
 
       if (!buffer) {
@@ -237,15 +283,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       }
 
       node.addBuffers(channelArrays);
-    };
-
-    if (!this.node) {
-      this.stretcherPromise!.then((node) => {
-        action(node);
-      });
-      return;
-    }
-    action(this.node);
+    });
   }
 
   get loop(): boolean {
