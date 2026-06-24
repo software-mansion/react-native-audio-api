@@ -42,7 +42,8 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   ma_uint64 convertBuffer(void *data, int numFrames);
 
   bool isConverterRequired();
-  void taskOffloaderFunction(WriterData data) override;
+  void processWriterData(void *data, int numFrames) override;
+  void rollbackFailedOpen();
 };
 
 } // namespace audioapi

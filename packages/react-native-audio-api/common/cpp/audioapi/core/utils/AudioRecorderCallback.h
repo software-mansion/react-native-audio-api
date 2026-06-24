@@ -59,7 +59,9 @@ class AudioRecorderCallback {
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
   static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =
       channels::spsc::WaitStrategy::ATOMIC_WAIT;
-  static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = 64;
+  static constexpr size_t RECORDER_CALLBACK_POOL_SIZE = 32;
+  // SPSC WAIT_ON_FULL rings hold at most (capacity - 1) elements.
+  static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = RECORDER_CALLBACK_POOL_SIZE + 1;
   std::mutex destructionAudioGuard_; // eliminates race between deconstruction and audio thread
 };
 

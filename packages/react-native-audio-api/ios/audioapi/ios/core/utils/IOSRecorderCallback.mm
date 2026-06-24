@@ -16,7 +16,8 @@
 
 namespace audioapi {
 
-using ios::copyAudioBufferList;
+using ios::allocateOwnedAudioBufferList;
+using ios::copyIntoOwnedAudioBufferList;
 using ios::freeOwnedAudioBufferList;
 
 IOSRecorderCallback::IOSRecorderCallback(
@@ -82,6 +83,30 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
     converterOutputBuffer_ =
         [[AVAudioPCMBuffer alloc] initWithPCMFormat:callbackFormat_
                                       frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
+
+    inputBufferPool_.clear();
+    inputBufferPool_.reserve(RECORDER_CALLBACK_POOL_SIZE);
+    auto bufferCount =
+        static_cast<UInt32>(bufferFormat_.isInterleaved ? 1 : bufferFormat_.channelCount);
+    auto bytesPerBuffer = static_cast<UInt32>(
+        converterInputBufferSize_ * bufferFormat_.streamDescription->mBytesPerFrame);
+    inputBufferBytesPerBuffer_ = bytesPerBuffer;
+    for (size_t i = 0; i < RECORDER_CALLBACK_POOL_SIZE; ++i) {
+      auto *buffer = allocateOwnedAudioBufferList(bufferCount, bytesPerBuffer);
+      if (buffer == nullptr) {
+        for (auto *allocatedBuffer : inputBufferPool_) {
+          freeOwnedAudioBufferList(allocatedBuffer);
+        }
+        inputBufferPool_.clear();
+        return Result<NoneType, std::string>::Err(
+            "Failed to preallocate iOS recorder callback buffers");
+      }
+      inputBufferPool_.push_back(buffer);
+    }
+
+    freeSlots_ = std::make_unique<FreeList>();
+    freeSlots_->seed();
+
     auto offloaderLambda = [this](CallbackData data) {
       taskOffloaderFunction(data);
     };
@@ -102,6 +127,13 @@ void IOSRecorderCallback::cleanup()
   @autoreleasepool {
     // join the worker
     offloader_.reset();
+
+    freeSlots_.reset();
+    for (auto *buffer : inputBufferPool_) {
+      freeOwnedAudioBufferList(buffer);
+    }
+    inputBufferPool_.clear();
+    inputBufferBytesPerBuffer_ = 0;
 
     if (circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
       emitAudioData(true);
@@ -131,29 +163,48 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferLis
   if (offloader_ == nullptr) {
     return;
   }
+  if (freeSlots_ == nullptr || inputBufferPool_.empty() || inputBufferBytesPerBuffer_ == 0) {
+    return;
+  }
   if (!isInitialized_.load(std::memory_order_acquire)) {
+    return;
+  }
+
+  auto slot = freeSlots_->tryAcquire();
+  if (!slot.has_value()) {
     return;
   }
 
   // CoreAudio owns `audioBufferList` only for the duration of this synchronous
   // callback. Copy into an owned AudioBufferList before handing off to the
   // worker thread; the consumer in taskOffloaderFunction frees it.
-  AudioBufferList *owned = copyAudioBufferList(audioBufferList);
-  if (owned == nullptr) {
+  auto *targetBuffer = inputBufferPool_[slot.value()];
+  if (!copyIntoOwnedAudioBufferList(
+          targetBuffer, audioBufferList, static_cast<unsigned int>(inputBufferBytesPerBuffer_))) {
+    freeSlots_->release(slot.value());
     return;
   }
-  offloader_->getSender()->send({.audioBufferList = owned, .numFrames = numFrames});
+
+  CallbackData callbackData{.slot = slot.value(), .numFrames = numFrames};
+  if (offloader_->getSender()->try_send(callbackData) != channels::spsc::ResponseStatus::SUCCESS) {
+    freeSlots_->release(slot.value());
+  }
 }
 
 void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
 {
-  auto [inputBuffer, numFrames] = data;
+  auto [slot, numFrames] = data;
 
   // The TaskOffloader destructor sends a default-constructed CallbackData
-  // (audioBufferList == nullptr) to unblock the receiver; ignore it here.
-  if (inputBuffer == nullptr) {
+  // with a sentinel slot to unblock the receiver; ignore it here.
+  if (slot == FreeList::kSentinel) {
     return;
   }
+
+  if (slot >= inputBufferPool_.size() || freeSlots_ == nullptr) {
+    return;
+  }
+  auto *inputBuffer = inputBufferPool_[slot];
 
   @autoreleasepool {
     NSError *error = nil;
@@ -166,8 +217,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
         circularBuffer_[i]->push_back(data, numFrames);
       }
 
-      freeOwnedAudioBufferList(inputBuffer);
-      inputBuffer = nullptr;
+      freeSlots_->release(slot);
       if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
         emitAudioData();
       }
@@ -181,8 +231,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
           inputBuffer->mBuffers[i].mDataByteSize);
     }
 
-    freeOwnedAudioBufferList(inputBuffer);
-    inputBuffer = nullptr;
+    freeSlots_->release(slot);
     converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;

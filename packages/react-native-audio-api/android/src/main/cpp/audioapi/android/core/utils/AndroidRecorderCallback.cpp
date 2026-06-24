@@ -88,6 +88,30 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
   processingBuffer_ = ma_malloc(
       processingBufferLength_ * channelCount_ * ma_get_bytes_per_sample(ma_format_f32), nullptr);
 
+  inputBufferBytesPerSlot_ = maxInputBufferLength_ * static_cast<size_t>(streamChannelCount_) *
+      ma_get_bytes_per_sample(ma_format_f32);
+  size_t inputPoolBytes = inputBufferBytesPerSlot_ * RECORDER_CALLBACK_POOL_SIZE;
+  inputBufferPool_ = ma_malloc(inputPoolBytes, nullptr);
+  if (inputBufferPool_ == nullptr) {
+    if (processingBuffer_ != nullptr) {
+      ma_free(processingBuffer_, nullptr);
+      processingBuffer_ = nullptr;
+      processingBufferLength_ = 0;
+    }
+    return Result<NoneType, std::string>::Err(
+        "Failed to preallocate Android recorder callback buffers");
+  }
+
+  inputBuffers_.clear();
+  inputBuffers_.reserve(RECORDER_CALLBACK_POOL_SIZE);
+  auto *poolHead = static_cast<char *>(inputBufferPool_);
+  for (size_t i = 0; i < RECORDER_CALLBACK_POOL_SIZE; ++i) {
+    inputBuffers_.push_back(poolHead + i * inputBufferBytesPerSlot_);
+  }
+
+  freeSlots_ = std::make_unique<FreeList>();
+  freeSlots_->seed();
+
   auto offloaderLambda = [this](CallbackData data) {
     taskOffloaderFunction(data);
   };
@@ -117,6 +141,13 @@ void AndroidRecorderCallback::cleanup() {
     processingBuffer_ = nullptr;
     processingBufferLength_ = 0;
   }
+  if (inputBufferPool_ != nullptr) {
+    ma_free(inputBufferPool_, nullptr);
+    inputBufferPool_ = nullptr;
+  }
+  inputBufferBytesPerSlot_ = 0;
+  inputBuffers_.clear();
+  freeSlots_.reset();
 
   for (const auto &arr : circularBuffer_) {
     arr->zero();
@@ -133,22 +164,33 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
   if (offloader_ == nullptr) {
     return;
   }
+  if (freeSlots_ == nullptr || inputBuffers_.empty() || inputBufferBytesPerSlot_ == 0) {
+    return;
+  }
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 
-  // Oboe owns `data` only for the duration of this synchronous callback.
-  // Copy into an owned buffer before handing off to the worker thread; the
-  // consumer in taskOffloaderFunction frees it.
-  size_t bytes =
-      static_cast<size_t>(numFrames) * streamChannelCount_ * ma_get_bytes_per_sample(ma_format_f32);
-  void *owned = ma_malloc(bytes, nullptr);
-  if (owned == nullptr) {
+  auto slot = freeSlots_->tryAcquire();
+  if (!slot.has_value()) {
     return;
   }
-  std::memcpy(owned, data, bytes);
 
-  offloader_->getSender()->send({.data = owned, .numFrames = numFrames});
+  size_t bytes =
+      static_cast<size_t>(numFrames) * streamChannelCount_ * ma_get_bytes_per_sample(ma_format_f32);
+  if (bytes > inputBufferBytesPerSlot_) {
+    freeSlots_->release(slot.value());
+    return;
+  }
+
+  // Oboe owns `data` only for the duration of this synchronous
+  // callback. Copy into an owned buffer before handing off to the
+  // worker thread; the consumer in runWriterTask frees it.
+  std::memcpy(inputBuffers_[slot.value()], data, bytes);
+  CallbackData callbackData{.slot = slot.value(), .numFrames = numFrames};
+  if (offloader_->getSender()->try_send(callbackData) != channels::spsc::ResponseStatus::SUCCESS) {
+    freeSlots_->release(slot.value());
+  }
 }
 
 /// @brief Deinterleaves the audio data and pushes it into the circular buffer.
@@ -166,13 +208,17 @@ void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFr
 /// @brief The handler function for the callback thread. It continuously receives audio data,
 /// processes it (resampling and deinterleaving if necessary), and pushes it into the circular buffer.
 void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
-  auto [data, numFrames] = callbackData;
+  auto [slot, numFrames] = callbackData;
 
   // The TaskOffloader destructor sends a default-constructed CallbackData
-  // (data == nullptr) to unblock the receiver; ignore it here.
-  if (data == nullptr) {
+  // with a sentinel slot to unblock the receiver; ignore it here.
+  if (slot == FreeList::kSentinel) {
     return;
   }
+  if (slot >= inputBuffers_.size() || freeSlots_ == nullptr) {
+    return;
+  }
+  void *data = inputBuffers_[slot];
 
   ma_uint64 inputFrameCount = numFrames;
   ma_uint64 outputFrameCount = 0;
@@ -183,7 +229,7 @@ void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
     if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
       emitAudioData();
     }
-    ma_free(data, nullptr);
+    freeSlots_->release(slot);
     return;
   }
 
@@ -199,7 +245,7 @@ void AndroidRecorderCallback::taskOffloaderFunction(CallbackData callbackData) {
     emitAudioData();
   }
 
-  ma_free(data, nullptr);
+  freeSlots_->release(slot);
 }
 
 } // namespace audioapi
