@@ -48,7 +48,7 @@ void BaseAudioContext::initialize() {
   destination_ = std::make_shared<AudioDestinationNode>(shared_from_this());
 }
 
-ContextState BaseAudioContext::getState() {
+ContextState BaseAudioContext::getState() const {
   auto state = state_.load(std::memory_order_acquire);
 
   if (state == ContextState::CLOSED || isDriverRunning()) {

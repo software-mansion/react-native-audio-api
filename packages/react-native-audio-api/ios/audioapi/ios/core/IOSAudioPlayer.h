@@ -21,7 +21,8 @@ class IOSAudioPlayer {
   IOSAudioPlayer(
       const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
-      int channelCount);
+      int channelCount,
+      std::atomic<uint32_t> &currentRenders);
   ~IOSAudioPlayer();
 
   bool start();
@@ -42,6 +43,7 @@ class IOSAudioPlayer {
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
   std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
+  std::atomic<uint32_t> &currentRenders_;
   int channelCount_;
   std::atomic<bool> isRunning_;
   /// Set from main thread on start/resume; consumed on audio thread to drop stale pending audio.

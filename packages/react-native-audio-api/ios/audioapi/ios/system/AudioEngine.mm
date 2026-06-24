@@ -1,6 +1,8 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+#include <mutex>
+
 @interface AudioEngineSourceRegistration : NSObject
 
 @property (nonatomic, copy) AVAudioSourceNodeRenderBlock renderBlock;
@@ -21,7 +23,9 @@
 @implementation AudioEngineInputRegistration
 @end
 
-@interface AudioEngine ()
+@interface AudioEngine () {
+  std::mutex _engineLock;
+}
 
 @property (nonatomic, strong)
     NSMutableDictionary<NSString *, AudioEngineSourceRegistration *> *sourceRegistrations;
@@ -34,6 +38,10 @@
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId;
 - (BOOL)materializeInputNodeIfNeeded;
 - (void)materializeTrackedNodesIfNeeded;
+
+- (AVAudioFormat *)liveInputFormat;
+- (void)resetInputNode;
+- (void)rebuildAudioEngineAndResumeIfNeeded;
 
 @end
 
@@ -112,6 +120,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)cleanup
 {
+  std::scoped_lock lock(_engineLock);
   [self destroyAudioEngine];
   self.state = AudioEngineState::AudioEngineStateIdle;
   self.sourceRegistrations = nil;
@@ -124,6 +133,10 @@ static AudioEngine *_sharedInstance = nil;
 
   [self.sessionManager setActive:false error:nil];
   self.sessionManager = nil;
+
+  if (_sharedInstance == self) {
+    _sharedInstance = nil;
+  }
 }
 
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId
@@ -149,7 +162,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (AVAudioFormat *)currentInputConnectionFormat
 {
-  AVAudioFormat *inputFormat = [self getLiveInputFormat];
+  AVAudioFormat *inputFormat = [self liveInputFormat];
 
   if (inputFormat == nil || inputFormat.sampleRate <= 0 || inputFormat.channelCount == 0) {
     return nil;
@@ -200,6 +213,7 @@ static AudioEngine *_sharedInstance = nil;
                                    sampleRate:(float)sampleRate
                                  channelCount:(AVAudioChannelCount)channelCount
 {
+  std::scoped_lock lock(_engineLock);
   [self createAudioEngineIfNeeded];
 
   NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
@@ -216,6 +230,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId
 {
+  std::scoped_lock lock(_engineLock);
   AVAudioSourceNode *sourceNode = self.sourceNodes[sourceNodeId];
 
   if (self.sourceRegistrations[sourceNodeId] == nil) {
@@ -238,10 +253,11 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
 {
+  std::scoped_lock lock(_engineLock);
   [self createAudioEngineIfNeeded];
 
   if (self.inputRegistration != nil || self.inputNode != nil) {
-    [self detachInputNode];
+    [self resetInputNode];
   }
 
   AudioEngineInputRegistration *registration = [[AudioEngineInputRegistration alloc] init];
@@ -251,7 +267,7 @@ static AudioEngine *_sharedInstance = nil;
   [self materializeInputNodeIfNeeded];
 }
 
-- (void)detachInputNode
+- (void)resetInputNode
 {
   if (self.inputRegistration == nil && self.inputNode == nil) {
     return;
@@ -269,7 +285,13 @@ static AudioEngine *_sharedInstance = nil;
   }
 }
 
-- (AVAudioFormat *)getLiveInputFormat
+- (void)detachInputNode
+{
+  std::scoped_lock lock(_engineLock);
+  [self resetInputNode];
+}
+
+- (AVAudioFormat *)liveInputFormat
 {
   if (self.audioEngine == nil) {
     return nil;
@@ -290,8 +312,15 @@ static AudioEngine *_sharedInstance = nil;
   return inputFormat;
 }
 
+- (AVAudioFormat *)getLiveInputFormat
+{
+  std::scoped_lock lock(_engineLock);
+  return [self liveInputFormat];
+}
+
 - (void)onInterruptionBegin
 {
+  std::scoped_lock lock(_engineLock);
   if (self.state != AudioEngineState::AudioEngineStateRunning) {
     return;
   }
@@ -301,6 +330,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)onSessionDeactivated
 {
+  std::scoped_lock lock(_engineLock);
   BOOL hadTrackedGraph = [self hasTrackedGraph];
   BOOL hadActiveState = self.state != AudioEngineState::AudioEngineStateIdle;
 
@@ -326,15 +356,22 @@ static AudioEngine *_sharedInstance = nil;
   self.state = AudioEngineState::AudioEngineStatePaused;
 }
 
+- (void)markSessionDeactivationInvalidatedGraph
+{
+  std::scoped_lock lock(_engineLock);
+  self.sessionDeactivationInvalidatedGraph = YES;
+}
+
 - (void)onInterruptionEnd:(bool)shouldResume
 {
+  std::scoped_lock lock(_engineLock);
   NSError *error = nil;
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
     return;
   }
 
-  [self stopIfNecessary];
+  [self stopEngine];
   [self rebuildAudioEngine];
 
   if (!shouldResume) {
@@ -359,12 +396,27 @@ static AudioEngine *_sharedInstance = nil;
 
 - (AudioEngineState)getState
 {
+  std::scoped_lock lock(_engineLock);
   return self.state;
 }
 
 - (bool)isEngineRunning
 {
+  std::scoped_lock lock(_engineLock);
   return self.audioEngine != nil && [self.audioEngine isRunning];
+}
+
+- (void)rebuildAudioEngineAndResumeIfNeeded
+{
+  if ([self.audioEngine isRunning]) {
+    [self.audioEngine stop];
+  }
+
+  [self rebuildAudioEngine];
+
+  if (self.state == AudioEngineState::AudioEngineStateRunning) {
+    [self startEngine];
+  }
 }
 
 - (void)rebuildAudioEngine
@@ -380,7 +432,8 @@ static AudioEngine *_sharedInstance = nil;
 {
   NSError *error = nil;
 
-  if ([self isEngineRunning] && self.state == AudioEngineState::AudioEngineStateRunning) {
+  if (self.audioEngine != nil && [self.audioEngine isRunning] &&
+      self.state == AudioEngineState::AudioEngineStateRunning) {
     return true;
   }
 
@@ -393,7 +446,7 @@ static AudioEngine *_sharedInstance = nil;
 
   if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
       self.sessionDeactivationInvalidatedGraph) {
-    [self restartAudioEngine];
+    [self rebuildAudioEngineAndResumeIfNeeded];
   } else {
     [self materializeTrackedNodesIfNeeded];
   }
@@ -431,7 +484,9 @@ static AudioEngine *_sharedInstance = nil;
 
 - (bool)startIfNecessary
 {
-  if (self.state == AudioEngineState::AudioEngineStateRunning && [self isEngineRunning]) {
+  std::scoped_lock lock(_engineLock);
+  if (self.state == AudioEngineState::AudioEngineStateRunning && self.audioEngine != nil &&
+      [self.audioEngine isRunning]) {
     return true;
   }
 
@@ -444,6 +499,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)pauseIfNecessary
 {
+  std::scoped_lock lock(_engineLock);
   if (self.state == AudioEngineState::AudioEngineStatePaused) {
     return;
   }
@@ -457,15 +513,13 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)stopIfNecessary
 {
-  if (self.state == AudioEngineState::AudioEngineStateIdle) {
-    return;
-  }
-
+  std::scoped_lock lock(_engineLock);
   [self stopEngine];
 }
 
 - (void)stopIfPossible
 {
+  std::scoped_lock lock(_engineLock);
   BOOL hasInput = self.inputRegistration != nil;
   BOOL hasSources = [self.sourceRegistrations count] > 0;
 
@@ -480,18 +534,13 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)restartAudioEngine
 {
-  if ([self.audioEngine isRunning]) {
-    [self.audioEngine stop];
-  }
-
-  [self rebuildAudioEngine];
-  if (self.state == AudioEngineState::AudioEngineStateRunning) {
-    [self startEngine];
-  }
+  std::scoped_lock lock(_engineLock);
+  [self rebuildAudioEngineAndResumeIfNeeded];
 }
 
 - (void)logAudioEngineState
 {
+  std::scoped_lock lock(_engineLock);
   AVAudioSession *session = [AVAudioSession sharedInstance];
 
   NSLog(@"================ 🎧 AVAudioEngine STATE ================");

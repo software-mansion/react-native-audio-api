@@ -40,6 +40,7 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 - (void)onInterruptionBegin;
 - (void)onInterruptionEnd:(bool)shouldResume;
 - (void)onSessionDeactivated;
+- (void)markSessionDeactivationInvalidatedGraph;
 
 - (AudioEngineState)getState;
 - (bool)isEngineRunning;

@@ -2,23 +2,31 @@
 #include <audioapi/android/core/AudioPlayer.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <jni.h>
 
 #include <algorithm>
 #include <memory>
+#include <mutex>
 
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
     const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
     float sampleRate,
-    int channelCount)
+    int channelCount,
+    std::mutex *driverMutex,
+    const std::shared_ptr<AudioContext> &context,
+    std::atomic<uint32_t> &currentRenders)
     : renderAudio_(renderAudio),
+      currentRenders_(currentRenders),
       sampleRate_(sampleRate),
       channelCount_(channelCount),
-      isRunning_(false) {}
+      isRunning_(false),
+      driverMutex_(driverMutex),
+      context_(context) {}
 
 bool AudioPlayer::openAudioStream() {
   AudioStreamBuilder builder;
@@ -42,7 +50,7 @@ bool AudioPlayer::openAudioStream() {
   }
 
   buffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
-  isInitialized_ = true;
+  isInitialized_.store(true, std::memory_order_release);
   return true;
 }
 
@@ -85,7 +93,7 @@ void AudioPlayer::suspend() {
 }
 
 void AudioPlayer::cleanup() {
-  isInitialized_ = false;
+  isInitialized_.store(false, std::memory_order_release);
 
   if (mStream_ != nullptr) {
     mStream_->close();
@@ -94,15 +102,17 @@ void AudioPlayer::cleanup() {
 }
 
 bool AudioPlayer::isRunning() const {
-  return mStream_ && mStream_->getState() == oboe::StreamState::Started &&
+  return mStream_ != nullptr && mStream_->getState() == oboe::StreamState::Started &&
       isRunning_.load(std::memory_order_acquire);
 }
 
 DataCallbackResult
 AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
-  if (!isInitialized_) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return DataCallbackResult::Continue;
   }
+
+  const CurrentRenderScope renderScope(currentRenders_);
 
   auto *buffer = static_cast<float *>(audioData);
   int processedFrames = 0;
@@ -126,12 +136,27 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
 }
 
 void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
-  if (error == oboe::Result::ErrorDisconnected) {
-    cleanup();
-    if (openAudioStream()) {
-      isInitialized_ = true;
-      resume();
-    }
+  if (error != oboe::Result::ErrorDisconnected || driverMutex_ == nullptr) {
+    return;
+  }
+
+  // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
+  std::scoped_lock lock(*driverMutex_);
+
+  auto context = context_.lock();
+  if (context == nullptr || context->isClosed()) {
+    return;
+  }
+
+  // The error thread is detached and can arrive late: if close() or a concurrent
+  // recovery already replaced the stream, don't tear down the healthy new stream.
+  if (stream != mStream_.get()) {
+    return;
+  }
+
+  cleanup();
+  if (openAudioStream()) {
+    resume();
   }
 }
 } // namespace audioapi

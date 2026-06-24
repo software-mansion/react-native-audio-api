@@ -123,7 +123,7 @@ static AudioSessionManager *_sharedInstance = nil;
 
   if (configChanged) {
     AudioEngine *audioEngine = [AudioEngine sharedInstance];
-    audioEngine.sessionDeactivationInvalidatedGraph = YES;
+    [audioEngine markSessionDeactivationInvalidatedGraph];
   }
 
   self.desiredCategory = category;

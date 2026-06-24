@@ -4,7 +4,7 @@ import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
 } from '../events/types';
-import { IAudioRecorder } from '../interfaces';
+import { IAudioRecorder } from '../jsi-interfaces';
 import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
@@ -44,11 +44,11 @@ export default class AudioRecorder {
   private isFileOutputEnabled: boolean = false;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
-    global.AudioEventEmitter
+    globalThis.AudioEventEmitter
   );
 
   constructor() {
-    this.recorder = global.createAudioRecorder();
+    this.recorder = globalThis.createAudioRecorder();
   }
 
   enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
@@ -71,17 +71,16 @@ export default class AudioRecorder {
   }
 
   /** Starts the audio recording process with configured output options */
-  start(options?: AudioRecorderStartOptions): Result<{}> {
+  start(options?: AudioRecorderStartOptions): Promise<Result<{}>> {
     if (!this.isFileOutputEnabled) {
-      this.recorder.start();
-      return { status: 'success' };
+      return this.recorder.start();
     }
 
     return this.recorder.start(options?.fileNameOverride);
   }
 
   /** Stops the audio recording process and releases internal resources */
-  stop(): Result<FileInfo> {
+  stop(): Promise<Result<FileInfo>> {
     return this.recorder.stop();
   }
 

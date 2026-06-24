@@ -3,7 +3,7 @@ import type { EventEmptyType } from '../../../events/types';
 import type {
   IAudioFileSourceNode,
   IAudioScheduledSourceNode,
-} from '../../../interfaces';
+} from '../../../jsi-interfaces';
 import AudioScheduledSourceNode from '../../../core/AudioScheduledSourceNode';
 
 type AttachFileSourceOptions = {
@@ -12,7 +12,9 @@ type AttachFileSourceOptions = {
 };
 
 export class AudioFileSourceNode extends AudioScheduledSourceNode {
-  private readonly emitter = new AudioEventEmitter(global.AudioEventEmitter);
+  private readonly emitter = new AudioEventEmitter(
+    globalThis.AudioEventEmitter
+  );
 
   attach(options: AttachFileSourceOptions): { duration: number } {
     this.resetNodeAndSubscriptions();

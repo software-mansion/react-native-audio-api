@@ -7,6 +7,7 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <audioapi/core/types/ContextState.h>
 #include <algorithm>
 #include <cassert>
 #include <memory>
@@ -33,7 +34,7 @@ OfflineAudioContext::~OfflineAudioContext() {
 }
 
 void OfflineAudioContext::resume() {
-  Locker locker(mutex_);
+  std::scoped_lock lock(driverMutex_);
 
   if (getState() == ContextState::RUNNING) {
     return;
@@ -43,7 +44,7 @@ void OfflineAudioContext::resume() {
 }
 
 void OfflineAudioContext::suspend(double when, const std::function<void()> &callback) {
-  Locker locker(mutex_);
+  std::scoped_lock lock(driverMutex_);
 
   // we can only suspend once per render quantum at the end of the quantum
   // first quantum is [0, RENDER_QUANTUM_SIZE)
@@ -64,7 +65,7 @@ void OfflineAudioContext::renderAudio() {
 
   std::thread([this]() {
     while (currentSampleFrame_ < length_) {
-      Locker locker(mutex_);
+      Locker locker(driverMutex_);
       int framesToProcess =
           std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
 
@@ -82,6 +83,8 @@ void OfflineAudioContext::renderAudio() {
         auto callback = suspend->second;
         scheduledSuspends_.erase(currentSampleFrame_);
         setState(ContextState::SUSPENDED);
+        processAudioEvents();
+        locker.unlock();
         callback();
         return;
       }
@@ -89,18 +92,19 @@ void OfflineAudioContext::renderAudio() {
 
     // Rendering completed
     resultCallback_(resultBuffer_);
+    setState(ContextState::CLOSED);
   }).detach();
 }
 
 void OfflineAudioContext::startRendering(OfflineAudioContextResultCallback callback) {
-  Locker locker(mutex_);
+  std::scoped_lock lock(driverMutex_);
 
   resultCallback_ = std::move(callback);
   renderAudio();
 }
 
 bool OfflineAudioContext::isDriverRunning() const {
-  return true;
+  return state_.load(std::memory_order_acquire) == ContextState::RUNNING;
 }
 
 } // namespace audioapi

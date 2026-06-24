@@ -1,7 +1,7 @@
 import AudioParam from './AudioParam';
 import type BaseAudioContext from './BaseAudioContext';
 import { EventTypeWithValue } from '../events/types';
-import { IAudioBufferBaseSourceNode } from '../interfaces';
+import { IAudioBufferBaseSourceNode } from '../jsi-interfaces';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 
 export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode {

@@ -58,14 +58,14 @@ class AudioAPIModule implements IAudioAPIModule {
 
   #verifyInstallation(): boolean {
     return (
-      global.createAudioContext != null &&
-      global.createOfflineAudioContext != null &&
-      global.createAudioRecorder != null &&
-      global.createAudioBuffer != null &&
-      global.createAudioDecoder != null &&
-      global.createAudioFileUtils != null &&
-      global.createAudioStretcher != null &&
-      global.AudioEventEmitter != null
+      globalThis.createAudioContext != null &&
+      globalThis.createOfflineAudioContext != null &&
+      globalThis.createAudioRecorder != null &&
+      globalThis.createAudioBuffer != null &&
+      globalThis.createAudioDecoder != null &&
+      globalThis.createAudioFileUtils != null &&
+      globalThis.createAudioStretcher != null &&
+      globalThis.AudioEventEmitter != null
     );
   }
 

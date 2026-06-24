@@ -1,5 +1,5 @@
 import { AudioApiError } from '../errors';
-import { IAudioFileUtils } from '../interfaces';
+import { IAudioFileUtils } from '../jsi-interfaces';
 import { prefetchFileSegments } from '../utils/metadataPrefetching';
 
 class AudioFileUtils {
@@ -7,7 +7,7 @@ class AudioFileUtils {
   protected readonly fileUtils: IAudioFileUtils;
 
   private constructor() {
-    this.fileUtils = global.createAudioFileUtils();
+    this.fileUtils = globalThis.createAudioFileUtils();
   }
 
   public static getInstance(): AudioFileUtils {

@@ -75,7 +75,7 @@ const Record: FC = () => {
     adapter.connect(audioContext.destination);
     audioRecorder.connect(adapter);
 
-    const result = audioRecorder.start();
+    const result = await audioRecorder.start();
 
     if (result.status === 'error') {
       Alert.alert(
@@ -90,7 +90,7 @@ const Record: FC = () => {
 
   /// This stops only the recording, not the audio context
   const stopEcho = async () => {
-    audioRecorder.stop();
+    await audioRecorder.stop();
     audioContext.suspend();
 
     audioRecorder.disconnect();
@@ -149,7 +149,7 @@ const Record: FC = () => {
       return;
     }
 
-    const result = audioRecorder.start();
+    const result = await audioRecorder.start();
 
     if (result.status === 'error') {
       Alert.alert(
@@ -227,7 +227,7 @@ const Record: FC = () => {
 
   useEffect(() => {
     return () => {
-      audioRecorder.stop();
+      void audioRecorder.stop();
       sourceNodesRef.current.forEach((source) => {
         source.disconnect();
       });

@@ -113,7 +113,7 @@ export default function PedalBoard() {
 
   const toggleRecording = async () => {
     if (isRecording) {
-      recorderRef.current?.stop();
+      await recorderRef.current?.stop();
       sourceNodeRef.current?.disconnect();
       setIsRecording(false);
     } else {
@@ -131,7 +131,7 @@ export default function PedalBoard() {
         if (audioContext.state === 'suspended') {
           audioContext.resume();
         }
-        recorder.start();
+        await recorder.start();
         setIsRecording(true);
       } else {
         Alert.alert(
