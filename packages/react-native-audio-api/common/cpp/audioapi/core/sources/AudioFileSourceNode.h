@@ -17,6 +17,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 using namespace audioapi::channels;
 
@@ -140,6 +141,14 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
 
+  /// @brief Handles the paused / drained / stopped short-circuit states before decoding.
+  /// @return a finished output buffer when the render should bail out early, std::nullopt otherwise.
+  /// @note Audio thread only. On success @p outContext holds a locked context.
+  std::optional<std::shared_ptr<DSPAudioBuffer>> renderPreflight(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess,
+      std::shared_ptr<BaseAudioContext> &outContext);
+
   float volume_;
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
@@ -158,13 +167,21 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   FillMode lastFillMode_{FillMode::Passthrough};
   std::array<float, MAX_CHANNEL_COUNT> previousOutputFrame_{};
   bool hasPreviousOutputFrame_{false};
+  bool endOfStreamStopPending_{false};
+  bool endOfStreamDrainPending_{false};
+  float eofDrainRate_{1.0f};
   size_t transitionFadeFramesRemaining_{0};
   static constexpr size_t MODE_TRANSITION_FADE_FRAMES = RENDER_QUANTUM_SIZE;
 
   [[nodiscard]] static FillMode chooseFillMode(bool preservesPitch, bool rateAffectsOutput);
   void setFillMode(FillMode mode);
   void applyModeTransitionFade(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+  void applyFadeOutToSilence(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
   void captureLastOutputFrame(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+  std::shared_ptr<DSPAudioBuffer> handleEndOfStreamPlayback(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess,
+      float activeRate);
 
   /// @brief Dispatches position-changed events at the configured interval.
   /// @param framesPlayed number of frames played since the last event; used to calculate the new position.

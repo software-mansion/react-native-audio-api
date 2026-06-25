@@ -22,6 +22,10 @@ class WsolaTimeStretcher {
     return inputQueue_.empty() ? 0 : inputQueue_[0].size();
   }
 
+  [[nodiscard]] size_t getBufferedOutputFrames() const {
+    return availableOutputFrames();
+  }
+
   void process(
       const DSPAudioBuffer &input,
       size_t inputFrames,
@@ -29,6 +33,10 @@ class WsolaTimeStretcher {
       size_t outputFrames,
       float playbackRate,
       float pitchFactor = 1.0f);
+
+  /// @brief Renders already-buffered WSOLA output/input without appending new PCM.
+  /// @return Number of frames written to @p output.
+  size_t drainOutput(DSPAudioBuffer &output, size_t outputFrames, float playbackRate);
 
   // some arbitrary value has to be set here to limit the size of the buffer for wsola algorithm
   static constexpr float MAX_PLAYBACK_RATE = 4;

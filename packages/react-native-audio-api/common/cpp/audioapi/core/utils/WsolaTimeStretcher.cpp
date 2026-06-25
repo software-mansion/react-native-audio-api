@@ -112,6 +112,26 @@ void WsolaTimeStretcher::process(
   }
 }
 
+size_t
+WsolaTimeStretcher::drainOutput(DSPAudioBuffer &output, size_t outputFrames, float playbackRate) {
+  if (channels_ == 0 || windowSize_ == 0 || playbackRate <= 0.0f || outputFrames == 0) {
+    return 0;
+  }
+
+  size_t rendered = 0;
+  while (rendered < outputFrames) {
+    rendered += writeOutput(output, rendered, outputFrames - rendered);
+    if (rendered >= outputFrames) {
+      break;
+    }
+    if (!runOneIteration(playbackRate)) {
+      break;
+    }
+  }
+
+  return rendered;
+}
+
 void WsolaTimeStretcher::appendInput(const DSPAudioBuffer &input, size_t inputFrames) {
   const size_t frames = std::min(inputFrames, input.getSize());
   if (frames == 0) {

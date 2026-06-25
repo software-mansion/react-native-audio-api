@@ -291,6 +291,35 @@ void AudioFileSourceNode::applyModeTransitionFade(
   transitionFadeFramesRemaining_ -= frames;
 }
 
+void AudioFileSourceNode::applyFadeOutToSilence(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
+  if (processingBuffer == nullptr) {
+    return;
+  }
+
+  const size_t frames = processingBuffer->getSize();
+  if (frames == 0) {
+    return;
+  }
+
+  const size_t channels =
+      std::min(processingBuffer->getNumberOfChannels(), static_cast<size_t>(MAX_CHANNEL_COUNT));
+
+  if (!hasPreviousOutputFrame_) {
+    processingBuffer->zero();
+    return;
+  }
+
+  for (size_t ch = 0; ch < channels; ++ch) {
+    float *data = processingBuffer->getChannel(ch)->begin();
+    const float startSample = previousOutputFrame_[ch];
+    for (size_t frame = 0; frame < frames; ++frame) {
+      const float mix = 1.0f - static_cast<float>(frame + 1) / static_cast<float>(frames);
+      data[frame] = startSample * mix;
+    }
+  }
+}
+
 void AudioFileSourceNode::captureLastOutputFrame(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
   if (processingBuffer == nullptr || processingBuffer->getSize() == 0) {
@@ -300,10 +329,40 @@ void AudioFileSourceNode::captureLastOutputFrame(
   const size_t lastFrame = processingBuffer->getSize() - 1;
   const size_t channels =
       std::min(processingBuffer->getNumberOfChannels(), static_cast<size_t>(MAX_CHANNEL_COUNT));
+
   for (size_t ch = 0; ch < channels; ++ch) {
     previousOutputFrame_[ch] = processingBuffer->getChannel(ch)->begin()[lastFrame];
   }
   hasPreviousOutputFrame_ = true;
+}
+
+std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::handleEndOfStreamPlayback(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    int framesToProcess,
+    float activeRate) {
+  const auto frames = static_cast<size_t>(framesToProcess);
+  processingBuffer->zero();
+
+  // Play out any audio still buffered inside the time-stretcher. While it keeps
+  // filling whole quanta we are still mid-tail, so keep draining on the next call.
+  const size_t drained = lastFillMode_ == FillMode::Wsola
+      ? wsolaStretcher_.drainOutput(*processingBuffer, frames, activeRate)
+      : 0;
+  if (drained >= frames) {
+    captureLastOutputFrame(processingBuffer);
+    return processingBuffer;
+  }
+
+  // The tail has run out. Fade the whole final quantum from the last rendered
+  // sample down to silence (a full render quantum ~2.7ms ramp) so the stop is
+  // inaudible. A short partial-tail fade is too abrupt and clicks, so we always
+  // ramp across the full quantum starting from previousOutputFrame_.
+  applyFadeOutToSilence(processingBuffer);
+  captureLastOutputFrame(processingBuffer);
+  resetPitchPreservationState();
+  endOfStreamDrainPending_ = false;
+  endOfStreamStopPending_ = true;
+  return processingBuffer;
 }
 
 void AudioFileSourceNode::setOnPositionChangedCallbackId(uint64_t callbackId) {
@@ -350,6 +409,8 @@ void AudioFileSourceNode::start(double when) {
 
   AudioScheduledSourceNode::start(when);
   filePaused_ = false;
+  endOfStreamStopPending_ = false;
+  endOfStreamDrainPending_ = false;
 
   if (seekDecoderDaemon_) {
     seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
@@ -396,6 +457,8 @@ void AudioFileSourceNode::pause() {
 void AudioFileSourceNode::disable() {
   stopDaemonThread();
   filePaused_ = false;
+  endOfStreamStopPending_ = false;
+  endOfStreamDrainPending_ = false;
 
   AudioScheduledSourceNode::disable();
 }
@@ -597,16 +660,35 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
   return processDecodedOutput(processingBuffer, framesToProcess);
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
+std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPreflight(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
-  if (decoderState_ == nullptr || filePaused_) {
+    int framesToProcess,
+    std::shared_ptr<BaseAudioContext> &outContext) {
+  if (decoderState_ == nullptr) {
     processingBuffer->zero();
     return processingBuffer;
   }
 
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr) {
+  if (endOfStreamStopPending_) {
+    endOfStreamStopPending_ = false;
+    filePaused_ = true;
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
+    handleStopScheduled();
+    processingBuffer->zero();
+    return processingBuffer;
+  }
+
+  if (endOfStreamDrainPending_) {
+    return handleEndOfStreamPlayback(processingBuffer, framesToProcess, eofDrainRate_);
+  }
+
+  if (filePaused_) {
+    processingBuffer->zero();
+    return processingBuffer;
+  }
+
+  outContext = context_.lock();
+  if (outContext == nullptr) {
     processingBuffer->zero();
     return processingBuffer;
   }
@@ -614,6 +696,17 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   if (decoderState_->pendingOffloadedSeeks.load(std::memory_order_acquire) > 0) {
     processingBuffer->zero();
     return processingBuffer;
+  }
+
+  return std::nullopt;
+}
+
+std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    int framesToProcess) {
+  std::shared_ptr<BaseAudioContext> context;
+  if (auto early = renderPreflight(processingBuffer, framesToProcess, context)) {
+    return *early;
   }
 
   size_t startOffset = 0;
@@ -653,13 +746,11 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   if (hasFreshChunk && incoming.state == StreamState::END_OF_STREAM) {
     currentTime_.store(duration_, std::memory_order_release);
     sendOnPositionChangedEvent(0, true);
+    clearPendingDecoderChunk();
 
-    filePaused_ = true;
-    playbackState_ = PlaybackState::STOP_SCHEDULED;
-    handleStopScheduled();
-
-    processingBuffer->zero();
-    return processingBuffer;
+    endOfStreamDrainPending_ = true;
+    eofDrainRate_ = activeRate;
+    return handleEndOfStreamPlayback(processingBuffer, framesToProcess, activeRate);
   }
 
   bool forceFlushEvent = false;
