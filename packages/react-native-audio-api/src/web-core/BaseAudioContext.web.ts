@@ -1,4 +1,4 @@
-import { ContextState } from '../types';
+import { AudioDurationInput, ContextState } from '../types';
 import AnalyserNode from './AnalyserNode.web';
 import AudioBuffer from './AudioBuffer.web';
 import AudioBufferSourceNode from './AudioBufferSourceNode.web';
@@ -47,4 +47,5 @@ export default interface BaseAudioContext {
     arrayBuffer: ArrayBuffer,
     fetchOptions?: RequestInit
   ): Promise<AudioBuffer>;
+  getAudioDuration(input: AudioDurationInput): Promise<number>;
 }

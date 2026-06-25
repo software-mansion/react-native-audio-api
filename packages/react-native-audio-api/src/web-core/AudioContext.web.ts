@@ -1,5 +1,10 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
-import { AudioContextOptions, ContextState, DecodeDataInput } from '../types';
+import {
+  AudioContextOptions,
+  AudioDurationInput,
+  ContextState,
+  DecodeDataInput,
+} from '../types';
 import AnalyserNode from './AnalyserNode.web';
 import AudioBuffer from './AudioBuffer.web';
 import AudioBufferSourceNode from './AudioBufferSourceNode.web';
@@ -16,6 +21,7 @@ import PeriodicWave from './PeriodicWave.web';
 import StereoPannerNode from './StereoPannerNode.web';
 import ConstantSourceNode from './ConstantSourceNode.web';
 import WaveShaperNode from './WaveShaperNode.web';
+import { getAudioDuration } from './AudioDecoder.web';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
@@ -166,6 +172,10 @@ export default class AudioContext implements BaseAudioContext {
     }
 
     throw new TypeError('Unsupported source for decodeAudioData: ' + source);
+  }
+
+  async getAudioDuration(input: AudioDurationInput): Promise<number> {
+    return await getAudioDuration(input);
   }
 
   async close(): Promise<void> {

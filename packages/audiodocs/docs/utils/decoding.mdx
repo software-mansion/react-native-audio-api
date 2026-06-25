@@ -6,8 +6,8 @@ import { Optional, MobileOnly } from '@site/src/components/Badges';
 
 # Decoding
 
-You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) and
-[`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64).
+You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata),
+[`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64), and [`getAudioDuration`](/docs/utils/decoding#getaudioduration).
 
 If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function;
 the decoded audio will then be automatically resampled to match the context's `sampleRate`.
@@ -82,6 +82,29 @@ import { decodeAudioData } from 'react-native-audio-api';
 const url = ... // url to an audio
 
 const buffer = await decodeAudioData(url);
+```
+</details>
+
+### `getAudioDuration` <MobileOnly />
+
+Reads the duration of a local audio file without decoding the full file into an [`AudioBuffer`](/docs/sources/audio-buffer).
+Use this when you only need the encoded file duration. Use [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) when you need sample data for playback or processing.
+
+This API currently supports local file paths and `file://` URIs. Remote URLs, asset module ids, `ArrayBuffer` input, base64 data URLs, and blob URLs are rejected explicitly.
+There is no `sampleRate` option because the returned duration belongs to the encoded file and does not depend on a caller-selected output sample rate.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `input` | `string` | Local file path or `file://` URI. |
+
+#### Returns `Promise<number>` with the duration in seconds.
+
+<details>
+<summary>Example reading local file duration</summary>
+```tsx
+import { getAudioDuration } from 'react-native-audio-api';
+
+const duration = await getAudioDuration('file:///tmp/recording.wav');
 ```
 </details>
 

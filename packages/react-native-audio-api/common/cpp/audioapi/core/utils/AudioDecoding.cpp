@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -108,6 +109,19 @@ bool pathHasExtension(const std::string &path, const std::vector<std::string> &e
       extensions, [&pathLower](const std::string &ext) { return pathLower.ends_with(ext); });
 }
 
+bool isValidDuration(float duration) {
+  return duration > 0.0F && std::isfinite(duration);
+}
+
+AudioDurationResult resolveDurationFromDecoder(decoding::IncrementalAudioDecoder &decoder) {
+  const float duration = decoder.getDurationInSeconds();
+  if (!isValidDuration(duration)) {
+    return Err("Audio duration metadata is unavailable");
+  }
+
+  return Ok(duration);
+}
+
 AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) {
   const int sr = static_cast<int>(sampleRate);
 
@@ -132,6 +146,34 @@ AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) 
     return Err("Failed to open file with miniaudio decoder: " + openResult.unwrap_err());
   }
   auto result = decodeAll(decoder);
+  decoder.close();
+  return result;
+}
+
+AudioDurationResult getDurationWithFilePath(const std::string &path) {
+  constexpr int useDecoderNativeSampleRate = 0;
+
+  if (needsFFmpegByPath(path)) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+    ffmpeg_decoder::FFmpegDecoder decoder;
+    const auto openResult = decoder.openFile(useDecoderNativeSampleRate, path);
+    if (openResult.is_err()) {
+      return Err("Failed to open file with FFmpeg decoder: " + openResult.unwrap_err());
+    }
+    auto result = resolveDurationFromDecoder(decoder);
+    decoder.close();
+    return result;
+#else
+    return Err("FFmpeg is disabled, cannot inspect duration with file path");
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+  }
+
+  miniaudio_decoder::MiniAudioDecoder decoder;
+  const auto openResult = decoder.openFile(useDecoderNativeSampleRate, path);
+  if (openResult.is_err()) {
+    return Err("Failed to open file with miniaudio decoder: " + openResult.unwrap_err());
+  }
+  auto result = resolveDurationFromDecoder(decoder);
   decoder.close();
   return result;
 }

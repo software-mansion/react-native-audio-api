@@ -24,6 +24,7 @@ export {
   default as AudioDecoder,
   decodeAudioData,
   decodePCMInBase64,
+  getAudioDuration,
 } from './web-core/AudioDecoder.web';
 
 export * from './web-core/custom';

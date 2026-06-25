@@ -1,5 +1,5 @@
 import { AudioApiError } from '../errors';
-import { DecodeDataInput } from '../types';
+import { AudioDurationInput, DecodeDataInput } from '../types';
 import { base64ToArrayBuffer } from '../utils';
 import AudioBuffer from './AudioBuffer.web';
 import OfflineAudioContext from './OfflineAudioContext.web';
@@ -122,6 +122,20 @@ export default class AudioDecoder {
       throw new AudioApiError('Failed to decode PCM data.');
     }
   }
+
+  public getAudioDurationInstance(input: DecodeDataInput): Promise<number> {
+    if (input instanceof ArrayBuffer) {
+      return Promise.reject(
+        new AudioApiError(
+          'ArrayBuffer duration probing is not currently supported.'
+        )
+      );
+    }
+
+    return Promise.reject(
+      new AudioApiError('getAudioDuration is not supported on web.')
+    );
+  }
 }
 
 export async function decodeAudioData(
@@ -148,4 +162,8 @@ export async function decodePCMInBase64(
     inputChannelCount,
     isInterleaved
   );
+}
+
+export function getAudioDuration(input: AudioDurationInput): Promise<number> {
+  return AudioDecoder.getInstance().getAudioDurationInstance(input);
 }
