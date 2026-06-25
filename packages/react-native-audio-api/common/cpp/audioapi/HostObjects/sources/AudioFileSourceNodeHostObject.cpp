@@ -21,6 +21,10 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       volume_(options.volume),
       playbackRate_(options.playbackRate),
       preservesPitch_(options.preservesPitch) {
+  if (std::static_pointer_cast<AudioFileSourceNode>(node_)->isHlsStreaming()) {
+    playbackRate_ = 1.0f;
+  }
+
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, playbackRate),
@@ -67,6 +71,10 @@ JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, playbackRate) {
 
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, playbackRate) {
   auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
+  if (node->isHlsStreaming()) {
+    return;
+  }
+
   const double nextPlaybackRate = value.getNumber();
   if (!std::isfinite(nextPlaybackRate) || nextPlaybackRate < 0.0 ||
       nextPlaybackRate > static_cast<double>(std::numeric_limits<float>::max())) {

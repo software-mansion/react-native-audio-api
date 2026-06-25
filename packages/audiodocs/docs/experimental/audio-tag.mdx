@@ -55,7 +55,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `muted` | `boolean` | `false` | Muted state. |
 | `volume` | `number` | `1` | Linear volume passed to the underlying source. |
 | `preload` | `PreloadType` | `'auto'` | Loading strategy for the source (`'none'`, `'metadata'`, `'auto'`). |
-| `playbackRate` | `number` | `1` | Playback speed. Native file playback accepts finite non-negative rates; negative reverse playback is not supported. |
+| `playbackRate` | `number` | `1` | Playback speed. Native playback accepts rates up to x4; negative reverse playback is not supported. |
 | `preservesPitch` | `boolean` | `true` | Preserve pitch when `playbackRate` changes. Set to `false` to let pitch change with playback speed. |
 | `onLoadStart` | `() => void` | no-op | Load started. |
 | `onLoad` | `() => void` | no-op | Source decoded / graph attached. |

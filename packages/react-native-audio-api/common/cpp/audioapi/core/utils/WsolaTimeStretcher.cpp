@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <numeric>
 #include <vector>
 
 namespace audioapi {
@@ -44,9 +43,9 @@ void WsolaTimeStretcher::configure(size_t channels, float sampleRate) {
 
   inputQueue_.assign(channels_, {});
   outputQueue_.assign(channels_, {});
-  const size_t inputQueueCapacity =
-      maxInputFrames_ + searchIntervalFrames_ + windowSize_ + RENDER_QUANTUM_SIZE * 4;
-  const size_t outputQueueCapacity = hopSize_ * 4 + RENDER_QUANTUM_SIZE * 4;
+  const size_t inputQueueCapacity = maxInputFrames_ + searchIntervalFrames_ + windowSize_ +
+      static_cast<size_t>(RENDER_QUANTUM_SIZE * 4);
+  const size_t outputQueueCapacity = hopSize_ * 4 + static_cast<size_t>(RENDER_QUANTUM_SIZE * 4);
   for (auto &channel : inputQueue_) {
     channel.reserve(inputQueueCapacity);
   }

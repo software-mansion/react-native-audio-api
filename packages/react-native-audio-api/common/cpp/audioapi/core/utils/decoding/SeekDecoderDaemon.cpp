@@ -96,7 +96,6 @@ bool SeekDecoderDaemon::decodeNextChunk(
   }
 
   const float playbackRate = sharedState_->playbackRate.load(std::memory_order_acquire);
-  data.playbackRate = playbackRate;
 
   if (playbackRate == 0.0f) {
     data.size = 0;
@@ -112,8 +111,7 @@ bool SeekDecoderDaemon::decodeNextChunk(
 
   // Decode at a fixed rate into the pipeline. Playback speed is applied later by WSOLA/resampling
   // on the audio thread (same model as Chromium's AudioRendererAlgorithm buffer + FillBuffer).
-  const size_t framesRequested = static_cast<size_t>(RENDER_QUANTUM_SIZE);
-  size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
+  size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
 
   if (framesRead > 0) {
     data.size = framesRead;
@@ -137,7 +135,7 @@ bool SeekDecoderDaemon::decodeNextChunk(
   if (sharedState_->loop.load(std::memory_order_acquire) && decoder_->seekToTime(0).is_ok()) {
     data.state = StreamState::DISCONTINUOUS;
     data.timestamp = 0.0;
-    framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), framesRequested);
+    framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
     data.size = framesRead;
     return true;
   }

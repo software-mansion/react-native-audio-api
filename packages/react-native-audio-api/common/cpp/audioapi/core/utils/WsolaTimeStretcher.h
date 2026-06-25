@@ -30,6 +30,9 @@ class WsolaTimeStretcher {
       float playbackRate,
       float pitchFactor = 1.0f);
 
+  // some arbitrary value has to be set here to limit the size of the buffer for wsola algorithm
+  static constexpr float MAX_PLAYBACK_RATE = 4;
+
   /// Rough latency estimates for buffer tail padding (seconds).
   static constexpr float INPUT_LATENCY_MS = 20.0f;
   static constexpr float OUTPUT_LATENCY_MS = 10.0f;

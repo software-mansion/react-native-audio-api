@@ -70,11 +70,18 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   }
 
   /// @brief Sets time-stretched playback speed for decoded file sources.
+  /// @note No-op for HLS live streams — playback rate changes are not supported.
   void setPlaybackRate(float v);
 
   /// @brief Current playback speed multiplier.
   float getPlaybackRate() const {
     return decoderState_->playbackRate.load(std::memory_order_acquire);
+  }
+
+  /// @brief True when the source is an FFmpeg HLS live/indefinite stream.
+  [[nodiscard]] bool isHlsStreaming() const {
+    return decoderState_ != nullptr &&
+        decoderState_->isHlsStreaming.load(std::memory_order_acquire);
   }
 
   /// @brief When true, playback speed changes preserve the original pitch.
@@ -187,6 +194,16 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Ensures the planar playback-rate buffer can hold @p frames.
   /// @note Audio thread only.
   bool ensurePlaybackRateBufferSize(size_t frames);
+
+  /// @brief Appends deinterleaved samples from interleaved PCM into @ref playbackRateBuffer_.
+  /// @return Number of frames copied from @p interleaved; 0 if nothing to copy.
+  /// @note Audio thread only.
+  size_t appendFromInterleaved(
+      const float *interleaved,
+      size_t frameCount,
+      size_t startFrame,
+      size_t framesNeeded,
+      size_t &totalInputFrames);
 
   /// @brief Renders a speed-changed chunk while keeping pitch unchanged.
   /// @note Audio thread only.

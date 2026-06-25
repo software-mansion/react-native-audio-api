@@ -58,13 +58,14 @@ enum class StreamState : std::uint8_t { PLAYING, DISCONTINUOUS, END_OF_STREAM };
 struct DecoderData {
   /// Fixed inline storage — no heap alloc/free when chunks cross the SPSC channel to the audio
   /// thread. Sized for one decode pull (independent of playback rate; WSOLA consumes at rate).
-  static constexpr size_t MAX_FRAMES = static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) * 4U;
+  // x4 is upper limit of wsola algorithm
+  static constexpr size_t MAX_FRAMES = static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) * 4;
   static constexpr size_t INTERLEAVED_BUFFER_CAPACITY =
       MAX_FRAMES * static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT);
 
   std::array<float, INTERLEAVED_BUFFER_CAPACITY> interleavedBuffer{};
   size_t size{};
-  float playbackRate{1.0f};
+  // float playbackRate{1.0f};
   double timestamp{0.0};
   StreamState state{StreamState::PLAYING};
 };

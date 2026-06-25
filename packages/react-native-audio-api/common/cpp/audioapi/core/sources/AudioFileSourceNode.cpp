@@ -17,6 +17,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <utility>
 
@@ -33,18 +34,11 @@ AudioFileSourceNode::AudioFileSourceNode(
       decoderState_(std::make_shared<AudioFileDecoderState>()),
       volume_(options.volume),
       loop_(options.loop),
+      targetPlaybackRate_(options.playbackRate),
       onPositionChangedInterval_(
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL)) {
-  decoderState_->playbackRate.store(
-      std::isfinite(options.playbackRate) && options.playbackRate >= 0.0f ? options.playbackRate
-                                                                          : 1.0f,
-      std::memory_order_release);
+  decoderState_->playbackRate.store(options.playbackRate, std::memory_order_release);
   decoderState_->preservesPitch.store(options.preservesPitch, std::memory_order_release);
-
-  const float initialRate = std::isfinite(options.playbackRate) && options.playbackRate >= 0.0f
-      ? options.playbackRate
-      : 1.0f;
-  targetPlaybackRate_ = initialRate;
 
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
@@ -56,6 +50,11 @@ AudioFileSourceNode::AudioFileSourceNode(
 
   if (!initDecoder(context, options)) {
     return;
+  }
+
+  if (isHlsStreaming()) {
+    targetPlaybackRate_ = 1.0f;
+    decoderState_->playbackRate.store(1.0f, std::memory_order_release);
   }
 
   isInitialized_.store(true, std::memory_order_release);
@@ -134,7 +133,11 @@ void AudioFileSourceNode::setPlaybackRate(float v) {
     return;
   }
 
-  if (!std::isfinite(v) || v < 0.0f) {
+  if (isHlsStreaming()) {
+    return;
+  }
+
+  if (!std::isfinite(v) || v < 0.0f || v > WsolaTimeStretcher::MAX_PLAYBACK_RATE) {
     return;
   }
 
@@ -169,19 +172,16 @@ void AudioFileSourceNode::stashPendingDecoderChunk(
   }
 
   const size_t remaining = chunk.size - consumedFrames;
-  const size_t channels = static_cast<size_t>(channelCount_);
+  const auto channels = static_cast<size_t>(channelCount_);
 
   pendingDecoderChunk_.state = chunk.state;
   pendingDecoderChunk_.timestamp = chunk.timestamp;
-  pendingDecoderChunk_.playbackRate = chunk.playbackRate;
   pendingDecoderChunk_.size = remaining;
 
-  for (size_t frame = 0; frame < remaining; ++frame) {
-    for (size_t ch = 0; ch < channels; ++ch) {
-      pendingDecoderChunk_.interleavedBuffer[frame * channels + ch] =
-          chunk.interleavedBuffer[(consumedFrames + frame) * channels + ch];
-    }
-  }
+  std::memcpy(
+      pendingDecoderChunk_.interleavedBuffer.data(),
+      chunk.interleavedBuffer.data() + consumedFrames * channels,
+      remaining * channels * sizeof(float));
 }
 
 void AudioFileSourceNode::consumePendingDecoderChunkFront(size_t consumedFrames) {
@@ -195,14 +195,12 @@ void AudioFileSourceNode::consumePendingDecoderChunkFront(size_t consumedFrames)
   }
 
   const size_t remaining = pendingDecoderChunk_.size - consumedFrames;
-  const size_t channels = static_cast<size_t>(channelCount_);
+  const auto channels = static_cast<size_t>(channelCount_);
 
-  for (size_t frame = 0; frame < remaining; ++frame) {
-    for (size_t ch = 0; ch < channels; ++ch) {
-      pendingDecoderChunk_.interleavedBuffer[frame * channels + ch] =
-          pendingDecoderChunk_.interleavedBuffer[(consumedFrames + frame) * channels + ch];
-    }
-  }
+  std::memmove(
+      pendingDecoderChunk_.interleavedBuffer.data(),
+      pendingDecoderChunk_.interleavedBuffer.data() + consumedFrames * channels,
+      remaining * channels * sizeof(float));
 
   pendingDecoderChunk_.size = remaining;
 }
@@ -423,12 +421,44 @@ bool AudioFileSourceNode::readNextFrameChunk(DecoderData &outData) {
   return frameReceiver_->try_receive(outData) == ResponseStatus::SUCCESS;
 }
 
+size_t AudioFileSourceNode::appendFromInterleaved(
+    const float *interleaved,
+    size_t frameCount,
+    size_t startFrame,
+    size_t framesNeeded,
+    size_t &totalInputFrames) {
+  if (playbackRateBuffer_ == nullptr || frameCount <= startFrame ||
+      totalInputFrames >= framesNeeded) {
+    return 0;
+  }
+
+  const size_t capacity = playbackRateBuffer_->getSize();
+  if (totalInputFrames >= capacity) {
+    return 0;
+  }
+
+  const size_t available = frameCount - startFrame;
+  const size_t framesStillNeeded = framesNeeded - totalInputFrames;
+  const size_t frames = std::min({available, capacity - totalInputFrames, framesStillNeeded});
+
+  if (frames == 0) {
+    return 0;
+  }
+
+  const auto channels = static_cast<size_t>(channelCount_);
+  playbackRateBuffer_->deinterleaveFrom(
+      interleaved + startFrame * channels, totalInputFrames, frames);
+
+  totalInputFrames += frames;
+  return frames;
+}
+
 size_t AudioFileSourceNode::renderWithWsolaPitchPreservation(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     DecoderData &incoming,
     int framesToProcess,
     float activeRate) {
-  const size_t requestedInputFrames =
+  const auto requestedInputFrames =
       static_cast<size_t>(std::ceil(activeRate * static_cast<float>(framesToProcess)));
   const size_t bufferedInputFrames = wsolaStretcher_.getBufferedInputFrames();
   const size_t requiredInputFrames = wsolaStretcher_.getRequiredInputFrames();
@@ -470,42 +500,22 @@ size_t AudioFileSourceNode::accumulateStretchInput(
   }
 
   playbackRateBuffer_->zero();
-  const size_t capacity = playbackRateBuffer_->getSize();
   size_t totalInputFrames = 0;
-  const size_t channels = static_cast<size_t>(channelCount_);
-
-  auto appendFromInterleaved =
-      [&](const float *interleaved, size_t frameCount, size_t startFrame) -> size_t {
-    if (frameCount <= startFrame || totalInputFrames >= framesNeeded ||
-        totalInputFrames >= capacity) {
-      return 0;
-    }
-
-    const size_t available = frameCount - startFrame;
-    const size_t framesStillNeeded = framesNeeded - totalInputFrames;
-    const size_t framesToCopy =
-        std::min({available, capacity - totalInputFrames, framesStillNeeded});
-
-    for (size_t ch = 0; ch < channels; ++ch) {
-      float *dest = playbackRateBuffer_->getChannel(ch)->begin() + totalInputFrames;
-      const float *src = interleaved + ch + startFrame * channels;
-      for (size_t frame = 0; frame < framesToCopy; ++frame) {
-        dest[frame] = src[frame * channels];
-      }
-    }
-    totalInputFrames += framesToCopy;
-    return framesToCopy;
-  };
 
   if (pendingDecoderChunk_.size > 0) {
     const size_t copiedFromPending = appendFromInterleaved(
-        pendingDecoderChunk_.interleavedBuffer.data(), pendingDecoderChunk_.size, 0);
+        pendingDecoderChunk_.interleavedBuffer.data(),
+        pendingDecoderChunk_.size,
+        0,
+        framesNeeded,
+        totalInputFrames);
     consumePendingDecoderChunkFront(copiedFromPending);
   }
 
   size_t incomingConsumed = 0;
   if (totalInputFrames < framesNeeded && incoming.size > 0) {
-    incomingConsumed = appendFromInterleaved(incoming.interleavedBuffer.data(), incoming.size, 0);
+    incomingConsumed = appendFromInterleaved(
+        incoming.interleavedBuffer.data(), incoming.size, 0, framesNeeded, totalInputFrames);
   }
 
   DecoderData extra;
@@ -520,8 +530,8 @@ size_t AudioFileSourceNode::accumulateStretchInput(
       break;
     }
 
-    const size_t extraConsumed =
-        appendFromInterleaved(extra.interleavedBuffer.data(), extra.size, 0);
+    const size_t extraConsumed = appendFromInterleaved(
+        extra.interleavedBuffer.data(), extra.size, 0, framesNeeded, totalInputFrames);
     if (extraConsumed < extra.size) {
       stashPendingDecoderChunk(extra, extraConsumed);
       break;
@@ -537,12 +547,7 @@ size_t AudioFileSourceNode::accumulateStretchInput(
   }
 
   if (volume_ != 1.0f) {
-    for (size_t ch = 0; ch < channels; ++ch) {
-      float *data = playbackRateBuffer_->getChannel(ch)->begin();
-      for (size_t frame = 0; frame < totalInputFrames; ++frame) {
-        data[frame] *= volume_;
-      }
-    }
+    playbackRateBuffer_->scale(volume_);
   }
 
   return totalInputFrames;
@@ -631,9 +636,9 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   }
 
   const bool preservesPitch = decoderState_->preservesPitch.load(std::memory_order_acquire);
-  const float activeRate = targetPlaybackRate_;
+  const float activeRate = isHlsStreaming() ? 1.0f : targetPlaybackRate_;
   const bool rateAffectsOutput = std::abs(activeRate - 1.0f) > RATE_SETTLE_EPSILON;
-  const size_t framesNeededForRate =
+  const auto framesNeededForRate =
       static_cast<size_t>(std::ceil(activeRate * static_cast<float>(framesToProcess)));
 
   DecoderData incoming{};
