@@ -66,7 +66,6 @@ struct DecoderData {
 
   std::array<float, INTERLEAVED_BUFFER_CAPACITY> interleavedBuffer{};
   size_t size{};
-  // float playbackRate{1.0f};
   double timestamp{0.0};
   StreamState state{StreamState::PLAYING};
 };

@@ -52,11 +52,6 @@ AudioFileSourceNode::AudioFileSourceNode(
     return;
   }
 
-  if (isHlsStreaming()) {
-    targetPlaybackRate_ = 1.0f;
-    decoderState_->playbackRate.store(1.0f, std::memory_order_release);
-  }
-
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -130,10 +125,6 @@ bool AudioFileSourceNode::initDecoder(
 
 void AudioFileSourceNode::setPlaybackRate(float v) {
   if (decoderState_ == nullptr) {
-    return;
-  }
-
-  if (isHlsStreaming()) {
     return;
   }
 
@@ -729,10 +720,9 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   }
 
   const bool preservesPitch = decoderState_->preservesPitch.load(std::memory_order_acquire);
-  const float activeRate = isHlsStreaming() ? 1.0f : targetPlaybackRate_;
-  const bool rateAffectsOutput = std::abs(activeRate - 1.0f) > RATE_SETTLE_EPSILON;
+  const bool rateAffectsOutput = std::abs(targetPlaybackRate_ - 1.0f) > RATE_SETTLE_EPSILON;
   const auto framesNeededForRate =
-      static_cast<size_t>(std::ceil(activeRate * static_cast<float>(framesToProcess)));
+      static_cast<size_t>(std::ceil(targetPlaybackRate_ * static_cast<float>(framesToProcess)));
 
   DecoderData incoming{};
   const bool needsFreshDecoderChunk = pendingDecoderChunk_.size < framesNeededForRate;
@@ -749,8 +739,8 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
     clearPendingDecoderChunk();
 
     endOfStreamDrainPending_ = true;
-    eofDrainRate_ = activeRate;
-    return handleEndOfStreamPlayback(processingBuffer, framesToProcess, activeRate);
+    eofDrainRate_ = targetPlaybackRate_;
+    return handleEndOfStreamPlayback(processingBuffer, framesToProcess, targetPlaybackRate_);
   }
 
   bool forceFlushEvent = false;
@@ -773,11 +763,11 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   size_t framesPlayed = std::min(static_cast<size_t>(framesToProcess), incoming.size);
   size_t sourceFramesConsumed = incoming.size;
   if (shouldStretch) {
-    sourceFramesConsumed =
-        renderWithWsolaPitchPreservation(processingBuffer, incoming, framesToProcess, activeRate);
+    sourceFramesConsumed = renderWithWsolaPitchPreservation(
+        processingBuffer, incoming, framesToProcess, targetPlaybackRate_);
   } else if (shouldResample) {
-    sourceFramesConsumed =
-        renderWithoutPitchPreservation(processingBuffer, incoming, framesToProcess, activeRate);
+    sourceFramesConsumed = renderWithoutPitchPreservation(
+        processingBuffer, incoming, framesToProcess, targetPlaybackRate_);
   } else {
     processingBuffer->deinterleaveFrom(incoming.interleavedBuffer.data(), framesPlayed);
 

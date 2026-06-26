@@ -2,29 +2,11 @@ import { useMemo } from 'react';
 import { Image, Platform } from 'react-native';
 import AudioContext from '../../../core/AudioContext';
 import type BaseAudioContext from '../../../core/BaseAudioContext';
-import { NotSupportedError } from '../../../errors';
 import { AudioProps, AudioPropsBase, AudioSource } from './types';
 
 const noop = () => {};
 const noopError = (_error: Error) => {};
 const noopNumber = (_number: number) => {};
-
-export const MAX_PLAYBACK_RATE = 4;
-
-/**
- * Validates a requested playback rate. The audio tag only supports playback
- * rates up to {@link MAX_PLAYBACK_RATE}; higher rates degrade the
- * time-stretching quality beyond usefulness.
- *
- * @throws A `NotSupportedError` when the playback rate exceeds the maximum.
- */
-export function validatePlaybackRate(playbackRate: number): void {
-  if (playbackRate > MAX_PLAYBACK_RATE) {
-    throw new NotSupportedError(
-      `playbackRate ${playbackRate} exceeds the maximum supported value of ${MAX_PLAYBACK_RATE}.`
-    );
-  }
-}
 
 /**
  * Merge props with defaults. `resolvedContext` must be stable when using the

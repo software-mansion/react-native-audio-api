@@ -30,23 +30,10 @@ const AudioTag: React.FC = () => {
   const volumeRef = useRef(1);
   const audioContextRef = useRef<AudioContext>(new AudioContext());
   const mediaElementSourceRef = useRef<MediaElementAudioSourceNode>(null);
+  const [mediaElementRoute, setMediaElementRoute] = useState(false);
   const biquadRef = useRef<BiquadFilterNode>(null);
 
   const ensureMediaElementRoute = useCallback(() => {
-    if (!audioRef.current) {
-      throw new Error('Audio tag handle is not ready yet.');
-    }
-
-    const ctx = audioContextRef.current;
-    mediaElementSourceRef.current = ctx.createMediaElementSource(
-      audioRef.current
-    );
-
-    biquadRef.current = ctx.createBiquadFilter();
-    biquadRef.current.type = 'lowpass';
-    biquadRef.current.frequency.value = 750;
-    mediaElementSourceRef.current.connect(biquadRef.current);
-    biquadRef.current.connect(ctx.destination);
   }, []);
 
   useEffect(() => {
@@ -55,11 +42,29 @@ const AudioTag: React.FC = () => {
     };
   }, []);
 
-  const ensureWithoutMediaElementRoute = useCallback(() => {
-    if (biquadRef.current) {
-      mediaElementSourceRef.current?.disconnect(biquadRef.current);
+  const handleMediaElementRouteChange = useCallback(() => {
+    if (!mediaElementRoute) {
+      if (!audioRef.current) {
+        throw new Error('Audio tag handle is not ready yet.');
+      }
+
+      const ctx = audioContextRef.current;
+      mediaElementSourceRef.current = ctx.createMediaElementSource(
+        audioRef.current
+      );
+
+      biquadRef.current = ctx.createBiquadFilter();
+      biquadRef.current.type = 'lowpass';
+      biquadRef.current.frequency.value = 750;
+      mediaElementSourceRef.current.connect(biquadRef.current);
+      biquadRef.current.connect(ctx.destination);
+    } else {
+      if (biquadRef.current) {
+        mediaElementSourceRef.current?.disconnect(biquadRef.current);
+      }
     }
-  }, []);
+    setMediaElementRoute(!mediaElementRoute);
+  }, [mediaElementRoute]);
 
   const handleVolumeChange = useCallback((nextVolume: number) => {
     setSliderVolume(nextVolume);
@@ -153,15 +158,10 @@ const AudioTag: React.FC = () => {
           />
           <Spacer.Vertical size={12} />
         </View>
-        <Button
-          title="Route via MediaElement node"
-          onPress={ensureMediaElementRoute}
-          width={screenWidth * 0.8}
-        />
         <Spacer.Vertical size={12} />
         <Button
-          title="Route without MediaElement node"
-          onPress={ensureWithoutMediaElementRoute}
+          title={!mediaElementRoute ? 'Route via MediaElement node' : 'Route without MediaElement node'}
+          onPress={handleMediaElementRouteChange}
           width={screenWidth * 0.8}
         />
       </View>

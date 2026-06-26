@@ -15,11 +15,7 @@ import type {
 } from './types';
 
 import { AudioComponentContext } from './AudioTagContext';
-import {
-  useStableAudioProps,
-  resolveSourcePath,
-  validatePlaybackRate,
-} from './utils';
+import { useStableAudioProps, resolveSourcePath } from './utils';
 import { AudioControls } from '..';
 import { useAudioSourceLoader } from './useAudioSourceLoader';
 
@@ -149,7 +145,6 @@ const Audio = React.memo(
 
     const setPlaybackRate = useCallback(
       (nextPlaybackRate: number) => {
-        validatePlaybackRate(nextPlaybackRate);
         fileSourceRef.current?.setPlaybackRate(nextPlaybackRate);
       },
       [fileSourceRef]
@@ -187,7 +182,6 @@ const Audio = React.memo(
     }, [loop, fileSourceRef]);
 
     useEffect(() => {
-      validatePlaybackRate(playbackRate);
       fileSourceRef.current?.setPlaybackRate(playbackRate);
     }, [playbackRate, fileSourceRef]);
 
