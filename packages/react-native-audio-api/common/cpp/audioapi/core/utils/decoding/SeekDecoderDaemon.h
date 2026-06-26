@@ -2,6 +2,7 @@
 
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
+#include "audioapi/core/utils/WsolaTimeStretcher.h"
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -58,8 +59,8 @@ enum class StreamState : std::uint8_t { PLAYING, DISCONTINUOUS, END_OF_STREAM };
 struct DecoderData {
   /// Fixed inline storage — no heap alloc/free when chunks cross the SPSC channel to the audio
   /// thread. Sized for one decode pull (independent of playback rate; WSOLA consumes at rate).
-  // x4 is upper limit of wsola algorithm
-  static constexpr size_t MAX_FRAMES = static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) * 4;
+  static constexpr size_t MAX_FRAMES = static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) *
+      audioapi::WsolaTimeStretcher::MAX_PLAYBACK_RATE;
   static constexpr size_t INTERLEAVED_BUFFER_CAPACITY =
       MAX_FRAMES * static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT);
 
