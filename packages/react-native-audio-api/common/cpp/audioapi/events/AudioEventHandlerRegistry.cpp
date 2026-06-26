@@ -1,8 +1,10 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <cstdio>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -43,6 +45,7 @@ AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
   if (workerThread_.joinable()) {
     workerThread_.join();
   }
+  std::scoped_lock lock(eventHandlersMutex_);
   eventHandlers_.clear();
 }
 
@@ -54,7 +57,10 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
   if (runtime_ == nullptr) {
     return 0;
   }
-  this->eventHandlers_[eventName][listenerId] = handler;
+  {
+    std::scoped_lock lock(eventHandlersMutex_);
+    this->eventHandlers_[eventName][listenerId] = handler;
+  }
 
   return listenerId;
 }
@@ -63,6 +69,7 @@ void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t
   if (runtime_ == nullptr || listenerId == 0) {
     return;
   }
+  std::scoped_lock lock(eventHandlersMutex_);
   this->eventHandlers_[eventName].erase(listenerId);
 }
 
@@ -107,21 +114,32 @@ void AudioEventHandlerRegistry::handleEventOnJSThread(
     return;
   }
 
-  auto it = eventHandlers_.find(eventName);
-  if (it == eventHandlers_.end()) {
-    return;
+  // Collect the matching handlers under the lock, then release it before
+  // invoking. invokeHandler() calls into JS, which may re-enter
+  // register/unregister; holding the lock across that would deadlock.
+  std::vector<std::shared_ptr<jsi::Function>> handlers;
+  {
+    std::scoped_lock lock(eventHandlersMutex_);
+    auto it = eventHandlers_.find(eventName);
+    if (it == eventHandlers_.end()) {
+      return;
+    }
+
+    if (listenerId == kBroadcastListenerId) {
+      handlers.reserve(it->second.size());
+      for (const auto &pair : it->second) {
+        handlers.push_back(pair.second);
+      }
+    } else {
+      auto handlerIt = it->second.find(listenerId);
+      if (handlerIt != it->second.end()) {
+        handlers.push_back(handlerIt->second);
+      }
+    }
   }
 
-  if (listenerId == kBroadcastListenerId) {
-    auto handlersCopy = it->second;
-    for (const auto &pair : handlersCopy) {
-      invokeHandler(pair.second, payload);
-    }
-  } else {
-    auto handlerIt = it->second.find(listenerId);
-    if (handlerIt != it->second.end()) {
-      invokeHandler(handlerIt->second, payload);
-    }
+  for (const auto &handler : handlers) {
+    invokeHandler(handler, payload);
   }
 }
 
