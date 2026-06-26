@@ -4,8 +4,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <audioapi/types/NodeOptions.h>
-#include <cmath>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -75,13 +73,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, playbackRate) {
     return;
   }
 
-  const double nextPlaybackRate = value.getNumber();
-  if (!std::isfinite(nextPlaybackRate) || nextPlaybackRate < 0.0 ||
-      nextPlaybackRate > static_cast<double>(std::numeric_limits<float>::max())) {
-    throw jsi::JSError(
-        runtime, "AudioFileSourceNode: playbackRate must be a finite, non-negative number.");
-  }
-  playbackRate_ = static_cast<float>(nextPlaybackRate);
+  playbackRate_ = static_cast<float>(value.getNumber());
   auto event = [node, playbackRate = this->playbackRate_](BaseAudioContext &ctx) {
     node->setPlaybackRate(playbackRate);
   };
