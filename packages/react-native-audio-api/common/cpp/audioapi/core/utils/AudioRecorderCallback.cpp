@@ -70,7 +70,10 @@ void AudioRecorderCallback::invokeCallback(
     int numFrames) {
   audioReadyEvent_.dispatch(
       AudioReadyPayload{
-          .buffer = std::make_shared<AudioBufferHostObject>(buffer), .numFrames = numFrames});
+          .buffer = std::make_shared<AudioBufferHostObject>(buffer),
+          .numFrames = numFrames,
+          .when = static_cast<double>(framesEmitted_) / sampleRate_});
+  framesEmitted_ += numFrames;
 }
 
 void AudioRecorderCallback::assignOnErrorCallbackId(uint64_t callbackId) {

@@ -52,6 +52,7 @@ class AudioRecorderCallback {
   size_t bufferLength_;
   int channelCount_;
   size_t ringBufferSize_;
+  uint64_t framesEmitted_ = 0;
 
   EventCaller<AudioEvent::AUDIO_READY> audioReadyEvent_;
   EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
