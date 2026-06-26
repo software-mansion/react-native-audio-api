@@ -108,7 +108,7 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
     return CloseFileResult::Err("File is not open");
   }
 
-  offloader_.reset();
+  // Joins the worker before draining/finalizing the encoder below.
   cleanupPreallocatedInputPool();
 
   result = processFifo(true);

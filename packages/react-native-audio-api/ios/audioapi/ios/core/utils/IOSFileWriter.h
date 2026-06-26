@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/AudioFileWriter.h>
+#include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SlotFreeList.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
@@ -16,7 +17,6 @@ typedef struct objc_object NSURL;
 typedef struct objc_object NSString;
 typedef struct objc_object AVAudioFile;
 typedef struct objc_object AVAudioFormat;
-typedef struct objc_object AudioBufferList;
 typedef struct objc_object AVAudioConverter;
 #endif // __OBJC__
 
@@ -64,7 +64,7 @@ class IOSFileWriter : public AudioFileWriter {
  private:
   using FreeList = slots::SlotFreeList<FILE_WRITER_POOL_SIZE>;
 
-  std::vector<AudioBufferList *> inputBufferPool_;
+  std::vector<ios::OwnedAudioBufferListPtr> inputBufferPool_;
   size_t inputBufferBytesPerBuffer_{0};
   std::unique_ptr<FreeList> freeSlots_;
 

@@ -1,70 +1,65 @@
 #pragma once
 
-#include <audioapi/utils/SpscChannel.hpp>
-
+#include <atomic>
+#include <bit>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <optional>
-#include <utility>
 
 namespace audioapi::slots {
 
-/// Lock-free free-list of preallocated buffer slot indices (0..Capacity-1).
-/// Audio thread acquires a slot, copies into pool[slot], worker releases it.
-/// Does not own audio data — only tracks which pool index is available.
+/// Lock-free free-list of preallocated buffer slot indices (0..Capacity-1),
+/// backed by a single atomic bitmask (bit i set == slot i is free).
+///
+/// Unlike an SPSC ring, acquire and release are safe from any thread: both the
+/// audio thread (failure paths) and the worker thread release slots, so a
+/// single-producer structure would be misused. Does not own audio data — only
+/// tracks which pool index is available.
 template <size_t Capacity>
 class SlotFreeList {
  public:
   static_assert(Capacity > 0, "SlotFreeList requires Capacity > 0");
+  static_assert(Capacity <= 64, "SlotFreeList stores slots in a 64-bit mask");
 
   /// Reserved slot value; TaskOffloader sends this on shutdown to unblock the worker.
   static constexpr size_t kSentinel = std::numeric_limits<size_t>::max();
 
-  SlotFreeList() {
-    // WAIT_ON_FULL SPSC rings hold at most (capacity - 1) elements. Request one
-    // extra slot so `seed()` can enqueue all Capacity indices without blocking.
-    auto [sender, receiver] = channels::spsc::channel<
-        size_t,
-        channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-        channels::spsc::WaitStrategy::ATOMIC_WAIT>(Capacity + 1);
-    sender_ = std::move(sender);
-    receiver_ = std::move(receiver);
-  }
-
-  /// JS thread: enqueue indices 0..Capacity-1 (all slots start free).
+  /// Mark all Capacity slots free. Call before handing the list to the audio thread.
   void seed() {
-    for (size_t i = 0; i < Capacity; ++i) {
-      sender_.send(i);
-    }
+    freeMask_.store(kFullMask, std::memory_order_release);
   }
 
-  /// Audio thread: take a free slot index, or nullopt if the pool is exhausted.
+  /// Take a free slot index, or nullopt if the pool is exhausted. Multi-consumer safe.
   std::optional<size_t> tryAcquire() {
-    size_t slot = 0;
-    auto status = receiver_.try_receive(slot);
-    if (status != channels::spsc::ResponseStatus::SUCCESS) {
-      return std::nullopt;
+    uint64_t mask = freeMask_.load(std::memory_order_acquire);
+    while (mask != 0) {
+      const auto slot = static_cast<size_t>(std::countr_zero(mask));
+      const uint64_t next = mask & (mask - 1); // clear lowest set bit
+      if (freeMask_.compare_exchange_weak(
+              mask, next, std::memory_order_acq_rel, std::memory_order_acquire)) {
+        return slot;
+      }
+      // CAS failure refreshes `mask` with the current value; retry.
     }
-
-    return slot;
+    return std::nullopt;
   }
 
-  /// Worker thread: return a slot index after processing pool[slot].
+  /// Return a slot index. Multi-producer safe and never blocks, so it is safe on the
+  /// real-time audio thread. A double-release just re-sets an already-free bit (no-op).
   void release(size_t slot) {
-    sender_.send(slot);
+    if (slot >= Capacity) {
+      return;
+    }
+    freeMask_.fetch_or(uint64_t{1} << slot, std::memory_order_acq_rel);
   }
 
  private:
-  channels::spsc::Sender<
-      size_t,
-      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      channels::spsc::WaitStrategy::ATOMIC_WAIT>
-      sender_;
-  channels::spsc::Receiver<
-      size_t,
-      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
-      channels::spsc::WaitStrategy::ATOMIC_WAIT>
-      receiver_;
+  // Low `Capacity` bits set. Built top-down so Capacity == 64 needs no special case:
+  // the static_asserts keep the shift amount in [0, 63], avoiding shift-by-64 UB.
+  static constexpr uint64_t kFullMask = ~uint64_t{0} >> (64 - Capacity);
+
+  std::atomic<uint64_t> freeMask_{0};
 };
 
 } // namespace audioapi::slots

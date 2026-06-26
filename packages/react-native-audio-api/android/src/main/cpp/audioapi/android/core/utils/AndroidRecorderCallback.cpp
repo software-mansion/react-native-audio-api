@@ -7,8 +7,11 @@
 #include <audioapi/utils/CircularArray.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstring>
 #include <memory>
+#include <mutex>
+#include <new>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -91,7 +94,8 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
   inputBufferBytesPerSlot_ = maxInputBufferLength_ * static_cast<size_t>(streamChannelCount_) *
       ma_get_bytes_per_sample(ma_format_f32);
   size_t inputPoolBytes = inputBufferBytesPerSlot_ * RECORDER_CALLBACK_POOL_SIZE;
-  inputBufferPool_ = ma_malloc(inputPoolBytes, nullptr);
+  // nothrow new keeps the graceful failure path (return Err) instead of throwing.
+  inputBufferPool_.reset(new (std::nothrow) std::byte[inputPoolBytes]);
   if (inputBufferPool_ == nullptr) {
     if (processingBuffer_ != nullptr) {
       ma_free(processingBuffer_, nullptr);
@@ -104,7 +108,7 @@ Result<NoneType, std::string> AndroidRecorderCallback::prepare(
 
   inputBuffers_.clear();
   inputBuffers_.reserve(RECORDER_CALLBACK_POOL_SIZE);
-  auto *poolHead = static_cast<char *>(inputBufferPool_);
+  std::byte *poolHead = inputBufferPool_.get();
   for (size_t i = 0; i < RECORDER_CALLBACK_POOL_SIZE; ++i) {
     inputBuffers_.push_back(poolHead + i * inputBufferBytesPerSlot_);
   }
@@ -141,10 +145,7 @@ void AndroidRecorderCallback::cleanup() {
     processingBuffer_ = nullptr;
     processingBufferLength_ = 0;
   }
-  if (inputBufferPool_ != nullptr) {
-    ma_free(inputBufferPool_, nullptr);
-    inputBufferPool_ = nullptr;
-  }
+  inputBufferPool_.reset();
   inputBufferBytesPerSlot_ = 0;
   inputBuffers_.clear();
   freeSlots_.reset();
@@ -159,8 +160,11 @@ void AndroidRecorderCallback::cleanup() {
 /// @param data Pointer to the incoming audio data.
 /// @param numFrames Number of frames in the incoming audio data.
 void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
-  // if we wait here, we are in the middle of the destruction
-  std::scoped_lock lock(destructionAudioGuard_);
+  // Don't block the audio thread: if cleanup() holds the guard we're being destroyed, drop the buffer.
+  std::unique_lock<std::mutex> lock(destructionAudioGuard_, std::try_to_lock);
+  if (!lock.owns_lock()) {
+    return;
+  }
   if (offloader_ == nullptr) {
     return;
   }
@@ -185,12 +189,13 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
 
   // Oboe owns `data` only for the duration of this synchronous
   // callback. Copy into an owned buffer before handing off to the
-  // worker thread; the consumer in runWriterTask frees it.
+  // worker thread; the consumer in taskOffloaderFunction releases the slot.
   std::memcpy(inputBuffers_[slot.value()], data, bytes);
   CallbackData callbackData{.slot = slot.value(), .numFrames = numFrames};
-  if (offloader_->getSender()->try_send(callbackData) != channels::spsc::ResponseStatus::SUCCESS) {
-    freeSlots_->release(slot.value());
-  }
+  // send() cannot block here: we hold a slot from a pool of RECORDER_CALLBACK_POOL_SIZE,
+  // and the channel is sized one larger, so the ring always has room while
+  // any slot is in flight.
+  offloader_->getSender()->send(callbackData);
 }
 
 /// @brief Deinterleaves the audio data and pushes it into the circular buffer.

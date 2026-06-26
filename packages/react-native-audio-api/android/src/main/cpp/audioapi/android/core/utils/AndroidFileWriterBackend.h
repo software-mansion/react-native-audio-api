@@ -5,6 +5,7 @@
 #include <audioapi/utils/SlotFreeList.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
+#include <cstddef>
 #include <limits>
 #include <memory>
 #include <string>
@@ -55,7 +56,7 @@ class AndroidFileWriterBackend : public AudioFileWriter {
   bool initializePreallocatedInputPool();
   void cleanupPreallocatedInputPool();
 
-  // delay initialization of offloader until prepare is called
+  // Lifetime tied to the preallocated pool so a writer can be reopened after closeFile().
   std::unique_ptr<task_offloader::TaskOffloader<
       WriterData,
       FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
@@ -63,9 +64,10 @@ class AndroidFileWriterBackend : public AudioFileWriter {
       offloader_;
 
  private:
+  void createOffloader();
   void runWriterTask(WriterData data);
 
-  void *inputBufferPool_{nullptr};
+  std::unique_ptr<std::byte[]> inputBufferPool_;
   size_t inputBufferBytesPerSlot_{0};
   std::vector<void *> inputBuffers_;
   std::unique_ptr<FreeList> freeSlots_;

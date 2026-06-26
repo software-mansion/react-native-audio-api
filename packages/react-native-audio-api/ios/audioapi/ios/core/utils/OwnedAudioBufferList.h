@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #ifndef __OBJC__
 typedef struct AudioBufferList AudioBufferList;
 #endif
@@ -8,6 +10,16 @@ namespace audioapi::ios {
 
 /// Frees an AudioBufferList allocated by `allocateOwnedAudioBufferList`.
 void freeOwnedAudioBufferList(const AudioBufferList *bufferList);
+
+/// unique_ptr deleter that releases an owned AudioBufferList and its channel buffers.
+struct OwnedAudioBufferListDeleter {
+  void operator()(AudioBufferList *bufferList) const noexcept {
+    freeOwnedAudioBufferList(bufferList);
+  }
+};
+
+/// Owning handle for an AudioBufferList from `allocateOwnedAudioBufferList`.
+using OwnedAudioBufferListPtr = std::unique_ptr<AudioBufferList, OwnedAudioBufferListDeleter>;
 
 /// Allocates an AudioBufferList with fixed per-buffer capacity.
 /// Returns nullptr on allocation failure. Caller must free with

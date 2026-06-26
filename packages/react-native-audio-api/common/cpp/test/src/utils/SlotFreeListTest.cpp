@@ -26,6 +26,36 @@ TEST(SlotFreeListTest, SeedAcquireRelease) {
   EXPECT_EQ(recycled.value(), slot1.value());
 }
 
+TEST(SlotFreeListTest, DoubleReleaseDoesNotDuplicateSlot) {
+  slots::SlotFreeList<4> freeList;
+  freeList.seed();
+
+  for (size_t i = 0; i < 4; ++i) {
+    ASSERT_TRUE(freeList.tryAcquire().has_value());
+  }
+
+  auto slot = size_t{2};
+  freeList.release(slot);
+  freeList.release(slot); // idempotent: must not make the slot available twice
+
+  ASSERT_TRUE(freeList.tryAcquire().has_value());
+  EXPECT_FALSE(freeList.tryAcquire().has_value());
+}
+
+TEST(SlotFreeListTest, OutOfRangeReleaseIsIgnored) {
+  slots::SlotFreeList<4> freeList;
+  freeList.seed();
+
+  for (size_t i = 0; i < 4; ++i) {
+    ASSERT_TRUE(freeList.tryAcquire().has_value());
+  }
+
+  freeList.release(4);
+  freeList.release(slots::SlotFreeList<4>::kSentinel);
+
+  EXPECT_FALSE(freeList.tryAcquire().has_value());
+}
+
 TEST(SlotFreeListTest, SentinelValueIsOutOfRange) {
   slots::SlotFreeList<8> freeList;
   freeList.seed();

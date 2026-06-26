@@ -12,13 +12,14 @@
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 namespace audioapi {
 
 using ios::allocateOwnedAudioBufferList;
 using ios::copyIntoOwnedAudioBufferList;
-using ios::freeOwnedAudioBufferList;
+using ios::OwnedAudioBufferListPtr;
 
 IOSRecorderCallback::IOSRecorderCallback(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -92,16 +93,13 @@ Result<NoneType, std::string> IOSRecorderCallback::prepare(
         converterInputBufferSize_ * bufferFormat_.streamDescription->mBytesPerFrame);
     inputBufferBytesPerBuffer_ = bytesPerBuffer;
     for (size_t i = 0; i < RECORDER_CALLBACK_POOL_SIZE; ++i) {
-      auto *buffer = allocateOwnedAudioBufferList(bufferCount, bytesPerBuffer);
+      OwnedAudioBufferListPtr buffer(allocateOwnedAudioBufferList(bufferCount, bytesPerBuffer));
       if (buffer == nullptr) {
-        for (auto *allocatedBuffer : inputBufferPool_) {
-          freeOwnedAudioBufferList(allocatedBuffer);
-        }
         inputBufferPool_.clear();
         return Result<NoneType, std::string>::Err(
             "Failed to preallocate iOS recorder callback buffers");
       }
-      inputBufferPool_.push_back(buffer);
+      inputBufferPool_.push_back(std::move(buffer));
     }
 
     freeSlots_ = std::make_unique<FreeList>();
@@ -129,9 +127,6 @@ void IOSRecorderCallback::cleanup()
     offloader_.reset();
 
     freeSlots_.reset();
-    for (auto *buffer : inputBufferPool_) {
-      freeOwnedAudioBufferList(buffer);
-    }
     inputBufferPool_.clear();
     inputBufferBytesPerBuffer_ = 0;
 
@@ -158,8 +153,11 @@ void IOSRecorderCallback::cleanup()
 /// @param numFrames Number of frames in the input buffer.
 void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
-  // if we wait here, we are in the middle of the destruction
-  std::scoped_lock lock(destructionAudioGuard_);
+  // Don't block the audio thread: if cleanup() holds the guard we're being destroyed, drop the buffer.
+  std::unique_lock<std::mutex> lock(destructionAudioGuard_, std::try_to_lock);
+  if (!lock.owns_lock()) {
+    return;
+  }
   if (offloader_ == nullptr) {
     return;
   }
@@ -178,7 +176,7 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferLis
   // CoreAudio owns `audioBufferList` only for the duration of this synchronous
   // callback. Copy into an owned AudioBufferList before handing off to the
   // worker thread; the consumer in taskOffloaderFunction frees it.
-  auto *targetBuffer = inputBufferPool_[slot.value()];
+  auto *targetBuffer = inputBufferPool_[slot.value()].get();
   if (!copyIntoOwnedAudioBufferList(
           targetBuffer, audioBufferList, static_cast<unsigned int>(inputBufferBytesPerBuffer_))) {
     freeSlots_->release(slot.value());
@@ -186,9 +184,10 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *audioBufferLis
   }
 
   CallbackData callbackData{.slot = slot.value(), .numFrames = numFrames};
-  if (offloader_->getSender()->try_send(callbackData) != channels::spsc::ResponseStatus::SUCCESS) {
-    freeSlots_->release(slot.value());
-  }
+  // send() cannot block here: we hold a slot from a pool of RECORDER_CALLBACK_POOL_SIZE,
+  // and the channel is sized one larger (see static_assert in AudioRecorderCallback.h),
+  // so the ring always has room while any slot is in flight.
+  offloader_->getSender()->send(callbackData);
 }
 
 void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
@@ -204,7 +203,7 @@ void IOSRecorderCallback::taskOffloaderFunction(CallbackData data)
   if (slot >= inputBufferPool_.size() || freeSlots_ == nullptr) {
     return;
   }
-  auto *inputBuffer = inputBufferPool_[slot];
+  auto *inputBuffer = inputBufferPool_[slot].get();
 
   @autoreleasepool {
     NSError *error = nil;

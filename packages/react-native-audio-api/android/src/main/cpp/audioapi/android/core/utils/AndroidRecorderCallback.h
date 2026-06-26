@@ -6,6 +6,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/SlotFreeList.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
+#include <cstddef>
 #include <limits>
 #include <memory>
 #include <string>
@@ -52,7 +53,7 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
  private:
   using FreeList = slots::SlotFreeList<RECORDER_CALLBACK_POOL_SIZE>;
 
-  void *inputBufferPool_{nullptr};
+  std::unique_ptr<std::byte[]> inputBufferPool_;
   size_t inputBufferBytesPerSlot_{0};
   std::vector<void *> inputBuffers_;
   std::unique_ptr<FreeList> freeSlots_;

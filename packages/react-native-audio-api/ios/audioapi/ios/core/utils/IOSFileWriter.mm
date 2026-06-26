@@ -8,12 +8,13 @@
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/UnitConversion.h>
+#include <utility>
 
 namespace audioapi {
 
 using ios::allocateOwnedAudioBufferList;
 using ios::copyIntoOwnedAudioBufferList;
-using ios::freeOwnedAudioBufferList;
+using ios::OwnedAudioBufferListPtr;
 
 IOSFileWriter::IOSFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -27,9 +28,6 @@ IOSFileWriter::~IOSFileWriter()
   @autoreleasepool {
     offloader_.reset();
     freeSlots_.reset();
-    for (auto *buffer : inputBufferPool_) {
-      freeOwnedAudioBufferList(buffer);
-    }
     inputBufferPool_.clear();
     inputBufferBytesPerBuffer_ = 0;
 
@@ -126,12 +124,12 @@ OpenFileResult IOSFileWriter::openFile(
         converterInputBufferSize_ * bufferFormat_.streamDescription->mBytesPerFrame);
     inputBufferBytesPerBuffer_ = bytesPerBuffer;
     for (size_t i = 0; i < FILE_WRITER_POOL_SIZE; ++i) {
-      auto *buffer = allocateOwnedAudioBufferList(bufferCount, bytesPerBuffer);
+      OwnedAudioBufferListPtr buffer(allocateOwnedAudioBufferList(bufferCount, bytesPerBuffer));
       if (buffer == nullptr) {
         rollbackFailedOpen();
         return OpenFileResult::Err("Failed to preallocate iOS file writer buffers");
       }
-      inputBufferPool_.push_back(buffer);
+      inputBufferPool_.push_back(std::move(buffer));
     }
 
     freeSlots_ = std::make_unique<FreeList>();
@@ -145,9 +143,6 @@ void IOSFileWriter::rollbackFailedOpen()
 {
   offloader_.reset();
   freeSlots_.reset();
-  for (auto *buffer : inputBufferPool_) {
-    freeOwnedAudioBufferList(buffer);
-  }
   inputBufferPool_.clear();
   inputBufferBytesPerBuffer_ = 0;
 
@@ -181,9 +176,6 @@ CloseFileResult IOSFileWriter::closeFile()
 
     offloader_.reset();
     freeSlots_.reset();
-    for (auto *buffer : inputBufferPool_) {
-      freeOwnedAudioBufferList(buffer);
-    }
     inputBufferPool_.clear();
     inputBufferBytesPerBuffer_ = 0;
 
@@ -229,8 +221,8 @@ void IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
 
   // CoreAudio owns `audioBufferList` only for the duration of this synchronous
   // callback. Copy into an owned AudioBufferList before handing off to the
-  // worker thread; the consumer in taskOffloaderFunction frees it.
-  auto *targetBuffer = inputBufferPool_[slot.value()];
+  // worker thread; the consumer in taskOffloaderFunction releases the slot.
+  auto *targetBuffer = inputBufferPool_[slot.value()].get();
   if (!copyIntoOwnedAudioBufferList(
           targetBuffer, audioBufferList, static_cast<unsigned int>(inputBufferBytesPerBuffer_))) {
     freeSlots_->release(slot.value());
@@ -238,9 +230,10 @@ void IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
   }
 
   WriterData writerData{.slot = slot.value(), .numFrames = numFrames};
-  if (offloader_->getSender()->try_send(writerData) != channels::spsc::ResponseStatus::SUCCESS) {
-    freeSlots_->release(slot.value());
-  }
+  // send() cannot block here: we hold a slot from a pool of FILE_WRITER_POOL_SIZE,
+  // and the channel is sized one larger,
+  // so the ring always has room while any slot is in flight.
+  offloader_->getSender()->send(writerData);
 }
 
 void IOSFileWriter::taskOffloaderFunction(WriterData data)
@@ -252,7 +245,7 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
   if (slot >= inputBufferPool_.size() || freeSlots_ == nullptr) {
     return;
   }
-  auto *audioBufferList = inputBufferPool_[slot];
+  auto *audioBufferList = inputBufferPool_[slot].get();
   @autoreleasepool {
     NSError *error = nil;
 

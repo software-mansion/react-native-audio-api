@@ -50,7 +50,6 @@ MiniAudioFileWriter::MiniAudioFileWriter(
 
 MiniAudioFileWriter::~MiniAudioFileWriter() {
   isFileOpen_.store(false, std::memory_order_release);
-  offloader_.reset();
   cleanupPreallocatedInputPool();
   fileProperties_.reset();
 
@@ -157,7 +156,7 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
     return CloseFileResult ::Err("File is not open");
   }
 
-  offloader_.reset();
+  // Joins the worker before the encoder teardown below.
   cleanupPreallocatedInputPool();
 
   isFileOpen_.store(false, std::memory_order_release);

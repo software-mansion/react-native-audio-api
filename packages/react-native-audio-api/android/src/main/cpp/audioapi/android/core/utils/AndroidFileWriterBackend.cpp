@@ -1,15 +1,18 @@
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
+#include <cstddef>
 #include <cstring>
 #include <memory>
+#include <new>
 
 namespace audioapi {
 AndroidFileWriterBackend::AndroidFileWriterBackend(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties)
-    : AudioFileWriter(audioEventHandlerRegistry, fileProperties) {
+    : AudioFileWriter(audioEventHandlerRegistry, fileProperties) {}
 
+void AndroidFileWriterBackend::createOffloader() {
   auto offloaderLambda = [this](WriterData data) {
     runWriterTask(data);
   };
@@ -29,31 +32,33 @@ bool AndroidFileWriterBackend::initializePreallocatedInputPool() {
   inputBufferBytesPerSlot_ = static_cast<size_t>(streamMaxBufferSize_) *
       static_cast<size_t>(streamChannelCount_) * ma_get_bytes_per_sample(ma_format_f32);
   size_t inputPoolBytes = inputBufferBytesPerSlot_ * FILE_WRITER_POOL_SIZE;
-  inputBufferPool_ = ma_malloc(inputPoolBytes, nullptr);
+  // nothrow new keeps the graceful failure path (return false) instead of throwing.
+  inputBufferPool_.reset(new (std::nothrow) std::byte[inputPoolBytes]);
   if (inputBufferPool_ == nullptr) {
     return false;
   }
 
   inputBuffers_.clear();
   inputBuffers_.reserve(FILE_WRITER_POOL_SIZE);
-  // cast to char so arethimetic pointer is valid
-  auto *poolHead = static_cast<char *>(inputBufferPool_);
+  std::byte *poolHead = inputBufferPool_.get();
   for (size_t i = 0; i < FILE_WRITER_POOL_SIZE; ++i) {
     inputBuffers_.push_back(poolHead + i * inputBufferBytesPerSlot_);
   }
 
   freeSlots_ = std::make_unique<FreeList>();
   freeSlots_->seed();
+
+  // Recreated on every open (closeFile tears it down), last so it never sees a half-built pool.
+  createOffloader();
   return true;
 }
 
 void AndroidFileWriterBackend::cleanupPreallocatedInputPool() {
+  // Stop the worker before freeing the pool/free list it accesses.
+  offloader_.reset();
   freeSlots_.reset();
   inputBuffers_.clear();
-  if (inputBufferPool_ != nullptr) {
-    ma_free(inputBufferPool_, nullptr);
-    inputBufferPool_ = nullptr;
-  }
+  inputBufferPool_.reset();
   inputBufferBytesPerSlot_ = 0;
 }
 
@@ -77,12 +82,13 @@ void AndroidFileWriterBackend::writeAudioData(void *data, int numFrames) {
 
   // Oboe owns `data` only for the duration of this synchronous
   // callback. Copy into an owned buffer before handing off to the
-  // worker thread; the consumer in runWriterTask frees it.
+  // worker thread; the consumer in runWriterTask releases the slot.
   std::memcpy(inputBuffers_[slot.value()], data, bytes);
   WriterData writerData{.slot = slot.value(), .numFrames = numFrames};
-  if (offloader_->getSender()->try_send(writerData) != channels::spsc::ResponseStatus::SUCCESS) {
-    freeSlots_->release(slot.value());
-  }
+  // send() cannot block here: we hold a slot from a pool of FILE_WRITER_POOL_SIZE,
+  // and the channel is sized one larger, so the ring always has room while any slot
+  // is in flight.
+  offloader_->getSender()->send(writerData);
 }
 
 void AndroidFileWriterBackend::runWriterTask(WriterData data) {
