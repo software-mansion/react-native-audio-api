@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace audioapi {
@@ -36,10 +37,8 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
 }
 
 AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {
-  // When JSI object is garbage collected (together with the eventual callback),
-  // underlying source node might still be active and try to call the
-  // non-existing callback.
-  setOnPositionChangedCallbackId(0);
+  auto node = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+  node->assignOnPositionChangedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, detune) {
@@ -55,8 +54,9 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedI
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChanged) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnPositionChangedCallbackId(callbackId);
+  auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+  sourceNode->assignOnPositionChangedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval) {
@@ -77,18 +77,6 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getInputLatency) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getOutputLatency) {
   return {outputLatency_};
-}
-
-void AudioBufferBaseSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
-
-  auto event = [sourceNode, callbackId](BaseAudioContext &) {
-    sourceNode->setOnPositionChangedCallbackId(callbackId);
-  };
-
-  sourceNode->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
-  sourceNode->scheduleAudioEvent(std::move(event));
-  onPositionChangedCallbackId_ = callbackId;
 }
 
 void AudioBufferBaseSourceNodeHostObject::initStretch(int channelCount, float sampleRate) {

@@ -251,19 +251,19 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
           dataCallbackMetadata_.channelCount,
           dataCallbackMetadata_.callbackId);
 
-      dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-    }
-    auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
-                              ->prepare(inputFormat, maxInputBufferLength);
+      dataCallback_->assignOnErrorCallbackId(errorEvent().getCallbackId());
+      auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
+                                ->prepare(inputFormat, maxInputBufferLength);
 
-    if (callbackResult.is_err()) {
-      rollbackFailedStart();
-      callbackOutputConfigured_.store(false, std::memory_order_release);
-      return Result<NoneType, std::string>::Err(
-          "Failed to prepare callback: " + callbackResult.unwrap_err());
-    }
+      if (callbackResult.is_err()) {
+        rollbackFailedStart();
+        callbackOutputConfigured_.store(false, std::memory_order_release);
+        return Result<NoneType, std::string>::Err(
+            "Failed to prepare callback: " + callbackResult.unwrap_err());
+      }
 
-    callbackOutputConfigured_.store(true, std::memory_order_release);
+      callbackOutputConfigured_.store(true, std::memory_order_release);
+    }
   }
 
   if (wantsConnection() && adapterNode_ != nullptr) {
@@ -383,7 +383,7 @@ Result<std::string, std::string> IOSAudioRecorder::setupFileWriter(
     fileWriter_ = createFileWriter(properties);
   }
 
-  fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+  fileWriter_->assignOnErrorCallbackId(errorEvent().getCallbackId());
 
   auto backend = std::static_pointer_cast<IOSFileWriter>(fileWriter_);
   auto fileResult = backend->openFile(
@@ -507,7 +507,7 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
 
   dataCallback_ = std::make_shared<IOSRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
-  dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+  dataCallback_->setOnErrorCallback(errorEvent().getCallbackId());
   callbackOutputEnabled_.store(true, std::memory_order_release);
   callbackOutputConfigured_.store(false, std::memory_order_release);
 

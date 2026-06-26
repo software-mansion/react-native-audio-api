@@ -28,11 +28,8 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
 
  protected:
   size_t bufferId_ = 0;
-  uint64_t onBufferEndedCallbackId_ = 0;
   bool stretchHasBeenInit_ = false;
   bool channelCountSet_ = false;
-
-  void setOnBufferEndedCallbackId(uint64_t callbackId);
 };
 
 } // namespace audioapi

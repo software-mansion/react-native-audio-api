@@ -15,8 +15,8 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   explicit AudioFileSourceNodeHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
       AudioFileSourceOptions &options);
-
   ~AudioFileSourceNodeHostObject() override;
+  DELETE_COPY_AND_MOVE(AudioFileSourceNodeHostObject);
 
   JSI_PROPERTY_GETTER_DECL(volume);
   JSI_PROPERTY_GETTER_DECL(playbackRate);
@@ -41,12 +41,6 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   }
 
  private:
-  uint64_t onPositionChangedCallbackId_ = 0;
-  uint64_t onEndedCallbackId_ = 0;
-
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
-  void setOnEndedCallbackId(uint64_t callbackId);
-
   bool loop_;
   double duration_;
   float volume_;

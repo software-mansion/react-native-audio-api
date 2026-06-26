@@ -33,7 +33,6 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, routedThroughMediaElement));
   addSetters(
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onPositionChanged),
-      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onEnded),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, playbackRate),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, preservesPitch),
@@ -46,8 +45,8 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
 }
 
 AudioFileSourceNodeHostObject::~AudioFileSourceNodeHostObject() {
-  setOnPositionChangedCallbackId(0);
-  setOnEndedCallbackId(0);
+  auto node = std::static_pointer_cast<AudioFileSourceNode>(node_);
+  node->assignOnPositionChangedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
@@ -145,32 +144,9 @@ JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, seekToTime) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, onPositionChanged) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnPositionChangedCallbackId(callbackId);
-}
-
-void AudioFileSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t callbackId) {
   auto sourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
-
-  auto event = [sourceNode, callbackId](BaseAudioContext &) {
-    sourceNode->setOnPositionChangedCallbackId(callbackId);
-  };
-
-  sourceNode->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
-  sourceNode->scheduleAudioEvent(std::move(event));
-  onPositionChangedCallbackId_ = callbackId;
-}
-
-void AudioFileSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackId) {
-  auto sourceNode = std::static_pointer_cast<AudioFileSourceNode>(node_);
-
-  auto event = [sourceNode, callbackId](BaseAudioContext &) {
-    sourceNode->setOnEndedCallbackId(callbackId);
-  };
-
-  sourceNode->unregisterOnEndedCallback(onEndedCallbackId_);
-  sourceNode->scheduleAudioEvent(std::move(event));
-  onEndedCallbackId_ = callbackId;
+  sourceNode->assignOnPositionChangedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 } // namespace audioapi

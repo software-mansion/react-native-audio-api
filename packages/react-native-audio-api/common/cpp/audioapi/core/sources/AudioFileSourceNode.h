@@ -6,6 +6,7 @@
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/events/PositionChangedDispatcher.h>
 #include <cstddef>
 #include <thread>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -30,8 +31,6 @@ inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
-/// @note Seek commands are executed from the JS thread and delegated to @ref SeekDecoderDaemon, which performs the seek and decoding on a worker thread,
-// then sends decoded frames back to the audio thread via SPSC channels.
 class AudioFileSourceNode : public AudioScheduledSourceNode {
   friend class MediaElementAudioSourceNode;
 
@@ -55,6 +54,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] bool isRoutedThroughMediaElement() const {
     return activeMediaBindingId_.load(std::memory_order_acquire) != 0;
   }
+
+  /// @brief Sends on position changed event.
+  /// @param framesPlayed number of frames played since the last event.
+  void sendOnPositionChangedEvent(int framesPlayed);
 
   /// @brief Registers @p bindingId as the current media-element owner of this decoder.
   void bindMediaElementSource(uint64_t bindingId);
@@ -96,13 +99,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Stops decoding on the audio thread until playback is started again.
   void pause();
 
-  /// @brief Registers the JS callback id for position-changed events.
-  /// @note Audio thread only.
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
-
-  /// @brief Unregisters a position-changed handler.
-  void unregisterOnPositionChangedCallback(uint64_t callbackId);
-
   /// @brief Enables looping at end-of-file.
   void setLoop(bool v) {
     loop_ = v;
@@ -126,6 +122,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   bool filePaused() const {
     return filePaused_;
   }
+
+  void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
  protected:
   /// @brief Outputs silence when media-routed; otherwise decodes into @p processingBuffer.
@@ -183,11 +181,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       int framesToProcess,
       float activeRate);
 
-  /// @brief Dispatches position-changed events at the configured interval.
-  /// @param framesPlayed number of frames played since the last event; used to calculate the new position.
-  /// @param forceFlush if true, the event is dispatched regardless of the configured interval (used to flush position immediately on seeks and end-of-file).
-  /// @note Audio thread only.
-  void sendOnPositionChangedEvent(int framesPlayed, bool forceFlush);
+  PositionChangedDispatcher positionChanged_;
 
   /// @brief Sets up SPSC channels, constructs the SeekDecoderDaemon, and initialises metadata from the opened decoder.
   /// @return false if the source could not be opened; caller must not set isInitialized_.
@@ -276,13 +270,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Connects to the destination when leaving media routing while playback is active.
   /// @note Audio thread only.
   void ensureConnectedForDirectPlayback();
-
-  /// @brief Id of the registered position-changed callback in JS; used to dispatch events and unregister.
-  uint64_t onPositionChangedCallbackId_ = 0;
-  /// @brief Interval in seconds for dispatching position-changed events.
-  int onPositionChangedInterval_;
-  /// @brief Accumulator for time since the last position-changed event; used to determine when to dispatch the next event.
-  int onPositionChangedTime_ = 0;
 
   /// @brief SPSC for JS -> Daemon thread communication (seek event)
   CommandSender commandSender_;

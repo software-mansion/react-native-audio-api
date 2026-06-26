@@ -11,6 +11,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <thread>
 #include <unordered_map>
 
@@ -75,6 +76,11 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
   std::atomic<uint64_t> listenerIdCounter_{1};
   const std::shared_ptr<react::CallInvoker> callInvoker_;
   jsi::Runtime *runtime_;
+  // Guards eventHandlers_. register/unregister run on the JS thread (and node
+  // destruction may run on the AudioDestructor worker), while handleEventOnJSThread
+  // reads it on the JS thread. The audio thread never touches the map (it only
+  // enqueues into dispatchQueue_), so this mutex is never taken on the RT path.
+  std::mutex eventHandlersMutex_;
   std::unordered_map<AudioEvent, std::unordered_map<uint64_t, std::shared_ptr<jsi::Function>>>
       eventHandlers_;
 

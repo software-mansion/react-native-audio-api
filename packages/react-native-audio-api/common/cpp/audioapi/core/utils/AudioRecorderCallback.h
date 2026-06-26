@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularArray.hpp>
@@ -35,8 +36,13 @@ class AudioRecorderCallback {
   void emitAudioData(bool flush = false);
   void invokeCallback(const std::shared_ptr<AudioBuffer> &buffer, int numFrames);
 
-  void setOnErrorCallback(uint64_t callbackId);
-  void clearOnErrorCallback();
+  void setOnErrorCallback(uint64_t callbackId) {
+    assignOnErrorCallbackId(callbackId);
+  }
+  void clearOnErrorCallback() {
+    assignOnErrorCallbackId(0);
+  }
+  void assignOnErrorCallbackId(uint64_t callbackId);
   void invokeOnErrorCallback(const std::string &message);
 
  protected:
@@ -45,13 +51,11 @@ class AudioRecorderCallback {
   float sampleRate_;
   size_t bufferLength_;
   int channelCount_;
-  uint64_t callbackId_;
   size_t ringBufferSize_;
   uint64_t framesEmitted_ = 0;
 
-  std::atomic<uint64_t> errorCallbackId_{0};
-
-  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  EventCaller<AudioEvent::AUDIO_READY> audioReadyEvent_;
+  EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
 
   // TODO: CircularAudioBuffer
   static constexpr size_t DEFAULT_RING_BUFFER_SIZE = 8192;

@@ -19,7 +19,8 @@ namespace audioapi {
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
-    : AudioBufferBaseSourceNode(context, options) {
+    : AudioBufferBaseSourceNode(context, options),
+      onBufferEndedEvent_(context->getAudioEventHandlerRegistry()) {
   if (options.pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
@@ -116,8 +117,8 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
 
 void AudioBufferQueueSourceNode::clearBuffers() {
   if (auto context = context_.lock()) {
-    for (auto it = buffers_.begin(); it != buffers_.end(); ++it) {
-      context->getGraphManager()->addAudioBufferForDestruction(std::move(it->second));
+    for (auto &buffer : buffers_) {
+      context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer.second));
     }
 
     buffers_.clear();
@@ -139,12 +140,8 @@ void AudioBufferQueueSourceNode::disable() {
   clearBuffers();
 }
 
-void AudioBufferQueueSourceNode::setOnBufferEndedCallbackId(uint64_t callbackId) {
-  onBufferEndedCallbackId_ = callbackId;
-}
-
-void AudioBufferQueueSourceNode::unregisterOnBufferEndedCallback(uint64_t callbackId) {
-  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::BUFFER_ENDED, callbackId);
+void AudioBufferQueueSourceNode::assignOnBufferEndedCallbackId(uint64_t callbackId) {
+  onBufferEndedEvent_.assignCallbackId(callbackId);
 }
 
 void AudioBufferQueueSourceNode::setChannelCount(int channelCount) {
@@ -161,12 +158,8 @@ double AudioBufferQueueSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool isLastBufferInQueue) {
-  if (onBufferEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->dispatchEventFromAudioThread(
-        AudioEvent::BUFFER_ENDED,
-        onBufferEndedCallbackId_,
-        BufferEndedPayload{.bufferId = bufferId, .isLastBufferInQueue = isLastBufferInQueue});
-  }
+  onBufferEndedEvent_.dispatchFromAudioThread(
+      BufferEndedPayload{.bufferId = bufferId, .isLastBufferInQueue = isLastBufferInQueue});
 }
 
 /**

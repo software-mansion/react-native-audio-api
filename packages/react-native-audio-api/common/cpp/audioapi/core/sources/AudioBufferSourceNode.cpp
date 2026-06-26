@@ -24,8 +24,13 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loop_(options.loop),
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
-      loopEnd_(options.loopEnd) {
-  processor_ = std::make_unique<SingleBufferProcessor>();
+      loopEnd_(options.loopEnd),
+      onLoopEndedEvent_(context->getAudioEventHandlerRegistry()) {
+  auto onLoopEnded = [this]() {
+    sendOnLoopEndedEvent();
+  };
+
+  processor_ = std::make_unique<SingleBufferProcessor>(onLoopEnded);
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -106,12 +111,8 @@ void AudioBufferSourceNode::disable() {
   AudioScheduledSourceNode::disable();
 }
 
-void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
-  onLoopEndedCallbackId_ = callbackId;
-}
-
-void AudioBufferSourceNode::unregisterOnLoopEndedCallback(uint64_t callbackId) {
-  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::LOOP_ENDED, callbackId);
+void AudioBufferSourceNode::assignOnLoopEndedCallbackId(uint64_t callbackId) {
+  onLoopEndedEvent_.assignCallbackId(callbackId);
 }
 
 double AudioBufferSourceNode::getCurrentPosition() const {
@@ -119,10 +120,7 @@ double AudioBufferSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferSourceNode::sendOnLoopEndedEvent() {
-  if (onLoopEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->dispatchEventFromAudioThread(
-        AudioEvent::LOOP_ENDED, onLoopEndedCallbackId_, EmptyPayload{});
-  }
+  onLoopEndedEvent_.dispatchEmptyFromAudioThread();
 }
 
 /**
@@ -157,11 +155,8 @@ void AudioBufferSourceNode::runBufferProcessor(
   processor_->setStartFrame(static_cast<size_t>(startFrame));
   processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
 
-  if (processor_->atBoundary()) {
-    if (processor_->shouldStop()) {
-      playbackState_ = PlaybackState::STOP_SCHEDULED;
-    }
-    sendOnLoopEndedEvent();
+  if (processor_->atBoundary() && processor_->shouldStop()) {
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
   }
 
   vReadIndex_ = processor_->getPosition();

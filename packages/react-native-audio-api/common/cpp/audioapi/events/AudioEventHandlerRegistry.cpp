@@ -1,8 +1,10 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <cstdio>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -27,7 +29,7 @@ AudioEventHandlerRegistry::AudioEventHandlerRegistry(
       }
 
       auto weak = weak_from_this();
-      callInvoker_->invokeAsync([weak, capturedItem = std::move(item)]() {
+      callInvoker_->invokeAsync([weak, capturedItem = std::move(item)](jsi::Runtime &runtime) {
         if (auto self = weak.lock()) {
           self->handleEventOnJSThread(
               capturedItem.event, capturedItem.listenerId, capturedItem.payload);
@@ -43,6 +45,7 @@ AudioEventHandlerRegistry::~AudioEventHandlerRegistry() {
   if (workerThread_.joinable()) {
     workerThread_.join();
   }
+  std::scoped_lock lock(eventHandlersMutex_);
   eventHandlers_.clear();
 }
 
@@ -54,37 +57,20 @@ uint64_t AudioEventHandlerRegistry::registerHandler(
   if (runtime_ == nullptr) {
     return 0;
   }
-
-  auto weakSelf = weak_from_this();
-  callInvoker_->invokeAsync([weakSelf, eventName, listenerId, handler]() {
-    if (auto self = weakSelf.lock()) {
-      self->eventHandlers_[eventName][listenerId] = handler;
-    }
-  });
+  {
+    std::scoped_lock lock(eventHandlersMutex_);
+    this->eventHandlers_[eventName][listenerId] = handler;
+  }
 
   return listenerId;
 }
 
 void AudioEventHandlerRegistry::unregisterHandler(AudioEvent eventName, uint64_t listenerId) {
-  if (runtime_ == nullptr) {
+  if (runtime_ == nullptr || listenerId == 0) {
     return;
   }
-
-  auto weakSelf = weak_from_this();
-  callInvoker_->invokeAsync([weakSelf, eventName, listenerId]() {
-    if (auto self = weakSelf.lock()) {
-      auto it = self->eventHandlers_.find(eventName);
-      if (it == self->eventHandlers_.end()) {
-        return;
-      }
-
-      auto &handlersMap = it->second;
-      auto handlerIt = handlersMap.find(listenerId);
-      if (handlerIt != handlersMap.end()) {
-        handlersMap.erase(handlerIt);
-      }
-    }
-  });
+  std::scoped_lock lock(eventHandlersMutex_);
+  this->eventHandlers_[eventName].erase(listenerId);
 }
 
 bool AudioEventHandlerRegistry::dispatchEvent(
@@ -124,21 +110,36 @@ void AudioEventHandlerRegistry::handleEventOnJSThread(
     AudioEvent eventName,
     uint64_t listenerId,
     const AudioEventPayload &payload) {
-  auto it = eventHandlers_.find(eventName);
-  if (it == eventHandlers_.end()) {
+  if (listenerId == 0) {
     return;
   }
 
-  if (listenerId == kBroadcastListenerId) {
-    auto handlersCopy = it->second;
-    for (const auto &pair : handlersCopy) {
-      invokeHandler(pair.second, payload);
+  // Collect the matching handlers under the lock, then release it before
+  // invoking. invokeHandler() calls into JS, which may re-enter
+  // register/unregister; holding the lock across that would deadlock.
+  std::vector<std::shared_ptr<jsi::Function>> handlers;
+  {
+    std::scoped_lock lock(eventHandlersMutex_);
+    auto it = eventHandlers_.find(eventName);
+    if (it == eventHandlers_.end()) {
+      return;
     }
-  } else {
-    auto handlerIt = it->second.find(listenerId);
-    if (handlerIt != it->second.end()) {
-      invokeHandler(handlerIt->second, payload);
+
+    if (listenerId == kBroadcastListenerId) {
+      handlers.reserve(it->second.size());
+      for (const auto &pair : it->second) {
+        handlers.push_back(pair.second);
+      }
+    } else {
+      auto handlerIt = it->second.find(listenerId);
+      if (handlerIt != it->second.end()) {
+        handlers.push_back(handlerIt->second);
+      }
     }
+  }
+
+  for (const auto &handler : handlers) {
+    invokeHandler(handler, payload);
   }
 }
 
@@ -151,10 +152,12 @@ void AudioEventHandlerRegistry::invokeHandler(
   try {
     auto eventObject = buildJsiObject(payload);
     handler->call(*runtime_, eventObject);
-  } catch (const std::exception &) {
-    throw;
+  } catch (const jsi::JSError &) {
+    fprintf(stderr, "JSError while invoking audio event handler\n");
+  } catch (const std::exception &e) {
+    fprintf(stderr, "Exception while invoking audio event handler: %s\n", e.what());
   } catch (...) {
-    printf("Unknown exception occurred while invoking audio event handler\n");
+    fprintf(stderr, "Unknown exception while invoking audio event handler\n");
   }
 }
 

@@ -3,7 +3,9 @@
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/events/PositionChangedDispatcher.h>
 
+#include <cstdint>
 #include <memory>
 
 namespace audioapi {
@@ -27,12 +29,9 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
   /// @note Audio Thread only
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
-
-  /// @note Audio Thread only
   void setOnPositionChangedInterval(int interval);
 
-  void unregisterOnPositionChangedCallback(uint64_t callbackId);
+  void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
  protected:
   // internal helper
@@ -64,11 +63,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;
 
-  uint64_t onPositionChangedCallbackId_ = 0; // 0 means no callback
-  int onPositionChangedIntervalInFrames_;
-  int onPositionChangedTimeInFrames_ = 0;
-
-  void sendOnPositionChangedEvent();
+  PositionChangedDispatcher positionChanged_;
 
   void processWithPitchCorrection(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,

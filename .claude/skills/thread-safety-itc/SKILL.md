@@ -65,37 +65,43 @@ oscillatorNode->scheduleAudioEvent(std::move(event));
 
 ---
 
-## Audio → JS: `IAudioEventHandlerRegistry`
+## Audio → JS: `IAudioEventHandlerRegistry` and `EventCaller`
 
 Send events from the audio thread back to JS (e.g. `ended`, `loopEnded`, `positionChanged`).
 
-```cpp
-// Audio thread: fire event with no payload
-audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::ENDED, {});
-
-// Audio thread: fire event with payload
-audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-    AudioEvent::POSITION_CHANGED, {{"position", currentPosition}});
-```
-
-Internally calls `callInvoker_->invokeAsync()` — safe to call from the audio thread.
-
-### Callback ID pattern
-
-Callbacks are stored as `std::atomic<uint64_t>` on the C++ node. `0` means no listener.
+**Prefer `EventCaller<AudioEvent::X>`** — a small RAII helper templated on the event type. `dispatch()` requires a payload matching `EventPayloadFor<AudioEvent::X, Payload>` (see `AudioEventPayloadMapping.h`).
 
 ```cpp
-// C++ node header
-std::atomic<uint64_t> onEndedCallbackId_{0};
+// Node member (composition — one EventCaller per event)
+EventCaller<AudioEvent::ENDED> onEndedEvent_{context->getAudioEventHandlerRegistry()};
 
-// HostObject destructor — MUST clear to prevent firing into a destroyed JS function
-~AudioScheduledSourceNodeHostObject() {
-  auto node = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-  node->setOnEndedCallbackId(0);
-}
+// JS thread: HostObject setter forwards to a named method
+void assignOnEndedCallbackId(uint64_t id) { onEndedEvent_.assignCallbackId(id); }
+
+// Audio thread: fire when playback ends (EmptyPayload only for ENDED)
+onEndedEvent_.dispatchEmpty();
+
+// With typed payload — compile error if payload does not match the event
+errorEvent_.dispatch(StringPayload{.name = "message", .reason = message});
+positionChangedEvent_.dispatch(DoubleValuePayload{.value = position});
 ```
 
-**Always clear callback IDs in the HostObject destructor.**
+Throttled events (e.g. `positionChanged`) use `PositionChangedDispatcher`, which **contains** an `EventCaller` plus interval/flush logic — still composition, not node inheritance from `EventCaller`.
+
+**Unregister lifecycle:**
+- `EventCaller::~EventCaller()` unregisters if `callbackId != 0` when the node is destroyed
+- `assignCallbackId(0)` unregisters when JS sets `onX = null`
+- **HostObject destructor must call `assignOnXCallbackId(0)`** for every event wired on that node — the C++ node can outlive the HostObject, and the registry JSI function may be invalid after GC
+- Clear callbacks in the **most-derived HostObject first** (each layer clears its own events; base destructors run afterward and clear parent events)
+- Do **not** inherit `EventCaller` on multiple node bases (ambiguous API); add member `EventCaller` fields per event instead
+
+Low-level registry API (used internally by `EventCaller`):
+
+```cpp
+audioEventHandlerRegistry_->dispatchEvent(AudioEvent::ENDED, callbackId, AudioEventPayload{...});
+```
+
+Internally calls `callInvoker_->invokeAsync()` — safe to call from the audio thread via `dispatchEvent`.
 
 ---
 
@@ -112,7 +118,7 @@ Do not call `AudioGraphManager` directly — go through `AudioNode::connect()` /
 | Scenario | Correct pattern |
 |---|---|
 | JS sets a property → audio thread reads it | Shadow state in HostObject + `scheduleAudioEvent` |
-| Audio thread fires an event → JS callback | `invokeHandlerWithEventBody()` |
+| Audio thread fires an event → JS callback | `EventCaller::dispatch()` / `dispatchEmpty()` |
 | JS connects/disconnects nodes | `AudioNode::connect()` → `AudioGraphManager` |
 | Property written by audio thread, JS reads it | `std::atomic<T>` on C++ node; getter reads directly |
 | Non-primitive, can be written by audio thread | Triple buffer (see `AnalyserNode` for reference) |
@@ -157,7 +163,7 @@ On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because O
 
 - **Reading `node_->field_` in a getter** when that field is written by the audio thread → use shadow state or atomics.
 - **Calling `node_->method()` directly from a setter** → always schedule via `scheduleAudioEvent`.
-- **Not clearing callback IDs in the HostObject destructor** → audio thread fires into destroyed JS function.
+- **Not clearing callback IDs in the HostObject destructor** → node keeps firing into a GC'd JSI function; call `assignOnXCallbackId(0)` from each event HostObject layer on teardown
 - **`std::vector::push_back` in `processNode()`** → may allocate; preallocate in constructor.
 - **`std::mutex` anywhere in `processNode()`** → deadlock risk and real-time violation.
 - **Copying `shared_ptr` inside `processNode()`** — increments atomic refcount; capture before entering hot path.

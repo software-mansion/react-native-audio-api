@@ -75,8 +75,8 @@ jsi::Value PromiseVendor::createAsyncPromise(std::function<void(Promise &&)> &&f
 }
 
 void PromiseVendor::asyncPromiseJob(
-    std::shared_ptr<react::CallInvoker> callInvoker,
-    std::function<PromiseResolver()> &&function,
+    const std::shared_ptr<react::CallInvoker> &callInvoker,
+    const std::function<PromiseResolver()> &function,
     std::shared_ptr<jsi::Function> &&resolve,
     std::shared_ptr<jsi::Function> &&reject) {
   PromiseResolver resolver;
