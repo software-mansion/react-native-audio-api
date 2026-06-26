@@ -4,17 +4,23 @@
 #include <audioapi/core/utils/buffer/BufferProcessorBase.h>
 
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/FatFunction.hpp>
 #include <cstddef>
 #include <memory>
 #include <utility>
 
 namespace audioapi {
 
+inline constexpr size_t ON_LOOP_ENDED_CALLBACK_SIZE = 64;
+
+using OnLoopEnded = FatFunction<ON_LOOP_ENDED_CALLBACK_SIZE, void()>;
+
 /// @brief Buffer processor that handles a single audio buffer.
 /// @note Before processing, the buffer, start frame, and end frame must be set. Looping can also be enabled if desired.
 class SingleBufferProcessor : public BufferProcessorBase {
  public:
-  SingleBufferProcessor() = default;
+  explicit SingleBufferProcessor(OnLoopEnded onLoopEnded = {})
+      : onLoopEnded_(std::move(onLoopEnded)) {}
 
   [[nodiscard]] bool atBoundary() const override;
   [[nodiscard]] bool shouldStop() const override;
@@ -39,14 +45,6 @@ class SingleBufferProcessor : public BufferProcessorBase {
     buffer_ = std::move(buffer);
   }
 
-  [[nodiscard]] bool didCrossLoopBoundary() const {
-    return loopBoundaryCrossed_;
-  }
-
-  void resetLoopBoundaryCrossed() {
-    loopBoundaryCrossed_ = false;
-  }
-
  protected:
   CursorState advance(double rate) override;
   void consume(size_t frames) override;
@@ -58,8 +56,8 @@ class SingleBufferProcessor : public BufferProcessorBase {
 
  private:
   std::shared_ptr<const AudioBuffer> buffer_ = nullptr;
+  OnLoopEnded onLoopEnded_;
   bool loop_ = false;
-  bool loopBoundaryCrossed_ = false;
   size_t startFrame_ = 0;
   size_t endFrame_ = 0;
 };

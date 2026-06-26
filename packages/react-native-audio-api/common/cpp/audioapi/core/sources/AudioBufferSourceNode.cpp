@@ -26,7 +26,11 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd),
       onLoopEndedEvent_(context->getAudioEventHandlerRegistry()) {
-  processor_ = std::make_unique<SingleBufferProcessor>();
+  auto onLoopEnded = [this]() {
+    sendOnLoopEndedEvent();
+  };
+
+  processor_ = std::make_unique<SingleBufferProcessor>(onLoopEnded);
   isInitialized_.store(true, std::memory_order_release);
 }
 
@@ -149,12 +153,7 @@ void AudioBufferSourceNode::runBufferProcessor(
   processor_->setPosition(vReadIndex_);
   processor_->setEndFrame(static_cast<size_t>(endFrame));
   processor_->setStartFrame(static_cast<size_t>(startFrame));
-  processor_->resetLoopBoundaryCrossed();
   processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
-
-  if (processor_->didCrossLoopBoundary()) {
-    sendOnLoopEndedEvent();
-  }
 
   if (processor_->atBoundary() && processor_->shouldStop()) {
     playbackState_ = PlaybackState::STOP_SCHEDULED;
