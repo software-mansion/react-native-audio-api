@@ -63,40 +63,45 @@ static AudioSessionManager *_sharedInstance = nil;
       self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
 }
 
-- (bool)configureAudioSession
+- (bool)configureAudioSession:(NSError **)outError
 {
-  NSError *error = nil;
-
   if (!self.shouldManageSession || [self areDesiredOptionsSet]) {
     return true;
   }
 
+  NSError *categoryError = nil;
   [self.audioSession setCategory:self.desiredCategory
                             mode:self.desiredMode
                          options:self.desiredOptions
-                           error:&error];
+                           error:&categoryError];
 
-  if (error != nil) {
-    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
+  if (categoryError != nil) {
+    NSLog(@"Error while configuring audio session: %@", [categoryError debugDescription]);
+    if (outError != nil) {
+      *outError = categoryError;
+    }
     return false;
-  } else {
-    NSLog(
-        @"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
-        self.audioSession.category,
-        self.audioSession.mode,
-        (unsigned long)self.audioSession.categoryOptions);
   }
+  NSLog(
+      @"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
+      self.audioSession.category,
+      self.audioSession.mode,
+      (unsigned long)self.audioSession.categoryOptions);
 
   if (@available(iOS 13.0, *)) {
     if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording !=
         self.allowHapticsAndSounds) {
+      NSError *hapticsError = nil;
       [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSounds
-                                                                 error:&error];
+                                                                 error:&hapticsError];
 
-      if (error != nil) {
+      if (hapticsError != nil) {
         NSLog(
             @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
-            [error debugDescription]);
+            [hapticsError debugDescription]);
+        if (outError != nil) {
+          *outError = hapticsError;
+        }
         return false;
       }
     }
@@ -133,7 +138,7 @@ static AudioSessionManager *_sharedInstance = nil;
   self.notifyOthersOnDeactivation = notifyOthersOnDeactivation;
 
   if (configChanged && self.isActive) {
-    [self configureAudioSession];
+    [self configureAudioSession:nil];
   }
 }
 
@@ -179,7 +184,7 @@ static AudioSessionManager *_sharedInstance = nil;
     return true;
   }
 
-  if (![self configureAudioSession]) {
+  if (![self configureAudioSession:error]) {
     return false;
   }
 
@@ -427,7 +432,7 @@ static AudioSessionManager *_sharedInstance = nil;
     return;
   }
 
-  resolve(@(true));
+  resolve(nil);
 }
 
 - (AVAudioSessionCategory)categoryFromString:(NSString *)categorySTR

@@ -114,8 +114,8 @@ export interface IAudioContext extends IBaseAudioContext {
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;
   close(): Promise<void>;
-  resume(): Promise<boolean>;
-  suspend(): Promise<boolean>;
+  resume(): Promise<void>;
+  suspend(): Promise<void>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {

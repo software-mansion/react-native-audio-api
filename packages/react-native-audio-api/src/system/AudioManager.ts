@@ -22,12 +22,16 @@ class AudioManager implements IAudioManager {
     return NativeAudioAPIModule.getDevicePreferredSampleRate();
   }
 
-  async setAudioSessionActivity(enabled: boolean): Promise<boolean> {
+  /**
+   * Activates or deactivates the audio session.
+   *
+   * Resolves when the session activity was set successfully. On failure it
+   * rejects with a {@link SessionActivationError} carrying the native error
+   * details (`nativeErrorInfo`) when available.
+   */
+  async setAudioSessionActivity(enabled: boolean): Promise<void> {
     try {
-      const success =
-        await NativeAudioAPIModule.setAudioSessionActivity(enabled);
-
-      return success;
+      await NativeAudioAPIModule.setAudioSessionActivity(enabled);
     } catch (error) {
       throw parseNativeError(error);
     }
@@ -104,8 +108,14 @@ class AudioManager implements IAudioManager {
     return NativeAudioAPIModule.getDevicesInfo();
   }
 
-  async setInputDevice(deviceId: string): Promise<boolean> {
-    return NativeAudioAPIModule.setInputDevice(deviceId);
+  /**
+   * Selects the given device as the current audio input.
+   *
+   * Resolves when the input device was set successfully and rejects when the
+   * device cannot be found or the system fails to switch to it.
+   */
+  async setInputDevice(deviceId: string): Promise<void> {
+    await NativeAudioAPIModule.setInputDevice(deviceId);
   }
 }
 
