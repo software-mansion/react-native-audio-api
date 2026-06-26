@@ -1,6 +1,7 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
 import type {
   AnalyserOptions,
+  AudioBufferSourceOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AutomationEventData,
@@ -10,12 +11,11 @@ import type {
   ChannelCountMode,
   ChannelInterpretation,
   ConstantSourceOptions,
+  ConvolverOptions,
   ContextState,
   DelayOptions,
   FileInfo,
   GainOptions,
-  IAudioBufferSourceOptions,
-  IConvolverOptions,
   IIRFilterOptions,
   OscillatorOptions,
   OscillatorType,
@@ -87,7 +87,7 @@ export interface IBaseAudioContext {
     biquadFilterOptions: BiquadFilterOptions
   ) => IBiquadFilterNode;
   createBufferSource: (
-    audioBufferSourceOptions: IAudioBufferSourceOptions
+    audioBufferSourceOptions: AudioBufferSourceOptions
   ) => IAudioBufferSourceNode;
   createDelay(delayOptions: DelayOptions): IDelayNode;
   createIIRFilter: (IIRFilterOptions: IIRFilterOptions) => IIIRFilterNode;
@@ -100,7 +100,7 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
-  createConvolver: (convolverOptions: IConvolverOptions) => IConvolverNode;
+  createConvolver: (convolverOptions: ConvolverOptions) => IConvolverNode;
   createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions: WaveShaperOptions) => IWaveShaperNode;
   createFileSource: (
@@ -264,14 +264,14 @@ export interface IAudioBuffer {
   readonly sampleRate: number;
   readonly numberOfChannels: number;
 
-  getChannelData(channel: number): Float32Array;
+  getChannelData(channel: number): Float32Array<ArrayBuffer>;
   copyFromChannel(
-    destination: Float32Array,
+    destination: Float32Array<ArrayBuffer>,
     channelNumber: number,
     startInChannel: number
   ): void;
   copyToChannel(
-    source: Float32Array,
+    source: Float32Array<ArrayBuffer>,
     channelNumber: number,
     startInChannel: number
   ): void;

@@ -47,6 +47,7 @@ class AudioRecorderCallback {
   int channelCount_;
   uint64_t callbackId_;
   size_t ringBufferSize_;
+  uint64_t framesEmitted_ = 0;
 
   std::atomic<uint64_t> errorCallbackId_{0};
 

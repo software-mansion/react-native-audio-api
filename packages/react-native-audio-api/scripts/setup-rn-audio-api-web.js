@@ -6,14 +6,14 @@ const path = require('path');
 const args = process.argv.slice(2);
 
 /**
- * Resolves and returns the absolute path to the SignalsmithStretch.mjs file.
+ * Resolves and returns the absolute path to the SignalsmithStretch.js file.
  *
- * @returns {string} The absolute path to the SignalsmithStretch.mjs file.
+ * @returns {string} The absolute path to the SignalsmithStretch.js file.
  */
 function getInputFilePath() {
   return path.resolve(
     __dirname,
-    '../lib/module/web-core/custom/signalsmithStretch/SignalsmithStretch.mjs'
+    '../lib/module/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch/SignalsmithStretch.js'
   );
 }
 
@@ -24,11 +24,9 @@ function getInputFilePath() {
  * @returns {string} The resolved output file path.
  */
 function getOutputFilePath() {
-  const publicFolder = path.resolve(
-    args[0] || 'public'
-  );
+  const publicFolder = path.resolve(args[0] || 'public');
 
-  const publicFile = './signalsmithStretch.mjs';
+  const publicFile = './signalsmithStretch.js';
   const outputPath = path.join(publicFolder, publicFile);
 
   console.log(`> Output file path: ${outputPath}\n`);

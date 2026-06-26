@@ -1,7 +1,7 @@
 import AudioAPIModule from '../AudioAPIModule';
 import { NotSupportedError } from '../errors';
 import { AudioTagHandle } from '../development/react/Audio/types';
-import { IAudioContext } from '../interfaces';
+import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
 import { AudioContextOptions } from '../types';
 import BaseAudioContext from './BaseAudioContext';
@@ -22,7 +22,7 @@ export default class AudioContext extends BaseAudioContext {
     const audioRuntime = AudioAPIModule.createAudioRuntime();
 
     super(
-      global.createAudioContext(
+      globalThis.createAudioContext(
         options?.sampleRate || AudioManager.getDevicePreferredSampleRate(),
         audioRuntime
       )

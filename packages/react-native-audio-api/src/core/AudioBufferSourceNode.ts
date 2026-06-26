@@ -1,4 +1,4 @@
-import { IAudioBufferSourceNode } from '../interfaces';
+import { IAudioBufferSourceNode } from '../jsi-interfaces';
 import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { InvalidStateError, RangeError } from '../errors';
@@ -19,7 +19,7 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
     super(context, node);
 
     if (options?.buffer) {
-      this._buffer = options.buffer;
+      this._buffer = options.buffer as AudioBuffer;
       this.bufferHasBeenSet = true;
     }
   }

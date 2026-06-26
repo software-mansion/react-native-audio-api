@@ -1,8 +1,8 @@
-import { IAudioBuffer } from '../interfaces';
+import { AudioBufferLike, AudioBufferOptions } from '../types';
+import { IAudioBuffer } from '../jsi-interfaces';
 import { IndexSizeError, NotSupportedError } from '../errors';
-import { AudioBufferOptions } from '../types';
 
-export default class AudioBuffer {
+export default class AudioBuffer implements AudioBufferLike {
   readonly length: number;
   readonly duration: number;
   readonly sampleRate: number;
@@ -26,7 +26,7 @@ export default class AudioBuffer {
     this.numberOfChannels = this.buffer.numberOfChannels;
   }
 
-  public getChannelData(channel: number): Float32Array {
+  public getChannelData(channel: number): Float32Array<ArrayBuffer> {
     if (channel < 0 || channel >= this.numberOfChannels) {
       throw new IndexSizeError(
         `The channel number provided (${channel}) is outside the range [0, ${this.numberOfChannels - 1}]`
@@ -36,7 +36,7 @@ export default class AudioBuffer {
   }
 
   public copyFromChannel(
-    destination: Float32Array,
+    destination: Float32Array<ArrayBuffer>,
     channelNumber: number,
     startInChannel: number = 0
   ): void {
@@ -56,7 +56,7 @@ export default class AudioBuffer {
   }
 
   public copyToChannel(
-    source: Float32Array,
+    source: Float32Array<ArrayBuffer>,
     channelNumber: number,
     startInChannel: number = 0
   ): void {
@@ -94,7 +94,7 @@ export default class AudioBuffer {
         `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
       );
     }
-    return global.createAudioBuffer(numberOfChannels, length, sampleRate);
+    return globalThis.createAudioBuffer(numberOfChannels, length, sampleRate);
   }
 
   private isAudioBuffer(obj: unknown): obj is IAudioBuffer {

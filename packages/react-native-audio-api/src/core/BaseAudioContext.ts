@@ -3,7 +3,7 @@ import {
   InvalidStateError,
   NotSupportedError,
 } from '../errors';
-import { IBaseAudioContext } from '../interfaces';
+import { IBaseAudioContext } from '../jsi-interfaces';
 import { AudioWorkletRuntime, ContextState, DecodeDataInput } from '../types';
 import { assertWorkletsEnabled } from '../utils';
 import AnalyserNode from './AnalyserNode';

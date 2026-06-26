@@ -3,7 +3,7 @@ import type { EventEmptyType } from '../../../events/types';
 import type {
   IAudioFileSourceNode,
   IAudioScheduledSourceNode,
-} from '../../../interfaces';
+} from '../../../jsi-interfaces';
 import AudioScheduledSourceNode from '../../../core/AudioScheduledSourceNode';
 
 type AttachFileSourceOptions = {
@@ -14,7 +14,9 @@ type AttachFileSourceOptions = {
 const MAX_PLAYBACK_RATE = 4;
 
 export class AudioFileSourceNode extends AudioScheduledSourceNode {
-  private readonly emitter = new AudioEventEmitter(global.AudioEventEmitter);
+  private readonly emitter = new AudioEventEmitter(
+    globalThis.AudioEventEmitter
+  );
 
   private positionSubscription?: AudioEventSubscription;
   private endedSubscription?: AudioEventSubscription;

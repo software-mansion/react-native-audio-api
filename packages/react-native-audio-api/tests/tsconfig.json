@@ -1,0 +1,5 @@
+// This just extends the base test config to trigger VSCode IntelliSense recognition
+
+{
+  "extends": "../tsconfig.test.json"
+}

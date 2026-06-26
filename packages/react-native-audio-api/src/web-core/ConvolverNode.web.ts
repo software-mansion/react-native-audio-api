@@ -5,11 +5,10 @@ import { ConvolverOptions } from '../types';
 
 export default class ConvolverNode extends AudioNode {
   constructor(context: BaseAudioContext, convolverOptions?: ConvolverOptions) {
+    const { buffer, ...rest } = convolverOptions ?? {};
     const convolver = new globalThis.ConvolverNode(context.context, {
-      ...convolverOptions,
-      ...(convolverOptions?.buffer
-        ? { buffer: convolverOptions.buffer.buffer }
-        : {}),
+      ...rest,
+      ...(buffer ? { buffer: (buffer as AudioBuffer).buffer } : {}),
     });
 
     const node = convolver;

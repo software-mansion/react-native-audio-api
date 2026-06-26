@@ -87,10 +87,10 @@
 - (void)stop
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  assert(audioEngine != nil);
-
-  [self detachSourceNodeIfAttached:audioEngine];
-  [audioEngine stopIfPossible];
+  if (audioEngine != nil) {
+    [self detachSourceNodeIfAttached:audioEngine];
+    [audioEngine stopIfPossible];
+  }
 }
 
 - (bool)resume

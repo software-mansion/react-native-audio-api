@@ -2,7 +2,7 @@ import { Image, Platform } from 'react-native';
 import { NativeAudioAPIModule } from '../specs';
 
 import { AudioApiError } from '../errors';
-import { IAudioDecoder } from '../interfaces';
+import { IAudioDecoder } from '../jsi-interfaces';
 import { DecodeDataInput } from '../types';
 import {
   isBase64Source,
@@ -17,7 +17,7 @@ class AudioDecoder {
   protected readonly decoder: IAudioDecoder;
 
   private constructor() {
-    this.decoder = global.createAudioDecoder();
+    this.decoder = globalThis.createAudioDecoder();
   }
 
   private async decodeAudioDataImplementation(

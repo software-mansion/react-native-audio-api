@@ -16,7 +16,7 @@ export default class WaveShaperNode extends AudioNode {
     return (this.node as globalThis.WaveShaperNode).oversample;
   }
 
-  set curve(curve: Float32Array | null) {
+  set curve(curve: Float32Array<ArrayBuffer> | null) {
     if (curve !== null) {
       if (this.isCurveSet) {
         throw new InvalidStateError(

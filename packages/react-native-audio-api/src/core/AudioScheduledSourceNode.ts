@@ -1,4 +1,4 @@
-import { IAudioScheduledSourceNode } from '../interfaces';
+import { IAudioScheduledSourceNode } from '../jsi-interfaces';
 import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
 import { EventEmptyType } from '../events/types';
@@ -7,7 +7,7 @@ import { AudioEventEmitter, AudioEventSubscription } from '../events';
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
   protected readonly audioEventEmitter = new AudioEventEmitter(
-    global.AudioEventEmitter
+    globalThis.AudioEventEmitter
   );
 
   private onEndedSubscription?: AudioEventSubscription;

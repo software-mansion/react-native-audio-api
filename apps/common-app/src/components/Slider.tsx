@@ -1,17 +1,10 @@
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  LayoutChangeEvent,
-} from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   withSpring,
   useSharedValue,
-  useAnimatedProps,
   useAnimatedStyle,
 } from 'react-native-reanimated';
 
@@ -30,6 +23,11 @@ interface SliderProps {
 }
 
 const handleSize = 20;
+
+function formatSliderValue(value: number, step: number): string {
+  const rounded = Math.round(value / step) * step;
+  return step < 1 ? rounded.toFixed(2) : String(rounded);
+}
 
 function valueToOffset(
   value: number,
@@ -59,31 +57,43 @@ function roundToStep(value: number, step: number): number {
   return Math.round(value / step) * step;
 }
 
-const AnimatedText = Animated.createAnimatedComponent(TextInput);
-
 const Slider: React.FC<SliderProps> = (props) => {
   const { value, onValueChange, min, max, step, label, minLabelWidth } = props;
 
   const offset = useSharedValue(0);
   const sValue = useSharedValue(0);
   const sliderWidth = useSharedValue(0);
+  const [displayValue, setDisplayValue] = useState(() =>
+    formatSliderValue(value, step),
+  );
+
+  const syncDisplayValue = useCallback(
+    (nextValue: number) => {
+      setDisplayValue(formatSliderValue(nextValue, step));
+    },
+    [step],
+  );
 
   useEffect(() => {
     offset.value = valueToOffset(value, sliderWidth.value, min, max);
     sValue.value = value;
-  }, [value, min, max, sliderWidth, offset, sValue]);
+    setDisplayValue(formatSliderValue(value, step));
+  }, [value, min, max, step, sliderWidth, offset, sValue]);
 
   const pan = Gesture.Pan()
     .onChange((event) => {
       offset.value = Math.max(
         0,
-        Math.min(sliderWidth.value - handleSize, offset.value + event.changeX)
+        Math.min(sliderWidth.value - handleSize, offset.value + event.changeX),
       );
 
       sValue.value = offsetToValue(offset.value, sliderWidth.value, min, max);
+      runOnJS(syncDisplayValue)(sValue.value);
     })
     .onEnd(() => {
-      runOnJS(onValueChange)(roundToStep(sValue.value, step));
+      const rounded = roundToStep(sValue.value, step);
+      runOnJS(onValueChange)(rounded);
+      runOnJS(syncDisplayValue)(rounded);
     });
 
   const onSliderLayout = (event: LayoutChangeEvent) => {
@@ -93,10 +103,11 @@ const Slider: React.FC<SliderProps> = (props) => {
       value,
       event.nativeEvent.layout.width,
       min,
-      max
+      max,
     );
 
     sValue.value = value;
+    setDisplayValue(formatSliderValue(value, step));
   };
 
   const handleStyle = useAnimatedStyle(() => ({
@@ -109,18 +120,13 @@ const Slider: React.FC<SliderProps> = (props) => {
     ],
   }));
 
-  const valueTextProps = useAnimatedProps(() => ({
-    text: `${step < 1 ? roundToStep(sValue.value, step).toFixed(2) : roundToStep(sValue.value, step)}`,
-    defaultValue: `${roundToStep(sValue.value, step)}`,
-  }));
-
   const valueTextStyle = useAnimatedStyle(() => ({
     transform: [
       {
         translateX: withSpring(
           sliderWidth.value > 0 && offset.value < 1.5 * handleSize
             ? 1.5 * handleSize
-            : 0
+            : 0,
         ),
       },
     ],
@@ -143,11 +149,9 @@ const Slider: React.FC<SliderProps> = (props) => {
       <GestureDetector gesture={pan}>
         <View style={styles.slider} onLayout={onSliderLayout}>
           <Animated.View style={[styles.fill, fillStyle]} />
-          <AnimatedText
-            editable={false}
-            animatedProps={valueTextProps}
-            style={[styles.valueText, valueTextStyle]}
-          />
+          <Animated.View style={[styles.valueTextContainer, valueTextStyle]}>
+            <Text style={styles.valueText}>{displayValue}</Text>
+          </Animated.View>
           <Animated.View style={[styles.handle, handleStyle]} />
         </View>
       </GestureDetector>
@@ -180,16 +184,19 @@ const styles = StyleSheet.create({
     borderRadius: handleSize / 2,
     backgroundColor: colors.main,
   },
-  valueText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
+  valueTextContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
+    justifyContent: 'center',
     paddingLeft: 12,
+  },
+  valueText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.white,
   },
   handle: {
     marginTop: -1,
