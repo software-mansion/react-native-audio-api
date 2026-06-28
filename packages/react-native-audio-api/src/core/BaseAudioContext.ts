@@ -4,22 +4,13 @@ import {
   NotSupportedError,
 } from '../errors';
 import { IBaseAudioContext } from '../jsi-interfaces';
-import {
-  AudioDurationInput,
-  AudioWorkletRuntime,
-  ContextState,
-  DecodeDataInput,
-} from '../types';
+import { AudioWorkletRuntime, ContextState, DecodeDataInput } from '../types';
 import { assertWorkletsEnabled } from '../utils';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
-import {
-  decodeAudioData,
-  decodePCMInBase64,
-  getAudioDuration,
-} from './AudioDecoder';
+import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
 import ConstantSourceNode from './ConstantSourceNode';
@@ -75,10 +66,6 @@ export default class BaseAudioContext {
       inputChannelCount,
       isInterleaved
     );
-  }
-
-  public async getAudioDuration(input: AudioDurationInput): Promise<number> {
-    return await getAudioDuration(input);
   }
 
   createWorkletNode(

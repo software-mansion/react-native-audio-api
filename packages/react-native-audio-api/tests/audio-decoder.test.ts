@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
-import type { IBaseAudioContext, IAudioDecoder } from '../src/jsi-interfaces';
+import type { IAudioDecoder } from '../src/jsi-interfaces';
 
 type AudioDecoderExports = typeof import('../src/core/AudioDecoder');
+type WebAudioDecoderExports = typeof import('../src/web-core/AudioDecoder.web');
 
 jest.mock('react-native', () => ({
   Image: {
@@ -21,16 +22,6 @@ jest.mock('react-native', () => ({
   },
 }));
 
-const createNativeAudioNode = () => ({
-  numberOfInputs: 0,
-  numberOfOutputs: 1,
-  channelCount: 2,
-  channelCountMode: 'explicit',
-  channelInterpretation: 'speakers',
-  connect: jest.fn(),
-  disconnect: jest.fn(),
-});
-
 const createDecoder = (duration: number = 12.5) =>
   ({
     decodeWithMemoryBlock: jest.fn(),
@@ -47,9 +38,64 @@ const loadAudioDecoder = (): AudioDecoderExports => {
   return require('../src/core/AudioDecoder') as AudioDecoderExports;
 };
 
+const loadWebAudioDecoder = (): WebAudioDecoderExports => {
+  return require('../src/web-core/AudioDecoder.web') as WebAudioDecoderExports;
+};
+
+const installMockAudio = ({
+  duration,
+  errorMessage,
+  resetDurationOnCleanup = false,
+}: {
+  duration: number;
+  errorMessage?: string;
+  resetDurationOnCleanup?: boolean;
+}) => {
+  const listeners = new Map<string, () => void>();
+  const audio = {
+    duration,
+    error: errorMessage ? { message: errorMessage } : null,
+    preload: '',
+    src: '',
+    addEventListener: jest.fn((eventName: string, listener: () => void) => {
+      listeners.set(eventName, listener);
+    }),
+    removeEventListener: jest.fn((eventName: string) => {
+      listeners.delete(eventName);
+    }),
+    load: jest.fn(() => {
+      if (audio.src === '') {
+        if (resetDurationOnCleanup) {
+          audio.duration = Number.NaN;
+        }
+        return;
+      }
+
+      const eventName = errorMessage ? 'error' : 'loadedmetadata';
+      listeners.get(eventName)?.();
+    }),
+  } as unknown as HTMLAudioElement;
+  const AudioMock = jest.fn(() => audio);
+
+  (globalThis as unknown as { Audio: typeof Audio }).Audio =
+    AudioMock as unknown as typeof Audio;
+
+  return { audio, AudioMock };
+};
+
 describe('getAudioDuration', () => {
+  const originalAudio = globalThis.Audio;
+
   beforeEach(() => {
     jest.resetModules();
+  });
+
+  afterEach(() => {
+    if (originalAudio) {
+      (globalThis as unknown as { Audio: typeof Audio }).Audio = originalAudio;
+    } else {
+      delete (globalThis as unknown as { Audio?: typeof Audio }).Audio;
+    }
   });
 
   it('routes local file paths to the native duration decoder', async () => {
@@ -107,25 +153,46 @@ describe('getAudioDuration', () => {
     expect(decoder.getDurationWithFilePath).not.toHaveBeenCalled();
   });
 
-  it('exposes duration probing through BaseAudioContext', async () => {
-    const decoder = createDecoder(3.25);
-    installDecoder(decoder);
+  it('reads duration from web audio metadata', async () => {
+    const { audio, AudioMock } = installMockAudio({
+      duration: 4.75,
+      resetDurationOnCleanup: true,
+    });
+    const { getAudioDuration } = loadWebAudioDecoder();
 
-    const BaseAudioContext = require('../src/core/BaseAudioContext')
-      .default as typeof import('../src/core/BaseAudioContext').default;
+    await expect(getAudioDuration('/audio/file.mp3')).resolves.toBe(4.75);
 
-    const context = new BaseAudioContext({
-      destination: createNativeAudioNode(),
-      sampleRate: 44100,
-      currentTime: 0,
-      state: 'running',
-    } as unknown as IBaseAudioContext);
-
-    await expect(context.getAudioDuration('/tmp/audio.wav')).resolves.toBe(
-      3.25
+    expect(AudioMock).toHaveBeenCalledTimes(1);
+    expect(audio.preload).toBe('metadata');
+    expect(audio.addEventListener).toHaveBeenCalledWith(
+      'loadedmetadata',
+      expect.any(Function)
     );
-    expect(decoder.getDurationWithFilePath).toHaveBeenCalledWith(
-      '/tmp/audio.wav'
+    expect(audio.src).toBe('');
+  });
+
+  it('resolves zero-duration web audio metadata', async () => {
+    installMockAudio({ duration: 0 });
+    const { getAudioDuration } = loadWebAudioDecoder();
+
+    await expect(getAudioDuration('/audio/empty.wav')).resolves.toBe(0);
+  });
+
+  it('rejects web audio sources when metadata has no finite duration', async () => {
+    installMockAudio({ duration: Infinity });
+    const { getAudioDuration } = loadWebAudioDecoder();
+
+    await expect(getAudioDuration('/audio/live-stream.mp3')).rejects.toThrow(
+      'Audio duration metadata is unavailable'
+    );
+  });
+
+  it('rejects web audio sources when metadata loading fails', async () => {
+    installMockAudio({ duration: 0, errorMessage: 'unsupported source' });
+    const { getAudioDuration } = loadWebAudioDecoder();
+
+    await expect(getAudioDuration('/audio/file.mp3')).rejects.toThrow(
+      'Failed to load audio metadata: unsupported source'
     );
   });
 });

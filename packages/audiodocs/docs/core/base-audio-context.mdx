@@ -287,27 +287,6 @@ const buffer = await audioContext.decodeAudioData(url);
 ```
 </details>
 
-### `getAudioDuration` <MobileOnly />
-
-Reads the duration of a local audio file without decoding the full file into an [`AudioBuffer`](/docs/sources/audio-buffer).
-Use this when you only need the encoded file duration. Use [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) when you need sample data for playback or processing.
-
-This API currently supports local file paths and `file://` URIs. Remote URLs, asset module ids, `ArrayBuffer` input, base64 data URLs, and blob URLs are rejected explicitly.
-There is no `sampleRate` option because the returned duration belongs to the encoded file and does not depend on the context's output sample rate.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `input` | `string` | Local file path or `file://` URI. |
-
-#### Returns `Promise<number>` with the duration in seconds.
-
-<details>
-<summary>Example reading local file duration</summary>
-```tsx
-const duration = await audioContext.getAudioDuration('file:///tmp/recording.wav');
-```
-</details>
-
 ### `decodePCMInBase64`
 
 Decodes base64-encoded PCM audio data.
@@ -351,4 +330,3 @@ The audio context is running normally.
 - `closed`
 
 The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
-

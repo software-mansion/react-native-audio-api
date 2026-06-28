@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { Optional, MobileOnly } from '@site/src/components/Badges';
+import { Optional } from '@site/src/components/Badges';
 
 # Decoding
 
@@ -85,17 +85,18 @@ const buffer = await decodeAudioData(url);
 ```
 </details>
 
-### `getAudioDuration` <MobileOnly />
+### `getAudioDuration`
 
-Reads the duration of a local audio file without decoding the full file into an [`AudioBuffer`](/docs/sources/audio-buffer).
+Reads the duration of an audio source without decoding the full file into an [`AudioBuffer`](/docs/sources/audio-buffer).
 Use this when you only need the encoded file duration. Use [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) when you need sample data for playback or processing.
 
-This API currently supports local file paths and `file://` URIs. Remote URLs, asset module ids, `ArrayBuffer` input, base64 data URLs, and blob URLs are rejected explicitly.
-There is no `sampleRate` option because the returned duration belongs to the encoded file and does not depend on a caller-selected output sample rate.
+On mobile, this API supports local file paths and `file://` URIs. Remote URLs, asset module ids, `ArrayBuffer` input, base64 data URLs, and blob URLs are rejected explicitly.
+On web, this API uses browser audio metadata loading and supports sources the browser can load, such as remote URLs, relative URLs, blob URLs, and data URLs.
+There is no `sampleRate` option because the returned duration belongs to the encoded source and does not depend on a caller-selected output sample rate.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `input` | `string` | Local file path or `file://` URI. |
+| `input` | `string` | Audio source URL or path. |
 
 #### Returns `Promise<number>` with the duration in seconds.
 

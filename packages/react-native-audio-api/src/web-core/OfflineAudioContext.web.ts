@@ -1,8 +1,4 @@
-import {
-  AudioDurationInput,
-  ContextState,
-  OfflineAudioContextOptions,
-} from '../types';
+import { ContextState, OfflineAudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext.web';
 import AnalyserNode from './AnalyserNode.web';
@@ -20,7 +16,6 @@ import WaveShaperNode from './WaveShaperNode.web';
 
 import ConvolverNode from './ConvolverNode.web';
 import DelayNode from './DelayNode.web';
-import { getAudioDuration } from './AudioDecoder.web';
 
 export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
@@ -153,10 +148,6 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   async decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
     return new AudioBuffer(await this.context.decodeAudioData(arrayBuffer));
-  }
-
-  async getAudioDuration(input: AudioDurationInput): Promise<number> {
-    return await getAudioDuration(input);
   }
 
   async startRendering(): Promise<AudioBuffer> {

@@ -23,7 +23,6 @@ import {
   ConstantSourceOptions,
   ConvolverOptions,
   DelayOptions,
-  AudioDurationInput,
   DecodeDataInput,
   GainOptions,
   OscillatorOptions,
@@ -588,10 +587,6 @@ class BaseAudioContextMock {
         sampleRate: 44100,
       })
     );
-  }
-
-  getAudioDuration(_input: AudioDurationInput): Promise<number> {
-    return getAudioDuration(_input);
   }
 
   createAnalyser(options?: AnalyserOptions): AnalyserNodeMock {
