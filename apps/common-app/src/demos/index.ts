@@ -37,9 +37,8 @@ export const demos: DemoScreen[] = [
   {
     key: 'Crossfade',
     title: 'Crossfade',
-    subtitle:
-      'Demonstrates crossfading between two audio files.',
+    subtitle: 'Demonstrates crossfading between two audio files.',
     icon: icons.ArrowLeftRight,
     screen: Crossfade,
-  }
+  },
 ] as const;
