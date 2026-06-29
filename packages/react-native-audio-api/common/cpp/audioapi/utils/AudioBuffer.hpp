@@ -237,23 +237,32 @@ class AlignedAudioBuffer {
 
   /// @brief Deinterleave audio data from an interleaved source buffer.
   void deinterleaveFrom(const float *source, size_t frames) {
+    deinterleaveFrom(source, 0, frames);
+  }
+
+  /// @brief Deinterleave @p frames from @p source into planar channels starting at @p destStartFrame.
+  void deinterleaveFrom(const float *source, size_t destStartFrame, size_t frames) {
     if (frames == 0) {
       return;
     }
 
     if (numberOfChannels_ == 1) {
-      channels_[0]->copy(source, 0, 0, frames);
+      channels_[0]->copy(source, 0, destStartFrame, frames);
       return;
     }
 
     if (numberOfChannels_ == 2) {
-      dsp::deinterleaveStereo(source, channels_[0]->begin(), channels_[1]->begin(), frames);
+      dsp::deinterleaveStereo(
+          source,
+          channels_[0]->begin() + destStartFrame,
+          channels_[1]->begin() + destStartFrame,
+          frames);
       return;
     }
 
     float *channelsPtrs[MAX_CHANNEL_COUNT];
     for (size_t i = 0; i < numberOfChannels_; ++i) {
-      channelsPtrs[i] = channels_[i]->begin();
+      channelsPtrs[i] = channels_[i]->begin() + destStartFrame;
     }
 
     for (size_t blockStart = 0; blockStart < frames; blockStart += kBlockSize) {

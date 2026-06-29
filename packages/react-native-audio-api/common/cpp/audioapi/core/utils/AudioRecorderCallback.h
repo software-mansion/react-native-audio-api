@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularArray.hpp>
@@ -35,8 +36,13 @@ class AudioRecorderCallback {
   void emitAudioData(bool flush = false);
   void invokeCallback(const std::shared_ptr<AudioBuffer> &buffer, int numFrames);
 
-  void setOnErrorCallback(uint64_t callbackId);
-  void clearOnErrorCallback();
+  void setOnErrorCallback(uint64_t callbackId) {
+    assignOnErrorCallbackId(callbackId);
+  }
+  void clearOnErrorCallback() {
+    assignOnErrorCallbackId(0);
+  }
+  void assignOnErrorCallbackId(uint64_t callbackId);
   void invokeOnErrorCallback(const std::string &message);
 
  protected:
@@ -45,12 +51,11 @@ class AudioRecorderCallback {
   float sampleRate_;
   size_t bufferLength_;
   int channelCount_;
-  uint64_t callbackId_;
   size_t ringBufferSize_;
+  uint64_t framesEmitted_ = 0;
 
-  std::atomic<uint64_t> errorCallbackId_{0};
-
-  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  EventCaller<AudioEvent::AUDIO_READY> audioReadyEvent_;
+  EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
 
   // TODO: CircularAudioBuffer
   static constexpr size_t DEFAULT_RING_BUFFER_SIZE = 8192;
@@ -59,7 +64,15 @@ class AudioRecorderCallback {
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
   static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =
       channels::spsc::WaitStrategy::ATOMIC_WAIT;
-  static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = 64;
+  static constexpr size_t RECORDER_CALLBACK_POOL_SIZE = 32;
+  // SPSC WAIT_ON_FULL rings hold at most (capacity - 1) elements.
+  static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = RECORDER_CALLBACK_POOL_SIZE + 1;
+  // At most POOL_SIZE slots can be in flight at once, so sizing the channel one
+  // larger guarantees the ring is never full when a slot is available — which is
+  // why the producer can use the blocking send() without it ever actually waiting.
+  static_assert(
+      RECORDER_CALLBACK_POOL_SIZE <= RECORDER_CALLBACK_CHANNEL_CAPACITY - 1,
+      "Channel must hold every in-flight slot so send() never blocks/overwrites");
   std::mutex destructionAudioGuard_; // eliminates race between deconstruction and audio thread
 };
 

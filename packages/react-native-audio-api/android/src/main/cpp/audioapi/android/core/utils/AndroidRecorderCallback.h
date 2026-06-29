@@ -4,16 +4,20 @@
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/SlotFreeList.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
+#include <cstddef>
+#include <limits>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace audioapi {
 
 class AudioEventHandlerRegistry;
 
 struct CallbackData {
-  void *data;
+  size_t slot = std::numeric_limits<size_t>::max();
   int numFrames;
 };
 
@@ -47,6 +51,13 @@ class AndroidRecorderCallback : public AudioRecorderCallback {
   void deinterleaveAndPushAudioData(void *data, int numFrames);
 
  private:
+  using FreeList = slots::SlotFreeList<RECORDER_CALLBACK_POOL_SIZE>;
+
+  std::unique_ptr<std::byte[]> inputBufferPool_;
+  size_t inputBufferBytesPerSlot_{0};
+  std::vector<void *> inputBuffers_;
+  std::unique_ptr<FreeList> freeSlots_;
+
   // delay initialization of offloader until prepare is called
   std::unique_ptr<task_offloader::TaskOffloader<
       CallbackData,

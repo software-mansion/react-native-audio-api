@@ -11,7 +11,7 @@ const mockSync =
 
 class AudioManager implements IAudioManager {
   getDevicePreferredSampleRate = mockSync(44100);
-  setAudioSessionActivity = mockAsync(true);
+  setAudioSessionActivity = mockAsync(undefined);
   setAudioSessionOptions = mockSync({});
   disableSessionManagement = mockSync({});
   observeAudioInterruptions = mockSync(true);
@@ -22,7 +22,7 @@ class AudioManager implements IAudioManager {
   checkRecordingPermissions = mockAsync('Granted' as PermissionStatus);
   requestNotificationPermissions = mockAsync('Granted' as PermissionStatus);
   checkNotificationPermissions = mockAsync('Granted' as PermissionStatus);
-  setInputDevice = mockAsync(true);
+  setInputDevice = mockAsync(undefined);
   getDevicesInfo = mockAsync({
     availableInputs: [],
     availableOutputs: [],

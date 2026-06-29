@@ -9,15 +9,15 @@ import {
 } from 'react';
 import { Platform } from 'react-native';
 
-import type BaseAudioContext from '../../../core/BaseAudioContext';
-import { probeDuration } from '../../../core/AudioFileUtils';
-import { NotSupportedError } from '../../../errors';
-import { NativeAudioAPIModule } from '../../../specs';
-import { base64ToArrayBuffer } from '../../../utils';
+import type BaseAudioContext from '../core/BaseAudioContext';
+import { probeDuration } from '../core/AudioFileUtils';
+import { NotSupportedError } from '../errors';
+import { NativeAudioAPIModule } from '../specs';
+import { base64ToArrayBuffer } from '../utils';
 import {
   DEFAULT_METADATA_SEGMENT_BYTES,
   supportsMetadataProbe,
-} from '../../../utils/metadataPrefetching';
+} from '../utils/metadataPrefetching';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
 import type { AudioSource, PreloadType } from './types';
 import { getSourceHeaders } from './utils';
@@ -28,6 +28,8 @@ type UseAudioSourceLoaderParams = {
   source: AudioSource;
   preloadMode: PreloadType;
   loop: boolean;
+  playbackRate: number;
+  preservesPitch: boolean;
   autoPlay: boolean;
   effectiveVolumeRef: RefObject<number>;
   onLoadStart: () => void;
@@ -52,6 +54,8 @@ export function useAudioSourceLoader({
   source,
   preloadMode,
   loop,
+  playbackRate,
+  preservesPitch,
   autoPlay,
   effectiveVolumeRef,
   onLoadStart,
@@ -68,6 +72,21 @@ export function useAudioSourceLoader({
   const isFetchingCancelled = useRef(false);
   const fullDataFetched = useRef(false);
 
+  const onLoadStartRef = useRef(onLoadStart);
+  onLoadStartRef.current = onLoadStart;
+  const onLoadRef = useRef(onLoad);
+  onLoadRef.current = onLoad;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
+  const onAutoPlayRef = useRef(onAutoPlay);
+  onAutoPlayRef.current = onAutoPlay;
+  const playbackRateRef = useRef(playbackRate);
+  playbackRateRef.current = playbackRate;
+  const preservesPitchRef = useRef(preservesPitch);
+  preservesPitchRef.current = preservesPitch;
+
   const disposeSource = useCallback(() => {
     fileSourceRef.current?.stopPositionTracking();
     fileSourceRef.current?.dispose();
@@ -83,14 +102,20 @@ export function useAudioSourceLoader({
 
     fileSourceRef.current?.dispose();
     const initialVolume = effectiveVolumeRef.current;
+    const initialPlaybackRate = playbackRateRef.current;
+    const initialPreservesPitch = preservesPitchRef.current;
 
     const node = context.context.createFileSource({
       source: nextSource,
       loop,
       volume: initialVolume,
+      playbackRate: initialPlaybackRate,
+      preservesPitch: initialPreservesPitch,
     });
     if (!node) {
-      onError(new NotSupportedError('This file format requires FFmpeg build'));
+      onErrorRef.current(
+        new NotSupportedError('This file format requires FFmpeg build')
+      );
       return false;
     }
 
@@ -98,31 +123,24 @@ export function useAudioSourceLoader({
     const { duration: nextDuration } = fileSource.attach({
       loop,
       onEnded: () => {
-        onEnded(nextDuration);
+        onEndedRef.current(nextDuration);
         spawnFileSource();
       },
     });
 
     fileSource.setVolume(initialVolume);
+    fileSource.setPlaybackRate(initialPlaybackRate);
+    fileSource.setPreservesPitch(initialPreservesPitch);
     fileSourceRef.current = fileSource;
     setDuration(nextDuration);
-    onLoad();
+    onLoadRef.current();
 
     if (autoPlay) {
-      onAutoPlay();
+      onAutoPlayRef.current();
     }
 
     return true;
-  }, [
-    autoPlay,
-    context,
-    effectiveVolumeRef,
-    loop,
-    onAutoPlay,
-    onEnded,
-    onError,
-    onLoad,
-  ]);
+  }, [autoPlay, context, effectiveVolumeRef, loop]);
 
   const loadPlaybackSource = useCallback(async (): Promise<boolean> => {
     if (!path) {
@@ -131,7 +149,7 @@ export function useAudioSourceLoader({
 
     isFetchingCancelled.current = false;
     setReady(false);
-    onLoadStart();
+    onLoadStartRef.current();
     const headers = getSourceHeaders(source);
 
     try {
@@ -164,12 +182,12 @@ export function useAudioSourceLoader({
       return false;
     } catch (error) {
       if (!isFetchingCancelled.current) {
-        onError(error as Error);
+        onErrorRef.current(error as Error);
       }
       setReady(false);
       return false;
     }
-  }, [onError, onLoadStart, path, source, spawnFileSource]);
+  }, [path, source, spawnFileSource]);
 
   const probeMetadataOnly = useCallback(async (): Promise<void> => {
     if (!path.startsWith('http') || !supportsMetadataProbe(path)) {
@@ -179,7 +197,7 @@ export function useAudioSourceLoader({
 
     isFetchingCancelled.current = false;
     setReady(false);
-    onLoadStart();
+    onLoadStartRef.current();
 
     try {
       const probedDuration = await probeDuration(
@@ -196,11 +214,11 @@ export function useAudioSourceLoader({
       setReady(true);
     } catch (error) {
       if (!isFetchingCancelled.current) {
-        onError(error as Error);
+        onErrorRef.current(error as Error);
       }
       setReady(false);
     }
-  }, [context?.sampleRate, onError, onLoadStart, path, source]);
+  }, [context?.sampleRate, path, source]);
 
   const loadForPlayback = useCallback(async (): Promise<boolean> => {
     if (fullDataFetched.current) {

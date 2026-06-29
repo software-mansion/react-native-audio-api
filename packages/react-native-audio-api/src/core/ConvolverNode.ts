@@ -1,4 +1,4 @@
-import { IConvolverNode } from '../interfaces';
+import { IConvolverNode } from '../jsi-interfaces';
 import { ConvolverOptions } from '../types';
 import type BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
@@ -14,7 +14,7 @@ export default class ConvolverNode extends AudioNode {
     super(context, convolverNode);
 
     if (options?.buffer) {
-      this.buffer = options.buffer;
+      this.buffer = options.buffer as AudioBuffer;
     }
     this.normalize = convolverNode.normalize;
   }

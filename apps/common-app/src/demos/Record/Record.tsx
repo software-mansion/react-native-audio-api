@@ -63,7 +63,6 @@ const Record: FC = () => {
       setHasPermissions(true);
     }
 
-    let success = false;
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'default',
@@ -71,15 +70,9 @@ const Record: FC = () => {
     });
 
     try {
-      success = await AudioManager.setAudioSessionActivity(true);
+      await AudioManager.setAudioSessionActivity(true);
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to activate audio session for recording.');
-      setState(RecordingState.Idle);
-      return;
-    }
-
-    if (!success) {
       Alert.alert('Error', 'Failed to activate audio session for recording.');
       setState(RecordingState.Idle);
       return;

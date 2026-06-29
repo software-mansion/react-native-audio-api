@@ -5,9 +5,8 @@ import type {
   IAudioFileUtils,
   IAudioRecorder,
   IAudioBuffer,
-  IAudioStretcher,
   IOfflineAudioContext,
-} from '../interfaces';
+} from '../jsi-interfaces';
 
 /* eslint-disable no-var */
 declare global {
@@ -35,8 +34,6 @@ declare global {
   var createAudioDecoder: () => IAudioDecoder;
 
   var createAudioFileUtils: () => IAudioFileUtils;
-
-  var createAudioStretcher: () => IAudioStretcher;
 
   var AudioEventEmitter: IAudioEventEmitter;
 }

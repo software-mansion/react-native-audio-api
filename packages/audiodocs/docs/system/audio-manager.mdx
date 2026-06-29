@@ -58,7 +58,7 @@ function App() {
 | :---: | :---: | :---- |
 | enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
 
-#### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.'
+#### Returns `Promise<void>`, which resolves when the audio session activity was set successfully. On failure the promise rejects with a `SessionActivationError` that carries the native error details (`nativeErrorInfo`) when available.
 
 ### `disableSessionManagement` <IOS />
 

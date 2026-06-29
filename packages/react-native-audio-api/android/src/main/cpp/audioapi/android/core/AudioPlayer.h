@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <mutex>
 
 #include <audioapi/android/core/NativeAudioPlayer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -24,7 +25,10 @@ class AudioPlayer : public AudioStreamDataCallback,
   AudioPlayer(
       const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
       float sampleRate,
-      int channelCount);
+      int channelCount,
+      std::mutex *driverMutex,
+      const std::shared_ptr<AudioContext> &context,
+      std::atomic<uint32_t> &currentRenders);
 
   ~AudioPlayer() override {
     nativeAudioPlayer_.release();
@@ -45,13 +49,14 @@ class AudioPlayer : public AudioStreamDataCallback,
   DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;
 
-  void onErrorAfterClose(AudioStream * /* audioStream */, Result /* error */) override;
+  void onErrorAfterClose(AudioStream *audioStream, Result error) override;
 
  private:
   std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
+  std::atomic<uint32_t> &currentRenders_;
   std::shared_ptr<AudioStream> mStream_;
   std::shared_ptr<DSPAudioBuffer> buffer_;
-  bool isInitialized_ = false;
+  std::atomic<bool> isInitialized_{false};
   float sampleRate_;
   int channelCount_;
   std::atomic<bool> isRunning_;
@@ -59,6 +64,8 @@ class AudioPlayer : public AudioStreamDataCallback,
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   /// Full output latency (seconds) sampled at callback start via Oboe timestamps.
   std::atomic<double> lastOutputLatencySeconds_{0.0};
+  std::mutex *driverMutex_;
+  std::weak_ptr<AudioContext> context_;
 
   bool openAudioStream();
 

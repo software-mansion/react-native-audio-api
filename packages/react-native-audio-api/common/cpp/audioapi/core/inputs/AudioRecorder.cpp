@@ -10,38 +10,32 @@
 
 namespace audioapi {
 
+void AudioRecorder::assignOnErrorCallbackId(uint64_t callbackId) {
+  std::scoped_lock lock(callbackMutex_, fileWriterMutex_, errorCallbackMutex_);
+
+  if (usesFileOutput() && fileWriter_ != nullptr) {
+    fileWriter_->assignOnErrorCallbackId(callbackId);
+  }
+
+  if (usesCallback() && dataCallback_ != nullptr) {
+    dataCallback_->assignOnErrorCallbackId(callbackId);
+  }
+
+  errorEvent_.assignCallbackId(callbackId);
+}
+
 /// @brief Sets the error callback to be invoked when an error occurs during recording.
 /// This method should be called from the JS thread only.
 /// @param callbackId Identifier for the JS callback to be invoked.
 void AudioRecorder::setOnErrorCallback(uint64_t callbackId) {
-  std::scoped_lock lock(callbackMutex_, fileWriterMutex_, errorCallbackMutex_);
-
-  if (usesFileOutput() && fileWriter_ != nullptr) {
-    fileWriter_->setOnErrorCallback(callbackId);
-  }
-
-  if (usesCallback() && dataCallback_ != nullptr) {
-    dataCallback_->setOnErrorCallback(callbackId);
-  }
-
-  errorCallbackId_.store(callbackId, std::memory_order_release);
+  assignOnErrorCallbackId(callbackId);
 }
 
 /// @brief Clears the error callback.
 /// If the recorder is currently active, it will stop invoking the callback immediately.
 /// This method should be called from the JS thread only.
 void AudioRecorder::clearOnErrorCallback() {
-  std::scoped_lock lock(callbackMutex_, fileWriterMutex_, errorCallbackMutex_);
-
-  if (usesFileOutput() && fileWriter_ != nullptr) {
-    fileWriter_->clearOnErrorCallback();
-  }
-
-  if (usesCallback() && dataCallback_ != nullptr) {
-    dataCallback_->clearOnErrorCallback();
-  }
-
-  errorCallbackId_.store(0, std::memory_order_release);
+  assignOnErrorCallbackId(0);
 }
 
 /// @brief Gets the current duration of the recorded audio in seconds.

@@ -70,7 +70,8 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
-  if (args[0].isUndefined()) {
+  // protect direct usage of raw jsi classes
+  if (args == nullptr || args[0].isUndefined()) {
     node_->disconnect();
     return jsi::Value::undefined();
   }

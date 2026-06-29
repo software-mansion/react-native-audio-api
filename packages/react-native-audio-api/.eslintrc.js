@@ -13,5 +13,5 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['lib', 'src/web-core/custom/signalsmithStretch'],
+  ignorePatterns: ['lib', 'src/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch'],
 };

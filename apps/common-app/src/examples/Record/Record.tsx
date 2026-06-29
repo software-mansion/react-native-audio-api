@@ -49,9 +49,10 @@ const Record: FC = () => {
       iosOptions: ['allowBluetoothHFP'],
     });
 
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.error('Failed to activate audio session:', error);
       Alert.alert(
         'Audio Session Error',
         'Failed to activate audio session for recording.'
@@ -115,9 +116,10 @@ const Record: FC = () => {
       iosOptions: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
     });
 
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.error('Failed to activate audio session:', error);
       Alert.alert(
         'Audio Session Error',
         'Failed to activate audio session for recording.'
@@ -176,9 +178,10 @@ const Record: FC = () => {
       iosOptions: [],
     });
 
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.error('Failed to activate audio session:', error);
       Alert.alert(
         'Audio Session Error',
         'Failed to activate audio session for playback.'

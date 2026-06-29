@@ -1,6 +1,6 @@
 import { AudioEventName, AudioEventCallback } from './types';
 import AudioEventSubscription from './AudioEventSubscription';
-import { IAudioEventEmitter } from '../interfaces';
+import { IAudioEventEmitter } from '../jsi-interfaces';
 
 export default class AudioEventEmitter {
   private readonly audioEventEmitter: IAudioEventEmitter;

@@ -2,8 +2,11 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/events/PositionChangedDispatcher.h>
 #include <cstddef>
 #include <thread>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -11,9 +14,11 @@
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 using namespace audioapi::channels;
 
@@ -26,8 +31,6 @@ inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
-/// @note Seek commands are executed from the JS thread and delegated to @ref SeekDecoderDaemon, which performs the seek and decoding on a worker thread,
-// then sends decoded frames back to the audio thread via SPSC channels.
 class AudioFileSourceNode : public AudioScheduledSourceNode {
   friend class MediaElementAudioSourceNode;
 
@@ -52,6 +55,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
     return activeMediaBindingId_.load(std::memory_order_acquire) != 0;
   }
 
+  /// @brief Sends on position changed event.
+  /// @param framesPlayed number of frames played since the last event.
+  void sendOnPositionChangedEvent(int framesPlayed);
+
   /// @brief Registers @p bindingId as the current media-element owner of this decoder.
   void bindMediaElementSource(uint64_t bindingId);
 
@@ -66,15 +73,31 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
     volume_ = v;
   }
 
+  /// @brief Sets time-stretched playback speed for decoded file sources.
+  /// @note No-op for HLS live streams — playback rate changes are not supported.
+  void setPlaybackRate(float v);
+
+  /// @brief Current playback speed multiplier.
+  float getPlaybackRate() const {
+    return decoderState_->playbackRate.load(std::memory_order_acquire);
+  }
+
+  /// @brief True when the source is an FFmpeg HLS live/indefinite stream.
+  [[nodiscard]] bool isHlsStreaming() const {
+    return decoderState_ != nullptr &&
+        decoderState_->isHlsStreaming.load(std::memory_order_acquire);
+  }
+
+  /// @brief When true, playback speed changes preserve the original pitch.
+  void setPreservesPitch(bool v);
+
+  /// @brief Current pitch-preservation mode.
+  bool getPreservesPitch() const {
+    return decoderState_->preservesPitch.load(std::memory_order_acquire);
+  }
+
   /// @brief Stops decoding on the audio thread until playback is started again.
   void pause();
-
-  /// @brief Registers the JS callback id for position-changed events.
-  /// @note Audio thread only.
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
-
-  /// @brief Unregisters a position-changed handler.
-  void unregisterOnPositionChangedCallback(uint64_t callbackId);
 
   /// @brief Enables looping at end-of-file.
   void setLoop(bool v) {
@@ -100,6 +123,8 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
     return filePaused_;
   }
 
+  void assignOnPositionChangedCallbackId(uint64_t callbackId);
+
  protected:
   /// @brief Outputs silence when media-routed; otherwise decodes into @p processingBuffer.
   std::shared_ptr<DSPAudioBuffer> processNode(
@@ -114,7 +139,17 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess);
 
+  /// @brief Handles the paused / drained / stopped short-circuit states before decoding.
+  /// @return a finished output buffer when the render should bail out early, std::nullopt otherwise.
+  /// @note Audio thread only. On success @p outContext holds a locked context.
+  std::optional<std::shared_ptr<DSPAudioBuffer>> renderPreflight(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess,
+      std::shared_ptr<BaseAudioContext> &outContext);
+
   float volume_;
+  WsolaTimeStretcher wsolaStretcher_;
+  std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
   bool filePaused_{false};
   bool loop_{false};
   double duration_{0};
@@ -122,11 +157,31 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   std::atomic<double> currentTime_{0};
   std::atomic<uint64_t> activeMediaBindingId_{0};
 
-  /// @brief Dispatches position-changed events at the configured interval.
-  /// @param framesPlayed number of frames played since the last event; used to calculate the new position.
-  /// @param forceFlush if true, the event is dispatched regardless of the configured interval (used to flush position immediately on seeks and end-of-file).
-  /// @note Audio thread only.
-  void sendOnPositionChangedEvent(int framesPlayed, bool forceFlush);
+  // Target rate from JS; applied immediately on the audio thread (Chromium does not smooth rate).
+  float targetPlaybackRate_{1.0f};
+  static constexpr float RATE_SETTLE_EPSILON = 1e-2f;
+
+  enum class FillMode : std::uint8_t { Passthrough, Resample, Wsola };
+  FillMode lastFillMode_{FillMode::Passthrough};
+  std::array<float, MAX_CHANNEL_COUNT> previousOutputFrame_{};
+  bool hasPreviousOutputFrame_{false};
+  bool endOfStreamStopPending_{false};
+  bool endOfStreamDrainPending_{false};
+  float eofDrainRate_{1.0f};
+  size_t transitionFadeFramesRemaining_{0};
+  static constexpr size_t MODE_TRANSITION_FADE_FRAMES = RENDER_QUANTUM_SIZE;
+
+  [[nodiscard]] static FillMode chooseFillMode(bool preservesPitch, bool rateAffectsOutput);
+  void setFillMode(FillMode mode);
+  void applyModeTransitionFade(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+  void applyFadeOutToSilence(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+  void captureLastOutputFrame(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+  std::shared_ptr<DSPAudioBuffer> handleEndOfStreamPlayback(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess,
+      float activeRate);
+
+  PositionChangedDispatcher positionChanged_;
 
   /// @brief Sets up SPSC channels, constructs the SeekDecoderDaemon, and initialises metadata from the opened decoder.
   /// @return false if the source could not be opened; caller must not set isInitialized_.
@@ -138,6 +193,71 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @param outData decoded frames and metadata; only valid if return value is true.
   /// @return false if no decoded frames are available; true if @p outData is filled and ready to process.
   [[nodiscard]] bool readNextFrameChunk(DecoderData &outData);
+
+  /// @brief Clears decoded chunks generated with stale playback settings.
+  /// @note Audio thread only. Used when toggling pitch-preservation mode.
+  void drainPendingFrames();
+
+  /// @brief Resets stretch/resample state after pitch-preservation mode changes.
+  /// @note Audio thread only.
+  void handlePitchPreservationModeChanged();
+
+  /// @brief Ensures the planar playback-rate buffer can hold @p frames.
+  /// @note Audio thread only.
+  bool ensurePlaybackRateBufferSize(size_t frames);
+
+  /// @brief Appends deinterleaved samples from interleaved PCM into @ref playbackRateBuffer_.
+  /// @return Number of frames copied from @p interleaved; 0 if nothing to copy.
+  /// @note Audio thread only.
+  size_t appendFromInterleaved(
+      const float *interleaved,
+      size_t frameCount,
+      size_t startFrame,
+      size_t framesNeeded,
+      size_t &totalInputFrames);
+
+  /// @brief Renders a speed-changed chunk while keeping pitch unchanged.
+  /// @note Audio thread only.
+  /// @return Number of source frames consumed from the decoder pipeline.
+  size_t renderWithWsolaPitchPreservation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      DecoderData &incoming,
+      int framesToProcess,
+      float activeRate);
+
+  /// @brief Pulls enough decoded PCM for one WSOLA/resample quantum (may read multiple SPSC chunks).
+  /// @return Number of input frames accumulated, or 0 on failure.
+  /// @note Audio thread only.
+  size_t accumulateStretchInput(
+      DecoderData &incoming,
+      float activeRate,
+      int framesToProcess,
+      size_t minFramesNeeded = 0);
+
+  /// @brief Drops any partially consumed decoder chunk retained for sub-1.0x playback.
+  /// @note Audio thread only.
+  void clearPendingDecoderChunk();
+
+  /// @brief Retains the unconsumed tail of @p chunk for the next render quantum.
+  /// @note Audio thread only.
+  void stashPendingDecoderChunk(const DecoderData &chunk, size_t consumedFrames);
+
+  /// @brief Removes @p consumedFrames from the front of the pending chunk buffer.
+  /// @note Audio thread only.
+  void consumePendingDecoderChunkFront(size_t consumedFrames);
+
+  /// @brief Resets pitch-preservation state.
+  /// @note Audio thread only.
+  void resetPitchPreservationState();
+
+  /// @brief Renders a speed-changed chunk with pitch following playback speed.
+  /// @note Audio thread only.
+  /// @return Number of source frames consumed from the decoder pipeline.
+  size_t renderWithoutPitchPreservation(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      DecoderData &incoming,
+      int framesToProcess,
+      float playbackRate);
 
   /// @brief Daemon thread for decoding and seeking
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
@@ -151,18 +271,14 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @note Audio thread only.
   void ensureConnectedForDirectPlayback();
 
-  /// @brief Id of the registered position-changed callback in JS; used to dispatch events and unregister.
-  uint64_t onPositionChangedCallbackId_ = 0;
-  /// @brief Interval in seconds for dispatching position-changed events.
-  int onPositionChangedInterval_;
-  /// @brief Accumulator for time since the last position-changed event; used to determine when to dispatch the next event.
-  int onPositionChangedTime_ = 0;
-
   /// @brief SPSC for JS -> Daemon thread communication (seek event)
   CommandSender commandSender_;
 
   /// @brief SPSC for Daemon thread -> Audio thread communication (decoded frames)
   std::shared_ptr<FrameReceiver> frameReceiver_;
+
+  /// @brief Tail of a decoder chunk not yet consumed (needed when playbackRate < 1.0).
+  DecoderData pendingDecoderChunk_;
 };
 
 } // namespace audioapi

@@ -79,8 +79,8 @@ OpenFileResult AndroidRotatingFileWriter::openInnerWriter() {
   return result;
 }
 
-void AndroidRotatingFileWriter::taskOffloaderFunction(WriterData data) {
-  auto inner = std::static_pointer_cast<AndroidFileWriterBackend>(currentWriter_);
-  inner->taskOffloaderFunction(data);
+void AndroidRotatingFileWriter::processWriterData(void *data, int numFrames) {
+  (void)data;
+  (void)numFrames;
 }
 } // namespace audioapi

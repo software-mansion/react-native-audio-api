@@ -2,8 +2,10 @@
 
 #include <audioapi/jsi/RuntimeLifecycleMonitor.h>
 #include <jsi/jsi.h>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -304,6 +306,16 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
   auto volumeValue = optionsObject.getProperty(runtime, "volume");
   if (volumeValue.isNumber()) {
     options.volume = static_cast<float>(volumeValue.getNumber());
+  }
+
+  auto playbackRateValue = optionsObject.getProperty(runtime, "playbackRate");
+  if (playbackRateValue.isNumber()) {
+    options.playbackRate = static_cast<float>(playbackRateValue.getNumber());
+  }
+
+  auto preservesPitchValue = optionsObject.getProperty(runtime, "preservesPitch");
+  if (preservesPitchValue.isBool()) {
+    options.preservesPitch = preservesPitchValue.getBool();
   }
 
   auto sourceValue = optionsObject.getProperty(runtime, "source");

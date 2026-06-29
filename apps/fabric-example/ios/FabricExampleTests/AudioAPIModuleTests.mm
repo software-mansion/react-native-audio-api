@@ -131,7 +131,7 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
                                resolve:^(id result) {
                                  AppendAudioModuleEvent(eventLog, @"resolve");
                                  eventsAtResolve = CopyAudioModuleEvents(eventLog);
-                                 XCTAssertEqualObjects(result, @YES);
+                                 XCTAssertNil(result);
                                  [resolveExpectation fulfill];
                                }
                                 reject:^(NSString *code, NSString *message, NSError *error) {

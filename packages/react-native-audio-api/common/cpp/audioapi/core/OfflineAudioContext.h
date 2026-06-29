@@ -6,7 +6,6 @@
 #include <audioapi/utils/Macros.h>
 
 #include <memory>
-#include <mutex>
 #include <unordered_map>
 
 namespace audioapi {
@@ -25,18 +24,11 @@ class OfflineAudioContext : public BaseAudioContext {
   ~OfflineAudioContext() override;
   DELETE_COPY_AND_MOVE(OfflineAudioContext);
 
-  /// @note JS Thread only
   void resume();
-
-  /// @note JS Thread only
   void suspend(double when, const OfflineAudioContextSuspendCallback &callback);
-
-  /// @note JS Thread only
   void startRendering(OfflineAudioContextResultCallback callback);
 
  private:
-  std::mutex mutex_;
-
   std::unordered_map<size_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
   OfflineAudioContextResultCallback resultCallback_;
 

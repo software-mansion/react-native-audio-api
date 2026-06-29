@@ -50,6 +50,7 @@ MiniAudioFileWriter::MiniAudioFileWriter(
 
 MiniAudioFileWriter::~MiniAudioFileWriter() {
   isFileOpen_.store(false, std::memory_order_release);
+  cleanupPreallocatedInputPool();
   fileProperties_.reset();
 
   if (encoder_ != nullptr) {
@@ -108,17 +109,41 @@ OpenFileResult MiniAudioFileWriter::openFile(
         "Failed to initialize encoder" + std::string(ma_result_description(result)));
   }
 
-  auto offloaderLambda = [this](WriterData data) {
-    taskOffloaderFunction(data);
-  };
-
-  offloader_ = std::make_unique<task_offloader::TaskOffloader<
-      WriterData,
-      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-      FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+  if (!initializePreallocatedInputPool()) {
+    rollbackFailedOpen();
+    return OpenFileResult::Err("Failed to preallocate Android file writer buffers");
+  }
 
   isFileOpen_.store(true, std::memory_order_release);
   return OpenFileResult ::Ok(filePath_);
+}
+
+void MiniAudioFileWriter::rollbackFailedOpen() {
+  cleanupPreallocatedInputPool();
+
+  if (encoder_ != nullptr) {
+    ma_encoder_uninit(encoder_.get());
+    encoder_.reset();
+  }
+
+  if (converter_ != nullptr) {
+    ma_data_converter_uninit(converter_.get(), nullptr);
+    converter_.reset();
+  }
+
+  if (processingBuffer_ != nullptr) {
+    ma_free(processingBuffer_, nullptr);
+    processingBuffer_ = nullptr;
+    processingBufferLength_ = 0;
+  }
+
+  if (!filePath_.empty()) {
+    std::remove(filePath_.c_str());
+    filePath_ = "";
+  }
+
+  framesWritten_.store(0, std::memory_order_release);
+  isFileOpen_.store(false, std::memory_order_release);
 }
 
 /// @brief Closes the audio file.
@@ -131,7 +156,8 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
     return CloseFileResult ::Err("File is not open");
   }
 
-  offloader_.reset();
+  // Joins the worker before the encoder teardown below.
+  cleanupPreallocatedInputPool();
 
   isFileOpen_.store(false, std::memory_order_release);
 
@@ -193,8 +219,7 @@ size_t MiniAudioFileWriter::getFileSizeBytes() const {
 /// @brief Writes audio data to the file.
 /// If possible (sample format, channel count, and interleaving matches),
 /// the data is written directly, otherwise in-memory conversion is performed first
-void MiniAudioFileWriter::taskOffloaderFunction(WriterData data) {
-  auto [audioData, numFrames] = data;
+void MiniAudioFileWriter::processWriterData(void *audioData, int numFrames) {
   ma_uint64 framesWritten = 0;
   ma_result result;
 

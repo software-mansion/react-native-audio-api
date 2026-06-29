@@ -3,7 +3,7 @@ import {
   InvalidStateError,
   NotSupportedError,
 } from '../errors';
-import { IIIRFilterNode } from '../interfaces';
+import { IIIRFilterNode } from '../jsi-interfaces';
 import AudioNode from './AudioNode';
 import { IIRFilterOptions } from '../types';
 import type BaseAudioContext from './BaseAudioContext';

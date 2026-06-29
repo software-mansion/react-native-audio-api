@@ -21,6 +21,7 @@ extern "C" {
 #include <sys/stat.h>
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <utility>
@@ -80,15 +81,6 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
     return OpenFileResult::Err("Unsupported codec for the given file format");
   }
 
-  auto offloaderLambda = [this](WriterData data) {
-    taskOffloaderFunction(data);
-  };
-
-  offloader_ = std::make_unique<task_offloader::TaskOffloader<
-      WriterData,
-      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-      FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
-
   return initializeFormatContext(codec)
       .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
       .and_then([this](auto) { return initializeStream(); })
@@ -97,6 +89,10 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
           [this](auto) { return initializeResampler(streamSampleRate_, streamChannelCount_); })
       .and_then([this](auto) {
         initializeBuffers(streamMaxBufferSize_);
+        if (!initializePreallocatedInputPool()) {
+          rollbackFailedOpen();
+          return OpenFileResult::Err("Failed to preallocate Android file writer buffers");
+        }
         isFileOpen_.store(true, std::memory_order_release);
         return OpenFileResult::Ok(filePath_);
       });
@@ -112,7 +108,8 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
     return CloseFileResult::Err("File is not open");
   }
 
-  offloader_.reset();
+  // Joins the worker before draining/finalizing the encoder below.
+  cleanupPreallocatedInputPool();
 
   result = processFifo(true);
 
@@ -134,8 +131,7 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
 }
 
 /// @brief Writes audio data to the currently opened file.
-void FFmpegAudioFileWriter::taskOffloaderFunction(WriterData data) {
-  auto [audioData, numFrames] = data;
+void FFmpegAudioFileWriter::processWriterData(void *audioData, int numFrames) {
   if (!isFileOpen()) {
     return;
   }
@@ -476,6 +472,32 @@ CloseFileResult FFmpegAudioFileWriter::finalizeOutput() {
   isFileOpen_.store(false, std::memory_order_release);
 
   return CloseFileResult::Ok({fileSizeInMB, durationInSeconds});
+}
+
+void FFmpegAudioFileWriter::rollbackFailedOpen() {
+  cleanupPreallocatedInputPool();
+
+  if (formatCtx_ != nullptr && formatCtx_->pb != nullptr) {
+    avio_closep(&formatCtx_->pb);
+  }
+
+  encoderCtx_.reset();
+  formatCtx_.reset();
+  resampleCtx_.reset();
+  audioFifo_.reset();
+  packet_.reset();
+  resamplerFrame_.reset();
+  writingFrame_.reset();
+  stream_ = nullptr;
+  nextPts_ = 0;
+
+  if (!filePath_.empty()) {
+    std::remove(filePath_.c_str());
+    filePath_ = "";
+  }
+
+  framesWritten_.store(0, std::memory_order_release);
+  isFileOpen_.store(false, std::memory_order_release);
 }
 
 } // namespace audioapi::android::ffmpeg

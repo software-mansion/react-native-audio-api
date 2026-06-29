@@ -5,6 +5,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
+#include <atomic>
 #include <functional>
 #include <memory>
 
@@ -28,6 +29,8 @@ class AudioContext : public BaseAudioContext {
   bool resume();
   bool suspend();
   bool start();
+
+  /// JS thread only — runs synchronously in `BaseAudioContextHostObject` construction.
   void initialize() override;
 
   [[nodiscard]] double getBaseLatency() const override;
@@ -43,10 +46,19 @@ class AudioContext : public BaseAudioContext {
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
   std::atomic<bool> isInitialized_{false};
+  /// Audio I/O callback thread increments around each platform render callback;
+  /// control thread waits on suspend/close.
+  std::atomic<uint32_t> currentRenders_{0};
 
   bool isDriverRunning() const override;
 
   std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio();
+
+  /// Caller must hold `driverMutex_`.
+  bool tryStartDriver();
+
+  /// Blocks until no audio I/O callback is in flight. Caller must hold `driverMutex_`.
+  void waitForRenderQuiescence() const;
 };
 
 } // namespace audioapi

@@ -43,7 +43,7 @@ const PatternShape: React.FC<PatternShapeProps> = (props) => {
 
     pathPoints.push(pathPoints[0]);
 
-    const skPath = Skia.Path.Make();
+    const skPath = Skia.PathBuilder.Make().build();
 
     skPath.moveTo(pathPoints[0].x, pathPoints[0].y);
 

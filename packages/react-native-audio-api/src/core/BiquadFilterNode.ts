@@ -1,5 +1,5 @@
 import { InvalidAccessError } from '../errors';
-import { IBiquadFilterNode } from '../interfaces';
+import { IBiquadFilterNode } from '../jsi-interfaces';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
 import type BaseAudioContext from './BaseAudioContext';

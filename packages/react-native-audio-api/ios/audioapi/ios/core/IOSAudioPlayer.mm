@@ -1,9 +1,11 @@
 #import <AVFoundation/AVFoundation.h>
+#include <audioapi/utils/Macros.h>
 
 #include <algorithm>
 #include <cstring>
 
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/ios/system/AudioSessionManager.h>
@@ -14,11 +16,13 @@ namespace audioapi {
 IOSAudioPlayer::IOSAudioPlayer(
     const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
     float sampleRate,
-    int channelCount)
+    int channelCount,
+    std::atomic<uint32_t> &currentRenders)
     : audioBuffer_(nullptr),
       audioPlayer_(nullptr),
       renderAudio_(renderAudio),
       sampleRate_(sampleRate),
+      currentRenders_(currentRenders),
       channelCount_(channelCount),
       isRunning_(false),
       pendingSaved_(RENDER_QUANTUM_SIZE, channelCount_, sampleRate)
@@ -49,6 +53,7 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
   if (numFrames > 0) {
     lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
   }
+  const CurrentRenderScope renderScope(currentRenders_);
 
   // If requested, clear any saved overflow before continuing normal rendering.
   if (flushOverflowNextPull_.exchange(false, std::memory_order_acq_rel)) {
@@ -90,7 +95,11 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
       continue;
     }
 
-    renderAudio_(audioBuffer_, RENDER_QUANTUM_SIZE);
+    if (isRunning_.load(std::memory_order_acquire)) {
+      renderAudio_(audioBuffer_, RENDER_QUANTUM_SIZE);
+    } else {
+      audioBuffer_->zero();
+    }
 
     // normal rendering - take RENDER_QUANTUM_SIZE frames from the graph and copy to output
     const int stillNeed = numFrames - outPos;

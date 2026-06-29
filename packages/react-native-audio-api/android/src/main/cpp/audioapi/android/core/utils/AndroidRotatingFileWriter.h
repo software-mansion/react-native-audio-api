@@ -33,7 +33,7 @@ class AndroidRotatingFileWriter : public AndroidFileWriterBackend, public Rotati
   void writeAudioData(AudioDataType data, int numFrames) override;
 
  private:
-  void taskOffloaderFunction(WriterData data) override;
+  void processWriterData(void *data, int numFrames) override;
 
   void rotateFiles() override;
   OpenFileResult openInnerWriter();

@@ -27,19 +27,14 @@ class Promise {
       jsi::Function &&resolve,
       jsi::Function &&reject)
       : inner_(
-            std::make_shared<Inner>(
-                Inner{std::move(callInvoker), std::move(resolve), std::move(reject)})) {}
+            std::make_shared<Inner>(Inner{
+                .callInvoker = std::move(callInvoker),
+                .resolve = std::move(resolve),
+                .reject = std::move(reject)})) {}
 
-  Promise(const Promise &other) {
-    inner_ = other.inner_;
-  }
-  Promise(Promise &&other) noexcept : inner_(std::move(other.inner_)) {}
-  Promise &operator=(Promise &&other) noexcept {
-    if (this != &other) {
-      inner_ = std::move(other.inner_);
-    }
-    return *this;
-  }
+  Promise(const Promise &other) = default;
+  Promise(Promise &&other) noexcept = default;
+  Promise &operator=(Promise &&other) noexcept = default;
 
   void resolve(const std::function<jsi::Value(jsi::Runtime &)> &&resolver) const {
     auto inner = inner_;
@@ -111,8 +106,8 @@ class PromiseVendor {
   std::shared_ptr<ThreadPool> threadPool_;
 
   static void asyncPromiseJob(
-      std::shared_ptr<react::CallInvoker> callInvoker,
-      std::function<PromiseResolver()> &&function,
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      const std::function<PromiseResolver()> &function,
       std::shared_ptr<jsi::Function> &&resolve,
       std::shared_ptr<jsi::Function> &&reject);
 };

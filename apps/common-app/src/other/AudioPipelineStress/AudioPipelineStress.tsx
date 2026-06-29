@@ -713,11 +713,7 @@ const AudioPipelineStress: FC = () => {
                 iosOptions: [],
               });
 
-              const active = await AudioManager.setAudioSessionActivity(true);
-
-              if (!active) {
-                throw new Error('Failed to activate playback session');
-              }
+              await AudioManager.setAudioSessionActivity(true);
 
               resourcesRef.current.configureRecorderTap();
               const result = await resourcesRef.current.tryStartRecording(

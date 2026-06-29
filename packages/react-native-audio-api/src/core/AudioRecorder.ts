@@ -4,7 +4,7 @@ import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
 } from '../events/types';
-import { IAudioRecorder } from '../interfaces';
+import { IAudioRecorder } from '../jsi-interfaces';
 import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
@@ -44,11 +44,11 @@ export default class AudioRecorder {
   private isFileOutputEnabled: boolean = false;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
-    global.AudioEventEmitter
+    globalThis.AudioEventEmitter
   );
 
   constructor() {
-    this.recorder = global.createAudioRecorder();
+    this.recorder = globalThis.createAudioRecorder();
   }
 
   enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {

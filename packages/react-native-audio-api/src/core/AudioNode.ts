@@ -1,4 +1,4 @@
-import { IAudioNode } from '../interfaces';
+import { IAudioNode } from '../jsi-interfaces';
 import AudioParam from './AudioParam';
 import { ChannelCountMode, ChannelInterpretation } from '../types';
 import type BaseAudioContext from './BaseAudioContext';

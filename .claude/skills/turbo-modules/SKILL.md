@@ -58,7 +58,7 @@ flowchart TD
   D["AudioAPIModuleInstaller::injectJSIBindings\n(runtime, callInvoker, eventRegistry, uiRuntime?)"]
 
   subgraph globals["globalThis — set by injectJSIBindings"]
-    G["createAudioContext\ncreateOfflineAudioContext\ncreateAudioRecorder\ncreateAudioBuffer\ncreateAudioDecoder\ncreateAudioStretcher\nAudioEventEmitter HostObject"]
+    G["createAudioContext\ncreateOfflineAudioContext\ncreateAudioRecorder\ncreateAudioBuffer\ncreateAudioDecoder\ncreateAudioFileUtils\nAudioEventEmitter HostObject"]
   end
 
   A --> ios

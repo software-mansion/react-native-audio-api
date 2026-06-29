@@ -69,6 +69,8 @@ class AudioPlayer {
       }
     };
 
+    this.sourceNode.playbackRate.linearRampToValueAtTime(2, this.audioContext.currentTime + 5);
+
     this.sourceNode.start(
       this.audioContext.currentTime,
       this.currentElapsedTime

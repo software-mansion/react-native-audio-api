@@ -39,8 +39,9 @@ import React, { useRef } from 'react';
 import {
   AudioContext,
   GainNode,
+  Audio,
+  AudioTagHandle,
 } from 'react-native-audio-api';
-import { Audio, AudioTagHandle } from 'react-native-audio-api/development/react';
 
 function WebExample() {
   const audioContextRef = useRef<AudioContext | null>(null);
