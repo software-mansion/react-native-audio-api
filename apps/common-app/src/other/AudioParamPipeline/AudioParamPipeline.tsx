@@ -401,12 +401,10 @@ const AudioParamPipeline: FC = () => {
   const playedCount = Object.values(audioStatuses).filter(
     (s) => s === 'done'
   ).length;
-  const errorPassCount = errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
-  const errorFailCount = errorSteps?.filter((s) => s.status === 'fail').length ?? 0;
+  const passedCount = errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
+  const failedCount = errorSteps?.filter((s) => s.status === 'fail').length ?? 0;
 
-  const passedCount = playedCount + errorPassCount;
-  const failedCount = errorFailCount;
-  const totalCount = AUDIO_TEST_CASES.length + ERROR_SUB_CASES.length;
+  const totalCount = ERROR_SUB_CASES.length;
   const hasAnyResults = playedCount > 0 || errorSteps !== null;
 
   const summaryItems: SummaryItem[] = [
@@ -416,11 +414,11 @@ const AudioParamPipeline: FC = () => {
     },
     {
       label: 'Passed',
-      value: hasAnyResults ? `${passedCount}/${totalCount}` : '—',
+      value: errorSteps !== null ? `${passedCount}/${totalCount}` : '—',
     },
     {
       label: 'Failed',
-      value: hasAnyResults ? String(failedCount) : '—',
+      value: errorSteps !== null ? String(failedCount) : '—',
     },
   ];
 
@@ -449,7 +447,9 @@ const AudioParamPipeline: FC = () => {
                 {status === 'playing' && (
                   <Text style={styles.playingLabel}>▶ PLAYING</Text>
                 )}
-                {status === 'done' && <StatusPill status="pass" />}
+                {status === 'done' && (
+                  <Text style={styles.doneLabel}>✓ PLAYED</Text>
+                )}
               </View>
               <Text style={styles.description}>{tc.description}</Text>
               <View style={styles.eventList}>
@@ -544,6 +544,11 @@ const styles = StyleSheet.create({
   },
   playingLabel: {
     color: colors.main,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  doneLabel: {
+    color: colors.gray,
     fontSize: 11,
     fontWeight: '700',
   },
