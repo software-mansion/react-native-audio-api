@@ -65,7 +65,7 @@ class IOSAudioRecorder : public AudioRecorder {
   void rollbackFailedStart();
 
   std::vector<std::string> recordingSegmentPaths_;
-  float streamSampleRate_{0.0f};
+  std::atomic<float> streamSampleRate_{0.0f};
   /// Updated on the audio thread from each input callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
 };

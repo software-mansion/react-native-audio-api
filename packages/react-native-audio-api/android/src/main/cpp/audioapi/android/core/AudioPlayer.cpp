@@ -172,7 +172,7 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
 }
 
 double AudioPlayer::getBaseLatency() const {
-  if (mStream_ == nullptr || !isInitialized_ || !isRunning()) {
+  if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) || !isRunning()) {
     return 0.0;
   }
 
@@ -190,7 +190,7 @@ double AudioPlayer::getBaseLatency() const {
 }
 
 double AudioPlayer::getOutputLatency() const {
-  if (mStream_ == nullptr || !isInitialized_ || !isRunning()) {
+  if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) || !isRunning()) {
     return 0.0;
   }
   return lastOutputLatencySeconds_.load(std::memory_order_acquire);

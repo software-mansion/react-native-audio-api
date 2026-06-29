@@ -59,7 +59,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
  private:
   std::shared_ptr<AudioBuffer> deinterleavingBuffer_;
 
-  float streamSampleRate_;
+  std::atomic<float> streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;
 

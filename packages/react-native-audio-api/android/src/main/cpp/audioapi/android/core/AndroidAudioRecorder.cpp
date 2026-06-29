@@ -546,7 +546,7 @@ double AndroidAudioRecorder::getInputLatency() const {
     baseLatency = static_cast<double>(callbackFrames) / static_cast<double>(streamSampleRate_);
   } else {
     const int32_t framesPerBurst = mStream_->getFramesPerBurst();
-    if (framesPerBurst > 0) {
+    if (framesPerBurst > 0 && streamSampleRate_ > 0.0f) {
       baseLatency = static_cast<double>(framesPerBurst) / static_cast<double>(streamSampleRate_);
     }
   }
