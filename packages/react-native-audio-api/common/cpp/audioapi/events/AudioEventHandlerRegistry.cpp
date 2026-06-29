@@ -80,11 +80,8 @@ bool AudioEventHandlerRegistry::dispatchEvent(
   if (runtime_ == nullptr) {
     return false;
   }
-  if (!dispatchQueue_.try_enqueue(
-          DispatchEvent{
-              .event = eventName, .listenerId = listenerId, .payload = std::move(payload)})) {
-    return false;
-  }
+  dispatchQueue_.enqueue(
+      DispatchEvent{.event = eventName, .listenerId = listenerId, .payload = std::move(payload)});
   itemsAvailable_.signal();
   return true;
 }

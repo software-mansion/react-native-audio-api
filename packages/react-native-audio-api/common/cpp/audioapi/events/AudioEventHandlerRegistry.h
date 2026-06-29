@@ -51,7 +51,7 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
 
   void unregisterHandler(AudioEvent eventName, uint64_t listenerId) override;
 
-  /// @brief Enqueue an event from a non-audio thread. Lock-free; drops when the queue is full.
+  /// @brief Enqueue an event from a non-audio thread.
   bool dispatchEvent(
       AudioEvent eventName,
       uint64_t listenerId,
