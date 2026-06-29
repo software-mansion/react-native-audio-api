@@ -9,15 +9,15 @@ import {
 } from 'react';
 import { Platform } from 'react-native';
 
-import type BaseAudioContext from '../../../core/BaseAudioContext';
-import { probeDuration } from '../../../core/AudioFileUtils';
-import { NotSupportedError } from '../../../errors';
-import { NativeAudioAPIModule } from '../../../specs';
-import { base64ToArrayBuffer } from '../../../utils';
+import type BaseAudioContext from '../core/BaseAudioContext';
+import { probeDuration } from '../core/AudioFileUtils';
+import { NotSupportedError } from '../errors';
+import { NativeAudioAPIModule } from '../specs';
+import { base64ToArrayBuffer } from '../utils';
 import {
   DEFAULT_METADATA_SEGMENT_BYTES,
   supportsMetadataProbe,
-} from '../../../utils/metadataPrefetching';
+} from '../utils/metadataPrefetching';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
 import type { AudioSource, PreloadType } from './types';
 import { getSourceHeaders } from './utils';

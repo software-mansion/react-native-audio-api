@@ -11,7 +11,7 @@ import { Experimental } from '@site/src/components/Badges';
 React component that mimics web `<Audio>` behavior.
 
 :::caution
-This API lives under `react-native-audio-api/development/react` and is **experimental**: behavior and props may change.
+This API is exported from `react-native-audio-api` and is still **experimental**: behavior and props may change.
 :::
 
 ## Usage
@@ -19,7 +19,7 @@ This API lives under `react-native-audio-api/development/react` and is **experim
 ```tsx
 import React, { useRef } from 'react';
 import { View } from 'react-native';
-import { Audio, AudioTagHandle } from 'react-native-audio-api/development/react';
+import { Audio, AudioTagHandle } from 'react-native-audio-api';
 
 const DEMO_URL = 'https://example.com/audio.mp3';
 

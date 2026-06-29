@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Image, Platform } from 'react-native';
-import AudioContext from '../../../core/AudioContext';
-import type BaseAudioContext from '../../../core/BaseAudioContext';
+import AudioContext from '../core/AudioContext';
+import type BaseAudioContext from '../core/BaseAudioContext';
 import { AudioProps, AudioPropsBase, AudioSource } from './types';
 
 const noop = () => {};

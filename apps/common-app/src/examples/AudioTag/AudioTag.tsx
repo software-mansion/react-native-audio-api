@@ -9,8 +9,6 @@ import { Text, useWindowDimensions, View } from 'react-native';
 import {
   Audio,
   AudioTagHandle,
-} from 'react-native-audio-api/development/react';
-import {
   AudioContext,
   BiquadFilterNode,
   MediaElementAudioSourceNode,
@@ -108,6 +106,7 @@ const AudioTag: React.FC = () => {
         source={DEMO_AUDIO_URL}
         ref={audioRef}
         context={audioContextRef.current}
+        loop
         controls
         onLoadStart={handleLoadStart}
         onLoad={handleLoad}

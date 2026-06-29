@@ -33,6 +33,11 @@ export { default as WorkletSourceNode } from './core/WorkletSourceNode';
 export * from './errors';
 export * from './system/types';
 export * from './types';
+
+// React components (Audio tag)
+export * from './Audio';
+export { default as Audio } from './Audio';
+export { default as AudioControls } from './Audio/controls/AudioControls';
 export type { MediaElementAudioSourceOptions } from './core/MediaElementAudioSourceNode';
 export type { default as AudioEventSubscription } from './events/AudioEventSubscription';
 export { default as FilePreset } from './utils/filePresets';

@@ -28,6 +28,11 @@ export {
 
 export * from './web-core/custom';
 
+// React components (Audio tag)
+export * from './Audio';
+export { default as Audio } from './Audio';
+export { default as AudioControls } from './Audio/controls/AudioControls';
+
 export function concatAudioFiles(
   _inputPaths: string[],
   _outputPath: string

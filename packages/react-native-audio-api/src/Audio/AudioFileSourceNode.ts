@@ -1,10 +1,10 @@
-import { AudioEventEmitter } from '../../../events';
-import type { EventEmptyType } from '../../../events/types';
+import { AudioEventEmitter } from '../events';
+import type { EventEmptyType } from '../events/types';
 import type {
   IAudioFileSourceNode,
   IAudioScheduledSourceNode,
-} from '../../../jsi-interfaces';
-import AudioScheduledSourceNode from '../../../core/AudioScheduledSourceNode';
+} from '../jsi-interfaces';
+import AudioScheduledSourceNode from '../core/AudioScheduledSourceNode';
 
 type AttachFileSourceOptions = {
   loop: boolean;

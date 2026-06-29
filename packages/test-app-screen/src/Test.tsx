@@ -46,6 +46,16 @@ import {
   queueSourceLastFlagTest,
   queueSourceLongPlaybackTest,
 } from './AudioBufferQueueSourceTest';
+import {
+  loadAudioTagSource,
+  audioTagBasicTest,
+  audioTagPauseResumeTest,
+  audioTagSeekTest,
+  audioTagVolumeTest,
+  audioTagPlaybackRateTest,
+  audioTagLoopTest,
+  audioTagFormatsTest,
+} from './AudioTagTest';
 
 import { View, Text, Button } from 'react-native';
 
@@ -224,6 +234,22 @@ const Test: FC = () => {
     setIsTesting(false);
   };
 
+  const audioTagTest = async () => {
+    setupAudioContext();
+    setIsTesting(true);
+    const ctx = audioContextRef.current!;
+    const source = await loadAudioTagSource();
+    await audioTagBasicTest(ctx, source, setTestingInfo);
+    await audioTagPauseResumeTest(ctx, source, setTestingInfo);
+    await audioTagSeekTest(ctx, source, setTestingInfo);
+    await audioTagVolumeTest(ctx, source, setTestingInfo);
+    await audioTagPlaybackRateTest(ctx, source, setTestingInfo);
+    await audioTagLoopTest(ctx, source, setTestingInfo);
+    await audioTagFormatsTest(ctx, setTestingInfo);
+    setTestingInfo('AudioTag test completed.');
+    setIsTesting(false);
+  };
+
   return (
     <View
       style={{
@@ -272,6 +298,11 @@ const Test: FC = () => {
         <Button
           title="audio buffer queue source (long ~60s)"
           onPress={audioBufferQueueSourceLongTest}
+          disabled={isTesting}
+        />
+        <Button
+          title="audio tag"
+          onPress={audioTagTest}
           disabled={isTesting}
         />
         <Text style={{ color: 'white', paddingTop: 40 }}>

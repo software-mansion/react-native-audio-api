@@ -28,7 +28,7 @@ packages/audiodocs/
 │   ├── types/             # Enum docs (OscillatorType, BiquadFilterType...)
 │   ├── utils/             # Utility functions (decoding, file utils)
 │   ├── react/             # React-specific hooks and helpers
-│   └── experimental/      # Experimental APIs (Audio tag / development.react)
+│   └── experimental/      # Experimental APIs
 ├── src/
 │   ├── components/        # Custom MDX components
 │   ├── examples/          # Standalone interactive demo implementations

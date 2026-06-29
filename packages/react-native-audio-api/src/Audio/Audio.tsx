@@ -16,7 +16,7 @@ import type {
 
 import { AudioComponentContext } from './AudioTagContext';
 import { useStableAudioProps, resolveSourcePath } from './utils';
-import { AudioControls } from '..';
+import AudioControls from './controls/AudioControls';
 import { useAudioSourceLoader } from './useAudioSourceLoader';
 
 const Audio = React.memo(
