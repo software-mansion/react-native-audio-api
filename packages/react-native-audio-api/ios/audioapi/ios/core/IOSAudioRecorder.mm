@@ -250,20 +250,20 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
           dataCallbackMetadata_.bufferLength,
           dataCallbackMetadata_.channelCount,
           dataCallbackMetadata_.callbackId);
-
-      dataCallback_->assignOnErrorCallbackId(errorEvent().getCallbackId());
-      auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
-                                ->prepare(inputFormat, maxInputBufferLength);
-
-      if (callbackResult.is_err()) {
-        rollbackFailedStart();
-        callbackOutputConfigured_.store(false, std::memory_order_release);
-        return Result<NoneType, std::string>::Err(
-            "Failed to prepare callback: " + callbackResult.unwrap_err());
-      }
-
-      callbackOutputConfigured_.store(true, std::memory_order_release);
     }
+
+    dataCallback_->assignOnErrorCallbackId(errorEvent().getCallbackId());
+    auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
+                              ->prepare(inputFormat, maxInputBufferLength);
+
+    if (callbackResult.is_err()) {
+      rollbackFailedStart();
+      callbackOutputConfigured_.store(false, std::memory_order_release);
+      return Result<NoneType, std::string>::Err(
+          "Failed to prepare callback: " + callbackResult.unwrap_err());
+    }
+
+    callbackOutputConfigured_.store(true, std::memory_order_release);
   }
 
   if (wantsConnection() && adapterNode_ != nullptr) {
