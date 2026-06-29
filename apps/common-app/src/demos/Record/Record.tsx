@@ -1,6 +1,7 @@
-import React, { FC, useCallback, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
 import {
   AudioBuffer,
+  AudioBufferSourceNode,
   AudioManager,
   concatAudioFiles,
   FileFormat,
@@ -26,6 +27,17 @@ const Record: FC = () => {
     null
   );
   const currentPositionSV = useSharedValue(0);
+  const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  const stopPlayback = useCallback(() => {
+    const source = playbackSourceRef.current;
+    if (source) {
+      source.onEnded = null;
+      source.disconnect();
+      playbackSourceRef.current = null;
+    }
+    currentPositionSV.value = 0;
+  }, [currentPositionSV]);
 
   const updateNotification = (paused: boolean) => {
     RecordingNotificationManager.show({
@@ -138,14 +150,23 @@ const Record: FC = () => {
       return;
     }
 
+    stopPlayback();
+
     const source = audioContext.createBufferSource();
     source.buffer = recordedBuffer;
     source.connect(audioContext.destination);
-    source.start(audioContext.currentTime);
+
+    // Keep the source alive until playback ends. Without a ref, release builds can
+    // GC the HostObject before onEnded fires; its destructor clears the native
+    // callback id and the UI never leaves the Playing state.
+    playbackSourceRef.current = source;
 
     source.onEnded = () => {
+      stopPlayback();
       setState(RecordingState.Idle);
     };
+
+    source.start(audioContext.currentTime);
 
     setTimeout(() => {
       currentPositionSV.value = withTiming(recordedBuffer.duration, {
@@ -155,7 +176,7 @@ const Record: FC = () => {
     }, 100);
 
     setState(RecordingState.Playing);
-  }, [state, recordedBuffer, currentPositionSV]);
+  }, [state, recordedBuffer, currentPositionSV, stopPlayback]);
 
   const onToggleState = useCallback(
     (action: RecordingState) => {
@@ -180,6 +201,7 @@ const Record: FC = () => {
         if (state === RecordingState.Recording) {
           onStopRecording();
         } else if (state === RecordingState.Playing) {
+          stopPlayback();
           setState(RecordingState.Idle);
         }
         return;
@@ -201,6 +223,7 @@ const Record: FC = () => {
       onStopRecording,
       onResumeRecording,
       onPlayRecording,
+      stopPlayback,
     ]
   );
 
@@ -242,12 +265,13 @@ const Record: FC = () => {
     Recorder.enableFileOutput({ rotateIntervalBytes: 1_000_000, format: FileFormat.M4A });
 
     return () => {
+      stopPlayback();
       Recorder.disableFileOutput();
       Recorder.stop();
       AudioManager.setAudioSessionActivity(false);
       RecordingNotificationManager.hide();
     };
-  }, []);
+  }, [stopPlayback]);
 
   return (
     <Container disablePadding>

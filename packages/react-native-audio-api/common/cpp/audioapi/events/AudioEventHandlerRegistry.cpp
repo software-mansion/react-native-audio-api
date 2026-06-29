@@ -107,9 +107,6 @@ void AudioEventHandlerRegistry::handleEventOnJSThread(
     AudioEvent eventName,
     uint64_t listenerId,
     const AudioEventPayload &payload) {
-  if (listenerId == 0) {
-    return;
-  }
 
   // Collect the matching handlers under the lock, then release it before
   // invoking. invokeHandler() calls into JS, which may re-enter
