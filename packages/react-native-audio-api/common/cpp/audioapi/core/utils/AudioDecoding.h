@@ -7,9 +7,7 @@
 #include <cstddef>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 namespace audioapi::audiodecoding {
@@ -18,7 +16,6 @@ using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
 using AudioDurationResult = Result<float, std::string>;
 
 [[nodiscard]] AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate);
-[[nodiscard]] AudioDurationResult getDurationWithFilePath(const std::string &path);
 [[nodiscard]] AudioBufferResult
 decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
 [[nodiscard]] AudioBufferResult decodeWithPCMInBase64(
@@ -36,6 +33,15 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
 [[nodiscard]] bool isHttpUrl(const std::string &path);
 [[nodiscard]] bool isValidDuration(float duration);
 
+[[nodiscard]] inline AudioDurationResult resolveDurationFromDecoder(
+    decoding::IncrementalAudioDecoder &decoder) {
+  const float duration = decoder.getDurationInSeconds();
+  if (!isValidDuration(duration)) {
+    return Err("Audio duration metadata is unavailable");
+  }
+  return Ok(duration);
+}
+
 [[nodiscard]] inline bool needsFFmpeg(AudioFormat format) {
   return format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
 }
@@ -48,20 +54,12 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
   return static_cast<float>(static_cast<int16_t>((byte2 << CHAR_BIT) | byte1)) / INT16_MAX;
 }
 
-template <typename D>
-  requires std::is_base_of_v<decoding::IncrementalAudioDecoder, D>
-std::optional<double> probeDuration(const void *data, size_t size, int outputSampleRate) {
-  D decoder;
-  const auto openResult = decoder.openMemory(outputSampleRate, data, size);
-  if (openResult.is_err()) {
-    return std::nullopt;
-  }
-  return static_cast<double>(decoder.getDurationInSeconds());
-}
-
-[[nodiscard]] std::optional<double> probeDurationFromUrl(
+[[nodiscard]] AudioDurationResult probeDurationWithFilePath(const std::string &path);
+[[nodiscard]] AudioDurationResult
+probeDurationWithMemory(const void *data, size_t size, int sampleRate = 0);
+[[nodiscard]] AudioDurationResult probeDurationWithUrl(
     const std::string &url,
-    int outputSampleRate,
-    const std::map<std::string, std::string> &headers);
+    int sampleRate = 0,
+    const std::map<std::string, std::string> &headers = {});
 
 } // namespace audioapi::audiodecoding

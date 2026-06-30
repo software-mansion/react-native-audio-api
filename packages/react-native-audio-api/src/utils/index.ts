@@ -29,3 +29,25 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   }
   return bytes.buffer;
 }
+
+export function headersFromRequestInit(
+  fetchOptions?: RequestInit
+): Record<string, string> | undefined {
+  if (!fetchOptions?.headers) {
+    return undefined;
+  }
+
+  if (fetchOptions.headers instanceof Headers) {
+    const headers: Record<string, string> = {};
+    fetchOptions.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    return headers;
+  }
+
+  if (Array.isArray(fetchOptions.headers)) {
+    return Object.fromEntries(fetchOptions.headers);
+  }
+
+  return fetchOptions.headers;
+}

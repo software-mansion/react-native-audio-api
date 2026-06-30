@@ -5,12 +5,8 @@ export { default as AudioBuffer } from './core/AudioBuffer';
 export { default as AudioBufferQueueSourceNode } from './core/AudioBufferQueueSourceNode';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
 export { default as AudioContext } from './core/AudioContext';
-export {
-  decodeAudioData,
-  decodePCMInBase64,
-  getAudioDuration,
-} from './core/AudioDecoder';
-export { concatAudioFiles } from './core/AudioFileUtils';
+export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
+export { concatAudioFiles, getAudioDuration } from './core/AudioFileUtils';
 export { default as AudioDestinationNode } from './core/AudioDestinationNode';
 export { default as AudioNode } from './core/AudioNode';
 export { default as AudioParam } from './core/AudioParam';

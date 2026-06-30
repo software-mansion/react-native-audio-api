@@ -21,7 +21,7 @@
 #include <audioapi/core/sources/StreamerNode.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/WorkletSourceNode.h>
-#include <audioapi/core/utils/AudioDecoding.hpp>
+#include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>

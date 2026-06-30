@@ -1,4 +1,4 @@
-#include <audioapi/core/utils/AudioDecoding.hpp>
+#include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/libs/base64/base64.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
@@ -51,29 +51,6 @@ AudioBufferResult decodeAll(decoding::IncrementalAudioDecoder &decoder) {
   auto audioBuffer = std::make_shared<AudioBuffer>(outputFrames, channels, outputSampleRate);
   audioBuffer->deinterleaveFrom(interleaved.data(), outputFrames);
   return Ok(std::move(audioBuffer));
-}
-
-std::optional<double> probeDurationFromUrl(
-    const std::string &url,
-    int outputSampleRate,
-    const std::map<std::string, std::string> &headers) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-  ffmpeg_decoder::FFmpegDecoder decoder;
-  const auto openResult = decoder.openUrl(outputSampleRate, url, headers);
-  if (openResult.is_err()) {
-    return std::nullopt;
-  }
-  const float duration = decoder.getDurationInSeconds();
-  decoder.close();
-  if (duration > 0 && std::isfinite(duration)) {
-    return static_cast<double>(duration);
-  }
-#else
-  (void)url;
-  (void)outputSampleRate;
-  (void)headers;
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-  return std::nullopt;
 }
 
 // NOLINTBEGIN(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
@@ -138,16 +115,83 @@ bool isHttpUrl(const std::string &path) {
 }
 
 bool isValidDuration(float duration) {
-  return duration > 0.0F && std::isfinite(duration);
+  return duration >= 0.0F && std::isfinite(duration);
 }
 
-AudioDurationResult resolveDurationFromDecoder(decoding::IncrementalAudioDecoder &decoder) {
-  const float duration = decoder.getDurationInSeconds();
-  if (!isValidDuration(duration)) {
-    return Err("Audio duration metadata is unavailable");
+AudioDurationResult probeDurationWithFilePath(const std::string &path) {
+  if (needsFFmpegByPath(path)) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+    ffmpeg_decoder::FFmpegDecoder decoder;
+    const auto openResult = decoder.openFile(0, path);
+    if (openResult.is_err()) {
+      return Err("Failed to open file with FFmpeg decoder: " + openResult.unwrap_err());
+    }
+    auto result = resolveDurationFromDecoder(decoder);
+    decoder.close();
+    return result;
+#else
+    return Err("FFmpeg is disabled, cannot inspect duration with file path");
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
 
-  return Ok(duration);
+  miniaudio_decoder::MiniAudioDecoder decoder;
+  const auto openResult = decoder.openFile(0, path);
+  if (openResult.is_err()) {
+    return Err("Failed to open file with miniaudio decoder: " + openResult.unwrap_err());
+  }
+  auto result = resolveDurationFromDecoder(decoder);
+  decoder.close();
+  return result;
+}
+
+AudioDurationResult probeDurationWithMemory(const void *data, size_t size, int sampleRate) {
+  const int sr = sampleRate != 0 ? sampleRate : 0;
+
+  {
+    miniaudio_decoder::MiniAudioDecoder decoder;
+    const auto openResult = decoder.openMemory(sr, data, size);
+    if (openResult.is_ok()) {
+      auto result = resolveDurationFromDecoder(decoder);
+      decoder.close();
+      if (result.is_ok()) {
+        return result;
+      }
+    }
+  }
+
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+  ffmpeg_decoder::FFmpegDecoder decoder;
+  const auto openResult = decoder.openMemory(sr, data, size);
+  if (openResult.is_err()) {
+    return Err("Failed to probe duration from memory: " + openResult.unwrap_err());
+  }
+  auto result = resolveDurationFromDecoder(decoder);
+  decoder.close();
+  return result;
+#else
+  return Err("Failed to probe duration from memory");
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+}
+
+AudioDurationResult probeDurationWithUrl(
+    const std::string &url,
+    int sampleRate,
+    const std::map<std::string, std::string> &headers) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+  ffmpeg_decoder::FFmpegDecoder decoder;
+  const auto openResult = decoder.openUrl(sampleRate, url, headers);
+  if (openResult.is_err()) {
+    return Err("Failed to open URL with FFmpeg decoder: " + openResult.unwrap_err());
+  }
+  auto result = resolveDurationFromDecoder(decoder);
+  decoder.close();
+  return result;
+#else
+  (void)url;
+  (void)sampleRate;
+  (void)headers;
+  return Err("FFmpeg is disabled, cannot probe duration from URL");
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) {
@@ -174,34 +218,6 @@ AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) 
     return Err("Failed to open file with miniaudio decoder: " + openResult.unwrap_err());
   }
   auto result = decodeAll(decoder);
-  decoder.close();
-  return result;
-}
-
-AudioDurationResult getDurationWithFilePath(const std::string &path) {
-  constexpr int useDecoderNativeSampleRate = 0;
-
-  if (needsFFmpegByPath(path)) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    ffmpeg_decoder::FFmpegDecoder decoder;
-    const auto openResult = decoder.openFile(useDecoderNativeSampleRate, path);
-    if (openResult.is_err()) {
-      return Err("Failed to open file with FFmpeg decoder: " + openResult.unwrap_err());
-    }
-    auto result = resolveDurationFromDecoder(decoder);
-    decoder.close();
-    return result;
-#else
-    return Err("FFmpeg is disabled, cannot inspect duration with file path");
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-  }
-
-  miniaudio_decoder::MiniAudioDecoder decoder;
-  const auto openResult = decoder.openFile(useDecoderNativeSampleRate, path);
-  if (openResult.is_err()) {
-    return Err("Failed to open file with miniaudio decoder: " + openResult.unwrap_err());
-  }
-  auto result = resolveDurationFromDecoder(decoder);
   decoder.close();
   return result;
 }

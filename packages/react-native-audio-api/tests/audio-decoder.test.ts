@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
-import type { IAudioDecoder } from '../src/jsi-interfaces';
+import type { IAudioDecoder, IAudioFileUtils } from '../src/jsi-interfaces';
 
 type AudioDecoderExports = typeof import('../src/core/AudioDecoder');
+type AudioFileUtilsExports = typeof import('../src/core/AudioFileUtils');
 type WebAudioDecoderExports = typeof import('../src/web-core/AudioDecoder.web');
 
 jest.mock('react-native', () => ({
@@ -22,16 +23,29 @@ jest.mock('react-native', () => ({
   },
 }));
 
-const createDecoder = (duration: number = 12.5) =>
+const createDecoder = () =>
   ({
     decodeWithMemoryBlock: jest.fn(),
     decodeWithFilePath: jest.fn(),
-    getDurationWithFilePath: jest.fn().mockResolvedValue(duration),
     decodeWithPCMInBase64: jest.fn(),
   }) as unknown as jest.Mocked<IAudioDecoder>;
 
+const createFileUtils = (duration: number = 12.5) =>
+  ({
+    concatAudioFiles: jest.fn(),
+    probeDuration: jest.fn().mockResolvedValue(duration),
+  }) as unknown as jest.Mocked<IAudioFileUtils>;
+
 const installDecoder = (decoder: IAudioDecoder) => {
   globalThis.createAudioDecoder = jest.fn(() => decoder);
+};
+
+const installFileUtils = (fileUtils: IAudioFileUtils) => {
+  globalThis.createAudioFileUtils = jest.fn(() => fileUtils);
+};
+
+const loadAudioFileUtils = (): AudioFileUtilsExports => {
+  return require('../src/core/AudioFileUtils') as AudioFileUtilsExports;
 };
 
 const loadAudioDecoder = (): AudioDecoderExports => {
@@ -98,59 +112,79 @@ describe('getAudioDuration', () => {
     }
   });
 
-  it('routes local file paths to the native duration decoder', async () => {
-    const decoder = createDecoder();
-    installDecoder(decoder);
+  it('routes local file paths to native duration probing', async () => {
+    const fileUtils = createFileUtils();
+    installFileUtils(fileUtils);
+    installDecoder(createDecoder());
 
-    const { getAudioDuration } = loadAudioDecoder();
+    const { getAudioDuration } = loadAudioFileUtils();
 
     await expect(
       getAudioDuration('file:///tmp/audio%20file.wav')
     ).resolves.toBe(12.5);
-    expect(decoder.getDurationWithFilePath).toHaveBeenCalledWith(
-      '/tmp/audio file.wav'
+    expect(fileUtils.probeDuration).toHaveBeenCalledWith(
+      '/tmp/audio file.wav',
+      0,
+      undefined
     );
-    expect(decoder.decodeWithFilePath).not.toHaveBeenCalled();
   });
 
-  it('rejects ArrayBuffer input without decoding audio data', async () => {
-    const decoder = createDecoder();
-    installDecoder(decoder);
+  it('probes ArrayBuffer input through audio file utils', async () => {
+    const fileUtils = createFileUtils(8.25);
+    installFileUtils(fileUtils);
+    installDecoder(createDecoder());
 
-    const { getAudioDuration } = loadAudioDecoder();
+    const { getAudioDuration } = loadAudioFileUtils();
+    const arrayBuffer = new ArrayBuffer(8);
+
+    await expect(getAudioDuration(arrayBuffer)).resolves.toBe(8.25);
+    expect(fileUtils.probeDuration).toHaveBeenCalledWith(
+      arrayBuffer,
+      undefined,
+      undefined
+    );
+  });
+
+  it('routes remote URLs to native duration probing', async () => {
+    const fileUtils = createFileUtils(6.5);
+    installFileUtils(fileUtils);
+    installDecoder(createDecoder());
+
+    const { getAudioDuration } = loadAudioFileUtils();
 
     await expect(
-      getAudioDuration(new ArrayBuffer(8) as unknown as string)
-    ).rejects.toThrow(
-      'ArrayBuffer duration probing is not currently supported.'
+      getAudioDuration('https://example.com/audio.mp3', {
+        headers: { Authorization: 'Bearer token' },
+      })
+    ).resolves.toBe(6.5);
+    expect(fileUtils.probeDuration).toHaveBeenCalledWith(
+      'https://example.com/audio.mp3',
+      0,
+      { Authorization: 'Bearer token' }
     );
-    expect(decoder.getDurationWithFilePath).not.toHaveBeenCalled();
   });
 
   it('rejects asset module ids without resolving bundled assets', async () => {
-    const decoder = createDecoder();
-    installDecoder(decoder);
+    installFileUtils(createFileUtils());
+    installDecoder(createDecoder());
 
-    const { getAudioDuration } = loadAudioDecoder();
+    const { getAudioDuration } = loadAudioFileUtils();
 
     await expect(getAudioDuration(1 as unknown as string)).rejects.toThrow(
-      'Input must be a local file path or file:// URI.'
+      'Input must be a local file path, remote URL, or ArrayBuffer.'
     );
-    expect(decoder.getDurationWithFilePath).not.toHaveBeenCalled();
   });
 
-  it('rejects remote URL input without fetching or decoding', async () => {
+  it('does not decode audio data when probing duration', async () => {
     const decoder = createDecoder();
     installDecoder(decoder);
+    installFileUtils(createFileUtils());
 
-    const { getAudioDuration } = loadAudioDecoder();
+    loadAudioFileUtils();
+    loadAudioDecoder();
 
-    await expect(
-      getAudioDuration('https://example.com/audio.mp3')
-    ).rejects.toThrow(
-      'Remote source duration probing is not currently supported.'
-    );
-    expect(decoder.getDurationWithFilePath).not.toHaveBeenCalled();
+    expect(decoder.decodeWithFilePath).not.toHaveBeenCalled();
+    expect(decoder.decodeWithMemoryBlock).not.toHaveBeenCalled();
   });
 
   it('reads duration from web audio metadata', async () => {
@@ -176,6 +210,13 @@ describe('getAudioDuration', () => {
     const { getAudioDuration } = loadWebAudioDecoder();
 
     await expect(getAudioDuration('/audio/empty.wav')).resolves.toBe(0);
+  });
+
+  it('reads duration from ArrayBuffer input on web', async () => {
+    installMockAudio({ duration: 3.5 });
+    const { getAudioDuration } = loadWebAudioDecoder();
+
+    await expect(getAudioDuration(new ArrayBuffer(8))).resolves.toBe(3.5);
   });
 
   it('rejects web audio sources when metadata has no finite duration', async () => {

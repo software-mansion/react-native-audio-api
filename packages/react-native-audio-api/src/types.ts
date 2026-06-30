@@ -255,7 +255,7 @@ export interface WaveShaperOptions extends AudioNodeOptions {
 }
 
 export type DecodeDataInput = number | string | ArrayBuffer;
-export type AudioDurationInput = string;
+export type AudioDurationInput = string | ArrayBuffer;
 
 export interface AudioRecorderStartOptions {
   fileNameOverride?: string;

@@ -10,12 +10,13 @@ import {
 import { Platform } from 'react-native';
 
 import type BaseAudioContext from '../core/BaseAudioContext';
-import { probeDuration, probeDurationFromUrl } from '../core/AudioFileUtils';
+import { probeDuration } from '../core/AudioFileUtils';
 import { NotSupportedError } from '../errors';
 import { NativeAudioAPIModule } from '../specs';
 import { base64ToArrayBuffer } from '../utils';
 import {
   DEFAULT_METADATA_SEGMENT_BYTES,
+  prefetchFileSegments,
   supportsMetadataProbe,
   usesUrlMetadataProbe,
 } from '../utils/metadataPrefetching';
@@ -218,14 +219,13 @@ export function useAudioSourceLoader({
       const useSegmentProbe = hasByteRanges && canSegmentProbe && !canUrlProbe;
 
       const probedDuration = useSegmentProbe
-        ? await probeDuration(
-            path,
-            DEFAULT_METADATA_SEGMENT_BYTES,
-            DEFAULT_METADATA_SEGMENT_BYTES,
-            context?.sampleRate,
-            headers
-          )
-        : await probeDurationFromUrl(path, context?.sampleRate, headers);
+        ? await prefetchFileSegments({
+            url: path,
+            startBytes: DEFAULT_METADATA_SEGMENT_BYTES,
+            endBytes: DEFAULT_METADATA_SEGMENT_BYTES,
+            headers,
+          }).then((data) => probeDuration(data, context?.sampleRate))
+        : await probeDuration(path, context?.sampleRate, headers);
 
       if (probedDuration && !isFetchingCancelled.current) {
         setDuration(probedDuration);

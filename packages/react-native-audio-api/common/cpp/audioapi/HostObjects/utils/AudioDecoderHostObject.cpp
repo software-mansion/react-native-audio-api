@@ -1,6 +1,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
-#include <audioapi/core/utils/AudioDecoding.hpp>
+#include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
@@ -16,7 +16,6 @@ AudioDecoderHostObject::AudioDecoderHostObject(
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithPCMInBase64),
       JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithFilePath),
-      JSI_EXPORT_FUNCTION(AudioDecoderHostObject, getDurationWithFilePath),
       JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithMemoryBlock));
 }
 
@@ -71,28 +70,6 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
       auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
       jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
       return jsiObject;
-    };
-  });
-
-  return promise;
-}
-
-JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, getDurationWithFilePath) {
-  auto sourcePath = args[0].getString(runtime).utf8(runtime);
-
-  auto promise = promiseVendor_->createAsyncPromise([sourcePath]() -> PromiseResolver {
-    auto result = audiodecoding::getDurationWithFilePath(sourcePath);
-
-    if (result.is_err()) {
-      return [result = std::move(result)](
-                 jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-        return result.unwrap_err();
-      };
-    }
-
-    const auto duration = result.unwrap();
-    return [duration](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-      return jsi::Value(duration);
     };
   });
 

@@ -183,18 +183,21 @@ export default class AudioDecoder {
     });
   }
 
-  public getAudioDurationInstance(input: DecodeDataInput): Promise<number> {
+  public getAudioDurationInstance(input: AudioDurationInput): Promise<number> {
     if (input instanceof ArrayBuffer) {
-      return Promise.reject(
-        new AudioApiError(
-          'ArrayBuffer duration probing is not currently supported.'
-        )
-      );
+      const blob = new Blob([input]);
+      const objectUrl = URL.createObjectURL(blob);
+
+      return this.loadDurationFromAudioElement(objectUrl).finally(() => {
+        URL.revokeObjectURL(objectUrl);
+      });
     }
 
     if (typeof input !== 'string') {
       return Promise.reject(
-        new TypeError('Input must be a valid string URL path.')
+        new TypeError(
+          'Input must be a local file path, remote URL, or ArrayBuffer.'
+        )
       );
     }
 

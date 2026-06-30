@@ -13,7 +13,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/core/utils/AudioDecoding.hpp>
+#include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
 
 namespace audioapi::option_parser {

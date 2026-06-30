@@ -80,15 +80,20 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 
 #### `metadata` format support (native)
 
-Metadata preload without a full download is only supported for remote sources whose path ends with one of these extensions:
+Metadata preload without a full download is supported for remote sources whose path ends with one of these extensions:
 
-| Extension | Codec / container |
-| :--- | :--- |
-| `.opus` | Opus |
-| `.mp4` | MP4 |
-| `.m4a` | M4A |
-| `.wav` | WAV |
-| `.flac` | FLAC |
+| Extension | Codec / container | Probe strategy |
+| :--- | :--- | :--- |
+| `.opus` | Opus | Byte-range prefetch |
+| `.mp4` | MP4 | Byte-range prefetch |
+| `.m4a` | M4A | Byte-range prefetch |
+| `.wav` | WAV | Byte-range prefetch |
+| `.flac` | FLAC | Byte-range prefetch |
+| `.mp3` | MP3 | Native URL metadata (requires FFmpeg) |
+| `.aac` | AAC | Native URL metadata (requires FFmpeg) |
+
+For `.mp3` and `.aac`, duration is read through the same native URL probing path as [`getAudioDuration`](/docs/utils/decoding#getaudioduration).
+Other listed formats fetch small byte ranges from the server when supported, then probe duration from that data.
 
 ## Ref handle (`AudioTagHandle`) methods
 

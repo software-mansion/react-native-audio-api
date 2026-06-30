@@ -3,11 +3,12 @@ import { NativeAudioAPIModule } from '../specs';
 
 import { AudioApiError } from '../errors';
 import { IAudioDecoder } from '../jsi-interfaces';
-import { AudioDurationInput, DecodeDataInput } from '../types';
+import { DecodeDataInput } from '../types';
 import {
   isBase64Source,
   isDataBlobString,
   isRemoteSource,
+  resolveLocalFilePath,
 } from '../utils/paths';
 import { base64ToArrayBuffer } from '../utils';
 import AudioBuffer from './AudioBuffer';
@@ -88,19 +89,6 @@ class AudioDecoder {
     return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
   }
 
-  private resolveLocalFilePath(stringSource: string): string {
-    const stripped = stringSource.startsWith('file://')
-      ? stringSource.slice('file://'.length)
-      : stringSource;
-    try {
-      // Unescape percent-encoded tokens.
-      return decodeURIComponent(stripped);
-    } catch {
-      // Fall back to the stripped path if encoding is malformed.
-      return stripped;
-    }
-  }
-
   private async decodeFromLocalFile(
     stringSource: string,
     sampleRate: number
@@ -121,16 +109,9 @@ class AudioDecoder {
       return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
     }
 
-    const filePath = this.resolveLocalFilePath(stringSource);
+    const filePath = resolveLocalFilePath(stringSource);
     const buffer = await this.decoder.decodeWithFilePath(filePath, sampleRate);
     return new AudioBuffer(buffer);
-  }
-
-  private async getDurationFromLocalFile(
-    stringSource: string
-  ): Promise<number> {
-    const filePath = this.resolveLocalFilePath(stringSource);
-    return await this.decoder.getDurationWithFilePath(filePath);
   }
 
   public static getInstance(): AudioDecoder {
@@ -173,30 +154,6 @@ class AudioDecoder {
     );
     return new AudioBuffer(buffer);
   }
-
-  public async getAudioDurationInstance(
-    input: DecodeDataInput
-  ): Promise<number> {
-    if (input instanceof ArrayBuffer) {
-      throw new AudioApiError(
-        'ArrayBuffer duration probing is not currently supported.'
-      );
-    }
-
-    if (typeof input !== 'string') {
-      throw new TypeError('Input must be a local file path or file:// URI.');
-    }
-
-    this.assertSupportedStringSource(input);
-
-    if (isRemoteSource(input)) {
-      throw new AudioApiError(
-        'Remote source duration probing is not currently supported.'
-      );
-    }
-
-    return await this.getDurationFromLocalFile(input);
-  }
 }
 
 export async function decodeAudioData(
@@ -223,10 +180,4 @@ export async function decodePCMInBase64(
     inputChannelCount,
     isInterleaved
   );
-}
-
-export async function getAudioDuration(
-  input: AudioDurationInput
-): Promise<number> {
-  return AudioDecoder.getInstance().getAudioDurationInstance(input);
 }
