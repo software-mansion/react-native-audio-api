@@ -32,15 +32,12 @@ AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
 }
 
 AudioBufferQueueSourceNodeHostObject::~AudioBufferQueueSourceNodeHostObject() {
-  // When JSI object is garbage collected (together with the eventual callback),
-  // underlying source node might still be active and try to call the
-  // non-existing callback.
-  setOnBufferEndedCallbackId(0);
+  bufferQueueSourceNode_->assignOnBufferEndedCallbackId(0);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferQueueSourceNodeHostObject, onBufferEnded) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnBufferEndedCallbackId(callbackId);
+  bufferQueueSourceNode_->assignOnBufferEndedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
@@ -96,7 +93,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
     auto extraTailFrames =
         static_cast<size_t>((inputLatency_ + outputLatency_) * copiedBuffer->getSampleRate());
     tailBuffer = std::make_shared<AudioBuffer>(
-        copiedBuffer->getNumberOfChannels(), extraTailFrames, copiedBuffer->getSampleRate());
+        extraTailFrames, copiedBuffer->getNumberOfChannels(), copiedBuffer->getSampleRate());
     tailBuffer->zero();
     stretchHasBeenInit_ = true;
   }
@@ -137,17 +134,6 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, clearBuffers) {
   bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
-}
-
-void AudioBufferQueueSourceNodeHostObject::setOnBufferEndedCallbackId(uint64_t callbackId) {
-  auto handle = node_->handle;
-  auto event = [handle, node = bufferQueueSourceNode_, callbackId](BaseAudioContext &) {
-    node->setOnBufferEndedCallbackId(callbackId);
-  };
-
-  bufferQueueSourceNode_->unregisterOnBufferEndedCallback(onBufferEndedCallbackId_);
-  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
-  onBufferEndedCallbackId_ = callbackId;
 }
 
 } // namespace audioapi

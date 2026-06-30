@@ -115,9 +115,9 @@ export default class StressResourceOwner {
     }
   }
 
-  startRecording(fileNameOverride: string): void {
+  async startRecording(fileNameOverride: string): Promise<void> {
     const { recorder } = this.getReadyResources();
-    const result = recorder.start({ fileNameOverride });
+    const result = await recorder.start({ fileNameOverride });
 
     if (result.status === 'error') {
       throw new Error(`Failed to start recording: ${result.message}`);
@@ -132,7 +132,7 @@ export default class StressResourceOwner {
   async stopRecordingAndDecode(): Promise<RecordingCapture> {
     const { context, recorder } = this.getReadyResources();
 
-    const stopResult = recorder.stop();
+    const stopResult = await recorder.stop();
     recorder.clearOnAudioReady();
 
     if (stopResult.status === 'error') {
@@ -179,7 +179,7 @@ export default class StressResourceOwner {
 
     try {
       if (recorder && (recorder.isRecording() || recorder.isPaused())) {
-        recorder.stop();
+        await recorder.stop();
       }
     } catch {}
 

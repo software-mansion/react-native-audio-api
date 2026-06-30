@@ -1,8 +1,9 @@
 #pragma once
+
+#include <audioapi/utils/Macros.h>
+#include <audioapi/utils/Result.hpp>
 #include <cstddef>
 #include <string>
-#include <audioapi/utils/Result.hpp>
-#include <audioapi/utils/Macros.h>
 
 namespace audioapi::decoding {
 using DecoderResult = Result<NoneType, std::string>;
@@ -21,19 +22,15 @@ class IncrementalAudioDecoder {
   /// @param outputSampleRate The output sample rate.
   /// @param path The path to the file.
   /// @return Ok(None) on success or Err(message) on failure.
-  [[nodiscard]] virtual DecoderResult openFile(
-      int outputSampleRate,
-      const std::string &path) = 0;
+  [[nodiscard]] virtual DecoderResult openFile(int outputSampleRate, const std::string &path) = 0;
 
   /// @brief Opens a memory block for decoding.
   /// @param outputSampleRate The output sample rate.
   /// @param data The data to decode.
   /// @param size The size of the data.
   /// @return Ok(None) on success or Err(message) on failure.
-  [[nodiscard]] virtual DecoderResult openMemory(
-      int outputSampleRate,
-      const void *data,
-      size_t size) = 0;
+  [[nodiscard]] virtual DecoderResult
+  openMemory(int outputSampleRate, const void *data, size_t size) = 0;
 
   /// @brief Reads PCM frames from the decoder.
   /// @param outInterleaved The output buffer for the decoded frames.
@@ -55,6 +52,11 @@ class IncrementalAudioDecoder {
   /// @brief Gets the output sample rate.
   /// @return The output sample rate.
   [[nodiscard]] virtual int outputSampleRate() const = 0;
+
+  /// @brief True when the source uses FFmpeg's live HLS demuxer (indefinite stream).
+  [[nodiscard]] virtual bool isHlsStreaming() const {
+    return false;
+  }
 
   /// @brief Gets the duration of the audio in seconds.
   /// @return The duration of the audio in seconds.

@@ -4,6 +4,7 @@
 #include <audioapi/HostObjects/sources/MediaElementAudioSourceNodeHostObject.h>
 #include <audioapi/core/AudioContext.h>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace audioapi {
@@ -42,9 +43,12 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
   context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
-    auto result = audioContext->resume();
-    return [result](jsi::Runtime &runtime) {
-      return jsi::Value(result);
+    const auto result = audioContext->resume();
+    return [result](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+      if (result) {
+        return jsi::Value::undefined();
+      }
+      return std::string("Failed to resume audio context.");
     };
   });
   return promise;
@@ -54,9 +58,12 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
-    auto result = audioContext->suspend();
-    return [result](jsi::Runtime &runtime) {
-      return jsi::Value(result);
+    const auto result = audioContext->suspend();
+    return [result](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+      if (result) {
+        return jsi::Value::undefined();
+      }
+      return std::string("Failed to suspend audio context.");
     };
   });
 

@@ -192,19 +192,17 @@ void PeriodicWave::createBandLimitedTables(
     // We need to clear out the highest frequencies to band-limit the waveform.
     auto numberOfPartials = getNumberOfPartialsPerRange(rangeIndex);
 
-    // Clamp the size to the number of partials.
-    auto clampedSize = std::min(size, numberOfPartials);
-
-    // copy real and imaginary data to the FFT frame, scale it and set the
-    // higher frequencies to zero.
+    // Copy frequency data into the FFT frame. Partial index 0 is DC; partial 1
+    // is the fundamental. Culling starts at partial (numberOfPartials + 1)
     for (int i = 0; i < size; i++) {
-      if (i >= clampedSize && i < halfSize) {
-        complexFFTData[i] = std::complex<float>(0.0f, 0.0f);
-      } else {
-        complexFFTData[i] = {
-            complexData[i].real() * static_cast<float>(fftSize),
-            complexData[i].imag() * -static_cast<float>(fftSize)};
-      }
+      complexFFTData[i] = {
+          complexData[i].real() * static_cast<float>(fftSize),
+          complexData[i].imag() * -static_cast<float>(fftSize)};
+    }
+
+    const int cullFromIndex = std::min(size, numberOfPartials + 1);
+    for (int i = cullFromIndex; i < halfSize; i++) {
+      complexFFTData[i] = std::complex<float>(0.0f, 0.0f);
     }
 
     // Zero out the DC and nquist components.

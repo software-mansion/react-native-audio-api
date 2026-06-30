@@ -51,6 +51,10 @@ bool AudioNode::requiresTailProcessing() const {
   return requiresTailProcessing_;
 }
 
+void AudioNode::disable() {
+  setProcessableState(utils::graph::GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
+}
+
 namespace {
 
 // Branch-free silence check over a contiguous float span. Reinterprets each

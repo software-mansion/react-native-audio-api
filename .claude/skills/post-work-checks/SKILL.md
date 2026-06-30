@@ -56,6 +56,14 @@ Runs `packages/react-native-audio-api/common/cpp/test/RunTests.sh` via CMake + G
 
 **When**: after any change to `common/cpp/audioapi/core/`, `dsp/`, or `utils/` C++ files.
 
+### Android C++ compile check
+
+```bash
+cd apps/fabric-example/android && ./gradlew :react-native-audio-api:assembleDebug
+```
+
+**When**: after any change to `android/src/main/cpp/` — these files are NOT covered by `yarn test` (which only builds `common/cpp/`). The gradle project resolves through the `node_modules/react-native-audio-api` workspace symlink, so local edits in `packages/react-native-audio-api/` are picked up. Takes ~3-4 minutes.
+
 ### AudioEvent enum sync check
 
 ```bash

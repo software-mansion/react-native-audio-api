@@ -30,11 +30,8 @@ export default function useAudioInput() {
   const [currentInput, setCurrentInput] = useState<string | null>(null);
 
   const onSelectInput = useCallback(async (device: AudioDeviceInfo) => {
-    const success = await AudioManager.setInputDevice(device.id);
-
-    if (success) {
-      setCurrentInput(device.id);
-    }
+    await AudioManager.setInputDevice(device.id);
+    setCurrentInput(device.id);
 
     const devicesInfo: AudioDevicesInfo = await AudioManager.getDevicesInfo();
     setAvailableInputs(devicesInfo.availableInputs);
@@ -83,8 +80,8 @@ export default function useAudioInput() {
        */
       currentInput: availableInputs.find((d) => d.id === currentInput) || null,
       /**
-       * Selects the given device as the current input. Returns true if
-       * successful, throws otherwise.
+       * Selects the given device as the current input. Resolves once the device
+       * is selected, throws otherwise.
        */
       onSelectInput,
     }),

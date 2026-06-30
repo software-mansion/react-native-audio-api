@@ -201,6 +201,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// @note Audio Thread only.
   [[nodiscard]] virtual bool isInputSilent(const std::vector<const DSPAudioBuffer *> &inputs) const;
 
+  /// @brief Stops this node from participating in graph processing.
+  /// @note Audio Thread only. Source nodes call this when playback finishes.
+  virtual void disable();
+
   virtual void processNode(int) = 0;
 
  private:

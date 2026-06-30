@@ -47,8 +47,8 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
   if (dataCallback_ != nullptr) {
     dataCallback_->cleanup();
   }
-  if (adapterNode_ != nullptr) {
-    adapterNode_->adapterCleanup();
+  if (adapterNodeHandle_ != nullptr) {
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
   }
   // oboe could be handling stopping and closing the stream, sanity check just in case
   if (mStream_ != nullptr) {
@@ -141,10 +141,11 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
     callbackOutputConfigured_.store(true, std::memory_order_release);
   }
 
-  if (wantsConnection() && adapterNode_ != nullptr) {
+  if (wantsConnection() && adapterNodeHandle_ != nullptr) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
+        ->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
     connectedConfigured_.store(true, std::memory_order_release);
   }
 
@@ -167,7 +168,7 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string>
 AndroidAudioRecorder::stop() {
   std::shared_ptr<AudioFileWriter> fileWriter;
   std::shared_ptr<AudioRecorderCallback> dataCallback;
-  std::shared_ptr<RecorderAdapterNode> adapterNode;
+  std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
   std::vector<std::string> outputPaths;
 
   double outputFileSize = 0.0;
@@ -204,7 +205,7 @@ AndroidAudioRecorder::stop() {
 
     if (isConnected()) {
       connectedConfigured_.store(false, std::memory_order_release);
-      adapterNode = std::move(adapterNode_);
+      adapterNodeHandle = std::move(adapterNodeHandle_);
     }
   }
 
@@ -236,8 +237,8 @@ AndroidAudioRecorder::stop() {
     dataCallback->cleanup();
   }
 
-  if (adapterNode != nullptr) {
-    adapterNode->adapterCleanup();
+  if (adapterNodeHandle != nullptr) {
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get())->adapterCleanup();
   }
 
   return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Ok(
@@ -422,14 +423,15 @@ void AndroidAudioRecorder::clearOnAudioReadyCallback() {
 /// @param node Shared pointer to the RecorderAdapterNode to connect.
 void AndroidAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &node) {
   std::scoped_lock adapterLock(adapterNodeMutex_);
-  adapterNode_ = node;
+  adapterNodeHandle_ = node;
   isConnected_.store(true, std::memory_order_release);
   connectedConfigured_.store(false, std::memory_order_release);
 
   if (!isIdle()) {
     deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
         streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    adapterNode_->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
+        ->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
     connectedConfigured_.store(true, std::memory_order_release);
   }
 }
@@ -438,7 +440,7 @@ void AndroidAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandl
 /// If the recorder is currently active, it will stop routing audio data immediately.
 /// This method should be called from the JS thread only.
 void AndroidAudioRecorder::disconnect() {
-  std::shared_ptr<RecorderAdapterNode> adapterNode;
+  std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
   bool hadConnection = false;
   {
     std::scoped_lock adapterLock(adapterNodeMutex_);
@@ -446,11 +448,11 @@ void AndroidAudioRecorder::disconnect() {
     connectedConfigured_.store(false, std::memory_order_release);
     isConnected_.store(false, std::memory_order_release);
     deinterleavingBuffer_ = nullptr;
-    adapterNode = std::move(adapterNode_);
+    adapterNodeHandle = std::move(adapterNodeHandle_);
   }
 
-  if (hadConnection && adapterNode != nullptr) {
-    adapterNode->adapterCleanup();
+  if (hadConnection && adapterNodeHandle != nullptr) {
+    static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get())->adapterCleanup();
   }
 }
 
@@ -491,11 +493,13 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
 
   if (isConnected()) {
     if (auto adapterLock = Locker::tryLock(adapterNodeMutex_)) {
-      auto adapterNode = adapterNode_;
+      auto adapterNodeHandle = adapterNodeHandle_;
       auto deinterleavingBuffer = deinterleavingBuffer_;
-      if (!isConnected() || adapterNode == nullptr || deinterleavingBuffer == nullptr) {
+      if (!isConnected() || adapterNodeHandle == nullptr || deinterleavingBuffer == nullptr) {
         return oboe::DataCallbackResult::Continue;
       }
+
+      auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get());
 
       auto const data = static_cast<float *>(audioData);
       deinterleavingBuffer->deinterleaveFrom(data, numFrames);

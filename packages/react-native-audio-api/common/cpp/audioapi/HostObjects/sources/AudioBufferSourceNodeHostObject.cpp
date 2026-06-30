@@ -53,7 +53,7 @@ AudioBufferSourceNodeHostObject::~AudioBufferSourceNodeHostObject() {
   // When JSI object is garbage collected (together with the eventual callback),
   // underlying source node might still be active and try to call the
   // non-existing callback.
-  setOnLoopEndedCallbackId(0, true);
+  audioBufferSourceNode_->assignOnLoopEndedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferSourceNodeHostObject, loop) {
@@ -121,8 +121,8 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopEnd) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onLoopEnded) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnLoopEndedCallbackId(callbackId);
+  audioBufferSourceNode_->assignOnLoopEndedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
@@ -151,21 +151,6 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
   }
 
   return jsi::Value::undefined();
-}
-
-void AudioBufferSourceNodeHostObject::setOnLoopEndedCallbackId(uint64_t callbackId, bool gcEvent) {
-  auto handle = node_->handle;
-  auto event = [handle, node = audioBufferSourceNode_, callbackId](BaseAudioContext &) {
-    node->setOnLoopEndedCallbackId(callbackId);
-  };
-
-  audioBufferSourceNode_->unregisterOnLoopEndedCallback(onLoopEndedCallbackId_);
-  if (gcEvent) {
-    audioBufferSourceNode_->scheduleGCEvent(std::move(event));
-  } else {
-    audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
-  }
-  onLoopEndedCallbackId_ = callbackId;
 }
 
 void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {

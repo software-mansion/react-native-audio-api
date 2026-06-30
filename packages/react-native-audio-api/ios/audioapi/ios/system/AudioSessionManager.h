@@ -30,7 +30,7 @@
                   allowHaptics:(BOOL)allowHaptics
     notifyOthersOnDeactivation:(BOOL)notifyOthersOnDeactivation;
 
-- (bool)configureAudioSession;
+- (bool)configureAudioSession:(NSError **)outError;
 /// Ensures the library-managed session is active. In external owner mode this is a no-op.
 - (bool)ensureActive:(bool)force error:(NSError **)error;
 - (bool)setActive:(bool)active error:(NSError **)error;

@@ -55,12 +55,14 @@ void AndroidRotatingFileWriter::writeAudioData(AudioDataType data, int numFrames
       rotateFiles();
     }
   }
-  framesWritten_.fetch_add(numFrames, std::memory_order_relaxed);
 }
 
 double AndroidRotatingFileWriter::getCurrentDuration() const {
-  return static_cast<double>(framesWritten_.load(std::memory_order_relaxed)) /
-      fileProperties_->sampleRate;
+  double currentSegmentDuration = 0.0;
+  if (currentWriter_ != nullptr) {
+    currentSegmentDuration = currentWriter_->getCurrentDuration();
+  }
+  return cumulativeDurationSec_ + currentSegmentDuration;
 }
 
 void AndroidRotatingFileWriter::rotateFiles() {
@@ -77,8 +79,8 @@ OpenFileResult AndroidRotatingFileWriter::openInnerWriter() {
   return result;
 }
 
-void AndroidRotatingFileWriter::taskOffloaderFunction(WriterData data) {
-  auto inner = std::static_pointer_cast<AndroidFileWriterBackend>(currentWriter_);
-  inner->taskOffloaderFunction(data);
+void AndroidRotatingFileWriter::processWriterData(void *data, int numFrames) {
+  (void)data;
+  (void)numFrames;
 }
 } // namespace audioapi

@@ -202,7 +202,7 @@ class ThreadPool {
 namespace thread_pool {
 
 inline constexpr std::size_t kSmallTaskStorageBytes = 32;
-inline constexpr std::size_t kPromiseTaskStorageBytes = 96;
+inline constexpr std::size_t kPromiseTaskStorageBytes = 128;
 
 } // namespace thread_pool
 

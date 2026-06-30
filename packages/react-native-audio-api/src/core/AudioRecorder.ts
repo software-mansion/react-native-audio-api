@@ -3,7 +3,7 @@ import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
 } from '../events/types';
-import { IAudioRecorder, IRecorderAdapterNode } from '../interfaces';
+import { IAudioRecorder } from '../jsi-interfaces';
 import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
@@ -42,14 +42,13 @@ export default class AudioRecorder {
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
   private isFileOutputEnabled: boolean = false;
-  private connectedAdapter_: IRecorderAdapterNode | null = null;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
-    global.AudioEventEmitter
+    globalThis.AudioEventEmitter
   );
 
   constructor() {
-    this.recorder = global.createAudioRecorder();
+    this.recorder = globalThis.createAudioRecorder();
   }
 
   enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
@@ -72,17 +71,16 @@ export default class AudioRecorder {
   }
 
   /** Starts the audio recording process with configured output options */
-  start(options?: AudioRecorderStartOptions): Result<{}> {
+  start(options?: AudioRecorderStartOptions): Promise<Result<{}>> {
     if (!this.isFileOutputEnabled) {
-      this.recorder.start();
-      return { status: 'success' };
+      return this.recorder.start();
     }
 
     return this.recorder.start(options?.fileNameOverride);
   }
 
   /** Stops the audio recording process and releases internal resources */
-  stop(): Result<FileInfo> {
+  stop(): Promise<Result<FileInfo>> {
     return this.recorder.stop();
   }
 
@@ -102,7 +100,6 @@ export default class AudioRecorder {
     this.recorder.connect(adapter);
     // @ts-expect-error node is protected, but we need to access it here
     adapter.connect(destination.node);
-    this.connectedAdapter_ = adapter;
     return destination;
   }
 
@@ -114,7 +111,6 @@ export default class AudioRecorder {
    */
   disconnect(): void {
     this.recorder.disconnect();
-    this.connectedAdapter_ = null;
   }
 
   /**

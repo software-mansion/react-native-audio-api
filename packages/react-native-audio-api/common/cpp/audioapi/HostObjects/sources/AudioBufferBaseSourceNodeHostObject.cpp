@@ -2,11 +2,13 @@
 #include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace audioapi {
@@ -39,10 +41,7 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
 }
 
 AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {
-  // When JSI object is garbage collected (together with the eventual callback),
-  // underlying source node might still be active and try to call the
-  // non-existing callback.
-  setOnPositionChangedCallbackId(0);
+  bufferBaseSourceNode_->assignOnPositionChangedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, detune) {
@@ -58,8 +57,8 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedI
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChanged) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnPositionChangedCallbackId(callbackId);
+  bufferBaseSourceNode_->assignOnPositionChangedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval) {
@@ -82,37 +81,18 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getOutputLatency) {
   return {outputLatency_};
 }
 
-void AudioBufferBaseSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  auto handle = node_->handle;
-  auto event = [handle, node = bufferBaseSourceNode_, callbackId](BaseAudioContext &) {
-    node->setOnPositionChangedCallbackId(callbackId);
-  };
-
-  bufferBaseSourceNode_->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
-  bufferBaseSourceNode_->scheduleAudioEvent(std::move(event));
-  onPositionChangedCallbackId_ = callbackId;
-}
-
 void AudioBufferBaseSourceNodeHostObject::initStretch(int channelCount, float sampleRate) {
   auto handle = node_->handle;
-  auto stretch = std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
-  stretch->presetDefault(channelCount, sampleRate);
-  inputLatency_ = std::max(
-      dsp::sampleFrameToTime(
-          stretch->inputLatency(), bufferBaseSourceNode_->getContextSampleRate()),
-      0.0);
-  outputLatency_ = std::max(
-      dsp::sampleFrameToTime(
-          stretch->outputLatency(), bufferBaseSourceNode_->getContextSampleRate()),
-      0.0);
+  inputLatency_ = WsolaTimeStretcher::INPUT_LATENCY_MS / 1000.0;
+  outputLatency_ = WsolaTimeStretcher::OUTPUT_LATENCY_MS / 1000.0;
 
-  auto playbackRateBuffer =
-      std::make_shared<DSPAudioBuffer>(3 * RENDER_QUANTUM_SIZE, channelCount, sampleRate);
+  auto playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
+      WsolaTimeStretcher::MAX_PLAYBACK_RATE * RENDER_QUANTUM_SIZE, channelCount, sampleRate);
 
-  auto event =
-      [handle, node = bufferBaseSourceNode_, stretch, playbackRateBuffer](BaseAudioContext &) {
-        node->initStretch(stretch, playbackRateBuffer);
-      };
+  auto event = [handle, node = bufferBaseSourceNode_, playbackRateBuffer, channelCount, sampleRate](
+                   BaseAudioContext &) {
+    node->initStretch(static_cast<size_t>(channelCount), sampleRate, playbackRateBuffer);
+  };
   bufferBaseSourceNode_->scheduleAudioEvent(std::move(event));
 }
 

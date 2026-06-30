@@ -12,7 +12,6 @@ export { default as AudioNode } from './core/AudioNode';
 export { default as AudioParam } from './core/AudioParam';
 export { default as AudioRecorder } from './core/AudioRecorder';
 export { default as AudioScheduledSourceNode } from './core/AudioScheduledSourceNode';
-export { default as changePlaybackSpeed } from './core/AudioStretcher';
 export { default as BaseAudioContext } from './core/BaseAudioContext';
 export { default as BiquadFilterNode } from './core/BiquadFilterNode';
 export { default as ConstantSourceNode } from './core/ConstantSourceNode';
@@ -33,6 +32,11 @@ export { default as WorkletSourceNode } from './core/WorkletSourceNode';
 export * from './errors';
 export * from './system/types';
 export * from './types';
+
+// React components (Audio tag)
+export * from './Audio';
+export { default as Audio } from './Audio';
+export { default as AudioControls } from './Audio/controls/AudioControls';
 export type { MediaElementAudioSourceOptions } from './core/MediaElementAudioSourceNode';
 export type { default as AudioEventSubscription } from './events/AudioEventSubscription';
 export { default as FilePreset } from './utils/filePresets';

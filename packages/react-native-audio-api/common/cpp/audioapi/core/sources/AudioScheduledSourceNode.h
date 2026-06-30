@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/types/NodeOptions.h>
 
 #include <cassert>
@@ -48,12 +49,9 @@ class AudioScheduledSourceNode : public AudioNode {
   /// @note Audio Thread only
   bool isStopScheduled() const;
 
-  /// @note Audio Thread only
-  void setOnEndedCallbackId(uint64_t callbackId);
+  void disable() override;
 
-  virtual void disable();
-
-  void unregisterOnEndedCallback(uint64_t callbackId);
+  void assignOnEndedCallbackId(uint64_t callbackId);
 
   bool canBeDestructed() const override;
 
@@ -62,9 +60,6 @@ class AudioScheduledSourceNode : public AudioNode {
   double stopTime_;
 
   PlaybackState playbackState_;
-
-  uint64_t onEndedCallbackId_ = 0;
-  const std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
@@ -75,6 +70,9 @@ class AudioScheduledSourceNode : public AudioNode {
       size_t currentSampleFrame);
 
   void handleStopScheduled();
+
+ private:
+  EventCaller<AudioEvent::ENDED> onEndedEvent_;
 };
 
 } // namespace audioapi

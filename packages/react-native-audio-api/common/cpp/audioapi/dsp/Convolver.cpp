@@ -128,11 +128,19 @@ void pairwise_complex_multiply_fast(
     float32x4_t a_im = a_de.val[1];
 
     // new_re = pre_re + ir_re*a_re - ir_im*a_im
+#if defined(__aarch64__) || defined(__arm64__)
     float32x4_t new_re = vfmaq_f32(pre_de.val[0], ir_re, a_re);
     new_re = vfmsq_f32(new_re, ir_im, a_im);
     // new_im = pre_im + ir_re*a_im + ir_im*a_re
     float32x4_t new_im = vfmaq_f32(pre_de.val[1], ir_re, a_im);
     new_im = vfmaq_f32(new_im, ir_im, a_re);
+#else
+    float32x4_t new_re = vmlaq_f32(pre_de.val[0], ir_re, a_re);
+    new_re = vmlsq_f32(new_re, ir_im, a_im);
+    // new_im = pre_im + ir_re*a_im + ir_im*a_re
+    float32x4_t new_im = vmlaq_f32(pre_de.val[1], ir_re, a_im);
+    new_im = vmlaq_f32(new_im, ir_im, a_re);
+#endif
 
     float32x4x2_t out_de;
     out_de.val[0] = new_re;

@@ -21,10 +21,11 @@ class RotatingFileWriter {
       WriterFactory writerFactory,
       OnSegmentFileOpenedCallback onSegmentFileOpened);
 
-  CloseFileResult closeFile();
   virtual void rotateFiles();
 
  protected:
+  CloseFileResult closeFile();
+
   static constexpr int FILE_SIZE_CHECK_WRITE_INTERVAL = 10;
 
   WriterFactory writerFactory_;

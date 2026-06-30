@@ -2,7 +2,10 @@
 
 #include <audioapi/jsi/RuntimeLifecycleMonitor.h>
 #include <jsi/jsi.h>
+#include <cmath>
 #include <cstddef>
+#include <cstdio>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -297,7 +300,7 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
 
   auto loopValue = optionsObject.getProperty(runtime, "loop");
   if (loopValue.isBool()) {
-    options.loop = static_cast<bool>(loopValue.getBool());
+    options.loop = loopValue.getBool();
   }
 
   auto volumeValue = optionsObject.getProperty(runtime, "volume");
@@ -305,11 +308,21 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     options.volume = static_cast<float>(volumeValue.getNumber());
   }
 
+  auto playbackRateValue = optionsObject.getProperty(runtime, "playbackRate");
+  if (playbackRateValue.isNumber()) {
+    options.playbackRate = static_cast<float>(playbackRateValue.getNumber());
+  }
+
+  auto preservesPitchValue = optionsObject.getProperty(runtime, "preservesPitch");
+  if (preservesPitchValue.isBool()) {
+    options.preservesPitch = preservesPitchValue.getBool();
+  }
+
   auto sourceValue = optionsObject.getProperty(runtime, "source");
   if (sourceValue.isString()) {
     options.filePath = sourceValue.asString(runtime).utf8(runtime);
     options.requiresFFmpeg =
-        audiodecoding::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac"});
+        audiodecoding::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac", ".m3u8"});
   } else if (sourceValue.isObject()) {
     auto sourceObj = sourceValue.asObject(runtime);
     if (sourceObj.isArrayBuffer(runtime)) {
@@ -317,11 +330,20 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
       auto *data = arrayBuffer.data(runtime);
       auto size = arrayBuffer.size(runtime);
       auto format = audiodecoding::detectAudioFormat(data, size);
-      options.requiresFFmpeg =
-          format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
+      options.requiresFFmpeg = format == AudioFormat::MP4 || format == AudioFormat::M4A ||
+          format == AudioFormat::AAC || format == AudioFormat::M3U8;
       options.data = std::vector<uint8_t>(data, data + size);
     }
   }
+
+#if RN_AUDIO_API_FFMPEG_DISABLED
+  if (options.requiresFFmpeg) {
+    throw jsi::JSError(
+        runtime,
+        "AudioFileSourceNode: source format (.mp4, .m4a, .aac, .m3u8) requires FFmpeg, "
+        "which is disabled in this build.");
+  }
+#endif
 
   return options;
 }

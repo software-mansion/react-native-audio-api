@@ -25,12 +25,12 @@ AudioScheduledSourceNodeHostObject::~AudioScheduledSourceNodeHostObject() {
   // When JSI object is garbage collected (together with the eventual callback),
   // underlying source node might still be active and try to call the
   // non-existing callback.
-  setOnEndedCallbackId(0, true);
+  scheduledSourceNode_->assignOnEndedCallbackId(0);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioScheduledSourceNodeHostObject, onEnded) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnEndedCallbackId(callbackId);
+  scheduledSourceNode_->assignOnEndedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, start) {
@@ -53,21 +53,6 @@ JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, stop) {
   scheduledSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
-}
-
-void AudioScheduledSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackId, bool gcEvent) {
-  auto handle = node_->handle;
-  auto event = [handle, node = scheduledSourceNode_, callbackId](BaseAudioContext &) {
-    node->setOnEndedCallbackId(callbackId);
-  };
-
-  scheduledSourceNode_->unregisterOnEndedCallback(onEndedCallbackId_);
-  if (gcEvent) {
-    scheduledSourceNode_->scheduleGCEvent(std::move(event));
-  } else {
-    scheduledSourceNode_->scheduleAudioEvent(std::move(event));
-  }
-  onEndedCallbackId_ = callbackId;
 }
 
 } // namespace audioapi

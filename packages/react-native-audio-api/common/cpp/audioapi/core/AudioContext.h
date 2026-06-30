@@ -5,6 +5,8 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
+#include <atomic>
+#include <functional>
 #include <memory>
 
 namespace audioapi {
@@ -40,8 +42,17 @@ class AudioContext : public BaseAudioContext {
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
   std::atomic<bool> isInitialized_{false};
+  /// Audio I/O callback thread increments around each platform render callback;
+  /// control thread waits on suspend/close.
+  std::atomic<uint32_t> currentRenders_{0};
 
   bool isDriverRunning() const override;
+
+  /// Caller must hold `driverMutex_`.
+  bool tryStartDriver();
+
+  /// Blocks until no audio I/O callback is in flight. Caller must hold `driverMutex_`.
+  void waitForRenderQuiescence() const;
 };
 
 } // namespace audioapi

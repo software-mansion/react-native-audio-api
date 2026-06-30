@@ -1,6 +1,8 @@
 #pragma once
 
+#include <ReactCommon/CallInvoker.h>
 #include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/JsiPromise.h>
 
 #include <memory>
 
@@ -12,8 +14,10 @@ class AudioEventHandlerRegistry;
 
 class AudioRecorderHostObject : public JsiHostObject {
  public:
-  explicit AudioRecorderHostObject(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  AudioRecorderHostObject(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      jsi::Runtime *runtime,
+      const std::shared_ptr<react::CallInvoker> &callInvoker);
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);
@@ -39,6 +43,7 @@ class AudioRecorderHostObject : public JsiHostObject {
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
+  std::shared_ptr<PromiseVendor> promiseVendor_;
 };
 
 } // namespace audioapi

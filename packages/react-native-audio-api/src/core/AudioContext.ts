@@ -1,7 +1,7 @@
 import AudioAPIModule from '../AudioAPIModule';
 import { NotSupportedError } from '../errors';
-import { AudioTagHandle } from '../development/react/Audio/types';
-import { IAudioContext } from '../interfaces';
+import { AudioTagHandle } from '../Audio/types';
+import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
 import { AudioContextOptions } from '../types';
 import BaseAudioContext from './BaseAudioContext';
@@ -22,7 +22,7 @@ export default class AudioContext extends BaseAudioContext {
     const audioRuntime = AudioAPIModule.createAudioRuntime();
 
     super(
-      global.createAudioContext(
+      globalThis.createAudioContext(
         options?.sampleRate || AudioManager.getDevicePreferredSampleRate(),
         audioRuntime
       )
@@ -33,12 +33,12 @@ export default class AudioContext extends BaseAudioContext {
     return (this.context as IAudioContext).close();
   }
 
-  async resume(): Promise<boolean> {
-    return (this.context as IAudioContext).resume();
+  async resume(): Promise<void> {
+    await (this.context as IAudioContext).resume();
   }
 
-  async suspend(): Promise<boolean> {
-    return (this.context as IAudioContext).suspend();
+  async suspend(): Promise<void> {
+    await (this.context as IAudioContext).suspend();
   }
 
   createMediaElementSource(

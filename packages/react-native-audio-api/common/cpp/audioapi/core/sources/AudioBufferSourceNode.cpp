@@ -24,7 +24,22 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd),
-      processor_(std::make_unique<SingleBufferProcessor>()) {}
+      onLoopEndedEvent_(context->getAudioEventHandlerRegistry()) {
+  auto onLoopEnded = [this]() {
+    sendOnLoopEndedEvent();
+  };
+
+  processor_ = std::make_unique<SingleBufferProcessor>(onLoopEnded);
+}
+
+void AudioBufferSourceNode::setLoop(bool loop) {
+  loop_ = loop;
+  processor_->setLoop(loop_);
+}
+
+void AudioBufferSourceNode::setLoopSkip(bool loopSkip) {
+  loopSkip_ = loopSkip;
+}
 
 void AudioBufferSourceNode::setLoopStart(double loopStart) {
   if (loopSkip_) {
@@ -35,14 +50,6 @@ void AudioBufferSourceNode::setLoopStart(double loopStart) {
 
 void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
   loopEnd_ = loopEnd;
-}
-
-void AudioBufferSourceNode::setLoop(bool loop) {
-  loop_ = loop;
-}
-
-void AudioBufferSourceNode::setLoopSkip(bool loopSkip) {
-  loopSkip_ = loopSkip;
 }
 
 void AudioBufferSourceNode::setBuffer(
@@ -107,12 +114,8 @@ void AudioBufferSourceNode::disable() {
   buffer_ = nullptr;
 }
 
-void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
-  onLoopEndedCallbackId_ = callbackId;
-}
-
-void AudioBufferSourceNode::unregisterOnLoopEndedCallback(uint64_t callbackId) {
-  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::LOOP_ENDED, callbackId);
+void AudioBufferSourceNode::assignOnLoopEndedCallbackId(uint64_t callbackId) {
+  onLoopEndedEvent_.assignCallbackId(callbackId);
 }
 
 double AudioBufferSourceNode::getCurrentPosition() const {
@@ -120,10 +123,7 @@ double AudioBufferSourceNode::getCurrentPosition() const {
 }
 
 void AudioBufferSourceNode::sendOnLoopEndedEvent() {
-  if (onLoopEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->dispatchEvent(
-        AudioEvent::LOOP_ENDED, onLoopEndedCallbackId_, EmptyPayload{});
-  }
+  onLoopEndedEvent_.dispatchEmptyFromAudioThread();
 }
 
 /**
@@ -158,11 +158,8 @@ void AudioBufferSourceNode::runBufferProcessor(
   processor_->setStartFrame(static_cast<size_t>(startFrame));
   processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
 
-  if (processor_->atBoundary()) {
-    if (processor_->shouldStop()) {
-      playbackState_ = PlaybackState::STOP_SCHEDULED;
-    }
-    sendOnLoopEndedEvent();
+  if (processor_->atBoundary() && processor_->shouldStop()) {
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
   }
 
   vReadIndex_ = processor_->getPosition();

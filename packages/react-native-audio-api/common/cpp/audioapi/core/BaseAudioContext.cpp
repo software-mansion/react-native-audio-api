@@ -5,7 +5,9 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/CircularArray.hpp>
+#ifdef DEBUG
 #include <test/src/graph/AudioThreadGuard.h>
+#endif
 #include <memory>
 #include <vector>
 
@@ -29,7 +31,7 @@ void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
   destination_ = destination;
 }
 
-ContextState BaseAudioContext::getState() {
+ContextState BaseAudioContext::getState() const {
   auto state = state_.load(std::memory_order_acquire);
 
   if (state == ContextState::CLOSED || isDriverRunning()) {

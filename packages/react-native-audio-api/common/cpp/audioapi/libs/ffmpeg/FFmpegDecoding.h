@@ -27,10 +27,9 @@ extern "C" {
 
 namespace audioapi::ffmpeg_decoder {
 
-/// Opaque IO state for openMemory (must outlive decode until close).
+/// Opaque IO state for openMemory — owns the audio bytes for the decoder's lifetime.
 struct MemoryIOContext {
-  const uint8_t *data = nullptr;
-  size_t size = 0;
+  std::vector<uint8_t> data;
   size_t pos = 0;
 };
 
@@ -46,14 +45,11 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   ~FFmpegDecoder() override;
   DELETE_COPY_AND_MOVE(FFmpegDecoder);
 
-  [[nodiscard]] decoding::DecoderResult openFile(
-      int outputSampleRate,
-      const std::string &path) override;
+  [[nodiscard]] decoding::DecoderResult openFile(int outputSampleRate, const std::string &path)
+      override;
 
-  [[nodiscard]] decoding::DecoderResult openMemory(
-      int outputSampleRate,
-      const void *data,
-      size_t size) override;
+  [[nodiscard]] decoding::DecoderResult
+  openMemory(int outputSampleRate, const void *data, size_t size) override;
 
   [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
 
@@ -62,8 +58,16 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   [[nodiscard]] bool isOpen() const override {
     return fmt_ctx_ != nullptr && codec_ctx_ != nullptr;
   }
-  [[nodiscard]] int outputChannels() const override { return output_channels_; }
-  [[nodiscard]] int outputSampleRate() const override { return output_sample_rate_; }
+  [[nodiscard]] int outputChannels() const override {
+    return output_channels_;
+  }
+  [[nodiscard]] int outputSampleRate() const override {
+    return output_sample_rate_;
+  }
+
+  [[nodiscard]] bool isHlsStreaming() const override {
+    return is_hls_streaming_;
+  }
 
   [[nodiscard]] float getDurationInSeconds() const override;
 
@@ -75,6 +79,9 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   [[nodiscard]] decoding::DecoderResult setupSwr();
   [[nodiscard]] decoding::DecoderResult feedPipeline();
   void appendFrameResampled(AVFrame *frame);
+  void detectHlsStreamingMode();
+
+  bool is_hls_streaming_ = false;
 
   AVFormatContext *fmt_ctx_ = nullptr;
   AVCodecContext *codec_ctx_ = nullptr;

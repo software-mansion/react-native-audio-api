@@ -3,9 +3,10 @@ import React, {
   createContext,
   PropsWithChildren,
   useMemo,
+  useState,
 } from 'react';
-import { StyleSheet } from 'react-native';
-import { Canvas as SKCanvas, useCanvasSize } from '@shopify/react-native-skia';
+import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { Canvas as SKCanvas } from '@shopify/react-native-skia';
 
 interface Size {
   width: number;
@@ -13,61 +14,71 @@ interface Size {
 }
 
 interface CanvasContext {
-  initialized: boolean;
+  ready: boolean;
   size: Size;
 }
 
 const CanvasContext = createContext<CanvasContext>({
-  initialized: false,
+  ready: false,
   size: { width: 0, height: 0 },
 });
 
 const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
-  const { ref, size } = useCanvasSize();
+  const [squareSide, setSquareSide] = useState(0);
+  const [renderSize, setRenderSize] = useState<Size>({ width: 0, height: 0 });
+
+  const ready = squareSide > 0;
 
   const context = useMemo(
     () => ({
-      initialized: true,
-      size: { width: size.width, height: size.height },
+      ready,
+      size: renderSize,
     }),
-    [size]
+    [ready, renderSize]
   );
 
+  const handleWrapperLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+
+    if (width <= 0 || height <= 0) {
+      return;
+    }
+
+    const side = Math.min(width, height);
+
+    setSquareSide(side);
+    setRenderSize({ width: side, height: side });
+  };
+
   return (
-    <SKCanvas style={styles.canvas} ref={ref}>
-      <CanvasContext.Provider value={context}>
-        {children}
-      </CanvasContext.Provider>
-    </SKCanvas>
+    <View style={styles.wrapper} onLayout={handleWrapperLayout}>
+      {ready ? (
+        <SKCanvas style={{ width: squareSide, height: squareSide }}>
+          <CanvasContext.Provider value={context}>{children}</CanvasContext.Provider>
+        </SKCanvas>
+      ) : null}
+    </View>
   );
 };
 
 export function useCanvas() {
   const canvasContext = useContext(CanvasContext);
 
-  if (!canvasContext.initialized) {
-    throw new Error('Canvas context not initialized');
+  if (!canvasContext.ready) {
+    throw new Error('Canvas is not ready');
   }
 
   return canvasContext;
 }
 
-export function withCanvas<P extends object>(
-  Component: React.ComponentType<P>
-) {
-  return (props: P) => {
-    return (
-      <Canvas>
-        <Component {...props} />
-      </Canvas>
-    );
-  };
-}
-
 export default Canvas;
 
 const styles = StyleSheet.create({
-  canvas: {
+  wrapper: {
     flex: 1,
+    width: '100%',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

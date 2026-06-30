@@ -4,6 +4,7 @@
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/jsi/JsiUtils.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
@@ -13,16 +14,22 @@
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #endif
 #include <memory>
+#include <string>
+#include <utility>
 
 namespace audioapi {
 
 AudioRecorderHostObject::AudioRecorderHostObject(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    jsi::Runtime *runtime,
+    const std::shared_ptr<react::CallInvoker> &callInvoker) {
 #ifdef ANDROID
   audioRecorder_ = std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry);
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry);
 #endif
+
+  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
@@ -44,47 +51,64 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   auto fileNameOverride = jsiutils::argToString(runtime, args, count, 0, "");
-  auto result = audioRecorder_->start(fileNameOverride);
-  auto jsResult = jsi::Object(runtime);
+  auto audioRecorder = audioRecorder_;
 
-  jsResult.setProperty(
-      runtime,
-      "status",
-      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+  return promiseVendor_->createAsyncPromise(
+      [audioRecorder, fileNameOverride = std::move(fileNameOverride)]() -> PromiseResolver {
+        auto result = audioRecorder->start(fileNameOverride);
 
-  if (!result.is_ok()) {
-    jsResult.setProperty(
-        runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
-  }
+        return [result = std::move(result)](
+                   jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+          auto jsResult = jsi::Object(runtime);
 
-  return jsResult;
+          jsResult.setProperty(
+              runtime,
+              "status",
+              jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+
+          if (!result.is_ok()) {
+            jsResult.setProperty(
+                runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
+          }
+
+          return jsi::Value(std::move(jsResult));
+        };
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
-  auto result = audioRecorder_->stop();
-  auto jsResult = jsi::Object(runtime);
+  auto audioRecorder = audioRecorder_;
 
-  jsResult.setProperty(
-      runtime,
-      "status",
-      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    auto result = audioRecorder->stop();
 
-  if (result.is_ok()) {
-    auto info = result.unwrap();
-    const auto &paths = std::get<0>(info);
-    auto pathsArray = jsi::Array(runtime, paths.size());
-    for (size_t i = 0; i < paths.size(); ++i) {
-      pathsArray.setValueAtIndex(runtime, i, jsi::String::createFromUtf8(runtime, paths[i]));
-    }
-    jsResult.setProperty(runtime, "paths", pathsArray);
-    jsResult.setProperty(runtime, "size", std::get<1>(info));
-    jsResult.setProperty(runtime, "duration", std::get<2>(info));
-  } else {
-    jsResult.setProperty(
-        runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
-  }
+    return [result =
+                std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+      auto jsResult = jsi::Object(runtime);
 
-  return jsResult;
+      jsResult.setProperty(
+          runtime,
+          "status",
+          jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+
+      if (result.is_ok()) {
+        auto info = result.unwrap();
+        const auto &paths = std::get<0>(info);
+        auto pathsArray = jsi::Array(runtime, paths.size());
+        for (size_t i = 0; i < paths.size(); ++i) {
+          pathsArray.setValueAtIndex(runtime, i, jsi::String::createFromUtf8(runtime, paths[i]));
+        }
+        jsResult.setProperty(runtime, "paths", pathsArray);
+        jsResult.setProperty(runtime, "size", std::get<1>(info));
+        jsResult.setProperty(runtime, "duration", std::get<2>(info));
+      } else {
+        jsResult.setProperty(
+            runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
+      }
+
+      return jsi::Value(std::move(jsResult));
+    };
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isRecording) {

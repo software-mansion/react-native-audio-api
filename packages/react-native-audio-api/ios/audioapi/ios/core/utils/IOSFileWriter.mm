@@ -4,11 +4,17 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
+#include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/UnitConversion.h>
+#include <utility>
 
 namespace audioapi {
+
+using ios::allocateOwnedAudioBufferList;
+using ios::copyIntoOwnedAudioBufferList;
+using ios::OwnedAudioBufferListPtr;
 
 IOSFileWriter::IOSFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -20,6 +26,11 @@ IOSFileWriter::IOSFileWriter(
 IOSFileWriter::~IOSFileWriter()
 {
   @autoreleasepool {
+    offloader_.reset();
+    freeSlots_.reset();
+    inputBufferPool_.clear();
+    inputBufferBytesPerBuffer_ = 0;
+
     fileURL_ = nil;
     audioFile_ = nil;
     converter_ = nil;
@@ -92,11 +103,7 @@ OpenFileResult IOSFileWriter::openFile(
 
     if (converterInputBuffer_ == nil || converterOutputBuffer_ == nil || audioFile_ == nil ||
         converter_ == nil) {
-      audioFile_ = nil;
-      converter_ = nil;
-      converterInputBuffer_ = nil;
-      converterOutputBuffer_ = nil;
-
+      rollbackFailedOpen();
       return OpenFileResult::Err("Error creating converter buffers");
     }
 
@@ -109,8 +116,48 @@ OpenFileResult IOSFileWriter::openFile(
         FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
         FILE_WRITER_SPSC_WAIT_STRATEGY>>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
 
+    inputBufferPool_.clear();
+    inputBufferPool_.reserve(FILE_WRITER_POOL_SIZE);
+    auto bufferCount =
+        static_cast<UInt32>(bufferFormat_.isInterleaved ? 1 : bufferFormat_.channelCount);
+    auto bytesPerBuffer = static_cast<UInt32>(
+        converterInputBufferSize_ * bufferFormat_.streamDescription->mBytesPerFrame);
+    inputBufferBytesPerBuffer_ = bytesPerBuffer;
+    for (size_t i = 0; i < FILE_WRITER_POOL_SIZE; ++i) {
+      OwnedAudioBufferListPtr buffer(allocateOwnedAudioBufferList(bufferCount, bytesPerBuffer));
+      if (buffer == nullptr) {
+        rollbackFailedOpen();
+        return OpenFileResult::Err("Failed to preallocate iOS file writer buffers");
+      }
+      inputBufferPool_.push_back(std::move(buffer));
+    }
+
+    freeSlots_ = std::make_unique<FreeList>();
+    freeSlots_->seed();
+
     return OpenFileResult::Ok([[fileURL_ path] UTF8String]);
   }
+}
+
+void IOSFileWriter::rollbackFailedOpen()
+{
+  offloader_.reset();
+  freeSlots_.reset();
+  inputBufferPool_.clear();
+  inputBufferBytesPerBuffer_ = 0;
+
+  audioFile_ = nil;
+  converter_ = nil;
+  converterInputBuffer_ = nil;
+  converterOutputBuffer_ = nil;
+  bufferFormat_ = nil;
+
+  if (fileURL_ != nil) {
+    [[NSFileManager defaultManager] removeItemAtURL:fileURL_ error:nil];
+    fileURL_ = nil;
+  }
+
+  framesWritten_.store(0, std::memory_order_release);
 }
 
 /// @brief Closes the currently open audio file and finalizes writing.
@@ -128,6 +175,9 @@ CloseFileResult IOSFileWriter::closeFile()
     }
 
     offloader_.reset();
+    freeSlots_.reset();
+    inputBufferPool_.clear();
+    inputBufferBytesPerBuffer_ = 0;
 
     // AVAudioFile automatically finalizes the file when deallocated
     audioFile_ = nil;
@@ -157,34 +207,63 @@ void IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int n
 {
   if (audioFile_ == nil) {
     invokeOnErrorCallback("Attempted to write audio data when file is not open");
-  } else {
-    offloader_->getSender()->send({audioBufferList, numFrames});
+    return;
   }
+  if (offloader_ == nullptr || freeSlots_ == nullptr || inputBufferPool_.empty() ||
+      inputBufferBytesPerBuffer_ == 0) {
+    return;
+  }
+
+  auto slot = freeSlots_->tryAcquire();
+  if (!slot.has_value()) {
+    return;
+  }
+
+  // CoreAudio owns `audioBufferList` only for the duration of this synchronous
+  // callback. Copy into an owned AudioBufferList before handing off to the
+  // worker thread; the consumer in taskOffloaderFunction releases the slot.
+  auto *targetBuffer = inputBufferPool_[slot.value()].get();
+  if (!copyIntoOwnedAudioBufferList(
+          targetBuffer, audioBufferList, static_cast<unsigned int>(inputBufferBytesPerBuffer_))) {
+    freeSlots_->release(slot.value());
+    return;
+  }
+
+  WriterData writerData{.slot = slot.value(), .numFrames = numFrames};
+  // send() cannot block here: we hold a slot from a pool of FILE_WRITER_POOL_SIZE,
+  // and the channel is sized one larger,
+  // so the ring always has room while any slot is in flight.
+  offloader_->getSender()->send(writerData);
 }
 
 void IOSFileWriter::taskOffloaderFunction(WriterData data)
 {
-  auto [audioBufferList, numFrames] = data;
-  if (audioBufferList == nullptr)
+  auto [slot, numFrames] = data;
+  if (slot == FreeList::kSentinel) {
     return;
+  }
+  if (slot >= inputBufferPool_.size() || freeSlots_ == nullptr) {
+    return;
+  }
+  auto *audioBufferList = inputBufferPool_[slot].get();
   @autoreleasepool {
     NSError *error = nil;
+
+    for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
+      memcpy(
+          converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
+          audioBufferList->mBuffers[i].mData,
+          audioBufferList->mBuffers[i].mDataByteSize);
+    }
+
+    freeSlots_->release(slot);
+    converterInputBuffer_.frameLength = numFrames;
+
     AVAudioFormat *fileFormat = [audioFile_ processingFormat];
 
     if (bufferFormat_.sampleRate == fileFormat.sampleRate &&
         bufferFormat_.channelCount == fileFormat.channelCount &&
         bufferFormat_.isInterleaved == fileFormat.isInterleaved) {
-      // We can use the converter input buffer as a "transport" layer to the file
-      for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
-        memcpy(
-            converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
-            audioBufferList->mBuffers[i].mData,
-            audioBufferList->mBuffers[i].mDataByteSize);
-      }
-
-      audioBufferList = nullptr;
-      converterInputBuffer_.frameLength = numFrames;
-
       [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
 
       if (error != nil) {
@@ -197,16 +276,6 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
       framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
       return;
     }
-
-    for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
-      memcpy(
-          converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
-          audioBufferList->mBuffers[i].mData,
-          audioBufferList->mBuffers[i].mDataByteSize);
-    }
-
-    audioBufferList = nullptr;
-    converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;
     AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
@@ -223,13 +292,16 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
     };
 
     [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
-    converterOutputBuffer_.frameLength =
-        fileProperties_->sampleRate / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
       invokeOnErrorCallback(
           std::string("Error during audio conversion, native error: ") +
           [[error debugDescription] UTF8String]);
+      return;
+    }
+
+    AVAudioFrameCount producedFrames = converterOutputBuffer_.frameLength;
+    if (producedFrames == 0) {
       return;
     }
 
@@ -242,14 +314,14 @@ void IOSFileWriter::taskOffloaderFunction(WriterData data)
       return;
     }
 
-    framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
+    framesWritten_.fetch_add(producedFrames, std::memory_order_acq_rel);
   }
 }
 
 double IOSFileWriter::getCurrentDuration() const
 {
   return static_cast<double>(framesWritten_.load(std::memory_order_acquire)) /
-      bufferFormat_.sampleRate;
+      fileProperties_->sampleRate;
 }
 
 std::string IOSFileWriter::getFilePath() const

@@ -2,6 +2,8 @@
 #import <objc/runtime.h>
 
 #import <audioapi/events/AudioEvent.h>
+#import <audioapi/events/AudioEventPayload.h>
+#import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
@@ -158,7 +160,8 @@
 @property(nonatomic, strong) NSDictionary *lastEventBody;
 
 - (void)resetCapturedEvent;
-- (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName eventBody:(NSDictionary *)eventBody;
+- (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName
+                           payload:(audioapi::AudioEventPayload)payload;
 
 @end
 
@@ -171,11 +174,33 @@
   self.lastEventBody = nil;
 }
 
-- (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName eventBody:(NSDictionary *)eventBody
+- (void)invokeHandlerWithEventName:(audioapi::AudioEvent)eventName
+                           payload:(audioapi::AudioEventPayload)payload
 {
   self.eventInvocationCount += 1;
   self.lastEventNameRaw = static_cast<NSInteger>(eventName);
-  self.lastEventBody = eventBody;
+
+  if (const auto *doublePayload = std::get_if<audioapi::DoubleValuePayload>(&payload)) {
+    self.lastEventBody = @{@"value" : @(doublePayload->value)};
+    return;
+  }
+
+  if (const auto *interruptionPayload = std::get_if<audioapi::InterruptionPayload>(&payload)) {
+    self.lastEventBody = @{
+      @"type" : [NSString stringWithUTF8String:interruptionPayload->type.c_str()],
+      @"shouldResume" : @(interruptionPayload->shouldResume),
+    };
+    return;
+  }
+
+  if (const auto *stringPayload = std::get_if<audioapi::StringPayload>(&payload)) {
+    NSString *key = [NSString stringWithUTF8String:stringPayload->name.c_str()];
+    NSString *value = [NSString stringWithUTF8String:stringPayload->reason.c_str()];
+    self.lastEventBody = @{key : value};
+    return;
+  }
+
+  self.lastEventBody = @{};
 }
 
 @end
@@ -262,6 +287,8 @@ static void ClearFakeSharedAudioSession(void)
 {
   [self.manager stopPollingSecondaryAudioHint];
   [self.manager cleanup];
+  [self.fakeAudioEngine cleanup];
+  [self.fakeSessionManager cleanup];
   self.manager = nil;
   self.module = nil;
   self.fakeAudioEngine = nil;

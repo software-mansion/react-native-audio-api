@@ -287,7 +287,7 @@ const AudioPipelineStress: FC = () => {
     await activateRecordingSession();
 
     resourcesRef.current.configureRecorderTap();
-    resourcesRef.current.startRecording(fileNameOverride);
+    await resourcesRef.current.startRecording(fileNameOverride);
     await waitForRecordingCallbacks(1);
     await sleep(SHORT_RECORDING_MS);
 
@@ -634,7 +634,7 @@ const AudioPipelineStress: FC = () => {
             async () => {
               await activateRecordingSession();
               resourcesRef.current.configureRecorderTap();
-              resourcesRef.current.startRecording(
+              await resourcesRef.current.startRecording(
                 `record-deactivation-${Date.now()}`
               );
               await waitForRecordingCallbacks(1);
@@ -670,7 +670,7 @@ const AudioPipelineStress: FC = () => {
                 throw new Error('Recorder is not ready');
               }
 
-              const result = recorder.stop();
+              const result = await recorder.stop();
               recorder.clearOnAudioReady();
 
               if (result.status === 'error') {
@@ -713,14 +713,10 @@ const AudioPipelineStress: FC = () => {
                 iosOptions: [],
               });
 
-              const active = await AudioManager.setAudioSessionActivity(true);
-
-              if (!active) {
-                throw new Error('Failed to activate playback session');
-              }
+              await AudioManager.setAudioSessionActivity(true);
 
               resourcesRef.current.configureRecorderTap();
-              const result = resourcesRef.current.tryStartRecording(
+              const result = await resourcesRef.current.tryStartRecording(
                 `wrong-category-${Date.now()}`
               );
 

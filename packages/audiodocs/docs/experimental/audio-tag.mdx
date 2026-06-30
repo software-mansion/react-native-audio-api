@@ -11,7 +11,7 @@ import { Experimental } from '@site/src/components/Badges';
 React component that mimics web `<Audio>` behavior.
 
 :::caution
-This API lives under `react-native-audio-api/development/react` and is **experimental**: behavior and props may change.
+This API is exported from `react-native-audio-api` and is still **experimental**: behavior and props may change.
 :::
 
 ## Usage
@@ -19,7 +19,7 @@ This API lives under `react-native-audio-api/development/react` and is **experim
 ```tsx
 import React, { useRef } from 'react';
 import { View } from 'react-native';
-import { Audio, AudioTagHandle } from 'react-native-audio-api/development/react';
+import { Audio, AudioTagHandle } from 'react-native-audio-api';
 
 const DEMO_URL = 'https://example.com/audio.mp3';
 
@@ -55,8 +55,8 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `muted` | `boolean` | `false` | Muted state. |
 | `volume` | `number` | `1` | Linear volume passed to the underlying source. |
 | `preload` | `PreloadType` | `'auto'` | Loading strategy for the source (`'none'`, `'metadata'`, `'auto'`). |
-| `playbackRate` | `number` | `1` | *Web support only*  |
-| `preservesPitch` | `boolean` | `true` | *Web support only* |
+| `playbackRate` | `number` | `1` | Playback speed. Native playback accepts rates up to x4; negative reverse playback is not supported. No-op for HLS files playback. |
+| `preservesPitch` | `boolean` | `true` | Preserve pitch when `playbackRate` changes. Set to `false` to let pitch change with playback speed. |
 | `onLoadStart` | `() => void` | no-op | Load started. |
 | `onLoad` | `() => void` | no-op | Source decoded / graph attached. |
 | `onError` | `(error: Error) => void` | no-op | Network, decode, or unsupported format (e.g. missing FFmpeg) errors. |

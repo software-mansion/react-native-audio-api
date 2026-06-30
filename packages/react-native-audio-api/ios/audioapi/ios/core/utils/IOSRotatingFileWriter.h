@@ -3,10 +3,10 @@
 #include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 
+#include <audioapi/utils/AudioFileProperties.h>
 #include <functional>
 #include <memory>
 #include <string>
-#include "audioapi/utils/AudioFileProperties.h"
 
 namespace audioapi {
 

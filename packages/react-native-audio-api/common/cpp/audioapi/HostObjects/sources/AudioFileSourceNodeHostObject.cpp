@@ -6,13 +6,14 @@
 #include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <audioapi/types/NodeOptions.h>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace audioapi {
 
 AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
-    const AudioFileSourceOptions &options)
+    AudioFileSourceOptions &options)
     : AudioScheduledSourceNodeHostObject(
           context->getGraph(),
           std::make_unique<AudioFileSourceNode>(context, options),
@@ -20,17 +21,26 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       audioFileSourceNode_(typedAudioNode<AudioFileSourceNode>(node_)),
       loop_(options.loop),
       duration_(audioFileSourceNode_->getDuration()),
-      volume_(options.volume) {
+      volume_(options.volume),
+      playbackRate_(options.playbackRate),
+      preservesPitch_(options.preservesPitch) {
+  if (audioFileSourceNode_->isHlsStreaming()) {
+    playbackRate_ = 1.0f;
+  }
+
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, volume),
+      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, playbackRate),
+      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, preservesPitch),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, currentTime),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, duration),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, routedThroughMediaElement));
   addSetters(
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onPositionChanged),
-      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onEnded),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, volume),
+      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, playbackRate),
+      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, preservesPitch),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, loop));
 
   addFunctions(
@@ -40,8 +50,7 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
 }
 
 AudioFileSourceNodeHostObject::~AudioFileSourceNodeHostObject() {
-  setOnPositionChangedCallbackId(0);
-  setOnEndedCallbackId(0);
+  audioFileSourceNode_->assignOnPositionChangedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
@@ -52,6 +61,36 @@ JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, volume) {
   volume_ = static_cast<float>(value.getNumber());
   auto event = [node = audioFileSourceNode_, volume = volume_](BaseAudioContext &) {
     node->setVolume(volume);
+  };
+  audioFileSourceNode_->scheduleAudioEvent(std::move(event));
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, playbackRate) {
+  return {playbackRate_};
+}
+
+JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, playbackRate) {
+  if (audioFileSourceNode_->isHlsStreaming()) {
+    return;
+  }
+
+  playbackRate_ = static_cast<float>(value.getNumber());
+  auto event = [node = audioFileSourceNode_,
+                playbackRate = this->playbackRate_](BaseAudioContext &) {
+    node->setPlaybackRate(playbackRate);
+  };
+  audioFileSourceNode_->scheduleAudioEvent(std::move(event));
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, preservesPitch) {
+  return {preservesPitch_};
+}
+
+JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, preservesPitch) {
+  preservesPitch_ = value.getBool();
+  auto event = [node = audioFileSourceNode_,
+                preservesPitch = this->preservesPitch_](BaseAudioContext &) {
+    node->setPreservesPitch(preservesPitch);
   };
   audioFileSourceNode_->scheduleAudioEvent(std::move(event));
 }
@@ -103,28 +142,8 @@ JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, seekToTime) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, onPositionChanged) {
-  auto callbackId = std::stoull(value.getString(runtime).utf8(runtime));
-  setOnPositionChangedCallbackId(callbackId);
-}
-
-void AudioFileSourceNodeHostObject::setOnPositionChangedCallbackId(uint64_t callbackId) {
-  auto event = [node = audioFileSourceNode_, callbackId](BaseAudioContext &) {
-    node->setOnPositionChangedCallbackId(callbackId);
-  };
-
-  audioFileSourceNode_->unregisterOnPositionChangedCallback(onPositionChangedCallbackId_);
-  audioFileSourceNode_->scheduleAudioEvent(std::move(event));
-  onPositionChangedCallbackId_ = callbackId;
-}
-
-void AudioFileSourceNodeHostObject::setOnEndedCallbackId(uint64_t callbackId) {
-  auto event = [node = audioFileSourceNode_, callbackId](BaseAudioContext &) {
-    node->setOnEndedCallbackId(callbackId);
-  };
-
-  audioFileSourceNode_->unregisterOnEndedCallback(onEndedCallbackId_);
-  audioFileSourceNode_->scheduleAudioEvent(std::move(event));
-  onEndedCallbackId_ = callbackId;
+  audioFileSourceNode_->assignOnPositionChangedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 } // namespace audioapi

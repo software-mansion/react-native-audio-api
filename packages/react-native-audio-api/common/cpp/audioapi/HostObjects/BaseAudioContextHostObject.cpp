@@ -257,7 +257,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
-  auto makeFileSourceHostObject = [&](const AudioFileSourceOptions &opts) -> jsi::Value {
+  auto makeFileSourceHostObject = [&](AudioFileSourceOptions &opts) -> jsi::Value {
 #if RN_AUDIO_API_FFMPEG_DISABLED
     if (opts.requiresFFmpeg) {
       return jsi::Value::undefined();
@@ -272,8 +272,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
 
   const auto options = args[0].asObject(runtime);
 
-  const auto fileSourceOptions =
-      audioapi::option_parser::parseAudioFileSourceOptions(runtime, options);
+  auto fileSourceOptions = audioapi::option_parser::parseAudioFileSourceOptions(runtime, options);
   return makeFileSourceHostObject(fileSourceOptions);
 }
 

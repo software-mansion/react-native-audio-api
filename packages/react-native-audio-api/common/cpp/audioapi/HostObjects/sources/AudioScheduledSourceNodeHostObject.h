@@ -26,10 +26,5 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
 
  protected:
   AudioScheduledSourceNode *scheduledSourceNode_ = nullptr;
-
- private:
-  uint64_t onEndedCallbackId_ = 0;
-
-  void setOnEndedCallbackId(uint64_t callbackId, bool gcEvent = false);
 };
 } // namespace audioapi

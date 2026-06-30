@@ -46,6 +46,12 @@ function App() {
 
 ### `setAudioSessionOptions` <IOS />
 
+:::warning AVAudioSession Compatibility
+Not all `iosOptions` are compatible with every `iosCategory`. Passing an invalid combination to the native API (for example, explicitly setting `allowBluetoothA2DP` alongside the `playback` category) will cause the configuration to fail. This can result in a `SessionActivationError` and total audio silence.
+
+Always verify valid category and option combinations in [Apple's AVAudioSession Documentation](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc).
+:::
+
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) |
@@ -58,7 +64,7 @@ function App() {
 | :---: | :---: | :---- |
 | enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
 
-#### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.'
+#### Returns `Promise<void>`, which resolves when the audio session activity was set successfully. On failure the promise rejects with a `SessionActivationError` that carries the native error details (`nativeErrorInfo`) when available.
 
 ### `disableSessionManagement` <IOS />
 

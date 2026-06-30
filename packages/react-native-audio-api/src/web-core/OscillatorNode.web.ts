@@ -1,0 +1,37 @@
+import { OscillatorType, OscillatorOptions } from '../types';
+import { InvalidStateError } from '../errors';
+import AudioScheduledSourceNode from './AudioScheduledSourceNode.web';
+import BaseAudioContext from './BaseAudioContext.web';
+import AudioParam from './AudioParam.web';
+import PeriodicWave from './PeriodicWave.web';
+
+export default class OscillatorNode extends AudioScheduledSourceNode {
+  readonly frequency: AudioParam;
+  readonly detune: AudioParam;
+
+  constructor(context: BaseAudioContext, options?: OscillatorOptions) {
+    const node = new globalThis.OscillatorNode(context.context, options);
+    super(context, node);
+
+    this.detune = new AudioParam(node.detune, context);
+    this.frequency = new AudioParam(node.frequency, context);
+  }
+
+  public get type(): OscillatorType {
+    return (this.node as globalThis.OscillatorNode).type;
+  }
+
+  public set type(value: OscillatorType) {
+    if (value === 'custom') {
+      throw new InvalidStateError(
+        "'type' cannot be set directly to 'custom'.  Use setPeriodicWave() to create a custom Oscillator type."
+      );
+    }
+
+    (this.node as globalThis.OscillatorNode).type = value;
+  }
+
+  public setPeriodicWave(wave: PeriodicWave): void {
+    (this.node as globalThis.OscillatorNode).setPeriodicWave(wave.periodicWave);
+  }
+}

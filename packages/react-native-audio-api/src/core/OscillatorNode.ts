@@ -1,4 +1,4 @@
-import { IOscillatorNode } from '../interfaces';
+import { IOscillatorNode } from '../jsi-interfaces';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import AudioParam from './AudioParam';
 import type BaseAudioContext from './BaseAudioContext';

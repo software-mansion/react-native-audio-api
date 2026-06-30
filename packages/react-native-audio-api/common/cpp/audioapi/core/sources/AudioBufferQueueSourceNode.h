@@ -2,13 +2,12 @@
 
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
-#include <audioapi/libs/signalsmith-stretch/signalsmith-stretch.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
+#include <audioapi/core/utils/buffer/QueueBufferProcessor.h>
 #include <cstddef>
 #include <list>
 #include <memory>
-#include "audioapi/core/utils/buffer/QueueBufferProcessor.h"
 
 namespace audioapi {
 
@@ -44,10 +43,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   /// @note Audio Thread only
   void disable() override;
 
-  /// @note Audio Thread only
-  void setOnBufferEndedCallbackId(uint64_t callbackId);
-
-  void unregisterOnBufferEndedCallback(uint64_t callbackId);
+  void assignOnBufferEndedCallbackId(uint64_t callbackId);
 
   /// @brief Set the channel count of the node. Channel count is set only once when the first buffer is enqueued.
   /// @param channelCount The channel count to set.
@@ -78,7 +74,7 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   double playedBuffersDuration_ = 0;
 
-  uint64_t onBufferEndedCallbackId_ = 0; // 0 means no callback
+  EventCaller<AudioEvent::BUFFER_ENDED> onBufferEndedEvent_;
 
   std::unique_ptr<QueueBufferProcessor> processor_;
 };

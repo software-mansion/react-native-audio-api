@@ -1,6 +1,6 @@
 import { AutomationEventData, AutomationEventType } from '../types';
 import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
-import { IAudioParam } from '../interfaces';
+import { IAudioParam } from '../jsi-interfaces';
 import type BaseAudioContext from './BaseAudioContext';
 import type AudioNode from './AudioNode';
 
@@ -140,13 +140,13 @@ export default class AudioParam {
       throw new InvalidStateError(`values must contain at least two values`);
     }
 
+    const clampedTime = Math.max(startTime, this.context.currentTime);
     this.checkCurveExclusion({
       type: AutomationEventType.SET_VALUE_CURVE,
-      automationTime: startTime,
+      automationTime: clampedTime,
       duration,
     });
 
-    const clampedTime = Math.max(startTime, this.context.currentTime);
     this.audioParam.setValueCurveAtTime(values, clampedTime, duration);
 
     return this;

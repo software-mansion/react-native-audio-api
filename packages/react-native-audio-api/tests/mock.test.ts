@@ -268,10 +268,10 @@ describe('React Native Audio API Mocks', () => {
       expect(recorder.options).toBeDefined();
     });
 
-    it('should support recording workflow', () => {
+    it('should support recording workflow', async () => {
       recorder.enableFileOutput();
 
-      const startResult = recorder.start();
+      const startResult = await recorder.start();
       expect(startResult.status).toBe('success');
       expect(recorder.isRecording()).toBe(true);
 
@@ -281,7 +281,7 @@ describe('React Native Audio API Mocks', () => {
       recorder.resume();
       expect(recorder.isPaused()).toBe(false);
 
-      const stopResult = recorder.stop();
+      const stopResult = await recorder.stop();
       expect(stopResult.status).toBe('success');
       // @ts-ignore - paths is not seen as the correct type
       expect(stopResult.paths?.length).toBeGreaterThan(0);
@@ -334,14 +334,6 @@ describe('React Native Audio API Mocks', () => {
       const buffer = await MockAPI.decodePCMInBase64(base64Data);
 
       expect(buffer).toBeInstanceOf(MockAPI.AudioBuffer);
-    });
-
-    it('should change playback speed', async () => {
-      const context = new MockAPI.AudioContext();
-      const inputBuffer = context.createBuffer(2, 1024, 44100);
-      const outputBuffer = await MockAPI.changePlaybackSpeed(inputBuffer, 1.5);
-
-      expect(outputBuffer).toBe(inputBuffer);
     });
 
     it('should concatenate audio files', async () => {

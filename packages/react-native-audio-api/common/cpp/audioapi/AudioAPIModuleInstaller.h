@@ -6,7 +6,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
-#include <audioapi/HostObjects/utils/AudioStretcherHostObject.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
@@ -33,13 +32,12 @@ class AudioAPIModuleInstaller {
     auto createAudioContext = getCreateAudioContextFunction(
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
     auto createAudioRecorder =
-        getCreateAudioRecorderFunction(jsiRuntime, audioEventHandlerRegistry);
+        getCreateAudioRecorderFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
     auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
     auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioFileUtils = getCreateAudioFileUtilsFunction(jsiRuntime, jsCallInvoker);
-    auto createAudioStretcher = getCreateAudioStretcherFunction(jsiRuntime, jsCallInvoker);
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
@@ -48,7 +46,6 @@ class AudioAPIModuleInstaller {
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioBuffer", createAudioBuffer);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioDecoder", createAudioDecoder);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioFileUtils", createAudioFileUtils);
-    jsiRuntime->global().setProperty(*jsiRuntime, "createAudioStretcher", createAudioStretcher);
 
     auto audioEventHandlerRegistryHostObject =
         std::make_shared<AudioEventHandlerRegistryHostObject>(audioEventHandlerRegistry);
@@ -133,18 +130,19 @@ class AudioAPIModuleInstaller {
 
   static jsi::Function getCreateAudioRecorderFunction(
       jsi::Runtime *jsiRuntime,
+      const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioRecorder"),
         0,
-        [audioEventHandlerRegistry](
+        [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto audioRecorderHostObject =
-              std::make_shared<AudioRecorderHostObject>(audioEventHandlerRegistry);
+          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
+              audioEventHandlerRegistry, &runtime, jsCallInvoker);
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 
@@ -167,24 +165,6 @@ class AudioAPIModuleInstaller {
           auto audioDecoderHostObject =
               std::make_shared<AudioDecoderHostObject>(&runtime, jsCallInvoker);
           return jsi::Object::createFromHostObject(runtime, audioDecoderHostObject);
-        });
-  }
-
-  static jsi::Function getCreateAudioStretcherFunction(
-      jsi::Runtime *jsiRuntime,
-      const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
-    return jsi::Function::createFromHostFunction(
-        *jsiRuntime,
-        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioStretcher"),
-        0,
-        [jsCallInvoker](
-            jsi::Runtime &runtime,
-            const jsi::Value &thisValue,
-            const jsi::Value *args,
-            size_t count) -> jsi::Value {
-          auto audioStretcherHostObject =
-              std::make_shared<AudioStretcherHostObject>(&runtime, jsCallInvoker);
-          return jsi::Object::createFromHostObject(runtime, audioStretcherHostObject);
         });
   }
 

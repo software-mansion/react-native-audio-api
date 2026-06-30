@@ -49,9 +49,10 @@ const Record: FC = () => {
       iosOptions: ['allowBluetoothHFP'],
     });
 
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.error('Failed to activate audio session:', error);
       Alert.alert(
         'Audio Session Error',
         'Failed to activate audio session for recording.'
@@ -73,7 +74,7 @@ const Record: FC = () => {
 
     audioRecorder.connect(audioContext, audioContext.destination);
 
-    const result = audioRecorder.start();
+    const result = await audioRecorder.start();
 
     if (result.status === 'error') {
       Alert.alert(
@@ -88,7 +89,7 @@ const Record: FC = () => {
 
   /// This stops only the recording, not the audio context
   const stopEcho = async () => {
-    audioRecorder.stop();
+    await audioRecorder.stop();
     audioContext.suspend();
 
     audioRecorder.disconnect();
@@ -113,9 +114,10 @@ const Record: FC = () => {
       iosOptions: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
     });
 
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.error('Failed to activate audio session:', error);
       Alert.alert(
         'Audio Session Error',
         'Failed to activate audio session for recording.'
@@ -147,7 +149,7 @@ const Record: FC = () => {
       return;
     }
 
-    const result = audioRecorder.start();
+    const result = await audioRecorder.start();
 
     if (result.status === 'error') {
       Alert.alert(
@@ -174,9 +176,10 @@ const Record: FC = () => {
       iosOptions: [],
     });
 
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.error('Failed to activate audio session:', error);
       Alert.alert(
         'Audio Session Error',
         'Failed to activate audio session for playback.'
@@ -225,7 +228,7 @@ const Record: FC = () => {
 
   useEffect(() => {
     return () => {
-      audioRecorder.stop();
+      void audioRecorder.stop();
       sourceNodesRef.current.forEach((source) => {
         source.disconnect();
       });

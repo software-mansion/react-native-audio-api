@@ -1,8 +1,21 @@
 cmake_minimum_required(VERSION 3.12.0)
 
-file(GLOB_RECURSE ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
-file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
-file(GLOB_RECURSE DSP_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/dsp/*.cpp")
+file(GLOB_RECURSE ANDROID_CPP_SOURCES_ABS CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/audioapi/*.cpp")
+file(GLOB_RECURSE COMMON_CPP_SOURCES_ABS CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
+file(GLOB_RECURSE DSP_CPP_SOURCES_ABS CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/dsp/*.cpp")
+
+foreach(src IN LISTS ANDROID_CPP_SOURCES_ABS)
+  file(RELATIVE_PATH rel_src "${CMAKE_CURRENT_SOURCE_DIR}" "${src}")
+  list(APPEND ANDROID_CPP_SOURCES "${rel_src}")
+endforeach()
+foreach(src IN LISTS COMMON_CPP_SOURCES_ABS)
+  file(RELATIVE_PATH rel_src "${CMAKE_CURRENT_SOURCE_DIR}" "${src}")
+  list(APPEND COMMON_CPP_SOURCES "${rel_src}")
+endforeach()
+foreach(src IN LISTS DSP_CPP_SOURCES_ABS)
+  file(RELATIVE_PATH rel_src "${CMAKE_CURRENT_SOURCE_DIR}" "${src}")
+  list(APPEND DSP_CPP_SOURCES "${rel_src}")
+endforeach()
 
 if (RN_AUDIO_API_FFMPEG_DISABLED)
   list(REMOVE_ITEM COMMON_CPP_SOURCES
@@ -30,6 +43,11 @@ set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external/android)
 set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs)
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
+
+# Debug-only allocation auditor used by BaseAudioContext::processGraph (mirrors iOS podspec).
+target_sources(react-native-audio-api PRIVATE
+  $<$<CONFIG:Debug>:${COMMON_CPP_DIR}/test/src/graph/AudioThreadGuard.cpp>
+)
 
 if (NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)

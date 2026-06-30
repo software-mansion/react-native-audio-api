@@ -17,7 +17,7 @@ interface Spec extends TurboModule {
   getDevicePreferredSampleRate(): number;
 
   // AVAudioSession management
-  setAudioSessionActivity(enabled: boolean): Promise<boolean>;
+  setAudioSessionActivity(enabled: boolean): Promise<void>;
   setAudioSessionOptions(
     category: string,
     mode: string,
@@ -40,7 +40,7 @@ interface Spec extends TurboModule {
 
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
-  setInputDevice(deviceId: string): Promise<boolean>;
+  setInputDevice(deviceId: string): Promise<void>;
 
   // Notification system
   showNotification(

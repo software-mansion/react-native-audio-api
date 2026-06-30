@@ -86,8 +86,14 @@ void SingleBufferProcessor::handleBoundary() {
 
   if (position_ >= static_cast<double>(endFrame_)) {
     position_ -= range;
+    if (direction_ == BufferProcessingDirection::FORWARD && onLoopEnded_) {
+      onLoopEnded_();
+    }
   } else if (position_ < static_cast<double>(startFrame_)) {
     position_ += range;
+    if (direction_ == BufferProcessingDirection::REVERSE && onLoopEnded_) {
+      onLoopEnded_();
+    }
   }
 }
 
