@@ -105,12 +105,9 @@ JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, probeDuration) {
 
     auto promise = promiseVendor_->createAsyncPromise(
         [pathOrUrl, sampleRate, headers = std::move(headers)]() -> PromiseResolver {
-          audiodecoding::AudioDurationResult result;
-          if (audiodecoding::isHttpUrl(pathOrUrl)) {
-            result = audiodecoding::probeDurationWithUrl(pathOrUrl, sampleRate, headers);
-          } else {
-            result = audiodecoding::probeDurationWithFilePath(pathOrUrl);
-          }
+          auto result = audiodecoding::isHttpUrl(pathOrUrl)
+              ? audiodecoding::probeDurationWithUrl(pathOrUrl, sampleRate, headers)
+              : audiodecoding::probeDurationWithFilePath(pathOrUrl);
 
           if (result.is_err()) {
             return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
