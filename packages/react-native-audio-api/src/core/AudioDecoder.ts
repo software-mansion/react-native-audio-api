@@ -3,7 +3,7 @@ import { NativeAudioAPIModule } from '../specs';
 
 import { AudioApiError } from '../errors';
 import { IAudioDecoder } from '../jsi-interfaces';
-import { DecodeDataInput } from '../types';
+import { AudioDurationInput, DecodeDataInput } from '../types';
 import {
   isBase64Source,
   isDataBlobString,
@@ -126,6 +126,13 @@ class AudioDecoder {
     return new AudioBuffer(buffer);
   }
 
+  private async getDurationFromLocalFile(
+    stringSource: string
+  ): Promise<number> {
+    const filePath = this.resolveLocalFilePath(stringSource);
+    return await this.decoder.getDurationWithFilePath(filePath);
+  }
+
   public static getInstance(): AudioDecoder {
     if (!AudioDecoder.instance) {
       AudioDecoder.instance = new AudioDecoder();
@@ -166,6 +173,30 @@ class AudioDecoder {
     );
     return new AudioBuffer(buffer);
   }
+
+  public async getAudioDurationInstance(
+    input: DecodeDataInput
+  ): Promise<number> {
+    if (input instanceof ArrayBuffer) {
+      throw new AudioApiError(
+        'ArrayBuffer duration probing is not currently supported.'
+      );
+    }
+
+    if (typeof input !== 'string') {
+      throw new TypeError('Input must be a local file path or file:// URI.');
+    }
+
+    this.assertSupportedStringSource(input);
+
+    if (isRemoteSource(input)) {
+      throw new AudioApiError(
+        'Remote source duration probing is not currently supported.'
+      );
+    }
+
+    return await this.getDurationFromLocalFile(input);
+  }
 }
 
 export async function decodeAudioData(
@@ -192,4 +223,10 @@ export async function decodePCMInBase64(
     inputChannelCount,
     isInterleaved
   );
+}
+
+export async function getAudioDuration(
+  input: AudioDurationInput
+): Promise<number> {
+  return AudioDecoder.getInstance().getAudioDurationInstance(input);
 }

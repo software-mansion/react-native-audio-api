@@ -15,8 +15,10 @@
 namespace audioapi::audiodecoding {
 
 using AudioBufferResult = Result<std::shared_ptr<AudioBuffer>, std::string>;
+using AudioDurationResult = Result<float, std::string>;
 
 [[nodiscard]] AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate);
+[[nodiscard]] AudioDurationResult getDurationWithFilePath(const std::string &path);
 [[nodiscard]] AudioBufferResult
 decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
 [[nodiscard]] AudioBufferResult decodeWithPCMInBase64(
@@ -32,6 +34,7 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
     const std::vector<std::string> &extensions);
 
 [[nodiscard]] bool isHttpUrl(const std::string &path);
+[[nodiscard]] bool isValidDuration(float duration);
 
 [[nodiscard]] inline bool needsFFmpeg(AudioFormat format) {
   return format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
