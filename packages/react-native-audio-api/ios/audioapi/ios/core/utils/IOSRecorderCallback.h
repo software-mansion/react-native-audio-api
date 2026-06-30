@@ -2,17 +2,21 @@
 
 #ifndef __OBJC__ // when compiled as C++
 typedef struct objc_object AVAudioFormat;
-typedef struct objc_object AudioBufferList;
 typedef struct objc_object AVAudioConverter;
+// AudioBufferList is forward-declared as a C struct by OwnedAudioBufferList.h.
 #endif
 
 #include <audioapi/core/utils/AudioRecorderCallback.h>
+#include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
+#include <audioapi/utils/SlotFreeList.hpp>
+#include <limits>
 #include <memory>
+#include <vector>
 
 struct CallbackData {
-  const AudioBufferList *audioBufferList;
+  size_t slot = std::numeric_limits<size_t>::max();
   int numFrames;
 };
 
@@ -47,6 +51,12 @@ class IOSRecorderCallback : public AudioRecorderCallback {
   AVAudioPCMBuffer *converterOutputBuffer_;
 
  private:
+  using FreeList = slots::SlotFreeList<RECORDER_CALLBACK_POOL_SIZE>;
+
+  std::vector<ios::OwnedAudioBufferListPtr> inputBufferPool_;
+  size_t inputBufferBytesPerBuffer_{0};
+  std::unique_ptr<FreeList> freeSlots_;
+
   std::unique_ptr<task_offloader::TaskOffloader<
       CallbackData,
       RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,

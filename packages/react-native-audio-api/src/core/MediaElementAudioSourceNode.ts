@@ -1,10 +1,7 @@
 import AudioNode from './AudioNode';
 import type AudioContext from './AudioContext';
 import { IAudioContext } from '../jsi-interfaces';
-import type {
-  AudioTagHandle,
-  InternalAudioTagHandle,
-} from '../development/react/Audio/types';
+import type { AudioTagHandle, InternalAudioTagHandle } from '../Audio/types';
 import { InvalidStateError } from '../errors';
 
 export interface MediaElementAudioSourceOptions {

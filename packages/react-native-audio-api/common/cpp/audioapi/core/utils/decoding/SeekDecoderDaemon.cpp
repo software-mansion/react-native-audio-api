@@ -1,4 +1,7 @@
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
+
+#include <algorithm>
+#include <cmath>
 #include <memory>
 #include <thread>
 #include <utility>
@@ -92,6 +95,22 @@ bool SeekDecoderDaemon::decodeNextChunk(
     return false;
   }
 
+  const float playbackRate = sharedState_->playbackRate.load(std::memory_order_acquire);
+
+  if (playbackRate == 0.0f) {
+    data.size = 0;
+    if (seekRequest.has_value()) {
+      data.state = StreamState::DISCONTINUOUS;
+      data.timestamp = seekRequest->seconds;
+    } else {
+      data.state = StreamState::PLAYING;
+      data.timestamp = decoder_->getCurrentPositionInSeconds();
+    }
+    return true;
+  }
+
+  // Decode at a fixed rate into the pipeline. Playback speed is applied later by WSOLA/resampling
+  // on the audio thread (same model as Chromium's AudioRendererAlgorithm buffer + FillBuffer).
   size_t framesRead = decoder_->readPcmFrames(data.interleavedBuffer.data(), RENDER_QUANTUM_SIZE);
 
   if (framesRead > 0) {

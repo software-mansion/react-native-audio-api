@@ -177,7 +177,7 @@ RCT_EXPORT_METHOD(
       }
     }
 
-    resolve(@(success));
+    resolve(nil);
   });
 }
 

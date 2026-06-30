@@ -17,7 +17,7 @@ interface Spec extends TurboModule {
   getDevicePreferredSampleRate(): number;
 
   // AVAudioSession management
-  setAudioSessionActivity(enabled: boolean): Promise<boolean>;
+  setAudioSessionActivity(enabled: boolean): Promise<void>;
   setAudioSessionOptions(
     category: string,
     mode: string,
@@ -40,7 +40,7 @@ interface Spec extends TurboModule {
 
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
-  setInputDevice(deviceId: string): Promise<boolean>;
+  setInputDevice(deviceId: string): Promise<void>;
 
   // New notification system
   showNotification(
@@ -65,7 +65,7 @@ const mockSync =
 const NativeAudioAPIModule: Spec = {
   install: mockSync(true),
   getDevicePreferredSampleRate: mockSync(0),
-  setAudioSessionActivity: mockAsync(true),
+  setAudioSessionActivity: mockAsync(undefined),
   setAudioSessionOptions: mockSync({}),
   disableSessionManagement: mockSync({}),
   observeAudioInterruptions: mockSync({}),
@@ -81,7 +81,7 @@ const NativeAudioAPIModule: Spec = {
     currentInputs: [],
     currentOutputs: [],
   }),
-  setInputDevice: mockAsync(true),
+  setInputDevice: mockAsync(undefined),
   showNotification: mockAsync({ success: true }),
   hideNotification: mockAsync({ success: true }),
   isNotificationActive: mockAsync(false),

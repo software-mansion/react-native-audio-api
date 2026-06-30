@@ -5,10 +5,8 @@ export const getAudioSettings = (
 ): AudioSettings => {
   switch (algorithm) {
     case 'linear':
-      return { pitchCorrection: false, PSOLA: false };
+      return { pitchCorrection: false };
     case 'pitchCorrection':
-      return { pitchCorrection: true, PSOLA: false };
-    case 'PSOLA':
-      return { pitchCorrection: false, PSOLA: true };
+      return { pitchCorrection: true };
   }
 };

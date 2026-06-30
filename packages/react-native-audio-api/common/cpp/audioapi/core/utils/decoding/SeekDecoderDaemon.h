@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
@@ -8,6 +9,7 @@
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <array>
+#include <atomic>
 #include <memory>
 #include <optional>
 #include <string>
@@ -39,6 +41,8 @@ struct AudioFileDecoderState {
   // Playback state
   std::atomic<double> currentTime{0.0};
   std::atomic<bool> loop{false};
+  std::atomic<float> playbackRate{1.0f};
+  std::atomic<bool> preservesPitch{true};
 
   /// True when the opened source is an FFmpeg HLS live/indefinite stream.
   std::atomic<bool> isHlsStreaming{false};
@@ -53,11 +57,14 @@ struct SeekRequest {
 enum class StreamState : std::uint8_t { PLAYING, DISCONTINUOUS, END_OF_STREAM };
 
 struct DecoderData {
-  std::array<
-      float,
-      static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) *
-          static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT)>
-      interleavedBuffer{};
+  /// Fixed inline storage — no heap alloc/free when chunks cross the SPSC channel to the audio
+  /// thread. Sized for one decode pull (independent of playback rate; WSOLA consumes at rate).
+  static constexpr size_t MAX_FRAMES = static_cast<size_t>(audioapi::RENDER_QUANTUM_SIZE) *
+      audioapi::WsolaTimeStretcher::MAX_PLAYBACK_RATE;
+  static constexpr size_t INTERLEAVED_BUFFER_CAPACITY =
+      MAX_FRAMES * static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT);
+
+  std::array<float, INTERLEAVED_BUFFER_CAPACITY> interleavedBuffer{};
   size_t size{};
   double timestamp{0.0};
   StreamState state{StreamState::PLAYING};

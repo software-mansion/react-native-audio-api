@@ -132,10 +132,10 @@ const MyRecorder: React.FC = () => {
     }
 
     // Activate audio session
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
-      console.warn('Could not activate the audio session');
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.warn('Could not activate the audio session', error);
       return;
     }
 
@@ -223,10 +223,10 @@ const MyRecorder: React.FC = () => {
     }
 
     // Activate audio session
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
-      console.warn('Could not activate the audio session');
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.warn('Could not activate the audio session', error);
       return;
     }
 
@@ -296,10 +296,10 @@ const MyRecorder: React.FC = () => {
     }
 
     // Activate audio session
-    const success = await AudioManager.setAudioSessionActivity(true);
-
-    if (!success) {
-      console.warn('Could not activate the audio session');
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.warn('Could not activate the audio session', error);
       return;
     }
 

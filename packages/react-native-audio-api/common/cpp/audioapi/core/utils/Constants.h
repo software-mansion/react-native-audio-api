@@ -18,10 +18,6 @@ inline constexpr int SEMITONES_PER_OCTAVE = 12;
 inline constexpr int BIQUAD_GAIN_DB_FACTOR = 40;
 inline constexpr float CENTS_TO_RATIO = 1.0f / 1200.0f;
 
-// stretcher
-inline constexpr float UPPER_FREQUENCY_LIMIT_DETECTION = 333.0f;
-inline constexpr float LOWER_FREQUENCY_LIMIT_DETECTION = 55.0f;
-
 // general
 inline constexpr float MOST_POSITIVE_SINGLE_FLOAT =
     static_cast<float>(std::numeric_limits<float>::max());

@@ -1,5 +1,6 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/AudioEventPayload.h>
 #include <memory>
 #include <string>
 
@@ -8,28 +9,14 @@ namespace audioapi {
 AudioFileWriter::AudioFileWriter(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties)
-    : fileProperties_(fileProperties), audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
+    : errorEvent_(audioEventHandlerRegistry), fileProperties_(fileProperties) {}
 
-void AudioFileWriter::setOnErrorCallback(uint64_t callbackId) {
-  errorCallbackId_.store(callbackId, std::memory_order_release);
-}
-
-void AudioFileWriter::clearOnErrorCallback() {
-  errorCallbackId_.store(0, std::memory_order_release);
+void AudioFileWriter::assignOnErrorCallbackId(uint64_t callbackId) {
+  errorEvent_.assignCallbackId(callbackId);
 }
 
 void AudioFileWriter::invokeOnErrorCallback(const std::string &message) {
-  uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
-
-  // TODO: only the line above is atomic, which means that between reading the callbackId and invoking the callback,
-  // the callback could be cleared. We need to ensure that the callback is still valid when invoking it.
-  // TL;DR: atomic szpont
-  if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
-    return;
-  }
-
-  audioEventHandlerRegistry_->dispatchEvent(
-      AudioEvent::RECORDER_ERROR, callbackId, StringPayload{.name = "message", .reason = message});
+  errorEvent_.dispatch(StringPayload{.name = "message", .reason = message});
 }
 
 bool AudioFileWriter::isFileOpen() {

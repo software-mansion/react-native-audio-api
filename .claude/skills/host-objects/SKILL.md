@@ -92,7 +92,7 @@ HostObjects/
     ├── JsEnumParser.h/.cpp      # Enum ↔ string conversions
     ├── NodeOptionsParser.h      # Parses JS option objects into C++ structs
     ├── AudioDecoderHostObject.h/.cpp
-    └── AudioStretcherHostObject.h/.cpp
+    └── AudioFileUtilsHostObject.h/.cpp
 ```
 
 ---

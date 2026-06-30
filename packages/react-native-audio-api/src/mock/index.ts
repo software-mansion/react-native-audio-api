@@ -1109,7 +1109,6 @@ export const AudioApiError = AudioApiErrorMock;
 
 // Export functions
 export {
-  changePlaybackSpeed,
   concatAudioFiles,
   decodeAudioData,
   decodePCMInBase64,

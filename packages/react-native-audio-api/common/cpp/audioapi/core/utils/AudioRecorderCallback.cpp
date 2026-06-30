@@ -5,6 +5,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/CircularArray.hpp>
 
+#include <audioapi/events/AudioEventPayload.h>
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -27,8 +28,9 @@ AudioRecorderCallback::AudioRecorderCallback(
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
       channelCount_(channelCount),
-      callbackId_(callbackId),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {
+      audioReadyEvent_(audioEventHandlerRegistry),
+      errorEvent_(audioEventHandlerRegistry) {
+  audioReadyEvent_.assignCallbackId(callbackId);
   ringBufferSize_ = std::max(bufferLength * 2, static_cast<size_t>(DEFAULT_RING_BUFFER_SIZE));
   circularBuffer_.resize(channelCount_);
 
@@ -66,37 +68,22 @@ void AudioRecorderCallback::emitAudioData(bool flush) {
 void AudioRecorderCallback::invokeCallback(
     const std::shared_ptr<AudioBuffer> &buffer,
     int numFrames) {
-  if (audioEventHandlerRegistry_) {
-    audioEventHandlerRegistry_->dispatchEvent(
-        AudioEvent::AUDIO_READY,
-        callbackId_,
-        AudioReadyPayload{
-            .buffer = std::make_shared<AudioBufferHostObject>(buffer),
-            .numFrames = numFrames,
-            .when = static_cast<double>(framesEmitted_) / sampleRate_});
-  }
+  audioReadyEvent_.dispatch(
+      AudioReadyPayload{
+          .buffer = std::make_shared<AudioBufferHostObject>(buffer),
+          .numFrames = numFrames,
+          .when = static_cast<double>(framesEmitted_) / sampleRate_});
   framesEmitted_ += numFrames;
 }
 
-void AudioRecorderCallback::setOnErrorCallback(uint64_t callbackId) {
-  errorCallbackId_.store(callbackId, std::memory_order_release);
-}
-
-void AudioRecorderCallback::clearOnErrorCallback() {
-  errorCallbackId_.store(0, std::memory_order_release);
+void AudioRecorderCallback::assignOnErrorCallbackId(uint64_t callbackId) {
+  errorEvent_.assignCallbackId(callbackId);
 }
 
 /// @brief Invokes the error callback with the provided message.
 /// @param message The error message to be sent to the callback.
 void AudioRecorderCallback::invokeOnErrorCallback(const std::string &message) {
-  uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
-
-  if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
-    return;
-  }
-
-  audioEventHandlerRegistry_->dispatchEvent(
-      AudioEvent::RECORDER_ERROR, callbackId, StringPayload{.name = "message", .reason = message});
+  errorEvent_.dispatch(StringPayload{.name = "message", .reason = message});
 }
 
 } // namespace audioapi

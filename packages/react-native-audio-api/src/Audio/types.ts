@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
-import type BaseAudioContext from '../../../core/BaseAudioContext';
-import type { IAudioFileSourceNode } from '../../../jsi-interfaces';
+import type BaseAudioContext from '../core/BaseAudioContext';
+import type { IAudioFileSourceNode } from '../jsi-interfaces';
 
 export interface AudioURISource {
   uri?: string | undefined;
@@ -31,6 +31,7 @@ export interface AudioTagHandle {
   seekToTime: (seconds: number) => void;
   setVolume: (volume: number) => void;
   setMuted: (muted: boolean) => void;
+  setPlaybackRate: (playbackRate: number) => void;
 }
 
 /**

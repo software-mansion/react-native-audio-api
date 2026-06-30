@@ -74,7 +74,7 @@ export interface AudioDevicesInfo {
 
 export interface IAudioManager {
   getDevicePreferredSampleRate(): number;
-  setAudioSessionActivity(enabled: boolean): Promise<boolean>;
+  setAudioSessionActivity(enabled: boolean): Promise<void>;
   setAudioSessionOptions(options: SessionOptions): void;
   disableSessionManagement(): void;
   observeAudioInterruptions(enabled: boolean): void;
@@ -89,5 +89,5 @@ export interface IAudioManager {
   requestNotificationPermissions(): Promise<PermissionStatus>;
   checkNotificationPermissions(): Promise<PermissionStatus>;
   getDevicesInfo(): Promise<AudioDevicesInfo>;
-  setInputDevice(deviceId: string): Promise<boolean>;
+  setInputDevice(deviceId: string): Promise<void>;
 }

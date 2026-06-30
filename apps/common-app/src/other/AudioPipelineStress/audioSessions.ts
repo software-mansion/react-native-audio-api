@@ -7,11 +7,7 @@ export async function activatePlaybackSession(): Promise<void> {
     iosOptions: [],
   });
 
-  const success = await AudioManager.setAudioSessionActivity(true);
-
-  if (!success) {
-    throw new Error('Failed to activate playback session');
-  }
+  await AudioManager.setAudioSessionActivity(true);
 }
 
 export async function activateRecordingSession(): Promise<void> {
@@ -21,9 +17,5 @@ export async function activateRecordingSession(): Promise<void> {
     iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
   });
 
-  const success = await AudioManager.setAudioSessionActivity(true);
-
-  if (!success) {
-    throw new Error('Failed to activate recording session');
-  }
+  await AudioManager.setAudioSessionActivity(true);
 }

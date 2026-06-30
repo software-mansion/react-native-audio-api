@@ -188,6 +188,8 @@ export interface AudioFileSourceOptions extends AudioNodeOptions {
   source: ArrayBuffer | string;
   loop?: boolean;
   volume?: number;
+  playbackRate?: number;
+  preservesPitch?: boolean;
 }
 
 export interface ConstantSourceOptions {

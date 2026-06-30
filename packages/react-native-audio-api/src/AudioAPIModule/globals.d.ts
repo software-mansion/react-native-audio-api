@@ -5,7 +5,6 @@ import type {
   IAudioFileUtils,
   IAudioRecorder,
   IAudioBuffer,
-  IAudioStretcher,
   IOfflineAudioContext,
 } from '../jsi-interfaces';
 
@@ -35,8 +34,6 @@ declare global {
   var createAudioDecoder: () => IAudioDecoder;
 
   var createAudioFileUtils: () => IAudioFileUtils;
-
-  var createAudioStretcher: () => IAudioStretcher;
 
   var AudioEventEmitter: IAudioEventEmitter;
 }

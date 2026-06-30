@@ -1,35 +1,33 @@
-import { AudioEventEmitter, AudioEventSubscription } from '../../../events';
-import type { EventEmptyType } from '../../../events/types';
+import { AudioEventEmitter } from '../events';
+import type { EventEmptyType } from '../events/types';
 import type {
   IAudioFileSourceNode,
   IAudioScheduledSourceNode,
-} from '../../../jsi-interfaces';
-import AudioScheduledSourceNode from '../../../core/AudioScheduledSourceNode';
+} from '../jsi-interfaces';
+import AudioScheduledSourceNode from '../core/AudioScheduledSourceNode';
 
 type AttachFileSourceOptions = {
   loop: boolean;
   onEnded: () => void;
 };
 
+const MAX_PLAYBACK_RATE = 4;
+
 export class AudioFileSourceNode extends AudioScheduledSourceNode {
   private readonly emitter = new AudioEventEmitter(
     globalThis.AudioEventEmitter
   );
 
-  private positionSubscription?: AudioEventSubscription;
-  private endedSubscription?: AudioEventSubscription;
-
   attach(options: AttachFileSourceOptions): { duration: number } {
     this.resetNodeAndSubscriptions();
 
-    this.endedSubscription = this.emitter.addAudioEventListener(
+    const sub = this.emitter.addAudioEventListener(
       'ended',
       (_event: EventEmptyType) => {
         options.onEnded();
       }
     );
-    (this.node as IAudioFileSourceNode).onEnded =
-      this.endedSubscription.subscriptionId;
+    (this.node as IAudioFileSourceNode).onEnded = sub.subscriptionId;
 
     return {
       duration: (this.node as IAudioFileSourceNode).duration,
@@ -60,6 +58,19 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     (this.node as IAudioFileSourceNode).loop = value;
   }
 
+  setPlaybackRate(value: number): void {
+    if (!Number.isFinite(value) || value < 0 || value > MAX_PLAYBACK_RATE) {
+      throw new Error(
+        `AudioFileSourceNode: playbackRate must be a non-negative number, less than or equal to ${MAX_PLAYBACK_RATE}.`
+      );
+    }
+    (this.node as IAudioFileSourceNode).playbackRate = value;
+  }
+
+  setPreservesPitch(value: boolean): void {
+    (this.node as IAudioFileSourceNode).preservesPitch = value;
+  }
+
   getFileSourceNode(): IAudioFileSourceNode {
     return this.node as IAudioFileSourceNode;
   }
@@ -77,30 +88,22 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
       return;
     }
     this.stopPositionTracking();
-    this.positionSubscription = this.emitter.addAudioEventListener(
+    const sub = this.emitter.addAudioEventListener(
       'positionChanged',
       (event) => {
         onTime(event.value);
       }
     );
-    (this.node as IAudioFileSourceNode).onPositionChanged =
-      this.positionSubscription.subscriptionId;
+    (this.node as IAudioFileSourceNode).onPositionChanged = sub.subscriptionId;
   }
 
   stopPositionTracking(): void {
-    this.positionSubscription?.remove();
-    this.positionSubscription = undefined;
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';
     }
   }
 
   private resetNodeAndSubscriptions(): void {
-    this.positionSubscription?.remove();
-    this.positionSubscription = undefined;
-    this.endedSubscription?.remove();
-    this.endedSubscription = undefined;
-
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';
       (this.node as IAudioFileSourceNode).onEnded = '0';

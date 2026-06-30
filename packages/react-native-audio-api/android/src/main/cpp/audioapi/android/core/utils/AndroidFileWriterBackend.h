@@ -2,13 +2,17 @@
 
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/utils/Result.hpp>
+#include <audioapi/utils/SlotFreeList.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
+#include <cstddef>
+#include <limits>
 #include <memory>
 #include <string>
+#include <vector>
 
 struct WriterData {
-  void *data;
+  size_t slot = std::numeric_limits<size_t>::max();
   int numFrames;
 };
 
@@ -39,20 +43,34 @@ class AndroidFileWriterBackend : public AudioFileWriter {
       int32_t streamChannelCount,
       int32_t streamMaxBufferSize,
       const std::string &fileNameOverride) = 0;
-  virtual void taskOffloaderFunction(WriterData data) = 0;
+  virtual void processWriterData(void *data, int numFrames) = 0;
 
  protected:
+  using FreeList = slots::SlotFreeList<FILE_WRITER_POOL_SIZE>;
+
   float streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSize_;
   std::string filePath_;
 
-  // delay initialization of offloader until prepare is called
+  bool initializePreallocatedInputPool();
+  void cleanupPreallocatedInputPool();
+
+  // Lifetime tied to the preallocated pool so a writer can be reopened after closeFile().
   std::unique_ptr<task_offloader::TaskOffloader<
       WriterData,
       FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
       FILE_WRITER_SPSC_WAIT_STRATEGY>>
       offloader_;
+
+ private:
+  void createOffloader();
+  void runWriterTask(WriterData data);
+
+  std::unique_ptr<std::byte[]> inputBufferPool_;
+  size_t inputBufferBytesPerSlot_{0};
+  std::vector<void *> inputBuffers_;
+  std::unique_ptr<FreeList> freeSlots_;
 };
 
 } // namespace audioapi

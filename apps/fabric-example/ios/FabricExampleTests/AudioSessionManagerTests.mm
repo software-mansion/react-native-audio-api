@@ -238,7 +238,7 @@
   self.manager.shouldManageSession = false;
   self.fakeSession.category = AVAudioSessionCategoryRecord;
 
-  XCTAssertTrue([self.manager configureAudioSession]);
+  XCTAssertTrue([self.manager configureAudioSession:nil]);
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
   XCTAssertEqual(self.fakeSession.setAllowHapticsCallCount, 0);
 }
@@ -246,7 +246,7 @@
 - (void)testConfigureAudioSessionNoOpsWhenDesiredOptionsAlreadySet
 {
   XCTAssertTrue([self.manager areDesiredOptionsSet]);
-  XCTAssertTrue([self.manager configureAudioSession]);
+  XCTAssertTrue([self.manager configureAudioSession:nil]);
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
   XCTAssertEqual(self.fakeSession.setAllowHapticsCallCount, 0);
 }
@@ -263,7 +263,7 @@
   self.fakeSession.categoryOptions = AVAudioSessionCategoryOptionMixWithOthers;
   self.fakeSession.allowHapticsAndSystemSoundsDuringRecording = NO;
 
-  XCTAssertTrue([self.manager configureAudioSession]);
+  XCTAssertTrue([self.manager configureAudioSession:nil]);
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
   XCTAssertEqual(self.fakeSession.setAllowHapticsCallCount, 1);
   XCTAssertEqualObjects(self.fakeSession.category, AVAudioSessionCategoryPlayAndRecord);
@@ -280,9 +280,13 @@
   self.fakeSession.setCategoryError =
       [NSError errorWithDomain:@"AudioSessionTests" code:100 userInfo:nil];
 
-  XCTAssertFalse([self.manager configureAudioSession]);
+  NSError *error = nil;
+  XCTAssertFalse([self.manager configureAudioSession:&error]);
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
   XCTAssertEqual(self.fakeSession.setAllowHapticsCallCount, 0);
+  XCTAssertNotNil(error);
+  XCTAssertEqualObjects(error.domain, @"AudioSessionTests");
+  XCTAssertEqual(error.code, 100);
 }
 
 - (void)testConfigureAudioSessionReturnsFalseWhenSettingHapticsFails
@@ -293,9 +297,13 @@
   self.fakeSession.setAllowHapticsError =
       [NSError errorWithDomain:@"AudioSessionTests" code:101 userInfo:nil];
 
-  XCTAssertFalse([self.manager configureAudioSession]);
+  NSError *error = nil;
+  XCTAssertFalse([self.manager configureAudioSession:&error]);
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
   XCTAssertEqual(self.fakeSession.setAllowHapticsCallCount, 1);
+  XCTAssertNotNil(error);
+  XCTAssertEqualObjects(error.domain, @"AudioSessionTests");
+  XCTAssertEqual(error.code, 101);
 }
 
 - (void)testSetAudioSessionOptionsUpdatesDesiredValuesAndReconfiguresWhenActive
@@ -410,10 +418,16 @@
   self.fakeSession.setCategoryError =
       [NSError errorWithDomain:@"AudioSessionTests" code:102 userInfo:nil];
 
-  XCTAssertFalse([self.manager activateSessionIfNeeded:false error:nil]);
+  NSError *error = nil;
+  XCTAssertFalse([self.manager activateSessionIfNeeded:false error:&error]);
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
   XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
   XCTAssertFalse(self.manager.isActive);
+  // The NSError from setCategory must propagate up through configureAudioSession so the JS
+  // bridge can surface the real AVFoundation domain/code instead of an opaque "unknown error".
+  XCTAssertNotNil(error);
+  XCTAssertEqualObjects(error.domain, @"AudioSessionTests");
+  XCTAssertEqual(error.code, 102);
 }
 
 - (void)testEnsureActiveNoOpsWhenSessionManagementIsDisabled
@@ -572,7 +586,7 @@
                         reject:^(NSString *code, NSString *message, NSError *error){
                         }];
 
-  XCTAssertEqualObjects(resolvedValue, @YES);
+  XCTAssertNil(resolvedValue);
   XCTAssertEqual(self.fakeSession.setPreferredInputCallCount, 1);
   XCTAssertEqualObjects(self.fakeSession.lastPreferredInput, input);
 }

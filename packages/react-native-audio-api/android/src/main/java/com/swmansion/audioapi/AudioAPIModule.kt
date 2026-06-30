@@ -113,7 +113,7 @@ class AudioAPIModule(
     enabled: Boolean,
     promise: Promise?,
   ) {
-    promise?.resolve(true)
+    promise?.resolve(null)
   }
 
   override fun setAudioSessionOptions(
@@ -184,7 +184,7 @@ class AudioAPIModule(
   ) {
     // TODO: noop for now, but it should be moved to upcoming
     // audio engine implementation for android (duplex stream)
-    promise?.resolve(true)
+    promise?.resolve(null)
   }
 
   // Notification system methods

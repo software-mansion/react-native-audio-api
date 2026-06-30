@@ -204,7 +204,7 @@ RAII mutex wrapper that can hold `nullptr` (no-op). Supports `Locker::tryLock(mu
 
 - **`AudioDecoder.h`** — decodes audio files to `AudioBuffer` (FFmpeg, conditional). Read the header.
 - **`AudioFileWriter.h`** — writes PCM to audio files. Read the header.
-- **`AudioStretcher.h`** — pitch/time stretching (signalsmith-stretch). Read the header.
+- **`WsolaTimeStretcher.h`** — pitch-preserving time stretch used by buffer/file sources. Read the header.
 - **`AudioRecorderCallback.h`** — callback adapter for the platform recorder. Internal.
 - **`worklets/WorkletsRunner.h`** — manages JS worklet execution on the audio thread. Internal.
 

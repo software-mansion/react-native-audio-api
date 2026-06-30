@@ -16,8 +16,8 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   explicit AudioBufferBaseSourceNodeHostObject(
       const std::shared_ptr<AudioBufferBaseSourceNode> &node,
       const BaseAudioBufferSourceOptions &options);
-
   ~AudioBufferBaseSourceNodeHostObject() override;
+  DELETE_COPY_AND_MOVE(AudioBufferBaseSourceNodeHostObject);
 
   JSI_PROPERTY_GETTER_DECL(detune);
   JSI_PROPERTY_GETTER_DECL(playbackRate);
@@ -34,13 +34,10 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   std::shared_ptr<AudioParamHostObject> playbackRateParam_;
 
   int onPositionChangedInterval_;
-  uint64_t onPositionChangedCallbackId_ = 0;
-
   double inputLatency_ = 0;
   double outputLatency_ = 0;
   bool pitchCorrection_;
 
-  void setOnPositionChangedCallbackId(uint64_t callbackId);
   void initStretch(int channelCount, float sampleRate);
 };
 

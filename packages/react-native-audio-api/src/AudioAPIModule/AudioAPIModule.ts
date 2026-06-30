@@ -64,7 +64,6 @@ class AudioAPIModule implements IAudioAPIModule {
       globalThis.createAudioBuffer != null &&
       globalThis.createAudioDecoder != null &&
       globalThis.createAudioFileUtils != null &&
-      globalThis.createAudioStretcher != null &&
       globalThis.AudioEventEmitter != null
     );
   }

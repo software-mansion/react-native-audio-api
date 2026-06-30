@@ -22,7 +22,7 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(
       startTime_(-1.0),
       stopTime_(-1.0),
       playbackState_(PlaybackState::UNSCHEDULED),
-      audioEventHandlerRegistry_(context->getAudioEventHandlerRegistry()) {}
+      onEndedEvent_(context->getAudioEventHandlerRegistry()) {}
 
 void AudioScheduledSourceNode::start(double when) {
 #if !RN_AUDIO_API_TEST
@@ -59,14 +59,6 @@ bool AudioScheduledSourceNode::isFinished() {
 
 bool AudioScheduledSourceNode::isStopScheduled() {
   return playbackState_ == PlaybackState::STOP_SCHEDULED;
-}
-
-void AudioScheduledSourceNode::setOnEndedCallbackId(const uint64_t callbackId) {
-  onEndedCallbackId_ = callbackId;
-}
-
-void AudioScheduledSourceNode::unregisterOnEndedCallback(uint64_t callbackId) {
-  audioEventHandlerRegistry_->unregisterHandler(AudioEvent::ENDED, callbackId);
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
@@ -161,12 +153,12 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 }
 
 void AudioScheduledSourceNode::disable() {
+  onEndedEvent_.dispatchEmptyFromAudioThread();
   AudioNode::disable();
+}
 
-  if (onEndedCallbackId_ != 0) {
-    audioEventHandlerRegistry_->dispatchEventFromAudioThread(
-        AudioEvent::ENDED, onEndedCallbackId_, EmptyPayload{});
-  }
+void AudioScheduledSourceNode::assignOnEndedCallbackId(uint64_t callbackId) {
+  onEndedEvent_.assignCallbackId(callbackId);
 }
 
 void AudioScheduledSourceNode::handleStopScheduled() {

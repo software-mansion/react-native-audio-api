@@ -4,11 +4,9 @@ import AudioBuffer from './AudioBuffer';
 import { RangeError } from '../errors';
 import type BaseAudioContext from './BaseAudioContext';
 import { BaseAudioBufferSourceOptions } from '../types';
-import { AudioEventSubscription } from '../events';
 import { OnBufferEndEventType } from '../events/types';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
-  private onBufferEndedSubscription?: AudioEventSubscription;
   private onBufferEndedCallback?: (event: OnBufferEndEventType) => void;
 
   constructor(
@@ -76,19 +74,18 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
   ) {
     if (!callback) {
       (this.node as IAudioBufferQueueSourceNode).onBufferEnded = '0';
-      this.onBufferEndedSubscription?.remove();
-      this.onBufferEndedSubscription = undefined;
       this.onBufferEndedCallback = undefined;
-
       return;
     }
 
     this.onBufferEndedCallback = callback;
-    this.onBufferEndedSubscription =
-      this.audioEventEmitter.addAudioEventListener('bufferEnded', callback);
+    const sub = this.audioEventEmitter.addAudioEventListener(
+      'bufferEnded',
+      callback
+    );
 
     (this.node as IAudioBufferQueueSourceNode).onBufferEnded =
-      this.onBufferEndedSubscription.subscriptionId;
+      sub.subscriptionId;
   }
 
   public pause(): void {
