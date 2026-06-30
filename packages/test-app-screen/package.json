@@ -1,6 +1,6 @@
 {
   "name": "rn-audio-api-test-screen",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "react-native test screen for rn-audio-api",
   "author": "michal.dydek@swmansion.com",
   "type": "commonjs",
