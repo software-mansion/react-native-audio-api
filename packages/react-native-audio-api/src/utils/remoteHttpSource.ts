@@ -1,3 +1,5 @@
+import { isFfmpegEnabled } from './flags';
+
 export function isRemoteHttpUrl(path: string): boolean {
   return path.startsWith('http://') || path.startsWith('https://');
 }
@@ -20,9 +22,8 @@ export async function detectHttpByteRanges(
       if (acceptRanges === 'bytes') {
         return true;
       }
-      if (acceptRanges === 'none') {
-        return false;
-      }
+
+      return false;
     }
   } catch {
     // HEAD may be blocked or unsupported — fall through to a Range GET probe.
@@ -48,14 +49,30 @@ export async function detectHttpByteRanges(
   return false;
 }
 
+async function downloadRemoteSource(
+  url: string,
+  headers?: Record<string, string>
+): Promise<ArrayBuffer> {
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new Error(`Failed to download remote audio (${response.status}).`);
+  }
+
+  return response.arrayBuffer();
+}
+
 /**
- * Stream via native URL when byte ranges work (or HLS); otherwise download
- * fully.
+ * Stream via native URL when FFmpeg is enabled and byte ranges work (or HLS);
+ * otherwise download fully so miniaudio can decode without FFmpeg.
  */
 export async function loadRemoteHttpSource(
   url: string,
   headers?: Record<string, string>
 ): Promise<ArrayBuffer | string> {
+  if (!isFfmpegEnabled()) {
+    return downloadRemoteSource(url, headers);
+  }
+
   if (isHlsPlaylistUrl(url)) {
     return url;
   }
@@ -65,10 +82,5 @@ export async function loadRemoteHttpSource(
     return url;
   }
 
-  const response = await fetch(url, { headers });
-  if (!response.ok) {
-    throw new Error(`Failed to download remote audio (${response.status}).`);
-  }
-
-  return response.arrayBuffer();
+  return downloadRemoteSource(url, headers);
 }

@@ -13,17 +13,10 @@ import type BaseAudioContext from '../core/BaseAudioContext';
 import { probeDuration } from '../core/AudioFileUtils';
 import { NotSupportedError } from '../errors';
 import { NativeAudioAPIModule } from '../specs';
-import { base64ToArrayBuffer } from '../utils';
-import {
-  DEFAULT_METADATA_SEGMENT_BYTES,
-  prefetchFileSegments,
-  supportsMetadataProbe,
-  usesUrlMetadataProbe,
-} from '../utils/metadataPrefetching';
+import { base64ToArrayBuffer, isFfmpegEnabled } from '../utils';
 import {
   isRemoteHttpUrl,
   loadRemoteHttpSource,
-  detectHttpByteRanges,
 } from '../utils/remoteHttpSource';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
 import type { AudioSource, PreloadType } from './types';
@@ -201,13 +194,6 @@ export function useAudioSourceLoader({
       return;
     }
 
-    const canSegmentProbe = supportsMetadataProbe(path);
-    const canUrlProbe = usesUrlMetadataProbe(path);
-    if (!canSegmentProbe && !canUrlProbe) {
-      setReady(true);
-      return;
-    }
-
     isFetchingCancelled.current = false;
     setReady(false);
     onLoadStartRef.current();
@@ -215,17 +201,11 @@ export function useAudioSourceLoader({
     const headers = getSourceHeaders(source);
 
     try {
-      const hasByteRanges = await detectHttpByteRanges(path, headers);
-      const useSegmentProbe = hasByteRanges && canSegmentProbe && !canUrlProbe;
-
-      const probedDuration = useSegmentProbe
-        ? await prefetchFileSegments({
-            url: path,
-            startBytes: DEFAULT_METADATA_SEGMENT_BYTES,
-            endBytes: DEFAULT_METADATA_SEGMENT_BYTES,
-            headers,
-          }).then((data) => probeDuration(data, context?.sampleRate))
-        : await probeDuration(path, context?.sampleRate, headers);
+      const probedDuration = await probeDuration(
+        path,
+        context?.sampleRate,
+        headers
+      );
 
       if (probedDuration && !isFetchingCancelled.current) {
         setDuration(probedDuration);
@@ -270,7 +250,12 @@ export function useAudioSourceLoader({
     }
 
     if (preloadMode === 'metadata') {
-      probeMetadataOnly();
+      if (!isFfmpegEnabled()) {
+        setReady(true);
+      } else {
+        probeMetadataOnly();
+      }
+
       return () => {
         isFetchingCancelled.current = true;
         disposeSource();

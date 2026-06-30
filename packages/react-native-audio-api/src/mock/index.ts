@@ -930,6 +930,8 @@ const concatAudioFiles = (
   return Promise.resolve(outputPath);
 };
 
+const isFfmpegEnabled = (): boolean => true;
+
 class AudioManagerMock {
   static getDevicePreferredSampleRate(): number {
     return 44100;
@@ -1098,6 +1100,7 @@ export {
   decodeAudioData,
   decodePCMInBase64,
   getAudioDuration,
+  isFfmpegEnabled,
   setMockSystemVolume,
   useSystemVolume,
 };
@@ -1200,6 +1203,7 @@ export default {
   getAudioDuration,
   changePlaybackSpeed,
   concatAudioFiles,
+  isFfmpegEnabled,
   useSystemVolume,
   setMockSystemVolume,
 

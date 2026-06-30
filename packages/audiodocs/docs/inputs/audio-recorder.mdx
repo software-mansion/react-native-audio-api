@@ -754,6 +754,10 @@ enum FileFormat {
 }
 ```
 
+:::caution Android + FFmpeg
+On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used).
+:::
+
 #### FileInfo
 
 ```tsx

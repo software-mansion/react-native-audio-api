@@ -7,6 +7,7 @@ export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
 export { default as AudioContext } from './core/AudioContext';
 export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
 export { concatAudioFiles, getAudioDuration } from './core/AudioFileUtils';
+export { isFfmpegEnabled } from './utils/flags';
 export { default as AudioDestinationNode } from './core/AudioDestinationNode';
 export { default as AudioNode } from './core/AudioNode';
 export { default as AudioParam } from './core/AudioParam';

@@ -27,6 +27,10 @@ export {
   getAudioDuration,
 } from './web-core/AudioDecoder.web';
 
+export function isFfmpegEnabled(): boolean {
+  return true;
+}
+
 export * from './web-core/custom';
 
 // React components (Audio tag)

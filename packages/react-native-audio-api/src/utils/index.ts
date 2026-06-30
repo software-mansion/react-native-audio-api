@@ -1,6 +1,8 @@
 import AudioAPIModule from '../AudioAPIModule';
 import { AudioApiError } from '../errors';
 
+export { isFfmpegEnabled } from './flags';
+
 export function assertWorkletsEnabled() {
   if (!AudioAPIModule.areWorkletsAvailable) {
     throw new AudioApiError(

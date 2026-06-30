@@ -75,25 +75,14 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 ### `preload`
 
 - `none` - Do not load on mount.
-- `metadata` - Load enough to probe duration.
+- `metadata` - Probe duration for remote sources via native URL metadata (requires FFmpeg). When FFmpeg is disabled in the build, this behaves like `none`.
 - `auto` (and empty string) - Load source immediately on mount (default behavior).
 
-#### `metadata` format support (native)
+#### `metadata` (native)
 
-Metadata preload without a full download is supported for remote sources whose path ends with one of these extensions:
+For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](/docs/utils/decoding#getaudioduration). This requires an FFmpeg-enabled build — check with [`isFfmpegEnabled`](/docs/flags/runtime-flags#isffmpegenabled).
 
-| Extension | Codec / container | Probe strategy |
-| :--- | :--- | :--- |
-| `.opus` | Opus | Byte-range prefetch |
-| `.mp4` | MP4 | Byte-range prefetch |
-| `.m4a` | M4A | Byte-range prefetch |
-| `.wav` | WAV | Byte-range prefetch |
-| `.flac` | FLAC | Byte-range prefetch |
-| `.mp3` | MP3 | Native URL metadata (requires FFmpeg) |
-| `.aac` | AAC | Native URL metadata (requires FFmpeg) |
-
-For `.mp3` and `.aac`, duration is read through the same native URL probing path as [`getAudioDuration`](/docs/utils/decoding#getaudioduration).
-Other listed formats fetch small byte ranges from the server when supported, then probe duration from that data.
+When FFmpeg is disabled, `preload="metadata"` is treated as `none`: the source is not fetched and duration stays unknown until playback starts.
 
 ## Ref handle (`AudioTagHandle`) methods
 
@@ -186,4 +175,4 @@ const MyAudioTagWrapper : React.FC = () => {
 
 ## Remarks
 
-- **FFmpeg:** Some formats require a build with FFmpeg; otherwise `createFileSource` may fail and `onError` receives a `NotSupportedError`.
+- **FFmpeg:** HLS and several compressed formats require an FFmpeg build for URL streaming. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. See [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used).
