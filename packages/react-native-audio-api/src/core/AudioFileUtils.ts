@@ -44,6 +44,14 @@ class AudioFileUtils {
   ): Promise<number | null> {
     return this.fileUtils.probeDuration(data, sampleRate);
   }
+
+  public async probeDurationFromUrlInstance(
+    url: string,
+    sampleRate?: number,
+    headers?: Record<string, string>
+  ): Promise<number | null> {
+    return this.fileUtils.probeDurationFromUrl(url, sampleRate, headers);
+  }
 }
 
 export async function concatAudioFiles(
@@ -72,5 +80,17 @@ export async function probeDuration(
   return AudioFileUtils.getInstance().probeDurationInstance(
     prefetchedData,
     sampleRate
+  );
+}
+
+export async function probeDurationFromUrl(
+  url: string,
+  sampleRate?: number,
+  headers?: Record<string, string>
+): Promise<number | null> {
+  return AudioFileUtils.getInstance().probeDurationFromUrlInstance(
+    url,
+    sampleRate,
+    headers
   );
 }

@@ -10,14 +10,20 @@ import {
 import { Platform } from 'react-native';
 
 import type BaseAudioContext from '../core/BaseAudioContext';
-import { probeDuration } from '../core/AudioFileUtils';
+import { probeDuration, probeDurationFromUrl } from '../core/AudioFileUtils';
 import { NotSupportedError } from '../errors';
 import { NativeAudioAPIModule } from '../specs';
 import { base64ToArrayBuffer } from '../utils';
 import {
   DEFAULT_METADATA_SEGMENT_BYTES,
   supportsMetadataProbe,
+  usesUrlMetadataProbe,
 } from '../utils/metadataPrefetching';
+import {
+  isRemoteHttpUrl,
+  loadRemoteHttpSource,
+  detectHttpByteRanges,
+} from '../utils/remoteHttpSource';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
 import type { AudioSource, PreloadType } from './types';
 import { getSourceHeaders } from './utils';
@@ -107,6 +113,7 @@ export function useAudioSourceLoader({
 
     const node = context.context.createFileSource({
       source: nextSource,
+      headers: getSourceHeaders(source),
       loop,
       volume: initialVolume,
       playbackRate: initialPlaybackRate,
@@ -140,7 +147,7 @@ export function useAudioSourceLoader({
     }
 
     return true;
-  }, [autoPlay, context, effectiveVolumeRef, loop]);
+  }, [autoPlay, context, effectiveVolumeRef, loop, source]);
 
   const loadPlaybackSource = useCallback(async (): Promise<boolean> => {
     if (!path) {
@@ -150,14 +157,12 @@ export function useAudioSourceLoader({
     isFetchingCancelled.current = false;
     setReady(false);
     onLoadStartRef.current();
+
     const headers = getSourceHeaders(source);
 
     try {
-      if (path.startsWith('http') && !path.endsWith('.m3u8')) {
-        const arrayBuffer = await fetch(path, { headers }).then((response) =>
-          response.arrayBuffer()
-        );
-        sourceRef.current = arrayBuffer;
+      if (isRemoteHttpUrl(path)) {
+        sourceRef.current = await loadRemoteHttpSource(path, headers);
       } else if (
         Platform.OS === 'android' &&
         !__DEV__ &&
@@ -190,7 +195,14 @@ export function useAudioSourceLoader({
   }, [path, source, spawnFileSource]);
 
   const probeMetadataOnly = useCallback(async (): Promise<void> => {
-    if (!path.startsWith('http') || !supportsMetadataProbe(path)) {
+    if (!isRemoteHttpUrl(path)) {
+      setReady(true);
+      return;
+    }
+
+    const canSegmentProbe = supportsMetadataProbe(path);
+    const canUrlProbe = usesUrlMetadataProbe(path);
+    if (!canSegmentProbe && !canUrlProbe) {
       setReady(true);
       return;
     }
@@ -199,14 +211,21 @@ export function useAudioSourceLoader({
     setReady(false);
     onLoadStartRef.current();
 
+    const headers = getSourceHeaders(source);
+
     try {
-      const probedDuration = await probeDuration(
-        path,
-        DEFAULT_METADATA_SEGMENT_BYTES,
-        DEFAULT_METADATA_SEGMENT_BYTES,
-        context?.sampleRate,
-        getSourceHeaders(source)
-      );
+      const hasByteRanges = await detectHttpByteRanges(path, headers);
+      const useSegmentProbe = hasByteRanges && canSegmentProbe && !canUrlProbe;
+
+      const probedDuration = useSegmentProbe
+        ? await probeDuration(
+            path,
+            DEFAULT_METADATA_SEGMENT_BYTES,
+            DEFAULT_METADATA_SEGMENT_BYTES,
+            context?.sampleRate,
+            headers
+          )
+        : await probeDurationFromUrl(path, context?.sampleRate, headers);
 
       if (probedDuration && !isFetchingCancelled.current) {
         setDuration(probedDuration);

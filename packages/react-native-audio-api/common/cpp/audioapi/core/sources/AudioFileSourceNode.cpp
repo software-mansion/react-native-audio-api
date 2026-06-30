@@ -43,9 +43,12 @@ AudioFileSourceNode::AudioFileSourceNode(
 
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
+  const bool useUrl = !options.sourceUrl.empty();
 
-  if (!useFilePath && !useData) {
-    assert(false && "AudioFileSourceNode requires either a file path or memory data to initialize");
+  if (!useFilePath && !useData && !useUrl) {
+    assert(
+        false &&
+        "AudioFileSourceNode requires a file path, remote URL, or memory data to initialize");
     return;
   }
 
@@ -103,6 +106,8 @@ bool AudioFileSourceNode::initDecoder(
   SeekDecoderDaemonOptions daemonOptions{
       .requiresFFmpeg = options.requiresFFmpeg,
       .filePath = std::move(options.filePath),
+      .sourceUrl = std::move(options.sourceUrl),
+      .httpHeaders = std::move(options.httpHeaders),
       .memoryData = std::move(options.data),
       .contextSampleRate = context->getSampleRate(),
       .loop = options.loop};

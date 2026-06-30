@@ -5,6 +5,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <cstddef>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -30,6 +31,8 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
     const std::string &path,
     const std::vector<std::string> &extensions);
 
+[[nodiscard]] bool isHttpUrl(const std::string &path);
+
 [[nodiscard]] inline bool needsFFmpeg(AudioFormat format) {
   return format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
 }
@@ -52,5 +55,10 @@ std::optional<double> probeDuration(const void *data, size_t size, int outputSam
   }
   return static_cast<double>(decoder.getDurationInSeconds());
 }
+
+[[nodiscard]] std::optional<double> probeDurationFromUrl(
+    const std::string &url,
+    int outputSampleRate,
+    const std::map<std::string, std::string> &headers);
 
 } // namespace audioapi::audiodecoding

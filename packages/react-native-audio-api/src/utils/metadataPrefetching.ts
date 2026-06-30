@@ -6,6 +6,9 @@ export const METADATA_PROBE_EXTENSIONS = [
   '.flac',
 ] as const;
 
+/** Formats where byte-range concat probing is unreliable; use native URL probe. */
+export const URL_METADATA_PROBE_EXTENSIONS = ['.mp3', '.aac'] as const;
+
 export const DEFAULT_METADATA_SEGMENT_BYTES = 1024 * 16;
 
 type PrefetchConfig = {
@@ -23,6 +26,13 @@ type PrefetchedSegment = {
 export function supportsMetadataProbe(path: string): boolean {
   const normalizedPath = path.split('?')[0].toLowerCase();
   return METADATA_PROBE_EXTENSIONS.some((extension) =>
+    normalizedPath.endsWith(extension)
+  );
+}
+
+export function usesUrlMetadataProbe(path: string): boolean {
+  const normalizedPath = path.split('?')[0].toLowerCase();
+  return URL_METADATA_PROBE_EXTENSIONS.some((extension) =>
     normalizedPath.endsWith(extension)
   );
 }

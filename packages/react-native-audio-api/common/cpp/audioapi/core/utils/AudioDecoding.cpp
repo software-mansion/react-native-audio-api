@@ -9,8 +9,10 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -49,6 +51,29 @@ AudioBufferResult decodeAll(decoding::IncrementalAudioDecoder &decoder) {
   auto audioBuffer = std::make_shared<AudioBuffer>(outputFrames, channels, outputSampleRate);
   audioBuffer->deinterleaveFrom(interleaved.data(), outputFrames);
   return Ok(std::move(audioBuffer));
+}
+
+std::optional<double> probeDurationFromUrl(
+    const std::string &url,
+    int outputSampleRate,
+    const std::map<std::string, std::string> &headers) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+  ffmpeg_decoder::FFmpegDecoder decoder;
+  const auto openResult = decoder.openUrl(outputSampleRate, url, headers);
+  if (openResult.is_err()) {
+    return std::nullopt;
+  }
+  const float duration = decoder.getDurationInSeconds();
+  decoder.close();
+  if (duration > 0 && std::isfinite(duration)) {
+    return static_cast<double>(duration);
+  }
+#else
+  (void)url;
+  (void)outputSampleRate;
+  (void)headers;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+  return std::nullopt;
 }
 
 // NOLINTBEGIN(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
@@ -106,6 +131,10 @@ bool pathHasExtension(const std::string &path, const std::vector<std::string> &e
   });
   return std::ranges::any_of(
       extensions, [&pathLower](const std::string &ext) { return pathLower.ends_with(ext); });
+}
+
+bool isHttpUrl(const std::string &path) {
+  return path.starts_with("http://") || path.starts_with("https://");
 }
 
 AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) {

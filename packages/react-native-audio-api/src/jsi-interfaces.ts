@@ -388,6 +388,11 @@ export interface IAudioFileUtils {
     data: ArrayBuffer,
     sampleRate?: number
   ) => Promise<number | null>;
+  probeDurationFromUrl: (
+    url: string,
+    sampleRate?: number,
+    headers?: Record<string, string>
+  ) => Promise<number | null>;
 }
 
 export interface IAudioEventEmitter {

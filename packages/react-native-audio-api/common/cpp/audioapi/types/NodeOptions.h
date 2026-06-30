@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -121,6 +122,8 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
 struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
   std::vector<uint8_t> data;
   std::string filePath;
+  std::string sourceUrl;
+  std::map<std::string, std::string> httpHeaders;
   bool requiresFFmpeg = false;
   bool loop = false;
   float volume = 1.0f;

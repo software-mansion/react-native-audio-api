@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cerrno>
 #include <cstring>
+#include <map>
 #include <thread>
 
 extern "C" {
@@ -45,6 +46,21 @@ inline constexpr int HLS_MAX_READ_RETRIES = 100;
 bool isTransientReadError(int errorCode) {
   return errorCode == AVERROR(EIO) || errorCode == AVERROR(ECONNRESET) ||
       errorCode == AVERROR(ETIMEDOUT) || errorCode == AVERROR(EPIPE);
+}
+
+std::string buildFfmpegHttpHeaders(const std::map<std::string, std::string> &headers) {
+  std::string headerBlock;
+  headerBlock.reserve(headers.size() * 32);
+  for (const auto &[key, value] : headers) {
+    if (key.empty()) {
+      continue;
+    }
+    headerBlock += key;
+    headerBlock += ": ";
+    headerBlock += value;
+    headerBlock += "\r\n";
+  }
+  return headerBlock;
 }
 
 } // namespace
@@ -205,24 +221,15 @@ decoding::DecoderResult FFmpegDecoder::setupSwr() {
   return Ok(None);
 }
 
-decoding::DecoderResult FFmpegDecoder::openFile(int outputSampleRate, const std::string &path) {
-  close();
-  if (path.empty()) {
-    return Err("FFmpegDecoder::openFile failed: path is empty");
-  }
-  const int openInputResult = avformat_open_input(&fmt_ctx_, path.c_str(), nullptr, nullptr);
-  if (openInputResult < 0) {
-    fmt_ctx_ = nullptr;
-    return Err(
-        "FFmpegDecoder::openFile failed: avformat_open_input failed: " +
-        parseFFmpegError(openInputResult));
-  }
+decoding::DecoderResult FFmpegDecoder::initializeDecodedStreams(
+    int outputSampleRate,
+    const char *errorContext) {
   const int streamInfoResult = avformat_find_stream_info(fmt_ctx_, nullptr);
   if (streamInfoResult < 0) {
     avformat_close_input(&fmt_ctx_);
     fmt_ctx_ = nullptr;
     return Err(
-        "FFmpegDecoder::openFile failed: avformat_find_stream_info failed: " +
+        std::string(errorContext) + " failed: avformat_find_stream_info failed: " +
         parseFFmpegError(streamInfoResult));
   }
   detectHlsStreamingMode();
@@ -239,11 +246,11 @@ decoding::DecoderResult FFmpegDecoder::openFile(int outputSampleRate, const std:
   frame_ = av_frame_alloc();
   if (packet_ == nullptr) {
     close();
-    return Err("FFmpegDecoder::openFile failed: av_packet_alloc returned null");
+    return Err(std::string(errorContext) + " failed: av_packet_alloc returned null");
   }
   if (frame_ == nullptr) {
     close();
-    return Err("FFmpegDecoder::openFile failed: av_frame_alloc returned null");
+    return Err(std::string(errorContext) + " failed: av_frame_alloc returned null");
   }
   auto swrResult = setupSwr();
   if (swrResult.is_err()) {
@@ -252,6 +259,49 @@ decoding::DecoderResult FFmpegDecoder::openFile(int outputSampleRate, const std:
   }
   total_output_frames_ = 0;
   return Ok(None);
+}
+
+decoding::DecoderResult FFmpegDecoder::openFile(int outputSampleRate, const std::string &path) {
+  close();
+  if (path.empty()) {
+    return Err("FFmpegDecoder::openFile failed: path is empty");
+  }
+  const int openInputResult = avformat_open_input(&fmt_ctx_, path.c_str(), nullptr, nullptr);
+  if (openInputResult < 0) {
+    fmt_ctx_ = nullptr;
+    return Err(
+        "FFmpegDecoder::openFile failed: avformat_open_input failed: " +
+        parseFFmpegError(openInputResult));
+  }
+  return initializeDecodedStreams(outputSampleRate, "FFmpegDecoder::openFile");
+}
+
+decoding::DecoderResult FFmpegDecoder::openUrl(
+    int outputSampleRate,
+    const std::string &url,
+    const std::map<std::string, std::string> &headers) {
+  close();
+  if (url.empty()) {
+    return Err("FFmpegDecoder::openUrl failed: url is empty");
+  }
+
+  AVDictionary *options = nullptr;
+  av_dict_set(&options, "protocol_whitelist", "file,http,https,tcp,tls,crypto,hls", 0);
+
+  const std::string headerBlock = buildFfmpegHttpHeaders(headers);
+  if (!headerBlock.empty()) {
+    av_dict_set(&options, "headers", headerBlock.c_str(), 0);
+  }
+
+  const int openInputResult = avformat_open_input(&fmt_ctx_, url.c_str(), nullptr, &options);
+  av_dict_free(&options);
+  if (openInputResult < 0) {
+    fmt_ctx_ = nullptr;
+    return Err(
+        "FFmpegDecoder::openUrl failed: avformat_open_input failed: " +
+        parseFFmpegError(openInputResult));
+  }
+  return initializeDecodedStreams(outputSampleRate, "FFmpegDecoder::openUrl");
 }
 
 decoding::DecoderResult
@@ -298,39 +348,7 @@ FFmpegDecoder::openMemory(int outputSampleRate, const void *data, size_t size) {
         "FFmpegDecoder::openMemory failed: avformat_open_input failed: " +
         parseFFmpegError(openInputResult));
   }
-  const int streamInfoResult = avformat_find_stream_info(fmt_ctx_, nullptr);
-  if (streamInfoResult < 0) {
-    close();
-    return Err(
-        "FFmpegDecoder::openMemory failed: avformat_find_stream_info failed: " +
-        parseFFmpegError(streamInfoResult));
-  }
-  detectHlsStreamingMode();
-  auto codecResult = openCodec(fmt_ctx_, audio_stream_index_, &codec_ctx_);
-  if (codecResult.is_err()) {
-    close();
-    return codecResult;
-  }
-  output_channels_ = codec_ctx_->ch_layout.nb_channels;
-  output_sample_rate_ = (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
-
-  packet_ = av_packet_alloc();
-  frame_ = av_frame_alloc();
-  if (packet_ == nullptr) {
-    close();
-    return Err("FFmpegDecoder::openMemory failed: av_packet_alloc returned null");
-  }
-  if (frame_ == nullptr) {
-    close();
-    return Err("FFmpegDecoder::openMemory failed: av_frame_alloc returned null");
-  }
-  auto swrResult = setupSwr();
-  if (swrResult.is_err()) {
-    close();
-    return swrResult;
-  }
-  total_output_frames_ = 0;
-  return Ok(None);
+  return initializeDecodedStreams(outputSampleRate, "FFmpegDecoder::openMemory");
 }
 
 void FFmpegDecoder::appendFrameResampled(AVFrame *frame) {
@@ -591,6 +609,12 @@ namespace audioapi::ffmpeg_decoder {
 FFmpegDecoder::~FFmpegDecoder() = default;
 void FFmpegDecoder::close() {}
 decoding::DecoderResult FFmpegDecoder::openFile(int, const std::string &) {
+  return Err("FFmpeg is disabled");
+}
+decoding::DecoderResult FFmpegDecoder::openUrl(
+    int,
+    const std::string &,
+    const std::map<std::string, std::string> &) {
   return Err("FFmpeg is disabled");
 }
 decoding::DecoderResult FFmpegDecoder::openMemory(int, const void *, size_t) {

@@ -17,6 +17,7 @@ class AudioFileUtilsHostObject : public JsiHostObject {
 
   JSI_HOST_FUNCTION_DECL(concatAudioFiles);
   JSI_HOST_FUNCTION_DECL(probeDuration);
+  JSI_HOST_FUNCTION_DECL(probeDurationFromUrl);
 
  private:
   std::shared_ptr<PromiseVendor> promiseVendor_;

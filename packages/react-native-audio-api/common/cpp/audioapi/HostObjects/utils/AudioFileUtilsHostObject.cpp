@@ -1,4 +1,5 @@
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
+#include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/utils/AudioFileConcatenator.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
@@ -9,6 +10,7 @@
 
 #include <jsi/jsi.h>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -41,7 +43,8 @@ AudioFileUtilsHostObject::AudioFileUtilsHostObject(
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioFileUtilsHostObject, concatAudioFiles),
-      JSI_EXPORT_FUNCTION(AudioFileUtilsHostObject, probeDuration));
+      JSI_EXPORT_FUNCTION(AudioFileUtilsHostObject, probeDuration),
+      JSI_EXPORT_FUNCTION(AudioFileUtilsHostObject, probeDurationFromUrl));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, concatAudioFiles) {
@@ -104,6 +107,38 @@ JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, probeDuration) {
   auto promise = promiseVendor_->createAsyncPromise(
       [bytes = std::vector<uint8_t>(data, data + size), sampleRate]() -> PromiseResolver {
         auto duration = probeDurationWithDecoder(bytes.data(), bytes.size(), sampleRate);
+        if (!duration.has_value()) {
+          return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+            return jsi::Value::null();
+          };
+        }
+
+        return [duration = duration.value()](
+                   jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+          return jsi::Value(duration);
+        };
+      });
+
+  return promise;
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, probeDurationFromUrl) {
+  if (count < 1 || !args[0].isString()) {
+    throw jsi::JSError(runtime, "probeDurationFromUrl expects a URL string.");
+  }
+
+  const auto url = args[0].asString(runtime).utf8(runtime);
+  const auto sampleRate =
+      count > 1 && args[1].isNumber() ? static_cast<int>(args[1].getNumber()) : 0;
+
+  std::map<std::string, std::string> headers;
+  if (count > 2 && args[2].isObject()) {
+    headers = audioapi::option_parser::parseHttpHeaders(runtime, args[2].asObject(runtime));
+  }
+
+  auto promise = promiseVendor_->createAsyncPromise(
+      [url, sampleRate, headers = std::move(headers)]() -> PromiseResolver {
+        auto duration = audiodecoding::probeDurationFromUrl(url, sampleRate, headers);
         if (!duration.has_value()) {
           return [](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
             return jsi::Value::null();

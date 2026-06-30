@@ -123,6 +123,13 @@ decoding::DecoderResult MiniAudioDecoder::openFile(
   return Ok(None);
 }
 
+decoding::DecoderResult MiniAudioDecoder::openUrl(
+    int /*outputSampleRate*/,
+    const std::string & /*url*/,
+    const std::map<std::string, std::string> & /*headers*/) {
+  return Err("MiniAudioDecoder::openUrl failed: remote URLs require FFmpeg");
+}
+
 decoding::DecoderResult MiniAudioDecoder::openMemory(
     int outputSampleRate,
     const void *data,
