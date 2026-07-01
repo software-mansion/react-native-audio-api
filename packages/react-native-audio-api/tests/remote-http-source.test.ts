@@ -53,4 +53,26 @@ describe('loadRemoteHttpSource', () => {
       headers: { Authorization: 'token' },
     });
   });
+
+  it('downloads when forceDownload is true even if byte ranges work', async () => {
+    isFfmpegEnabledMock.mockReturnValue(true);
+    const buffer = new ArrayBuffer(8);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => buffer,
+    });
+
+    await expect(
+      loadRemoteHttpSource(
+        'https://example.com/song.mp3',
+        { Authorization: 'token' },
+        true
+      )
+    ).resolves.toBe(buffer);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/song.mp3', {
+      headers: { Authorization: 'token' },
+    });
+  });
 });

@@ -55,6 +55,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `muted` | `boolean` | `false` | Muted state. |
 | `volume` | `number` | `1` | Linear volume passed to the underlying source. |
 | `preload` | `PreloadType` | `'auto'` | Loading strategy for the source (`'none'`, `'metadata'`, `'auto'`). |
+| `forceDownload` | `boolean` | `false` | **Native only.** When `true`, download the full remote file in JS instead of streaming via HTTP byte ranges (useful when servers rate-limit range requests). Ignored on web and for HLS (`.m3u8`) sources. |
 | `playbackRate` | `number` | `1` | Playback speed. Native playback accepts rates up to x4; negative reverse playback is not supported. No-op for HLS files playback. |
 | `preservesPitch` | `boolean` | `true` | Preserve pitch when `playbackRate` changes. Set to `false` to let pitch change with playback speed. |
 | `onLoadStart` | `() => void` | no-op | Load started. |

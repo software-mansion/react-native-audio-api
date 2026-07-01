@@ -27,6 +27,7 @@ type UseAudioSourceLoaderParams = {
   path: string;
   source: AudioSource;
   preloadMode: PreloadType;
+  forceDownload: boolean;
   loop: boolean;
   playbackRate: number;
   preservesPitch: boolean;
@@ -53,6 +54,7 @@ export function useAudioSourceLoader({
   path,
   source,
   preloadMode,
+  forceDownload,
   loop,
   playbackRate,
   preservesPitch,
@@ -156,7 +158,11 @@ export function useAudioSourceLoader({
 
     try {
       if (isRemoteHttpUrl(path)) {
-        sourceRef.current = await loadRemoteHttpSource(path, headers);
+        sourceRef.current = await loadRemoteHttpSource(
+          path,
+          headers,
+          forceDownload
+        );
       } else if (
         Platform.OS === 'android' &&
         !__DEV__ &&
@@ -186,7 +192,7 @@ export function useAudioSourceLoader({
       setReady(false);
       return false;
     }
-  }, [path, source, spawnFileSource]);
+  }, [forceDownload, path, source, spawnFileSource]);
 
   const probeMetadataOnly = useCallback(async (): Promise<void> => {
     if (!isRemoteHttpUrl(path)) {

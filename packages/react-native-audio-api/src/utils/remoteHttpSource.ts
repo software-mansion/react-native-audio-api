@@ -4,12 +4,12 @@ export function isRemoteHttpUrl(path: string): boolean {
   return path.startsWith('http://') || path.startsWith('https://');
 }
 
-export function isHlsPlaylistUrl(path: string): boolean {
+function isHlsPlaylistUrl(path: string): boolean {
   return path.split('?')[0].toLowerCase().includes('.m3u8');
 }
 
 /** Detect whether the server supports HTTP byte ranges (HEAD, then Range probe). */
-export async function detectHttpByteRanges(
+async function detectHttpByteRanges(
   url: string,
   headers?: Record<string, string>
 ): Promise<boolean> {
@@ -49,7 +49,7 @@ export async function detectHttpByteRanges(
   return false;
 }
 
-async function downloadRemoteSource(
+async function downloadRemoteHttpSource(
   url: string,
   headers?: Record<string, string>
 ): Promise<ArrayBuffer> {
@@ -67,14 +67,15 @@ async function downloadRemoteSource(
  */
 export async function loadRemoteHttpSource(
   url: string,
-  headers?: Record<string, string>
+  headers?: Record<string, string>,
+  forceDownload = false
 ): Promise<ArrayBuffer | string> {
-  if (!isFfmpegEnabled()) {
-    return downloadRemoteSource(url, headers);
-  }
-
   if (isHlsPlaylistUrl(url)) {
     return url;
+  }
+
+  if (!isFfmpegEnabled() || forceDownload) {
+    return downloadRemoteHttpSource(url, headers);
   }
 
   const hasByteRanges = await detectHttpByteRanges(url, headers);
@@ -82,5 +83,5 @@ export async function loadRemoteHttpSource(
     return url;
   }
 
-  return downloadRemoteSource(url, headers);
+  return downloadRemoteHttpSource(url, headers);
 }

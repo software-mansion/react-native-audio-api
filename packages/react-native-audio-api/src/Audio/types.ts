@@ -48,6 +48,11 @@ interface AudioControlProps {
   loop: boolean;
   muted: boolean;
   preload: PreloadType;
+  /**
+   * When true, download the full remote file instead of streaming via HTTP
+   * ranges. Native only — ignored on web.
+   */
+  forceDownload: boolean;
   source: AudioSource;
   playbackRate: number;
   preservesPitch: boolean;
