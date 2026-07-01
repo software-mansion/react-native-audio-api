@@ -37,7 +37,7 @@ OpenFileResult IOSRotatingFileWriter::openFile(
   streamFormat_ = streamFormat;
   streamMaxBufferSizeInFrames_ = streamMaxBufferSizeInFrames;
   if (!fileNameOverride.empty()) {
-    fileProperties_->fileNamePrefix = fileNameOverride;
+    fileProperties_->fileNamePrefix = fileNameOverride + fileProperties_->fileNamePrefix;
   }
   if (currentWriter_ == nullptr) {
     currentWriter_ = writerFactory_(fileProperties_);
