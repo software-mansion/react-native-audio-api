@@ -7,7 +7,7 @@ sidebar_label: Runtime flags
 
 These helpers let you check at runtime which optional native features are compiled into your app. They are synchronous and safe to call from JavaScript after the library has been installed.
 
-Use them to branch UI or loading logic — for example, skip remote metadata preload when FFmpeg is disabled, hide streaming controls when [`StreamerNode`](/docs/sources/streamer-node) is unavailable, or offer only WAV recording on Android.
+Use them to branch UI or loading logic — for example, skip remote metadata preload when FFmpeg is disabled, disable hls streaming, or offer only WAV recording on Android.
 
 :::info Build-time vs runtime
 To **disable** optional libraries at build time (and reduce app size), see [Disabling prebuilt libraries](/docs/other/disabling-prebuilt-libraries). Runtime flags only tell you what ended up in the binary you are running.
@@ -34,7 +34,7 @@ if (!isFfmpegEnabled()) {
 
 | Area | API | Requires FFmpeg for |
 | :--- | :--- | :--- |
-| Streaming | [`StreamerNode`](/docs/sources/streamer-node) | HLS playback |
+| Streaming | [`Audio tag`](/docs/sources/audio-tag) | HLS playback |
 | Playback | [`createFileSource`](/docs/core/base-audio-context#createfilesource), [`<Audio>`](/docs/experimental/audio-tag) | Remote URL streaming, HLS (`.m3u8`), local `.mp4` / `.m4a` / `.aac`. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. |
 | Decoding | [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) | `.aac`, `.mp4`, `.m4a` (and remote URLs for any format) |
 | Metadata | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](/docs/experimental/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing |
