@@ -135,6 +135,7 @@ OpenFileResult IOSFileWriter::openFile(
     freeSlots_ = std::make_unique<FreeList>();
     freeSlots_->seed();
 
+    isFileOpen_.store(true, std::memory_order_release);
     return OpenFileResult::Ok([[fileURL_ path] UTF8String]);
   }
 }
@@ -158,6 +159,7 @@ void IOSFileWriter::rollbackFailedOpen()
   }
 
   framesWritten_.store(0, std::memory_order_release);
+  isFileOpen_.store(false, std::memory_order_release);
 }
 
 /// @brief Closes the currently open audio file and finalizes writing.
@@ -170,9 +172,11 @@ CloseFileResult IOSFileWriter::closeFile()
     NSError *error;
     std::string filePath = [[fileURL_ path] UTF8String];
 
-    if (audioFile_ == nil) {
+    if (!isFileOpen() || audioFile_ == nil) {
       return CloseFileResult::Err("file is not open: " + filePath);
     }
+
+    isFileOpen_.store(false, std::memory_order_release);
 
     offloader_.reset();
     freeSlots_.reset();
@@ -205,8 +209,7 @@ CloseFileResult IOSFileWriter::closeFile()
 /// This method should be called from the audio thread.
 void IOSFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
-  if (audioFile_ == nil) {
-    invokeOnErrorCallback("Attempted to write audio data when file is not open");
+  if (!isFileOpen() || audioFile_ == nil) {
     return;
   }
   if (offloader_ == nullptr || freeSlots_ == nullptr || inputBufferPool_.empty() ||

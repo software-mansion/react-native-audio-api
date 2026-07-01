@@ -23,6 +23,7 @@ import {
   ConstantSourceOptions,
   ConvolverOptions,
   DelayOptions,
+  DecodeDataInput,
   GainOptions,
   OscillatorOptions,
   PeriodicWaveOptions,
@@ -867,6 +868,41 @@ const decodePCMInBase64 = (_base64Data: string): Promise<AudioBufferMock> => {
   );
 };
 
+const getAudioDuration = (_input: DecodeDataInput): Promise<number> => {
+  if (_input instanceof ArrayBuffer) {
+    return Promise.resolve(1);
+  }
+
+  if (
+    typeof _input === 'string' &&
+    _input.startsWith('data:audio/') &&
+    _input.includes(';base64,')
+  ) {
+    return Promise.reject(
+      new AudioApiErrorMock(
+        'Base64 source decoding is not currently supported, to decode raw PCM base64 strings use decodePCMInBase64 method.'
+      )
+    );
+  }
+
+  if (typeof _input === 'string' && _input.startsWith('blob:')) {
+    return Promise.reject(
+      new AudioApiErrorMock(
+        'Data Blob string decoding is not currently supported.'
+      )
+    );
+  }
+
+  return Promise.resolve(1);
+};
+
+const changePlaybackSpeed = (
+  buffer: AudioBufferMock,
+  _speed: number
+): Promise<AudioBufferMock> => {
+  return Promise.resolve(buffer);
+};
+
 const concatAudioFiles = (
   inputPaths: string[],
   outputPath: string
@@ -893,6 +929,8 @@ const concatAudioFiles = (
 
   return Promise.resolve(outputPath);
 };
+
+const isFfmpegEnabled = (): boolean => true;
 
 class AudioManagerMock {
   static getDevicePreferredSampleRate(): number {
@@ -1061,6 +1099,8 @@ export {
   concatAudioFiles,
   decodeAudioData,
   decodePCMInBase64,
+  getAudioDuration,
+  isFfmpegEnabled,
   setMockSystemVolume,
   useSystemVolume,
 };
@@ -1160,7 +1200,10 @@ export default {
   // Functions
   decodeAudioData,
   decodePCMInBase64,
+  getAudioDuration,
+  changePlaybackSpeed,
   concatAudioFiles,
+  isFfmpegEnabled,
   useSystemVolume,
   setMockSystemVolume,
 

@@ -216,6 +216,7 @@ android {
       "**/librrc_root.so",
       "**/libjscexecutor.so",
       "**/libv8executor.so",
+      "**/libworklets.so",
       "**/libreanimated.so"
     ]
   }

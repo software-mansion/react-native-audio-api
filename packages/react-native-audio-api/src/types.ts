@@ -186,6 +186,7 @@ export interface ConvolverOptions extends AudioNodeOptions {
 
 export interface AudioFileSourceOptions extends AudioNodeOptions {
   source: ArrayBuffer | string;
+  headers?: Record<string, string>;
   loop?: boolean;
   volume?: number;
   playbackRate?: number;
@@ -254,6 +255,7 @@ export interface WaveShaperOptions extends AudioNodeOptions {
 }
 
 export type DecodeDataInput = number | string | ArrayBuffer;
+export type AudioDurationInput = string | ArrayBuffer;
 
 export interface AudioRecorderStartOptions {
   fileNameOverride?: string;

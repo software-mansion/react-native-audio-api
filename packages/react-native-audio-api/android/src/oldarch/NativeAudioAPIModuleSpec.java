@@ -43,6 +43,10 @@ public abstract class NativeAudioAPIModuleSpec extends ReactContextBaseJavaModul
   @DoNotStrip
   public abstract double getDevicePreferredSampleRate();
 
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  @DoNotStrip
+  public abstract boolean isFfmpegEnabled();
+
   @ReactMethod
   @DoNotStrip
   public abstract void setAudioSessionActivity(boolean enabled, Promise promise);

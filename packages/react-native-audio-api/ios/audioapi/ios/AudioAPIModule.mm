@@ -130,6 +130,15 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
   return [self.audioSessionManager getDevicePreferredSampleRate];
 }
 
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(isFfmpegEnabled)
+{
+#if RN_AUDIO_API_FFMPEG_DISABLED
+  return @NO;
+#else
+  return @YES;
+#endif
+}
+
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(resolveAndroidReleaseAsset : (NSString *)assetPath)
 {
   return NULL; //noop

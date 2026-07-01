@@ -30,7 +30,9 @@ export default interface BaseAudioContext {
   createBiquadFilter(): BiquadFilterNode;
   createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode;
   createConvolver(): ConvolverNode;
-  createBufferSource(): AudioBufferSourceNode;
+  createBufferSource(options?: {
+    pitchCorrection: boolean;
+  }): AudioBufferSourceNode;
   createBuffer(
     numOfChannels: number,
     length: number,

@@ -15,6 +15,7 @@ type AudioFocusType =
 interface Spec extends TurboModule {
   install(): boolean;
   getDevicePreferredSampleRate(): number;
+  isFfmpegEnabled(): boolean;
 
   // AVAudioSession management
   setAudioSessionActivity(enabled: boolean): Promise<void>;

@@ -10,6 +10,7 @@
 #include <audioapi/utils/SpscChannel.hpp>
 #include <array>
 #include <atomic>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,6 +22,8 @@ struct SeekDecoderDaemonOptions {
   bool requiresFFmpeg;
   // source
   std::string filePath;
+  std::string sourceUrl;
+  std::map<std::string, std::string> httpHeaders;
   std::vector<uint8_t> memoryData;
   // playback
   float contextSampleRate;

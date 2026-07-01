@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -31,6 +32,10 @@ class MiniAudioDecoder : public decoding::IncrementalAudioDecoder {
       int outputSampleRate,
       const void *data,
       size_t size) override;
+  [[nodiscard]] decoding::DecoderResult openUrl(
+      int outputSampleRate,
+      const std::string &url,
+      const std::map<std::string, std::string> &headers = {}) override;
   [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
   void close() override;
   [[nodiscard]] bool isOpen() const override;

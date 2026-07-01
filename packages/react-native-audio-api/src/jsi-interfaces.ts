@@ -385,8 +385,9 @@ export interface IAudioFileUtils {
     outputPath: string
   ) => Promise<string>;
   probeDuration: (
-    data: ArrayBuffer,
-    sampleRate?: number
+    input: ArrayBuffer | string,
+    sampleRate?: number,
+    headers?: Record<string, string>
   ) => Promise<number | null>;
 }
 

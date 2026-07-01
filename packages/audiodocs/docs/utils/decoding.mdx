@@ -2,12 +2,12 @@
 sidebar_position: 1
 ---
 
-import { Optional, MobileOnly } from '@site/src/components/Badges';
+import { Optional } from '@site/src/components/Badges';
 
 # Decoding
 
-You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) and
-[`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64).
+You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata),
+[`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64), and [`getAudioDuration`](/docs/utils/decoding#getaudioduration).
 
 If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function;
 the decoded audio will then be automatically resampled to match the context's `sampleRate`.
@@ -23,7 +23,7 @@ Supported file formats:
 - m4a
 - mp4
 
-Last three formats are decoded with ffmpeg on the mobile, [see for more info](/docs/other/ffmpeg-info).
+Last three formats are decoded with ffmpeg on the mobile, [see for more info](/docs/flags/runtime-flags#where-ffmpeg-is-used).
 :::
 
 ### `decodeAudioData`
@@ -82,6 +82,69 @@ import { decodeAudioData } from 'react-native-audio-api';
 const url = ... // url to an audio
 
 const buffer = await decodeAudioData(url);
+```
+</details>
+
+### `getAudioDuration`
+
+Reads the duration of an audio source without decoding the full file into an [`AudioBuffer`](/docs/sources/audio-buffer).
+Use this when you only need the encoded file duration. Use [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) when you need sample data for playback or processing.
+
+On mobile, duration is read from file metadata via the native decoder. Local paths, `file://` URIs, remote `http(s):` URLs, and `ArrayBuffer` input are supported.
+Remote URL probing requires FFmpeg in the native build — see [Runtime flags](/docs/flags/runtime-flags#isffmpegenabled).
+Asset module ids, base64 data URLs, and blob URLs are rejected explicitly.
+
+On web, this API uses browser audio metadata loading and supports sources the browser can load, such as remote URLs, relative URLs, blob URLs, and data URLs.
+
+There is no `sampleRate` option because the returned duration belongs to the encoded source and does not depend on a caller-selected output sample rate.
+
+<table>
+  <thead>
+    <tr>
+      <th align="center">Parameter</th>
+      <th align="center">Type</th>
+      <th align="center">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="2" align="center"><code>input</code></td>
+      <td align="center"><code>ArrayBuffer</code></td>
+      <td align="center">Encoded audio bytes (mobile only).</td>
+    </tr>
+    <tr>
+      <td align="center"><code>string</code></td>
+      <td align="center">Local path, <code>file://</code> URI, or remote URL.</td>
+    </tr>
+    <tr>
+      <td align="center"><code>fetchOptions</code><Optional /></td>
+      <td align="center"><code>[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)</code></td>
+      <td align="center">Additional fetch options when <code>input</code> is a remote URL (for example, auth headers).</td>
+    </tr>
+  </tbody>
+</table>
+
+#### Returns `Promise<number>` with the duration in seconds.
+
+Throws an error when duration metadata is unavailable or when the input type is not supported.
+
+<details>
+<summary>Example reading local file duration</summary>
+```tsx
+import { getAudioDuration } from 'react-native-audio-api';
+
+const duration = await getAudioDuration('file:///tmp/recording.wav');
+```
+</details>
+
+<details>
+<summary>Example reading remote URL duration</summary>
+```tsx
+import { getAudioDuration } from 'react-native-audio-api';
+
+const duration = await getAudioDuration('https://example.com/audio.mp3', {
+  headers: { Authorization: 'Bearer token' },
+});
 ```
 </details>
 

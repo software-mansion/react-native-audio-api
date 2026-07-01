@@ -1,5 +1,6 @@
 #include <audioapi/android/AudioAPIModule.h>
 #include <audioapi/android/JniEventPayloadParser.h>
+#include <audioapi/android/system/NativeFileInfo.hpp>
 #include <memory>
 
 namespace audioapi {
@@ -53,6 +54,9 @@ void AudioAPIModule::registerNatives() {
 }
 
 void AudioAPIModule::injectJSIBindings() {
+  // cache app directory paths on the attached thread
+  NativeFileInfo::warmCache();
+
 #if RN_AUDIO_API_ENABLE_WORKLETS
   auto uiWorkletRuntime = weakWorkletsModuleProxy_.lock()->getUIWorkletRuntime();
 #else

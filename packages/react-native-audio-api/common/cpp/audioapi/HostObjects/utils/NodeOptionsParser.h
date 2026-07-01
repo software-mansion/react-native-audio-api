@@ -6,15 +6,46 @@
 #include <cstddef>
 #include <cstdio>
 #include <limits>
+#include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/core/utils/AudioDecoding.hpp>
+#include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
 
 namespace audioapi::option_parser {
+
+inline std::map<std::string, std::string> parseHttpHeaders(
+    jsi::Runtime &runtime,
+    const jsi::Object &headersObject) {
+  std::map<std::string, std::string> headers;
+  const auto propertyNames = headersObject.getPropertyNames(runtime);
+  const auto count = propertyNames.size(runtime);
+  for (size_t i = 0; i < count; ++i) {
+    const auto keyValue = propertyNames.getValueAtIndex(runtime, i);
+    if (!keyValue.isString()) {
+      continue;
+    }
+    const auto key = keyValue.asString(runtime).utf8(runtime);
+    const auto value = headersObject.getProperty(runtime, key.c_str());
+    if (value.isString()) {
+      headers.emplace(key, value.asString(runtime).utf8(runtime));
+    }
+  }
+  return headers;
+}
+
+inline void mergeHttpHeaders(
+    std::map<std::string, std::string> &target,
+    const std::map<std::string, std::string> &incoming) {
+  for (const auto &[key, value] : incoming) {
+    target[key] = value;
+  }
+}
+
 inline AudioNodeOptions parseAudioNodeOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
@@ -320,12 +351,29 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
 
   auto sourceValue = optionsObject.getProperty(runtime, "source");
   if (sourceValue.isString()) {
-    options.filePath = sourceValue.asString(runtime).utf8(runtime);
-    options.requiresFFmpeg =
-        audiodecoding::pathHasExtension(options.filePath, {".mp4", ".m4a", ".aac", ".m3u8"});
+    const auto path = sourceValue.asString(runtime).utf8(runtime);
+    if (audiodecoding::isHttpUrl(path)) {
+      options.sourceUrl = path;
+      options.requiresFFmpeg = true;
+    } else {
+      options.filePath = path;
+      options.requiresFFmpeg =
+          audiodecoding::pathHasExtension(path, {".mp4", ".m4a", ".aac", ".m3u8"});
+    }
   } else if (sourceValue.isObject()) {
     auto sourceObj = sourceValue.asObject(runtime);
-    if (sourceObj.isArrayBuffer(runtime)) {
+    if (sourceObj.hasProperty(runtime, "uri")) {
+      const auto uriValue = sourceObj.getProperty(runtime, "uri");
+      if (uriValue.isString()) {
+        options.sourceUrl = uriValue.asString(runtime).utf8(runtime);
+        options.requiresFFmpeg = true;
+      }
+      const auto sourceHeadersValue = sourceObj.getProperty(runtime, "headers");
+      if (sourceHeadersValue.isObject()) {
+        mergeHttpHeaders(
+            options.httpHeaders, parseHttpHeaders(runtime, sourceHeadersValue.asObject(runtime)));
+      }
+    } else if (sourceObj.isArrayBuffer(runtime)) {
       auto arrayBuffer = sourceObj.getArrayBuffer(runtime);
       auto *data = arrayBuffer.data(runtime);
       auto size = arrayBuffer.size(runtime);
@@ -336,11 +384,17 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     }
   }
 
+  const auto headersValue = optionsObject.getProperty(runtime, "headers");
+  if (headersValue.isObject()) {
+    mergeHttpHeaders(
+        options.httpHeaders, parseHttpHeaders(runtime, headersValue.asObject(runtime)));
+  }
+
 #if RN_AUDIO_API_FFMPEG_DISABLED
   if (options.requiresFFmpeg) {
     throw jsi::JSError(
         runtime,
-        "AudioFileSourceNode: source format (.mp4, .m4a, .aac, .m3u8) requires FFmpeg, "
+        "AudioFileSourceNode: remote URLs and formats (.mp4, .m4a, .aac, .m3u8) require FFmpeg, "
         "which is disabled in this build.");
   }
 #endif

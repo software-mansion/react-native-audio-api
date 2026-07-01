@@ -3,6 +3,7 @@
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <cstddef>
+#include <map>
 #include <string>
 
 namespace audioapi::decoding {
@@ -23,6 +24,16 @@ class IncrementalAudioDecoder {
   /// @param path The path to the file.
   /// @return Ok(None) on success or Err(message) on failure.
   [[nodiscard]] virtual DecoderResult openFile(int outputSampleRate, const std::string &path) = 0;
+
+  /// @brief Opens a remote HTTP(S) URL for incremental decoding via FFmpeg.
+  /// @param outputSampleRate The output sample rate.
+  /// @param url The remote URL (http:// or https://).
+  /// @param headers Optional HTTP request headers (e.g. Authorization).
+  /// @return Ok(None) on success or Err(message) on failure.
+  [[nodiscard]] virtual DecoderResult openUrl(
+      int outputSampleRate,
+      const std::string &url,
+      const std::map<std::string, std::string> &headers = {}) = 0;
 
   /// @brief Opens a memory block for decoding.
   /// @param outputSampleRate The output sample rate.

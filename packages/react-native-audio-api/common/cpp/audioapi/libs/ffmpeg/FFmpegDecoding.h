@@ -14,6 +14,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 #include <cstddef>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -35,7 +36,7 @@ struct MemoryIOContext {
 
 /**
  * FFmpeg decoder with incremental read, analogous to ma_decoder:
- *   1) openFile or openMemory
+ *   1) openFile, openUrl, or openMemory
  *   2) readPcmFrames repeatedly; 0 returned = end of stream
  *   3) close when done
  */
@@ -47,6 +48,11 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
 
   [[nodiscard]] decoding::DecoderResult openFile(int outputSampleRate, const std::string &path)
       override;
+
+  [[nodiscard]] decoding::DecoderResult openUrl(
+      int outputSampleRate,
+      const std::string &url,
+      const std::map<std::string, std::string> &headers = {}) override;
 
   [[nodiscard]] decoding::DecoderResult
   openMemory(int outputSampleRate, const void *data, size_t size) override;
@@ -76,6 +82,9 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 
  private:
+  [[nodiscard]] decoding::DecoderResult initializeDecodedStreams(
+      int outputSampleRate,
+      const char *errorContext);
   [[nodiscard]] decoding::DecoderResult setupSwr();
   [[nodiscard]] decoding::DecoderResult feedPipeline();
   void appendFrameResampled(AVFrame *frame);

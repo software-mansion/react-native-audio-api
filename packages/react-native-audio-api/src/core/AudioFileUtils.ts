@@ -1,6 +1,13 @@
 import { AudioApiError } from '../errors';
 import { IAudioFileUtils } from '../jsi-interfaces';
-import { prefetchFileSegments } from '../utils/metadataPrefetching';
+import { AudioDurationInput } from '../types';
+import { headersFromRequestInit } from '../utils';
+import {
+  isBase64Source,
+  isDataBlobString,
+  isRemoteSource,
+  resolveLocalFilePath,
+} from '../utils/paths';
 
 class AudioFileUtils {
   private static instance: AudioFileUtils | null = null;
@@ -39,10 +46,50 @@ class AudioFileUtils {
   }
 
   public async probeDurationInstance(
-    data: ArrayBuffer,
-    sampleRate?: number
+    input: ArrayBuffer | string,
+    sampleRate?: number,
+    headers?: Record<string, string>
   ): Promise<number | null> {
-    return this.fileUtils.probeDuration(data, sampleRate);
+    return this.fileUtils.probeDuration(input, sampleRate, headers);
+  }
+
+  public async getAudioDurationInstance(
+    input: AudioDurationInput,
+    fetchOptions?: RequestInit
+  ): Promise<number> {
+    let duration: number | null;
+
+    if (input instanceof ArrayBuffer) {
+      duration = await this.probeDurationInstance(input);
+    } else if (typeof input !== 'string') {
+      throw new TypeError(
+        'Input must be a local file path, remote URL, or ArrayBuffer.'
+      );
+    } else {
+      if (isBase64Source(input)) {
+        throw new AudioApiError(
+          'Base64 source decoding is not currently supported, to decode raw PCM base64 strings use decodePCMInBase64 method.'
+        );
+      }
+
+      if (isDataBlobString(input)) {
+        throw new AudioApiError(
+          'Data Blob string decoding is not currently supported.'
+        );
+      }
+
+      const headers = headersFromRequestInit(fetchOptions);
+      const source = isRemoteSource(input)
+        ? input
+        : resolveLocalFilePath(input);
+      duration = await this.probeDurationInstance(source, 0, headers);
+    }
+
+    if (duration === null) {
+      throw new AudioApiError('Audio duration metadata is unavailable');
+    }
+
+    return duration;
   }
 }
 
@@ -57,20 +104,23 @@ export async function concatAudioFiles(
 }
 
 export async function probeDuration(
-  url: string,
-  startBytes: number,
-  endBytes: number,
+  input: ArrayBuffer | string,
   sampleRate?: number,
-  headers?: { [key: string]: string }
+  headers?: Record<string, string>
 ): Promise<number | null> {
-  const prefetchedData = await prefetchFileSegments({
-    url,
-    startBytes,
-    endBytes,
-    headers,
-  });
   return AudioFileUtils.getInstance().probeDurationInstance(
-    prefetchedData,
-    sampleRate
+    input,
+    sampleRate,
+    headers
+  );
+}
+
+export async function getAudioDuration(
+  input: AudioDurationInput,
+  fetchOptions?: RequestInit
+): Promise<number> {
+  return AudioFileUtils.getInstance().getAudioDurationInstance(
+    input,
+    fetchOptions
   );
 }

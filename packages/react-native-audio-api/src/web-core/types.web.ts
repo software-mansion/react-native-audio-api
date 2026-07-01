@@ -10,7 +10,10 @@ export interface AudioBufferSourceNodeBackend {
   disconnect(destination?: AudioNode | AudioParam): void;
 
   start(when?: number, offset?: number, duration?: number): void;
-  stop(when: number): void;
+  stop(when?: number): void;
+
+  get onEnded(): ((event: Event) => void) | null;
+  set onEnded(callback: ((event: Event) => void) | null);
 
   get buffer(): AudioBuffer | null;
   set buffer(buffer: AudioBuffer | null);

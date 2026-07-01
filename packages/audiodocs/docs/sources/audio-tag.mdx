@@ -1,18 +1,10 @@
 ---
-sidebar_position: 1
+sidebar_position: 6
 ---
-
-import { Experimental } from '@site/src/components/Badges';
 
 # Audio tag (`<Audio>`)
 
-<Experimental />
-
 React component that mimics web `<Audio>` behavior.
-
-:::caution
-This API is exported from `react-native-audio-api` and is still **experimental**: behavior and props may change.
-:::
 
 ## Usage
 
@@ -55,6 +47,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `muted` | `boolean` | `false` | Muted state. |
 | `volume` | `number` | `1` | Linear volume passed to the underlying source. |
 | `preload` | `PreloadType` | `'auto'` | Loading strategy for the source (`'none'`, `'metadata'`, `'auto'`). |
+| `forceDownload` | `boolean` | `false` | **Native only.** When `true`, download the full remote file in JS instead of streaming via HTTP byte ranges (useful when servers rate-limit range requests). Ignored on web and for HLS (`.m3u8`) sources. |
 | `playbackRate` | `number` | `1` | Playback speed. Native playback accepts rates up to x4; negative reverse playback is not supported. No-op for HLS files playback. |
 | `preservesPitch` | `boolean` | `true` | Preserve pitch when `playbackRate` changes. Set to `false` to let pitch change with playback speed. |
 | `onLoadStart` | `() => void` | no-op | Load started. |
@@ -75,20 +68,14 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 ### `preload`
 
 - `none` - Do not load on mount.
-- `metadata` - Load enough to probe duration.
+- `metadata` - Probe duration for remote sources via native URL metadata (requires FFmpeg). When FFmpeg is disabled in the build, this behaves like `none`.
 - `auto` (and empty string) - Load source immediately on mount (default behavior).
 
-#### `metadata` format support (native)
+#### `metadata` (native)
 
-Metadata preload without a full download is only supported for remote sources whose path ends with one of these extensions:
+For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](/docs/utils/decoding#getaudioduration). This requires an FFmpeg-enabled build — check with [`isFfmpegEnabled`](/docs/flags/runtime-flags#isffmpegenabled).
 
-| Extension | Codec / container |
-| :--- | :--- |
-| `.opus` | Opus |
-| `.mp4` | MP4 |
-| `.m4a` | M4A |
-| `.wav` | WAV |
-| `.flac` | FLAC |
+When FFmpeg is disabled, `preload="metadata"` is treated as `none`: the source is not fetched and duration stays unknown until playback starts.
 
 ## Ref handle (`AudioTagHandle`) methods
 
@@ -181,4 +168,4 @@ const MyAudioTagWrapper : React.FC = () => {
 
 ## Remarks
 
-- **FFmpeg:** Some formats require a build with FFmpeg; otherwise `createFileSource` may fail and `onError` receives a `NotSupportedError`.
+- **FFmpeg:** HLS and several compressed formats require an FFmpeg build for URL streaming. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. See [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used).
