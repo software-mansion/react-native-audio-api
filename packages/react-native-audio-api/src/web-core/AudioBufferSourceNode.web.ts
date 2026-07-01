@@ -28,8 +28,16 @@ export default class AudioBufferSourceNode {
     this.node.start(when, offset, duration);
   }
 
-  stop(when: number = 0): void {
+  stop(when?: number): void {
     this.node.stop(when);
+  }
+
+  get onEnded(): ((event: Event) => void) | null {
+    return this.node.onEnded;
+  }
+
+  set onEnded(callback: ((event: Event) => void) | null) {
+    this.node.onEnded = callback;
   }
 
   get detune(): AudioParam {
