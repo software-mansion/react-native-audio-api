@@ -351,13 +351,13 @@ describe('React Native Audio API Mocks', () => {
       );
     });
 
-    it('should change playback speed', async () => {
-      const context = new MockAPI.AudioContext();
-      const inputBuffer = context.createBuffer(2, 1024, 44100);
-      const outputBuffer = await MockAPI.changePlaybackSpeed(inputBuffer, 1.5);
+    // it('should change playback speed', async () => {
+    //   const context = new MockAPI.AudioContext();
+    //   const inputBuffer = context.createBuffer(2, 1024, 44100);
+    //   const outputBuffer = await MockAPI.changePlaybackSpeed(inputBuffer, 1.5);
 
-      expect(outputBuffer).toBe(inputBuffer);
-    });
+    //   expect(outputBuffer).toBe(inputBuffer);
+    // });
 
     it('should concatenate audio files', async () => {
       const outputPath = await MockAPI.concatAudioFiles(

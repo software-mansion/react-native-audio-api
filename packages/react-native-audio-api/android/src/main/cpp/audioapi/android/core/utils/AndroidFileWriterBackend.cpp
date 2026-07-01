@@ -63,8 +63,8 @@ void AndroidFileWriterBackend::cleanupPreallocatedInputPool() {
 }
 
 void AndroidFileWriterBackend::writeAudioData(void *data, int numFrames) {
-  if (offloader_ == nullptr || freeSlots_ == nullptr || inputBufferBytesPerSlot_ == 0 ||
-      inputBuffers_.empty()) {
+  if (!isFileOpen() || offloader_ == nullptr || freeSlots_ == nullptr ||
+      inputBufferBytesPerSlot_ == 0 || inputBuffers_.empty()) {
     return;
   }
 
