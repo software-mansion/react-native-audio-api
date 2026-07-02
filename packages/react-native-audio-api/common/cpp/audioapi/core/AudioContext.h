@@ -10,7 +10,9 @@
 #include <memory>
 
 namespace audioapi {
-#ifdef ANDROID
+#ifdef RN_AUDIO_API_NODE
+class NodeAudioPlayer;
+#elif defined(ANDROID)
 class AudioPlayer;
 #else
 class IOSAudioPlayer;
@@ -36,7 +38,9 @@ class AudioContext : public BaseAudioContext {
   void initialize(const AudioDestinationNode *destination) final;
 
  private:
-#ifdef ANDROID
+#ifdef RN_AUDIO_API_NODE
+  std::shared_ptr<NodeAudioPlayer> audioPlayer_;
+#elif defined(ANDROID)
   std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;

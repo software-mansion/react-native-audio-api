@@ -1,0 +1,10 @@
+[
+  {
+    "pattern": "/crashtests/",
+    "reason": "excluded in smoke profile"
+  },
+  {
+    "pattern": "/resources/",
+    "reason": "support files, not executable tests"
+  }
+]
