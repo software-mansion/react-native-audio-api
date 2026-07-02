@@ -12051,10 +12051,12 @@ react-loadable-ssr-addon-v5-slorber@^1.0.1:
   dependencies:
     "@types/react" "*"
 
-react-native-audio-api@*:
-  version "0.8.2"
-  resolved "https://registry.yarnpkg.com/react-native-audio-api/-/react-native-audio-api-0.8.2.tgz#5deb4ffe07538b8d1c747af3903025632a23f6a2"
-  integrity sha512-p+a7gL1wy09yXoqUTYdO+tAQe/G7DpWFrFUDULu4dFUsyPaVd0T10Y7Nf5P391Ldg5A6F/aIfoUtKf150RyKmw==
+react-native-audio-api@latest:
+  version "0.13.1"
+  resolved "https://registry.yarnpkg.com/react-native-audio-api/-/react-native-audio-api-0.13.1.tgz#e998747f490ae0b638106a2e719d4f9e5483b924"
+  integrity sha512-FuUcj/flfWImRFQkxpJVJe0HueQxwliCjeI+kVcWQPOj46mkpsbEhvNF0IPRNwWiDl1GaiYka8oLShZ+Y7Y9OA==
+  dependencies:
+    semver "^7.7.3"
 
 react-native-canvas@^0.1.40:
   version "0.1.40"
@@ -12913,6 +12915,11 @@ semver@^6.3.0, semver@^6.3.1:
   version "6.3.1"
   resolved "https://registry.yarnpkg.com/semver/-/semver-6.3.1.tgz#556d2ef8689146e46dcea4bfdd095f3434dffcb4"
   integrity sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==
+
+semver@^7.7.3:
+  version "7.8.5"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-7.8.5.tgz#39b646037dd50c14fb451e7e4cac58ed8b863f69"
+  integrity sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==
 
 send@0.19.0:
   version "0.19.0"
