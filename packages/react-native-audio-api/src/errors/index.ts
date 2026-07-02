@@ -1,3 +1,7 @@
+export {
+  setFloat32ArrayViewFactory,
+  wrapFloat32ArrayView,
+} from './createFloat32ArrayView';
 export { default as IndexSizeError } from './IndexSizeError';
 export { default as InvalidAccessError } from './InvalidAccessError';
 export { default as InvalidStateError } from './InvalidStateError';

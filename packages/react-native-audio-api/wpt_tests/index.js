@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('node:fs');
 const Module = require('node:module');
 const path = require('node:path');
 
@@ -13,26 +12,8 @@ const mediaDevices = {
 };
 
 function loadTypeScriptApi() {
-  const packageRoot = path.resolve(__dirname, '..');
-  const candidates = [
-    path.join(packageRoot, 'lib', 'commonjs', 'api.js'),
-    path.join(packageRoot, 'lib', 'commonjs', 'api', 'index.js'),
-  ];
-
-  for (const filePath of candidates) {
-    if (!fs.existsSync(filePath)) {
-      continue;
-    }
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires, import/no-dynamic-require, global-require
-      return require(filePath);
-    } catch {
-      // Try next candidate path.
-    }
-  }
-
-  return null;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, import/no-dynamic-require, global-require
+  return require(path.join(__dirname, 'wpt-api.js'));
 }
 
 function installReactNativeNodeShim() {
@@ -41,10 +22,25 @@ function installReactNativeNodeShim() {
     return;
   }
 
+  const nativeModuleStub = {
+    install() {
+      return true;
+    },
+    getDevicePreferredSampleRate() {
+      return 44100;
+    },
+    isFfmpegEnabled() {
+      return false;
+    },
+  };
+
   const reactNativeShim = {
     TurboModuleRegistry: {
       get() {
-        return null;
+        return nativeModuleStub;
+      },
+      getEnforcing() {
+        return nativeModuleStub;
       },
     },
     Platform: { OS: 'ios' },
@@ -81,12 +77,7 @@ function installReactNativeNodeShim() {
 installReactNativeNodeShim();
 
 const typeScriptApi = loadTypeScriptApi();
-if (typeScriptApi != null) {
-  module.exports = {
-    ...typeScriptApi,
-    mediaDevices: typeScriptApi.mediaDevices || mediaDevices,
-  };
-} else {
-  // eslint-disable-next-line global-require
-  module.exports = require('./index-fallback');
-}
+module.exports = {
+  ...typeScriptApi,
+  mediaDevices,
+};

@@ -7,10 +7,10 @@ import { createRequire } from 'node:module';
 import chalk from 'chalk';
 import { program } from 'commander';
 import wptRunner from 'wpt-runner';
-import { setFloat32ArrayViewFactory } from '../../lib/commonjs/errors/index.js';
 import { wrapAudioNodeConstructors } from './wrap-audio-node-constructors.mjs';
 
 const require = createRequire(import.meta.url);
+const { setFloat32ArrayViewFactory } = require('../../lib/commonjs/errors/index.js');
 const createRequestAnimationFrame = require('./mocks/requestAnimationFrame.js');
 
 const harnessDir = path.dirname(new URL(import.meta.url).pathname);
@@ -27,17 +27,8 @@ program
 program.parse(process.argv);
 const options = program.opts();
 
-const wptRootPath = path.join(harnessDir, '..', 'wpt-src');
-const testsPath = path.join(wptRootPath, 'webaudio');
+const testsPath = path.join(harnessDir, '..', 'webaudio');
 const rootURL = 'webaudio';
-
-if (!fs.existsSync(testsPath)) {
-  console.error(`Missing WPT checkout at '${testsPath}'.`);
-  console.error(
-    'Initialize WPT source first: yarn wpt:init'
-  );
-  process.exit(1);
-}
 
 process.WPT_TEST_RUNNER = new EventEmitter();
 

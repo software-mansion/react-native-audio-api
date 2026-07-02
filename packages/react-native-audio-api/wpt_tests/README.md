@@ -3,20 +3,18 @@
 This directory contains the Node.js bootstrap for running Web Audio WPT against
 `react-native-audio-api`.
 
-## What this phase provides
+## What this provides
 
-- Native Node addon scaffold (`wpt_tests/src`) using JSI HostObjects via `node-api-jsi`.
-- JSI-backed runtime installation (`jsi_install.cpp`) wired through `AudioAPIModuleInstaller` infrastructure.
+- Native Node addon (`wpt_tests/src`) using JSI HostObjects via `node-api-jsi`.
+- JSI-backed runtime installation (`jsi_install.cpp`).
 - Smoke WPT harness (`wpt_tests/wpt/wpt-harness.mjs`) with allowlist + skip policy.
-- WPT source checkout as git submodule (`wpt_tests/wpt-src`).
+- Vendored Web Audio API tests under `wpt_tests/webaudio/` (~3 MB, full `webaudio` subtree).
 
 ## Prerequisites
 
 - Node.js 22+
 - CMake 3.14+
-- `react-native` dependencies installed in the monorepo (`yarn install`)
-- Initialized sparse WPT source:
-  - `yarn wpt:init`
+- Monorepo dependencies installed (`yarn install` at repo root)
 
 ## Local workflow
 
@@ -34,8 +32,15 @@ From `packages/react-native-audio-api`:
 ## Troubleshooting
 
 - **Native addon fails to load**
-  - Rebuild with `yarn workspace react-native-audio-api node:build`.
-- **No tests found**
-  - Confirm `wpt_tests/wpt-src/webaudio` exists under this package directory.
+  - Rebuild with `yarn node:build`.
 - **Device-related instability in CI**
   - Node test backend is sink-less; keep tests within the smoke profile.
+- **Runner appears hung**
+  - Kill stale processes: `pkill -f wpt-harness.mjs`
+  - Some tests are excluded in `wpt/skip-list.json` (crashtests, AudioWorklet, known engine hangs).
+- **Subset runs**
+  - `yarn wpt --filter gain` or `node ./wpt_tests/wpt/wpt-harness.mjs --filter the-analysernode-interface`
+
+## Scope
+
+The Node harness exports only spec Web Audio API classes via `wpt-api.js` (no recorder, decoder, streamer, or worklet nodes). Failures for unimplemented spec APIs (e.g. `PannerNode`, `ChannelMergerNode`) are expected until those nodes land.

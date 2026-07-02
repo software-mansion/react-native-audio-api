@@ -6,5 +6,29 @@
   {
     "pattern": "/resources/",
     "reason": "support files, not executable tests"
+  },
+  {
+    "pattern": "the-audioworklet-interface",
+    "reason": "AudioWorklet is not available in the Node WPT build (RN_AUDIO_API_ENABLE_WORKLETS=0)"
+  },
+  {
+    "pattern": "media-playback-while-not-visible-permission-policy",
+    "reason": "requires browser visibility/permission-policy infrastructure"
+  },
+  {
+    "pattern": "audionode-channel-rules.html",
+    "reason": "hangs native offline renderer on large discrete-mixing graphs (engine bug, tracked separately)"
+  },
+  {
+    "pattern": "-crash.html",
+    "reason": "browser crashtests without testharness stall the Node runner"
+  },
+  {
+    "pattern": "historical.html",
+    "reason": "IDL harness page, not an executable smoke test"
+  },
+  {
+    "pattern": "idlharness",
+    "reason": "IDL harness page, not an executable smoke test"
   }
 ]

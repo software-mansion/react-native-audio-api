@@ -80,7 +80,6 @@
     "format:common": "find common/cpp/ \\( -path 'common/cpp/audioapi/libs' -prune -o -path 'common/cpp/audioapi/external' -prune -o -type f \\( -iname \"*.h\" -o -iname \"*.cpp\" -o -iname \"*.hpp\" \\) -print \\) | xargs clang-format -i",
     "build": "bob build",
     "node:build": "cmake-js compile -d wpt_tests",
-    "wpt:init": "bash ./wpt_tests/scripts/init-wpt-src.sh",
     "wpt:build": "yarn build && yarn node:build",
     "wpt:only": "node ./wpt_tests/wpt/wpt-harness.mjs",
     "wpt": "yarn wpt:build && yarn wpt:only",

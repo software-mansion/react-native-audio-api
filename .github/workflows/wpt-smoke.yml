@@ -14,10 +14,6 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Initialize sparse WPT source
-        working-directory: packages/react-native-audio-api
-        run: yarn wpt:init
-
       - name: Build and run WPT smoke
         working-directory: packages/react-native-audio-api
         run: yarn wpt

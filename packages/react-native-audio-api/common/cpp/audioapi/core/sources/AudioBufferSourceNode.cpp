@@ -65,17 +65,25 @@ void AudioBufferSourceNode::setBuffer(
     context->getDisposer()->dispose(std::move(buffer_));
   }
 
-  if (audioBuffer_ != nullptr) {
-    context->getDisposer()->dispose(std::move(audioBuffer_));
-  }
-
   if (buffer == nullptr) {
     loopEnd_ = 0;
     channelCount_ = 1;
 
     buffer_ = nullptr;
     processor_->setBuffer(nullptr);
+    if (audioBuffer_ != nullptr) {
+      context->getDisposer()->dispose(std::move(audioBuffer_));
+    }
+    // Replace the (possibly shared with the previous AudioBuffer) output
+    // buffer with a fresh one so processNode() can output silence without
+    // touching the old buffer's data.
+    audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+        RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
     return;
+  }
+
+  if (audioBuffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(audioBuffer_));
   }
 
   buffer_ = buffer;
