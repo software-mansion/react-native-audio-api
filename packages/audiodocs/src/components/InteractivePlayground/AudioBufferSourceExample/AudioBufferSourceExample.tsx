@@ -83,7 +83,7 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
         setIsPlaying(false);
       }
     };
-  }, [stopSound, playbackRate,detune,loop,loopStart,loopEnd, pitchCorrection]); 
+  }, [stopSound, playbackRate, detune, loop, loopStart, loopEnd, pitchCorrection]); 
 
   const handlePlayButtonClick = () => {
     if (isPlaying) {

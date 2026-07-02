@@ -4,7 +4,7 @@
 const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
 
-import { topbarBannerReservationScript } from '@swmansion/t-rex-ui/topbar-banner'; // eslint-disable-line import/first
+import { topbarBannerReservationScript } from '@swmansion/t-rex-ui/topbar-banner'; // eslint-disable-line import/first, import/no-unresolved
 // @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
 import { TOP_BAR_BANNER } from './src/components/topbarBanner.config.ts'; // eslint-disable-line import/first
 
