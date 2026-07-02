@@ -11,13 +11,16 @@
 
 #include <cstddef>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace audioapi::utils::graph {
 
 namespace {
+
+// Channel-layout vocabulary in this codebase:
+//   downstream — away from AudioDestinationNode (toward sources); node->inputs
+//   upstream   — toward AudioDestinationNode; node->outputs
 
 /// @brief Returns the AudioNode associated with `node`, or nullptr if the
 /// node has no audio payload (e.g. the lightweight `graph->addNode()` used
@@ -40,8 +43,8 @@ inline audioapi::AudioNode *audioNodeOf(const HostGraph::Node *node) {
   return node->handle->audioNode->asAudioNode();
 }
 
-/// @brief Returns the effective number of output channels that `audio` presents
-/// to downstream connections. Uses the output buffer when present.
+/// @brief Returns how many channels `audio` presents on upstream connections
+/// (toward AudioDestinationNode). Uses the output buffer when present.
 size_t outputChannelCountOf(const audioapi::AudioNode *audio) {
   if (audio == nullptr) {
     return 0;
@@ -63,12 +66,9 @@ size_t outputChannelCountOf(const audioapi::AudioNode *audio) {
 /// When there are no inputs the node keeps its own `channelCount` attribute
 /// (matches the shape the buffer already had at construction time).
 ///
-/// `downstreamChannels` carries channel counts already computed for upstream
-/// nodes during a cascade walk so that not-yet-applied buffer swaps are still
-/// visible to downstream negotiation.
-size_t negotiateChannelCount(
-    const HostGraph::Node *dest,
-    const std::unordered_map<const HostGraph::Node *, size_t> &downstreamChannels) {
+/// `term` identifies the current negotiation pass. Input nodes resolved in
+/// that pass expose their pending upstream width via `channelLayout`.
+size_t negotiateChannelCount(const HostGraph::Node *dest, size_t term) {
   auto *destAudio = audioNodeOf(dest);
   if (destAudio == nullptr) {
     return 0;
@@ -88,8 +88,8 @@ size_t negotiateChannelCount(
       continue;
     }
     size_t c = 0;
-    if (const auto it = downstreamChannels.find(input); it != downstreamChannels.end()) {
-      c = it->second;
+    if (input->channelLayout.isResolvedFor(term)) {
+      c = input->channelLayout.upstreamChannelCount;
     } else {
       c = outputChannelCountOf(inAudio);
     }
@@ -143,19 +143,15 @@ struct ChannelNegotiation {
 
 using NegotiationBatch = std::vector<ChannelNegotiation>;
 
-/// @brief Recursively computes the downstream channel count for `node` and
-/// every upstream ancestor, using already-resolved entries in
-/// `downstreamChannels`. This lets a later addEdge() see the layout that
-/// earlier (not yet applied) negotiations will produce.
-void resolveChannelCountForNode(
-    HostGraph::Node *node,
-    std::unordered_map<const HostGraph::Node *, size_t> &downstreamChannels) {
-  if (node == nullptr || downstreamChannels.contains(node)) {
+/// @brief Recursively resolves upstream channel counts for `node` and every
+/// downstream ancestor (`node->inputs`) in negotiation pass `term`.
+void resolveChannelCountForNode(HostGraph::Node *node, size_t term) {
+  if (node == nullptr || node->channelLayout.isResolvedFor(term)) {
     return;
   }
 
   for (HostGraph::Node *input : node->inputs) {
-    resolveChannelCountForNode(input, downstreamChannels);
+    resolveChannelCountForNode(input, term);
   }
 
   auto *audio = audioNodeOf(node);
@@ -163,37 +159,33 @@ void resolveChannelCountForNode(
     return;
   }
 
-  const size_t desired = negotiateChannelCount(node, downstreamChannels);
-  downstreamChannels[node] = audio->getDownstreamChannelCount(desired);
+  const size_t desired = negotiateChannelCount(node, term);
+  node->channelLayout.setResolved(term, audio->getUpstreamChannelCount(desired));
 }
 
-/// @brief Starting at `dest` (the edge destination / connect target), negotiates
-/// channel layouts for `dest` and every node further toward the audio
-/// destination. Uses `downstreamChannels` to thread not-yet-applied upstream
-/// output counts through the walk.
-void collectChannelNegotiations(
-    HostGraph::Node *dest,
-    std::unordered_map<const HostGraph::Node *, size_t> &downstreamChannels,
-    NegotiationBatch &out) {
+/// @brief Starting at `dest` (the connect `to` node), negotiates channel
+/// layouts for `dest` and every node further upstream (toward
+/// AudioDestinationNode via `dest->outputs`).
+void collectChannelNegotiations(HostGraph::Node *dest, size_t term, NegotiationBatch &out) {
   if (dest == nullptr) {
     return;
   }
 
   for (HostGraph::Node *input : dest->inputs) {
-    resolveChannelCountForNode(input, downstreamChannels);
+    resolveChannelCountForNode(input, term);
   }
 
   if (auto *destAudio = audioNodeOf(dest)) {
-    const size_t desired = negotiateChannelCount(dest, downstreamChannels);
-    downstreamChannels[dest] = destAudio->getDownstreamChannelCount(desired);
+    const size_t desired = negotiateChannelCount(dest, term);
+    dest->channelLayout.setResolved(term, destAudio->getUpstreamChannelCount(desired));
 
     if (auto negotiatedBuffer = buildNegotiatedBufferIfNeeded(dest, desired)) {
       out.push_back({.node = dest, .buffer = std::move(negotiatedBuffer)});
     }
   }
 
-  for (HostGraph::Node *downstream : dest->outputs) {
-    collectChannelNegotiations(downstream, downstreamChannels, out);
+  for (HostGraph::Node *upstream : dest->outputs) {
+    collectChannelNegotiations(upstream, term, out);
   }
 }
 
@@ -252,9 +244,13 @@ HostGraph::~HostGraph() {
 }
 
 HostGraph::HostGraph(HostGraph &&other) noexcept
-    : nodes(std::move(other.nodes)), edgeCount_(other.edgeCount_), last_term(other.last_term) {
+    : nodes(std::move(other.nodes)),
+      edgeCount_(other.edgeCount_),
+      last_term(other.last_term),
+      channelLayoutTerm_(other.channelLayoutTerm_) {
   other.edgeCount_ = 0;
   other.last_term = 0;
+  other.channelLayoutTerm_ = 0;
 }
 
 auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
@@ -269,8 +265,10 @@ auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
     nodes = std::move(other.nodes);
     edgeCount_ = other.edgeCount_;
     last_term = other.last_term;
+    channelLayoutTerm_ = other.channelLayoutTerm_;
     other.edgeCount_ = 0;
     other.last_term = 0;
+    other.channelLayoutTerm_ = 0;
   }
   return *this;
 }
@@ -347,11 +345,11 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
   edgeCount_++;
 
   // Channel-count negotiation: computed + allocated on the host thread,
-  // applied on the audio thread by the AGEvent below. Cascade through every
-  // downstream node so late upstream connects still propagate.
-  std::unordered_map<const HostGraph::Node *, size_t> downstreamChannels;
+  // applied on the audio thread by the AGEvent below. Cascade upstream
+  // (toward AudioDestinationNode) so late downstream connects still propagate.
+  const size_t channelLayoutTerm = ++channelLayoutTerm_;
   auto negotiations = std::make_unique<NegotiationBatch>();
-  collectChannelNegotiations(to, downstreamChannels, *negotiations);
+  collectChannelNegotiations(to, channelLayoutTerm, *negotiations);
 
   // could be problematic, since we are passing raw pointer to the lambda
   return Res::Ok(
@@ -417,11 +415,11 @@ auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
   }
 
   // Channel-count negotiation: computed + allocated on the host thread,
-  // applied on the audio thread by the AGEvent below. Cascade through every
-  // downstream node so disconnects still propagate.
-  std::unordered_map<const HostGraph::Node *, size_t> downstreamChannels;
+  // applied on the audio thread by the AGEvent below. Cascade upstream
+  // (toward AudioDestinationNode) so disconnects still propagate.
+  const size_t channelLayoutTerm = ++channelLayoutTerm_;
   auto negotiations = std::make_unique<NegotiationBatch>();
-  collectChannelNegotiations(to, downstreamChannels, *negotiations);
+  collectChannelNegotiations(to, channelLayoutTerm, *negotiations);
 
   // could be problematic, since we are passing raw pointer to the lambda
   return Res::Ok(

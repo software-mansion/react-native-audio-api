@@ -37,7 +37,7 @@ void StereoPannerNode::setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer>
   audioBuffer_ = buffer;
 }
 
-size_t StereoPannerNode::getDownstreamChannelCount(size_t /*negotiatedChannelCount*/) const {
+size_t StereoPannerNode::getUpstreamChannelCount(size_t /*negotiatedChannelCount*/) const {
   return outputBuffer_->getNumberOfChannels();
 }
 

@@ -89,9 +89,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     setOutputBuffer(buffer);
   }
 
-  /// @brief Channel count presented to downstream nodes after negotiation.
-  /// Default: the negotiated channel count. StereoPanner always outputs stereo.
-  [[nodiscard]] virtual size_t getDownstreamChannelCount(size_t negotiatedChannelCount) const {
+  /// @brief Channel count this node presents on upstream connections (toward
+  /// AudioDestinationNode) after negotiation. Default: the negotiated channel
+  /// count. StereoPanner always outputs stereo.
+  [[nodiscard]] virtual size_t getUpstreamChannelCount(size_t negotiatedChannelCount) const {
     return negotiatedChannelCount;
   }
 

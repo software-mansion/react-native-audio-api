@@ -56,6 +56,34 @@ class HostGraph {
     bool visit(size_t currentTerm);
   };
 
+  /// Per-node scratch for channel-layout negotiation (host thread only).
+  ///
+  /// Follows the same generation-stamp pattern as `TraversalState`: each
+  /// `addEdge` / `removeEdge` bumps `HostGraph::channelLayoutTerm_`, and nodes
+  /// visited in that pass stamp `term` with the current value. A node is
+  /// considered resolved for the pass when `term == channelLayoutTerm_`.
+  ///
+  /// During the pass, `upstreamChannelCount` stores how many channels this
+  /// node will present on upstream connections (toward AudioDestinationNode)
+  /// after negotiation — including overrides such as StereoPanner's fixed
+  /// stereo output. Downstream nodes read these pending widths from their
+  /// inputs instead of live output buffers, so multiple connects in one batch
+  /// (before the AGEvent applies buffer swaps on the audio thread) still see
+  /// consistent layouts. Values are never read on the audio thread.
+  struct ChannelLayoutState {
+    size_t term = 0;
+    size_t upstreamChannelCount = 0;
+
+    [[nodiscard]] bool isResolvedFor(size_t currentTerm) const {
+      return term == currentTerm;
+    }
+
+    void setResolved(size_t currentTerm, size_t count) {
+      term = currentTerm;
+      upstreamChannelCount = count;
+    }
+  };
+
   /// A single node in the HostGraph.
   struct Node {
     std::vector<Node *> inputs;  // reversed edges
@@ -68,6 +96,7 @@ class HostGraph {
     /// entry in `linkedNodes` is marked too (recursively).
     std::vector<Node *> linkedNodes;
     TraversalState traversalState;
+    ChannelLayoutState channelLayout;
     std::shared_ptr<NodeHandle> handle; // shared handle bridging to AudioGraph
     bool ghost = false; // kept for cycle detection until AudioGraph confirms deletion
 
@@ -144,7 +173,8 @@ class HostGraph {
   /// another while holding the lock, so a plain mutex is sufficient.
   mutable std::mutex nodesMutex_;
   size_t edgeCount_ = 0;
-  size_t last_term = 0; // monotonic counter for traversal freshness
+  size_t last_term = 0;          // monotonic counter for traversal freshness
+  size_t channelLayoutTerm_ = 0; // monotonic counter for channel negotiation passes
 
   /// @brief DFS reachability check (traverses ghosts too).
   bool hasPath(Node *start, Node *end);
