@@ -78,6 +78,23 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     audioBuffer_ = buffer;
   }
 
+  /// @brief Buffer whose channel layout is negotiated from upstream connections.
+  /// Default: same as the output buffer. StereoPanner negotiates the input
+  /// buffer while keeping a fixed stereo output.
+  [[nodiscard]] virtual std::shared_ptr<DSPAudioBuffer> getNegotiatedBuffer() const {
+    return getOutputBuffer();
+  }
+
+  virtual void setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) {
+    setOutputBuffer(buffer);
+  }
+
+  /// @brief Channel count presented to downstream nodes after negotiation.
+  /// Default: the negotiated channel count. StereoPanner always outputs stereo.
+  [[nodiscard]] virtual size_t getDownstreamChannelCount(size_t negotiatedChannelCount) const {
+    return negotiatedChannelCount;
+  }
+
   /// @note JS Thread only
   [[nodiscard]] bool requiresTailProcessing() const;
 
