@@ -58,7 +58,6 @@ Object.assign(api, {
   InvalidAccessError: errors.InvalidAccessError,
   InvalidStateError: errors.InvalidStateError,
   NotSupportedError: errors.NotSupportedError,
-  RangeError: errors.RangeError,
 });
 
 module.exports = api;

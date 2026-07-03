@@ -53,7 +53,7 @@ function checkDelayedResult(renderedBuffer, toneBuffer, should) {
     } else {
       // Make sure we have silence after the delayed tone.
       if (renderedData[i] != 0) {
-        should(renderedData[j], 'Final portion at frame ' + i).beEqualTo(0);
+        should(renderedData[i], 'Final portion at frame ' + i).beEqualTo(0);
         success = false;
         break;
       }

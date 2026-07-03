@@ -28,6 +28,9 @@ From `packages/react-native-audio-api`:
    - `yarn wpt`
 4. Run filtered subset:
    - `node ./wpt_tests/wpt/wpt-harness.mjs --filter gain`
+5. Run in parallel (one worker process per test class, up to N concurrent):
+   - `node ./wpt_tests/wpt/wpt-harness.mjs --jobs 4`
+   - `node ./wpt_tests/wpt/wpt-harness.mjs --jobs auto --filter the-gainnode-interface`
 
 ## Troubleshooting
 

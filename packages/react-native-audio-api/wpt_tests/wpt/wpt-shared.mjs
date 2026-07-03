@@ -1,0 +1,236 @@
+import EventEmitter from 'node:events';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+
+import chalk from 'chalk';
+
+import { wrapAudioNodeConstructors } from './wrap-audio-node-constructors.mjs';
+
+const require = createRequire(import.meta.url);
+const { setFloat32ArrayViewFactory } = require('../../lib/commonjs/errors/index.js');
+const createRequestAnimationFrame = require('./mocks/requestAnimationFrame.js');
+
+export const harnessDir = path.dirname(new URL(import.meta.url).pathname);
+export const testsPath = path.join(harnessDir, '..', 'webaudio');
+export const rootURL = 'webaudio';
+
+export const smokeAllowlist = JSON.parse(
+  fs.readFileSync(path.join(harnessDir, 'smoke-allowlist.json'), 'utf8')
+);
+export const skipList = JSON.parse(
+  fs.readFileSync(path.join(harnessDir, 'skip-list.json'), 'utf8')
+);
+
+export function resolveJobsOption(jobsOption) {
+  if (jobsOption == null || jobsOption === '1') {
+    return 1;
+  }
+  if (jobsOption === 'auto') {
+    return Math.max(1, (os.cpus()?.length ?? 1) - 1);
+  }
+  const parsed = Number.parseInt(String(jobsOption), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    throw new Error(`Invalid --jobs value: ${jobsOption}`);
+  }
+  return parsed;
+}
+
+export function walkHtmlFiles(rootDir, prefix = '') {
+  const entries = fs.readdirSync(path.join(rootDir, prefix), { withFileTypes: true });
+  let files = [];
+  for (const entry of entries) {
+    const rel = path.join(prefix, entry.name);
+    if (entry.isDirectory()) {
+      files = files.concat(walkHtmlFiles(rootDir, rel));
+    } else if (entry.name.endsWith('.html')) {
+      files.push(rel);
+    }
+  }
+  return files;
+}
+
+export function smokeFilter(name) {
+  return smokeAllowlist.some(prefix => name.includes(prefix));
+}
+
+export function getSkippedByPolicy(name) {
+  return skipList.find(item => name.includes(item.pattern));
+}
+
+export function normalizeTestPath(filePath) {
+  return filePath.split(path.sep).join('/');
+}
+
+/**
+ * WPT "test class" — typically one interface directory under the-audio-api/.
+ * Used to batch independent tests into worker processes.
+ */
+export function getTestClass(testPath) {
+  const normalized = normalizeTestPath(testPath);
+  const parts = normalized.split('/');
+
+  if (parts[0] === 'the-audio-api' && parts.length >= 3) {
+    return `${parts[0]}/${parts[1]}`;
+  }
+
+  if (parts.length >= 2) {
+    return parts.slice(0, -1).join('/');
+  }
+
+  return 'root';
+}
+
+export function groupTestsByClass(testPaths) {
+  const groups = new Map();
+
+  for (const testPath of testPaths) {
+    const testClass = getTestClass(testPath);
+    const bucket = groups.get(testClass) ?? [];
+    bucket.push(testPath);
+    groups.set(testClass, bucket);
+  }
+
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([testClass, paths]) => ({
+      testClass,
+      testPaths: paths.sort(),
+    }));
+}
+
+export function collectSelectedTestPaths({
+  filterRegexp = '.*',
+  includeCrashtests = false,
+}) {
+  const extraFilterRe = new RegExp(filterRegexp);
+  const selected = [];
+
+  for (const file of walkHtmlFiles(testsPath)) {
+    const fullName = normalizeTestPath(file);
+    if (getSkippedByPolicy(fullName) != null) {
+      continue;
+    }
+    if (!includeCrashtests && fullName.includes('/crashtests/')) {
+      continue;
+    }
+    if (!smokeFilter(fullName)) {
+      continue;
+    }
+    if (!extraFilterRe.test(fullName)) {
+      continue;
+    }
+    selected.push(fullName);
+  }
+
+  return selected.sort();
+}
+
+export function loadNodeAudioApi() {
+  const nodeAudioApi = require('../index.js');
+  const { TypeError: _TypeError, RangeError: _RangeError, ...audioApiForWindow } =
+    nodeAudioApi;
+  return { nodeAudioApi, audioApiForWindow };
+}
+
+export function createWptEnvironment() {
+  const cleanupEmitter = new EventEmitter();
+  const { nodeAudioApi, audioApiForWindow } = loadNodeAudioApi();
+  let cancelPendingAnimationFrames = () => {};
+
+  cleanupEmitter.on('cleanup', () => {
+    cancelPendingAnimationFrames();
+  });
+
+  const setup = window => {
+    cleanupEmitter.emit('cleanup');
+
+    setFloat32ArrayViewFactory(
+      (buffer, byteOffset, length) =>
+        new window.Float32Array(buffer, byteOffset, length)
+    );
+
+    Object.assign(window, audioApiForWindow);
+    // Library throws via globalThis.TypeError/RangeError; align with the test
+    // page realm so audit.js constructor checks (error.constructor === TypeError)
+    // pass under jsdom.
+    globalThis.TypeError = window.TypeError;
+    globalThis.RangeError = window.RangeError;
+    wrapAudioNodeConstructors(window);
+    if (window.navigator == null) {
+      window.navigator = {};
+    }
+    window.navigator.mediaDevices = nodeAudioApi.mediaDevices;
+
+    const animationFrame = createRequestAnimationFrame(window);
+    window.requestAnimationFrame = animationFrame.requestAnimationFrame;
+    window.cancelAnimationFrame = animationFrame.cancelAnimationFrame;
+    cancelPendingAnimationFrames = animationFrame.cancelAll;
+  };
+
+  return { setup, cleanupEmitter };
+}
+
+export function createSequentialFilter({ filterRegexp, includeCrashtests, listOnly }) {
+  const extraFilterRe = new RegExp(filterRegexp);
+
+  return name => {
+    if (getSkippedByPolicy(name) != null) {
+      return false;
+    }
+    if (!includeCrashtests && name.includes('/crashtests/')) {
+      return false;
+    }
+    if (!smokeFilter(name)) {
+      return false;
+    }
+    if (!extraFilterRe.test(name)) {
+      return false;
+    }
+    if (listOnly) {
+      console.log(name);
+      return false;
+    }
+    return true;
+  };
+}
+
+export function createReporter(handlers) {
+  return {
+    startSuite: name => handlers.startSuite?.(name),
+    pass: message => handlers.pass?.(message),
+    fail: message => handlers.fail?.(message),
+    reportStack: stack => handlers.reportStack?.(stack),
+  };
+}
+
+export function createConsoleReporter({ numPassRef, numFailRef }) {
+  return createReporter({
+    startSuite: name => {
+      console.log(`\n${chalk.bold.underline(path.join(testsPath, name))}\n`);
+    },
+    pass: message => {
+      numPassRef.value += 1;
+      console.log(chalk.green(`  √ ${message}`));
+    },
+    fail: message => {
+      numFailRef.value += 1;
+      console.log(chalk.red(`  × ${message}`));
+    },
+    reportStack: stack => {
+      console.log(chalk.dim(`    ${stack}`));
+    },
+  });
+}
+
+export function printSummary({ numPass, numFail, timerStarted }) {
+  const total = numPass + numFail;
+  const passRate = total > 0 ? ((numPass / total) * 100).toFixed(1) : '0.0';
+  console.log(chalk.bold(`\nPASS: ${numPass}`));
+  console.log(chalk.bold(`FAIL: ${numFail}`));
+  console.log(chalk.bold(`PASS RATE: ${passRate}% (${numPass}/${total})`));
+  if (timerStarted) {
+    console.timeEnd('wpt-duration');
+  }
+}

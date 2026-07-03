@@ -1,36 +1,73 @@
-import { Blob } from 'node:buffer';
-import EventEmitter from 'node:events';
-import fs from 'node:fs';
-import path from 'node:path';
-import { createRequire } from 'node:module';
-
 import chalk from 'chalk';
 import { program } from 'commander';
-import wptRunner from 'wpt-runner';
-import { wrapAudioNodeConstructors } from './wrap-audio-node-constructors.mjs';
 
-const require = createRequire(import.meta.url);
-const { setFloat32ArrayViewFactory } = require('../../lib/commonjs/errors/index.js');
-const createRequestAnimationFrame = require('./mocks/requestAnimationFrame.js');
-
-const harnessDir = path.dirname(new URL(import.meta.url).pathname);
-const allowListPath = path.join(harnessDir, 'smoke-allowlist.json');
-const skipListPath = path.join(harnessDir, 'skip-list.json');
-const smokeAllowlist = JSON.parse(fs.readFileSync(allowListPath, 'utf8'));
-const skipList = JSON.parse(fs.readFileSync(skipListPath, 'utf8'));
+import {
+  collectSelectedTestPaths,
+  createConsoleReporter,
+  createSequentialFilter,
+  createWptEnvironment,
+  printSummary,
+  resolveJobsOption,
+} from './wpt-shared.mjs';
+import {
+  createParallelConsoleReporter,
+  runSequentialWpt,
+  WptParallelRunner,
+} from './WptParallelRunner.mjs';
 
 program
   .option('--list', 'List test files only')
   .option('--filter <regexp>', 'Additional regex filter for tests', '.*')
-  .option('--include-crashtests', 'Include crashtests', false);
+  .option('--include-crashtests', 'Include crashtests', false)
+  .option(
+    '--jobs <n|auto>',
+    'Run test classes in parallel worker processes (1 = sequential)',
+    '1'
+  );
 
 program.parse(process.argv);
 const options = program.opts();
 
-const testsPath = path.join(harnessDir, '..', 'webaudio');
-const rootURL = 'webaudio';
+let numPass = 0;
+let numFail = 0;
+let timerStarted = false;
+let summaryPrinted = false;
+/** @type {import('./WptParallelRunner.mjs').WptParallelRunner | null} */
+let parallelRunner = null;
 
-process.WPT_TEST_RUNNER = new EventEmitter();
+const printHarnessSummary = () => {
+  if (summaryPrinted) {
+    return;
+  }
+  summaryPrinted = true;
+
+  if (parallelRunner != null) {
+    parallelRunner.printSummary();
+    return;
+  }
+
+  printSummary({ numPass, numFail, timerStarted });
+};
+
+const signalExitCode = {
+  SIGHUP: 129,
+  SIGINT: 130,
+  SIGTERM: 143,
+};
+
+const handleSignal = signal => {
+  console.error(chalk.yellow(`\nReceived ${signal}; printing partial summary.`));
+  printHarnessSummary();
+
+  const failCount =
+    parallelRunner != null ? parallelRunner.getCounts().numFail : numFail;
+  const exitCode = signalExitCode[signal] ?? 1;
+  process.exit(failCount > 0 ? 1 : exitCode);
+};
+
+process.on('SIGHUP', () => handleSignal('SIGHUP'));
+process.on('SIGINT', () => handleSignal('SIGINT'));
+process.on('SIGTERM', () => handleSignal('SIGTERM'));
 
 process.on('unhandledRejection', error => {
   const message = error instanceof Error ? error.stack || error.message : String(error);
@@ -42,155 +79,66 @@ process.on('uncaughtException', error => {
   console.error(chalk.red(`Uncaught exception during WPT run:\n${message}`));
 });
 
-let numPass = 0;
-let numFail = 0;
-let timerStarted = false;
-let summaryPrinted = false;
-
-const printSummary = () => {
-  if (summaryPrinted) {
-    return;
-  }
-  summaryPrinted = true;
-  const total = numPass + numFail;
-  const passRate = total > 0 ? ((numPass / total) * 100).toFixed(1) : '0.0';
-  console.log(chalk.bold(`\nPASS: ${numPass}`));
-  console.log(chalk.bold(`FAIL: ${numFail}`));
-  console.log(chalk.bold(`PASS RATE: ${passRate}% (${numPass}/${total})`));
-  if (timerStarted) {
-    console.timeEnd('wpt-duration');
-  }
-};
-
-const signalExitCode = {
-  SIGHUP: 129,
-  SIGINT: 130,
-  SIGTERM: 143,
-};
-
-const handleSignal = signal => {
-  console.error(chalk.yellow(`\nReceived ${signal}; printing partial summary.`));
-  printSummary();
-  process.exit(signalExitCode[signal] ?? 1);
-};
-
-process.on('SIGHUP', () => handleSignal('SIGHUP'));
-process.on('SIGINT', () => handleSignal('SIGINT'));
-process.on('SIGTERM', () => handleSignal('SIGTERM'));
-
-const smokeFilter = name => smokeAllowlist.some(prefix => name.includes(prefix));
-const extraFilterRe = new RegExp(options.filter);
-
-function walkHtmlFiles(rootDir, prefix = '') {
-  const entries = fs.readdirSync(path.join(rootDir, prefix), { withFileTypes: true });
-  let files = [];
-  for (const entry of entries) {
-    const rel = path.join(prefix, entry.name);
-    if (entry.isDirectory()) {
-      files = files.concat(walkHtmlFiles(rootDir, rel));
-    } else if (entry.name.endsWith('.html')) {
-      files.push(rel);
-    }
-  }
-  return files;
-}
-
 if (options.list) {
-  const allFiles = walkHtmlFiles(testsPath);
-  for (const file of allFiles) {
-    const fullName = file.split(path.sep).join('/');
-    const skippedByPolicy = skipList.find(item => fullName.includes(item.pattern));
-    if (skippedByPolicy != null) {
-      continue;
-    }
-    if (smokeFilter(fullName) && extraFilterRe.test(fullName)) {
-      console.log(fullName);
-    }
+  for (const file of collectSelectedTestPaths({
+    filterRegexp: options.filter,
+    includeCrashtests: options.includeCrashtests,
+  })) {
+    console.log(file);
   }
   process.exit(0);
 }
 
-const nodeAudioApi = require('../index.js');
-const { TypeError: _TypeError, RangeError: _RangeError, ...audioApiForWindow } =
-  nodeAudioApi;
-
-let cancelPendingAnimationFrames = () => {};
-
-process.WPT_TEST_RUNNER.on('cleanup', () => {
-  cancelPendingAnimationFrames();
+const jobs = resolveJobsOption(options.jobs);
+const selectedTestPaths = collectSelectedTestPaths({
+  filterRegexp: options.filter,
+  includeCrashtests: options.includeCrashtests,
 });
 
-const setup = window => {
-  process.WPT_TEST_RUNNER.emit('cleanup');
-
-  setFloat32ArrayViewFactory(
-    (buffer, byteOffset, length) => new window.Float32Array(buffer, byteOffset, length)
-  );
-
-  Object.assign(window, audioApiForWindow);
-  wrapAudioNodeConstructors(window);
-  if (window.navigator == null) {
-    window.navigator = {};
-  }
-  window.navigator.mediaDevices = nodeAudioApi.mediaDevices;
-
-  const animationFrame = createRequestAnimationFrame(window);
-  window.requestAnimationFrame = animationFrame.requestAnimationFrame;
-  window.cancelAnimationFrame = animationFrame.cancelAnimationFrame;
-  cancelPendingAnimationFrames = animationFrame.cancelAll;
-};
-
-const filter = name => {
-  const skippedByPolicy = skipList.find(item => name.includes(item.pattern));
-  if (skippedByPolicy != null) {
-    return false;
-  }
-
-  if (!options.includeCrashtests && name.includes('/crashtests/')) {
-    return false;
-  }
-
-  if (!smokeFilter(name)) {
-    return false;
-  }
-
-  if (!extraFilterRe.test(name)) {
-    return false;
-  }
-
-  if (options.list) {
-    console.log(name);
-    return false;
-  }
-
-  return true;
-};
-
-const reporter = {
-  startSuite: name => {
-    console.log(`\n${chalk.bold.underline(path.join(testsPath, name))}\n`);
-  },
-  pass: message => {
-    numPass += 1;
-    console.log(chalk.green(`  √ ${message}`));
-  },
-  fail: message => {
-    numFail += 1;
-    console.log(chalk.red(`  × ${message}`));
-  },
-  reportStack: stack => {
-    console.log(chalk.dim(`    ${stack}`));
-  },
-};
+// Warm up native module in the parent for sequential mode; workers load their own copy.
+if (jobs === 1) {
+  createWptEnvironment();
+}
 
 try {
   console.time('wpt-duration');
   timerStarted = true;
-  await wptRunner(testsPath, { rootURL, setup, filter, reporter });
-  printSummary();
+
+  if (jobs === 1) {
+    const numPassRef = { value: 0 };
+    const numFailRef = { value: 0 };
+    const filter = createSequentialFilter({
+      filterRegexp: options.filter,
+      includeCrashtests: options.includeCrashtests,
+      listOnly: false,
+    });
+    const reporter = createConsoleReporter({ numPassRef, numFailRef });
+    const fileFailures = await runSequentialWpt({ filter, reporter });
+    numPass = numPassRef.value;
+    numFail = numFailRef.value;
+    if (fileFailures > 0 && numFail === 0) {
+      numFail = fileFailures;
+    }
+  } else {
+    parallelRunner = new WptParallelRunner({
+      jobs,
+      handlers: createParallelConsoleReporter(),
+    });
+    parallelRunner.markTimerStarted();
+    const result = await parallelRunner.run(selectedTestPaths);
+    numPass = result.numPass;
+    numFail = result.numFail;
+    parallelRunner.printSummary();
+    summaryPrinted = true;
+    parallelRunner = null;
+  }
+
+  if (!summaryPrinted) {
+    printHarnessSummary();
+  }
   process.exit(numFail > 0 ? 1 : 0);
 } catch (error) {
-  printSummary();
+  printHarnessSummary();
   console.error(error.stack);
   process.exit(1);
 }

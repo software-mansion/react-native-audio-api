@@ -30,5 +30,21 @@
   {
     "pattern": "idlharness",
     "reason": "IDL harness page, not an executable smoke test"
+  },
+  {
+    "pattern": "audiocontext-not-fully-active",
+    "reason": "requires WPT /common/get-host-info.sub.js and cross-origin iframe infrastructure not available in Node harness"
+  },
+  {
+    "pattern": "cors-check.https.html",
+    "reason": "requires WPT /common/get-host-info.sub.js and cross-origin infrastructure not available in Node harness"
+  },
+  {
+    "pattern": "no-cors.https.html",
+    "reason": "requires WPT /common/get-host-info.sub.js and cross-origin infrastructure not available in Node harness"
+  },
+  {
+    "pattern": "suspend-with-navigation",
+    "reason": "requires WPT /common/utils.js and dispatcher infrastructure not available in Node harness"
   }
 ]

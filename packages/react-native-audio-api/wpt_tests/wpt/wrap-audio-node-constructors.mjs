@@ -70,4 +70,64 @@ export function wrapAudioNodeConstructors(window) {
 
     window[name] = wrapAudioNodeConstructor(Original, window, optionsRequired);
   }
+
+  wrapAudioNodeConnectDisconnect(window);
+}
+
+const DOM_EXCEPTION_NAMES = new Set([
+  'IndexSizeError',
+  'InvalidAccessError',
+  'InvalidStateError',
+  'NotSupportedError',
+  'SyntaxError',
+  'TypeError',
+  'SecurityError',
+  'NetworkError',
+  'AbortError',
+  'DataError',
+  'EncodingError',
+  'NotReadableError',
+  'UnknownError',
+  'ConstraintError',
+  'QuotaExceededError',
+  'TimeoutError',
+]);
+
+function toWindowDomException(window, error) {
+  if (error instanceof window.DOMException) {
+    return error;
+  }
+
+  const name = error?.name;
+  if (typeof name === 'string' && DOM_EXCEPTION_NAMES.has(name) && window.DOMException != null) {
+    return new window.DOMException(error.message, name);
+  }
+
+  return error;
+}
+
+function wrapAudioNodeConnectDisconnect(window) {
+  const AudioNode = window.AudioNode;
+  if (typeof AudioNode !== 'function') {
+    return;
+  }
+
+  const originalConnect = AudioNode.prototype.connect;
+  const originalDisconnect = AudioNode.prototype.disconnect;
+
+  AudioNode.prototype.connect = function connect(...args) {
+    try {
+      return originalConnect.apply(this, args);
+    } catch (error) {
+      throw toWindowDomException(window, error);
+    }
+  };
+
+  AudioNode.prototype.disconnect = function disconnect(...args) {
+    try {
+      return originalDisconnect.apply(this, args);
+    } catch (error) {
+      throw toWindowDomException(window, error);
+    }
+  };
 }
