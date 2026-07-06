@@ -7,6 +7,7 @@
 #include <audioapi/utils/FatFunction.hpp>
 #include <audioapi/utils/Result.hpp>
 
+#include <audioapi/utils/Macros.h>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -106,6 +107,8 @@ class HostGraph {
 
     /// Destructor tears down all edges touching this node.
     ~Node();
+    Node() = default;
+    DELETE_COPY_AND_MOVE(Node);
   };
 
   // ── Lifecycle ───────────────────────────────────────────────────────────
@@ -155,6 +158,15 @@ class HostGraph {
 
   /// @brief Marks a node as not processing and recursively marks all inputs as not processing.
   static void markNodesAsNotProcessing(Node *node);
+
+  /// @brief Audio-thread helper shared by removeEdge / removeAllEdges.
+  ///
+  /// After `from` loses one or more outputs, tears down its conditional
+  /// processing state iff it was only kept processing for a downstream
+  /// consumer and none of its remaining outputs still require it. No-op when
+  /// `from` is not `CONDITIONAL_PROCESSABLE`. Reads `from->outputs`, so it must
+  /// run after the host-side edge removal has been applied.
+  static void updateProcessingStateAfterDisconnect(Node *from);
 
   /// @brief Removes all outgoing edges from `from`.
   /// @return single AGEvent that removes all inputs on the AudioGraph side, or NODE_NOT_FOUND.
