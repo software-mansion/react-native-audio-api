@@ -8,26 +8,24 @@ import { ReadOnly, Optional } from '@site/src/components/Badges';
 # WaveShaperNode
 
 The `WaveShaperNode` interface represents non-linear signal distortion effects.
-Non-linear distortion is commonly used for both subtle non-linear warming, or more obvious distortion effects.
-
+Non-linear distortion is commonly used for both subtle non-linear warming, and more obvious distortion effects.
 
 ## Constructor
 
 ```tsx
-constructor(context: BaseAudioContext, waveShaperOptions?: WaveShaperOptions)
+constructor(context: BaseAudioContext, options?: WaveShaperOptions)
 ```
 
 ### `WaveShaperOptions`
 
 Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
 
-| Parameter | Type | Default | Description |
+| Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `curve` <Optional /> | `Float32Array` | - | Array representing curve values |
-| `oversample` <Optional /> | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | - | Value representing oversample property |
+| `curve` <Optional /> | `Float32Array` | - | Initial value for [`curve`](/docs/effects/wave-shaper-node#properties). |
+| `oversample` <Optional /> | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | `'none'` | Initial value for [`oversample`](/docs/effects/wave-shaper-node#properties). |
 
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createStereoPanner()`](/docs/core/base-audio-context#createwaveshaper)
+You can also create a `WaveShaperNode` via the [`BaseAudioContext.createWaveShaper()`](/docs/core/base-audio-context#createwaveshaper) factory method, which uses default values.
 
 ## Properties
 
@@ -48,13 +46,13 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 ## Remarks
 
 #### `curve`
-- Default value is null
+- Default value is `null`.
 - Contains at least two values.
-- Subsequent modifications of curve have no effects. To change the curve, assign a new Float32Array object to this property.
+- Subsequent modifications of `curve` have no effect. To change the curve, assign a new `Float32Array` object to this property.
 
 #### `oversample`
-- Default value `none`
-- Value of `2x` or `4x` can increases quality of the effect, but in some cases it is better not to use oversampling for very accurate shaping curve.
+- Default value is `'none'`.
+- Values of `'2x'` or `'4x'` can increase the quality of the effect, but in some cases it is better not to use oversampling for a very accurate shaping curve.
 
 ### `OverSampleType`
 
