@@ -1,4 +1,4 @@
-name: CI Check
+name: C++ Job
 
 on:
   workflow_call:
@@ -9,15 +9,22 @@ on:
       run:
         required: true
         type: string
+      working-directory:
+        required: false
+        type: string
+        default: '.'
 
 jobs:
-  check:
+  run:
     name: ${{ inputs.name }}
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
     steps:
-      - name: Setup
-        uses: ./.github/actions/setup
+      - name: Setup C++
+        uses: ./.github/actions/setup-cpp
 
       - name: ${{ inputs.name }}
         run: ${{ inputs.run }}

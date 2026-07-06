@@ -1,4 +1,5 @@
 name: Graph Tests
+
 on:
   pull_request:
     paths:
@@ -7,8 +8,8 @@ on:
 
 jobs:
   graph-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-      - run: yarn test:graph
+    uses: ./.github/workflows/cpp-job.yml
+    with:
+      name: Graph tests
+      working-directory: packages/react-native-audio-api/common/cpp/test
+      run: bash RunTestsGraph.sh

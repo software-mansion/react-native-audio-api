@@ -1,21 +1,17 @@
 name: Setup
-description: Setup Node.js and install dependencies
+description: Setup Node.js, lint tooling, and install dependencies
 
 runs:
   using: composite
   steps:
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version-file: .nvmrc
+    - name: Checkout with Node
+      uses: ./.github/actions/checkout-with-node
+
+    - name: Setup CMake
+      uses: ./.github/actions/setup-cmake
 
     - name: Setup Python
       uses: actions/setup-python@v1
-
-    - name: Setup Cmake
-      uses: jwlawson/actions-setup-cmake@v2
-      with:
-        cmake-version: '4.0.x'
 
     - name: Install cpplint
       shell: bash

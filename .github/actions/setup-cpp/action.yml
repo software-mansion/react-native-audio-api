@@ -1,0 +1,19 @@
+name: Setup C++
+description: Checkout repository and install CMake for C++ builds
+
+inputs:
+  cmake-version:
+    description: 'CMake version to install'
+    required: false
+    default: '4.0.x'
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: ./.github/actions/setup-cmake
+      with:
+        cmake-version: ${{ inputs.cmake-version }}

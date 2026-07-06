@@ -21,14 +21,8 @@ jobs:
     env:
       PACKAGE_DIR: packages/custom-node-generator
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org/
+      - name: Checkout with Node
+        uses: ./.github/actions/checkout-with-node
 
       - name: Update NPM
         run: npm install -g npm@latest

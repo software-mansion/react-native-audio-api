@@ -37,15 +37,10 @@ jobs:
       PACKAGE_NAME: PLACEHOLDER
       TAG: PLACEHOLDER
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Checkout with Node
+        uses: ./.github/actions/checkout-with-node
         with:
-          node-version: 24
-          cache: 'yarn'
-          registry-url: https://registry.npmjs.org/
+          cache: yarn
 
       - name: Update NPM
         run: npm install -g npm@latest
