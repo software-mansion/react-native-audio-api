@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/RuntimeLifecycleMonitor.h>
+#include <audioapi/jsi/RuntimeObserver.h>
 #include <jsi/jsi.h>
 #include <cmath>
 #include <cstddef>

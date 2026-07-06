@@ -112,6 +112,7 @@ For full per-line analysis see [build-details.md](build-details.md#android-andro
 - `Accelerate` framework linked, enabling `HAVE_ACCELERATE=1` for vDSP SIMD on iOS
 - Header search paths split: `pod_target_xcconfig` (library compilation) vs `xcconfig` (app consumers)
 - `rnaa_utils.rb` resolves dynamic paths at `pod install` time (not hardcoded)
+- JSI internals use distinct names (`HostObject`, `RuntimeInstanceCache`, `RuntimeObserver`) instead of generic names like `JsiHostObject` / `RuntimeAwareCache` / `RuntimeLifecycleMonitor` — `react-native-skia` publishes headers with those generic names and CocoaPods can resolve the wrong file when both libraries are in the same app
 
 For full per-line analysis see [build-details.md](build-details.md#ios-rnaudioapipodspec--detailed-analysis).
 

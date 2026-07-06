@@ -5,7 +5,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/graph/HostNode.h>
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <jsi/jsi.h>
@@ -17,7 +17,7 @@ using namespace facebook;
 
 class AudioNode;
 
-class AudioNodeHostObject : public JsiHostObject, public utils::graph::HostNode {
+class AudioNodeHostObject : public HostObject, public utils::graph::HostNode {
  public:
   explicit AudioNodeHostObject(
       const std::shared_ptr<utils::graph::Graph> &graph,

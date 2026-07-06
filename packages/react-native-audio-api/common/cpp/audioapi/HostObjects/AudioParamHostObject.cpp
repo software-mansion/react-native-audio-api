@@ -2,7 +2,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/utils/graph/BridgeNode.h>
 #include <audioapi/core/utils/param/ParamEvent.h>
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <string>

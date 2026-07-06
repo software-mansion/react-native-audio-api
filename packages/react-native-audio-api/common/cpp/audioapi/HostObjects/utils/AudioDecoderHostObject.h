@@ -9,7 +9,7 @@
 namespace audioapi {
 using namespace facebook;
 
-class AudioDecoderHostObject : public JsiHostObject {
+class AudioDecoderHostObject : public HostObject {
  public:
   explicit AudioDecoderHostObject(
       jsi::Runtime *runtime,

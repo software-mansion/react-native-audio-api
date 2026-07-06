@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <jsi/jsi.h>
@@ -11,7 +11,7 @@
 namespace audioapi {
 using namespace facebook;
 
-class AudioBufferHostObject : public JsiHostObject {
+class AudioBufferHostObject : public HostObject {
  public:
   std::shared_ptr<AudioBuffer> audioBuffer_;
 
@@ -21,7 +21,7 @@ class AudioBufferHostObject : public JsiHostObject {
   AudioBufferHostObject(AudioBufferHostObject &&other) noexcept;
   AudioBufferHostObject &operator=(AudioBufferHostObject &&other) noexcept {
     if (this != &other) {
-      JsiHostObject::operator=(std::move(other));
+      HostObject::operator=(std::move(other));
       audioBuffer_ = std::move(other.audioBuffer_);
     }
     return *this;
