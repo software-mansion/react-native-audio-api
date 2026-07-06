@@ -65,8 +65,8 @@ https://github.com/software-mansion-labs/rn-audio-libs/releases/download/<TAG>/
 Current tag: **v3.0.0** (see `scripts/download-prebuilt-binaries.sh`).
 
 The download script is triggered automatically:
-- **iOS**: by podspec `prepare_command` during `pod install`
-- **Android**: by `downloadPrebuiltBinaries` Gradle task, which runs before `preBuild`
+- **iOS**: by podspec `prepare_command` during `pod install` — downloads `ffmpeg_ios`, `iphoneos`, `iphonesimulator`, `macosx`
+- **Android**: by `downloadPrebuiltBinaries` Gradle task, which runs before `preBuild` — downloads `android`, `jniLibs`
 
 Downloaded artifacts land in:
 - `common/cpp/audioapi/external/android/<ABI>/` — `.a` static libs for Android ABIs

@@ -3,23 +3,33 @@
 
 MAIN_DOWNLOAD_URL="https://github.com/software-mansion-labs/rn-audio-libs/releases/download"
 TAG="v3.1.0"
-DOWNLOAD_NAMES=(
+ANDROID_DOWNLOAD_NAMES=(
     "android.zip"
+    "jniLibs.zip"
+)
+IOS_DOWNLOAD_NAMES=(
     "ffmpeg_ios.zip"
     "iphoneos.zip"
     "iphonesimulator.zip"
-    "jniLibs.zip"
     "macosx.zip"
 )
+
+PLATFORM="$1"
+if [ "$PLATFORM" != "android" ] && [ "$PLATFORM" != "ios" ]; then
+    echo "Error: platform argument required. Usage: $0 <android|ios> [skipffmpeg]"
+    exit 1
+fi
 
 # Use a temporary directory for downloads, ensuring it exists
 TEMP_DOWNLOAD_DIR="$(pwd)/audioapi-binaries-temp"
 mkdir -p "$TEMP_DOWNLOAD_DIR"
 
-if [ "$1" == "android" ]; then
+if [ "$PLATFORM" == "android" ]; then
     PROJECT_ROOT="$(pwd)/.."
+    DOWNLOAD_NAMES=("${ANDROID_DOWNLOAD_NAMES[@]}")
 else
     PROJECT_ROOT="$(pwd)"
+    DOWNLOAD_NAMES=("${IOS_DOWNLOAD_NAMES[@]}")
 fi
 
 if [ "$2" == "skipffmpeg" ]; then
@@ -113,6 +123,8 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
 
 done
 
-restore_versioned_framework_symlinks
+if [ "$PLATFORM" == "ios" ]; then
+    restore_versioned_framework_symlinks
+fi
 
 rm -rf "$TEMP_DOWNLOAD_DIR"
