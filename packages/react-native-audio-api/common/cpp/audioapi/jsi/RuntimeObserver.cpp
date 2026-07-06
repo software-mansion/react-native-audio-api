@@ -1,4 +1,4 @@
-#include <audioapi/jsi/RuntimeLifecycleMonitor.h>
+#include <audioapi/jsi/RuntimeObserver.h>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -7,14 +7,14 @@
 
 namespace audioapi {
 
-static std::unordered_map<jsi::Runtime *, std::unordered_set<RuntimeLifecycleListener *>> listeners;
+static std::unordered_map<jsi::Runtime *, std::unordered_set<RuntimeObserverListener *>> listeners;
 static std::mutex listenersMutex;
 
-struct RuntimeLifecycleMonitorObject : public jsi::HostObject {
+struct RuntimeObserverObject : public jsi::HostObject {
   jsi::Runtime *rt_;
-  explicit RuntimeLifecycleMonitorObject(jsi::Runtime *rt) : rt_(rt) {}
-  ~RuntimeLifecycleMonitorObject() override {
-    std::unordered_set<RuntimeLifecycleListener *> toNotify;
+  explicit RuntimeObserverObject(jsi::Runtime *rt) : rt_(rt) {}
+  ~RuntimeObserverObject() override {
+    std::unordered_set<RuntimeObserverListener *> toNotify;
     {
       std::scoped_lock lock(listenersMutex);
       auto listenersSet = listeners.find(rt_);
@@ -30,7 +30,7 @@ struct RuntimeLifecycleMonitorObject : public jsi::HostObject {
   }
 };
 
-void RuntimeLifecycleMonitor::addListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener) {
+void RuntimeObserver::addListener(jsi::Runtime &rt, RuntimeObserverListener *listener) {
   std::scoped_lock lock(listenersMutex);
   auto listenersSet = listeners.find(&rt);
   if (listenersSet == listeners.end()) {
@@ -40,10 +40,9 @@ void RuntimeLifecycleMonitor::addListener(jsi::Runtime &rt, RuntimeLifecycleList
     // runtime's global object.
     rt.global().setProperty(
         rt,
-        "__rnaudioapi_runtime_lifecycle_monitor",
-        jsi::Object::createFromHostObject(
-            rt, std::make_shared<RuntimeLifecycleMonitorObject>(&rt)));
-    std::unordered_set<RuntimeLifecycleListener *> newSet;
+        "__rnaudioapi_runtime_observer",
+        jsi::Object::createFromHostObject(rt, std::make_shared<RuntimeObserverObject>(&rt)));
+    std::unordered_set<RuntimeObserverListener *> newSet;
     newSet.insert(listener);
     listeners.emplace(&rt, std::move(newSet));
   } else {
@@ -51,7 +50,7 @@ void RuntimeLifecycleMonitor::addListener(jsi::Runtime &rt, RuntimeLifecycleList
   }
 }
 
-void RuntimeLifecycleMonitor::removeListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener) {
+void RuntimeObserver::removeListener(jsi::Runtime &rt, RuntimeObserverListener *listener) {
   std::scoped_lock lock(listenersMutex);
   auto listenersSet = listeners.find(&rt);
   if (listenersSet == listeners.end()) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
@@ -13,7 +13,7 @@ using namespace facebook;
 class BaseAudioContext;
 class AudioDestinationNodeHostObject;
 
-class BaseAudioContextHostObject : public JsiHostObject {
+class BaseAudioContextHostObject : public HostObject {
  public:
   explicit BaseAudioContextHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
