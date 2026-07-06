@@ -3,7 +3,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/HostNode.h>
 #include <audioapi/core/utils/param/ParamControlQueue.h>
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <audioapi/utils/Result.hpp>
 #include <jsi/jsi.h>
 #include <cstddef>
@@ -26,7 +26,7 @@ inline constexpr size_t kAudioParamBytes = 2 * RENDER_QUANTUM_SIZE * sizeof(floa
 /// to this param connect to the bridge node (source → bridge).
 ///
 /// When destroyed, the BridgeNode is removed from the graph.
-class AudioParamHostObject : public JsiHostObject {
+class AudioParamHostObject : public HostObject {
  public:
   using HNode = utils::graph::HostGraph::Node;
 

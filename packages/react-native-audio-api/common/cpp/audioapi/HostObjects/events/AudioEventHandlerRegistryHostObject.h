@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 
 #include <ReactCommon/CallInvoker.h>
 #include <jsi/jsi.h>
@@ -11,7 +11,7 @@ using namespace facebook;
 
 class AudioEventHandlerRegistry;
 
-class AudioEventHandlerRegistryHostObject : public JsiHostObject {
+class AudioEventHandlerRegistryHostObject : public HostObject {
  public:
   explicit AudioEventHandlerRegistryHostObject(
       const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry);

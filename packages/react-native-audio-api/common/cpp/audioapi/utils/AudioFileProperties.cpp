@@ -1,6 +1,6 @@
 #include <audioapi/utils/AudioFileProperties.h>
 
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <jsi/jsi.h>
 #include <memory>
 #include <string>

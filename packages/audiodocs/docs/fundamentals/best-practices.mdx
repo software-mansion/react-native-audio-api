@@ -18,7 +18,7 @@ user experience, and maintainability. Here are some key best practices to consid
 
 - **Suspend when not in use**: Suspend the `AudioContext` when audio is not needed to save system resources and battery life, especially on mobile devices.
   Running `AudioContext` is still playing silence even if there is no playing source node connected to the [`destination`](/docs/core/base-audio-context#properties).
-  Additionally, on iOS devices, the state of the `AudioContext` is directly related with state of the lock screen. If running `AudioContext` exists, it is impossible to set lock screen state to [`state_paused`](/docs/system/audio-manager#lockscreeninfo).
+  Additionally, on iOS devices, the state of the `AudioContext` is directly related with state of the lock screen. If running `AudioContext` exists, it is impossible to set lock screen state to `state_paused`.
 
 ## React hooks vs React Native Audio API
 

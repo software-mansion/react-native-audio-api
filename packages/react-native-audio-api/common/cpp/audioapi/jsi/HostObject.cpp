@@ -1,4 +1,4 @@
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -12,19 +12,18 @@ namespace audioapi {
 
 #if JSI_DEBUG_ALLOCATIONS
 int objCounter = 0;
-std::vector<JsiHostObject *> objects;
+std::vector<HostObject *> objects;
 #endif
 
-JsiHostObject::JsiHostObject() {
+HostObject::HostObject() {
   getters_ = std::make_unique<
-      std::unordered_map<std::string, jsi::Value (JsiHostObject::*)(jsi::Runtime &)>>();
+      std::unordered_map<std::string, jsi::Value (HostObject::*)(jsi::Runtime &)>>();
   functions_ = std::make_unique<std::unordered_map<
       std::string,
-      jsi::Value (JsiHostObject::*)(
+      jsi::Value (HostObject::*)(
           jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>>();
-  setters_ = std::make_unique<std::unordered_map<
-      std::string,
-      void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>();
+  setters_ = std::make_unique<
+      std::unordered_map<std::string, void (HostObject::*)(jsi::Runtime &, const jsi::Value &)>>();
 
 #if JSI_DEBUG_ALLOCATIONS
   objects.push_back(this);
@@ -32,7 +31,7 @@ JsiHostObject::JsiHostObject() {
 #endif
 }
 
-JsiHostObject::JsiHostObject(JsiHostObject &&other) noexcept
+HostObject::HostObject(HostObject &&other) noexcept
     : getters_(std::move(other.getters_)),
       functions_(std::move(other.functions_)),
       setters_(std::move(other.setters_)) {
@@ -45,7 +44,7 @@ JsiHostObject::JsiHostObject(JsiHostObject &&other) noexcept
 #endif
 }
 
-JsiHostObject &JsiHostObject::operator=(JsiHostObject &&other) noexcept {
+HostObject &HostObject::operator=(HostObject &&other) noexcept {
   if (this != &other) {
     getters_ = std::move(other.getters_);
     functions_ = std::move(other.functions_);
@@ -62,7 +61,7 @@ JsiHostObject &JsiHostObject::operator=(JsiHostObject &&other) noexcept {
   return *this;
 }
 
-JsiHostObject::~JsiHostObject() {
+HostObject::~HostObject() {
 #if JSI_DEBUG_ALLOCATIONS
   auto it = std::find(objects.begin(), objects.end(), this);
   if (it != objects.end()) {
@@ -72,7 +71,7 @@ JsiHostObject::~JsiHostObject() {
 #endif
 }
 
-std::vector<jsi::PropNameID> JsiHostObject::getPropertyNames(jsi::Runtime &rt) {
+std::vector<jsi::PropNameID> HostObject::getPropertyNames(jsi::Runtime &rt) {
   std::vector<jsi::PropNameID> propertyNames;
   propertyNames.reserve(getters_->size() + functions_->size() + setters_->size());
 
@@ -91,7 +90,7 @@ std::vector<jsi::PropNameID> JsiHostObject::getPropertyNames(jsi::Runtime &rt) {
   return propertyNames;
 }
 
-jsi::Value JsiHostObject::get(jsi::Runtime &runtime, const jsi::PropNameID &name) {
+jsi::Value HostObject::get(jsi::Runtime &runtime, const jsi::PropNameID &name) {
   auto nameAsString = name.utf8(runtime);
   auto &hostFunctionCache = hostFunctionCache_.get(runtime);
 
@@ -111,7 +110,7 @@ jsi::Value JsiHostObject::get(jsi::Runtime &runtime, const jsi::PropNameID &name
   if (function != functions_->end()) {
     auto dispatcher = std::bind(
         function->second,
-        reinterpret_cast<JsiHostObject *>(this),
+        reinterpret_cast<HostObject *>(this),
         std::placeholders::_1,
         std::placeholders::_2,
         std::placeholders::_3,
@@ -125,10 +124,7 @@ jsi::Value JsiHostObject::get(jsi::Runtime &runtime, const jsi::PropNameID &name
   return jsi::Value::undefined();
 }
 
-void JsiHostObject::set(
-    jsi::Runtime &runtime,
-    const jsi::PropNameID &name,
-    const jsi::Value &value) {
+void HostObject::set(jsi::Runtime &runtime, const jsi::PropNameID &name, const jsi::Value &value) {
   auto nameAsString = name.utf8(runtime);
 
   auto setter = setters_->find(nameAsString);

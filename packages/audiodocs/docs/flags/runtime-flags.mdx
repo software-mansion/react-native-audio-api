@@ -35,9 +35,9 @@ if (!isFfmpegEnabled()) {
 | Area | API | Requires FFmpeg for |
 | :--- | :--- | :--- |
 | Streaming | [`Audio tag`](/docs/sources/audio-tag) | HLS playback |
-| Playback | [`createFileSource`](/docs/core/base-audio-context#createfilesource), [`<Audio>`](/docs/experimental/audio-tag) | Remote URL streaming, HLS (`.m3u8`), local `.mp4` / `.m4a` / `.aac`. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. |
+| Playback | `createFileSource`, [`<Audio>`](/docs/sources/audio-tag) | Remote URL streaming, HLS (`.m3u8`), local `.mp4` / `.m4a` / `.aac`. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. |
 | Decoding | [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) | `.aac`, `.mp4`, `.m4a` (and remote URLs for any format) |
-| Metadata | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](/docs/experimental/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing |
+| Metadata | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](/docs/sources/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing |
 | Recording | [`AudioRecorder`](/docs/inputs/audio-recorder) file output | **Android only:** `M4A`, `FLAC`, and `CAF` (WAV uses miniaudio). iOS uses system AVFoundation instead. |
 | File utils | [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles) | M4A concatenation (WAV uses miniaudio) |
 

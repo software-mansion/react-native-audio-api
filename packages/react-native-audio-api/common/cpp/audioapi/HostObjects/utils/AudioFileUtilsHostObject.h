@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
@@ -9,7 +9,7 @@
 namespace audioapi {
 using namespace facebook;
 
-class AudioFileUtilsHostObject : public JsiHostObject {
+class AudioFileUtilsHostObject : public HostObject {
  public:
   explicit AudioFileUtilsHostObject(
       jsi::Runtime *runtime,
