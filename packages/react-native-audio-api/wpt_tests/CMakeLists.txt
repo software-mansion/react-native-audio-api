@@ -13,6 +13,10 @@ set(JSI_IMPL_DIR "${JSI_DIR}/jsi")
 set(FFMPEG_INCLUDE_DIR "${PACKAGE_ROOT}/common/cpp/audioapi/external/include_ffmpeg")
 include(FetchContent)
 
+if(POLICY CMP0169)
+  cmake_policy(SET CMP0169 OLD)
+endif()
+
 # Upstream has no release tags; pin to a known commit. GCC on Linux requires
 # explicit <atomic>/<utility> includes that are missing from upstream sources.
 set(NODE_API_JSI_GIT_TAG 4b8a4a59c4e1b7b988b809dedffd89a7662aa785)
@@ -38,6 +42,9 @@ string(REPLACE
   "#include \"NodeApiJsiRuntime.h\"\n\n#include <atomic>\n#include <utility>\n#include <algorithm>"
   NODE_API_JSI_RUNTIME_CONTENT
   "${NODE_API_JSI_RUNTIME_CONTENT}")
+if(NOT MSVC)
+  string(REPLACE " __cdecl" "" NODE_API_JSI_RUNTIME_CONTENT "${NODE_API_JSI_RUNTIME_CONTENT}")
+endif()
 set(NODE_API_JSI_SET_TRAP_ORIGINAL
 "  runInMethodContext(
       \"HostObject::set\", [&hostObject, &propertyId, &value, this]() {
@@ -125,3 +132,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME}
   ${CMAKE_JS_LIB}
 )
+
+if(MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE /w)
+else()
+  target_compile_options(${PROJECT_NAME} PRIVATE -w)
+endif()
