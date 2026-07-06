@@ -9,6 +9,7 @@ This directory contains the Node.js bootstrap for running Web Audio WPT against
 - JSI-backed runtime installation (`jsi_install.cpp`).
 - Smoke WPT harness (`wpt_tests/wpt/wpt-harness.mjs`) with allowlist + skip policy.
 - Vendored Web Audio API tests under `wpt_tests/webaudio/` (~3 MB, full `webaudio` subtree).
+- Manual conformance reporting (`wpt-results.mjs`) that produces a [wpt.fyi](https://wpt.fyi/results/webaudio/the-audio-api?label=experimental&label=master&aligned)-style markdown table.
 
 ## Prerequisites
 
@@ -28,9 +29,37 @@ From `packages/react-native-audio-api`:
    - `yarn wpt`
 4. Run filtered subset:
    - `node ./wpt_tests/wpt/wpt-harness.mjs --filter gain`
-5. Run in parallel (one worker process per test class, up to N concurrent):
-   - `node ./wpt_tests/wpt/wpt-harness.mjs --jobs 4`
-   - `node ./wpt_tests/wpt/wpt-harness.mjs --jobs auto --filter the-gainnode-interface`
+
+## Maintainer conformance report
+
+Full WPT runs are intentionally manual. CI keeps a small smoke subset; maintainers
+refresh the public conformance table after local runs.
+
+A full smoke run completes in well under 5 minutes and is deterministic: the same
+run always produces identical, complete numbers.
+
+1. Build once:
+   - `yarn wpt:build`
+2. Run the report profile and write artifacts:
+   - `yarn wpt:report`
+   - writes `wpt_tests/results/latest.json`
+   - writes `wpt_tests/results/latest.md`
+3. Update the docs summary in one step:
+   - `yarn wpt:report:docs`
+   - regenerates the WPT summary block in
+     `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`
+4. Review and commit the docs change. Raw result files stay local by default.
+
+Useful flags:
+
+- `--profile smoke` (default): `the-audio-api` subtree, aligned with wpt.fyi
+- `--profile full`: entire vendored `webaudio/` tree
+- `--report-json <path>` / `--write-markdown <path>`: custom output locations
+- `--update-docs`: rewrite the summary block in the audiodocs coverage page
+- `yarn wpt:markdown`: regenerate markdown from an existing JSON report
+
+The published conformance summary lives in the docs, not here:
+`packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
 
 ## Troubleshooting
 

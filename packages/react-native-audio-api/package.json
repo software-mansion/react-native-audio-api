@@ -85,6 +85,9 @@
     "wpt": "yarn wpt:build && yarn wpt:only",
     "wpt:list": "node ./wpt_tests/wpt/wpt-harness.mjs --list",
     "wpt:filter": "node ./wpt_tests/wpt/wpt-harness.mjs --filter",
+    "wpt:report": "yarn wpt:build && node ./wpt_tests/wpt/wpt-harness.mjs --report-json ./wpt_tests/results/latest.json --write-markdown ./wpt_tests/results/latest.md",
+    "wpt:report:docs": "yarn wpt:build && node ./wpt_tests/wpt/wpt-harness.mjs --report-json ./wpt_tests/results/latest.json --write-markdown ./wpt_tests/results/latest.md --update-docs",
+    "wpt:markdown": "node ./wpt_tests/wpt/wpt-markdown.mjs --from-json ./wpt_tests/results/latest.json",
     "create:package": "./scripts/create-package.sh",
     "prepack": "cp ../../README.md ./README.md",
     "postpack": "rm ./README.md"

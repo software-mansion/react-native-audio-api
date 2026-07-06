@@ -1,10 +1,10 @@
 import EventEmitter from 'node:events';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
 import chalk from 'chalk';
+import wptRunner from 'wpt-runner';
 
 import { wrapAudioNodeConstructors } from './wrap-audio-node-constructors.mjs';
 
@@ -19,22 +19,20 @@ export const rootURL = 'webaudio';
 export const smokeAllowlist = JSON.parse(
   fs.readFileSync(path.join(harnessDir, 'smoke-allowlist.json'), 'utf8')
 );
+export const fullAllowlist = ['webaudio'];
 export const skipList = JSON.parse(
   fs.readFileSync(path.join(harnessDir, 'skip-list.json'), 'utf8')
 );
 
-export function resolveJobsOption(jobsOption) {
-  if (jobsOption == null || jobsOption === '1') {
-    return 1;
+export function getProfileAllowlist(profile = 'smoke') {
+  if (profile === 'full') {
+    return fullAllowlist;
   }
-  if (jobsOption === 'auto') {
-    return Math.max(1, (os.cpus()?.length ?? 1) - 1);
-  }
-  const parsed = Number.parseInt(String(jobsOption), 10);
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    throw new Error(`Invalid --jobs value: ${jobsOption}`);
-  }
-  return parsed;
+  return smokeAllowlist;
+}
+
+export function profileMatches(name, profile = 'smoke') {
+  return getProfileAllowlist(profile).some(prefix => name.includes(prefix));
 }
 
 export function walkHtmlFiles(rootDir, prefix = '') {
@@ -51,8 +49,8 @@ export function walkHtmlFiles(rootDir, prefix = '') {
   return files;
 }
 
-export function smokeFilter(name) {
-  return smokeAllowlist.some(prefix => name.includes(prefix));
+export function smokeFilter(name, profile = 'smoke') {
+  return profileMatches(name, profile);
 }
 
 export function getSkippedByPolicy(name) {
@@ -65,7 +63,7 @@ export function normalizeTestPath(filePath) {
 
 /**
  * WPT "test class" — typically one interface directory under the-audio-api/.
- * Used to batch independent tests into worker processes.
+ * Used to group results by interface for the coverage report.
  */
 export function getTestClass(testPath) {
   const normalized = normalizeTestPath(testPath);
@@ -82,27 +80,10 @@ export function getTestClass(testPath) {
   return 'root';
 }
 
-export function groupTestsByClass(testPaths) {
-  const groups = new Map();
-
-  for (const testPath of testPaths) {
-    const testClass = getTestClass(testPath);
-    const bucket = groups.get(testClass) ?? [];
-    bucket.push(testPath);
-    groups.set(testClass, bucket);
-  }
-
-  return [...groups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([testClass, paths]) => ({
-      testClass,
-      testPaths: paths.sort(),
-    }));
-}
-
 export function collectSelectedTestPaths({
   filterRegexp = '.*',
   includeCrashtests = false,
+  profile = 'smoke',
 }) {
   const extraFilterRe = new RegExp(filterRegexp);
   const selected = [];
@@ -115,7 +96,7 @@ export function collectSelectedTestPaths({
     if (!includeCrashtests && fullName.includes('/crashtests/')) {
       continue;
     }
-    if (!smokeFilter(fullName)) {
+    if (!smokeFilter(fullName, profile)) {
       continue;
     }
     if (!extraFilterRe.test(fullName)) {
@@ -172,7 +153,12 @@ export function createWptEnvironment() {
   return { setup, cleanupEmitter };
 }
 
-export function createSequentialFilter({ filterRegexp, includeCrashtests, listOnly }) {
+export function createSequentialFilter({
+  filterRegexp,
+  includeCrashtests,
+  listOnly,
+  profile = 'smoke',
+}) {
   const extraFilterRe = new RegExp(filterRegexp);
 
   return name => {
@@ -182,7 +168,7 @@ export function createSequentialFilter({ filterRegexp, includeCrashtests, listOn
     if (!includeCrashtests && name.includes('/crashtests/')) {
       return false;
     }
-    if (!smokeFilter(name)) {
+    if (!smokeFilter(name, profile)) {
       return false;
     }
     if (!extraFilterRe.test(name)) {
@@ -194,6 +180,11 @@ export function createSequentialFilter({ filterRegexp, includeCrashtests, listOn
     }
     return true;
   };
+}
+
+export async function runSequentialWpt({ filter, reporter }) {
+  const { setup } = createWptEnvironment();
+  return wptRunner(testsPath, { rootURL, setup, filter, reporter });
 }
 
 export function createReporter(handlers) {

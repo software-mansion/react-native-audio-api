@@ -1,3 +1,6 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import chalk from 'chalk';
 import { program } from 'commander';
 
@@ -6,47 +9,116 @@ import {
   createConsoleReporter,
   createSequentialFilter,
   createWptEnvironment,
+  getProfileAllowlist,
   printSummary,
-  resolveJobsOption,
+  runSequentialWpt,
 } from './wpt-shared.mjs';
 import {
-  createParallelConsoleReporter,
-  runSequentialWpt,
-  WptParallelRunner,
-} from './WptParallelRunner.mjs';
+  buildReport,
+  formatCoverageMarkdown,
+  updateDocsSection,
+  WptResultsCollector,
+  wrapReporter,
+  writeReportFiles,
+} from './wpt-results.mjs';
+
+const harnessDir = path.dirname(fileURLToPath(import.meta.url));
+const defaultJsonReportPath = path.join(harnessDir, '..', 'results', 'latest.json');
+const defaultMarkdownReportPath = path.join(harnessDir, '..', 'results', 'latest.md');
+const defaultDocsPath = path.join(
+  harnessDir,
+  '..',
+  '..',
+  '..',
+  'audiodocs',
+  'docs',
+  'other',
+  'web-audio-api-coverage.mdx'
+);
 
 program
   .option('--list', 'List test files only')
   .option('--filter <regexp>', 'Additional regex filter for tests', '.*')
   .option('--include-crashtests', 'Include crashtests', false)
   .option(
-    '--jobs <n|auto>',
-    'Run test classes in parallel worker processes (1 = sequential)',
-    '1'
+    '--profile <name>',
+    'Test selection profile: smoke (the-audio-api) or full (entire webaudio tree)',
+    'smoke'
+  )
+  .option(
+    '--report-json <path>',
+    'Write structured JSON results for markdown generation',
+    null
+  )
+  .option(
+    '--write-markdown <path>',
+    'Write a wpt.fyi-style markdown report',
+    null
+  )
+  .option(
+    '--update-docs',
+    'Replace the WPT summary block in the audiodocs Web Audio API coverage page',
+    false
   );
 
 program.parse(process.argv);
 const options = program.opts();
 
+if (!['smoke', 'full'].includes(options.profile)) {
+  console.error(chalk.red(`Invalid --profile value: ${options.profile}`));
+  process.exit(1);
+}
+
 let numPass = 0;
 let numFail = 0;
 let timerStarted = false;
 let summaryPrinted = false;
-/** @type {import('./WptParallelRunner.mjs').WptParallelRunner | null} */
-let parallelRunner = null;
+const resultsCollector = new WptResultsCollector();
+const startedAt = Date.now();
 
 const printHarnessSummary = () => {
   if (summaryPrinted) {
     return;
   }
   summaryPrinted = true;
+  printSummary({ numPass, numFail, timerStarted });
+};
 
-  if (parallelRunner != null) {
-    parallelRunner.printSummary();
+const writeReports = () => {
+  const reportJsonPath =
+    options.reportJson === true ? defaultJsonReportPath : options.reportJson;
+  const markdownPath =
+    options.writeMarkdown === true ? defaultMarkdownReportPath : options.writeMarkdown;
+
+  if (!reportJsonPath && !markdownPath && !options.updateDocs) {
     return;
   }
 
-  printSummary({ numPass, numFail, timerStarted });
+  const report = buildReport({
+    collector: resultsCollector,
+    profile: options.profile,
+    filterRegexp: options.filter,
+    includeCrashtests: options.includeCrashtests,
+    profileAllowlist: getProfileAllowlist(options.profile),
+    durationMs: Date.now() - startedAt,
+  });
+
+  writeReportFiles({
+    report,
+    jsonPath: reportJsonPath,
+    markdownPath,
+  });
+
+  if (reportJsonPath) {
+    console.log(chalk.dim(`Wrote JSON report: ${reportJsonPath}`));
+  }
+  if (markdownPath) {
+    console.log(chalk.dim(`Wrote markdown report: ${markdownPath}`));
+  }
+  if (options.updateDocs) {
+    updateDocsSection(defaultDocsPath, formatCoverageMarkdown(report));
+    console.log(chalk.dim(`Updated docs summary: ${defaultDocsPath}`));
+  }
 };
 
 const signalExitCode = {
@@ -58,11 +130,8 @@ const signalExitCode = {
 const handleSignal = signal => {
   console.error(chalk.yellow(`\nReceived ${signal}; printing partial summary.`));
   printHarnessSummary();
-
-  const failCount =
-    parallelRunner != null ? parallelRunner.getCounts().numFail : numFail;
-  const exitCode = signalExitCode[signal] ?? 1;
-  process.exit(failCount > 0 ? 1 : exitCode);
+  writeReports();
+  process.exit(numFail > 0 ? 1 : signalExitCode[signal] ?? 1);
 };
 
 process.on('SIGHUP', () => handleSignal('SIGHUP'));
@@ -83,62 +152,45 @@ if (options.list) {
   for (const file of collectSelectedTestPaths({
     filterRegexp: options.filter,
     includeCrashtests: options.includeCrashtests,
+    profile: options.profile,
   })) {
     console.log(file);
   }
   process.exit(0);
 }
 
-const jobs = resolveJobsOption(options.jobs);
-const selectedTestPaths = collectSelectedTestPaths({
-  filterRegexp: options.filter,
-  includeCrashtests: options.includeCrashtests,
-});
-
-// Warm up native module in the parent for sequential mode; workers load their own copy.
-if (jobs === 1) {
-  createWptEnvironment();
-}
+// Warm up the native module in the parent before running.
+createWptEnvironment();
 
 try {
   console.time('wpt-duration');
   timerStarted = true;
 
-  if (jobs === 1) {
-    const numPassRef = { value: 0 };
-    const numFailRef = { value: 0 };
-    const filter = createSequentialFilter({
-      filterRegexp: options.filter,
-      includeCrashtests: options.includeCrashtests,
-      listOnly: false,
-    });
-    const reporter = createConsoleReporter({ numPassRef, numFailRef });
-    const fileFailures = await runSequentialWpt({ filter, reporter });
-    numPass = numPassRef.value;
-    numFail = numFailRef.value;
-    if (fileFailures > 0 && numFail === 0) {
-      numFail = fileFailures;
-    }
-  } else {
-    parallelRunner = new WptParallelRunner({
-      jobs,
-      handlers: createParallelConsoleReporter(),
-    });
-    parallelRunner.markTimerStarted();
-    const result = await parallelRunner.run(selectedTestPaths);
-    numPass = result.numPass;
-    numFail = result.numFail;
-    parallelRunner.printSummary();
-    summaryPrinted = true;
-    parallelRunner = null;
+  const numPassRef = { value: 0 };
+  const numFailRef = { value: 0 };
+  const filter = createSequentialFilter({
+    filterRegexp: options.filter,
+    includeCrashtests: options.includeCrashtests,
+    listOnly: false,
+    profile: options.profile,
+  });
+  const reporter = wrapReporter(
+    createConsoleReporter({ numPassRef, numFailRef }),
+    resultsCollector
+  );
+  const fileFailures = await runSequentialWpt({ filter, reporter });
+  numPass = numPassRef.value;
+  numFail = numFailRef.value;
+  if (fileFailures > 0 && numFail === 0) {
+    numFail = fileFailures;
   }
 
-  if (!summaryPrinted) {
-    printHarnessSummary();
-  }
+  printHarnessSummary();
+  writeReports();
   process.exit(numFail > 0 ? 1 : 0);
 } catch (error) {
   printHarnessSummary();
+  writeReports();
   console.error(error.stack);
   process.exit(1);
 }
