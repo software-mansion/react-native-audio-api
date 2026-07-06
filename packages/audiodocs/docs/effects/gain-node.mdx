@@ -21,17 +21,17 @@ constructor(context: BaseAudioContext, options?: GainOptions)
 
 ### `GainOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `gain` <Optional /> | `number` | `1.0` | Initial value for [`gain`](/docs/effects/gain-node#properties) |
+| `gain` <Optional /> | `number` | 1 | Initial value for [`gain`](/docs/effects/gain-node#properties) |
 
 You can also create a `GainNode` via the [`BaseAudioContext.createGain()`](/docs/core/base-audio-context#creategain) factory method, which uses default values.
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
@@ -42,7 +42,7 @@ It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 ## Methods
 
 `GainNode` does not define any additional methods.
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ## Usage
 

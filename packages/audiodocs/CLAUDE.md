@@ -116,7 +116,7 @@ gain.connect(ctx.destination);
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 | Name | Type | Default | Description |
 | :----: | :----: | :-------- | :------- |
@@ -124,7 +124,7 @@ It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
 
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ## Remarks
 
