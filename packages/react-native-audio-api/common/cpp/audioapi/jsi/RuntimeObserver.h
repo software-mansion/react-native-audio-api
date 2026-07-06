@@ -10,8 +10,8 @@ using namespace facebook;
  * Listener interface that allows for getting notified when a jsi::Runtime
  * instance is destroyed.
  */
-struct RuntimeLifecycleListener {
-  virtual ~RuntimeLifecycleListener() = default;
+struct RuntimeObserverListener {
+  virtual ~RuntimeObserverListener() = default;
   virtual void onRuntimeDestroyed(jsi::Runtime *) = 0;
 };
 
@@ -21,9 +21,9 @@ struct RuntimeLifecycleListener {
  * cleanup any data that references a given jsi::Runtime instance before it gets
  * destroyed.
  */
-struct RuntimeLifecycleMonitor {
-  static void addListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener);
-  static void removeListener(jsi::Runtime &rt, RuntimeLifecycleListener *listener);
+struct RuntimeObserver {
+  static void addListener(jsi::Runtime &rt, RuntimeObserverListener *listener);
+  static void removeListener(jsi::Runtime &rt, RuntimeObserverListener *listener);
 };
 
 } // namespace audioapi

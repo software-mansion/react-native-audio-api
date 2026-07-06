@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/RuntimeAwareCache.h>
+#include <audioapi/jsi/RuntimeInstanceCache.h>
 
 #include <jsi/jsi.h>
 #include <map>
@@ -19,7 +19,7 @@
 #define JSI_EXPORT_FUNCTION(CLASS, FUNCTION) \
   std::make_pair( \
       std::string(#FUNCTION), \
-      static_cast<jsi::Value (JsiHostObject::*)( \
+      static_cast<jsi::Value (HostObject::*)( \
           jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>(&CLASS::FUNCTION))
 
 #define JSI_PROPERTY_GETTER_DECL(name) jsi::Value name(jsi::Runtime &runtime)
@@ -27,7 +27,7 @@
 #define JSI_EXPORT_PROPERTY_GETTER(CLASS, FUNCTION) \
   std::make_pair( \
       std::string(#FUNCTION), \
-      static_cast<jsi::Value (JsiHostObject::*)(jsi::Runtime &)>(&CLASS::FUNCTION))
+      static_cast<jsi::Value (HostObject::*)(jsi::Runtime &)>(&CLASS::FUNCTION))
 
 #define JSI_PROPERTY_SETTER_DECL(name) void name(jsi::Runtime &runtime, const jsi::Value &value)
 #define JSI_PROPERTY_SETTER_IMPL(CLASS, name) \
@@ -35,20 +35,20 @@
 #define JSI_EXPORT_PROPERTY_SETTER(CLASS, FUNCTION) \
   std::make_pair( \
       std::string(#FUNCTION), \
-      static_cast<void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>(&CLASS::FUNCTION))
+      static_cast<void (HostObject::*)(jsi::Runtime &, const jsi::Value &)>(&CLASS::FUNCTION))
 
 namespace audioapi {
 
 using namespace facebook;
 
-class JsiHostObject : public jsi::HostObject {
+class HostObject : public jsi::HostObject {
  public:
-  JsiHostObject();
-  JsiHostObject(const JsiHostObject &) = delete;
-  JsiHostObject &operator=(const JsiHostObject &) = delete;
-  JsiHostObject(JsiHostObject &&) noexcept;
-  JsiHostObject &operator=(JsiHostObject &&other) noexcept;
-  ~JsiHostObject() override;
+  HostObject();
+  HostObject(const HostObject &) = delete;
+  HostObject &operator=(const HostObject &) = delete;
+  HostObject(HostObject &&) noexcept;
+  HostObject &operator=(HostObject &&other) noexcept;
+  ~HostObject() override;
 
   std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime &rt) override;
 
@@ -72,21 +72,20 @@ class JsiHostObject : public jsi::HostObject {
   }
 
  protected:
-  std::unique_ptr<std::unordered_map<std::string, jsi::Value (JsiHostObject::*)(jsi::Runtime &)>>
+  std::unique_ptr<std::unordered_map<std::string, jsi::Value (HostObject::*)(jsi::Runtime &)>>
       getters_;
 
   std::unique_ptr<std::unordered_map<
       std::string,
-      jsi::Value (
-          JsiHostObject::*)(jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>>
+      jsi::Value (HostObject::*)(jsi::Runtime &, const jsi::Value &, const jsi::Value *, size_t)>>
       functions_;
 
   std::unique_ptr<
-      std::unordered_map<std::string, void (JsiHostObject::*)(jsi::Runtime &, const jsi::Value &)>>
+      std::unordered_map<std::string, void (HostObject::*)(jsi::Runtime &, const jsi::Value &)>>
       setters_;
 
  private:
-  RuntimeAwareCache<std::map<std::string, jsi::Function>> hostFunctionCache_;
+  RuntimeInstanceCache<std::map<std::string, jsi::Function>> hostFunctionCache_;
 };
 
 } // namespace audioapi

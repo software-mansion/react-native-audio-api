@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/RuntimeLifecycleMonitor.h>
+#include <audioapi/jsi/RuntimeObserver.h>
 
 #include <jsi/jsi.h>
 #include <unordered_map>
@@ -21,17 +21,17 @@ using namespace facebook;
  * deleted is the root cause of that crash).
  */
 template <typename T>
-class RuntimeAwareCache : public RuntimeLifecycleListener {
+class RuntimeInstanceCache : public RuntimeObserverListener {
  public:
   void onRuntimeDestroyed(jsi::Runtime *rt) override {
     // A runtime has been destroyed, so destroy the related cache.
     runtimeCaches_.erase(rt);
   }
 
-  ~RuntimeAwareCache() override {
+  ~RuntimeInstanceCache() override {
     for (auto &cache : runtimeCaches_) {
       // remove all `onRuntimeDestroyed` listeners.
-      RuntimeLifecycleMonitor::removeListener(*cache.first, this);
+      RuntimeObserver::removeListener(*cache.first, this);
     }
   }
 
@@ -40,7 +40,7 @@ class RuntimeAwareCache : public RuntimeLifecycleListener {
       // This is the first time this Runtime has been accessed.
       // We set up a `onRuntimeDestroyed` listener for it and
       // initialize the cache map.
-      RuntimeLifecycleMonitor::addListener(rt, this);
+      RuntimeObserver::addListener(rt, this);
 
       T cache;
       runtimeCaches_.emplace(&rt, std::move(cache));
