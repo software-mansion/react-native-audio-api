@@ -15,14 +15,20 @@ but if odd-ordered filters are needed or automation is not needed, then `IIRFilt
 
 ## Constructor
 
-[`BaseAudioContext.createIIRFilter(options: IIRFilterNodeOptions)`](/docs/core/base-audio-context#createiirfilter)
-
-```jsx
-interface IIRFilterNodeOptions {
-  feedforward: number[]; // array of floating-point values specifying the feedforward (numerator) coefficients
-  feedback: number[]; // array of floating-point values specifying the feedback (denominator) coefficients
-}
+```tsx
+constructor(context: BaseAudioContext, options: IIRFilterOptions)
 ```
+
+### `IIRFilterOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `feedforward` | `number[]` | - | Array of floating-point values specifying the feedforward (numerator) coefficients. |
+| `feedback` | `number[]` | - | Array of floating-point values specifying the feedback (denominator) coefficients. |
+
+You can also create an `IIRFilterNode` via the [`BaseAudioContext.createIIRFilter()`](/docs/core/base-audio-context#createiirfilter) factory method.
 
 #### Errors
 
@@ -32,9 +38,11 @@ interface IIRFilterNodeOptions {
 | `InvalidStateError` | All of the feedforward coefficients are 0, or the first feedback coefficient is 0. |
 
 ## Properties
+
 Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
+
 Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ### `getFrequencyResponse`

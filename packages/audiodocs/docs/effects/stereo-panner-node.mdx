@@ -7,24 +7,23 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # StereoPannerNode
 
-The `StereoPannerNode` interface represents the change in ratio between two output channels (f. e. left and right speaker).
+The `StereoPannerNode` interface represents the change in ratio between two output channels (left and right speaker).
 
 ## Constructor
 
 ```tsx
-constructor(context: BaseAudioContext, stereoPannerOptions?: StereoPannerOptions)
+constructor(context: BaseAudioContext, options?: StereoPannerOptions)
 ```
 
 ### `StereoPannerOptions`
 
 Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
 
-| Parameter | Type | Default | Description |
+| Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `pan` <Optional /> | `number` | - | Number representing pan value |
+| `pan` <Optional /> | `number` | `0.0` | Initial value for [`pan`](/docs/effects/stereo-panner-node#properties). |
 
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createStereoPanner()`](/docs/core/base-audio-context#createstereopanner)
+You can also create a `StereoPannerNode` via the [`BaseAudioContext.createStereoPanner()`](/docs/core/base-audio-context#createstereopanner) factory method, which uses default values.
 
 ## Properties
 
@@ -44,5 +43,5 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 ## Remarks
 
 #### `pan`
-- Default value is 0
-- Nominal range is -1 (only left channel) to 1 (only right channel).
+- Default value is `0.0`.
+- Nominal range is `-1.0` (only left channel) to `1.0` (only right channel).
