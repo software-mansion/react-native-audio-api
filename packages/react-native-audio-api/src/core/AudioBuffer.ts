@@ -46,7 +46,6 @@ export default class AudioBuffer implements AudioBufferLike {
     channelNumber: number,
     startInChannel: number = 0
   ): void {
-    AudioBuffer.assertFloat32Array(destination, 'destination');
     if (channelNumber < 0 || channelNumber >= this.numberOfChannels) {
       throw new IndexSizeError(
         `The channel number provided (${channelNumber}) is outside the range [0, ${this.numberOfChannels - 1}]`
@@ -67,7 +66,6 @@ export default class AudioBuffer implements AudioBufferLike {
     channelNumber: number,
     startInChannel: number = 0
   ): void {
-    AudioBuffer.assertFloat32Array(source, 'source');
     if (channelNumber < 0 || channelNumber >= this.numberOfChannels) {
       throw new IndexSizeError(
         `The channel number provided (${channelNumber}) is outside the range [0, ${this.numberOfChannels - 1}]`
@@ -81,31 +79,6 @@ export default class AudioBuffer implements AudioBufferLike {
     }
 
     this.buffer.copyToChannel(source, channelNumber, startInChannel);
-  }
-
-  private static assertFloat32Array(value: unknown, name: string): void {
-    // Cross-realm Float32Arrays (e.g. from a jsdom window) fail instanceof,
-    // so also accept any object that looks like a Float32Array view.
-    const isFloat32View =
-      value instanceof Float32Array ||
-      (typeof value === 'object' &&
-        value !== null &&
-        ArrayBuffer.isView(value as ArrayBufferView) &&
-        (value as Float32Array).BYTES_PER_ELEMENT === 4 &&
-        (value.constructor as { name?: string })?.name === 'Float32Array');
-
-    if (!isFloat32View) {
-      throw new TypeError(`The provided ${name} is not a Float32Array`);
-    }
-
-    const backingBuffer = (value as Float32Array).buffer as {
-      constructor?: { name?: string };
-    };
-    if (backingBuffer?.constructor?.name === 'SharedArrayBuffer') {
-      throw new TypeError(
-        `The provided ${name} is backed by a SharedArrayBuffer, which is not allowed`
-      );
-    }
   }
 
   private static createBufferFromOptions(

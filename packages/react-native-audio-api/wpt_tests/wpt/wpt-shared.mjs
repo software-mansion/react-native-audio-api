@@ -7,6 +7,7 @@ import chalk from 'chalk';
 import wptRunner from 'wpt-runner';
 
 import { wrapAudioNodeConstructors } from './wrap-audio-node-constructors.mjs';
+import { wrapAudioBufferCopyMethods } from './wpt-utils.mjs';
 
 const require = createRequire(import.meta.url);
 const { setFloat32ArrayViewFactory } = require('../../lib/commonjs/errors/index.js');
@@ -139,6 +140,7 @@ export function createWptEnvironment() {
     globalThis.TypeError = window.TypeError;
     globalThis.RangeError = window.RangeError;
     wrapAudioNodeConstructors(window);
+    wrapAudioBufferCopyMethods(window);
     if (window.navigator == null) {
       window.navigator = {};
     }
