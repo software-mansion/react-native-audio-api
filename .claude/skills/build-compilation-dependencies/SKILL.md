@@ -65,8 +65,10 @@ https://github.com/software-mansion-labs/rn-audio-libs/releases/download/<TAG>/
 Current tag: **v3.0.0** (see `scripts/download-prebuilt-binaries.sh`).
 
 The download script is triggered automatically:
-- **iOS**: by podspec `prepare_command` during `pod install` — downloads `ffmpeg_ios`, `iphoneos`, `iphonesimulator`, `macosx`
+- **iOS**: by podspec `prepare_command` during `pod install` **and** by a `script_phase` (`[CP-User] Download RNAudioAPI prebuilt binaries`, `:before_headers`, always-out-of-date) on every Xcode build — downloads `ffmpeg_ios`, `iphoneos`, `iphonesimulator`, `macosx`. `prepare_command` ensures all vendored `.xcframework`s exist when CocoaPods generates `[CP] Copy XCFrameworks` (required for correct FFmpeg linking). The build-time phase handles CI setups that cache `Pods/` independently from `node_modules/` — it is a fast no-op when binaries are already present. **It must use `:before_headers`, not `:before_compile`** — CocoaPods inserts its own `[CP] Copy XCFrameworks` phase right after `Headers`; `:before_compile` would land *after* it. The phase's `output_files` declares both the `-force_load` static libs and the four FFmpeg xcframeworks. The whole phase is skipped only when *both* `DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS` and `DISABLE_AUDIOAPI_FFMPEG` are set.
 - **Android**: by `downloadPrebuiltBinaries` Gradle task, which runs before `preBuild` — downloads `android`, `jniLibs`
+
+The script is idempotent — it skips any archive whose destination directory already exists, so the per-build invocations are fast no-ops once binaries are present.
 
 Downloaded artifacts land in:
 - `common/cpp/audioapi/external/android/<ABI>/` — `.a` static libs for Android ABIs
