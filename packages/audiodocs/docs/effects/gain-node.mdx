@@ -25,7 +25,7 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `gain` <Optional /> | `number` | 1 | Initial value for [`gain`](/docs/effects/gain-node#properties) |
+| `gain` <Optional /> | `number` | `1.0` | Initial value for [`gain`](/docs/effects/gain-node#properties) |
 
 You can also create a `GainNode` via the [`BaseAudioContext.createGain()`](/docs/core/base-audio-context#creategain) factory method, which uses default values.
 
@@ -71,8 +71,8 @@ gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 2);
 
 #### `gain`
 - Nominal range is -∞ to ∞.
-- Values greater than `1.0` amplify the signal; values between `0` and `1.0` attenuate it.
-- A value of `0` silences the signal. Negative values invert the signal phase.
+- Values greater than `1.0` amplify the signal; values between `0.0` and `1.0` attenuate it.
+- A value of `0.0` silences the signal. Negative values invert the signal phase.
 
 ## Advanced usage — Envelope (ADSR)
 

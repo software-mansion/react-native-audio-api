@@ -25,7 +25,7 @@ In general we can distinguish four types of nodes:
 #### Rendering audio graph
 
 Audio graph rendering is done in blocks of sample-frames. The number of sample-frames in a block is called render quantum size, and the block itself is called a render quantum.
-By default render quantum size value is 128 and it is constant.
+By default render quantum size value is `128` and it is constant.
 
 The [`AudioContext`](/docs/core/audio-context) rendering thread is driven by a system-level audio callback.
 Each call has a system-level audio callback buffer size, which is a varying number of sample-frames that needs to be computed on time before the next system-level audio callback arrives,
@@ -39,7 +39,7 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
+| `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from `0.0`. | <ReadOnly /> |
 | `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
 | `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
@@ -72,9 +72,9 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 
 | Error type | Description |
 | :---: | :---- |
-| `NotSupportedError` | `numOfChannels` is outside the nominal range [1, 32]. |
-| `NotSupportedError` | `sampleRate` is outside the nominal range [8000, 96000]. |
-| `NotSupportedError` | `length` is less then 1. |
+| `NotSupportedError` | `numOfChannels` is outside the nominal range [`1`, `32`]. |
+| `NotSupportedError` | `sampleRate` is outside the nominal range [`8000`, `96000`]. |
+| `NotSupportedError` | `length` is less then `1`. |
 
 #### Returns `AudioBuffer`.
 
@@ -146,7 +146,7 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
+| `constraints` <Optional /> | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of `1.0` and minimum peak value of `-1.0`.|
 
 #### Errors
 
@@ -204,8 +204,8 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 | Error type | Description |
 | :---: | :---- |
 | `Error` | `react-native-worklet` is not found as dependency. |
-| `NotSupportedError` | `bufferLength` < 1. |
-| `NotSupportedError` | `inputChannelCount` is not in range [1, 32]. |
+| `NotSupportedError` | `bufferLength` < `1`. |
+| `NotSupportedError` | `inputChannelCount` is not in range [`1`, `32`]. |
 
 #### Returns `WorkletNode`.
 

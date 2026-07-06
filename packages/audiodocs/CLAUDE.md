@@ -99,7 +99,7 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `gain` <Optional /> | `number` | `1` | Initial gain value. |
+| `gain` <Optional /> | `number` | `1.0` | Initial gain value. |
 
 Or by using [`BaseAudioContext.createGain()`](/docs/core/base-audio-context#creategain).
 
@@ -120,7 +120,7 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 | Name | Type | Default | Description |
 | :----: | :----: | :-------- | :------- |
-| `gain` <ReadOnly /> | `AudioParam` | `1` | Gain applied to the signal. Range: [0, 1] typical. |
+| `gain` <ReadOnly /> | `AudioParam` | `1.0` | Gain applied to the signal. Range: [`0.0`, `1.0`] typical. |
 
 ## Methods
 
@@ -129,8 +129,8 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 ## Remarks
 
 #### `gain`
-- Nominal range is [0, 1] for attenuation but accepts any finite value.
-- Values > 1 amplify; negative values invert phase.
+- Nominal range is [`0.0`, `1.0`] for attenuation but accepts any finite value.
+- Values greater than `1.0` amplify; negative values invert phase.
 ```
 
 ## Custom MDX Components
@@ -141,7 +141,7 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 import { Optional, ReadOnly, Overridden, IOS, Android, Experimental, MobileOnly }
   from '@site/src/components/Badges';
 
-| `gain` <ReadOnly /> | `AudioParam` | `1` | ... |
+| `gain` <ReadOnly /> | `AudioParam` | `1.0` | ... |
 | `type` <Optional /> | `string` | `'sine'` | ... |
 ```
 
@@ -241,7 +241,7 @@ Block: `$$formula$$`
 ```mdx
 | Name | Type | Default value | Description |
 | :----: | :----: | :-------- | :------- |
-| `frequency` <ReadOnly /> | `AudioParam` | `440` | Oscillation frequency in Hz. |
+| `frequency` <ReadOnly /> | `AudioParam` | `440.0` | Oscillation frequency in Hz. |
 | `type` | `OscillatorType` | `'sine'` | Waveform shape. |
 ```
 

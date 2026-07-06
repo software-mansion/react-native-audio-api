@@ -8,7 +8,7 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 # DelayNode
 
 The `DelayNode` interface represents latency in an audio signal by a given amount of time. It is an [`AudioNode`](/docs/core/audio-node) that applies time shift to incoming signal f.e.
-if `delayTime` value is 0.5, it means that audio will be played after 0.5 seconds.
+if `delayTime` value is `0.5`, it means that audio will be played after `0.5` seconds.
 
 :::info
 Delay is a node with tail-time, which means that it continues to output non-silent audio with zero input for the duration of `delayTime`.
@@ -26,8 +26,8 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `maxDelayTime` <Optional /> | `number` | 1 | Maximum amount of time, in seconds, to buffer delayed values. |
-| `delayTime` <Optional /> | `number` | 0 | Initial value for [`delayTime`](/docs/effects/delay-node#properties). |
+| `maxDelayTime` <Optional /> | `number` | `1.0` | Maximum amount of time, in seconds, to buffer delayed values. |
+| `delayTime` <Optional /> | `number` | `0.0` | Initial value for [`delayTime`](/docs/effects/delay-node#properties). |
 
 You can also create a `DelayNode` via the [`BaseAudioContext.createDelay(maxDelayTime?: number)`](/docs/core/base-audio-context#createdelay) factory method, which uses default values when called without arguments.
 
@@ -53,9 +53,9 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 ## Remarks
 
 #### `maxDelayTime`
-- Default value is 1.
-- Nominal range is 0 - 180.
+- Default value is `1.0`.
+- Nominal range is `0.0` - `180.0`.
 
 #### `delayTime`
-- Default value is 0.
-- Nominal range is 0 - `maxDelayTime`.
+- Default value is `0.0`.
+- Nominal range is `0.0` - `maxDelayTime`.

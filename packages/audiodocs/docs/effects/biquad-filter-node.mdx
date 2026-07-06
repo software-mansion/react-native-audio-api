@@ -27,10 +27,10 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `Q` <Optional /> | `number` | 1 | Initial value for [`Q`](/docs/effects/biquad-filter-node#properties) |
-| `detune` <Optional /> | `number` | 0 | Initial value for [`detune`](/docs/effects/biquad-filter-node#properties) |
-| `frequency` <Optional /> | `number` | 350 | Initial value for [`frequency`](/docs/effects/biquad-filter-node#properties) |
-| `gain` <Optional /> | `number` | 0 | Initial value for [`gain`](/docs/effects/biquad-filter-node#properties) |
+| `Q` <Optional /> | `number` | `1.0` | Initial value for [`Q`](/docs/effects/biquad-filter-node#properties) |
+| `detune` <Optional /> | `number` | `0.0` | Initial value for [`detune`](/docs/effects/biquad-filter-node#properties) |
+| `frequency` <Optional /> | `number` | `350.0` | Initial value for [`frequency`](/docs/effects/biquad-filter-node#properties) |
+| `gain` <Optional /> | `number` | `0.0` | Initial value for [`gain`](/docs/effects/biquad-filter-node#properties) |
 | `type` <Optional /> | `BiquadFilterType` | `lowpass` | Initial value for [`type`](/docs/effects/biquad-filter-node#properties) |
 
 Or by using `BaseAudioContext` factory method:
@@ -95,15 +95,15 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 ## Remarks
 
 #### `frequency`
-- Range: [10, $\frac{sampleRate}{2}$].
+- Range: [`10.0`, $\frac{sampleRate}{2}$].
 
 #### `Q`
 - Range:
   - For `lowpass` and `highpass` is [-Q, Q], where Q is the largest value for which $10^{Q/20}$ does not overflow the single-precision floating-point representation.
-Numerically: Q ≈ 770.63678.
+Numerically: Q ≈ `770.63678`.
   - For `bandpass`, `notch`, `allpass`, and `peaking`: Q is related to the filter’s bandwidth and should be positive.
   - Not used for `lowshelf` and `highshelf`.
 
 #### `gain`
-- Range: [-40, 40].
+- Range: [`-40.0`, `40.0`].
 - Positive values correspond to amplification; negative to attenuation.
