@@ -100,15 +100,10 @@ size_t negotiateChannelCount(const HostGraph::Node *dest, size_t term) {
     return attr;
   }
 
-  switch (mode) {
-    case audioapi::ChannelCountMode::MAX:
-      return maxInputChannels;
-    case audioapi::ChannelCountMode::CLAMPED_MAX:
-      return std::min(attr, maxInputChannels);
-    case audioapi::ChannelCountMode::EXPLICIT:
-      return attr;
+  if (mode == audioapi::ChannelCountMode::CLAMPED_MAX) {
+    return std::min(attr, maxInputChannels);
   }
-  return attr;
+  return maxInputChannels;
 }
 
 /// @brief If `dest` needs a newly negotiated channel layout, allocates a
