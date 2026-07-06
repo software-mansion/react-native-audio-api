@@ -1,0 +1,133 @@
+/**
+ * Wrap Web Audio node constructors so invalid-argument TypeErrors are thrown
+ * from the jsdom window realm. Node-loaded modules otherwise throw Node's
+ * TypeError (e.g. on `undefined.context`), which audit.js rejects.
+ */
+
+const AUDIO_NODE_CONSTRUCTORS = [
+  { name: 'AnalyserNode' },
+  { name: 'AudioBufferSourceNode' },
+  { name: 'BiquadFilterNode' },
+  { name: 'ConstantSourceNode' },
+  { name: 'ConvolverNode' },
+  { name: 'DelayNode' },
+  { name: 'GainNode' },
+  { name: 'IIRFilterNode', optionsRequired: true },
+  { name: 'OscillatorNode' },
+  { name: 'StereoPannerNode' },
+  { name: 'WaveShaperNode' },
+];
+
+function isBaseAudioContext(value) {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    'context' in value &&
+    'destination' in value &&
+    'sampleRate' in value
+  );
+}
+
+function isOptionsDictionary(value) {
+  if (value === undefined || value === null) {
+    return true;
+  }
+
+  return typeof value === 'object' && !Array.isArray(value);
+}
+
+function wrapAudioNodeConstructor(Original, window, optionsRequired = false) {
+  function Wrapped(...args) {
+    const [context, options] = args;
+
+    if (!isBaseAudioContext(context)) {
+      throw new window.TypeError();
+    }
+
+    if (optionsRequired && (options === undefined || options === null)) {
+      throw new window.TypeError();
+    }
+
+    if (!isOptionsDictionary(options)) {
+      throw new window.TypeError();
+    }
+
+    return Reflect.construct(Original, args, new.target ?? Wrapped);
+  }
+
+  Wrapped.prototype = Original.prototype;
+  Object.defineProperty(Wrapped, 'name', { value: Original.name });
+
+  return Wrapped;
+}
+
+export function wrapAudioNodeConstructors(window) {
+  for (const { name, optionsRequired = false } of AUDIO_NODE_CONSTRUCTORS) {
+    const Original = window[name];
+    if (typeof Original !== 'function') {
+      continue;
+    }
+
+    window[name] = wrapAudioNodeConstructor(Original, window, optionsRequired);
+  }
+
+  wrapAudioNodeConnectDisconnect(window);
+}
+
+const DOM_EXCEPTION_NAMES = new Set([
+  'IndexSizeError',
+  'InvalidAccessError',
+  'InvalidStateError',
+  'NotSupportedError',
+  'SyntaxError',
+  'TypeError',
+  'SecurityError',
+  'NetworkError',
+  'AbortError',
+  'DataError',
+  'EncodingError',
+  'NotReadableError',
+  'UnknownError',
+  'ConstraintError',
+  'QuotaExceededError',
+  'TimeoutError',
+]);
+
+function toWindowDomException(window, error) {
+  if (error instanceof window.DOMException) {
+    return error;
+  }
+
+  const name = error?.name;
+  if (typeof name === 'string' && DOM_EXCEPTION_NAMES.has(name) && window.DOMException != null) {
+    return new window.DOMException(error.message, name);
+  }
+
+  return error;
+}
+
+function wrapAudioNodeConnectDisconnect(window) {
+  const AudioNode = window.AudioNode;
+  if (typeof AudioNode !== 'function') {
+    return;
+  }
+
+  const originalConnect = AudioNode.prototype.connect;
+  const originalDisconnect = AudioNode.prototype.disconnect;
+
+  AudioNode.prototype.connect = function connect(...args) {
+    try {
+      return originalConnect.apply(this, args);
+    } catch (error) {
+      throw toWindowDomException(window, error);
+    }
+  };
+
+  AudioNode.prototype.disconnect = function disconnect(...args) {
+    try {
+      return originalDisconnect.apply(this, args);
+    } catch (error) {
+      throw toWindowDomException(window, error);
+    }
+  };
+}
