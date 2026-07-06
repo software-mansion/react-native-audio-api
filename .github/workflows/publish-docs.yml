@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: github-pages
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Checkout with Node
         uses: ./.github/actions/checkout-with-node
 

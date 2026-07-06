@@ -23,8 +23,11 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - name: Setup C++
-        uses: ./.github/actions/setup-cpp
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: ./.github/actions/setup-cmake
 
       - name: ${{ inputs.name }}
         run: ${{ inputs.run }}
