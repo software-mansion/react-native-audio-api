@@ -156,6 +156,9 @@ void resolveChannelCountForNode(HostGraph::Node *node, size_t term) {
 
   auto *audio = audioNodeOf(node);
   if (audio == nullptr) {
+    // Stamp visited for non-AudioNode payloads (e.g. BridgeNode) so shared DAG
+    // paths cannot re-enter this node in the same negotiation pass.
+    node->channelLayout.setResolved(term, 0);
     return;
   }
 
@@ -167,7 +170,7 @@ void resolveChannelCountForNode(HostGraph::Node *node, size_t term) {
 /// layouts for `dest` and every node further upstream (toward
 /// AudioDestinationNode via `dest->outputs`).
 void collectChannelNegotiations(HostGraph::Node *dest, size_t term, NegotiationBatch &out) {
-  if (dest == nullptr) {
+  if (dest == nullptr || dest->channelLayout.isResolvedFor(term)) {
     return;
   }
 
@@ -182,6 +185,8 @@ void collectChannelNegotiations(HostGraph::Node *dest, size_t term, NegotiationB
     if (auto negotiatedBuffer = buildNegotiatedBufferIfNeeded(dest, desired)) {
       out.push_back({.node = dest, .buffer = std::move(negotiatedBuffer)});
     }
+  } else {
+    dest->channelLayout.setResolved(term, 0);
   }
 
   for (HostGraph::Node *upstream : dest->outputs) {
