@@ -13,10 +13,14 @@ set(JSI_IMPL_DIR "${JSI_DIR}/jsi")
 set(FFMPEG_INCLUDE_DIR "${PACKAGE_ROOT}/common/cpp/audioapi/external/include_ffmpeg")
 include(FetchContent)
 
+# Upstream has no release tags; pin to a known commit. GCC on Linux requires
+# explicit <atomic>/<utility> includes that are missing from upstream sources.
+set(NODE_API_JSI_GIT_TAG 4b8a4a59c4e1b7b988b809dedffd89a7662aa785)
+
 FetchContent_Declare(
   node_api_jsi
   GIT_REPOSITORY https://github.com/microsoft/node-api-jsi.git
-  GIT_TAG main
+  GIT_TAG ${NODE_API_JSI_GIT_TAG}
   GIT_SHALLOW TRUE
 )
 FetchContent_GetProperties(node_api_jsi)
@@ -29,6 +33,11 @@ set(NODE_API_JSI_RUNTIME_PATCHED_DIR "${CMAKE_BINARY_DIR}/generated/node_api_jsi
 set(NODE_API_JSI_RUNTIME_PATCHED_SRC "${NODE_API_JSI_RUNTIME_PATCHED_DIR}/NodeApiJsiRuntime.cpp")
 file(MAKE_DIRECTORY "${NODE_API_JSI_RUNTIME_PATCHED_DIR}")
 file(READ "${NODE_API_JSI_RUNTIME_SRC}" NODE_API_JSI_RUNTIME_CONTENT)
+string(REPLACE
+  "#include \"NodeApiJsiRuntime.h\"\n\n#include <algorithm>"
+  "#include \"NodeApiJsiRuntime.h\"\n\n#include <atomic>\n#include <utility>\n#include <algorithm>"
+  NODE_API_JSI_RUNTIME_CONTENT
+  "${NODE_API_JSI_RUNTIME_CONTENT}")
 set(NODE_API_JSI_SET_TRAP_ORIGINAL
 "  runInMethodContext(
       \"HostObject::set\", [&hostObject, &propertyId, &value, this]() {
