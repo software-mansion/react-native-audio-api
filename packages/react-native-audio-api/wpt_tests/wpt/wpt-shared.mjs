@@ -7,7 +7,10 @@ import chalk from 'chalk';
 import wptRunner from 'wpt-runner';
 
 import { wrapAudioNodeConstructors } from './wrap-audio-node-constructors.mjs';
-import { wrapAudioBufferCopyMethods } from './wpt-utils.mjs';
+import {
+  wrapAudioBufferCopyMethods,
+  wrapWebAudioRealmErrors,
+} from './wpt-utils.mjs';
 
 const require = createRequire(import.meta.url);
 const { setFloat32ArrayViewFactory } = require('../../lib/commonjs/errors/index.js');
@@ -146,6 +149,7 @@ export function createWptEnvironment() {
     Object.assign(window, audioApiForWindow);
     alignGlobalRealmConstructors(window);
     wrapAudioNodeConstructors(window);
+    wrapWebAudioRealmErrors(window);
     wrapAudioBufferCopyMethods(window);
     if (window.navigator == null) {
       window.navigator = {};

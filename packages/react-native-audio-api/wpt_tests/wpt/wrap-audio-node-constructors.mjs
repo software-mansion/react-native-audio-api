@@ -4,6 +4,11 @@
  * TypeError (e.g. on `undefined.context`), which audit.js rejects.
  */
 
+import {
+  toWindowRealmError,
+  WRAPPED_NODE_CONSTRUCTORS,
+} from './wpt-utils.mjs';
+
 const AUDIO_NODE_CONSTRUCTORS = [
   { name: 'AnalyserNode' },
   { name: 'AudioBufferSourceNode' },
@@ -52,7 +57,11 @@ function wrapAudioNodeConstructor(Original, window, optionsRequired = false) {
       throw new window.TypeError();
     }
 
-    return Reflect.construct(Original, args, new.target ?? Wrapped);
+    try {
+      return Reflect.construct(Original, args, new.target ?? Wrapped);
+    } catch (error) {
+      throw toWindowRealmError(window, error);
+    }
   }
 
   Wrapped.prototype = Original.prototype;
@@ -69,41 +78,10 @@ export function wrapAudioNodeConstructors(window) {
     }
 
     window[name] = wrapAudioNodeConstructor(Original, window, optionsRequired);
+    WRAPPED_NODE_CONSTRUCTORS.add(name);
   }
 
   wrapAudioNodeConnectDisconnect(window);
-}
-
-const DOM_EXCEPTION_NAMES = new Set([
-  'IndexSizeError',
-  'InvalidAccessError',
-  'InvalidStateError',
-  'NotSupportedError',
-  'SyntaxError',
-  'TypeError',
-  'SecurityError',
-  'NetworkError',
-  'AbortError',
-  'DataError',
-  'EncodingError',
-  'NotReadableError',
-  'UnknownError',
-  'ConstraintError',
-  'QuotaExceededError',
-  'TimeoutError',
-]);
-
-function toWindowDomException(window, error) {
-  if (error instanceof window.DOMException) {
-    return error;
-  }
-
-  const name = error?.name;
-  if (typeof name === 'string' && DOM_EXCEPTION_NAMES.has(name) && window.DOMException != null) {
-    return new window.DOMException(error.message, name);
-  }
-
-  return error;
 }
 
 function wrapAudioNodeConnectDisconnect(window) {
@@ -119,7 +97,7 @@ function wrapAudioNodeConnectDisconnect(window) {
     try {
       return originalConnect.apply(this, args);
     } catch (error) {
-      throw toWindowDomException(window, error);
+      throw toWindowRealmError(window, error);
     }
   };
 
@@ -127,7 +105,7 @@ function wrapAudioNodeConnectDisconnect(window) {
     try {
       return originalDisconnect.apply(this, args);
     } catch (error) {
-      throw toWindowDomException(window, error);
+      throw toWindowRealmError(window, error);
     }
   };
 }

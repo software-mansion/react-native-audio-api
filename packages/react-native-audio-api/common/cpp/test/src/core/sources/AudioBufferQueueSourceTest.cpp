@@ -156,10 +156,9 @@ TEST_F(AudioBufferQueueSourceTest, StreamingEnqueueKeepsPaceAndContinuity) {
 
 /// Full-graph variant: a mono queue source added to the graph and connected
 /// to the (stereo) destination, rendered through BaseAudioContext::processGraph
-/// — i.e. the exact production pull path including graph pre-processing,
-/// channel up-mixing and the destination's per-quantum normalize(). Content is
-/// an impulse train (1.0 every 1000 frames); after normalization the impulse
-/// POSITIONS must still land every 1000 output frames if consumption pace is
+/// — i.e. the exact production pull path including graph pre-processing and
+/// channel up-mixing. Content is an impulse train (1.0 every 1000 frames); the
+/// impulse POSITIONS must land every 1000 output frames if consumption pace is
 /// exactly 1x, and every other sample must stay silent.
 TEST_F(AudioBufferQueueSourceTest, FullGraphRenderPreservesPaceAndSilence) {
   auto stereoContext = std::make_shared<OfflineAudioContext>(

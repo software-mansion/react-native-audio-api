@@ -378,14 +378,14 @@ export function formatMarkdownReport(report) {
 }
 
 // Red -> yellow -> green gradient keyed on pass ratio, mirroring the wpt.fyi
-// results dashboard. Returns a pastel background so the dark cell text stays
-// readable in both light and dark docs themes.
+// results dashboard. Higher saturation and mid lightness keep rows vivid but
+// still readable with dark cell text in light and dark docs themes.
 function colorForRate(pass, total) {
   if (total === 0) {
     return 'transparent';
   }
   const hue = Math.round((pass / total) * 120); // 0 = red, 120 = green
-  return `hsl(${hue}, 65%, 80%)`;
+  return `hsl(${hue}, 85%, 72%)`;
 }
 
 function coverageRow({ label, pass, total, bold = false }) {

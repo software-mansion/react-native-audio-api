@@ -5,11 +5,18 @@ import { AnalyserOptions } from '../types';
 import AudioNode from './AudioNode';
 import { AnalyserOptionsValidator } from '../options-validators';
 
-export default class AnalyserNode extends AudioNode {
-  private static allowedFFTSize: number[] = [
-    32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
-  ];
+const ANALYSER_ALLOWED_FFT_SIZE: number[] = [
+  32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
+] as const;
 
+// The native engine stores these attributes as 32-bit floats, so reading them
+// back loses the exact double the Web Audio spec expects (e.g. 0.8 ->
+// 0.800000011920929). Rounding to float32's ~7 significant digits recovers it.
+function roundFromFloat32(value: number): number {
+  return Number(value.toPrecision(7));
+}
+
+export default class AnalyserNode extends AudioNode {
   constructor(context: BaseAudioContext, options?: AnalyserOptions) {
     AnalyserOptionsValidator.validate(options);
     const analyserNode: IAnalyserNode = context.context.createAnalyser(
@@ -23,7 +30,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public set fftSize(value: number) {
-    if (!AnalyserNode.allowedFFTSize.includes(value)) {
+    if (!ANALYSER_ALLOWED_FFT_SIZE.includes(value)) {
       throw new IndexSizeError(
         `Provided value (${value}) must be a power of 2 between 32 and 32768`
       );
@@ -33,7 +40,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public get minDecibels(): number {
-    return (this.node as IAnalyserNode).minDecibels;
+    return roundFromFloat32((this.node as IAnalyserNode).minDecibels);
   }
 
   public set minDecibels(value: number) {
@@ -47,7 +54,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public get maxDecibels(): number {
-    return (this.node as IAnalyserNode).maxDecibels;
+    return roundFromFloat32((this.node as IAnalyserNode).maxDecibels);
   }
 
   public set maxDecibels(value: number) {
@@ -61,7 +68,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public get smoothingTimeConstant(): number {
-    return (this.node as IAnalyserNode).smoothingTimeConstant;
+    return roundFromFloat32((this.node as IAnalyserNode).smoothingTimeConstant);
   }
 
   public set smoothingTimeConstant(value: number) {

@@ -30,17 +30,24 @@
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
-#include <audioapi/utils/AudioArray.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <numbers>
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
 // formulas for filters
 // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers, readability-identifier-length)
 
 namespace audioapi {
+
+namespace {
+
+constexpr double kPi = std::numbers::pi_v<double>;
+constexpr double kSqrt2 = std::numbers::sqrt2_v<double>;
+
+} // namespace
 
 BiquadFilterNode::BiquadFilterNode(
     const std::shared_ptr<BaseAudioContext> &context,
@@ -66,11 +73,7 @@ BiquadFilterNode::BiquadFilterNode(
               MOST_NEGATIVE_SINGLE_FLOAT,
               BIQUAD_GAIN_DB_FACTOR * LOG10_MOST_POSITIVE_SINGLE_FLOAT,
               context)),
-      type_(options.type),
-      x1_(MAX_CHANNEL_COUNT),
-      x2_(MAX_CHANNEL_COUNT),
-      y1_(MAX_CHANNEL_COUNT),
-      y2_(MAX_CHANNEL_COUNT) {}
+      type_(options.type) {}
 
 void BiquadFilterNode::setType(BiquadFilterType type) {
   type_ = type;
@@ -117,218 +120,239 @@ void BiquadFilterNode::getFrequencyResponse(
     float *phaseResponseOutput,
     const size_t length,
     BiquadFilterType type) {
-  auto frequency = frequencyParam_->getValue();
-  auto Q = QParam_->getValue();
-  auto gain = gainParam_->getValue();
-  auto detune = detuneParam_->getValue();
+  const double frequency = frequencyParam_->getValue();
+  const double Q = QParam_->getValue();
+  const double gain = gainParam_->getValue();
+  const double detune = detuneParam_->getValue();
 
-  auto coeffs = applyFilter(frequency, Q, gain, detune, type);
+  const auto coeffs = applyFilter(frequency, Q, gain, detune, type);
 
-  float nyquist = getNyquistFrequency();
+  const double nyquist = getNyquistFrequency();
 
   for (size_t i = 0; i < length; i++) {
     // Convert from frequency in Hz to normalized frequency [0, 1]
-    float normalizedFreq = frequencyArray[i] / nyquist;
+    const double normalizedFreq = static_cast<double>(frequencyArray[i]) / nyquist;
 
-    if (normalizedFreq < 0.0f || normalizedFreq > 1.0f) {
+    if (normalizedFreq < 0.0 || normalizedFreq > 1.0) {
       // Out-of-bounds frequencies should return NaN.
       magResponseOutput[i] = std::nanf("");
       phaseResponseOutput[i] = std::nanf("");
       continue;
     }
 
-    double omega = -PI * normalizedFreq;
-    auto z = std::complex<double>(std::cos(omega), std::sin(omega));
-    auto response = (coeffs.b0 + (coeffs.b1 + coeffs.b2 * z) * z) /
-        (std::complex<double>(1, 0) + (coeffs.a1 + coeffs.a2 * z) * z);
-    magResponseOutput[i] = static_cast<float>(std::abs(response));
-    phaseResponseOutput[i] = static_cast<float>(atan2(imag(response), real(response)));
+    const double omega = kPi * normalizedFreq;
+    const double cosW = std::cos(omega);
+    const double sinW = std::sin(omega);
+    const double cos2W = std::cos(2.0 * omega);
+    const double sin2W = std::sin(2.0 * omega);
+
+    // Match the decomposed H(e^{j*pi*f}) evaluation used by the WPT reference
+    // (biquad-getFrequencyResponse.html / biquad-filters.js) for better
+    // numerical agreement near Nyquist than complex division.
+    const double numeratorReal = coeffs.b0 + coeffs.b1 * cosW + coeffs.b2 * cos2W;
+    const double numeratorImag = -(coeffs.b1 * sinW + coeffs.b2 * sin2W);
+    const double denominatorReal = 1.0 + coeffs.a1 * cosW + coeffs.a2 * cos2W;
+    const double denominatorImag = -(coeffs.a1 * sinW + coeffs.a2 * sin2W);
+
+    const double magnitude = std::sqrt(
+        (numeratorReal * numeratorReal + numeratorImag * numeratorImag) /
+        (denominatorReal * denominatorReal + denominatorImag * denominatorImag));
+    magResponseOutput[i] = static_cast<float>(magnitude);
+
+    double phase =
+        std::atan2(numeratorImag, numeratorReal) - std::atan2(denominatorImag, denominatorReal);
+    if (phase >= kPi) {
+      phase -= 2.0 * kPi;
+    } else if (phase <= -kPi) {
+      phase += 2.0 * kPi;
+    }
+    phaseResponseOutput[i] = static_cast<float>(phase);
   }
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::getLowpassCoefficients(
-    float frequency,
-    float Q) {
+    double frequency,
+    double Q) {
   // Limit frequency to [0, 1] range
-  if (frequency >= 1.0f) {
-    return getNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency >= 1.0) {
+    return getNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  if (frequency <= 0.0f) {
-    return getNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency <= 0.0) {
+    return getNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  float g = std::pow(10.0f, 0.05f * Q);
+  const double g = std::pow(10.0, 0.05 * Q);
 
-  float theta = PI * frequency;
-  float alpha = std::sin(theta) / (2 * g);
-  float cosW = std::cos(theta);
-  float beta = (1 - cosW) / 2;
+  const double theta = kPi * frequency;
+  const double alpha = std::sin(theta) / (2 * g);
+  const double cosW = std::cos(theta);
+  const double beta = (1 - cosW) / 2;
 
   return getNormalizedCoefficients(beta, 2 * beta, beta, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::getHighpassCoefficients(
-    float frequency,
-    float Q) {
-  if (frequency >= 1.0f) {
-    return getNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    double frequency,
+    double Q) {
+  if (frequency >= 1.0) {
+    return getNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
-  if (frequency <= 0.0f) {
-    return getNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency <= 0.0) {
+    return getNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  float g = std::pow(10.0f, 0.05f * Q);
+  const double g = std::pow(10.0, 0.05 * Q);
 
-  float theta = PI * frequency;
-  float alpha = std::sin(theta) / (2 * g);
-  float cosW = std::cos(theta);
-  float beta = (1 + cosW) / 2;
+  const double theta = kPi * frequency;
+  const double alpha = std::sin(theta) / (2 * g);
+  const double cosW = std::cos(theta);
+  const double beta = (1 + cosW) / 2;
 
   return getNormalizedCoefficients(beta, -2 * beta, beta, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::getBandpassCoefficients(
-    float frequency,
-    float Q) {
+    double frequency,
+    double Q) {
   // Limit frequency to [0, 1] range
-  if (frequency <= 0.0f || frequency >= 1.0f) {
-    return getNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency <= 0.0 || frequency >= 1.0) {
+    return getNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
   // Limit Q to positive values
-  if (Q <= 0.0f) {
-    return getNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (Q <= 0.0) {
+    return getNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  float w0 = PI * frequency;
-  float alpha = std::sin(w0) / (2 * Q);
-  float cosW = std::cos(w0);
+  const double w0 = kPi * frequency;
+  const double alpha = std::sin(w0) / (2 * Q);
+  const double cosW = std::cos(w0);
 
-  return getNormalizedCoefficients(alpha, 0.0f, -alpha, 1.0f + alpha, -2 * cosW, 1.0f - alpha);
+  return getNormalizedCoefficients(alpha, 0.0, -alpha, 1.0 + alpha, -2 * cosW, 1.0 - alpha);
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::getLowshelfCoefficients(
-    float frequency,
-    float gain) {
-  float A = std::pow(10.0f, gain / 40.0f);
+    double frequency,
+    double gain) {
+  const double A = std::pow(10.0, gain / 40.0);
 
-  if (frequency >= 1.0f) {
-    return getNormalizedCoefficients(A * A, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency >= 1.0) {
+    return getNormalizedCoefficients(A * A, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  if (frequency <= 0.0f) {
-    return getNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency <= 0.0) {
+    return getNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  float w0 = PI * frequency;
-  float alpha = 0.5f * std::sin(w0) * std::numbers::sqrt2_v<float>;
-  float cosW = std::cos(w0);
-  float gamma = 2.0f * std::sqrt(A) * alpha;
+  const double w0 = kPi * frequency;
+  const double alpha = 0.5 * std::sin(w0) * kSqrt2;
+  const double cosW = std::cos(w0);
+  const double gamma = 2.0 * std::sqrt(A) * alpha;
 
   return getNormalizedCoefficients(
       A * (A + 1 - (A - 1) * cosW + gamma),
-      2.0f * A * (A - 1 - (A + 1) * cosW),
+      2.0 * A * (A - 1 - (A + 1) * cosW),
       A * (A + 1 - (A - 1) * cosW - gamma),
       A + 1 + (A - 1) * cosW + gamma,
-      -2.0f * (A - 1 + (A + 1) * cosW),
+      -2.0 * (A - 1 + (A + 1) * cosW),
       A + 1 + (A - 1) * cosW - gamma);
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::getHighshelfCoefficients(
-    float frequency,
-    float gain) {
-  float A = std::pow(10.0f, gain / 40.0f);
+    double frequency,
+    double gain) {
+  const double A = std::pow(10.0, gain / 40.0);
 
-  if (frequency >= 1.0f) {
-    return getNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency >= 1.0) {
+    return getNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  if (frequency <= 0.0f) {
-    return getNormalizedCoefficients(A * A, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency <= 0.0) {
+    return getNormalizedCoefficients(A * A, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  float w0 = PI * frequency;
+  const double w0 = kPi * frequency;
   // In the original formula: sqrt((A + 1/A) * (1/S - 1) + 2), but we assume
   // the maximum value S = 1, so it becomes 0 + 2 under the square root
-  float alpha = 0.5f * std::sin(w0) * std::numbers::sqrt2_v<float>;
-  float cosW = std::cos(w0);
-  float gamma = 2.0f * std::sqrt(A) * alpha;
+  const double alpha = 0.5 * std::sin(w0) * kSqrt2;
+  const double cosW = std::cos(w0);
+  const double gamma = 2.0 * std::sqrt(A) * alpha;
 
   return getNormalizedCoefficients(
       A * (A + 1 + (A - 1) * cosW + gamma),
-      -2.0f * A * (A - 1 + (A + 1) * cosW),
+      -2.0 * A * (A - 1 + (A + 1) * cosW),
       A * (A + 1 + (A - 1) * cosW - gamma),
       A + 1 - (A - 1) * cosW + gamma,
-      2.0f * (A - 1 - (A + 1) * cosW),
+      2.0 * (A - 1 - (A + 1) * cosW),
       A + 1 - (A - 1) * cosW - gamma);
 }
 
 BiquadFilterNode::FilterCoefficients
-BiquadFilterNode::getPeakingCoefficients(float frequency, float Q, float gain) {
-  float A = std::pow(10.0f, gain / 40.0f);
+BiquadFilterNode::getPeakingCoefficients(double frequency, double Q, double gain) {
+  const double A = std::pow(10.0, gain / 40.0);
 
-  if (frequency <= 0.0f || frequency >= 1.0f) {
-    return getNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (frequency <= 0.0 || frequency >= 1.0) {
+    return getNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  if (Q <= 0.0f) {
-    return getNormalizedCoefficients(A * A, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (Q <= 0.0) {
+    return getNormalizedCoefficients(A * A, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  float w0 = PI * frequency;
-  float alpha = std::sin(w0) / (2 * Q);
-  float cosW = std::cos(w0);
+  const double w0 = kPi * frequency;
+  const double alpha = std::sin(w0) / (2 * Q);
+  const double cosW = std::cos(w0);
 
   return getNormalizedCoefficients(
       1 + alpha * A, -2 * cosW, 1 - alpha * A, 1 + alpha / A, -2 * cosW, 1 - alpha / A);
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::getNotchCoefficients(
-    float frequency,
-    float Q) {
-  if (frequency <= 0.0f || frequency >= 1.0f) {
-    return getNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    double frequency,
+    double Q) {
+  if (frequency <= 0.0 || frequency >= 1.0) {
+    return getNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  if (Q <= 0.0f) {
-    return getNormalizedCoefficients(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (Q <= 0.0) {
+    return getNormalizedCoefficients(0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  float w0 = PI * frequency;
-  float alpha = std::sin(w0) / (2 * Q);
-  float cosW = std::cos(w0);
+  const double w0 = kPi * frequency;
+  const double alpha = std::sin(w0) / (2 * Q);
+  const double cosW = std::cos(w0);
 
-  return getNormalizedCoefficients(1.0f, -2 * cosW, 1.0f, 1 + alpha, -2 * cosW, 1 - alpha);
+  return getNormalizedCoefficients(1.0, -2 * cosW, 1.0, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::getAllpassCoefficients(
-    float frequency,
-    float Q) {
-  if (frequency <= 0.0f || frequency >= 1.0f) {
-    return getNormalizedCoefficients(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    double frequency,
+    double Q) {
+  if (frequency <= 0.0 || frequency >= 1.0) {
+    return getNormalizedCoefficients(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  if (Q <= 0.0f) {
-    return getNormalizedCoefficients(-1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  if (Q <= 0.0) {
+    return getNormalizedCoefficients(-1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
   }
 
-  float w0 = PI * frequency;
-  float alpha = std::sin(w0) / (2 * Q);
-  float cosW = std::cos(w0);
+  const double w0 = kPi * frequency;
+  const double alpha = std::sin(w0) / (2 * Q);
+  const double cosW = std::cos(w0);
 
   return getNormalizedCoefficients(
       1 - alpha, -2 * cosW, 1 + alpha, 1 + alpha, -2 * cosW, 1 - alpha);
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::getNormalizedCoefficients(
-    float b0,
-    float b1,
-    float b2,
-    float a0,
-    float a1,
-    float a2) {
-  auto a0Inverted = 1.0f / a0;
+    double b0,
+    double b1,
+    double b2,
+    double a0,
+    double a1,
+    double a2) {
+  const double a0Inverted = 1.0 / a0;
   return {
       .b0 = b0 * a0Inverted,
       .b1 = b1 * a0Inverted,
@@ -338,18 +362,18 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::getNormalizedCoefficients
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
-    float frequency,
-    float Q,
-    float gain,
-    float detune,
+    double frequency,
+    double Q,
+    double gain,
+    double detune,
     BiquadFilterType type) {
   // NyquistFrequency is half of the sample rate.
   // Normalized frequency is therefore:
   // frequency / (sampleRate / 2) = (2 * frequency) / sampleRate
-  float normalizedFrequency = frequency / getNyquistFrequency();
+  double normalizedFrequency = frequency / getNyquistFrequency();
 
-  if (detune != 0.0f) {
-    normalizedFrequency *= std::pow(2.0f, detune / 1200.0f);
+  if (detune != 0.0) {
+    normalizedFrequency *= std::pow(2.0, detune / 1200.0);
   }
 
   FilterCoefficients coeffs = {.b0 = 1.0, .b1 = 0.0, .b2 = 0.0, .a1 = 0.0, .a2 = 0.0};
@@ -388,50 +412,48 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
 
 void BiquadFilterNode::processNode(int framesToProcess) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    auto currentTime = context->getCurrentTime();
-    float frequency = frequencyParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
-    float detune = detuneParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
-    auto Q = QParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
-    auto gain = gainParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+    const auto currentTime = context->getCurrentTime();
 
-    auto coeffs = applyFilter(frequency, Q, gain, detune, type_);
+    const auto frequencyValues =
+        frequencyParam_->processARateParam(framesToProcess, currentTime)->getChannel(0)->span();
+    const auto detuneValues =
+        detuneParam_->processARateParam(framesToProcess, currentTime)->getChannel(0)->span();
+    const auto QValues =
+        QParam_->processARateParam(framesToProcess, currentTime)->getChannel(0)->span();
+    const auto gainValues =
+        gainParam_->processARateParam(framesToProcess, currentTime)->getChannel(0)->span();
 
-    lastA2_ = coeffs.a2;
+    const auto numChannels = audioBuffer_->getNumberOfChannels();
 
-    float x1, x2, y1, y2; // NOLINT(cppcoreguidelines-init-variables)
+    for (int i = 0; i < framesToProcess; ++i) {
+      const auto coeffs = applyFilter(
+          static_cast<double>(frequencyValues[static_cast<size_t>(i)]),
+          static_cast<double>(QValues[static_cast<size_t>(i)]),
+          static_cast<double>(gainValues[static_cast<size_t>(i)]),
+          static_cast<double>(detuneValues[static_cast<size_t>(i)]),
+          type_);
 
-    auto numChannels = audioBuffer_->getNumberOfChannels();
+      lastA2_ = coeffs.a2;
 
-    for (size_t c = 0; c < numChannels; ++c) {
-      auto channel = audioBuffer_->getChannel(c)->subSpan(framesToProcess);
+      for (size_t c = 0; c < numChannels; ++c) {
+        float &sample = (*audioBuffer_->getChannel(c))[static_cast<size_t>(i)];
 
-      x1 = x1_[c];
-      x2 = x2_[c];
-      y1 = y1_[c];
-      y2 = y2_[c];
-
-      for (float &sample : channel) {
-        auto input = sample;
-        auto output =
-            coeffs.b0 * input + coeffs.b1 * x1 + coeffs.b2 * x2 - coeffs.a1 * y1 - coeffs.a2 * y2;
+        const double input = sample;
+        double output = coeffs.b0 * input + coeffs.b1 * x1_[c] + coeffs.b2 * x2_[c] -
+            coeffs.a1 * y1_[c] - coeffs.a2 * y2_[c];
 
         // Avoid denormalized numbers
-        if (std::abs(output) < 1e-15f) {
-          output = 0.0f;
+        if (std::abs(output) < 1e-15) {
+          output = 0.0;
         }
 
         sample = static_cast<float>(output);
 
-        x2 = x1;
-        x1 = input;
-        y2 = y1;
-        y1 = static_cast<float>(output);
+        x2_[c] = x1_[c];
+        x1_[c] = input;
+        y2_[c] = y1_[c];
+        y1_[c] = output;
       }
-
-      x1_[c] = x1;
-      x2_[c] = x2;
-      y1_[c] = y1;
-      y2_[c] = y2;
     }
   } else {
     audioBuffer_->zero();

@@ -36,6 +36,7 @@
 #include <gtest/gtest_prod.h>
 #endif // RN_AUDIO_API_TEST
 
+#include <array>
 #include <memory>
 
 namespace audioapi {
@@ -84,7 +85,7 @@ class BiquadFilterNode : public AudioNode {
   static constexpr double kTailEpsilon = 1e-4;
 
   /// Hard upper bound on the computed tail length (seconds).
-  static constexpr float kMaxTailSeconds = 30.0f;
+  static constexpr double kMaxTailSeconds = 30.0;
 
   /// Keeps `log(r)` bounded away from zero when the pole sits on the unit
   /// circle. `r` is clamped to `1 - kPoleRadiusEpsilon`, so the epsilon alone
@@ -104,28 +105,28 @@ class BiquadFilterNode : public AudioNode {
   /// magnitude for stable biquads.
   double lastA2_ = 0.0;
 
-  // delayed samples, one per channel
-  DSPAudioArray x1_;
-  DSPAudioArray x2_;
-  DSPAudioArray y1_;
-  DSPAudioArray y2_;
+  // delayed samples, one per channel (double precision for filter state)
+  std::array<double, MAX_CHANNEL_COUNT> x1_{};
+  std::array<double, MAX_CHANNEL_COUNT> x2_{};
+  std::array<double, MAX_CHANNEL_COUNT> y1_{};
+  std::array<double, MAX_CHANNEL_COUNT> y2_{};
 
   struct alignas(64) FilterCoefficients {
     double b0, b1, b2, a1, a2;
   };
 
-  static FilterCoefficients getLowpassCoefficients(float frequency, float Q);
-  static FilterCoefficients getHighpassCoefficients(float frequency, float Q);
-  static FilterCoefficients getBandpassCoefficients(float frequency, float Q);
-  static FilterCoefficients getLowshelfCoefficients(float frequency, float gain);
-  static FilterCoefficients getHighshelfCoefficients(float frequency, float gain);
-  static FilterCoefficients getPeakingCoefficients(float frequency, float Q, float gain);
-  static FilterCoefficients getNotchCoefficients(float frequency, float Q);
-  static FilterCoefficients getAllpassCoefficients(float frequency, float Q);
+  static FilterCoefficients getLowpassCoefficients(double frequency, double Q);
+  static FilterCoefficients getHighpassCoefficients(double frequency, double Q);
+  static FilterCoefficients getBandpassCoefficients(double frequency, double Q);
+  static FilterCoefficients getLowshelfCoefficients(double frequency, double gain);
+  static FilterCoefficients getHighshelfCoefficients(double frequency, double gain);
+  static FilterCoefficients getPeakingCoefficients(double frequency, double Q, double gain);
+  static FilterCoefficients getNotchCoefficients(double frequency, double Q);
+  static FilterCoefficients getAllpassCoefficients(double frequency, double Q);
   static FilterCoefficients
-  getNormalizedCoefficients(float b0, float b1, float b2, float a0, float a1, float a2);
+  getNormalizedCoefficients(double b0, double b1, double b2, double a0, double a1, double a2);
   FilterCoefficients
-  applyFilter(float frequency, float Q, float gain, float detune, BiquadFilterType type);
+  applyFilter(double frequency, double Q, double gain, double detune, BiquadFilterType type);
 };
 
 } // namespace audioapi
