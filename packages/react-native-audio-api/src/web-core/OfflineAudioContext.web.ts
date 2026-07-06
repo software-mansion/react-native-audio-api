@@ -1,5 +1,6 @@
 import { ContextState, OfflineAudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
+import { assertSupportedSampleRate } from '../utils/audioConstants';
 import BaseAudioContext from './BaseAudioContext.web';
 import AnalyserNode from './AnalyserNode.web';
 import AudioDestinationNode from './AudioDestinationNode.web';
@@ -31,12 +32,14 @@ export default class OfflineAudioContext implements BaseAudioContext {
     arg2?: number
   ) {
     if (typeof arg0 === 'object') {
+      assertSupportedSampleRate(arg0.sampleRate);
       this.context = new window.OfflineAudioContext(arg0);
     } else if (
       typeof arg0 === 'number' &&
       typeof arg1 === 'number' &&
       typeof arg2 === 'number'
     ) {
+      assertSupportedSampleRate(arg2);
       this.context = new window.OfflineAudioContext(arg0, arg1, arg2);
     } else {
       throw new NotSupportedError('Invalid constructor arguments');
@@ -109,11 +112,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
       );
     }
 
-    if (sampleRate < 8000 || sampleRate > 96000) {
-      throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
-      );
-    }
+    assertSupportedSampleRate(sampleRate);
 
     return new AudioBuffer({ numberOfChannels, length, sampleRate });
   }
