@@ -75,6 +75,7 @@ Pod::Spec.new do |s|
   ffmpeg_dir = "$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_audio_api_dir]}/#{external_dir_relative}/ffmpeg_ios"
 
   ffmpeg_framework_names =  %w[libavcodec libavformat libavutil libswresample]
+  static_external_libs_names = %w[libopusfile libopus libogg libvorbis libvorbisenc libvorbisfile]
 
   # `prepare_command` hydrates binaries on a fresh `pod install` so CocoaPods can
   # register all vendored `.xcframework`s in `[CP] Copy XCFrameworks`. When `Pods/`
@@ -93,7 +94,7 @@ Pod::Spec.new do |s|
     download_output_files = []
 
     unless $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
-      %w[libopusfile libopus libogg libvorbis libvorbisenc libvorbisfile].each do |lib|
+      static_external_libs_names.each do |lib|
         download_output_files << "#{lib_dir}/#{lib}.a"
       end
     end
@@ -175,14 +176,9 @@ Pod::Spec.new do |s|
     'OTHER_LDFLAGS' => %W[
       $(inherited)
     ]
-    .concat($RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? [] : %W[
-      -force_load #{lib_dir}/libopusfile.a
-      -force_load #{lib_dir}/libopus.a
-      -force_load #{lib_dir}/libogg.a
-      -force_load #{lib_dir}/libvorbis.a
-      -force_load #{lib_dir}/libvorbisenc.a
-      -force_load #{lib_dir}/libvorbisfile.a
-    ])
+    .concat($RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? [] : static_external_libs_names.flat_map { |lib|
+      ['-force_load', "#{lib_dir}/#{lib}.a"]
+    })
     .join(" "),
   }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
