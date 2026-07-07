@@ -1,6 +1,10 @@
 import { AudioBufferLike, AudioBufferOptions } from '../types';
 import { IAudioBuffer } from '../jsi-interfaces';
-import { IndexSizeError, NotSupportedError } from '../errors';
+import {
+  IndexSizeError,
+  NotSupportedError,
+  wrapFloat32ArrayView,
+} from '../errors';
 
 export default class AudioBuffer implements AudioBufferLike {
   readonly length: number;
@@ -32,7 +36,9 @@ export default class AudioBuffer implements AudioBufferLike {
         `The channel number provided (${channel}) is outside the range [0, ${this.numberOfChannels - 1}]`
       );
     }
-    return this.buffer.getChannelData(channel);
+    return wrapFloat32ArrayView(
+      this.buffer.getChannelData(channel)
+    ) as Float32Array<ArrayBuffer>;
   }
 
   public copyFromChannel(

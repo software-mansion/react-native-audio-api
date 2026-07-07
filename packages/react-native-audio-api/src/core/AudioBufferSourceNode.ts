@@ -13,12 +13,14 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   private bufferHasBeenSet: boolean = false;
 
   constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions) {
-    const node = context.context.createBufferSource(options || {});
+    // The native layer expects the AudioBuffer HostObject, not the TS wrapper,
+    // so pass the buffer through the setter below instead of the options.
+    const { buffer, ...nativeOptions } = options ?? {};
+    const node = context.context.createBufferSource(nativeOptions);
     super(context, node);
 
-    if (options?.buffer) {
-      this._buffer = options.buffer as AudioBuffer;
-      this.bufferHasBeenSet = true;
+    if (buffer != null) {
+      this.buffer = buffer as AudioBuffer;
     }
   }
 
@@ -34,6 +36,12 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
       }
 
       return;
+    }
+
+    if (!(buffer instanceof AudioBuffer)) {
+      throw new TypeError(
+        'Failed to set buffer: the provided value is not of type AudioBuffer.'
+      );
     }
 
     if (this.bufferHasBeenSet) {

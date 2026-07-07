@@ -1,4 +1,6 @@
-#ifdef ANDROID
+#ifdef RN_AUDIO_API_NODE
+#include "NodeAudioPlayer.h"
+#elif defined(ANDROID)
 #include <audioapi/android/core/AudioPlayer.h>
 #else
 #include <audioapi/ios/core/IOSAudioPlayer.h>
@@ -23,7 +25,12 @@ AudioContext::~AudioContext() {
 
 void AudioContext::initialize(const AudioDestinationNode *destination) {
   BaseAudioContext::initialize(destination);
-#ifdef ANDROID
+#ifdef RN_AUDIO_API_NODE
+  audioPlayer_ = std::make_shared<NodeAudioPlayer>(
+      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
+      getSampleRate(),
+      destination_->getChannelCount());
+#elif defined(ANDROID)
   audioPlayer_ = std::make_shared<AudioPlayer>(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
