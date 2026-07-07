@@ -414,33 +414,33 @@ void BiquadFilterNode::processNode(int framesToProcess) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     const auto currentTime = context->getCurrentTime();
 
-    const auto frequencyValues =
-        frequencyParam_->processARateParam(framesToProcess, currentTime)->getChannel(0)->span();
-    const auto detuneValues =
-        detuneParam_->processARateParam(framesToProcess, currentTime)->getChannel(0)->span();
-    const auto QValues =
-        QParam_->processARateParam(framesToProcess, currentTime)->getChannel(0)->span();
-    const auto gainValues =
-        gainParam_->processARateParam(framesToProcess, currentTime)->getChannel(0)->span();
+    // k-rate: sample the parameters once per render quantum and reuse the
+    // resulting coefficients for every frame in the block.
+    const float frequency = frequencyParam_->processKRateParam(framesToProcess, currentTime);
+    const float detune = detuneParam_->processKRateParam(framesToProcess, currentTime);
+    const float Q = QParam_->processKRateParam(framesToProcess, currentTime);
+    const float gain = gainParam_->processKRateParam(framesToProcess, currentTime);
+
+    const auto coeffs = applyFilter(frequency, Q, gain, detune, type_);
+
+    lastA2_ = coeffs.a2;
 
     const auto numChannels = audioBuffer_->getNumberOfChannels();
 
-    for (int i = 0; i < framesToProcess; ++i) {
-      const auto coeffs = applyFilter(
-          static_cast<double>(frequencyValues[static_cast<size_t>(i)]),
-          static_cast<double>(QValues[static_cast<size_t>(i)]),
-          static_cast<double>(gainValues[static_cast<size_t>(i)]),
-          static_cast<double>(detuneValues[static_cast<size_t>(i)]),
-          type_);
+    for (size_t c = 0; c < numChannels; ++c) {
+      // Filter state kept in double precision for the recursive difference
+      // equation; only the sample I/O is float.
+      double x1 = x1_[c];
+      double x2 = x2_[c];
+      double y1 = y1_[c];
+      double y2 = y2_[c];
 
-      lastA2_ = coeffs.a2;
+      auto channel = audioBuffer_->getChannel(c)->subSpan(framesToProcess);
 
-      for (size_t c = 0; c < numChannels; ++c) {
-        float &sample = (*audioBuffer_->getChannel(c))[static_cast<size_t>(i)];
-
+      for (float &sample : channel) {
         const double input = sample;
-        double output = coeffs.b0 * input + coeffs.b1 * x1_[c] + coeffs.b2 * x2_[c] -
-            coeffs.a1 * y1_[c] - coeffs.a2 * y2_[c];
+        double output =
+            coeffs.b0 * input + coeffs.b1 * x1 + coeffs.b2 * x2 - coeffs.a1 * y1 - coeffs.a2 * y2;
 
         // Avoid denormalized numbers
         if (std::abs(output) < 1e-15) {
@@ -449,11 +449,16 @@ void BiquadFilterNode::processNode(int framesToProcess) {
 
         sample = static_cast<float>(output);
 
-        x2_[c] = x1_[c];
-        x1_[c] = input;
-        y2_[c] = y1_[c];
-        y1_[c] = output;
+        x2 = x1;
+        x1 = input;
+        y2 = y1;
+        y1 = output;
       }
+
+      x1_[c] = x1;
+      x2_[c] = x2;
+      y1_[c] = y1;
+      y2_[c] = y2;
     }
   } else {
     audioBuffer_->zero();
