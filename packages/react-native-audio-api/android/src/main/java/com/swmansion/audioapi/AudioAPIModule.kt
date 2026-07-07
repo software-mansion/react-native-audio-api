@@ -39,7 +39,6 @@ class AudioAPIModule(
 
   @OptIn(markerClass = [FrameworkAPI::class])
   private external fun initHybrid(
-    workletsModule: Any?,
     jsContext: Long,
     callInvoker: CallInvokerHolderImpl,
   ): HybridData
@@ -68,16 +67,7 @@ class AudioAPIModule(
     val jsContext = context.javaScriptContextHolder!!.get()
     val jsCallInvokerHolder = context.jsCallInvokerHolder as CallInvokerHolderImpl
 
-    var workletsModule: Any? = null
-    if (BuildConfig.RN_AUDIO_API_ENABLE_WORKLETS) {
-      try {
-        workletsModule = context.getNativeModule("WorkletsModule")
-      } catch (_: Exception) {
-        throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
-      }
-    }
-
-    mHybridData = initHybrid(workletsModule, jsContext, jsCallInvokerHolder)
+    mHybridData = initHybrid(jsContext, jsCallInvokerHolder)
     MediaSessionManager.initialize(WeakReference(this), reactContext)
     NativeFileInfo.initialize(reactContext)
     injectJSIBindings()

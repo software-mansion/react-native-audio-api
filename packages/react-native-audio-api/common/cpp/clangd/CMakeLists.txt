@@ -50,19 +50,6 @@ target_include_directories(
   "/opt/homebrew/Cellar/googletest/1.17.0/include"
 )
 
-add_library(worklets SHARED IMPORTED)
-set_target_properties(
-  worklets
-  PROPERTIES
-    IMPORTED_LOCATION
-    "${REACT_NATIVE_WORKLETS_DIR}/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
-)
-list(APPEND INCLUDE_LIBRARIES
-  "${REACT_NATIVE_WORKLETS_DIR}/../Common/cpp"
-  "${REACT_NATIVE_WORKLETS_DIR}/src/main/cpp"
-)
-list(APPEND LINK_LIBRARIES worklets)
-
 target_include_directories(rnaudioapi_cursor PUBLIC ${INCLUDE_LIBRARIES})
 
 target_link_libraries(rnaudioapi_cursor ${LINK_LIBRARIES})

@@ -137,56 +137,6 @@ describe('Mock Integration Tests', () => {
     });
   });
 
-  describe('Worklet Processing', () => {
-    it('should create and use worklet nodes for custom processing', () => {
-      const context = new MockAPI.AudioContext();
-
-      const processingCallback = jest.fn(
-        (inputData, outputData, framesToProcess) => {
-          // Mock audio processing logic
-          for (let channel = 0; channel < outputData.length; channel++) {
-            for (let i = 0; i < framesToProcess; i++) {
-              outputData[channel][i] = inputData[channel][i] * 0.5; // Simple gain
-            }
-          }
-        }
-      );
-
-      const workletNode = new MockAPI.WorkletProcessingNode(
-        context,
-        'AudioRuntime',
-        processingCallback
-      );
-
-      expect(workletNode).toBeInstanceOf(MockAPI.WorkletProcessingNode);
-      expect(workletNode.context).toBe(context);
-    });
-
-    it('should create worklet source node for custom audio generation', () => {
-      const context = new MockAPI.AudioContext();
-
-      const sourceCallback = jest.fn(
-        (audioData, framesToProcess, currentTime) => {
-          // Mock audio generation logic
-          for (let channel = 0; channel < audioData.length; channel++) {
-            for (let i = 0; i < framesToProcess; i++) {
-              audioData[channel][i] = Math.sin(currentTime + i); // Simple sine wave
-            }
-          }
-        }
-      );
-
-      const workletSource = new MockAPI.WorkletSourceNode(
-        context,
-        'UIRuntime',
-        sourceCallback
-      );
-
-      expect(workletSource).toBeInstanceOf(MockAPI.WorkletSourceNode);
-      expect(workletSource.context).toBe(context);
-    });
-  });
-
   describe('Buffer Queue Management', () => {
     it('should manage audio buffer queue for seamless playback', () => {
       const context = new MockAPI.AudioContext();
