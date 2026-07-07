@@ -242,7 +242,7 @@ details.alert {
 }
 
 [class*='headerWithBadges'] {
-  align-items: baseline;
+  align-items: center;
 }
 
 [class*=admonition-warning] code {
