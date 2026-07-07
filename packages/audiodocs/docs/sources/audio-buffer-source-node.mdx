@@ -39,7 +39,7 @@ The pitch correction algorithm introduces processing latency.
 As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.
 For more details, see [getLatency()](/docs/sources/audio-buffer-base-source-node#getlatency).
 
-If you plan to play multiple buffers one after another, consider using [AudioBufferQueueSourceNode](/docs/sources/audio-buffer-queue-source-node)
+If you plan to play multiple buffers one after another, consider using [AudioBufferQueueSourceNode](/docs/sources/audio-buffer-queue-source-node).
 :::
 
 ## Example
@@ -70,6 +70,8 @@ It inherits all properties from [`AudioBufferBaseSourceNode`](/docs/sources/audi
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated buffer" channelCountMode="max" channelInterpretation="speakers" />
 
+`AudioBufferSourceNode` defines the following additional properties:
+
 | Name | Type | Description |
 | :----: | :----: | :-------- |
 | `buffer` | [`AudioBuffer`](/docs/sources/audio-buffer) | Associated `AudioBuffer`. |
@@ -88,8 +90,8 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to 0, the node starts playing immediately. <br /> Default: `0`. |
-| `offset` <Optional /> | `number` | The position, in seconds, within the audio buffer where playback begins. <br /> The default value is `0`, which starts playback from the beginning of the buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties) (or the defined [`loopEnd`](/docs/sources/audio-buffer-source-node#properties) value), it’s automatically clamped to the valid range. <br /> Offsets are calculated using the buffer’s natural sample rate rather than the current playback rate — so even if the sound is played at double speed, halfway through a 10-second buffer is still 5 seconds. |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0`, the node starts playing immediately. <br /> Default: `0`. |
+| `offset` <Optional /> | `number` | The position, in seconds, within the audio buffer where playback begins. <br /> The default value is `0`, which starts playback from the beginning of the buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties) (or the defined [`loopEnd`](/docs/sources/audio-buffer-source-node#properties) value), it’s automatically clamped to the valid range. <br /> Offsets are calculated using the buffer’s natural sample rate rather than the current playback rate — so even if the sound is played at double speed, halfway through a `10`-second buffer is still `5` seconds. |
 | `duration` <Optional /> | `number` | The playback duration, in seconds. If not provided, playback continues until the sound ends naturally or is manually stopped with [`stop() method`](/docs/sources/audio-scheduled-source-node#stop). <br /> Equivalent to calling `start(when, offset)` followed by `stop(when + duration)`. |
 
 
@@ -109,8 +111,8 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 
 ### `onLoopEnded`
 
-Sets (or remove) callback that will be fired when buffer source node reached the end of the loop and is looping back to `loopStart`.
-You can remove callback either by passing `null` or calling `remove` on the returned subscription.
+Sets (or removes) a callback that will be fired when buffer source node reached the end of the loop and is looping back to `loopStart`.
+You can remove the callback either by passing `null` or calling `remove` on the returned subscription.
 
 ```ts
 const subscription = audioBufferSourceNode.onLoopEnded = () => { // setting the callback
@@ -123,13 +125,13 @@ subscription.remove(); // removal of the subscription
 ## Remarks
 
 #### `buffer`
-- If is null, it outputs a single channel of silence (all samples are equal to 0).
+- If is null, it outputs a single channel of silence (all samples are equal to `0`).
 
 #### `loop`
 - Default value is false.
 
 #### `loopStart`
-- Default value is 0.
+- Default value is `0`.
 
 #### `loopEnd`
 - Default value is `buffer.duration`.
