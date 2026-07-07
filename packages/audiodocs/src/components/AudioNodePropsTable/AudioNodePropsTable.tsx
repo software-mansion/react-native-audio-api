@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
+import Link from '@docusaurus/Link';
 
-import DetailBox from '@site/src/ui/DetailBox';
-
-import styles from './styles.module.css';
+import AudioNodeInheritedSection from '@site/src/components/AudioNodeInheritedSection';
+import { ReadOnly } from '@site/src/components/Badges';
 
 type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 type ChannelInterpretation = 'speakers' | 'discrete';
@@ -15,6 +15,9 @@ interface AudioNodePropsTableProps {
   channelInterpretation: ChannelInterpretation;
 }
 
+const renderValue = (value: number | string) =>
+  typeof value === 'number' ? <code>{value}</code> : value;
+
 const AudioNodePropsTable = ({
   numberOfInputs,
   numberOfOutputs,
@@ -22,46 +25,102 @@ const AudioNodePropsTable = ({
   channelCountMode,
   channelInterpretation,
 }: AudioNodePropsTableProps) => {
-  const props = [
-    { label: 'Number of inputs', value: numberOfInputs },
-    { label: 'Number of outputs', value: numberOfOutputs },
-    { label: 'Channel count', value: channelCount },
-    { label: 'Channel count mode', value: channelCountMode },
-    { label: 'Channel interpretation', value: channelInterpretation },
-  ];
-
   return (
-    <DetailBox
-      tag="AudioNode"
-      info="properties"
-      startOpen={false}
-      className={styles.propsDetailBox}
-    >
-      <table className={styles.audioNodeProps} style={{ width: '100%', display: 'table' }}>
-        <tbody>
-          {props.map((prop) => (
-            <tr key={prop.label}>
-              <td
-                style={{
-                  textAlign: 'left',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {prop.label}
-              </td>
-              <td
-                style={{
-                  textAlign: 'left',
-                  width: '99%',
-                }}
-              >
-                {prop.value}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </DetailBox>
+    <AudioNodeInheritedSection info="properties">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Value</th>
+          <th>Description</th>
+          <th />
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <code>numberOfInputs</code>
+          </td>
+          <td>
+            <code>number</code>
+          </td>
+          <td>{renderValue(numberOfInputs)}</td>
+          <td>Number of input connections for the node.</td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <code>numberOfOutputs</code>
+          </td>
+          <td>
+            <code>number</code>
+          </td>
+          <td>{renderValue(numberOfOutputs)}</td>
+          <td>Number of output connections for the node.</td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <code>channelCount</code>
+          </td>
+          <td>
+            <code>number</code>
+          </td>
+          <td>{renderValue(channelCount)}</td>
+          <td>
+            Number of channels used when up-mixing or down-mixing the node's
+            inputs.
+          </td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <code>channelCountMode</code>
+          </td>
+          <td>
+            <Link to="/docs/types/channel-count-mode">
+              <code>ChannelCountMode</code>
+            </Link>
+          </td>
+          <td>
+            <code>{channelCountMode}</code>
+          </td>
+          <td>
+            How channels are mixed between the node's inputs and outputs.
+          </td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <code>channelInterpretation</code>
+          </td>
+          <td>
+            <Link to="/docs/types/channel-interpretation">
+              <code>ChannelInterpretation</code>
+            </Link>
+          </td>
+          <td>
+            <code>{channelInterpretation}</code>
+          </td>
+          <td>
+            How input channels are mapped to output channels when their counts
+            differ.
+          </td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+      </tbody>
+    </AudioNodeInheritedSection>
   );
 };
+
 export default memo(AudioNodePropsTable);

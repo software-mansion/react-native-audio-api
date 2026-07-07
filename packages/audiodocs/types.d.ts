@@ -1,5 +1,7 @@
 
 
+/// <reference types="@docusaurus/module-type-aliases" />
+
 module "*.module.css" {
   const classes: { [key: string]: string };
   export default classes;
