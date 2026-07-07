@@ -45,14 +45,18 @@ inline audioapi::AudioNode *audioNodeOf(const HostGraph::Node *node) {
 }
 
 /// @brief Returns how many channels `audio` presents on upstream connections
-/// (toward AudioDestinationNode). Uses the output buffer when present.
+/// (toward AudioDestinationNode).
+///
+/// Reads the atomic `channelCount_` attribute rather than the output buffer:
+/// the buffer's `shared_ptr` is swapped on the audio thread (setBuffer /
+/// applyChannelNegotiations), so reading it here on the JS thread would race.
+/// For source nodes `channelCount_` already tracks the buffer's width, and this
+/// helper is only the fallback for inputs not yet resolved in the current
+/// negotiation pass (traversals resolve every input first via
+/// `resolveChannelCountForNode`).
 size_t outputChannelCountOf(const audioapi::AudioNode *audio) {
   if (audio == nullptr) {
     return 0;
-  }
-  const auto out = audio->getOutputBuffer();
-  if (out != nullptr) {
-    return out->getNumberOfChannels();
   }
   return audio->getChannelCount();
 }
@@ -362,8 +366,14 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
 
   from->outputs.push_back(to);
   to->inputs.push_back(from);
-  to->handle->audioNode->inputBuffers_.reserve(to->inputs.size());
   edgeCount_++;
+
+  // Reserve the destination's input-scratch capacity off the audio thread.
+  // `inputBuffers_` is audio-thread-only, so we allocate a replacement here and
+  // swap it in from the AGEvent instead of mutating the live vector (which
+  // `process()` reads concurrently on the audio thread — a data race).
+  auto reservedInputs = std::make_unique<std::vector<const audioapi::DSPAudioBuffer *>>();
+  reservedInputs->reserve(to->inputs.size());
 
   // Channel-count negotiation: computed + allocated on the host thread,
   // applied on the audio thread by the AGEvent below. Cascade upstream
@@ -372,8 +382,11 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
 
   // could be problematic, since we are passing raw pointer to the lambda
   return Res::Ok(
-      [from, hTo = to->handle, hFrom = from->handle, negotiations = std::move(negotiations)](
-          AudioGraph &graph, auto &disposer) mutable {
+      [from,
+       hTo = to->handle,
+       hFrom = from->handle,
+       negotiations = std::move(negotiations),
+       reservedInputs = std::move(reservedInputs)](AudioGraph &graph, auto &disposer) mutable {
         auto *fromNode = hFrom->audioNode.get();
         auto *toNode = hTo->audioNode.get();
         if (!fromNode->isProcessable() && toNode->isProcessable()) {
@@ -381,6 +394,7 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
         }
         applyChannelNegotiations(*negotiations, disposer);
         disposer.dispose(std::move(negotiations));
+        disposer.dispose(toNode->exchangeInputScratch(std::move(*reservedInputs)));
         graph.pool().push(graph[hTo->index].input_head, from->handle->index);
         graph.markDirty();
       });

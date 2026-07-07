@@ -44,7 +44,7 @@ bool AudioNode::isProcessable() const {
 }
 
 size_t AudioNode::getChannelCount() const {
-  return channelCount_;
+  return channelCount_.load(std::memory_order_acquire);
 }
 
 bool AudioNode::requiresTailProcessing() const {

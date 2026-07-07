@@ -9,6 +9,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -28,6 +29,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   ~AudioNode() override = default;
   DELETE_COPY_AND_MOVE(AudioNode);
 
+  /// @brief Returns this node's `channelCount` attribute.
+  /// @note Safe to call from any thread: `channelCount_` is atomic because
+  /// source subclasses update it on the audio thread while the JS thread reads
+  /// it during channel-count negotiation.
   [[nodiscard]] size_t getChannelCount() const;
 
   /// @brief Returns this node's `channelCountMode` attribute.
@@ -199,7 +204,14 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   const int numberOfInputs_ = 1;
   const int numberOfOutputs_ = 1;
-  int channelCount_ = 2;
+  /// @brief Number of channels this node presents.
+  ///
+  /// Atomic because it is read on the JS thread during channel-count
+  /// negotiation (`HostGraph`/`getChannelCount`) while source subclasses
+  /// (AudioBufferSource, Streamer, AudioFileSource, RecorderAdapter,
+  /// AudioBufferQueueSource) write it on the audio thread once they learn the
+  /// decoded/buffer channel count. Plain reads/writes here would race.
+  std::atomic<int> channelCount_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;
