@@ -97,7 +97,7 @@ constructor(context: BaseAudioContext, options?: GainOptions)
 
 Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
 
-| Parameter | Type | Default | |
+| Parameter | Type | Default | Description |
 | :---: | :---: | :----: | :---- |
 | `gain` <Optional /> | `number` | `1.0` | Initial gain value. |
 
