@@ -49,6 +49,10 @@ const COVERAGE_NOTES = {
   'the-analysernode-interface':
     'One failure: minDecibels/maxDecibels are stored as float, so reading back a ' +
     'high-precision double value loses a few digits (cosmetic round-trip mismatch).',
+  'the-audiobuffer-interface':
+    'Remaining failures: acquire-the-content expects AudioBufferSourceNode.start() to ' +
+    'snapshot the buffer contents (we still share the underlying memory), and ' +
+    'audiobuffer-reuse needs ChannelMergerNode, which is not yet available.',
   'the-biquadfilternode-interface':
     'The filter runs in double precision, so the static frequency response matches the ' +
     'reference. The remaining failures are the parameter-automation tests, which expect ' +

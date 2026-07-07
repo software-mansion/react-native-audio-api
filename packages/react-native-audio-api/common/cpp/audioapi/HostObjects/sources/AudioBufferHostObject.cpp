@@ -2,6 +2,8 @@
 
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 
+#include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <utility>
 
@@ -57,11 +59,18 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyFromChannel) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto *destination = reinterpret_cast<float *>(arrayBuffer.data(runtime));
-  auto length = arrayBuffer.size(runtime) / sizeof(float);
+  auto destinationLength = arrayBuffer.size(runtime) / sizeof(float);
   auto channelNumber = static_cast<int>(args[1].getNumber());
-  auto startInChannel = static_cast<size_t>(args[2].getNumber());
+  auto rawStart = args[2].getNumber();
+  auto channelSize = audioBuffer_->getSize();
 
-  audioBuffer_->getChannel(channelNumber)->copyTo(destination, startInChannel, 0, length);
+  // Per spec, an out-of-range (or negative) startInChannel copies nothing, and a
+  // copy that would run past the end of the channel is truncated rather than throwing.
+  if (rawStart >= 0 && static_cast<size_t>(rawStart) < channelSize) {
+    auto startInChannel = static_cast<size_t>(rawStart);
+    auto framesToCopy = std::min(destinationLength, channelSize - startInChannel);
+    audioBuffer_->getChannel(channelNumber)->copyTo(destination, startInChannel, 0, framesToCopy);
+  }
 
   return jsi::Value::undefined();
 }
@@ -70,11 +79,18 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyToChannel) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto *source = reinterpret_cast<float *>(arrayBuffer.data(runtime));
-  auto length = arrayBuffer.size(runtime) / sizeof(float);
+  auto sourceLength = arrayBuffer.size(runtime) / sizeof(float);
   auto channelNumber = static_cast<int>(args[1].getNumber());
-  auto startInChannel = static_cast<size_t>(args[2].getNumber());
+  auto rawStart = args[2].getNumber();
+  auto channelSize = audioBuffer_->getSize();
 
-  audioBuffer_->getChannel(channelNumber)->copy(source, 0, startInChannel, length);
+  // Per spec, an out-of-range (or negative) startInChannel copies nothing, and a
+  // copy that would run past the end of the channel is truncated rather than throwing.
+  if (rawStart >= 0 && static_cast<size_t>(rawStart) < channelSize) {
+    auto startInChannel = static_cast<size_t>(rawStart);
+    auto framesToCopy = std::min(sourceLength, channelSize - startInChannel);
+    audioBuffer_->getChannel(channelNumber)->copy(source, 0, startInChannel, framesToCopy);
+  }
 
   return jsi::Value::undefined();
 }
