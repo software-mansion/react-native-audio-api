@@ -13,8 +13,18 @@ import Animated, {
   withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
-import { Button, Container } from '../../components';
+import { Button, Container, Switch } from '../../components';
 import { colors } from '../../styles';
+
+const HEAVY_JS_ITERATIONS = 4_000_000;
+
+function runHeavyJsWork(): number {
+  let acc = 0;
+  for (let i = 0; i < HEAVY_JS_ITERATIONS; i++) {
+    acc += Math.sin(i * 0.001) * Math.cos(i * 0.0013);
+  }
+  return acc;
+}
 
 function VisualizerBar({
   amplitude,
@@ -61,7 +71,11 @@ function Worklets() {
   const workletNodeRef = useRef<WorkletNode | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const lfoRef = useRef<OscillatorNode | null>(null);
+  const heavyWorkAccRef = useRef(0);
+  const jsWorkloadTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
+  const [heavyJsLoad, setHeavyJsLoad] = useState(false);
 
   const bar0 = useSharedValue(0);
   const bar1 = useSharedValue(0);
@@ -78,6 +92,27 @@ function Worklets() {
       audioContextRef.current?.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (!heavyJsLoad) {
+      if (jsWorkloadTimerRef.current != null) {
+        clearInterval(jsWorkloadTimerRef.current);
+        jsWorkloadTimerRef.current = null;
+      }
+      return;
+    }
+
+    jsWorkloadTimerRef.current = setInterval(() => {
+      heavyWorkAccRef.current += runHeavyJsWork();
+    }, 0);
+
+    return () => {
+      if (jsWorkloadTimerRef.current != null) {
+        clearInterval(jsWorkloadTimerRef.current);
+        jsWorkloadTimerRef.current = null;
+      }
+    };
+  }, [heavyJsLoad]);
 
   const start = () => {
     const ctx = audioContextRef.current;
@@ -173,6 +208,11 @@ function Worklets() {
         Oscillator → WorkletNode (RMS on UI runtime) → destination
       </Text>
 
+      <View style={styles.toggleRow}>
+        <Text style={styles.toggleLabel}>Heavy JS workload</Text>
+        <Switch value={heavyJsLoad} onValueChange={setHeavyJsLoad} />
+      </View>
+
       <View style={{ ...styles.visualizer, backgroundColor: colors.white }}>
         <View style={styles.barsContainer}>
           {barAmplitudes.map((amplitude, index) => (
@@ -198,14 +238,25 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    marginBottom: 30,
+    marginBottom: 24,
     textAlign: 'center',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  toggleLabel: {
+    color: colors.white,
+    fontSize: 14,
   },
   visualizer: {
     height: 250,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginVertical: 30,
+    marginVertical: 16,
     borderRadius: 10,
     padding: 20,
   },
