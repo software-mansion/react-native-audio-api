@@ -125,7 +125,7 @@ Adds a callback to be invoked upon hearing an event.
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `name` | [`SystemEventName`](audio-manager#systemeventname) | Name of an event listener. |
-| `callback` | [`SystemEventCallback`](audio-manager#systemeventname) | Callback that will be invoked upon hearing an event. |
+| `callback` | [`SystemEventCallback`](audio-manager#systemeventcallback) | Callback that will be invoked upon hearing an event. |
 
 #### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise.
 
@@ -263,12 +263,19 @@ type SystemEvents = {
 };
 
 type SystemEventName = keyof SystemEvents;
+```
+</details>
+
+### `SystemEventCallback`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
 type SystemEventCallback<Name extends SystemEventName> = (
   event: SystemEvents[Name]
 ) => void;
 ```
 </details>
-
 
 ### `AudioEventSubscription`
 

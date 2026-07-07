@@ -77,12 +77,12 @@ Checks if the notification is displayed.
 
 ### `addEventListener`
 
-Add an event listener for notification actions.
+Adds an event listener for notification actions.
 
 |  Parameter  | Type | Description |
 | :---------: | :----: | :---------------------- |
-| `eventName` | [`RecordingNotificationEvent`](recording-notification-manager#recordingnotificationevent) | The event to listen for |
-| `callback`  | ([`RecordingNotificationEvent](recording-notification-manager#recordingnotificationevent)) => void | Callback function |
+| `eventName` | [`RecordingNotificationEventName`](recording-notification-manager#recordingnotificationeventname) | The event to listen for |
+| `callback`  | [`NotificationCallback`](recording-notification-manager#notificationcallback) | Callback function |
 
 #### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
 
@@ -106,7 +106,7 @@ interface RecordingNotificationInfo {
 ```
 </details>
 
-### `RecordingNotificationEvent`
+### `RecordingNotificationEventName`
 
 <details>
 <summary>Type definitions</summary>
@@ -115,6 +115,19 @@ interface RecordingNotificationEvent {
   recordingNotificationPause: EventEmptyType;
   recordingNotificationResume: EventEmptyType;
 }
+
+type RecordingNotificationEventName = keyof RecordingNotificationEvent;
+```
+</details>
+
+### `NotificationCallback`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type NotificationCallback<Name extends RecordingNotificationEventName> = (
+  event: RecordingNotificationEvent[Name]
+) => void;
 ```
 </details>
 

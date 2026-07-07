@@ -14,16 +14,16 @@ The `PlaybackNotificationManager` provides media session integration and playbac
 
 :::info Platform Differences
 
-**iOS Requirements:**
-- Notification controls only appear when an active `AudioContext` is running
-- `show()` or `hide()` only update metadata - they don't control notification visibility
-- The notification automatically appears/disappears based on audio session state
-- To show: create and resume an AudioContext
-- To hide: suspend or close the AudioContext
+**iOS:**
+- Notification controls appear only when an active `AudioContext` is running.
+- `show()` and `hide()` only update metadata; they do not control notification visibility.
+- The notification appears and disappears automatically based on the audio session state.
+- Creating and resuming an `AudioContext` shows the controls.
+- Suspending or closing the `AudioContext` hides the controls.
 
 **Android:**
-- Notification visibility is directly controlled by `show()` and `hide()` methods
-- Works independently of AudioContext state
+- Notification visibility is controlled directly by `show()` and `hide()`.
+- Notification controls work independently of `AudioContext` state.
 :::
 
 ## Example
@@ -76,7 +76,7 @@ PlaybackNotificationManager.hide();
 
 ### `show`
 
-Display the notification with initial metadata.
+Displays the notification with initial metadata.
 
 :::note iOS Behavior
 On iOS, this method only sets the metadata. The notification controls will only appear when an `AudioContext` is actively running. Make sure to create and resume an AudioContext before calling `show()`.
@@ -94,7 +94,7 @@ Metadata is remembered between calls, so after initial passing the metadata to s
 
 ### `hide`
 
-Hide the notification. Can be shown again later by calling `show()`.
+Hides the notification. Can be shown again later by calling `show()`.
 
 :::note iOS Behavior
 On iOS, this method clears the metadata but does not hide the notification controls. To completely hide controls on iOS, you must suspend or close the AudioContext.
@@ -104,7 +104,7 @@ On iOS, this method clears the metadata but does not hide the notification contr
 
 ### `enableControl`
 
-Enable or disable specific playback controls.
+Enables or disables specific playback controls.
 
 | Parameter | Type | Description |
 | :-------: | :-----: | :------ |
@@ -115,18 +115,18 @@ Enable or disable specific playback controls.
 
 ### `isActive`
 
-Check if the notification is currently active and visible.
+Checks if the notification is currently active and visible.
 
 #### Returns `Promise<boolean>`.
 
 ### `addEventListener`
 
-Add an event listener for notification actions.
+Adds an event listener for notification actions.
 
 |  Parameter  | Type | Description |
 | :---------: | :------: | :------- |
 | `eventName` | [`PlaybackNotificationEventName`](playback-notification-manager#playbacknotificationeventname) | The event to listen for |
-| `callback`  | [`SystemEventCallback`](/docs/system/audio-manager#systemeventname) | Callback function |
+| `callback`  | [`NotificationCallback`](playback-notification-manager#notificationcallback) | Callback function |
 
 #### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
 
@@ -198,4 +198,13 @@ type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
 ```
 </details>
 
+### `NotificationCallback`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type NotificationCallback<Name extends PlaybackNotificationEventName> = (
+  event: PlaybackNotificationEvent[Name]
+) => void;
 ```
+</details>
