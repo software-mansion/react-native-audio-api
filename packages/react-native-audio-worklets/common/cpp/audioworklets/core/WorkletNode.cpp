@@ -2,6 +2,7 @@
 #include <audioworklets/core/WorkletNode.h>
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <utility>
 
@@ -12,7 +13,10 @@ WorkletNode::WorkletNode(
     UIWorkletsRunner workletRunner)
     : audioapi::AudioNode(context),
       workletRunner_(std::move(workletRunner)),
-      busy_(std::make_shared<std::atomic<bool>>(false)) {
+      busy_(std::make_shared<std::atomic<bool>>(false)),
+      minFramesBetweenDispatch_(static_cast<size_t>(std::max(
+          1.0f,
+          std::floor(context->getSampleRate() / kMaxUiDispatchRateHz)))) {
   snapshotBuffers_ = std::make_shared<
       std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>>(
       static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
@@ -34,6 +38,13 @@ void WorkletNode::processNode(int framesToProcess) {
     return;
   }
 
+  framesSinceLastDispatch_ += frameCount;
+
+  if (framesSinceLastDispatch_ < minFramesBetweenDispatch_) {
+    return;
+  }
+
+  framesSinceLastDispatch_ = 0;
   dispatchToUI(frameCount, channelCount);
 }
 

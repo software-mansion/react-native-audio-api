@@ -11,12 +11,12 @@
 namespace audioworklets {
 
 /**
- * A pass-through analysis node that hands each render quantum of audio data to a
- * JavaScript worklet running on the UI runtime, so the UI can be animated from
- * live audio (e.g. amplitude/RMS visualizers).
+ * A pass-through analysis node that hands render-quantum audio snapshots to a
+ * JavaScript worklet on the UI runtime so the UI can be animated from live
+ * audio (e.g. amplitude/RMS visualizers).
  *
- * Audio flows through unchanged. Buffer length and channel count match the
- * incoming quantum from the graph (`framesToProcess` and input channel count).
+ * UI dispatches are capped at ~120 Hz (sample-rate aware) so the audio thread
+ * does not flood the UI scheduler. Audio flows through unchanged.
  */
 class WorkletNode : public audioapi::AudioNode {
  public:
@@ -28,6 +28,8 @@ class WorkletNode : public audioapi::AudioNode {
   void processNode(int framesToProcess) override;
 
  private:
+  static constexpr float kMaxUiDispatchRateHz = 120.0f;
+
   void dispatchToUI(size_t frameCount, size_t channelCount);
 
   UIWorkletsRunner workletRunner_;
@@ -41,6 +43,12 @@ class WorkletNode : public audioapi::AudioNode {
   /// @brief True while a UI-thread worklet invocation is still pending. Prevents
   /// the audio thread from flooding the UI scheduler; quanta are dropped instead.
   std::shared_ptr<std::atomic<bool>> busy_;
+
+  /// @brief Audio-thread accumulator for sample-rate-aware UI dispatch throttling.
+  size_t framesSinceLastDispatch_{0};
+
+  /// @brief Minimum audio frames between UI worklet dispatches (~120 Hz at context sample rate).
+  size_t minFramesBetweenDispatch_{0};
 };
 
 } // namespace audioworklets

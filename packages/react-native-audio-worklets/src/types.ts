@@ -8,8 +8,8 @@ export interface IWorkletsModule {
 }
 
 /**
- * Invoked on the UI worklet runtime once per render quantum (when the prior
- * callback has finished).
+ * Invoked on the UI worklet runtime at most ~120 times per second with the
+ * latest render-quantum snapshot (when the prior callback has finished).
  *
  * @param audioBuffers - One `ArrayBuffer` per channel of **32-bit float PCM**
  *   (not interleaved). Wrap with `new Float32Array(buffer)` for zero-copy
