@@ -83,6 +83,7 @@ Graph::HNode *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
   sendNodeGrowIfNeeded();
 
   eventSender_.send(std::move(event));
+  drainProducedEventsIfSelfDraining();
   return hostNode;
 }
 
@@ -110,6 +111,7 @@ Graph::Res Graph::addEdge(HNode *from, HNode *to) {
   return hostGraph.addEdge(from, to).map([&](AGEvent event) {
     sendPoolGrowIfNeeded();
     eventSender_.send(std::move(event));
+    drainProducedEventsIfSelfDraining();
     return NoneType{};
   });
 }
@@ -122,6 +124,7 @@ Graph::Res Graph::removeEdge(HNode *from, HNode *to) {
   // collectDisposedNodes();
   return hostGraph.removeEdge(from, to).map([&](AGEvent event) {
     eventSender_.send(std::move(event));
+    drainProducedEventsIfSelfDraining();
     return NoneType{};
   });
 }
@@ -130,6 +133,15 @@ Graph::Res Graph::removeAllEdges(HNode *from) {
   // collectDisposedNodes();
   return hostGraph.removeAllEdges(from).map([&](AGEvent event) {
     eventSender_.send(std::move(event));
+    drainProducedEventsIfSelfDraining();
+    return NoneType{};
+  });
+}
+
+Graph::Res Graph::renegotiateNode(HNode *node) {
+  return hostGraph.renegotiateNode(node).map([&](AGEvent event) {
+    eventSender_.send(std::move(event));
+    drainProducedEventsIfSelfDraining();
     return NoneType{};
   });
 }

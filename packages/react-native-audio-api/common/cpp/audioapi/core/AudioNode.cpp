@@ -52,7 +52,8 @@ bool AudioNode::requiresTailProcessing() const {
 }
 
 void AudioNode::disable() {
-  setProcessableState(utils::graph::GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
+  // Defer the flip to NOT_PROCESSABLE by one quantum.
+  pendingDisable_ = true;
 }
 
 namespace {

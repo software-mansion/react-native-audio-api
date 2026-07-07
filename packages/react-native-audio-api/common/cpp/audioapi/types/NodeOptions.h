@@ -27,7 +27,7 @@ struct AudioNodeOptions {
 
 struct AudioDestinationOptions : AudioNodeOptions {
   AudioDestinationOptions() {
-    numberOfOutputs = 0;
+    numberOfOutputs = 1;
     channelCountMode = ChannelCountMode::EXPLICIT;
   }
 };

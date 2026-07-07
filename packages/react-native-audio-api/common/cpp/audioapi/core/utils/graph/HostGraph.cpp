@@ -386,6 +386,26 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
       });
 }
 
+auto HostGraph::renegotiateNode(Node *node) -> Res {
+  std::scoped_lock lock(nodesMutex_);
+  if (node == nullptr || std::ranges::find(nodes, node) == nodes.end()) {
+    return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+  if (node->ghost) {
+    return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+
+  // Recompute channel layouts for this node and everything downstream.
+  auto negotiations = collectNegotiations(++channelLayoutTerm_, node);
+
+  return Res::Ok(
+      [negotiations = std::move(negotiations)](AudioGraph &graph, auto &disposer) mutable {
+        applyChannelNegotiations(*negotiations, disposer);
+        disposer.dispose(std::move(negotiations));
+        graph.markDirty();
+      });
+}
+
 void HostGraph::markNodesAsNotProcessing(Node *node) {
   if (node == nullptr || node->handle == nullptr || node->handle->audioNode == nullptr) {
     return;

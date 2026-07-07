@@ -26,7 +26,14 @@ OfflineAudioContext::OfflineAudioContext(
       currentSampleFrame_(0),
       audioBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels, sampleRate)),
-      resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {}
+      resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {
+  // The graph is built entirely before startRendering() spawns the render
+  // (consumer) thread. Until then there is no consumer draining the bounded
+  // graph-event channel, so a large graph would otherwise fill it and block
+  // the producer forever. Let the producing thread drain it itself for now;
+  // renderAudio() hands draining back to the render thread.
+  getGraph()->setProducerSelfDrain(true);
+}
 
 void OfflineAudioContext::resume() {
   std::scoped_lock lock(driverMutex_);
@@ -58,6 +65,11 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
 void OfflineAudioContext::renderAudio() {
   setState(ContextState::RUNNING);
 
+  // The render thread below becomes the single consumer of the graph-event
+  // channel, so the producer must stop self-draining to preserve the SPSC
+  // single-consumer invariant.
+  getGraph()->setProducerSelfDrain(false);
+
   std::thread([this]() {
     while (currentSampleFrame_ < length_) {
       Locker locker(driverMutex_);
@@ -79,6 +91,10 @@ void OfflineAudioContext::renderAudio() {
         scheduledSuspends_.erase(currentSampleFrame_);
         setState(ContextState::SUSPENDED);
         processAudioEvents();
+        // The render thread is about to exit; with no consumer again, let the
+        // producer self-drain any graph mutations made from the suspend
+        // callback until resume() restarts rendering.
+        getGraph()->setProducerSelfDrain(true);
         locker.unlock();
         callback();
         return;

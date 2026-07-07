@@ -60,6 +60,16 @@ const COVERAGE_NOTES = {
     'render quantum (k-rate) and recompute the coefficients once per block. The audible ' +
     'difference is negligible, while computing the coefficient/trig math once per block ' +
     'instead of once per sample makes processing dramatically faster on the audio thread.',
+  'the-audionode-interface':
+    'Remaining failures are tests that depend on ChannelMergerNode or ChannelSplitterNode ' +
+    '(not yet implemented) or on indexed connect()/disconnect() overloads with output/input ' +
+    'parameters (not yet implemented). Examples: disconnect audits that build multi-output ' +
+    'graphs with a splitter, connect-method-chaining with an out-of-range output index, and ' +
+    'chaining across every node type including ChannelMerger. A few other assertions fail only ' +
+    'in the Node WPT harness (iframe AudioContext, MediaElement source wiring) or check ' +
+    'argument-type errors we do not surface before cross-context validation. channelCount, ' +
+    'channelCountMode and channelInterpretation are settable after construction with graph ' +
+    'renegotiation, and the audionode-channel-rules discrete-mixing conformance test passes.',
 };
 
 const CATEGORY_LABELS = {
@@ -463,7 +473,7 @@ export function formatCoverageMarkdown(report) {
     "      <th style={{ textAlign: 'right' }}>Passing</th>",
     "      <th style={{ textAlign: 'right' }}>Total</th>",
     "      <th style={{ textAlign: 'right' }}>Pass rate</th>",
-    '      <th>Notes</th>',
+    '      <th>Differences</th>',
     '    </tr>',
     '  </thead>',
     '  <tbody>',

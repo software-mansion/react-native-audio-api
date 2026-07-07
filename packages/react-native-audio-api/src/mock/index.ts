@@ -534,7 +534,7 @@ class AudioDestinationNodeMock extends AudioNodeMock {
 
   constructor(context: BaseAudioContextMock) {
     super(context, {});
-    this.numberOfOutputs = 0;
+    this.numberOfOutputs = 1;
   }
 }
 
