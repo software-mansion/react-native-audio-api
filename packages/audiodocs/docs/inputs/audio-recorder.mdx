@@ -11,11 +11,11 @@ import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 # AudioRecorder
 
-AudioRecorder is a primary interface for capturing audio. It supports three main modes of operations:
+`AudioRecorder` is a primary interface for capturing audio. It supports three main modes of operations:
 
 - **File recording:** Writing audio data directly to the filesystem.
 - **Data callback:** Emitting raw audio buffers, that can be used in either further processing or streamed.
-- **Graph processing:** Connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing
+- **Graph processing:** Connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing.
 
 ## Configuration
 
@@ -52,11 +52,11 @@ Additionally to be able to record audio while application is in the background, 
 
   </TabItem>
   <TabItem value="iOS" label="iOS">
-    For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode
+    For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode.
 
     ![background mode configuration example](/docs/recorder/signing-and-capabilities.png)
 
-    Microphone permission can be created or modified through the `Info.plist` file
+    Microphone permission can be created or modified through the `Info.plist` file.
 
     ![Info plist example](/docs/recorder/info-plist.png)
 
@@ -73,7 +73,7 @@ Additionally to be able to record audio while application is in the background, 
 
   </TabItem>
   <TabItem value="android" label="Android">
-    To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file
+    To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file.
 
     ```xml
     <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -94,7 +94,7 @@ Additionally to be able to record audio while application is in the background, 
   </TabItem>
 </Tabs>
 
-## Usage
+## Examples
 
 <Tabs group="usage">
   <TabItem value="record-to-file" label="Record to File">
@@ -358,7 +358,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-        Creates new instance of AudioRecorder. It is preferred to create only a single instance of the AudioRecorder class for the best performance, memory and battery consumption reasons. While the idle recorder has minimal impact on anything mentioned, switching between separate recorder instances might have a noticeable impact on the device.
+        Creates a new instance of `AudioRecorder`. It is preferred to create only a single instance of the `AudioRecorder` class for the best performance, memory and battery consumption reasons. While the idle recorder has minimal impact on anything mentioned, switching between separate recorder instances might have a noticeable impact on the device.
         </div>
         ```tsx
         import { AudioRecorder } from 'react-native-audio-api';
@@ -400,7 +400,7 @@ export default MyRecorder;
         <div class="text-content">
         Stops the input stream and cleans up each input access method. Returns a `Promise` that resolves when recording has stopped.
 
-        For details on the returned file information check: [FileInfo](#fileinfo)
+        For details on the returned file information, see [FileInfo](#fileinfo).
         </div>
         ```tsx
         const result = await audioRecorder.stop();
@@ -454,7 +454,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns `true` if the recorder is in active/recording state
+          Returns `true` if the recorder is in active/recording state.
         </div>
         ```tsx
           const isRecording = audioRecorder.isRecording();
@@ -488,7 +488,7 @@ export default MyRecorder;
         <div class="text-content">
           Sets an error callback for any possible internal error that might happen during file writing, callback invocation or adapter access.
 
-          For details check: [OnRecorderErrorEventType](#onrecordererroreventtype)
+          For details, see [OnRecorderErrorEventType](#onrecordererroreventtype).
         </div>
         ```tsx
           audioRecorder.onError((error: OnRecorderErrorEventType) => {
@@ -533,7 +533,7 @@ export default MyRecorder;
         <div class="text-content">
           Configures and enables the file output with defined options and stream properties. Options property allows for configuration of the output file structure and quality. By default the recorder writes to cache directory using high-quality `M4A` file.
 
-          For further information check: [AudioRecorderFileOptions](#audiorecorderfileoptions)
+          For further information, see [AudioRecorderFileOptions](#audiorecorderfileoptions).
         </div>
         ```tsx
           audioRecorder.enableFileOutput();
@@ -589,9 +589,9 @@ export default MyRecorder;
           The callback is periodically invoked with audio buffers that match the preferred configuration provided in `options`. These parameters (sample rate, buffer length, and channel count) guide how audio data is chunked and delivered, though the exact values may vary depending on device capabilities.
           <br />
 
-          For further information check:
-            - [AudioRecorderCallbackOptions](#audiorecordercallbackoptions)
-            - [OnAudioReadyEventType](#onaudioreadyeventtype)
+          For further information, see:
+            - [AudioRecorderCallbackOptions](#audiorecordercallbackoptions).
+            - [OnAudioReadyEventType](#onaudioreadyeventtype).
         </div>
         ```tsx
           const sampleRate = 16000;
@@ -663,7 +663,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Disconnects AudioRecorder from the audio graph.
+          Disconnects `AudioRecorder` from the audio graph.
         </div>
         ```tsx
           audioRecorder.disconnect();
@@ -686,12 +686,12 @@ interface AudioRecorderCallbackOptions {
 ```
 
 - `sampleRate` - The desired sample rate (in Hz) for audio buffers delivered to the
-  recording callback. Common values include 44100 or 48000 Hz. The actual
+  recording callback. Common values include `44100` or `48000` Hz. The actual
   sample rate may differ depending on hardware and system capabilities.
 
 - `bufferLength` - The preferred size of each audio buffer, expressed as the number of samples per channel. Smaller buffers reduce latency but increase CPU load, while larger buffers improve efficiency at the cost of higher latency.
 
-- `channelCount` - The desired number of audio channels per buffer. Typically 1 for mono or 2 for stereo recordings.
+- `channelCount` - The desired number of audio channels per buffer. Typically `1` for mono or `2` for stereo recordings.
 
 #### OnRecorderErrorEventType
 
@@ -713,7 +713,7 @@ interface OnAudioReadyEventType {
 }
 ```
 
-- `buffer` - The audio buffer containing the recorded PCM data. This buffer includes one or more channels of floating-point samples in the range of -1.0 to 1.0.
+- `buffer` - The audio buffer containing the recorded PCM data. This buffer includes one or more channels of floating-point samples in the range of `-1.0` to `1.0`.
 - `numFrames` - The number of audio frames contained in this buffer. A frame represents a single sample across all channels.
 - `when` - The timestamp (in seconds) indicating when this buffer was captured, relative to the start of the recording session.
 
@@ -737,7 +737,7 @@ interface AudioRecorderFileOptions {
 ```
 
 - `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
-- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to 0 (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles).
+- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles).
 - `format` - The desired extension and file format of the recorder file. Check: [FileFormat](#fileformat) below.
 - `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
@@ -745,7 +745,7 @@ interface AudioRecorderFileOptions {
 - `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
 - `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
-  - Higher values are more battery- and storage-efficient.
+  - Higher values are more battery - and storage-efficient.
 
 #### FileFormat
 
@@ -780,13 +780,13 @@ interface FileInfo {
 
 #### FilePresetType
 
-Describes audio format that is used during writing to file as well as encoded final file properties. You can use one of predefined presets, or fully customize the result file, but be aware that the properties aren't limited to only valid configurations, you may find property pairs that will result in error result during recording start (or when enabling the file output during active input session)!
+Describes the audio format that is used during writing to file as well as encoded final file properties. You can use one of predefined presets, or fully customize the result file, but be aware that the properties aren't limited to only valid configurations, you may find property pairs that will result in error result during recording start (or when enabling the file output during active input session)!
 
 ##### Built-in file presets
 
-For convenience we have provided set of most basic file configurations that should cover most of the cases (or at least we hope they will, please raise an issue if you find something lacking or misconfigured!).
+For convenience we have provided a set of most basic file configurations that should cover most of the cases (or at least we hope they will, please raise an issue if you find something lacking or misconfigured!).
 
-###### Usage
+##### Usage
 
 ```tsx
 import { AudioRecorder, FileFormat, FilePreset } from 'react-native-audio-api';
@@ -815,7 +815,7 @@ audioRecorder.enableFileOutput({
         </div>
         ```tsx
         audioRecorder.enableFileOutput({
-          format: FileFormat.CAF,
+          format: FileFormat.Caf,
           preset: FilePreset.Lossless,
         });
         ```
@@ -904,12 +904,12 @@ export interface FilePresetType {
         <div class="table-vertical-top-table">
         | Use case | Bitrate (bps) | Notes |
         | :- | - | :- |
-        | Very low quality / telemetry |	32000 |	Bare minimum for speech intelligibility |
-        | Low quality voice notes |	48000 |	Optimized for small files and fast encoding |
-        | Standard speech / podcasts |	64000 – 96000 |	Good balance of clarity and size |
-        | Medium quality general audio |	128000 |	Common default for consumer audio |
-        | High quality music / voice |	160000 – 192000 |	Near-transparent for most listeners |
-        | Very high quality |	256000 – 320000 |	Large files, minimal perceptual loss |
+        | Very low quality / telemetry | `32000` | Bare minimum for speech intelligibility |
+        | Low quality voice notes | `48000` | Optimized for small files and fast encoding |
+        | Standard speech / podcasts | `64000` – `96000` | Good balance of clarity and size |
+        | Medium quality general audio | `128000` | Common default for consumer audio |
+        | High quality music / voice | `160000` – `192000` | Near-transparent for most listeners |
+        | Very high quality | `256000` – `320000` | Large files, minimal perceptual loss |
         </div>
       </td>
     </tr>
@@ -978,5 +978,3 @@ export interface FilePresetType {
     </tr>
   </tbody>
 </table>
-
-## Remarks & known issues
