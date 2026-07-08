@@ -28,20 +28,22 @@ Both options are disabled (i.e. libraries are enabled) by default.
 
 <Tabs queryString="platform">
   <TabItem value="expo" label="Expo" default>
-    Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional).
+    Add an entry in the [Audio API Expo plugin](/docs/other/audio-api-plugin) configuration:
 
     ```
     "disableFFmpeg": true
     ```
   </TabItem>
   <TabItem value="iOS" label="iOS">
-    Podfile
+    Add an entry to the Podfile:
+
     ```
     ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'
     ```
   </TabItem>
   <TabItem value="android" label="Android">
-    gradle.properties
+    In `gradle.properties`:
+
     ```
     disableAudioapiFFmpeg=true
     ```
@@ -55,20 +57,22 @@ This removes the bundled Opus / Ogg / Vorbis static libraries. With this flag en
 
 <Tabs queryString="platform">
   <TabItem value="expo" label="Expo" default>
-    Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional).
+    Add an entry in the [Audio API Expo plugin](/docs/other/audio-api-plugin) configuration:
 
     ```
     "disableStaticExternalLibs": true
     ```
   </TabItem>
   <TabItem value="iOS" label="iOS">
-    Podfile
+    Add an entry to the Podfile:
+
     ```
     ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] = '1'
     ```
   </TabItem>
   <TabItem value="android" label="Android">
-    gradle.properties
+    In `gradle.properties`:
+
     ```
     disableAudioapiStaticExternalLibs=true
     ```

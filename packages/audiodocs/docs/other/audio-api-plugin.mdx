@@ -11,9 +11,6 @@ sidebar_position: 3
 The Audio API Expo plugin allows to set certain permissions and
 background audio related settings in developer friendly way.
 
-<details>
-<summary>Type definitions</summary>
-
 ```typescript
 interface Options {
   iosMicrophonePermission?: string;
@@ -23,8 +20,6 @@ interface Options {
   androidFSTypes: string[];
 }
 ```
-
-</details>
 
 ## How to use it?
 
@@ -85,19 +80,19 @@ export default {
 
 ## Options
 
-### iosBackgroundMode
+### `iosBackgroundMode`
 
 Defaults to `true`.
 
-Allows app to play audio in the background on iOS.
+Allows the app to play audio in the background on iOS.
 
-### iosMicrophonePermission
+### `iosMicrophonePermission`
 
 Defaults to `undefined`.
 
 Allows to specify a custom microphone permission message for iOS. If not specified it will be omitted in the `Info.plist`.
 
-### androidPermissions
+### `androidPermissions`
 
 Defaults to
 
@@ -110,38 +105,31 @@ Defaults to
 
 Allows to specify certain android app permissions to apply.
 
-##### Permissions:
+Permissions:
 
-- `android.permission.POST_NOTIFICATIONS` - Required by Foreground Services on Android 13+ to post notifications.
+- `android.permission.POST_NOTIFICATIONS` - required by Foreground Services on Android 13+ to post notifications.
+- `android.permission.FOREGROUND_SERVICE` - allows the app to run a Foreground Service.
+- `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` - allows the app to run a Foreground Service specifically for continuous audio or video playback.
+- `android.permission.FOREGROUND_SERVICE_MICROPHONE` - allows the app to run a Foreground Service specifically for continuous microphone capture from the background.
+- `android.permission.MODIFY_AUDIO_SETTINGS` - allows the app to modify global audio settings.
+- `android.permission.INTERNET` - allows applications to open network sockets.
+- `android.permission.RECORD_AUDIO` - allows an application to record audio.
 
-- `android.permission.FOREGROUND_SERVICE` - Allows an app to run a Foreground Service
+### `androidForegroundService`
 
-- `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` - Allows an app to run a Foreground Service specifically for continues audio or video playback.
+Defaults to `true`.
 
-- `android.permission.FOREGROUND_SERVICE_MICROPHONE` - Allows an app to run a Foreground Service specifically for continues microphone capture from the background.
+Allows the app to use Foreground Service options specified by the user. It permits the app to play audio in the background on Android.
 
-- `android.permission.MODIFY_AUDIO_SETTINGS` - Allows an app to modify global audio settings.
+### `androidFSTypes`
 
-- `android.permission.INTERNET` - Allows applications to open network sockets.
+Allows the user to specify the appropriate Foreground Service type.
 
-- `android.permission.RECORD_AUDIO` - Allows an application to record audio.
+Types description:
 
-### androidForegroundService
+- `mediaPlayback` - continue audio or video playback from the background.
+- `microphone` - continue microphone capture from the background, such as voice recorders or communication apps.
 
-Defaults to true
+Runtime prerequisites:
 
-Allows app to use Foreground Service options specified by user,
-it permits app to play audio in the background on Android.
-
-### androidFSTypes
-
-Allows user to specify appropriate Foreground Service type.
-
-##### Types description
-
-- `mediaPlayback` - Continue audio or video playback from the background.
-
-- `microphone` - Continue microphone capture from the background, such as voice recorders or communication apps.
-
-  Runtime prerequisites:
-    - Request and be granted the RECORD_AUDIO runtime permission.
+- Request and be granted the RECORD_AUDIO runtime permission.
