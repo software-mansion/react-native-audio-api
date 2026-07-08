@@ -300,16 +300,24 @@ type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 ```
 </details>
 
-### `AudioDevicesInfo`
+### `AudioDeviceInfo`
 
 <details>
 <summary>Type definitions</summary>
 ```typescript
 export interface AudioDeviceInfo {
-  name: string;
-  category: string;
+  id: string; // unique device identifier
+  name: string; // human-readable device name
+  category: string; // device category (e.g. "Built-In Microphone", "Bluetooth")
 }
+```
+</details>
 
+### `AudioDevicesInfo`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
 export type AudioDeviceList = AudioDeviceInfo[];
 
 export interface AudioDevicesInfo {
