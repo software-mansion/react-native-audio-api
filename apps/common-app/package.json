@@ -14,13 +14,14 @@
     "@shopify/react-native-skia": "2.6.2",
     "lucide-react-native": "^0.555.0",
     "react-native-audio-api": "workspace:*",
+    "react-native-audio-worklets": "workspace:*",
     "react-native-background-timer": "2.4.1",
     "react-native-gesture-handler": "2.31.1",
-    "react-native-reanimated": "4.3.0",
+    "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "5.7.0",
     "react-native-screens": "4.24.0",
     "react-native-svg": "15.15.4",
-    "react-native-worklets": "0.8.1"
+    "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

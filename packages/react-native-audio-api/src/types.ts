@@ -38,8 +38,6 @@ export type BiquadFilterType =
 
 export type ContextState = 'running' | 'closed' | 'suspended';
 
-export type AudioWorkletRuntime = 'AudioRuntime' | 'UIRuntime';
-
 export type OscillatorType =
   | 'sine'
   | 'square'

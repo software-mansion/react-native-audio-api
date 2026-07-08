@@ -49,7 +49,6 @@
     "!common/cpp/test",
     "scripts/setup-rn-audio-api-web.js",
     "scripts/rnaa_utils.rb",
-    "scripts/validate-worklets-version.js",
     "scripts/download-prebuilt-binaries.sh",
     "app.plugin.js"
   ],
@@ -116,13 +115,7 @@
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*",
-    "react-native-worklets": ">= 0.6.0"
-  },
-  "peerDependenciesMeta": {
-    "react-native-worklets": {
-      "optional": true
-    }
+    "react-native": "*"
   },
   "devDependencies": {
     "@babel/cli": "^7.20.0",

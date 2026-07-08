@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
@@ -22,8 +21,7 @@ class AudioContext : public BaseAudioContext {
  public:
   explicit AudioContext(
       float sampleRate,
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const RuntimeRegistry &runtimeRegistry);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
 

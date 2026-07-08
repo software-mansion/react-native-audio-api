@@ -229,6 +229,22 @@ The JSI injection itself (`AudioAPIModuleInstaller`) is identical for both archi
 
 ---
 
+## Pure C++ TurboModule library (`react-native-audio-worklets`)
+
+Extension packages that expose a **C++-only** TurboModule (no JNI implementation) use a hybrid Android setup:
+
+| Piece | Role |
+|---|---|
+| `react-native.config.js` `cxxModule*` fields | Registers `NativeAudioWorkletsModule` in app autolinking (`autolinking_cxxModuleProvider`) |
+| `android/build.gradle` + `com.facebook.react` | Runs Codegen → `react_codegen_rnaudioworklets` (JSI spec headers) |
+| `AudioWorkletsPackage.kt` | Stub `BaseReactPackage` so Gradle autolinking includes the library project |
+| Root `CMakeLists.txt` | Static `react-native-audio-worklets` target; linked into `libappmodules.so` via autolinking |
+| `common/cpp/NativeAudioWorkletsModule.h` | Forwarding header — autolinking includes `<NativeAudioWorkletsModule.h>` |
+
+iOS uses `NativeAudioWorkletsModuleProvider.mm` + `codegenConfig.ios.modulesProvider` instead.
+
+RN guide: https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules
+
 ---
 
 *Maintenance: see [maintenance.md](maintenance.md).*

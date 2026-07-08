@@ -27,9 +27,6 @@ class BaseAudioContextHostObject : public HostObject {
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
 
-  JSI_HOST_FUNCTION_DECL(createWorkletSourceNode);
-  JSI_HOST_FUNCTION_DECL(createWorkletNode);
-  JSI_HOST_FUNCTION_DECL(createWorkletProcessingNode);
   JSI_HOST_FUNCTION_DECL(createRecorderAdapter);
   JSI_HOST_FUNCTION_DECL(createOscillator);
   JSI_HOST_FUNCTION_DECL(createStreamer);
@@ -46,6 +43,12 @@ class BaseAudioContextHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(createConvolver);
   JSI_HOST_FUNCTION_DECL(createWaveShaper);
   JSI_HOST_FUNCTION_DECL(createDelay);
+
+  /// @brief Access the underlying C++ audio context.
+  /// @return The underlying C++ audio context.
+  [[nodiscard]] const std::shared_ptr<BaseAudioContext> &getContext() const {
+    return context_;
+  }
 
  protected:
   std::shared_ptr<BaseAudioContext> context_;
