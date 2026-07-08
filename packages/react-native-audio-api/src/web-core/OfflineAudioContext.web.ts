@@ -3,6 +3,7 @@ import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext.web';
 import AnalyserNode from './AnalyserNode.web';
 import AudioDestinationNode from './AudioDestinationNode.web';
+import AudioListener from './AudioListener.web';
 import AudioBuffer from './AudioBuffer.web';
 import AudioBufferSourceNode from './AudioBufferSourceNode.web';
 import BiquadFilterNode from './BiquadFilterNode.web';
@@ -21,6 +22,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
 
   readonly destination: AudioDestinationNode;
+  readonly listener: AudioListener;
   readonly sampleRate: number;
 
   constructor(options: OfflineAudioContextOptions);
@@ -44,6 +46,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);
+    this.listener = new AudioListener(this, this.context.listener);
   }
 
   public get currentTime(): number {

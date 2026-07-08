@@ -12,6 +12,7 @@ import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 import AudioDestinationNode from './AudioDestinationNode';
+import AudioListener from './AudioListener';
 import BiquadFilterNode from './BiquadFilterNode';
 import ConstantSourceNode from './ConstantSourceNode';
 import ConvolverNode from './ConvolverNode';
@@ -29,12 +30,14 @@ import WorkletSourceNode from './WorkletSourceNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
+  readonly listener: AudioListener;
   readonly sampleRate: number;
   readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
     this.destination = new AudioDestinationNode(this, context.destination);
+    this.listener = new AudioListener(this, context.listener);
     this.sampleRate = context.sampleRate;
   }
 

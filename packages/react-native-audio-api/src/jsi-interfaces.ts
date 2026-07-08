@@ -55,6 +55,7 @@ export type ShareableWorkletCallback =
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
+  readonly listener: IAudioListener;
   readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
@@ -171,6 +172,18 @@ export interface IIIRFilterNode extends IAudioNode {
 }
 
 export interface IAudioDestinationNode extends IAudioNode {}
+
+export interface IAudioListener {
+  readonly positionX: IAudioParam;
+  readonly positionY: IAudioParam;
+  readonly positionZ: IAudioParam;
+  readonly forwardX: IAudioParam;
+  readonly forwardY: IAudioParam;
+  readonly forwardZ: IAudioParam;
+  readonly upX: IAudioParam;
+  readonly upY: IAudioParam;
+  readonly upZ: IAudioParam;
+}
 
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when: number): void;

@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/AudioListenerHostObject.h>
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
@@ -38,9 +39,11 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       promiseVendor_(std::make_shared<PromiseVendor>(runtime, callInvoker)),
       callInvoker_(callInvoker) {
   destination_ = std::make_shared<AudioDestinationNodeHostObject>(context_);
+  listener_ = std::make_shared<AudioListenerHostObject>(context_);
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, listener),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
@@ -75,6 +78,10 @@ BaseAudioContextHostObject::~BaseAudioContextHostObject() = default;
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
   return jsi::Object::createFromHostObject(runtime, destination_);
+}
+
+JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, listener) {
+  return jsi::Object::createFromHostObject(runtime, listener_);
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {

@@ -29,6 +29,30 @@ describe('Mock Integration Tests', () => {
       expect(context.destination.numberOfOutputs).toBe(0);
     });
 
+    it('should expose an AudioListener with nine spatialization params', () => {
+      const context = new MockAPI.AudioContext();
+      const listener = context.listener;
+
+      expect(listener).toBeDefined();
+
+      // Spec defaults: position (0, 0, 0), forward (0, 0, -1), up (0, 1, 0)
+      expect(listener.positionX.value).toBe(0);
+      expect(listener.positionY.value).toBe(0);
+      expect(listener.positionZ.value).toBe(0);
+      expect(listener.forwardX.value).toBe(0);
+      expect(listener.forwardY.value).toBe(0);
+      expect(listener.forwardZ.value).toBe(-1);
+      expect(listener.upX.value).toBe(0);
+      expect(listener.upY.value).toBe(1);
+      expect(listener.upZ.value).toBe(0);
+
+      // Params accept direct writes and automation
+      listener.positionX.value = 5;
+      expect(listener.positionX.value).toBe(5);
+      listener.positionY.setValueAtTime(2, 0);
+      expect(listener.positionY.value).toBe(2);
+    });
+
     it('should create an audio graph with effects chain', () => {
       const context = new MockAPI.AudioContext();
 
