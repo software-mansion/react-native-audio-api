@@ -340,6 +340,21 @@ describe('React Native Audio API Mocks', () => {
       expect(buffer).toBeInstanceOf(MockAPI.AudioBuffer);
     });
 
+    it('should get audio duration', async () => {
+      await expect(
+        MockAPI.getAudioDuration('file:///tmp/audio.wav')
+      ).resolves.toBe(1);
+    });
+
+    it('should reject unsupported audio duration inputs', async () => {
+      await expect(
+        MockAPI.getAudioDuration('data:audio/wav;base64,AAAA')
+      ).rejects.toThrow('Base64 source decoding is not currently supported');
+      await expect(MockAPI.getAudioDuration('blob:audio')).rejects.toThrow(
+        'Data Blob string decoding is not currently supported.'
+      );
+    });
+
     it('should concatenate audio files', async () => {
       const outputPath = await MockAPI.concatAudioFiles(
         ['file:///tmp/recording-1.m4a', 'file:///tmp/recording-2.m4a'],

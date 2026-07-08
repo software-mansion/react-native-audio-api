@@ -156,10 +156,10 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
     return CloseFileResult ::Err("File is not open");
   }
 
-  // Joins the worker before the encoder teardown below.
-  cleanupPreallocatedInputPool();
-
   isFileOpen_.store(false, std::memory_order_release);
+
+  // Drains the worker queue before the encoder teardown below.
+  cleanupPreallocatedInputPool();
 
   if (encoder_ != nullptr) {
     ma_encoder_uninit(encoder_.get());

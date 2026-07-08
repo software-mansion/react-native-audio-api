@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/BaseAudioContext.h>
@@ -12,7 +13,11 @@ namespace audioapi {
 WaveShaperNodeHostObject::WaveShaperNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const WaveShaperOptions &options)
-    : AudioNodeHostObject(context->createWaveShaper(options), options),
+    : AudioNodeHostObject(
+          context->getGraph(),
+          std::make_unique<WaveShaperNode>(context, options),
+          options),
+      waveShaperNode_(typedAudioNode<WaveShaperNode>(node_)),
       oversample_(options.oversample) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(WaveShaperNodeHostObject, oversample));
   addSetters(JSI_EXPORT_PROPERTY_SETTER(WaveShaperNodeHostObject, oversample));
@@ -24,36 +29,50 @@ JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, oversample) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(WaveShaperNodeHostObject, oversample) {
-  auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
-
+  auto handle = node_->handle;
   auto oversample = js_enum_parser::overSampleTypeFromString(value.asString(runtime).utf8(runtime));
-  auto event = [waveShaperNode, oversample](BaseAudioContext &) {
-    waveShaperNode->setOversample(oversample);
+
+  // Build all resamplers on the JS thread so the audio thread only does
+  // pointer swaps.
+  const auto sampleRate = waveShaperNode_->getContextSampleRate();
+  const auto channelCount = waveShaperNode_->getChannelCount();
+  auto update = std::make_unique<OversampleUpdate>();
+  update->type = oversample;
+  update->pairs.reserve(channelCount);
+  for (size_t i = 0; i < channelCount; ++i) {
+    update->pairs.emplace_back(WaveShaper::makeResamplers(oversample, sampleRate));
+  }
+
+  auto event = [handle, node = waveShaperNode_, update = std::move(update)](
+                   BaseAudioContext &context) mutable {
+    node->setOversample(std::move(update), *context.getDisposer());
   };
-  waveShaperNode->scheduleAudioEvent(std::move(event));
+  waveShaperNode_->scheduleAudioEvent(std::move(event));
   oversample_ = oversample;
 }
 
 JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
-  auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
+  auto handle = node_->handle;
 
   std::shared_ptr<AudioArray> curve = nullptr;
 
   if (args[0].isObject()) {
     auto arrayBuffer =
         args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-    // *2 because it is copied to internal curve array for processing
-    thisValue.asObject(runtime).setExternalMemoryPressure(runtime, arrayBuffer.size(runtime) * 2);
+    // *2 because the curve is copied into an internal AudioArray for processing.
+    // Include the node's own base footprint; otherwise we'd clobber it.
+    thisValue.asObject(runtime).setExternalMemoryPressure(
+        runtime, getMemoryPressure() + arrayBuffer.size(runtime) * 2);
 
     auto size = static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float));
     curve =
         std::make_shared<AudioArray>(reinterpret_cast<float *>(arrayBuffer.data(runtime)), size);
   }
 
-  auto event = [waveShaperNode, curve](BaseAudioContext &) {
-    waveShaperNode->setCurve(curve);
+  auto event = [handle, node = waveShaperNode_, curve](BaseAudioContext &) {
+    node->setCurve(curve);
   };
-  waveShaperNode->scheduleAudioEvent(std::move(event));
+  waveShaperNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
 }

@@ -1,4 +1,5 @@
 #include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
@@ -16,13 +17,15 @@ class GainTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
+  std::shared_ptr<AudioDestinationNode> destination;
   static constexpr int sampleRate = 44100;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
-    context->initialize();
+    destination = std::make_shared<AudioDestinationNode>(context);
+    context->initialize(destination.get());
   }
 };
 
@@ -35,15 +38,17 @@ class TestableGainNode : public GainNode {
     getGainParam()->setValue(value);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return GainNode::processNode(processingBuffer, framesToProcess);
+  void setInputBuffer(const std::shared_ptr<DSPAudioBuffer> &input) {
+    audioBuffer_ = input;
+  }
+
+  void processNode(int framesToProcess) override {
+    GainNode::processNode(framesToProcess);
   }
 };
 
 TEST_F(GainTest, GainCanBeCreated) {
-  auto gain = context->createGain(GainOptions());
+  auto gain = std::make_shared<GainNode>(context, GainOptions());
   ASSERT_NE(gain, nullptr);
 }
 
@@ -58,7 +63,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectly) {
     (*buffer->getChannel(0))[i] = i + 1;
   }
 
-  auto resultBuffer = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
+  gainNode.setInputBuffer(buffer);
+  gainNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = gainNode.getOutputBuffer();
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], (i + 1) * GAIN_VALUE);
   }
@@ -76,7 +83,9 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
     (*buffer->getChannel(1))[i] = -i - 1;
   }
 
-  auto resultBuffer = gainNode.processNode(buffer, FRAMES_TO_PROCESS);
+  gainNode.setInputBuffer(buffer);
+  gainNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = gainNode.getOutputBuffer();
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], (i + 1) * GAIN_VALUE);
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(1))[i], (-i - 1) * GAIN_VALUE);

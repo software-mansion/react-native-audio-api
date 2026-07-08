@@ -1,5 +1,9 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
+#include <audioapi/core/effects/delay/DelayLine.h>
+#include <audioapi/core/effects/delay/DelayReader.h>
+#include <audioapi/core/effects/delay/DelayRingBufferOp.h>
+#include <audioapi/core/effects/delay/DelayWriter.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -19,97 +23,27 @@ DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext> &context, const Del
                   1), // +1 to enable delayTime equal to maxDelayTime
               channelCount_,
               context->getSampleRate())) {
-  isInitialized_.store(true, std::memory_order_release);
+  delayLine_ = std::make_shared<DelayLine>(delayBuffer_, delayTimeParam_);
+
+  // Tail processing belongs to the writer: when the writer's upstream goes
+  // silent, the writer must keep filling the ring with zeros for one full
+  // `maxDelayTime` so that the reader naturally drains to silence. The
+  // reader has no audio inputs (its data comes from the shared ring) and is
+  // GC'd via the linkNodes(reader, writer) propagation, so it sets
+  // `requiresTailProcessing = false` to opt out of the base-class state
+  // machine that would otherwise consider it permanently "silent".
+  AudioNodeOptions readerOptions = options;
+  // Reader has no audio inputs (its data comes from the shared ring) and
+  // does not own the tail — see comment above.
+  readerOptions.numberOfInputs = 0;
+  readerOptions.requiresTailProcessing = false;
+
+  delayReader_ = std::make_unique<DelayReader>(context, readerOptions, delayLine_);
+  delayWriter_ = std::make_unique<DelayWriter>(context, options, delayLine_);
 }
 
 std::shared_ptr<AudioParam> DelayNode::getDelayTimeParam() const {
   return delayTimeParam_;
-}
-
-void DelayNode::onInputDisabled() {
-  numberOfEnabledInputNodes_ -= 1;
-  if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
-    signalledToStop_ = true;
-    remainingFrames_ = static_cast<int>(delayTimeParam_->getValue() * getContextSampleRate());
-  }
-}
-
-void DelayNode::delayBufferOperation(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess,
-    size_t &operationStartingIndex,
-    DelayNode::BufferAction action) {
-  size_t processingBufferStartIndex = 0;
-
-  // handle buffer wrap around
-  if (operationStartingIndex + framesToProcess > delayBuffer_->getSize()) {
-    auto framesToEnd = static_cast<int>(delayBuffer_->getSize() - operationStartingIndex);
-
-    if (action == BufferAction::WRITE) {
-      delayBuffer_->sum(
-          *processingBuffer, processingBufferStartIndex, operationStartingIndex, framesToEnd);
-    } else { // READ
-      processingBuffer->sum(
-          *delayBuffer_, operationStartingIndex, processingBufferStartIndex, framesToEnd);
-      delayBuffer_->zero(operationStartingIndex, framesToEnd);
-    }
-
-    operationStartingIndex = 0;
-    processingBufferStartIndex += framesToEnd;
-    framesToProcess -= framesToEnd;
-  }
-
-  if (action == BufferAction::WRITE) {
-    delayBuffer_->sum(
-        *processingBuffer, processingBufferStartIndex, operationStartingIndex, framesToProcess);
-    processingBuffer->zero();
-  } else { // READ
-    processingBuffer->sum(
-        *delayBuffer_, operationStartingIndex, processingBufferStartIndex, framesToProcess);
-    delayBuffer_->zero(operationStartingIndex, framesToProcess);
-  }
-
-  operationStartingIndex += framesToProcess;
-}
-
-// delay buffer always has channelCount_ channels
-// processing is split into two parts
-// 1. writing to delay buffer (mixing if needed) from processing buffer
-// 2. reading from delay buffer to processing buffer (mixing if needed) with delay
-std::shared_ptr<DSPAudioBuffer> DelayNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
-  // handling tail processing
-  if (signalledToStop_) {
-    if (remainingFrames_ <= 0) {
-      disable();
-      signalledToStop_ = false;
-      return processingBuffer;
-    }
-
-    delayBufferOperation(
-        processingBuffer, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
-    remainingFrames_ -= framesToProcess;
-    return processingBuffer;
-  }
-
-  // normal processing
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr) {
-    processingBuffer->zero();
-    return processingBuffer;
-  }
-
-  auto delayTime = delayTimeParam_->processKRateParam(framesToProcess, context->getCurrentTime());
-  size_t writeIndex =
-      static_cast<size_t>(static_cast<float>(readIndex_) + delayTime * context->getSampleRate()) %
-      delayBuffer_->getSize();
-  delayBufferOperation(
-      processingBuffer, framesToProcess, writeIndex, DelayNode::BufferAction::WRITE);
-  delayBufferOperation(
-      processingBuffer, framesToProcess, readIndex_, DelayNode::BufferAction::READ);
-
-  return processingBuffer;
 }
 
 } // namespace audioapi

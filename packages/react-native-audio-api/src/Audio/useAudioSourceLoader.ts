@@ -13,11 +13,11 @@ import type BaseAudioContext from '../core/BaseAudioContext';
 import { probeDuration } from '../core/AudioFileUtils';
 import { NotSupportedError } from '../errors';
 import { NativeAudioAPIModule } from '../specs';
-import { base64ToArrayBuffer } from '../utils';
+import { base64ToArrayBuffer, isFfmpegEnabled } from '../utils';
 import {
-  DEFAULT_METADATA_SEGMENT_BYTES,
-  supportsMetadataProbe,
-} from '../utils/metadataPrefetching';
+  isRemoteHttpUrl,
+  loadRemoteHttpSource,
+} from '../utils/remoteHttpSource';
 import { AudioFileSourceNode } from './AudioFileSourceNode';
 import type { AudioSource, PreloadType } from './types';
 import { getSourceHeaders } from './utils';
@@ -27,6 +27,7 @@ type UseAudioSourceLoaderParams = {
   path: string;
   source: AudioSource;
   preloadMode: PreloadType;
+  forceDownload: boolean;
   loop: boolean;
   playbackRate: number;
   preservesPitch: boolean;
@@ -53,6 +54,7 @@ export function useAudioSourceLoader({
   path,
   source,
   preloadMode,
+  forceDownload,
   loop,
   playbackRate,
   preservesPitch,
@@ -107,6 +109,7 @@ export function useAudioSourceLoader({
 
     const node = context.context.createFileSource({
       source: nextSource,
+      headers: getSourceHeaders(source),
       loop,
       volume: initialVolume,
       playbackRate: initialPlaybackRate,
@@ -140,7 +143,7 @@ export function useAudioSourceLoader({
     }
 
     return true;
-  }, [autoPlay, context, effectiveVolumeRef, loop]);
+  }, [autoPlay, context, effectiveVolumeRef, loop, source]);
 
   const loadPlaybackSource = useCallback(async (): Promise<boolean> => {
     if (!path) {
@@ -150,14 +153,16 @@ export function useAudioSourceLoader({
     isFetchingCancelled.current = false;
     setReady(false);
     onLoadStartRef.current();
+
     const headers = getSourceHeaders(source);
 
     try {
-      if (path.startsWith('http') && !path.endsWith('.m3u8')) {
-        const arrayBuffer = await fetch(path, { headers }).then((response) =>
-          response.arrayBuffer()
+      if (isRemoteHttpUrl(path)) {
+        sourceRef.current = await loadRemoteHttpSource(
+          path,
+          headers,
+          forceDownload
         );
-        sourceRef.current = arrayBuffer;
       } else if (
         Platform.OS === 'android' &&
         !__DEV__ &&
@@ -187,10 +192,10 @@ export function useAudioSourceLoader({
       setReady(false);
       return false;
     }
-  }, [path, source, spawnFileSource]);
+  }, [forceDownload, path, source, spawnFileSource]);
 
   const probeMetadataOnly = useCallback(async (): Promise<void> => {
-    if (!path.startsWith('http') || !supportsMetadataProbe(path)) {
+    if (!isRemoteHttpUrl(path)) {
       setReady(true);
       return;
     }
@@ -199,13 +204,13 @@ export function useAudioSourceLoader({
     setReady(false);
     onLoadStartRef.current();
 
+    const headers = getSourceHeaders(source);
+
     try {
       const probedDuration = await probeDuration(
         path,
-        DEFAULT_METADATA_SEGMENT_BYTES,
-        DEFAULT_METADATA_SEGMENT_BYTES,
         context?.sampleRate,
-        getSourceHeaders(source)
+        headers
       );
 
       if (probedDuration && !isFetchingCancelled.current) {
@@ -251,7 +256,12 @@ export function useAudioSourceLoader({
     }
 
     if (preloadMode === 'metadata') {
-      probeMetadataOnly();
+      if (!isFfmpegEnabled()) {
+        setReady(true);
+      } else {
+        probeMetadataOnly();
+      }
+
       return () => {
         isFetchingCancelled.current = true;
         disposeSource();

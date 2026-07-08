@@ -108,7 +108,9 @@ CloseFileResult FFmpegAudioFileWriter::closeFile() {
     return CloseFileResult::Err("File is not open");
   }
 
-  // Joins the worker before draining/finalizing the encoder below.
+  isFileOpen_.store(false, std::memory_order_release);
+
+  // Drains the worker queue before flushing/finalizing the encoder below.
   cleanupPreallocatedInputPool();
 
   result = processFifo(true);
@@ -466,10 +468,12 @@ CloseFileResult FFmpegAudioFileWriter::finalizeOutput() {
     avio_closep(&formatCtx_->pb);
   }
 
-  double durationInSeconds = getCurrentDuration();
+  double durationInSeconds = 0.0;
+  if (encoderCtx_ != nullptr && encoderCtx_->sample_rate > 0) {
+    durationInSeconds = static_cast<double>(nextPts_) / encoderCtx_->sample_rate;
+  }
 
   filePath_ = "";
-  isFileOpen_.store(false, std::memory_order_release);
 
   return CloseFileResult::Ok({fileSizeInMB, durationInSeconds});
 }

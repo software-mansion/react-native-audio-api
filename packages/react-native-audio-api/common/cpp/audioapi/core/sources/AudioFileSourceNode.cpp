@@ -43,17 +43,18 @@ AudioFileSourceNode::AudioFileSourceNode(
 
   const bool useFilePath = !options.filePath.empty();
   const bool useData = !options.data.empty();
+  const bool useUrl = !options.sourceUrl.empty();
 
-  if (!useFilePath && !useData) {
-    assert(false && "AudioFileSourceNode requires either a file path or memory data to initialize");
+  if (!useFilePath && !useData && !useUrl) {
+    assert(
+        false &&
+        "AudioFileSourceNode requires a file path, remote URL, or memory data to initialize");
     return;
   }
 
   if (!initDecoder(context, options)) {
     return;
   }
-
-  isInitialized_.store(true, std::memory_order_release);
 }
 
 AudioFileSourceNode::~AudioFileSourceNode() {
@@ -103,6 +104,8 @@ bool AudioFileSourceNode::initDecoder(
   SeekDecoderDaemonOptions daemonOptions{
       .requiresFFmpeg = options.requiresFFmpeg,
       .filePath = std::move(options.filePath),
+      .sourceUrl = std::move(options.sourceUrl),
+      .httpHeaders = std::move(options.httpHeaders),
       .memoryData = std::move(options.data),
       .contextSampleRate = context->getSampleRate(),
       .loop = options.loop};
@@ -367,21 +370,16 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::handleEndOfStreamPlayback(
   return processingBuffer;
 }
 
-void AudioFileSourceNode::connect(const std::shared_ptr<AudioNode> &node) {
-  if (isRoutedThroughMediaElement()) {
-    return;
-  }
-
-  AudioScheduledSourceNode::connect(node);
-}
+//void AudioFileSourceNode::connect(const std::shared_ptr<AudioNode> &node) {
+//  if (isRoutedThroughMediaElement()) {
+//    return;
+//  }
+//
+//  AudioScheduledSourceNode::connect(node);
+//}
+//
 
 void AudioFileSourceNode::start(double when) {
-  if (!isRoutedThroughMediaElement()) {
-    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-      connect(context->getDestination());
-    }
-  }
-
   AudioScheduledSourceNode::start(when);
   filePaused_ = false;
   endOfStreamStopPending_ = false;
@@ -413,9 +411,9 @@ void AudioFileSourceNode::ensureConnectedForDirectPlayback() {
     return;
   }
 
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    connect(context->getDestination());
-  }
+  //  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+  //    connect(context->getDestination());
+  //  }
 }
 
 bool AudioFileSourceNode::isCurrentMediaElementSource(uint64_t bindingId) const {
@@ -440,7 +438,7 @@ void AudioFileSourceNode::disable() {
 }
 
 void AudioFileSourceNode::seekToTime(double seconds) {
-  if (decoderState_ == nullptr || !isInitialized_.load(std::memory_order_acquire)) {
+  if (decoderState_ == nullptr) {
     return;
   }
   const double dur = duration_;
@@ -626,14 +624,12 @@ size_t AudioFileSourceNode::renderWithoutPitchPreservation(
   return inputFrames;
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void AudioFileSourceNode::processNode(int framesToProcess) {
   if (isRoutedThroughMediaElement()) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
-  return processDecodedOutput(processingBuffer, framesToProcess);
+  processDecodedOutput(framesToProcess);
 }
 
 std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPreflight(
@@ -677,12 +673,15 @@ std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPrefli
   return std::nullopt;
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void AudioFileSourceNode::processDecodedOutput(
+    int framesToProcess,
+    const std::shared_ptr<DSPAudioBuffer> &outputBuffer) {
+  const std::shared_ptr<DSPAudioBuffer> &processingBuffer =
+      outputBuffer != nullptr ? outputBuffer : audioBuffer_;
+
   std::shared_ptr<BaseAudioContext> context;
-  if (auto early = renderPreflight(processingBuffer, framesToProcess, context)) {
-    return *early;
+  if (renderPreflight(processingBuffer, framesToProcess, context)) {
+    return;
   }
 
   size_t startOffset = 0;
@@ -697,7 +696,7 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBuffer->zero();
-    return processingBuffer;
+    return;
   }
 
   if (startOffset > 0) {
@@ -715,7 +714,7 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
 
   if (!hasFreshChunk && pendingDecoderChunk_.size == 0) {
     processingBuffer->zero();
-    return processingBuffer;
+    return;
   }
 
   if (hasFreshChunk && incoming.state == StreamState::END_OF_STREAM) {
@@ -725,7 +724,8 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
 
     endOfStreamDrainPending_ = true;
     eofDrainRate_ = targetPlaybackRate_;
-    return handleEndOfStreamPlayback(processingBuffer, framesToProcess, targetPlaybackRate_);
+    handleEndOfStreamPlayback(processingBuffer, framesToProcess, targetPlaybackRate_);
+    return;
   }
 
   bool forceFlushEvent = false;
@@ -778,8 +778,6 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::processDecodedOutput(
   if (isStopScheduled()) {
     handleStopScheduled();
   }
-
-  return processingBuffer;
 }
 
 } // namespace audioapi

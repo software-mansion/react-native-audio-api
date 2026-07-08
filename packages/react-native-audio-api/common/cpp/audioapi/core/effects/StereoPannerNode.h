@@ -18,14 +18,20 @@ class StereoPannerNode : public AudioNode {
       const StereoPannerOptions &options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
+  [[nodiscard]] std::shared_ptr<DSPAudioBuffer> getOutputBuffer() const override;
+  [[nodiscard]] std::shared_ptr<DSPAudioBuffer> getNegotiatedBuffer() const override;
+  void setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) override;
+  [[nodiscard]] size_t getUpstreamChannelCount(size_t negotiatedChannelCount) const override;
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
+  [[nodiscard]] const DSPAudioBuffer *getOutput() const override {
+    return outputBuffer_.get();
+  }
 
  private:
   const std::shared_ptr<AudioParam> panParam_;
+  const std::shared_ptr<DSPAudioBuffer> outputBuffer_;
 };
 
 } // namespace audioapi

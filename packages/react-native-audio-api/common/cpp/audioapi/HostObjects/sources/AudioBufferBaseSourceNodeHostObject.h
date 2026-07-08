@@ -14,7 +14,8 @@ class AudioParamHostObject;
 class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit AudioBufferBaseSourceNodeHostObject(
-      const std::shared_ptr<AudioBufferBaseSourceNode> &node,
+      const std::shared_ptr<utils::graph::Graph> &graph,
+      std::unique_ptr<AudioNode> node,
       const BaseAudioBufferSourceOptions &options);
   ~AudioBufferBaseSourceNodeHostObject() override;
   DELETE_COPY_AND_MOVE(AudioBufferBaseSourceNodeHostObject);
@@ -30,6 +31,8 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   JSI_HOST_FUNCTION_DECL(getOutputLatency);
 
  protected:
+  AudioBufferBaseSourceNode *bufferBaseSourceNode_ = nullptr;
+
   std::shared_ptr<AudioParamHostObject> detuneParam_;
   std::shared_ptr<AudioParamHostObject> playbackRateParam_;
 

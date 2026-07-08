@@ -93,7 +93,7 @@ class IIRFilterTest : public ::testing::Test {
 TEST_F(IIRFilterTest, IIRFilterCanBeCreated) {
   const std::vector<float> feedforward = {1.0};
   const std::vector<float> feedback = {1.0};
-  auto node = context->createIIRFilter(IIRFilterOptions(feedforward, feedback));
+  auto node = std::make_shared<IIRFilterNode>(context, IIRFilterOptions(feedforward, feedback));
   ASSERT_NE(node, nullptr);
 }
 

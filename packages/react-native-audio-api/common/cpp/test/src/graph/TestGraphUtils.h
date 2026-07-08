@@ -5,10 +5,14 @@
 #define RN_AUDIO_API_TEST true // for intellisense
 #endif
 
+#include <audioapi/core/AudioNode.h>
+#include <audioapi/core/AudioParam.h>
 #include <audioapi/core/OfflineAudioContext.h>
-#include <audioapi/core/utils/graph/AudioGraph.hpp>
-#include <audioapi/core/utils/graph/HostGraph.hpp>
-#include <audioapi/core/utils/graph/HostNode.hpp>
+#include <audioapi/core/destinations/AudioDestinationNode.h>
+#include <audioapi/core/utils/graph/AudioGraph.h>
+#include <audioapi/core/utils/graph/BridgeNode.h>
+#include <audioapi/core/utils/graph/HostGraph.h>
+#include <audioapi/core/utils/graph/HostNode.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <atomic>
 #include <functional>
@@ -28,10 +32,16 @@ inline std::shared_ptr<BaseAudioContext> getGraphTestContext() {
     auto eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     auto ctx =
         std::make_shared<OfflineAudioContext>(2, 1024, 44100.0f, eventRegistry, RuntimeRegistry{});
-    ctx->initialize();
     return ctx;
   }();
   return context;
+}
+
+// ── MockAudioParam ────────────────────────────────────────────────────────
+// Real AudioParam for use in graph tests that need valid param pointers.
+
+inline std::shared_ptr<AudioParam> createMockAudioParam() {
+  return std::make_shared<AudioParam>(0.0f, -1.0f, 1.0f, getGraphTestContext());
 }
 
 struct MockNode : AudioNode {
@@ -47,22 +57,36 @@ struct MockNode : AudioNode {
     destructible_.store(value, std::memory_order_release);
   }
 
- private:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBus,
-      int) override {
-    return processingBus;
+  void setProcessable() {
+    setProcessableState(PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE);
   }
+
+ private:
+  void processNode(int) override {}
 
   std::atomic<bool> destructible_;
 };
 
-// ── MockHostNode ──────────────────────────────────────────────────────────
-// RAII wrapper around HostNode<MockNode> for testing the HostNode lifecycle.
+// ── NonProcessableMockNode ────────────────────────────────────────────────
+// Pure GraphObject subclass that is not processable. Used to test
+// iter() filtering at the AudioGraph level without depending on BridgeNode.
 
-class MockHostNode : public HostNode<MockNode> {
+struct NonProcessableMockNode : GraphObject {
+  [[nodiscard]] bool isProcessable() const override {
+    return false;
+  }
+
+  [[nodiscard]] bool canBeDestructed() const override {
+    return true;
+  }
+};
+
+// ── MockHostNode ──────────────────────────────────────────────────────────
+// RAII wrapper around HostNode for testing the HostNode lifecycle.
+
+class MockHostNode : public HostNode {
  public:
-  explicit MockHostNode(std::shared_ptr<Graph<MockNode>> graph, bool destructible = true)
+  explicit MockHostNode(std::shared_ptr<Graph> graph, bool destructible = true)
       : HostNode(std::move(graph), std::make_unique<MockNode>(destructible)) {}
 };
 
@@ -87,10 +111,14 @@ struct ProcessableMockNode : MockNode {
       ProcessFn processFn = nullptr,
       int initialValue = 0,
       bool destructible = true)
-      : MockNode(destructible), value(initialValue), processFn_(std::move(processFn)) {}
+      : MockNode(destructible), value(initialValue), processFn_(std::move(processFn)) {
+    setProcessable();
+  }
 
-  /// @brief Called by the audio thread with the inputs range from iter().
-  /// Collects input values into a stack buffer — no heap allocation.
+  /// @brief Called by the audio thread with an input range from `Graph::iter()`.
+  ///
+  /// Supports both strongly-typed test ranges and GraphObject-based ranges,
+  /// collecting values into a stack buffer with no heap allocation.
   template <std::ranges::input_range R>
   void process(R &&inputs) {
     if (!processFn_)
@@ -98,8 +126,18 @@ struct ProcessableMockNode : MockNode {
     int buf[kMaxInputs];
     size_t n = 0;
     for (const auto &input : inputs) {
-      if (n < kMaxInputs)
+      if (n >= kMaxInputs) {
+        continue;
+      }
+
+      if constexpr (requires { input.value.load(std::memory_order_acquire); }) {
         buf[n++] = input.value.load(std::memory_order_acquire);
+      } else {
+        auto *typed = dynamic_cast<const ProcessableMockNode *>(&input);
+        if (typed) {
+          buf[n++] = typed->value.load(std::memory_order_acquire);
+        }
+      }
     }
     value.store(processFn_({buf, n}), std::memory_order_release);
   }
@@ -115,22 +153,21 @@ class TestGraphUtils {
   /// @brief Creates a paired AudioGraph + HostGraph from an adjacency list.
   /// @param adjacencyList adjacencyList[i] = {j, k} means edges i→j, i→k
   /// @return (AudioGraph, HostGraph) pair with consistent structure
-  static std::pair<AudioGraph<MockNode>, HostGraph<MockNode>> createTestGraph(
+  static std::pair<AudioGraph, HostGraph> createTestGraph(
       std::vector<std::vector<size_t>> adjacencyList);
 
   /// @brief Converts AudioGraph to adjacency list for equality comparison.
   static std::vector<std::vector<size_t>> convertAudioGraphToAdjacencyList(
-      const AudioGraph<MockNode> &audioGraph);
+      const AudioGraph &audioGraph);
 
   /// @brief Converts HostGraph to adjacency list for equality comparison.
   static std::vector<std::vector<size_t>> convertHostGraphToAdjacencyList(
-      const HostGraph<MockNode> &hostGraph);
+      const HostGraph &hostGraph);
 
  private:
-  static HostGraph<MockNode> makeFromAdjacencyList(
-      const std::vector<std::vector<size_t>> &adjacencyList);
+  static HostGraph makeFromAdjacencyList(const std::vector<std::vector<size_t>> &adjacencyList);
 
-  static AudioGraph<MockNode> createAudioGraphFromHostGraph(const HostGraph<MockNode> &hostGraph);
+  static AudioGraph createAudioGraphFromHostGraph(const HostGraph &hostGraph);
 };
 
 } // namespace audioapi::utils::graph

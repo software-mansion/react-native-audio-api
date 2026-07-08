@@ -52,9 +52,7 @@ public:
   explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context);
 
 protected:
-  std::shared_ptr<DSPAudioBuffer>
-  processNode(const std::shared_ptr<DSPAudioBuffer> &buffer,
-              int framesToProcess) override;
+  void processNode(int framesToProcess) override;
 
 // highlight-start
 private:
@@ -79,14 +77,11 @@ private:
 namespace audioapi {
     MyProcessorNode::MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context)
         //highlight-next-line
-        : AudioNode(context), gain(0.5) {
-        isInitialized_.store(true, std::memory_order_release);
-    }
+        : AudioNode(context), gain(0.5) {}
 
-    std::shared_ptr<DSPAudioBuffer> MyProcessorNode::processNode(const std::shared_ptr<DSPAudioBuffer> &buffer,
-                                    int framesToProcess) {
+    void MyProcessorNode::processNode(int framesToProcess) {
       // highlight-start
-      for (int channel = 0; channel < buffer->getNumberOfChannels(); ++channel) {
+      for (int channel = 0; channel < audioBuffer_->getNumberOfChannels(); ++channel) {
         auto *audioArray = bus->getChannel(channel);
         for (size_t i = 0; i < framesToProcess; ++i) {
           // Apply gain to each sample in the audio array

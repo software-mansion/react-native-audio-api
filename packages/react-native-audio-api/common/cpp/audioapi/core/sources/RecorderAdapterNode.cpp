@@ -67,12 +67,10 @@ void RecorderAdapterNode::adapterCleanup() {
   isInitialized_.store(false, std::memory_order_release);
 }
 
-std::shared_ptr<DSPAudioBuffer> RecorderAdapterNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void RecorderAdapterNode::processNode(int framesToProcess) {
   if (!isInitialized_.load(std::memory_order_acquire)) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
   if (needsResampling_) {
@@ -81,8 +79,7 @@ std::shared_ptr<DSPAudioBuffer> RecorderAdapterNode::processNode(
     readFrames(*adapterOutputBuffer_, framesToProcess);
   }
 
-  processingBuffer->sum(*adapterOutputBuffer_, ChannelInterpretation::SPEAKERS);
-  return processingBuffer;
+  audioBuffer_->sum(*adapterOutputBuffer_, ChannelInterpretation::SPEAKERS);
 }
 
 void RecorderAdapterNode::processResampled(int framesToProcess) {

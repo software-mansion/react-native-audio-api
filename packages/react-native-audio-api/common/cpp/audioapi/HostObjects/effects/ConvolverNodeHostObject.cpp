@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
@@ -18,7 +19,11 @@ namespace audioapi {
 ConvolverNodeHostObject::ConvolverNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const ConvolverOptions &options)
-    : AudioNodeHostObject(context->createConvolver(options), options),
+    : AudioNodeHostObject(
+          context->getGraph(),
+          std::make_unique<ConvolverNode>(context, options),
+          options),
+      convolverNode_(typedAudioNode<ConvolverNode>(node_)),
       normalize_(!options.disableNormalization) {
   if (options.buffer != nullptr) {
     setBuffer(options.buffer);
@@ -30,7 +35,7 @@ ConvolverNodeHostObject::ConvolverNodeHostObject(
 }
 
 JSI_PROPERTY_GETTER_IMPL(ConvolverNodeHostObject, normalize) {
-  return jsi::Value(normalize_);
+  return {normalize_};
 }
 
 JSI_PROPERTY_SETTER_IMPL(ConvolverNodeHostObject, normalize) {
@@ -44,8 +49,8 @@ JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   }
 
   auto bufferHostObject = args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-  thisValue.asObject(runtime).setExternalMemoryPressure(
-      runtime, bufferHostObject->getSizeInBytes());
+  irBytes_ = bufferHostObject->getSizeInBytes();
+  thisValue.asObject(runtime).setExternalMemoryPressure(runtime, getMemoryPressure());
 
   setBuffer(bufferHostObject->audioBuffer_);
 
@@ -57,16 +62,16 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
     return;
   }
 
-  auto convolverNode = std::static_pointer_cast<ConvolverNode>(node_);
+  irBytes_ = buffer->getSize() * buffer->getNumberOfChannels() * sizeof(float);
 
   auto copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
 
   float scaleFactor = 1.0f;
   if (normalize_) {
-    scaleFactor = convolverNode->calculateNormalizationScale(copiedBuffer);
+    scaleFactor = convolverNode_->calculateNormalizationScale(copiedBuffer);
   }
 
-  auto threadPool = std::make_shared<ThreadPool>(4);
+  auto threadPool = std::make_shared<ConvolverThreadPool>(4);
   std::vector<std::unique_ptr<Convolver>> convolvers;
   for (size_t i = 0; i < copiedBuffer->getNumberOfChannels(); ++i) {
     AudioArray channelData(*copiedBuffer->getChannel(i));
@@ -81,14 +86,14 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   }
 
   auto internalBuffer = std::make_shared<DSPAudioBuffer>(
-      RENDER_QUANTUM_SIZE * 2, convolverNode->getChannelCount(), copiedBuffer->getSampleRate());
+      RENDER_QUANTUM_SIZE * 2, convolverNode_->getChannelCount(), copiedBuffer->getSampleRate());
   auto intermediateBuffer = std::make_shared<DSPAudioBuffer>(
       RENDER_QUANTUM_SIZE, convolvers.size(), copiedBuffer->getSampleRate());
 
   struct SetupData {
     std::shared_ptr<AudioBuffer> buffer;
     std::vector<std::unique_ptr<Convolver>> convolvers;
-    std::shared_ptr<ThreadPool> threadPool;
+    std::shared_ptr<ConvolverThreadPool> threadPool;
     std::shared_ptr<DSPAudioBuffer> internalBuffer;
     std::shared_ptr<DSPAudioBuffer> intermediateBuffer;
     float scaleFactor;
@@ -102,15 +107,16 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
       .intermediateBuffer = intermediateBuffer,
       .scaleFactor = scaleFactor});
 
-  auto event = [convolverNode, setupData](BaseAudioContext &) {
-    convolverNode->setBuffer(
+  auto event = [node = convolverNode_, setupData](BaseAudioContext &context) {
+    node->setBuffer(
         setupData->buffer,
         std::move(setupData->convolvers),
         setupData->threadPool,
         setupData->internalBuffer,
         setupData->intermediateBuffer,
         setupData->scaleFactor);
+    context.getDisposer()->dispose(std::move(setupData));
   };
-  convolverNode->scheduleAudioEvent(std::move(event));
+  convolverNode_->scheduleAudioEvent(std::move(event));
 }
 } // namespace audioapi

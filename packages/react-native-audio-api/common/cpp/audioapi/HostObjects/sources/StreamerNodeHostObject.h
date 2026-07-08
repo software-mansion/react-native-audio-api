@@ -18,7 +18,10 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
   explicit StreamerNodeHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
       const StreamerOptions &options)
-      : AudioScheduledSourceNodeHostObject(context->createStreamer(options), options) {}
+      : AudioScheduledSourceNodeHostObject(
+            context->getGraph(),
+            std::make_unique<StreamerNode>(context, options),
+            options) {}
 
   [[nodiscard]] static size_t getSizeInBytes() {
     return SIZE;

@@ -1,4 +1,4 @@
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <iostream>
@@ -18,14 +18,14 @@ namespace audioapi::utils::graph {
 class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using MNode = MockNode;
-  using HNode = HostGraph<MNode>::Node;
-  using AGEvent = HostGraph<MNode>::AGEvent;
+  using HNode = HostGraph::Node;
+  using AGEvent = HostGraph::AGEvent;
 
-  static constexpr size_t kPayloadSize = HostGraph<MNode>::kDisposerPayloadSize;
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   std::mt19937_64 rng;
-  AudioGraph<MNode> audioGraph;
-  HostGraph<MNode> hostGraph;
+  AudioGraph audioGraph;
+  HostGraph hostGraph;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::vector<HNode *> liveNodes;
   size_t nextId = 0;
@@ -37,7 +37,8 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
   // ── Helpers ─────────────────────────────────────────────────────────────
 
   HNode *doAddNode() {
-    auto handle = std::make_shared<NodeHandle<MNode>>(0, std::make_unique<MNode>());
+    std::unique_ptr<GraphObject> obj = std::make_unique<MNode>();
+    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     size_t id = nextId++;
     hostNode->test_node_identifier__ = id;

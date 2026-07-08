@@ -44,6 +44,11 @@ set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs)
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
 
+# Debug-only allocation auditor used by BaseAudioContext::processGraph (mirrors iOS podspec).
+target_sources(react-native-audio-api PRIVATE
+  $<$<CONFIG:Debug>:${COMMON_CPP_DIR}/test/src/graph/AudioThreadGuard.cpp>
+)
+
 if (NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)
     add_library(${lib} STATIC IMPORTED)
@@ -164,6 +169,11 @@ if (RN_AUDIO_API_FFMPEG_DISABLED)
     PRIVATE RN_AUDIO_API_FFMPEG_DISABLED=1
   )
 endif()
+
+target_compile_definitions(
+  react-native-audio-api
+  PRIVATE $<$<CONFIG:Debug>:DEBUG>
+)
 
 if (RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   target_compile_definitions(

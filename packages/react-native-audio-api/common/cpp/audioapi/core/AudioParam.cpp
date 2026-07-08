@@ -19,12 +19,11 @@ AudioParam::AudioParam(
       defaultValue_(defaultValue),
       minValue_(minValue),
       maxValue_(maxValue),
-      eventRenderQueue_(defaultValue),
-      audioBuffer_(
-          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {
-  inputBuffers_.reserve(4);
-  inputNodes_.reserve(4);
-}
+      inputBuffer_(
+          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+      outputBuffer_(
+          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+      eventRenderQueue_(defaultValue) {}
 
 float AudioParam::getValueAtTime(double time) {
   auto value = eventRenderQueue_.computeValueAtTime(time);
@@ -68,89 +67,41 @@ void AudioParam::cancelAndHoldAtTime(double cancelTime) {
   eventRenderQueue_.cancelAndHoldAtTime(cancelTime);
 }
 
-void AudioParam::addInputNode(AudioNode *node) {
-  inputNodes_.emplace_back(node);
-}
-
-void AudioParam::removeInputNode(AudioNode *node) {
-  for (int i = 0; i < inputNodes_.size(); i++) {
-    if (inputNodes_[i] == node) {
-      std::swap(inputNodes_[i], inputNodes_.back());
-      inputNodes_.resize(inputNodes_.size() - 1);
-      break;
-    }
-  }
-}
-
-std::shared_ptr<DSPAudioBuffer> AudioParam::calculateInputs(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
-  processingBuffer->zero();
-  if (inputNodes_.empty()) {
-    return processingBuffer;
-  }
-  processInputs(processingBuffer, framesToProcess, true);
-  mixInputsBuffers(processingBuffer);
-  return processingBuffer;
-}
-
 std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
-  auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
-
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    return processingBuffer;
+    outputBuffer_->zero();
+    return outputBuffer_;
   }
-  float sampleRate = context->getSampleRate();
-  auto bufferData = processingBuffer->getChannel(0)->span();
-  double timeCache = time;
-  float timeStep = 1.0f / sampleRate;
-  float sample = 0.0f;
 
-  // Add automated parameter value to each sample
-  for (int i = 0; i < framesToProcess; i++, timeCache += timeStep) {
-    sample = getValueAtTime(timeCache);
-    bufferData[i] += sample;
+  float sampleRate = context->getSampleRate();
+  double timeCache = time;
+  double timeStep = 1.0 / sampleRate;
+
+  // Read modulation from input buffer (filled by BridgeNode if connected, otherwise zeros)
+  auto inputData = inputBuffer_->getChannel(0)->span();
+  auto outputData = outputBuffer_->getChannel(0)->span();
+
+  // Compute: modulation + automated parameter value → output buffer
+  for (size_t i = 0; i < framesToProcess; i++, timeCache += timeStep) {
+    outputData[i] = inputData[i] + getValueAtTime(timeCache);
   }
-  // processingBuffer is a mono buffer containing per-sample parameter values
-  return processingBuffer;
+
+  // Zero the input buffer so next frame starts clean if no BridgeNode refills it
+  inputBuffer_->zero();
+
+  return outputBuffer_;
 }
 
 float AudioParam::processKRateParam(int framesToProcess, double time) {
-  auto processingBuffer = calculateInputs(audioBuffer_, framesToProcess);
-
   // Return block-rate parameter value plus first sample of input modulation
-  return processingBuffer->getChannel(0)->span()[0] + getValueAtTime(time);
-}
+  float modulation = inputBuffer_->getChannel(0)->span()[0];
+  float result = modulation + getValueAtTime(time);
 
-void AudioParam::processInputs(
-    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-    int framesToProcess,
-    bool checkIsAlreadyProcessed) {
-  for (auto *inputNode : inputNodes_) {
-    assert(inputNode != nullptr);
+  // Zero the input buffer so next frame starts clean if no BridgeNode refills it
+  inputBuffer_->zero();
 
-    if (!inputNode->isEnabled()) {
-      continue;
-    }
-
-    // Process this input node and store its output buffer
-    auto inputBuffer =
-        inputNode->processAudio(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
-    inputBuffers_.emplace_back(inputBuffer);
-  }
-}
-
-void AudioParam::mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
-  assert(processingBuffer != nullptr);
-
-  // Sum all input buffers into the processing buffer
-  for (auto &inputBuffer : inputBuffers_) {
-    processingBuffer->sum(*inputBuffer, ChannelInterpretation::SPEAKERS);
-  }
-
-  // Clear for next processing cycle
-  inputBuffers_.clear();
+  return result;
 }
 
 } // namespace audioapi

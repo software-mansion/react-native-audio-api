@@ -1,4 +1,5 @@
 import AudioNode from './AudioNode';
+import AudioParam from './AudioParam';
 import type AudioContext from './AudioContext';
 import { IAudioContext } from '../jsi-interfaces';
 import type { AudioTagHandle, InternalAudioTagHandle } from '../Audio/types';
@@ -27,7 +28,19 @@ export default class MediaElementAudioSourceNode extends AudioNode {
     const node = (context.context as IAudioContext).createMediaElementSource(
       fileSourceNode
     );
+    fileSourceNode.disconnect(undefined);
     super(context, node);
     this.mediaElement = options.mediaElement;
+  }
+
+  public override disconnect(destination?: AudioNode | AudioParam): void {
+    super.disconnect(destination);
+
+    const fileSourceNode = (
+      this.mediaElement as InternalAudioTagHandle
+    ).getFileSourceNode();
+    if (fileSourceNode !== null && !fileSourceNode.routedThroughMediaElement) {
+      fileSourceNode.connect(this.context.context.destination);
+    }
   }
 }

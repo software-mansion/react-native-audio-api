@@ -2,7 +2,6 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -28,10 +27,6 @@ OfflineAudioContext::OfflineAudioContext(
       audioBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels, sampleRate)),
       resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {}
-
-OfflineAudioContext::~OfflineAudioContext() {
-  getGraphManager()->cleanup();
-}
 
 void OfflineAudioContext::resume() {
   std::scoped_lock lock(driverMutex_);
@@ -70,7 +65,7 @@ void OfflineAudioContext::renderAudio() {
           std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
 
       audioBuffer_->zero();
-      destination_->renderAudio(audioBuffer_, framesToProcess);
+      processGraph(audioBuffer_.get(), framesToProcess);
 
       resultBuffer_->copy(*audioBuffer_, 0, currentSampleFrame_, framesToProcess);
 

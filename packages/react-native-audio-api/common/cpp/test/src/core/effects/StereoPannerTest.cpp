@@ -1,4 +1,5 @@
 #include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
@@ -16,13 +17,15 @@ class StereoPannerTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
+  std::shared_ptr<AudioDestinationNode> destination;
   static constexpr int sampleRate = 44100;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
-    context->initialize();
+    destination = std::make_shared<AudioDestinationNode>(context);
+    context->initialize(destination.get());
   }
 };
 
@@ -35,15 +38,17 @@ class TestableStereoPannerNode : public StereoPannerNode {
     getPanParam()->setValue(value);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return StereoPannerNode::processNode(processingBuffer, framesToProcess);
+  void setInputBuffer(const std::shared_ptr<DSPAudioBuffer> &input) {
+    audioBuffer_ = input;
+  }
+
+  void processNode(int framesToProcess) override {
+    StereoPannerNode::processNode(framesToProcess);
   }
 };
 
 TEST_F(StereoPannerTest, StereoPannerCanBeCreated) {
-  auto panner = context->createStereoPanner(StereoPannerOptions());
+  auto panner = std::make_shared<StereoPannerNode>(context, StereoPannerOptions());
   ASSERT_NE(panner, nullptr);
 }
 
@@ -58,7 +63,9 @@ TEST_F(StereoPannerTest, PanModulatesInputMonoCorrectly) {
     (*buffer->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
   }
 
-  auto resultBuffer = panNode.processNode(buffer, FRAMES_TO_PROCESS);
+  panNode.setInputBuffer(buffer);
+  panNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = panNode.getOutputBuffer();
   // x = (0.5 + 1) / 2 = 0.75
   // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
   // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867
@@ -86,7 +93,9 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithNegativePan) {
     (*buffer->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;
   }
 
-  auto resultBuffer = panNode.processNode(buffer, FRAMES_TO_PROCESS);
+  panNode.setInputBuffer(buffer);
+  panNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = panNode.getOutputBuffer();
   // x = -0.5 + 1 = 0.5
   // gainL = cos(x * (π / 2)) = cos(0.5 * (π / 2)) = 0.7071067811865476
   // gainR = sin(x * (π / 2)) = sin(0.5 * (π / 2)) = 0.7071067811865476
@@ -114,7 +123,9 @@ TEST_F(StereoPannerTest, PanModulatesInputStereoCorrectlyWithPositivePan) {
     (*buffer->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;
   }
 
-  auto resultBuffer = panNode.processNode(buffer, FRAMES_TO_PROCESS);
+  panNode.setInputBuffer(buffer);
+  panNode.processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = panNode.getOutputBuffer();
   // x = 0.75
   // gainL = cos(x * (π / 2)) = cos(0.75 * (π / 2)) = 0.38268343236508984
   // gainR = sin(x * (π / 2)) = sin(0.75 * (π / 2)) = 0.9238795325112867

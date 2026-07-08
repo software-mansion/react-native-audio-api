@@ -53,8 +53,8 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
     this.node.start(when, offset, duration);
   }
 
-  public stop(when: number = 0): void {
-    if (when < 0) {
+  public stop(when?: number): void {
+    if (when !== undefined && when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
       );
@@ -138,6 +138,16 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
 
   public set loopSkip(value: boolean) {
     this._loopSkip = value;
+  }
+
+  public get onEnded(): ((event: Event) => void) | null {
+    return this.node.onended as ((event: Event) => void) | null;
+  }
+
+  public set onEnded(callback: ((event: Event) => void) | null) {
+    this.node.onended = callback as
+      | ((this: AudioScheduledSourceNode, ev: Event) => unknown)
+      | null;
   }
 
   public get onLoopEnded(): ((event: object) => void) | undefined {

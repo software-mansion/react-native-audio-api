@@ -1,7 +1,8 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/utils/graph/BridgeNode.h>
 #include <audioapi/core/utils/param/ParamEvent.h>
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <string>
@@ -9,8 +10,13 @@
 
 namespace audioapi {
 
-AudioParamHostObject::AudioParamHostObject(const std::shared_ptr<AudioParam> &param)
-    : param_(param),
+AudioParamHostObject::AudioParamHostObject(
+    std::shared_ptr<utils::graph::Graph> graph,
+    HNode *ownerNode,
+    const std::shared_ptr<AudioParam> &param)
+    : graph_(std::move(graph)),
+      ownerNode_(ownerNode),
+      param_(param),
       defaultValue_(param->getDefaultValue()),
       minValue_(param->getMinValue()),
       maxValue_(param->getMaxValue()) {
@@ -31,6 +37,15 @@ AudioParamHostObject::AudioParamHostObject(const std::shared_ptr<AudioParam> &pa
       JSI_EXPORT_FUNCTION(AudioParamHostObject, checkCurveExclusion));
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioParamHostObject, value));
+}
+
+AudioParamHostObject::~AudioParamHostObject() {
+  if (graph_ && bridgeNode_ != nullptr) {
+    // Remove the bridge node itself
+    (void)graph_->removeNode(bridgeNode_);
+    bridgeNode_ = nullptr;
+    ownerNode_ = nullptr;
+  }
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioParamHostObject, value) {
@@ -157,6 +172,18 @@ JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, cancelAndHoldAtTime) {
 
   param_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
+}
+
+void AudioParamHostObject::connectToGraph() {
+  if (isConnectedToGraph_ || graph_ == nullptr) {
+    return;
+  }
+
+  auto bridgeGraphObject = std::make_unique<utils::graph::BridgeNode>(param_.get());
+  bridgeNode_ = graph_->addNode(std::move(bridgeGraphObject));
+  // Connect bridge → owner so topological sort orders correctly
+  (void)graph_->addEdge(bridgeNode_, ownerNode_);
+  isConnectedToGraph_ = true;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, checkCurveExclusion) {

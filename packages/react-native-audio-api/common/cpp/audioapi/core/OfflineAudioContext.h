@@ -21,7 +21,7 @@ class OfflineAudioContext : public BaseAudioContext {
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
-  ~OfflineAudioContext() override;
+  ~OfflineAudioContext() override = default;
   DELETE_COPY_AND_MOVE(OfflineAudioContext);
 
   void resume();

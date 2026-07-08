@@ -1,4 +1,3 @@
-import { AudioApiError } from '../errors';
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
 import {
   OnAudioReadyEventType,
@@ -16,7 +15,8 @@ import {
 } from '../types';
 import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
-import RecorderAdapterNode from './RecorderAdapterNode';
+import type AudioNode from './AudioNode';
+import type BaseAudioContext from './BaseAudioContext';
 
 // Enforces default options, making sure that all properties are defined
 // for the contract with native code.
@@ -94,24 +94,13 @@ export default class AudioRecorder {
     this.recorder.resume();
   }
 
-  /**
-   * Connects a {@link RecorderAdapterNode} to the recorder’s audio graph.
-   *
-   * Each node can only be connected once. Attempting to connect a node multiple
-   * times will throw an error.
-   *
-   * @param node - The adapter node to connect to the recorder.
-   * @throws If the node has already been connected.
-   */
-  connect(node: RecorderAdapterNode): void {
-    if (node.wasConnected) {
-      throw new AudioApiError(
-        'RecorderAdapterNode cannot be connected more than once. Refer to the documentation for more details.'
-      );
-    }
-
-    node.wasConnected = true;
-    this.recorder.connect(node.getNode());
+  /** Connects the recorder to a destination node. */
+  connect(context: BaseAudioContext, destination: AudioNode): AudioNode {
+    const adapter = context.context.createRecorderAdapter();
+    this.recorder.connect(adapter);
+    // @ts-expect-error node is protected, but we need to access it here
+    adapter.connect(destination.node);
+    return destination;
   }
 
   /**

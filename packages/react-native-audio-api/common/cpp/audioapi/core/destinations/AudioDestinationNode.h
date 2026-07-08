@@ -4,7 +4,6 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
-#include <atomic>
 #include <cstddef>
 #include <memory>
 
@@ -14,28 +13,15 @@ class BaseAudioContext;
 
 class AudioDestinationNode : public AudioNode {
  public:
-  explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context);
-
-  /// @note Thread safe
-  std::size_t getCurrentSampleFrame() const;
-
-  /// @note Thread safe
-  double getCurrentTime() const;
-
-  /// @note Audio Thread only
-  void renderAudio(const std::shared_ptr<DSPAudioBuffer> &audioData, int numFrames);
+  explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
+      : AudioNode(context, AudioDestinationOptions()) {
+    processableState_ = GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE;
+  }
 
  protected:
-  // DestinationNode is triggered by AudioContext using renderAudio
-  // processNode function is not necessary and is never called.
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) final {
-    return processingBuffer;
+  void processNode(int) final {
+    audioBuffer_->normalize();
   };
-
- private:
-  std::atomic<std::size_t> currentSampleFrame_;
 };
 
 } // namespace audioapi

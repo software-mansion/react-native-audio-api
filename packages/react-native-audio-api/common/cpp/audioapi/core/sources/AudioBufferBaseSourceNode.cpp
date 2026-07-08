@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
@@ -59,23 +60,21 @@ void AudioBufferBaseSourceNode::assignOnPositionChangedCallbackId(uint64_t callb
   positionChanged_.assignCallbackId(callbackId);
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioBufferBaseSourceNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
   if (isEmpty()) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
-  if (!pitchCorrection_) {
-    processWithoutPitchCorrection(processingBuffer, framesToProcess);
+  // apply pitch correction only if the playback rate is not 1.0
+  if (pitchCorrection_ &&
+      getComputedPlaybackRateValue(framesToProcess, context_.lock()->getCurrentTime()) != 1.0f) {
+    processWithPitchCorrection(audioBuffer_, framesToProcess);
   } else {
-    processWithPitchCorrection(processingBuffer, framesToProcess);
+    processWithoutPitchCorrection(audioBuffer_, framesToProcess);
   }
 
   handleStopScheduled();
-
-  return processingBuffer;
 }
 
 void AudioBufferBaseSourceNode::processWithPitchCorrection(

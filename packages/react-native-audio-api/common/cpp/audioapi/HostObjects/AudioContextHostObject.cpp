@@ -29,6 +29,7 @@ AudioContextHostObject::AudioContextHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
+  context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
     return [audioContext](jsi::Runtime &runtime) {
@@ -41,6 +42,7 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
+  context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
     const auto result = audioContext->resume();
@@ -55,6 +57,7 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
+  context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
     const auto result = audioContext->suspend();
@@ -77,17 +80,12 @@ JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, outputLatency) {
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
   auto sourceObject = args[0].asObject(runtime);
   auto fileSourceHostObject = sourceObject.getHostObject<AudioFileSourceNodeHostObject>(runtime);
-  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  auto mediaElementSourceNode =
-      audioContext->createMediaElementSource(fileSourceHostObject->getAudioFileSourceNode());
-
-  if (mediaElementSourceNode == nullptr) {
-    throw jsi::JSError(runtime, "This media element is already connected to this AudioContext.");
-  }
-
-  auto mediaElementSourceHostObject =
-      std::make_shared<MediaElementAudioSourceNodeHostObject>(mediaElementSourceNode);
-  return jsi::Object::createFromHostObject(runtime, mediaElementSourceHostObject);
+  auto *fileSourceRaw = fileSourceHostObject->audioFileSourceNode();
+  auto mediaElementHostObject = std::make_shared<MediaElementAudioSourceNodeHostObject>(
+      std::static_pointer_cast<AudioContext>(context_), fileSourceRaw);
+  auto object = jsi::Object::createFromHostObject(runtime, mediaElementHostObject);
+  object.setExternalMemoryPressure(runtime, mediaElementHostObject->getMemoryPressure());
+  return object;
 }
 
 } // namespace audioapi

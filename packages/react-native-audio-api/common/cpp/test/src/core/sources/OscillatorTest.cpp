@@ -26,7 +26,7 @@ class OscillatorTest : public ::testing::Test {
 };
 
 TEST_F(OscillatorTest, OscillatorCanBeCreated) {
-  auto osc = context->createOscillator(OscillatorOptions());
+  auto osc = std::make_shared<OscillatorNode>(context, OscillatorOptions());
   ASSERT_NE(osc, nullptr);
 }
 

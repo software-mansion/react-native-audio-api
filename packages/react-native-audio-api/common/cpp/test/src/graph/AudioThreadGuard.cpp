@@ -30,13 +30,15 @@ size_t AudioThreadGuard::allocationViolations() {
 }
 
 void AudioThreadGuard::recordAllocation() {
-  if (g_armed)
+  if (g_armed) {
     ++g_violations;
+  }
 }
 
 void AudioThreadGuard::recordDeallocation() {
-  if (g_armed)
+  if (g_armed) {
     ++g_violations;
+  }
 }
 
 // ── Context switches ──────────────────────────────────────────────────────
@@ -98,6 +100,21 @@ bool AudioThreadGuard::Scope::clean() const {
 // __has_feature is Clang-only; GCC uses __SANITIZE_ADDRESS__ / __SANITIZE_THREAD__.
 #ifndef __has_feature
 #define __has_feature(x) 0
+#endif
+
+#if !defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) && \
+    !__has_feature(address_sanitizer) && !__has_feature(thread_sanitizer)
+
+bool audioapi::test::AudioThreadGuard::isEnabled() {
+  return true;
+}
+
+#else
+
+bool audioapi::test::AudioThreadGuard::isEnabled() {
+  return false;
+}
+
 #endif
 
 #if !defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) && \

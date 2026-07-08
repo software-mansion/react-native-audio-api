@@ -2,6 +2,9 @@
 
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
+#include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/Disposer.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
@@ -18,55 +21,19 @@
 
 namespace audioapi {
 
-class GainNode;
-class DelayNode;
-class PeriodicWave;
-class OscillatorNode;
-class ConstantSourceNode;
-class StereoPannerNode;
-class AudioGraphManager;
-class BiquadFilterNode;
-class IIRFilterNode;
-class AudioDestinationNode;
-class AudioBufferSourceNode;
-class AudioBufferQueueSourceNode;
-class AudioFileSourceNode;
-class MediaElementAudioSourceNode;
-class AnalyserNode;
 class AudioEventHandlerRegistry;
-class ConvolverNode;
 class IAudioEventHandlerRegistry;
-class RecorderAdapterNode;
-class WaveShaperNode;
-class WorkletSourceNode;
-class WorkletNode;
-class WorkletProcessingNode;
-class StreamerNode;
-struct GainOptions;
-struct StereoPannerOptions;
-struct ConvolverOptions;
-struct ConstantSourceOptions;
-struct AnalyserOptions;
-struct BiquadFilterOptions;
-struct OscillatorOptions;
-struct BaseAudioBufferSourceOptions;
-struct AudioBufferSourceOptions;
-struct AudioFileSourceOptions;
-struct MediaElementAudioSourceOptions;
-struct StreamerOptions;
-struct DelayOptions;
-struct IIRFilterOptions;
-struct WaveShaperOptions;
+class PeriodicWave;
+class AudioDestinationNode;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
-  DELETE_COPY_AND_MOVE(BaseAudioContext);
-
   explicit BaseAudioContext(
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
+  DELETE_COPY_AND_MOVE(BaseAudioContext);
 
   ContextState getState() const;
   [[nodiscard]] bool isClosed() const {
@@ -76,56 +43,33 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] virtual double getBaseLatency() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
-  [[nodiscard]] std::shared_ptr<AudioDestinationNode> getDestination() const;
 
   void setState(ContextState state);
 
-  std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
-  std::shared_ptr<WorkletSourceNode> createWorkletSourceNode(
-      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime,
-      bool shouldLockRuntime = true);
-  std::shared_ptr<WorkletNode> createWorkletNode(
-      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime,
-      size_t bufferLength,
-      size_t inputChannelCount,
-      bool shouldLockRuntime = true);
-  std::shared_ptr<WorkletProcessingNode> createWorkletProcessingNode(
-      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-      std::weak_ptr<worklets::WorkletRuntime> runtime,
-      bool shouldLockRuntime = true);
-  std::shared_ptr<DelayNode> createDelay(const DelayOptions &options);
-  std::shared_ptr<IIRFilterNode> createIIRFilter(const IIRFilterOptions &options);
-  std::shared_ptr<OscillatorNode> createOscillator(const OscillatorOptions &options);
-  std::shared_ptr<ConstantSourceNode> createConstantSource(const ConstantSourceOptions &options);
-  std::shared_ptr<StreamerNode> createStreamer(const StreamerOptions &options);
-  std::shared_ptr<GainNode> createGain(const GainOptions &options);
-  std::shared_ptr<StereoPannerNode> createStereoPanner(const StereoPannerOptions &options);
-  std::shared_ptr<BiquadFilterNode> createBiquadFilter(const BiquadFilterOptions &options);
-  std::shared_ptr<AudioBufferSourceNode> createBufferSource(
-      const AudioBufferSourceOptions &options);
-  std::shared_ptr<AudioFileSourceNode> createFileSource(AudioFileSourceOptions &options);
-  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
-      const BaseAudioBufferSourceOptions &options);
   [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(
-      const std::vector<std::complex<float>>
-          &complexData, // NOLINT(readability-avoid-const-params-in-decls)
+      const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
       int length) const;
-  std::shared_ptr<AnalyserNode> createAnalyser(const AnalyserOptions &options);
-  std::shared_ptr<ConvolverNode> createConvolver(const ConvolverOptions &options);
-  std::shared_ptr<WaveShaperNode> createWaveShaper(const WaveShaperOptions &options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
-  [[nodiscard]] std::shared_ptr<AudioGraphManager> getGraphManager() const;
-  [[nodiscard]] std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
-  [[nodiscard]] const RuntimeRegistry &getRuntimeRegistry() const;
+  std::shared_ptr<utils::graph::Graph> getGraph() const;
+  std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
+  const RuntimeRegistry &getRuntimeRegistry() const;
+  utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *getDisposer() const;
 
-  virtual void initialize();
+  /// @brief Assigns the audio destination node to the context.
+  /// @param destination The audio destination node to be associated with the context.
+  /// @note This method must be called before the audio context can be used for processing audio.
+  virtual void initialize(const AudioDestinationNode *destination);
 
   void processAudioEvents() {
+    // Drain JS-thread scheduler first, then the GC-thread scheduler.
+    // This preserves causality for the common case where a JS-thread
+    // produced event logically happens-before a GC-thread cleanup event
+    // on the same node (e.g. `onEnded = id` followed by HostObject
+    // finalization that clears the callback id).
     audioEventScheduler_.processAllEvents(*this);
+    gcAudioEventScheduler_.processAllEvents(*this);
   }
 
   template <typename F>
@@ -139,9 +83,29 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     return audioEventScheduler_.scheduleEvent(std::forward<F>(event));
   }
 
+  /// @brief Schedule an audio event produced on the JS runtime's finalizer
+  /// (GC) thread. Uses a dedicated SPSC channel so the main
+  /// `audioEventScheduler_` stays single-producer (JS thread).
+  ///
+  /// Call this from JSI HostObject destructors (which on Hermes fire on the
+  /// concurrent GC thread) instead of `scheduleAudioEvent`, otherwise the
+  /// GC thread and the JS thread will race on the same SPSC channel.
+  ///
+  /// @note Unlike `scheduleAudioEvent`, this does NOT fall through to a
+  /// synchronous `event(*this)` when the context is not RUNNING. The
+  /// finalizer thread must never touch context state directly, and the
+  /// event handler itself must be safe to skip if the audio thread never
+  /// drains it (e.g. context already closed).
+  template <typename F>
+  bool scheduleGCEvent(F &&event) noexcept {
+    return gcAudioEventScheduler_.scheduleEvent(std::forward<F>(event));
+  }
+
+  void processGraph(DSPAudioBuffer *buffer, int numFrames);
+
  protected:
-  std::shared_ptr<AudioDestinationNode> destination_;
-  std::shared_ptr<AudioGraphManager> graphManager_;
+  std::atomic<std::size_t> currentSampleFrame_{0};
+  const AudioDestinationNode *destination_;
 
   /// Serializes context lifecycle and driver control across the JS thread and the
   /// promise-vendor thread pool (`resume` / `suspend` / `close` / offline render).
@@ -168,7 +132,15 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedSawtoothWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
+  static constexpr size_t GC_AUDIO_SCHEDULER_CAPACITY = 256;
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
+  /// Dedicated single-producer SPSC scheduler for events produced on the
+  /// JS runtime's finalizer (GC) thread. Keeps `audioEventScheduler_`
+  /// single-producer (JS thread) and avoids the MPSC-on-SPSC data race.
+  CrossThreadEventScheduler<BaseAudioContext> gcAudioEventScheduler_;
+
+  std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
+  std::shared_ptr<utils::graph::Graph> graph_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };

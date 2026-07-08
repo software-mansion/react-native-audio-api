@@ -18,7 +18,7 @@ SeekDecoderDaemon::SeekDecoderDaemon(
       commandReceiver_(std::move(commandReceiver)),
       frameSender_(std::move(frameSender)),
       frameReceiverForDrain_(std::move(frameReceiver)) {
-  if (options.requiresFFmpeg) {
+  if (options.requiresFFmpeg || !options.sourceUrl.empty()) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
     decoder_ = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
 #endif
@@ -30,9 +30,9 @@ SeekDecoderDaemon::SeekDecoderDaemon(
 
   int contextSampleRate = static_cast<int>(options.contextSampleRate);
 
-  // Check in AudioFileSourceNode constructor ensures that at least one of filePath or memoryData is provided,
-  // so we can attempt to open the decoder with either without additional checks here.
-  if (!options.filePath.empty()) {
+  if (!options.sourceUrl.empty()) {
+    openResult = decoder_->openUrl(contextSampleRate, options.sourceUrl, options.httpHeaders);
+  } else if (!options.filePath.empty()) {
     openResult = decoder_->openFile(contextSampleRate, options.filePath);
   } else {
     openResult = decoder_->openMemory(

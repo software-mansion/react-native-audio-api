@@ -32,6 +32,8 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <memory>
 
 // https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
@@ -68,9 +70,7 @@ BiquadFilterNode::BiquadFilterNode(
       x1_(MAX_CHANNEL_COUNT),
       x2_(MAX_CHANNEL_COUNT),
       y1_(MAX_CHANNEL_COUNT),
-      y2_(MAX_CHANNEL_COUNT) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+      y2_(MAX_CHANNEL_COUNT) {}
 
 void BiquadFilterNode::setType(BiquadFilterType type) {
   type_ = type;
@@ -329,7 +329,12 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::getNormalizedCoefficients
     float a1,
     float a2) {
   auto a0Inverted = 1.0f / a0;
-  return {b0 * a0Inverted, b1 * a0Inverted, b2 * a0Inverted, a1 * a0Inverted, a2 * a0Inverted};
+  return {
+      .b0 = b0 * a0Inverted,
+      .b1 = b1 * a0Inverted,
+      .b2 = b2 * a0Inverted,
+      .a1 = a1 * a0Inverted,
+      .a2 = a2 * a0Inverted};
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
@@ -381,9 +386,7 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
   return coeffs;
 }
 
-std::shared_ptr<DSPAudioBuffer> BiquadFilterNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void BiquadFilterNode::processNode(int framesToProcess) {
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
     auto currentTime = context->getCurrentTime();
     float frequency = frequencyParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
@@ -393,12 +396,14 @@ std::shared_ptr<DSPAudioBuffer> BiquadFilterNode::processNode(
 
     auto coeffs = applyFilter(frequency, Q, gain, detune, type_);
 
+    lastA2_ = coeffs.a2;
+
     float x1, x2, y1, y2; // NOLINT(cppcoreguidelines-init-variables)
 
-    auto numChannels = processingBuffer->getNumberOfChannels();
+    auto numChannels = audioBuffer_->getNumberOfChannels();
 
     for (size_t c = 0; c < numChannels; ++c) {
-      auto channel = processingBuffer->getChannel(c)->subSpan(framesToProcess);
+      auto channel = audioBuffer_->getChannel(c)->subSpan(framesToProcess);
 
       x1 = x1_[c];
       x2 = x2_[c];
@@ -429,10 +434,29 @@ std::shared_ptr<DSPAudioBuffer> BiquadFilterNode::processNode(
       y2_[c] = y2;
     }
   } else {
-    processingBuffer->zero();
+    audioBuffer_->zero();
   }
+}
 
-  return processingBuffer;
+int BiquadFilterNode::computeTailFrames() const {
+  // some ai math slop, but it matches web audio api, so I think it's correct
+  // Two safety bounds:
+  //   1. `r` is clamped to `1 - kPoleRadiusEpsilon` so that `log(r)` stays
+  //      bounded away from zero for poles sitting arbitrarily close to the
+  //      unit circle (very high Q).
+  //   2. The returned frame count is capped at `kMaxTailSeconds * sr` so a
+  //      pathological coefficient update cannot keep a node alive forever.
+  const double rRaw = std::sqrt(std::abs(lastA2_));
+  const double r = std::min(rRaw, 1.0 - kPoleRadiusEpsilon);
+  if (r <= 0.0) {
+    return 0;
+  }
+  const double frames = std::ceil(std::log(kTailEpsilon) / std::log(r));
+  if (!std::isfinite(frames) || frames <= 0.0) {
+    return 0;
+  }
+  const int cap = static_cast<int>(kMaxTailSeconds * getContextSampleRate());
+  return std::min(static_cast<int>(frames), cap);
 }
 
 } // namespace audioapi

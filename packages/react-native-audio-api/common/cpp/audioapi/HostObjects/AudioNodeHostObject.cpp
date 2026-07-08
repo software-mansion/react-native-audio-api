@@ -1,16 +1,22 @@
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
+#include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
+#include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/effects/delay/host_nodes/DelayReaderHostNode.h>
+#include <audioapi/core/effects/delay/host_nodes/DelayWriterHostNode.h>
 
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
 AudioNodeHostObject::AudioNodeHostObject(
-    const std::shared_ptr<AudioNode> &node,
+    const std::shared_ptr<utils::graph::Graph> &graph,
+    std::unique_ptr<AudioNode> node,
     const AudioNodeOptions &options)
-    : node_(node),
+    : utils::graph::HostNode(graph, std::move(node)),
       numberOfInputs_(options.numberOfInputs),
       numberOfOutputs_(options.numberOfOutputs),
       channelCount_(options.channelCount),
@@ -58,13 +64,27 @@ JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelInterpretation) {
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
   auto obj = args[0].getObject(runtime);
+
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
-    auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
-    node_->connect(std::shared_ptr<AudioNodeHostObject>(node)->node_);
-  }
-  if (obj.isHostObject<AudioParamHostObject>(runtime)) {
+    auto toNodeHost = obj.getHostObject<AudioNodeHostObject>(runtime);
+
+    // source is a delay node: route through its reader
+    if (auto *fromDelay = dynamic_cast<DelayNodeHostObject *>(this); fromDelay != nullptr) {
+      fromDelay->delayReaderHostNode_->connect(*toNodeHost);
+      return jsi::Value::undefined();
+    }
+
+    // destination is a delay node: route through its writer
+    if (auto *toDelay = dynamic_cast<DelayNodeHostObject *>(toNodeHost.get()); toDelay != nullptr) {
+      connect(*toDelay->delayWriterHostNode_);
+      return jsi::Value::undefined();
+    }
+
+    connect(*toNodeHost);
+  } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    node_->connect(std::shared_ptr<AudioParamHostObject>(param)->param_);
+    param->connectToGraph();
+    graph_->addEdge(node_, param->bridgeNode());
   }
   return jsi::Value::undefined();
 }
@@ -72,19 +92,20 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
   // protect direct usage of raw jsi classes
   if (args == nullptr || args[0].isUndefined()) {
-    node_->disconnect();
+    disconnect();
     return jsi::Value::undefined();
   }
+
   auto obj = args[0].getObject(runtime);
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
-    node_->disconnect(std::shared_ptr<AudioNodeHostObject>(node)->node_);
+    disconnect(*node);
+  } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
+    auto param = obj.getHostObject<AudioParamHostObject>(runtime);
+    // Disconnect source → bridge
+    graph_->removeEdge(node_, param->bridgeNode());
   }
 
-  if (obj.isHostObject<AudioParamHostObject>(runtime)) {
-    auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    node_->disconnect(std::shared_ptr<AudioParamHostObject>(param)->param_);
-  }
   return jsi::Value::undefined();
 }
 } // namespace audioapi

@@ -21,7 +21,7 @@ AnalyserNode::AnalyserNode(
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant) {
   setFFTSize(options.fftSize);
-  isInitialized_.store(true, std::memory_order_release);
+  setProcessableState(GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE);
 }
 
 void AnalyserNode::setFFTSize(int fftSize) {
@@ -88,14 +88,12 @@ void AnalyserNode::getByteTimeDomainData(uint8_t *data, int length) {
   }
 }
 
-std::shared_ptr<DSPAudioBuffer> AnalyserNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void AnalyserNode::processNode(int framesToProcess) {
   // Analyser should behave like a sniffer node, it should not modify the
-  // processingBuffer but instead copy the data to its own input buffer.
+  // audioBuffer_ but instead copy the data to its own input buffer.
 
   // Down mix the input buffer to mono
-  downMixBuffer_->copy(*processingBuffer);
+  downMixBuffer_->copy(*audioBuffer_);
   // Copy the down mixed buffer to the input buffer (circular buffer)
   inputArray_->push_back(*downMixBuffer_->getChannel(0), framesToProcess, true);
 
@@ -106,8 +104,6 @@ std::shared_ptr<DSPAudioBuffer> AnalyserNode::processNode(
   frame->sequenceNumber = ++publishSequence_;
   inputArray_->pop_back(frame->timeDomain, fftSize, 0, true);
   analysisBuffer_.publish();
-
-  return processingBuffer;
 }
 
 void AnalyserNode::doFFTAnalysis() {

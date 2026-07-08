@@ -1,11 +1,13 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <cstdint>
+#include <cstring>
 #include <memory>
+#include <vector>
 
 namespace audioapi {
 
@@ -23,285 +25,112 @@ AudioNode::AudioNode(
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
 
-AudioNode::~AudioNode() {
-  if (isInitialized_.load(std::memory_order_acquire)) {
-    cleanup();
-  }
+bool AudioNode::canBeDestructed() const {
+  // Tail-bearing nodes must not be destroyed mid-tail: even if the node is
+  // orphaned and has no live inputs, audio that has not yet been rendered
+  // would otherwise be lost. Once the tail has fully drained, the node
+  // becomes destructible.
+  return !requiresTailProcessing_ || tailState_ == TailState::FINISHED;
 }
 
-bool AudioNode::canBeDestructed() const {
-  return true;
+bool AudioNode::isProcessable() const {
+  if (GraphObject::isProcessable()) {
+    return true;
+  }
+  // Even after a downstream disconnect flips processableState_ to
+  // NOT_PROCESSABLE, a tail-bearing node must keep being scheduled until its
+  // impulse response has decayed. Otherwise the tail would never play out.
+  return requiresTailProcessing_ && tailState_ != TailState::FINISHED;
 }
 
 size_t AudioNode::getChannelCount() const {
   return channelCount_;
 }
 
-void AudioNode::connect(
-    const std::shared_ptr<AudioNode>
-        &node) { // NOLINT(readability-convert-member-functions-to-static)
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getGraphManager()->addPendingNodeConnection(
-        shared_from_this(), node, AudioGraphManager::ConnectionType::CONNECT);
-  }
-}
-
-void AudioNode::connect(
-    const std::shared_ptr<AudioParam>
-        &param) { // NOLINT(readability-convert-member-functions-to-static)
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getGraphManager()->addPendingParamConnection(
-        shared_from_this(), param, AudioGraphManager::ConnectionType::CONNECT);
-  }
-}
-
-void AudioNode::disconnect() { // NOLINT(readability-convert-member-functions-to-static)
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getGraphManager()->addPendingNodeConnection(
-        shared_from_this(), nullptr, AudioGraphManager::ConnectionType::DISCONNECT_ALL);
-  }
-}
-
-void AudioNode::disconnect(
-    const std::shared_ptr<AudioNode>
-        &node) { // NOLINT(readability-convert-member-functions-to-static)
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getGraphManager()->addPendingNodeConnection(
-        shared_from_this(), node, AudioGraphManager::ConnectionType::DISCONNECT);
-  }
-}
-
-void AudioNode::disconnect(
-    const std::shared_ptr<AudioParam>
-        &param) { // NOLINT(readability-convert-member-functions-to-static)
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    context->getGraphManager()->addPendingParamConnection(
-        shared_from_this(), param, AudioGraphManager::ConnectionType::DISCONNECT);
-  }
-}
-
-bool AudioNode::isEnabled() const {
-  return isEnabled_;
-}
-
 bool AudioNode::requiresTailProcessing() const {
   return requiresTailProcessing_;
 }
 
-void AudioNode::enable() {
-  if (isEnabled()) {
-    return;
-  }
-
-  isEnabled_ = true;
-
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end; ++it) {
-    it->get()->onInputEnabled();
-  }
-}
-
 void AudioNode::disable() {
-  if (!isEnabled()) {
-    return;
-  }
-
-  isEnabled_ = false;
-
-  for (const auto &outputNode : outputNodes_) {
-    outputNode.get()->onInputDisabled();
-  }
+  setProcessableState(utils::graph::GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioNode::processAudio(
-    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-    int framesToProcess,
-    bool checkIsAlreadyProcessed) {
-  if (!isInitialized_.load(std::memory_order_acquire)) {
-    return outputBuffer;
+namespace {
+
+// Branch-free silence check over a contiguous float span. Reinterprets each
+// sample as its IEEE-754 bit pattern and ORs them together with the sign bit
+// masked out, so `-0.0f` is treated as silent (matching `== 0.0f`). The lack
+// of an in-loop branch lets the compiler auto-vectorize this tight loop.
+[[nodiscard]] inline bool spanIsSilent(const float *data, size_t count) noexcept {
+  constexpr std::uint32_t kSignMask = 0x7FFFFFFFu;
+  std::uint32_t acc = 0;
+  for (size_t i = 0; i < count; ++i) {
+    std::uint32_t bits;
+    std::memcpy(&bits, data + i, sizeof(bits));
+    acc |= (bits & kSignMask);
   }
-
-  if (checkIsAlreadyProcessed && isAlreadyProcessed()) {
-    return audioBuffer_;
-  }
-
-  // Process inputs and return the buffer with the most channels.
-  auto processingBuffer = processInputs(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
-
-  // Apply channel count mode.
-  processingBuffer = applyChannelCountMode(processingBuffer);
-
-  // Mix all input buffers into the processing buffer.
-  mixInputsBuffers(processingBuffer);
-
-  assert(processingBuffer != nullptr);
-
-  // Finally, process the node itself.
-  return processNode(processingBuffer, framesToProcess);
+  return acc == 0;
 }
 
-bool AudioNode::isAlreadyProcessed() { // NOLINT(readability-convert-member-functions-to-static)
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    std::size_t currentSampleFrame = context->getCurrentSampleFrame();
+} // namespace
 
-    // check if the node has already been processed for this rendering quantum
-    if (currentSampleFrame == lastRenderedFrame_) {
-      return true;
-    }
-
-    // Update the last rendered frame before processing node and its inputs.
-    lastRenderedFrame_ = currentSampleFrame;
-
-    return false;
+bool AudioNode::isInputSilent(const std::vector<const DSPAudioBuffer *> &inputs) const {
+  // No inputs means upstream is gone (or this node never had any). Either
+  // way the mixer below would feed silence to processNode, so treat it as
+  // silent input here.
+  if (inputs.empty()) {
+    return true;
   }
-
-  // If context is invalid, consider it as already processed to avoid processing
-  return true; // NOLINT(readability-simplify-boolean-expr)
-}
-
-std::shared_ptr<DSPAudioBuffer> AudioNode::processInputs(
-    const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
-    int framesToProcess,
-    bool checkIsAlreadyProcessed) { // NOLINT(readability-convert-member-functions-to-static)
-  auto processingBuffer = audioBuffer_;
-  processingBuffer->zero();
-
-  size_t maxNumberOfChannels = 0;
-  for (auto *inputNode : inputNodes_) {
-    assert(inputNode != nullptr);
-
-    if (!inputNode->isEnabled()) {
+  for (const DSPAudioBuffer *input : inputs) {
+    if (input == nullptr) {
       continue;
     }
-
-    auto inputBuffer =
-        inputNode->processAudio(outputBuffer, framesToProcess, checkIsAlreadyProcessed);
-    inputBuffers_.push_back(inputBuffer);
-
-    if (maxNumberOfChannels < inputBuffer->getNumberOfChannels()) {
-      maxNumberOfChannels = inputBuffer->getNumberOfChannels();
-      processingBuffer = inputBuffer;
+    const size_t channels = input->getNumberOfChannels();
+    for (size_t c = 0; c < channels; ++c) {
+      auto *channel = input->getChannel(c);
+      if (channel == nullptr) {
+        continue;
+      }
+      const auto span = channel->span();
+      if (!spanIsSilent(span.data(), span.size())) {
+        return false;
+      }
     }
   }
-
-  return processingBuffer;
+  return true;
 }
 
-std::shared_ptr<DSPAudioBuffer> AudioNode::applyChannelCountMode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
-  // If the channelCountMode is EXPLICIT, the node should output the number of
-  // channels specified by the channelCount.
-  if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
-    return audioBuffer_;
-  }
+void AudioNode::updateTailStateForQuantum(
+    const std::vector<const DSPAudioBuffer *> &inputs,
+    int numFrames) {
+  const bool silent = isInputSilent(inputs);
 
-  // If the channelCountMode is CLAMPED_MAX, the node should output the maximum
-  // number of channels clamped to channelCount.
-  if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX &&
-      processingBuffer->getNumberOfChannels() >= channelCount_) {
-    return audioBuffer_;
-  }
-
-  return processingBuffer;
-}
-
-void AudioNode::mixInputsBuffers(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
-  assert(processingBuffer != nullptr);
-
-  for (auto it = inputBuffers_.begin(), end = inputBuffers_.end(); it != end; ++it) {
-    processingBuffer->sum(**it, channelInterpretation_);
-  }
-
-  inputBuffers_.clear();
-}
-
-void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
-  auto position = outputNodes_.find(node);
-
-  if (position == outputNodes_.end()) {
-    outputNodes_.insert(node);
-    node->onInputConnected(this);
-  }
-}
-
-void AudioNode::connectParam(const std::shared_ptr<AudioParam> &param) {
-  auto position = outputParams_.find(param);
-
-  if (position == outputParams_.end()) {
-    outputParams_.insert(param);
-    param->addInputNode(this);
-  }
-}
-
-void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
-  auto position = outputNodes_.find(node);
-
-  if (position != outputNodes_.end()) {
-    node->onInputDisconnected(this);
-    outputNodes_.erase(node);
-  }
-}
-
-void AudioNode::disconnectParam(const std::shared_ptr<AudioParam> &param) {
-  auto position = outputParams_.find(param);
-
-  if (position != outputParams_.end()) {
-    param->removeInputNode(this);
-    outputParams_.erase(param);
-  }
-}
-
-void AudioNode::onInputEnabled() {
-  numberOfEnabledInputNodes_ += 1;
-
-  if (!isEnabled()) {
-    enable();
-  }
-}
-
-void AudioNode::onInputDisabled() {
-  numberOfEnabledInputNodes_ -= 1;
-
-  if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
-    disable();
-  }
-}
-
-void AudioNode::onInputConnected(AudioNode *node) {
-  if (!isInitialized_.load(std::memory_order_acquire)) {
+  if (!silent) {
+    // Any non-silent sample re-arms the tail: the node is being driven again
+    // and we must not stop it mid-stream.
+    tailState_ = TailState::ACTIVE;
+    tailFramesRemaining_ = 0;
     return;
   }
 
-  inputNodes_.insert(node);
-
-  if (node->isEnabled()) {
-    onInputEnabled();
+  switch (tailState_) {
+    case TailState::ACTIVE:
+      tailState_ = TailState::SIGNALLED_TO_STOP;
+      tailFramesRemaining_ = computeTailFrames();
+      if (tailFramesRemaining_ <= 0) {
+        tailState_ = TailState::FINISHED;
+      }
+      break;
+    case TailState::SIGNALLED_TO_STOP:
+      tailFramesRemaining_ -= numFrames;
+      if (tailFramesRemaining_ <= 0) {
+        tailState_ = TailState::FINISHED;
+      }
+      break;
+    case TailState::FINISHED:
+      // Stay finished; will be reset to ACTIVE if non-silent input returns.
+      break;
   }
-}
-
-void AudioNode::onInputDisconnected(AudioNode *node) {
-  if (!isInitialized_.load(std::memory_order_acquire)) {
-    return;
-  }
-
-  if (node->isEnabled()) {
-    onInputDisabled();
-  }
-
-  auto position = inputNodes_.find(node);
-
-  if (position != inputNodes_.end()) {
-    inputNodes_.erase(position);
-  }
-}
-
-void AudioNode::cleanup() {
-  isInitialized_.store(false, std::memory_order_release);
-
-  for (const auto &outputNode : outputNodes_) {
-    outputNode.get()->onInputDisconnected(this);
-  }
-
-  outputNodes_.clear();
 }
 
 } // namespace audioapi

@@ -37,29 +37,31 @@ class TestableWaveShaperNode : public WaveShaperNode {
     data[2] = 2.0f;
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return WaveShaperNode::processNode(processingBuffer, framesToProcess);
+  void setInputBuffer(const std::shared_ptr<DSPAudioBuffer> &input) {
+    audioBuffer_ = input;
+  }
+
+  void processNode(int framesToProcess) override {
+    WaveShaperNode::processNode(framesToProcess);
   }
 
   std::shared_ptr<AudioArray> testCurve_;
 };
 
 TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
-  auto waveShaper = context->createWaveShaper(WaveShaperOptions());
+  auto waveShaper = std::make_shared<WaveShaperNode>(context, WaveShaperOptions());
   ASSERT_NE(waveShaper, nullptr);
 }
 
 TEST_F(WaveShaperNodeTest, NullCanBeAsignedToCurve) {
-  auto waveShaper = context->createWaveShaper(WaveShaperOptions());
+  auto waveShaper = std::make_shared<WaveShaperNode>(context, WaveShaperOptions());
   ASSERT_NO_THROW(waveShaper->setCurve(nullptr));
 }
 
 TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
   static constexpr int FRAMES_TO_PROCESS = 5;
   auto waveShaper = std::make_shared<TestableWaveShaperNode>(context);
-  waveShaper->setOversample(OverSampleType::OVERSAMPLE_NONE);
+  waveShaper->setOversample(std::make_unique<OversampleUpdate>(), *context->getDisposer());
   waveShaper->setCurve(waveShaper->testCurve_);
 
   auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
@@ -67,7 +69,9 @@ TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
     (*buffer->getChannel(0))[i] = -1.0f + i * 0.5f;
   }
 
-  auto resultBuffer = waveShaper->processNode(buffer, FRAMES_TO_PROCESS);
+  waveShaper->setInputBuffer(buffer);
+  waveShaper->processNode(FRAMES_TO_PROCESS);
+  auto resultBuffer = waveShaper->getOutputBuffer();
   auto curveData = waveShaper->testCurve_->span();
   auto resultData = resultBuffer->getChannel(0)->span();
 

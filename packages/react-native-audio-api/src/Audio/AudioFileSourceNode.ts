@@ -39,6 +39,9 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
   }
 
   play(): void {
+    if (!(this.node as IAudioFileSourceNode).routedThroughMediaElement) {
+      this.connect(this.context.destination);
+    }
     (this.node as IAudioScheduledSourceNode).start(this.context.currentTime);
   }
 

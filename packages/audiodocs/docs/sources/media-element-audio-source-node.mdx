@@ -9,7 +9,7 @@ import { ReadOnly } from '@site/src/components/Badges';
 
 The `MediaElementAudioSourceNode` is an [`AudioNode`](/docs/core/audio-node) that routes media playback into the audio graph.
 On the web it mirrors [`AudioContext.createMediaElementSource()`](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaElementSource) and accepts an `HTMLMediaElement`.
-On the native it wraps a file-backed source created by the experimental [`<Audio>`](/docs/experimental/audio-tag) tag.
+On the native it wraps a file-backed source created by the experimental [`<Audio>`](/docs/sources/audio-tag) tag.
 
 ## Constructor
 
@@ -21,7 +21,7 @@ constructor(context: BaseAudioContext, options: MediaElementAudioSourceOptions)
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) (native) | — | Media element whose audio is routed into the graph. On native, wait for [`onLoad`](/docs/experimental/audio-tag#props-audioprops) before constructing this node. |
+| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](/docs/sources/audio-tag#ref-handle-audiotaghandle-methods) (native) | — | Media element whose audio is routed into the graph. On native, wait for [`onLoad`](/docs/sources/audio-tag#props-audioprops) before constructing this node. |
 
 Or by using [`AudioContext`](/docs/core/audio-context) factory method:
 [`AudioContext.createMediaElementSource()`](/docs/core/audio-context#createmediaelementsource)
@@ -95,7 +95,7 @@ It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 | Name | Type | Default value | Description |
 | :----: | :----: | :-------- | :------- |
-| `mediaElement` <ReadOnly /> | `HTMLMediaElement` \| [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) | — | The media element routed into the audio graph. |
+| `mediaElement` <ReadOnly /> | `HTMLMediaElement` \| [`AudioTagHandle`](/docs/sources/audio-tag#ref-handle-audiotaghandle-methods) | — | The media element routed into the audio graph. |
 
 ## Methods
 
@@ -106,4 +106,4 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 #### Native routing
 
 - On native, the underlying file source is disconnected from the destination when this node is created so audio is not processed twice.
-- Use the same [`AudioTagHandle`](/docs/experimental/audio-tag#ref-handle-audiotaghandle-methods) for transport controls (`play`, `pause`, `seekToTime`, `volume`).
+- Use the same [`AudioTagHandle`](/docs/sources/audio-tag#ref-handle-audiotaghandle-methods) for transport controls (`play`, `pause`, `seekToTime`, `volume`).

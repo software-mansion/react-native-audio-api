@@ -1,5 +1,5 @@
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
-#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/types/NodeOptions.h>
@@ -11,7 +11,11 @@ namespace audioapi {
 AnalyserNodeHostObject::AnalyserNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     const AnalyserOptions &options)
-    : AudioNodeHostObject(context->createAnalyser(options), options) {
+    : AudioNodeHostObject(
+          context->getGraph(),
+          std::make_unique<AnalyserNode>(context, options),
+          options),
+      analyserNode_(typedAudioNode<AnalyserNode>(node_)) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, fftSize),
       JSI_EXPORT_PROPERTY_GETTER(AnalyserNodeHostObject, minDecibels),
@@ -32,48 +36,35 @@ AnalyserNodeHostObject::AnalyserNodeHostObject(
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, fftSize) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  return {analyserNode->getFFTSize()};
+  return {analyserNode_->getFFTSize()};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  return {analyserNode->getMinDecibels()};
+  return {analyserNode_->getMinDecibels()};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, maxDecibels) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  return {analyserNode->getMaxDecibels()};
+  return {analyserNode_->getMaxDecibels()};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  return {analyserNode->getSmoothingTimeConstant()};
+  return {analyserNode_->getSmoothingTimeConstant()};
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, fftSize) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-
-  auto fftSize = static_cast<int>(value.getNumber());
-  analyserNode->setFFTSize(fftSize);
+  analyserNode_->setFFTSize(static_cast<int>(value.getNumber()));
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  auto minDecibels = static_cast<float>(value.getNumber());
-  analyserNode->setMinDecibels(minDecibels);
+  analyserNode_->setMinDecibels(static_cast<float>(value.getNumber()));
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, maxDecibels) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  auto maxDecibels = static_cast<float>(value.getNumber());
-  analyserNode->setMaxDecibels(maxDecibels);
+  analyserNode_->setMaxDecibels(static_cast<float>(value.getNumber()));
 }
 
 JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, smoothingTimeConstant) {
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  auto smoothingTimeConstant = static_cast<float>(value.getNumber());
-  analyserNode->setSmoothingTimeConstant(smoothingTimeConstant);
+  analyserNode_->setSmoothingTimeConstant(static_cast<float>(value.getNumber()));
 }
 
 JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {
@@ -82,8 +73,7 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatFrequencyData) {
   auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime) / sizeof(float));
 
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  analyserNode->getFloatFrequencyData(data, length);
+  analyserNode_->getFloatFrequencyData(data, length);
 
   return jsi::Value::undefined();
 }
@@ -94,8 +84,7 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteFrequencyData) {
   auto data = arrayBuffer.data(runtime);
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  analyserNode->getByteFrequencyData(data, length);
+  analyserNode_->getByteFrequencyData(data, length);
 
   return jsi::Value::undefined();
 }
@@ -106,8 +95,7 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getFloatTimeDomainData) {
   auto data = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto length = static_cast<int>(arrayBuffer.size(runtime) / sizeof(float));
 
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  analyserNode->getFloatTimeDomainData(data, length);
+  analyserNode_->getFloatTimeDomainData(data, length);
 
   return jsi::Value::undefined();
 }
@@ -118,8 +106,7 @@ JSI_HOST_FUNCTION_IMPL(AnalyserNodeHostObject, getByteTimeDomainData) {
   auto data = arrayBuffer.data(runtime);
   auto length = static_cast<int>(arrayBuffer.size(runtime));
 
-  auto analyserNode = std::static_pointer_cast<AnalyserNode>(node_);
-  analyserNode->getByteTimeDomainData(data, length);
+  analyserNode_->getByteTimeDomainData(data, length);
 
   return jsi::Value::undefined();
 }

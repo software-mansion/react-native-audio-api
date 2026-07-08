@@ -8,6 +8,7 @@ import {
   isBase64Source,
   isDataBlobString,
   isRemoteSource,
+  resolveLocalFilePath,
 } from '../utils/paths';
 import { base64ToArrayBuffer } from '../utils';
 import AudioBuffer from './AudioBuffer';
@@ -88,19 +89,6 @@ class AudioDecoder {
     return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
   }
 
-  private resolveLocalFilePath(stringSource: string): string {
-    const stripped = stringSource.startsWith('file://')
-      ? stringSource.slice('file://'.length)
-      : stringSource;
-    try {
-      // Unescape percent-encoded tokens.
-      return decodeURIComponent(stripped);
-    } catch {
-      // Fall back to the stripped path if encoding is malformed.
-      return stripped;
-    }
-  }
-
   private async decodeFromLocalFile(
     stringSource: string,
     sampleRate: number
@@ -121,7 +109,7 @@ class AudioDecoder {
       return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
     }
 
-    const filePath = this.resolveLocalFilePath(stringSource);
+    const filePath = resolveLocalFilePath(stringSource);
     const buffer = await this.decoder.decodeWithFilePath(filePath, sampleRate);
     return new AudioBuffer(buffer);
   }

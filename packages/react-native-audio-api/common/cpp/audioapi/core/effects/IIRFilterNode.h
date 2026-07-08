@@ -54,12 +54,28 @@ class IIRFilterNode : public AudioNode {
       size_t length) const;
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
+
+  /// @brief IIR tail length, derived from the dominant pole magnitude of the
+  /// (normalized) feedback polynomial. `r` is clamped to
+  /// `1 - kPoleRadiusEpsilon` to keep the log bounded for poles near the
+  /// unit circle, and the result is capped at `kMaxTailSeconds * sampleRate`
+  /// for pathological coefficient sets.
+  /// @note Audio Thread only.
+  [[nodiscard]] int computeTailFrames() const override;
 
  private:
   static constexpr size_t BUFFER_LENGTH = 32;
+
+  /// Envelope threshold at which the impulse response is considered inaudible (-80 dB).
+  static constexpr double kTailEpsilon = 1e-4;
+
+  /// Hard upper bound on the computed tail length (seconds).
+  static constexpr float kMaxTailSeconds = 30.0f;
+
+  /// Keeps `log(r)` bounded away from zero when the pole sits on or outside
+  /// the unit circle.
+  static constexpr double kPoleRadiusEpsilon = 1e-5;
 
   const AudioArray feedforward_;
   const AudioArray feedback_;
@@ -67,6 +83,14 @@ class IIRFilterNode : public AudioNode {
   AudioBuffer xBuffers_;
   AudioBuffer yBuffers_;
   std::array<size_t, BUFFER_LENGTH> bufferIndices_{};
+
+  double dominantPoleRadius_ = 0.0;
+
+  /// @brief Estimates `max|root|` of the normalized feedback polynomial
+  /// `z^N + a_1 z^(N-1) + ... + a_N` using power iteration on its companion
+  /// matrix. Returns 0 for degenerate (0-order) polynomials.
+  /// @note Called once from the constructor.
+  static double computeDominantPoleRadius(const AudioArray &feedback);
 
   static std::complex<float>
   evaluatePolynomial(const AudioArray &coefficients, std::complex<float> z, int order) {

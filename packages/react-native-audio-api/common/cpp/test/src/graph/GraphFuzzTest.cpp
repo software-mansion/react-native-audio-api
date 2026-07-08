@@ -1,7 +1,5 @@
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 #include <gtest/gtest.h>
-#include <algorithm>
-#include <atomic>
 #include <chrono>
 #include <memory>
 #include <random>
@@ -9,12 +7,12 @@
 #include <thread>
 #include <utility>
 #include <vector>
-#include "AudioThreadGuard.h"
 #include "MockGraphProcessor.h"
 #include "TestGraphUtils.h"
 
 using namespace audioapi::utils::graph;
 using audioapi::test::MockGraphProcessor;
+using audioapi::utils::DisposerImpl;
 
 // =========================================================================
 // Fixture — parameterized by seed for reproducible randomized testing
@@ -23,12 +21,12 @@ using audioapi::test::MockGraphProcessor;
 class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using PNode = ProcessableMockNode;
-  using HNode = HostGraph<PNode>::Node;
-  using Res = Graph<PNode>::Res;
-  using ResultError = Graph<PNode>::ResultError;
+  using HNode = HostGraph::Node;
 
+  static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
+  DisposerImpl<kPayloadSize> disposer_{64};
   std::mt19937_64 rng;
-  std::unique_ptr<Graph<PNode>> graph;
+  std::unique_ptr<Graph> graph;
   std::vector<HNode *> nodes; // tracks live (non-removed) nodes
   size_t initialNodeCount;
   size_t operationCount;
@@ -49,7 +47,7 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     // Ensure graph growth does not happen on the audio thread during this fuzz run.
     const auto maxNodes = static_cast<std::uint32_t>(initialNodeCount + operationCount + 64);
     const auto maxEdges = static_cast<std::uint32_t>(operationCount * 2 + 64);
-    graph = std::make_unique<Graph<PNode>>(4096, maxNodes, maxEdges);
+    graph = std::make_unique<Graph>(4096, &disposer_, maxNodes, maxEdges);
 
     // Randomly partition the range 0..99 into 4 operation weights
     size_t total = 100;
@@ -80,8 +78,9 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
           }
           // Sum inputs
           int sum = 0;
-          for (int v : inputs)
+          for (int v : inputs) {
             sum += v;
+          }
           return sum;
         },
         initialValue);
@@ -89,13 +88,15 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
   /// @brief Pick two distinct random nodes from the live set.
   std::pair<HNode *, HNode *> pickTwoNodes() {
-    if (nodes.size() < 2)
+    if (nodes.size() < 2) {
       return {nullptr, nullptr};
+    }
     auto dist = std::uniform_int_distribution<size_t>(0, nodes.size() - 1);
     size_t a = dist(rng);
     size_t b = dist(rng);
-    if (a == b)
+    if (a == b) {
       return {nullptr, nullptr};
+    }
     return {nodes[a], nodes[b]};
   }
 

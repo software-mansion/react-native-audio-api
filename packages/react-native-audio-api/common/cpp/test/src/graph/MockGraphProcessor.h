@@ -1,11 +1,12 @@
 #pragma once
 
-#include <audioapi/core/utils/graph/Graph.hpp>
+#include <audioapi/core/utils/graph/Graph.h>
 #include "AudioThreadGuard.h"
 
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <ranges>
 #include <thread>
 
 #ifdef __APPLE__
@@ -21,15 +22,15 @@ namespace audioapi::test {
 /// Spawns a dedicated thread that repeatedly:
 ///   1. Processes SPSC events (graph mutations from the main thread)
 ///   2. Runs toposort + compaction
-///   3. Iterates nodes in topological order, calling `process()` if the
-///      NodeType supports it (SFINAE via `requires`)
+///   3. Iterates graph objects in topological order, downcasts to `NodeType`,
+///      then calls `process(inputs)` if available
 ///
 /// The thread is instrumented with AudioThreadGuard to detect heap
 /// allocations / deallocations and sample context-switch counters.
 ///
 /// ## Usage
 /// ```cpp
-/// Graph<ProcessableMockNode> graph(4096);
+/// Graph graph(4096);
 /// MockGraphProcessor processor(graph);
 /// processor.start();
 /// // … mutate graph from main thread …
@@ -37,11 +38,11 @@ namespace audioapi::test {
 /// EXPECT_TRUE(processor.allocationClean());
 /// ```
 ///
-/// @tparam NodeType the audio graph node type (must satisfy AudioGraphNode)
-template <audioapi::utils::graph::AudioGraphNode NodeType>
+/// @tparam NodeType concrete GraphObject subtype expected by this processor.
+template <typename NodeType>
 class MockGraphProcessor {
  public:
-  explicit MockGraphProcessor(audioapi::utils::graph::Graph<NodeType> &graph) : graph_(graph) {}
+  explicit MockGraphProcessor(audioapi::utils::graph::Graph &graph) : graph_(graph) {}
 
   ~MockGraphProcessor() {
     stop();
@@ -59,8 +60,9 @@ class MockGraphProcessor {
   /// @brief Signals the audio thread to stop and waits for it to finish.
   void stop() {
     running_.store(false, std::memory_order_release);
-    if (thread_.joinable())
+    if (thread_.joinable()) {
       thread_.join();
+    }
   }
 
   /// @brief Total allocation/deallocation violations across all cycles.
@@ -136,16 +138,18 @@ class MockGraphProcessor {
     cycles_.fetch_add(1, std::memory_order_relaxed);
   }
 
-  /// @brief Iterates nodes in topological order and calls process(inputs).
+  /// @brief Iterates graph objects in topological order and calls process(inputs).
   void processNodes() {
-    for (auto &&[node, inputs] : graph_.iter()) {
-      if constexpr (requires { node.process(inputs); }) {
-        node.process(inputs);
+    for (auto &&[graphObject, inputs] : graph_.iter()) {
+      auto *node = dynamic_cast<NodeType *>(&graphObject);
+      if (!node) {
+        continue;
       }
+      node->process(inputs);
     }
   }
 
-  audioapi::utils::graph::Graph<NodeType> &graph_;
+  audioapi::utils::graph::Graph &graph_;
   std::thread thread_;
   std::atomic<bool> running_{false};
   std::atomic<size_t> allocationViolations_{0};

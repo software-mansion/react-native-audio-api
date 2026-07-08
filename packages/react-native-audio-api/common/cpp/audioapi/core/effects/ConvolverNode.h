@@ -28,7 +28,7 @@ class ConvolverNode : public AudioNode {
   void setBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,
       std::vector<std::unique_ptr<Convolver>> convolvers,
-      const std::shared_ptr<ThreadPool> &threadPool,
+      const std::shared_ptr<ConvolverThreadPool> &threadPool,
       const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
       const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
       float scaleFactor);
@@ -36,16 +36,17 @@ class ConvolverNode : public AudioNode {
   float calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) const;
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
+
+  /// @brief Tail length equals the impulse-response length in frames. A
+  /// freshly loaded IR makes the convolver ring for at least its own length
+  /// after the input goes silent.
+  /// @note Audio Thread only.
+  [[nodiscard]] int computeTailFrames() const override;
 
  private:
-  void onInputDisabled() override;
   const float gainCalibrationSampleRate_;
-  size_t remainingSegments_;
   size_t internalBufferIndex_;
-  bool signalledToStop_;
   float scaleFactor_;
   std::shared_ptr<DSPAudioBuffer> intermediateBuffer_;
 
@@ -55,7 +56,9 @@ class ConvolverNode : public AudioNode {
   std::shared_ptr<DSPAudioBuffer> internalBuffer_;
   // vectors of convolvers, one per channel
   std::vector<std::unique_ptr<Convolver>> convolvers_;
-  std::shared_ptr<ThreadPool> threadPool_;
+  std::shared_ptr<ConvolverThreadPool> threadPool_;
+  std::array<int, 4> inputChannelMap_;
+  std::array<int, 4> outputChannelMap_;
 
   void performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
 };

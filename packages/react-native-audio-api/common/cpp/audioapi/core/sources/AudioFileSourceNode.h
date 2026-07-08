@@ -44,9 +44,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Closes the decoder and tears down offloaded seek workers.
   void disable() override;
 
-  /// @brief Connects to @p node unless audio is routed through a media element.
-  void connect(const std::shared_ptr<AudioNode> &node) override;
-
   /// @brief Schedules playback; auto-connects to the destination when not media-routed.
   void start(double when) override;
 
@@ -123,21 +120,23 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
     return filePaused_;
   }
 
+  bool canBeDestructed() const override {
+    return filePaused() || AudioScheduledSourceNode::canBeDestructed();
+  }
+
   void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
  protected:
-  /// @brief Outputs silence when media-routed; otherwise decodes into @p processingBuffer.
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioFileDecoderState> decoderState_;
   /// @brief Decodes and mixes samples for direct or media-element playback.
+  /// @param outputBuffer when non-null, decoded audio is written here instead of this node's buffer.
   /// @note Audio thread only.
-  std::shared_ptr<DSPAudioBuffer> processDecodedOutput(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess);
+  void processDecodedOutput(
+      int framesToProcess,
+      const std::shared_ptr<DSPAudioBuffer> &outputBuffer = nullptr);
 
   /// @brief Handles the paused / drained / stopped short-circuit states before decoding.
   /// @return a finished output buffer when the render should bail out early, std::nullopt otherwise.

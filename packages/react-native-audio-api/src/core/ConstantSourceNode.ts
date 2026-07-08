@@ -12,6 +12,6 @@ export default class ConstantSourceNode extends AudioScheduledSourceNode {
       options || {}
     );
     super(context, node);
-    this.offset = new AudioParam(node.offset, context);
+    this.offset = new AudioParam(node.offset, context, this);
   }
 }

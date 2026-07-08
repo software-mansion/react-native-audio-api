@@ -12,8 +12,8 @@ export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode 
   constructor(context: BaseAudioContext, node: IAudioBufferBaseSourceNode) {
     super(context, node);
 
-    this.detune = new AudioParam(node.detune, context);
-    this.playbackRate = new AudioParam(node.playbackRate, context);
+    this.detune = new AudioParam(node.detune, context, this);
+    this.playbackRate = new AudioParam(node.playbackRate, context, this);
   }
 
   public get onPositionChanged():

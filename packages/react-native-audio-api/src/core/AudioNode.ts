@@ -2,7 +2,7 @@ import { IAudioNode } from '../jsi-interfaces';
 import AudioParam from './AudioParam';
 import { ChannelCountMode, ChannelInterpretation } from '../types';
 import type BaseAudioContext from './BaseAudioContext';
-import { InvalidAccessError } from '../errors';
+import { IndexSizeError } from '../errors';
 
 export default class AudioNode {
   readonly context: BaseAudioContext;
@@ -27,14 +27,24 @@ export default class AudioNode {
   public connect(destination: AudioParam): void;
   public connect(destination: AudioNode | AudioParam): AudioNode | void {
     if (this.context !== destination.context) {
-      throw new InvalidAccessError(
+      throw new IndexSizeError(
         'Source and destination are from different BaseAudioContexts'
       );
+    }
+
+    if (this.numberOfOutputs === 0) {
+      throw new IndexSizeError('Faild to connect: AudioNode has no output');
     }
 
     if (destination instanceof AudioParam) {
       this.node.connect(destination.audioParam);
     } else {
+      if (destination.numberOfInputs === 0) {
+        throw new IndexSizeError(
+          'Failed to connect: destination AudioNode has no input'
+        );
+      }
+
       this.node.connect(destination.node);
       return destination;
     }

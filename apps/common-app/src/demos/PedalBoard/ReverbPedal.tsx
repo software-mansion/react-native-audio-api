@@ -47,7 +47,7 @@ export default function ReverbPedal({
     } else if (level < 0.66) {
       desiredDuration = 0.7;
     } else {
-      desiredDuration = 1;
+      desiredDuration = 5;
     }
     if (convolverNodeRef.current?.buffer) {
       if (convolverNodeRef.current.buffer.duration === desiredDuration) {

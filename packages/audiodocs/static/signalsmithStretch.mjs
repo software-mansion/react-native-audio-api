@@ -470,10 +470,19 @@ function registerWorkletProcessor(Module, audioNodeKey) {
           return result;
         },
         schedule: (objIn, adjustPrevious) => {
-          let outputTime = 'output' in objIn ? objIn.output : currentTime;
-          let latestSegment = this.timeMap[this.timeMap.length - 1];
-          while (this.timeMap.length && this.timeMap[this.timeMap.length - 1].output >= outputTime) {
-            latestSegment = this.timeMap.pop();
+          let outputTime = 'output' in objIn && objIn.output !== undefined ? objIn.output : currentTime;
+          let latestSegment = this.timeMap[0];
+          for (let i = 0; i < this.timeMap.length; i++) {
+            if (this.timeMap[i].output <= outputTime) {
+              latestSegment = this.timeMap[i];
+            } else {
+              break;
+            }
+          }
+          const existingIndex = this.timeMap.findIndex(segment => segment.output === outputTime);
+          if (existingIndex >= 0) {
+            latestSegment = this.timeMap[existingIndex];
+            this.timeMap.splice(existingIndex, 1);
           }
           let obj = {
             active: latestSegment.active,
@@ -489,7 +498,12 @@ function registerWorkletProcessor(Module, audioNodeKey) {
             let rate = latestSegment.active ? latestSegment.rate : 0;
             obj.input = latestSegment.input + (obj.output - latestSegment.output) * rate;
           }
-          this.timeMap.push(obj);
+          const insertAt = existingIndex >= 0 ? existingIndex : this.timeMap.findIndex(segment => segment.output > outputTime);
+          if (insertAt === -1) {
+            this.timeMap.push(obj);
+          } else {
+            this.timeMap.splice(insertAt, 0, obj);
+          }
           if (adjustPrevious && this.timeMap.length > 1) {
             let previous = this.timeMap[this.timeMap.length - 2];
             if (previous.output < currentTime) {
@@ -500,12 +514,12 @@ function registerWorkletProcessor(Module, audioNodeKey) {
             previous.rate = (obj.input - previous.input) / (obj.output - previous.output);
           }
           let currentMapSegment = this.timeMap[0];
-          while (this.timeMap.length > 1 && this.timeMap[1].output <= outputTime) {
+          while (this.timeMap.length > 1 && this.timeMap[1].output <= currentTime) {
             this.timeMap.shift();
             currentMapSegment = this.timeMap[0];
           }
           let rate = currentMapSegment.active ? currentMapSegment.rate : 0;
-          let inputTime = currentMapSegment.input + (outputTime - currentMapSegment.output) * rate;
+          let inputTime = currentMapSegment.input + (currentTime - currentMapSegment.output) * rate;
           this.timeIntervalCounter = this.timeIntervalSamples;
           this.port.postMessage(['time', inputTime]);
           return obj;

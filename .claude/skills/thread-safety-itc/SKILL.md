@@ -140,6 +140,8 @@ offloader.scheduleTask(std::move(workItem));
 
 See the `utilities` skill for full API.
 
+**Pitfall — file writer / recorder shutdown:** `TaskOffloader::shutdown()` drains the SPSC queue before joining the worker. Call it (or destroy the offloader) only after `isFileOpen_` is cleared so the audio thread stops enqueueing. Otherwise rotated or closed M4A segments lose seconds of buffered audio. Types with a `.slot` member use `slot == size_t max` as the shutdown sentinel.
+
 ---
 
 ## Driver synchronization (layered model)

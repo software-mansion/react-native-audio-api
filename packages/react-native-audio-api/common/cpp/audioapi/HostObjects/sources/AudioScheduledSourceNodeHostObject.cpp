@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/types/NodeOptions.h>
@@ -8,9 +9,11 @@
 namespace audioapi {
 
 AudioScheduledSourceNodeHostObject::AudioScheduledSourceNodeHostObject(
-    const std::shared_ptr<AudioScheduledSourceNode> &node,
+    const std::shared_ptr<utils::graph::Graph> &graph,
+    std::unique_ptr<AudioNode> node,
     const AudioScheduledSourceNodeOptions &options)
-    : AudioNodeHostObject(node, options) {
+    : AudioNodeHostObject(graph, std::move(node), options),
+      scheduledSourceNode_(typedAudioNode<AudioScheduledSourceNode>(node_)) {
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onEnded));
 
   addFunctions(
@@ -19,33 +22,35 @@ AudioScheduledSourceNodeHostObject::AudioScheduledSourceNodeHostObject(
 }
 
 AudioScheduledSourceNodeHostObject::~AudioScheduledSourceNodeHostObject() {
-  auto node = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-  node->assignOnEndedCallbackId(0);
+  // When JSI object is garbage collected (together with the eventual callback),
+  // underlying source node might still be active and try to call the
+  // non-existing callback.
+  scheduledSourceNode_->assignOnEndedCallbackId(0);
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioScheduledSourceNodeHostObject, onEnded) {
-  auto sourceNode = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-  sourceNode->assignOnEndedCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
+  scheduledSourceNode_->assignOnEndedCallbackId(
+      std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, start) {
-  auto audioScheduleSourceNode = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-
-  auto event = [audioScheduleSourceNode, when = args[0].getNumber()](BaseAudioContext &) {
-    audioScheduleSourceNode->start(when);
-  };
-  audioScheduleSourceNode->scheduleAudioEvent(std::move(event));
+  auto handle = node_->handle;
+  auto event =
+      [handle, node = scheduledSourceNode_, when = args[0].getNumber()](BaseAudioContext &) {
+        node->start(when);
+      };
+  scheduledSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioScheduledSourceNodeHostObject, stop) {
-  auto audioScheduleSourceNode = std::static_pointer_cast<AudioScheduledSourceNode>(node_);
-
-  auto event = [audioScheduleSourceNode, when = args[0].getNumber()](BaseAudioContext &) {
-    audioScheduleSourceNode->stop(when);
-  };
-  audioScheduleSourceNode->scheduleAudioEvent(std::move(event));
+  auto handle = node_->handle;
+  auto event =
+      [handle, node = scheduledSourceNode_, when = args[0].getNumber()](BaseAudioContext &) {
+        node->stop(when);
+      };
+  scheduledSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::Value::undefined();
 }

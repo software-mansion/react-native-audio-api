@@ -3,7 +3,9 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
 
+#include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -17,15 +19,22 @@ WaveShaperNode::WaveShaperNode(
     waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr, context->getSampleRate()));
   }
   setCurve(options.curve);
-  isInitialized_.store(true, std::memory_order_release);
 }
 
-void WaveShaperNode::setOversample(OverSampleType type) {
-  oversample_ = type;
+void WaveShaperNode::setOversample(
+    std::unique_ptr<OversampleUpdate> update,
+    utils::Disposer<DISPOSER_PAYLOAD_SIZE> &disposer) {
+  oversample_ = update->type;
 
-  for (int i = 0; i < waveShapers_.size(); i++) {
-    waveShapers_[i]->setOversample(type);
+  const size_t n = std::min(waveShapers_.size(), update->pairs.size());
+  for (size_t i = 0; i < n; i++) {
+    auto &[up, down] = update->pairs[i];
+    waveShapers_[i]->setOversample(update->type, std::move(up), std::move(down), disposer);
   }
+  // Ship the wrapper itself off the audio thread. Only the 8-byte
+  // unique_ptr crosses the disposer; ~OversampleUpdate (and its now-empty
+  // vector of moved-from unique_ptrs) runs on the worker thread.
+  disposer.dispose(std::move(update));
 }
 
 void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
@@ -36,20 +45,16 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   }
 }
 
-std::shared_ptr<DSPAudioBuffer> WaveShaperNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void WaveShaperNode::processNode(int framesToProcess) {
   if (curve_ == nullptr) {
-    return processingBuffer;
+    return;
   }
 
-  for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); channel++) {
-    auto *channelData = processingBuffer->getChannel(channel);
+  for (size_t channel = 0; channel < audioBuffer_->getNumberOfChannels(); channel++) {
+    auto *channelData = audioBuffer_->getChannel(channel);
 
     waveShapers_[channel]->process(*channelData, framesToProcess);
   }
-
-  return processingBuffer;
 }
 
 } // namespace audioapi

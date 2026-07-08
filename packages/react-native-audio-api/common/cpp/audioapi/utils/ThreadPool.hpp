@@ -1,11 +1,12 @@
 #pragma once
+#include <cstddef>
 #include <memory>
 #include <thread>
 #include <utility>
 #include <variant>
 #include <vector>
 
-#include <audioapi/utils/MoveOnlyFunction.hpp>
+#include <audioapi/utils/FatFunction.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 
 namespace audioapi {
@@ -16,10 +17,16 @@ namespace audioapi {
 /// @note Each worker thread has its own SPSC channel to receive tasks from the load balancer.
 /// @note The thread pool can be shut down gracefully by sending a stop event to the load balancer, which then propagates the stop event to all worker threads.
 /// @note IMPORTANT: ThreadPool is not thread-safe and events should be scheduled from a single thread only.
+/// @tparam TaskSize Maximum size in bytes of a scheduled task closure (stored
+/// inline via stdext::inplace_function, no heap allocation). Tasks larger than
+/// this fail at compile time. Pick the smallest value that fits all your
+/// schedule(...) call sites; smaller is better as it shrinks the SPSC slot
+/// footprint and keeps the audio-thread allocation contract enforced.
+template <std::size_t TaskSize>
 class ThreadPool {
   struct StopEvent {};
   struct TaskEvent {
-    audioapi::move_only_function<void()> task;
+    FatFunction<TaskSize, void()> task;
   };
   using Event = std::variant<TaskEvent, StopEvent>;
 
@@ -67,12 +74,12 @@ class ThreadPool {
   }
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool &operator=(const ThreadPool &) = delete;
-  ThreadPool(ThreadPool &&other)
+  ThreadPool(ThreadPool &&other) noexcept
       : loadBalancerThread(std::move(other.loadBalancerThread)),
         workers(std::move(other.workers)),
         loadBalancerSender(std::move(other.loadBalancerSender)),
         controlBlock_(std::move(other.controlBlock_)) {}
-  ThreadPool &operator=(ThreadPool &&other) {
+  ThreadPool &operator=(ThreadPool &&other) noexcept {
     if (this != &other) {
       loadBalancerThread = std::move(other.loadBalancerThread);
       workers = std::move(other.workers);
@@ -104,11 +111,10 @@ class ThreadPool {
   /// @note The task should not throw exceptions, as they will not be caught.
   /// @note The task should end at some point, otherwise the thread pool will never be able to shut down.
   /// @note IMPORTANT: This function is not thread-safe and should be called from a single thread only.
-  template <
-      typename Func,
-      typename... Args,
-      typename = std::enable_if_t<std::is_invocable_r_v<void, Func, Args...>>>
-  void schedule(Func &&task, Args &&...args) noexcept {
+  template <typename Func, typename... Args>
+  void schedule(Func &&task, Args &&...args) noexcept
+    requires(std::is_invocable_r_v<void, Func, Args...>)
+  {
     controlBlock_->tasksScheduled.fetch_add(1, std::memory_order_release);
 
     /// We know that lifetime of each worker thus spsc thus lambda is strongly bounded by ThreadPool lifetime
@@ -124,7 +130,7 @@ class ThreadPool {
         cntrl->waitingForTasks.notify_one();
       }
     };
-    loadBalancerSender.send(TaskEvent{audioapi::move_only_function<void()>(std::move(boundTask))});
+    loadBalancerSender.send(TaskEvent{std::move(boundTask)});
   }
 
   /// @brief Waits for all scheduled tasks to complete
@@ -143,7 +149,6 @@ class ThreadPool {
       return;
     }
     controlBlock_->waitingForTasks.wait(true, std::memory_order_acquire);
-    return;
   }
 
  private:
@@ -179,8 +184,8 @@ class ThreadPool {
       /// and whenever we receive StopEvent we can burn some cycles as it will not be expected to execute fast.
       if (std::holds_alternative<StopEvent>(event)) [[unlikely]] {
         // Propagate stop event to all workers
-        for (size_t i = 0; i < localWorkerSenders.size(); ++i) {
-          localWorkerSenders[i].send(StopEvent{});
+        for (auto &localWorkerSender : localWorkerSenders) {
+          localWorkerSender.send(StopEvent{});
         }
         break;
       } else if (std::holds_alternative<TaskEvent>(event)) [[likely]] {
@@ -192,5 +197,16 @@ class ThreadPool {
     }
   }
 };
+
+/// Max inline storage (bytes) for scheduled task closures.
+namespace thread_pool {
+
+inline constexpr std::size_t kSmallTaskStorageBytes = 32;
+inline constexpr std::size_t kPromiseTaskStorageBytes = 128;
+
+} // namespace thread_pool
+
+using ConvolverThreadPool = ThreadPool<thread_pool::kSmallTaskStorageBytes>;
+using PromiseVendorThreadPool = ThreadPool<thread_pool::kPromiseTaskStorageBytes>;
 
 }; // namespace audioapi

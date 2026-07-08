@@ -1,5 +1,3 @@
-
-
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -98,13 +96,6 @@ describe('Audio Recording Tests', () => {
     });
 
     expect(result.status).toBe('success');
-
-    // Set up recording chain
-    const oscillator = context.createOscillator();
-    const recorderAdapter = context.createRecorderAdapter();
-
-    oscillator.connect(recorderAdapter);
-    recorder.connect(recorderAdapter);
 
     // Test recording workflow
     const startResult = await recorder.start();

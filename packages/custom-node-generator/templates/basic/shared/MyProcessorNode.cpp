@@ -3,13 +3,9 @@
 namespace audioapi {
 MyProcessorNode::MyProcessorNode(
     const std::shared_ptr<BaseAudioContext> &context)
-    : AudioNode(context) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+    : AudioNode(context) {}
 
-std::shared_ptr<DSPAudioBuffer>
-MyProcessorNode::processNode(const std::shared_ptr<DSPAudioBuffer> &buffer,
-                             int framesToProcess) {
+void MyProcessorNode::processNode(int framesToProcess) {
   // put your processing logic here
 }
 } // namespace audioapi

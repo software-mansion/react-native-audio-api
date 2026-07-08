@@ -31,9 +31,6 @@ const AudioTag: React.FC = () => {
   const [mediaElementRoute, setMediaElementRoute] = useState(false);
   const biquadRef = useRef<BiquadFilterNode>(null);
 
-  const ensureMediaElementRoute = useCallback(() => {
-  }, []);
-
   useEffect(() => {
     return () => {
       mediaElementSourceRef.current = null;

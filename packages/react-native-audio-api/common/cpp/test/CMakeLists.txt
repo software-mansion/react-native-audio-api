@@ -3,6 +3,11 @@ project(rnaudioapi_test)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(-Wno-interference-size)
+endif()
+
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")

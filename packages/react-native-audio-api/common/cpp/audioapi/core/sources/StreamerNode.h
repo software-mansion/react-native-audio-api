@@ -67,6 +67,8 @@ struct StreamingData {
   ~StreamingData() = default;
 };
 
+using StreamingDataPtr = std::unique_ptr<StreamingData>;
+
 namespace audioapi {
 
 struct StreamerOptions;
@@ -80,9 +82,7 @@ class StreamerNode : public AudioScheduledSourceNode {
   DELETE_COPY_AND_MOVE(StreamerNode);
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
 
  private:
   std::string streamPath_;
@@ -101,20 +101,21 @@ class StreamerNode : public AudioScheduledSourceNode {
   // --resampling--
   AudioBuffer resamplerInputBuffer_;
   AudioBuffer resamplerOutputBuffer_;
-  StreamingData bufferedAudioData_; // audio data for buffering hls frames
-  bool hasBufferedAudioData_;
-  int audio_stream_index_; // index of the audio stream channel in the input
+  StreamingDataPtr bufferedAudioData_; // audio data for buffering hls frames
+  int audio_stream_index_;             // index of the audio stream channel in the input
   int maxResampledSamples_;
   size_t processedSamples_;
 
   std::thread streamingThread_;
   std::atomic<bool> isNodeFinished_;                         // Flag to control the streaming thread
   static constexpr int INITIAL_MAX_RESAMPLED_SAMPLES = 8192; // Initial size for resampled data
-  channels::spsc::
-      Sender<StreamingData, STREAMER_NODE_SPSC_OVERFLOW_STRATEGY, STREAMER_NODE_SPSC_WAIT_STRATEGY>
-          sender_;
+  channels::spsc::Sender<
+      StreamingDataPtr,
+      STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
+      STREAMER_NODE_SPSC_WAIT_STRATEGY>
+      sender_;
   channels::spsc::Receiver<
-      StreamingData,
+      StreamingDataPtr,
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
       STREAMER_NODE_SPSC_WAIT_STRATEGY>
       receiver_;

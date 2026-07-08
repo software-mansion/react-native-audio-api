@@ -15,10 +15,12 @@ uint64_t MediaElementAudioSourceNode::generateBindingId() {
 
 MediaElementAudioSourceNode::MediaElementAudioSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
-    const std::shared_ptr<AudioFileSourceNode> &fileSource,
+    AudioFileSourceNode *fileSource,
     const MediaElementAudioSourceOptions &options)
     : AudioNode(context, options), bindingId_(generateBindingId()), fileSource_(fileSource) {
-  isInitialized_.store(true, std::memory_order_release);
+  if (fileSource_ != nullptr) {
+    fileSource_->bindMediaElementSource(bindingId_);
+  }
 }
 
 MediaElementAudioSourceNode::~MediaElementAudioSourceNode() {
@@ -27,44 +29,39 @@ MediaElementAudioSourceNode::~MediaElementAudioSourceNode() {
   }
 }
 
-std::shared_ptr<DSPAudioBuffer> MediaElementAudioSourceNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+bool MediaElementAudioSourceNode::canBeDestructed() const {
+  return fileSourceNodePaused();
+}
+
+void MediaElementAudioSourceNode::onOutputsDisconnected() {
+  if (fileSource_ != nullptr) {
+    fileSource_->releaseMediaElementSource(bindingId_);
+  }
+}
+
+void MediaElementAudioSourceNode::processNode(int framesToProcess) {
   if (fileSource_ == nullptr) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
   if (!fileSource_->isCurrentMediaElementSource(bindingId_)) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
-  return fileSource_->processDecodedOutput(processingBuffer, framesToProcess);
+  fileSource_->processDecodedOutput(framesToProcess, audioBuffer_);
 }
 
 size_t MediaElementAudioSourceNode::getFileSourceNodeUseCount() const {
-  if (fileSource_ == nullptr) {
-    return 0;
-  }
-  return fileSource_.use_count();
+  return fileSource_ != nullptr ? 1 : 0;
 }
 
 bool MediaElementAudioSourceNode::fileSourceNodePaused() const {
   if (fileSource_ == nullptr) {
-    return false;
+    return true;
   }
   return fileSource_->filePaused();
-}
-
-void MediaElementAudioSourceNode::onOutputsDisconnected() {
-  if (fileSource_ == nullptr || !outputNodes_.empty()) {
-    return;
-  }
-
-  if (fileSource_->isCurrentMediaElementSource(bindingId_)) {
-    fileSource_->releaseMediaElementSource(bindingId_);
-  }
 }
 
 } // namespace audioapi

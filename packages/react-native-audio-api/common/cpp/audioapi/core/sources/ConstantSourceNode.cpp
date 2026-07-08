@@ -16,28 +16,24 @@ ConstantSourceNode::ConstantSourceNode(
               options.offset,
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
-              context)) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+              context)) {}
 
 std::shared_ptr<AudioParam> ConstantSourceNode::getOffsetParam() const {
   return offsetParam_;
 }
 
-std::shared_ptr<DSPAudioBuffer> ConstantSourceNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void ConstantSourceNode::processNode(int framesToProcess) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
   updatePlaybackInfo(
-      processingBuffer,
+      audioBuffer_,
       framesToProcess,
       startOffset,
       offsetLength,
@@ -45,22 +41,19 @@ std::shared_ptr<DSPAudioBuffer> ConstantSourceNode::processNode(
       context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
   auto *offsetChannel =
       offsetParam_->processARateParam(framesToProcess, context->getCurrentTime())->getChannel(0);
 
-  for (size_t channel = 0; channel < processingBuffer->getNumberOfChannels(); ++channel) {
-    processingBuffer->getChannel(channel)->copy(
-        *offsetChannel, startOffset, startOffset, offsetLength);
+  for (size_t channel = 0; channel < audioBuffer_->getNumberOfChannels(); ++channel) {
+    audioBuffer_->getChannel(channel)->copy(*offsetChannel, startOffset, startOffset, offsetLength);
   }
 
   if (isStopScheduled()) {
     handleStopScheduled();
   }
-
-  return processingBuffer;
 }
 } // namespace audioapi

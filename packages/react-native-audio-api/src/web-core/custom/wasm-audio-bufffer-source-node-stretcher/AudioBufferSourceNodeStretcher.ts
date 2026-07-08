@@ -7,10 +7,14 @@ import AudioNode from '../../AudioNode.web';
 
 import { clamp } from '../../../utils';
 import { AudioBufferSourceOptions } from '../../../types';
-import SignalsmithStretch from './signalsmithStretch/SignalsmithStretch.js';
+import LoadCustomWasm, { globalWasmPromise, globalTag } from './LoadCustomWasm';
 
 import { AudioBufferSourceNodeBackend } from '../../types.web';
-import { ScheduleOptions, WasmAudioBufferSourceStretcherNode } from './types';
+import {
+  ScheduleOptions,
+  WasmAudioBufferSourceStretcherNode,
+  WasmAudioBufferSourceStretcherNodeFactory,
+} from './types';
 import AudioStretcherParam, {
   StretcherAutomationEvent,
 } from './AudioStretcherParam';
@@ -46,6 +50,8 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   readonly detune: AudioStretcherParam;
   readonly playbackRate: AudioStretcherParam;
 
+  private _onEnded: ((event: Event) => void) | null = null;
+
   private _loop: boolean = false;
   private _loopStart: number = -1;
   private _loopEnd: number = -1;
@@ -59,7 +65,20 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
 
   constructor(context: BaseAudioContext, options: AudioBufferSourceOptions) {
     this.context = context;
-    const stretcherPromise = SignalsmithStretch(context.context);
+    // The worklet is loaded as a static asset (served next to the app) rather
+    // than bundled, so it is never transformed by the consumer's bundler. The
+    // consumer preloads it via LoadCustomWasm(prefix); this call is idempotent.
+    const stretcherPromise = (async () => {
+      await LoadCustomWasm('/react-native-audio-api');
+      await globalWasmPromise;
+      const factory = (
+        window as unknown as Record<
+          string,
+          WasmAudioBufferSourceStretcherNodeFactory
+        >
+      )[globalTag];
+      return factory(context.context);
+    })();
     this.stretcherPromise = stretcherPromise;
     stretcherPromise.then((node) => {
       this.node = node;
@@ -222,13 +241,6 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
         : when;
 
     this.runOnStretcher((node) => {
-      if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
-        node.schedule({
-          loopStart: this._loopStart,
-          loopEnd: this._loopEnd,
-        });
-      }
-
       const playbackRate = this.playbackRate.getValueAtTime(startAt);
       const detune = this.detune.getValueAtTime(startAt);
       node.start(
@@ -238,16 +250,30 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
         playbackRate,
         detuneCentsToSemitones(detune)
       );
+
+      // Pin the loop to the same segment start() just scheduled (output=startAt).
+      // A separate schedule() with no output would land at the worklet's own
+      // (later) currentTime as an inactive trailing segment and silence playback.
+      if (this.loop && this._loopStart !== -1 && this._loopEnd !== -1) {
+        node.schedule({
+          output: startAt,
+          loopStart: this._loopStart,
+          loopEnd: this._loopEnd,
+        });
+      }
+
       this.flushPendingParamEvents();
     });
   }
 
-  stop(when: number): void {
-    if (when < 0) {
+  stop(when?: number): void {
+    if (when !== undefined && when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
       );
     }
+    // Passing `undefined` lets the worklet stop at its own fresh currentTime.
+    // Passing 0 would schedule deactivation before the start segment (a no-op).
     this.runOnStretcher((node) => {
       node.stop(when);
     });
@@ -286,12 +312,33 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     });
   }
 
+  // Unlike the browser AudioBufferSourceNode, the WASM worklet only picks up
+  // loop bounds when they are scheduled. start() schedules the initial loop;
+  // these setters must re-schedule so live changes take effect while playing.
+  private applyLoopToStretcher(): void {
+    if (!this.hasBeenStarted) {
+      return;
+    }
+    this.runOnStretcher((node) => {
+      if (this._loop && this._loopStart !== -1 && this._loopEnd !== -1) {
+        node.schedule({
+          loopStart: this._loopStart,
+          loopEnd: this._loopEnd,
+        });
+      } else {
+        // Zero-length loop disables looping in the worklet going forward.
+        node.schedule({ loopStart: 0, loopEnd: 0 });
+      }
+    });
+  }
+
   get loop(): boolean {
     return this._loop;
   }
 
   set loop(value: boolean) {
     this._loop = value;
+    this.applyLoopToStretcher();
   }
 
   get loopStart(): number {
@@ -300,6 +347,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
 
   set loopStart(value: number) {
     this._loopStart = value;
+    this.applyLoopToStretcher();
   }
 
   get loopEnd(): number {
@@ -308,6 +356,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
 
   set loopEnd(value: number) {
     this._loopEnd = value;
+    this.applyLoopToStretcher();
   }
 
   get loopSkip(): boolean {
@@ -325,5 +374,16 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   // The WASM stretcher has no per-loop event; callback is stored but never fired.
   set onLoopEnded(callback: ((event: object) => void) | null) {
     this._onLoopEnded = callback ?? undefined;
+  }
+
+  get onEnded(): ((event: Event) => void) | null {
+    return this._onEnded;
+  }
+
+  set onEnded(callback: ((event: Event) => void) | null) {
+    this._onEnded = callback;
+    this.runOnStretcher((node) => {
+      node.onEnded = callback;
+    });
   }
 }

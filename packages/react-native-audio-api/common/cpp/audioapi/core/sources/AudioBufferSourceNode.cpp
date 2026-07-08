@@ -1,7 +1,6 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/AudioUtils.hpp>
@@ -31,7 +30,6 @@ AudioBufferSourceNode::AudioBufferSourceNode(
   };
 
   processor_ = std::make_unique<SingleBufferProcessor>(onLoopEnded);
-  isInitialized_.store(true, std::memory_order_release);
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {
@@ -63,13 +61,13 @@ void AudioBufferSourceNode::setBuffer(
     return;
   }
 
-  auto graphManager = context->getGraphManager();
-
   if (buffer_ != nullptr) {
-    graphManager->addAudioBufferForDestruction(std::move(buffer_));
+    context->getDisposer()->dispose(std::move(buffer_));
   }
 
-  // TODO move DSPAudioBuffers destruction to graph manager as well
+  if (audioBuffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(audioBuffer_));
+  }
 
   if (buffer == nullptr) {
     loopEnd_ = 0;
@@ -109,6 +107,11 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
 
 void AudioBufferSourceNode::disable() {
   AudioScheduledSourceNode::disable();
+
+  if (auto context = context_.lock()) {
+    context->getDisposer()->dispose(std::move(buffer_));
+  }
+  buffer_ = nullptr;
 }
 
 void AudioBufferSourceNode::assignOnLoopEndedCallbackId(uint64_t callbackId) {

@@ -51,7 +51,6 @@ async function App() {
         // !VERY IMPORTANT: please read the Known Issue section below
     };
     const workletNode = audioContext.createWorkletNode(worklet, 1024, 2, 'UIRuntime');
-    const adapterNode = audioContext.createRecorderAdapter();
 
     await AudioManager.setAudioSessionActivity(true);
     adapterNode.connect(workletNode);

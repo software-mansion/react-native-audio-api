@@ -75,9 +75,7 @@ class AnalyserNode : public AudioNode {
   void getByteTimeDomainData(uint8_t *data, int length);
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
 
  private:
   std::atomic<int> fftSize_;

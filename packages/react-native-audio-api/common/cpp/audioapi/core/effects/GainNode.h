@@ -17,9 +17,7 @@ class GainNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
 
  private:
   const std::shared_ptr<AudioParam> gainParam_;

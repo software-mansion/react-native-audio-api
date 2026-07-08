@@ -133,8 +133,8 @@ export interface IAudioNode {
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
 
-  connect: (destination: IAudioNode | IAudioParam) => void;
-  disconnect: (destination?: IAudioNode | IAudioParam) => void;
+  connect(destination: IAudioNode | IAudioParam): void;
+  disconnect(destination?: IAudioNode | IAudioParam): void;
 }
 
 export interface IDelayNode extends IAudioNode {
@@ -388,8 +388,9 @@ export interface IAudioFileUtils {
     outputPath: string
   ) => Promise<string>;
   probeDuration: (
-    data: ArrayBuffer,
-    sampleRate?: number
+    input: ArrayBuffer | string,
+    sampleRate?: number,
+    headers?: Record<string, string>
   ) => Promise<number | null>;
 }
 

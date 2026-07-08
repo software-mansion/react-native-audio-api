@@ -14,7 +14,7 @@
 namespace audioapi {
 
 AudioPlayer::AudioPlayer(
-    const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
     std::mutex *driverMutex,
@@ -132,7 +132,7 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
     auto framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
     if (isRunning_.load(std::memory_order_acquire)) {
-      renderAudio_(buffer_, framesToProcess);
+      renderAudio_(buffer_.get(), framesToProcess);
     } else {
       buffer_->zero();
     }

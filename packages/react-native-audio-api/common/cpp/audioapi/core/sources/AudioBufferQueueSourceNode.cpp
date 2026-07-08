@@ -1,7 +1,6 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/core/utils/buffer/QueueBufferProcessor.h>
@@ -27,11 +26,9 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     addExtraTailFrames_ = true;
   }
 
-  isInitialized_.store(true, std::memory_order_release);
+  auto *disposer = context->getDisposer();
 
-  auto graphManager = context->getGraphManager();
-
-  auto onBufferConsumed = [this, graphManager](
+  auto onBufferConsumed = [this, disposer](
                               size_t bufferId,
                               std::shared_ptr<AudioBuffer> buffer,
                               bool isLastInQueue,
@@ -40,7 +37,7 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     if (fireBufferEndedEvent) {
       sendOnBufferEndedEvent(bufferId, isLastInQueue);
     }
-    graphManager->addAudioBufferForDestruction(std::move(buffer));
+    disposer->dispose(std::move(buffer));
   };
 
   processor_ = std::make_unique<QueueBufferProcessor>(&buffers_, onBufferConsumed);
@@ -94,10 +91,8 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
       return;
     }
 
-    auto graphManager = context->getGraphManager();
-
     if (buffers_.front().first == bufferId) {
-      graphManager->addAudioBufferForDestruction(std::move(buffers_.front().second));
+      context->getDisposer()->dispose(std::move(buffers_.front().second));
       buffers_.pop_front();
       vReadIndex_ = 0.0;
       return;
@@ -107,7 +102,7 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
     // And keep vReadIndex_ at the same position.
     for (auto it = std::next(buffers_.begin()); it != buffers_.end(); ++it) {
       if (it->first == bufferId) {
-        graphManager->addAudioBufferForDestruction(std::move(it->second));
+        context->getDisposer()->dispose(std::move(it->second));
         buffers_.erase(it);
         return;
       }
@@ -117,8 +112,8 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
 
 void AudioBufferQueueSourceNode::clearBuffers() {
   if (auto context = context_.lock()) {
-    for (auto &buffer : buffers_) {
-      context->getGraphManager()->addAudioBufferForDestruction(std::move(buffer.second));
+    for (auto it = buffers_.begin(); it != buffers_.end(); ++it) {
+      context->getDisposer()->dispose(std::move(it->second));
     }
 
     buffers_.clear();

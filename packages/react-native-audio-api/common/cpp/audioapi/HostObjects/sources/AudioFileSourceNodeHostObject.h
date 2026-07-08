@@ -36,11 +36,20 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_HOST_FUNCTION_DECL(seekToStart);
   JSI_HOST_FUNCTION_DECL(seekToTime);
 
-  [[nodiscard]] std::shared_ptr<AudioFileSourceNode> getAudioFileSourceNode() const {
-    return std::static_pointer_cast<AudioFileSourceNode>(node_);
+  [[nodiscard]] AudioFileSourceNode *audioFileSourceNode() const noexcept {
+    return audioFileSourceNode_;
+  }
+
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // Interleaved decode scratch (RQ * channels) + file/streaming state.
+    // FFmpeg decoder context (if enabled) adds more but is not tracked here;
+    return AudioNodeHostObject::getMemoryPressure() +
+        RENDER_QUANTUM_SIZE * channelCount_ * sizeof(float) + 4 * 1024;
   }
 
  private:
+  AudioFileSourceNode *audioFileSourceNode_ = nullptr;
+
   bool loop_;
   double duration_;
   float volume_;

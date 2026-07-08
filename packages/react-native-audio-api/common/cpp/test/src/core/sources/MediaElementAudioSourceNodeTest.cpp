@@ -1,8 +1,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
-#include <audioapi/core/effects/GainNode.h>
+#include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <audioapi/core/sources/MediaElementAudioSourceNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
@@ -72,12 +71,14 @@ class MediaElementAudioSourceNodeTest : public ::testing::Test {
   static constexpr int kSampleRate = 44100;
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
+  std::shared_ptr<AudioDestinationNode> destination;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(
         2, 5 * kSampleRate, kSampleRate, eventRegistry, RuntimeRegistry{});
-    context->initialize();
+    destination = std::make_shared<AudioDestinationNode>(context);
+    context->initialize(destination.get());
   }
 
   std::shared_ptr<AudioFileSourceNode> createFileSource() {
@@ -93,14 +94,13 @@ class TestableMediaElementAudioSourceNode : public MediaElementAudioSourceNode {
  public:
   explicit TestableMediaElementAudioSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
-      const std::shared_ptr<AudioFileSourceNode> &fileSource,
+      AudioFileSourceNode *fileSource,
       const MediaElementAudioSourceOptions &options)
       : MediaElementAudioSourceNode(context, fileSource, options) {}
 
-  std::shared_ptr<DSPAudioBuffer> processForTest(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) {
-    return processNode(processingBuffer, framesToProcess);
+  const DSPAudioBuffer *processForTest(int framesToProcess) {
+    processNode(framesToProcess);
+    return getOutputBuffer().get();
   }
 };
 
@@ -126,21 +126,14 @@ TEST_F(MediaElementAudioSourceNodeTest, DisconnectingLastOutputReleasesMediaBind
   auto fileSource = createFileSource();
   ASSERT_NE(fileSource, nullptr);
 
-  auto gain = context->createGain(GainOptions{});
-  auto gainNode = std::static_pointer_cast<AudioNode>(gain);
   auto media = std::make_shared<MediaElementAudioSourceNode>(
       context,
-      fileSource,
+      fileSource.get(),
       MediaElementAudioSourceOptions(static_cast<int>(fileSource->getChannelCount())));
 
-  fileSource->bindMediaElementSource(media->getBindingId());
   ASSERT_TRUE(fileSource->isRoutedThroughMediaElement());
 
-  media->connect(gainNode);
-  context->getGraphManager()->preProcessGraph();
-
-  media->disconnect(gainNode);
-  context->getGraphManager()->preProcessGraph();
+  media->onOutputsDisconnected();
 
   EXPECT_FALSE(fileSource->isRoutedThroughMediaElement());
 }
@@ -151,23 +144,17 @@ TEST_F(MediaElementAudioSourceNodeTest, StaleMediaNodeOutputsSilence) {
 
   auto mediaA = std::make_shared<TestableMediaElementAudioSourceNode>(
       context,
-      fileSource,
+      fileSource.get(),
       MediaElementAudioSourceOptions(static_cast<int>(fileSource->getChannelCount())));
   auto mediaB = std::make_shared<TestableMediaElementAudioSourceNode>(
       context,
-      fileSource,
+      fileSource.get(),
       MediaElementAudioSourceOptions(static_cast<int>(fileSource->getChannelCount())));
 
-  fileSource->bindMediaElementSource(mediaA->getBindingId());
-  fileSource->bindMediaElementSource(mediaB->getBindingId());
+  ASSERT_TRUE(fileSource->isCurrentMediaElementSource(mediaB->getBindingId()));
 
   constexpr int kFrames = 8;
-  auto buffer = std::make_shared<DSPAudioBuffer>(kFrames, 1, static_cast<float>(kSampleRate));
-  for (int i = 0; i < kFrames; ++i) {
-    (*buffer->getChannel(0))[i] = 1.0f;
-  }
-
-  auto out = mediaA->processForTest(buffer, kFrames);
+  const DSPAudioBuffer *out = mediaA->processForTest(kFrames);
   ASSERT_NE(out, nullptr);
 
   for (int i = 0; i < kFrames; ++i) {

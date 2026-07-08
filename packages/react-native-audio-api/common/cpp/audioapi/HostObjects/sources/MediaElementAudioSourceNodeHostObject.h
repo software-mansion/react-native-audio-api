@@ -2,21 +2,25 @@
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/HostObjects/sources/MediaElementAudioSourceNodeHostObject.h>
+#include <audioapi/core/AudioContext.h>
+#include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/types/NodeOptions.h>
 #include <memory>
 
 namespace audioapi {
 
-class MediaElementAudioSourceNode;
-
 class MediaElementAudioSourceNodeHostObject : public AudioNodeHostObject {
  public:
   explicit MediaElementAudioSourceNodeHostObject(
-      const std::shared_ptr<MediaElementAudioSourceNode> &node)
+      const std::shared_ptr<AudioContext> &context,
+      AudioFileSourceNode *fileSource)
       : AudioNodeHostObject(
-            node,
-            MediaElementAudioSourceOptions(static_cast<int>(node->getChannelCount()))) {}
+            context->getGraph(),
+            std::make_unique<MediaElementAudioSourceNode>(
+                context,
+                fileSource,
+                MediaElementAudioSourceOptions(static_cast<int>(fileSource->getChannelCount())))) {}
 };
 
 } // namespace audioapi

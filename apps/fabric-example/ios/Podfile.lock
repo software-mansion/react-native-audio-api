@@ -1842,7 +1842,7 @@ PODS:
     - React-utils (= 0.85.0)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.85.0)
-  - RNAudioAPI (0.13.0):
+  - RNAudioAPI (1.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1863,10 +1863,10 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - RNAudioAPI/audioapi (= 0.13.0)
+    - RNAudioAPI/audioapi (= 1.0.0)
     - RNWorklets
     - Yoga
-  - RNAudioAPI/audioapi (0.13.0):
+  - RNAudioAPI/audioapi (1.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1887,35 +1887,12 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - RNAudioAPI/audioapi/audioapi_dsp (= 0.13.0)
-    - RNAudioAPI/audioapi/ios (= 0.13.0)
-    - RNAudioAPI/audioapi/miniaudio_impl (= 0.13.0)
+    - RNAudioAPI/audioapi/audioapi_dsp (= 1.0.0)
+    - RNAudioAPI/audioapi/ios (= 1.0.0)
+    - RNAudioAPI/audioapi/miniaudio_impl (= 1.0.0)
     - RNWorklets
     - Yoga
-  - RNAudioAPI/audioapi/audioapi_dsp (0.13.0):
-    - hermes-engine
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-Core-prebuilt
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - ReactNativeDependencies
-    - RNWorklets
-    - Yoga
-  - RNAudioAPI/audioapi/ios (0.13.0):
+  - RNAudioAPI/audioapi/audioapi_dsp (1.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1938,7 +1915,30 @@ PODS:
     - ReactNativeDependencies
     - RNWorklets
     - Yoga
-  - RNAudioAPI/audioapi/miniaudio_impl (0.13.0):
+  - RNAudioAPI/audioapi/ios (1.0.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - RNWorklets
+    - Yoga
+  - RNAudioAPI/audioapi/miniaudio_impl (1.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety

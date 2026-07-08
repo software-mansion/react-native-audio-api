@@ -14,7 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Allow override of GRAPH_FILTER via environment variable
-GRAPH_FILTER="${GRAPH_FILTER:-AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:Seeds/*}"
+GRAPH_FILTER="${GRAPH_FILTER:-AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:GraphNodeGrowthTest.*:Seeds/*}"
 
 cmake -S . -B build -Wno-dev
 

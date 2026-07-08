@@ -303,9 +303,7 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const adapter = audioContext.createRecorderAdapter();
-    adapter.connect(audioContext.destination);
-    audioRecorder.connect(adapter);
+    audioRecorder.connect(audioContext, audioContext.destination);
 
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
@@ -662,11 +660,19 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Connects AudioRecorder with [RecorderAdapterNode](/docs/sources/recorder-adapter-node) instance that can be used for further audio processing.
+          Routes captured audio into an audio graph. Two forms are supported:
+
+          1. `connect(adapter)` — connects the recorder to an adapter node you created yourself with `audioContext.createRecorderAdapter()`. Each adapter can only be connected once.
+          2. `connect(context, destination)` — convenience form that creates the adapter node internally, wires the recorder to it, connects it to `destination`, and returns the adapter so you can `disconnect()` it later if needed.
         </div>
         ```tsx
+          // Form 1: explicit adapter
           const adapter = audioContext.createRecorderAdapter();
           audioRecorder.connect(adapter);
+          adapter.connect(audioContext.destination);
+
+          // Form 2: convenience — adapter created under the hood
+          const adapter = audioRecorder.connect(audioContext, audioContext.destination);
         ```
       </td>
     </tr>
@@ -773,6 +779,10 @@ enum FileFormat {
   Flac,
 }
 ```
+
+:::caution Android + FFmpeg
+On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used).
+:::
 
 #### FileInfo
 

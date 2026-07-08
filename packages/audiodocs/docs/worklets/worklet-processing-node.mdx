@@ -70,11 +70,10 @@ function App() {
         gainWorklet,
         'AudioRuntime'
     );
-    const adapterNode = audioContext.createRecorderAdapter();
 
-    adapterNode.connect(workletProcessingNode);
-    workletProcessingNode.connect(audioContext.destination);
-    recorder.connect(adapterNode);
+    recorder
+      .connect(audioContext, workletProcessingNode)
+      .connect(audioContext.destination);
     recorder.start();
 }
 ```

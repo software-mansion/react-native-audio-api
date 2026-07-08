@@ -123,6 +123,24 @@ class Sender {
     }
   }
 
+  /// @brief Snapshot of the monotonic send sequence counter.
+  ///
+  /// Returns the total number of successful sends performed on this channel
+  /// since construction (no wrap-around within the lifetime of the process —
+  /// uint64_t is sufficient).
+  ///
+  /// Intended use: cross-channel barriers. A second producer (e.g. on a GC
+  /// thread, sending on a different channel) can snapshot this value to
+  /// publish a "wait until the receiver of this channel has consumed at
+  /// least N events" barrier.
+  ///
+  /// @note Safe to call from any thread. The sender thread reads its own
+  /// counter; other threads observe with acquire ordering, synchronizing
+  /// with the matching release in `try_send`.
+  [[nodiscard]] std::uint64_t sendCursor() const noexcept {
+    return channel_->sendSeq_.load(std::memory_order_acquire);
+  }
+
   /// @brief Send a value to the channel (move version)
   /// @param value The value to send
   /// @note This function is lock-free but may block if the channel is full.
@@ -179,6 +197,41 @@ class Receiver {
   ResponseStatus try_receive(T &value) noexcept(
       std::is_nothrow_move_assignable_v<T> && std::is_nothrow_destructible_v<T>) {
     return channel_->try_receive(value);
+  }
+
+  /// @brief Peek at the front element without consuming it.
+  ///
+  /// Returns a const pointer to the oldest unread slot, or nullptr if the
+  /// channel is currently empty. The slot is **not** destroyed and the
+  /// receive cursor is **not** advanced — a subsequent `try_receive` will
+  /// move the element out and destroy the slot as usual.
+  ///
+  /// Only valid for channels with `WAIT_ON_FULL` strategy. With
+  /// `OVERWRITE_ON_FULL` the sender may overwrite the slot a peeker is
+  /// pointing at, which would race; that combination is statically
+  /// rejected.
+  ///
+  /// @note Single-consumer only. Must be called from the same thread that
+  /// owns the receiver.
+  [[nodiscard]] const T *try_peek() noexcept {
+    static_assert(
+        Strategy == OverflowStrategy::WAIT_ON_FULL,
+        "try_peek requires WAIT_ON_FULL: with OVERWRITE_ON_FULL the sender "
+        "can race the peeked slot.");
+    return channel_->try_peek();
+  }
+
+  /// @brief Snapshot of the monotonic receive sequence counter.
+  ///
+  /// Returns the total number of successful receives performed on this
+  /// channel since construction. Used together with the matching
+  /// `Sender::sendCursor()` to express "the receiver has consumed every
+  /// event that existed at the moment the sender snapshot was taken"
+  /// barriers.
+  ///
+  /// @note Owned by the receiver thread; relaxed load is sufficient.
+  [[nodiscard]] std::uint64_t rcvCursor() const noexcept {
+    return channel_->rcvSeq_.load(std::memory_order_relaxed);
   }
 
   /// @brief Receive a value from the channel
@@ -299,6 +352,10 @@ class InnerChannel {
     buffer_[rcvCursor].~T(); // Call destructor
 
     rcvCursor_.store(next_index(rcvCursor), std::memory_order_release);
+    // Monotonic sequence: paired with sendSeq_ so external code can compare
+    // "events received" against a snapshot of "events sent" without having
+    // to reason about wrap-around in the masked cursors above.
+    rcvSeq_.fetch_add(1, std::memory_order_release);
 
     if constexpr (Wait == WaitStrategy::ATOMIC_WAIT) {
       rcvCursor_.notify_one(); // Notify sender that a value has been received
@@ -309,6 +366,20 @@ class InnerChannel {
     }
 
     return ResponseStatus::SUCCESS;
+  }
+
+  /// @brief Peek without consuming. See `Receiver::try_peek` for contract.
+  /// @note Single-consumer only; reads the receiver-owned cursor.
+  const T *try_peek() noexcept {
+    size_t rcvCursor = rcvCursor_.load(std::memory_order_relaxed);
+
+    if (rcvCursor == sendCursorCache_) {
+      sendCursorCache_ = sendCursor_.load(std::memory_order_acquire);
+      if (rcvCursor == sendCursorCache_) {
+        return nullptr;
+      }
+    }
+    return &buffer_[rcvCursor];
   }
 
  private:
@@ -332,6 +403,7 @@ class InnerChannel {
     new (&buffer_[sendCursor]) T(std::forward<U>(value));
 
     sendCursor_.store(next_sendCursor, std::memory_order_release);
+    sendSeq_.fetch_add(1, std::memory_order_release);
 
     if constexpr (Wait == WaitStrategy::ATOMIC_WAIT) {
       sendCursor_.notify_one(); // Notify receiver that a value has been sent
@@ -375,6 +447,7 @@ class InnerChannel {
     // Normal case: buffer not full
     new (&buffer_[sendCursor]) T(std::forward<U>(value));
     sendCursor_.store(next_sendCursor, std::memory_order_release);
+    sendSeq_.store(sendSeq_.load(std::memory_order_relaxed) + 1, std::memory_order_release);
 
     if constexpr (Wait == WaitStrategy::ATOMIC_WAIT) {
       sendCursor_.notify_one(); // Notify receiver that a value has been sent
@@ -419,6 +492,13 @@ class InnerChannel {
   alignas(hardware_constructive_interference_size) std::atomic<size_t> rcvCursor_{0};
   alignas(hardware_constructive_interference_size) size_t sendCursorCache_{
       0}; // reduces cache coherency
+
+  /// Monotonic 64-bit sequence counters paired with the masked cursors
+  /// above. Unlike the cursors, these never wrap during a process lifetime,
+  /// which makes them safe to compare with `<` from a third party (e.g. a
+  /// barrier in another channel). Single-writer per counter.
+  alignas(hardware_constructive_interference_size) std::atomic<std::uint64_t> sendSeq_{0};
+  alignas(hardware_constructive_interference_size) std::atomic<std::uint64_t> rcvSeq_{0};
 
   /// Flag indicating if the oldest element is occupied
   alignas(hardware_constructive_interference_size) std::atomic<bool> oldestOccupied_{false};

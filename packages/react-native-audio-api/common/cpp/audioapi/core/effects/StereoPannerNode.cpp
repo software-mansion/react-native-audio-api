@@ -14,32 +14,50 @@ StereoPannerNode::StereoPannerNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const StereoPannerOptions &options)
     : AudioNode(context, options),
-      panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+      panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)),
+      outputBuffer_(
+          std::make_shared<DSPAudioBuffer>(
+              RENDER_QUANTUM_SIZE,
+              channelCount_,
+              context->getSampleRate())) {}
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-std::shared_ptr<DSPAudioBuffer> StereoPannerNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+std::shared_ptr<DSPAudioBuffer> StereoPannerNode::getOutputBuffer() const {
+  return outputBuffer_;
+}
+
+std::shared_ptr<DSPAudioBuffer> StereoPannerNode::getNegotiatedBuffer() const {
+  return getInputBuffer();
+}
+
+void StereoPannerNode::setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) {
+  audioBuffer_ = buffer;
+}
+
+size_t StereoPannerNode::getUpstreamChannelCount(size_t /*negotiatedChannelCount*/) const {
+  return outputBuffer_->getNumberOfChannels();
+}
+
+void StereoPannerNode::processNode(int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    return processingBuffer;
+    return;
   }
+
   double time = context->getCurrentTime();
   double deltaTime = 1.0 / context->getSampleRate();
 
   auto panParamValues = panParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
-  auto outputLeft = audioBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
-  auto outputRight = audioBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
+  auto outputLeft = outputBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
+  auto outputRight = outputBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
 
   // Input is mono
-  if (processingBuffer->getNumberOfChannels() == 1) {
-    auto inputLeft = processingBuffer->getChannelByType(AudioBuffer::ChannelMono)->span();
+  if (audioBuffer_->getNumberOfChannels() == 1) {
+    auto inputLeft = audioBuffer_->getChannelByType(AudioBuffer::ChannelMono)->span();
 
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
@@ -52,8 +70,8 @@ std::shared_ptr<DSPAudioBuffer> StereoPannerNode::processNode(
       time += deltaTime;
     }
   } else { // Input is stereo
-    auto inputLeft = processingBuffer->getChannelByType(AudioBuffer::ChannelLeft)->span();
-    auto inputRight = processingBuffer->getChannelByType(AudioBuffer::ChannelRight)->span();
+    auto inputLeft = audioBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
+    auto inputRight = audioBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
 
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
@@ -74,8 +92,6 @@ std::shared_ptr<DSPAudioBuffer> StereoPannerNode::processNode(
       time += deltaTime;
     }
   }
-
-  return audioBuffer_;
 }
 
 } // namespace audioapi

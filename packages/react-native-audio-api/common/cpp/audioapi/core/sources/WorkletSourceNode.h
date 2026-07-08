@@ -22,11 +22,7 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
       : AudioScheduledSourceNode(context) {}
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override {
-    return processingBuffer;
-  }
+  void processNode(int framesToProcess) override {}
 };
 #else
 
@@ -37,9 +33,7 @@ class WorkletSourceNode : public AudioScheduledSourceNode {
       WorkletsRunner &&workletRunner);
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> processNode(
-      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess) override;
+  void processNode(int framesToProcess) override;
 
  private:
   WorkletsRunner workletRunner_;

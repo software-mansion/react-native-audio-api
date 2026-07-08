@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <sys/resource.h>
 #include <cstddef>
 #include <cstdint>
@@ -54,6 +55,14 @@ class AudioThreadGuard {
   /// Takes a snapshot of context-switch counters.
   static ContextSwitchSnapshot contextSwitches();
 
+  // ── Sanitizer-awareness ─────────────────────────────────────────────────
+
+  /// Returns true if the operator new/delete overrides are active.
+  /// When building with ASan or TSan the overrides are disabled (the
+  /// sanitizer provides its own interceptors), so allocation tracking
+  /// is unavailable and any test relying on it should be skipped.
+  static bool isEnabled();
+
   // ── Internal — called by operator new/delete overrides ──────────────────
 
   static void recordAllocation();
@@ -69,8 +78,7 @@ class AudioThreadGuard {
    public:
     Scope();
     ~Scope();
-    Scope(const Scope &) = delete;
-    Scope &operator=(const Scope &) = delete;
+    DELETE_COPY_AND_MOVE(Scope);
 
     /// Number of allocation/deallocation violations within this scope.
     [[nodiscard]] size_t allocationViolations() const;

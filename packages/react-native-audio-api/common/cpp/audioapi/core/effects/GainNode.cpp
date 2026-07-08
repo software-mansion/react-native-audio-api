@@ -15,31 +15,25 @@ GainNode::GainNode(const std::shared_ptr<BaseAudioContext> &context, const GainO
               options.gain,
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
-              context)) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+              context)) {}
 
 std::shared_ptr<AudioParam> GainNode::getGainParam() const {
   return gainParam_;
 }
 
-std::shared_ptr<DSPAudioBuffer> GainNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void GainNode::processNode(int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    return processingBuffer;
+    return;
   }
   double time = context->getCurrentTime();
   auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
   auto *gainValues = gainParamValues->getChannel(0);
 
-  for (size_t i = 0; i < processingBuffer->getNumberOfChannels(); i++) {
-    auto *channel = processingBuffer->getChannel(i);
+  for (size_t i = 0; i < audioBuffer_->getNumberOfChannels(); i++) {
+    auto *channel = audioBuffer_->getChannel(i);
     channel->multiply(*gainValues, framesToProcess);
   }
-
-  return processingBuffer;
 }
 
 } // namespace audioapi

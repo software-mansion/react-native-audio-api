@@ -1,5 +1,5 @@
 import { AudioApiError } from '../errors';
-import { DecodeDataInput } from '../types';
+import { AudioDurationInput, DecodeDataInput } from '../types';
 import { base64ToArrayBuffer } from '../utils';
 import AudioBuffer from './AudioBuffer.web';
 import OfflineAudioContext from './OfflineAudioContext.web';
@@ -122,6 +122,87 @@ export default class AudioDecoder {
       throw new AudioApiError('Failed to decode PCM data.');
     }
   }
+
+  private loadDurationFromAudioElement(input: string): Promise<number> {
+    if (typeof globalThis.Audio !== 'function') {
+      return Promise.reject(
+        new AudioApiError('getAudioDuration requires HTMLAudioElement support.')
+      );
+    }
+
+    return new Promise((resolve, reject) => {
+      const audio = new globalThis.Audio();
+      let settled = false;
+
+      const cleanup = () => {
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.removeEventListener('error', handleError);
+        audio.src = '';
+        audio.load();
+      };
+
+      const settle = (callback: () => void) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        cleanup();
+        callback();
+      };
+
+      const handleLoadedMetadata = () => {
+        const duration = audio.duration;
+
+        if (Number.isFinite(duration) && duration >= 0) {
+          settle(() => resolve(duration));
+          return;
+        }
+
+        settle(() =>
+          reject(new AudioApiError('Audio duration metadata is unavailable'))
+        );
+      };
+
+      const handleError = () => {
+        const errorMessage = audio.error?.message
+          ? `: ${audio.error.message}`
+          : '';
+        settle(() =>
+          reject(
+            new AudioApiError(`Failed to load audio metadata${errorMessage}`)
+          )
+        );
+      };
+
+      audio.preload = 'metadata';
+      audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.addEventListener('error', handleError);
+      audio.src = input;
+      audio.load();
+    });
+  }
+
+  public getAudioDurationInstance(input: AudioDurationInput): Promise<number> {
+    if (input instanceof ArrayBuffer) {
+      const blob = new Blob([input]);
+      const objectUrl = URL.createObjectURL(blob);
+
+      return this.loadDurationFromAudioElement(objectUrl).finally(() => {
+        URL.revokeObjectURL(objectUrl);
+      });
+    }
+
+    if (typeof input !== 'string') {
+      return Promise.reject(
+        new TypeError(
+          'Input must be a local file path, remote URL, or ArrayBuffer.'
+        )
+      );
+    }
+
+    return this.loadDurationFromAudioElement(input);
+  }
 }
 
 export async function decodeAudioData(
@@ -148,4 +229,8 @@ export async function decodePCMInBase64(
     inputChannelCount,
     isInterleaved
   );
+}
+
+export function getAudioDuration(input: AudioDurationInput): Promise<number> {
+  return AudioDecoder.getInstance().getAudioDurationInstance(input);
 }

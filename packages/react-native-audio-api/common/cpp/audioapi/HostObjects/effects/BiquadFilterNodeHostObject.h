@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/HostObjects/AudioParamHostObject.h>
 
 #include <memory>
 
@@ -10,6 +11,7 @@ using namespace facebook;
 struct BiquadFilterOptions;
 class BaseAudioContext;
 class AudioParamHostObject;
+class BiquadFilterNode;
 
 class BiquadFilterNodeHostObject : public AudioNodeHostObject {
  public:
@@ -27,7 +29,15 @@ class BiquadFilterNodeHostObject : public AudioNodeHostObject {
 
   JSI_HOST_FUNCTION_DECL(getFrequencyResponse);
 
+  [[nodiscard]] size_t getMemoryPressure() const override {
+    // 4 params + per-channel biquad state (x1,x2,y1,y2).
+    return AudioNodeHostObject::getMemoryPressure() + 4 * kAudioParamBytes +
+        channelCount_ * 4 * sizeof(float);
+  }
+
  private:
+  BiquadFilterNode *biquadFilterNode_ = nullptr;
+
   std::shared_ptr<AudioParamHostObject> frequencyParam_;
   std::shared_ptr<AudioParamHostObject> detuneParam_;
   std::shared_ptr<AudioParamHostObject> QParam_;

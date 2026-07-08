@@ -19,21 +19,22 @@ class AudioScheduledSourceTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
+  std::shared_ptr<AudioDestinationNode> destination;
+  static constexpr int sampleRate = 44100;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(
-        2, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry, RuntimeRegistry{});
-    context->initialize();
+        2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
+    destination = std::make_shared<AudioDestinationNode>(context);
+    context->initialize(destination.get());
   }
 };
 
 class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
  public:
   explicit TestableAudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context)
-      : AudioScheduledSourceNode(context) {
-    isInitialized_.store(true, std::memory_order_release);
-  }
+      : AudioScheduledSourceNode(context) {}
 
   void updatePlaybackInfo(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
@@ -51,10 +52,7 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
         currentSampleFrame);
   }
 
-  std::shared_ptr<DSPAudioBuffer> processNode(const std::shared_ptr<DSPAudioBuffer> &, int)
-      override {
-    return nullptr;
-  }
+  void processNode(int) override {}
 
   PlaybackState getPlaybackState() const {
     return playbackState_;
@@ -73,7 +71,7 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
           nonSilentFramesToProcess,
           context->getSampleRate(),
           context->getCurrentSampleFrame());
-      context->getDestination()->renderAudio(processingBuffer, frames);
+      context->processGraph(processingBuffer.get(), frames);
     }
   }
 };

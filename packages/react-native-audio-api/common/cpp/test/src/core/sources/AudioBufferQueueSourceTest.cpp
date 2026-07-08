@@ -2,6 +2,8 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/graph/Graph.h>
+#include <audioapi/core/utils/graph/HostGraph.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -42,30 +44,38 @@ class TestableQueueSourceNode : public AudioBufferQueueSourceNode {
   using AudioBufferQueueSourceNode::processNode;
 };
 
+/// Recovers the concrete audio node owned by a graph node that was just added
+/// via Graph::addNode (the unique_ptr payload lives inside the NodeHandle).
+template <typename NodeT>
+NodeT *nodeOf(utils::graph::HostGraph::Node *hostNode) {
+  return static_cast<NodeT *>(hostNode->handle->audioNode->asAudioNode());
+}
+
 } // namespace
 
 class AudioBufferQueueSourceTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
+  std::shared_ptr<AudioDestinationNode> destination;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(
         1, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry, RuntimeRegistry{});
-    context->initialize();
+    destination = std::make_shared<AudioDestinationNode>(context);
+    context->initialize(destination.get());
   }
 
-  /// Renders one quantum from `node` and advances the context clock the way
-  /// AudioDestinationNode::renderAudio does in production (process first,
-  /// then advance currentSampleFrame).
+  /// Renders one quantum from `node` directly into its own output buffer and
+  /// advances the context clock the way processGraph does in production
+  /// (process first, then advance currentSampleFrame). The node is exercised
+  /// in isolation here, so processGraph only serves to tick the clock.
   std::shared_ptr<DSPAudioBuffer> renderQuantum(TestableQueueSourceNode &node) {
-    auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, (float)SAMPLE_RATE);
-    out->zero();
-    auto result = node.processNode(out, QUANTUM);
+    node.processNode(QUANTUM);
     auto clockBuffer = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, (float)SAMPLE_RATE);
-    context->getDestination()->renderAudio(clockBuffer, QUANTUM);
-    return result;
+    context->processGraph(clockBuffer.get(), QUANTUM);
+    return node.getOutputBuffer();
   }
 };
 
@@ -144,21 +154,31 @@ TEST_F(AudioBufferQueueSourceTest, StreamingEnqueueKeepsPaceAndContinuity) {
   EXPECT_NEAR(node.getCurrentPosition(), expectedPosition, 2.0 * QUANTUM / (double)SAMPLE_RATE);
 }
 
-/// Full-graph variant: a mono queue source created via the context factory,
-/// connected to the (stereo) destination, rendered through
-/// AudioDestinationNode::renderAudio — i.e. the exact production pull path
-/// including graph pre-processing, channel up-mixing and the destination's
-/// per-quantum normalize(). Content is an impulse train (1.0 every 1000
-/// frames); after normalization the impulse POSITIONS must still land every
-/// 1000 output frames if consumption pace is exactly 1x, and every other
-/// sample must stay silent.
+/// Full-graph variant: a mono queue source added to the graph and connected
+/// to the (stereo) destination, rendered through BaseAudioContext::processGraph
+/// — i.e. the exact production pull path including graph pre-processing,
+/// channel up-mixing and the destination's per-quantum normalize(). Content is
+/// an impulse train (1.0 every 1000 frames); after normalization the impulse
+/// POSITIONS must still land every 1000 output frames if consumption pace is
+/// exactly 1x, and every other sample must stay silent.
 TEST_F(AudioBufferQueueSourceTest, FullGraphRenderPreservesPaceAndSilence) {
   auto stereoContext = std::make_shared<OfflineAudioContext>(
       2, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry, RuntimeRegistry{});
-  stereoContext->initialize();
 
-  auto node = stereoContext->createBufferQueueSource(BaseAudioBufferSourceOptions());
-  node->connect(stereoContext->getDestination());
+  auto graph = stereoContext->getGraph();
+
+  // The destination must live in the graph so processGraph() renders through
+  // it and copies its output buffer back.
+  auto *destinationHostNode = graph->addNode(std::make_unique<AudioDestinationNode>(stereoContext));
+  auto *destinationNode = nodeOf<AudioDestinationNode>(destinationHostNode);
+  stereoContext->initialize(destinationNode);
+
+  // Mono queue source -> stereo destination, exactly like the production graph.
+  auto *sourceHostNode = graph->addNode(
+      std::make_unique<AudioBufferQueueSourceNode>(stereoContext, BaseAudioBufferSourceOptions()));
+  auto *node = nodeOf<AudioBufferQueueSourceNode>(sourceHostNode);
+
+  ASSERT_TRUE(graph->addEdge(sourceHostNode, destinationHostNode).is_ok());
 
   constexpr size_t CHUNK_FRAMES = 10080;
   constexpr size_t IMPULSE_PERIOD = 1000;
@@ -186,7 +206,7 @@ TEST_F(AudioBufferQueueSourceTest, FullGraphRenderPreservesPaceAndSilence) {
     }
 
     auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 2, (float)SAMPLE_RATE);
-    stereoContext->getDestination()->renderAudio(out, QUANTUM);
+    stereoContext->processGraph(out.get(), QUANTUM);
 
     for (size_t ch = 0; ch < 2; ++ch) {
       auto channel = out->getChannel(ch)->span();

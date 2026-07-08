@@ -1,0 +1,171 @@
+---
+sidebar_position: 6
+---
+
+# Audio tag (`<Audio>`)
+
+React component that mimics web `<Audio>` behavior.
+
+## Usage
+
+```tsx
+import React, { useRef } from 'react';
+import { View } from 'react-native';
+import { Audio, AudioTagHandle } from 'react-native-audio-api';
+
+const DEMO_URL = 'https://example.com/audio.mp3';
+
+export function Player() {
+  const ref = useRef<AudioTagHandle>(null);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Audio
+        ref={ref}
+        source={DEMO_URL}
+        controls
+        onLoad={() => console.log('ready')}
+        onError={(e) => console.error(e)}
+        onPositionChange={(seconds) => {}}
+      />
+    </View>
+  );
+}
+```
+
+## Props (`AudioProps`)
+
+Only **required** field is a `source`. Callbacks default to no-ops if omitted.
+
+| Name | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `source` | `AudioSource` | — | Asset id (`require(...)`), string URI/path, or `{ uri?, headers? }` for HTTP(S). |
+| `context` | `BaseAudioContext` | — | Optional. Native: implicit [`AudioContext`](/docs/core/audio-context) when omitted. Web: unused for HTML element playback. |
+| `autoPlay` | `boolean` | `false` | Start playback after load. |
+| `controls` | `boolean` | `false` | When `true`, renders default `AudioControls` above `children`. |
+| `loop` | `boolean` | `false` | Loop playback. |
+| `muted` | `boolean` | `false` | Muted state. |
+| `volume` | `number` | `1` | Linear volume passed to the underlying source. |
+| `preload` | `PreloadType` | `'auto'` | Loading strategy for the source (`'none'`, `'metadata'`, `'auto'`). |
+| `forceDownload` | `boolean` | `false` | **Native only.** When `true`, download the full remote file in JS instead of streaming via HTTP byte ranges (useful when servers rate-limit range requests). Ignored on web and for HLS (`.m3u8`) sources. |
+| `playbackRate` | `number` | `1` | Playback speed. Native playback accepts rates up to x4; negative reverse playback is not supported. No-op for HLS files playback. |
+| `preservesPitch` | `boolean` | `true` | Preserve pitch when `playbackRate` changes. Set to `false` to let pitch change with playback speed. |
+| `onLoadStart` | `() => void` | no-op | Load started. |
+| `onLoad` | `() => void` | no-op | Source decoded / graph attached. |
+| `onError` | `(error: Error) => void` | no-op | Network, decode, or unsupported format (e.g. missing FFmpeg) errors. |
+| `onPositionChange` | `(seconds: number) => void` | no-op | Playback position updates while playing. |
+| `onEnded` | `() => void` | no-op | Natural end of playback (also used internally when looping restarts). |
+| `onPlay` | `() => void` | no-op | After `play()`. |
+| `onPause` | `() => void` | no-op | After `pause()`. |
+| `onVolumeChange` | `(volume: number) => void` | no-op | When effective volume changes. |
+
+### `AudioSource`
+
+- `string` — URI or path (`http(s):`, `file://`, or platform-specific asset path).
+- `number` — Result of `require('./file.mp3')` (bundled asset).
+- `AudioURISource` — `{ uri?: string; headers?: Record<string, string> }` for fetch with custom headers.
+
+### `preload`
+
+- `none` - Do not load on mount.
+- `metadata` - Probe duration for remote sources via native URL metadata (requires FFmpeg). When FFmpeg is disabled in the build, this behaves like `none`.
+- `auto` (and empty string) - Load source immediately on mount (default behavior).
+
+#### `metadata` (native)
+
+For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](/docs/utils/decoding#getaudioduration). This requires an FFmpeg-enabled build — check with [`isFfmpegEnabled`](/docs/flags/runtime-flags#isffmpegenabled).
+
+When FFmpeg is disabled, `preload="metadata"` is treated as `none`: the source is not fetched and duration stays unknown until playback starts.
+
+## Ref handle (`AudioTagHandle`) methods
+
+### `play`
+
+Start or resume playback.
+
+### `pause`
+
+Pause playback.
+
+### `seekToTime`
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| seconds | `number` | Seek to a time in seconds (clamped to duration when known). |
+
+### `setVolume`
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| volume | `number` | Updates volume state . |
+
+### `setMuted`
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| muted | `boolean` | Updates muted state . |
+
+## `useAudioTagContext`
+
+<details>
+<summary>Types</summary>
+```typescript
+type AudioComponentContextType = {
+  play: () => void;
+  pause: () => void;
+  seekToTime: (seconds: number) => void;
+  setVolume: (volume: number) => void;
+  setMuted: (muted: boolean) => void;
+
+  ready: boolean;
+  volume: number;
+  muted: boolean;
+  playbackState: AudioTagPlaybackState;
+  currentTime: number;
+  duration: number;
+  autoPlay: boolean;
+  loop: boolean;
+  preload: PreloadType;
+  playbackRate: number;
+  preservesPitch: boolean;
+};
+```
+</details>
+<br />
+
+Useful for creating your custom UI component. Must be used under `<Audio>`. Throws an `Error` if used outside the provider.
+
+```tsx
+import React from 'react';
+import { Button } from 'react-native';
+
+const AudioControls: React.FC = () => {
+  const {
+    play,
+    pause,
+    seekToTime,
+  } = useAudioTagContext();
+
+  return (
+    <>
+      <Button onPress={() => play()}>Play</Button>
+      <Button onPress={() => pause()}>Pause</Button>
+      <Button onPress={() => seekToTime(10)}>Seek to 10</Button>
+    </>
+  );
+}
+
+const MyAudioTagWrapper : React.FC = () => {
+  const URL = ...;
+
+  return (
+    <Audio source={URL}>
+      <AudioControls />
+    </Audio>
+  );
+}
+```
+
+## Remarks
+
+- **FFmpeg:** HLS and several compressed formats require an FFmpeg build for URL streaming. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. See [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used).

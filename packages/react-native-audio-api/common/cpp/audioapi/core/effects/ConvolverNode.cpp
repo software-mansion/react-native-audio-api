@@ -1,9 +1,12 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
-#include <audioapi/core/utils/AudioGraphManager.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
+
+#ifdef ANDROID
+#include <android/log.h>
+#endif
 
 #include <algorithm>
 #include <memory>
@@ -16,20 +19,16 @@ ConvolverNode::ConvolverNode(
     const ConvolverOptions &options)
     : AudioNode(context, options),
       gainCalibrationSampleRate_(context->getSampleRate()),
-      remainingSegments_(0),
       internalBufferIndex_(0),
-      signalledToStop_(false),
       scaleFactor_(1.0f),
       intermediateBuffer_(nullptr),
       buffer_(nullptr),
-      internalBuffer_(nullptr) {
-  isInitialized_.store(true, std::memory_order_release);
-}
+      internalBuffer_(nullptr) {}
 
 void ConvolverNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
     std::vector<std::unique_ptr<Convolver>> convolvers,
-    const std::shared_ptr<ThreadPool> &threadPool,
+    const std::shared_ptr<ConvolverThreadPool> &threadPool,
     const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
     const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
     float scaleFactor) {
@@ -38,13 +37,25 @@ void ConvolverNode::setBuffer(
     return;
   }
 
-  auto graphManager = context->getGraphManager();
-
-  if (buffer_) {
-    graphManager->addAudioBufferForDestruction(std::move(buffer_));
+  if (buffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(buffer_));
   }
 
-  // TODO move convolvers, thread pool and DSPAudioBuffers destruction to graph manager as well
+  if (threadPool_ != nullptr) {
+    context->getDisposer()->dispose(std::move(threadPool_));
+  }
+
+  for (auto &convolver : convolvers_) {
+    context->getDisposer()->dispose(std::move(convolver));
+  }
+
+  if (internalBuffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(internalBuffer_));
+  }
+
+  if (intermediateBuffer_ != nullptr) {
+    context->getDisposer()->dispose(std::move(intermediateBuffer_));
+  }
 
   buffer_ = buffer;
   convolvers_ = std::move(convolvers);
@@ -53,6 +64,13 @@ void ConvolverNode::setBuffer(
   intermediateBuffer_ = intermediateBuffer;
   scaleFactor_ = scaleFactor;
   internalBufferIndex_ = 0;
+
+  // Re-arm the tail: a brand-new IR may have a completely different length,
+  // and any pending tail countdown from the previous IR is now meaningless.
+  // The base-class state machine will recompute computeTailFrames() the next
+  // time the input goes silent.
+  tailState_ = TailState::ACTIVE;
+  tailFramesRemaining_ = 0;
 }
 
 float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuffer> &buffer) const {
@@ -80,40 +98,41 @@ float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuff
   return power;
 }
 
-void ConvolverNode::onInputDisabled() {
-  numberOfEnabledInputNodes_ -= 1;
-  if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
-    signalledToStop_ = true;
-    remainingSegments_ = convolvers_.at(0)->getSegCount();
+// processing pipeline: audioBuffer_ (input) -> intermediateBuffer_ -> audioBuffer_ (output)
+void ConvolverNode::processNode(int framesToProcess) {
+  if (buffer_ == nullptr) {
+    return;
   }
-}
 
-// processing pipeline: processingBuffer -> intermediateBuffer_ -> audioBuffer_ (mixing
-// with intermediateBuffer_)
-std::shared_ptr<DSPAudioBuffer> ConvolverNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
-  if (processingBuffer->getSize() != RENDER_QUANTUM_SIZE) {
+  if (framesToProcess != RENDER_QUANTUM_SIZE) {
+#ifdef ANDROID
+    __android_log_print(
+        ANDROID_LOG_WARN,
+        "RN_AUDIOAPI",
+        "convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor");
+#else
     printf(
-        "[AUDIOAPI WARN] convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor\n");
+        "[RN_AUDIOAPI WARN] convolver requires 128 buffer size for each render quantum, otherwise quality of convolution is very poor\n");
+#endif
   }
-  if (signalledToStop_) {
-    if (remainingSegments_ > 0) {
-      remainingSegments_--;
-    } else {
-      disable();
-      signalledToStop_ = false;
-      internalBufferIndex_ = 0;
-      return processingBuffer;
-    }
+
+  // Once the base-class tail counter has fully drained, stop convolving and
+  // emit silence; the IR's contribution has decayed beyond audibility.
+  if (tailState_ == TailState::FINISHED) {
+    audioBuffer_->zero();
+    internalBufferIndex_ = 0;
+    return;
   }
+
   if (internalBufferIndex_ < framesToProcess) {
-    performConvolution(processingBuffer); // result returned to intermediateBuffer_
+    performConvolution(audioBuffer_); // reads from audioBuffer_, result goes to intermediateBuffer_
+    audioBuffer_->zero();
     audioBuffer_->sum(*intermediateBuffer_);
 
     internalBuffer_->copy(*audioBuffer_, 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
     internalBufferIndex_ += RENDER_QUANTUM_SIZE;
   }
+
   audioBuffer_->zero();
   audioBuffer_->copy(*internalBuffer_, 0, 0, framesToProcess);
   auto remainingFrames = static_cast<int>(internalBufferIndex_ - framesToProcess);
@@ -128,8 +147,13 @@ std::shared_ptr<DSPAudioBuffer> ConvolverNode::processNode(
   for (int i = 0; i < audioBuffer_->getNumberOfChannels(); ++i) {
     audioBuffer_->getChannel(i)->scale(scaleFactor_);
   }
+}
 
-  return audioBuffer_;
+int ConvolverNode::computeTailFrames() const {
+  // The convolver's impulse response equals the IR buffer itself, so a full
+  // tail equals one IR length of samples. If no IR has been set yet, there
+  // is nothing to ring out.
+  return buffer_ ? static_cast<int>(buffer_->getSize()) : 0;
 }
 
 void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
@@ -141,20 +165,18 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
       });
     }
   } else if (processingBuffer->getNumberOfChannels() == 2) {
-    std::vector<int> inputChannelMap;
-    std::vector<int> outputChannelMap;
     if (convolvers_.size() == 2) {
-      inputChannelMap = {0, 1};
-      outputChannelMap = {0, 1};
+      inputChannelMap_ = {0, 1, 0, 0};
+      outputChannelMap_ = {0, 1, 0, 0};
     } else { // 4 channel IR
-      inputChannelMap = {0, 0, 1, 1};
-      outputChannelMap = {0, 3, 2, 1};
+      inputChannelMap_ = {0, 0, 1, 1};
+      outputChannelMap_ = {0, 3, 2, 1};
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threadPool_->schedule([this, i, inputChannelMap, outputChannelMap, &processingBuffer] {
+      threadPool_->schedule([this, i, &processingBuffer] {
         convolvers_[i]->process(
-            *processingBuffer->getChannel(inputChannelMap[i]),
-            *intermediateBuffer_->getChannel(outputChannelMap[i]));
+            *processingBuffer->getChannel(inputChannelMap_[i]),
+            *intermediateBuffer_->getChannel(outputChannelMap_[i]));
       });
     }
   }

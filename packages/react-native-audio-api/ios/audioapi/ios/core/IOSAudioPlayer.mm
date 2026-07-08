@@ -14,7 +14,7 @@
 namespace audioapi {
 
 IOSAudioPlayer::IOSAudioPlayer(
-    const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
     std::atomic<uint32_t> &currentRenders)
@@ -95,11 +95,7 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
       continue;
     }
 
-    if (isRunning_.load(std::memory_order_acquire)) {
-      renderAudio_(audioBuffer_, RENDER_QUANTUM_SIZE);
-    } else {
-      audioBuffer_->zero();
-    }
+    renderAudio_(audioBuffer_.get(), RENDER_QUANTUM_SIZE);
 
     // normal rendering - take RENDER_QUANTUM_SIZE frames from the graph and copy to output
     const int stillNeed = numFrames - outPos;

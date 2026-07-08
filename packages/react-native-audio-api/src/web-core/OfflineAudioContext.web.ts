@@ -86,8 +86,10 @@ export default class OfflineAudioContext implements BaseAudioContext {
     return new IIRFilterNode(this, { feedforward, feedback });
   }
 
-  createBufferSource(pitchCorrection?: boolean): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this, { pitchCorrection });
+  createBufferSource(options?: {
+    pitchCorrection: boolean;
+  }): AudioBufferSourceNode {
+    return new AudioBufferSourceNode(this, options);
   }
 
   createBuffer(

@@ -10,7 +10,9 @@
 #include <memory>
 
 namespace audioapi {
-#ifdef ANDROID
+#ifdef RN_AUDIO_API_NODE
+class NodeAudioPlayer;
+#elif defined(ANDROID)
 class AudioPlayer;
 #else
 class IOSAudioPlayer;
@@ -30,17 +32,15 @@ class AudioContext : public BaseAudioContext {
   bool suspend();
   bool start();
 
-  /// JS thread only — runs synchronously in `BaseAudioContextHostObject` construction.
-  void initialize() override;
-
-  [[nodiscard]] double getBaseLatency() const override;
-  [[nodiscard]] double getOutputLatency() const;
-
-  std::shared_ptr<MediaElementAudioSourceNode> createMediaElementSource(
-      const std::shared_ptr<AudioFileSourceNode> &fileSource);
+  /// @brief Initializes native audio player and assigns the audio destination node to the context.
+  /// @param destination The audio destination node to be associated with the context.
+  /// @note This method must be called before the audio context can be used for processing audio.
+  void initialize(const AudioDestinationNode *destination) final;
 
  private:
-#ifdef ANDROID
+#ifdef RN_AUDIO_API_NODE
+  std::shared_ptr<NodeAudioPlayer> audioPlayer_;
+#elif defined(ANDROID)
   std::shared_ptr<AudioPlayer> audioPlayer_;
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
@@ -51,8 +51,6 @@ class AudioContext : public BaseAudioContext {
   std::atomic<uint32_t> currentRenders_{0};
 
   bool isDriverRunning() const override;
-
-  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio();
 
   /// Caller must hold `driverMutex_`.
   bool tryStartDriver();

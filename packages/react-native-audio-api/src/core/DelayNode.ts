@@ -9,6 +9,6 @@ export default class DelayNode extends AudioNode {
   constructor(context: BaseAudioContext, options?: DelayOptions) {
     const delay = context.context.createDelay(options || {});
     super(context, delay);
-    this.delayTime = new AudioParam(delay.delayTime, context);
+    this.delayTime = new AudioParam(delay.delayTime, context, this);
   }
 }

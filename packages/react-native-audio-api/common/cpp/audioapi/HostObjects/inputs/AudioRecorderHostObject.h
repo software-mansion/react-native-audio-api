@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ReactCommon/CallInvoker.h>
-#include <audioapi/jsi/JsiHostObject.h>
+#include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <memory>
@@ -12,7 +12,7 @@ using namespace facebook;
 class AudioRecorder;
 class AudioEventHandlerRegistry;
 
-class AudioRecorderHostObject : public JsiHostObject {
+class AudioRecorderHostObject : public HostObject {
  public:
   AudioRecorderHostObject(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,

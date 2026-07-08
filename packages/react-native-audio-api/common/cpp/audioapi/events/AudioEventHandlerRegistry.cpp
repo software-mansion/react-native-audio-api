@@ -80,11 +80,8 @@ bool AudioEventHandlerRegistry::dispatchEvent(
   if (runtime_ == nullptr) {
     return false;
   }
-  if (!dispatchQueue_.try_enqueue(
-          DispatchEvent{
-              .event = eventName, .listenerId = listenerId, .payload = std::move(payload)})) {
-    return false;
-  }
+  dispatchQueue_.enqueue(
+      DispatchEvent{.event = eventName, .listenerId = listenerId, .payload = std::move(payload)});
   itemsAvailable_.signal();
   return true;
 }
@@ -110,9 +107,6 @@ void AudioEventHandlerRegistry::handleEventOnJSThread(
     AudioEvent eventName,
     uint64_t listenerId,
     const AudioEventPayload &payload) {
-  if (listenerId == 0) {
-    return;
-  }
 
   // Collect the matching handlers under the lock, then release it before
   // invoking. invokeHandler() calls into JS, which may re-enter

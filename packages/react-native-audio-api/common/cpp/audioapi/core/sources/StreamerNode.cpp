@@ -35,7 +35,6 @@ StreamerNode::StreamerNode(
       pkt_(nullptr),
       frame_(nullptr),
       swrCtx_(nullptr),
-      hasBufferedAudioData_(false),
       audio_stream_index_(-1),
       maxResampledSamples_(0),
       processedSamples_(0) {
@@ -54,19 +53,17 @@ StreamerNode::~StreamerNode() {
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
-std::shared_ptr<DSPAudioBuffer> StreamerNode::processNode(
-    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+void StreamerNode::processNode(int framesToProcess) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   size_t startOffset = 0;
   size_t offsetLength = 0;
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
   updatePlaybackInfo(
-      processingBuffer,
+      audioBuffer_,
       framesToProcess,
       startOffset,
       offsetLength,
@@ -75,37 +72,33 @@ std::shared_ptr<DSPAudioBuffer> StreamerNode::processNode(
   isNodeFinished_.store(isFinished(), std::memory_order_release);
 
   if (!isPlaying() && !isStopScheduled()) {
-    processingBuffer->zero();
-    return processingBuffer;
+    audioBuffer_->zero();
+    return;
   }
 
-  auto bufferRemaining = static_cast<int>(bufferedAudioData_.size - processedSamples_);
+  auto bufferRemaining =
+      bufferedAudioData_ ? static_cast<int>(bufferedAudioData_->size - processedSamples_) : 0;
   int alreadyProcessed = 0;
   if (bufferRemaining < framesToProcess) {
-    if (hasBufferedAudioData_) {
-      processingBuffer->copy(bufferedAudioData_.buffer, processedSamples_, 0, bufferRemaining);
+    if (bufferedAudioData_) {
+      audioBuffer_->copy(bufferedAudioData_->buffer, processedSamples_, 0, bufferRemaining);
       framesToProcess -= bufferRemaining;
       alreadyProcessed += bufferRemaining;
+      context->getDisposer()->dispose(std::move(bufferedAudioData_));
     }
-    StreamingData data;
-    auto res = receiver_.try_receive(data);
-    auto success = res == channels::spsc::ResponseStatus::SUCCESS;
-    hasBufferedAudioData_ = success;
-    if (success) {
-      bufferedAudioData_ = std::move(data);
+    receiver_.try_receive(bufferedAudioData_);
+    if (bufferedAudioData_) {
       processedSamples_ = 0;
     }
   }
   // sometimes valid buffer comes from spsc, but it could be empty (?), idk why, but skip those
-  if (hasBufferedAudioData_ && framesToProcess > 0 &&
-      static_cast<int>(bufferedAudioData_.size - processedSamples_) >= framesToProcess) {
-    processingBuffer->copy(
-        bufferedAudioData_.buffer, processedSamples_, alreadyProcessed, framesToProcess);
+  if (bufferedAudioData_ && framesToProcess > 0 &&
+      static_cast<int>(bufferedAudioData_->size - processedSamples_) >= framesToProcess) {
+    audioBuffer_->copy(
+        bufferedAudioData_->buffer, processedSamples_, alreadyProcessed, framesToProcess);
     processedSamples_ += framesToProcess;
   }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
-
-  return processingBuffer;
 }
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -113,10 +106,6 @@ bool StreamerNode::initialize(const std::string &inputUrl) {
   streamPath_ = inputUrl;
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
-    return false;
-  }
-
-  if (isInitialized_.load(std::memory_order_acquire)) {
     return false;
   }
 
@@ -151,14 +140,13 @@ bool StreamerNode::initialize(const std::string &inputUrl) {
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 
   auto [sender, receiver] = channels::spsc::channel<
-      StreamingData,
+      StreamingDataPtr,
       STREAMER_NODE_SPSC_OVERFLOW_STRATEGY,
       STREAMER_NODE_SPSC_WAIT_STRATEGY>(CHANNEL_CAPACITY);
   sender_ = std::move(sender);
   receiver_ = std::move(receiver);
 
   streamingThread_ = std::thread(&StreamerNode::streamAudio, this);
-  isInitialized_.store(true, std::memory_order_release);
   return true;
 }
 
@@ -273,7 +261,7 @@ void StreamerNode::processFrameWithResampler(
     buffer[ch].copy(resamplerOutputBuffer_[ch], 0, 0, outSamples);
   }
 
-  StreamingData data{std::move(buffer), static_cast<size_t>(outSamples)};
+  auto data = std::make_unique<StreamingData>(std::move(buffer), static_cast<size_t>(outSamples));
   sender_.send(std::move(data));
 }
 
@@ -321,9 +309,11 @@ void StreamerNode::cleanup() {
   this->playbackState_ = PlaybackState::FINISHED;
   isNodeFinished_.store(true, std::memory_order_release);
   if (streamingThread_.joinable()) {
-    StreamingData dummy;
+    StreamingDataPtr dummy;
     while (receiver_.try_receive(dummy) == channels::spsc::ResponseStatus::SUCCESS) {
-    } // clear the receiver
+      // clear the receiver; freed unique_ptrs destroy their payloads here
+      // (cleanup runs on the JS/audio-graph thread, not the audio thread).
+    }
     streamingThread_.join();
   }
   if (swrCtx_ != nullptr) {
@@ -351,7 +341,6 @@ void StreamerNode::cleanup() {
   decoder_ = nullptr;
   codecpar_ = nullptr;
   maxResampledSamples_ = 0;
-  isInitialized_.store(false, std::memory_order_release);
 }
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 } // namespace audioapi
