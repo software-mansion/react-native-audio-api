@@ -2,10 +2,9 @@
 
 #include <audioapi/jsi/RuntimeObserver.h>
 #include <jsi/jsi.h>
-#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
-#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -452,6 +451,72 @@ inline IIRFilterOptions parseIIRFilterOptions(
   return options;
 }
 
+/// Parses Web IDL `sequence<float>` curve values: TypedArrays, JS arrays, and
+/// other array-like objects with a numeric `length`.
+inline std::shared_ptr<AudioArray> parseCurveValue(
+    jsi::Runtime &runtime,
+    const jsi::Value &curveValue) {
+  if (curveValue.isUndefined() || curveValue.isNull() || !curveValue.isObject()) {
+    return nullptr;
+  }
+
+  auto curveObject = curveValue.getObject(runtime);
+
+  if (curveObject.hasProperty(runtime, "buffer")) {
+    auto arrayBuffer = curveObject.getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+    const auto byteOffset =
+        static_cast<size_t>(curveObject.getProperty(runtime, "byteOffset").getNumber());
+    const auto byteLength =
+        static_cast<size_t>(curveObject.getProperty(runtime, "byteLength").getNumber());
+    const auto *data = reinterpret_cast<const float *>(
+        static_cast<const uint8_t *>(arrayBuffer.data(runtime)) + byteOffset);
+
+    return std::make_shared<AudioArray>(data, byteLength / sizeof(float));
+  }
+
+  size_t length = 0;
+  if (curveObject.isArray(runtime)) {
+    length = curveObject.asArray(runtime).size(runtime);
+  } else if (curveObject.hasProperty(runtime, "length")) {
+    const auto lengthValue = curveObject.getProperty(runtime, "length");
+    if (!lengthValue.isNumber()) {
+      return nullptr;
+    }
+    length = static_cast<size_t>(lengthValue.getNumber());
+  } else {
+    return nullptr;
+  }
+
+  if (length < 2) {
+    return nullptr;
+  }
+
+  auto curve = std::make_shared<AudioArray>(length);
+  auto data = curve->span();
+
+  if (curveObject.isArray(runtime)) {
+    const auto jsArray = curveObject.asArray(runtime);
+    for (size_t i = 0; i < length; ++i) {
+      const auto element = jsArray.getValueAtIndex(runtime, i);
+      if (!element.isNumber()) {
+        return nullptr;
+      }
+      data[i] = static_cast<float>(element.getNumber());
+    }
+    return curve;
+  }
+
+  for (size_t i = 0; i < length; ++i) {
+    const std::string indexKey = std::to_string(i);
+    const auto element = curveObject.getProperty(runtime, indexKey.c_str());
+    if (!element.isNumber()) {
+      return nullptr;
+    }
+    data[i] = static_cast<float>(element.getNumber());
+  }
+  return curve;
+}
+
 inline WaveShaperOptions parseWaveShaperOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
@@ -469,13 +534,7 @@ inline WaveShaperOptions parseWaveShaperOptions(
     }
   }
 
-  if (optionsObject.hasProperty(runtime, "buffer")) {
-    auto arrayBuffer = optionsObject.getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-
-    options.curve = std::make_shared<AudioArray>(
-        reinterpret_cast<float *>(arrayBuffer.data(runtime)),
-        static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float)));
-  }
+  options.curve = parseCurveValue(runtime, optionsObject.getProperty(runtime, "curve"));
   return options;
 }
 } // namespace audioapi::option_parser

@@ -1,5 +1,8 @@
 import type PeriodicWave from './core/PeriodicWave';
 
+/** Web IDL `sequence<T>` — array-like values accepted at API boundaries. */
+export type Sequence<T> = ArrayLike<T>;
+
 export interface AudioBufferLike {
   readonly length: number;
   readonly duration: number;
@@ -250,7 +253,7 @@ export interface DelayOptions extends AudioNodeOptions {
 }
 
 export interface WaveShaperOptions extends AudioNodeOptions {
-  curve?: Float32Array;
+  curve?: Sequence<number>;
   oversample?: OverSampleType;
 }
 

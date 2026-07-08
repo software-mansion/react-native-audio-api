@@ -2,11 +2,11 @@ import AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
 import { InvalidStateError } from '../errors';
 import { IWaveShaperNode } from '../jsi-interfaces';
-import { WaveShaperOptions } from '../types';
+import { Sequence, WaveShaperOptions } from '../types';
 
 export default class WaveShaperNode extends AudioNode {
   private isCurveSet: boolean = false;
-  private _curve: Float32Array | null = null;
+  private _curve: Sequence<number> | null = null;
 
   constructor(context: BaseAudioContext, options?: WaveShaperOptions) {
     const node = context.context.createWaveShaper(options || {});
@@ -17,7 +17,7 @@ export default class WaveShaperNode extends AudioNode {
     }
   }
 
-  get curve(): Float32Array | null {
+  get curve(): Sequence<number> | null {
     return this._curve;
   }
 
@@ -25,7 +25,7 @@ export default class WaveShaperNode extends AudioNode {
     return (this.node as IWaveShaperNode).oversample;
   }
 
-  set curve(curve: Float32Array | null) {
+  set curve(curve: Sequence<number> | null) {
     if (curve !== null) {
       if (this.isCurveSet) {
         throw new InvalidStateError(
