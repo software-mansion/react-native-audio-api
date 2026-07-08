@@ -53,10 +53,6 @@ double BaseAudioContext::getCurrentTime() const {
   return static_cast<double>(getCurrentSampleFrame()) / getSampleRate();
 }
 
-double BaseAudioContext::getBaseLatency() const {
-  return 0.0;
-}
-
 void BaseAudioContext::setState(ContextState state) {
   state_.store(state, std::memory_order_release);
 }
