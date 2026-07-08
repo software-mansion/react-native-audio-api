@@ -6,7 +6,7 @@ import { Optional } from '@site/src/components/Badges';
 
 # Decoding
 
-You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata),
+You can decode audio data independently, without creating an [`AudioContext`](/docs/core/audio-context), using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata),
 [`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64), and [`getAudioDuration`](/docs/utils/decoding#getaudioduration).
 
 If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function;
@@ -23,12 +23,14 @@ Supported file formats:
 - m4a
 - mp4
 
-Last three formats are decoded with ffmpeg on the mobile, [see for more info](/docs/flags/runtime-flags#where-ffmpeg-is-used).
+On mobile, `.aac`, `.mp4`, and `.m4a` are decoded with FFmpeg — see [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used) for more info.
 :::
+
+## Methods
 
 ### `decodeAudioData`
 
-Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio;
+Decodes audio data from either a file path or an [`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer). The optional `sampleRate` parameter lets you resample the decoded audio;
 if not provided, the original sample rate from the file is used.
 
 <table>
@@ -42,8 +44,8 @@ if not provided, the original sample rate from the file is used.
   <tbody>
     <tr>
       <td rowspan="3" align="center"><code>input</code></td>
-      <td align="center"><code>ArrayBuffer</code></td>
-      <td align="center">ArrayBuffer with audio data.</td>
+      <td align="center">[`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer)</td>
+      <td align="center">[`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) with audio data.</td>
     </tr>
     <tr>
       <td align="center"><code>string</code></td>
@@ -69,8 +71,8 @@ if not provided, the original sample rate from the file is used.
 #### Returns `Promise<AudioBuffer>`.
 
 :::caution
-If you are passing asset module id to decode function, bear in mind that it uses Image component provided
-by React Native internally. By default only support .mp3, .wav, .mp4, .m4a, .aac audio file formats.
+If you are passing a number as an input to decode function, bear in mind that it uses the [`Image`](https://reactnative.dev/docs/image) component provided
+by React Native internally. By default it only supports `.mp3`, `.wav`, `.mp4`, `.m4a`, `.aac` audio file formats.
 If you want to use other types, refer to [this section](https://reactnative.dev/docs/images#static-non-image-resources) for more info.
 :::
 
@@ -157,7 +159,7 @@ Decodes base64-encoded PCM audio data.
 | `base64String` | `string` | Base64-encoded PCM audio data. |
 | `inputSampleRate` | `number` | Sample rate of the input PCM data. |
 | `inputChannelCount` | `number` | Number of channels in the input PCM data. |
-| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Default is `true`. |
+| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Defaults to `true`. |
 
 #### Returns `Promise<AudioBuffer>`
 
