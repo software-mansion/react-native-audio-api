@@ -4,73 +4,151 @@ sidebar_label: Introduction
 sidebar_position: 1
 ---
 import { MobileOnly } from '@site/src/components/Badges';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-# RNWorklets Support <MobileOnly />
+# Worklets <MobileOnly />
 
-The `RNWorklets` library was originally part of Reanimated until version 4.0.0; since then, it has become a separate library.
+Worklet support in React Native Audio API is provided by a separate package — [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets). It bridges the audio engine with [`react-native-worklets`](https://docs.swmansion.com/react-native-worklets/) so you can react to live audio on the UI thread — for example, to drive Reanimated visualizers from an RMS meter.
 
-To use the worklet features provided by `react-native-audio-api`, you need to install this library:
+:::info Requirements
+- [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**
+- [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.8.0**
+- React Native **New Architecture** (TurboModules / Fabric)
+:::
+
+## Installation
+
+Install both peer dependencies and the worklets integration package:
+
+<Tabs groupId="package-manager">
+  <TabItem value="npm" label="npm" default>
 
 ```bash
-npm install react-native-worklets
+npm install react-native-audio-api react-native-worklets react-native-audio-worklets
 ```
-> **Note**: Supported versions of `react-native-worklets` are [0.6.x, 0.7.x]. They are checked and updated manually with each release. Nightly versions are always supported but your build may fail.
 
-If the library is not installed, you will encounter runtime errors when trying to use features that depend on worklets and do not have documented fallback implementations.
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+
+```bash
+yarn add react-native-audio-api react-native-worklets react-native-audio-worklets
+```
+
+  </TabItem>
+</Tabs>
+
+Follow the [`react-native-worklets` setup guide](https://docs.swmansion.com/react-native-worklets/docs/) (Babel plugin, native rebuild). Then rebuild your app so the native modules are linked:
+
+<Tabs groupId="rebuild">
+  <TabItem value="ios" label="iOS" default>
+
+```bash
+cd ios && pod install && cd ..
+npx react-native run-ios
+```
+
+  </TabItem>
+  <TabItem value="android" label="Android">
+
+```bash
+npx react-native run-android
+```
+
+  </TabItem>
+</Tabs>
+
+Import `react-native-audio-worklets` before creating any worklet node. The package installs its native extensions on top of `react-native-audio-api`:
+
+```tsx
+import 'react-native-audio-api';
+import { WorkletNode } from 'react-native-audio-worklets';
+```
+
+:::tip
+If you only use core audio nodes and never import `react-native-audio-worklets`, you do **not** need `react-native-worklets` installed — the main library builds without it.
+:::
 
 ## What is a worklet?
 
 You can read more about worklets in the [RNWorklets documentation](https://docs.swmansion.com/react-native-worklets/).
 
-Simply put, a worklet is a piece of code that can be executed on a runtime different from the main JavaScript runtime (or more formally, the runtime on which the code was created).
+Simply put, a worklet is a piece of JavaScript that can run on a runtime other than the one it was created on — for example, the shared UI worklet runtime used by Reanimated.
 
-## What kind of worklets are used in react-native-audio-api?
+## UI runtime
 
-We support two types of worklet runtimes, each optimized for different use cases:
+`WorkletNode` dispatches your callback on the **UI worklet runtime** provided by `react-native-worklets`. That lets you update Reanimated shared values and animated styles directly from audio-driven logic.
 
-### UIRuntime
-Worklets executed on the UI runtime provided by the `RNWorklets` library. This allows the use of Reanimated utilities and features inside the worklets. The main goal is to enable seamless integration with the UI - for example, creating animations from audio data.
+**Use it when you want to:**
 
-**Use UIRuntime when:**
-- You need to update UI elements from audio data
-- Creating visualizations or animations based on audio
-- Integrating with Reanimated shared values
-- Performance is less critical than UI responsiveness
+- Build visualizers or meters from live audio
+- Drive UI animations from audio analysis (RMS, peak level, etc.)
+- Integrate with Reanimated shared values and `withSpring` / `withTiming`
 
-### AudioRuntime
-Worklets executed on the audio rendering thread for maximum performance and minimal latency. This runtime is optimized for real-time audio processing where timing is critical.
+Audio still flows through the node unchanged — the worklet receives a **read-only snapshot** for analysis.
 
-**Use AudioRuntime when:**
-- Performance and low latency are crucial
-- Processing audio in real-time without dropouts
-- Generating audio with precise timing
-- Audio processing doesn't need to interact with UI
+:::note
+Support for an audio-thread worklet runtime (for low-latency DSP) is planned for future releases. For now, only the UI runtime is exposed through `react-native-audio-worklets`.
+:::
 
-You can specify the runtime type when creating worklet nodes using the `workletRuntime` parameter.
+## How to use audio worklets mindfully
 
-## How to use worklets in react-native-audio-api mindfully?
+`WorkletNode` is designed for **UI visualization**, not sample-accurate audio processing. The audio thread accumulates frames into a snapshot buffer and schedules your callback on the UI thread — it never blocks playback.
 
-Our API is specifically designed to support high throughput to enable audio playback at 44.1Hz, which is the default frequency for most modern devices.
+### Pick a sensible `bufferLength`
 
-However, this introduces several limitations on what can be done inside a worklet. Since a worklet must be executed on the JavaScript runtime, each execution introduces latency.
+`bufferLength` is the number of **frames per channel** passed to each callback. It controls how often the worklet runs when the UI keeps up:
 
-$$ 44.1\text{Hz} \equiv 44100\text{ samples} \equiv 1\text{ s} $$
+$$
+\text{callback rate (Hz)} \approx \frac{\text{sampleRate}}{\text{bufferLength}}
+$$
 
-This means the sample rate indicates how many frames are processed in one second. Most features that allow using worklets as callbacks should also allow setting `bufferLength` for worklet input.
+At 44.1 kHz:
 
-If you set `bufferLength` to 128 (which is the default internal buffer size of our API used to process the graph), you must remember that your worklet should not take more than:
+| `bufferLength` | Approx. callback rate |
+| :---: | :---: |
+| 128 | ~344 Hz |
+| 512 | ~86 Hz |
+| 1024 | ~43 Hz |
+| 4096 | ~11 Hz |
 
-$$ 1\text{ s} = 1000\text{ ms} $$
+- **Smaller values** — lower latency, more frequent callbacks, more JS work
+- **Larger values** — smoother analysis windows (e.g. RMS over more samples), fewer callbacks
 
-$$ \frac{44100}{128} \approx 344 $$
+For visualizers, **512–4096** is usually a good starting range.
 
-$$ \frac{1000\text{ ms}}{344} \approx 2.9\text{ ms} $$
+### Keep worklet callbacks short
 
-This means that if your worklet, plus the rest of the processing, takes more than 2.9ms, you may start to experience audio dropouts or other playback issues.
+Even though the callback runs off the audio thread, a slow worklet still delays the next snapshot and can make visualizations stutter. Avoid:
 
-### Recommendations
+- Network or file I/O
+- Heavy loops or allocations
+- Calling non-worklet functions
 
-- Use a larger `bufferLength`, like 256, 512 or even 1024 if you don't need more than 40fps.
-- Avoid blocking operations in the worklet (e.g., calling APIs - use JS callbacks for these instead).
-- Do not overuse worklets. Before creating 5 or 6, consider if it can be done with a single one. Creating chained nodes that invoke worklets increases latency linearly.
-- Measure performance and memory usage, and check logs to ensure you are not dropping frames.
+Prefer simple math (sum, max, RMS) and updating shared values.
+
+### Expect frame skipping under load
+
+While a callback is still running, the node **does not fill a new snapshot** — incoming analysis frames are skipped until the callback finishes. Audio playback is unaffected. If the main JS thread is under heavy load, visualizer updates may lag or jump; increase `bufferLength` to reduce pressure.
+
+### Use one worklet node when possible
+
+Chaining multiple `WorkletNode` instances multiplies UI scheduling overhead. If you need several derived metrics, compute them in a single callback.
+
+### Reanimated integration tip
+
+If shared-value updates from the worklet are not reflected on screen, add this at the **end** of your callback as a workaround for microtask flushing:
+
+```ts
+requestAnimationFrame(() => {});
+```
+
+Use this only when you confirm the UI is not updating — it has a small performance cost.
+
+## Available nodes
+
+| Node | Package | Status |
+| :--- | :--- | :--- |
+| [`WorkletNode`](/docs/worklets/worklet-node) | `react-native-audio-worklets` | Available |
+| [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node) | — | Not yet available |
+| [`WorkletSourceNode`](/docs/worklets/worklet-source-node) | — | Not yet available |

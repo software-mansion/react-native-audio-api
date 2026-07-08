@@ -6,6 +6,10 @@ import { ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 # WorkletSourceNode
 
+:::caution Not yet available
+This node is not part of [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets) yet. The documentation below describes the planned API. For now, use [`WorkletNode`](/docs/worklets/worklet-node).
+:::
+
 :::warning
 This node is dependent on `react-native-worklets` and you need to install them in order to use this node. Refer to [getting-started page](/docs/fundamentals/getting-started#possible-additional-dependencies) for more info.
 :::
@@ -14,9 +18,9 @@ The `WorkletSourceNode` interface represents a scheduled source node in the audi
 
 This node allows you to generate audio procedurally using JavaScript worklets, making it perfect for creating custom synthesizers, audio generators, or real-time audio effects that produce sound rather than just process it.
 
-For more information about worklets, see our [Introduction to worklets](/docs/worklets/worklets-introduction).
+For more information about worklets, see the [Worklets introduction](/docs/worklets/introduction).
 
-## Constructor
+## Constructor (planned)
 
 ```tsx
 constructor(
@@ -29,10 +33,12 @@ constructor(
     startOffset: number
   ) => void)
 ```
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createWorkletSourceNode(worklet, workletRuntime)`](/docs/core/base-audio-context#createworkletsourcenode-)
 
-## Example
+:::note
+This constructor is not available yet. It will ship in a future release of `react-native-audio-worklets`.
+:::
+
+## Example (planned)
 
 ```tsx
 import { AudioContext } from 'react-native-audio-api';
