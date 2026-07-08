@@ -84,15 +84,19 @@ Downloaded artifacts land in:
 
 ### Files
 - `android/build.gradle` — Gradle library config
+- `android/fix-prefab.gradle` — prefab publication workaround (ported from react-native-worklets)
 - `android/CMakeLists.txt` — Android CMake root (SIMD detection, RN version flags, delegates to subdirectory)
 - `android/src/main/cpp/audioapi/CMakeLists.txt` — actual build target (sources, prebuilt libs, include paths)
+- `common/cpp/audioapi/EXTENSION_API.md` — stable C++ extension contract for dependent native modules
+- `common/cpp/audioapi/compatibility/StableAPI.h` — single public C++ compatibility header for extensions
 
 ### Key behaviors
 - Feature flags (`newArchEnabled`, `disableAudioapiFFmpeg`) are read from app's `gradle.properties` and forwarded to both CMake and Kotlin `BuildConfig`
 - DSP sources always compiled with `-O3` regardless of overall build type
 - Sources gathered with `GLOB_RECURSE CONFIGURE_DEPENDS` — CMake re-runs automatically when files are added/removed
-- Worklets must be merged before the audio API CMake build starts (explicit Gradle task dependency)
 - 16KB page size alignment enabled for Android 15+
+- **Extension API (prefab)**: single public C++ header `<audioapi/compatibility/StableAPI.h>`; prefab publishes transitive headers needed to compile it (`prepareAudioApiHeadersForPrefabs`); `fix-prefab.gradle` ensures the `.so` is in prefab metadata. Contract: `EXTENSION_API.md`
+- CMake exposes `COMMON_CPP_DIR` and `ANDROID_CPP_DIR` as **PUBLIC** include dirs so prefab consumers resolve `<audioapi/...>`
 
 For full per-line analysis see [build-details.md](build-details.md#android-androidcmakeliststxt-root--detailed-analysis).
 

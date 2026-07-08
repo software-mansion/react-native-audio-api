@@ -3,7 +3,6 @@ import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderStartOptions,
-  AudioWorkletRuntime,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
@@ -483,48 +482,6 @@ class MediaElementAudioSourceNodeMock extends AudioNodeMock {
   }
 }
 
-class WorkletNodeMock extends AudioNodeMock {
-  constructor(
-    context: BaseAudioContextMock,
-    _runtime: AudioWorkletRuntime,
-    _callback: (audioData: Array<Float32Array>, channelCount: number) => void,
-    _bufferLength: number,
-    _inputChannelCount: number
-  ) {
-    super(context, {});
-  }
-}
-
-class WorkletProcessingNodeMock extends AudioNodeMock {
-  constructor(
-    context: BaseAudioContextMock,
-    _runtime: AudioWorkletRuntime,
-    _callback: (
-      inputData: Array<Float32Array>,
-      outputData: Array<Float32Array>,
-      framesToProcess: number,
-      currentTime: number
-    ) => void
-  ) {
-    super(context, {});
-  }
-}
-
-class WorkletSourceNodeMock extends AudioScheduledSourceNodeMock {
-  constructor(
-    context: BaseAudioContextMock,
-    _runtime: AudioWorkletRuntime,
-    _callback: (
-      audioData: Array<Float32Array>,
-      framesToProcess: number,
-      currentTime: number,
-      startOffset: number
-    ) => void
-  ) {
-    super(context, {});
-  }
-}
-
 class PeriodicWaveMock {
   constructor(_context: BaseAudioContextMock, _options?: PeriodicWaveOptions) {}
 }
@@ -653,29 +610,6 @@ class BaseAudioContextMock {
 
   createStreamer(options: StreamerOptions): StreamerNodeMock {
     return new StreamerNodeMock(this, options);
-  }
-
-  createWorkletNode(
-    _shareableWorklet: Record<string, unknown>,
-    _runOnUI: boolean,
-    _bufferLength: number,
-    _inputChannelCount: number
-  ): WorkletNodeMock {
-    return new WorkletNodeMock(this, 'AudioRuntime', noop, 0, 0);
-  }
-
-  createWorkletProcessingNode(
-    _shareableWorklet: Record<string, unknown>,
-    _runOnUI: boolean
-  ): WorkletProcessingNodeMock {
-    return new WorkletProcessingNodeMock(this, 'AudioRuntime', noop);
-  }
-
-  createWorkletSourceNode(
-    _shareableWorklet: Record<string, unknown>,
-    _runOnUI: boolean
-  ): WorkletSourceNodeMock {
-    return new WorkletSourceNodeMock(this, 'AudioRuntime', noop);
   }
 }
 
@@ -1075,9 +1009,6 @@ export const RecorderAdapterNode = RecorderAdapterNodeMock;
 export const StereoPannerNode = StereoPannerNodeMock;
 export const StreamerNode = StreamerNodeMock;
 export const WaveShaperNode = WaveShaperNodeMock;
-export const WorkletNode = WorkletNodeMock;
-export const WorkletProcessingNode = WorkletProcessingNodeMock;
-export const WorkletSourceNode = WorkletSourceNodeMock;
 export const PeriodicWave = PeriodicWaveMock;
 
 export const AudioManager = AudioManagerMock;
@@ -1129,9 +1060,6 @@ export type RecorderAdapterNode = RecorderAdapterNodeMock;
 export type StereoPannerNode = StereoPannerNodeMock;
 export type StreamerNode = StreamerNodeMock;
 export type WaveShaperNode = WaveShaperNodeMock;
-export type WorkletNode = WorkletNodeMock;
-export type WorkletProcessingNode = WorkletProcessingNodeMock;
-export type WorkletSourceNode = WorkletSourceNodeMock;
 export type PeriodicWave = PeriodicWaveMock;
 
 // Export types and enums
@@ -1140,7 +1068,6 @@ export {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderStartOptions,
-  AudioWorkletRuntime,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
@@ -1192,9 +1119,6 @@ export default {
   StereoPannerNode: StereoPannerNodeMock,
   StreamerNode: StreamerNodeMock,
   WaveShaperNode: WaveShaperNodeMock,
-  WorkletNode: WorkletNodeMock,
-  WorkletProcessingNode: WorkletProcessingNodeMock,
-  WorkletSourceNode: WorkletSourceNodeMock,
   PeriodicWave: PeriodicWaveMock,
 
   // Functions

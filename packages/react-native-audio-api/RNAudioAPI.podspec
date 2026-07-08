@@ -12,9 +12,6 @@ fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 ios_min_version = '14.0'
 
-worklets_enabled = $audio_api_config[:worklets_enabled]
-worklets_preprocessor_flag = worklets_enabled ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
-
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
 static_external_libs_flag = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? '-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1 -DMA_NO_LIBOPUS=1 -DMA_NO_LIBVORBIS=1' : ''
 skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_DISABLED ? 'skipffmpeg' : ''
@@ -57,10 +54,6 @@ Pod::Spec.new do |s|
       sss.header_mappings_dir = "common/cpp/audioapi/libs"
       sss.compiler_flags = "-x objective-c++"
     end
-  end
-
-  if worklets_enabled
-    s.dependency 'RNWorklets'
   end
 
   s.ios.frameworks = 'Accelerate', 'AVFoundation', 'MediaPlayer'
@@ -141,16 +134,11 @@ Pod::Spec.new do |s|
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\""
     ])
     .concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include_ffmpeg\""])
-    .concat(worklets_enabled ? [
-      '"$(PODS_ROOT)/Headers/Public/RNWorklets"',
-      '"$(PODS_ROOT)/Headers/Private/ReactCodegen"',
-      '"$(PODS_ROOT)/../build/generated/ios/ReactCodegen"',
-    ] : [])
     .join(' '),
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
     "GCC_PREPROCESSOR_DEFINITIONS[config=Debug]" => '$(inherited) HAVE_ACCELERATE=1 DEBUG=1',
-    'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{worklets_preprocessor_flag} #{ffmpeg_flag} #{static_external_libs_flag}",
+    'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{ffmpeg_flag} #{static_external_libs_flag}",
   }
 
   s.xcconfig = {
@@ -165,13 +153,6 @@ Pod::Spec.new do |s|
       "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_audio_api_dir]}/ios\"",
       "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_audio_api_dir]}/common/cpp\"",
     ]
-    .concat(worklets_enabled ? [
-      '"$(PODS_ROOT)/Headers/Public/RNWorklets"',
-      '"$(PODS_ROOT)/Headers/Private/ReactCodegen"',
-      '"$(PODS_ROOT)/../build/generated/ios/ReactCodegen"',
-      "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_worklets_dir]}/apple\"",
-      "\"$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_worklets_dir]}/Common/cpp\""
-    ] : [])
     .join(' '),
     'OTHER_LDFLAGS' => %W[
       $(inherited)

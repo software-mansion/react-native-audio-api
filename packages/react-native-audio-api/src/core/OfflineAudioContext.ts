@@ -1,4 +1,3 @@
-import AudioAPIModule from '../AudioAPIModule';
 import { InvalidStateError, NotSupportedError } from '../errors';
 import { assertSupportedSampleRate } from '../utils/validation';
 import { IOfflineAudioContext } from '../jsi-interfaces';
@@ -18,8 +17,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
     arg1?: number,
     arg2?: number
   ) {
-    const audioRuntime = AudioAPIModule.createAudioRuntime();
-
     if (typeof arg0 === 'object') {
       const { numberOfChannels, length, sampleRate } = arg0;
       assertSupportedSampleRate(sampleRate);
@@ -27,8 +24,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
         globalThis.createOfflineAudioContext(
           numberOfChannels,
           length,
-          sampleRate,
-          audioRuntime
+          sampleRate
         )
       );
 
@@ -40,7 +36,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     ) {
       assertSupportedSampleRate(arg2);
       super(
-        globalThis.createOfflineAudioContext(arg0, arg1, arg2, audioRuntime)
+        globalThis.createOfflineAudioContext(arg0, arg1, arg2)
       );
       this.duration = arg1 / arg2;
     } else {

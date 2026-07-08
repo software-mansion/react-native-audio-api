@@ -1,6 +1,5 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/OfflineAudioContext.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -17,8 +16,7 @@ class AudioParamTest : public ::testing::Test {
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_shared<OfflineAudioContext>(
-        2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
+    context = std::make_shared<OfflineAudioContext>(2, 5 * sampleRate, sampleRate, eventRegistry);
   }
 };
 
