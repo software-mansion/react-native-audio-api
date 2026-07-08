@@ -11,9 +11,10 @@ import com.facebook.react.module.model.ReactModuleInfoProvider
  * `autolinking_cxxModuleProvider` (see `react-native.config.js` cxxModule* fields).
  */
 class AudioWorkletsPackage : BaseReactPackage() {
-  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
-      null
+  override fun getModule(
+    name: String,
+    reactContext: ReactApplicationContext,
+  ): NativeModule? = null
 
-  override fun getReactModuleInfoProvider(): ReactModuleInfoProvider =
-      ReactModuleInfoProvider { emptyMap() }
+  override fun getReactModuleInfoProvider(): ReactModuleInfoProvider = ReactModuleInfoProvider { emptyMap() }
 }

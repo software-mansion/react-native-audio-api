@@ -34,8 +34,7 @@ class AudioWorkletsInstaller {
         contextObject.getHostObject<audioapi::BaseAudioContextHostObject>(runtime);
     if (contextHostObject == nullptr) {
       throw jsi::JSError(
-          runtime,
-          "[react-native-audio-worklets] first argument is not a valid AudioContext");
+          runtime, "[react-native-audio-worklets] first argument is not a valid AudioContext");
     }
 
     return contextHostObject->getContext();
@@ -58,8 +57,7 @@ class AudioWorkletsInstaller {
       size_t count) {
     if (count < 4) {
       throw jsi::JSError(
-          runtime,
-          "[react-native-audio-worklets] __createWorkletNode expects 4 arguments");
+          runtime, "[react-native-audio-worklets] __createWorkletNode expects 4 arguments");
     }
     const auto &context = getContextOrThrow(runtime, args[0]);
     auto serializableWorklet = getSerializableWorkletOrThrow(runtime, args[1]);

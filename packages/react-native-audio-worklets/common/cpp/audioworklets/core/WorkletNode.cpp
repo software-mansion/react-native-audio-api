@@ -14,11 +14,10 @@ WorkletNode::WorkletNode(
     : audioapi::AudioNode(context),
       workletRunner_(std::move(workletRunner)),
       busy_(std::make_shared<std::atomic<bool>>(false)),
-      minFramesBetweenDispatch_(static_cast<size_t>(std::max(
-          1.0f,
-          std::floor(context->getSampleRate() / kMaxUiDispatchRateHz)))) {
-  snapshotBuffers_ = std::make_shared<
-      std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>>(
+      minFramesBetweenDispatch_(
+          static_cast<size_t>(
+              std::max(1.0f, std::floor(context->getSampleRate() / kMaxUiDispatchRateHz)))) {
+  snapshotBuffers_ = std::make_shared<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>>(
       static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
   for (size_t ch = 0; ch < static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT); ++ch) {
     (*snapshotBuffers_)[ch] =
@@ -59,10 +58,7 @@ void WorkletNode::dispatchToUI(size_t frameCount, size_t channelCount) {
   // Drop this quantum if the previous UI invocation has not completed yet.
   bool expected = false;
   if (!busy_->compare_exchange_strong(
-          expected,
-          true,
-          std::memory_order_acq_rel,
-          std::memory_order_acquire)) {
+          expected, true, std::memory_order_acq_rel, std::memory_order_acquire)) {
     return;
   }
 

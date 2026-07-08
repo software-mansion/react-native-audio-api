@@ -38,8 +38,7 @@ class UIWorkletsRunner {
       std::shared_ptr<worklets::Serializable> serializableWorklet);
 
   [[nodiscard]] bool isValid() const {
-    return uiRuntime_ != nullptr && uiScheduler_ != nullptr &&
-        serializableWorklet_ != nullptr;
+    return uiRuntime_ != nullptr && uiScheduler_ != nullptr && serializableWorklet_ != nullptr;
   }
 
   /// @brief Schedules the worklet to run on the UI thread with the given audio
@@ -50,8 +49,7 @@ class UIWorkletsRunner {
   /// @param onComplete Invoked on the UI thread once the worklet returns.
   /// @note Audio Thread only.
   void invokeOnUI(
-      std::shared_ptr<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>>
-          channels,
+      std::shared_ptr<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>> channels,
       size_t channelCount,
       std::function<void()> onComplete) const;
 

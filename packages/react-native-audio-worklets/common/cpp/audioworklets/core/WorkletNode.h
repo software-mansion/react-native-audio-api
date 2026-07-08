@@ -37,8 +37,7 @@ class WorkletNode : public audioapi::AudioNode {
   /// @brief Fixed pool of per-channel UI snapshot buffers (MAX_CHANNEL_COUNT × render quantum).
   /// Allocated once in the constructor; never reallocated. Held in a shared_ptr so
   /// scheduled UI jobs keep the pool alive without per-quantum vector allocation.
-  std::shared_ptr<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>>
-      snapshotBuffers_;
+  std::shared_ptr<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>> snapshotBuffers_;
 
   /// @brief True while a UI-thread worklet invocation is still pending. Prevents
   /// the audio thread from flooding the UI scheduler; quanta are dropped instead.

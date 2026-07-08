@@ -24,8 +24,21 @@
   "scripts": {
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src && prettier --check src",
-    "format": "prettier --write src",
+    "lint": "yarn lint:js && yarn lint:cpp && yarn lint:ios && yarn lint:kotlin",
+    "lint:js": "eslint src && yarn prettier --check src",
+    "lint:cpp": "./scripts/cpplint.sh",
+    "lint:ios": "yarn format:ios -Werror",
+    "lint:kotlin": "ktlint 'android/src/main/java/**/*.kt'",
+    "format": "yarn format:js && yarn format:android:kotlin && yarn format:ios && yarn format:common",
+    "format:check": "yarn format:check:js && yarn format:check:android:kotlin && yarn format:check:ios && yarn format:check:common",
+    "format:check:js": "prettier --check src",
+    "format:check:android:kotlin": "ktlint 'android/src/main/java/**/*.kt'",
+    "format:check:ios": "find ios/audioworklets -type f \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | xargs clang-format --dry-run --Werror",
+    "format:check:common": "find common/cpp/ \\( -path 'common/cpp/clangd/build' -prune -o -type f \\( -iname \"*.h\" -o -iname \"*.cpp\" -o -iname \"*.hpp\" \\) -print \\) | xargs clang-format --dry-run --Werror",
+    "format:js": "prettier --write --list-different src",
+    "format:android:kotlin": "ktlint -F 'android/src/main/java/**/*.kt'",
+    "format:ios": "find ios/audioworklets -type f \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | xargs clang-format -i",
+    "format:common": "find common/cpp/ \\( -path 'common/cpp/clangd/build' -prune -o -type f \\( -iname \"*.h\" -o -iname \"*.cpp\" -o -iname \"*.hpp\" \\) -print \\) | xargs clang-format -i",
     "build": "bob build"
   },
   "keywords": [

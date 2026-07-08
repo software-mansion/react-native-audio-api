@@ -15,8 +15,7 @@ UIWorkletsRunner::UIWorkletsRunner(
       serializableWorklet_(std::move(serializableWorklet)) {}
 
 void UIWorkletsRunner::invokeOnUI(
-    std::shared_ptr<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>>
-        channels,
+    std::shared_ptr<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>> channels,
     size_t channelCount,
     std::function<void()> onComplete) const {
   worklets::scheduleOnUI(
