@@ -25,7 +25,6 @@ import type {
   StreamerOptions,
   WaveShaperOptions,
   AudioFileSourceOptions,
-  Sequence,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -326,10 +325,9 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 export interface IWorkletProcessingNode extends IAudioNode {}
 
 export interface IWaveShaperNode extends IAudioNode {
-  readonly curve: Sequence<number> | null;
   oversample: OverSampleType;
 
-  setCurve(curve: Sequence<number> | null): void;
+  setCurve(curve: Float32Array | null): void;
 }
 export interface IAudioRecorderCallbackOptions extends AudioRecorderCallbackOptions {
   callbackId: string;

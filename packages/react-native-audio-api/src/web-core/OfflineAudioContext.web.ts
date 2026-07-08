@@ -137,7 +137,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createWaveShaper(): WaveShaperNode {
-    return new WaveShaperNode(this, this.context.createWaveShaper());
+    return new WaveShaperNode(this);
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {

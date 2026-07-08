@@ -14,6 +14,8 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/AudioArrayBuffer.hpp>
 
 namespace audioapi::option_parser {
 
@@ -453,7 +455,7 @@ inline IIRFilterOptions parseIIRFilterOptions(
 
 /// Parses Web IDL `sequence<float>` curve values: TypedArrays, JS arrays, and
 /// other array-like objects with a numeric `length`.
-inline std::shared_ptr<AudioArray> parseCurveValue(
+inline std::shared_ptr<AudioArray> parseCurveSequence(
     jsi::Runtime &runtime,
     const jsi::Value &curveValue) {
   if (curveValue.isUndefined() || curveValue.isNull() || !curveValue.isObject()) {
@@ -471,7 +473,12 @@ inline std::shared_ptr<AudioArray> parseCurveValue(
     const auto *data = reinterpret_cast<const float *>(
         static_cast<const uint8_t *>(arrayBuffer.data(runtime)) + byteOffset);
 
-    return std::make_shared<AudioArray>(data, byteLength / sizeof(float));
+    const auto length = byteLength / sizeof(float);
+    if (length < 2) {
+      return nullptr;
+    }
+
+    return std::make_shared<AudioArray>(data, length);
   }
 
   size_t length = 0;
@@ -517,6 +524,38 @@ inline std::shared_ptr<AudioArray> parseCurveValue(
   return curve;
 }
 
+inline bool isFloat32Array(jsi::Runtime &runtime, const jsi::Object &object) {
+  if (!object.hasProperty(runtime, "buffer")) {
+    return false;
+  }
+
+  const auto float32ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Float32Array");
+  return object.instanceOf(runtime, float32ArrayCtor);
+}
+
+/// Creates a `Float32Array` attribute value from parsed curve samples.
+inline jsi::Object createFloat32ArrayFromCurve(
+    jsi::Runtime &runtime,
+    const std::shared_ptr<AudioArray> &curve) {
+  auto arrayBufferHandle = std::make_shared<AudioArrayBuffer>(curve->begin(), curve->getSize());
+  auto arrayBuffer = jsi::ArrayBuffer(runtime, arrayBufferHandle);
+  auto float32ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Float32Array");
+  return float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
+}
+
+/// Converts a Web IDL `sequence<float>` constructor option into the `Float32Array`
+/// stored on the `curve` attribute. Preserves the original `Float32Array` reference.
+inline jsi::Value curveSequenceToAttributeValue(
+    jsi::Runtime &runtime,
+    const jsi::Value &sequenceValue,
+    const std::shared_ptr<AudioArray> &parsedCurve) {
+  if (sequenceValue.isObject() && isFloat32Array(runtime, sequenceValue.getObject(runtime))) {
+    return jsi::Value(runtime, sequenceValue);
+  }
+
+  return createFloat32ArrayFromCurve(runtime, parsedCurve);
+}
+
 inline WaveShaperOptions parseWaveShaperOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
@@ -534,7 +573,16 @@ inline WaveShaperOptions parseWaveShaperOptions(
     }
   }
 
-  options.curve = parseCurveValue(runtime, optionsObject.getProperty(runtime, "curve"));
+  const auto curveValue = optionsObject.getProperty(runtime, "curve");
+  if (!curveValue.isUndefined() && !curveValue.isNull()) {
+    options.curve = parseCurveSequence(runtime, curveValue);
+    if (options.curve == nullptr) {
+      throw jsi::JSError(
+          runtime,
+          "Failed to construct 'WaveShaperNode': The curve must contain at least two values.");
+    }
+  }
+
   return options;
 }
 } // namespace audioapi::option_parser
