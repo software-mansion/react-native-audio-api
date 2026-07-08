@@ -39,7 +39,7 @@
     "format:android:kotlin": "ktlint -F 'android/src/main/java/**/*.kt'",
     "format:ios": "find ios/audioworklets -type f \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | xargs clang-format -i",
     "format:common": "find common/cpp/ \\( -path 'common/cpp/clangd/build' -prune -o -type f \\( -iname \"*.h\" -o -iname \"*.cpp\" -o -iname \"*.hpp\" \\) -print \\) | xargs clang-format -i",
-    "build": "bob build"
+    "build": "yarn workspace react-native-audio-api build && bob build"
   },
   "keywords": [
     "react-native",

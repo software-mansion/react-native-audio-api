@@ -19,6 +19,7 @@ jobs:
     with:
       name: Lint and typecheck
       run: |
+        yarn workspace react-native-audio-api build
         yarn lint
         yarn typecheck
 
