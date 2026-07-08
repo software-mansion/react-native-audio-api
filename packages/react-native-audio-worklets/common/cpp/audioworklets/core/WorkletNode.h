@@ -27,6 +27,8 @@ class WorkletNode : public audioapi::AudioNode {
       UIWorkletsRunner workletRunner,
       size_t bufferLength);
 
+  ~WorkletNode() override;
+
  protected:
   void processNode(int framesToProcess) override;
 

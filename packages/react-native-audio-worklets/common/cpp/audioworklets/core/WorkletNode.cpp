@@ -23,7 +23,15 @@ WorkletNode::WorkletNode(
   }
 }
 
+WorkletNode::~WorkletNode() {
+  workletRunner_.deactivate();
+}
+
 void WorkletNode::processNode(int framesToProcess) {
+  if (!workletRunner_.isActive()) {
+    return;
+  }
+
   if (framesToProcess <= 0) {
     return;
   }
@@ -61,7 +69,7 @@ void WorkletNode::processNode(int framesToProcess) {
 }
 
 void WorkletNode::dispatchToUI(size_t channelCount) {
-  if (!workletRunner_.isValid()) {
+  if (!workletRunner_.isActive()) {
     framesFilled_ = 0;
     return;
   }
