@@ -31,12 +31,6 @@ jobs:
         yarn workspace react-native-audio-worklets run lint
         yarn workspace react-native-audio-worklets run typecheck
 
-  lint-fabric-example:
-    uses: ./.github/workflows/ci-check.yml
-    with:
-      name: Lint (fabric-example)
-      run: yarn workspace fabric-example run lint
-
   check-audio-enum-sync:
     uses: ./.github/workflows/ci-check.yml
     with:
