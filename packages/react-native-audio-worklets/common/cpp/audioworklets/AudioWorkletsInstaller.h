@@ -21,7 +21,7 @@ class AudioWorkletsInstaller {
         jsi::Function::createFromHostFunction(
             runtime,
             jsi::PropNameID::forAscii(runtime, "__createWorkletNode"),
-            4,
+            5,
             createWorkletNode));
   }
 
@@ -55,14 +55,15 @@ class AudioWorkletsInstaller {
       const jsi::Value & /*thisValue*/,
       const jsi::Value *args,
       size_t count) {
-    if (count < 4) {
+    if (count < 5) {
       throw jsi::JSError(
-          runtime, "[react-native-audio-worklets] __createWorkletNode expects 4 arguments");
+          runtime, "[react-native-audio-worklets] __createWorkletNode expects 5 arguments");
     }
     const auto &context = getContextOrThrow(runtime, args[0]);
     auto serializableWorklet = getSerializableWorkletOrThrow(runtime, args[1]);
+    const auto bufferLength = static_cast<size_t>(args[2].asNumber());
 
-    auto uiRuntimeHolder = args[2].asObject(runtime);
+    auto uiRuntimeHolder = args[3].asObject(runtime);
     auto uiRuntime = worklets::getWorkletRuntimeFromHolder(runtime, uiRuntimeHolder);
     if (uiRuntime == nullptr) {
       throw jsi::JSError(
@@ -71,7 +72,7 @@ class AudioWorkletsInstaller {
           "Make sure react-native-worklets is installed.");
     }
 
-    auto uiSchedulerHolder = args[3].asObject(runtime);
+    auto uiSchedulerHolder = args[4].asObject(runtime);
     auto uiScheduler = worklets::getUISchedulerFromHolder(runtime, uiSchedulerHolder);
     if (uiScheduler == nullptr) {
       throw jsi::JSError(
@@ -85,7 +86,8 @@ class AudioWorkletsInstaller {
         context,
         std::move(uiRuntime),
         std::move(uiScheduler),
-        std::move(serializableWorklet));
+        std::move(serializableWorklet),
+        bufferLength);
 
     auto object = jsi::Object::createFromHostObject(runtime, hostObject);
     object.setExternalMemoryPressure(runtime, hostObject->getMemoryPressure());

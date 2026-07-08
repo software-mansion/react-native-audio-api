@@ -2,9 +2,16 @@ import { AudioNode, BaseAudioContext } from 'react-native-audio-api';
 
 import AudioWorkletsModule from './AudioWorkletsModule';
 import type { WorkletNodeCallback } from './types';
+import { validateBufferLength } from './utils';
 
 export default class WorkletNode extends AudioNode {
-  constructor(context: BaseAudioContext, callback: WorkletNodeCallback) {
+  constructor(
+    context: BaseAudioContext,
+    callback: WorkletNodeCallback,
+    bufferLength: number
+  ) {
+    const length = validateBufferLength(bufferLength);
+
     const workletsModule = AudioWorkletsModule.workletsModule;
     const shareableWorklet = workletsModule.createSerializable(callback);
 
@@ -17,6 +24,7 @@ export default class WorkletNode extends AudioNode {
     const node = globalThis.__createWorkletNode(
       context.context,
       shareableWorklet,
+      length,
       workletsModule.getUIRuntimeHolder(),
       workletsModule.getUISchedulerHolder()
     );

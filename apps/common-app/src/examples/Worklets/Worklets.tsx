@@ -147,7 +147,8 @@ function Worklets() {
           damping: 18,
           stiffness: 120,
         });
-      }
+      },
+      1024
     );
 
     const oscillator = ctx.createOscillator();

@@ -2,7 +2,6 @@
 #include <audioworklets/core/WorkletNode.h>
 
 #include <algorithm>
-#include <cmath>
 #include <memory>
 #include <utility>
 
@@ -10,18 +9,17 @@ namespace audioworklets {
 
 WorkletNode::WorkletNode(
     const std::shared_ptr<audioapi::BaseAudioContext> &context,
-    UIWorkletsRunner workletRunner)
+    UIWorkletsRunner workletRunner,
+    size_t bufferLength)
     : audioapi::AudioNode(context),
       workletRunner_(std::move(workletRunner)),
-      busy_(std::make_shared<std::atomic<bool>>(false)),
-      minFramesBetweenDispatch_(
-          static_cast<size_t>(
-              std::max(1.0f, std::floor(context->getSampleRate() / kMaxUiDispatchRateHz)))) {
+      bufferLength_(bufferLength),
+      busy_(std::make_shared<std::atomic<bool>>(false)) {
   snapshotBuffers_ = std::make_shared<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>>(
       static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
+
   for (size_t ch = 0; ch < static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT); ++ch) {
-    (*snapshotBuffers_)[ch] =
-        std::make_shared<audioapi::AudioArrayBuffer>(audioapi::RENDER_QUANTUM_SIZE);
+    (*snapshotBuffers_)[ch] = std::make_shared<audioapi::AudioArrayBuffer>(bufferLength_);
   }
 }
 
@@ -30,48 +28,57 @@ void WorkletNode::processNode(int framesToProcess) {
     return;
   }
 
-  const size_t frameCount = static_cast<size_t>(framesToProcess);
-  const size_t channelCount = audioBuffer_->getNumberOfChannels();
+  if (busy_->load(std::memory_order_acquire)) {
+    return;
+  }
+
+  const auto frameCount = static_cast<size_t>(framesToProcess);
+  const auto channelCount = audioBuffer_->getNumberOfChannels();
 
   if (channelCount == 0) {
-    return;
-  }
-
-  framesSinceLastDispatch_ += frameCount;
-
-  if (framesSinceLastDispatch_ < minFramesBetweenDispatch_) {
-    return;
-  }
-
-  framesSinceLastDispatch_ = 0;
-  dispatchToUI(frameCount, channelCount);
-}
-
-void WorkletNode::dispatchToUI(size_t frameCount, size_t channelCount) {
-  if (!workletRunner_.isValid()) {
     return;
   }
 
   const size_t channelsToCopy =
       std::min(channelCount, static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
 
-  // Drop this quantum if the previous UI invocation has not completed yet.
+  const size_t remaining = bufferLength_ - framesFilled_;
+  if (remaining == 0) {
+    return;
+  }
+
+  const size_t framesToCopy = std::min(frameCount, remaining);
+
+  for (size_t ch = 0; ch < channelsToCopy; ++ch) {
+    (*snapshotBuffers_)[ch]->copy(*audioBuffer_->getChannel(ch), 0, framesFilled_, framesToCopy);
+  }
+
+  framesFilled_ += framesToCopy;
+
+  if (framesFilled_ >= bufferLength_) {
+    dispatchToUI(channelsToCopy);
+  }
+}
+
+void WorkletNode::dispatchToUI(size_t channelCount) {
+  if (!workletRunner_.isValid()) {
+    framesFilled_ = 0;
+    return;
+  }
+
   bool expected = false;
   if (!busy_->compare_exchange_strong(
           expected, true, std::memory_order_acq_rel, std::memory_order_acquire)) {
     return;
   }
 
-  for (size_t ch = 0; ch < channelsToCopy; ++ch) {
-    (*snapshotBuffers_)[ch]->copy(*audioBuffer_->getChannel(ch), 0, 0, frameCount);
-  }
-
   std::atomic_thread_fence(std::memory_order_release);
 
   auto busy = busy_;
-  workletRunner_.invokeOnUI(snapshotBuffers_, channelsToCopy, [busy]() {
-    busy->store(false, std::memory_order_release);
-  });
+  workletRunner_.invokeOnUI(
+      snapshotBuffers_, channelCount, [busy]() { busy->store(false, std::memory_order_release); });
+
+  framesFilled_ = 0;
 }
 
 } // namespace audioworklets
