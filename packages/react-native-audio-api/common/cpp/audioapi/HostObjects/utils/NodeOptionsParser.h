@@ -313,17 +313,6 @@ inline AudioBufferSourceOptions parseAudioBufferSourceOptions(
   return options;
 }
 
-inline StreamerOptions parseStreamerOptions(
-    jsi::Runtime &runtime,
-    const jsi::Object &optionsObject) {
-  auto options = StreamerOptions();
-  if (optionsObject.hasProperty(runtime, "streamPath")) {
-    options.streamPath =
-        optionsObject.getProperty(runtime, "streamPath").asString(runtime).utf8(runtime);
-  }
-  return options;
-}
-
 inline AudioFileSourceOptions parseAudioFileSourceOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {

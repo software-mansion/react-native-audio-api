@@ -20,7 +20,6 @@ import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
-import StreamerNode from './StreamerNode';
 import WaveShaperNode from './WaveShaperNode';
 
 export default class BaseAudioContext {
@@ -65,10 +64,6 @@ export default class BaseAudioContext {
 
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this);
-  }
-
-  createStreamer(streamPath: string): StreamerNode {
-    return new StreamerNode(this, { streamPath });
   }
 
   createConstantSource(): ConstantSourceNode {

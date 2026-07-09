@@ -24,7 +24,6 @@ export { default as OfflineAudioContext } from './core/OfflineAudioContext';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as PeriodicWave } from './core/PeriodicWave';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
-export { default as StreamerNode } from './core/StreamerNode';
 export { default as WaveShaperNode } from './core/WaveShaperNode';
 
 export * from './errors';

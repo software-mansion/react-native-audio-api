@@ -16,7 +16,6 @@
 #include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
-#include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
@@ -45,7 +44,6 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
   addFunctions(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConstantSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
@@ -99,22 +97,6 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
   auto object = jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
   object.setExternalMemoryPressure(runtime, oscillatorHostObject->getMemoryPressure());
   return object;
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-  auto streamerOptions = StreamerOptions();
-  if (!args[0].isUndefined()) {
-    const auto options = args[0].asObject(runtime);
-    streamerOptions = audioapi::option_parser::parseStreamerOptions(runtime, options);
-  }
-  auto streamerHostObject = std::make_shared<StreamerNodeHostObject>(context_, streamerOptions);
-  auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
-  object.setExternalMemoryPressure(runtime, StreamerNodeHostObject::getSizeInBytes());
-  return object;
-#else
-  return jsi::Value::undefined();
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
