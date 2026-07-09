@@ -48,6 +48,7 @@ const AudioVisualizer: React.FC = () => {
     bufferSourceRef.current = audioContextRef.current.createBufferSource();
     bufferSourceRef.current.buffer = audioBuffer;
     bufferSourceRef.current.connect(analyserRef.current);
+    bufferSourceRef.current.connect(audioContextRef.current.destination);
 
     const when = audioContextRef.current.currentTime;
     setStartTime(when);
@@ -84,7 +85,6 @@ const AudioVisualizer: React.FC = () => {
         fftSize: FFT_SIZE,
         smoothingTimeConstant: 0.2,
       });
-      analyserRef.current.connect(audioContextRef.current.destination);
     }
 
     fetchAudioBuffer();

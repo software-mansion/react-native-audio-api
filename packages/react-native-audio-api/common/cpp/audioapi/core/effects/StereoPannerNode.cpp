@@ -29,6 +29,18 @@ std::shared_ptr<DSPAudioBuffer> StereoPannerNode::getOutputBuffer() const {
   return outputBuffer_;
 }
 
+std::shared_ptr<DSPAudioBuffer> StereoPannerNode::getNegotiatedBuffer() const {
+  return getInputBuffer();
+}
+
+void StereoPannerNode::setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) {
+  audioBuffer_ = buffer;
+}
+
+size_t StereoPannerNode::getUpstreamChannelCount(size_t /*negotiatedChannelCount*/) const {
+  return outputBuffer_->getNumberOfChannels();
+}
+
 void StereoPannerNode::processNode(int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {

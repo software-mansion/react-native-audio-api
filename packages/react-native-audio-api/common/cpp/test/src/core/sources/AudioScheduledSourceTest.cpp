@@ -1,7 +1,6 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
@@ -24,8 +23,7 @@ class AudioScheduledSourceTest : public ::testing::Test {
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_shared<OfflineAudioContext>(
-        2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
+    context = std::make_shared<OfflineAudioContext>(2, 5 * sampleRate, sampleRate, eventRegistry);
     destination = std::make_shared<AudioDestinationNode>(context);
     context->initialize(destination.get());
   }

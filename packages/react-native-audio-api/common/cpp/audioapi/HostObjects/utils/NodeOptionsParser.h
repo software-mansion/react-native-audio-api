@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/RuntimeLifecycleMonitor.h>
+#include <audioapi/jsi/RuntimeObserver.h>
 #include <jsi/jsi.h>
 #include <cmath>
 #include <cstddef>
@@ -116,10 +116,12 @@ inline ConvolverOptions parseConvolverOptions(
   }
 
   if (optionsObject.hasProperty(runtime, "buffer")) {
-    auto bufferHostObject = optionsObject.getProperty(runtime, "buffer")
-                                .getObject(runtime)
-                                .asHostObject<AudioBufferHostObject>(runtime);
-    options.buffer = bufferHostObject->audioBuffer_;
+    auto bufferValue = optionsObject.getProperty(runtime, "buffer");
+    if (bufferValue.isObject() &&
+        bufferValue.getObject(runtime).isHostObject<AudioBufferHostObject>(runtime)) {
+      options.buffer =
+          bufferValue.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime)->audioBuffer_;
+    }
   }
   return options;
 }
@@ -285,10 +287,12 @@ inline AudioBufferSourceOptions parseAudioBufferSourceOptions(
   AudioBufferSourceOptions options(parseBaseAudioBufferSourceOptions(runtime, optionsObject));
 
   if (optionsObject.hasProperty(runtime, "buffer")) {
-    auto bufferHostObject = optionsObject.getProperty(runtime, "buffer")
-                                .getObject(runtime)
-                                .asHostObject<AudioBufferHostObject>(runtime);
-    options.buffer = bufferHostObject->audioBuffer_;
+    auto bufferValue = optionsObject.getProperty(runtime, "buffer");
+    if (bufferValue.isObject() &&
+        bufferValue.getObject(runtime).isHostObject<AudioBufferHostObject>(runtime)) {
+      options.buffer =
+          bufferValue.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime)->audioBuffer_;
+    }
   }
 
   auto loopValue = optionsObject.getProperty(runtime, "loop");

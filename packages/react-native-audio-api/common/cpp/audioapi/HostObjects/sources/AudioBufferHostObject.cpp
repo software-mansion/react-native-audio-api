@@ -22,7 +22,7 @@ AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> 
 }
 
 AudioBufferHostObject::AudioBufferHostObject(AudioBufferHostObject &&other) noexcept
-    : JsiHostObject(std::move(other)), audioBuffer_(std::move(other.audioBuffer_)) {}
+    : HostObject(std::move(other)), audioBuffer_(std::move(other.audioBuffer_)) {}
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, sampleRate) {
   return {audioBuffer_->getSampleRate()};

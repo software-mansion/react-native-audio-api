@@ -1,16 +1,6 @@
 #import <React/RCTBridge+Private.h>
 #import <audioapi/ios/AudioAPIModule.h>
 
-#import <audioapi/core/utils/worklets/SafeIncludes.h>
-#if RN_AUDIO_API_ENABLE_WORKLETS
-// Forward-declare the single method used from WorkletsModule instead of importing
-// <worklets/apple/WorkletsModule.h>, which transitively includes the codegen-generated
-// <rnworklets/rnworklets.h> that is not visible to this compile unit in all build setups
-// (e.g. prebuilt RNWorklets in EAS builds).
-@interface WorkletsModule : NSObject
-- (std::shared_ptr<worklets::WorkletsModuleProxy>)getWorkletsModuleProxy;
-@end
-#endif
 #ifdef RCT_NEW_ARCH_ENABLED
 #import <React/RCTCallInvoker.h>
 #endif // RCT_NEW_ARCH_ENABLED
@@ -24,7 +14,6 @@
 
 using namespace audioapi;
 using namespace facebook::react;
-using namespace worklets;
 
 @interface RCTBridge (JSIRuntime)
 - (void *)runtime;
@@ -41,7 +30,6 @@ using namespace worklets;
 
 @implementation AudioAPIModule {
   std::shared_ptr<AudioEventHandlerRegistry> _eventHandler;
-  std::weak_ptr<WorkletsModuleProxy> weakWorkletsModuleProxy_;
 }
 
 - (void)handleSessionDeactivation
@@ -93,33 +81,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
   _eventHandler = std::make_shared<AudioEventHandlerRegistry>(jsiRuntime, jsCallInvoker);
 
-#if RN_AUDIO_API_ENABLE_WORKLETS
-  WorkletsModule *workletsModule = [_moduleRegistry moduleForName:"WorkletsModule"];
-
-  if (!workletsModule) {
-    NSLog(@"WorkletsModule not found in module registry");
-  }
-
-  auto workletsModuleProxy = [workletsModule getWorkletsModuleProxy];
-
-  if (!workletsModuleProxy) {
-    NSLog(@"WorkletsModuleProxy not available");
-  }
-
-  weakWorkletsModuleProxy_ = workletsModuleProxy;
-
-  auto uiWorkletRuntime = workletsModuleProxy->getUIWorkletRuntime();
-
-  if (!uiWorkletRuntime) {
-    NSLog(@"UI Worklet Runtime not available");
-  }
-
-  // Get the actual JSI Runtime reference
-  audioapi::AudioAPIModuleInstaller::injectJSIBindings(
-      jsiRuntime, jsCallInvoker, _eventHandler, uiWorkletRuntime);
-#else
   audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler);
-#endif
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
   return @YES;

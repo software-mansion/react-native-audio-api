@@ -65,8 +65,10 @@ https://github.com/software-mansion-labs/rn-audio-libs/releases/download/<TAG>/
 Current tag: **v3.0.0** (see `scripts/download-prebuilt-binaries.sh`).
 
 The download script is triggered automatically:
-- **iOS**: by podspec `prepare_command` during `pod install`
-- **Android**: by `downloadPrebuiltBinaries` Gradle task, which runs before `preBuild`
+- **iOS**: by podspec `prepare_command` during `pod install` **and** by a `script_phase` (`[CP-User] Download RNAudioAPI prebuilt binaries`, `:before_headers`, always-out-of-date) on every Xcode build — downloads `ffmpeg_ios`, `iphoneos`, `iphonesimulator`, `macosx`. `prepare_command` ensures all vendored `.xcframework`s exist when CocoaPods generates `[CP] Copy XCFrameworks` (required for correct FFmpeg linking). The build-time phase handles CI setups that cache `Pods/` independently from `node_modules/` — it is a fast no-op when binaries are already present. **It must use `:before_headers`, not `:before_compile`** — CocoaPods inserts its own `[CP] Copy XCFrameworks` phase right after `Headers`; `:before_compile` would land *after* it. The phase's `output_files` declares both the `-force_load` static libs and the four FFmpeg xcframeworks. The whole phase is skipped only when *both* `DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS` and `DISABLE_AUDIOAPI_FFMPEG` are set.
+- **Android**: by `downloadPrebuiltBinaries` Gradle task, which runs before `preBuild` — downloads `android`, `jniLibs`
+
+The script is idempotent — it skips any archive whose destination directory already exists, so the per-build invocations are fast no-ops once binaries are present.
 
 Downloaded artifacts land in:
 - `common/cpp/audioapi/external/android/<ABI>/` — `.a` static libs for Android ABIs
@@ -82,15 +84,19 @@ Downloaded artifacts land in:
 
 ### Files
 - `android/build.gradle` — Gradle library config
+- `android/fix-prefab.gradle` — prefab publication workaround (ported from react-native-worklets)
 - `android/CMakeLists.txt` — Android CMake root (SIMD detection, RN version flags, delegates to subdirectory)
 - `android/src/main/cpp/audioapi/CMakeLists.txt` — actual build target (sources, prebuilt libs, include paths)
+- `common/cpp/audioapi/EXTENSION_API.md` — stable C++ extension contract for dependent native modules
+- `common/cpp/audioapi/compatibility/StableAPI.h` — single public C++ compatibility header for extensions
 
 ### Key behaviors
 - Feature flags (`newArchEnabled`, `disableAudioapiFFmpeg`) are read from app's `gradle.properties` and forwarded to both CMake and Kotlin `BuildConfig`
 - DSP sources always compiled with `-O3` regardless of overall build type
 - Sources gathered with `GLOB_RECURSE CONFIGURE_DEPENDS` — CMake re-runs automatically when files are added/removed
-- Worklets must be merged before the audio API CMake build starts (explicit Gradle task dependency)
 - 16KB page size alignment enabled for Android 15+
+- **Extension API (prefab)**: single public C++ header `<audioapi/compatibility/StableAPI.h>`; prefab publishes transitive headers needed to compile it (`prepareAudioApiHeadersForPrefabs`); `fix-prefab.gradle` ensures the `.so` is in prefab metadata. Contract: `EXTENSION_API.md`
+- CMake exposes `COMMON_CPP_DIR` and `ANDROID_CPP_DIR` as **PUBLIC** include dirs so prefab consumers resolve `<audioapi/...>`
 
 For full per-line analysis see [build-details.md](build-details.md#android-androidcmakeliststxt-root--detailed-analysis).
 
@@ -110,6 +116,7 @@ For full per-line analysis see [build-details.md](build-details.md#android-andro
 - `Accelerate` framework linked, enabling `HAVE_ACCELERATE=1` for vDSP SIMD on iOS
 - Header search paths split: `pod_target_xcconfig` (library compilation) vs `xcconfig` (app consumers)
 - `rnaa_utils.rb` resolves dynamic paths at `pod install` time (not hardcoded)
+- JSI internals use distinct names (`HostObject`, `RuntimeInstanceCache`, `RuntimeObserver`) instead of generic names like `JsiHostObject` / `RuntimeAwareCache` / `RuntimeLifecycleMonitor` — `react-native-skia` publishes headers with those generic names and CocoaPods can resolve the wrong file when both libraries are in the same app
 
 For full per-line analysis see [build-details.md](build-details.md#ios-rnaudioapipodspec--detailed-analysis).
 

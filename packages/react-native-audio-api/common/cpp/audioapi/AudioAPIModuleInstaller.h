@@ -15,8 +15,6 @@
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
-
 #include <memory>
 namespace audioapi {
 
@@ -27,14 +25,13 @@ class AudioAPIModuleInstaller {
   static void injectJSIBindings(
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr) {
-    auto createAudioContext = getCreateAudioContextFunction(
-        jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
+    auto createAudioContext =
+        getCreateAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
     auto createAudioRecorder =
         getCreateAudioRecorderFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
-    auto createOfflineAudioContext = getCreateOfflineAudioContextFunction(
-        jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
+    auto createOfflineAudioContext =
+        getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
     auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioFileUtils = getCreateAudioFileUtilsFunction(jsiRuntime, jsCallInvoker);
@@ -59,30 +56,20 @@ class AudioAPIModuleInstaller {
   static jsi::Function getCreateAudioContextFunction(
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const std::weak_ptr<worklets::WorkletRuntime> &uiRuntime) {
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
         1,
-        [jsCallInvoker, audioEventHandlerRegistry, uiRuntime](
+        [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
-#if RN_AUDIO_API_ENABLE_WORKLETS
-          auto runtimeRegistry = RuntimeRegistry{.uiRuntime = uiRuntime};
-          if (count > 1 && args[1].isObject()) {
-            runtimeRegistry.audioRuntime = worklets::extractWorkletRuntime(runtime, args[1]);
-          }
-#else
-          auto runtimeRegistry = RuntimeRegistry{};
-#endif
-
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              sampleRate, audioEventHandlerRegistry, runtimeRegistry, &runtime, jsCallInvoker);
+              sampleRate, audioEventHandlerRegistry, &runtime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });
@@ -91,13 +78,12 @@ class AudioAPIModuleInstaller {
   static jsi::Function getCreateOfflineAudioContextFunction(
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const std::weak_ptr<worklets::WorkletRuntime> &uiRuntime) {
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createOfflineAudioContext"),
         3,
-        [jsCallInvoker, audioEventHandlerRegistry, uiRuntime](
+        [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
@@ -106,21 +92,11 @@ class AudioAPIModuleInstaller {
           auto length = static_cast<size_t>(args[1].getNumber());
           auto sampleRate = static_cast<float>(args[2].getNumber());
 
-#if RN_AUDIO_API_ENABLE_WORKLETS
-          auto runtimeRegistry = RuntimeRegistry{.uiRuntime = uiRuntime};
-          if (count > 3 && args[3].isObject()) {
-            runtimeRegistry.audioRuntime = worklets::extractWorkletRuntime(runtime, args[3]);
-          }
-#else
-          auto runtimeRegistry = RuntimeRegistry{};
-#endif
-
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
               numberOfChannels,
               length,
               sampleRate,
               audioEventHandlerRegistry,
-              runtimeRegistry,
               &runtime,
               jsCallInvoker);
 

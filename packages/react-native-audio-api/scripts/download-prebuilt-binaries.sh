@@ -3,23 +3,59 @@
 
 MAIN_DOWNLOAD_URL="https://github.com/software-mansion-labs/rn-audio-libs/releases/download"
 TAG="v3.1.0"
-DOWNLOAD_NAMES=(
+ANDROID_DOWNLOAD_NAMES=(
     "android.zip"
+    "jniLibs.zip"
+)
+IOS_DOWNLOAD_NAMES=(
     "ffmpeg_ios.zip"
     "iphoneos.zip"
     "iphonesimulator.zip"
-    "jniLibs.zip"
     "macosx.zip"
 )
+STATIC_LIB_NAMES=(
+    "libopusfile.a"
+    "libopus.a"
+    "libogg.a"
+    "libvorbis.a"
+    "libvorbisenc.a"
+    "libvorbisfile.a"
+)
+FFMPEG_IOS_FRAMEWORKS=(
+    "libavcodec.xcframework"
+    "libavformat.xcframework"
+    "libavutil.xcframework"
+    "libswresample.xcframework"
+)
+FFMPEG_ANDROID_SO_LIBS=(
+    "libavcodec.so"
+    "libavformat.so"
+    "libavutil.so"
+    "libswresample.so"
+)
+ANDROID_JNI_ABIS=(
+    "armeabi-v7a"
+    "arm64-v8a"
+    "x86_64"
+    "x86"
+)
+
+PLATFORM="$1"
+if [ "$PLATFORM" != "android" ] && [ "$PLATFORM" != "ios" ]; then
+    echo "Error: platform argument required. Usage: $0 <android|ios> [skipffmpeg]"
+    exit 1
+fi
 
 # Use a temporary directory for downloads, ensuring it exists
 TEMP_DOWNLOAD_DIR="$(pwd)/audioapi-binaries-temp"
 mkdir -p "$TEMP_DOWNLOAD_DIR"
 
-if [ "$1" == "android" ]; then
+if [ "$PLATFORM" == "android" ]; then
     PROJECT_ROOT="$(pwd)/.."
+    DOWNLOAD_NAMES=("${ANDROID_DOWNLOAD_NAMES[@]}")
 else
     PROJECT_ROOT="$(pwd)"
+    DOWNLOAD_NAMES=("${IOS_DOWNLOAD_NAMES[@]}")
 fi
 
 if [ "$2" == "skipffmpeg" ]; then
@@ -68,6 +104,56 @@ restore_versioned_framework_symlinks() {
     done
 }
 
+artifacts_present() {
+    local extracted_dir_name="$1"
+    local final_check_path="$2"
+    local abi
+    local lib
+    local framework
+    local so_lib
+
+    case "$extracted_dir_name" in
+        ffmpeg_ios)
+            for framework in "${FFMPEG_IOS_FRAMEWORKS[@]}"; do
+                if [ ! -d "${final_check_path}/${framework}" ]; then
+                    return 1
+                fi
+            done
+            ;;
+        jniLibs)
+            for abi in "${ANDROID_JNI_ABIS[@]}"; do
+                for so_lib in "${FFMPEG_ANDROID_SO_LIBS[@]}"; do
+                    if [ ! -f "${final_check_path}/${abi}/${so_lib}" ]; then
+                        return 1
+                    fi
+                done
+            done
+            ;;
+        android)
+            for abi in "${ANDROID_JNI_ABIS[@]}"; do
+                for lib in "${STATIC_LIB_NAMES[@]}"; do
+                    if [ ! -f "${final_check_path}/${abi}/${lib}" ]; then
+                        return 1
+                    fi
+                done
+            done
+            ;;
+        iphoneos|iphonesimulator|macosx)
+            for lib in "${STATIC_LIB_NAMES[@]}"; do
+                if [ ! -f "${final_check_path}/${lib}" ]; then
+                    return 1
+                fi
+            done
+            ;;
+        *)
+            [ -d "$final_check_path" ]
+            return
+            ;;
+    esac
+
+    return 0
+}
+
 for name in "${DOWNLOAD_NAMES[@]}"; do
     ARCH_URL="${MAIN_DOWNLOAD_URL}/${TAG}/${name}"
     ZIP_FILE_PATH="${TEMP_DOWNLOAD_DIR}/${name}"
@@ -91,11 +177,11 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
     fi
     FINAL_CHECK_PATH="${OUTPUT_DIR}/${EXTRACTED_DIR_NAME}"
 
-    if [ -d "$FINAL_CHECK_PATH" ]; then
+    if artifacts_present "$EXTRACTED_DIR_NAME" "$FINAL_CHECK_PATH"; then
         continue
     fi
 
-    # If we are here, the directory does not exist, so we download and unzip.
+    # If we are here, the artifacts are missing, so we download and unzip.
     echo "Downloading from: $ARCH_URL"
     curl -fsSL "$ARCH_URL" -o "$ZIP_FILE_PATH"
 
@@ -113,6 +199,8 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
 
 done
 
-restore_versioned_framework_symlinks
+if [ "$PLATFORM" == "ios" ]; then
+    restore_versioned_framework_symlinks
+fi
 
 rm -rf "$TEMP_DOWNLOAD_DIR"

@@ -42,12 +42,31 @@ packagingOptions {
 }
 ```
 
-### Worklets dependency ordering
-
-Worklets must be merged before the audio API's CMake build starts. Gradle task dependency is wired explicitly:
+### Prefab extension API
 
 ```groovy
-tasks.getByName("buildCMakeDebug").dependsOn(rnWorkletsProject.tasks.getByName("mergeDebugNativeLibs"))
+buildFeatures {
+  prefab true
+  prefabPublishing true
+}
+
+prefab {
+  "react-native-audio-api" {
+    headers audioApiPrefabHeadersDir.absolutePath
+  }
+}
+```
+
+`prepareAudioApiHeadersForPrefabs` copies `audioapi/**/*.{h,hpp}` (include-only, no
+excludes — same approach as react-native-worklets). `fix-prefab.gradle` makes
+`prefab*ConfigurePackage` depend on `externalNativeBuild*` and touches dependents'
+`prefab_config.json`.
+
+Consumers:
+
+```cmake
+find_package(react-native-audio-api REQUIRED CONFIG)
+target_link_libraries(my-ext react-native-audio-api::react-native-audio-api)
 ```
 
 ### Minimum RN version enforcement

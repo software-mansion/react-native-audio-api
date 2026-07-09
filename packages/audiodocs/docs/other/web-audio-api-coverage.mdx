@@ -59,3 +59,60 @@ We will do our best to ship it as soon as possible!
 🚧 - Partially implemented
 
 ❌ - Not yet available
+
+## Web Platform Tests (WPT)
+
+The [Web Platform Tests](https://web-platform-tests.org/) project is the
+cross-browser test suite that browser vendors use to verify their
+implementations against the official web specifications. Its `webaudio` subtree
+is the same suite that powers the public
+[wpt.fyi Web Audio dashboard](https://wpt.fyi/results/webaudio/the-audio-api?label=experimental&label=master&aligned).
+
+We run those exact tests against `react-native-audio-api` through a small Node
+harness, which lets us measure spec conformance with the same assertions a
+browser is held to. Each test file contains many individual assertions; the
+numbers below count assertions, not files.
+
+The table below is a snapshot from a local run and only lists the interfaces
+that are currently available in the library. It is refreshed manually by
+maintainers, so treat it as an approximate conformance indicator rather than a
+live status.
+
+{/* wpt-summary:start */}
+
+_Last updated: 2026-07-06. Numbers come from the local WPT smoke run and are a snapshot, not a live badge._
+
+<table>
+  <thead>
+    <tr>
+      <th>Interface</th>
+      <th style={{ textAlign: 'right' }}>Passing</th>
+      <th style={{ textAlign: 'right' }}>Total</th>
+      <th style={{ textAlign: 'right' }}>Pass rate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style={{ backgroundColor: 'hsl(101, 65%, 80%)', color: '#1c1e21' }}><td>AnalyserNode</td><td style={{ textAlign: 'right' }}>118</td><td style={{ textAlign: 'right' }}>140</td><td style={{ textAlign: 'right' }}>84.3%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(101, 65%, 80%)', color: '#1c1e21' }}><td>AudioBuffer</td><td style={{ textAlign: 'right' }}>105</td><td style={{ textAlign: 'right' }}>125</td><td style={{ textAlign: 'right' }}>84.0%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(45, 65%, 80%)', color: '#1c1e21' }}><td>AudioBufferSourceNode</td><td style={{ textAlign: 'right' }}>109</td><td style={{ textAlign: 'right' }}>289</td><td style={{ textAlign: 'right' }}>37.7%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(42, 65%, 80%)', color: '#1c1e21' }}><td>AudioContext</td><td style={{ textAlign: 'right' }}>40</td><td style={{ textAlign: 'right' }}>115</td><td style={{ textAlign: 'right' }}>34.8%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(0, 65%, 80%)', color: '#1c1e21' }}><td>AudioDestinationNode</td><td style={{ textAlign: 'right' }}>0</td><td style={{ textAlign: 'right' }}>1</td><td style={{ textAlign: 'right' }}>0.0%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(98, 65%, 80%)', color: '#1c1e21' }}><td>AudioNode</td><td style={{ textAlign: 'right' }}>50</td><td style={{ textAlign: 'right' }}>61</td><td style={{ textAlign: 'right' }}>82.0%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(72, 65%, 80%)', color: '#1c1e21' }}><td>AudioParam</td><td style={{ textAlign: 'right' }}>300</td><td style={{ textAlign: 'right' }}>499</td><td style={{ textAlign: 'right' }}>60.1%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(89, 65%, 80%)', color: '#1c1e21' }}><td>BiquadFilterNode</td><td style={{ textAlign: 'right' }}>187</td><td style={{ textAlign: 'right' }}>251</td><td style={{ textAlign: 'right' }}>74.5%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(98, 65%, 80%)', color: '#1c1e21' }}><td>ConstantSourceNode</td><td style={{ textAlign: 'right' }}>49</td><td style={{ textAlign: 'right' }}>60</td><td style={{ textAlign: 'right' }}>81.7%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(66, 65%, 80%)', color: '#1c1e21' }}><td>ConvolverNode</td><td style={{ textAlign: 'right' }}>94</td><td style={{ textAlign: 'right' }}>170</td><td style={{ textAlign: 'right' }}>55.3%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(81, 65%, 80%)', color: '#1c1e21' }}><td>DelayNode</td><td style={{ textAlign: 'right' }}>89</td><td style={{ textAlign: 'right' }}>132</td><td style={{ textAlign: 'right' }}>67.4%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(88, 65%, 80%)', color: '#1c1e21' }}><td>GainNode</td><td style={{ textAlign: 'right' }}>11</td><td style={{ textAlign: 'right' }}>15</td><td style={{ textAlign: 'right' }}>73.3%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(64, 65%, 80%)', color: '#1c1e21' }}><td>IIRFilterNode</td><td style={{ textAlign: 'right' }}>45</td><td style={{ textAlign: 'right' }}>85</td><td style={{ textAlign: 'right' }}>52.9%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(0, 65%, 80%)', color: '#1c1e21' }}><td>MediaElementAudioSourceNode</td><td style={{ textAlign: 'right' }}>0</td><td style={{ textAlign: 'right' }}>7</td><td style={{ textAlign: 'right' }}>0.0%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(52, 65%, 80%)', color: '#1c1e21' }}><td>OfflineAudioContext</td><td style={{ textAlign: 'right' }}>30</td><td style={{ textAlign: 'right' }}>69</td><td style={{ textAlign: 'right' }}>43.5%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(86, 65%, 80%)', color: '#1c1e21' }}><td>OscillatorNode</td><td style={{ textAlign: 'right' }}>67</td><td style={{ textAlign: 'right' }}>93</td><td style={{ textAlign: 'right' }}>72.0%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(74, 65%, 80%)', color: '#1c1e21' }}><td>PeriodicWave</td><td style={{ textAlign: 'right' }}>19</td><td style={{ textAlign: 'right' }}>31</td><td style={{ textAlign: 'right' }}>61.3%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(81, 65%, 80%)', color: '#1c1e21' }}><td>StereoPannerNode</td><td style={{ textAlign: 'right' }}>68</td><td style={{ textAlign: 'right' }}>101</td><td style={{ textAlign: 'right' }}>67.3%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(85, 65%, 80%)', color: '#1c1e21' }}><td>WaveShaperNode</td><td style={{ textAlign: 'right' }}>53</td><td style={{ textAlign: 'right' }}>75</td><td style={{ textAlign: 'right' }}>70.7%</td></tr>
+    <tr style={{ backgroundColor: 'hsl(74, 65%, 80%)', color: '#1c1e21' }}><td><strong>Total</strong></td><td style={{ textAlign: 'right' }}>1434</td><td style={{ textAlign: 'right' }}>2319</td><td style={{ textAlign: 'right' }}><strong>61.8%</strong></td></tr>
+  </tbody>
+</table>
+
+{/* wpt-summary:end */}
