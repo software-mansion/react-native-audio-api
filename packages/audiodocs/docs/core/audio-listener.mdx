@@ -1,0 +1,56 @@
+---
+sidebar_position: 5
+---
+
+import { ReadOnly } from '@site/src/components/Badges';
+
+# AudioListener
+
+The `AudioListener` interface represents the position and orientation of the person listening to the audio scene.
+It is used for 3D spatialization: all `PannerNode` objects spatialize sound in relation to the context's listener.
+
+`AudioListener` is **not** an [`AudioNode`](/docs/core/audio-node) — it has no inputs, outputs, or `connect()`/`disconnect()` methods. It only exposes nine [`AudioParam`](/docs/core/audio-param) properties.
+
+Every [`BaseAudioContext`](/docs/core/base-audio-context) exposes a single listener through its read-only `listener` property — you never construct one yourself.
+
+- The `positionX`, `positionY` and `positionZ` parameters represent the location of the listener in 3D Cartesian coordinate space.
+- The `forwardX`, `forwardY` and `forwardZ` parameters represent a direction vector in 3D space — which direction the listener's "nose" is pointing.
+- The `upX`, `upY` and `upZ` parameters represent the direction the top of the listener's head is pointing.
+
+The `forward` and `up` vectors are expected to be linearly independent.
+
+## Example
+
+```tsx
+import { AudioContext } from 'react-native-audio-api';
+
+const ctx = new AudioContext();
+const listener = ctx.listener;
+
+// Move the listener 3 meters along the x axis.
+listener.positionX.value = 3;
+
+// Or automate the movement over time.
+listener.positionX.linearRampToValueAtTime(10, ctx.currentTime + 2);
+```
+
+## Properties
+
+All properties are [`AudioParam`](/docs/core/audio-param)s with `minValue`/`maxValue` spanning the full single-precision float range (approximately ±3.4028235e38), a-rate automation.
+
+| Name | Type | Default value | Description | |
+| :----: | :----: | :----: | :-------- | :-: |
+| `positionX` | [`AudioParam`](/docs/core/audio-param) | `0` | x-coordinate of the listener's position. | <ReadOnly /> |
+| `positionY` | [`AudioParam`](/docs/core/audio-param) | `0` | y-coordinate of the listener's position. | <ReadOnly /> |
+| `positionZ` | [`AudioParam`](/docs/core/audio-param) | `0` | z-coordinate of the listener's position. | <ReadOnly /> |
+| `forwardX` | [`AudioParam`](/docs/core/audio-param) | `0` | x-component of the listener's forward direction. | <ReadOnly /> |
+| `forwardY` | [`AudioParam`](/docs/core/audio-param) | `0` | y-component of the listener's forward direction. | <ReadOnly /> |
+| `forwardZ` | [`AudioParam`](/docs/core/audio-param) | `-1` | z-component of the listener's forward direction. | <ReadOnly /> |
+| `upX` | [`AudioParam`](/docs/core/audio-param) | `0` | x-component of the listener's up direction. | <ReadOnly /> |
+| `upY` | [`AudioParam`](/docs/core/audio-param) | `1` | y-component of the listener's up direction. | <ReadOnly /> |
+| `upZ` | [`AudioParam`](/docs/core/audio-param) | `0` | z-component of the listener's up direction. | <ReadOnly /> |
+
+## Remarks
+
+- The deprecated Web Audio API methods `setPosition(x, y, z)` and `setOrientation(x, y, z, xUp, yUp, zUp)` are intentionally **not implemented**. Set the corresponding `AudioParam` values directly instead.
+- `PannerNode` — the consumer of these parameters — is not implemented yet, so changing the listener currently has no audible effect. The interface is provided ahead of `PannerNode` support.
