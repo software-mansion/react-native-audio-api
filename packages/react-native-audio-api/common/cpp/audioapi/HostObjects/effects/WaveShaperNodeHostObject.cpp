@@ -1,9 +1,9 @@
 #include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
+#include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
-#include <audioapi/types/NodeOptions.h>
 
 #include <memory>
 #include <utility>
@@ -22,6 +22,36 @@ WaveShaperNodeHostObject::WaveShaperNodeHostObject(
   addGetters(JSI_EXPORT_PROPERTY_GETTER(WaveShaperNodeHostObject, oversample));
   addSetters(JSI_EXPORT_PROPERTY_SETTER(WaveShaperNodeHostObject, oversample));
   addFunctions(JSI_EXPORT_FUNCTION(WaveShaperNodeHostObject, setCurve));
+
+  if (options.curve != nullptr) {
+    curveMemoryPressure_ = options.curve->getSize() * sizeof(float) * 2;
+  }
+}
+
+void WaveShaperNodeHostObject::scheduleCurveUpdate(const std::shared_ptr<AudioArray> &curve) {
+  auto handle = node_->handle;
+
+  curveMemoryPressure_ = curve != nullptr ? curve->getSize() * sizeof(float) * 2 : 0;
+
+  auto event = [handle, node = waveShaperNode_, curve](BaseAudioContext &) {
+    node->setCurve(curve);
+  };
+  waveShaperNode_->scheduleAudioEvent(std::move(event));
+}
+
+JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
+  std::shared_ptr<AudioArray> curve = nullptr;
+
+  if (!args[0].isNull() && !args[0].isUndefined()) {
+    curve = option_parser::parseCurveSequence(runtime, args[0]);
+    if (curve != nullptr) {
+      thisValue.asObject(runtime).setExternalMemoryPressure(
+          runtime, getMemoryPressure() + curve->getSize() * sizeof(float) * 2);
+    }
+  }
+
+  scheduleCurveUpdate(curve);
+  return jsi::Value::undefined();
 }
 
 JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, oversample) {
@@ -49,32 +79,6 @@ JSI_PROPERTY_SETTER_IMPL(WaveShaperNodeHostObject, oversample) {
   };
   waveShaperNode_->scheduleAudioEvent(std::move(event));
   oversample_ = oversample;
-}
-
-JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
-  auto handle = node_->handle;
-
-  std::shared_ptr<AudioArray> curve = nullptr;
-
-  if (args[0].isObject()) {
-    auto arrayBuffer =
-        args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-    // *2 because the curve is copied into an internal AudioArray for processing.
-    // Include the node's own base footprint; otherwise we'd clobber it.
-    thisValue.asObject(runtime).setExternalMemoryPressure(
-        runtime, getMemoryPressure() + arrayBuffer.size(runtime) * 2);
-
-    auto size = static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float));
-    curve =
-        std::make_shared<AudioArray>(reinterpret_cast<float *>(arrayBuffer.data(runtime)), size);
-  }
-
-  auto event = [handle, node = waveShaperNode_, curve](BaseAudioContext &) {
-    node->setCurve(curve);
-  };
-  waveShaperNode_->scheduleAudioEvent(std::move(event));
-
-  return jsi::Value::undefined();
 }
 
 } // namespace audioapi

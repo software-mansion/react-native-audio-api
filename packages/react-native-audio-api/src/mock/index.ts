@@ -303,9 +303,20 @@ class ConvolverNodeMock extends AudioNodeMock {
 class WaveShaperNodeMock extends AudioNodeMock {
   private _curve: Float32Array | null = null;
   private _oversample: OverSampleType = 'none';
+  private curveWasSet = false;
 
-  constructor(context: BaseAudioContextMock, _options?: WaveShaperOptions) {
+  constructor(context: BaseAudioContextMock, options?: WaveShaperOptions) {
     super(context, {});
+    if (options?.curve) {
+      this._curve =
+        options.curve instanceof Float32Array
+          ? options.curve
+          : Float32Array.from(options.curve);
+      this.curveWasSet = true;
+    }
+    if (options?.oversample) {
+      this._oversample = options.oversample;
+    }
   }
 
   get curve(): Float32Array | null {
@@ -313,6 +324,19 @@ class WaveShaperNodeMock extends AudioNodeMock {
   }
 
   set curve(value: Float32Array | null) {
+    if (value !== null) {
+      if (this.curveWasSet) {
+        throw new InvalidStateErrorMock(
+          'The curve can only be set once and cannot be changed afterwards.'
+        );
+      }
+      if (value.length < 2) {
+        throw new InvalidStateErrorMock(
+          'The curve must have at least two values if not null.'
+        );
+      }
+      this.curveWasSet = true;
+    }
     this._curve = value;
   }
 

@@ -244,7 +244,7 @@ export interface DelayOptions extends AudioNodeOptions {
 }
 
 export interface WaveShaperOptions extends AudioNodeOptions {
-  curve?: Float32Array;
+  curve?: number[] | Float32Array;
   oversample?: OverSampleType;
 }
 

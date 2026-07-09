@@ -277,7 +277,6 @@ export interface IAnalyserNode extends IAudioNode {
 export interface IRecorderAdapterNode extends IAudioNode {}
 
 export interface IWaveShaperNode extends IAudioNode {
-  readonly curve: Float32Array | null;
   oversample: OverSampleType;
 
   setCurve(curve: Float32Array | null): void;
