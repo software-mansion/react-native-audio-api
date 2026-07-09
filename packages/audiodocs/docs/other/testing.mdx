@@ -168,30 +168,6 @@ describe('Worklet Tests', () => {
 });
 ```
 
-### Audio Streaming Testing
-
-```typescript
-import { AudioContext } from 'react-native-audio-api/mock';
-
-describe('Streaming Tests', () => {
-  it('should handle audio streaming', () => {
-    const context = new AudioContext();
-
-    const streamer = context.createStreamer({
-      streamPath: 'https://example.com/audio-stream',
-    });
-
-    expect(streamer.streamPath).toBe('https://example.com/audio-stream');
-
-    // Test streaming controls
-    streamer.start();
-    streamer.pause();
-    streamer.resume();
-    streamer.stop();
-  });
-});
-```
-
 ### Error Handling Testing
 
 ```typescript

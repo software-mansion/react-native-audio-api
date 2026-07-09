@@ -12,7 +12,8 @@ export default class AudioParam {
   constructor(
     public readonly audioParam: IAudioParam,
     public readonly context: BaseAudioContext,
-    public readonly owner: AudioNode
+    // null for params not owned by an AudioNode (e.g. AudioListener params)
+    public readonly owner: AudioNode | null = null
   ) {
     this.value = audioParam.value;
     this.defaultValue = audioParam.defaultValue;

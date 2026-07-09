@@ -3,7 +3,7 @@
 /**
  * Slim Web Audio API surface for the Node WPT harness.
  * Only spec-defined classes are exported — no RN extensions
- * (recorder, decoder, streamer, worklet nodes, etc.).
+ * (recorder, decoder, worklet nodes, etc.).
  */
 
 const path = require('node:path');
