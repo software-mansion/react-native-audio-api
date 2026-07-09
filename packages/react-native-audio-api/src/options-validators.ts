@@ -53,9 +53,9 @@ export function validateAudioNodeOptions(options?: AudioNodeOptions): void {
 const ANALYSER_DEFAULT_MIN_DECIBELS = -100;
 const ANALYSER_DEFAULT_MAX_DECIBELS = -30;
 
-const ANALYSER_ALLOWED_FFT_SIZE = [
+export const ANALYSER_ALLOWED_FFT_SIZE = [
   32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
-] as const;
+];
 
 function validateAnalyserMinDecibels(
   minDecibels: number,
@@ -89,9 +89,7 @@ export const AnalyserOptionsValidator: OptionsValidator<AnalyserOptions> = {
 
     if (
       options.fftSize !== undefined &&
-      !ANALYSER_ALLOWED_FFT_SIZE.includes(
-        options.fftSize as (typeof ANALYSER_ALLOWED_FFT_SIZE)[number]
-      )
+      !ANALYSER_ALLOWED_FFT_SIZE.includes(options.fftSize)
     ) {
       throw new IndexSizeError(
         `Provided value (${options.fftSize}) must be a power of 2 between 32 and 32768`

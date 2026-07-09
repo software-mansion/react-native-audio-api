@@ -3,18 +3,11 @@ import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../jsi-interfaces';
 import { AnalyserOptions } from '../types';
 import AudioNode from './AudioNode';
-import { AnalyserOptionsValidator } from '../options-validators';
-
-const ANALYSER_ALLOWED_FFT_SIZE: number[] = [
-  32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
-] as const;
-
-// The native engine stores these attributes as 32-bit floats, so reading them
-// back loses the exact double the Web Audio spec expects (e.g. 0.8 ->
-// 0.800000011920929). Rounding to float32's ~7 significant digits recovers it.
-function roundFromFloat32(value: number): number {
-  return Number(value.toPrecision(7));
-}
+import {
+  ANALYSER_ALLOWED_FFT_SIZE,
+  AnalyserOptionsValidator,
+} from '../options-validators';
+import { roundFromFloat32 } from '../utils/round';
 
 export default class AnalyserNode extends AudioNode {
   constructor(context: BaseAudioContext, options?: AnalyserOptions) {
