@@ -40,8 +40,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, baseLatency));
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
