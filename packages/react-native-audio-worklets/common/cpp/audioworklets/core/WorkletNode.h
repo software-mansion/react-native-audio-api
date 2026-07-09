@@ -1,12 +1,12 @@
 #pragma once
 
 #include <audioapi/compatibility/StableAPI.h>
+#include <audioworklets/AudioChannelViews.h>
 #include <audioworklets/UIWorkletsRunner.h>
 
 #include <atomic>
 #include <cstddef>
 #include <memory>
-#include <vector>
 
 namespace audioworklets {
 
@@ -36,13 +36,9 @@ class WorkletNode : public audioapi::AudioNode {
   void dispatchToUI(size_t channelCount);
 
   UIWorkletsRunner workletRunner_;
+  std::shared_ptr<AudioChannelViews> channelViews_;
   size_t bufferLength_;
   size_t framesFilled_{0};
-
-  /// @brief Fixed pool of per-channel UI snapshot buffers (MAX_CHANNEL_COUNT × bufferLength).
-  /// Allocated once in the constructor; never reallocated. Held in a shared_ptr so
-  /// scheduled UI jobs keep the pool alive without per-quantum vector allocation.
-  std::shared_ptr<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>> snapshotBuffers_;
 
   /// @brief True while a UI-thread worklet invocation is still pending. Snapshot buffers
   /// are not filled until the callback completes.

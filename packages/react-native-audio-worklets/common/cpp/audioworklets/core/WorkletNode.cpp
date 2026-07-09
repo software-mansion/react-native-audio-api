@@ -15,12 +15,8 @@ WorkletNode::WorkletNode(
       workletRunner_(std::move(workletRunner)),
       bufferLength_(bufferLength),
       busy_(std::make_shared<std::atomic<bool>>(false)) {
-  snapshotBuffers_ = std::make_shared<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>>(
-      static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
-
-  for (size_t ch = 0; ch < static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT); ++ch) {
-    (*snapshotBuffers_)[ch] = std::make_shared<audioapi::AudioArrayBuffer>(bufferLength_);
-  }
+  channelViews_ = workletRunner_.createChannelViews(
+      bufferLength_, static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
 }
 
 WorkletNode::~WorkletNode() {
@@ -28,7 +24,7 @@ WorkletNode::~WorkletNode() {
 }
 
 void WorkletNode::processNode(int framesToProcess) {
-  if (!workletRunner_.isActive()) {
+  if (!workletRunner_.isActive() || channelViews_ == nullptr) {
     return;
   }
 
@@ -58,7 +54,8 @@ void WorkletNode::processNode(int framesToProcess) {
   const size_t framesToCopy = std::min(frameCount, remaining);
 
   for (size_t ch = 0; ch < channelsToCopy; ++ch) {
-    (*snapshotBuffers_)[ch]->copy(*audioBuffer_->getChannel(ch), 0, framesFilled_, framesToCopy);
+    channelViews_->channelBuffer(ch)->copy(
+        *audioBuffer_->getChannel(ch), 0, framesFilled_, framesToCopy);
   }
 
   framesFilled_ += framesToCopy;
@@ -84,7 +81,7 @@ void WorkletNode::dispatchToUI(size_t channelCount) {
 
   auto busy = busy_;
   workletRunner_.invokeOnUI(
-      snapshotBuffers_, channelCount, [busy]() { busy->store(false, std::memory_order_release); });
+      channelCount, [busy]() { busy->store(false, std::memory_order_release); });
 
   framesFilled_ = 0;
 }

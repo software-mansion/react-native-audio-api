@@ -122,17 +122,15 @@ function Worklets() {
 
     workletNodeRef.current = new WorkletNode(
       ctx,
-      (audioBuffers, numberOfChannels) => {
+      (audioData, numberOfChannels) => {
         'worklet';
         if (numberOfChannels < 1) {
           return;
         }
-        const buffer = audioBuffers[0];
-        if (buffer == null) {
-          return;
-        }
-        const channel = new Float32Array(buffer);
+
+        const channel = audioData[0];
         let sum = 0;
+
         for (let i = 0; i < channel.length; i++) {
           sum += channel[i] * channel[i];
         }

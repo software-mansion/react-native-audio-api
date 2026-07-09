@@ -1,14 +1,13 @@
 #pragma once
 
 #include <audioapi/compatibility/StableAPI.h>
+#include <audioworklets/AudioChannelViews.h>
 #include <worklets/Compat/StableApi.h>
 
-#include <jsi/jsi.h>
-
 #include <atomic>
+#include <cstddef>
 #include <functional>
 #include <memory>
-#include <vector>
 
 namespace audioworklets {
 
@@ -28,40 +27,57 @@ using namespace facebook;
  * `scheduleOnUI`. This is fire-and-forget: UI animation does not need a result
  * and must not block the audio thread.
  *
- * Scheduled jobs capture buffer pools and an alive token so they can no-op safely
- * after the node is destroyed or the worklets module is invalidated on reload.
+ * Scheduled jobs capture a pre-allocated `UIWorkletJob` shared_ptr so the
+ * `scheduleOnUI` closure stays small. Only one job may be in flight at a time.
  */
 class UIWorkletsRunner {
  public:
   UIWorkletsRunner(
-      std::shared_ptr<worklets::WorkletRuntime> uiRuntime,
-      std::shared_ptr<worklets::UIScheduler> uiScheduler,
+      const std::shared_ptr<worklets::WorkletRuntime> &uiRuntime,
+      const std::shared_ptr<worklets::UIScheduler> &uiScheduler,
       std::shared_ptr<worklets::Serializable> serializableWorklet);
 
   /// Stops scheduling new UI jobs and causes in-flight lambdas to no-op.
+  /// JSI views are released on the UI scheduler after any in-flight job completes.
   /// Safe to call multiple times.
   void deactivate();
 
   [[nodiscard]] bool isActive() const;
 
-  /// @brief Schedules the worklet to run on the UI thread with the given audio
-  /// data. The channel buffer pool is captured (kept alive) by the scheduled job;
-  /// the JSI arrays are built on the UI runtime, inside the UI thread.
-  /// @param channels Shared, fixed-size pool of per-channel snapshot buffers.
+  /// Allocates channel buffers and pre-builds stable `Float32Array[]` views on
+  /// the UI worklet runtime. Must be called once before the first `invokeOnUI`.
+  [[nodiscard]] std::shared_ptr<AudioChannelViews> createChannelViews(
+      size_t frameCount,
+      size_t channelCount);
+
+  /// @brief Schedules the worklet to run on the UI thread with pre-built channel
+  /// views from `createChannelViews`.
   /// @param channelCount Number of channels to expose to the worklet.
   /// @param onComplete Invoked on the UI thread once the worklet returns.
   /// @note Audio Thread only.
-  void invokeOnUI(
-      std::shared_ptr<std::vector<std::shared_ptr<audioapi::AudioArrayBuffer>>> channels,
-      size_t channelCount,
-      std::function<void()> onComplete) const;
+  void invokeOnUI(size_t channelCount, std::function<void()> onComplete) const;
 
  private:
+  struct UIWorkletJob {
+    std::shared_ptr<std::atomic<bool>> alive;
+    std::weak_ptr<worklets::WorkletRuntime> uiRuntime;
+    std::weak_ptr<worklets::UIScheduler> uiScheduler;
+    std::shared_ptr<worklets::Serializable> serializableWorklet;
+    std::shared_ptr<AudioChannelViews> channelViews;
+    size_t channelCount{0};
+    std::function<void()> onComplete;
+  };
+
+  static void runUIWorkletJob(const std::shared_ptr<UIWorkletJob> &job);
+
   /// Shared with scheduled UI lambdas so they can bail out after teardown/reload.
   std::shared_ptr<std::atomic<bool>> alive_;
   std::weak_ptr<worklets::WorkletRuntime> uiRuntime_;
   std::weak_ptr<worklets::UIScheduler> uiScheduler_;
   std::shared_ptr<worklets::Serializable> serializableWorklet_;
+  std::shared_ptr<AudioChannelViews> channelViews_;
+  /// Reused across dispatches; only one job may be in flight at a time.
+  std::shared_ptr<UIWorkletJob> job_;
 };
 
 } // namespace audioworklets
