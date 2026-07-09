@@ -13,9 +13,9 @@
   "exports": {
     ".": {
       "types": "./lib/typescript/index.d.ts",
-      "react-native": "./src/index",
+      "react-native": "./src/index.ts",
       "node": "./wpt_tests/index.js",
-      "default": "./lib/module/index"
+      "default": "./lib/module/index.js"
     }
   },
   "files": [
