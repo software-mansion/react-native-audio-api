@@ -28,7 +28,7 @@ export function validateAudioNodeOptions(options?: AudioNodeOptions): void {
     !VALID_CHANNEL_COUNT_MODES.includes(options.channelCountMode)
   ) {
     throw new TypeError(
-      `The channelCountMode value ('${options.channelCountMode}') is not a valid enum value of type ChannelCountMode`
+      `The channelCountMode value ('${options.channelCountMode}') is not a valid ChannelCountMode type`
     );
   }
 
@@ -37,7 +37,7 @@ export function validateAudioNodeOptions(options?: AudioNodeOptions): void {
     !VALID_CHANNEL_INTERPRETATIONS.includes(options.channelInterpretation)
   ) {
     throw new TypeError(
-      `The channelInterpretation value ('${options.channelInterpretation}') is not a valid enum value of type ChannelInterpretation`
+      `The channelInterpretation value ('${options.channelInterpretation}') is not a valid ChannelInterpretation type`
     );
   }
 }
