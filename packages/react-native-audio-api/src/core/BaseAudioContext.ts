@@ -5,7 +5,7 @@ import {
 } from '../errors';
 import { IBaseAudioContext } from '../jsi-interfaces';
 import { AudioWorkletRuntime, ContextState, DecodeDataInput } from '../types';
-import { assertWorkletsEnabled } from '../utils';
+import { assertWorkletsEnabled } from '../utils/validation';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';

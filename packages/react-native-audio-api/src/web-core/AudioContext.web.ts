@@ -1,5 +1,5 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
-import { assertSupportedSampleRate } from '../utils/audioConstants';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioContextOptions, ContextState, DecodeDataInput } from '../types';
 import AnalyserNode from './AnalyserNode.web';
 import AudioBuffer from './AudioBuffer.web';

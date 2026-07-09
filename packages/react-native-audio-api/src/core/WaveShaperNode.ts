@@ -1,8 +1,8 @@
 import AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
-import { InvalidStateError } from '../errors';
 import { IWaveShaperNode } from '../jsi-interfaces';
 import { WaveShaperOptions } from '../types';
+import { validateWaveShaperCurve } from '../utils/validation';
 
 export default class WaveShaperNode extends AudioNode {
   private isCurveSet: boolean = false;
@@ -26,19 +26,9 @@ export default class WaveShaperNode extends AudioNode {
   }
 
   set curve(curve: Float32Array | null) {
+    validateWaveShaperCurve(curve, this.isCurveSet);
+
     if (curve !== null) {
-      if (this.isCurveSet) {
-        throw new InvalidStateError(
-          'The curve can only be set once and cannot be changed afterwards.'
-        );
-      }
-
-      if (curve.length < 2) {
-        throw new InvalidStateError(
-          'The curve must have at least two values if not null.'
-        );
-      }
-
       this.isCurveSet = true;
     }
 

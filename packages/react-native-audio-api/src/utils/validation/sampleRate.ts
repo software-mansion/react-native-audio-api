@@ -1,4 +1,4 @@
-import { NotSupportedError } from '../errors';
+import { NotSupportedError } from '../../errors';
 
 /** Web Audio API §2.4 Supported Sample Rates */
 export const MIN_SUPPORTED_SAMPLE_RATE = 3000;

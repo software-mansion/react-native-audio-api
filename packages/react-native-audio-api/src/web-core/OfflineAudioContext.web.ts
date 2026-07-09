@@ -1,6 +1,6 @@
 import { ContextState, OfflineAudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
-import { assertSupportedSampleRate } from '../utils/audioConstants';
+import { assertSupportedSampleRate } from '../utils/validation';
 import BaseAudioContext from './BaseAudioContext.web';
 import AnalyserNode from './AnalyserNode.web';
 import AudioDestinationNode from './AudioDestinationNode.web';

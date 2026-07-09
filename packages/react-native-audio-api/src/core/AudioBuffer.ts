@@ -5,7 +5,7 @@ import {
   NotSupportedError,
   wrapFloat32ArrayView,
 } from '../errors';
-import { assertSupportedSampleRate } from '../utils/audioConstants';
+import { assertSupportedSampleRate } from '../utils/validation';
 
 export default class AudioBuffer implements AudioBufferLike {
   readonly length: number;

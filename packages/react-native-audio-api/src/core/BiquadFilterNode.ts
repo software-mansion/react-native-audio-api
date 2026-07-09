@@ -1,4 +1,4 @@
-import { BiquadFilterOptionsValidator } from '../options-validators';
+import { BiquadFilterOptionsValidator } from '../utils/validation';
 import { InvalidAccessError } from '../errors';
 import { IBiquadFilterNode } from '../jsi-interfaces';
 import AudioNode from './AudioNode';

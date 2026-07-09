@@ -1,0 +1,43 @@
+import { NotSupportedError } from '../../errors';
+import { AudioNodeOptions } from '../../types';
+
+const MAX_CHANNEL_COUNT = 32;
+const VALID_CHANNEL_COUNT_MODES = ['max', 'clamped-max', 'explicit'];
+const VALID_CHANNEL_INTERPRETATIONS = ['speakers', 'discrete'];
+
+export function validateAudioNodeOptions(options?: AudioNodeOptions): void {
+  if (!options) {
+    return;
+  }
+
+  if (options.channelCount !== undefined) {
+    const { channelCount } = options;
+    if (
+      !Number.isInteger(channelCount) ||
+      channelCount < 1 ||
+      channelCount > MAX_CHANNEL_COUNT
+    ) {
+      throw new NotSupportedError(
+        `The channelCount value (${channelCount}) must be an integer between 1 and ${MAX_CHANNEL_COUNT}`
+      );
+    }
+  }
+
+  if (
+    options.channelCountMode !== undefined &&
+    !VALID_CHANNEL_COUNT_MODES.includes(options.channelCountMode)
+  ) {
+    throw new TypeError(
+      `The channelCountMode value ('${options.channelCountMode}') is not a valid enum value of type ChannelCountMode`
+    );
+  }
+
+  if (
+    options.channelInterpretation !== undefined &&
+    !VALID_CHANNEL_INTERPRETATIONS.includes(options.channelInterpretation)
+  ) {
+    throw new TypeError(
+      `The channelInterpretation value ('${options.channelInterpretation}') is not a valid enum value of type ChannelInterpretation`
+    );
+  }
+}

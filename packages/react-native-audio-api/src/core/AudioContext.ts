@@ -1,5 +1,5 @@
 import AudioAPIModule from '../AudioAPIModule';
-import { assertSupportedSampleRate } from '../utils/audioConstants';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioTagHandle } from '../Audio/types';
 import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';

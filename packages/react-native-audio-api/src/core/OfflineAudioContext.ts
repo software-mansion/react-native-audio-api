@@ -1,6 +1,6 @@
 import AudioAPIModule from '../AudioAPIModule';
 import { InvalidStateError, NotSupportedError } from '../errors';
-import { assertSupportedSampleRate } from '../utils/audioConstants';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { IOfflineAudioContext } from '../jsi-interfaces';
 import { OfflineAudioContextOptions } from '../types';
 import AudioBuffer from './AudioBuffer';

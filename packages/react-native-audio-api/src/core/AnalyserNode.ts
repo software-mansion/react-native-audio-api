@@ -1,12 +1,14 @@
 import type BaseAudioContext from './BaseAudioContext';
-import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../jsi-interfaces';
 import { AnalyserOptions } from '../types';
 import AudioNode from './AudioNode';
 import {
-  ANALYSER_ALLOWED_FFT_SIZE,
   AnalyserOptionsValidator,
-} from '../options-validators';
+  validateAnalyserFftSize,
+  validateAnalyserMaxDecibels,
+  validateAnalyserMinDecibels,
+  validateAnalyserSmoothingTimeConstant,
+} from '../utils/validation';
 import { roundFromFloat32 } from '../utils/round';
 
 export default class AnalyserNode extends AudioNode {
@@ -23,12 +25,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public set fftSize(value: number) {
-    if (!ANALYSER_ALLOWED_FFT_SIZE.includes(value)) {
-      throw new IndexSizeError(
-        `Provided value (${value}) must be a power of 2 between 32 and 32768`
-      );
-    }
-
+    validateAnalyserFftSize(value);
     (this.node as IAnalyserNode).fftSize = value;
   }
 
@@ -37,12 +34,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public set minDecibels(value: number) {
-    if (value >= this.maxDecibels) {
-      throw new IndexSizeError(
-        `The minDecibels value (${value}) must be less than maxDecibels`
-      );
-    }
-
+    validateAnalyserMinDecibels(value, this.maxDecibels);
     (this.node as IAnalyserNode).minDecibels = value;
   }
 
@@ -51,12 +43,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public set maxDecibels(value: number) {
-    if (value <= this.minDecibels) {
-      throw new IndexSizeError(
-        `The maxDecibels value (${value}) must be greater than minDecibels`
-      );
-    }
-
+    validateAnalyserMaxDecibels(value, this.minDecibels);
     (this.node as IAnalyserNode).maxDecibels = value;
   }
 
@@ -65,12 +52,7 @@ export default class AnalyserNode extends AudioNode {
   }
 
   public set smoothingTimeConstant(value: number) {
-    if (value < 0 || value > 1) {
-      throw new IndexSizeError(
-        `The smoothingTimeConstant value (${value}) must be between 0 and 1`
-      );
-    }
-
+    validateAnalyserSmoothingTimeConstant(value);
     (this.node as IAnalyserNode).smoothingTimeConstant = value;
   }
 
