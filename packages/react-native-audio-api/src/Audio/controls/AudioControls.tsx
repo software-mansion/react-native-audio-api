@@ -59,10 +59,12 @@ const AudioControls: React.FC = () => {
     (x: number) => {
       progressTrackAnim.expand();
       const d = durationRef.current;
-      progressTrackRef.current?.measureInWindow((_left, _y, width, _h) => {
-        progressMetricsWidth.value = width;
-        setScrubTime(timeFromLocationX(x, width, d));
-      });
+      progressTrackRef.current?.measureInWindow(
+        (_left: number, _y: number, width: number, _h: number) => {
+          progressMetricsWidth.value = width;
+          setScrubTime(timeFromLocationX(x, width, d));
+        }
+      );
     },
     [progressTrackAnim, progressMetricsWidth, setScrubTime, progressTrackRef]
   );
@@ -147,9 +149,11 @@ const AudioControls: React.FC = () => {
   }, [playbackState, pause, play]);
 
   const onProgressTrackLayout = useCallback(() => {
-    progressTrackRef.current?.measureInWindow((_left, _y, width, _h) => {
-      progressMetricsWidth.value = width;
-    });
+    progressTrackRef.current?.measureInWindow(
+      (_left: number, _y: number, width: number, _h: number) => {
+        progressMetricsWidth.value = width;
+      }
+    );
   }, [progressMetricsWidth, progressTrackRef]);
 
   if (!ready) {

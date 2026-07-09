@@ -14,10 +14,8 @@
 namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const RuntimeRegistry &runtimeRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
-      isInitialized_(false) {}
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {}
 
 AudioContext::~AudioContext() {
   if (getState() != ContextState::CLOSED) {

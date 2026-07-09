@@ -4,8 +4,7 @@ import {
   NotSupportedError,
 } from '../errors';
 import { IBaseAudioContext } from '../jsi-interfaces';
-import { AudioWorkletRuntime, ContextState, DecodeDataInput } from '../types';
-import { assertWorkletsEnabled } from '../utils';
+import { ContextState, DecodeDataInput } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
@@ -23,9 +22,6 @@ import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WaveShaperNode from './WaveShaperNode';
-import WorkletNode from './WorkletNode';
-import WorkletProcessingNode from './WorkletProcessingNode';
-import WorkletSourceNode from './WorkletSourceNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -65,60 +61,6 @@ export default class BaseAudioContext {
       inputChannelCount,
       isInterleaved
     );
-  }
-
-  createWorkletNode(
-    callback: (audioData: Array<Float32Array>, channelCount: number) => void,
-    bufferLength: number,
-    inputChannelCount: number,
-    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
-  ): WorkletNode {
-    if (inputChannelCount < 1 || inputChannelCount > 32) {
-      throw new NotSupportedError(
-        `The number of input channels provided (${inputChannelCount}) can not be less than 1 or greater than 32`
-      );
-    }
-
-    if (bufferLength < 1) {
-      throw new NotSupportedError(
-        `The buffer length provided (${bufferLength}) can not be less than 1`
-      );
-    }
-
-    assertWorkletsEnabled();
-    return new WorkletNode(
-      this,
-      workletRuntime,
-      callback,
-      bufferLength,
-      inputChannelCount
-    );
-  }
-
-  createWorkletProcessingNode(
-    callback: (
-      inputData: Array<Float32Array>,
-      outputData: Array<Float32Array>,
-      framesToProcess: number,
-      currentTime: number
-    ) => void,
-    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
-  ): WorkletProcessingNode {
-    assertWorkletsEnabled();
-    return new WorkletProcessingNode(this, workletRuntime, callback);
-  }
-
-  createWorkletSourceNode(
-    callback: (
-      audioData: Array<Float32Array>,
-      framesToProcess: number,
-      currentTime: number,
-      startOffset: number
-    ) => void,
-    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
-  ): WorkletSourceNode {
-    assertWorkletsEnabled();
-    return new WorkletSourceNode(this, workletRuntime, callback);
   }
 
   createOscillator(): OscillatorNode {

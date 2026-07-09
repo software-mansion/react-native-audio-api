@@ -12,11 +12,10 @@ namespace audioapi {
 AudioContextHostObject::AudioContextHostObject(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const RuntimeRegistry &runtimeRegistry,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker)
     : BaseAudioContextHostObject(
-          std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
+          std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry),
           runtime,
           callInvoker) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, outputLatency));

@@ -5,7 +5,6 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/graph/Graph.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 
@@ -30,8 +29,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
   explicit BaseAudioContext(
       float sampleRate,
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const RuntimeRegistry &runtimeRegistry);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   virtual ~BaseAudioContext() = default;
   DELETE_COPY_AND_MOVE(BaseAudioContext);
 
@@ -54,7 +52,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   std::shared_ptr<utils::graph::Graph> getGraph() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
-  const RuntimeRegistry &getRuntimeRegistry() const;
   utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *getDisposer() const;
 
   /// @brief Assigns the audio destination node to the context.
@@ -125,7 +122,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  private:
   std::atomic<float> sampleRate_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
-  RuntimeRegistry runtimeRegistry_;
 
   std::shared_ptr<PeriodicWave> cachedSineWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;

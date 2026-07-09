@@ -1,7 +1,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioDecoding.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/CircularArray.hpp>
@@ -15,12 +14,10 @@ namespace audioapi {
 
 BaseAudioContext::BaseAudioContext(
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const RuntimeRegistry &runtimeRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : state_(ContextState::SUSPENDED),
       sampleRate_(sampleRate),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
-      runtimeRegistry_(runtimeRegistry),
       audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY),
       gcAudioEventScheduler_(GC_AUDIO_SCHEDULER_CAPACITY),
       disposer_(
@@ -98,10 +95,6 @@ std::shared_ptr<utils::graph::Graph> BaseAudioContext::getGraph() const {
 
 std::shared_ptr<IAudioEventHandlerRegistry> BaseAudioContext::getAudioEventHandlerRegistry() const {
   return audioEventHandlerRegistry_;
-}
-
-const RuntimeRegistry &BaseAudioContext::getRuntimeRegistry() const {
-  return runtimeRegistry_;
 }
 
 utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *BaseAudioContext::getDisposer() const {

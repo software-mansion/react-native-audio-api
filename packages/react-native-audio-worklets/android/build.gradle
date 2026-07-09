@@ -1,0 +1,132 @@
+import com.android.Version
+import org.apache.tools.ant.taskdefs.condition.Os
+
+buildscript {
+  ext.getExtOrDefault = { name ->
+    return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["AudioWorklets_" + name]
+  }
+
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.7.2"
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
+  }
+}
+
+def getExtOrDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["AudioWorklets_" + name]
+}
+
+def getExtOrIntegerDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["AudioWorklets_" + name]).toInteger()
+}
+
+def isNewArchitectureEnabled() {
+  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+}
+
+if (!isNewArchitectureEnabled()) {
+  throw new GradleException(
+      "[react-native-audio-worklets] requires React Native New Architecture. " +
+      "Set newArchEnabled=true in your app's android/gradle.properties."
+  )
+}
+
+def safeAppExtGet(prop, fallback) {
+  def appProject = rootProject.allprojects.find { it.plugins.hasPlugin('com.android.application') }
+  return appProject?.ext?.has(prop) ? appProject.ext.get(prop) : fallback
+}
+
+def resolveReactNativeDirectory() {
+  def reactNativeLocation = safeAppExtGet("REACT_NATIVE_NODE_MODULES_DIR", null)
+
+  if (reactNativeLocation != null) {
+    return file(reactNativeLocation)
+  }
+
+  def reactNativePackage = file(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim())
+  if (reactNativePackage.exists()) {
+    return reactNativePackage.parentFile
+  }
+
+  throw new GradleException(
+      "[AudioWorklets] Unable to resolve react-native location in node_modules."
+  )
+}
+
+def supportsNamespace() {
+  def parsed = Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')
+  def major = parsed[0].toInteger()
+  def minor = parsed[1].toInteger()
+
+  return (major == 7 && minor >= 3) || major >= 8
+}
+
+apply plugin: "com.android.library"
+apply plugin: "org.jetbrains.kotlin.android"
+
+apply plugin: "com.facebook.react"
+
+android {
+  if (supportsNamespace()) {
+    namespace "com.swmansion.audioworklets"
+
+    sourceSets {
+      main {
+        manifest.srcFile "src/main/AndroidManifestNew.xml"
+      }
+    }
+  }
+
+  ndkVersion getExtOrDefault("ndkVersion")
+  compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
+
+  defaultConfig {
+    minSdkVersion getExtOrIntegerDefault("minSdkVersion")
+    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
+    }
+  }
+
+  lintOptions {
+    disable "GradleCompatible"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    jvmTarget = "17"
+  }
+
+  sourceSets {
+    main {
+      java.srcDirs += ["${project.buildDir}/generated/source/codegen/java"]
+    }
+  }
+}
+
+repositories {
+  mavenCentral()
+  google()
+}
+
+dependencies {
+  implementation "com.facebook.react:react-android"
+}
+
+react {
+  jsRootDir = file("../src/")
+  libraryName = "rnaudioworklets"
+  codegenJavaPackageName = "com.swmansion.audioworklets"
+}

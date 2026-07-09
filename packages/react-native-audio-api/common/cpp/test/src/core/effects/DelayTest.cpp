@@ -3,7 +3,6 @@
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/effects/delay/DelayReader.h>
 #include <audioapi/core/effects/delay/DelayWriter.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -24,8 +23,7 @@ class DelayTest : public ::testing::Test {
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_shared<OfflineAudioContext>(
-        2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
+    context = std::make_shared<OfflineAudioContext>(2, 5 * sampleRate, sampleRate, eventRegistry);
     destination = std::make_shared<AudioDestinationNode>(context);
     context->initialize(destination.get());
   }

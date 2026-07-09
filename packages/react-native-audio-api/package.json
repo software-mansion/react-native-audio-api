@@ -14,8 +14,10 @@
     ".": {
       "types": "./lib/typescript/index.d.ts",
       "react-native": "./src/index",
-      "node": "./wpt_tests/index.js",
       "default": "./lib/module/index"
+    },
+    "./wpt-node": {
+      "node": "./wpt_tests/index.js"
     }
   },
   "files": [
@@ -49,7 +51,6 @@
     "!common/cpp/test",
     "scripts/setup-rn-audio-api-web.js",
     "scripts/rnaa_utils.rb",
-    "scripts/validate-worklets-version.js",
     "scripts/download-prebuilt-binaries.sh",
     "app.plugin.js"
   ],
@@ -79,6 +80,7 @@
     "format:ios": "find ios/audioapi/ios -type f \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | xargs clang-format -i",
     "format:common": "find common/cpp/ \\( -path 'common/cpp/audioapi/libs' -prune -o -path 'common/cpp/audioapi/external' -prune -o -type f \\( -iname \"*.h\" -o -iname \"*.cpp\" -o -iname \"*.hpp\" \\) -print \\) | xargs clang-format -i",
     "build": "bob build",
+    "prepare": "bob build",
     "node:build": "cmake-js compile -d wpt_tests",
     "wpt:build": "yarn build && yarn node:build",
     "wpt:only": "node ./wpt_tests/wpt/wpt-harness.mjs",
@@ -116,13 +118,7 @@
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*",
-    "react-native-worklets": ">= 0.6.0"
-  },
-  "peerDependenciesMeta": {
-    "react-native-worklets": {
-      "optional": true
-    }
+    "react-native": "*"
   },
   "devDependencies": {
     "@babel/cli": "^7.20.0",
