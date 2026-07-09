@@ -252,6 +252,11 @@ details.alert {
   align-items: center;
 }
 
+.table-with-rate-column table th:nth-child(3),
+.table-with-rate-column table td:nth-child(3) {
+  white-space: nowrap;
+}
+
 [class*=admonition-warning] code {
   background-color: var(--swm-yellow-light-40) !important;
   border: none !important;
