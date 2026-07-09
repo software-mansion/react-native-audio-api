@@ -16,8 +16,8 @@ export default class WaveShaperNode extends AudioNode {
         options.curve instanceof Float32Array
           ? options.curve
           : Float32Array.from(options.curve);
+      this.curveWasSet = true;
     }
-    this.curveWasSet = true;
   }
 
   get curve(): Float32Array | null {
