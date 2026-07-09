@@ -2,6 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import { useCopyToClipboard } from 'usehooks-ts';
 
+// @ts-ignore
 import BrowserOnly from '@docusaurus/BrowserOnly';
 // @ts-ignore
 import CodeBlock from '@theme/CodeBlock';
