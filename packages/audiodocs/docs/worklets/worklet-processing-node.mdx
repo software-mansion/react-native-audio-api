@@ -2,6 +2,8 @@
 sidebar_position: 4
 ---
 
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { ReadOnly } from '@site/src/components/Badges';
 
 # WorkletProcessingNode
@@ -131,11 +133,19 @@ const audioProcessor = (
 
 ## Properties
 
-It has no own properties but inherits from [`AudioNode`](/docs/core/audio-node).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+
+`WorkletProcessingNode` does not define any additional properties.
 
 ## Methods
 
-It has no own methods but inherits from [`AudioNode`](/docs/core/audio-node).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`WorkletProcessingNode` does not define any additional methods.
 
 ## Performance Considerations
 
