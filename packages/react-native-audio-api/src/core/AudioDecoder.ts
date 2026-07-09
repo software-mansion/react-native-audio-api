@@ -32,7 +32,7 @@ class AudioDecoder {
       return this.decodeFromArrayBuffer(input, rate);
     }
 
-    const stringSource = this.resolveStringSource(input);
+    const stringSource = this.resolveToStringSource(input);
     this.assertSupportedStringSource(stringSource);
 
     if (isRemoteSource(stringSource)) {
@@ -54,7 +54,7 @@ class AudioDecoder {
     return new AudioBuffer(buffer);
   }
 
-  private resolveStringSource(input: number | string): string | number {
+  private resolveToStringSource(input: number | string): string {
     return typeof input === 'number'
       ? Image.resolveAssetSource(input).uri
       : input;

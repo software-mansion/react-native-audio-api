@@ -8,18 +8,18 @@ const AudioNodeMethodsTable = () => {
     <AudioNodeInheritedSection info="methods">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Description</th>
+          <th style={{ textAlign: 'center' }}>Name</th>
+          <th style={{ textAlign: 'left' }}>Description</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <Link to="/docs/core/audio-node#connect">
               <code>connect</code>
             </Link>
           </td>
-          <td>
+          <td style={{ textAlign: 'left' }}>
             Connects one of the node's outputs to an{' '}
             <Link to="/docs/core/audio-node">
               <code>AudioNode</code>
@@ -32,12 +32,12 @@ const AudioNodeMethodsTable = () => {
           </td>
         </tr>
         <tr>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <Link to="/docs/core/audio-node#disconnect">
               <code>disconnect</code>
             </Link>
           </td>
-          <td>
+          <td style={{ textAlign: 'left' }}>
             Disconnects one or more outgoing connections. With no arguments,
             disconnects from all destinations.
           </td>

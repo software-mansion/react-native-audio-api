@@ -29,49 +29,53 @@ const AudioNodePropsTable = ({
     <AudioNodeInheritedSection info="properties">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Value</th>
-          <th>Description</th>
+          <th style={{ textAlign: 'center' }}>Name</th>
+          <th style={{ textAlign: 'center' }}>Type</th>
+          <th style={{ textAlign: 'left' }}>Value</th>
+          <th style={{ textAlign: 'left' }}>Description</th>
           <th />
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <code>numberOfInputs</code>
           </td>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <code>number</code>
           </td>
-          <td>{renderValue(numberOfInputs)}</td>
-          <td>Number of input connections for the node.</td>
+          <td style={{ textAlign: 'left' }}>{renderValue(numberOfInputs)}</td>
+          <td style={{ textAlign: 'left' }}>
+            Number of input connections for the node.
+          </td>
           <td>
             <ReadOnly />
           </td>
         </tr>
         <tr>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <code>numberOfOutputs</code>
           </td>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <code>number</code>
           </td>
-          <td>{renderValue(numberOfOutputs)}</td>
-          <td>Number of output connections for the node.</td>
+          <td style={{ textAlign: 'left' }}>{renderValue(numberOfOutputs)}</td>
+          <td style={{ textAlign: 'left' }}>
+            Number of output connections for the node.
+          </td>
           <td>
             <ReadOnly />
           </td>
         </tr>
         <tr>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <code>channelCount</code>
           </td>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <code>number</code>
           </td>
-          <td>{renderValue(channelCount)}</td>
-          <td>
+          <td style={{ textAlign: 'left' }}>{renderValue(channelCount)}</td>
+          <td style={{ textAlign: 'left' }}>
             Number of channels used when up-mixing or down-mixing the node's
             inputs.
           </td>
@@ -80,18 +84,18 @@ const AudioNodePropsTable = ({
           </td>
         </tr>
         <tr>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <code>channelCountMode</code>
           </td>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <Link to="/docs/types/channel-count-mode">
               <code>ChannelCountMode</code>
             </Link>
           </td>
-          <td>
+          <td style={{ textAlign: 'left' }}>
             <code>{channelCountMode}</code>
           </td>
-          <td>
+          <td style={{ textAlign: 'left' }}>
             How channels are mixed between the node's inputs and outputs.
           </td>
           <td>
@@ -99,18 +103,18 @@ const AudioNodePropsTable = ({
           </td>
         </tr>
         <tr>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <code>channelInterpretation</code>
           </td>
-          <td>
+          <td style={{ textAlign: 'center' }}>
             <Link to="/docs/types/channel-interpretation">
               <code>ChannelInterpretation</code>
             </Link>
           </td>
-          <td>
+          <td style={{ textAlign: 'left' }}>
             <code>{channelInterpretation}</code>
           </td>
-          <td>
+          <td style={{ textAlign: 'left' }}>
             How input channels are mapped to output channels when their counts
             differ.
           </td>

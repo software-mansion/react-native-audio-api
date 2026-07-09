@@ -25,7 +25,7 @@ In general we can distinguish four types of nodes:
 #### Rendering audio graph
 
 Audio graph rendering is done in blocks of sample-frames. The number of sample-frames in a block is called render quantum size, and the block itself is called a render quantum.
-By default render quantum size value is `128` and it is constant.
+By default render quantum size value is `128` and it is a constant.
 
 The [`AudioContext`](/docs/core/audio-context) rendering thread is driven by a system-level audio callback.
 Each call has a system-level audio callback buffer size, which is a varying number of sample-frames that needs to be computed on time before the next system-level audio callback arrives,
