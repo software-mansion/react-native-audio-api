@@ -29,7 +29,6 @@ class BaseAudioContextHostObject : public HostObject {
 
   JSI_HOST_FUNCTION_DECL(createRecorderAdapter);
   JSI_HOST_FUNCTION_DECL(createOscillator);
-  JSI_HOST_FUNCTION_DECL(createStreamer);
   JSI_HOST_FUNCTION_DECL(createConstantSource);
   JSI_HOST_FUNCTION_DECL(createGain);
   JSI_HOST_FUNCTION_DECL(createStereoPanner);

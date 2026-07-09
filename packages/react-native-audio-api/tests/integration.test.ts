@@ -173,26 +173,6 @@ describe('Mock Integration Tests', () => {
     });
   });
 
-  describe('Streaming Audio', () => {
-    it('should set up audio streaming node', () => {
-      const context = new MockAPI.AudioContext();
-
-      // Create streamer with options
-      const streamer = context.createStreamer({
-        streamPath: 'https://example.com/audio-stream',
-      });
-
-      // Connect to output
-      streamer.connect(context.destination);
-
-      // Control playback
-      streamer.start();
-      streamer.pause();
-      streamer.resume();
-      streamer.stop();
-    });
-  });
-
   describe('System Integration', () => {
     it('should integrate with system audio management', () => {
       // Get preferred sample rate

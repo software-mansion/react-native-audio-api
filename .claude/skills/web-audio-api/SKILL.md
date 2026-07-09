@@ -130,7 +130,6 @@ These are exported from `api.ts` but **not** from `api.web.ts` (or have a stub/c
 | Class | Purpose |
 |---|---|
 | `AudioBufferQueueSourceNode` | Queue of audio buffers, plays them sequentially — no Web Audio spec equivalent |
-| `StreamerNode` | FFmpeg-backed streaming decoder — no Web Audio spec equivalent |
 | `AudioRecorder` | Microphone input recording — no Web Audio spec equivalent |
 | `RecorderAdapterNode` | Connects recorder to the audio graph |
 | `WorkletNode` / `WorkletSourceNode` / `WorkletProcessingNode` | JS-on-audio-thread via React Native Worklets — different from browser `AudioWorkletNode` |

@@ -27,7 +27,6 @@ import {
   OscillatorOptions,
   PeriodicWaveOptions,
   StereoPannerOptions,
-  StreamerOptions,
   WaveShaperOptions,
 } from '../types';
 
@@ -457,18 +456,6 @@ class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
   }
 }
 
-class StreamerNodeMock extends AudioScheduledSourceNodeMock {
-  readonly streamPath: string = '';
-
-  constructor(context: BaseAudioContextMock, options: StreamerOptions) {
-    super(context, options);
-    this.streamPath = options.streamPath;
-  }
-
-  pause(): void {}
-  resume(): void {}
-}
-
 class MediaElementAudioSourceNodeMock extends AudioNodeMock {
   readonly mediaElement: HTMLMediaElement | AudioNodeMock;
 
@@ -606,10 +593,6 @@ class BaseAudioContextMock {
     options?: BaseAudioBufferSourceOptions
   ): AudioBufferQueueSourceNodeMock {
     return new AudioBufferQueueSourceNodeMock(this, options);
-  }
-
-  createStreamer(options: StreamerOptions): StreamerNodeMock {
-    return new StreamerNodeMock(this, options);
   }
 }
 
@@ -1007,7 +990,6 @@ export const OfflineAudioContext = OfflineAudioContextMock;
 export const OscillatorNode = OscillatorNodeMock;
 export const RecorderAdapterNode = RecorderAdapterNodeMock;
 export const StereoPannerNode = StereoPannerNodeMock;
-export const StreamerNode = StreamerNodeMock;
 export const WaveShaperNode = WaveShaperNodeMock;
 export const PeriodicWave = PeriodicWaveMock;
 
@@ -1058,7 +1040,6 @@ export type OfflineAudioContext = OfflineAudioContextMock;
 export type OscillatorNode = OscillatorNodeMock;
 export type RecorderAdapterNode = RecorderAdapterNodeMock;
 export type StereoPannerNode = StereoPannerNodeMock;
-export type StreamerNode = StreamerNodeMock;
 export type WaveShaperNode = WaveShaperNodeMock;
 export type PeriodicWave = PeriodicWaveMock;
 
@@ -1091,7 +1072,6 @@ export {
   OscillatorOptions,
   PeriodicWaveOptions,
   StereoPannerOptions,
-  StreamerOptions,
   WaveShaperOptions,
 };
 
@@ -1117,7 +1097,6 @@ export default {
   OscillatorNode: OscillatorNodeMock,
   RecorderAdapterNode: RecorderAdapterNodeMock,
   StereoPannerNode: StereoPannerNodeMock,
-  StreamerNode: StreamerNodeMock,
   WaveShaperNode: WaveShaperNodeMock,
   PeriodicWave: PeriodicWaveMock,
 

@@ -28,7 +28,6 @@ common/cpp/audioapi/core/
 │   ├── AudioBufferSourceNode.h / .cpp
 │   ├── AudioBufferQueueSourceNode.h / .cpp
 │   ├── ConstantSourceNode.h / .cpp
-│   ├── StreamerNode.h / .cpp        # FFmpeg-based (conditional)
 │   ├── WorkletSourceNode.h / .cpp
 │   └── RecorderAdapterNode.h / .cpp
 ├── effects/
@@ -125,7 +124,6 @@ classDiagram
   AudioScheduledSourceNode <|-- AudioBufferBaseSourceNode
   AudioScheduledSourceNode <|-- OscillatorNode
   AudioScheduledSourceNode <|-- ConstantSourceNode
-  AudioScheduledSourceNode <|-- StreamerNode
   AudioScheduledSourceNode <|-- WorkletSourceNode
 
   AudioBufferBaseSourceNode <|-- AudioBufferSourceNode

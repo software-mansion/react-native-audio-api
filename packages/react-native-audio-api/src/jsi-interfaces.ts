@@ -22,7 +22,6 @@ import type {
   OverSampleType,
   Result,
   StereoPannerOptions,
-  StreamerOptions,
   WaveShaperOptions,
   AudioFileSourceOptions,
 } from './types';
@@ -63,7 +62,6 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: ConvolverOptions) => IConvolverNode;
-  createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions: WaveShaperOptions) => IWaveShaperNode;
   createFileSource: (
     audioFileOptions: AudioFileSourceOptions
@@ -162,8 +160,6 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
 
   setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
-
-export interface IStreamerNode extends IAudioNode {}
 
 export interface IConstantSourceNode extends IAudioScheduledSourceNode {
   readonly offset: IAudioParam;

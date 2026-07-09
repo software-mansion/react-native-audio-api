@@ -195,10 +195,6 @@ export interface ConstantSourceOptions {
   offset?: number;
 }
 
-export interface StreamerOptions {
-  streamPath: string;
-}
-
 export interface PeriodicWaveConstraints {
   disableNormalization?: boolean;
 }
