@@ -2,7 +2,10 @@
 
 #include <audioapi/compatibility/StableAPI.h>
 #include <audioworklets/HostObjects/WorkletNodeHostObject.h>
+#include <audioworklets/HostObjects/WorkletProcessingNodeHostObject.h>
+#include <audioworklets/HostObjects/WorkletSourceNodeHostObject.h>
 #include <worklets/Compat/StableApi.h>
+#include <worklets/WorkletRuntime/WorkletRuntime.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -23,6 +26,24 @@ class AudioWorkletsInstaller {
             jsi::PropNameID::forAscii(runtime, "__createWorkletNode"),
             5,
             createWorkletNode));
+
+    runtime.global().setProperty(
+        runtime,
+        "__createWorkletSourceNode",
+        jsi::Function::createFromHostFunction(
+            runtime,
+            jsi::PropNameID::forAscii(runtime, "__createWorkletSourceNode"),
+            3,
+            createWorkletSourceNode));
+
+    runtime.global().setProperty(
+        runtime,
+        "__createWorkletProcessingNode",
+        jsi::Function::createFromHostFunction(
+            runtime,
+            jsi::PropNameID::forAscii(runtime, "__createWorkletProcessingNode"),
+            3,
+            createWorkletProcessingNode));
   }
 
  private:
@@ -48,6 +69,12 @@ class AudioWorkletsInstaller {
         arg,
         "[react-native-audio-worklets] expected a worklet as the second argument",
         worklets::Serializable::ValueType::WorkletType);
+  }
+
+  static std::weak_ptr<worklets::WorkletRuntime> getAudioRuntimeOrThrow(
+      jsi::Runtime &runtime,
+      const jsi::Value &arg) {
+    return worklets::extractWorkletRuntime(runtime, arg);
   }
 
   static jsi::Value createWorkletNode(
@@ -88,6 +115,49 @@ class AudioWorkletsInstaller {
         std::move(uiScheduler),
         std::move(serializableWorklet),
         bufferLength);
+
+    auto object = jsi::Object::createFromHostObject(runtime, hostObject);
+    object.setExternalMemoryPressure(runtime, hostObject->getMemoryPressure());
+    return object;
+  }
+
+  static jsi::Value createWorkletSourceNode(
+      jsi::Runtime &runtime,
+      const jsi::Value & /*thisValue*/,
+      const jsi::Value *args,
+      size_t count) {
+    if (count < 3) {
+      throw jsi::JSError(
+          runtime, "[react-native-audio-worklets] __createWorkletSourceNode expects 3 arguments");
+    }
+
+    const auto &context = getContextOrThrow(runtime, args[0]);
+    auto serializableWorklet = getSerializableWorkletOrThrow(runtime, args[1]);
+    const auto workletRuntime = getAudioRuntimeOrThrow(runtime, args[2]);
+
+    auto hostObject = std::make_shared<WorkletSourceNodeHostObject>(
+        context->getGraph(), context, workletRuntime, serializableWorklet);
+
+    return jsi::Object::createFromHostObject(runtime, hostObject);
+  }
+
+  static jsi::Value createWorkletProcessingNode(
+      jsi::Runtime &runtime,
+      const jsi::Value & /*thisValue*/,
+      const jsi::Value *args,
+      size_t count) {
+    if (count < 3) {
+      throw jsi::JSError(
+          runtime,
+          "[react-native-audio-worklets] __createWorkletProcessingNode expects 3 arguments");
+    }
+
+    const auto &context = getContextOrThrow(runtime, args[0]);
+    auto serializableWorklet = getSerializableWorkletOrThrow(runtime, args[1]);
+    const auto workletRuntime = getAudioRuntimeOrThrow(runtime, args[2]);
+
+    auto hostObject = std::make_shared<WorkletProcessingNodeHostObject>(
+        context->getGraph(), context, workletRuntime, serializableWorklet);
 
     auto object = jsi::Object::createFromHostObject(runtime, hostObject);
     object.setExternalMemoryPressure(runtime, hostObject->getMemoryPressure());

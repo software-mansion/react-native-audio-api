@@ -62,7 +62,11 @@ Import `react-native-audio-worklets` before creating any worklet node. The packa
 
 ```tsx
 import 'react-native-audio-api';
-import { WorkletNode } from 'react-native-audio-worklets';
+import {
+  WorkletNode,
+  WorkletProcessingNode,
+  WorkletSourceNode,
+} from 'react-native-audio-worklets';
 ```
 
 :::tip
@@ -87,9 +91,16 @@ Simply put, a worklet is a piece of JavaScript that can run on a runtime other t
 
 Audio still flows through the node unchanged — the worklet receives a **read-only snapshot** for analysis.
 
-:::note
-Support for an audio-thread worklet runtime (for low-latency DSP) is planned for future releases. For now, only the UI runtime is exposed through `react-native-audio-worklets`.
-:::
+## Audio runtime
+
+`WorkletSourceNode` and `WorkletProcessingNode` invoke your callback synchronously on a **dedicated audio worklet runtime** each render quantum (128 frames).
+
+**Use them when you want to:**
+
+- Generate audio procedurally (`WorkletSourceNode`)
+- Process audio inside the graph with custom JavaScript DSP (`WorkletProcessingNode`)
+
+These callbacks run on the audio path. Keep them short and allocation-free — a slow worklet can cause dropouts.
 
 ## How to use audio worklets mindfully
 
@@ -147,8 +158,8 @@ Use this only when you confirm the UI is not updating — it has a small perform
 
 ## Available nodes
 
-| Node | Package | Status |
-| :--- | :--- | :--- |
-| [`WorkletNode`](/docs/worklets/worklet-node) | `react-native-audio-worklets` | Available |
-| [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node) | — | Not yet available |
-| [`WorkletSourceNode`](/docs/worklets/worklet-source-node) | — | Not yet available |
+| Node | Package | Runtime | Status |
+| :--- | :--- | :--- | :--- |
+| [`WorkletNode`](/docs/worklets/worklet-node) | `react-native-audio-worklets` | UI | Available |
+| [`WorkletSourceNode`](/docs/worklets/worklet-source-node) | `react-native-audio-worklets` | Audio | Available |
+| [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node) | `react-native-audio-worklets` | Audio | Available |

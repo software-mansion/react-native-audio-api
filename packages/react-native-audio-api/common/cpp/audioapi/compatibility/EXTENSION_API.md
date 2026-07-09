@@ -103,10 +103,14 @@ obvious in the podspec:
 | `audioapi::AudioNodeHostObject` | Base HostObject for custom nodes exposed to JS |
 | `audioapi::BaseAudioContext` | Context handle; `getGraph()`, scheduling, sample rate |
 | `audioapi::AudioNode` | Base class for custom `AudioNode` implementations |
+| `audioapi::AudioScheduledSourceNodeHostObject` | HostObject base for scheduled source nodes (`start`/`stop`/`onEnded`) |
+| `audioapi::AudioScheduledSourceNode` | Base class for scheduled sources (e.g. worklet generators) |
+| `AudioScheduledSourceNodeOptions` (via `types/NodeOptions.h`) | Options for scheduled source HostObjects |
 | `audioapi::utils::graph::Graph` | Audio graph owned by the context |
 | `RENDER_QUANTUM_SIZE` etc. (via `core/utils/Constants.h`) | Frame-size and engine constants |
 | `audioapi::AudioBuffer` | Multi-channel float buffer |
-| `audioapi::AudioArrayBuffer` | Single-channel view for JSI handoff |
+| `audioapi::AudioArrayBuffer` | Single-channel float buffer; implements `jsi::MutableBuffer` for zero-copy JSI `ArrayBuffer` handoff |
+| `DELETE_COPY_AND_MOVE` (via `utils/Macros.h`) | Macro to delete copy and move constructors/assignment for extension-owned classes |
 
 ---
 

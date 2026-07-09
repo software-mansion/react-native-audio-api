@@ -5,13 +5,14 @@ import 'react-native-audio-api';
 import semverGte from 'semver/functions/gte';
 
 import NativeAudioWorkletsModule from './specs/NativeAudioWorkletsModule';
-import type { IWorkletsModule } from './types';
+import type { IWorkletsModule, WorkletRuntime } from './types';
 
 const MIN_WORKLETS_VERSION = '0.10.0';
 
 class AudioWorkletsModuleImpl {
   #workletsModule: IWorkletsModule | null = null;
   #workletsVersion = 'unknown';
+  #audioRuntime: WorkletRuntime | null = null;
 
   constructor() {
     this.#verifyWorklets();
@@ -52,11 +53,25 @@ class AudioWorkletsModuleImpl {
   }
 
   #isInstalled(): boolean {
-    return globalThis.__createWorkletNode != null;
+    return (
+      globalThis.__createWorkletNode != null &&
+      globalThis.__createWorkletSourceNode != null &&
+      globalThis.__createWorkletProcessingNode != null
+    );
   }
 
   get workletsModule(): IWorkletsModule {
     return this.#workletsModule!;
+  }
+
+  getAudioRuntime(): WorkletRuntime {
+    if (this.#audioRuntime == null) {
+      this.#audioRuntime = this.#workletsModule!.createWorkletRuntime({
+        name: 'AudioWorkletRuntime',
+        enableEventLoop: false,
+      });
+    }
+    return this.#audioRuntime;
   }
 }
 

@@ -27,10 +27,7 @@ class AudioChannelViews {
       size_t frameCount,
       size_t channelCount);
 
-  AudioChannelViews(const AudioChannelViews &) = delete;
-  AudioChannelViews &operator=(const AudioChannelViews &) = delete;
-  AudioChannelViews(AudioChannelViews &&) = delete;
-  AudioChannelViews &operator=(AudioChannelViews &&) = delete;
+  DELETE_COPY_AND_MOVE(AudioChannelViews);
   ~AudioChannelViews();
 
   /// @brief Returns a stable `Float32Array[]` whose length equals `activeChannelCount`,
