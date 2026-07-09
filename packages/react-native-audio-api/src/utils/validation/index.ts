@@ -28,8 +28,6 @@ export {
   MIN_SUPPORTED_SAMPLE_RATE,
 } from './sampleRate';
 
-export { assertWorkletsEnabled } from './worklets';
-
 export { validateIIRFilterOptions } from './iirFilter';
 
 export {

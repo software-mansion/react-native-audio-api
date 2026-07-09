@@ -35,9 +35,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
       typeof arg2 === 'number'
     ) {
       assertSupportedSampleRate(arg2);
-      super(
-        globalThis.createOfflineAudioContext(arg0, arg1, arg2)
-      );
+      super(globalThis.createOfflineAudioContext(arg0, arg1, arg2));
       this.duration = arg1 / arg2;
     } else {
       throw new NotSupportedError('Invalid constructor arguments');
