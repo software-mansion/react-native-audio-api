@@ -187,7 +187,7 @@ export default class AudioRecorder {
   }
 
   get inputLatency(): number {
-    return this.recorder.getInputLatency();
+    return this.recorder.inputLatency;
   }
 
   onError(callback: (error: OnRecorderErrorEventType) => void): void {

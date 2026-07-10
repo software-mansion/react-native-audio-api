@@ -39,7 +39,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   }
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
-
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
 
   void setState(ContextState state);

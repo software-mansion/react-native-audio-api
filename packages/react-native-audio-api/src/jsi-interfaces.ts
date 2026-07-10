@@ -318,7 +318,8 @@ export interface IAudioRecorder {
 
   getCurrentDuration: () => number;
   getFilePath: () => string | null;
-  getInputLatency: () => number;
+
+  readonly inputLatency: number;
 }
 
 export interface IAudioDecoder {

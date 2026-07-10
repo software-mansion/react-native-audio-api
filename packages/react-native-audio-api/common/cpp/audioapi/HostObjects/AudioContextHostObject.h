@@ -25,5 +25,6 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
   JSI_HOST_FUNCTION_DECL(createMediaElementSource);
 
   JSI_PROPERTY_GETTER_DECL(outputLatency);
+  JSI_PROPERTY_GETTER_DECL(baseLatency);
 };
 } // namespace audioapi
