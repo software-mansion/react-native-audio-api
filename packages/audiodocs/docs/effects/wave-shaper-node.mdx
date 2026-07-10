@@ -23,7 +23,7 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `curve` <Optional /> | `Float32Array` | - | Initial value for [`curve`](/docs/effects/wave-shaper-node#properties). |
+| `curve` <Optional /> | `number[] \| Float32Array` | - | Initial value for [`curve`](/docs/effects/wave-shaper-node#properties). |
 | `oversample` <Optional /> | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | `'none'` | Initial value for [`oversample`](/docs/effects/wave-shaper-node#properties). |
 
 You can also create a `WaveShaperNode` via the [`BaseAudioContext.createWaveShaper()`](/docs/core/base-audio-context#createwaveshaper) factory method, which uses default values.
@@ -36,8 +36,14 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 | Name | Type | Description |
 | :--: | :--: | :---------- |
-| `curve` | `Float32Array \| null` |  The shaping curve used for waveshaping effect. |
-| `oversample` | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) |  Specifies what type of oversampling should be used when applying shaping curve. |
+| `curve` | `Float32Array \| null` | The shaping curve used for the waveshaping effect. |
+| `oversample` | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | Specifies what type of oversampling should be used when applying the shaping curve. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `InvalidStateError` | `curve` has already been set, or the provided curve has fewer than two values. |
 
 ## Methods
 
@@ -51,8 +57,9 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 #### `curve`
 - Default value is `null`.
-- Contains at least two values.
-- Subsequent modifications of `curve` have no effect. To change the curve, assign a new `Float32Array` object to this property.
+- Must contain at least two values when not `null`.
+- Can be set only once — either via the constructor `curve` option or by assigning to this property. Subsequent assignments throw `InvalidStateError`.
+- The constructor accepts a `number[]` or `Float32Array`; the property getter always returns a `Float32Array` or `null`.
 
 #### `oversample`
 - Default value is `'none'`.

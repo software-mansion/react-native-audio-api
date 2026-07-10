@@ -11,6 +11,7 @@ import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 import AudioDestinationNode from './AudioDestinationNode';
+import AudioListener from './AudioListener';
 import BiquadFilterNode from './BiquadFilterNode';
 import ConstantSourceNode from './ConstantSourceNode';
 import ConvolverNode from './ConvolverNode';
@@ -20,17 +21,18 @@ import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
-import StreamerNode from './StreamerNode';
 import WaveShaperNode from './WaveShaperNode';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
+  readonly listener: AudioListener;
   readonly sampleRate: number;
   readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
     this.context = context;
     this.destination = new AudioDestinationNode(this, context.destination);
+    this.listener = new AudioListener(this, context.listener);
     this.sampleRate = context.sampleRate;
   }
 
@@ -65,10 +67,6 @@ export default class BaseAudioContext {
 
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this);
-  }
-
-  createStreamer(streamPath: string): StreamerNode {
-    return new StreamerNode(this, { streamPath });
   }
 
   createConstantSource(): ConstantSourceNode {

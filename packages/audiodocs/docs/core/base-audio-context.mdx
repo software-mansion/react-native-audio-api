@@ -41,6 +41,7 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 | :----: | :----: | :-------- | :-: |
 | `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from `0.0`. | <ReadOnly /> |
 | `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
+| `listener` | [`AudioListener`](/docs/core/audio-listener) | Listener used for 3D spatialization, shared by all `PannerNode`s in the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
 | `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
 
@@ -171,16 +172,6 @@ connected to it.
 Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
 #### Returns `StereoPannerNode`.
-
-### `createStreamer` <MobileOnly />
-
-Creates [`StreamerNode`](/docs/sources/streamer-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `options` <Optional /> | [`StreamerOptions`](/docs/sources/streamer-node#streameroptions) | Streamer options to initialize. |
-
-#### Returns `StreamerNode`.
 
 ### `createWaveShaper`
 

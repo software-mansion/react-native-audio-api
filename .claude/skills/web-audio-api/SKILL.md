@@ -114,10 +114,11 @@ Current status (from `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`)
 | Interface | What's available |
 |---|---|
 | `AudioContext` | `close`, `suspend`, `resume`, `currentTime`, `destination`, `sampleRate`, `state` |
-| `BaseAudioContext` | `currentTime`, `destination`, `sampleRate`, `state`, `decodeAudioData`, all `create*` for available nodes |
+| `BaseAudioContext` | `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all `create*` for available nodes |
+| `AudioListener` | All nine AudioParams; deprecated `setPosition` / `setOrientation` omitted; no audible effect until `PannerNode` |
 
 ### Not yet implemented ❌
-`AudioListener`, `AudioSinkInfo`, `AudioWorklet`, `AudioWorkletGlobalScope`, `AudioWorkletNode`, `AudioWorkletProcessor`, `ChannelMergerNode`, `ChannelSplitterNode`, `DynamicsCompressorNode`, `MediaElementAudioSourceNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`, `PannerNode`
+`AudioSinkInfo`, `AudioWorklet`, `AudioWorkletGlobalScope`, `AudioWorkletNode`, `AudioWorkletProcessor`, `ChannelMergerNode`, `ChannelSplitterNode`, `DynamicsCompressorNode`, `MediaElementAudioSourceNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`, `PannerNode`
 
 **Goal**: everything in the Web Audio API spec should eventually be in this library. If you implement a node from the ❌ list, update the coverage table in `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
 
@@ -130,7 +131,6 @@ These are exported from `api.ts` but **not** from `api.web.ts` (or have a stub/c
 | Class | Purpose |
 |---|---|
 | `AudioBufferQueueSourceNode` | Queue of audio buffers, plays them sequentially — no Web Audio spec equivalent |
-| `StreamerNode` | FFmpeg-backed streaming decoder — no Web Audio spec equivalent |
 | `AudioRecorder` | Microphone input recording — no Web Audio spec equivalent |
 | `RecorderAdapterNode` | Connects recorder to the audio graph |
 | `WorkletNode` / `WorkletSourceNode` / `WorkletProcessingNode` | JS-on-audio-thread via React Native Worklets — different from browser `AudioWorkletNode` |
