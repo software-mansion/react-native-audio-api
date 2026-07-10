@@ -12,6 +12,7 @@ using namespace facebook;
 
 class BaseAudioContext;
 class AudioDestinationNodeHostObject;
+class AudioListenerHostObject;
 
 class BaseAudioContextHostObject : public HostObject {
  public:
@@ -23,13 +24,13 @@ class BaseAudioContextHostObject : public HostObject {
   ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(destination);
+  JSI_PROPERTY_GETTER_DECL(listener);
   JSI_PROPERTY_GETTER_DECL(state);
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
 
   JSI_HOST_FUNCTION_DECL(createRecorderAdapter);
   JSI_HOST_FUNCTION_DECL(createOscillator);
-  JSI_HOST_FUNCTION_DECL(createStreamer);
   JSI_HOST_FUNCTION_DECL(createConstantSource);
   JSI_HOST_FUNCTION_DECL(createGain);
   JSI_HOST_FUNCTION_DECL(createStereoPanner);
@@ -56,5 +57,6 @@ class BaseAudioContextHostObject : public HostObject {
   std::shared_ptr<react::CallInvoker> callInvoker_;
 
   std::shared_ptr<AudioDestinationNodeHostObject> destination_;
+  std::shared_ptr<AudioListenerHostObject> listener_;
 };
 } // namespace audioapi

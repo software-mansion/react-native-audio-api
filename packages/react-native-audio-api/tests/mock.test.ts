@@ -205,15 +205,6 @@ describe('React Native Audio API Mocks', () => {
       });
     });
 
-    describe('StreamerNode', () => {
-      it('should create a StreamerNode', () => {
-        const streamer = context.createStreamer({
-          streamPath: 'http://example.com/stream',
-        });
-        expect(streamer).toBeInstanceOf(MockAPI.StreamerNode);
-      });
-    });
-
   });
 
   describe('AudioRecorder', () => {

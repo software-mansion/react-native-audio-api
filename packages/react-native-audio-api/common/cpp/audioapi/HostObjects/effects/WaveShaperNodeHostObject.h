@@ -26,13 +26,16 @@ class WaveShaperNodeHostObject : public AudioNodeHostObject {
   [[nodiscard]] size_t getMemoryPressure() const override {
     // 2x and 4x oversample scratch buffers: (RQ*2 + RQ*4) * 2 (I/O) * float.
     // Resamplers carry roughly the same amount of internal state again.
-    return AudioNodeHostObject::getMemoryPressure() + 12 * RENDER_QUANTUM_SIZE * sizeof(float);
-    // The user curve is tracked separately via setExternalMemoryPressure in `setCurve`.
+    return AudioNodeHostObject::getMemoryPressure() + 12 * RENDER_QUANTUM_SIZE * sizeof(float) +
+        curveMemoryPressure_;
   }
 
  private:
+  void scheduleCurveUpdate(const std::shared_ptr<AudioArray> &curve);
+
   WaveShaperNode *waveShaperNode_ = nullptr;
 
   OverSampleType oversample_;
+  size_t curveMemoryPressure_{0};
 };
 } // namespace audioapi
