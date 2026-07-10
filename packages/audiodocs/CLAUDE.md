@@ -260,7 +260,7 @@ Block: `$$formula$$`
 
 ```mdx
 | Name | Type | Default value | Description |
-| :----: | :----: | :-------- | :------- |
+| :----: | :----: | :----: | :------- |
 | `frequency` <ReadOnly /> | `AudioParam` | `440.0` | Oscillation frequency in Hz. |
 | `type` | `OscillatorType` | `'sine'` | Waveform shape. |
 ```

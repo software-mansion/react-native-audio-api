@@ -21,7 +21,7 @@ The `ChannelInterpretation` type specifies how the input channels are mapped to 
 ### `speakers`
 
 | Number of input channels | Number of output channels | Mixing rules |
-| :------------------------: | :------------------------- | :------------ |
+| :----: | :----: | :-------- |
 | 1 (Mono) | 2 (Stereo) | output.L = input.M <br /> output.R = input.M |
 | 1 (Mono) | 4 (Quad) | output.L = input.M <br /> output.R = input.M <br /> output.SL = `0` <br /> output.SR = `0` |
 | 1 (Mono) | 6 (5.1) | output.L = `0` <br /> output.R = `0` <br /> output.C = input.M <br /> output.LFE = `0` <br /> output.SL = `0` <br /> output.SR = `0` |
@@ -38,6 +38,6 @@ The `ChannelInterpretation` type specifies how the input channels are mapped to 
 ### `discrete`
 
 | Number of input channels | Number of output channels | Mixing rules |
-| :------------------------: | :------------------------- | :------------ |
+| :----: | :----: | :-------- |
 | x | y where y > x | Fill each output channel with its counterpart (channel with same number) the rest of output channels are silent channels |
 | x | y where y < x | Fill each output channel with its counterpart (channel with same number) the rest of input channels are skipped |

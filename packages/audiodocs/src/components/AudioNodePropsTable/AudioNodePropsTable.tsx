@@ -31,7 +31,7 @@ const AudioNodePropsTable = ({
         <tr>
           <th style={{ textAlign: 'center' }}>Name</th>
           <th style={{ textAlign: 'center' }}>Type</th>
-          <th style={{ textAlign: 'left' }}>Value</th>
+          <th style={{ textAlign: 'center' }}>Value</th>
           <th style={{ textAlign: 'left' }}>Description</th>
           <th />
         </tr>
@@ -44,7 +44,7 @@ const AudioNodePropsTable = ({
           <td style={{ textAlign: 'center' }}>
             <code>number</code>
           </td>
-          <td style={{ textAlign: 'left' }}>{renderValue(numberOfInputs)}</td>
+          <td style={{ textAlign: 'center' }}>{renderValue(numberOfInputs)}</td>
           <td style={{ textAlign: 'left' }}>
             Number of input connections for the node.
           </td>
@@ -59,7 +59,7 @@ const AudioNodePropsTable = ({
           <td style={{ textAlign: 'center' }}>
             <code>number</code>
           </td>
-          <td style={{ textAlign: 'left' }}>{renderValue(numberOfOutputs)}</td>
+          <td style={{ textAlign: 'center' }}>{renderValue(numberOfOutputs)}</td>
           <td style={{ textAlign: 'left' }}>
             Number of output connections for the node.
           </td>
@@ -74,7 +74,7 @@ const AudioNodePropsTable = ({
           <td style={{ textAlign: 'center' }}>
             <code>number</code>
           </td>
-          <td style={{ textAlign: 'left' }}>{renderValue(channelCount)}</td>
+          <td style={{ textAlign: 'center' }}>{renderValue(channelCount)}</td>
           <td style={{ textAlign: 'left' }}>
             Number of channels used when up-mixing or down-mixing the node's
             inputs.
@@ -92,7 +92,7 @@ const AudioNodePropsTable = ({
               <code>ChannelCountMode</code>
             </Link>
           </td>
-          <td style={{ textAlign: 'left' }}>
+          <td style={{ textAlign: 'center' }}>
             <code>{channelCountMode}</code>
           </td>
           <td style={{ textAlign: 'left' }}>
@@ -111,7 +111,7 @@ const AudioNodePropsTable = ({
               <code>ChannelInterpretation</code>
             </Link>
           </td>
-          <td style={{ textAlign: 'left' }}>
+          <td style={{ textAlign: 'center' }}>
             <code>{channelInterpretation}</code>
           </td>
           <td style={{ textAlign: 'left' }}>

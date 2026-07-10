@@ -16,7 +16,7 @@ Disabling both flags below can shave several MB off the final app size across al
 The available flags are independent and can be combined:
 
 | Flag | What it removes | What stops working |
-| :--- | :--- | :--- |
+| :---: | :---- | :---- |
 | `disableFFmpeg` | FFmpeg shared libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | Streaming, remote playback/metadata, `.aac` / `.mp4` / `.m4a` decode, M4A concat, **Android** non-WAV recording — see [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used) |
 | `disableStaticExternalLibs` | Static libs: `libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile` | Decoding `ogg`, `opus`, `oga` files |
 

@@ -87,7 +87,7 @@ Metadata is remembered between calls, so after initial passing the metadata to s
 :::
 
 | Parameter | Type | Description |
-| :-------: | :----------: | :----- |
+| :---: | :---: | :---- |
 | `info` | [`PlaybackNotificationInfo`](playback-notification-manager#playbacknotificationinfo) | Initial notification metadata |
 
 #### Returns `Promise<void>`.
@@ -107,7 +107,7 @@ On iOS, this method clears the metadata but does not hide the notification contr
 Enables or disables specific playback controls.
 
 | Parameter | Type | Description |
-| :-------: | :-----: | :------ |
+| :---: | :---: | :---- |
 | `control` | [`PlaybackControlName`](playback-notification-manager#playbackcontrolname) | The control to enable/disable |
 | `enabled` | `boolean` | Whether the control should be enabled |
 
@@ -124,7 +124,7 @@ Checks if the notification is currently active and visible.
 Adds an event listener for notification actions.
 
 |  Parameter  | Type | Description |
-| :---------: | :------: | :------- |
+| :---: | :---: | :---- |
 | `eventName` | [`PlaybackNotificationEventName`](playback-notification-manager#playbacknotificationeventname) | The event to listen for |
 | `callback`  | [`NotificationCallback`](playback-notification-manager#notificationcallback) | Callback function |
 

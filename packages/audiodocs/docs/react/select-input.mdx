@@ -58,7 +58,7 @@ function AudioInputSelector() {
 #### Returns an object with the following properties:
 
 | Name | Type | Description |
-| :----: | :----: | :------- |
+| :----: | :----: | :---- |
 | `availableInputs` | [`AudioDeviceInfo[]`](/docs/system/audio-manager#audiodeviceinfo) | List of available audio input devices under the current device configuration. |
 | `currentInput` | [`AudioDeviceInfo`](/docs/system/audio-manager#audiodeviceinfo) \| `null` | The currently selected audio input device, or `null` if none is yet selected by the system. |
 | `onSelectInput` | `(device: AudioDeviceInfo) => Promise<void>` | Selects the given device as the current input. Resolves once the device is selected; throws otherwise. |
