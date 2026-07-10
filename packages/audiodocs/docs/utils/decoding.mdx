@@ -3,6 +3,7 @@ sidebar_position: 1
 ---
 
 import { Optional } from '@site/src/components/Badges';
+import DecodeAudioDataDocs from '@site/src/components/DecodeAudioDataDocs/DecodeAudioDataDocs';
 
 # Decoding
 
@@ -30,62 +31,7 @@ On mobile, `.aac`, `.mp4`, and `.m4a` are decoded with FFmpeg — see [Runtime f
 
 ### `decodeAudioData`
 
-Decodes audio data from either a file path or an [`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer). The optional `sampleRate` parameter lets you resample the decoded audio;
-if not provided, the original sample rate from the file is used.
-
-<table>
-  <thead>
-    <tr>
-      <th align="center">Parameter</th>
-      <th align="center">Type</th>
-      <th align="center">Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td rowspan="3" align="center"><code>input</code></td>
-      <td align="center">[`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer)</td>
-      <td align="left">[`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) with audio data.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>string</code></td>
-      <td align="left">Path to remote or local audio file.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>number</code></td>
-      <td align="left">Asset module id. </td>
-    </tr>
-    <tr>
-      <td align="center"><code>sampleRate</code><Optional /></td>
-      <td align="center"><code>number</code></td>
-      <td align="left">Target sample rate for the decoded audio.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>fetchOptions</code><Optional /></td>
-      <td align="center"><code>[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)</code></td>
-      <td align="left">Additional headers parameters when passing url to fetch.</td>
-    </tr>
-  </tbody>
-</table>
-
-#### Returns `Promise<AudioBuffer>`.
-
-:::caution
-If you are passing a number as an input to decode function, bear in mind that it uses the [`Image`](https://reactnative.dev/docs/image) component provided
-by React Native internally. By default it only supports `.mp3`, `.wav`, `.mp4`, `.m4a`, `.aac` audio file formats.
-If you want to use other types, refer to [this section](https://reactnative.dev/docs/images#static-non-image-resources) for more info.
-:::
-
-<details>
-<summary>Example decoding remote URL</summary>
-```tsx
-import { decodeAudioData } from 'react-native-audio-api';
-
-const url = ... // url to an audio
-
-const buffer = await decodeAudioData(url);
-```
-</details>
+<DecodeAudioDataDocs variant="standalone" />
 
 ### `getAudioDuration`
 
@@ -155,7 +101,7 @@ const duration = await getAudioDuration('https://example.com/audio.mp3', {
 Decodes base64-encoded PCM audio data.
 
 | Parameter | Type | Description |
-| :-----------: | :------: |-------------|
+| :---: | :---: | :---- |
 | `base64String` | `string` | Base64-encoded PCM audio data. |
 | `inputSampleRate` | `number` | Sample rate of the input PCM data. |
 | `inputChannelCount` | `number` | Number of channels in the input PCM data. |

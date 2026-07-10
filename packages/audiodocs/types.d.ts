@@ -1,6 +1,7 @@
 
 
 /// <reference types="@docusaurus/module-type-aliases" />
+/// <reference types="@docusaurus/theme-classic" />
 
 module "*.module.css" {
   const classes: { [key: string]: string };
