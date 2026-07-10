@@ -10,17 +10,11 @@ import type {
 
 /* eslint-disable no-var */
 declare global {
-  var createAudioContext: (
-    sampleRate: number,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    audioWorkletRuntime: any
-  ) => IAudioContext;
+  var createAudioContext: (sampleRate: number) => IAudioContext;
   var createOfflineAudioContext: (
     numberOfChannels: number,
     length: number,
-    sampleRate: number,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    audioWorkletRuntime: any
+    sampleRate: number
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: () => IAudioRecorder;

@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/AudioListenerHostObject.h>
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
@@ -9,8 +10,6 @@
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
-#include <audioapi/HostObjects/effects/WorkletNodeHostObject.h>
-#include <audioapi/HostObjects/effects/WorkletProcessingNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
@@ -18,8 +17,6 @@
 #include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
-#include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
-#include <audioapi/HostObjects/sources/WorkletSourceNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
@@ -38,20 +35,18 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       promiseVendor_(std::make_shared<PromiseVendor>(runtime, callInvoker)),
       callInvoker_(callInvoker) {
   destination_ = std::make_shared<AudioDestinationNodeHostObject>(context_);
+  listener_ = std::make_shared<AudioListenerHostObject>(context_);
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, listener),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
   addFunctions(
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletSourceNode),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletNode),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletProcessingNode),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConstantSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
@@ -77,6 +72,10 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
   return jsi::Object::createFromHostObject(runtime, destination_);
 }
 
+JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, listener) {
+  return jsi::Object::createFromHostObject(runtime, listener_);
+}
+
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
   return jsi::String::createFromUtf8(
       runtime, js_enum_parser::contextStateToString(context_->getState()));
@@ -88,68 +87,6 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, currentTime) {
   return {context_->getCurrentTime()};
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletSourceNode) {
-#if RN_AUDIO_API_ENABLE_WORKLETS
-  auto shareableWorklet =
-      worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(runtime, args[0]);
-  auto shouldUseUiRuntime = args[1].getBool();
-  std::weak_ptr<worklets::WorkletRuntime> workletRuntime = shouldUseUiRuntime
-      ? context_->getRuntimeRegistry().uiRuntime
-      : context_->getRuntimeRegistry().audioRuntime;
-
-  auto workletSourceNodeHostObject = std::make_shared<WorkletSourceNodeHostObject>(
-      context_->getGraph(), context_, workletRuntime, shareableWorklet, shouldUseUiRuntime);
-  return jsi::Object::createFromHostObject(runtime, workletSourceNodeHostObject);
-#endif
-  return jsi::Value::undefined();
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
-#if RN_AUDIO_API_ENABLE_WORKLETS
-  auto shareableWorklet =
-      worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(runtime, args[0]);
-  auto shouldUseUiRuntime = args[1].getBool();
-  std::weak_ptr<worklets::WorkletRuntime> workletRuntime = shouldUseUiRuntime
-      ? context_->getRuntimeRegistry().uiRuntime
-      : context_->getRuntimeRegistry().audioRuntime;
-  auto bufferLength = static_cast<size_t>(args[2].getNumber());
-  auto inputChannelCount = static_cast<size_t>(args[3].getNumber());
-
-  auto workletNodeHostObject = std::make_shared<WorkletNodeHostObject>(
-      context_->getGraph(),
-      context_,
-      workletRuntime,
-      shareableWorklet,
-      shouldUseUiRuntime,
-      bufferLength,
-      inputChannelCount);
-  auto jsiObject = jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
-  jsiObject.setExternalMemoryPressure(
-      runtime,
-      sizeof(float) * bufferLength * inputChannelCount); // rough estimate of underlying buffer
-  return jsiObject;
-#endif
-  return jsi::Value::undefined();
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletProcessingNode) {
-#if RN_AUDIO_API_ENABLE_WORKLETS
-  auto shareableWorklet =
-      worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(runtime, args[0]);
-  auto shouldUseUiRuntime = args[1].getBool();
-  std::weak_ptr<worklets::WorkletRuntime> workletRuntime = shouldUseUiRuntime
-      ? context_->getRuntimeRegistry().uiRuntime
-      : context_->getRuntimeRegistry().audioRuntime;
-
-  auto workletProcessingNodeHostObject = std::make_shared<WorkletProcessingNodeHostObject>(
-      context_->getGraph(), context_, workletRuntime, shareableWorklet, shouldUseUiRuntime);
-  auto object = jsi::Object::createFromHostObject(runtime, workletProcessingNodeHostObject);
-  object.setExternalMemoryPressure(runtime, workletProcessingNodeHostObject->getMemoryPressure());
-  return object;
-#endif
-  return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createRecorderAdapter) {
@@ -167,22 +104,6 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
   auto object = jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
   object.setExternalMemoryPressure(runtime, oscillatorHostObject->getMemoryPressure());
   return object;
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-  auto streamerOptions = StreamerOptions();
-  if (!args[0].isUndefined()) {
-    const auto options = args[0].asObject(runtime);
-    streamerOptions = audioapi::option_parser::parseStreamerOptions(runtime, options);
-  }
-  auto streamerHostObject = std::make_shared<StreamerNodeHostObject>(context_, streamerOptions);
-  auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
-  object.setExternalMemoryPressure(runtime, StreamerNodeHostObject::getSizeInBytes());
-  return object;
-#else
-  return jsi::Value::undefined();
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {

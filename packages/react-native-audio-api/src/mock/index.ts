@@ -3,7 +3,6 @@ import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderStartOptions,
-  AudioWorkletRuntime,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
@@ -28,7 +27,6 @@ import {
   OscillatorOptions,
   PeriodicWaveOptions,
   StereoPannerOptions,
-  StreamerOptions,
   WaveShaperOptions,
 } from '../types';
 
@@ -305,9 +303,20 @@ class ConvolverNodeMock extends AudioNodeMock {
 class WaveShaperNodeMock extends AudioNodeMock {
   private _curve: Float32Array | null = null;
   private _oversample: OverSampleType = 'none';
+  private curveWasSet = false;
 
-  constructor(context: BaseAudioContextMock, _options?: WaveShaperOptions) {
+  constructor(context: BaseAudioContextMock, options?: WaveShaperOptions) {
     super(context, {});
+    if (options?.curve) {
+      this._curve =
+        options.curve instanceof Float32Array
+          ? options.curve
+          : Float32Array.from(options.curve);
+      this.curveWasSet = true;
+    }
+    if (options?.oversample) {
+      this._oversample = options.oversample;
+    }
   }
 
   get curve(): Float32Array | null {
@@ -315,6 +324,19 @@ class WaveShaperNodeMock extends AudioNodeMock {
   }
 
   set curve(value: Float32Array | null) {
+    if (value !== null) {
+      if (this.curveWasSet) {
+        throw new InvalidStateErrorMock(
+          'The curve can only be set once and cannot be changed afterwards.'
+        );
+      }
+      if (value.length < 2) {
+        throw new InvalidStateErrorMock(
+          'The curve must have at least two values if not null.'
+        );
+      }
+      this.curveWasSet = true;
+    }
     this._curve = value;
   }
 
@@ -458,18 +480,6 @@ class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
   }
 }
 
-class StreamerNodeMock extends AudioScheduledSourceNodeMock {
-  readonly streamPath: string = '';
-
-  constructor(context: BaseAudioContextMock, options: StreamerOptions) {
-    super(context, options);
-    this.streamPath = options.streamPath;
-  }
-
-  pause(): void {}
-  resume(): void {}
-}
-
 class MediaElementAudioSourceNodeMock extends AudioNodeMock {
   readonly mediaElement: HTMLMediaElement | AudioNodeMock;
 
@@ -480,48 +490,6 @@ class MediaElementAudioSourceNodeMock extends AudioNodeMock {
     super(context, {});
     this.mediaElement = mediaElement;
     this.numberOfInputs = 0;
-  }
-}
-
-class WorkletNodeMock extends AudioNodeMock {
-  constructor(
-    context: BaseAudioContextMock,
-    _runtime: AudioWorkletRuntime,
-    _callback: (audioData: Array<Float32Array>, channelCount: number) => void,
-    _bufferLength: number,
-    _inputChannelCount: number
-  ) {
-    super(context, {});
-  }
-}
-
-class WorkletProcessingNodeMock extends AudioNodeMock {
-  constructor(
-    context: BaseAudioContextMock,
-    _runtime: AudioWorkletRuntime,
-    _callback: (
-      inputData: Array<Float32Array>,
-      outputData: Array<Float32Array>,
-      framesToProcess: number,
-      currentTime: number
-    ) => void
-  ) {
-    super(context, {});
-  }
-}
-
-class WorkletSourceNodeMock extends AudioScheduledSourceNodeMock {
-  constructor(
-    context: BaseAudioContextMock,
-    _runtime: AudioWorkletRuntime,
-    _callback: (
-      audioData: Array<Float32Array>,
-      framesToProcess: number,
-      currentTime: number,
-      startOffset: number
-    ) => void
-  ) {
-    super(context, {});
   }
 }
 
@@ -538,14 +506,42 @@ class AudioDestinationNodeMock extends AudioNodeMock {
   }
 }
 
+class AudioListenerMock {
+  public positionX: AudioParamMock;
+  public positionY: AudioParamMock;
+  public positionZ: AudioParamMock;
+  public forwardX: AudioParamMock;
+  public forwardY: AudioParamMock;
+  public forwardZ: AudioParamMock;
+  public upX: AudioParamMock;
+  public upY: AudioParamMock;
+  public upZ: AudioParamMock;
+
+  constructor(context: BaseAudioContextMock) {
+    this.positionX = new AudioParamMock(null, context);
+    this.positionY = new AudioParamMock(null, context);
+    this.positionZ = new AudioParamMock(null, context);
+    this.forwardX = new AudioParamMock(null, context);
+    this.forwardY = new AudioParamMock(null, context);
+    this.forwardZ = new AudioParamMock(null, context);
+    this.forwardZ.value = -1;
+    this.upX = new AudioParamMock(null, context);
+    this.upY = new AudioParamMock(null, context);
+    this.upY.value = 1;
+    this.upZ = new AudioParamMock(null, context);
+  }
+}
+
 class BaseAudioContextMock {
   public destination: AudioDestinationNodeMock;
+  public listener: AudioListenerMock;
   private _sampleRate: number = 44100;
   private _currentTime: number = 0;
   protected _state: ContextState = 'running';
 
   constructor(options?: AudioContextOptions) {
     this.destination = new AudioDestinationNodeMock(this);
+    this.listener = new AudioListenerMock(this);
     if (options?.sampleRate) {
       this._sampleRate = options.sampleRate;
     }
@@ -649,33 +645,6 @@ class BaseAudioContextMock {
     options?: BaseAudioBufferSourceOptions
   ): AudioBufferQueueSourceNodeMock {
     return new AudioBufferQueueSourceNodeMock(this, options);
-  }
-
-  createStreamer(options: StreamerOptions): StreamerNodeMock {
-    return new StreamerNodeMock(this, options);
-  }
-
-  createWorkletNode(
-    _shareableWorklet: Record<string, unknown>,
-    _runOnUI: boolean,
-    _bufferLength: number,
-    _inputChannelCount: number
-  ): WorkletNodeMock {
-    return new WorkletNodeMock(this, 'AudioRuntime', noop, 0, 0);
-  }
-
-  createWorkletProcessingNode(
-    _shareableWorklet: Record<string, unknown>,
-    _runOnUI: boolean
-  ): WorkletProcessingNodeMock {
-    return new WorkletProcessingNodeMock(this, 'AudioRuntime', noop);
-  }
-
-  createWorkletSourceNode(
-    _shareableWorklet: Record<string, unknown>,
-    _runOnUI: boolean
-  ): WorkletSourceNodeMock {
-    return new WorkletSourceNodeMock(this, 'AudioRuntime', noop);
   }
 }
 
@@ -1058,6 +1027,7 @@ export const AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
 export const AudioBufferSourceNode = AudioBufferSourceNodeMock;
 export const AudioContext = AudioContextMock;
 export const AudioDestinationNode = AudioDestinationNodeMock;
+export const AudioListener = AudioListenerMock;
 export const AudioNode = AudioNodeMock;
 export const AudioParam = AudioParamMock;
 export const AudioRecorder = AudioRecorderMock;
@@ -1073,11 +1043,7 @@ export const OfflineAudioContext = OfflineAudioContextMock;
 export const OscillatorNode = OscillatorNodeMock;
 export const RecorderAdapterNode = RecorderAdapterNodeMock;
 export const StereoPannerNode = StereoPannerNodeMock;
-export const StreamerNode = StreamerNodeMock;
 export const WaveShaperNode = WaveShaperNodeMock;
-export const WorkletNode = WorkletNodeMock;
-export const WorkletProcessingNode = WorkletProcessingNodeMock;
-export const WorkletSourceNode = WorkletSourceNodeMock;
 export const PeriodicWave = PeriodicWaveMock;
 
 export const AudioManager = AudioManagerMock;
@@ -1112,6 +1078,7 @@ export type AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
 export type AudioBufferSourceNode = AudioBufferSourceNodeMock;
 export type AudioContext = AudioContextMock;
 export type AudioDestinationNode = AudioDestinationNodeMock;
+export type AudioListener = AudioListenerMock;
 export type AudioNode = AudioNodeMock;
 export type AudioParam = AudioParamMock;
 export type AudioRecorder = AudioRecorderMock;
@@ -1127,11 +1094,7 @@ export type OfflineAudioContext = OfflineAudioContextMock;
 export type OscillatorNode = OscillatorNodeMock;
 export type RecorderAdapterNode = RecorderAdapterNodeMock;
 export type StereoPannerNode = StereoPannerNodeMock;
-export type StreamerNode = StreamerNodeMock;
 export type WaveShaperNode = WaveShaperNodeMock;
-export type WorkletNode = WorkletNodeMock;
-export type WorkletProcessingNode = WorkletProcessingNodeMock;
-export type WorkletSourceNode = WorkletSourceNodeMock;
 export type PeriodicWave = PeriodicWaveMock;
 
 // Export types and enums
@@ -1140,7 +1103,6 @@ export {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderStartOptions,
-  AudioWorkletRuntime,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
@@ -1164,7 +1126,6 @@ export {
   OscillatorOptions,
   PeriodicWaveOptions,
   StereoPannerOptions,
-  StreamerOptions,
   WaveShaperOptions,
 };
 
@@ -1175,6 +1136,7 @@ export default {
   AudioBufferSourceNode: AudioBufferSourceNodeMock,
   AudioContext: AudioContextMock,
   AudioDestinationNode: AudioDestinationNodeMock,
+  AudioListener: AudioListenerMock,
   AudioNode: AudioNodeMock,
   AudioParam: AudioParamMock,
   AudioRecorder: AudioRecorderMock,
@@ -1190,11 +1152,7 @@ export default {
   OscillatorNode: OscillatorNodeMock,
   RecorderAdapterNode: RecorderAdapterNodeMock,
   StereoPannerNode: StereoPannerNodeMock,
-  StreamerNode: StreamerNodeMock,
   WaveShaperNode: WaveShaperNodeMock,
-  WorkletNode: WorkletNodeMock,
-  WorkletProcessingNode: WorkletProcessingNodeMock,
-  WorkletSourceNode: WorkletSourceNodeMock,
   PeriodicWave: PeriodicWaveMock,
 
   // Functions

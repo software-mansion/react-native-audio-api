@@ -3,6 +3,11 @@ project(rnaudioapi_test)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(-Wno-interference-size)
+endif()
+
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
@@ -32,8 +37,6 @@ file(GLOB_RECURSE RNAUDIOAPI_SRC
 
 # exclude HostObjects from tests
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
-# exclude worklet nodes
-list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")
 
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/AudioContext.cpp"
@@ -84,7 +87,6 @@ add_executable(
   ${test_src}
 )
 
-add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
 add_compile_definitions(RN_AUDIO_API_FFMPEG_DISABLED=1)
 add_compile_definitions(RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1)

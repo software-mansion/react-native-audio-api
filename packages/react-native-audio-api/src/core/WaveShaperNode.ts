@@ -5,15 +5,18 @@ import { IWaveShaperNode } from '../jsi-interfaces';
 import { WaveShaperOptions } from '../types';
 
 export default class WaveShaperNode extends AudioNode {
-  private isCurveSet: boolean = false;
+  private curveWasSet = false;
   private _curve: Float32Array | null = null;
 
   constructor(context: BaseAudioContext, options?: WaveShaperOptions) {
     const node = context.context.createWaveShaper(options || {});
     super(context, node);
     if (options?.curve) {
-      this._curve = options.curve;
-      this.isCurveSet = true;
+      this._curve =
+        options.curve instanceof Float32Array
+          ? options.curve
+          : Float32Array.from(options.curve);
+      this.curveWasSet = true;
     }
   }
 
@@ -27,7 +30,7 @@ export default class WaveShaperNode extends AudioNode {
 
   set curve(curve: Float32Array | null) {
     if (curve !== null) {
-      if (this.isCurveSet) {
+      if (this.curveWasSet) {
         throw new InvalidStateError(
           'The curve can only be set once and cannot be changed afterwards.'
         );
@@ -39,9 +42,10 @@ export default class WaveShaperNode extends AudioNode {
         );
       }
 
-      this.isCurveSet = true;
+      this.curveWasSet = true;
     }
 
+    this._curve = curve;
     (this.node as IWaveShaperNode).setCurve(curve);
   }
 

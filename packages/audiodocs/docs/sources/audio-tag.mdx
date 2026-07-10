@@ -42,7 +42,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `source` | `AudioSource` | — | Asset id (`require(...)`), string URI/path, or `{ uri?, headers? }` for HTTP(S). |
 | `context` | `BaseAudioContext` | — | Optional. Native: implicit [`AudioContext`](/docs/core/audio-context) when omitted. Web: unused for HTML element playback. |
 | `autoPlay` | `boolean` | `false` | Start playback after load. |
-| `controls` | `boolean` | `false` | When `true`, renders default [`AudioControls`](#audiocontrols) above `children`. |
+| `controls` | `boolean` | `false` | When `true`, renders default `AudioControls` above `children`. |
 | `loop` | `boolean` | `false` | Loop playback. |
 | `muted` | `boolean` | `false` | Muted state. |
 | `volume` | `number` | `1` | Linear volume passed to the underlying source. |

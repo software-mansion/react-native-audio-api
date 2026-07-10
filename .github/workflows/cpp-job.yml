@@ -1,0 +1,39 @@
+name: C++ Job
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        required: true
+        type: string
+      run:
+        required: true
+        type: string
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+  run:
+    name: ${{ inputs.name }}
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout with Node
+        uses: ./.github/actions/checkout-with-node
+
+      - name: Setup Yarn
+        uses: ./.github/actions/setup-yarn
+
+      - name: Setup CMake
+        uses: ./.github/actions/setup-cmake
+
+      - name: ${{ inputs.name }}
+        run: ${{ inputs.run }}

@@ -3,7 +3,6 @@ module.exports = function (api) {
   return {
     presets: ['module:@react-native/babel-preset'],
     plugins: [
-      'react-native-worklets/plugin',
       [
         'module-resolver',
         {
@@ -25,6 +24,7 @@ module.exports = function (api) {
           ],
         },
       ],
+      'react-native-worklets/plugin',
     ],
   };
 };

@@ -202,45 +202,6 @@ describe('React Native Audio API Mocks', () => {
       });
     });
 
-    describe('StreamerNode', () => {
-      it('should create a StreamerNode', () => {
-        const streamer = context.createStreamer({
-          streamPath: 'http://example.com/stream',
-        });
-        expect(streamer).toBeInstanceOf(MockAPI.StreamerNode);
-      });
-    });
-
-    describe('WorkletNodes', () => {
-      it('should create WorkletNode', () => {
-        const workletNode = new MockAPI.WorkletNode(
-          context,
-          'AudioRuntime',
-          () => {},
-          1024,
-          2
-        );
-        expect(workletNode).toBeInstanceOf(MockAPI.WorkletNode);
-      });
-
-      it('should create WorkletProcessingNode', () => {
-        const processingNode = new MockAPI.WorkletProcessingNode(
-          context,
-          'AudioRuntime',
-          () => {}
-        );
-        expect(processingNode).toBeInstanceOf(MockAPI.WorkletProcessingNode);
-      });
-
-      it('should create WorkletSourceNode', () => {
-        const sourceNode = new MockAPI.WorkletSourceNode(
-          context,
-          'AudioRuntime',
-          () => {}
-        );
-        expect(sourceNode).toBeInstanceOf(MockAPI.WorkletSourceNode);
-      });
-    });
   });
 
   describe('AudioRecorder', () => {

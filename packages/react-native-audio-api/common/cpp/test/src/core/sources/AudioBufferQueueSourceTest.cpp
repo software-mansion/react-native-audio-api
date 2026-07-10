@@ -4,7 +4,6 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/graph/HostGraph.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -61,8 +60,7 @@ class AudioBufferQueueSourceTest : public ::testing::Test {
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    context = std::make_shared<OfflineAudioContext>(
-        1, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry, RuntimeRegistry{});
+    context = std::make_shared<OfflineAudioContext>(1, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry);
     destination = std::make_shared<AudioDestinationNode>(context);
     context->initialize(destination.get());
   }
@@ -162,8 +160,8 @@ TEST_F(AudioBufferQueueSourceTest, StreamingEnqueueKeepsPaceAndContinuity) {
 /// POSITIONS must still land every 1000 output frames if consumption pace is
 /// exactly 1x, and every other sample must stay silent.
 TEST_F(AudioBufferQueueSourceTest, FullGraphRenderPreservesPaceAndSilence) {
-  auto stereoContext = std::make_shared<OfflineAudioContext>(
-      2, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry, RuntimeRegistry{});
+  auto stereoContext =
+      std::make_shared<OfflineAudioContext>(2, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry);
 
   auto graph = stereoContext->getGraph();
 

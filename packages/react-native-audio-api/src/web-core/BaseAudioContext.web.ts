@@ -3,6 +3,7 @@ import AnalyserNode from './AnalyserNode.web';
 import AudioBuffer from './AudioBuffer.web';
 import AudioBufferSourceNode from './AudioBufferSourceNode.web';
 import AudioDestinationNode from './AudioDestinationNode.web';
+import AudioListener from './AudioListener.web';
 import BiquadFilterNode from './BiquadFilterNode.web';
 import ConstantSourceNode from './ConstantSourceNode.web';
 import ConvolverNode from './ConvolverNode.web';
@@ -18,6 +19,7 @@ export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
 
   readonly destination: AudioDestinationNode;
+  readonly listener: AudioListener;
   readonly sampleRate: number;
 
   get currentTime(): number;

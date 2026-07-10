@@ -30,8 +30,7 @@ namespace audioapi::utils::graph {
 inline std::shared_ptr<BaseAudioContext> getGraphTestContext() {
   static std::shared_ptr<BaseAudioContext> context = [] {
     auto eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
-    auto ctx =
-        std::make_shared<OfflineAudioContext>(2, 1024, 44100.0f, eventRegistry, RuntimeRegistry{});
+    auto ctx = std::make_shared<OfflineAudioContext>(2, 1024, 44100.0f, eventRegistry);
     return ctx;
   }();
   return context;

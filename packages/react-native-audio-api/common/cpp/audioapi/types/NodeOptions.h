@@ -147,10 +147,6 @@ struct MediaElementAudioSourceOptions : AudioNodeOptions {
   }
 };
 
-struct StreamerOptions : AudioScheduledSourceNodeOptions {
-  std::string streamPath;
-};
-
 struct DelayOptions : AudioNodeOptions {
   float maxDelayTime = 1.0f;
   float delayTime = 0.0f;

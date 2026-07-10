@@ -38,8 +38,6 @@ export type BiquadFilterType =
 
 export type ContextState = 'running' | 'closed' | 'suspended';
 
-export type AudioWorkletRuntime = 'AudioRuntime' | 'UIRuntime';
-
 export type OscillatorType =
   | 'sine'
   | 'square'
@@ -197,10 +195,6 @@ export interface ConstantSourceOptions {
   offset?: number;
 }
 
-export interface StreamerOptions {
-  streamPath: string;
-}
-
 export interface PeriodicWaveConstraints {
   disableNormalization?: boolean;
 }
@@ -250,7 +244,7 @@ export interface DelayOptions extends AudioNodeOptions {
 }
 
 export interface WaveShaperOptions extends AudioNodeOptions {
-  curve?: Float32Array;
+  curve?: number[] | Float32Array;
   oversample?: OverSampleType;
 }
 

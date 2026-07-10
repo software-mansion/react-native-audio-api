@@ -40,7 +40,7 @@ Every audio node has three layers. HostObject is the middle one:
 ```mermaid
 flowchart TD
   TS["TypeScript class\n(src/core/)"]
-  HO["HostObject\n(C++ — JsiHostObject subclass)"]
+  HO["HostObject\n(C++ — audioapi::HostObject subclass)"]
   AN["AudioNode\n(C++ core — audio thread)"]
 
   TS <--> |"JSI — direct memory, no serialization"| HO
@@ -81,7 +81,6 @@ HostObjects/
 │   ├── AudioBufferSourceNodeHostObject.h/.cpp
 │   ├── AudioBufferQueueSourceNodeHostObject.h/.cpp
 │   ├── ConstantSourceNodeHostObject.h/.cpp
-│   ├── StreamerNodeHostObject.h/.cpp
 │   ├── AudioBufferHostObject.h/.cpp               # Data container, not a node
 │   └── RecorderAdapterNodeHostObject.h/.cpp
 ├── inputs/
@@ -99,7 +98,7 @@ HostObjects/
 
 ## Macro System
 
-All HostObjects use macros defined in `jsi/JsiHostObject.h`. Always use these — never write raw JSI dispatch code.
+All HostObjects use macros defined in `jsi/HostObject.h`. Always use these — never write raw JSI dispatch code.
 
 ### Declaration macros (in .h)
 
