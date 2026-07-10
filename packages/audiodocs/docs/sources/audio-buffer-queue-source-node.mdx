@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 4
 sidebar_label: AudioBufferQueueSourceNode
 ---
 
@@ -8,7 +8,7 @@ import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 
 # AudioBufferQueueSourceNode <MobileOnly />
 
-The `AudioBufferQueueSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents player that consists of many short buffers.
+The `AudioBufferQueueSourceNode` is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which represents a player that consists of many short buffers.
 
 ## Constructor
 
@@ -22,8 +22,8 @@ interface AudioBufferBaseSourceNodeOptions {
 
 :::caution
 The pitch correction algorithm introduces processing latency.
-As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time — typically around `0.06s` when pitch correction is enabled, and `0.0` otherwise.
-For more details, see [getLatency()](/docs/sources/audio-buffer-base-source-node#getlatency).
+As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.
+Use [`getLatency()`](#getlatency) to obtain the compensation value for the current `playbackRate`.
 :::
 
 ## Example
@@ -52,13 +52,40 @@ function App() {
 
 ## Properties
 
-It inherits all properties from [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node#properties).
+It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated buffer" channelCountMode="max" channelInterpretation="speakers" />
 
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `playbackRate` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
+
 ## Methods
 
-It inherits all methods from [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node#methods).
+It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+
+### `getLatency`
+
+Returns the playback latency introduced by the pitch correction algorithm, in seconds.
+When scheduling precise playback times, start input samples this many seconds earlier to compensate for processing delay.
+Returns `0.0` when pitch correction is disabled.
+
+#### Returns `number`.
+
+<details>
+<summary>Example usage</summary>
+```tsx
+const source = audioContext.createBufferQueueSource({ pitchCorrection: true });
+source.connect(audioContext.destination);
+
+const latency = source.getLatency();
+
+// Schedule playback slightly earlier to compensate for latency
+const startTime = audioContext.currentTime + 1.0; // play in 1 second
+source.start(startTime - latency);
+```
+</details>
 
 ### `enqueueBuffer`
 
@@ -105,6 +132,36 @@ pause() halts the audio while keeping the current playback position, allowing yo
 
 ## Events
 
+It inherits all events from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#events).
+
+### `onPositionChanged` <MobileOnly />
+
+Allows to set (or remove) a callback that will be fired after processing certain part of an audio.
+Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
+You can remove the callback by passing `null`.
+
+### `onPositionChangedInterval` <MobileOnly />
+
+Allows to set frequency for `onPositionChanged` event. Value that can be set is around `1000/x` Hz.
+
+```ts
+import { AudioContext, AudioBufferQueueSourceNode } from 'react-native-audio-api';
+
+function App() {
+    const ctx = new AudioContext();
+    const sourceNode = ctx.createBufferQueueSource();
+    let offset = 0;
+
+    sourceNode.onPositionChanged = (event) => { //setting callback
+        this.offset = event.value;
+    };
+
+    sourceNode.onPositionChangedInterval = 100; //setting frequency to ~10Hz
+
+    sourceNode.start();
+}
+```
+
 ### `onBufferEnded`
 
 Sets (or removes) a callback that will be fired when a specific buffer has ended with payload of type [`OnBufferEndEventType`](audio-buffer-queue-source-node#onbufferendeventtype)
@@ -122,6 +179,17 @@ audioBufferQueueSourceNode.onBufferEnded = (event) => { //setting callback
 ```
 
 ## Remarks
+
+#### `detune`
+- Default value is `0.0`.
+- Nominal range is -∞ to ∞.
+- For example value of `100` detune the source up by one semitone, whereas `-1200` down by one octave.
+
+#### `playbackRate`
+- Default value is `1.0`.
+- Nominal range is -∞ to ∞.
+- For example value of `1.0` plays audio at normal speed, whereas value of `2.0` plays audio twice as fast as normal speed.
+- When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses pitch correction algorithm.
 
 ### `OnBufferEndEventType`
 

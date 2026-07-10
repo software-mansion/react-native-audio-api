@@ -20,6 +20,10 @@ user experience, and maintainability. Here are some key best practices to consid
   Running `AudioContext` is still playing silence even if there is no playing source node connected to the [`destination`](/docs/core/base-audio-context#properties).
   Additionally, on iOS devices, the state of the `AudioContext` is directly related with state of the lock screen. If running `AudioContext` exists, it is impossible to set lock screen state to [`state_paused`](/docs/system/audio-manager#lockscreeninfo).
 
+## [**AudioRecorder**](/docs/inputs/audio-recorder) Management
+
+- **Single AudioRecorder**: It is preferred to create only a single instance of the `AudioRecorder` class for the best performance, memory, and battery consumption. While an idle recorder has minimal impact, switching between separate recorder instances might have a noticeable impact on the device.
+
 ## React hooks vs React Native Audio API
 
 - **Create singleton class to manage audio layer**: Instead of storing `AudioContext` or nodes directly in your React components using `useState` or `useRef`,
