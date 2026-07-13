@@ -1,7 +1,6 @@
 #pragma once
 
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
@@ -19,8 +18,7 @@ class OfflineAudioContext : public BaseAudioContext {
       int numberOfChannels,
       size_t length,
       float sampleRate,
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const RuntimeRegistry &runtimeRegistry);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~OfflineAudioContext() override = default;
   DELETE_COPY_AND_MOVE(OfflineAudioContext);
 

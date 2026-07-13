@@ -9,6 +9,15 @@ set(COMMON_CPP_DIR ${CMAKE_SOURCE_DIR}/..)
 set(RN_AUDIO_API_TEST 0)
 set(REACT_NATIVE_DIR ../../../../../node_modules/react-native)
 
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
+)
+# For Windows/cross-platform compatibility, force shared runtime matching
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+# -------------------------------------
 
 file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c" "${COMMON_CPP_DIR}/test/*.cpp")
 list(REMOVE_ITEM COMMON_CPP_SOURCES
@@ -47,22 +56,9 @@ target_include_directories(
   "${REACT_NATIVE_DIR}/ReactCommon/jsi"
   "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
   "${COMMON_CPP_DIR}/../../ios"
-  "/opt/homebrew/Cellar/googletest/1.17.0/include"
+  "${googletest_SOURCE_DIR}/googletest/include"
 )
-
-add_library(worklets SHARED IMPORTED)
-set_target_properties(
-  worklets
-  PROPERTIES
-    IMPORTED_LOCATION
-    "${REACT_NATIVE_WORKLETS_DIR}/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
-)
-list(APPEND INCLUDE_LIBRARIES
-  "${REACT_NATIVE_WORKLETS_DIR}/../Common/cpp"
-  "${REACT_NATIVE_WORKLETS_DIR}/src/main/cpp"
-)
-list(APPEND LINK_LIBRARIES worklets)
 
 target_include_directories(rnaudioapi_cursor PUBLIC ${INCLUDE_LIBRARIES})
 
-target_link_libraries(rnaudioapi_cursor ${LINK_LIBRARIES})
+target_link_libraries(rnaudioapi_cursor ${LINK_LIBRARIES} gtest gmock gtest_main)

@@ -1,5 +1,5 @@
 import { IndexSizeError, NotSupportedError } from '../errors';
-import { assertSupportedSampleRate } from '../utils/audioConstants';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioBufferLike, AudioBufferOptions } from '../types';
 
 export default class AudioBuffer implements AudioBufferLike {

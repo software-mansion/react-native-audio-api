@@ -22,59 +22,21 @@ import type {
   OverSampleType,
   Result,
   StereoPannerOptions,
-  StreamerOptions,
   WaveShaperOptions,
   AudioFileSourceOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
 
-export type WorkletNodeCallback = (
-  audioData: Array<ArrayBuffer>,
-  channelCount: number
-) => void;
-
-export type WorkletSourceNodeCallback = (
-  audioData: Array<ArrayBuffer>,
-  framesToProcess: number,
-  currentTime: number,
-  startOffset: number
-) => void;
-
-export type WorkletProcessingNodeCallback = (
-  inputData: Array<ArrayBuffer>,
-  outputData: Array<ArrayBuffer>,
-  framesToProcess: number,
-  currentTime: number
-) => void;
-
-export type ShareableWorkletCallback =
-  | WorkletNodeCallback
-  | WorkletSourceNodeCallback
-  | WorkletProcessingNodeCallback;
-
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
+  readonly listener: IAudioListener;
   readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
   readonly decoder: IAudioDecoder;
 
   createRecorderAdapter(): IRecorderAdapterNode;
-  createWorkletSourceNode(
-    shareableWorklet: ShareableWorkletCallback,
-    shouldUseUiRuntime: boolean
-  ): IWorkletSourceNode;
-  createWorkletNode(
-    shareableWorklet: ShareableWorkletCallback,
-    shouldUseUiRuntime: boolean,
-    bufferLength: number,
-    inputChannelCount: number
-  ): IWorkletNode;
-  createWorkletProcessingNode(
-    shareableWorklet: ShareableWorkletCallback,
-    shouldUseUiRuntime: boolean
-  ): IWorkletProcessingNode;
   createOscillator(oscillatorOptions: OscillatorOptions): IOscillatorNode;
   createConstantSource(
     constantSourceOptions: ConstantSourceOptions
@@ -101,7 +63,6 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: ConvolverOptions) => IConvolverNode;
-  createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions: WaveShaperOptions) => IWaveShaperNode;
   createFileSource: (
     audioFileOptions: AudioFileSourceOptions
@@ -172,6 +133,18 @@ export interface IIIRFilterNode extends IAudioNode {
 
 export interface IAudioDestinationNode extends IAudioNode {}
 
+export interface IAudioListener {
+  readonly positionX: IAudioParam;
+  readonly positionY: IAudioParam;
+  readonly positionZ: IAudioParam;
+  readonly forwardX: IAudioParam;
+  readonly forwardY: IAudioParam;
+  readonly forwardZ: IAudioParam;
+  readonly upX: IAudioParam;
+  readonly upY: IAudioParam;
+  readonly upZ: IAudioParam;
+}
+
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when: number): void;
   stop: (when: number) => void;
@@ -200,8 +173,6 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
 
   setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
-
-export interface IStreamerNode extends IAudioNode {}
 
 export interface IConstantSourceNode extends IAudioScheduledSourceNode {
   readonly offset: IAudioParam;
@@ -318,14 +289,7 @@ export interface IAnalyserNode extends IAudioNode {
 
 export interface IRecorderAdapterNode extends IAudioNode {}
 
-export interface IWorkletNode extends IAudioNode {}
-
-export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
-
-export interface IWorkletProcessingNode extends IAudioNode {}
-
 export interface IWaveShaperNode extends IAudioNode {
-  readonly curve: Float32Array | null;
   oversample: OverSampleType;
 
   setCurve(curve: Float32Array | null): void;

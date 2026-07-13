@@ -10,8 +10,6 @@ import {
   oscillatorTestWithGain,
   oscillatorTestWithStereoPanner,
 } from './OscillatorTest';
-import { streamerTest } from './StreamingTest';
-import { workletTest } from './WorkletsTest';
 import { recorderTest, recorderPlaybackTest } from './RecorderTest';
 import {
   audioBufferFormatsTest,
@@ -90,7 +88,7 @@ const Test: FC = () => {
     };
   }, []);
 
-  const setupAudioContext = async () => {
+  const setupAudioContext = () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     }
@@ -142,29 +140,6 @@ const Test: FC = () => {
       setTestingInfo('Recording test completed.');
       setIsTesting(false);
     }, 11000);
-  };
-
-  const streamingTest = () => {
-    setIsTesting(true);
-    setupAudioContext();
-    setTestingInfo('Streaming test');
-    streamerTest(audioContextRef);
-    setTimeout(() => {
-      setTestingInfo('Streaming test completed.');
-      setIsTesting(false);
-    }, 5000);
-  };
-
-  const workletsTest = () => {
-    setIsTesting(true);
-    setupAudioContext();
-
-    setTestingInfo('Worklet test that reduces gain to 0.1');
-    workletTest(audioContextRef);
-    setTimeout(() => {
-      setTestingInfo('Worklet test completed.');
-      setIsTesting(false);
-    }, 4000);
   };
 
   const audioBufferSourceTest = async () => {
@@ -257,8 +232,7 @@ const Test: FC = () => {
         paddingTop: 200,
         backgroundColor: 'black',
         height: '100%',
-      }}
-    >
+      }}>
       <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         <Text style={{ color: 'white' }}>{testingInfo}</Text>
       </View>
@@ -274,12 +248,6 @@ const Test: FC = () => {
           disabled={isTesting}
         />
         <Button title="recorder" onPress={recordingTest} disabled={isTesting} />
-        <Button title="streamer" onPress={streamingTest} disabled={isTesting} />
-        <Button
-          title="worklet node"
-          onPress={workletsTest}
-          disabled={isTesting}
-        />
         <Button
           title="audio buffer source"
           onPress={audioBufferSourceTest}
@@ -300,11 +268,7 @@ const Test: FC = () => {
           onPress={audioBufferQueueSourceLongTest}
           disabled={isTesting}
         />
-        <Button
-          title="audio tag"
-          onPress={audioTagTest}
-          disabled={isTesting}
-        />
+        <Button title="audio tag" onPress={audioTagTest} disabled={isTesting} />
         <Text style={{ color: 'white', paddingTop: 40 }}>
           CHECK IF EVERYTHING WORKS AFTER HOT RELOAD
         </Text>

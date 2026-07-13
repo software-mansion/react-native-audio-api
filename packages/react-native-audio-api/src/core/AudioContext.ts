@@ -1,5 +1,4 @@
-import AudioAPIModule from '../AudioAPIModule';
-import { assertSupportedSampleRate } from '../utils/audioConstants';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioTagHandle } from '../Audio/types';
 import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
@@ -13,12 +12,9 @@ export default class AudioContext extends BaseAudioContext {
       assertSupportedSampleRate(options.sampleRate);
     }
 
-    const audioRuntime = AudioAPIModule.createAudioRuntime();
-
     super(
       globalThis.createAudioContext(
-        options?.sampleRate || AudioManager.getDevicePreferredSampleRate(),
-        audioRuntime
+        options?.sampleRate || AudioManager.getDevicePreferredSampleRate()
       )
     );
   }

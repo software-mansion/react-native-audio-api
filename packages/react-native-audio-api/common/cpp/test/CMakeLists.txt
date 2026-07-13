@@ -37,8 +37,6 @@ file(GLOB_RECURSE RNAUDIOAPI_SRC
 
 # exclude HostObjects from tests
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
-# exclude worklet nodes
-list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")
 
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/AudioContext.cpp"
@@ -89,7 +87,6 @@ add_executable(
   ${test_src}
 )
 
-add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
 add_compile_definitions(RN_AUDIO_API_FFMPEG_DISABLED=1)
 add_compile_definitions(RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1)
@@ -116,6 +113,6 @@ target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
 target_link_libraries(tests_asan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
 
 include(GoogleTest)
-gtest_discover_tests(tests)
-gtest_discover_tests(tests_tsan)
-gtest_discover_tests(tests_asan)
+gtest_discover_tests(tests DISCOVERY_MODE PRE_TEST)
+gtest_discover_tests(tests_tsan DISCOVERY_MODE PRE_TEST)
+gtest_discover_tests(tests_asan DISCOVERY_MODE PRE_TEST)

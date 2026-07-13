@@ -19,9 +19,8 @@ OfflineAudioContext::OfflineAudioContext(
     int numberOfChannels,
     size_t length,
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const RuntimeRegistry &runtimeRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry, runtimeRegistry),
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
       length_(length),
       currentSampleFrame_(0),
       audioBuffer_(

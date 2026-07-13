@@ -1,10 +1,11 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
-import { assertSupportedSampleRate } from '../utils/audioConstants';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioContextOptions, ContextState, DecodeDataInput } from '../types';
 import AnalyserNode from './AnalyserNode.web';
 import AudioBuffer from './AudioBuffer.web';
 import AudioBufferSourceNode from './AudioBufferSourceNode.web';
 import AudioDestinationNode from './AudioDestinationNode.web';
+import AudioListener from './AudioListener.web';
 import BaseAudioContext from './BaseAudioContext.web';
 import BiquadFilterNode from './BiquadFilterNode.web';
 import ConvolverNode from './ConvolverNode.web';
@@ -22,6 +23,7 @@ export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
 
   readonly destination: AudioDestinationNode;
+  readonly listener: AudioListener;
   readonly sampleRate: number;
 
   constructor(options?: AudioContextOptions) {
@@ -33,6 +35,7 @@ export default class AudioContext implements BaseAudioContext {
 
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);
+    this.listener = new AudioListener(this, this.context.listener);
   }
 
   public get currentTime(): number {
@@ -132,7 +135,7 @@ export default class AudioContext implements BaseAudioContext {
   }
 
   createWaveShaper(): WaveShaperNode {
-    return new WaveShaperNode(this, this.context.createWaveShaper());
+    return new WaveShaperNode(this);
   }
 
   async decodeAudioData(

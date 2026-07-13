@@ -12,6 +12,7 @@ using namespace facebook;
 
 class BaseAudioContext;
 class AudioDestinationNodeHostObject;
+class AudioListenerHostObject;
 
 class BaseAudioContextHostObject : public HostObject {
  public:
@@ -23,16 +24,13 @@ class BaseAudioContextHostObject : public HostObject {
   ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(destination);
+  JSI_PROPERTY_GETTER_DECL(listener);
   JSI_PROPERTY_GETTER_DECL(state);
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
 
-  JSI_HOST_FUNCTION_DECL(createWorkletSourceNode);
-  JSI_HOST_FUNCTION_DECL(createWorkletNode);
-  JSI_HOST_FUNCTION_DECL(createWorkletProcessingNode);
   JSI_HOST_FUNCTION_DECL(createRecorderAdapter);
   JSI_HOST_FUNCTION_DECL(createOscillator);
-  JSI_HOST_FUNCTION_DECL(createStreamer);
   JSI_HOST_FUNCTION_DECL(createConstantSource);
   JSI_HOST_FUNCTION_DECL(createGain);
   JSI_HOST_FUNCTION_DECL(createStereoPanner);
@@ -47,11 +45,18 @@ class BaseAudioContextHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(createWaveShaper);
   JSI_HOST_FUNCTION_DECL(createDelay);
 
+  /// @brief Access the underlying C++ audio context.
+  /// @return The underlying C++ audio context.
+  [[nodiscard]] const std::shared_ptr<BaseAudioContext> &getContext() const {
+    return context_;
+  }
+
  protected:
   std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
 
   std::shared_ptr<AudioDestinationNodeHostObject> destination_;
+  std::shared_ptr<AudioListenerHostObject> listener_;
 };
 } // namespace audioapi

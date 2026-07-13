@@ -41,6 +41,7 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 | :----: | :----: | :-------- | :-: |
 | `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
 | `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
+| `listener` | [`AudioListener`](/docs/core/audio-listener) | Listener used for 3D spatialization, shared by all `PannerNode`s in the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
 | `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
 
@@ -73,7 +74,7 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 | Error type | Description |
 | :---: | :---- |
 | `NotSupportedError` | `numOfChannels` is outside the nominal range [1, 32]. |
-| `NotSupportedError` | `sampleRate` is outside the nominal range [8000, 96000]. |
+| `NotSupportedError` | `sampleRate` is outside the supported range [3000, 768000]. |
 | `NotSupportedError` | `length` is less then 1. |
 
 #### Returns `AudioBuffer`.
@@ -171,16 +172,6 @@ connected to it.
 Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
 #### Returns `StereoPannerNode`.
-
-### `createStreamer` <MobileOnly />
-
-Creates [`StreamerNode`](/docs/sources/streamer-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `options` <Optional /> | [`StreamerOptions`](/docs/sources/streamer-node#streameroptions) | Streamer options to initialize. |
-
-#### Returns `StreamerNode`.
 
 ### `createWaveShaper`
 
@@ -281,6 +272,13 @@ If not provided, the audio will be automatically resampled to match the audio co
 </table>
 
 #### Returns `Promise<AudioBuffer>`.
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `TypeError` | `input` is not a module id, URI, or `ArrayBuffer`. |
+| `AudioApiError` | `input` is a base64 or data-blob string (use [`decodePCMInBase64`](#decodepcminbase64) for raw PCM base64). |
 
 <details>
 <summary>Example decoding</summary>

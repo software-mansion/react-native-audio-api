@@ -81,7 +81,6 @@ HostObjects/
 │   ├── AudioBufferSourceNodeHostObject.h/.cpp
 │   ├── AudioBufferQueueSourceNodeHostObject.h/.cpp
 │   ├── ConstantSourceNodeHostObject.h/.cpp
-│   ├── StreamerNodeHostObject.h/.cpp
 │   ├── AudioBufferHostObject.h/.cpp               # Data container, not a node
 │   └── RecorderAdapterNodeHostObject.h/.cpp
 ├── inputs/

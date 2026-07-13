@@ -73,24 +73,27 @@ else()
   set(BUILD_TYPE "release")
 endif()
 
+# PUBLIC: extension packages consume `<audioapi/...>` via the published prefab.
 target_include_directories(
   react-native-audio-api
+  PUBLIC
+    "${COMMON_CPP_DIR}"
+    "${ANDROID_CPP_DIR}"
   PRIVATE
-  "${COMMON_CPP_DIR}"
-  "${ANDROID_CPP_DIR}"
-  "${INCLUDE_DIR}"
-  "${FFMPEG_INCLUDE_DIR}"
-  "${REACT_NATIVE_DIR}/ReactCommon"
-  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
-  "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
+    "${INCLUDE_DIR}"
+    "${FFMPEG_INCLUDE_DIR}"
+    "${REACT_NATIVE_DIR}/ReactCommon"
+    "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
+    "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
+    "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
 )
 
 if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   target_include_directories(
     react-native-audio-api
     PRIVATE
-    "${INCLUDE_DIR}/opus"
-    "${INCLUDE_DIR}/vorbis"
+      "${INCLUDE_DIR}/opus"
+      "${INCLUDE_DIR}/vorbis"
   )
 endif()
 
@@ -102,66 +105,9 @@ set(LINK_LIBRARIES
   oboe::oboe
 )
 
-set(INCLUDE_LIBRARIES
-  "${COMMON_CPP_DIR}"
-  "${ANDROID_CPP_DIR}"
-  "${INCLUDE_DIR}"
-  "${REACT_NATIVE_DIR}/ReactCommon"
-  "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
-  "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
-  "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
-)
-
-if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
-  list(APPEND INCLUDE_LIBRARIES
-    "${INCLUDE_DIR}/opus"
-    "${INCLUDE_DIR}/vorbis"
-  )
-endif()
-
-if(RN_AUDIO_API_WORKLETS_ENABLED)
-  list(APPEND INCLUDE_LIBRARIES
-    "${REACT_NATIVE_WORKLETS_DIR}/../Common/cpp"
-    "${REACT_NATIVE_WORKLETS_DIR}/src/main/cpp"
-  )
-
-  find_package(react-native-worklets CONFIG QUIET)
-  if(react-native-worklets_FOUND)
-    list(APPEND LINK_LIBRARIES react-native-worklets::worklets)
-  else()
-    # Fallback for environments without prefab publication (older worklets)
-    add_library(worklets SHARED IMPORTED)
-    set_target_properties(
-      worklets
-      PROPERTIES
-        IMPORTED_LOCATION
-        "${REACT_NATIVE_WORKLETS_DIR}/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
-    )
-    list(APPEND LINK_LIBRARIES worklets)
-  endif()
-endif()
-
-target_include_directories(
-  react-native-audio-api
-  PRIVATE
-  ${INCLUDE_LIBRARIES}
-)
-
 set(RN_VERSION_LINK_LIBRARIES
   ReactAndroid::reactnative
 )
-
-if(RN_AUDIO_API_WORKLETS_ENABLED)
-  target_compile_definitions(
-    react-native-audio-api
-    PRIVATE RN_AUDIO_API_ENABLE_WORKLETS=1
-  )
-else()
-  target_compile_definitions(
-    react-native-audio-api
-    PRIVATE RN_AUDIO_API_ENABLE_WORKLETS=0
-  )
-endif()
 
 if (RN_AUDIO_API_FFMPEG_DISABLED)
   target_compile_definitions(
