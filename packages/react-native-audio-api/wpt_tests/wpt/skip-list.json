@@ -46,5 +46,9 @@
   {
     "pattern": "suspend-with-navigation",
     "reason": "requires WPT /common/utils.js and dispatcher infrastructure not available in Node harness"
+  },
+  {
+    "pattern": "test-analyser-minimum.html",
+    "reason": "requires createScriptProcessor (ScriptProcessorNode), which is not implemented"
   }
 ]

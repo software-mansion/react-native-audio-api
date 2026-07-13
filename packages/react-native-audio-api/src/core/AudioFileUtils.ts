@@ -2,12 +2,8 @@ import { AudioApiError } from '../errors';
 import { IAudioFileUtils } from '../jsi-interfaces';
 import { AudioDurationInput } from '../types';
 import { headersFromRequestInit } from '../utils';
-import {
-  isBase64Source,
-  isDataBlobString,
-  isRemoteSource,
-  resolveLocalFilePath,
-} from '../utils/paths';
+import { isRemoteSource, resolveLocalFilePath } from '../utils/paths';
+import { assertUnsupportedDecodeStringFormats } from '../utils/validation';
 
 class AudioFileUtils {
   private static instance: AudioFileUtils | null = null;
@@ -66,17 +62,7 @@ class AudioFileUtils {
         'Input must be a local file path, remote URL, or ArrayBuffer.'
       );
     } else {
-      if (isBase64Source(input)) {
-        throw new AudioApiError(
-          'Base64 source decoding is not currently supported, to decode raw PCM base64 strings use decodePCMInBase64 method.'
-        );
-      }
-
-      if (isDataBlobString(input)) {
-        throw new AudioApiError(
-          'Data Blob string decoding is not currently supported.'
-        );
-      }
+      assertUnsupportedDecodeStringFormats(input);
 
       const headers = headersFromRequestInit(fetchOptions);
       const source = isRemoteSource(input)

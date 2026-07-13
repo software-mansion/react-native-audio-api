@@ -74,7 +74,7 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 | Error type | Description |
 | :---: | :---- |
 | `NotSupportedError` | `numOfChannels` is outside the nominal range [1, 32]. |
-| `NotSupportedError` | `sampleRate` is outside the nominal range [8000, 96000]. |
+| `NotSupportedError` | `sampleRate` is outside the supported range [3000, 768000]. |
 | `NotSupportedError` | `length` is less then 1. |
 
 **Returns:** `AudioBuffer`
@@ -272,6 +272,13 @@ If not provided, the audio will be automatically resampled to match the audio co
 </table>
 
 **Returns:** `Promise<AudioBuffer>`
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `TypeError` | `input` is not a module id, URI, or `ArrayBuffer`. |
+| `AudioApiError` | `input` is a base64 or data-blob string (use [`decodePCMInBase64`](#decodepcminbase64) for raw PCM base64). |
 
 <details>
 <summary>Example decoding</summary>
