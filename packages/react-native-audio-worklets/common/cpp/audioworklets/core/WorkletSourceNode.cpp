@@ -55,22 +55,17 @@ void WorkletSourceNode::processNode(int framesToProcess) {
 
   const size_t outputChannelCount = audioBuffer_->getNumberOfChannels();
   const jsi::Value *outputData = outputChannelViews_->channelsArray(outputChannelCount);
-  if (outputData == nullptr) {
+  if (outputData == nullptr || !workletRunner_.isActive()) {
     audioBuffer_->zero();
     return;
   }
 
-  const auto result = workletRunner_.call(
+  workletRunner_.callUnsafe(
       *outputData,
       jsi::Value(static_cast<int>(outputChannelCount)),
       jsi::Value(static_cast<int>(nonSilentFramesToProcess)),
       jsi::Value(context->getCurrentTime()),
       jsi::Value(static_cast<int>(startOffset)));
-
-  if (!result.has_value()) {
-    audioBuffer_->zero();
-    return;
-  }
 
   for (size_t i = 0; i < outputChannelCount; ++i) {
     audioBuffer_->getChannel(i)->copy(

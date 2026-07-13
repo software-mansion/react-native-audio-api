@@ -3,15 +3,13 @@
 #include <worklets/Compat/StableApi.h>
 #include <worklets/WorkletRuntime/WorkletRuntime.h>
 
-#include <audioworklets/AudioChannelViews.h>
+#include <audioworklets/utils/AudioChannelViews.h>
 
 #include <jsi/jsi.h>
 
 #include <array>
 #include <cstddef>
-#include <functional>
 #include <memory>
-#include <optional>
 #include <utility>
 
 namespace audioworklets {
@@ -38,35 +36,22 @@ class AudioWorkletsRunner {
   AudioWorkletsRunner &operator=(AudioWorkletsRunner &&other) noexcept;
   ~AudioWorkletsRunner();
 
-  /// @brief Invokes the worklet without acquiring the runtime mutex.
-  /// @note Audio Thread only. Caller must ensure the runtime is valid.
+  [[nodiscard]] bool isActive() const {
+    return workletInitialized_ && unsafeRuntimePtr_ != nullptr;
+  }
+
+  /// @brief Invokes the cached worklet on the audio worklet runtime.
+  /// @note Audio Thread only. Caller must check `isActive()` first.
   template <typename... Args>
-  jsi::Value callUnsafe(Args &&...args) {
+  jsi::Value callUnsafe(Args &&...args) const {
     return getUnsafeWorklet().call(*unsafeRuntimePtr_, std::forward<Args>(args)...);
   }
-
-  /// @brief Invokes the worklet synchronously on the audio worklet runtime.
-  /// @returns `std::nullopt` when the runtime or worklet is unavailable.
-  /// @note Audio Thread only.
-  template <typename... Args>
-  std::optional<jsi::Value> call(Args &&...args) const {
-    auto strongRuntime = weakRuntime_.lock();
-    if (strongRuntime == nullptr || !workletInitialized_) {
-      return std::nullopt;
-    }
-
-    return strongRuntime->runSync(getUnsafeWorklet(), std::forward<Args>(args)...);
-  }
-
-  /// @brief Runs a job synchronously on the audio worklet runtime.
-  std::optional<jsi::Value> executeOnRuntimeSync(
-      const std::function<jsi::Value(jsi::Runtime &)> &&job) const noexcept(noexcept(job));
 
   /// @brief Allocates channel buffers and pre-builds stable `Float32Array[]` views on
   /// the audio worklet runtime.
   /// @param frameCount Number of frames per channel (view length).
   /// @param channelCount Number of channel slots in the pool.
-  /// @note Must be called once before the first `call`.
+  /// @note Must be called once before the first `callUnsafe`.
   [[nodiscard]] std::shared_ptr<AudioChannelViews> createChannelViews(
       size_t frameCount,
       size_t channelCount);
@@ -79,6 +64,8 @@ class AudioWorkletsRunner {
   alignas(jsi::Function) std::array<std::byte, sizeof(jsi::Function)> unsafeWorklet_{};
 
   bool workletInitialized_ = false;
+
+  void destroyCachedWorklet();
 
   [[nodiscard]] const jsi::Function &getUnsafeWorklet() const {
     return *reinterpret_cast<const jsi::Function *>(unsafeWorklet_.data());

@@ -55,7 +55,7 @@ std::shared_ptr<AudioChannelViews> UIWorkletsRunner::createChannelViews(
   return channelViews_;
 }
 
-void UIWorkletsRunner::invokeOnUI(size_t channelCount, std::function<void()> onComplete) const {
+void UIWorkletsRunner::call(size_t channelCount, std::function<void()> onComplete) const {
   auto uiRuntime = uiRuntime_.lock();
   auto uiScheduler = uiScheduler_.lock();
   if (!isActive() || !serializableWorklet_ || !uiRuntime || !uiScheduler) {

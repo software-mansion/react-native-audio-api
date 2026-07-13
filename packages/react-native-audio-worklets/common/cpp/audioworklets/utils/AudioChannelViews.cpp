@@ -1,4 +1,4 @@
-#include <audioworklets/AudioChannelViews.h>
+#include <audioworklets/utils/AudioChannelViews.h>
 #include <worklets/WorkletRuntime/WorkletRuntime.h>
 
 #include <memory>

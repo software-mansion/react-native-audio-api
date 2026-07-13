@@ -80,8 +80,7 @@ void WorkletNode::dispatchToUI(size_t channelCount) {
   std::atomic_thread_fence(std::memory_order_release);
 
   auto busy = busy_;
-  workletRunner_.invokeOnUI(
-      channelCount, [busy]() { busy->store(false, std::memory_order_release); });
+  workletRunner_.call(channelCount, [busy]() { busy->store(false, std::memory_order_release); });
 
   framesFilled_ = 0;
 }

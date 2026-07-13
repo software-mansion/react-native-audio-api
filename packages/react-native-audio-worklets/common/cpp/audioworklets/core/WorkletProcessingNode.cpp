@@ -51,14 +51,14 @@ void WorkletProcessingNode::processNode(int framesToProcess) {
 
   const jsi::Value *inputData = inputChannelViews_->channelsArray(inputChannelCount);
   const jsi::Value *outputData = outputChannelViews_->channelsArray(outputChannelCount);
-  if (inputData == nullptr || outputData == nullptr) {
+  if (inputData == nullptr || outputData == nullptr || !workletRunner_.isActive()) {
     for (size_t ch = 0; ch < outputChannelCount; ++ch) {
       getOutputBuffer()->getChannel(ch)->zero(0, framesToProcess);
     }
     return;
   }
 
-  auto result = workletRunner_.call(
+  workletRunner_.callUnsafe(
       *inputData,
       *outputData,
       jsi::Value(static_cast<int>(inputChannelCount)),
@@ -67,13 +67,8 @@ void WorkletProcessingNode::processNode(int framesToProcess) {
       jsi::Value(time));
 
   for (size_t ch = 0; ch < outputChannelCount; ++ch) {
-    auto *channelData = getOutputBuffer()->getChannel(ch);
-
-    if (result.has_value()) {
-      channelData->copy(*outputChannelViews_->channelBuffer(ch), 0, 0, framesToProcess);
-    } else {
-      channelData->zero(0, framesToProcess);
-    }
+    getOutputBuffer()->getChannel(ch)->copy(
+        *outputChannelViews_->channelBuffer(ch), 0, 0, framesToProcess);
   }
 }
 

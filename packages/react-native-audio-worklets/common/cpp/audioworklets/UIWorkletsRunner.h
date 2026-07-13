@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/compatibility/StableAPI.h>
-#include <audioworklets/AudioChannelViews.h>
+#include <audioworklets/utils/AudioChannelViews.h>
 #include <worklets/Compat/StableApi.h>
 
 #include <atomic>
@@ -45,7 +45,7 @@ class UIWorkletsRunner {
   [[nodiscard]] bool isActive() const;
 
   /// Allocates channel buffers and pre-builds stable `Float32Array[]` views on
-  /// the UI worklet runtime. Must be called once before the first `invokeOnUI`.
+  /// the UI worklet runtime. Must be called once before the first `call`.
   [[nodiscard]] std::shared_ptr<AudioChannelViews> createChannelViews(
       size_t frameCount,
       size_t channelCount);
@@ -55,7 +55,7 @@ class UIWorkletsRunner {
   /// @param channelCount Number of channels to expose to the worklet.
   /// @param onComplete Invoked on the UI thread once the worklet returns.
   /// @note Audio Thread only.
-  void invokeOnUI(size_t channelCount, std::function<void()> onComplete) const;
+  void call(size_t channelCount, std::function<void()> onComplete) const;
 
  private:
   struct UIWorkletJob {

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <audioapi/compatibility/StableAPI.h>
-#include <audioworklets/AudioChannelViews.h>
 #include <audioworklets/UIWorkletsRunner.h>
+#include <audioworklets/utils/AudioChannelViews.h>
 
 #include <atomic>
 #include <cstddef>
