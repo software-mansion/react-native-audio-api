@@ -86,11 +86,18 @@ It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-sc
 
 ### `getLatency`
 
-Returns the playback latency introduced by the pitch correction algorithm, in seconds.
-When scheduling precise playback times, start input samples this many seconds earlier to compensate for processing delay.
+Returns an estimated scheduling compensation for the WSOLA pitch-correction path, in seconds. Use this value when calling [`start()`](/docs/sources/audio-scheduled-source-node#start) — do not hardcode a fixed delay.
+
+| Condition | Returned value |
+| :---: | :---- |
+| `pitchCorrection: false` | `0.0` |
+| `pitchCorrection: true` | `0.01 + 0.02 × playbackRate` (seconds) |
+
+At `playbackRate = 1.0`, that is `0.03s`. At `playbackRate = 1.5`, that is `0.04s`. Read [`playbackRate`](#properties) and call `getLatency()` immediately before scheduling — the estimate scales with the current rate.
+
 Returns `0.0` when pitch correction is disabled.
 
-#### Returns `number`.
+**Returns:** `number`.
 
 <details>
 <summary>Example usage</summary>
@@ -187,7 +194,7 @@ subscription.remove(); // removal of the subscription
 - Default value is `1.0`.
 - Nominal range is -∞ to ∞.
 - For example value of `1.0` plays audio at normal speed, whereas value of `2.0` plays audio twice as fast as normal speed.
-- When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses pitch correction algorithm.
+- When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses the WSOLA pitch-correction algorithm when the rate is not `1.0`.
 
 #### `buffer`
 - If is null, it outputs a single channel of silence (all samples are equal to `0`).
