@@ -1,21 +1,3 @@
-export interface IWorkletsModule {
-  /** Creates a serializable value. */
-  createSerializable: <T>(value: T) => T;
-  /** Returns the holder object wrapping the shared UI worklet runtime. */
-  getUIRuntimeHolder: () => object;
-  /** Returns the holder object wrapping the shared UI scheduler. */
-  getUISchedulerHolder: () => object;
-  /** Creates a dedicated worklet runtime (used for audio-thread worklets). */
-  createWorkletRuntime: (
-    nameOrConfig?: string | { name?: string; enableEventLoop?: boolean }
-  ) => WorkletRuntime;
-}
-
-export interface WorkletRuntime {
-  __hostObjectWorkletRuntime: never;
-  readonly name: string;
-}
-
 /**
  * Invoked on the UI worklet runtime once `bufferLength` frames have been
  * accumulated (when the prior callback has finished).
