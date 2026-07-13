@@ -12,12 +12,14 @@ specific sample rate which is the quantity of frames that will play in one secon
 
 ![](/img/audioBuffer.png)
 
-It can be created from audio file using [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) or from raw data using [`AudioBuffer(options)`](#constructor).
+It can be created from audio file using [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) or from raw data using the [constructor](#constructor).
 Once you have data in `AudioBuffer`, audio can be played by passing it to [`AudioBufferSourceNode`](audio-buffer-source-node).
 
 ## Constructor
 
-`AudioBuffer(options: AudioBufferOptions)`
+```tsx
+constructor(options: AudioBufferOptions)
+```
 
 ### `AudioBufferOptions`
 

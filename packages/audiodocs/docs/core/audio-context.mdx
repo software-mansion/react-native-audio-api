@@ -2,6 +2,8 @@
 sidebar_position: 2
 ---
 
+import { Optional } from '@site/src/components/Badges';
+
 # AudioContext
 
 The `AudioContext` interface inherits from [`BaseAudioContext`](/docs/core/base-audio-context).
@@ -9,13 +11,15 @@ It is responsible for supervising and managing audio-processing graph.
 
 ## Constructor
 
-`AudioContext(options: AudioContextOptions)`
-
-```jsx
-interface AudioContextOptions {
-  sampleRate: number;
-}
+```tsx
+constructor(options?: AudioContextOptions)
 ```
+
+### `AudioContextOptions`
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `sampleRate` <Optional /> | `number` | - | The preferred sample rate for the context. |
 
 #### Errors
 
