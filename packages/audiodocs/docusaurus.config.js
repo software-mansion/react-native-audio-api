@@ -68,7 +68,7 @@ const config = {
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           editUrl:
-            'https://github.com/software-mansion/react-native-audio-api/edit/main/packages/audiodocs/docs',
+            'https://github.com/software-mansion/react-native-audio-api/edit/main/packages/audiodocs/',
         },
         blog: false,
         theme: {
