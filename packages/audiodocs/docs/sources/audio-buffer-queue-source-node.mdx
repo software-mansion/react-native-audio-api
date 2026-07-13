@@ -12,13 +12,19 @@ The `AudioBufferQueueSourceNode` is an [`AudioScheduledSourceNode`](/docs/source
 
 ## Constructor
 
-`BaseAudioContext.createBufferQueueSource(options?: AudioBufferBaseSourceNodeOptions)`
+`AudioBufferQueueSourceNode(context: BaseAudioContext, options?: BaseAudioBufferSourceOptions)`
 
-```jsx
-interface AudioBufferBaseSourceNodeOptions {
-  pitchCorrection: boolean // specifies if pitch correction algorithm has to be available
-}
-```
+### `BaseAudioBufferSourceOptions`
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](/docs/sources/audio-buffer-queue-source-node#properties). |
+| `playbackRate` <Optional /> | `number` | `1.0` | Initial value for [`playbackRate`](/docs/sources/audio-buffer-queue-source-node#properties). |
+| `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](/docs/sources/audio-buffer-queue-source-node#properties). |
+
+:::info
+You can also create an `AudioBufferQueueSourceNode` via [`BaseAudioContext.createBufferQueueSource()`](/docs/core/base-audio-context#createbufferqueuesource), which uses default values.
+:::
 
 :::caution
 The pitch correction algorithm introduces processing latency.

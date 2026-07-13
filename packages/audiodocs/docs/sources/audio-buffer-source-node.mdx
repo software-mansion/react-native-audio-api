@@ -22,16 +22,33 @@ However, this node is very inexpensive to create, and what is crucial you can re
 
 ## Constructor
 
-[`BaseAudioContext.createBufferSource(options: AudioBufferBaseSourceNodeOptions)`](/docs/core/base-audio-context#createbuffersource)
+`AudioBufferSourceNode(context: BaseAudioContext, options?: AudioBufferSourceOptions)`
 
-```jsx
-interface AudioBufferBaseSourceNodeOptions {
-  pitchCorrection: boolean // specifies if pitch correction algorithm has to be available
-}
-```
+### `BaseAudioBufferSourceOptions`
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](/docs/sources/audio-buffer-source-node#properties). |
+| `playbackRate` <Optional /> | `number` | `1.0` | Initial value for [`playbackRate`](/docs/sources/audio-buffer-source-node#properties). |
+| `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](/docs/sources/audio-buffer-source-node#properties). |
+
+### `AudioBufferSourceOptions`
+
+Inherits all properties from [`BaseAudioBufferSourceOptions`](#baseaudiobuffersourceoptions).
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `buffer` <Optional /> | [`AudioBuffer`](/docs/sources/audio-buffer) | - | Initial value for [`buffer`](/docs/sources/audio-buffer-source-node#properties). |
+| `loop` <Optional /> | `boolean` | `false` | Initial value for [`loop`](/docs/sources/audio-buffer-source-node#properties). |
+| `loopStart` <Optional /> | `number` | `0` | Initial value for [`loopStart`](/docs/sources/audio-buffer-source-node#properties). |
+| `loopEnd` <Optional /> | `number` | `0` | Initial value for [`loopEnd`](/docs/sources/audio-buffer-source-node#properties). |
 
 :::info
-To use pitchCorrection option in the web environment, you need to call `npx setup-rn-audio-web react-native-audio-api` command and paste its result to your own bundler public directory".
+You can also create an `AudioBufferSourceNode` via [`BaseAudioContext.createBufferSource()`](/docs/core/base-audio-context#createbuffersource), which uses default values.
+:::
+
+:::info
+To use the `pitchCorrection` option in the web environment, you need to call `npx setup-rn-audio-web react-native-audio-api` and paste its result into your bundler public directory.
 :::
 
 :::caution
