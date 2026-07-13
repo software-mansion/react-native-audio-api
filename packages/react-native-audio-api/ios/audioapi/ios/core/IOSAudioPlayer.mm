@@ -199,7 +199,7 @@ double IOSAudioPlayer::getOutputLatency() const
   }
 
   AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
-  return [sessionManager outputLatencySeconds];
+  return [sessionManager outputLatencySeconds] + [sessionManager ioBufferDurationSeconds];
 }
 
 } // namespace audioapi
