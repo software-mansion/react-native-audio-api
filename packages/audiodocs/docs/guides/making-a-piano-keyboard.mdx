@@ -5,7 +5,7 @@ sidebar_position: 2
 import InteractiveExample from '@site/src/components/InteractiveExample';
 
 
-# Making a piano keyboard
+# Piano keyboard
 
 In this section, we will use some of the core Audio API interfaces to create a simple piano keyboard. We will learn what an [`AudioParam`](/docs/core/audio-param) is and how to use it to change the pitch of the sound.
 
@@ -67,7 +67,7 @@ export default function SimplePiano() {
 }
 ```
 
-## Create audio context and preload the data
+## Audio context and sample preloading
 
 Like previously, we will need to preload the audio files in order to be able to play them. Using the interfaces we already know, we will download them and store in the memory using the good old `useRef` hook.
 
@@ -106,7 +106,7 @@ export default function SimplePiano() {
 }
 ```
 
-## Playing the sounds
+## Sound playback
 
 Now it is finally time to play the sounds. We will use the [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) and simply play the buffers.
 

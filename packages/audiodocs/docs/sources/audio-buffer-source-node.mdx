@@ -24,17 +24,7 @@ However, this node is very inexpensive to create, and what is crucial you can re
 
 `AudioBufferSourceNode(context: BaseAudioContext, options?: AudioBufferSourceOptions)`
 
-### `BaseAudioBufferSourceOptions`
-
-| Parameter | Type | Default | |
-| :---: | :---: | :----: | :---- |
-| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](/docs/sources/audio-buffer-source-node#properties). |
-| `playbackRate` <Optional /> | `number` | `1.0` | Initial value for [`playbackRate`](/docs/sources/audio-buffer-source-node#properties). |
-| `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](/docs/sources/audio-buffer-source-node#properties). |
-
 ### `AudioBufferSourceOptions`
-
-Inherits all properties from [`BaseAudioBufferSourceOptions`](#baseaudiobuffersourceoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
@@ -42,6 +32,9 @@ Inherits all properties from [`BaseAudioBufferSourceOptions`](#baseaudiobufferso
 | `loop` <Optional /> | `boolean` | `false` | Initial value for [`loop`](/docs/sources/audio-buffer-source-node#properties). |
 | `loopStart` <Optional /> | `number` | `0` | Initial value for [`loopStart`](/docs/sources/audio-buffer-source-node#properties). |
 | `loopEnd` <Optional /> | `number` | `0` | Initial value for [`loopEnd`](/docs/sources/audio-buffer-source-node#properties). |
+| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](/docs/sources/audio-buffer-source-node#properties). |
+| `playbackRate` <Optional /> | `number` | `1.0` | Initial value for [`playbackRate`](/docs/sources/audio-buffer-source-node#properties). |
+| `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](/docs/sources/audio-buffer-source-node#properties). |
 
 :::info
 You can also create an `AudioBufferSourceNode` via [`BaseAudioContext.createBufferSource()`](/docs/core/base-audio-context#createbuffersource), which uses default values.
