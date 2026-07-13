@@ -1,7 +1,7 @@
-import { InvalidStateError } from '../errors';
-import BaseAudioContext from './BaseAudioContext.web';
 import AudioNode from './AudioNode.web';
+import BaseAudioContext from './BaseAudioContext.web';
 import { WaveShaperOptions } from '../types';
+import { validateWaveShaperCurve } from '../utils/validation';
 
 function toFloat32Array(curve: number[] | Float32Array): Float32Array {
   return curve instanceof Float32Array ? curve : Float32Array.from(curve);
@@ -28,19 +28,9 @@ export default class WaveShaperNode extends AudioNode {
   }
 
   set curve(curve: Float32Array<ArrayBuffer> | null) {
+    validateWaveShaperCurve(curve, this.curveWasSet);
+
     if (curve !== null) {
-      if (this.curveWasSet) {
-        throw new InvalidStateError(
-          'The curve can only be set once and cannot be changed afterwards.'
-        );
-      }
-
-      if (curve.length < 2) {
-        throw new InvalidStateError(
-          'The curve must have at least two values if not null.'
-        );
-      }
-
       this.curveWasSet = true;
     }
 

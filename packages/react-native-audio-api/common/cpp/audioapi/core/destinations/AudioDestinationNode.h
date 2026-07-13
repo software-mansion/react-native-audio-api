@@ -19,9 +19,11 @@ class AudioDestinationNode : public AudioNode {
   }
 
  protected:
-  void processNode(int) final {
-    audioBuffer_->normalize();
-  };
+  // Output normalization (peak limiting) is applied by the real-time audio
+  // players (iOS / Android) just before the buffer is handed to the hardware,
+  // NOT here. Doing it in the destination node would also rescale offline
+  // renders (OfflineAudioContext), breaking Web Audio API spec conformance.
+  void processNode(int /*framesToProcess*/) final {}
 };
 
 } // namespace audioapi

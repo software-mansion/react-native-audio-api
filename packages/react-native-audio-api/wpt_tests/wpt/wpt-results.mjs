@@ -42,6 +42,22 @@ const AVAILABLE_INTERFACES = {
   'the-waveshapernode-interface': 'WaveShaperNode',
 };
 
+// Optional per-interface explanations for the remaining WPT failures, keyed by
+// the same spec-section key as AVAILABLE_INTERFACES. Rendered in the "Notes"
+// column of the coverage table.
+const COVERAGE_NOTES = {
+  'the-analysernode-interface':
+    'One failure: minDecibels/maxDecibels are stored as float, so reading back a ' +
+    'high-precision double value loses a few digits (cosmetic round-trip mismatch).',
+  'the-biquadfilternode-interface':
+    'The filter runs in double precision, so the static frequency response matches the ' +
+    'reference. The remaining failures are the parameter-automation tests, which expect ' +
+    'per-sample (a-rate) coefficient updates; we sample the params once per 128-frame ' +
+    'render quantum (k-rate) and recompute the coefficients once per block. The audible ' +
+    'difference is negligible, while computing the coefficient/trig math once per block ' +
+    'instead of once per sample makes processing dramatically faster on the audio thread.',
+};
+
 const CATEGORY_LABELS = {
   'processing-model': 'Processing model',
   'the-analysernode-interface': 'AnalyserNode',
@@ -378,17 +394,17 @@ export function formatMarkdownReport(report) {
 }
 
 // Red -> yellow -> green gradient keyed on pass ratio, mirroring the wpt.fyi
-// results dashboard. Returns a pastel background so the dark cell text stays
-// readable in both light and dark docs themes.
+// results dashboard. Higher saturation and mid lightness keep rows vivid but
+// still readable with dark cell text in light and dark docs themes.
 function colorForRate(pass, total) {
   if (total === 0) {
     return 'transparent';
   }
   const hue = Math.round((pass / total) * 120); // 0 = red, 120 = green
-  return `hsl(${hue}, 65%, 80%)`;
+  return `hsl(${hue}, 85%, 72%)`;
 }
 
-function coverageRow({ label, pass, total, bold = false }) {
+function coverageRow({ label, pass, total, note = '', bold = false }) {
   const name = bold ? `<strong>${label}</strong>` : label;
   const rate = bold ? `<strong>${formatRate(pass, total)}</strong>` : formatRate(pass, total);
   const style = `{{ backgroundColor: '${colorForRate(pass, total)}', color: '#1c1e21' }}`;
@@ -398,6 +414,7 @@ function coverageRow({ label, pass, total, bold = false }) {
     `<td style={{ textAlign: 'right' }}>${pass}</td>` +
     `<td style={{ textAlign: 'right' }}>${total}</td>` +
     `<td style={{ textAlign: 'right' }}>${rate}</td>` +
+    `<td>${note}</td>` +
     `</tr>`
   );
 }
@@ -416,6 +433,7 @@ export function formatCoverageMarkdown(report) {
       label: AVAILABLE_INTERFACES[category.key],
       pass: category.pass,
       total: category.total,
+      note: COVERAGE_NOTES[category.key] ?? '',
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
@@ -437,10 +455,11 @@ export function formatCoverageMarkdown(report) {
     '<table>',
     '  <thead>',
     '    <tr>',
-    '      <th>Interface</th>',
+      '      <th>Interface</th>',
     "      <th style={{ textAlign: 'right' }}>Passing</th>",
     "      <th style={{ textAlign: 'right' }}>Total</th>",
     "      <th style={{ textAlign: 'right' }}>Pass rate</th>",
+    '      <th>Notes</th>',
     '    </tr>',
     '  </thead>',
     '  <tbody>',
