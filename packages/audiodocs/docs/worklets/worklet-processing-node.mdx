@@ -2,6 +2,8 @@
 sidebar_position: 4
 ---
 
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { ReadOnly } from '@site/src/components/Badges';
 
 # WorkletProcessingNode
@@ -84,20 +86,20 @@ The worklet function receives four parameters:
 
 ### `inputData: Array<Float32Array>`
 A two-dimensional array where:
-- First dimension represents the audio channel (0 = left, 1 = right for stereo)
+- First dimension represents the audio channel (`0` = left, `1` = right for stereo)
 - Second dimension contains the input audio samples for that channel
 - You should **read** from these buffers to get the input audio data
 - The length of each `Float32Array` equals the `framesToProcess` parameter
 
 ### `outputData: Array<Float32Array>`
 A two-dimensional array where:
-- First dimension represents the audio channel (0 = left, 1 = right for stereo)
+- First dimension represents the audio channel (`0` = left, `1` = right for stereo)
 - Second dimension contains the output audio samples for that channel
 - You must **write** to these buffers to produce the processed audio output
 - The length of each `Float32Array` equals the `framesToProcess` parameter
 
 ### `framesToProcess: number`
-The number of audio samples to process in this call. This determines how many samples you need to process in each channel's buffer. This value will be at most 128.
+The number of audio samples to process in this call. This determines how many samples you need to process in each channel's buffer. This value will be at most `128`.
 
 ### `currentTime: number`
 The current audio context time in seconds when this worklet call begins. This represents the absolute time since the audio context was created.
@@ -131,11 +133,19 @@ const audioProcessor = (
 
 ## Properties
 
-It has no own properties but inherits from [`AudioNode`](/docs/core/audio-node).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+
+`WorkletProcessingNode` does not define any additional properties.
 
 ## Methods
 
-It has no own methods but inherits from [`AudioNode`](/docs/core/audio-node).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`WorkletProcessingNode` does not define any additional methods.
 
 ## Performance Considerations
 

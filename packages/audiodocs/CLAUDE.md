@@ -71,21 +71,12 @@ sidebar_position: 3
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # GainNode
 
 Brief one-line description. `GainNode` extends [`AudioNode`](/docs/core/audio-node).
-
-#### [`AudioNode`](/docs/core/audio-node#properties) properties
-
-<AudioNodePropsTable
-  numberOfInputs={1}
-  numberOfOutputs={1}
-  channelCount={2}
-  channelCountMode={"max"}
-  channelInterpretation={"speakers"}
-/>
 
 ## Constructor
 
@@ -99,7 +90,7 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `gain` <Optional /> | `number` | `1` | Initial gain value. |
+| `gain` <Optional /> | `number` | `1.0` | Initial value for [`gain`](/docs/effects/gain-node#properties) |
 
 Or by using [`BaseAudioContext.createGain()`](/docs/core/base-audio-context#creategain).
 
@@ -116,21 +107,34 @@ gain.connect(ctx.destination);
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
-| Name | Type | Default | Description |
-| :----: | :----: | :-------- | :------- |
-| `gain` <ReadOnly /> | `AudioParam` | `1` | Gain applied to the signal. Range: [0, 1] typical. |
+<AudioNodePropsTable
+  numberOfInputs={1}
+  numberOfOutputs={1}
+  channelCount={2}
+  channelCountMode="max"
+  channelInterpretation="speakers"
+/>
+
+| Name | Type | Description | |
+| :----: | :----: | :-------- | :-: |
+| `gain` | [`AudioParam`](/docs/core/audio-param) | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing the gain value to apply. | <ReadOnly /> |
 
 ## Methods
 
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`GainNode` does not define any additional methods.
 
 ## Remarks
 
 #### `gain`
-- Nominal range is [0, 1] for attenuation but accepts any finite value.
-- Values > 1 amplify; negative values invert phase.
+- Nominal range is -∞ to ∞.
+- Values greater than `1.0` amplify the signal; values between `0.0` and `1.0` attenuate it.
+- A value of `0.0` silences the signal. Negative values invert the signal phase.
 ```
 
 ## Custom MDX Components
@@ -141,7 +145,7 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 import { Optional, ReadOnly, Overridden, IOS, Android, Experimental, MobileOnly }
   from '@site/src/components/Badges';
 
-| `gain` <ReadOnly /> | `AudioParam` | `1` | ... |
+| `gain` <ReadOnly /> | `AudioParam` | `1.0` | ... |
 | `type` <Optional /> | `string` | `'sine'` | ... |
 ```
 
@@ -160,6 +164,22 @@ import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 ```
 
 Use the values from the Web Audio API spec for the node you are documenting.
+
+### AudioNodeMethodsTable — inherited `connect` / `disconnect`
+
+```tsx
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+
+## Methods
+
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`MyNode` does not define any additional methods.
+```
+
+Use in every node page that inherits directly from [`AudioNode`](/docs/core/audio-node). Place it in the **Methods** section after the inheritance sentence and before node-specific methods (if any).
 
 ### InteractivePlayground — live audio demo with controls
 
@@ -225,7 +245,7 @@ Block: `$$formula$$`
 
 1. Identify the category folder: `docs/sources/`, `docs/effects/`, `docs/analysis/`, etc.
 2. Create `docs/<category>/my-node.mdx`.
-3. Use the structure above: frontmatter → imports → `AudioNodePropsTable` → Constructor → Example → Properties → Methods → Remarks.
+3. Use the structure above: frontmatter → imports → Constructor → Example → Properties → Methods → Remarks.
 4. Set `sidebar_position` relative to neighboring files (check their positions first).
 5. Sidebar updates automatically on next `yarn start` / `yarn build`.
 
@@ -240,8 +260,8 @@ Block: `$$formula$$`
 
 ```mdx
 | Name | Type | Default value | Description |
-| :----: | :----: | :-------- | :------- |
-| `frequency` <ReadOnly /> | `AudioParam` | `440` | Oscillation frequency in Hz. |
+| :----: | :----: | :----: | :------- |
+| `frequency` <ReadOnly /> | `AudioParam` | `440.0` | Oscillation frequency in Hz. |
 | `type` | `OscillatorType` | `'sine'` | Waveform shape. |
 ```
 

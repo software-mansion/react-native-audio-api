@@ -14,7 +14,7 @@ Child classes:
 
 ## Properties
 
-It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+Inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
@@ -23,13 +23,13 @@ It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio
 
 ## Methods
 
-It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+Inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
 
 ### `getLatency`
 
 Returns the playback latency introduced by the pitch correction algorithm, in seconds.
 When scheduling precise playback times, start input samples this many seconds earlier to compensate for processing delay.
-Typically around `0.06s` when pitch correction is enabled, and `0` otherwise.
+Typically around `0.06` s when pitch correction is enabled, and `0.0` otherwise.
 
 #### Returns `number`.
 
@@ -83,12 +83,12 @@ function App() {
 ## Remarks
 
 #### `detune`
-- Default value is 0.0.
+- Default value is `0.0`.
 - Nominal range is -∞ to ∞.
-- For example value of 100 detune the source up by one semitone, whereas -1200 down by one octave.
+- For example value of `100.0` detune the source up by one semitone, whereas `-1200.0` down by one octave.
 
 #### `playbackRate`
-- Default value is 1.0.
+- Default value is `1.0`.
 - Nominal range is -∞ to ∞.
-- For example value of 1.0 plays audio at normal speed, whereas value of 2.0 plays audio twice as fast as normal speed.
-- When created with `pitchCorrection` it is clamped to range -4 to 4 and uses pitch correction algorithm.
+- For example value of `1.0` plays audio at normal speed, whereas value of `2.0` plays audio twice as fast as normal speed.
+- When created with `pitchCorrection` it is clamped to range `-4.0` to `4.0` and uses pitch correction algorithm.
