@@ -78,7 +78,7 @@ function App() {
 
 ## Properties
 
-It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+Inherits all properties from [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated buffer" channelCountMode="max" channelInterpretation="speakers" />
 
@@ -132,8 +132,8 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0`, the node starts playing immediately. <br /> Default: `0`. |
-| `offset` <Optional /> | `number` | The position, in seconds, within the audio buffer where playback begins. <br /> The default value is `0`, which starts playback from the beginning of the buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties) (or the defined [`loopEnd`](/docs/sources/audio-buffer-source-node#properties) value), it’s automatically clamped to the valid range. <br /> Offsets are calculated using the buffer’s natural sample rate rather than the current playback rate — so even if the sound is played at double speed, halfway through a `10`-second buffer is still `5` seconds. |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
+| `offset` <Optional /> | `number` | The position, in seconds, within the audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties) (or the defined [`loopEnd`](/docs/sources/audio-buffer-source-node#properties) value), it’s automatically clamped to the valid range. <br /> Offsets are calculated using the buffer’s natural sample rate rather than the current playback rate — so even if the sound is played at double speed, halfway through a `10`-second buffer is still `5` seconds. |
 | `duration` <Optional /> | `number` | The playback duration, in seconds. If not provided, playback continues until the sound ends naturally or is manually stopped with [`stop() method`](/docs/sources/audio-scheduled-source-node#stop). <br /> Equivalent to calling `start(when, offset)` followed by `stop(when + duration)`. |
 
 
@@ -209,13 +209,13 @@ subscription.remove(); // removal of the subscription
 - When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses the WSOLA pitch-correction algorithm when the rate is not `1.0`.
 
 #### `buffer`
-- If is null, it outputs a single channel of silence (all samples are equal to `0`).
+- If is null, it outputs a single channel of silence (all samples are equal to `0.0`).
 
 #### `loop`
 - Default value is false.
 
 #### `loopStart`
-- Default value is `0`.
+- Default value is `0.0`.
 
 #### `loopEnd`
 - Default value is `buffer.duration`.

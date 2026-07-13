@@ -4,6 +4,7 @@ sidebar_position: 1
 
 import { Optional, ReadOnly } from '@site/src/components/Badges';
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import FrequencyResponseGraph from '@site/src/examples/Biquad/FrequencyResponseGraph';
 import VinylPlayer from '@site/src/examples/VinylPlayer';
 
@@ -41,7 +42,7 @@ You can also create a `BiquadFilterNode` via [`BaseAudioContext.createBiquadFilt
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
@@ -87,12 +88,14 @@ Note: The `detune` parameter behaves the same way for all filter types, so it is
 
 ## Methods
 
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
 
 ### `getFrequencyResponse`
 
 | Parameter | Type | Description |
-| :--------: | :--: | :---------- |
+| :---: | :---: | :---- |
 | `frequencyArray` | `Float32Array` | Array of frequencies (in Hz), which you want to filter. |
 | `magResponseOutput` | `Float32Array` | Output array to store the computed linear magnitude values for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
 | `phaseResponseOutput` | `Float32Array` | Output array to store the computed phase response values (in radians) for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
@@ -111,5 +114,5 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
   - Not used for `lowshelf` and `highshelf`.
 
 #### `gain`
-- Nominal range is `-40` to `40`.
+- Range: [`-40.0`, `40.0`].
 - Positive values correspond to amplification; negative to attenuation.

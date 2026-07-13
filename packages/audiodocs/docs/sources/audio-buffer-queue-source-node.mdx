@@ -59,7 +59,7 @@ function App() {
 
 ## Properties
 
-It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+Inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated buffer" channelCountMode="max" channelInterpretation="speakers" />
 
@@ -133,8 +133,8 @@ Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`Audio
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0`, the node starts playing immediately. <br /> Default: `0`. |
-| `offset` <Optional /> | `number` | The offset, in seconds, from the start of the first buffer in the queue. Playback begins at this position within that buffer; buffers that follow always play from the start. <br /> The default value is `0`, which starts playback from the beginning of that buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties), it’s automatically clamped to the valid range. |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
+| `offset` <Optional /> | `number` | The position, in seconds, within the first enqueued audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the first enqueued buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties), it’s automatically clamped to the valid range. |
 
 
 ### `pause`

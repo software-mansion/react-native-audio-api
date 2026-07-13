@@ -3,6 +3,7 @@ sidebar_position: 6
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { ReadOnly } from '@site/src/components/Badges';
 
 # MediaElementAudioSourceNode
@@ -89,17 +90,21 @@ function NativeExample() {
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated media element" channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Default value | Description |
-| :----: | :----: | :-------- | :------- |
+| :----: | :----: | :----: | :------- |
 | `mediaElement` <ReadOnly /> | `HTMLMediaElement` \| [`AudioTagHandle`](/docs/sources/audio-tag#ref-handle-audiotaghandle-methods) | — | The media element routed into the audio graph. |
 
 ## Methods
 
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`MediaElementAudioSourceNode` does not define any additional methods.
 
 ## Remarks
 
