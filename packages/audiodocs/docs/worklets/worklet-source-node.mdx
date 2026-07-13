@@ -8,7 +8,7 @@ import { ReadOnly } from '@site/src/components/Badges';
 # WorkletSourceNode
 
 :::warning
-Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.8.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
 :::
 
 `WorkletSourceNode` is a scheduled source that generates audio synchronously on the **audio worklet runtime** each render quantum. It extends [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node), so you can `start()` and `stop()` it at specific times.
@@ -98,26 +98,6 @@ function SineGenerator() {
   // ...
 }
 ```
-
-## Worklet Parameters Explanation
-
-The worklet function receives four parameters:
-
-### `audioData: Array<Float32Array>`
-A two-dimensional array where:
-- First dimension represents the audio channel (`0` = left, `1` = right for stereo)
-- Second dimension contains the audio samples for that channel
-- You must **write** audio data to these buffers to generate sound
-- The length of each `Float32Array` equals `framesToProcess`
-
-### `framesToProcess: number`
-The number of audio samples to generate in this call. This determines how many samples you need to fill in each channel's buffer.
-
-### `currentTime: number`
-The current audio context time in seconds when this worklet call begins. This represents the absolute time since the audio context was created.
-
-### `startOffset: number`
-The sample offset within the current processing block where your generated audio should begin. This is particularly important for precise timing when the node starts or stops mid-block.
 
 ## Understanding `startOffset` and `currentTime`
 

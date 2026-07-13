@@ -9,7 +9,7 @@ import { ReadOnly } from '@site/src/components/Badges';
 # WorkletProcessingNode
 
 :::warning
-Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.8.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
 :::
 
 `WorkletProcessingNode` is an effect node that processes audio synchronously on the **audio worklet runtime** each render quantum. Unlike [`WorkletNode`](/docs/worklets/worklet-node), which only provides read-only snapshots on the UI runtime, this node receives input audio and writes processed output back into the graph.
@@ -107,30 +107,6 @@ function GainEffect() {
   // ...
 }
 ```
-
-## Worklet Parameters Explanation
-
-The worklet function receives four parameters:
-
-### `inputData: Array<Float32Array>`
-A two-dimensional array where:
-- First dimension represents the audio channel (`0` = left, `1` = right for stereo)
-- Second dimension contains the input audio samples for that channel
-- You should **read** from these buffers to get the input audio data
-- The length of each `Float32Array` equals the `framesToProcess` parameter
-
-### `outputData: Array<Float32Array>`
-A two-dimensional array where:
-- First dimension represents the audio channel (`0` = left, `1` = right for stereo)
-- Second dimension contains the output audio samples for that channel
-- You must **write** to these buffers to produce the processed audio output
-- The length of each `Float32Array` equals the `framesToProcess` parameter
-
-### `framesToProcess: number`
-The number of audio samples to process in this call. This determines how many samples you need to process in each channel's buffer. This value will be at most `128`.
-
-### `currentTime: number`
-The current audio context time in seconds when this worklet call begins. This represents the absolute time since the audio context was created.
 
 ## Audio Processing Pattern
 

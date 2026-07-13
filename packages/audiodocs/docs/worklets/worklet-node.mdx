@@ -9,7 +9,7 @@ import { ReadOnly } from '@site/src/components/Badges';
 # WorkletNode
 
 :::warning
-Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.8.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
 :::
 
 `WorkletNode` is a pass-through analysis node. It accumulates incoming audio frames until `bufferLength` is reached, then invokes your worklet on the **UI runtime** with a read-only snapshot. Audio output is unchanged — modifications inside the callback do not affect the signal.
@@ -61,7 +61,7 @@ Do **not** assign `audioData` or a channel view to a Reanimated shared value (or
 | :---: | :---- |
 | `Error` | `react-native-audio-worklets` native module not installed or New Architecture is disabled. |
 | `Error` | `react-native-worklets` is missing or below the supported version. |
-| `NotSupportedError` | `bufferLength` is not a positive integer. |
+| `NotSupportedError` | `bufferLength` is not a finite positive integer. |
 
 ## How buffering works
 
@@ -131,8 +131,6 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 <AudioNodeMethodsTable />
 
 `WorkletNode` does not define any additional methods.
-
-Inherits all methods from [`AudioNode`](/docs/core/audio-node).
 
 ## Known issue
 
