@@ -7,8 +7,6 @@ import TabItem from '@theme/TabItem';
 
 # Getting started
 
-The goal of _Fundamentals_ is to guide you through the setup process of the Audio API, as well as to show the basic concepts behind audio programming using a web audio framework, giving you the confidence to explore more advanced use cases on your own. This section is packed with interactive examples, code snippets, and explanations. Are you ready? Let's make some noise!
-
 ## Installation
 
 It takes only a few steps to add Audio API to your project:
@@ -111,10 +109,10 @@ bash -c 'echo Hello World!'
 
 ### Step 4: Additional dependencies (optional)
 
-If you plan to use any of [`WorkletNode`](/docs/worklets/worklet-node), [`WorkletSourceNode`](/docs/worklets/worklet-source-node), or [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node), it is required to have the `react-native-worklets` library set up with version **0.6.0** or higher. See the [worklets getting started page](https://docs.swmansion.com/react-native-worklets/docs/) for info on how to do it.
+If you plan to use any of [`WorkletNode`](/docs/worklets/worklet-node), [`WorkletSourceNode`](/docs/worklets/worklet-source-node), or [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node), install [`react-native-audio-worklets`](https://github.com/software-mansion/react-native-audio-api/tree/main/packages/react-native-audio-worklets) and [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) `>= 0.10.0`. Follow the [react-native-worklets setup guide](https://docs.swmansion.com/react-native-worklets/docs/fundamentals/getting-started) for Babel and native configuration, then see the [Worklets](/docs/worklets/worklets-introduction) section for usage.
 
 :::info
-If you are not planning to use any of mentioned nodes, `react-native-worklets` dependency is **OPTIONAL** and your app will build successfully without them.
+If you are not planning to use worklet nodes, `react-native-worklets` and `react-native-audio-worklets` are **optional** — the main library builds successfully without them.
 :::
 
 ### Usage with expo
