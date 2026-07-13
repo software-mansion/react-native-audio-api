@@ -93,6 +93,10 @@ void NodeAudioPlayer::run() {
 
     buffer_->zero();
     renderAudio_(buffer_.get(), RENDER_QUANTUM_SIZE);
+    // Peak-normalize the rendered quantum before it would reach the hardware.
+    // This limiting lives in the player (not the destination node) so offline
+    // renders stay spec-accurate.
+    buffer_->normalize();
     std::this_thread::sleep_for(quantumDuration);
   }
 }

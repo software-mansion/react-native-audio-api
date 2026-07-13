@@ -122,6 +122,10 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
 
     if (isRunning_.load(std::memory_order_acquire)) {
       renderAudio_(buffer_.get(), framesToProcess);
+      // Peak-normalize the rendered quantum before it reaches the hardware.
+      // This limiting lives in the player (not the destination node) so
+      // offline renders stay spec-accurate.
+      buffer_->normalize();
     } else {
       buffer_->zero();
     }

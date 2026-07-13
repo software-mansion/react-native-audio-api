@@ -3,11 +3,13 @@ import { ConvolverOptions } from '../types';
 import type BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 import AudioBuffer from './AudioBuffer';
+import { ConvolverOptionsValidator } from '../utils/validation';
 
 export default class ConvolverNode extends AudioNode {
   private _buffer: AudioBuffer | null = null;
 
   constructor(context: BaseAudioContext, options?: ConvolverOptions) {
+    ConvolverOptionsValidator.validate(options);
     const convolverNode: IConvolverNode = context.context.createConvolver(
       options || {}
     );

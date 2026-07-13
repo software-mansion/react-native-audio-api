@@ -7,7 +7,10 @@ import chalk from 'chalk';
 import wptRunner from 'wpt-runner';
 
 import { wrapAudioNodeConstructors } from './wrap-audio-node-constructors.mjs';
-import { wrapAudioBufferCopyMethods } from './wpt-utils.mjs';
+import {
+  wrapAudioBufferCopyMethods,
+  wrapWebAudioRealmErrors,
+} from './wpt-utils.mjs';
 
 const require = createRequire(import.meta.url);
 const { setFloat32ArrayViewFactory } = require('../../lib/commonjs/errors/index.js');
@@ -116,6 +119,16 @@ export function loadNodeAudioApi() {
   return { nodeAudioApi, audioApiForWindow };
 }
 
+export function alignGlobalRealmConstructors(window) {
+  // Library throws via globalThis.*; align with the jsdom window realm so
+  // assert_throws_js / assert_throws_dom and audit.js constructor checks pass.
+  globalThis.TypeError = window.TypeError;
+  globalThis.RangeError = window.RangeError;
+  if (window.DOMException != null) {
+    globalThis.DOMException = window.DOMException;
+  }
+}
+
 export function createWptEnvironment() {
   const cleanupEmitter = new EventEmitter();
   const { nodeAudioApi, audioApiForWindow } = loadNodeAudioApi();
@@ -134,12 +147,9 @@ export function createWptEnvironment() {
     );
 
     Object.assign(window, audioApiForWindow);
-    // Library throws via globalThis.TypeError/RangeError; align with the test
-    // page realm so audit.js constructor checks (error.constructor === TypeError)
-    // pass under jsdom.
-    globalThis.TypeError = window.TypeError;
-    globalThis.RangeError = window.RangeError;
+    alignGlobalRealmConstructors(window);
     wrapAudioNodeConstructors(window);
+    wrapWebAudioRealmErrors(window);
     wrapAudioBufferCopyMethods(window);
     if (window.navigator == null) {
       window.navigator = {};
