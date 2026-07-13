@@ -99,6 +99,26 @@ function SineGenerator() {
 }
 ```
 
+## Worklet Parameters Explanation
+
+The worklet function receives four parameters:
+
+### `audioData: Array<Float32Array>`
+A two-dimensional array where:
+- First dimension represents the audio channel (`0` = left, `1` = right for stereo)
+- Second dimension contains the audio samples for that channel
+- You must **write** audio data to these buffers to generate sound
+- The length of each `Float32Array` equals `framesToProcess`
+
+### `framesToProcess: number`
+The number of audio samples to generate in this call. This determines how many samples you need to fill in each channel's buffer.
+
+### `currentTime: number`
+The current audio context time in seconds when this worklet call begins. This represents the absolute time since the audio context was created.
+
+### `startOffset: number`
+The sample offset within the current processing block where your generated audio should begin. This is particularly important for precise timing when the node starts or stops mid-block.
+
 ## Understanding `startOffset` and `currentTime`
 
 When a source starts mid-quantum, native code zeroes the silent prefix in the output buffer. Your worklet still writes from index `0`, and native code copies those samples to the correct offset.

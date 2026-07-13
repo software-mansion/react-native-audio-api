@@ -22,7 +22,6 @@ import type {
   OverSampleType,
   Result,
   StereoPannerOptions,
-  StreamerOptions,
   WaveShaperOptions,
   AudioFileSourceOptions,
 } from './types';
@@ -31,6 +30,7 @@ import type {
 
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
+  readonly listener: IAudioListener;
   readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
@@ -63,7 +63,6 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: ConvolverOptions) => IConvolverNode;
-  createStreamer: (streamerOptions: StreamerOptions) => IStreamerNode | null; // null when FFmpeg is not enabled
   createWaveShaper: (waveShaperOptions: WaveShaperOptions) => IWaveShaperNode;
   createFileSource: (
     audioFileOptions: AudioFileSourceOptions
@@ -134,6 +133,18 @@ export interface IIIRFilterNode extends IAudioNode {
 
 export interface IAudioDestinationNode extends IAudioNode {}
 
+export interface IAudioListener {
+  readonly positionX: IAudioParam;
+  readonly positionY: IAudioParam;
+  readonly positionZ: IAudioParam;
+  readonly forwardX: IAudioParam;
+  readonly forwardY: IAudioParam;
+  readonly forwardZ: IAudioParam;
+  readonly upX: IAudioParam;
+  readonly upY: IAudioParam;
+  readonly upZ: IAudioParam;
+}
+
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when: number): void;
   stop: (when: number) => void;
@@ -162,8 +173,6 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
 
   setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
-
-export interface IStreamerNode extends IAudioNode {}
 
 export interface IConstantSourceNode extends IAudioScheduledSourceNode {
   readonly offset: IAudioParam;
@@ -281,7 +290,6 @@ export interface IAnalyserNode extends IAudioNode {
 export interface IRecorderAdapterNode extends IAudioNode {}
 
 export interface IWaveShaperNode extends IAudioNode {
-  readonly curve: Float32Array | null;
   oversample: OverSampleType;
 
   setCurve(curve: Float32Array | null): void;

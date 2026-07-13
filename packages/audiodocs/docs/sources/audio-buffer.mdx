@@ -7,7 +7,7 @@ import { ReadOnly, Optional } from '@site/src/components/Badges';
 # AudioBuffer
 
 The `AudioBuffer` interface represents a short audio asset, commonly shorter then one minute.
-It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) values with a nominal range of [−1, 1] (but not limited to that range),
+It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) values with a nominal range of [`-1.0`, `1.0`] (but not limited to that range),
 specific sample rate which is the quantity of frames that will play in one second and length.
 
 ![](/img/audioBuffer.png)
@@ -26,7 +26,7 @@ constructor(options: AudioBufferOptions)
 | Parameter | Type | Default | Description |
 | :---: | :---: | :----: | :---- |
 | `length` | `number` | - | [`Length`](/docs/sources/audio-buffer#properties) of the buffer |
-| `numberOfChannels` <Optional /> | `number` | 1.0 | Number of [`channels`](/docs/sources/audio-buffer#properties) in buffer |
+| `numberOfChannels` <Optional /> | `number` | `1` | Number of [`channels`](/docs/sources/audio-buffer#properties) in buffer |
 | `sampleRate` | `number` | - | [`Sample rate`](/docs/sources/audio-buffer#properties) of the buffer in Hz |
 
 Or by using `BaseAudioContext` factory method:

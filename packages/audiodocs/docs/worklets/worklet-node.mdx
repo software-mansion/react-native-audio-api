@@ -2,7 +2,8 @@
 sidebar_position: 2
 ---
 
-import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { ReadOnly } from '@site/src/components/Badges';
 
 # WorkletNode
@@ -117,17 +118,19 @@ function Visualizer() {
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
-<AudioNodePropsTable
-  numberOfInputs={1}
-  numberOfOutputs={1}
-  channelCount={2}
-  channelCountMode={"max"}
-  channelInterpretation={"speakers"}
-/>
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+
+`WorkletNode` does not define any additional properties.
 
 ## Methods
+
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`WorkletNode` does not define any additional methods.
 
 Inherits all methods from [`AudioNode`](/docs/core/audio-node).
 

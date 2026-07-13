@@ -4,13 +4,13 @@ sidebar_position: 4
 
 # Non-expo app permissions
 
-If your app needs to access non-trivial resources such as microphone or running in the background, there has to be explicit entries about it in special places.
+If your app needs to access non-trivial resources such as microphone or be able to run in the background, there have to be explicit entries about it in special places.
 
 ## iOS
 
 On iOS the file that handles special permissions is named [`Info.plist`](https://developer.apple.com/documentation/bundleresources/information-property-list?language=objc).
 This file is placed in `ios/YourAppName` directory.
-For example to tell system that our app wants to use a microphone, we would need to add this entry to the file.
+For example to tell the system that our app wants to use a microphone, we would need to add this entry to the file.
 
 ```
 <key>NSMicrophoneUsageDescription</key>
@@ -21,7 +21,7 @@ For example to tell system that our app wants to use a microphone, we would need
 
 On Android the file that handles special permissions is named [`AndroidManifest.xml`](https://developer.android.com/guide/topics/manifest/manifest-intro).
 This file is placed in `android/app/src/main` directory.
-For example to tell system that our app wants to use a microphone, we would need to add this entry to the file.
+For example to tell the system that our app wants to use a microphone, we would need to add this entry to the file.
 
 ```
 <uses-permission android:name="android.permission.RECORD_AUDIO"/>

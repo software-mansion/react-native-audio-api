@@ -9,6 +9,7 @@ export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
 export { concatAudioFiles, getAudioDuration } from './core/AudioFileUtils';
 export { isFfmpegEnabled } from './utils/flags';
 export { default as AudioDestinationNode } from './core/AudioDestinationNode';
+export { default as AudioListener } from './core/AudioListener';
 export { default as AudioNode } from './core/AudioNode';
 export { default as AudioParam } from './core/AudioParam';
 export { default as AudioRecorder } from './core/AudioRecorder';
@@ -24,7 +25,6 @@ export { default as OfflineAudioContext } from './core/OfflineAudioContext';
 export { default as OscillatorNode } from './core/OscillatorNode';
 export { default as PeriodicWave } from './core/PeriodicWave';
 export { default as StereoPannerNode } from './core/StereoPannerNode';
-export { default as StreamerNode } from './core/StreamerNode';
 export { default as WaveShaperNode } from './core/WaveShaperNode';
 
 export * from './errors';

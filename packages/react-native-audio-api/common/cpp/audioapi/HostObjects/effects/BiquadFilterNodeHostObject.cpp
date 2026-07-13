@@ -62,13 +62,22 @@ JSI_PROPERTY_GETTER_IMPL(BiquadFilterNodeHostObject, type) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(BiquadFilterNodeHostObject, type) {
+  const auto typeStr = value.toString(runtime).utf8(runtime);
+
+  BiquadFilterType parsedType;
+  try {
+    parsedType = js_enum_parser::filterTypeFromString(typeStr);
+  } catch (const std::invalid_argument &) {
+    // WebIDL coerces non-strings (e.g. 99 → "99"); unknown enum values are ignored.
+    return;
+  }
+
   auto handle = node_->handle;
-  auto type = js_enum_parser::filterTypeFromString(value.asString(runtime).utf8(runtime));
-  auto event = [handle, node = biquadFilterNode_, type](BaseAudioContext &) {
+  auto event = [handle, node = biquadFilterNode_, type = parsedType](BaseAudioContext &) {
     node->setType(type);
   };
   biquadFilterNode_->scheduleAudioEvent(std::move(event));
-  type_ = type;
+  type_ = parsedType;
 }
 
 JSI_HOST_FUNCTION_IMPL(BiquadFilterNodeHostObject, getFrequencyResponse) {

@@ -1,9 +1,11 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioContextOptions, ContextState, DecodeDataInput } from '../types';
 import AnalyserNode from './AnalyserNode.web';
 import AudioBuffer from './AudioBuffer.web';
 import AudioBufferSourceNode from './AudioBufferSourceNode.web';
 import AudioDestinationNode from './AudioDestinationNode.web';
+import AudioListener from './AudioListener.web';
 import BaseAudioContext from './BaseAudioContext.web';
 import BiquadFilterNode from './BiquadFilterNode.web';
 import ConvolverNode from './ConvolverNode.web';
@@ -21,23 +23,19 @@ export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
 
   readonly destination: AudioDestinationNode;
+  readonly listener: AudioListener;
   readonly sampleRate: number;
 
   constructor(options?: AudioContextOptions) {
-    if (
-      options &&
-      options.sampleRate &&
-      (options.sampleRate < 8000 || options.sampleRate > 96000)
-    ) {
-      throw new NotSupportedError(
-        `The provided sampleRate is not supported: ${options.sampleRate}`
-      );
+    if (options?.sampleRate != null) {
+      assertSupportedSampleRate(options.sampleRate);
     }
 
     this.context = new window.AudioContext({ sampleRate: options?.sampleRate });
 
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);
+    this.listener = new AudioListener(this, this.context.listener);
   }
 
   public get currentTime(): number {
@@ -113,11 +111,7 @@ export default class AudioContext implements BaseAudioContext {
       );
     }
 
-    if (sampleRate < 8000 || sampleRate > 96000) {
-      throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
-      );
-    }
+    assertSupportedSampleRate(sampleRate);
 
     return new AudioBuffer({ numberOfChannels, length, sampleRate });
   }
@@ -141,7 +135,7 @@ export default class AudioContext implements BaseAudioContext {
   }
 
   createWaveShaper(): WaveShaperNode {
-    return new WaveShaperNode(this, this.context.createWaveShaper());
+    return new WaveShaperNode(this);
   }
 
   async decodeAudioData(

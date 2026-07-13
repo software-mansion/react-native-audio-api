@@ -96,8 +96,7 @@ Audio still flows through the node unchanged — the worklet receives a **read-o
 
 **Use them when you want to:**
 
-- Generate audio procedurally (`WorkletSourceNode`)
-- Process audio inside the graph with custom JavaScript DSP (`WorkletProcessingNode`)
+Our API is specifically designed to support high throughput to enable audio playback at `44.1` kHz, which is the default frequency for most modern devices.
 
 These callbacks run on the audio path. Keep them short and allocation-free — a slow worklet can cause dropouts.
 
@@ -105,7 +104,7 @@ These callbacks run on the audio path. Keep them short and allocation-free — a
 
 `WorkletNode` is designed for **UI visualization**, not sample-accurate audio processing. The audio thread accumulates frames into a snapshot buffer and schedules your callback on the UI thread — it never blocks playback.
 
-### Pick a sensible `bufferLength`
+If you set `bufferLength` to `128` (which is the default internal buffer size of our API used to process the graph), you must remember that your worklet should not take more than:
 
 `bufferLength` is the number of **frames per channel** passed to each callback. It controls how often the worklet runs when the UI keeps up:
 
@@ -115,50 +114,12 @@ $$
 
 At 44.1 kHz:
 
-| `bufferLength` | Approx. callback rate |
-| :---: | :---: |
-| 128 | ~344 Hz |
-| 512 | ~86 Hz |
-| 1024 | ~43 Hz |
-| 4096 | ~11 Hz |
+This means that if your worklet, plus the rest of the processing, takes more than `2.9` ms, you may start to experience audio dropouts or other playback issues.
 
 - **Smaller values** — lower latency, more frequent callbacks, more JS work
 - **Larger values** — smoother analysis windows (e.g. RMS over more samples), fewer callbacks
 
-For visualizers, **512–4096** is usually a good starting range.
-
-### Keep worklet callbacks short
-
-Even though the callback runs off the audio thread, a slow worklet still delays the next snapshot and can make visualizations stutter. Avoid:
-
-- Network or file I/O
-- Heavy loops or allocations
-- Calling non-worklet functions
-
-Prefer simple math (sum, max, RMS) and updating shared values.
-
-### Expect frame skipping under load
-
-While a callback is still running, the node **does not fill a new snapshot** — incoming analysis frames are skipped until the callback finishes. Audio playback is unaffected. If the main JS thread is under heavy load, visualizer updates may lag or jump; increase `bufferLength` to reduce pressure.
-
-### Use one worklet node when possible
-
-Chaining multiple `WorkletNode` instances multiplies UI scheduling overhead. If you need several derived metrics, compute them in a single callback.
-
-### Reanimated integration tip
-
-If shared-value updates from the worklet are not reflected on screen, add this at the **end** of your callback as a workaround for microtask flushing:
-
-```ts
-requestAnimationFrame(() => {});
-```
-
-Use this only when you confirm the UI is not updating — it has a small performance cost.
-
-## Available nodes
-
-| Node | Package | Runtime | Status |
-| :--- | :--- | :--- | :--- |
-| [`WorkletNode`](/docs/worklets/worklet-node) | `react-native-audio-worklets` | UI | Available |
-| [`WorkletSourceNode`](/docs/worklets/worklet-source-node) | `react-native-audio-worklets` | Audio | Available |
-| [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node) | `react-native-audio-worklets` | Audio | Available |
+- Use a larger `bufferLength`, like `256`, `512` or even `1024` if you don't need more than `40` fps.
+- Avoid blocking operations in the worklet (e.g., calling APIs - use JS callbacks for these instead).
+- Do not overuse worklets. Before creating 5 or 6, consider if it can be done with a single one. Creating chained nodes that invoke worklets increases latency linearly.
+- Measure performance and memory usage, and check logs to ensure you are not dropping frames.

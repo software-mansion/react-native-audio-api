@@ -1,8 +1,10 @@
 import { ContextState, OfflineAudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
+import { assertSupportedSampleRate } from '../utils/validation';
 import BaseAudioContext from './BaseAudioContext.web';
 import AnalyserNode from './AnalyserNode.web';
 import AudioDestinationNode from './AudioDestinationNode.web';
+import AudioListener from './AudioListener.web';
 import AudioBuffer from './AudioBuffer.web';
 import AudioBufferSourceNode from './AudioBufferSourceNode.web';
 import BiquadFilterNode from './BiquadFilterNode.web';
@@ -21,6 +23,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
 
   readonly destination: AudioDestinationNode;
+  readonly listener: AudioListener;
   readonly sampleRate: number;
 
   constructor(options: OfflineAudioContextOptions);
@@ -31,12 +34,14 @@ export default class OfflineAudioContext implements BaseAudioContext {
     arg2?: number
   ) {
     if (typeof arg0 === 'object') {
+      assertSupportedSampleRate(arg0.sampleRate);
       this.context = new window.OfflineAudioContext(arg0);
     } else if (
       typeof arg0 === 'number' &&
       typeof arg1 === 'number' &&
       typeof arg2 === 'number'
     ) {
+      assertSupportedSampleRate(arg2);
       this.context = new window.OfflineAudioContext(arg0, arg1, arg2);
     } else {
       throw new NotSupportedError('Invalid constructor arguments');
@@ -44,6 +49,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);
+    this.listener = new AudioListener(this, this.context.listener);
   }
 
   public get currentTime(): number {
@@ -109,11 +115,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
       );
     }
 
-    if (sampleRate < 8000 || sampleRate > 96000) {
-      throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
-      );
-    }
+    assertSupportedSampleRate(sampleRate);
 
     return new AudioBuffer({ numberOfChannels, length, sampleRate });
   }
@@ -137,7 +139,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createWaveShaper(): WaveShaperNode {
-    return new WaveShaperNode(this, this.context.createWaveShaper());
+    return new WaveShaperNode(this);
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {

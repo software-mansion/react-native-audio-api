@@ -10,7 +10,6 @@ import {
   oscillatorTestWithGain,
   oscillatorTestWithStereoPanner,
 } from './OscillatorTest';
-import { streamerTest } from './StreamingTest';
 import { recorderTest, recorderPlaybackTest } from './RecorderTest';
 import {
   audioBufferFormatsTest,
@@ -143,17 +142,6 @@ const Test: FC = () => {
     }, 11000);
   };
 
-  const streamingTest = () => {
-    setIsTesting(true);
-    setupAudioContext();
-    setTestingInfo('Streaming test');
-    streamerTest(audioContextRef);
-    setTimeout(() => {
-      setTestingInfo('Streaming test completed.');
-      setIsTesting(false);
-    }, 5000);
-  };
-
   const audioBufferSourceTest = async () => {
     setupAudioContext();
     setIsTesting(true);
@@ -260,7 +248,6 @@ const Test: FC = () => {
           disabled={isTesting}
         />
         <Button title="recorder" onPress={recordingTest} disabled={isTesting} />
-        <Button title="streamer" onPress={streamingTest} disabled={isTesting} />
         <Button
           title="audio buffer source"
           onPress={audioBufferSourceTest}

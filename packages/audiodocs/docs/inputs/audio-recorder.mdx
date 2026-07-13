@@ -6,8 +6,6 @@ toc_max_heading_level: 5
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
-import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 # AudioRecorder
 
@@ -686,12 +684,12 @@ interface AudioRecorderCallbackOptions {
 ```
 
 - `sampleRate` - The desired sample rate (in Hz) for audio buffers delivered to the
-  recording callback. Common values include 44100 or 48000 Hz. The actual
+  recording callback. Common values include `44100` or `48000` Hz. The actual
   sample rate may differ depending on hardware and system capabilities.
 
 - `bufferLength` - The preferred size of each audio buffer, expressed as the number of samples per channel. Smaller buffers reduce latency but increase CPU load, while larger buffers improve efficiency at the cost of higher latency.
 
-- `channelCount` - The desired number of audio channels per buffer. Typically 1 for mono or 2 for stereo recordings.
+- `channelCount` - The desired number of audio channels per buffer. Typically `1` for mono or `2` for stereo recordings.
 
 #### OnRecorderErrorEventType
 
@@ -713,7 +711,7 @@ interface OnAudioReadyEventType {
 }
 ```
 
-- `buffer` - The audio buffer containing the recorded PCM data. This buffer includes one or more channels of floating-point samples in the range of -1.0 to 1.0.
+- `buffer` - The audio buffer containing the recorded PCM data. This buffer includes one or more channels of floating-point samples in the range of `-1.0` to `1.0`.
 - `numFrames` - The number of audio frames contained in this buffer. A frame represents a single sample across all channels.
 - `when` - The timestamp (in seconds) indicating when this buffer was captured, relative to the start of the recording session.
 
@@ -737,7 +735,7 @@ interface AudioRecorderFileOptions {
 ```
 
 - `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
-- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to 0 (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles).
+- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles).
 - `format` - The desired extension and file format of the recorder file. Check: [FileFormat](#fileformat) below.
 - `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
@@ -904,12 +902,12 @@ export interface FilePresetType {
         <div class="table-vertical-top-table">
         | Use case | Bitrate (bps) | Notes |
         | :- | - | :- |
-        | Very low quality / telemetry |	32000 |	Bare minimum for speech intelligibility |
-        | Low quality voice notes |	48000 |	Optimized for small files and fast encoding |
-        | Standard speech / podcasts |	64000 – 96000 |	Good balance of clarity and size |
-        | Medium quality general audio |	128000 |	Common default for consumer audio |
-        | High quality music / voice |	160000 – 192000 |	Near-transparent for most listeners |
-        | Very high quality |	256000 – 320000 |	Large files, minimal perceptual loss |
+        | Very low quality / telemetry |	`32000` |	Bare minimum for speech intelligibility |
+        | Low quality voice notes |	`48000` |	Optimized for small files and fast encoding |
+        | Standard speech / podcasts |	`64000` – `96000` |	Good balance of clarity and size |
+        | Medium quality general audio |	`128000` |	Common default for consumer audio |
+        | High quality music / voice |	`160000` – `192000` |	Near-transparent for most listeners |
+        | Very high quality |	`256000` – `320000` |	Large files, minimal perceptual loss |
         </div>
       </td>
     </tr>
