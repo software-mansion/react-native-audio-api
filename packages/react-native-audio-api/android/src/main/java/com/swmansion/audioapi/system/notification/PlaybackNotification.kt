@@ -45,6 +45,19 @@ class PlaybackNotification(
     const val ACTION_SKIP_FORWARD = "com.swmansion.audioapi.ACTION_SKIP_FORWARD"
     const val ACTION_SKIP_BACKWARD = "com.swmansion.audioapi.ACTION_SKIP_BACKWARD"
     const val ID = 100
+
+    private const val DEFAULT_SKIP_INTERVAL_SECONDS = 15
+    private const val MIN_SKIP_INTERVAL_SECONDS = 1
+    private const val MAX_SKIP_INTERVAL_SECONDS = 120
+
+    @JvmStatic
+    var skipIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS
+      private set
+
+    @JvmStatic
+    fun setSkipIntervalSeconds(seconds: Int) {
+      skipIntervalSeconds = seconds.coerceIn(MIN_SKIP_INTERVAL_SECONDS, MAX_SKIP_INTERVAL_SECONDS)
+    }
   }
 
   private var mediaSession: MediaSessionCompat? = null
@@ -99,12 +112,12 @@ class PlaybackNotification(
         }
 
         override fun onFastForward() {
-          val body = HashMap<String, Any>().apply { put("value", 15) }
+          val body = HashMap<String, Any>().apply { put("value", skipIntervalSeconds) }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_FORWARD.ordinal, body)
         }
 
         override fun onRewind() {
-          val body = HashMap<String, Any>().apply { put("value", 15) }
+          val body = HashMap<String, Any>().apply { put("value", skipIntervalSeconds) }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_BACKWARD.ordinal, body)
         }
 
@@ -164,6 +177,9 @@ class PlaybackNotification(
   }
 
   override fun show(options: ReadableMap?): Notification {
+    if (options != null) {
+      updateSkipIntervalFromOptions(options)
+    }
     initializeIfNeeded()
     if (options != null) {
       updateInternal(options)
@@ -194,7 +210,15 @@ class PlaybackNotification(
 
   override fun getChannelId(): String = channelId
 
+  private fun updateSkipIntervalFromOptions(info: ReadableMap) {
+    if (info.hasKey("skipInterval")) {
+      setSkipIntervalSeconds(info.getDouble("skipInterval").toInt())
+    }
+  }
+
   private fun updateInternal(info: ReadableMap) {
+    updateSkipIntervalFromOptions(info)
+
     if (info.hasKey("control") && info.hasKey("enabled")) {
       enableControl(info.getString("control"), info.getBoolean("enabled"))
     }

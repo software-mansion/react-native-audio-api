@@ -32,12 +32,12 @@ class PlaybackNotificationReceiver : BroadcastReceiver() {
       }
 
       ACTION_SKIP_FORWARD -> {
-        val body = HashMap<String, Any>().apply { put("value", 15) }
+        val body = HashMap<String, Any>().apply { put("value", PlaybackNotification.skipIntervalSeconds) }
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_FORWARD.ordinal, body)
       }
 
       ACTION_SKIP_BACKWARD -> {
-        val body = HashMap<String, Any>().apply { put("value", 15) }
+        val body = HashMap<String, Any>().apply { put("value", PlaybackNotification.skipIntervalSeconds) }
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_BACKWARD.ordinal, body)
       }
     }
