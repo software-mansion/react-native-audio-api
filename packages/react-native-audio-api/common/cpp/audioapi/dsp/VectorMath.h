@@ -67,6 +67,15 @@ void multiply(
 // Finds the maximum magnitude of a float vector.
 float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProcess);
 
+// Returns the dot product of two float vectors (sum of element-wise products).
+float dotProduct(
+    const float *inputVector1,
+    const float *inputVector2,
+    size_t numberOfElementsToProcess);
+
+// Returns the sum of squares of a float vector
+float sumOfSquares(const float *inputVector, size_t numberOfElementsToProcess);
+
 void interleaveStereo(
     const float *inputLeft,
     const float *inputRight,
