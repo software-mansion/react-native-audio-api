@@ -15,7 +15,6 @@ WorkletNode::WorkletNode(
       workletRunner_(std::move(workletRunner)),
       bufferLength_(bufferLength),
       busy_(std::make_shared<std::atomic<bool>>(false)) {
-  setProcessableState(GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE);
   workletRunner_.createChannelViews(
       bufferLength_, static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
 }
@@ -76,6 +75,7 @@ void WorkletNode::dispatchToUI(size_t channelCount) {
   bool expected = false;
   if (!busy_->compare_exchange_strong(
           expected, true, std::memory_order_acq_rel, std::memory_order_acquire)) {
+    framesFilled_ = 0;
     return;
   }
 
