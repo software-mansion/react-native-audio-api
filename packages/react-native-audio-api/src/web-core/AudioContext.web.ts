@@ -1,4 +1,5 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioContextOptions, ContextState, DecodeDataInput } from '../types';
 import AnalyserNode from './AnalyserNode.web';
 import AudioBuffer from './AudioBuffer.web';
@@ -26,14 +27,8 @@ export default class AudioContext implements BaseAudioContext {
   readonly sampleRate: number;
 
   constructor(options?: AudioContextOptions) {
-    if (
-      options &&
-      options.sampleRate &&
-      (options.sampleRate < 8000 || options.sampleRate > 96000)
-    ) {
-      throw new NotSupportedError(
-        `The provided sampleRate is not supported: ${options.sampleRate}`
-      );
+    if (options?.sampleRate != null) {
+      assertSupportedSampleRate(options.sampleRate);
     }
 
     this.context = new window.AudioContext({ sampleRate: options?.sampleRate });
@@ -124,11 +119,7 @@ export default class AudioContext implements BaseAudioContext {
       );
     }
 
-    if (sampleRate < 8000 || sampleRate > 96000) {
-      throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
-      );
-    }
+    assertSupportedSampleRate(sampleRate);
 
     return new AudioBuffer({ numberOfChannels, length, sampleRate });
   }

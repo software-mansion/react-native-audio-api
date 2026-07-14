@@ -1,4 +1,5 @@
 import { IndexSizeError, NotSupportedError } from '../errors';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioBufferLike, AudioBufferOptions } from '../types';
 
 export default class AudioBuffer implements AudioBufferLike {
@@ -90,11 +91,7 @@ export default class AudioBuffer implements AudioBufferLike {
         `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
       );
     }
-    if (sampleRate < 8000 || sampleRate > 96000) {
-      throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
-      );
-    }
+    assertSupportedSampleRate(sampleRate);
     return new globalThis.AudioBuffer({ numberOfChannels, length, sampleRate });
   }
 

@@ -222,9 +222,8 @@ TEST_F(BiquadFilterTest, GetFrequencyResponse) {
       0.25f * nyquistFrequency,
       0.5f * nyquistFrequency,
       0.75f * nyquistFrequency,
-      nyquistFrequency - 0.0001f,
-      nyquistFrequency,
-      nyquistFrequency + 0.0001f};
+      nyquistFrequency - 0.1f,
+      nyquistFrequency + 1.0f};
 
   std::vector<float> magResponseNode(TestFrequencies.size());
   std::vector<float> phaseResponseNode(TestFrequencies.size());

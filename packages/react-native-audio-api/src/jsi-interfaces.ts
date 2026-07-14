@@ -5,7 +5,7 @@ import type {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AutomationEventData,
-  BaseAudioBufferSourceOptions,
+  AudioBufferQueueSourceOptions,
   BiquadFilterOptions,
   BiquadFilterType,
   ChannelCountMode,
@@ -54,7 +54,7 @@ export interface IBaseAudioContext {
   createDelay(delayOptions: DelayOptions): IDelayNode;
   createIIRFilter: (IIRFilterOptions: IIRFilterOptions) => IIIRFilterNode;
   createBufferQueueSource: (
-    audioBufferQueueSourceOptions: BaseAudioBufferSourceOptions
+    audioBufferQueueSourceOptions: AudioBufferQueueSourceOptions
   ) => IAudioBufferQueueSourceNode;
   createPeriodicWave: (
     real: Float32Array,

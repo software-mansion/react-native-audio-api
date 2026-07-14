@@ -87,7 +87,7 @@ The worklet function receives four parameters:
 
 ### `audioData: Array<Float32Array>`
 A two-dimensional array where:
-- First dimension represents the audio channel (0 = left, 1 = right for stereo)
+- First dimension represents the audio channel (`0` = left, `1` = right for stereo)
 - Second dimension contains the audio samples for that channel
 - You must **write** audio data to these buffers to generate sound
 - The length of each `Float32Array` equals `framesToProcess`

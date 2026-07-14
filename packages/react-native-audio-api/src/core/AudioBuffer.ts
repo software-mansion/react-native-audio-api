@@ -5,6 +5,7 @@ import {
   NotSupportedError,
   wrapFloat32ArrayView,
 } from '../errors';
+import { assertSupportedSampleRate } from '../utils/validation';
 
 export default class AudioBuffer implements AudioBufferLike {
   readonly length: number;
@@ -95,11 +96,7 @@ export default class AudioBuffer implements AudioBufferLike {
         `The number of frames provided (${length}) is less than or equal to the minimum bound (0)`
       );
     }
-    if (sampleRate < 8000 || sampleRate > 96000) {
-      throw new NotSupportedError(
-        `The sample rate provided (${sampleRate}) is outside the range [8000, 96000]`
-      );
-    }
+    assertSupportedSampleRate(sampleRate);
     return globalThis.createAudioBuffer(numberOfChannels, length, sampleRate);
   }
 

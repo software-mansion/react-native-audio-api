@@ -50,7 +50,7 @@ You can specify the runtime type when creating worklet nodes using the `workletR
 
 ## How to use worklets in react-native-audio-api mindfully?
 
-Our API is specifically designed to support high throughput to enable audio playback at 44.1Hz, which is the default frequency for most modern devices.
+Our API is specifically designed to support high throughput to enable audio playback at `44.1` kHz, which is the default frequency for most modern devices.
 
 However, this introduces several limitations on what can be done inside a worklet. Since a worklet must be executed on the JavaScript runtime, each execution introduces latency.
 
@@ -58,7 +58,7 @@ $$ 44.1\text{Hz} \equiv 44100\text{ samples} \equiv 1\text{ s} $$
 
 This means the sample rate indicates how many frames are processed in one second. Most features that allow using worklets as callbacks should also allow setting `bufferLength` for worklet input.
 
-If you set `bufferLength` to 128 (which is the default internal buffer size of our API used to process the graph), you must remember that your worklet should not take more than:
+If you set `bufferLength` to `128` (which is the default internal buffer size of our API used to process the graph), you must remember that your worklet should not take more than:
 
 $$ 1\text{ s} = 1000\text{ ms} $$
 
@@ -66,11 +66,11 @@ $$ \frac{44100}{128} \approx 344 $$
 
 $$ \frac{1000\text{ ms}}{344} \approx 2.9\text{ ms} $$
 
-This means that if your worklet, plus the rest of the processing, takes more than 2.9ms, you may start to experience audio dropouts or other playback issues.
+This means that if your worklet, plus the rest of the processing, takes more than `2.9` ms, you may start to experience audio dropouts or other playback issues.
 
 ### Recommendations
 
-- Use a larger `bufferLength`, like 256, 512 or even 1024 if you don't need more than 40fps.
+- Use a larger `bufferLength`, like `256`, `512` or even `1024` if you don't need more than `40` fps.
 - Avoid blocking operations in the worklet (e.g., calling APIs - use JS callbacks for these instead).
 - Do not overuse worklets. Before creating 5 or 6, consider if it can be done with a single one. Creating chained nodes that invoke worklets increases latency linearly.
 - Measure performance and memory usage, and check logs to ensure you are not dropping frames.

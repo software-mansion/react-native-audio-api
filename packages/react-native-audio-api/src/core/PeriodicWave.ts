@@ -1,7 +1,7 @@
 import { IPeriodicWave } from '../jsi-interfaces';
 import type BaseAudioContext from './BaseAudioContext';
 import { PeriodicWaveOptions } from '../types';
-import { PeriodicWaveOptionsValidator } from '../options-validators';
+import { PeriodicWaveOptionsValidator } from '../utils/validation';
 
 export function generateRealAndImag(
   options?: PeriodicWaveOptions

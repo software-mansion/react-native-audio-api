@@ -2,6 +2,9 @@
 sidebar_position: 4
 ---
 
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+
 # IIRFilterNode
 
 The `IIRFilterNode` interface represents a general infinite impulse response (IIR) filter.
@@ -15,32 +18,46 @@ but if odd-ordered filters are needed or automation is not needed, then `IIRFilt
 
 ## Constructor
 
-[`BaseAudioContext.createIIRFilter(options: IIRFilterNodeOptions)`](/docs/core/base-audio-context#createiirfilter)
-
-```jsx
-interface IIRFilterNodeOptions {
-  feedforward: number[]; // array of floating-point values specifying the feedforward (numerator) coefficients
-  feedback: number[]; // array of floating-point values specifying the feedback (denominator) coefficients
-}
+```tsx
+constructor(context: BaseAudioContext, options: IIRFilterOptions)
 ```
+
+### `IIRFilterOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `feedforward` | `number[]` | - | Array of floating-point values specifying the feedforward (numerator) coefficients. |
+| `feedback` | `number[]` | - | Array of floating-point values specifying the feedback (denominator) coefficients. |
+
+You can also create an `IIRFilterNode` via the [`BaseAudioContext.createIIRFilter()`](/docs/core/base-audio-context#createiirfilter) factory method.
 
 #### Errors
 
 | Error type | Description |
 | :---: | :---- |
-| `NotSupportedError` | One or both of the input arrays exceeds 20 members. |
-| `InvalidStateError` | All of the feedforward coefficients are 0, or the first feedback coefficient is 0. |
+| `NotSupportedError` | One or both of the input arrays exceeds `20` members. |
+| `InvalidStateError` | All of the feedforward coefficients are `0.0`, or the first feedback coefficient is `0.0`. |
 
 ## Properties
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+
+`IIRFilterNode` does not define any additional properties.
 
 ## Methods
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
 
 ### `getFrequencyResponse`
 
 | Parameter | Type | Description |
-| :--------: | :--: | :---------- |
+| :---: | :---: | :---- |
 | `frequencyArray` | `Float32Array` | Array of frequencies (in Hz), which you want to filter. |
 | `magResponseOutput` | `Float32Array` | Output array to store the computed linear magnitude values for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |
 | `phaseResponseOutput` | `Float32Array` | Output array to store the computed phase response values (in radians) for each frequency. For frequencies outside the range [0, $\frac{sampleRate}{2}$], the corresponding results are NaN. |

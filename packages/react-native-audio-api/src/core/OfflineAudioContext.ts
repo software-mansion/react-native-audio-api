@@ -1,4 +1,5 @@
 import { InvalidStateError, NotSupportedError } from '../errors';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { IOfflineAudioContext } from '../jsi-interfaces';
 import { OfflineAudioContextOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
@@ -18,6 +19,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
   ) {
     if (typeof arg0 === 'object') {
       const { numberOfChannels, length, sampleRate } = arg0;
+      assertSupportedSampleRate(sampleRate);
       super(
         globalThis.createOfflineAudioContext(
           numberOfChannels,
@@ -32,6 +34,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
       typeof arg1 === 'number' &&
       typeof arg2 === 'number'
     ) {
+      assertSupportedSampleRate(arg2);
       super(globalThis.createOfflineAudioContext(arg0, arg1, arg2));
       this.duration = arg1 / arg2;
     } else {

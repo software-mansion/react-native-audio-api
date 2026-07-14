@@ -147,8 +147,8 @@ void AnalyserNode::initializeWindowData(int fftSize) {
   auto data = windowData_->span();
   auto size = windowData_->getSize();
 
-  const auto invSizeMinusOne = 1.0f / static_cast<float>(size - 1);
-  const auto alpha = 2.0f * std::numbers::pi_v<float> * invSizeMinusOne;
+  const auto invSize = 1.0f / static_cast<float>(size);
+  const auto alpha = 2.0f * std::numbers::pi_v<float> * invSize;
 
   for (size_t i = 0; i < size; ++i) {
     const auto phase = alpha * static_cast<float>(i);

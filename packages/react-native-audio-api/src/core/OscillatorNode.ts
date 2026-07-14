@@ -5,6 +5,7 @@ import type BaseAudioContext from './BaseAudioContext';
 import PeriodicWave from './PeriodicWave';
 import { InvalidStateError } from '../errors';
 import { OscillatorOptions } from '../types';
+import { OscillatorOptionsValidator } from '../utils/validation';
 
 export default class OscillatorNode extends AudioScheduledSourceNode {
   readonly frequency: AudioParam;
@@ -14,6 +15,8 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
     if (options?.periodicWave) {
       options.type = 'custom';
     }
+
+    OscillatorOptionsValidator.validate(options);
 
     const node = context.context.createOscillator(options || {});
     super(context, node);

@@ -4,13 +4,9 @@ import { NativeAudioAPIModule } from '../specs';
 import { AudioApiError } from '../errors';
 import { IAudioDecoder } from '../jsi-interfaces';
 import { DecodeDataInput } from '../types';
-import {
-  isBase64Source,
-  isDataBlobString,
-  isRemoteSource,
-  resolveLocalFilePath,
-} from '../utils/paths';
+import { isRemoteSource, resolveLocalFilePath } from '../utils/paths';
 import { base64ToArrayBuffer } from '../utils';
+import { assertSupportedDecodeStringSource } from '../utils/validation';
 import AudioBuffer from './AudioBuffer';
 
 class AudioDecoder {
@@ -32,8 +28,8 @@ class AudioDecoder {
       return this.decodeFromArrayBuffer(input, rate);
     }
 
-    const stringSource = this.resolveStringSource(input);
-    this.assertSupportedStringSource(stringSource);
+    const stringSource = this.resolveToStringSource(input);
+    assertSupportedDecodeStringSource(stringSource);
 
     if (isRemoteSource(stringSource)) {
       return this.decodeFromRemoteUrl(stringSource, rate, fetchOptions);
@@ -54,28 +50,10 @@ class AudioDecoder {
     return new AudioBuffer(buffer);
   }
 
-  private resolveStringSource(input: number | string): string | number {
+  private resolveToStringSource(input: number | string): string {
     return typeof input === 'number'
       ? Image.resolveAssetSource(input).uri
       : input;
-  }
-
-  private assertSupportedStringSource(
-    source: string | number
-  ): asserts source is string {
-    if (typeof source !== 'string') {
-      throw new TypeError('Input must be a module, uri or ArrayBuffer');
-    }
-    if (isBase64Source(source)) {
-      throw new AudioApiError(
-        'Base64 source decoding is not currently supported, to decode raw PCM base64 strings use decodePCMInBase64 method.'
-      );
-    }
-    if (isDataBlobString(source)) {
-      throw new AudioApiError(
-        'Data Blob string decoding is not currently supported.'
-      );
-    }
   }
 
   private async decodeFromRemoteUrl(

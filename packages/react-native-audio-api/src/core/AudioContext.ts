@@ -1,4 +1,4 @@
-import { NotSupportedError } from '../errors';
+import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioTagHandle } from '../Audio/types';
 import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
@@ -8,14 +8,8 @@ import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
 
 export default class AudioContext extends BaseAudioContext {
   constructor(options?: AudioContextOptions) {
-    if (
-      options &&
-      options.sampleRate &&
-      (options.sampleRate < 8000 || options.sampleRate > 96000)
-    ) {
-      throw new NotSupportedError(
-        `The provided sampleRate is not supported: ${options.sampleRate}`
-      );
+    if (options?.sampleRate != null) {
+      assertSupportedSampleRate(options.sampleRate);
     }
 
     super(

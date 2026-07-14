@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
+import Link from '@docusaurus/Link';
 
-import DetailBox from '@site/src/ui/DetailBox';
-
-import styles from './styles.module.css';
+import AudioNodeInheritedSection from '@site/src/components/AudioNodeInheritedSection';
+import { ReadOnly } from '@site/src/components/Badges';
 
 type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 type ChannelInterpretation = 'speakers' | 'discrete';
@@ -15,6 +15,9 @@ interface AudioNodePropsTableProps {
   channelInterpretation: ChannelInterpretation;
 }
 
+const renderValue = (value: number | string) =>
+  typeof value === 'number' ? <code>{value}</code> : value;
+
 const AudioNodePropsTable = ({
   numberOfInputs,
   numberOfOutputs,
@@ -22,46 +25,106 @@ const AudioNodePropsTable = ({
   channelCountMode,
   channelInterpretation,
 }: AudioNodePropsTableProps) => {
-  const props = [
-    { label: 'Number of inputs', value: numberOfInputs },
-    { label: 'Number of outputs', value: numberOfOutputs },
-    { label: 'Channel count', value: channelCount },
-    { label: 'Channel count mode', value: channelCountMode },
-    { label: 'Channel interpretation', value: channelInterpretation },
-  ];
-
   return (
-    <DetailBox
-      tag="AudioNode"
-      info="properties"
-      startOpen={false}
-      className={styles.propsDetailBox}
-    >
-      <table className={styles.audioNodeProps} style={{ width: '100%', display: 'table' }}>
-        <tbody>
-          {props.map((prop) => (
-            <tr key={prop.label}>
-              <td
-                style={{
-                  textAlign: 'left',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {prop.label}
-              </td>
-              <td
-                style={{
-                  textAlign: 'left',
-                  width: '99%',
-                }}
-              >
-                {prop.value}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </DetailBox>
+    <AudioNodeInheritedSection info="properties">
+      <thead>
+        <tr>
+          <th style={{ textAlign: 'center' }}>Name</th>
+          <th style={{ textAlign: 'center' }}>Type</th>
+          <th style={{ textAlign: 'center' }}>Value</th>
+          <th style={{ textAlign: 'left' }}>Description</th>
+          <th />
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style={{ textAlign: 'center' }}>
+            <code>numberOfInputs</code>
+          </td>
+          <td style={{ textAlign: 'center' }}>
+            <code>number</code>
+          </td>
+          <td style={{ textAlign: 'center' }}>{renderValue(numberOfInputs)}</td>
+          <td style={{ textAlign: 'left' }}>
+            Number of input connections for the node.
+          </td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+        <tr>
+          <td style={{ textAlign: 'center' }}>
+            <code>numberOfOutputs</code>
+          </td>
+          <td style={{ textAlign: 'center' }}>
+            <code>number</code>
+          </td>
+          <td style={{ textAlign: 'center' }}>{renderValue(numberOfOutputs)}</td>
+          <td style={{ textAlign: 'left' }}>
+            Number of output connections for the node.
+          </td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+        <tr>
+          <td style={{ textAlign: 'center' }}>
+            <code>channelCount</code>
+          </td>
+          <td style={{ textAlign: 'center' }}>
+            <code>number</code>
+          </td>
+          <td style={{ textAlign: 'center' }}>{renderValue(channelCount)}</td>
+          <td style={{ textAlign: 'left' }}>
+            Number of channels used when up-mixing or down-mixing the node's
+            inputs.
+          </td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+        <tr>
+          <td style={{ textAlign: 'center' }}>
+            <code>channelCountMode</code>
+          </td>
+          <td style={{ textAlign: 'center' }}>
+            <Link to="/docs/types/channel-count-mode">
+              <code>ChannelCountMode</code>
+            </Link>
+          </td>
+          <td style={{ textAlign: 'center' }}>
+            <code>{channelCountMode}</code>
+          </td>
+          <td style={{ textAlign: 'left' }}>
+            How channels are mixed between the node's inputs and outputs.
+          </td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+        <tr>
+          <td style={{ textAlign: 'center' }}>
+            <code>channelInterpretation</code>
+          </td>
+          <td style={{ textAlign: 'center' }}>
+            <Link to="/docs/types/channel-interpretation">
+              <code>ChannelInterpretation</code>
+            </Link>
+          </td>
+          <td style={{ textAlign: 'center' }}>
+            <code>{channelInterpretation}</code>
+          </td>
+          <td style={{ textAlign: 'left' }}>
+            How input channels are mapped to output channels when their counts
+            differ.
+          </td>
+          <td>
+            <ReadOnly />
+          </td>
+        </tr>
+      </tbody>
+    </AudioNodeInheritedSection>
   );
 };
+
 export default memo(AudioNodePropsTable);

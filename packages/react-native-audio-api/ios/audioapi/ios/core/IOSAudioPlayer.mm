@@ -97,6 +97,11 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
 
     renderAudio_(audioBuffer_.get(), RENDER_QUANTUM_SIZE);
 
+    // Peak-normalize the rendered quantum before it reaches the hardware. This
+    // limiting lives in the player (not the destination node) so offline
+    // renders stay spec-accurate.
+    audioBuffer_->normalize();
+
     // normal rendering - take RENDER_QUANTUM_SIZE frames from the graph and copy to output
     const int stillNeed = numFrames - outPos;
     if (stillNeed >= RENDER_QUANTUM_SIZE) {
