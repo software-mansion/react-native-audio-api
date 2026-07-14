@@ -2,8 +2,8 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/utils/WsolaTimeStretcher.h>
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
+#include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>

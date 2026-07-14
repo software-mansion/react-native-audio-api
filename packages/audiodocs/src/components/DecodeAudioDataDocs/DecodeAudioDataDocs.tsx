@@ -154,9 +154,9 @@ const buffer = await audioContext.decodeAudioData(url);`;
         .
       </Admonition>
 
-      <h4>
-        Returns <code>Promise&lt;AudioBuffer&gt;</code>.
-      </h4>
+      <p>
+        <strong>Returns:</strong> <code>Promise&lt;AudioBuffer&gt;</code>
+      </p>
 
       <details>
         <summary>

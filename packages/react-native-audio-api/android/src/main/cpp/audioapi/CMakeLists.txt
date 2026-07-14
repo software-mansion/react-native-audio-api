@@ -121,6 +121,16 @@ target_compile_definitions(
   PRIVATE $<$<CONFIG:Debug>:DEBUG>
 )
 
+# Forward the SIMD capability detected in the top-level android/CMakeLists.txt so
+# the dsp/ vector math (VectorMath, WsolaTimeStretcher) compiles its NEON/SSE2
+# intrinsic paths instead of the scalar fallback. arm64-v8a always has NEON and
+# x86_64 always has SSE2, so these are safe baselines for their ABIs.
+if(HAVE_ARM_NEON_INTRINSICS)
+  target_compile_definitions(react-native-audio-api PRIVATE HAVE_ARM_NEON_INTRINSICS=1)
+elseif(HAVE_X86_SSE2)
+  target_compile_definitions(react-native-audio-api PRIVATE HAVE_X86_SSE2=1)
+endif()
+
 if (RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   target_compile_definitions(
     react-native-audio-api

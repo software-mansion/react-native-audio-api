@@ -1,17 +1,17 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 import InteractiveExample from '@site/src/components/InteractiveExample';
 
 
-# Making a piano keyboard
+# Piano keyboard
 
 In this section, we will use some of the core Audio API interfaces to create a simple piano keyboard. We will learn what an [`AudioParam`](/docs/core/audio-param) is and how to use it to change the pitch of the sound.
 
 ## Base application
 
-Like in the previous example, we will start with a simple app with a couple of buttons so we don't need to worry about the UI later.
+We will start with a simple app with a couple of buttons so we don't need to worry about the UI later.
 You can just copy and paste the code below to your project.
 
 ```tsx
@@ -67,7 +67,7 @@ export default function SimplePiano() {
 }
 ```
 
-## Create audio context and preload the data
+## Audio context and sample preloading
 
 Like previously, we will need to preload the audio files in order to be able to play them. Using the interfaces we already know, we will download them and store in the memory using the good old `useRef` hook.
 
@@ -106,7 +106,7 @@ export default function SimplePiano() {
 }
 ```
 
-## Playing the sounds
+## Sound playback
 
 Now it is finally time to play the sounds. We will use the [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) and simply play the buffers.
 
@@ -192,9 +192,9 @@ import PressOutSrc from '!!raw-loader!@site/src/examples/SimplePiano/PressOutSou
 And they stop on release, just as we wanted. But if we hold the keys for a short time, it sounds a bit strange. Also, have you noticed that the sound is simply cut off when we release the key? 🤔
 It leaves a bit of an unpleasant feeling, right? So let’s try to make it a bit smoother.
 
-## Envelopes ✉️
+## Envelopes
 
-We will start from the end this time, and finally, we will use new type of audio node - [`GainNode`](/docs/effects/gain-node) :tada: <br />
+We will start from the end this time, and finally, we will use new type of audio node - [`GainNode`](/docs/effects/gain-node) :tada:.
 `GainNode` is a simple node that can change the volume of any node (or nodes) connected to it. The `GainNode` has a single element called [`AudioParam`](/docs/core/audio-param), which is also named `gain`.
 
 ## What is an AudioParam?
@@ -307,10 +307,12 @@ So, the only piece left is addressing the missing sample files for the 'B' and '
 
 ## Tampering with the playback rate
 
-The [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) also has its own [`AudioParam`](/docs/core/audio-param), called `playbackRate` as the title suggests. It allows us to change the speed of the playback of the audio buffer. <br /> <br />
-Yay! Nice. But how can we use that to make the missing keys sound? I will keep this short, as this guide is already quite long, so let’s wrap up!<br /><br />
+The [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) also has its own [`AudioParam`](/docs/core/audio-param), called `playbackRate` as the title suggests. It allows us to change the speed of the playback of the audio buffer.
 
-When we change the speed of a sound, it will also change its pitch (frequency). So, we can use that to make the missing keys sound.<br /><br />
+Yay! Nice. But how can we use that to make the missing keys sound? I will keep this short, as this guide is already quite long, so let’s wrap up!
+
+When we change the speed of a sound, it will also change its pitch (frequency). So, we can use that to make the missing keys sound.
+
 Each piano key has its own dominant frequency (e.g., the frequency of the `A4` key is `440Hz`). We can check the frequency of each key, calculate the ratio between them, and use that ratio to adjust the playback rate of the buffers we have.
 
 ![Piano keys frequencies](/img/frequencies-on-piano.jpg)
@@ -380,11 +382,11 @@ import SimplePianoSrc from '!!raw-loader!@site/src/examples/SimplePiano/FinalSou
 
 In this guide, we have learned how to create a simple piano keyboard with the help of the GainNode and AudioParams. To sum up:
 
-- [`AudioParam`](/docs/core/audio-param) is an interface that provides ways to control various aspects of audio nodes over time.
-- [`GainNode`](/docs/effects/gain-node) is a simple node that can change the volume of any node connected to it.
-- [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) has a parameter called `playbackRate` that allows to change the speed of the audio buffer's playback, thereby altering the pitch of the sound.
-- We can use `GainNode` to create envelopes, making the sound transitions smoother and more pleasant.
-- We have learned how to use the Audio API in the React environment, simulating a more production-like scenario.
+- [`AudioParam`](/docs/core/audio-param) is an interface that provides ways to control various aspects of audio nodes over time
+- [`GainNode`](/docs/effects/gain-node) is a simple node that can change the volume of any node connected to it
+- [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) has a parameter called `playbackRate` that allows to change the speed of the audio buffer's playback, thereby altering the pitch of the sound
+- We can use `GainNode` to create envelopes, making the sound transitions smoother and more pleasant
+- We have learned how to use the Audio API in the React environment, simulating a more production-like scenario
 
 ## What's next?
 
