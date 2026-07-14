@@ -2,7 +2,6 @@
 
 #include <audioapi/compatibility/StableAPI.h>
 #include <audioworklets/UIWorkletsRunner.h>
-#include <audioworklets/utils/AudioChannelViews.h>
 
 #include <atomic>
 #include <cstddef>
@@ -36,7 +35,6 @@ class WorkletNode : public audioapi::AudioNode {
   void dispatchToUI(size_t channelCount);
 
   UIWorkletsRunner workletRunner_;
-  std::shared_ptr<AudioChannelViews> channelViews_;
   size_t bufferLength_;
   size_t framesFilled_{0};
 

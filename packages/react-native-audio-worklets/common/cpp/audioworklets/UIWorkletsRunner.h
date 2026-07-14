@@ -46,9 +46,12 @@ class UIWorkletsRunner {
 
   /// Allocates channel buffers and pre-builds stable `Float32Array[]` views on
   /// the UI worklet runtime. Must be called once before the first `call`.
-  [[nodiscard]] std::shared_ptr<AudioChannelViews> createChannelViews(
-      size_t frameCount,
-      size_t channelCount);
+  void createChannelViews(size_t frameCount, size_t channelCount);
+
+  /// Native buffer pool filled on the audio thread; views are read on the UI thread.
+  [[nodiscard]] const std::shared_ptr<AudioChannelViews> &channelViews() const {
+    return job_->channelViews;
+  }
 
   /// @brief Schedules the worklet to run on the UI thread with pre-built channel
   /// views from `createChannelViews`.
@@ -70,13 +73,7 @@ class UIWorkletsRunner {
 
   static void runUIWorkletJob(const std::shared_ptr<UIWorkletJob> &job);
 
-  /// Shared with scheduled UI lambdas so they can bail out after teardown/reload.
-  std::shared_ptr<std::atomic<bool>> alive_;
-  std::weak_ptr<worklets::WorkletRuntime> uiRuntime_;
-  std::weak_ptr<worklets::UIScheduler> uiScheduler_;
-  std::shared_ptr<worklets::Serializable> serializableWorklet_;
-  std::shared_ptr<AudioChannelViews> channelViews_;
-  /// Reused across dispatches; only one job may be in flight at a time.
+  /// Shared by the runner and scheduled UI lambdas; only one job may be in flight.
   std::shared_ptr<UIWorkletJob> job_;
 };
 

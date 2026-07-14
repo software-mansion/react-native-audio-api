@@ -15,7 +15,8 @@ WorkletNode::WorkletNode(
       workletRunner_(std::move(workletRunner)),
       bufferLength_(bufferLength),
       busy_(std::make_shared<std::atomic<bool>>(false)) {
-  channelViews_ = workletRunner_.createChannelViews(
+  setProcessableState(GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE);
+  workletRunner_.createChannelViews(
       bufferLength_, static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
 }
 
@@ -24,7 +25,8 @@ WorkletNode::~WorkletNode() {
 }
 
 void WorkletNode::processNode(int framesToProcess) {
-  if (!workletRunner_.isActive() || channelViews_ == nullptr) {
+  const auto &channelViews = workletRunner_.channelViews();
+  if (!workletRunner_.isActive() || channelViews == nullptr) {
     return;
   }
 
@@ -54,7 +56,7 @@ void WorkletNode::processNode(int framesToProcess) {
   const size_t framesToCopy = std::min(frameCount, remaining);
 
   for (size_t ch = 0; ch < channelsToCopy; ++ch) {
-    channelViews_->channelBuffer(ch)->copy(
+    channelViews->channelBuffer(ch)->copy(
         *audioBuffer_->getChannel(ch), 0, framesFilled_, framesToCopy);
   }
 

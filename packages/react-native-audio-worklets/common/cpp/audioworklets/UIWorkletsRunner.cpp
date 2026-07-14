@@ -10,26 +10,22 @@ UIWorkletsRunner::UIWorkletsRunner(
     const std::shared_ptr<worklets::WorkletRuntime> &uiRuntime,
     const std::shared_ptr<worklets::UIScheduler> &uiScheduler,
     std::shared_ptr<worklets::Serializable> serializableWorklet)
-    : alive_(std::make_shared<std::atomic<bool>>(true)),
-      uiRuntime_(uiRuntime),
-      uiScheduler_(uiScheduler),
-      serializableWorklet_(std::move(serializableWorklet)),
-      job_(std::make_shared<UIWorkletJob>()) {
-  job_->alive = alive_;
-  job_->uiRuntime = uiRuntime_;
-  job_->uiScheduler = uiScheduler_;
-  job_->serializableWorklet = serializableWorklet_;
+    : job_(std::make_shared<UIWorkletJob>()) {
+  job_->alive = std::make_shared<std::atomic<bool>>(true);
+  job_->uiRuntime = uiRuntime;
+  job_->uiScheduler = uiScheduler;
+  job_->serializableWorklet = std::move(serializableWorklet);
 }
 
 void UIWorkletsRunner::deactivate() {
-  alive_->store(false, std::memory_order_release);
+  job_->alive->store(false, std::memory_order_release);
 
-  auto channelViews = channelViews_;
+  auto channelViews = job_->channelViews;
   if (channelViews == nullptr) {
     return;
   }
 
-  auto uiScheduler = uiScheduler_.lock();
+  auto uiScheduler = job_->uiScheduler.lock();
   if (uiScheduler == nullptr) {
     channelViews->releaseJsValues();
     return;
@@ -39,26 +35,22 @@ void UIWorkletsRunner::deactivate() {
 }
 
 bool UIWorkletsRunner::isActive() const {
-  return alive_->load(std::memory_order_acquire);
+  return job_->alive->load(std::memory_order_acquire);
 }
 
-std::shared_ptr<AudioChannelViews> UIWorkletsRunner::createChannelViews(
-    size_t frameCount,
-    size_t channelCount) {
-  auto uiRuntime = uiRuntime_.lock();
+void UIWorkletsRunner::createChannelViews(size_t frameCount, size_t channelCount) {
+  auto uiRuntime = job_->uiRuntime.lock();
   if (!uiRuntime) {
-    return nullptr;
+    return;
   }
 
-  channelViews_ = std::make_shared<AudioChannelViews>(uiRuntime, frameCount, channelCount);
-  job_->channelViews = channelViews_;
-  return channelViews_;
+  job_->channelViews = std::make_shared<AudioChannelViews>(uiRuntime, frameCount, channelCount);
 }
 
 void UIWorkletsRunner::call(size_t channelCount, std::function<void()> onComplete) const {
-  auto uiRuntime = uiRuntime_.lock();
-  auto uiScheduler = uiScheduler_.lock();
-  if (!isActive() || !serializableWorklet_ || !uiRuntime || !uiScheduler) {
+  auto uiRuntime = job_->uiRuntime.lock();
+  auto uiScheduler = job_->uiScheduler.lock();
+  if (!isActive() || !job_->serializableWorklet || !uiRuntime || !uiScheduler) {
     if (onComplete) {
       onComplete();
     }

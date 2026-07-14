@@ -1,15 +1,15 @@
 #pragma once
 
-#include <audioapi/core/AudioNode.h>
-#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/compatibility/StableAPI.h>
 
 namespace audioapi {
 
 class MyProcessorNode : public AudioNode {
-public:
+ public:
   explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context);
 
-protected:
+ protected:
   void processNode(int framesToProcess) override;
 };
+
 } // namespace audioapi

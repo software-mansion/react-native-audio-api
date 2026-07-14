@@ -10,6 +10,10 @@ In this section, we will create our own [`pure C++ turbo-module`](https://reactn
 
 We highly encourage you to get familiar with [this guide](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules), since we will be using many similar concepts explained there.
 
+:::info Stable C++ API
+Custom nodes must include only [`StableAPI.h`](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/compatibility/StableAPI.h) from `react-native-audio-api` — the same header used by extension packages such as [`react-native-audio-worklets`](https://github.com/software-mansion/react-native-audio-api/tree/main/packages/react-native-audio-worklets). Do not include other `audioapi/...` headers directly; they are internal and may change without notice. See [`EXTENSION_API.md`](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/compatibility/EXTENSION_API.md) for the full contract.
+:::
+
 ## Generate files
 
 We prepared a script that generates all of the boiler plate code for you.
@@ -43,8 +47,7 @@ For the sake of a simplicity, we will use value as a raw `double` type, not wrap
 
 ```cpp
 #pragma once
-#include <audioapi/core/AudioNode.h>
-#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/compatibility/StableAPI.h>
 
 namespace audioapi {
 
@@ -57,7 +60,16 @@ protected:
 
 // highlight-start
 private:
-  double gain; // value responsible for gain value
+  double gain_{0.5};
+
+public:
+  [[nodiscard]] double getGain() const {
+    return gain_;
+  }
+
+  void setGain(double value) {
+    gain_ = value;
+  }
 // highlight-end
 };
 
@@ -72,21 +84,18 @@ private:
 
 ```cpp
 #include "MyProcessorNode.h"
-#include <audioapi/utils/AudioBuffer.hpp>
-#include <audioapi/utils/AudioArray.hpp>
 
 namespace audioapi {
     MyProcessorNode::MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context)
         // highlight-next-line
-        : AudioNode(context), gain(0.5) {}
+        : AudioNode(context) {}
 
     void MyProcessorNode::processNode(int framesToProcess) {
       // highlight-start
       for (int channel = 0; channel < audioBuffer_->getNumberOfChannels(); ++channel) {
-        auto *audioArray = bus->getChannel(channel);
+        auto *samples = audioBuffer_->getChannel(channel);
         for (size_t i = 0; i < framesToProcess; ++i) {
-          // Apply gain to each sample in the audio array
-          (*audioArray)[i] *= gain;
+          (*samples)[i] *= gain_;
         }
       }
       // highlight-end
@@ -104,36 +113,36 @@ namespace audioapi {
 #pragma once
 
 #include "MyProcessorNode.h"
-#include <audioapi/HostObjects/AudioNodeHostObject.h>
+#include <audioapi/compatibility/StableAPI.h>
 
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;
 
 class MyProcessorNodeHostObject : public AudioNodeHostObject {
 public:
-  explicit MyProcessorNodeHostObject(
-      const std::shared_ptr<MyProcessorNode> &node)
-      : AudioNodeHostObject(node) {
+  explicit MyProcessorNodeHostObject(const std::shared_ptr<BaseAudioContext> &context)
+      : AudioNodeHostObject(
+            context->getGraph(),
+            std::make_unique<MyProcessorNode>(context)) {
     // highlight-start
-    addGetters(JSI_EXPORT_PROPERTY_GETTER(MyProcessorNodeHostObject, getter));
-    addSetters(JSI_EXPORT_PROPERTY_SETTER(MyProcessorNodeHostObject, setter));
+    addGetters(JSI_EXPORT_PROPERTY_GETTER(MyProcessorNodeHostObject, gain));
+    addSetters(JSI_EXPORT_PROPERTY_SETTER(MyProcessorNodeHostObject, gain));
     // highlight-end
   }
 
   // highlight-start
-  JSI_PROPERTY_GETTER(getter) {
+  JSI_PROPERTY_GETTER(gain) {
      auto processorNode = std::static_pointer_cast<MyProcessorNode>(node_);
-     return {processorNode->someGetter()};
+     return jsi::Value(processorNode->getGain());
   }
   // highlight-end
 
   // highlight-start
-  JSI_PROPERTY_SETTER(setter) {
+  JSI_PROPERTY_SETTER(gain) {
      auto processorNode = std::static_pointer_cast<MyProcessorNode>(node_);
-     processorNode->someSetter(value.getNumber());
+     processorNode->setGain(value.getNumber());
   }
   // highlight-end
 };
@@ -153,8 +162,8 @@ When it comes to iOS there is also nothing more than following [react-native tut
 
 ### Android
 
-Case with android is much different, because of the way android is compiled we need to compile our library with whole turbo-module.
-Firstly, follow [the guide](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules#android), but replace `CmakeLists.txt` with this content:
+Case with Android is different because your TurboModule is compiled together with the app.
+Follow [the guide](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules#android), then link against the published prefab instead of importing the `.so` manually:
 
 ```cmake
 cmake_minimum_required(VERSION 3.13)
@@ -162,9 +171,10 @@ cmake_minimum_required(VERSION 3.13)
 project(appmodules)
 
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
-set(AUDIO_API_DIR ${ROOT}/node_modules/react-native-audio-api)
 
 include(${REACT_ANDROID_DIR}/cmake-utils/ReactNative-application.cmake)
+
+find_package(react-native-audio-api REQUIRED CONFIG)
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   ${ROOT}/shared/NativeAudioProcessingModule.cpp
@@ -174,30 +184,16 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${ROOT}/shared
-    ${AUDIO_API_DIR}/common/cpp
 )
 
-add_library(react-native-audio-api SHARED IMPORTED)
-string(TOLOWER ${CMAKE_BUILD_TYPE} BUILD_TYPE_LOWER)
-# we need to import built library from android directory
-set_target_properties(react-native-audio-api PROPERTIES IMPORTED_LOCATION
-        ${AUDIO_API_DIR}/android/build/intermediates/merged_native_libs/${BUILD_TYPE_LOWER}/merge${CMAKE_BUILD_TYPE}NativeLibs/out/lib/${CMAKE_ANDROID_ARCH_ABI}/libreact-native-audio-api.so
+target_link_libraries(${CMAKE_PROJECT_NAME}
+  react-native-audio-api::react-native-audio-api
+  android
+  log
 )
-target_link_libraries(${CMAKE_PROJECT_NAME} react-native-audio-api android log)
 ```
 
-Last part that is required for you to do, is to add following lines to `build.gradle` file located in `android/app` directory.
-
-```Cmake
-evaluationDependsOn(":react-native-audio-api")
-
-afterEvaluate {
-    tasks.getByName("buildCMakeDebug").dependsOn(findProject(":react-native-audio-api").tasks.getByName("mergeDebugNativeLibs"))
-    tasks.getByName("buildCMakeRelWithDebInfo").dependsOn(findProject(":react-native-audio-api").tasks.getByName("mergeReleaseNativeLibs"))
-}
-```
-
-Since in `CmakeLists.txt` we depend on `libreact-native-audio-api.so`, we need to make sure that building an app will be invoked after library is existing.
+Prefab ships `StableAPI.h` and the transitive headers it needs — you do not need to add `common/cpp` to `target_include_directories`.
 
 ## Final touches
 
