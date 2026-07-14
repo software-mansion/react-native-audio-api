@@ -478,12 +478,6 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
 
   if (numFrames > 0) {
     lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
-
-    // Sample at callback start (maximum of the input latency sawtooth).
-    const auto latencyResult = oboeStream->calculateLatencyMillis();
-    if (latencyResult) {
-      lastInputLatencySeconds_.store(latencyResult.value() / 1000.0, std::memory_order_release);
-    }
   }
 
   if (usesFileOutput()) {
@@ -595,9 +589,9 @@ double AndroidAudioRecorder::getInputLatency() const {
     }
   }
 
-  const double measuredTotal = lastInputLatencySeconds_.load(std::memory_order_acquire);
-  if (measuredTotal > 0.0) {
-    return std::max(measuredTotal, baseLatency);
+  const auto latencyResult = mStream_->calculateLatencyMillis();
+  if (latencyResult) {
+    return std::max(latencyResult.value() / 1000.0, baseLatency);
   }
 
   const int32_t framesPerBurst = mStream_->getFramesPerBurst();
