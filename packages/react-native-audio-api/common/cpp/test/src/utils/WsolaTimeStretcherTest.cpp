@@ -1,5 +1,5 @@
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/core/utils/WsolaTimeStretcher.h>
+#include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 
