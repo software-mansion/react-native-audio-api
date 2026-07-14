@@ -5,7 +5,7 @@ import { TestScreen } from '../../../../packages/test-app-screen';
 
 import AudioParamPipeline from './AudioParamPipeline';
 import AudioPipelineStress from './AudioPipelineStress';
-import LatencyMeter from './LatencyMeter/LatencyMeter';
+import LatencyValidation from './LatencyValidation';
 
 /** Screens shown under the 'Other' bottom tab (stress tests, internal tooling). */
 export const otherScreens: Example[] = [
@@ -28,9 +28,9 @@ export const otherScreens: Example[] = [
     screen: TestScreen,
   },
   {
-    key: 'LatencyMeter',
-    title: 'Latency Meter',
-    Icon: icons.Timer,
-    screen: LatencyMeter,
+    key: 'LatencyValidation',
+    title: 'Latency Validation',
+    Icon: icons.CircleCheck,
+    screen: LatencyValidation,
   },
 ];

@@ -31,7 +31,7 @@ type NavigationParamList = {
   ConvolverIR: undefined;
   AudioParamPipeline: undefined;
   TestScreen: undefined;
-  LatencyMeter: undefined;
+  LatencyValidation: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;

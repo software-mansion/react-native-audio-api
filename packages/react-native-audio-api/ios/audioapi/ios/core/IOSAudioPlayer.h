@@ -50,8 +50,6 @@ class IOSAudioPlayer {
   std::atomic<uint32_t> &currentRenders_;
   int channelCount_;
   std::atomic<bool> isRunning_;
-  /// Updated on the audio thread from each render callback `numFrames` (e.g. 512 at 48 kHz).
-  std::atomic<int32_t> lastCallbackFrameCount_{0};
   /// Set from main thread on start/resume; consumed on audio thread to drop stale pending audio.
   std::atomic<bool> flushOverflowNextPull_{false};
   /// Frames valid at the front of each `pendingSaved_[ch]` (0 … RENDER_QUANTUM_SIZE).

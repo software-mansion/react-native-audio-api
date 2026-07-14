@@ -50,9 +50,6 @@ void IOSAudioPlayer::clearPendingSaved()
 
 void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFrames)
 {
-  if (numFrames > 0) {
-    lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
-  }
   const CurrentRenderScope renderScope(currentRenders_);
 
   // If requested, clear any saved overflow before continuing normal rendering.
@@ -143,7 +140,6 @@ bool IOSAudioPlayer::start()
 void IOSAudioPlayer::stop()
 {
   isRunning_.store(false, std::memory_order_release);
-  lastCallbackFrameCount_.store(0, std::memory_order_release);
   [audioPlayer_ stop];
 }
 
@@ -188,13 +184,7 @@ double IOSAudioPlayer::getBaseLatency() const
     return 0.0;
   }
 
-  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
-  if (callbackFrames > 0 && sampleRate_ > 0.0f) {
-    return static_cast<double>(callbackFrames) / static_cast<double>(sampleRate_);
-  }
-
-  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
-  return [sessionManager ioBufferDurationSeconds];
+  return static_cast<double>(RENDER_QUANTUM_SIZE) / static_cast<double>(sampleRate_);
 }
 
 double IOSAudioPlayer::getOutputLatency() const
