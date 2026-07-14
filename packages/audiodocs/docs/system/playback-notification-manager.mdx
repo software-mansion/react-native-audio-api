@@ -35,7 +35,7 @@ await PlaybackNotificationManager.show({
   artist: 'My Artist',
   duration: 180,
   state: 'paused',
-  skipInterval: 10, // seconds to skip on fast-forward/rewind; default: 15
+  skipInterval: 10
 });
 
 // Listen for notification controls
@@ -58,7 +58,6 @@ const pauseListener = PlaybackNotificationManager.addEventListener(
 const skipForwardListener = PlaybackNotificationManager.addEventListener(
   'playbackNotificationSkipForward',
   (event) => {
-    // event.value is the skip interval in seconds
     seekBy(event.value);
   }
 );
@@ -171,7 +170,6 @@ interface PlaybackNotificationInfo {
   speed?: number;
   state?: 'playing' | 'paused';
 
-  // Skip interval in seconds for skipForward/skipBackward; default: 15
   skipInterval?: number;
 }
 ```
@@ -181,7 +179,7 @@ interface PlaybackNotificationInfo {
 
 - Configures how many seconds `playbackNotificationSkipForward` and `playbackNotificationSkipBackward` advance or rewind.
 - Defaults to `15` when omitted.
-- Clamped to `1–120` seconds on native platforms.
+- Clamped to `1–120` seconds in JavaScript before being passed to native.
 - Pass `skipInterval` in the same `show()` call (or earlier) before enabling skip controls, so the interval is applied when controls are first set up.
 - On Android, skip action icons show `15` when `skipInterval` is `15` (default); otherwise generic skip icons without a number are used.
 

@@ -47,8 +47,6 @@ class PlaybackNotification(
     const val ID = 100
 
     private const val DEFAULT_SKIP_INTERVAL_SECONDS = 15
-    private const val MIN_SKIP_INTERVAL_SECONDS = 1
-    private const val MAX_SKIP_INTERVAL_SECONDS = 120
 
     @JvmStatic
     var skipIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS
@@ -56,7 +54,7 @@ class PlaybackNotification(
 
     @JvmStatic
     fun setSkipIntervalSeconds(seconds: Int) {
-      skipIntervalSeconds = seconds.coerceIn(MIN_SKIP_INTERVAL_SECONDS, MAX_SKIP_INTERVAL_SECONDS)
+      skipIntervalSeconds = seconds
     }
   }
 

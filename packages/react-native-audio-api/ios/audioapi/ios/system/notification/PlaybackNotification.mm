@@ -13,8 +13,6 @@
   }
 
 static const NSInteger kDefaultSkipIntervalSeconds = 15;
-static const NSInteger kMinSkipIntervalSeconds = 1;
-static const NSInteger kMaxSkipIntervalSeconds = 120;
 
 @implementation PlaybackNotification {
   BOOL _isInitialized;
@@ -152,9 +150,7 @@ static const NSInteger kMaxSkipIntervalSeconds = 120;
     return;
   }
 
-  NSInteger interval = (NSInteger)[skipIntervalValue doubleValue];
-  interval = MAX(kMinSkipIntervalSeconds, MIN(kMaxSkipIntervalSeconds, interval));
-  _skipInterval = interval;
+  _skipInterval = (NSInteger)[skipIntervalValue doubleValue];
   [self applySkipIntervals];
 }
 
