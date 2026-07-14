@@ -640,13 +640,13 @@ interface AudioRecorderFileOptions {
 - `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles).
   - Use a large enough value for your format. Very small thresholds rotate often, which increases the chance of audible gaps or muffled joins after concatenation — especially for **M4A**, where each segment is a separate AAC encode.
   - Practical starting points: **≥ 1 MB** for WAV, **≥ 200 KB** for M4A (adjust upward if you still hear artifacts at segment boundaries).
-  - `rotateIntervalBytes` controls segment file size, not RAM usage. For crash-resilience tuning on Android, use [`androidFlushIntervalMs`](#androidflushintervalms) instead.
+  - This option controls segment file size, not RAM usage. For crash-resilience tuning on Android, use [`androidFlushIntervalMs`](#androidflushintervalms) instead.
 - `format` - The desired extension and file format of the recorder file. Check: [FileFormat](#fileformat) below.
 - `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
 - `subDirectory` - If configured it will create the recording inside requested directory (default: `undefined`).
 - `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
-- `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
+- <span id="androidflushintervalms"></span>`androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
   - Higher values are more battery - and storage-efficient.
 
