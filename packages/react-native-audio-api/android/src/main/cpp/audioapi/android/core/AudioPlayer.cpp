@@ -29,6 +29,7 @@ AudioPlayer::AudioPlayer(
       context_(context) {}
 
 bool AudioPlayer::openAudioStream() {
+  std::scoped_lock lock(streamMutex_);
   AudioStreamBuilder builder;
 
   builder.setSharingMode(SharingMode::Exclusive)
@@ -55,6 +56,7 @@ bool AudioPlayer::openAudioStream() {
 }
 
 bool AudioPlayer::start() {
+  std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
     auto result = mStream_->requestStart() == oboe::Result::OK;
     isRunning_.store(result, std::memory_order_release);
@@ -65,6 +67,7 @@ bool AudioPlayer::start() {
 }
 
 void AudioPlayer::stop() {
+  std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
     lastCallbackFrameCount_.store(0, std::memory_order_release);
@@ -73,6 +76,7 @@ void AudioPlayer::stop() {
 }
 
 bool AudioPlayer::resume() {
+  std::scoped_lock lock(streamMutex_);
   if (isRunning()) {
     return true;
   }
@@ -87,6 +91,7 @@ bool AudioPlayer::resume() {
 }
 
 void AudioPlayer::suspend() {
+  std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
     mStream_->requestPause();
@@ -94,6 +99,7 @@ void AudioPlayer::suspend() {
 }
 
 void AudioPlayer::cleanup() {
+  std::scoped_lock lock(streamMutex_);
   isInitialized_.store(false, std::memory_order_release);
 
   if (mStream_ != nullptr) {
@@ -103,6 +109,7 @@ void AudioPlayer::cleanup() {
 }
 
 bool AudioPlayer::isRunning() const {
+  std::scoped_lock lock(streamMutex_);
   return mStream_ != nullptr && mStream_->getState() == oboe::StreamState::Started &&
       isRunning_.load(std::memory_order_acquire);
 }
@@ -146,7 +153,7 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   }
 
   // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
-  std::scoped_lock lock(*driverMutex_);
+  std::scoped_lock lock(*driverMutex_, streamMutex_);
 
   auto context = context_.lock();
   if (context == nullptr || context->isClosed()) {
@@ -166,6 +173,7 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
 }
 
 double AudioPlayer::getBaseLatency() const {
+  std::scoped_lock lock(streamMutex_);
   if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) || !isRunning()) {
     return 0.0;
   }
@@ -184,6 +192,7 @@ double AudioPlayer::getBaseLatency() const {
 }
 
 double AudioPlayer::getOutputLatency() const {
+  std::scoped_lock lock(streamMutex_);
   if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) || !isRunning()) {
     return 0.0;
   }

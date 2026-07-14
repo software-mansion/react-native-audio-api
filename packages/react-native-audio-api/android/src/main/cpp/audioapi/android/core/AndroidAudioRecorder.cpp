@@ -50,12 +50,8 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
   if (adapterNodeHandle_ != nullptr) {
     static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
   }
-  // oboe could be handling stopping and closing the stream, sanity check just in case
-  if (mStream_ != nullptr) {
-    mStream_->requestStop();
-    mStream_->close();
-    mStream_.reset();
-  }
+
+  cleanup();
 }
 
 /// @brief Creates and opens the Oboe audio input stream for recording.
@@ -64,6 +60,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// Callable from the JS thread only.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
+  std::scoped_lock streamLock(streamMutex_);
   if (mStream_ != nullptr) {
     return Result<NoneType, std::string>::Ok(None);
   }
@@ -101,7 +98,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 /// Most likely this was due to alpha version mistakes, but in case of problems leaving this here. (ㆆ _ ㆆ)
 /// @returns On success, returns the file URI where the recording is being saved (if file output is enabled).
 Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fileNameOverride) {
-  std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+  std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_, streamMutex_);
 
   if (!isIdle()) {
     return Result<NoneType, std::string>::Err("Recorder is already recording");
@@ -176,7 +173,7 @@ AndroidAudioRecorder::stop() {
   bool hadFileOutput = false;
 
   {
-    std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+    std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_, streamMutex_);
 
     if (isIdle()) {
       return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
@@ -360,6 +357,7 @@ void AndroidAudioRecorder::disableFileOutput() {
 /// For session without active file output, this method acts same as stop().
 /// This method should be called from the JS thread only.
 void AndroidAudioRecorder::pause() {
+  std::scoped_lock streamLock(streamMutex_);
   if (!isRecording()) {
     return;
   }
@@ -371,6 +369,7 @@ void AndroidAudioRecorder::pause() {
 /// @brief Resumes the audio recording stream if it was previously paused.
 /// This method should be called from the JS thread only.
 void AndroidAudioRecorder::resume() {
+  std::scoped_lock streamLock(streamMutex_);
   if (!isPaused()) {
     return;
   }
@@ -519,7 +518,9 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
 }
 
 bool AndroidAudioRecorder::isRecording() const {
-  return state_.load(std::memory_order_acquire) == RecorderState::Recording &&
+  std::scoped_lock streamLock(streamMutex_);
+  return mStream_ != nullptr &&
+      state_.load(std::memory_order_acquire) == RecorderState::Recording &&
       mStream_->getState() == oboe::StreamState::Started;
 }
 
@@ -532,21 +533,30 @@ bool AndroidAudioRecorder::isIdle() const {
 }
 
 void AndroidAudioRecorder::cleanup() {
+  std::scoped_lock streamLock(streamMutex_);
   state_.store(RecorderState::Idle, std::memory_order_release);
 
   if (mStream_ != nullptr) {
+    mStream_->requestStop();
     mStream_->close();
     mStream_.reset();
   }
 }
 
 /// @brief onError callback that is invoked by the Oboe stream when an error occurs.
-/// This method runs on the audio thread.
+/// This method runs on a background thread spawned by Oboe as per AudioStreamAAudio::internalErrorCallback.
 /// If the error is a disconnection, it attempts to reopen the stream and resume recording.
 /// @param oboeStream Pointer to the Oboe audio stream.
 /// @param error The oboe::Result error code.
 void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
+  std::scoped_lock streamLock(streamMutex_);
   if (error == oboe::Result::ErrorDisconnected) {
+
+    // Since this runs on a background thread, it can be delayed, so do not teardown an already healthy stream.
+    if (mStream_.get() != stream) {
+      return;
+    }
+
     cleanup();
 
     auto streamResult = openAudioStream();
@@ -572,6 +582,8 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 }
 
 double AndroidAudioRecorder::getInputLatency() const {
+  std::scoped_lock streamLock(streamMutex_);
+
   if (mStream_ == nullptr || isIdle()) {
     return 0.0;
   }

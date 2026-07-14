@@ -55,6 +55,7 @@ class AudioPlayer : public AudioStreamDataCallback,
   std::function<void(DSPAudioBuffer *, int)> renderAudio_;
   std::atomic<uint32_t> &currentRenders_;
   std::shared_ptr<AudioStream> mStream_;
+  mutable std::recursive_mutex streamMutex_;
   std::shared_ptr<DSPAudioBuffer> buffer_;
   std::atomic<bool> isInitialized_{false};
   float sampleRate_;

@@ -81,6 +81,7 @@ class AudioRecorder {
   mutable std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;
   mutable std::mutex adapterNodeMutex_;
+  mutable std::recursive_mutex streamMutex_;
 
   std::atomic<uint64_t> errorCallbackId_{0};
 
