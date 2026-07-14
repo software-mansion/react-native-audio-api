@@ -21,9 +21,10 @@ namespace audioapi {
 class IOSAudioPlayer {
  public:
   IOSAudioPlayer(
-      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
-      int channelCount);
+      int channelCount,
+      std::atomic<uint32_t> &currentRenders);
   ~IOSAudioPlayer();
 
   bool start();
@@ -37,7 +38,8 @@ class IOSAudioPlayer {
  protected:
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
-  std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> renderAudio_;
+  std::function<void(DSPAudioBuffer *, int)> renderAudio_;
+  std::atomic<uint32_t> &currentRenders_;
   int channelCount_;
   std::atomic<bool> isRunning_;
 };
@@ -221,10 +223,11 @@ class IOSAudioPlayer {
 class TestableIOSAudioPlayer : public IOSAudioPlayer {
  public:
   TestableIOSAudioPlayer(
-      const std::function<void(std::shared_ptr<DSPAudioBuffer>, int)> &renderAudio,
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount)
-      : IOSAudioPlayer(renderAudio, sampleRate, channelCount) {}
+      : currentRendersStorage_(0),
+        IOSAudioPlayer(renderAudio, sampleRate, channelCount, currentRendersStorage_) {}
 
   NativeAudioPlayer *replaceAudioPlayer(NativeAudioPlayer *audioPlayer) {
     NativeAudioPlayer *previous = audioPlayer_;
@@ -243,6 +246,9 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
   void setRunning(bool isRunning) {
     isRunning_.store(isRunning, std::memory_order_release);
   }
+
+ private:
+  std::atomic<uint32_t> currentRendersStorage_;
 };
 
 struct TestAudioOutput {
@@ -473,7 +479,7 @@ struct TestAudioOutput {
 {
   auto assertOperationTracksRunning = [&](bool useResume) {
     auto player = std::make_unique<TestableIOSAudioPlayer>(
-        [](std::shared_ptr<DSPAudioBuffer>, int) {}, 48000, 2);
+        [](DSPAudioBuffer *, int) {}, 48000, 2);
     FakeNativeAudioPlayer *fakeNative = [[FakeNativeAudioPlayer alloc] init];
     NativeAudioPlayer *originalNative = player->replaceAudioPlayer(fakeNative);
     [originalNative cleanup];
@@ -498,7 +504,7 @@ struct TestAudioOutput {
 - (void)testStartShortCircuitsWhenAlreadyRunning
 {
   auto player =
-      std::make_unique<TestableIOSAudioPlayer>([](std::shared_ptr<DSPAudioBuffer>, int) {}, 48000, 2);
+      std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
   FakeNativeAudioPlayer *fakeNative = [[FakeNativeAudioPlayer alloc] init];
   NativeAudioPlayer *originalNative = player->replaceAudioPlayer(fakeNative);
   [originalNative cleanup];
@@ -515,7 +521,7 @@ struct TestAudioOutput {
 {
   auto assertOperationStopsRunning = [&](bool useSuspend) {
     auto player = std::make_unique<TestableIOSAudioPlayer>(
-        [](std::shared_ptr<DSPAudioBuffer>, int) {}, 48000, 2);
+        [](DSPAudioBuffer *, int) {}, 48000, 2);
     FakeNativeAudioPlayer *fakeNative = [[FakeNativeAudioPlayer alloc] init];
     NativeAudioPlayer *originalNative = player->replaceAudioPlayer(fakeNative);
     [originalNative cleanup];
@@ -542,7 +548,7 @@ struct TestAudioOutput {
 - (void)testCleanupStopsThenCleansUpAndClearsAudioBuffer
 {
   auto player =
-      std::make_unique<TestableIOSAudioPlayer>([](std::shared_ptr<DSPAudioBuffer>, int) {}, 48000, 2);
+      std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
   FakeNativeAudioPlayer *fakeNative = [[FakeNativeAudioPlayer alloc] init];
   NativeAudioPlayer *originalNative = player->replaceAudioPlayer(fakeNative);
   [originalNative cleanup];
@@ -558,7 +564,7 @@ struct TestAudioOutput {
 - (void)testIsRunningRequiresInternalFlagEngineAndRunningState
 {
   auto player =
-      std::make_unique<TestableIOSAudioPlayer>([](std::shared_ptr<DSPAudioBuffer>, int) {}, 48000, 2);
+      std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
 
   player->setRunning(false);
   self.audioEngine.fakeEngineRunning = YES;
@@ -582,12 +588,12 @@ struct TestAudioOutput {
   std::vector<int> renderedFrameSizes;
   int chunkIndex = 0;
   auto player = std::make_unique<TestableIOSAudioPlayer>(
-      [&renderedFrameSizes, &chunkIndex](std::shared_ptr<DSPAudioBuffer> buffer, int numFrames) {
+      [&renderedFrameSizes, &chunkIndex](DSPAudioBuffer *buffer, int numFrames) {
         renderedFrameSizes.push_back(numFrames);
 
         for (int channel = 0; channel < 2; channel += 1) {
           for (int frame = 0; frame < numFrames; frame += 1) {
-            (*buffer->getChannel(channel))[frame] = (channel == 0 ? 1.0f : 10.0f) * (chunkIndex + 1);
+            (*buffer)[channel][frame] = (channel == 0 ? 1.0f : 10.0f) * (chunkIndex + 1);
           }
         }
 
@@ -630,7 +636,7 @@ struct TestAudioOutput {
 {
   int renderCallCount = 0;
   auto player = std::make_unique<TestableIOSAudioPlayer>(
-      [&renderCallCount](std::shared_ptr<DSPAudioBuffer>, int) {
+      [&renderCallCount](DSPAudioBuffer *, int) {
         renderCallCount += 1;
       },
       48000,
@@ -639,7 +645,7 @@ struct TestAudioOutput {
   player->setRunning(false);
   for (int channel = 0; channel < 2; channel += 1) {
     for (int frame = 0; frame < static_cast<int>(player->getAudioBuffer()->getSize()); frame += 1) {
-      (*player->getAudioBuffer()->getChannel(channel))[frame] = 0.75f;
+      (*player->getAudioBuffer())[channel][frame] = 0.75f;
     }
   }
 
