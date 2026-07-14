@@ -183,7 +183,7 @@ interface PlaybackNotificationInfo {
 - Defaults to **15** when omitted.
 - Clamped to **1–120** seconds on native platforms.
 - Pass `skipInterval` in the same `show()` call (or earlier) before enabling skip controls, so the interval is applied when controls are first set up.
-- On Android, notification action icons may still display "15" regardless of the configured interval.
+- On Android, skip action icons show **15** when `skipInterval` is 15 (default); otherwise generic skip icons without a number are used.
 
 ### `PlaybackControlName`
 

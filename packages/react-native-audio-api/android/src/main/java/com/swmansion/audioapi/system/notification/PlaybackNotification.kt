@@ -212,8 +212,36 @@ class PlaybackNotification(
 
   private fun updateSkipIntervalFromOptions(info: ReadableMap) {
     if (info.hasKey("skipInterval")) {
+      val previous = skipIntervalSeconds
       setSkipIntervalSeconds(info.getDouble("skipInterval").toInt())
+      if (isInitialized && previous != skipIntervalSeconds) {
+        refreshSkipControlIcons()
+      }
     }
+  }
+
+  private fun skipForwardIcon(): Int =
+    if (skipIntervalSeconds == DEFAULT_SKIP_INTERVAL_SECONDS) {
+      R.drawable.skip_forward_15
+    } else {
+      R.drawable.skip_forward
+    }
+
+  private fun skipBackwardIcon(): Int =
+    if (skipIntervalSeconds == DEFAULT_SKIP_INTERVAL_SECONDS) {
+      R.drawable.skip_backward_15
+    } else {
+      R.drawable.skip_backward
+    }
+
+  private fun refreshSkipControlIcons() {
+    if (hasControl(PlaybackStateCompat.ACTION_REWIND) ||
+      hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)
+    ) {
+      updatePlaybackActionState()
+      updatePlaybackState(playbackStateVal)
+    }
+    updateNotificationsActions()
   }
 
   private fun updateInternal(info: ReadableMap) {
@@ -352,7 +380,7 @@ class PlaybackNotification(
           .Builder(
             "SkipBackward",
             "Skip Backward",
-            R.drawable.skip_backward_15,
+            skipBackwardIcon(),
           ).build(),
       )
     }
@@ -363,7 +391,7 @@ class PlaybackNotification(
           .Builder(
             "SkipForward",
             "Skip Forward",
-            R.drawable.skip_forward_15,
+            skipForwardIcon(),
           ).build(),
       )
     }
@@ -401,7 +429,7 @@ class PlaybackNotification(
 
     if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
       notificationBuilder?.addAction(
-        createAction("skip_backward", "Skip Backward", R.drawable.skip_backward_15, PlaybackStateCompat.ACTION_REWIND),
+        createAction("skip_backward", "Skip Backward", skipBackwardIcon(), PlaybackStateCompat.ACTION_REWIND),
       )
       actionsList.add(index++)
     }
@@ -427,7 +455,7 @@ class PlaybackNotification(
 
     if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
       notificationBuilder?.addAction(
-        createAction("skip_forward", "Skip Forward", R.drawable.skip_forward_15, PlaybackStateCompat.ACTION_FAST_FORWARD),
+        createAction("skip_forward", "Skip Forward", skipForwardIcon(), PlaybackStateCompat.ACTION_FAST_FORWARD),
       )
       actionsList.add(index++)
     }
