@@ -30,7 +30,7 @@ const node = new WorkletSourceNode(context, callback);
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `context` | `BaseAudioContext` | The audio context that owns this node. |
+| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
 | `callback` | `WorkletSourceNodeCallback` | Worklet invoked on the audio runtime each render quantum. Must include the `'worklet'` directive. |
 
 ### `WorkletSourceNodeCallback`
@@ -57,8 +57,8 @@ type WorkletSourceNodeCallback = (
 
 | Error type | Condition |
 | :---: | :---- |
-| `Error` | `react-native-audio-worklets` native module not installed or New Architecture is disabled. |
-| `Error` | `react-native-worklets` is missing or below the supported version. |
+| `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
+| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
 
 ## Example
 

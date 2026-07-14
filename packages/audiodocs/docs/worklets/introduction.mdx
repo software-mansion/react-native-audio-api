@@ -80,7 +80,7 @@ Simply put, a worklet is a piece of JavaScript that can run on a runtime other t
 
 ## UI runtime
 
-`WorkletNode` dispatches your callback on the **UI worklet runtime** provided by `react-native-worklets`. That lets you update Reanimated shared values and animated styles directly from audio-driven logic.
+[`WorkletNode`](/docs/worklets/worklet-node) dispatches your callback on the **UI worklet runtime** provided by `react-native-worklets`. That lets you update Reanimated shared values and animated styles directly from audio-driven logic.
 
 **Use it when you want to:**
 
@@ -92,7 +92,7 @@ Audio still flows through the node unchanged — the worklet receives a **read-o
 
 ## Audio runtime
 
-`WorkletSourceNode` and `WorkletProcessingNode` invoke your callback synchronously on a **dedicated audio worklet runtime** each render quantum (128 frames).
+[`WorkletSourceNode`](/docs/worklets/worklet-source-node) and [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node) invoke your callback synchronously on a **dedicated audio worklet runtime** each render quantum (128 frames).
 
 **Use them when you want to:**
 

@@ -2,6 +2,7 @@
 // native module has installed its JSI globals (createAudioContext, ...) before
 // we install the worklet extensions on top of them.
 import 'react-native-audio-api';
+import { NotSupportedError } from 'react-native-audio-api';
 import semverGte from 'semver/functions/gte';
 import type { WorkletRuntime } from 'react-native-worklets';
 
@@ -20,7 +21,7 @@ class AudioWorkletsModuleImpl {
     this.#verifyWorklets();
 
     if (!NativeAudioWorkletsModule) {
-      throw new Error(
+      throw new NotSupportedError(
         'react-native-audio-worklets: native module not found. This package requires React Native ' +
           'New Architecture (TurboModules). Enable newArchEnabled on Android and ' +
           'RCT_NEW_ARCH_ENABLED=1 in your Podfile, then rebuild the native app.'
@@ -39,13 +40,13 @@ class AudioWorkletsModuleImpl {
       this.#workletsVersion =
         require('react-native-worklets/package.json').version;
     } catch {
-      throw new Error(
+      throw new NotSupportedError(
         'react-native-audio-worklets requires react-native-worklets to be installed.'
       );
     }
 
     if (!semverGte(this.#workletsVersion, MIN_WORKLETS_VERSION)) {
-      throw new Error(
+      throw new NotSupportedError(
         `react-native-audio-worklets requires react-native-worklets >= ${MIN_WORKLETS_VERSION}, ` +
           `but ${this.#workletsVersion} is installed.`
       );

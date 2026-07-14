@@ -1,4 +1,8 @@
-import { AudioNode, BaseAudioContext } from 'react-native-audio-api';
+import {
+  AudioNode,
+  BaseAudioContext,
+  NotSupportedError,
+} from 'react-native-audio-api';
 
 import AudioWorkletsModule from './AudioWorkletsModule';
 import type { WorkletNodeCallback } from './types';
@@ -16,7 +20,7 @@ export default class WorkletNode extends AudioNode {
     const shareableWorklet = workletsModule.createSerializable(callback);
 
     if (globalThis.__createWorkletNode == null) {
-      throw new Error(
+      throw new NotSupportedError(
         'react-native-audio-worklets: worklet extensions are not installed.'
       );
     }

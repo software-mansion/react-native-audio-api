@@ -29,7 +29,7 @@ const node = new WorkletNode(context, callback, bufferLength);
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `context` | `BaseAudioContext` | The audio context that owns this node. |
+| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
 | `callback` | `WorkletNodeCallback` | Worklet invoked on the UI runtime when a snapshot is ready. Must include the `'worklet'` directive. |
 | `bufferLength` | `number` | Number of frames per channel in each snapshot. Frames are accumulated across render quanta until this length is reached. |
 
@@ -59,8 +59,8 @@ Do **not** assign `audioData` or a channel view to a Reanimated shared value (or
 
 | Error type | Condition |
 | :---: | :---- |
-| `Error` | `react-native-audio-worklets` native module not installed or New Architecture is disabled. |
-| `Error` | `react-native-worklets` is missing or below the supported version. |
+| `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
+| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
 | `NotSupportedError` | `bufferLength` is not a finite positive integer. |
 
 ## How buffering works
