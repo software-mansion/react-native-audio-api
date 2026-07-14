@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# Best Practices
+# Best practices
 
 When working with audio in a web or mobile application, following best practices ensures optimal performance,
 user experience, and maintainability. Here are some key best practices to consider when using the React Native Audio API:
@@ -19,6 +19,10 @@ user experience, and maintainability. Here are some key best practices to consid
 - **Suspend when not in use**: Suspend the `AudioContext` when audio is not needed to save system resources and battery life, especially on mobile devices.
   Running `AudioContext` is still playing silence even if there is no playing source node connected to the [`destination`](/docs/core/base-audio-context#properties).
   Additionally, on iOS devices, the state of the `AudioContext` is directly related with state of the lock screen. If running `AudioContext` exists, it is impossible to set lock screen state to `state_paused`.
+
+## [**AudioRecorder**](/docs/inputs/audio-recorder) Management
+
+- **Single AudioRecorder**: It is preferred to create only a single instance of the `AudioRecorder` class for the best performance, memory, and battery consumption. While an idle recorder has minimal impact, switching between separate recorder instances might have a noticeable impact on the device.
 
 ## React hooks vs React Native Audio API
 

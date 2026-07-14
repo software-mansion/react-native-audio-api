@@ -164,11 +164,13 @@ export interface OscillatorOptions {
   periodicWave?: PeriodicWave;
 }
 
-export interface BaseAudioBufferSourceOptions {
+interface BaseAudioBufferSourceOptions {
   detune?: number;
   playbackRate?: number;
   pitchCorrection?: boolean;
 }
+
+export type AudioBufferQueueSourceOptions = BaseAudioBufferSourceOptions;
 
 export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: AudioBufferLike;
