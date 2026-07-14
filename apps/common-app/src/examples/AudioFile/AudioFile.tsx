@@ -76,7 +76,7 @@ const AudioFile: FC = () => {
         state: 'paused',
         speed: 1.0,
         elapsedTime: 0,
-        skipInterval: 10
+        skipInterval: 15 // default is 15
       });
       await PlaybackNotificationManager.enableControl('skipBackward', true);
       await PlaybackNotificationManager.enableControl('nextTrack', true);
