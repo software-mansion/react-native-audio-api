@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
-#include <audioapi/core/utils/WsolaTimeStretcher.h>
+#include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 

@@ -74,6 +74,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
 endif()
 ```
 
+**Important:** the root `android/CMakeLists.txt` only `set()`s these as CMake variables. They are turned into actual preprocessor defines in the child `src/main/cpp/audioapi/CMakeLists.txt` via `target_compile_definitions(... HAVE_ARM_NEON_INTRINSICS=1 / HAVE_X86_SSE2=1)`. If you add new `#if defined(HAVE_ARM_NEON_INTRINSICS)` code, verify the define is actually reaching the compiler on Android — it is easy to regress to scalar.
+
 ### RN version-dependent flags (workaround for RN 0.80+ flag changes)
 
 ```cmake

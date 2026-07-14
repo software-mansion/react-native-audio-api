@@ -1,5 +1,6 @@
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/core/utils/WsolaTimeStretcher.h>
+#include <audioapi/dsp/VectorMath.h>
+#include <audioapi/dsp/WsolaTimeStretcher.h>
 
 #include <algorithm>
 #include <cmath>
@@ -56,6 +57,9 @@ void WsolaTimeStretcher::configure(size_t channels, float sampleRate) {
   targetBlock_.assign(channels_, std::vector<float>(windowSize_, 0.0f));
   optimalBlock_.assign(channels_, std::vector<float>(windowSize_, 0.0f));
   targetEnergy_.assign(channels_, 0.0f);
+  // Search span covers every candidate offset [0, searchIntervalFrames_) plus a
+  // full trailing window, so any candidate slice stays in bounds.
+  searchSpan_.assign(channels_, std::vector<float>(searchIntervalFrames_ + windowSize_, 0.0f));
 
   reset();
 }
@@ -266,9 +270,20 @@ bool WsolaTimeStretcher::targetIsWithinSearchRegion() const {
       targetBlockIndex_ + static_cast<int>(windowSize_) <= searchBlockIndex_ + searchBlockSize;
 }
 
+void WsolaTimeStretcher::fillSearchSpan() {
+  const size_t spanLength = searchIntervalFrames_ + windowSize_;
+  for (size_t channel = 0; channel < channels_; ++channel) {
+    auto &span = searchSpan_[channel];
+    for (size_t j = 0; j < spanLength; ++j) {
+      span[j] = sampleAt(channel, searchBlockIndex_ + static_cast<int>(j));
+    }
+  }
+}
+
 int WsolaTimeStretcher::findOptimalBlockIndex() {
   fillBlock(targetBlock_, targetBlockIndex_);
   computeTargetEnergy();
+  fillSearchSpan();
 
   const int candidateCount = static_cast<int>(searchIntervalFrames_);
   if (candidateCount <= 1) {
@@ -322,18 +337,15 @@ int WsolaTimeStretcher::findOptimalBlockIndex() {
 
 float WsolaTimeStretcher::similarityAt(int candidateIndex) const {
   static constexpr float EPSILON = 1e-12f;
+  const int offset = candidateIndex - searchBlockIndex_;
   float score = 0.0f;
 
   for (size_t channel = 0; channel < channels_; ++channel) {
-    float dot = 0.0f;
-    float candidateEnergy = 0.0f;
+    const float *target = targetBlock_[channel].data();
+    const float *candidate = searchSpan_[channel].data() + offset;
 
-    for (size_t frame = 0; frame < windowSize_; frame += SIMILARITY_FRAME_STRIDE) {
-      const float target = targetBlock_[channel][frame];
-      const float candidate = sampleAt(channel, candidateIndex + static_cast<int>(frame));
-      dot += target * candidate;
-      candidateEnergy += candidate * candidate;
-    }
+    const float dot = dsp::dotProduct(target, candidate, windowSize_);
+    const float candidateEnergy = dsp::sumOfSquares(candidate, windowSize_);
 
     score += dot / std::sqrt(targetEnergy_[channel] * candidateEnergy + EPSILON);
   }
@@ -387,12 +399,7 @@ void WsolaTimeStretcher::fillBlock(std::vector<std::vector<float>> &block, int f
 
 void WsolaTimeStretcher::computeTargetEnergy() {
   for (size_t channel = 0; channel < channels_; ++channel) {
-    float energy = 0.0f;
-    for (size_t frame = 0; frame < windowSize_; frame += SIMILARITY_FRAME_STRIDE) {
-      const float value = targetBlock_[channel][frame];
-      energy += value * value;
-    }
-    targetEnergy_[channel] = energy;
+    targetEnergy_[channel] = dsp::sumOfSquares(targetBlock_[channel].data(), windowSize_);
   }
 }
 

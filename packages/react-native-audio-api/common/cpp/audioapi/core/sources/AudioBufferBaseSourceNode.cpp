@@ -5,7 +5,7 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
-#include <audioapi/core/utils/WsolaTimeStretcher.h>
+#include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <algorithm>
 #include <cmath>
 #include <memory>
