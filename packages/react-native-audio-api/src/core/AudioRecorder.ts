@@ -13,6 +13,9 @@ import {
   FileInfo,
   Result,
 } from '../types';
+// Imported for {@link concatAudioFiles} in enableFileOutput docs.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSDoc link target
+import { concatAudioFiles } from './AudioFileUtils';
 import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
 import type AudioNode from './AudioNode';
@@ -51,6 +54,21 @@ export default class AudioRecorder {
     this.recorder = globalThis.createAudioRecorder();
   }
 
+  /**
+   * Enables writing recorded audio to a file using the provided options.
+   *
+   * When {@link AudioRecorderFileOptions.rotateIntervalBytes} is greater than
+   * `0`, the recorder splits output into multiple segment files. After
+   * recording, join them with {@link concatAudioFiles} from the package entry
+   * point.
+   *
+   * **Rotation size:** very low `rotateIntervalBytes` values rotate often and
+   * cause audible artifacts at segment boundaries after concatenation —
+   * especially for encoded formats such as M4A, where each segment starts a
+   * fresh AAC encode. Practical starting points: about **512 KB–1 MB** for WAV
+   * and **≥ 200 KB** for M4A. This option controls segment file size, not
+   * recording memory use.
+   */
   enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
     this.options_ = options || {};
     const parsedOptions = withDefaultOptions(this.options_);
