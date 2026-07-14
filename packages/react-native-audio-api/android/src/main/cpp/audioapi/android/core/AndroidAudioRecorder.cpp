@@ -191,7 +191,6 @@ AndroidAudioRecorder::stop() {
 
     state_.store(RecorderState::Idle, std::memory_order_release);
     lastCallbackFrameCount_.store(0, std::memory_order_release);
-    lastInputLatencySeconds_.store(0.0, std::memory_order_release);
     mStream_->requestStop();
 
     hadFileOutput = usesFileOutput();

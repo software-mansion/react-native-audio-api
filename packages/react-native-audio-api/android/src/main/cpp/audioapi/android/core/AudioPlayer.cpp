@@ -68,7 +68,6 @@ void AudioPlayer::stop() {
   if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
     lastCallbackFrameCount_.store(0, std::memory_order_release);
-    lastOutputLatencySeconds_.store(0.0, std::memory_order_release);
     mStream_->requestStop();
   }
 }

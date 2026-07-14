@@ -62,8 +62,6 @@ class AudioPlayer : public AudioStreamDataCallback,
   std::atomic<bool> isRunning_;
   /// Updated on the audio thread from each Oboe callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
-  /// Full output latency (seconds) sampled at callback start via Oboe timestamps.
-  std::atomic<double> lastOutputLatencySeconds_{0.0};
   std::mutex *driverMutex_;
   std::weak_ptr<AudioContext> context_;
 

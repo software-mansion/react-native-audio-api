@@ -70,8 +70,6 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   std::vector<std::string> recordingSegmentPaths_;
   /// Updated on the audio thread from each input callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
-  /// Full input latency (seconds) sampled at callback start via Oboe timestamps.
-  std::atomic<double> lastInputLatencySeconds_{0.0};
   Result<NoneType, std::string> openAudioStream();
   std::shared_ptr<AudioFileWriter> createFileWriter(
       const std::shared_ptr<AudioFileProperties> &props);
