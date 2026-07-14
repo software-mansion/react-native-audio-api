@@ -13,6 +13,9 @@ import {
   FileInfo,
   Result,
 } from '../types';
+// Imported for {@link concatAudioFiles} in enableFileOutput docs.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSDoc link target
+import { concatAudioFiles } from './AudioFileUtils';
 import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
 import type AudioNode from './AudioNode';
