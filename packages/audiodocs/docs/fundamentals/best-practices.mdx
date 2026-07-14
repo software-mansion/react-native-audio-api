@@ -65,7 +65,7 @@ user experience, and maintainability. Here are some key best practices to consid
 
 - **Configure background audio in Expo**: For background playback or recording, enable the required options in the [`react-native-audio-api` Expo plugin](/docs/other/audio-api-plugin) — iOS background mode, Android foreground service, and the appropriate permissions.
 
-- **Wire lock-screen and notification controls once per session**: Register [`PlaybackNotificationManager`](/docs/system/playback-notification-manager) or [`RecordingNotificationManager`](/docs/system/recording-notification-manager) listeners when a session starts and remove them on cleanup. On iOS, lock-screen play/pause state follows the `AudioContext` — you must [`suspend()`](/docs/core/audio-context#suspend) the context to show paused.
+- **Wire lock-screen and notification controls once per session**: Register [`PlaybackNotificationManager`](/docs/system/playback-notification-manager) or [`RecordingNotificationManager`](/docs/system/recording-notification-manager) listeners when a session starts and remove them on cleanup. On iOS, lock-screen play/pause state follows the `AudioContext` — you must [`suspend()`](/docs/core/audio-context#suspend) the context to show paused. For recording indicators on iOS, use a Live Activity with [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/) instead of `RecordingNotificationManager`.
 
 ## Performance
 
