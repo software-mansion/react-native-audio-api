@@ -31,8 +31,9 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 | `frequency` <Optional /> | `number` | `440.0` | Initial value for [`frequency`](/docs/sources/oscillator-node#properties). |
 | `detune` <Optional /> | `number` | `0.0` | Initial value for [`detune`](/docs/sources/oscillator-node#properties). |
 
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createOscillator()`](/docs/core/base-audio-context#createoscillator)
+:::info
+You can also create an `OscillatorNode` via [`BaseAudioContext.createOscillator()`](/docs/core/base-audio-context#createoscillator), which uses default values.
+:::
 
 ## Example
 
@@ -76,7 +77,7 @@ Sets any periodic wave.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `wave` | [`PeriodicWave`](/docs/effects/periodic-wave) | Data representing custom wave. [`See for reference`](/docs/core/base-audio-context#createperiodicwave) |
+| `wave` | [`PeriodicWave`](/docs/effects/periodic-wave) | Data representing custom wave ([see for reference](/docs/core/base-audio-context#createperiodicwave)). |
 
 #### Returns `undefined`.
 

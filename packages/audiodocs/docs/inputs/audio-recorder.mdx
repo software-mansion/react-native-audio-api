@@ -6,14 +6,15 @@ toc_max_heading_level: 5
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import { Optional } from '@site/src/components/Badges';
 
 # AudioRecorder
 
-AudioRecorder is a primary interface for capturing audio. It supports three main modes of operations:
+`AudioRecorder` is a primary interface for capturing audio. It supports three main modes of operations:
 
 - **File recording:** Writing audio data directly to the filesystem.
 - **Data callback:** Emitting raw audio buffers, that can be used in either further processing or streamed.
-- **Graph processing:** Connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing
+- **Graph processing:** Connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing.
 
 ## Configuration
 
@@ -50,11 +51,11 @@ Additionally to be able to record audio while application is in the background, 
 
   </TabItem>
   <TabItem value="iOS" label="iOS">
-    For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode
+    For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode.
 
     ![background mode configuration example](/docs/recorder/signing-and-capabilities.png)
 
-    Microphone permission can be created or modified through the `Info.plist` file
+    Microphone permission can be created or modified through the `Info.plist` file.
 
     ![Info plist example](/docs/recorder/info-plist.png)
 
@@ -71,7 +72,7 @@ Additionally to be able to record audio while application is in the background, 
 
   </TabItem>
   <TabItem value="android" label="Android">
-    To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file
+    To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file.
 
     ```xml
     <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -92,7 +93,7 @@ Additionally to be able to record audio while application is in the background, 
   </TabItem>
 </Tabs>
 
-## Usage
+## Examples
 
 <Tabs group="usage">
   <TabItem value="record-to-file" label="Record to File">
@@ -343,335 +344,236 @@ export default MyRecorder;
   </TabItem>
 </Tabs>
 
-## API
+## Constructor
 
-<table className="table-vertical-top">
-  <thead>
-    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><div class="text-content">
-        ##### Constructor
-      </div></td>
-      <td>
-        <div class="text-content">
-        Creates new instance of AudioRecorder. It is preferred to create only a single instance of the AudioRecorder class for the best performance, memory and battery consumption reasons. While the idle recorder has minimal impact on anything mentioned, switching between separate recorder instances might have a noticeable impact on the device.
-        </div>
-        ```tsx
-        import { AudioRecorder } from 'react-native-audio-api';
+```tsx
+constructor()
+```
 
-        const audioRecorder = new AudioRecorder();
-        ```
-      </td>
-    </tr>
-    <tr>
-      <td><div class="text-content">
-        ##### start
-        <br />
-        (asynchronous)
-      </div></td>
-      <td>
-        <div class="text-content">
-          Starts the stream from system audio input device. Returns a `Promise` that resolves when recording has started.
-          You can pass optional object with `fileNameOverride` string, to provide your own fileName generation.
-        </div>
-        ```tsx
-        const result = await audioRecorder.start({
-          fileNameOverride: `my_audio_${mySessionId}`
-        });
+Creates a new `AudioRecorder` instance.
 
-        console.log(result.status);
-        ```
-      </td>
-    </tr>
+:::info
+It is preferred to create only a single instance of `AudioRecorder` for the best performance, memory, and battery consumption. While an idle recorder has minimal impact, switching between separate recorder instances might have a noticeable impact on the device.
+:::
 
-<!-- -->
+```tsx
+import { AudioRecorder } from 'react-native-audio-api';
 
-    <tr>
-      <td><div class="text-content">
-        ##### stop
-        <br />
-        (asynchronous)
-      </div></td>
-      <td>
-        <div class="text-content">
-        Stops the input stream and cleans up each input access method. Returns a `Promise` that resolves when recording has stopped.
+const audioRecorder = new AudioRecorder();
+```
 
-        For details on the returned file information check: [FileInfo](#fileinfo)
-        </div>
-        ```tsx
-        const result = await audioRecorder.stop();
+## Properties
 
-        if (result.status === 'success') {
-          const { paths, duration, size } = result;
-        } else if (result.status === 'error') {
-          console.error(result.message);
-        }
-        ```
-      </td>
-    </tr>
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `options` | [`AudioRecorderFileOptions`](#audiorecorderfileoptions) \| `null` | Active file-output configuration after [`enableFileOutput()`](#enablefileoutput), or `null` when file output is disabled. |
 
-<!-- -->
+## Methods
 
-    <tr>
-      <td><div class="text-content">
-        ##### pause
-      </div></td>
-      <td>
-        <div class="text-content">
-          Pauses the recording. This is useful when recording to file is active, but you don't want to finalize the file.
-        </div>
-        ```tsx
-          audioRecorder.pause();
-        ```
-      </td>
-    </tr>
+### `start`
 
-<!-- -->
+Starts the stream from the system audio input device.
 
-    <tr>
-      <td><div class="text-content">
-        ##### resume
-      </div></td>
-      <td>
-        <div class="text-content">
-          Resumes the recording if it was previously paused, otherwise does nothing.
-        </div>
-        ```tsx
-          audioRecorder.resume();
-        ```
-      </td>
-    </tr>
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `options` <Optional /> | [`AudioRecorderStartOptions`](#audiorecorderstartoptions) | Optional recording start configuration. |
 
-<!-- -->
+#### Returns `Promise<Result<{}>>`.
 
-    <tr>
-      <td><div class="text-content">
-        ##### isRecording
-      </div></td>
-      <td>
-        <div class="text-content">
-          Returns `true` if the recorder is in active/recording state
-        </div>
-        ```tsx
-          const isRecording = audioRecorder.isRecording();
-        ```
-      </td>
-    </tr>
+```tsx
+const result = await audioRecorder.start({
+  fileNameOverride: `my_audio_${mySessionId}`,
+});
 
-<!-- -->
+console.log(result.status);
+```
 
-    <tr>
-      <td><div class="text-content">
-        ##### isPaused
-      </div></td>
-      <td>
-        <div class="text-content">
-          Returns `true` if the recorder is in paused state.
-        </div>
-        ```tsx
-          const isPaused = audioRecorder.isPaused();
-        ```
-      </td>
-    </tr>
+### `stop`
 
-<!-- -->
+Stops the input stream and cleans up each input access method.
 
-    <tr>
-      <td><div class="text-content">
-        ##### onError
-      </div></td>
-      <td>
-        <div class="text-content">
-          Sets an error callback for any possible internal error that might happen during file writing, callback invocation or adapter access.
+For details on the returned file information, see [`FileInfo`](#fileinfo).
 
-          For details check: [OnRecorderErrorEventType](#onrecordererroreventtype)
-        </div>
-        ```tsx
-          audioRecorder.onError((error: OnRecorderErrorEventType) => {
-            console.log(error);
-          });
-        ```
-      </td>
-    </tr>
+#### Returns `Promise<Result<FileInfo>>`.
 
-<!-- -->
+```tsx
+const result = await audioRecorder.stop();
 
-    <tr>
-      <td><div class="text-content">
-        ##### clearOnError
-      </div></td>
-      <td>
-        <div class="text-content">
-          Removes the error callback.
-        </div>
-        ```tsx
-          audioRecorder.clearOnError();
-        ```
-      </td>
-    </tr>
+if (result.status === 'success') {
+  const { paths, duration, size } = result;
+} else if (result.status === 'error') {
+  console.error(result.message);
+}
+```
 
-  </tbody>
-</table>
+### `pause`
 
-### Recording to file
+Pauses the recording. This is useful when recording to file is active, but you do not want to finalize the file.
 
-<table className="table-vertical-top">
-  <thead>
-    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
-  </thead>
-  <tbody>
-<!-- -->
-    <tr>
-      <td><div class="text-content">
-        ##### enableFileOutput
-      </div></td>
-      <td>
-        <div class="text-content">
-          Configures and enables the file output with defined options and stream properties. Options property allows for configuration of the output file structure and quality. By default the recorder writes to cache directory using high-quality `M4A` file.
+```tsx
+audioRecorder.pause();
+```
 
-          For further information check: [AudioRecorderFileOptions](#audiorecorderfileoptions)
-        </div>
-        ```tsx
-          audioRecorder.enableFileOutput();
-        ```
-      </td>
-    </tr>
-    <!-- -->
-    <tr>
-      <td><div class="text-content">
-        ##### disableFileOutput
-      </div></td>
-      <td>
-        <div class="text-content">
-          Disables the file output and finalizes the currently recorded file if the recorder is active.
-        </div>
-        ```tsx
-          audioRecorder.disableFileOutput();
-        ```
-      </td>
-    </tr>
-    <!-- -->
-    <tr>
-      <td><div class="text-content">
-        ##### getCurrentDuration
-      </div></td>
-      <td>
-        <div class="text-content">
-          Returns current recording duration if recording to file is enabled.
-        </div>
-        ```tsx
-          const duration = audioRecorder.getCurrentDuration();
-        ```
-      </td>
-    </tr>
+### `resume`
 
-  </tbody>
-</table>
+Resumes the recording if it was previously paused; otherwise does nothing.
 
-### Data callback
+```tsx
+audioRecorder.resume();
+```
 
-<table className="table-vertical-top">
-  <thead>
-    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
-  </thead>
-  <tbody>
-<!-- -->
-    <tr>
-      <td><div class="text-content">
-        ##### onAudioReady
-      </div></td>
-      <td>
-        <div class="text-content">
-          The callback is periodically invoked with audio buffers that match the preferred configuration provided in `options`. These parameters (sample rate, buffer length, and channel count) guide how audio data is chunked and delivered, though the exact values may vary depending on device capabilities.
-          <br />
+### `isRecording`
 
-          For further information check:
-            - [AudioRecorderCallbackOptions](#audiorecordercallbackoptions)
-            - [OnAudioReadyEventType](#onaudioreadyeventtype)
-        </div>
-        ```tsx
-          const sampleRate = 16000;
+Returns `true` if the recorder is in an active recording state.
 
-          audioRecorder.onAudioReady(
-            {
-              sampleRate,
-              bufferLength: 0.1 * sampleRate, // 0.1s of data
-              channelCount: 1,
-            },
-            ({ buffer, numFrames, when }) => {
-              // do something with the data
-            });
-        ```
-      </td>
-    </tr>
-    <!-- -->
-    <tr>
-      <td><div class="text-content">
-        ##### clearOnAudioReady
-      </div></td>
-      <td>
-        <div class="text-content">
-          Disables and flushes the remaining audio data through `onAudioReady` callback as explained above.
-        </div>
-        ```tsx
-          audioRecorder.clearOnAudioReady();
-        ```
-      </td>
-    </tr>
+#### Returns `boolean`.
 
-  </tbody>
-</table>
+```tsx
+const isRecording = audioRecorder.isRecording();
+```
 
-#### Graph processing
+### `isPaused`
 
-<table className="table-vertical-top">
-  <thead>
-    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
-  </thead>
-  <tbody>
-<!-- -->
-    <tr>
-      <td><div class="text-content">
-        ##### connect
-      </div></td>
-      <td>
-        <div class="text-content">
-          Routes captured audio into an audio graph. Two forms are supported:
+Returns `true` if the recorder is in a paused state.
 
-          1. `connect(adapter)` — connects the recorder to an adapter node you created yourself with `audioContext.createRecorderAdapter()`. Each adapter can only be connected once.
-          2. `connect(context, destination)` — convenience form that creates the adapter node internally, wires the recorder to it, connects it to `destination`, and returns the adapter so you can `disconnect()` it later if needed.
-        </div>
-        ```tsx
-          // Form 1: explicit adapter
-          const adapter = audioContext.createRecorderAdapter();
-          audioRecorder.connect(adapter);
-          adapter.connect(audioContext.destination);
+#### Returns `boolean`.
 
-          // Form 2: convenience — adapter created under the hood
-          const adapter = audioRecorder.connect(audioContext, audioContext.destination);
-        ```
-      </td>
-    </tr>
-    <!-- -->
-    <tr>
-      <td><div class="text-content">
-        ##### disconnect
-      </div></td>
-      <td>
-        <div class="text-content">
-          Disconnects AudioRecorder from the audio graph.
-        </div>
-        ```tsx
-          audioRecorder.disconnect();
-        ```
-      </td>
-    </tr>
-  </tbody>
-</table>
+```tsx
+const isPaused = audioRecorder.isPaused();
+```
+
+### `getCurrentDuration`
+
+Returns the current recording duration when file output is enabled.
+
+#### Returns `number`.
+
+```tsx
+const duration = audioRecorder.getCurrentDuration();
+```
+
+### `enableFileOutput`
+
+Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file.
+
+For further information, see [`AudioRecorderFileOptions`](#audiorecorderfileoptions).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `options` <Optional /> | [`AudioRecorderFileOptions`](#audiorecorderfileoptions) | File output configuration. |
+
+#### Returns `Result<{}>`.
+
+```tsx
+audioRecorder.enableFileOutput();
+```
+
+### `disableFileOutput`
+
+Disables file output and finalizes the currently recorded file if the recorder is active.
+
+```tsx
+audioRecorder.disableFileOutput();
+```
+
+### `onAudioReady`
+
+Registers a callback that receives raw audio buffers during an active recording session.
+
+The callback is periodically invoked with audio buffers that match the preferred configuration provided in `options`. These parameters guide how audio data is chunked and delivered, though the exact values may vary depending on device capabilities.
+
+For further information, see [`AudioRecorderCallbackOptions`](#audiorecordercallbackoptions) and [`OnAudioReadyEventType`](#onaudioreadyeventtype).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `options` | [`AudioRecorderCallbackOptions`](#audiorecordercallbackoptions) | Preferred callback buffer configuration. |
+| `callback` | `(event: OnAudioReadyEventType) => void` | Function invoked when a new audio buffer is available. |
+
+#### Returns `Result<void>`.
+
+```tsx
+const sampleRate = 16000;
+
+audioRecorder.onAudioReady(
+  {
+    sampleRate,
+    bufferLength: 0.1 * sampleRate, // 0.1s of data
+    channelCount: 1,
+  },
+  ({ buffer, numFrames, when }) => {
+    // do something with the data
+  }
+);
+```
+
+### `clearOnAudioReady`
+
+Removes the audio data callback and flushes any remaining buffered data through `onAudioReady`.
+
+```tsx
+audioRecorder.clearOnAudioReady();
+```
+
+### `connect`
+
+Routes captured audio into an audio graph by creating a recorder adapter with [`BaseAudioContext.createRecorderAdapter()`](/docs/core/base-audio-context#createrecorderadapter), connecting the recorder to it, and wiring it to `destination`.
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | Audio context used to create the recorder adapter. |
+| `destination` | [`AudioNode`](/docs/core/audio-node) | Destination node in the audio graph. |
+
+#### Returns [`AudioNode`](/docs/core/audio-node).
+
+```tsx
+audioRecorder.connect(audioContext, audioContext.destination);
+```
+
+### `disconnect`
+
+Disconnects `AudioRecorder` from the audio graph.
+
+```tsx
+audioRecorder.disconnect();
+```
+
+### `onError`
+
+Sets an error callback for internal errors that might happen during file writing, callback invocation, or adapter access.
+
+For details, see [`OnRecorderErrorEventType`](#onrecordererroreventtype).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `callback` | `(error: OnRecorderErrorEventType) => void` | Error handler invoked when recording fails. |
+
+```tsx
+audioRecorder.onError((error) => {
+  console.log(error);
+});
+```
+
+### `clearOnError`
+
+Removes the error callback.
+
+```tsx
+audioRecorder.clearOnError();
+```
 
 ## Types
+
+#### `AudioRecorderStartOptions`
+
+```tsx
+interface AudioRecorderStartOptions {
+  fileNameOverride?: string;
+}
+```
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `fileNameOverride` <Optional /> | `string` | Custom file name used when recording to file. |
 
 #### AudioRecorderCallbackOptions
 
@@ -743,7 +645,7 @@ interface AudioRecorderFileOptions {
 - `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
 - `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
-  - Higher values are more battery- and storage-efficient.
+  - Higher values are more battery - and storage-efficient.
 
 #### FileFormat
 
@@ -778,13 +680,13 @@ interface FileInfo {
 
 #### FilePresetType
 
-Describes audio format that is used during writing to file as well as encoded final file properties. You can use one of predefined presets, or fully customize the result file, but be aware that the properties aren't limited to only valid configurations, you may find property pairs that will result in error result during recording start (or when enabling the file output during active input session)!
+Describes the audio format that is used during writing to file as well as encoded final file properties. You can use one of predefined presets, or fully customize the result file, but be aware that the properties aren't limited to only valid configurations, you may find property pairs that will result in error result during recording start (or when enabling the file output during active input session)!
 
 ##### Built-in file presets
 
-For convenience we have provided set of most basic file configurations that should cover most of the cases (or at least we hope they will, please raise an issue if you find something lacking or misconfigured!).
+For convenience we have provided a set of most basic file configurations that should cover most of the cases (or at least we hope they will, please raise an issue if you find something lacking or misconfigured!).
 
-###### Usage
+##### Usage
 
 ```tsx
 import { AudioRecorder, FileFormat, FilePreset } from 'react-native-audio-api';
@@ -813,7 +715,7 @@ audioRecorder.enableFileOutput({
         </div>
         ```tsx
         audioRecorder.enableFileOutput({
-          format: FileFormat.CAF,
+          format: FileFormat.Caf,
           preset: FilePreset.Lossless,
         });
         ```
@@ -976,5 +878,3 @@ export interface FilePresetType {
     </tr>
   </tbody>
 </table>
-
-## Remarks & known issues

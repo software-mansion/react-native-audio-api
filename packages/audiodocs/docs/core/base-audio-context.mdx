@@ -23,7 +23,7 @@ In general we can distinguish four types of nodes:
 
 ![](/img/audio-graph.png)
 
-#### Rendering audio graph
+#### Rendering the audio graph
 
 Audio graph rendering is done in blocks of sample-frames. The number of sample-frames in a block is called render quantum size, and the block itself is called a render quantum.
 By default render quantum size value is `128` and it is a constant.
@@ -52,13 +52,13 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 
 Creates [`AnalyserNode`](/docs/analysis/analyser-node).
 
-#### Returns `AnalyserNode`.
+**Returns:** `AnalyserNode`
 
 ### `createBiquadFilter`
 
 Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
-#### Returns `BiquadFilterNode`.
+**Returns:** `BiquadFilterNode`
 
 ### `createBuffer`
 
@@ -70,7 +70,7 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 | `length` | `number` | An integer representing the length of the buffer in sampleFrames. Two seconds buffer has length equals to `2 * sampleRate`. |
 | `sampleRate` | `number` | A float representing the sample rate of the buffer. |
 
-#### Errors
+**Errors**
 
 | Error type | Description |
 | :---: | :---- |
@@ -78,7 +78,7 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 | `NotSupportedError` | `sampleRate` is outside the supported range [`3000`, `768000`]. |
 | `NotSupportedError` | `length` is less then `1`. |
 
-#### Returns `AudioBuffer`.
+**Returns:** `AudioBuffer`
 
 ### `createBufferSource`
 
@@ -88,7 +88,7 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 | :---: | :---: | :---- |
 | `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
 
-#### Returns `AudioBufferSourceNode`.
+**Returns:** `AudioBufferSourceNode`
 
 ### `createBufferQueueSource` <MobileOnly />
 
@@ -96,21 +96,21 @@ Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-n
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
+| `options` <Optional /> | [`AudioBufferQueueSourceOptions`](/docs/sources/audio-buffer-queue-source-node#audiobufferqueuesourceoptions) | Constructor options for [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node). |
 
-#### Returns `AudioBufferQueueSourceNode`.
+**Returns:** `AudioBufferQueueSourceNode`
 
 ### `createConstantSource`
 
 Creates [`ConstantSourceNode`](/docs/sources/constant-source-node).
 
-#### Returns `ConstantSourceNode`.
+**Returns:** `ConstantSourceNode`
 
 ### `createConvolver`
 
 Creates [`ConvolverNode`](/docs/effects/convolver-node).
 
-#### Returns `ConvolverNode`.
+**Returns:** `ConvolverNode`
 
 ### `createDelay`
 
@@ -120,25 +120,25 @@ Creates [`DelayNode`](/docs/effects/delay-node)
 | :---: | :---: | :---- |
 | `maxDelayTime` <Optional /> | `number` | Maximum amount of time to buffer delayed values|
 
-#### Returns `DelayNode`
+**Returns:** `DelayNode`
 
 ### `createGain`
 
 Creates [`GainNode`](/docs/effects/gain-node).
 
-#### Returns `GainNode`.
+**Returns:** `GainNode`
 
 ### `createIIRFilter`
 
 Creates [`IIRFilterNode`](/docs/effects/iir-filter-node).
 
-#### Returns `IIRFilterNode`.
+**Returns:** `IIRFilterNode`
 
 ### `createOscillator`
 
 Creates [`OscillatorNode`](/docs/sources/oscillator-node).
 
-#### Returns `OscillatorNode`.
+**Returns:** `OscillatorNode`
 
 ### `createPeriodicWave`
 
@@ -150,13 +150,13 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 | `imag` | `Float32Array` | An array of sine terms. |
 | `constraints` <Optional /> | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of `1.0` and minimum peak value of `-1.0`.|
 
-#### Errors
+**Errors**
 
 | Error type | Description |
 | :---: | :---- |
 | `InvalidAccessError` | `real` and `imag` arrays do not have same length. |
 
-#### Returns `PeriodicWave`.
+**Returns:** `PeriodicWave`
 
 ### `createRecorderAdapter`
 
@@ -166,19 +166,19 @@ Feed it using [`AudioRecorder.connect`](/docs/inputs/audio-recorder#connect) and
 connect it downstream like any other node. Produces silence until a recorder is
 connected to it.
 
-#### Returns `RecorderAdapterNode`
+**Returns:** `RecorderAdapterNode`
 
 ### `createStereoPanner`
 
 Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
-#### Returns `StereoPannerNode`.
+**Returns:** `StereoPannerNode`
 
 ### `createWaveShaper`
 
 Creates [`WaveShaperNode`](/docs/effects/wave-shaper-node).
 
-#### Returns `WaveShaperNode`.
+**Returns:** `WaveShaperNode`
 
 ### `createWorkletNode` <MobileOnly />
 
@@ -191,7 +191,7 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 | `inputChannelCount` | `number` | The number of channels that the node expects as input (it will get min(expected, provided)). |
 | `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
 
-#### Errors
+**Errors**
 
 | Error type | Description |
 | :---: | :---- |
@@ -199,7 +199,7 @@ Creates [`WorkletNode`](/docs/worklets/worklet-node).
 | `NotSupportedError` | `bufferLength` < `1`. |
 | `NotSupportedError` | `inputChannelCount` is not in range [`1`, `32`]. |
 
-#### Returns `WorkletNode`.
+**Returns:** `WorkletNode`
 
 ### `createWorkletSourceNode` <MobileOnly />
 
@@ -210,13 +210,13 @@ Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
 | `worklet` | `(Array<Float32Array>, number, number, number) => void` | The worklet to be executed. |
 | `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
 
-#### Errors
+**Errors**
 
 | Error type | Description |
 | :---: | :---- |
 | `Error` | `react-native-worklet` is not found as dependency. |
 
-#### Returns `WorkletSourceNode`.
+**Returns:** `WorkletSourceNode`
 
 ### `createWorkletProcessingNode` <MobileOnly />
 
@@ -227,13 +227,13 @@ Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
 | `worklet` | `(Array<Float32Array>, Array<Float32Array>, number, number) => void` | The worklet to be executed. |
 | `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
 
-#### Errors
+**Errors**
 
 | Error type | Description |
 | :---: | :---- |
 | `Error` | `react-native-worklet` is not found as dependency. |
 
-#### Returns `WorkletProcessingNode`.
+**Returns:** `WorkletProcessingNode`
 
 ### `decodeAudioData`
 
@@ -250,7 +250,7 @@ Decodes base64-encoded PCM audio data.
 | `inputChannelCount` | `number` | Number of channels in the input PCM data. |
 | `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Default is `true`. |
 
-#### Returns `Promise<AudioBuffer>`
+**Returns:** `Promise<AudioBuffer>`
 
 <details>
 <summary>Example decoding with data in base64 format </summary>
