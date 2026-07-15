@@ -46,17 +46,11 @@ class PlaybackNotification(
     const val ACTION_SKIP_BACKWARD = "com.swmansion.audioapi.ACTION_SKIP_BACKWARD"
     const val ID = 100
 
-    private const val DEFAULT_SKIP_INTERVAL_SECONDS = 15
-
-    @JvmStatic
-    var skipIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS
-      private set
-
-    @JvmStatic
-    fun setSkipIntervalSeconds(seconds: Int) {
-      skipIntervalSeconds = seconds
-    }
+    // Must match kDefaultSkipIntervalSeconds on iOS.
+    const val DEFAULT_SKIP_INTERVAL_SECONDS = 15
   }
+
+  private var skipIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS
 
   private var mediaSession: MediaSessionCompat? = null
   private var notificationBuilder: NotificationCompat.Builder? = null
@@ -210,9 +204,8 @@ class PlaybackNotification(
 
   private fun updateSkipIntervalFromOptions(info: ReadableMap) {
     if (info.hasKey("skipInterval")) {
-      val previous = skipIntervalSeconds
-      setSkipIntervalSeconds(info.getDouble("skipInterval").toInt())
-      if (isInitialized && previous != skipIntervalSeconds) {
+      skipIntervalSeconds = info.getDouble("skipInterval").toInt()
+      if (isInitialized) {
         refreshSkipControlIcons()
       }
     }
@@ -487,6 +480,7 @@ class PlaybackNotification(
       val customActionName = if (name == "skip_forward") ACTION_SKIP_FORWARD else ACTION_SKIP_BACKWARD
       val intent = Intent(customActionName)
       intent.setPackage(context.packageName)
+      intent.putExtra(PlaybackNotificationReceiver.EXTRA_SKIP_INTERVAL_SECONDS, skipIntervalSeconds)
       pendingIntent =
         PendingIntent.getBroadcast(
           context,

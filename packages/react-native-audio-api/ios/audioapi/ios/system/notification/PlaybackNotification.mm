@@ -12,6 +12,7 @@
     @"artwork" : MPMediaItemPropertyArtwork \
   }
 
+// Must match PlaybackNotification.DEFAULT_SKIP_INTERVAL_SECONDS on Android.
 static const NSInteger kDefaultSkipIntervalSeconds = 15;
 
 @implementation PlaybackNotification {

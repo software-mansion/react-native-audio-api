@@ -14,6 +14,7 @@ class PlaybackNotificationReceiver : BroadcastReceiver() {
     const val ACTION_NOTIFICATION_DISMISSED = "com.swmansion.audioapi.PLAYBACK_NOTIFICATION_DISMISSED"
     const val ACTION_SKIP_FORWARD = "com.swmansion.audioapi.ACTION_SKIP_FORWARD"
     const val ACTION_SKIP_BACKWARD = "com.swmansion.audioapi.ACTION_SKIP_BACKWARD"
+    const val EXTRA_SKIP_INTERVAL_SECONDS = "skipIntervalSeconds"
 
     private var audioAPIModule: AudioAPIModule? = null
 
@@ -32,12 +33,22 @@ class PlaybackNotificationReceiver : BroadcastReceiver() {
       }
 
       ACTION_SKIP_FORWARD -> {
-        val body = HashMap<String, Any>().apply { put("value", PlaybackNotification.skipIntervalSeconds) }
+        val skipInterval =
+          intent.getIntExtra(
+            EXTRA_SKIP_INTERVAL_SECONDS,
+            PlaybackNotification.DEFAULT_SKIP_INTERVAL_SECONDS,
+          )
+        val body = HashMap<String, Any>().apply { put("value", skipInterval) }
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_FORWARD.ordinal, body)
       }
 
       ACTION_SKIP_BACKWARD -> {
-        val body = HashMap<String, Any>().apply { put("value", PlaybackNotification.skipIntervalSeconds) }
+        val skipInterval =
+          intent.getIntExtra(
+            EXTRA_SKIP_INTERVAL_SECONDS,
+            PlaybackNotification.DEFAULT_SKIP_INTERVAL_SECONDS,
+          )
+        val body = HashMap<String, Any>().apply { put("value", skipInterval) }
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_BACKWARD.ordinal, body)
       }
     }
