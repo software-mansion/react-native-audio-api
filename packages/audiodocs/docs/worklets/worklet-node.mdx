@@ -22,7 +22,24 @@ For background on runtimes and performance tips, see [How to use audio worklets 
 import { AudioContext } from 'react-native-audio-api';
 import { WorkletNode } from 'react-native-audio-worklets';
 
-const node = new WorkletNode(context, callback, bufferLength);
+const node = new WorkletNode(context, callback, 1024);
+
+// or with explicit options:
+const timeDomainNode = new WorkletNode(context, callback, {
+  domain: 'time-domain',
+  bufferLength: 1024,
+});
+
+const frequencyDomainNode = new WorkletNode(context, callback, {
+  domain: 'frequency-domain',
+  bufferLength: 1024,
+});
+```
+
+After construction, tune frequency-domain analysis at runtime:
+
+```tsx
+frequencyDomainNode.smoothingTimeConstant = 0.5;
 ```
 
 ### Parameters
@@ -31,7 +48,25 @@ const node = new WorkletNode(context, callback, bufferLength);
 | :---: | :---: | :---- |
 | `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
 | `callback` | `WorkletNodeCallback` | Worklet invoked on the UI runtime when a snapshot is ready. Must include the `'worklet'` directive. |
-| `bufferLength` | `number` | Number of frames in each down-mixed mono snapshot. Frames are accumulated across render quanta until this length is reached. |
+| `options` | `number \| WorkletNodeOptions` | Optional. Pass `bufferLength` directly, `{ domain?, bufferLength? }`, or omit for defaults (`time-domain`, `bufferLength: 1024`). |
+
+### `WorkletNodeOptions`
+
+```tsx
+type WorkletNodeDomain = 'time-domain' | 'frequency-domain';
+
+interface WorkletNodeOptions {
+  domain?: WorkletNodeDomain; // default 'time-domain'
+  bufferLength?: number; // power of 2, 32..32768, default 1024
+  smoothingTimeConstant?: number; // default 0.8, frequency-domain only
+}
+```
+
+| Option | Default | Description |
+| :--- | :---- | :---- |
+| `domain` | `'time-domain'` | Snapshot type passed to the callback. |
+| `bufferLength` | `1024` | Snapshot size: PCM samples (time-domain) or magnitude bins (frequency-domain). In frequency-domain mode the internal FFT size is `bufferLength * 2`. |
+| `smoothingTimeConstant` | `0.8` | Exponential smoothing of linear magnitude bins (`0`..`1`). |
 
 ### `WorkletNodeCallback`
 
@@ -41,7 +76,7 @@ type WorkletNodeCallback = (audioData: Float32Array) => void;
 
 | Argument | Description |
 | :--- | :---- |
-| `audioData` | Stable down-mixed mono `Float32Array` of 32-bit float PCM, of length `bufferLength`. The same view object is reused every callback; only the underlying sample memory is refilled. |
+| `audioData` | Stable `Float32Array` reused every callback. **Time-domain:** down-mixed mono PCM (`bufferLength` samples). **Frequency-domain:** linear magnitude spectrum (`bufferLength` bins; FFT size `bufferLength * 2`). |
 
 :::caution
 Do **not** assign `audioData` to a Reanimated shared value (or any state read later on the UI thread). The native buffer pool is reused for the next snapshot and may be written from the audio thread after your callback returns.
@@ -57,14 +92,15 @@ Do **not** assign `audioData` to a Reanimated shared value (or any state read la
 | :---: | :---- |
 | `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
 | `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
-| `NotSupportedError` | `bufferLength` is not a finite positive integer. |
+| `IndexSizeError` | `bufferLength` or `smoothingTimeConstant` is out of range. |
 
 ## How buffering works
 
-1. Each render quantum appends frames into an internal snapshot buffer.
-2. When `bufferLength` frames have been collected, the callback is scheduled on the UI thread.
-3. While the callback is running, new frames are **skipped** (audio still passes through).
-4. After the callback completes, accumulation starts again from the beginning.
+1. Each render quantum appends down-mixed mono frames into an internal buffer.
+2. **Time-domain:** when `bufferLength` frames are collected, the callback is scheduled.
+3. **Frequency-domain:** when `bufferLength * 2` PCM samples are collected, native code runs window + FFT + magnitude smoothing, then schedules the callback with `bufferLength` bins.
+4. While the callback is running, new frames are **skipped** (audio still passes through).
+5. After the callback completes, accumulation starts again from the beginning.
 
 If a single quantum contains more frames than needed to fill the buffer, only the frames required to reach `bufferLength` are copied — the rest are discarded.
 
@@ -116,7 +152,10 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
-`WorkletNode` does not define any additional properties.
+| Property | Type | Description |
+| :--- | :--- | :---- |
+| `bufferLength` <ReadOnly /> | `number` | Snapshot size passed to the callback (set at construction). In frequency-domain mode, internal FFT size is `bufferLength * 2`. |
+| `smoothingTimeConstant` | `number` | Exponential smoothing of linear magnitude bins (`0`..`1`, default `0.8`). Meaningful in frequency-domain mode. |
 
 ## Methods
 

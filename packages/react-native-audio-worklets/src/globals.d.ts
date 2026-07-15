@@ -5,7 +5,9 @@ declare global {
     | ((
         audioContext: unknown,
         shareableWorklet: unknown,
+        domain: number,
         bufferLength: number,
+        smoothingTimeConstant: number,
         uiRuntimeHolder: unknown,
         uiSchedulerHolder: unknown
       ) => any)

@@ -15,6 +15,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/dsp/FFT.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>

@@ -188,7 +188,7 @@ function Worklets() {
           stiffness: 120,
         });
       },
-      1024
+      { domain: 'time-domain', bufferLength: 1024 }
     );
 
     workletSourceRef.current.connect(workletProcessingRef.current);

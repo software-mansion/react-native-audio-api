@@ -2,10 +2,10 @@
 
 #include <audioapi/compatibility/StableAPI.h>
 #include <audioworklets/core/WorkletNode.h>
+#include <audioworklets/core/WorkletNodeDomain.h>
 #include <worklets/Compat/StableApi.h>
 
 #include <memory>
-#include <utility>
 
 namespace audioworklets {
 
@@ -16,27 +16,21 @@ class WorkletNodeHostObject : public audioapi::AudioNodeHostObject {
   WorkletNodeHostObject(
       const std::shared_ptr<audioapi::utils::graph::Graph> &graph,
       const std::shared_ptr<audioapi::BaseAudioContext> &context,
-      std::shared_ptr<worklets::WorkletRuntime> uiRuntime,
-      std::shared_ptr<worklets::UIScheduler> uiScheduler,
-      std::shared_ptr<worklets::Serializable> serializableWorklet,
-      size_t bufferLength)
-      : audioapi::AudioNodeHostObject(
-            graph,
-            std::make_unique<WorkletNode>(
-                context,
-                UIWorkletsRunner(
-                    std::move(uiRuntime),
-                    std::move(uiScheduler),
-                    std::move(serializableWorklet)),
-                bufferLength)),
-        bufferLength_(bufferLength) {}
+      const std::shared_ptr<worklets::WorkletRuntime> &uiRuntime,
+      const std::shared_ptr<worklets::UIScheduler> &uiScheduler,
+      const std::shared_ptr<worklets::Serializable> &serializableWorklet,
+      WorkletNodeDomain domain,
+      const WorkletNodeOptions &options);
 
-  [[nodiscard]] size_t getMemoryPressure() const override {
-    return AudioNodeHostObject::getMemoryPressure() + bufferLength_ * sizeof(float);
-  }
+  JSI_PROPERTY_GETTER_DECL(bufferLength);
+  JSI_PROPERTY_GETTER_DECL(smoothingTimeConstant);
+
+  JSI_PROPERTY_SETTER_DECL(smoothingTimeConstant);
+
+  [[nodiscard]] size_t getMemoryPressure() const override;
 
  private:
-  size_t bufferLength_;
+  WorkletNode *workletNode_ = nullptr;
 };
 
 } // namespace audioworklets

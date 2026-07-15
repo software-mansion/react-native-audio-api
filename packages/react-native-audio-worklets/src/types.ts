@@ -1,6 +1,14 @@
+export type WorkletNodeDomain = 'time-domain' | 'frequency-domain';
+
+export interface WorkletNodeOptions {
+  domain?: WorkletNodeDomain;
+  bufferLength?: number;
+  smoothingTimeConstant?: number;
+}
+
 /**
- * Invoked on the UI worklet runtime once `bufferLength` frames have been
- * accumulated (when the prior callback has finished).
+ * Invoked on the UI worklet runtime once a snapshot is ready (when the prior
+ * callback has finished).
  *
  * @remarks
  *   Do not store `audioData` in Reanimated shared values or other state read
@@ -9,10 +17,14 @@
  *   Derive scalars inside the callback (e.g. RMS, peak) or copy samples
  *   (`Float32Array.from(audioData)`) if you need to keep waveform data for
  *   later UI reads.
- * @param audioData - Stable down-mixed mono `Float32Array` view (zero-copy over
- *   a reused native buffer pool) spanning the full `bufferLength`. The same
- *   object identity is passed on every callback; only the underlying sample
- *   memory is refilled.
+ * @param audioData - Stable `Float32Array` view (zero-copy over a reused native
+ *   buffer pool). The same object identity is passed on every callback; only
+ *   the underlying sample memory is refilled.
+ *
+ *   - **Time-domain:** down-mixed mono PCM of length `bufferLength`.
+ *   - **Frequency-domain:** linear magnitude spectrum of length `bufferLength`
+ *       (internal FFT size is `bufferLength * 2`; same window + FFT path as
+ *       `AnalyserNode`, with `smoothingTimeConstant` applied at runtime).
  */
 export type WorkletNodeCallback = (audioData: Float32Array) => void;
 
