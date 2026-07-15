@@ -42,6 +42,9 @@ class IOSAudioPlayer {
   std::atomic<uint32_t> &currentRenders_;
   int channelCount_;
   std::atomic<bool> isRunning_;
+  std::atomic<bool> flushOverflowNextPull_;
+  int pendingSavedCount_;
+  DSPAudioBuffer pendingSaved_;
 };
 
 } // namespace audioapi
@@ -586,18 +589,18 @@ struct TestAudioOutput {
 - (void)testRenderBlockRendersInQuantumSizedChunksWhenRunning
 {
   std::vector<int> renderedFrameSizes;
-  int chunkIndex = 0;
+  float delta = 0.1f;
   auto player = std::make_unique<TestableIOSAudioPlayer>(
-      [&renderedFrameSizes, &chunkIndex](DSPAudioBuffer *buffer, int numFrames) {
+      [&renderedFrameSizes, &delta](DSPAudioBuffer *buffer, int numFrames) {
         renderedFrameSizes.push_back(numFrames);
 
         for (int channel = 0; channel < 2; channel += 1) {
           for (int frame = 0; frame < numFrames; frame += 1) {
-            (*buffer)[channel][frame] = (channel == 0 ? 1.0f : 10.0f) * (chunkIndex + 1);
+            (*buffer)[channel][frame] = (channel == 0 ? 0.1f : 0.2f) + delta;
           }
         }
 
-        chunkIndex += 1;
+        delta += 0.1f;
       },
       48000,
       2);
@@ -617,18 +620,18 @@ struct TestAudioOutput {
   XCTAssertEqual(renderedFrameSizes[2], RENDER_QUANTUM_SIZE);
 
   for (int frame = 0; frame < 128; frame += 1) {
-    XCTAssertEqualWithAccuracy(output.channels[0][frame], 1.0f, 0.0001f);
-    XCTAssertEqualWithAccuracy(output.channels[1][frame], 10.0f, 0.0001f);
+    XCTAssertEqualWithAccuracy(output.channels[0][frame], 0.2f, 0.0001f);
+    XCTAssertEqualWithAccuracy(output.channels[1][frame], 0.3f, 0.0001f);
   }
 
   for (int frame = 128; frame < 256; frame += 1) {
-    XCTAssertEqualWithAccuracy(output.channels[0][frame], 2.0f, 0.0001f);
-    XCTAssertEqualWithAccuracy(output.channels[1][frame], 20.0f, 0.0001f);
+    XCTAssertEqualWithAccuracy(output.channels[0][frame], 0.3f, 0.0001f);
+    XCTAssertEqualWithAccuracy(output.channels[1][frame], 0.4f, 0.0001f);
   }
 
   for (int frame = 256; frame < 300; frame += 1) {
-    XCTAssertEqualWithAccuracy(output.channels[0][frame], 3.0f, 0.0001f);
-    XCTAssertEqualWithAccuracy(output.channels[1][frame], 30.0f, 0.0001f);
+    XCTAssertEqualWithAccuracy(output.channels[0][frame], 0.4f, 0.0001f);
+    XCTAssertEqualWithAccuracy(output.channels[1][frame], 0.5f, 0.0001f);
   }
 }
 
