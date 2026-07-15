@@ -9,8 +9,12 @@ import {
 
 # RecordingNotificationManager <Android />
 
-The `RecordingNotificationManager` provides system integration with [`Recorder`](/docs/inputs/audio-recorder).
+The `RecordingNotificationManager` provides system integration with [`AudioRecorder`](/docs/inputs/audio-recorder) on Android.
 It can send events about pausing and resuming to your application.
+
+:::note iOS
+`RecordingNotificationManager` is not available on iOS. For a recording indicator on the Lock Screen and in the Dynamic Island, use a [Live Activity](https://docs.expo.dev/versions/latest/sdk/widgets/) built with [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/).
+:::
 
 ## Example
 ```typescript

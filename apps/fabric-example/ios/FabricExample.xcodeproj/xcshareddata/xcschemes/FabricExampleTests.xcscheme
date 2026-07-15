@@ -7,25 +7,11 @@
       buildImplicitDependencies = "YES">
       <BuildActionEntries>
          <BuildActionEntry
-            buildForTesting = "NO"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "FabricExample.app"
-               BlueprintName = "FabricExample"
-               ReferencedContainer = "container:FabricExample.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
             buildForTesting = "YES"
-            buildForRunning = "NO"
+            buildForRunning = "YES"
             buildForProfiling = "NO"
             buildForArchiving = "NO"
-            buildForAnalyzing = "NO">
+            buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "B2C3D561E00000100A0A001"
@@ -69,9 +55,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "FabricExample.app"
-            BlueprintName = "FabricExample"
+            BlueprintIdentifier = "B2C3D561E00000100A0A001"
+            BuildableName = "FabricExampleTestHost.app"
+            BlueprintName = "FabricExampleTestHost"
             ReferencedContainer = "container:FabricExample.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -86,9 +72,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "FabricExample.app"
-            BlueprintName = "FabricExample"
+            BlueprintIdentifier = "B2C3D561E00000100A0A001"
+            BuildableName = "FabricExampleTestHost.app"
+            BlueprintName = "FabricExampleTestHost"
             ReferencedContainer = "container:FabricExample.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

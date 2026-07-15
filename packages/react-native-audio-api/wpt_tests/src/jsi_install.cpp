@@ -35,7 +35,6 @@ using facebook::jsi::Value;
 using Microsoft::NodeApiJsi::makeNodeApiJsiRuntime;
 using rnaudioapi::node::NodeJSRuntimeApi;
 using rnaudioapi::node::SyncCallInvoker;
-using RuntimeRegistry = ::RuntimeRegistry;
 
 struct JsiInstallState {
   std::unique_ptr<NodeJSRuntimeApi> jsRuntimeApi;
@@ -131,7 +130,6 @@ void installOfflineBindings(
             length,
             sampleRate,
             eventRegistry,
-            RuntimeRegistry{},
             &rt,
             callInvoker);
 
@@ -186,7 +184,6 @@ void installAudioContextBinding(
         auto hostObject = std::make_shared<AudioContextHostObject>(
             sampleRate,
             eventRegistry,
-            RuntimeRegistry{},
             &rt,
             callInvoker);
 

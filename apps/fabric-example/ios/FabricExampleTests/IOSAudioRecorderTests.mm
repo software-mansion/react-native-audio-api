@@ -6,6 +6,7 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/core/inputs/AudioRecorder.h>
 #import <audioapi/core/sources/RecorderAdapterNode.h>
+#import <audioapi/core/utils/graph/NodeHandle.h>
 #import <audioapi/utils/AudioFileProperties.h>
 
 #include <memory>
@@ -33,24 +34,47 @@ class IOSAudioRecorder : public AudioRecorder {
 
   Result<NoneType, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
+  void disableFileOutput() override;
 
-  void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
+  void connect(const std::shared_ptr<utils::graph::NodeHandle> &node) override;
+  void disconnect() override;
 
   void pause() override;
   void resume() override;
 
   bool isRecording() const override;
   bool isPaused() const override;
+  bool isIdle() const override;
 
   Result<NoneType, std::string> setOnAudioReadyCallback(
       float sampleRate,
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId) override;
+  void clearOnAudioReadyCallback() override;
 
  protected:
   NativeAudioRecorder *nativeRecorder_;
 };
+
+struct RecorderAdapterTestFixture {
+  std::shared_ptr<OfflineAudioContext> context;
+  std::shared_ptr<utils::graph::NodeHandle> handle;
+
+  RecorderAdapterNode *adapter() const
+  {
+    return static_cast<RecorderAdapterNode *>(handle->audioNode.get());
+  }
+};
+
+static RecorderAdapterTestFixture makeRecorderAdapterFixture()
+{
+  RecorderAdapterTestFixture fixture;
+  fixture.context = std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr);
+  auto adapterNode = std::make_unique<RecorderAdapterNode>(fixture.context);
+  fixture.handle = std::make_shared<utils::graph::NodeHandle>(0, std::move(adapterNode));
+  return fixture;
+}
 
 } // namespace audioapi
 
@@ -483,10 +507,7 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
 
 - (void)testConnectWhileIdleTracksIntentWithoutLiveConnection
 {
-  auto context =
-      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr, RuntimeRegistry{});
-  context->initialize();
-  auto adapter = context->createRecorderAdapter();
+  auto adapter = std::make_shared<utils::graph::NodeHandle>(0, nullptr);
 
   _recorder->connect(adapter);
 
@@ -556,14 +577,11 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
 - (void)testStopClearsConfiguredStateButPreservesConfiguredIntent
 {
   self.audioEngine.state = AudioEngineStateRunning;
-  auto context =
-      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr, RuntimeRegistry{});
-  context->initialize();
-  auto adapter = context->createRecorderAdapter();
+  auto adapterFixture = makeRecorderAdapterFixture();
 
   XCTAssertTrue(_recorder->enableFileOutput([self validFileProperties]).is_ok());
   XCTAssertTrue(_recorder->setOnAudioReadyCallback(48000, 256, 1, 99).is_ok());
-  _recorder->connect(adapter);
+  _recorder->connect(adapterFixture.handle);
 
   auto startResult = _recorder->start("");
   XCTAssertTrue(startResult.is_ok());
@@ -646,16 +664,14 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
 
 - (void)testConnectWhileActiveInitializesAdapterAndDisconnectClearsIt
 {
-  auto context =
-      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr, RuntimeRegistry{});
-  context->initialize();
-  auto adapter = context->createRecorderAdapter();
+  auto adapterFixture = makeRecorderAdapterFixture();
+  auto *adapter = adapterFixture.adapter();
 
   XCTAssertFalse(_recorder->isConnected());
   XCTAssertEqual(adapter->buff_.size(), 0U);
 
   _recorder->setRecorderState(AudioRecorder::RecorderState::Recording);
-  _recorder->connect(adapter);
+  _recorder->connect(adapterFixture.handle);
 
   XCTAssertTrue(_recorder->isConnected());
   XCTAssertEqual(adapter->buff_.size(), 2U);
