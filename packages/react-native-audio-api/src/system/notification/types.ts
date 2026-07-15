@@ -35,6 +35,8 @@ export interface PlaybackNotificationInfo {
   elapsedTime?: number;
   speed?: number;
   state?: 'playing' | 'paused';
+  /** Skip interval in seconds for skipForward/skipBackward. Default: 15 */
+  skipInterval?: number;
 }
 
 /// Available playback control actions.
