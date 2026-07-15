@@ -3,22 +3,18 @@
  * accumulated (when the prior callback has finished).
  *
  * @remarks
- *   Do not store `audioData` (or individual channel views) in Reanimated shared
- *   values or other state read asynchronously later. The backing memory reused
- *   for the next snapshot and may be written from the audio thread after your
- *   callback returns. Derive scalars inside the callback (e.g. RMS, peak) or
- *   copy samples (`Float32Array.from(channel)`) if you need to keep waveform
- *   data for later UI reads.
- * @param audioData - Stable per-channel `Float32Array` views (zero-copy over a
- *   reused native buffer pool). Each view spans the full `bufferLength`. The
- *   same object identities are passed on every callback; only the underlying
- *   sample memory is refilled.
- * @param numberOfChannels - Active channel count (`audioData.length`).
+ *   Do not store `audioData` in Reanimated shared values or other state read
+ *   asynchronously later. The backing memory is reused for the next snapshot
+ *   and may be written from the audio thread after your callback returns.
+ *   Derive scalars inside the callback (e.g. RMS, peak) or copy samples
+ *   (`Float32Array.from(audioData)`) if you need to keep waveform data for
+ *   later UI reads.
+ * @param audioData - Stable down-mixed mono `Float32Array` view (zero-copy over
+ *   a reused native buffer pool) spanning the full `bufferLength`. The same
+ *   object identity is passed on every callback; only the underlying sample
+ *   memory is refilled.
  */
-export type WorkletNodeCallback = (
-  audioData: Array<Float32Array>,
-  numberOfChannels: number
-) => void;
+export type WorkletNodeCallback = (audioData: Float32Array) => void;
 
 /**
  * Invoked synchronously on the audio worklet runtime each render quantum.

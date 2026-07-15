@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace audioworklets {
 
@@ -12,11 +13,16 @@ WorkletNode::WorkletNode(
     UIWorkletsRunner workletRunner,
     size_t bufferLength)
     : audioapi::AudioNode(context),
+      downMixBuffer_(
+          std::make_unique<audioapi::DSPAudioBuffer>(
+              audioapi::RENDER_QUANTUM_SIZE,
+              1,
+              context->getSampleRate())),
       workletRunner_(std::move(workletRunner)),
       bufferLength_(bufferLength),
       busy_(std::make_shared<std::atomic<bool>>(false)) {
-  workletRunner_.createChannelViews(
-      bufferLength_, static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
+  setProcessableState(GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE);
+  workletRunner_.createChannelView(bufferLength_);
 }
 
 WorkletNode::~WorkletNode() {
@@ -24,8 +30,8 @@ WorkletNode::~WorkletNode() {
 }
 
 void WorkletNode::processNode(int framesToProcess) {
-  const auto &channelViews = workletRunner_.channelViews();
-  if (!workletRunner_.isActive() || channelViews == nullptr) {
+  const auto &channelView = workletRunner_.channelView();
+  if (!workletRunner_.isActive() || channelView == nullptr) {
     return;
   }
 
@@ -37,15 +43,9 @@ void WorkletNode::processNode(int framesToProcess) {
     return;
   }
 
+  downMixBuffer_->copy(*audioBuffer_);
+
   const auto frameCount = static_cast<size_t>(framesToProcess);
-  const auto channelCount = audioBuffer_->getNumberOfChannels();
-
-  if (channelCount == 0) {
-    return;
-  }
-
-  const size_t channelsToCopy =
-      std::min(channelCount, static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT));
 
   const size_t remaining = bufferLength_ - framesFilled_;
   if (remaining == 0) {
@@ -54,19 +54,29 @@ void WorkletNode::processNode(int framesToProcess) {
 
   const size_t framesToCopy = std::min(frameCount, remaining);
 
-  for (size_t ch = 0; ch < channelsToCopy; ++ch) {
-    channelViews->channelBuffer(ch)->copy(
-        *audioBuffer_->getChannel(ch), 0, framesFilled_, framesToCopy);
-  }
+  channelView->channelBuffer(0)->copy(
+      *downMixBuffer_->getChannel(0), 0, framesFilled_, framesToCopy);
 
   framesFilled_ += framesToCopy;
 
   if (framesFilled_ >= bufferLength_) {
-    dispatchToUI(channelsToCopy);
+    dispatchToUI();
   }
 }
 
-void WorkletNode::dispatchToUI(size_t channelCount) {
+void WorkletNode::processInputs(
+    const std::vector<const audioapi::DSPAudioBuffer *> &inputs,
+    int numFrames) {
+  if (inputs.empty()) {
+    getInputBuffer()->zero(0, static_cast<size_t>(numFrames));
+    framesFilled_ = 0;
+    return;
+  }
+
+  audioapi::AudioNode::processInputs(inputs, numFrames);
+}
+
+void WorkletNode::dispatchToUI() {
   if (!workletRunner_.isActive()) {
     framesFilled_ = 0;
     return;
@@ -82,7 +92,7 @@ void WorkletNode::dispatchToUI(size_t channelCount) {
   std::atomic_thread_fence(std::memory_order_release);
 
   auto busy = busy_;
-  workletRunner_.call(channelCount, [busy]() { busy->store(false, std::memory_order_release); });
+  workletRunner_.call([busy]() { busy->store(false, std::memory_order_release); });
 
   framesFilled_ = 0;
 }

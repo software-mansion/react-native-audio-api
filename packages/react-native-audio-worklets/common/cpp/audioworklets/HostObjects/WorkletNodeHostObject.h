@@ -32,8 +32,7 @@ class WorkletNodeHostObject : public audioapi::AudioNodeHostObject {
         bufferLength_(bufferLength) {}
 
   [[nodiscard]] size_t getMemoryPressure() const override {
-    return AudioNodeHostObject::getMemoryPressure() +
-        static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT) * bufferLength_ * sizeof(float);
+    return AudioNodeHostObject::getMemoryPressure() + bufferLength_ * sizeof(float);
   }
 
  private:

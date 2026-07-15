@@ -6,6 +6,7 @@
 #include <atomic>
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 namespace audioworklets {
 
@@ -14,10 +15,12 @@ namespace audioworklets {
  * JavaScript worklet on the UI runtime so the UI can be animated from live
  * audio (e.g. amplitude/RMS visualizers).
  *
- * Render-quantum frames are copied directly into snapshot buffers until
- * `bufferLength` is reached, then a snapshot is dispatched to the UI scheduler.
+ * Incoming audio is down-mixed to mono, accumulated until `bufferLength` is
+ * reached, then dispatched to the UI scheduler as a single `Float32Array`.
  * While the UI callback is running, incoming frames are skipped. Audio flows
- * through unchanged.
+ * through unchanged. The node is always scheduled while the context is running
+ * (like `AnalyserNode`), but snapshot accumulation runs only when upstream
+ * inputs are connected.
  */
 class WorkletNode : public audioapi::AudioNode {
  public:
@@ -28,11 +31,18 @@ class WorkletNode : public audioapi::AudioNode {
 
   ~WorkletNode() override;
 
+  DELETE_COPY_AND_MOVE(WorkletNode);
+
  protected:
   void processNode(int framesToProcess) override;
 
+  void processInputs(const std::vector<const audioapi::DSPAudioBuffer *> &inputs, int numFrames)
+      override;
+
  private:
-  void dispatchToUI(size_t channelCount);
+  void dispatchToUI();
+
+  std::unique_ptr<audioapi::DSPAudioBuffer> downMixBuffer_;
 
   UIWorkletsRunner workletRunner_;
   size_t bufferLength_;

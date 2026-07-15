@@ -1,7 +1,6 @@
 // Import react-native-audio-api for its side effect: this guarantees the core
 // native module has installed its JSI globals (createAudioContext, ...) before
 // we install the worklet extensions on top of them.
-import 'react-native-audio-api';
 import { NotSupportedError } from 'react-native-audio-api';
 import semverGte from 'semver/functions/gte';
 import type { WorkletRuntime } from 'react-native-worklets';

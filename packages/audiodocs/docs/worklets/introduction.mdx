@@ -108,7 +108,7 @@ These callbacks run on the audio path. Keep them short and allocation-free — a
 
 `WorkletNode` is designed for **UI visualization**, not sample-accurate audio processing. The audio thread accumulates frames into a snapshot buffer and schedules your callback on the UI thread — it never blocks playback.
 
-`bufferLength` is the number of **frames per channel** in each snapshot. It controls how often the callback runs when the UI keeps up:
+`bufferLength` is the number of **frames** in each down-mixed mono snapshot. It controls how often the callback runs when the UI keeps up:
 
 $$
 \text{callback rate (Hz)} \approx \frac{\text{sampleRate}}{\text{bufferLength}}

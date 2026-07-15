@@ -31,28 +31,24 @@ const node = new WorkletNode(context, callback, bufferLength);
 | :---: | :---: | :---- |
 | `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
 | `callback` | `WorkletNodeCallback` | Worklet invoked on the UI runtime when a snapshot is ready. Must include the `'worklet'` directive. |
-| `bufferLength` | `number` | Number of frames per channel in each snapshot. Frames are accumulated across render quanta until this length is reached. |
+| `bufferLength` | `number` | Number of frames in each down-mixed mono snapshot. Frames are accumulated across render quanta until this length is reached. |
 
 ### `WorkletNodeCallback`
 
 ```tsx
-type WorkletNodeCallback = (
-  audioData: Array<Float32Array>,
-  numberOfChannels: number
-) => void;
+type WorkletNodeCallback = (audioData: Float32Array) => void;
 ```
 
 | Argument | Description |
 | :--- | :---- |
-| `audioData` | One stable `Float32Array` per channel of 32-bit float PCM (not interleaved), each of length `bufferLength`. The same view objects are reused every callback; only the underlying sample memory is refilled. |
-| `numberOfChannels` | Active channel count for this callback (`audioData.length`). |
+| `audioData` | Stable down-mixed mono `Float32Array` of 32-bit float PCM, of length `bufferLength`. The same view object is reused every callback; only the underlying sample memory is refilled. |
 
 :::caution
-Do **not** assign `audioData` or a channel view to a Reanimated shared value (or any state read later on the UI thread). The native buffer pool is reused for the next snapshot and may be written from the audio thread after your callback returns.
+Do **not** assign `audioData` to a Reanimated shared value (or any state read later on the UI thread). The native buffer pool is reused for the next snapshot and may be written from the audio thread after your callback returns.
 
 - **Safe:** compute a scalar inside the callback and assign that (e.g. `amplitude.value = rms`).
-- **Safe:** copy samples if you need waveform data later — `Float32Array.from(audioData[0]!)`.
-- **Unsafe:** `waveform.value = audioData[0]` — you keep a live alias, not a frozen snapshot.
+- **Safe:** copy samples if you need waveform data later — `Float32Array.from(audioData)`.
+- **Unsafe:** `waveform.value = audioData` — you keep a live alias, not a frozen snapshot.
 :::
 
 ### Errors
@@ -89,16 +85,14 @@ function Visualizer() {
 
     const workletNode = new WorkletNode(
       ctx,
-      (audioData, numberOfChannels) => {
+      (audioData) => {
         'worklet';
-        if (numberOfChannels < 1) return;
 
-        const channel = audioData[0]!;
         let sum = 0;
-        for (let i = 0; i < channel.length; i++) {
-          sum += channel[i] * channel[i];
+        for (let i = 0; i < audioData.length; i++) {
+          sum += audioData[i] * audioData[i];
         }
-        const rms = Math.sqrt(sum / channel.length);
+        const rms = Math.sqrt(sum / audioData.length);
         amplitude.value = withSpring(Math.min(rms * 4, 1));
       },
       1024
