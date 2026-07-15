@@ -916,6 +916,26 @@
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
 }
 
+- (void)
+    testRestartAudioEngineDoesNotRecurseWhenSessionDeactivationInvalidatedGraphSet {
+  [self attachSourceNodeToAudioEngine];
+  FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
+  oldEngine.fakeRunning = YES;
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.sessionDeactivationInvalidatedGraph = YES;
+
+  [self.audioEngine restartAudioEngine];
+
+  FakeAudioEngine *newEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(newEngine, oldEngine);
+  XCTAssertEqual(oldEngine.stopCallCount, 1);
+  XCTAssertEqual(newEngine.prepareCallCount, 1);
+  XCTAssertEqual(newEngine.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertFalse(self.audioEngine.sessionDeactivationInvalidatedGraph);
+  XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
+}
+
 - (void)testConcurrentStartIfNecessaryDoesNotCrash {
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.state = AudioEngineStateIdle;
