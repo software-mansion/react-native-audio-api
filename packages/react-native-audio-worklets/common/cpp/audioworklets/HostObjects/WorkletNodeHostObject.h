@@ -18,7 +18,8 @@ class WorkletNodeHostObject : public audioapi::AudioNodeHostObject {
       const std::shared_ptr<audioapi::BaseAudioContext> &context,
       std::shared_ptr<worklets::WorkletRuntime> uiRuntime,
       std::shared_ptr<worklets::UIScheduler> uiScheduler,
-      std::shared_ptr<worklets::Serializable> serializableWorklet)
+      std::shared_ptr<worklets::Serializable> serializableWorklet,
+      size_t bufferLength)
       : audioapi::AudioNodeHostObject(
             graph,
             std::make_unique<WorkletNode>(
@@ -26,13 +27,17 @@ class WorkletNodeHostObject : public audioapi::AudioNodeHostObject {
                 UIWorkletsRunner(
                     std::move(uiRuntime),
                     std::move(uiScheduler),
-                    std::move(serializableWorklet)))) {}
+                    std::move(serializableWorklet)),
+                bufferLength)),
+        bufferLength_(bufferLength) {}
 
   [[nodiscard]] size_t getMemoryPressure() const override {
     return AudioNodeHostObject::getMemoryPressure() +
-        static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT) * audioapi::RENDER_QUANTUM_SIZE *
-        sizeof(float);
+        static_cast<size_t>(audioapi::MAX_CHANNEL_COUNT) * bufferLength_ * sizeof(float);
   }
+
+ private:
+  size_t bufferLength_;
 };
 
 } // namespace audioworklets

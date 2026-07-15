@@ -142,26 +142,30 @@ describe('Offline Processing Tests', () => {
 ### Custom worklet testing
 
 ```typescript
-import { AudioContext, WorkletProcessingNode } from 'react-native-audio-api/mock';
+import { AudioContext } from 'react-native-audio-api';
+import { WorkletProcessingNode } from 'react-native-audio-worklets';
 
 describe('Worklet Tests', () => {
   it('should create custom audio processing', () => {
     const context = new AudioContext();
 
-    const processingCallback = jest.fn((inputData, outputData, framesToProcess) => {
-      // Mock audio processing logic
-      for (let channel = 0; channel < outputData.length; channel++) {
-        for (let i = 0; i < framesToProcess; i++) {
-          outputData[channel][i] = inputData[channel][i] * 0.5; // Simple gain
+    const processingCallback = jest.fn(
+      (
+        inputData,
+        outputData,
+        inputChannelCount,
+        outputChannelCount,
+        framesToProcess
+      ) => {
+        for (let channel = 0; channel < outputChannelCount; channel++) {
+          for (let i = 0; i < framesToProcess; i++) {
+            outputData[channel][i] = inputData[channel][i] * 0.5;
+          }
         }
       }
-    });
-
-    const workletNode = new WorkletProcessingNode(
-      context,
-      'AudioRuntime',
-      processingCallback
     );
+
+    const workletNode = new WorkletProcessingNode(context, processingCallback);
 
     expect(workletNode.context).toBe(context);
   });

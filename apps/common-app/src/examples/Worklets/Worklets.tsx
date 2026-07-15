@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { AudioContext } from 'react-native-audio-api';
 import {
-  AudioContext,
-  OscillatorNode,
-} from 'react-native-audio-api';
-import { WorkletNode } from 'react-native-audio-worklets';
+  WorkletNode,
+  WorkletProcessingNode,
+  WorkletSourceNode,
+} from 'react-native-audio-worklets';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -68,9 +69,9 @@ function VisualizerBar({
 
 function Worklets() {
   const audioContextRef = useRef<AudioContext | null>(null);
+  const workletSourceRef = useRef<WorkletSourceNode | null>(null);
+  const workletProcessingRef = useRef<WorkletProcessingNode | null>(null);
   const workletNodeRef = useRef<WorkletNode | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
-  const lfoRef = useRef<OscillatorNode | null>(null);
   const heavyWorkAccRef = useRef(0);
   const jsWorkloadTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -120,21 +121,64 @@ function Worklets() {
       return;
     }
 
+    const sampleRate = ctx.sampleRate;
+
+    workletSourceRef.current = new WorkletSourceNode(
+      ctx,
+      (audioData, outputChannelCount, framesToProcess, currentTime, startOffset) => {
+        'worklet';
+
+        const frequency = 440;
+
+        for (let channel = 0; channel < outputChannelCount; channel++) {
+          for (let i = 0; i < framesToProcess; i++) {
+            const sampleTime = currentTime + (startOffset + i) / sampleRate;
+            const phase = 2 * Math.PI * frequency * sampleTime;
+            audioData[channel]![i] = Math.sin(phase) * 0.25;
+          }
+        }
+      }
+    );
+
+    workletProcessingRef.current = new WorkletProcessingNode(
+      ctx,
+      (
+        inputData,
+        outputData,
+        inputChannelCount,
+        outputChannelCount,
+        framesToProcess,
+        currentTime
+      ) => {
+        'worklet';
+
+        const tremolo =
+          0.75 + 0.25 * Math.sin(2 * Math.PI * 2 * currentTime);
+
+        for (let ch = 0; ch < outputChannelCount; ch++) {
+          const input = inputData[Math.min(ch, inputChannelCount - 1)]!;
+          const output = outputData[ch]!;
+
+          for (let i = 0; i < framesToProcess; i++) {
+            output[i] = Math.tanh(input[i]! * 1.2) * tremolo;
+          }
+        }
+      }
+    );
+
     workletNodeRef.current = new WorkletNode(
       ctx,
-      (audioBuffers, numberOfChannels) => {
+      (audioData, numberOfChannels) => {
         'worklet';
         if (numberOfChannels < 1) {
           return;
         }
-        const buffer = audioBuffers[0];
-        if (buffer == null) {
-          return;
-        }
-        const channel = new Float32Array(buffer);
+
+        const channel = audioData[0]!;
         let sum = 0;
+
         for (let i = 0; i < channel.length; i++) {
-          sum += channel[i] * channel[i];
+          sum += channel[i]! * channel[i]!;
         }
         const rms = Math.sqrt(sum / channel.length);
         const scaledAmplitude = Math.min(rms * 4, 1);
@@ -147,30 +191,15 @@ function Worklets() {
           damping: 18,
           stiffness: 120,
         });
-      }
+      },
+      1024
     );
 
-    const oscillator = ctx.createOscillator();
-    oscillator.frequency.value = 440;
-
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 2;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.18;
-    const amp = ctx.createGain();
-    amp.gain.value = 0.25;
-
-    lfo.connect(lfoGain);
-    lfoGain.connect(amp.gain);
-    oscillator.connect(amp);
-    amp.connect(workletNodeRef.current);
+    workletSourceRef.current.connect(workletProcessingRef.current);
+    workletProcessingRef.current.connect(workletNodeRef.current);
     workletNodeRef.current.connect(ctx.destination);
 
-    oscillator.start();
-    lfo.start();
-
-    oscillatorRef.current = oscillator;
-    lfoRef.current = lfo;
+    workletSourceRef.current.start();
 
     if (ctx.state === 'suspended') {
       ctx.resume();
@@ -180,12 +209,13 @@ function Worklets() {
   };
 
   const stop = () => {
-    oscillatorRef.current?.stop();
-    lfoRef.current?.stop();
+    workletSourceRef.current?.stop();
+    workletSourceRef.current?.disconnect();
+    workletProcessingRef.current?.disconnect();
     workletNodeRef.current?.disconnect();
 
-    oscillatorRef.current = null;
-    lfoRef.current = null;
+    workletSourceRef.current = null;
+    workletProcessingRef.current = null;
     workletNodeRef.current = null;
 
     bar0.value = withSpring(0, { damping: 20, stiffness: 100 });
@@ -205,7 +235,7 @@ function Worklets() {
         Audio Worklets Visualizer
       </Text>
       <Text style={{ ...styles.subtitle, color: colors.white }}>
-        Oscillator → WorkletNode (RMS on UI runtime) → destination
+        WorkletSource → WorkletProcessing → WorkletNode → destination
       </Text>
 
       <View style={styles.toggleRow}>
