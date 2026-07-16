@@ -2,11 +2,8 @@ import { IAudioNode } from '../jsi-interfaces';
 import AudioParam from './AudioParam';
 import { ChannelCountMode, ChannelInterpretation } from '../types';
 import type BaseAudioContext from './BaseAudioContext';
-import {
-  IndexSizeError,
-  InvalidAccessError,
-  NotSupportedError,
-} from '../errors';
+import { IndexSizeError, InvalidAccessError } from '../errors';
+import { validateChannelCount } from '../utils/validation/audioNodeOptions';
 
 export default class AudioNode {
   readonly context: BaseAudioContext;
@@ -26,12 +23,7 @@ export default class AudioNode {
   }
 
   public set channelCount(value: number) {
-    if (!Number.isFinite(value) || value < 1) {
-      throw new NotSupportedError(
-        `channelCount must be a positive integer, received: ${value}`
-      );
-    }
-
+    validateChannelCount(value);
     this.node.channelCount = value;
   }
 

@@ -64,9 +64,9 @@ void OfflineAudioContext::suspend(double when, const std::function<void()> &call
 void OfflineAudioContext::renderAudio() {
   setState(ContextState::RUNNING);
 
-  // The render thread below becomes the single consumer of the graph-event
-  // channel, so the producer must stop self-draining to preserve the SPSC
-  // single-consumer invariant.
+  // Flush while we are still the sole consumer, then hand the channel to the
+  // render thread.
+  getGraph()->processEvents();
   getGraph()->setProducerSelfDrain(false);
 
   std::thread([this]() {
@@ -94,6 +94,7 @@ void OfflineAudioContext::renderAudio() {
         // producer self-drain any graph mutations made from the suspend
         // callback until resume() restarts rendering.
         getGraph()->setProducerSelfDrain(true);
+        getGraph()->processEvents();
         locker.unlock();
         callback();
         return;

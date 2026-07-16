@@ -75,8 +75,7 @@ void AudioBufferSourceNode::setBuffer(
 
     buffer_ = nullptr;
     processor_->setBuffer(nullptr);
-    audioBuffer_ = std::make_shared<DSPAudioBuffer>(
-        RENDER_QUANTUM_SIZE, static_cast<size_t>(channelCount_), getContextSampleRate());
+    audioBuffer_ = audioBuffer;
     return;
   }
 

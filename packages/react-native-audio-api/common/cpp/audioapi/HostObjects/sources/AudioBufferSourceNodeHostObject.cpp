@@ -161,6 +161,7 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
 
   std::shared_ptr<AudioBuffer> copiedBuffer;
   std::shared_ptr<DSPAudioBuffer> audioBuffer;
+  const size_t newChannelCount = buffer == nullptr ? 1u : buffer->getNumberOfChannels();
 
   if (buffer == nullptr) {
     copiedBuffer = nullptr;
@@ -184,6 +185,14 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
         RENDER_QUANTUM_SIZE,
         copiedBuffer->getNumberOfChannels(),
         audioBufferSourceNode_->getContextSampleRate());
+  }
+
+  // Update channelCount on the host thread before renegotiation so MAX /
+  // CLAMPED_MAX downstream nodes see the new width immediately.
+  if (audioBufferSourceNode_->getChannelCount() != newChannelCount) {
+    audioBufferSourceNode_->setChannelCount(newChannelCount);
+    channelCount_ = newChannelCount;
+    renegotiate();
   }
 
   auto event =

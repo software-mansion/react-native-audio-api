@@ -159,20 +159,24 @@ class Graph {
   ///
   /// The event channel is a bounded SPSC queue with a `WAIT_ON_FULL` +
   /// `ATOMIC_WAIT` sender: once full, `send()` blocks until a consumer
-  /// advances the receive cursor. A realtime `AudioContext` has a live audio
-  /// callback continuously draining the channel, so this must stay `false`
-  /// there (the producer must not race the audio thread on the receiver).
+  /// advances the receive cursor.
   ///
-  /// An `OfflineAudioContext`, however, builds its entire graph *before*
-  /// `startRendering()` spawns the render (consumer) thread. With no consumer
-  /// yet, a large graph would fill the channel and deadlock the producer.
-  /// Enabling self-drain during that window makes the producer act as the sole
-  /// consumer (SPSC still holds — one thread does both), keeping the queue near
-  /// empty. It MUST be disabled again before the render thread starts so the
-  /// render thread becomes the single consumer.
+  /// Enable self-drain only while there is **no** audio/render consumer:
+  ///   - `OfflineAudioContext`: before `startRendering()`, and again after a
+  ///     scheduled suspend until `resume()` restarts the render thread.
+  ///   - Realtime `AudioContext`: while SUSPENDED / stopped (construction,
+  ///     after `suspend()` / `close()` quiescence). With no callback draining
+  ///     the channel, a large graph would otherwise fill it and block.
+  ///
+  /// It MUST be disabled again *before* the audio/render thread starts so that
+  /// thread becomes the single consumer (the producer must not race it on the
+  /// receiver). Call `processEvents()` once immediately before disabling so the
+  /// bounded channel is empty (otherwise a full queue could block forever with
+  /// no consumer). If start/resume fails, re-enable.
   ///
   /// @note Toggle only from the thread that owns graph construction, and only
-  /// while no other thread is consuming the channel.
+  /// while no other thread is consuming the channel. After enabling, call
+  /// `processEvents()` once to flush any backlog already in the channel.
   void setProducerSelfDrain(bool enabled) {
     producerSelfDrain_.store(enabled, std::memory_order_release);
   }

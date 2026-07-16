@@ -87,6 +87,7 @@ react-native-audio-api*.tgz
 
 # Envs
 .env
+.cursor
 
 compile_commands.json
 openssl-prebuilt/
