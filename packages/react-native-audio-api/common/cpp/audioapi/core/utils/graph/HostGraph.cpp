@@ -394,7 +394,10 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
         }
         applyChannelNegotiations(*negotiations, disposer);
         disposer.dispose(std::move(negotiations));
+        // dispose the vector
         disposer.dispose(toNode->exchangeInputScratch(std::move(*reservedInputs)));
+        // dispose the unique_ptr
+        disposer.dispose(std::move(reservedInputs));
         graph.pool().push(graph[hTo->index].input_head, from->handle->index);
         graph.markDirty();
       });
