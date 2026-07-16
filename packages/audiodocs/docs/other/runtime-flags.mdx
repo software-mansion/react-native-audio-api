@@ -1,8 +1,3 @@
----
-sidebar_position: 1
-sidebar_label: Runtime flags
----
-
 # Runtime flags
 
 These helpers let you check at runtime which optional native features are compiled into your app. They are synchronous and safe to call from JavaScript after the library has been installed.
@@ -33,7 +28,7 @@ if (!isFfmpegEnabled()) {
 ### Where FFmpeg is used
 
 | Area | API | Requires FFmpeg for |
-| :--- | :--- | :--- |
+| :---: | :---: | :---- |
 | Streaming | [`Audio tag`](/docs/sources/audio-tag) | HLS playback |
 | Playback | `createFileSource`, [`<Audio>`](/docs/sources/audio-tag) | Remote URL streaming, HLS (`.m3u8`), local `.mp4` / `.m4a` / `.aac`. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. |
 | Decoding | [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) | `.aac`, `.mp4`, `.m4a` (and remote URLs for any format) |

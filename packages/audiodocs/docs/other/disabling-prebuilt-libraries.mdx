@@ -16,8 +16,8 @@ Disabling both flags below can shave several MB off the final app size across al
 The available flags are independent and can be combined:
 
 | Flag | What it removes | What stops working |
-| :--- | :--- | :--- |
-| `disableFFmpeg` | FFmpeg shared libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | Streaming, remote playback/metadata, `.aac` / `.mp4` / `.m4a` decode, M4A concat, **Android** non-WAV recording — see [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used) |
+| :---: | :---- | :---- |
+| `disableFFmpeg` | FFmpeg shared libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | Streaming, remote playback/metadata, `.aac` / `.mp4` / `.m4a` decode, M4A concat, **Android** non-WAV recording — see [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used) |
 | `disableStaticExternalLibs` | Static libs: `libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile` | Decoding `ogg`, `opus`, `oga` files |
 
 :::info
@@ -28,20 +28,22 @@ Both options are disabled (i.e. libraries are enabled) by default.
 
 <Tabs queryString="platform">
   <TabItem value="expo" label="Expo" default>
-    Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional).
+    Add an entry in the [Audio API Expo plugin](/docs/other/audio-api-plugin) configuration:
 
     ```
     "disableFFmpeg": true
     ```
   </TabItem>
   <TabItem value="iOS" label="iOS">
-    Podfile
+    Add an entry to the Podfile:
+
     ```
     ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'
     ```
   </TabItem>
   <TabItem value="android" label="Android">
-    gradle.properties
+    In `gradle.properties`:
+
     ```
     disableAudioapiFFmpeg=true
     ```
@@ -55,20 +57,22 @@ This removes the bundled Opus / Ogg / Vorbis static libraries. With this flag en
 
 <Tabs queryString="platform">
   <TabItem value="expo" label="Expo" default>
-    Add entry in [expo plugin](/docs/fundamentals/getting-started#step-2-add-audio-api-expo-plugin-optional).
+    Add an entry in the [Audio API Expo plugin](/docs/other/audio-api-plugin) configuration:
 
     ```
     "disableStaticExternalLibs": true
     ```
   </TabItem>
   <TabItem value="iOS" label="iOS">
-    Podfile
+    Add an entry to the Podfile:
+
     ```
     ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] = '1'
     ```
   </TabItem>
   <TabItem value="android" label="Android">
-    gradle.properties
+    In `gradle.properties`:
+
     ```
     disableAudioapiStaticExternalLibs=true
     ```

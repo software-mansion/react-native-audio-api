@@ -3,6 +3,7 @@ sidebar_position: 1
 ---
 
 import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
+import DecodeAudioDataDocs from '@site/src/components/DecodeAudioDataDocs/DecodeAudioDataDocs';
 
 # BaseAudioContext
 
@@ -22,10 +23,10 @@ In general we can distinguish four types of nodes:
 
 ![](/img/audio-graph.png)
 
-#### Rendering audio graph
+#### Rendering the audio graph
 
 Audio graph rendering is done in blocks of sample-frames. The number of sample-frames in a block is called render quantum size, and the block itself is called a render quantum.
-By default render quantum size value is 128 and it is constant.
+By default render quantum size value is `128` and it is a constant.
 
 The [`AudioContext`](/docs/core/audio-context) rendering thread is driven by a system-level audio callback.
 Each call has a system-level audio callback buffer size, which is a varying number of sample-frames that needs to be computed on time before the next system-level audio callback arrives,
@@ -39,7 +40,7 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from 0. | <ReadOnly /> |
+| `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from `0.0`. | <ReadOnly /> |
 | `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
 | `listener` | [`AudioListener`](/docs/core/audio-listener) | Listener used for 3D spatialization, shared by all `PannerNode`s in the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
@@ -51,13 +52,13 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 
 Creates [`AnalyserNode`](/docs/analysis/analyser-node).
 
-#### Returns `AnalyserNode`.
+**Returns:** `AnalyserNode`
 
 ### `createBiquadFilter`
 
 Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
-#### Returns `BiquadFilterNode`.
+**Returns:** `BiquadFilterNode`
 
 ### `createBuffer`
 
@@ -69,15 +70,15 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 | `length` | `number` | An integer representing the length of the buffer in sampleFrames. Two seconds buffer has length equals to `2 * sampleRate`. |
 | `sampleRate` | `number` | A float representing the sample rate of the buffer. |
 
-#### Errors
+**Errors**
 
 | Error type | Description |
 | :---: | :---- |
-| `NotSupportedError` | `numOfChannels` is outside the nominal range [1, 32]. |
-| `NotSupportedError` | `sampleRate` is outside the supported range [3000, 768000]. |
-| `NotSupportedError` | `length` is less then 1. |
+| `NotSupportedError` | `numOfChannels` is outside the nominal range [`1`, `32`]. |
+| `NotSupportedError` | `sampleRate` is outside the supported range [`3000`, `768000`]. |
+| `NotSupportedError` | `length` is less then `1`. |
 
-#### Returns `AudioBuffer`.
+**Returns:** `AudioBuffer`
 
 ### `createBufferSource`
 
@@ -87,7 +88,7 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 | :---: | :---: | :---- |
 | `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
 
-#### Returns `AudioBufferSourceNode`.
+**Returns:** `AudioBufferSourceNode`
 
 ### `createBufferQueueSource` <MobileOnly />
 
@@ -95,21 +96,21 @@ Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-n
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
+| `options` <Optional /> | [`AudioBufferQueueSourceOptions`](/docs/sources/audio-buffer-queue-source-node#audiobufferqueuesourceoptions) | Constructor options for [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node). |
 
-#### Returns `AudioBufferQueueSourceNode`.
+**Returns:** `AudioBufferQueueSourceNode`
 
 ### `createConstantSource`
 
 Creates [`ConstantSourceNode`](/docs/sources/constant-source-node).
 
-#### Returns `ConstantSourceNode`.
+**Returns:** `ConstantSourceNode`
 
 ### `createConvolver`
 
 Creates [`ConvolverNode`](/docs/effects/convolver-node).
 
-#### Returns `ConvolverNode`.
+**Returns:** `ConvolverNode`
 
 ### `createDelay`
 
@@ -119,25 +120,25 @@ Creates [`DelayNode`](/docs/effects/delay-node)
 | :---: | :---: | :---- |
 | `maxDelayTime` <Optional /> | `number` | Maximum amount of time to buffer delayed values|
 
-#### Returns `DelayNode`
+**Returns:** `DelayNode`
 
 ### `createGain`
 
 Creates [`GainNode`](/docs/effects/gain-node).
 
-#### Returns `GainNode`.
+**Returns:** `GainNode`
 
 ### `createIIRFilter`
 
 Creates [`IIRFilterNode`](/docs/effects/iir-filter-node).
 
-#### Returns `IIRFilterNode`.
+**Returns:** `IIRFilterNode`
 
 ### `createOscillator`
 
 Creates [`OscillatorNode`](/docs/sources/oscillator-node).
 
-#### Returns `OscillatorNode`.
+**Returns:** `OscillatorNode`
 
 ### `createPeriodicWave`
 
@@ -147,15 +148,15 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 | :---: | :---: | :---- |
 | `real` | `Float32Array` | An array of cosine terms. |
 | `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of 1 and minimum peak value of -1.|
+| `constraints` <Optional /> | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of `1.0` and minimum peak value of `-1.0`.|
 
-#### Errors
+**Errors**
 
 | Error type | Description |
 | :---: | :---- |
 | `InvalidAccessError` | `real` and `imag` arrays do not have same length. |
 
-#### Returns `PeriodicWave`.
+**Returns:** `PeriodicWave`
 
 ### `createRecorderAdapter`
 
@@ -165,142 +166,36 @@ Feed it using [`AudioRecorder.connect`](/docs/inputs/audio-recorder#connect) and
 connect it downstream like any other node. Produces silence until a recorder is
 connected to it.
 
-#### Returns `RecorderAdapterNode`
+**Returns:** `RecorderAdapterNode`
 
 ### `createStereoPanner`
 
 Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 
-#### Returns `StereoPannerNode`.
+**Returns:** `StereoPannerNode`
 
 ### `createWaveShaper`
 
 Creates [`WaveShaperNode`](/docs/effects/wave-shaper-node).
 
-#### Returns `WaveShaperNode`.
-
-### `createWorkletNode` <MobileOnly />
-
-Creates [`WorkletNode`](/docs/worklets/worklet-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `worklet` | `(Array<Float32Array>, number) => void` | The worklet to be executed. |
-| `bufferLength` | `number` | The size of the buffer that will be passed to the worklet on each call. |
-| `inputChannelCount` | `number` | The number of channels that the node expects as input (it will get min(expected, provided)). |
-| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `Error` | `react-native-worklet` is not found as dependency. |
-| `NotSupportedError` | `bufferLength` < 1. |
-| `NotSupportedError` | `inputChannelCount` is not in range [1, 32]. |
-
-#### Returns `WorkletNode`.
-
-### `createWorkletSourceNode` <MobileOnly />
-
-Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `worklet` | `(Array<Float32Array>, number, number, number) => void` | The worklet to be executed. |
-| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `Error` | `react-native-worklet` is not found as dependency. |
-
-#### Returns `WorkletSourceNode`.
-
-### `createWorkletProcessingNode` <MobileOnly />
-
-Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `worklet` | `(Array<Float32Array>, Array<Float32Array>, number, number) => void` | The worklet to be executed. |
-| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `Error` | `react-native-worklet` is not found as dependency. |
-
-#### Returns `WorkletProcessingNode`.
+**Returns:** `WaveShaperNode`
 
 ### `decodeAudioData`
 
-Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio.
-If not provided, the audio will be automatically resampled to match the audio context's `sampleRate`.
-
-**For the list of supported formats visit [this page](/docs/utils/decoding).**
-
-<table>
-  <thead>
-    <tr>
-      <th align="center">Parameter</th>
-      <th align="center">Type</th>
-      <th align="center">Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td rowspan="3" align="center"><code>input</code></td>
-      <td align="center"><code>ArrayBuffer</code></td>
-      <td align="center">ArrayBuffer with audio data.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>string</code></td>
-      <td align="center">Path to remote or local audio file.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>number</code></td>
-      <td align="center">Asset module id. <MobileOnly/> </td>
-    </tr>
-    <tr>
-      <td align="center"><code>fetchOptions</code><Optional /></td>
-      <td align="center"><code>[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)</code></td>
-      <td align="center">Additional headers parameters when passing url to fetch.</td>
-    </tr>
-  </tbody>
-</table>
-
-#### Returns `Promise<AudioBuffer>`.
-
-#### Errors
-
-| Error type | Description |
-| :---: | :---- |
-| `TypeError` | `input` is not a module id, URI, or `ArrayBuffer`. |
-| `AudioApiError` | `input` is a base64 or data-blob string (use [`decodePCMInBase64`](#decodepcminbase64) for raw PCM base64). |
-
-<details>
-<summary>Example decoding</summary>
-```tsx
-const url = ... // url to an audio
-
-const buffer = await audioContext.decodeAudioData(url);
-```
-</details>
+<DecodeAudioDataDocs variant="context" />
 
 ### `decodePCMInBase64`
 
 Decodes base64-encoded PCM audio data.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| :---: | :---: | :---- |
 | `base64String` | `string` | Base64-encoded PCM audio data. |
 | `inputSampleRate` | `number` | Sample rate of the input PCM data. |
 | `inputChannelCount` | `number` | Number of channels in the input PCM data. |
 | `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Default is `true`. |
 
-#### Returns `Promise<AudioBuffer>`
+**Returns:** `Promise<AudioBuffer>`
 
 <details>
 <summary>Example decoding with data in base64 format </summary>

@@ -4,7 +4,11 @@ import {
   NotSupportedError,
 } from '../errors';
 import { IBaseAudioContext } from '../jsi-interfaces';
-import { ContextState, DecodeDataInput } from '../types';
+import {
+  ContextState,
+  DecodeDataInput,
+  AudioBufferQueueSourceOptions,
+} from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
@@ -130,9 +134,9 @@ export default class BaseAudioContext {
     return new IIRFilterNode(this, { feedforward, feedback });
   }
 
-  createBufferQueueSource(options?: {
-    pitchCorrection: boolean;
-  }): AudioBufferQueueSourceNode {
+  createBufferQueueSource(
+    options?: AudioBufferQueueSourceOptions
+  ): AudioBufferQueueSourceNode {
     if (options !== undefined) {
       return new AudioBufferQueueSourceNode(this, options);
     } else {

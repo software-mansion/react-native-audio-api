@@ -12,7 +12,7 @@ Each `AudioNode` is associated with a certain number of audio channels that faci
 We usually represent the channels with the standard abbreviations detailed in the table below:
 
 | Name | Number of channels | Channels |
-| :----: | :------: | :-------- |
+| :----: | :----: | :-------- |
 | Mono | 1 | 0: M - mono |
 | Stereo | 2 | 0: L - left <br /> 1: R - right |
 | Quad | 4 | 0: L - left <br /> 1: R - right <br /> 2: SL - surround left <br /> 3: SR - surround right |
@@ -117,7 +117,7 @@ It is used to constructing majority of all `AudioNodes`.
 
 | Parameter | Type | Default | Description |
 | :---: | :---: | :----: | :---- |
-| `channelCount` <Optional /> | `number` | 2 | Indicates number of channels used in mixing of node. |
+| `channelCount` <Optional /> | `number` | `2` | Indicates number of channels used in mixing of node. |
 | `channelCountMode` <Optional /> | [`ChannelCountMode`](/docs/types/channel-count-mode) | `max` | Determines how the number of input channels affects the number of output channels in an audio node. |
 | `channelInterpretation` <Optional /> | [`ChannelInterpretation`](/docs/types/channel-interpretation) | `speakers` | Specifies how input channels are mapped out to output channels when the number of them are different. |
 
@@ -126,7 +126,7 @@ If any of these values are not provided, default values are used.
 ## Remarks
 
 #### `numberOfInputs`
-- Source nodes are characterized by having a `numberOfInputs` value of 0.
+- Source nodes are characterized by having a `numberOfInputs` value of `0`.
 
 #### `numberOfOutputs`
-- Destination nodes are characterized by having a `numberOfOutputs` value of 0.
+- Destination nodes are characterized by having a `numberOfOutputs` value of `0`.

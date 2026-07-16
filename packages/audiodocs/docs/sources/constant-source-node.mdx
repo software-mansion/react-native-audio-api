@@ -8,7 +8,7 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 # ConstantSourceNode
 
 The `ConstantSourceNode` is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which represents an audio source, that outputs a single constant value.
-The `offset` parameter controls this value. Although the node is called "constant" its `offset` value can be automated to change over time, which makes it powerful tool
+The `offset` parameter controls this value. Although the node is called "constant" its `offset` value can be automated to change over time, which makes it a powerful tool
 for controlling multiple other [`AudioParam`](/docs/core/audio-param) values in an audio graph.
 Just like `AudioScheduledSourceNode`, it can be started only once.
 
@@ -22,10 +22,11 @@ constructor(context: BaseAudioContext, options?: ConstantSourceOptions)
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `offset` <Optional /> | `number` | 1 | Initial value for [`offset`](/docs/sources/constant-source-node#properties) |
+| `offset` <Optional /> | `number` | `1.0` | Initial value for [`offset`](/docs/sources/constant-source-node#properties) |
 
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createConstantSource()`](/docs/core/base-audio-context#createconstantsource) that creates node with default values.
+:::info
+You can also create a `ConstantSourceNode` via [`BaseAudioContext.createConstantSource()`](/docs/core/base-audio-context#createconstantsource), that creates node with default values.
+:::
 
 ## Example
 
@@ -75,14 +76,14 @@ function App() {
 
 ## Properties
 
-It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+Inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Default value | Description |
-| :----: | :----: | :--------: | :------- |
-| `offset` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | 1.0 |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing the value which the node constantly outputs. |
+| :----: | :----: | :----: | :------- |
+| `offset` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | `1.0` |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing the value which the node constantly outputs. |
 
 ## Methods
 
-It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+Inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).

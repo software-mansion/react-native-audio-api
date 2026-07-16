@@ -89,6 +89,21 @@ float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProces
   return maximumValue;
 }
 
+float dotProduct(
+    const float *inputVector1,
+    const float *inputVector2,
+    size_t numberOfElementsToProcess) {
+  float result = 0;
+  vDSP_dotpr(inputVector1, 1, inputVector2, 1, &result, numberOfElementsToProcess);
+  return result;
+}
+
+float sumOfSquares(const float *inputVector, size_t numberOfElementsToProcess) {
+  float result = 0;
+  vDSP_svesq(inputVector, 1, &result, numberOfElementsToProcess);
+  return result;
+}
+
 void multiplyByScalarThenAddToOutput(
     const float *inputVector,
     float scalar,
@@ -578,7 +593,7 @@ float maximumMagnitude(const float *inputVector, size_t numberOfElementsToProces
   max = std::max(max, groupMaxP[3]);
 
   n = tailFrames;
-#elif defined(c)
+#elif defined(HAVE_ARM_NEON_INTRINSICS)
   size_t tailFrames = n % 4;
   const float *endP = inputVector + n - tailFrames;
 
@@ -778,6 +793,71 @@ void interleaveStereo(
     *outputInterleaved++ = *inputLeft++;
     *outputInterleaved++ = *inputRight++;
   }
+}
+
+float dotProduct(
+    const float *inputVector1,
+    const float *inputVector2,
+    size_t numberOfElementsToProcess) {
+  size_t n = numberOfElementsToProcess;
+  size_t i = 0;
+  float sum = 0.0f;
+
+#ifdef HAVE_X86_SSE2
+  __m128 acc = _mm_setzero_ps();
+  for (; i + 4 <= n; i += 4) {
+    __m128 v1 = _mm_loadu_ps(inputVector1 + i);
+    __m128 v2 = _mm_loadu_ps(inputVector2 + i);
+    acc = _mm_add_ps(acc, _mm_mul_ps(v1, v2));
+  }
+  float lanes[4];
+  _mm_storeu_ps(lanes, acc);
+  sum = lanes[0] + lanes[1] + lanes[2] + lanes[3];
+#elif defined(HAVE_ARM_NEON_INTRINSICS)
+  float32x4_t acc = vdupq_n_f32(0.0f);
+  for (; i + 4 <= n; i += 4) {
+    float32x4_t v1 = vld1q_f32(inputVector1 + i);
+    float32x4_t v2 = vld1q_f32(inputVector2 + i);
+    acc = vmlaq_f32(acc, v1, v2);
+  }
+  float32x2_t pair = vadd_f32(vget_low_f32(acc), vget_high_f32(acc));
+  sum = vget_lane_f32(vpadd_f32(pair, pair), 0);
+#endif
+
+  for (; i < n; ++i) {
+    sum += inputVector1[i] * inputVector2[i];
+  }
+  return sum;
+}
+
+float sumOfSquares(const float *inputVector, size_t numberOfElementsToProcess) {
+  size_t n = numberOfElementsToProcess;
+  size_t i = 0;
+  float sum = 0.0f;
+
+#ifdef HAVE_X86_SSE2
+  __m128 acc = _mm_setzero_ps();
+  for (; i + 4 <= n; i += 4) {
+    __m128 v = _mm_loadu_ps(inputVector + i);
+    acc = _mm_add_ps(acc, _mm_mul_ps(v, v));
+  }
+  float lanes[4];
+  _mm_storeu_ps(lanes, acc);
+  sum = lanes[0] + lanes[1] + lanes[2] + lanes[3];
+#elif defined(HAVE_ARM_NEON_INTRINSICS)
+  float32x4_t acc = vdupq_n_f32(0.0f);
+  for (; i + 4 <= n; i += 4) {
+    float32x4_t v = vld1q_f32(inputVector + i);
+    acc = vmlaq_f32(acc, v, v);
+  }
+  float32x2_t pair = vadd_f32(vget_low_f32(acc), vget_high_f32(acc));
+  sum = vget_lane_f32(vpadd_f32(pair, pair), 0);
+#endif
+
+  for (; i < n; ++i) {
+    sum += inputVector[i] * inputVector[i];
+  }
+  return sum;
 }
 
 #endif

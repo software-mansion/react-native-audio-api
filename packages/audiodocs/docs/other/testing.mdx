@@ -5,24 +5,14 @@ import TabItem from '@theme/TabItem';
 
 React Native Audio API provides a comprehensive mock implementation to help you test your audio-related code without requiring actual audio hardware or platform-specific implementations.
 
-## Mock Implementation
+## Mock implementation
 
 The mock implementation provides the same API surface as the real library but with no-op or simplified implementations that are perfect for unit testing.
 
-### Importing Mocks
+### Importing mocks
 
 <Tabs>
 <TabItem value="jest" label="Jest">
-
-```typescript
-import * as MockAudioAPI from 'react-native-audio-api/mock';
-
-// Or import specific components
-import { AudioContext, AudioRecorder } from 'react-native-audio-api/mock';
-```
-
-</TabItem>
-<TabItem value="manual" label="Manual Setup">
 
 ```typescript
 // In your test setup file
@@ -35,11 +25,21 @@ import { AudioContext, AudioRecorder } from 'react-native-audio-api';
 ```
 
 </TabItem>
+<TabItem value="manual" label="Manual setup">
+
+```typescript
+import * as MockAudioAPI from 'react-native-audio-api/mock';
+
+// Or import specific components
+import { AudioContext, AudioRecorder } from 'react-native-audio-api/mock';
+```
+
+</TabItem>
 </Tabs>
 
-## Basic Usage
+## Basic usage
 
-### Audio Context Testing
+### Audio context testing
 
 ```typescript
 import { AudioContext } from 'react-native-audio-api/mock';
@@ -78,7 +78,7 @@ describe('Audio Graph Tests', () => {
 });
 ```
 
-### Audio Recording Testing
+### Audio recording testing
 
 ```typescript
 import { AudioContext, AudioRecorder, FileFormat, FileDirectory } from 'react-native-audio-api/mock';
@@ -109,7 +109,7 @@ describe('Audio Recording Tests', () => {
 });
 ```
 
-### Offline Audio Processing
+### Offline audio processing
 
 ```typescript
 import { OfflineAudioContext } from 'react-native-audio-api/mock';
@@ -137,31 +137,35 @@ describe('Offline Processing Tests', () => {
 });
 ```
 
-## Advanced Testing Scenarios
+## Advanced testing scenarios
 
-### Custom Worklet Testing
+### Custom worklet testing
 
 ```typescript
-import { AudioContext, WorkletProcessingNode } from 'react-native-audio-api/mock';
+import { AudioContext } from 'react-native-audio-api';
+import { WorkletProcessingNode } from 'react-native-audio-worklets';
 
 describe('Worklet Tests', () => {
   it('should create custom audio processing', () => {
     const context = new AudioContext();
 
-    const processingCallback = jest.fn((inputData, outputData, framesToProcess) => {
-      // Mock audio processing logic
-      for (let channel = 0; channel < outputData.length; channel++) {
-        for (let i = 0; i < framesToProcess; i++) {
-          outputData[channel][i] = inputData[channel][i] * 0.5; // Simple gain
+    const processingCallback = jest.fn(
+      (
+        inputData,
+        outputData,
+        inputChannelCount,
+        outputChannelCount,
+        framesToProcess
+      ) => {
+        for (let channel = 0; channel < outputChannelCount; channel++) {
+          for (let i = 0; i < framesToProcess; i++) {
+            outputData[channel][i] = inputData[channel][i] * 0.5;
+          }
         }
       }
-    });
-
-    const workletNode = new WorkletProcessingNode(
-      context,
-      'AudioRuntime',
-      processingCallback
     );
+
+    const workletNode = new WorkletProcessingNode(context, processingCallback);
 
     expect(workletNode.context).toBe(context);
   });
@@ -198,9 +202,9 @@ describe('Error Handling Tests', () => {
 });
 ```
 
-## Mock Configuration
+## Mock configuration
 
-### System Volume Testing
+### System volume testing
 
 ```typescript
 import { useSystemVolume, setMockSystemVolume, AudioManager } from 'react-native-audio-api/mock';
@@ -229,7 +233,7 @@ describe('System Integration Tests', () => {
 });
 ```
 
-### Audio Callback Testing
+### Audio callback testing
 
 ```typescript
 import { AudioRecorder } from 'react-native-audio-api/mock';
@@ -257,7 +261,7 @@ describe('Callback Tests', () => {
 });
 ```
 
-## Type Safety
+## Type safety
 
 The mock implementation provides full TypeScript support with the same types as the real library:
 
@@ -270,15 +274,15 @@ function processAudioNode(node: GainNode): void {
 }
 ```
 
-## Testing Best Practices
+## Testing best practices
 
-1. **Isolate Audio Logic**: Test audio processing logic separately from UI components
-2. **Mock External Dependencies**: Use mocks for file system, network, and platform-specific operations
-3. **Test Error Scenarios**: Verify your code handles various error conditions gracefully
-4. **Validate Audio Graph Structure**: Ensure nodes are connected correctly
-5. **Test Async Operations**: Use proper async/await patterns for operations like rendering
+1. **Isolate audio logic**: Test audio processing logic separately from UI components.
+2. **Mock external dependencies**: Use mocks for file system, network, and platform-specific operations.
+3. **Test error scenarios**: Verify that your code handles various error conditions gracefully.
+4. **Validate audio graph structure**: Ensure nodes are connected correctly.
+5. **Test async operations**: Use proper async/await patterns for operations like rendering.
 
-## Example Test Suite
+## Example test suite
 
 ```typescript
 import {
@@ -339,4 +343,4 @@ describe('Audio Application Tests', () => {
 });
 ```
 
-The mock implementation provides a complete testing environment that allows you to thoroughly test your audio applications without requiring real audio hardware or complex setup.
+The mock implementation provides a complete testing environment that allows you to thoroughly test your audio applications without requiring real audio hardware or a complex setup.

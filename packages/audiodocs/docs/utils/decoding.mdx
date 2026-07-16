@@ -3,10 +3,11 @@ sidebar_position: 1
 ---
 
 import { Optional } from '@site/src/components/Badges';
+import DecodeAudioDataDocs from '@site/src/components/DecodeAudioDataDocs/DecodeAudioDataDocs';
 
 # Decoding
 
-You can decode audio data independently, without creating an AudioContext, using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata),
+You can decode audio data independently, without creating an [`AudioContext`](/docs/core/audio-context), using the exported functions [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata),
 [`decodePCMInBase64`](/docs/utils/decoding#decodepcminbase64), and [`getAudioDuration`](/docs/utils/decoding#getaudioduration).
 
 If you already have an audio context, you can decode audio data directly using its [`decodeAudioData`](/docs/core/base-audio-context#decodeaudiodata) function;
@@ -23,67 +24,14 @@ Supported file formats:
 - m4a
 - mp4
 
-Last three formats are decoded with ffmpeg on the mobile, [see for more info](/docs/flags/runtime-flags#where-ffmpeg-is-used).
+On mobile, `.aac`, `.mp4`, and `.m4a` are decoded with FFmpeg — see [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used) for more info.
 :::
+
+## Methods
 
 ### `decodeAudioData`
 
-Decodes audio data from either a file path or an ArrayBuffer. The optional `sampleRate` parameter lets you resample the decoded audio;
-if not provided, the original sample rate from the file is used.
-
-<table>
-  <thead>
-    <tr>
-      <th align="center">Parameter</th>
-      <th align="center">Type</th>
-      <th align="center">Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td rowspan="3" align="center"><code>input</code></td>
-      <td align="center"><code>ArrayBuffer</code></td>
-      <td align="center">ArrayBuffer with audio data.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>string</code></td>
-      <td align="center">Path to remote or local audio file.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>number</code></td>
-      <td align="center">Asset module id. </td>
-    </tr>
-    <tr>
-      <td align="center"><code>sampleRate</code><Optional /></td>
-      <td align="center"><code>number</code></td>
-      <td align="center">Target sample rate for the decoded audio.</td>
-    </tr>
-    <tr>
-      <td align="center"><code>fetchOptions</code><Optional /></td>
-      <td align="center"><code>[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)</code></td>
-      <td align="center">Additional headers parameters when passing url to fetch.</td>
-    </tr>
-  </tbody>
-</table>
-
-#### Returns `Promise<AudioBuffer>`.
-
-:::caution
-If you are passing asset module id to decode function, bear in mind that it uses Image component provided
-by React Native internally. By default only support .mp3, .wav, .mp4, .m4a, .aac audio file formats.
-If you want to use other types, refer to [this section](https://reactnative.dev/docs/images#static-non-image-resources) for more info.
-:::
-
-<details>
-<summary>Example decoding remote URL</summary>
-```tsx
-import { decodeAudioData } from 'react-native-audio-api';
-
-const url = ... // url to an audio
-
-const buffer = await decodeAudioData(url);
-```
-</details>
+<DecodeAudioDataDocs variant="standalone" />
 
 ### `getAudioDuration`
 
@@ -91,7 +39,7 @@ Reads the duration of an audio source without decoding the full file into an [`A
 Use this when you only need the encoded file duration. Use [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) when you need sample data for playback or processing.
 
 On mobile, duration is read from file metadata via the native decoder. Local paths, `file://` URIs, remote `http(s):` URLs, and `ArrayBuffer` input are supported.
-Remote URL probing requires FFmpeg in the native build — see [Runtime flags](/docs/flags/runtime-flags#isffmpegenabled).
+Remote URL probing requires FFmpeg in the native build — see [Runtime flags](/docs/other/runtime-flags#isffmpegenabled).
 Asset module ids, base64 data URLs, and blob URLs are rejected explicitly.
 
 On web, this API uses browser audio metadata loading and supports sources the browser can load, such as remote URLs, relative URLs, blob URLs, and data URLs.
@@ -110,16 +58,16 @@ There is no `sampleRate` option because the returned duration belongs to the enc
     <tr>
       <td rowspan="2" align="center"><code>input</code></td>
       <td align="center"><code>ArrayBuffer</code></td>
-      <td align="center">Encoded audio bytes (mobile only).</td>
+      <td align="left">Encoded audio bytes (mobile only).</td>
     </tr>
     <tr>
       <td align="center"><code>string</code></td>
-      <td align="center">Local path, <code>file://</code> URI, or remote URL.</td>
+      <td align="left">Local path, <code>file://</code> URI, or remote URL.</td>
     </tr>
     <tr>
       <td align="center"><code>fetchOptions</code><Optional /></td>
       <td align="center"><code>[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)</code></td>
-      <td align="center">Additional fetch options when <code>input</code> is a remote URL (for example, auth headers).</td>
+      <td align="left">Additional fetch options when <code>input</code> is a remote URL (for example, auth headers).</td>
     </tr>
   </tbody>
 </table>
@@ -153,11 +101,11 @@ const duration = await getAudioDuration('https://example.com/audio.mp3', {
 Decodes base64-encoded PCM audio data.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| :---: | :---: | :---- |
 | `base64String` | `string` | Base64-encoded PCM audio data. |
 | `inputSampleRate` | `number` | Sample rate of the input PCM data. |
 | `inputChannelCount` | `number` | Number of channels in the input PCM data. |
-| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Default is `true`. |
+| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Defaults to `true`. |
 
 #### Returns `Promise<AudioBuffer>`
 

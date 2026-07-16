@@ -7,12 +7,12 @@ import { ReadOnly, Optional } from '@site/src/components/Badges';
 # AudioBuffer
 
 The `AudioBuffer` interface represents a short audio asset, commonly shorter then one minute.
-It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) values with a nominal range of [−1, 1] (but not limited to that range),
+It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) values with a nominal range of [`-1.0`, `1.0`] (but not limited to that range),
 specific sample rate which is the quantity of frames that will play in one second and length.
 
 ![](/img/audioBuffer.png)
 
-It can be created from audio file using [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) or from raw data using `constructor`.
+It can be created from audio file using [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) or from raw data using the [constructor](#constructor).
 Once you have data in `AudioBuffer`, audio can be played by passing it to [`AudioBufferSourceNode`](audio-buffer-source-node).
 
 ## Constructor
@@ -26,7 +26,7 @@ constructor(options: AudioBufferOptions)
 | Parameter | Type | Default | Description |
 | :---: | :---: | :----: | :---- |
 | `length` | `number` | - | [`Length`](/docs/sources/audio-buffer#properties) of the buffer |
-| `numberOfChannels` <Optional /> | `number` | 1.0 | Number of [`channels`](/docs/sources/audio-buffer#properties) in buffer |
+| `numberOfChannels` <Optional /> | `number` | `1` | Number of [`channels`](/docs/sources/audio-buffer#properties) in buffer |
 | `sampleRate` | `number` | - | [`Sample rate`](/docs/sources/audio-buffer#properties) of the buffer in Hz |
 
 Or by using `BaseAudioContext` factory method:
@@ -59,7 +59,7 @@ Gets modifiable array with PCM data from given channel.
 
 | Error type | Description |
 | :---: | :---- |
-| `IndexSizeError` | `channel` specifies unexisting audio channel. |
+| `IndexSizeError` | `channel` specifies nonexistent audio channel. |
 
 #### Returns `Float32Array`.
 
@@ -77,14 +77,14 @@ Copies data from given channel of the `AudioBuffer` to an array.
 
 | Error type | Description |
 | :---: | :---- |
-| `IndexSizeError` | `channelNumber` specifies unexisting audio channel. |
+| `IndexSizeError` | `channelNumber` specifies nonexistent audio channel. |
 | `IndexSizeError` | `startInChannel` is greater then the `AudioBuffer` length. |
 
 #### Returns `undefined`.
 
 ### `copyToChannel`
 
-Copies data from given array to specified channel of the `AudioBuffer`.
+Copies data from the given array to the specified channel of the `AudioBuffer`.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -96,7 +96,7 @@ Copies data from given array to specified channel of the `AudioBuffer`.
 
 | Error type | Description |
 | :---: | :---- |
-| `IndexSizeError` | `channelNumber` specifies unexisting audio channel. |
+| `IndexSizeError` | `channelNumber` specifies nonexistent audio channel. |
 | `IndexSizeError` | `startInChannel` is greater then the `AudioBuffer` length. |
 
 #### Returns `undefined`.

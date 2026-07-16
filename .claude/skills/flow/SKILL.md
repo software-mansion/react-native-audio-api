@@ -212,7 +212,8 @@ If the feature has a visible or audible component, add a demo in `apps/fabric-ex
 
 Path: `packages/audiodocs/`
 
-Every **public API** that ships must have a documentation page. The docs package uses MDX. Look at an existing node's page for the format. Cover:
+Every **public API** that ships must have a documentation page. The docs package uses MDX. See `packages/audiodocs/CLAUDE.md` for the full page template.
+Cover:
 
 - Constructor / factory call
 - All properties and their types/ranges

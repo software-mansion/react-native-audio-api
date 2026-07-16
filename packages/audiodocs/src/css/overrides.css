@@ -195,7 +195,8 @@ button[class*='DocSearch-Button'] {
 .table-vertical-top tbody tr td:first-child {
   min-width: 200px;
   text-wrap: wrap;
-  word-break: break-all;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .table-vertical-top tbody tr td:last-child {
@@ -221,13 +222,19 @@ button[class*='DocSearch-Button'] {
   padding: 0.2rem;
 }
 
+.table-vertical-top div table td:first-child {
+  min-width: 200px;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
 .table-vertical-top div table td:nth-child(2) {
   min-width: 150px;
 }
 
 .table-vertical-top-table {
   padding-top: 1px;
-  overflow-x: hidden;
+  overflow-x: auto;
   border-collapse: collapse;
   box-sizing: border-box;
 }
@@ -242,7 +249,12 @@ details.alert {
 }
 
 [class*='headerWithBadges'] {
-  align-items: baseline;
+  align-items: center;
+}
+
+.table-with-rate-column table th:nth-child(3),
+.table-with-rate-column table td:nth-child(3) {
+  white-space: nowrap;
 }
 
 [class*=admonition-warning] code {

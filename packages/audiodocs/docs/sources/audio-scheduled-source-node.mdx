@@ -2,6 +2,8 @@
 sidebar_position: 2
 ---
 
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional, Experimental } from '@site/src/components/Badges';
 
 # AudioScheduledSourceNode
@@ -10,16 +12,21 @@ The `AudioScheduledSourceNode` interface is an [`AudioNode`](/docs/core/audio-no
 It provides ability to start and stop audio playback.
 
 Child classes:
- - [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node)
+ - [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node)
+ - [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node)
  - [`OscillatorNode`](/docs/sources/oscillator-node)
 
 ## Properties
 
 `AudioScheduledSourceNode` does not define any additional properties.
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
 ## Methods
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
 
 ### `start`
 
@@ -61,9 +68,9 @@ If you invoke this method multiple times on the same node before the designated 
 
 ### `onEnded`
 
-Sets (or remove) callback that will be fired when source node has stopped playing,
+Sets (or removes) a callback that will be fired when source node has stopped playing,
 either because it's reached a predetermined stop time, the full duration of the audio has been performed, or because the entire buffer has been played.
-You can remove callback either by passing `null` or calling `remove` on the returned subscription.
+You can remove the callback either by passing `null` or calling `remove` on the returned subscription.
 
 
 ```ts

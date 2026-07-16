@@ -3,7 +3,7 @@ import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { RangeError } from '../errors';
 import type BaseAudioContext from './BaseAudioContext';
-import { BaseAudioBufferSourceOptions } from '../types';
+import { AudioBufferQueueSourceOptions } from '../types';
 import { OnBufferEndEventType } from '../events/types';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
@@ -11,7 +11,7 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
 
   constructor(
     context: BaseAudioContext,
-    options?: BaseAudioBufferSourceOptions
+    options?: AudioBufferQueueSourceOptions
   ) {
     const node = context.context.createBufferQueueSource(options || {});
     super(context, node);

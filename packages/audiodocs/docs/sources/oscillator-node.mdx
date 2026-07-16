@@ -23,16 +23,17 @@ constructor(context: BaseAudioContext, options?: OscillatorOptions)
 
 ### `OscillatorOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
 | `type` <Optional /> | [`OscillatorType`](/docs/types/oscillator-type) | `sine` | Initial value for [`type`](/docs/sources/oscillator-node#properties). |
-| `frequency` <Optional /> | `number` | 440 | Initial value for [`frequency`](/docs/sources/oscillator-node#properties). |
-| `detune` <Optional /> | `number` | 0 | Initial value for [`detune`](/docs/sources/oscillator-node#properties). |
+| `frequency` <Optional /> | `number` | `440.0` | Initial value for [`frequency`](/docs/sources/oscillator-node#properties). |
+| `detune` <Optional /> | `number` | `0.0` | Initial value for [`detune`](/docs/sources/oscillator-node#properties). |
 
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createOscillator()`](/docs/core/base-audio-context#createoscillator)
+:::info
+You can also create an `OscillatorNode` via [`BaseAudioContext.createOscillator()`](/docs/core/base-audio-context#createoscillator), which uses default values.
+:::
 
 ## Example
 
@@ -56,19 +57,19 @@ function App() {
 
 ## Properties
 
-It inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+Inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Default value | Description |
-| :----: | :----: | :-------- | :------- |
-| `detune` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | 0 |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
-| `frequency` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | 440 | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing frequency of wave in herzs. |
+| :----: | :----: | :----: | :------- |
+| `detune` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | `0.0` |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `frequency` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | `440.0` | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing frequency of wave in herzs. |
 | `type` | [`OscillatorType`](/docs/types/oscillator-type)| `sine` | String value represening type of wave. |
 
 ## Methods
 
-It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+Inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
 
 ### `setPeriodicWave`
 
@@ -76,7 +77,7 @@ Sets any periodic wave.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `wave` | [`PeriodicWave`](/docs/effects/periodic-wave) | Data representing custom wave. [`See for reference`](/docs/core/base-audio-context#createperiodicwave) |
+| `wave` | [`PeriodicWave`](/docs/effects/periodic-wave) | Data representing custom wave ([see for reference](/docs/core/base-audio-context#createperiodicwave)). |
 
 #### Returns `undefined`.
 
@@ -84,9 +85,9 @@ Sets any periodic wave.
 
 #### `detune`
 - Nominal range is: -∞ to ∞.
-- For example value of 100 detune the source up by one semitone, whereas -1200 down by one octave.
+- For example value of `100.0` detune the source up by one semitone, whereas `-1200.0` down by one octave.
 
 #### `frequency`
-- 440 Hz is equivalent to piano note A4.
+- `440.0` Hz is equivalent to piano note A4.
 - Nominal range is: $-\frac{\text{sampleRate}}{2}$ to $\frac{\text{sampleRate}}{2}$
 (`sampleRate` value is taken from [`AudioContext`](/docs/core/base-audio-context#properties))

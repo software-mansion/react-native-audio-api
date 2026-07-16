@@ -48,11 +48,7 @@ class WsolaTimeStretcher {
  private:
   static constexpr float OLA_WINDOW_MS = 20.0f;
   static constexpr float SEARCH_INTERVAL_MS = 30.0f;
-  // Chromium uses a denser decimated search, but pairs it with SIMD dot products
-  // and precomputed moving energies. This lighter search keeps iOS route changes
-  // from overloading the real-time audio callback in the current implementation.
   static constexpr size_t SEARCH_DECIMATION = 12;
-  static constexpr size_t SIMILARITY_FRAME_STRIDE = 4;
   static constexpr size_t QUEUE_COMPACT_THRESHOLD_FRAMES = 4096;
 
   size_t channels_{0};
@@ -82,6 +78,11 @@ class WsolaTimeStretcher {
   std::vector<std::vector<float>> targetBlock_;
   std::vector<std::vector<float>> optimalBlock_;
   std::vector<float> targetEnergy_;
+  // Contiguous, pitch-resampled copy of the current search region per channel.
+  // Materialized once per findOptimalBlockIndex() so every candidate window is a
+  // contiguous slice, enabling SIMD cross-correlation instead of per-sample
+  // interpolation inside the search loop.
+  std::vector<std::vector<float>> searchSpan_;
 
   void appendInput(const DSPAudioBuffer &input, size_t inputFrames);
   size_t availableOutputFrames() const;
@@ -91,6 +92,7 @@ class WsolaTimeStretcher {
   bool canRunIteration() const;
   bool targetIsWithinSearchRegion() const;
   int findOptimalBlockIndex();
+  void fillSearchSpan();
   float similarityAt(int candidateIndex) const;
   [[nodiscard]] int maxSourceIndexForBlock(int blockStartFrame) const;
   float sampleAt(size_t channel, int frameIndex) const;

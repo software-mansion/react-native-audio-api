@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/core/utils/WsolaTimeStretcher.h>
+#include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>

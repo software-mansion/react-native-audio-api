@@ -324,6 +324,13 @@
   --swm-platform-badge-color: var(--swm-off-white);
   --swm-available-from-badge-background: var(--swm-yellow-dark-120);
   --swm-available-from-badge-color: var(--swm-off-white);
+
+  /* Oscillator wave charts */
+  --swm-oscillator-sine: var(--swm-red-light-100);
+  --swm-oscillator-square: var(--swm-green-light-100);
+  --swm-oscillator-triangle: var(--swm-blue-light-100);
+  --swm-oscillator-sawtooth: var(--swm-purple-light-100);
+  --swm-oscillator-grid: rgba(0, 0, 0, 0.2);
 }
 
 :root[data-theme='dark'] {
@@ -515,4 +522,11 @@
   --swm-platform-badge-color: var(--swm-off-white);
   --swm-available-from-badge-background: var(--swm-yellow-dark-120);
   --swm-available-from-badge-color: var(--swm-off-white);
+
+  /* Oscillator wave charts */
+  --swm-oscillator-sine: var(--swm-red-dark-100);
+  --swm-oscillator-square: var(--swm-green-dark-100);
+  --swm-oscillator-triangle: var(--swm-blue-dark-100);
+  --swm-oscillator-sawtooth: var(--swm-purple-dark-100);
+  --swm-oscillator-grid: rgba(252, 252, 255, 0.15);
 }

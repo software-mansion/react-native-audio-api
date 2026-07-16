@@ -9,8 +9,12 @@ import {
 
 # RecordingNotificationManager <Android />
 
-The `RecordingNotificationManager` provides system integration with [`Recorder`](/docs/inputs/audio-recorder).
+The `RecordingNotificationManager` provides system integration with [`AudioRecorder`](/docs/inputs/audio-recorder) on Android.
 It can send events about pausing and resuming to your application.
+
+:::note iOS
+`RecordingNotificationManager` is not available on iOS. For a recording indicator on the Lock Screen and in the Dynamic Island, use a [Live Activity](https://docs.expo.dev/versions/latest/sdk/widgets/) built with [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/).
+:::
 
 ## Example
 ```typescript
@@ -42,20 +46,17 @@ RecordingNotificationManager.hide();
 
 Shows the recording notification with the parameters.
 
-:::info
 Metadata is saved between calls, so after the initial pass to the show method, you need only call it with elements that are supposed to change.
-:::
-
 
 | Parameter |Type| Description|
-| :-------: | :--: | :----|
+| :---: | :---: | :---- |
 | `info` | [`RecordingNotificationInfo`](recording-notification-manager#recordingnotificationinfo) | Initial notification metadata |
 
 #### Returns `Promise<void>`.
 
 :::info
 For more details, go to [android developer page](https://developer.android.com/develop/ui/views/notifications#Templates).
-Resource name is a path to resource plased in res/drawable folder. It has to be either .png file or .xml file, name is indicated without file extenstion. (photo.png -> photo).
+Resource name is a path to resource placed in res/drawable folder. It has to be either .png file or .xml file, name is indicated without file extension. (photo.png -> photo).
 :::
 
 :::caution
@@ -77,12 +78,12 @@ Checks if the notification is displayed.
 
 ### `addEventListener`
 
-Add an event listener for notification actions.
+Adds an event listener for notification actions.
 
 |  Parameter  | Type | Description |
-| :---------: | :----: | :---------------------- |
-| `eventName` | [`RecordingNotificationEvent`](recording-notification-manager#recordingnotificationevent) | The event to listen for |
-| `callback`  | ([`RecordingNotificationEvent](recording-notification-manager#recordingnotificationevent)) => void | Callback function |
+| :---: | :---: | :---- |
+| `eventName` | [`RecordingNotificationEventName`](recording-notification-manager#recordingnotificationeventname) | The event to listen for |
+| `callback`  | [`NotificationCallback`](recording-notification-manager#notificationcallback) | Callback function |
 
 #### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
 
@@ -106,15 +107,29 @@ interface RecordingNotificationInfo {
 ```
 </details>
 
-### `RecordingNotificationEvent`
+### `RecordingNotificationEventName`
 
 <details>
 <summary>Type definitions</summary>
 ```typescript
+interface EventEmptyType {}
+
 interface RecordingNotificationEvent {
   recordingNotificationPause: EventEmptyType;
   recordingNotificationResume: EventEmptyType;
 }
+
+type RecordingNotificationEventName = keyof RecordingNotificationEvent;
 ```
 </details>
 
+### `NotificationCallback`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type NotificationCallback<Name extends RecordingNotificationEventName> = (
+  event: RecordingNotificationEvent[Name]
+) => void;
+```
+</details>

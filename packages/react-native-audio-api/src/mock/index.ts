@@ -17,7 +17,7 @@ import {
   Result,
   AnalyserOptions,
   AudioBufferSourceOptions,
-  BaseAudioBufferSourceOptions,
+  AudioBufferQueueSourceOptions,
   BiquadFilterOptions,
   ConstantSourceOptions,
   ConvolverOptions,
@@ -458,7 +458,7 @@ class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
 
   constructor(
     context: BaseAudioContextMock,
-    _options?: BaseAudioBufferSourceOptions
+    _options?: AudioBufferQueueSourceOptions
   ) {
     super(context, {});
   }
@@ -642,7 +642,7 @@ class BaseAudioContextMock {
   }
 
   createBufferQueueSource(
-    options?: BaseAudioBufferSourceOptions
+    options?: AudioBufferQueueSourceOptions
   ): AudioBufferQueueSourceNodeMock {
     return new AudioBufferQueueSourceNodeMock(this, options);
   }
@@ -1117,7 +1117,7 @@ export {
   Result,
   AnalyserOptions,
   AudioBufferSourceOptions,
-  BaseAudioBufferSourceOptions,
+  AudioBufferQueueSourceOptions,
   BiquadFilterOptions,
   ConstantSourceOptions,
   ConvolverOptions,

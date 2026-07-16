@@ -2,156 +2,160 @@
 sidebar_position: 4
 ---
 
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { ReadOnly } from '@site/src/components/Badges';
 
 # WorkletProcessingNode
 
 :::warning
-This node is dependent on `react-native-worklets` and you need to install them in order to use this node. Refer to [getting-started page](/docs/fundamentals/getting-started#possible-additional-dependencies) for more info.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
 :::
 
-The `WorkletProcessingNode` interface represents a node in the audio processing graph that can process audio using a worklet function. Unlike [`WorkletNode`](/docs/worklets/worklet-node) which only provides read-only access to audio data, `WorkletProcessingNode` allows you to modify the audio signal by providing both input and output buffers.
+`WorkletProcessingNode` is an effect node that processes audio synchronously on the **audio worklet runtime** each render quantum. Unlike [`WorkletNode`](/docs/worklets/worklet-node), which only provides read-only snapshots on the UI runtime, this node receives input audio and writes processed output back into the graph.
 
-This node lets you execute a worklet that receives input audio data and produces output audio data, making it perfect for creating custom audio effects, filters, and processors. The worklet processes the exact number of frames provided by the audio system in each call.
+Use it for custom effects, filters, dynamics processors, and other in-graph DSP written in JavaScript.
 
-For more information about worklets, see our [Introduction to worklets](/docs/worklets/worklets-introduction).
+For runtime differences and performance tips, see [How to use audio worklets mindfully](/docs/worklets/introduction#how-to-use-audio-worklets-mindfully).
 
 ## Constructor
 
 ```tsx
-constructor(
-  context: BaseAudioContext,
-  runtime: AudioWorkletRuntime,
-  callback: (
-    inputData: Array<Float32Array>,
-    outputData: Array<Float32Array>,
-    framesToProcess: number,
-    currentTime: number
-  ) => void)
+import { AudioContext } from 'react-native-audio-api';
+import { WorkletProcessingNode } from 'react-native-audio-worklets';
+
+const node = new WorkletProcessingNode(context, callback);
 ```
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createWorkletProcessingNode(worklet, workletRuntime)`](/docs/core/base-audio-context#createworkletprocessingnode-)
+
+### Parameters
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
+| `callback` | `WorkletProcessingNodeCallback` | Worklet invoked on the audio runtime each render quantum. Must include the `'worklet'` directive. |
+
+### `WorkletProcessingNodeCallback`
+
+```tsx
+type WorkletProcessingNodeCallback = (
+  inputData: Array<Float32Array>,
+  outputData: Array<Float32Array>,
+  inputChannelCount: number,
+  outputChannelCount: number,
+  framesToProcess: number,
+  currentTime: number
+) => void;
+```
+
+| Argument | Description |
+| :--- | :---- |
+| `inputData` | Stable per-channel `Float32Array` views over the input pool (read-only for your callback). Each view spans the full render quantum (128 frames). |
+| `outputData` | Stable per-channel `Float32Array` views over the output pool. Write processed samples into indices `0 .. framesToProcess - 1`. |
+| `inputChannelCount` | Active input channel count (`inputData.length`). |
+| `outputChannelCount` | Active output channel count (`outputData.length`). |
+| `framesToProcess` | Number of frames in this quantum (at most 128). |
+| `currentTime` | Audio context time in seconds at the start of this quantum. |
+
+:::note
+Input and output use **separate** buffer pools. You must write every output sample you want to hear — unwritten frames are not automatically copied from input.
+:::
+
+### Errors
+
+| Error type | Condition |
+| :---: | :---- |
+| `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
+| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
 
 ## Example
 
+Simple gain effect:
+
 ```tsx
-import { AudioContext, AudioRecorder } from 'react-native-audio-api';
+import { AudioContext } from 'react-native-audio-api';
+import { WorkletProcessingNode } from 'react-native-audio-worklets';
 
-// This example shows how to create a simple gain effect using WorkletProcessingNode
-function App() {
-    const recorder = new AudioRecorder({
-      sampleRate: 16000,
-      bufferLengthInSamples: 16000,
-    });
+function GainEffect() {
+  const start = () => {
+    const ctx = new AudioContext();
 
-    const audioContext = new AudioContext({ sampleRate: 16000 });
-
-    // Create a simple gain worklet that multiplies the input by a gain value
-    const gainWorklet = (
-        inputData: Array<Float32Array>,
-        outputData: Array<Float32Array>,
-        framesToProcess: number,
-        currentTime: number
-    ) => {
+    const gainNode = new WorkletProcessingNode(
+      ctx,
+      (inputData, outputData, inputChannelCount, outputChannelCount, framesToProcess) => {
         'worklet';
-        const gain = 0.5; // 50% volume
 
-        for (let ch = 0; ch < inputData.length; ch++) {
-            const input = inputData[ch];
-            const output = outputData[ch];
+        const gain = 0.5;
 
-            for (let i = 0; i < framesToProcess; i++) {
-                output[i] = input[i] * gain;
-            }
+        for (let ch = 0; ch < Math.min(inputChannelCount, outputChannelCount); ch++) {
+          const input = inputData[ch]!;
+          const output = outputData[ch]!;
+
+          for (let i = 0; i < framesToProcess; i++) {
+            output[i] = input[i]! * gain;
+          }
         }
-    };
-
-    const workletProcessingNode = audioContext.createWorkletProcessingNode(
-        gainWorklet,
-        'AudioRuntime'
+      }
     );
 
-    recorder
-      .connect(audioContext, workletProcessingNode)
-      .connect(audioContext.destination);
-    recorder.start();
+    const oscillator = ctx.createOscillator();
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.start();
+    ctx.resume();
+  };
+
+  // ...
 }
 ```
-
-## Worklet Parameters Explanation
-
-The worklet function receives four parameters:
-
-### `inputData: Array<Float32Array>`
-A two-dimensional array where:
-- First dimension represents the audio channel (0 = left, 1 = right for stereo)
-- Second dimension contains the input audio samples for that channel
-- You should **read** from these buffers to get the input audio data
-- The length of each `Float32Array` equals the `framesToProcess` parameter
-
-### `outputData: Array<Float32Array>`
-A two-dimensional array where:
-- First dimension represents the audio channel (0 = left, 1 = right for stereo)
-- Second dimension contains the output audio samples for that channel
-- You must **write** to these buffers to produce the processed audio output
-- The length of each `Float32Array` equals the `framesToProcess` parameter
-
-### `framesToProcess: number`
-The number of audio samples to process in this call. This determines how many samples you need to process in each channel's buffer. This value will be at most 128.
-
-### `currentTime: number`
-The current audio context time in seconds when this worklet call begins. This represents the absolute time since the audio context was created.
 
 ## Audio Processing Pattern
 
 A typical WorkletProcessingNode worklet follows this pattern:
 
 ```tsx
-const audioProcessor = (
-    inputData: Array<Float32Array>,
-    outputData: Array<Float32Array>,
-    framesToProcess: number,
-    currentTime: number
+const processor = (
+  inputData: Array<Float32Array>,
+  outputData: Array<Float32Array>,
+  inputChannelCount: number,
+  outputChannelCount: number,
+  framesToProcess: number,
+  currentTime: number
 ) => {
-    'worklet';
+  'worklet';
 
-    for (let channel = 0; channel < inputData.length; channel++) {
-        const input = inputData[channel];
-        const output = outputData[channel];
+  for (let channel = 0; channel < outputChannelCount; channel++) {
+    const input = inputData[Math.min(channel, inputChannelCount - 1)]!;
+    const output = outputData[channel]!;
 
-        for (let sample = 0; sample < framesToProcess; sample++) {
-            // Process each sample
-            // Read from: input[sample]
-            // Write to: output[sample]
-            output[sample] = processAudioSample(input[sample]);
-        }
+    for (let sample = 0; sample < framesToProcess; sample++) {
+      output[sample] = processSample(input[sample]!, currentTime);
     }
+  }
 };
 ```
 
 ## Properties
 
-It has no own properties but inherits from [`AudioNode`](/docs/core/audio-node).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+
+`WorkletProcessingNode` does not define any additional properties.
 
 ## Methods
 
-It has no own methods but inherits from [`AudioNode`](/docs/core/audio-node).
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
-## Performance Considerations
+<AudioNodeMethodsTable />
 
-Since `WorkletProcessingNode` processes audio in real-time, performance is critical:
+`WorkletProcessingNode` does not define any additional methods.
 
-- Keep worklet functions lightweight and efficient
-- Avoid complex calculations that could cause audio dropouts
-- Process samples in-place when possible
-- Consider using lookup tables for expensive operations
-- Use `AudioRuntime` for better performance, `UIRuntime` for UI integration
-- Test on target devices to ensure smooth audio processing
+## Performance considerations
 
-## Use Cases
+Callbacks run synchronously on the audio path each render quantum. Keep worklet functions lightweight — heavy math or allocations can cause dropouts.
 
-- **Audio Effects**: Reverb, delay, distortion, filters
-- **Audio Processing**: Compression, limiting, normalization
-- **Real-time Filters**: EQ, high-pass, low-pass, band-pass filters
-- **Custom Algorithms**: Noise reduction, pitch shifting, spectral processing
-- **Signal Analysis**: Feature extraction while passing audio through
+## See also
+
+- [`WorkletSourceNode`](/docs/worklets/worklet-source-node) — generate audio with a worklet
+- [`WorkletNode`](/docs/worklets/worklet-node) — read-only snapshots on the UI runtime for visualizers
+- [Worklets introduction](/docs/worklets/introduction)

@@ -54,17 +54,17 @@ Always verify valid category and option combinations in [Apple's AVAudioSession 
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) |
+| options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors). |
 
-#### Returns `undefined`
+#### Returns `undefined`.
 
 ### `setAudioSessionActivity` <IOS />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
+| enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity. |
 
-#### Returns `Promise<void>`, which resolves when the audio session activity was set successfully. On failure the promise rejects with a `SessionActivationError` that carries the native error details (`nativeErrorInfo`) when available.
+#### Returns `Promise<void>`, which resolves when the audio session activity was set successfully. On failure, the promise rejects with a `SessionActivationError` that carries the native error details (`nativeErrorInfo`) when available.
 
 ### `disableSessionManagement` <IOS />
 
@@ -86,86 +86,82 @@ Any later call to `setAudioSessionOptions` or `setAudioSessionActivity` will re-
 | `param` |  [`AudioFocusType`](audio-manager#audiofocustype) \| `boolean` \| `null` | It is used to enable/disable observing audio interruptions. Passing `false` or `null` disables the observation, otherwise it is enabled. |
 
 :::info
-On android passing the audio focus type set the native [audio focus](https://developer.android.com/media/optimize/audio-focus) accordingly.
-It is recommended for apps to respect the rules for good user experience.
-On iOS it just enables/disables event emission and has no additional effects.
+On Android, passing an [`AudioFocusType`](audio-manager#audiofocustype) requests the matching native [audio focus](https://developer.android.com/media/optimize/audio-focus) mode (for example, `'gain'` for long-term playback).
+Follow [Android's audio focus guidelines](https://developer.android.com/media/optimize/audio-focus) for the best user experience.
+On iOS, passing `true` or `false` only enables or disables interruption event emission; the focus type is ignored.
 :::
 
-#### Returns `undefined`
+#### Returns `undefined`.
 
 ### `activelyReclaimSession` <IOS /> <Experimental />
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `enabled` | `boolean` | It is used to enable/disable session spoofing |
+| `enabled` | `boolean` | It is used to enable/disable session spoofing. |
 
-#### Returns `undefined`
+#### Returns `undefined`.
 
-More aggressively try to reactivate the audio session during interruptions.
+Tries more aggressively to reactivate the audio session during interruptions.
 
-In some cases (depends on app session settings and other apps using audio) system may never
-send the `interruption ended` event. This method will check if any other audio is playing
-and try to reactivate the audio session, as soon as there is "silence".
-Although this might change the expected behavior.
+In some cases (depends on app session settings and other apps using audio) the system may never
+send the `interruption ended` event. This method checks whether any other audio is playing
+and tries to reactivate the audio session as soon as there is "silence", although this might change the expected behavior.
 
-Internally method uses `AVAudioSessionSilenceSecondaryAudioHintNotification` as well as
+Internally, the method uses `AVAudioSessionSilenceSecondaryAudioHintNotification` as well as
 interval polling to check if other audio is playing.
 
 ### `observeVolumeChanges`
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `enabled` | `boolean` | It is used to enable/disable observing volume changes |
+| `enabled` | `boolean` | It is used to enable/disable observing volume changes. |
 
-#### Returns `undefined`
-
+#### Returns `undefined`.
 
 ### `addSystemEventListener`
 
-Adds callback to be invoked upon hearing an event.
+Adds a callback to be invoked upon hearing an event.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `name` | [`SystemEventName`](audio-manager#systemeventname) | Name of an event listener |
-| `callback` | [`SystemEventCallback`](audio-manager#systemeventname) | Callback that will be invoked upon hearing an event |
+| `name` | [`SystemEventName`](audio-manager#systemeventname) | Name of an event listener. |
+| `callback` | [`SystemEventCallback`](audio-manager#systemeventcallback) | Callback that will be invoked upon hearing an event. |
 
-#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise
+#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise.
 
 ### `requestRecordingPermissions`
 
 Brings up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
 is directly requested, but sometimes it is better to ask beforehand.
 
-#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`
+#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`.
 
-#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Returns `Promise<PermissionStatus>`, which is resolved after receiving the answer from the system.
 
 ### `checkRecordingPermissions`
 
-Checks if permissions were previously granted.
+Checks if recording permissions were previously granted.
 
-#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`
-
-#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Returns `Promise<PermissionStatus>`, which is resolved after receiving the answer from the system.
 
 ### `requestNotificationPermissions`
 
 Brings up the system notification permissions pop-up on demand. The pop-up automatically shows if notification data
 is directly requested, but sometimes it is better to ask beforehand.
 
-#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Returns `Promise<PermissionStatus>`, which is resolved after receiving the answer from the system.
 
-### `checkRecordingPermissions`
+### `checkNotificationPermissions`
 
-Checks if permissions were previously granted.
+Checks if notification permissions were previously granted.
 
-#### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
+#### Returns `Promise<PermissionStatus>`, which is resolved after receiving the answer from the system.
 
 ### `getDevicesInfo`
 
 Checks currently used and available devices.
 
-#### Returns promise of [`AudioDevicesInfo`](/docs/system/audio-manager#audiodevicesinfo) type, which is resolved after receiving answer from the system.
+#### Returns `Promise<AudioDevicesInfo>`, which is resolved after receiving the answer from the system.
 
 ## Remarks
 
@@ -267,12 +263,19 @@ type SystemEvents = {
 };
 
 type SystemEventName = keyof SystemEvents;
+```
+</details>
+
+### `SystemEventCallback`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
 type SystemEventCallback<Name extends SystemEventName> = (
   event: SystemEvents[Name]
 ) => void;
 ```
 </details>
-
 
 ### `AudioEventSubscription`
 
@@ -297,16 +300,24 @@ type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 ```
 </details>
 
-### `AudioDevicesInfo`
+### `AudioDeviceInfo`
 
 <details>
 <summary>Type definitions</summary>
 ```typescript
 export interface AudioDeviceInfo {
-  name: string;
-  category: string;
+  id: string; // unique device identifier
+  name: string; // human-readable device name
+  category: string; // device category (e.g. "Built-In Microphone", "Bluetooth")
 }
+```
+</details>
 
+### `AudioDevicesInfo`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
 export type AudioDeviceList = AudioDeviceInfo[];
 
 export interface AudioDevicesInfo {

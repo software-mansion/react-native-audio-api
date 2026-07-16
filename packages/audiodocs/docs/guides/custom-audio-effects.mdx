@@ -1,0 +1,254 @@
+---
+sidebar_position: 5
+---
+
+# Custom audio effects
+
+In this section, we will create our own [`pure C++ turbo-module`](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules) and use it to build a custom processing node that transforms audio however you like.
+
+### Prerequisites
+
+We highly encourage you to get familiar with [this guide](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules), since we will be using many similar concepts explained there.
+
+:::info Stable C++ API
+Custom nodes must include only [`StableAPI.h`](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/compatibility/StableAPI.h) from `react-native-audio-api` — the same header used by extension packages such as [`react-native-audio-worklets`](https://github.com/software-mansion/react-native-audio-api/tree/main/packages/react-native-audio-worklets). Do not include other `audioapi/...` headers directly; they are internal and may change without notice. See [`EXTENSION_API.md`](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/compatibility/EXTENSION_API.md) for the full contract.
+:::
+
+## Generate files
+
+We prepared a script that generates all of the boiler plate code for you.
+The only things you need to do yourself are:
+
+- customize the processor for your use case
+- configure [`codegen`](https://reactnative.dev/docs/the-new-architecture/what-is-codegen) for your project
+- write platform-specific code to compile those files
+
+```bash
+npx rn-audioapi-custom-node-generator create -o # path where you want files to be generated, usually same level as android/ and ios/
+```
+
+## Analyzing generated files
+
+You should see two directories:
+- `shared/` — contains C++ files (source code for the custom effect and the JSI layer — Host Objects used to communicate with JavaScript)
+- `specs/` — defines the TypeScript interface that invokes C++ code from JavaScript
+
+:::caution
+Name of the file in `specs/` has to start with `Native` to be seen by codegen.
+:::
+
+The most important file is `MyProcessorNode.cpp`. It contains the main processing logic that directly manipulates raw audio data.
+
+In this guide, we will edit files in order to achieve [`GainNode`](/docs/effects/gain-node) functionality.
+For the sake of a simplicity, we will use value as a raw `double` type, not wrapped in [`AudioParam`](/docs/core/audio-param).
+
+<details open>
+<summary>MyProcessorNode.h</summary>
+
+```cpp
+#pragma once
+#include <audioapi/compatibility/StableAPI.h>
+
+namespace audioapi {
+
+class MyProcessorNode : public AudioNode {
+public:
+  explicit MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context);
+
+protected:
+  void processNode(int framesToProcess) override;
+
+// highlight-start
+private:
+  double gain_{0.5};
+
+public:
+  [[nodiscard]] double getGain() const {
+    return gain_;
+  }
+
+  void setGain(double value) {
+    gain_ = value;
+  }
+// highlight-end
+};
+
+} // namespace audioapi
+```
+</details>
+
+<br />
+
+<details open>
+<summary>MyProcessorNode.cpp</summary>
+
+```cpp
+#include "MyProcessorNode.h"
+
+namespace audioapi {
+    MyProcessorNode::MyProcessorNode(const std::shared_ptr<BaseAudioContext> &context)
+        // highlight-next-line
+        : AudioNode(context) {}
+
+    void MyProcessorNode::processNode(int framesToProcess) {
+      // highlight-start
+      for (int channel = 0; channel < audioBuffer_->getNumberOfChannels(); ++channel) {
+        auto *samples = audioBuffer_->getChannel(channel);
+        for (size_t i = 0; i < framesToProcess; ++i) {
+          (*samples)[i] *= gain_;
+        }
+      }
+      // highlight-end
+    }
+} // namespace audioapi
+```
+</details>
+
+<br />
+
+<details open>
+<summary>MyProcessorNodeHostObject.h</summary>
+
+```cpp
+#pragma once
+
+#include "MyProcessorNode.h"
+#include <audioapi/compatibility/StableAPI.h>
+
+#include <memory>
+
+namespace audioapi {
+using namespace facebook;
+
+class MyProcessorNodeHostObject : public AudioNodeHostObject {
+public:
+  explicit MyProcessorNodeHostObject(const std::shared_ptr<BaseAudioContext> &context)
+      : AudioNodeHostObject(
+            context->getGraph(),
+            std::make_unique<MyProcessorNode>(context)) {
+    // highlight-start
+    addGetters(JSI_EXPORT_PROPERTY_GETTER(MyProcessorNodeHostObject, gain));
+    addSetters(JSI_EXPORT_PROPERTY_SETTER(MyProcessorNodeHostObject, gain));
+    // highlight-end
+  }
+
+  // highlight-start
+  JSI_PROPERTY_GETTER(gain) {
+     auto processorNode = std::static_pointer_cast<MyProcessorNode>(node_);
+     return jsi::Value(processorNode->getGain());
+  }
+  // highlight-end
+
+  // highlight-start
+  JSI_PROPERTY_SETTER(gain) {
+     auto processorNode = std::static_pointer_cast<MyProcessorNode>(node_);
+     processorNode->setGain(value.getNumber());
+  }
+  // highlight-end
+};
+} // namespace audioapi
+```
+</details>
+
+## Codegen
+
+Onboarding codegen doesn't require anything special in regards to basic [react-native tutorial](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules#2-configure-codegen).
+
+## Native files
+
+### iOS
+
+When it comes to iOS there is also nothing more than following [react-native tutorial](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules#ios).
+
+### Android
+
+Case with Android is different because your TurboModule is compiled together with the app.
+Follow [the guide](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules#android), then link against the published prefab instead of importing the `.so` manually:
+
+```cmake
+cmake_minimum_required(VERSION 3.13)
+
+project(appmodules)
+
+set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
+
+include(${REACT_ANDROID_DIR}/cmake-utils/ReactNative-application.cmake)
+
+find_package(react-native-audio-api REQUIRED CONFIG)
+
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+  ${ROOT}/shared/NativeAudioProcessingModule.cpp
+  ${ROOT}/shared/MyProcessorNode.cpp
+  ${ROOT}/shared/MyProcessorNodeHostObject.cpp
+)
+
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+    ${ROOT}/shared
+)
+
+target_link_libraries(${CMAKE_PROJECT_NAME}
+  react-native-audio-api::react-native-audio-api
+  android
+  log
+)
+```
+
+Prefab ships `StableAPI.h` and the transitive headers it needs — you do not need to add `common/cpp` to `target_include_directories`.
+
+## Final touches
+
+Finally, onboard your custom module by adding a `types.ts` file with a TypeScript interface that maps to the C++ layer:
+
+```typescript
+// types.ts
+import { AudioNode, BaseAudioContext } from "react-native-audio-api";
+import { IAudioNode, IBaseAudioContext } from "react-native-audio-api/lib/typescript/interfaces";
+
+export interface IMyProcessorNode extends IAudioNode {
+    gain: number;
+}
+
+export class MyProcessorNode extends AudioNode {
+    constructor(context: BaseAudioContext, node: IMyProcessorNode) {
+        super(context, node);
+    }
+
+    public set gain(value: number) {
+        (this.node as IMyProcessorNode).gain = value;
+    }
+
+    public get gain(): number {
+        return (this.node as IMyProcessorNode).gain;
+    }
+}
+
+declare global {
+    var createCustomProcessorNode: (context: IBaseAudioContext) => IMyProcessorNode;
+}
+```
+
+## Example
+
+```tsx
+import {
+  AudioContext,
+  OscillatorNode,
+} from 'react-native-audio-api';
+import { MyProcessorNode } from './types';
+
+function App() {
+  const audioContext = new AudioContext();
+  const oscillator = audioContext.createOscillator();
+  // constructor is put in global scope
+  const processor = new MyProcessorNode(audioContext, global.createCustomProcessorNode(audioContext.context));
+  oscillator.connect(processor);
+  processor.connect(audioContext.destination);
+  oscillator.start(audioContext.currentTime);
+}
+```
+
+**Check out fully working [demo app](https://github.com/software-mansion-labs/custom-processor-node-example).**
+
+## What's next?
+
+We're not sure, but give yourself a pat on the back – you've earned it! More guides are on the way, so stay tuned! 🎼

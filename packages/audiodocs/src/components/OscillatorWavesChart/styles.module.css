@@ -1,0 +1,43 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.panel {
+  position: relative;
+  width: 100%;
+}
+
+.chart {
+  width: 100%;
+  aspect-ratio: 6 / 1;
+}
+
+/* Grid reference lines. Colored here (rather than via a stroke attribute) so the
+   theme-aware CSS variable resolves — var() is not evaluated inside SVG
+   presentation attributes. */
+.chart :global(.recharts-reference-line line) {
+  stroke: var(--swm-oscillator-grid);
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  left: -0.3rem;
+  z-index: 1;
+  font-size: 0.875rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+@media screen and (max-width: 600px) {
+  .chart {
+    aspect-ratio: 4 / 1;
+  }
+
+  .label {
+    font-size: 0.75rem;
+  }
+}

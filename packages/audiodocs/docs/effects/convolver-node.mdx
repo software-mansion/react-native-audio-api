@@ -3,16 +3,17 @@ sidebar_position: 2
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional } from '@site/src/components/Badges';
 
 # ConvolverNode
 
-The `ConvolverNode` interface represents a linear convolution effect, that can be applied to a signal given an impulse response.
+The `ConvolverNode` interface represents a linear convolution effect that can be applied to a signal given an impulse response.
 This is the easiest way to achieve `echo` or [`reverb`](https://en.wikipedia.org/wiki/Reverb_effect) effects.
 
 
 :::info
-Convolver is a node with tail-time, which means, that it continues to output non-silent audio with zero input for the length of the buffer.
+Convolver is a node with tail-time, which means that it continues to output non-silent audio with zero input for the length of the buffer.
 :::
 
 ## Constructor
@@ -23,19 +24,18 @@ constructor(context: BaseAudioContext, options?: ConvolverOptions)
 
 ### `ConvolverOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `buffer` <Optional /> | `number` |  | Initial value for [`buffer`](/docs/effects/convolver-node#properties). |
-| `normalize` <Optional /> | `boolean` | true | Initial value for [`normalize`](/docs/effects/convolver-node#properties). |
+| `buffer` <Optional /> | [`AudioBuffer`](/docs/sources/audio-buffer) |  | Initial value for [`buffer`](/docs/effects/convolver-node#properties). |
+| `disableNormalization` <Optional /> | `boolean` | `false` | When `true`, disables equal-power normalization of the impulse response (inverse of [`normalize`](/docs/effects/convolver-node#properties)). |
 
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createConvolver()`](/docs/core/base-audio-context#createconvolver)
+You can also create a `ConvolverNode` via the [`BaseAudioContext.createConvolver()`](/docs/core/base-audio-context#createconvolver) factory method, which uses default values.
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
 
@@ -47,3 +47,11 @@ It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 :::caution
 Linear convolution is a heavy computational process, so if your audio has some weird artefacts that should not be there, try to decrease the duration of impulse response buffer.
 :::
+
+## Methods
+
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`ConvolverNode` does not define any additional methods.

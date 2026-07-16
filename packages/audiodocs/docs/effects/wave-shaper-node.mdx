@@ -3,39 +3,39 @@ sidebar_position: 6
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { ReadOnly, Optional } from '@site/src/components/Badges';
 
 # WaveShaperNode
 
 The `WaveShaperNode` interface represents non-linear signal distortion effects.
-Non-linear distortion is commonly used for both subtle non-linear warming, or more obvious distortion effects.
-
+Non-linear distortion is commonly used for both subtle non-linear warming, and more obvious distortion effects.
 
 ## Constructor
 
 ```tsx
-constructor(context: BaseAudioContext, waveShaperOptions?: WaveShaperOptions)
+constructor(context: BaseAudioContext, options?: WaveShaperOptions)
 ```
 
 ### `WaveShaperOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
 
-| Parameter | Type | Default | Description |
+| Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `curve` <Optional /> | `number[] \| Float32Array` | - | Shaping curve values. Must contain at least two elements. |
-| `oversample` <Optional /> | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | - | Value representing oversample property |
+| `curve` <Optional /> | `number[] \| Float32Array` | - | Initial value for [`curve`](/docs/effects/wave-shaper-node#properties). |
+| `oversample` <Optional /> | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | `'none'` | Initial value for [`oversample`](/docs/effects/wave-shaper-node#properties). |
 
-Or by using [`BaseAudioContext.createWaveShaper()`](/docs/core/base-audio-context#createwaveshaper).
+You can also create a `WaveShaperNode` via the [`BaseAudioContext.createWaveShaper()`](/docs/core/base-audio-context#createwaveshaper) factory method, which uses default values.
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
-| :--: | :--: | :---------- |
+| :----: | :----: | :-------- |
 | `curve` | `Float32Array \| null` | The shaping curve used for the waveshaping effect. |
 | `oversample` | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | Specifies what type of oversampling should be used when applying the shaping curve. |
 
@@ -47,8 +47,11 @@ It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
 
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
 `WaveShaperNode` does not define any additional methods.
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ## Remarks
 
@@ -59,8 +62,8 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 - The constructor accepts a `number[]` or `Float32Array`; the property getter always returns a `Float32Array` or `null`.
 
 #### `oversample`
-- Default value `none`
-- Value of `2x` or `4x` can increases quality of the effect, but in some cases it is better not to use oversampling for very accurate shaping curve.
+- Default value is `'none'`.
+- Values of `'2x'` or `'4x'` can increase the quality of the effect, but in some cases it is better not to use oversampling for a very accurate shaping curve.
 
 ### `OverSampleType`
 

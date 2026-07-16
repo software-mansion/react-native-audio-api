@@ -22,7 +22,7 @@ module.exports = {
       },
     },
     {
-      types: ['string', 'property', 'atrule', 'selector', 'tag'],
+      types: ['string', 'property', 'atrule', 'selector', 'tag', 'constant'],
       style: {
         color: 'var(--swm-navy-light-80)',
       },
@@ -41,7 +41,6 @@ module.exports = {
         'number',
         'boolean',
         'variable',
-        'constant',
         'regex',
         'inserted',
         'operator',

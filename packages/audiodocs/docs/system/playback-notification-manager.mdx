@@ -14,16 +14,16 @@ The `PlaybackNotificationManager` provides media session integration and playbac
 
 :::info Platform Differences
 
-**iOS Requirements:**
-- Notification controls only appear when an active `AudioContext` is running
-- `show()` or `hide()` only update metadata - they don't control notification visibility
-- The notification automatically appears/disappears based on audio session state
-- To show: create and resume an AudioContext
-- To hide: suspend or close the AudioContext
+**iOS:**
+- Notification controls appear only when an active `AudioContext` is running.
+- `show()` and `hide()` only update metadata; they do not control notification visibility.
+- The notification appears and disappears automatically based on the audio session state.
+- Creating and resuming an `AudioContext` shows the controls.
+- Suspending or closing the `AudioContext` hides the controls.
 
 **Android:**
-- Notification visibility is directly controlled by `show()` and `hide()` methods
-- Works independently of AudioContext state
+- Notification visibility is controlled directly by `show()` and `hide()`.
+- Notification controls work independently of `AudioContext` state.
 :::
 
 ## Example
@@ -35,6 +35,7 @@ await PlaybackNotificationManager.show({
   artist: 'My Artist',
   duration: 180,
   state: 'paused',
+  skipInterval: 10
 });
 
 // Listen for notification controls
@@ -54,6 +55,20 @@ const pauseListener = PlaybackNotificationManager.addEventListener(
   }
 );
 
+const skipForwardListener = PlaybackNotificationManager.addEventListener(
+  'playbackNotificationSkipForward',
+  (event) => {
+    seekBy(event.value);
+  }
+);
+
+const skipBackwardListener = PlaybackNotificationManager.addEventListener(
+  'playbackNotificationSkipBackward',
+  (event) => {
+    seekBy(-event.value);
+  }
+);
+
 const seekToListener = PlaybackNotificationManager.addEventListener(
   'playbackNotificationSeekTo',
   (event) => {
@@ -68,6 +83,8 @@ PlaybackNotificationManager.show({ elapsedTime: 60 });
 // Cleanup
 playListener.remove();
 pauseListener.remove();
+skipForwardListener.remove();
+skipBackwardListener.remove();
 seekToListener.remove();
 PlaybackNotificationManager.hide();
 ```
@@ -76,7 +93,7 @@ PlaybackNotificationManager.hide();
 
 ### `show`
 
-Display the notification with initial metadata.
+Displays the notification with initial metadata.
 
 :::note iOS Behavior
 On iOS, this method only sets the metadata. The notification controls will only appear when an `AudioContext` is actively running. Make sure to create and resume an AudioContext before calling `show()`.
@@ -87,14 +104,14 @@ Metadata is remembered between calls, so after initial passing the metadata to s
 :::
 
 | Parameter | Type | Description |
-| :-------: | :----------: | :----- |
+| :---: | :---: | :---- |
 | `info` | [`PlaybackNotificationInfo`](playback-notification-manager#playbacknotificationinfo) | Initial notification metadata |
 
 #### Returns `Promise<void>`.
 
 ### `hide`
 
-Hide the notification. Can be shown again later by calling `show()`.
+Hides the notification. Can be shown again later by calling `show()`.
 
 :::note iOS Behavior
 On iOS, this method clears the metadata but does not hide the notification controls. To completely hide controls on iOS, you must suspend or close the AudioContext.
@@ -104,10 +121,10 @@ On iOS, this method clears the metadata but does not hide the notification contr
 
 ### `enableControl`
 
-Enable or disable specific playback controls.
+Enables or disables specific playback controls.
 
 | Parameter | Type | Description |
-| :-------: | :-----: | :------ |
+| :---: | :---: | :---- |
 | `control` | [`PlaybackControlName`](playback-notification-manager#playbackcontrolname) | The control to enable/disable |
 | `enabled` | `boolean` | Whether the control should be enabled |
 
@@ -115,18 +132,18 @@ Enable or disable specific playback controls.
 
 ### `isActive`
 
-Check if the notification is currently active and visible.
+Checks if the notification is currently active and visible.
 
 #### Returns `Promise<boolean>`.
 
 ### `addEventListener`
 
-Add an event listener for notification actions.
+Adds an event listener for notification actions.
 
 |  Parameter  | Type | Description |
-| :---------: | :------: | :------- |
+| :---: | :---: | :---- |
 | `eventName` | [`PlaybackNotificationEventName`](playback-notification-manager#playbacknotificationeventname) | The event to listen for |
-| `callback`  | [`SystemEventCallback`](/docs/system/audio-manager#systemeventname) | Callback function |
+| `callback`  | [`NotificationCallback`](playback-notification-manager#notificationcallback) | Callback function |
 
 #### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
 
@@ -152,9 +169,19 @@ interface PlaybackNotificationInfo {
   elapsedTime?: number;
   speed?: number;
   state?: 'playing' | 'paused';
+
+  skipInterval?: number;
 }
 ```
 </details>
+
+#### `skipInterval`
+
+- Configures how many seconds `playbackNotificationSkipForward` and `playbackNotificationSkipBackward` advance or rewind.
+- Defaults to `15` when omitted.
+- Clamped to `1–120` seconds in JavaScript before being passed to native.
+- Pass `skipInterval` in the same `show()` call (or earlier) before enabling skip controls, so the interval is applied when controls are first set up.
+- On Android, skip action icons show `15` when `skipInterval` is `15` (default); otherwise generic skip icons without a number are used.
 
 ### `PlaybackControlName`
 
@@ -178,6 +205,8 @@ type PlaybackControlName =
 <details>
   <summary>Type definitions</summary>
 ```typescript
+interface EventEmptyType {}
+
 interface EventTypeWithValue {
   value: number;
 }
@@ -198,4 +227,13 @@ type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
 ```
 </details>
 
+### `NotificationCallback`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type NotificationCallback<Name extends PlaybackNotificationEventName> = (
+  event: PlaybackNotificationEvent[Name]
+) => void;
 ```
+</details>
