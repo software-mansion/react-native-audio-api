@@ -17,8 +17,7 @@ set(CODEGEN_JNI_DIR "${WORKLETS_PACKAGE_DIR}/android/build/generated/source/code
 set(CODEGEN_IOS_DIR "${REPO_ROOT_DIR}/apps/fabric-example/ios/build/generated/ios/ReactCodegen")
 
 file(GLOB_RECURSE AUDIO_WORKLETS_SOURCES CONFIGURE_DEPENDS
-  "${COMMON_CPP_DIR}/audioworklets/*.cpp"
-  "${COMMON_CPP_DIR}/audioworklets/*/*.cpp")
+  "${COMMON_CPP_DIR}/audioworklets/*.cpp")
 
 add_library(rnaudioworklets_cursor STATIC ${AUDIO_WORKLETS_SOURCES})
 

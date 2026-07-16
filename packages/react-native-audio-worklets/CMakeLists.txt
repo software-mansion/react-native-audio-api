@@ -6,8 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 file(GLOB_RECURSE AUDIO_WORKLETS_SOURCES CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/common/cpp/audioworklets/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/common/cpp/audioworklets/*/*.cpp")
+  "${CMAKE_CURRENT_SOURCE_DIR}/common/cpp/audioworklets/*.cpp")
 
 add_library(react-native-audio-worklets STATIC ${AUDIO_WORKLETS_SOURCES})
 
