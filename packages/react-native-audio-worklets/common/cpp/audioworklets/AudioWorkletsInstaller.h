@@ -4,7 +4,7 @@
 #include <audioworklets/HostObjects/WorkletNodeHostObject.h>
 #include <audioworklets/HostObjects/WorkletProcessingNodeHostObject.h>
 #include <audioworklets/HostObjects/WorkletSourceNodeHostObject.h>
-#include <audioworklets/core/WorkletNodeDomain.h>
+#include <audioworklets/HostObjects/utils/NodeOptionsParser.h>
 #include <worklets/Compat/StableApi.h>
 #include <worklets/WorkletRuntime/WorkletRuntime.h>
 
@@ -89,12 +89,7 @@ class AudioWorkletsInstaller {
     }
     const auto &context = getContextOrThrow(runtime, args[0]);
     auto serializableWorklet = getSerializableWorkletOrThrow(runtime, args[1]);
-    const auto domain = static_cast<WorkletNodeDomain>(static_cast<int>(args[2].asNumber()));
-    if (domain != WorkletNodeDomain::TimeDomain && domain != WorkletNodeDomain::FrequencyDomain) {
-      throw jsi::JSError(
-          runtime,
-          "[react-native-audio-worklets] domain must be 0 (time-domain) or 1 (frequency-domain)");
-    }
+    const auto domain = option_parser::parseWorkletNodeDomain(runtime, args[2]);
 
     WorkletNodeOptions options;
     options.bufferLength = static_cast<size_t>(args[3].asNumber());

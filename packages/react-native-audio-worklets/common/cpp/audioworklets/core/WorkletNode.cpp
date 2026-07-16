@@ -2,9 +2,7 @@
 #include <audioworklets/core/WorkletNode.h>
 
 #include <algorithm>
-#include <cmath>
 #include <memory>
-#include <numbers>
 #include <utility>
 #include <vector>
 
@@ -49,12 +47,8 @@ void WorkletNode::setSmoothingTimeConstant(float smoothingTimeConstant) {
 }
 
 void WorkletNode::initializeFrequencyDomain(int fftSize) {
-  fft_ = std::make_unique<audioapi::dsp::FFT>(fftSize);
   frequencyTimeDomainAccum_ = std::make_unique<audioapi::DSPAudioArray>(fftSize);
-  tempArray_ = std::make_unique<audioapi::DSPAudioArray>(fftSize);
-  magnitudeArray_ = std::make_unique<audioapi::DSPAudioArray>(fftSize / 2);
-  complexData_ = std::vector<std::complex<float>>(fftSize);
-  initializeWindowData(fftSize);
+  spectrumAnalyser_ = std::make_unique<audioapi::dsp::SpectrumAnalyser>(fftSize);
 }
 
 void WorkletNode::processNode(int framesToProcess) {
@@ -124,45 +118,14 @@ void WorkletNode::processFrequencyDomain(int framesToProcess) {
 
   if (framesFilled_ >= fftSize) {
     doFFTAnalysis();
-    channelView->channelBuffer(0)->copy(*magnitudeArray_, 0, 0, bufferLength_);
+    channelView->channelBuffer(0)->copy(spectrumAnalyser_->getMagnitudeData(), 0, 0, bufferLength_);
     dispatchToUI();
   }
 }
 
 void WorkletNode::doFFTAnalysis() {
-  const auto fftSize = fftSizeForBufferLength(bufferLength_);
   const auto smoothingTimeConstant = smoothingTimeConstant_.load(std::memory_order_acquire);
-
-  tempArray_->copy(*frequencyTimeDomainAccum_, 0, 0, fftSize);
-  tempArray_->multiply(*windowData_, fftSize);
-
-  fft_->doFFT(*tempArray_, complexData_);
-
-  complexData_[0] = std::complex<float>(complexData_[0].real(), 0);
-
-  const float magnitudeScale = 1.0f / static_cast<float>(fftSize);
-  auto magnitudeBufferData = magnitudeArray_->span();
-
-  for (size_t i = 0; i < magnitudeArray_->getSize(); ++i) {
-    const auto scalarMagnitude = std::abs(complexData_[i]) * magnitudeScale;
-    magnitudeBufferData[i] = smoothingTimeConstant * magnitudeBufferData[i] +
-        (1.0f - smoothingTimeConstant) * scalarMagnitude;
-  }
-}
-
-void WorkletNode::initializeWindowData(int fftSize) {
-  windowData_ = std::make_unique<audioapi::DSPAudioArray>(static_cast<size_t>(fftSize));
-  auto data = windowData_->span();
-  const auto size = windowData_->getSize();
-
-  const auto invSize = 1.0f / static_cast<float>(size);
-  const auto alpha = 2.0f * std::numbers::pi_v<float> * invSize;
-
-  for (size_t i = 0; i < size; ++i) {
-    const auto phase = alpha * static_cast<float>(i);
-    const auto window = 0.42f - 0.50f * std::cos(phase) + 0.08f * std::cos(2.0f * phase);
-    data[i] = window;
-  }
+  spectrumAnalyser_->analyze(*frequencyTimeDomainAccum_, smoothingTimeConstant);
 }
 
 void WorkletNode::processInputs(

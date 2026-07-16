@@ -87,7 +87,3 @@ export function resolveWorkletNodeOptions(
       options.smoothingTimeConstant ?? DEFAULT_SMOOTHING_TIME_CONSTANT,
   };
 }
-
-export function workletNodeDomainToNative(domain: WorkletNodeDomain): number {
-  return domain === 'frequency-domain' ? 1 : 0;
-}

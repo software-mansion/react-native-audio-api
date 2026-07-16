@@ -9,7 +9,6 @@ import type { WorkletNodeCallback, WorkletNodeOptions } from './types';
 import {
   resolveWorkletNodeOptions,
   validateWorkletSmoothingTimeConstant,
-  workletNodeDomainToNative,
 } from './utils';
 
 export type { WorkletNodeDomain, WorkletNodeOptions } from './types';
@@ -39,7 +38,7 @@ export default class WorkletNode extends AudioNode {
     const node = globalThis.__createWorkletNode(
       context.context,
       shareableWorklet,
-      workletNodeDomainToNative(resolved.domain),
+      resolved.domain,
       resolved.bufferLength,
       resolved.smoothingTimeConstant,
       workletsModule.getUIRuntimeHolder(),

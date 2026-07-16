@@ -3,19 +3,14 @@
 #include <audioapi/compatibility/StableAPI.h>
 #include <audioworklets/UIWorkletsRunner.h>
 #include <audioworklets/core/WorkletNodeDomain.h>
+#include <audioworklets/types/NodeOptions.h>
 
 #include <atomic>
-#include <complex>
 #include <cstddef>
 #include <memory>
 #include <vector>
 
 namespace audioworklets {
-
-struct WorkletNodeOptions {
-  size_t bufferLength = 1024;
-  float smoothingTimeConstant = audioapi::AnalyserOptions::kDefaultSmoothingTimeConstant;
-};
 
 /**
  * A pass-through analysis node that hands buffered audio snapshots to a
@@ -67,7 +62,6 @@ class WorkletNode : public audioapi::AudioNode {
   void processTimeDomain(int framesToProcess);
   void processFrequencyDomain(int framesToProcess);
   void doFFTAnalysis();
-  void initializeWindowData(int fftSize);
   void initializeFrequencyDomain(int fftSize);
 
   static size_t fftSizeForBufferLength(size_t bufferLength);
@@ -80,12 +74,8 @@ class WorkletNode : public audioapi::AudioNode {
   std::unique_ptr<audioapi::DSPAudioBuffer> downMixBuffer_;
   std::unique_ptr<audioapi::DSPAudioArray> timeDomainAccum_;
 
-  std::unique_ptr<audioapi::dsp::FFT> fft_;
   std::unique_ptr<audioapi::DSPAudioArray> frequencyTimeDomainAccum_;
-  std::unique_ptr<audioapi::DSPAudioArray> tempArray_;
-  std::unique_ptr<audioapi::DSPAudioArray> windowData_;
-  std::unique_ptr<audioapi::DSPAudioArray> magnitudeArray_;
-  std::vector<std::complex<float>> complexData_;
+  std::unique_ptr<audioapi::dsp::SpectrumAnalyser> spectrumAnalyser_;
 
   UIWorkletsRunner workletRunner_;
   size_t framesFilled_{0};

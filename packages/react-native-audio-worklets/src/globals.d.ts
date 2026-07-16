@@ -5,7 +5,7 @@ declare global {
     | ((
         audioContext: unknown,
         shareableWorklet: unknown,
-        domain: number,
+        domain: import('./types').WorkletNodeDomain,
         bufferLength: number,
         smoothingTimeConstant: number,
         uiRuntimeHolder: unknown,
