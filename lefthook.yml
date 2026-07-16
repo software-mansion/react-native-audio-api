@@ -13,3 +13,7 @@ commit-msg:
   commands:
     commitlint:
       run: npx commitlint --edit
+pre-push:
+  commands:
+    validate_fast:
+      run: yarn validate:fast

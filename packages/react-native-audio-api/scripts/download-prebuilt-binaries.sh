@@ -50,11 +50,11 @@ fi
 TEMP_DOWNLOAD_DIR="$(pwd)/audioapi-binaries-temp"
 mkdir -p "$TEMP_DOWNLOAD_DIR"
 
+PROJECT_ROOT="$(pwd)/.."
+
 if [ "$PLATFORM" == "android" ]; then
-    PROJECT_ROOT="$(pwd)/.."
     DOWNLOAD_NAMES=("${ANDROID_DOWNLOAD_NAMES[@]}")
 else
-    PROJECT_ROOT="$(pwd)"
     DOWNLOAD_NAMES=("${IOS_DOWNLOAD_NAMES[@]}")
 fi
 
