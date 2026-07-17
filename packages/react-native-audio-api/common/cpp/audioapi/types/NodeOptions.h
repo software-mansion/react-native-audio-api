@@ -30,6 +30,12 @@ struct AudioDestinationOptions : AudioNodeOptions {
     numberOfOutputs = 0;
     channelCountMode = ChannelCountMode::EXPLICIT;
   }
+
+  explicit AudioDestinationOptions(int channels) {
+    numberOfOutputs = 0;
+    channelCount = channels;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+  }
 };
 
 struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
@@ -159,6 +165,28 @@ struct DelayOptions : AudioNodeOptions {
     requiresTailProcessing = true;
   }
 };
+
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+struct ChannelMergerOptions : AudioNodeOptions {
+  ChannelMergerOptions() {
+    numberOfInputs = 6;
+    numberOfOutputs = 1;
+    channelCount = 1;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+    channelInterpretation = ChannelInterpretation::SPEAKERS;
+  }
+};
+
+struct ChannelSplitterOptions : AudioNodeOptions {
+  ChannelSplitterOptions() {
+    numberOfInputs = 1;
+    numberOfOutputs = 6;
+    channelCount = 6;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+    channelInterpretation = ChannelInterpretation::DISCRETE;
+  }
+};
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
 
 struct IIRFilterOptions : AudioNodeOptions {
   std::vector<float> feedforward;

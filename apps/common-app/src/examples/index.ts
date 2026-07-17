@@ -13,6 +13,7 @@ import Record from './Record/Record';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
+import ChannelMergerSplitter from './ChannelMergerSplitter';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -29,6 +30,7 @@ type NavigationParamList = {
   Worklets: undefined;
   AudioTag: undefined;
   ConvolverIR: undefined;
+  ChannelMergerSplitter: undefined;
   AudioParamPipeline: undefined;
   TestScreen: undefined;
 };
@@ -120,5 +122,11 @@ export const Examples: Example[] = [
     title: 'Reverb Effect',
     Icon: icons.AudioWaveform,
     screen: ConvolverIR,
+  },
+  {
+    key: 'ChannelMergerSplitter',
+    title: 'Channel Merger / Splitter',
+    Icon: icons.Split,
+    screen: ChannelMergerSplitter,
   },
 ] as const;

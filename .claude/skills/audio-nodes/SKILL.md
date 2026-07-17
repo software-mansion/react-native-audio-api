@@ -39,6 +39,8 @@ common/cpp/audioapi/core/
 │   ├── WaveShaperNode.h / .cpp
 │   ├── ConvolverNode.h / .cpp
 │   ├── WorkletNode.h / .cpp
+│   ├── channel_merger/             # ChannelMerger internal input/output nodes (composite)
+│   ├── channel_splitter/           # ChannelSplitter internal input/output nodes (composite)
 │   └── PeriodicWave.h / .cpp        # Wave table (not a node)
 ├── analysis/
 │   └── AnalyserNode.h / .cpp

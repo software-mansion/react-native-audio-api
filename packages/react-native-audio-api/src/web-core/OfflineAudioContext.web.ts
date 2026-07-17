@@ -18,6 +18,8 @@ import WaveShaperNode from './WaveShaperNode.web';
 
 import ConvolverNode from './ConvolverNode.web';
 import DelayNode from './DelayNode.web';
+import ChannelMergerNode from './ChannelMergerNode.web';
+import ChannelSplitterNode from './ChannelSplitterNode.web';
 
 export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
@@ -86,6 +88,20 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createConvolver(): ConvolverNode {
     return new ConvolverNode(this);
+  }
+
+  createChannelMerger(numberOfInputs?: number): ChannelMergerNode {
+    return new ChannelMergerNode(
+      this,
+      numberOfInputs !== undefined ? { numberOfInputs } : undefined
+    );
+  }
+
+  createChannelSplitter(numberOfOutputs?: number): ChannelSplitterNode {
+    return new ChannelSplitterNode(
+      this,
+      numberOfOutputs !== undefined ? { numberOfOutputs } : undefined
+    );
   }
 
   createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {

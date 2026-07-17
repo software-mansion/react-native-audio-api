@@ -17,7 +17,7 @@ class AudioDestinationNodeHostObject : public AudioNodeHostObject {
       const AudioDestinationOptions &options = AudioDestinationOptions())
       : AudioNodeHostObject(
             context->getGraph(),
-            std::make_unique<AudioDestinationNode>(context),
+            std::make_unique<AudioDestinationNode>(context, options),
             options),
         destinationNode_(typedAudioNode<AudioDestinationNode>(node_)) {
     context->initialize(destinationNode_);

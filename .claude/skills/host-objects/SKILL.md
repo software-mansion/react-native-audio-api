@@ -72,6 +72,8 @@ HostObjects/
 │   ├── StereoPannerNodeHostObject.h/.cpp
 │   ├── WaveShaperNodeHostObject.h/.cpp
 │   ├── ConvolverNodeHostObject.h/.cpp
+│   ├── ChannelMergerNodeHostObject.h/.cpp   # Composite: routes inputs to slot hosts
+│   ├── ChannelSplitterNodeHostObject.h/.cpp # Composite: routes outputs from slot hosts
 │   ├── WorkletNodeHostObject.h/.cpp
 │   └── WorkletProcessingNodeHostObject.h/.cpp
 ├── sources/

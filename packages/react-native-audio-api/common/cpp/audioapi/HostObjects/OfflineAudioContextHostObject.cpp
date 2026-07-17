@@ -21,7 +21,8 @@ OfflineAudioContextHostObject::OfflineAudioContextHostObject(
               sampleRate,
               audioEventHandlerRegistry),
           runtime,
-          callInvoker) {
+          callInvoker,
+          numberOfChannels) {
   addFunctions(
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, resume),
       JSI_EXPORT_FUNCTION(OfflineAudioContextHostObject, suspend),

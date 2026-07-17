@@ -100,6 +100,26 @@ Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-n
 
 **Returns:** `AudioBufferQueueSourceNode`
 
+### `createChannelMerger`
+
+Creates [`ChannelMergerNode`](/docs/effects/channel-merger-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `numberOfInputs` <Optional /> | `number` | Number of inputs to merge (range `1` – `32`, default `6`). |
+
+**Returns:** `ChannelMergerNode`
+
+### `createChannelSplitter`
+
+Creates [`ChannelSplitterNode`](/docs/effects/channel-splitter-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `numberOfOutputs` <Optional /> | `number` | Number of outputs to split into (range `1` – `32`, default `6`). |
+
+**Returns:** `ChannelSplitterNode`
+
 ### `createConstantSource`
 
 Creates [`ConstantSourceNode`](/docs/sources/constant-source-node).

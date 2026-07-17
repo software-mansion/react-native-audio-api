@@ -5,6 +5,8 @@ import AudioBufferSourceNode from './AudioBufferSourceNode.web';
 import AudioDestinationNode from './AudioDestinationNode.web';
 import AudioListener from './AudioListener.web';
 import BiquadFilterNode from './BiquadFilterNode.web';
+import ChannelMergerNode from './ChannelMergerNode.web';
+import ChannelSplitterNode from './ChannelSplitterNode.web';
 import ConstantSourceNode from './ConstantSourceNode.web';
 import ConvolverNode from './ConvolverNode.web';
 import DelayNode from './DelayNode.web';
@@ -47,6 +49,8 @@ export default interface BaseAudioContext {
   ): PeriodicWave;
   createAnalyser(): AnalyserNode;
   createWaveShaper(): WaveShaperNode;
+  createChannelMerger(numberOfInputs?: number): ChannelMergerNode;
+  createChannelSplitter(numberOfOutputs?: number): ChannelSplitterNode;
   decodeAudioData(
     arrayBuffer: ArrayBuffer,
     fetchOptions?: RequestInit

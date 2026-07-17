@@ -28,6 +28,8 @@ const AVAILABLE_INTERFACES = {
   'the-audionode-interface': 'AudioNode',
   'the-audioparam-interface': 'AudioParam',
   'the-biquadfilternode-interface': 'BiquadFilterNode',
+  'the-channelmergernode-interface': 'ChannelMergerNode',
+  'the-channelsplitternode-interface': 'ChannelSplitterNode',
   'the-constantsourcenode-interface': 'ConstantSourceNode',
   'the-convolvernode-interface': 'ConvolverNode',
   'the-delaynode-interface': 'DelayNode',
