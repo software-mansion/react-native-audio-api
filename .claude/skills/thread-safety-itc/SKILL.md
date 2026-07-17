@@ -111,6 +111,12 @@ Connect/disconnect operations queue via `AudioGraphManager` (its own internal SP
 
 Do not call `AudioGraphManager` directly — go through `AudioNode::connect()` / `disconnect()`.
 
+### Processable state is audio-thread-only
+
+Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is derived exclusively on the audio thread by `AudioGraph::settleProcessableState()` (a reverse-topological pull run inside `Graph::process()`), using only audio-thread-owned data: the topo-sorted node array, `InputPool` input lists, and `link_head` processable-links.
+
+**Pitfall (fixed):** earlier, `HostGraph` AGEvents (`addEdge`/`removeEdge`/`removeAllEdges`) walked `HostGraph::Node::{inputs,outputs,linkedNodes}` on the audio thread to mark processable state incrementally. Those vectors mutate on the JS thread under `nodesMutex_` — a cross-thread race. AGEvents must never read HostGraph adjacency for processable state; they only mirror structural edges/links onto the audio graph. The host-side `linkedNodes` list is now kept solely so links can be scrubbed when a linked node is disposed.
+
 ---
 
 ## Decision Table
