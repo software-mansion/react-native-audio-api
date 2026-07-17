@@ -16,13 +16,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LIBRARY_DIR="$REPO_ROOT/packages/react-native-audio-api"
 SCRIPTS_DIR="$LIBRARY_DIR/scripts"
-FABRIC_ANDROID="$REPO_ROOT/apps/fabric-example/android"
-FABRIC_IOS="$REPO_ROOT/apps/fabric-example/ios"
 
 RUN_FAST=false
 RUN_GRAPH=false
 RUN_ANDROID=false
 RUN_IOS=false
+RUN_FULL=false
 
 PREBUILD_CORE_DONE=false
 
@@ -36,7 +35,6 @@ is_macos() {
   [[ "$(uname -s)" == "Darwin" ]]
 }
 
-has_android_sdk() {
 has_android_sdk() {
   local sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
   [[ -n "$sdk_root" && -d "$sdk_root" ]]
@@ -147,8 +145,8 @@ run_android() {
   enable_ccache_if_available
   run_prebuild_for_platform android
 
-  log_step "Gradle: :react-native-audio-api:assembleDebug"
-  (cd "$FABRIC_ANDROID" && ./gradlew :react-native-audio-api:assembleDebug)
+  log_step "yarn workspace react-native-audio-api build:android"
+  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api build:android)
 }
 
 run_ios() {
@@ -175,15 +173,8 @@ run_ios() {
   enable_ccache_if_available
   run_prebuild_for_platform ios
 
-  log_step "pod install"
-  (cd "$FABRIC_IOS" && pod install)
-
-  log_step "xcodebuild (FabricExample, iOS Simulator)"
-  (cd "$FABRIC_IOS" && xcodebuild build \
-    -workspace FabricExample.xcworkspace \
-    -scheme FabricExample \
-    -destination 'generic/platform=iOS Simulator' \
-    -quiet)
+  log_step "yarn workspace react-native-audio-api build:ios"
+  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api build:ios)
 }
 
 run_full() {
@@ -200,8 +191,8 @@ Usage: ./scripts/validate.sh [--fast] [--graph] [--android] [--ios] [--full]
 Tiers:
   --fast     CI parity: format, lint, typecheck, enum sync, build, C++ + JS tests
   --graph    Graph tests (optional; run when graph/audio-thread code changes)
-  --android  Android native build via Gradle (requires ANDROID_HOME)
-  --ios      iOS native build via pod install + xcodebuild (macOS only)
+  --android  Android native build via yarn workspace … build:android (requires ANDROID_HOME)
+  --ios      iOS native build via yarn workspace … build:ios (macOS only)
   --full     --fast + --android + --ios (skips unavailable platforms with a warning)
 
 Examples:
@@ -228,9 +219,7 @@ while [[ $# -gt 0 ]]; do
       RUN_IOS=true
       ;;
     --full)
-      RUN_FAST=true
-      RUN_ANDROID=true
-      RUN_IOS=true
+    RUN_FULL=true
       ;;
     --help|-h)
       usage
@@ -245,32 +234,28 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if [[ "$RUN_FAST" == false && "$RUN_GRAPH" == false && "$RUN_ANDROID" == false && "$RUN_IOS" == false ]]; then
+if [[ "$RUN_FAST" == false && "$RUN_GRAPH" == false && "$RUN_ANDROID" == false && "$RUN_IOS" == false && "$RUN_FULL" == false ]]; then
   usage >&2
   exit 1
 fi
 
 cd "$REPO_ROOT"
 
-is_full_run() {
-  [[ "$RUN_FAST" == true && "$RUN_ANDROID" == true && "$RUN_IOS" == true && "$RUN_GRAPH" == false ]]
-}
 
-if is_full_run; then
+if [[ "$RUN_FULL" == true ]]; then
   run_full
-else
-  if [[ "$RUN_FAST" == true ]]; then
-    run_fast
-  fi
-  if [[ "$RUN_GRAPH" == true ]]; then
-    run_graph
-  fi
-  if [[ "$RUN_ANDROID" == true ]]; then
-    run_android false
-  fi
-  if [[ "$RUN_IOS" == true ]]; then
-    run_ios false
-  fi
+fi
+if [[ "$RUN_FAST" == true && "$RUN_FULL" == false ]]; then
+  run_fast
+fi
+if [[ "$RUN_GRAPH" == true ]]; then
+  run_graph
+fi
+if [[ "$RUN_ANDROID" == true && "$RUN_FULL" == false ]]; then
+  run_android false
+fi
+if [[ "$RUN_IOS" == true && "$RUN_FULL" == false ]]; then
+  run_ios false
 fi
 
 log_step "Validation complete."

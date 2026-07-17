@@ -4,7 +4,7 @@ description: >
   Ordered quality gate checklist to run after every code change in react-native-audio-api.
   Covers formatting, linting, type checking, C++ tests, JS tests, enum sync validation,
   and tiered local validation (validate.sh) for native builds CI does not run.
-  Documents what lefthook pre-commit and pre-push hooks run automatically vs what must be run manually.
+  Documents what lefthook pre-commit hooks run automatically vs what must be run manually.
   Use at the end of any implementation task before opening a PR.
   Trigger phrases: "post-work", "before PR", "before commit", "check quality", "run linter",
   "run tests", "format code", "lefthook", "pre-commit", "yarn test", "yarn lint",
@@ -73,29 +73,25 @@ Hooks run when lefthook is installed (`lefthook install`).
 
 **If a hook fails, the commit is aborted.** Fix the issue and re-commit — do NOT use `--no-verify`.
 
-### Pre-push (every `git push`, when lefthook is installed)
-
-Runs `yarn validate:fast` — CI-parity checks (`yarn install --immutable`, format check, lint, typecheck, enum sync, build, C++ tests, JS tests).
-
-You can also run it by hand anytime:
-
-```bash
-yarn validate:fast
-```
-
-Native builds (`validate:android`, `validate:ios`, `validate:full`) and graph tests (`validate:graph`) are never run by lefthook.
+There is no pre-push hook — `yarn validate:fast` (and native/graph tiers) are run manually before opening a PR. Native builds (`validate:android`, `validate:ios`, `validate:full`) and graph tests (`validate:graph`) are never run by lefthook.
 
 ---
 
 ## What Must Be Run Manually
 
-These are not covered by lefthook (pre-commit or pre-push):
+These are not covered by lefthook:
+
+### CI-parity gate (before opening a PR)
+
+```bash
+yarn validate:fast
+```
 
 ### Native compile checks (when platform code changes)
 
 ```bash
-yarn validate:android   # Gradle :react-native-audio-api:assembleDebug (~3–4 min)
-yarn validate:ios       # pod install + xcodebuild (macOS only)
+yarn validate:android   # yarn workspace … build:android (~3–4 min)
+yarn validate:ios       # yarn workspace … build:ios (macOS only)
 yarn validate:full      # --fast + --android + --ios
 ```
 
@@ -113,7 +109,7 @@ yarn validate:graph
 yarn workspace react-native-audio-api run test:cpp
 ```
 
-**When**: after any change to `common/cpp/audioapi/core/`, `dsp/`, or `utils/` C++ files. Prefer this for a fast C++-only loop without running Jest; pre-push still runs the fuller `--fast` suite.
+**When**: after any change to `common/cpp/audioapi/core/`, `dsp/`, or `utils/` C++ files. Prefer this for a fast C++-only loop without running Jest; run `yarn validate:fast` before opening a PR.
 
 ### Library unit tests (JS + C++)
 
@@ -121,7 +117,7 @@ yarn workspace react-native-audio-api run test:cpp
 yarn test   # from monorepo root — runs test:js + test:cpp
 ```
 
-**When**: after any change to C++ files or TypeScript files in `src/`. Prefer this for a quick local test loop covering both TS and C++ logic; pre-push still runs the fuller `--fast` suite with linters and builds.
+**When**: after any change to C++ files or TypeScript files in `src/`. Prefer this for a quick local test loop covering both TS and C++ logic; run `yarn validate:fast` before opening a PR.
 
 ### AudioEvent enum sync check
 
@@ -129,7 +125,7 @@ yarn test   # from monorepo root — runs test:js + test:cpp
 yarn check-audio-enum-sync
 ```
 
-**When**: only when you modify the `AudioEvent` enum or any file that maps event names across C++/Kotlin/TypeScript. Skip this step if you already ran `validate:fast` / pre-push (it includes enum sync).
+**When**: only when you modify the `AudioEvent` enum or any file that maps event names across C++/Kotlin/TypeScript. Skip this step if you already ran `validate:fast` (it includes enum sync).
 
 ---
 
@@ -165,7 +161,7 @@ Later steps may surface issues caused by earlier ones — run in this order:
 1. `yarn format` — fix formatting first (removes noise from lint)
 2. `yarn lint` — catch remaining code issues
 3. `yarn typecheck` — catch TypeScript errors
-4. `yarn validate:fast` — full CI-parity gate (or `yarn test` / `test:cpp` for a quick local loop; pre-push still runs `--fast`)
+4. `yarn validate:fast` — full CI-parity gate (or `yarn test` / `test:cpp` for a quick local loop; always run `--fast` before opening a PR)
 5. `yarn validate:graph` — when graph / audio-thread code changed
 6. `yarn validate:android` / `yarn validate:ios` / `yarn validate:full` — when native code or build files changed (see decision table above)
 

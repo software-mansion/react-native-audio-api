@@ -180,8 +180,8 @@ CI intentionally skips native Android/iOS builds (expensive). Use the tiered loc
 ```bash
 yarn validate:fast      # CI parity (format, lint, typecheck, enum sync, build, C++ + JS tests)
 yarn validate:graph     # graph tests + ASan (optional; graph path changes)
-yarn validate:android   # Gradle :react-native-audio-api:assembleDebug
-yarn validate:ios       # pod install + xcodebuild (macOS only)
+yarn validate:android   # yarn workspace … build:android
+yarn validate:ios       # yarn workspace … build:ios (macOS only)
 yarn validate:full      # --fast + --android + --ios
 ```
 
@@ -211,7 +211,7 @@ Before `--android` or `--ios`, the script runs once:
 2. [`download-prebuilt-binaries.sh`](../../../packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh) `{android|ios}` (must run from `packages/react-native-audio-api/scripts/`)
 3. `yarn workspace react-native-audio-api test:cpp`
 
-Android (NDK) and iOS (Clang) cannot share object files — reuse is at the prebuild/download level. If `ccache` is installed, it is enabled automatically for native builds.
+Android (NDK) and iOS (Clang) cannot share object files — reuse is at the prebuild/download level. If `ccache` is installed, `validate.sh` wraps host `CC`/`CXX`; only the host C++ tests (`test:cpp`) honor that — Gradle/NDK and `xcodebuild` use their own toolchains and are unaffected.
 
 ### Platform skip behavior
 
