@@ -71,9 +71,6 @@ class GraphObject {
     // Collect valid input buffers (those with non-null getOutput)
     inputBuffers_.clear();
     for (const GraphObject &input : inputs) {
-      if (!input.isProcessable()) {
-        continue;
-      }
       if (const DSPAudioBuffer *output = input.getOutput()) {
         inputBuffers_.push_back(output);
       }
