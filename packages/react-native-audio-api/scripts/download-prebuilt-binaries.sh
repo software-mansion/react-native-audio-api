@@ -47,10 +47,11 @@ if [ "$PLATFORM" != "android" ] && [ "$PLATFORM" != "ios" ]; then
 fi
 
 # Use a temporary directory for downloads, ensuring it exists
-TEMP_DOWNLOAD_DIR="$(pwd)/audioapi-binaries-temp"
-mkdir -p "$TEMP_DOWNLOAD_DIR"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-PROJECT_ROOT="$(pwd)/.."
+# Use a temporary directory for downloads, ensuring it exists
+TEMP_DOWNLOAD_DIR="${SCRIPT_DIR}/audioapi-binaries-temp"
 
 if [ "$PLATFORM" == "android" ]; then
     DOWNLOAD_NAMES=("${ANDROID_DOWNLOAD_NAMES[@]}")
