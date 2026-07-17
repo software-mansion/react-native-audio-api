@@ -22,7 +22,6 @@
   },
   "files": [
     "src/",
-    "wpt_tests/",
     "development/react/",
     "mock/",
     "lib/",
@@ -47,7 +46,7 @@
     "!**/__mocks__",
     "!**/.*",
     "!**/node_modules",
-    "!common/cpp/cursor",
+    "!common/cpp/clangd",
     "!common/cpp/test",
     "scripts/setup-rn-audio-api-web.js",
     "scripts/rnaa_utils.rb",
