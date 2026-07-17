@@ -142,7 +142,7 @@ run_android() {
   fi
 
   log_step "Tier 2 (--android): Android native build"
-  enable_ccache_if_available
+
   run_prebuild_for_platform android
 
   log_step "yarn workspace react-native-audio-api build:android"
@@ -170,7 +170,7 @@ run_ios() {
   fi
 
   log_step "Tier 3 (--ios): iOS native build"
-  enable_ccache_if_available
+
   run_prebuild_for_platform ios
 
   log_step "yarn workspace react-native-audio-api build:ios"
