@@ -37,6 +37,7 @@ is_macos() {
 }
 
 has_android_sdk() {
+has_android_sdk() {
   local sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
   [[ -n "$sdk_root" && -d "$sdk_root" ]]
 }
