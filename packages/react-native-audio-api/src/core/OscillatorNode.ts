@@ -19,7 +19,7 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
     OscillatorOptionsValidator.validate(options);
 
     const node = context.context.createOscillator(options || {});
-    super(context, node);
+    super(context, node, options);
     this.frequency = new AudioParam(node.frequency, context, this);
     this.detune = new AudioParam(node.detune, context, this);
     this.type = node.type;

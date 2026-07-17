@@ -467,6 +467,26 @@ auto HostGraph::removeAllEdges(Node *from) -> Res {
   });
 }
 
+auto HostGraph::renegotiateNode(Node *node) -> Res {
+  std::scoped_lock lock(nodesMutex_);
+  if (node == nullptr || std::ranges::find(nodes, node) == nodes.end()) {
+    return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+  if (node->ghost) {
+    return Res::Err(ResultError::NODE_NOT_FOUND);
+  }
+
+  // Recompute channel layouts for this node and everything downstream.
+  auto negotiations = collectNegotiations(++channelLayoutTerm_, node);
+
+  return Res::Ok(
+      [negotiations = std::move(negotiations)](AudioGraph &graph, auto &disposer) mutable {
+        applyChannelNegotiations(*negotiations, disposer);
+        disposer.dispose(std::move(negotiations));
+        graph.markDirty();
+      });
+}
+
 bool HostGraph::hasPath(Node *start, Node *end) {
   if (start == end) {
     return true;

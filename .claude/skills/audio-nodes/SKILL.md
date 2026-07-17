@@ -340,7 +340,7 @@ Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while conn
 
 7. **Spec compliance**
    - Check the Web Audio API spec for default values, parameter ranges, and behavior
-   - See `web-audio-api.md` skill
+   - See `web-audio-api` skill
 
 8. **Tests and docs** — see the `flow` skill
 

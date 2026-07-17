@@ -9,7 +9,7 @@ export default class IIRFilterNode extends AudioNode {
   constructor(context: BaseAudioContext, options: IIRFilterOptions) {
     validateIIRFilterOptions(options);
     const iirFilterNode = context.context.createIIRFilter(options);
-    super(context, iirFilterNode);
+    super(context, iirFilterNode, options);
   }
 
   public getFrequencyResponse(

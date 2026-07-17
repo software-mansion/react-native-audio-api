@@ -1,9 +1,16 @@
 import { IAudioNode } from '../jsi-interfaces';
 import AudioParam from './AudioParam';
-import { ChannelCountMode, ChannelInterpretation } from '../types';
+import {
+  AudioNodeOptions,
+  ChannelCountMode,
+  ChannelInterpretation,
+} from '../types';
 import type BaseAudioContext from './BaseAudioContext';
 import { IndexSizeError, InvalidAccessError } from '../errors';
-import { validateChannelCount } from '../utils/validation/audioNodeOptions';
+import {
+  validateAudioNodeOptions,
+  validateChannelCount,
+} from '../utils/validation/audioNodeOptions';
 
 export default class AudioNode {
   readonly context: BaseAudioContext;
@@ -11,7 +18,12 @@ export default class AudioNode {
   readonly numberOfOutputs: number;
   protected readonly node: IAudioNode;
 
-  constructor(context: BaseAudioContext, node: IAudioNode) {
+  constructor(
+    context: BaseAudioContext,
+    node: IAudioNode,
+    options?: AudioNodeOptions
+  ) {
+    validateAudioNodeOptions(options);
     this.context = context;
     this.node = node;
     this.numberOfInputs = this.node.numberOfInputs;
