@@ -56,6 +56,7 @@ class AudioWorkletsModuleImpl {
 
   #isInstalled(): boolean {
     return (
+      globalThis.__createWorkletAudioContext != null &&
       globalThis.__createWorkletNode != null &&
       globalThis.__createWorkletSourceNode != null &&
       globalThis.__createWorkletProcessingNode != null

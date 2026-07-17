@@ -1,12 +1,16 @@
 #pragma once
 
 #include <audioapi/compatibility/StableAPI.h>
+#include <audioworklets/HostObjects/WorkletAudioContextHostObject.h>
 #include <audioworklets/HostObjects/WorkletNodeHostObject.h>
 #include <audioworklets/HostObjects/WorkletProcessingNodeHostObject.h>
 #include <audioworklets/HostObjects/WorkletSourceNodeHostObject.h>
 #include <audioworklets/HostObjects/utils/NodeOptionsParser.h>
 #include <worklets/Compat/StableApi.h>
 #include <worklets/WorkletRuntime/WorkletRuntime.h>
+
+#include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -18,7 +22,24 @@ using namespace facebook;
 
 class AudioWorkletsInstaller {
  public:
-  static void inject(jsi::Runtime &runtime) {
+  static void inject(
+      jsi::Runtime &runtime,
+      const std::shared_ptr<react::CallInvoker> &callInvoker) {
+    runtime.global().setProperty(
+        runtime,
+        "__createWorkletAudioContext",
+        jsi::Function::createFromHostFunction(
+            runtime,
+            jsi::PropNameID::forAscii(runtime, "__createWorkletAudioContext"),
+            1,
+            [callInvoker](
+                jsi::Runtime &rt,
+                const jsi::Value & /*thisValue*/,
+                const jsi::Value *args,
+                size_t count) -> jsi::Value {
+              return createWorkletAudioContext(rt, callInvoker, args, count);
+            }));
+
     runtime.global().setProperty(
         runtime,
         "__createWorkletNode",
@@ -48,6 +69,47 @@ class AudioWorkletsInstaller {
   }
 
  private:
+  static std::shared_ptr<audioapi::AudioEventHandlerRegistry> getAudioEventHandlerRegistryOrThrow(
+      jsi::Runtime &runtime) {
+    auto emitter = runtime.global().getProperty(runtime, "AudioEventEmitter");
+    if (!emitter.isObject()) {
+      throw jsi::JSError(
+          runtime,
+          "[react-native-audio-worklets] AudioEventEmitter is not installed. "
+          "Make sure react-native-audio-api is initialized before audio-worklets.");
+    }
+
+    auto hostObject =
+        emitter.asObject(runtime).getHostObject<audioapi::AudioEventHandlerRegistryHostObject>(
+            runtime);
+    if (hostObject == nullptr) {
+      throw jsi::JSError(
+          runtime,
+          "[react-native-audio-worklets] AudioEventEmitter is not a valid audio event registry");
+    }
+
+    return hostObject->getEventHandlerRegistry();
+  }
+
+  static jsi::Value createWorkletAudioContext(
+      jsi::Runtime &runtime,
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      const jsi::Value *args,
+      size_t count) {
+    if (count < 1) {
+      throw jsi::JSError(
+          runtime, "[react-native-audio-worklets] __createWorkletAudioContext expects 1 argument");
+    }
+
+    const auto sampleRate = static_cast<float>(args[0].asNumber());
+    const auto audioEventHandlerRegistry = getAudioEventHandlerRegistryOrThrow(runtime);
+
+    auto hostObject = std::make_shared<WorkletAudioContextHostObject>(
+        sampleRate, audioEventHandlerRegistry, &runtime, callInvoker);
+
+    return jsi::Object::createFromHostObject(runtime, hostObject);
+  }
+
   static std::shared_ptr<audioapi::BaseAudioContext> getContextOrThrow(
       jsi::Runtime &runtime,
       const jsi::Value &arg) {
