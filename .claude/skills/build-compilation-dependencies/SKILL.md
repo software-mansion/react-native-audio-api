@@ -194,7 +194,7 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 | TS build (`bob build`) | Yes | `--fast` |
 | C++ test subset (`RunTests.sh`) | Yes | `--fast` |
 | Jest | Yes | `--fast` |
-| Graph tests | Path-filtered in `graph-tests.yml` | `--graph` |
+| Graph tests | No, path-filtered in `graph-tests.yml` | `--graph` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
 | Android JNI C++ + Kotlin | **No** | `--android` |
 | iOS ObjC++ | **No** | `--ios` |
