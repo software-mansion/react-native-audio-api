@@ -60,6 +60,7 @@ const AudioVisualizer: React.FC = () => {
   const handlePlayPause = async () => {
     if (isPlaying) {
       const stopTime = audioContextRef.current!.currentTime;
+      audioContextRef.current?.suspend();
       bufferSourceRef.current?.stop(stopTime);
       setOffset((prev) => prev + stopTime - startTime);
       setIsPlaying(false);
