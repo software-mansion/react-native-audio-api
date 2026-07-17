@@ -22,7 +22,6 @@
   },
   "files": [
     "src/",
-    "wpt_tests/",
     "development/react/",
     "mock/",
     "lib/",
