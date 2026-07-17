@@ -37,7 +37,8 @@ is_macos() {
 }
 
 has_android_sdk() {
-  [[ -n "${ANDROID_HOME:-}" || -n "${ANDROID_SDK_ROOT:-}" ]]
+  local sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+  [[ -n "$sdk_root" && -d "$sdk_root" ]]
 }
 
 enable_ccache_if_available() {
