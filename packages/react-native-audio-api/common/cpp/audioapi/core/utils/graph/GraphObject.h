@@ -15,6 +15,8 @@ class AudioNode;
 
 namespace audioapi::utils::graph {
 
+class AudioGraph;
+
 /// @brief Base class for graph objects (AudioNode, BridgeNode, etc.).
 ///
 /// GraphObjects are owned by NodeHandles and stored in AudioGraph's flat vector
@@ -77,6 +79,12 @@ class GraphObject {
       }
     }
     processInputs(inputBuffers_, numFrames);
+    // Conditional nodes are pulled for one quantum only; flip back to idle so
+    // the next settle pass re-derives the active cone from seeds (replaces a
+    // global reset at the start of settleProcessableState()).
+    if (processableState_ == PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
+      processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
+    }
   }
 
   /// @brief Swaps in a pre-reserved input-scratch vector and returns the
@@ -102,12 +110,22 @@ class GraphObject {
 
  protected:
   friend class HostGraph;
+  friend class AudioGraph;
   /// @brief Implementation of processing logic with filtered input buffers.
   /// @param inputs Vector of pointers to valid input buffers
   /// @param numFrames Number of audio frames to process
   virtual void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames);
 
   PROCESSABLE_STATE processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
+
+  /// @brief When set, AudioGraph::settleProcessableState() will never promote
+  /// this node back to CONDITIONAL_PROCESSABLE during the reverse-topo pull.
+  ///
+  /// Used to make `disable()` sticky: a source that finished playback while
+  /// still connected to a processable downstream must stay idle for good,
+  /// otherwise the every-quantum reverse pull would re-activate it (it is
+  /// still an input of a processable consumer). Audio-thread only.
+  bool excludeFromProcessablePull_ = false;
 
  private:
   // Reusable buffer for collecting inputs (avoids allocation per frame)

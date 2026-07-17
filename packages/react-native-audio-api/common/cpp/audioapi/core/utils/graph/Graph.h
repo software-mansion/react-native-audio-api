@@ -40,7 +40,7 @@ namespace audioapi::utils::graph {
 /// ## Audio-thread call order
 /// ```
 /// graph.processEvents();       // drain Channel A, then Channel B (FIFO within each)
-/// graph.process();             // toposort + compaction
+/// graph.process();             // toposort + compaction + settle processable state
 /// for (auto&& [node, inputs] : graph.iter()) { ... }
 /// ```
 class Graph {
@@ -99,7 +99,8 @@ class Graph {
   /// @note Should be called only from the audio thread.
   void processEvents();
 
-  /// @brief Runs toposort + compaction on the audio graph.
+  /// @brief Runs toposort + compaction on the audio graph, then settles every
+  /// node's processable state for the coming quantum (reverse-topo pull).
   /// Allocation-free.
   /// @note Should be called only from the audio thread.
   void process();
@@ -135,11 +136,12 @@ class Graph {
   Res addEdge(HNode *from, HNode *to);
 
   /// @brief Links two nodes so that `to` follows the processable state of
-  /// `from` (one-way). No AudioGraph side effect — purely a host-graph hint
-  /// for propagating the processable state between nodes that share
-  /// processing semantics but not an audio edge (e.g. DelayReader →
-  /// DelayWriter).
-  static void linkNodes(HNode *from, HNode *to);
+  /// `from` (one-way), for nodes that share processing semantics but not an
+  /// audio edge (e.g. DelayReader → DelayWriter, which communicate through a
+  /// ring buffer). Records the link on both the host graph (for cleanup) and
+  /// the audio graph (a `link_head` entry consumed by
+  /// AudioGraph::settleProcessableState()). Idempotent.
+  void linkNodes(HNode *from, HNode *to);
 
   /// @brief Removes a directed edge from → to.
   Res removeEdge(HNode *from, HNode *to);

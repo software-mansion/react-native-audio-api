@@ -10,7 +10,9 @@
 #include <algorithm>
 
 #include <cstddef>
+#include <iterator>
 #include <memory>
+#include <optional>
 #include <span>
 #include <utility>
 #include <vector>
@@ -271,9 +273,11 @@ HostGraph::~HostGraph() {
 HostGraph::HostGraph(HostGraph &&other) noexcept
     : nodes(std::move(other.nodes)),
       edgeCount_(other.edgeCount_),
+      linkCount_(other.linkCount_),
       last_term(other.last_term),
       channelLayoutTerm_(other.channelLayoutTerm_) {
   other.edgeCount_ = 0;
+  other.linkCount_ = 0;
   other.last_term = 0;
   other.channelLayoutTerm_ = 0;
 }
@@ -289,9 +293,11 @@ auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
     }
     nodes = std::move(other.nodes);
     edgeCount_ = other.edgeCount_;
+    linkCount_ = other.linkCount_;
     last_term = other.last_term;
     channelLayoutTerm_ = other.channelLayoutTerm_;
     other.edgeCount_ = 0;
+    other.linkCount_ = 0;
     other.last_term = 0;
     other.channelLayoutTerm_ = 0;
   }
@@ -322,26 +328,6 @@ auto HostGraph::removeNode(Node *node) -> Res {
 
   return Res::Ok(
       [h = node->handle](AudioGraph &graph, auto &) mutable { graph[h->index].orphaned = true; });
-}
-
-void HostGraph::markNodesAsProcessing(Node *node) {
-  if (node == nullptr) {
-    return;
-  }
-  // Already CONDITIONAL or ALWAYS — do not recurse. Stops infinite recursion
-  // on cycles (e.g. delay feedback) and avoids redundant walks.
-  if (node->handle->audioNode->isProcessable()) {
-    return;
-  }
-  node->handle->audioNode->setProcessableState(
-      GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE);
-
-  for (Node *input : node->inputs) {
-    markNodesAsProcessing(input);
-  }
-  for (Node *linked : node->linkedNodes) {
-    markNodesAsProcessing(linked);
-  }
 }
 
 auto HostGraph::addEdge(Node *from, Node *to) -> Res {
@@ -380,83 +366,21 @@ auto HostGraph::addEdge(Node *from, Node *to) -> Res {
   // (toward AudioDestinationNode) so late downstream connects still propagate.
   auto negotiations = collectNegotiations(++channelLayoutTerm_, to);
 
-  // could be problematic, since we are passing raw pointer to the lambda
   return Res::Ok(
-      [from,
-       hTo = to->handle,
+      [hTo = to->handle,
        hFrom = from->handle,
        negotiations = std::move(negotiations),
        reservedInputs = std::move(reservedInputs)](AudioGraph &graph, auto &disposer) mutable {
-        auto *fromNode = hFrom->audioNode.get();
         auto *toNode = hTo->audioNode.get();
-        if (!fromNode->isProcessable() && toNode->isProcessable()) {
-          markNodesAsProcessing(from);
-        }
         applyChannelNegotiations(*negotiations, disposer);
         disposer.dispose(std::move(negotiations));
         // dispose the vector
         disposer.dispose(toNode->exchangeInputScratch(std::move(*reservedInputs)));
         // dispose the unique_ptr
         disposer.dispose(std::move(reservedInputs));
-        graph.pool().push(graph[hTo->index].input_head, from->handle->index);
+        graph.pool().push(graph[hTo->index].input_head, hFrom->index);
         graph.markDirty();
       });
-}
-
-auto HostGraph::renegotiateNode(Node *node) -> Res {
-  std::scoped_lock lock(nodesMutex_);
-  if (node == nullptr || std::ranges::find(nodes, node) == nodes.end()) {
-    return Res::Err(ResultError::NODE_NOT_FOUND);
-  }
-  if (node->ghost) {
-    return Res::Err(ResultError::NODE_NOT_FOUND);
-  }
-
-  // Recompute channel layouts for this node and everything downstream.
-  auto negotiations = collectNegotiations(++channelLayoutTerm_, node);
-
-  return Res::Ok(
-      [negotiations = std::move(negotiations)](AudioGraph &graph, auto &disposer) mutable {
-        applyChannelNegotiations(*negotiations, disposer);
-        disposer.dispose(std::move(negotiations));
-        graph.markDirty();
-      });
-}
-
-void HostGraph::markNodesAsNotProcessing(Node *node) {
-  if (node == nullptr || node->handle == nullptr || node->handle->audioNode == nullptr) {
-    return;
-  }
-  auto *audioNode = node->handle->audioNode.get();
-  if (!audioNode->isProcessable()) {
-    return;
-  }
-  if (audioNode->processableState_ != GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
-    return;
-  }
-  audioNode->setProcessableState(GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
-
-  for (Node *input : node->inputs) {
-    markNodesAsNotProcessing(input);
-  }
-  for (Node *linked : node->linkedNodes) {
-    markNodesAsNotProcessing(linked);
-  }
-}
-
-void HostGraph::updateProcessingStateAfterDisconnect(Node *from) {
-  if (from == nullptr || from->handle == nullptr || from->handle->audioNode == nullptr) {
-    return;
-  }
-  auto *fromAudio = from->handle->audioNode.get();
-  if (fromAudio->processableState_ != GraphObject::PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
-    return;
-  }
-  const bool noProcessableOutputs = std::ranges::all_of(
-      from->outputs, [](Node *output) { return !output->handle->audioNode->isProcessable(); });
-  if (noProcessableOutputs) {
-    markNodesAsNotProcessing(from);
-  }
 }
 
 auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
@@ -490,13 +414,11 @@ auto HostGraph::removeEdge(Node *from, Node *to) -> Res {
   // (toward AudioDestinationNode) so disconnects still propagate.
   auto negotiations = collectNegotiations(++channelLayoutTerm_, to);
 
-  // could be problematic, since we are passing raw pointer to the lambda
-  return Res::Ok([from, hTo = to->handle, negotiations = std::move(negotiations)](
+  return Res::Ok([hFrom = from->handle, hTo = to->handle, negotiations = std::move(negotiations)](
                      AudioGraph &graph, auto &disposer) mutable {
-    updateProcessingStateAfterDisconnect(from);
     applyChannelNegotiations(*negotiations, disposer);
     disposer.dispose(std::move(negotiations));
-    graph.pool().remove(graph[hTo->index].input_head, from->handle->index);
+    graph.pool().remove(graph[hTo->index].input_head, hFrom->index);
     graph.markDirty();
   });
 }
@@ -533,9 +455,8 @@ auto HostGraph::removeAllEdges(Node *from) -> Res {
   // that lost this input re-derives its layout.
   auto negotiations = collectNegotiations(++channelLayoutTerm_, formerOutputs);
 
-  return Res::Ok([pairs = std::move(pairs), from, negotiations = std::move(negotiations)](
+  return Res::Ok([pairs = std::move(pairs), negotiations = std::move(negotiations)](
                      AudioGraph &graph, auto &disposer) mutable {
-    updateProcessingStateAfterDisconnect(from);
     applyChannelNegotiations(*negotiations, disposer);
     disposer.dispose(std::move(negotiations));
     for (const auto &[fromIdx, toIdx] : pairs) {
@@ -575,19 +496,34 @@ bool HostGraph::hasPath(Node *start, Node *end) {
   return false;
 }
 
-void HostGraph::linkNodes(Node *from, Node *to) {
+std::optional<HostGraph::AGEvent> HostGraph::linkNodes(Node *from, Node *to) {
+  std::scoped_lock lock(nodesMutex_);
   if (from == nullptr || to == nullptr || from == to) {
-    return;
+    return std::nullopt;
+  }
+  if (from->ghost || to->ghost) {
+    return std::nullopt;
   }
   if (std::ranges::find(from->linkedNodes, to) != from->linkedNodes.end()) {
-    return;
+    return std::nullopt;
   }
   from->linkedNodes.push_back(to);
+  linkCount_++;
+
+  return AGEvent([hFrom = from->handle, hTo = to->handle](AudioGraph &graph, auto &) mutable {
+    graph.pool().push(graph[hFrom->index].link_head, hTo->index);
+    graph.markDirty();
+  });
 }
 
 size_t HostGraph::edgeCount() const {
   std::scoped_lock lock(nodesMutex_);
   return edgeCount_;
+}
+
+size_t HostGraph::linkCount() const {
+  std::scoped_lock lock(nodesMutex_);
+  return linkCount_;
 }
 
 size_t HostGraph::nodeCount() const {
@@ -601,9 +537,14 @@ void HostGraph::collectDisposedNodes() {
     Node *n = *it;
     if (n->ghost && n->handle.use_count() == 1) {
       edgeCount_ -= n->outputs.size();
+      // Outgoing links from n, plus any incoming links to n from other nodes,
+      // are all being torn down — keep linkCount_ in sync for pool sizing.
+      linkCount_ -= n->linkedNodes.size();
       for (Node *m : nodes) {
         auto &ln = m->linkedNodes;
-        ln.erase(std::ranges::remove(ln, n).begin(), ln.end());
+        auto newEnd = std::ranges::remove(ln, n).begin();
+        linkCount_ -= static_cast<size_t>(std::distance(newEnd, ln.end()));
+        ln.erase(newEnd, ln.end());
       }
       *it = nodes.back();
       nodes.pop_back();

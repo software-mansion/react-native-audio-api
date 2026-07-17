@@ -10,6 +10,7 @@
 #include <audioapi/utils/Macros.h>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -93,8 +94,10 @@ class HostGraph {
     /// Used to tie together the state of logically-linked host nodes that do
     /// not share a graph edge (e.g. DelayReader → DelayWriter communicate via
     /// a ring buffer, so no audio edge exists, but they must be processed
-    /// together). One-way: when THIS node is marked (not)processing, every
-    /// entry in `linkedNodes` is marked too (recursively).
+    /// together). The actual processable propagation happens on the audio
+    /// thread in AudioGraph::settleProcessableState() via the mirrored
+    /// `link_head` entries; this host-side list only exists so links can be
+    /// scrubbed when a linked node is disposed.
     std::vector<Node *> linkedNodes;
     TraversalState traversalState;
     ChannelLayoutState channelLayout;
@@ -139,34 +142,20 @@ class HostGraph {
 
   /// @brief Links the processable-state of `from` to propagate into `to`.
   ///
-  /// When `from` is marked (not)processing, `to` will be too. The link is
-  /// one-way and does NOT create a graph edge (no AudioGraph side effect).
-  /// Intended for host nodes that share processing semantics but do not
-  /// share an audio edge (e.g. DelayReader → DelayWriter).
+  /// Records the link on `from->linkedNodes` (host-side, for cleanup) and
+  /// returns an AGEvent that mirrors it onto the audio graph as a `link_head`
+  /// entry. The actual propagation happens on the audio thread in
+  /// AudioGraph::settleProcessableState(). One-way and does NOT create a graph
+  /// edge. Intended for host nodes that share processing semantics but not an
+  /// audio edge (e.g. DelayReader → DelayWriter).
   ///
-  /// If the same pair is already linked, this is a no-op.
-  static void linkNodes(Node *from, Node *to);
-
-  /// @brief Marks this node CONDITIONAL_PROCESSABLE, then recurses into inputs
-  /// and linkedNodes. Skips nodes that are already processable (terminates
-  /// cycles and redundant paths).
-  static void markNodesAsProcessing(Node *node);
+  /// @return AGEvent to replay on AudioGraph, or std::nullopt if the pair is
+  ///         invalid or already linked.
+  std::optional<AGEvent> linkNodes(Node *from, Node *to);
 
   /// @brief Removes a directed edge from → to.
   /// @return AGEvent that removes the input on the AudioGraph side.
   Res removeEdge(Node *from, Node *to);
-
-  /// @brief Marks a node as not processing and recursively marks all inputs as not processing.
-  static void markNodesAsNotProcessing(Node *node);
-
-  /// @brief Audio-thread helper shared by removeEdge / removeAllEdges.
-  ///
-  /// After `from` loses one or more outputs, tears down its conditional
-  /// processing state iff it was only kept processing for a downstream
-  /// consumer and none of its remaining outputs still require it. No-op when
-  /// `from` is not `CONDITIONAL_PROCESSABLE`. Reads `from->outputs`, so it must
-  /// run after the host-side edge removal has been applied.
-  static void updateProcessingStateAfterDisconnect(Node *from);
 
   /// @brief Removes all outgoing edges from `from`.
   /// @return single AGEvent that removes all inputs on the AudioGraph side, or NODE_NOT_FOUND.
@@ -183,6 +172,9 @@ class HostGraph {
   /// @brief Current number of live (non-ghost) edges.
   [[nodiscard]] size_t edgeCount() const;
 
+  /// @brief Current number of processable-links (backs pool slots too).
+  [[nodiscard]] size_t linkCount() const;
+
   /// @brief Current number of nodes (including ghosts).
   [[nodiscard]] size_t nodeCount() const;
 
@@ -193,6 +185,7 @@ class HostGraph {
   /// another while holding the lock, so a plain mutex is sufficient.
   mutable std::mutex nodesMutex_;
   size_t edgeCount_ = 0;
+  size_t linkCount_ = 0;
   size_t last_term = 0;          // monotonic counter for traversal freshness
   size_t channelLayoutTerm_ = 0; // monotonic counter for channel negotiation passes
 

@@ -29,6 +29,12 @@ class AudioGraph {
 
     std::shared_ptr<NodeHandle> handle = nullptr; // owned handle bridging to HostGraph
     std::uint32_t input_head = InputPool::kNull;  // head of input linked list in pool_
+    /// Head of the processable-link linked list in pool_. These are NOT audio
+    /// edges: they mark other nodes whose processable state must follow this
+    /// node's (e.g. DelayReader -> DelayWriter, which communicate through a
+    /// ring buffer rather than a graph edge). Links do not participate in the
+    /// topological sort, only in settleProcessableState().
+    std::uint32_t link_head = InputPool::kNull;
 
     std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
     unsigned will_be_deleted : 1 = 0;       // scratch — marked for compaction removal
@@ -154,6 +160,29 @@ class AudioGraph {
   ///
   /// Extra space: O(1) — everything in place.
   void process();
+
+  /// @brief Recomputes every node's processable state for the coming render
+  /// quantum via a reverse-topological pull.
+  ///
+  /// The graph is kept topologically sorted (sources first, sinks last), so
+  /// a right-to-left walk visits every consumer before its producers. Seed
+  /// nodes (AudioDestinationNode, AnalyserNode, ...) are ALWAYS_PROCESSABLE
+  /// and act as pull roots.
+  ///
+  /// Because links are not part of the topological order, a marked link
+  /// target may sit *after* the node that pulled it; the pull therefore
+  /// iterates to a fixpoint. State only ever transitions NOT -> CONDITIONAL,
+  /// so the loop is monotonic and terminates. Link-free graphs settle in a
+  /// single pass.
+  ///
+  /// Must derive state ONLY from `processableState_`, never from
+  /// `AudioNode::isProcessable()` — a tail-bearing node keeps the latter true
+  /// after a disconnect and would otherwise re-activate its whole upstream
+  /// cone.
+  ///
+  /// Allocation-free. Audio-thread only. Call after process() (indices and
+  /// topological order must be settled) and before the forward iter() pass.
+  void settleProcessableState();
 
  private:
   std::vector<Node> nodes;       // always kept topologically sorted

@@ -1,7 +1,7 @@
 #pragma once
 
 #if !RN_AUDIO_API_TEST
-#error "RN_AUDIO_API_TEST must be enabled to use TestGraphUtils"
+#warning "RN_AUDIO_API_TEST must be enabled to use TestGraphUtils"
 #define RN_AUDIO_API_TEST true // for intellisense
 #endif
 
@@ -9,6 +9,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/AudioGraph.h>
 #include <audioapi/core/utils/graph/BridgeNode.h>
 #include <audioapi/core/utils/graph/HostGraph.h>
@@ -56,8 +57,11 @@ struct MockNode : AudioNode {
     destructible_.store(value, std::memory_order_release);
   }
 
+  // Marks this node as a processable seed. Uses ALWAYS_PROCESSABLE so the
+  // node survives AudioGraph::settleProcessableState()'s reverse-topo reset and
+  // acts as a pull root (mirrors AudioDestinationNode / AnalyserNode).
   void setProcessable() {
-    setProcessableState(PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE);
+    setProcessableState(PROCESSABLE_STATE::ALWAYS_PROCESSABLE);
   }
 
  private:
@@ -114,14 +118,14 @@ struct ProcessableMockNode : MockNode {
     setProcessable();
   }
 
-  /// @brief Called by the audio thread with an input range from `Graph::iter()`.
-  ///
-  /// Supports both strongly-typed test ranges and GraphObject-based ranges,
-  /// collecting values into a stack buffer with no heap allocation.
+  /// @brief Reads upstream ProcessableMockNode values and stores the result.
+  /// Called from the test audio loop before `GraphObject::process()` so that
+  /// end-of-quantum processable demotion still runs in the base `process()`.
   template <std::ranges::input_range R>
-  void process(R &&inputs) {
-    if (!processFn_)
+  void collectFromInputGraphObjects(R &&inputs) {
+    if (!processFn_) {
       return;
+    }
     int buf[kMaxInputs];
     size_t n = 0;
     for (const auto &input : inputs) {

@@ -1,3 +1,4 @@
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/BridgeNode.h>
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
@@ -197,6 +198,7 @@ TEST_F(BridgeIterTest, IterSkipsNonProcessableNodes) {
   ASSERT_TRUE(addEdge(processable1, nonProcessable));
   ASSERT_TRUE(addEdge(nonProcessable, processable2));
   audioGraph.process();
+  audioGraph.settleProcessableState();
 
   // iter() should only yield 2 nodes (skip the non-processable one)
   size_t count = 0;
@@ -218,6 +220,7 @@ TEST_F(BridgeIterTest, AllProcessableNodesInTopoOrder) {
   ASSERT_TRUE(addEdge(bridge, b));
   ASSERT_TRUE(addEdge(b, c));
   audioGraph.process();
+  audioGraph.settleProcessableState();
 
   // Should yield A, bridge, B, C in topo order (bridge is now processable)
   size_t count = 0;
@@ -239,6 +242,7 @@ TEST_F(BridgeIterTest, InputsViewMayReferenceBridgeIndices) {
   ASSERT_TRUE(addEdge(source, bridge));
   ASSERT_TRUE(addEdge(bridge, owner));
   audioGraph.process();
+  audioGraph.settleProcessableState();
 
   size_t processableCount = 0;
   for (auto &&[graphObject, inputs] : audioGraph.iter()) {
@@ -345,6 +349,9 @@ class BridgeGraphWrapperTest : public ::testing::Test {
   void processAll() {
     graph->processEvents();
     graph->process();
+    for (auto &&[node, inputs] : graph->iter()) {
+      node.process(inputs, audioapi::RENDER_QUANTUM_SIZE);
+    }
   }
 };
 
@@ -362,12 +369,13 @@ TEST_F(BridgeGraphWrapperTest, ConnectSourceToBridge) {
 
   processAll();
 
-  // Should have 3 nodes: source, bridge, owner (all processable now)
+  // After a full quantum, conditional nodes are demoted back to NOT at the
+  // end of GraphObject::process(); only the ALWAYS seed stays in iter().
   size_t iterCount = 0;
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 3u);
+  EXPECT_EQ(iterCount, 1u);
 }
 
 TEST_F(BridgeGraphWrapperTest, DisconnectSourceFromBridge) {
@@ -391,7 +399,7 @@ TEST_F(BridgeGraphWrapperTest, DisconnectSourceFromBridge) {
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 2u); // only owner + bridge remains processable
+  EXPECT_EQ(iterCount, 1u); // only the ALWAYS owner remains in iter()
 }
 
 TEST_F(BridgeGraphWrapperTest, DuplicateEdgeToBridgeRejected) {
@@ -466,23 +474,23 @@ TEST_F(BridgeGraphWrapperTest, MultipleSourcesConnectToSameBridge) {
   ASSERT_TRUE(graph->addEdge(source2, bridge).is_ok());
   processAll();
 
-  // Should have 4 nodes: source1, source2, bridge, owner
+  // Should have 4 nodes during the quantum; after processAll only ALWAYS owner
+  // remains in iter().
   size_t iterCount = 0;
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 4u);
+  EXPECT_EQ(iterCount, 1u);
 
   // Disconnect one source
   ASSERT_TRUE(graph->removeEdge(source1, bridge).is_ok());
   processAll();
 
-  // Still 4 nodes
   iterCount = 0;
   for (auto &&[graphObject, inputs] : graph->iter()) {
     iterCount++;
   }
-  EXPECT_EQ(iterCount, 3u); // source1 is unprocessable
+  EXPECT_EQ(iterCount, 1u);
 }
 
 TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
@@ -549,6 +557,9 @@ class BridgeFuzzTest : public ::testing::TestWithParam<uint64_t> {
   void processAll() {
     graph->processEvents();
     graph->process();
+    for (auto &&[node, inputs] : graph->iter()) {
+      node.process(inputs, audioapi::RENDER_QUANTUM_SIZE);
+    }
   }
 
   HNode *pickRandom() {

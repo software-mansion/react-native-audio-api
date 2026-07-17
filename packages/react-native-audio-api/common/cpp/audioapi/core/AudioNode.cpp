@@ -52,8 +52,11 @@ bool AudioNode::requiresTailProcessing() const {
 }
 
 void AudioNode::disable() {
-  // Defer the flip to NOT_PROCESSABLE by one quantum.
-  pendingDisable_ = true;
+  // Make the transition sticky: the every-quantum reverse-topo pull in
+  // AudioGraph::settleProcessableState() must not re-activate a node that has
+  // finished (e.g. a stopped source) even while it is still connected to a
+  // processable consumer.
+  excludeFromProcessablePull_ = true;
 }
 
 namespace {
