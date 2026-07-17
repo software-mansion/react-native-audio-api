@@ -10,8 +10,12 @@
 
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
+#include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>

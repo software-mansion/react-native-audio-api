@@ -1,25 +1,64 @@
-export interface IWorkletsModule {
-  /** Creates a serializable value. */
-  createSerializable: <T>(value: T) => T;
-  /** Returns the holder object wrapping the shared UI worklet runtime. */
-  getUIRuntimeHolder: () => object;
-  /** Returns the holder object wrapping the shared UI scheduler. */
-  getUISchedulerHolder: () => object;
-}
-
 /**
- * Invoked on the UI worklet runtime at most ~120 times per second with the
- * latest render-quantum snapshot (when the prior callback has finished).
+ * Invoked on the UI worklet runtime once `bufferLength` frames have been
+ * accumulated (when the prior callback has finished).
  *
- * @param audioBuffers - One `ArrayBuffer` per channel of **32-bit float PCM**
- *   (not interleaved). Wrap with `new Float32Array(buffer)` for zero-copy
- *   access.
- * @param numberOfChannels - Active channel count for this quantum (same as
- *   `audioBuffers.length`). Use when iterating channels in a loop.
- *
- *   The function must include the `'worklet'` directive.
+ * @remarks
+ *   Do not store `audioData` (or individual channel views) in Reanimated shared
+ *   values or other state read asynchronously later. The backing memory reused
+ *   for the next snapshot and may be written from the audio thread after your
+ *   callback returns. Derive scalars inside the callback (e.g. RMS, peak) or
+ *   copy samples (`Float32Array.from(channel)`) if you need to keep waveform
+ *   data for later UI reads.
+ * @param audioData - Stable per-channel `Float32Array` views (zero-copy over a
+ *   reused native buffer pool). Each view spans the full `bufferLength`. The
+ *   same object identities are passed on every callback; only the underlying
+ *   sample memory is refilled.
+ * @param numberOfChannels - Active channel count (`audioData.length`).
  */
 export type WorkletNodeCallback = (
-  audioBuffers: Array<ArrayBuffer>,
+  audioData: Array<Float32Array>,
   numberOfChannels: number
+) => void;
+
+/**
+ * Invoked synchronously on the audio worklet runtime each render quantum.
+ *
+ * @param audioData - Stable per-channel `Float32Array` views over the output
+ *   pool. Write samples into indices `0 .. framesToProcess - 1`. Each view
+ *   spans the full render quantum size; only the first `framesToProcess`
+ *   samples are read by native code.
+ * @param outputChannelCount - Active output channel count (`audioData.length`).
+ * @param framesToProcess - Number of frames to generate this quantum (may be
+ *   less than the render quantum when playback starts or stops mid-buffer).
+ * @param startOffset - Silent prefix length already zeroed in the output
+ *   buffer; use when computing absolute sample time, not as a write offset into
+ *   `audioData`.
+ */
+export type WorkletSourceNodeCallback = (
+  audioData: Array<Float32Array>,
+  outputChannelCount: number,
+  framesToProcess: number,
+  currentTime: number,
+  startOffset: number
+) => void;
+
+/**
+ * Invoked synchronously on the audio worklet runtime each render quantum.
+ *
+ * @param inputData - Stable per-channel `Float32Array` views over the input
+ *   pool.
+ * @param outputData - Stable per-channel `Float32Array` views over the output
+ *   pool. Write processed samples here. Each view length equals the render
+ *   quantum size.
+ * @param inputChannelCount - Active input channel count (`inputData.length`).
+ * @param outputChannelCount - Active output channel count
+ *   (`outputData.length`).
+ */
+export type WorkletProcessingNodeCallback = (
+  inputData: Array<Float32Array>,
+  outputData: Array<Float32Array>,
+  inputChannelCount: number,
+  outputChannelCount: number,
+  framesToProcess: number,
+  currentTime: number
 ) => void;

@@ -8,6 +8,11 @@ import type {
   PlaybackNotificationInfo,
 } from './types';
 import { AudioApiError } from '../../errors';
+import { clamp } from '../../utils';
+
+const DEFAULT_SKIP_INTERVAL_SECONDS = 15;
+const MIN_SKIP_INTERVAL_SECONDS = 1;
+const MAX_SKIP_INTERVAL_SECONDS = 120;
 
 class PlaybackNotificationManager implements NotificationManager<
   PlaybackNotificationInfo,
@@ -15,6 +20,7 @@ class PlaybackNotificationManager implements NotificationManager<
 > {
   private notificationKey = 'playback';
   private audioEventEmitter: AudioEventEmitter;
+  private skipIntervalSeconds = DEFAULT_SKIP_INTERVAL_SECONDS;
 
   constructor() {
     this.audioEventEmitter = new AudioEventEmitter(
@@ -34,10 +40,21 @@ class PlaybackNotificationManager implements NotificationManager<
       throw new AudioApiError('NativeAudioAPIModule is not available');
     }
 
+    if (info.skipInterval !== undefined) {
+      this.skipIntervalSeconds = clamp(
+        info.skipInterval,
+        MIN_SKIP_INTERVAL_SECONDS,
+        MAX_SKIP_INTERVAL_SECONDS
+      );
+    }
+
     const result = await NativeAudioAPIModule.showNotification(
       'playback',
       this.notificationKey,
-      info as Record<string, string | number | boolean | undefined>
+      {
+        ...info,
+        skipInterval: this.skipIntervalSeconds,
+      } as Record<string, string | number | boolean | undefined>
     );
 
     if (result.error) {

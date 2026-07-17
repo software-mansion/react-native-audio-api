@@ -25,6 +25,7 @@
 
 @interface AudioEngine () {
   std::mutex _engineLock;
+  BOOL _isRebuildingAudioEngine;
 }
 
 @property (nonatomic, strong)
@@ -408,15 +409,24 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)rebuildAudioEngineAndResumeIfNeeded
 {
+  if (_isRebuildingAudioEngine) {
+    return;
+  }
+
+  _isRebuildingAudioEngine = YES;
+
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
 
   [self rebuildAudioEngine];
+  self.sessionDeactivationInvalidatedGraph = false;
 
   if (self.state == AudioEngineState::AudioEngineStateRunning) {
     [self startEngine];
   }
+
+  _isRebuildingAudioEngine = NO;
 }
 
 - (void)rebuildAudioEngine

@@ -20,6 +20,10 @@
     "reason": "hangs native offline renderer on large discrete-mixing graphs (engine bug, tracked separately)"
   },
   {
+    "pattern": "audiobuffersource-null.html",
+    "reason": "SIGSEGV in Node WPT runner when buffer is set then cleared to null before offline render (engine bug, tracked separately)"
+  },
+  {
     "pattern": "-crash.html",
     "reason": "browser crashtests without testharness stall the Node runner"
   },

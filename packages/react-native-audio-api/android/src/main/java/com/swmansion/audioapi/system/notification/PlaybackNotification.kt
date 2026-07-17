@@ -45,7 +45,12 @@ class PlaybackNotification(
     const val ACTION_SKIP_FORWARD = "com.swmansion.audioapi.ACTION_SKIP_FORWARD"
     const val ACTION_SKIP_BACKWARD = "com.swmansion.audioapi.ACTION_SKIP_BACKWARD"
     const val ID = 100
+
+    // Must match kDefaultSkipIntervalSeconds on iOS.
+    const val DEFAULT_SKIP_INTERVAL_SECONDS = 15
   }
+
+  private var skipIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS
 
   private var mediaSession: MediaSessionCompat? = null
   private var notificationBuilder: NotificationCompat.Builder? = null
@@ -99,12 +104,12 @@ class PlaybackNotification(
         }
 
         override fun onFastForward() {
-          val body = HashMap<String, Any>().apply { put("value", 15) }
+          val body = HashMap<String, Any>().apply { put("value", skipIntervalSeconds) }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_FORWARD.ordinal, body)
         }
 
         override fun onRewind() {
-          val body = HashMap<String, Any>().apply { put("value", 15) }
+          val body = HashMap<String, Any>().apply { put("value", skipIntervalSeconds) }
           audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_BACKWARD.ordinal, body)
         }
 
@@ -164,6 +169,9 @@ class PlaybackNotification(
   }
 
   override fun show(options: ReadableMap?): Notification {
+    if (options != null) {
+      updateSkipIntervalFromOptions(options)
+    }
     initializeIfNeeded()
     if (options != null) {
       updateInternal(options)
@@ -194,7 +202,42 @@ class PlaybackNotification(
 
   override fun getChannelId(): String = channelId
 
+  private fun updateSkipIntervalFromOptions(info: ReadableMap) {
+    if (info.hasKey("skipInterval")) {
+      skipIntervalSeconds = info.getDouble("skipInterval").toInt()
+      if (isInitialized) {
+        refreshSkipControlIcons()
+      }
+    }
+  }
+
+  private fun skipForwardIcon(): Int =
+    if (skipIntervalSeconds == DEFAULT_SKIP_INTERVAL_SECONDS) {
+      R.drawable.skip_forward_15
+    } else {
+      R.drawable.skip_forward
+    }
+
+  private fun skipBackwardIcon(): Int =
+    if (skipIntervalSeconds == DEFAULT_SKIP_INTERVAL_SECONDS) {
+      R.drawable.skip_backward_15
+    } else {
+      R.drawable.skip_backward
+    }
+
+  private fun refreshSkipControlIcons() {
+    if (hasControl(PlaybackStateCompat.ACTION_REWIND) ||
+      hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)
+    ) {
+      updatePlaybackActionState()
+      updatePlaybackState(playbackStateVal)
+    }
+    updateNotificationsActions()
+  }
+
   private fun updateInternal(info: ReadableMap) {
+    updateSkipIntervalFromOptions(info)
+
     if (info.hasKey("control") && info.hasKey("enabled")) {
       enableControl(info.getString("control"), info.getBoolean("enabled"))
     }
@@ -328,7 +371,7 @@ class PlaybackNotification(
           .Builder(
             "SkipBackward",
             "Skip Backward",
-            R.drawable.skip_backward_15,
+            skipBackwardIcon(),
           ).build(),
       )
     }
@@ -339,7 +382,7 @@ class PlaybackNotification(
           .Builder(
             "SkipForward",
             "Skip Forward",
-            R.drawable.skip_forward_15,
+            skipForwardIcon(),
           ).build(),
       )
     }
@@ -377,7 +420,7 @@ class PlaybackNotification(
 
     if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
       notificationBuilder?.addAction(
-        createAction("skip_backward", "Skip Backward", R.drawable.skip_backward_15, PlaybackStateCompat.ACTION_REWIND),
+        createAction("skip_backward", "Skip Backward", skipBackwardIcon(), PlaybackStateCompat.ACTION_REWIND),
       )
       actionsList.add(index++)
     }
@@ -403,7 +446,7 @@ class PlaybackNotification(
 
     if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
       notificationBuilder?.addAction(
-        createAction("skip_forward", "Skip Forward", R.drawable.skip_forward_15, PlaybackStateCompat.ACTION_FAST_FORWARD),
+        createAction("skip_forward", "Skip Forward", skipForwardIcon(), PlaybackStateCompat.ACTION_FAST_FORWARD),
       )
       actionsList.add(index++)
     }
@@ -437,6 +480,7 @@ class PlaybackNotification(
       val customActionName = if (name == "skip_forward") ACTION_SKIP_FORWARD else ACTION_SKIP_BACKWARD
       val intent = Intent(customActionName)
       intent.setPackage(context.packageName)
+      intent.putExtra(PlaybackNotificationReceiver.EXTRA_SKIP_INTERVAL_SECONDS, skipIntervalSeconds)
       pendingIntent =
         PendingIntent.getBroadcast(
           context,
