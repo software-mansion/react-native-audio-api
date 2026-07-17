@@ -9,8 +9,8 @@ export default class PeriodicWave {
   constructor(context: BaseAudioContext, options?: PeriodicWaveOptions) {
     const finalOptions = generateRealAndImag(options);
     const periodicWave = context.context.createPeriodicWave(
-      finalOptions.real!,
-      finalOptions.imag!,
+      finalOptions.real,
+      finalOptions.imag,
       { disableNormalization: finalOptions.disableNormalization }
     );
     this.periodicWave = periodicWave;

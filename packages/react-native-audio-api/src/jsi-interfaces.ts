@@ -37,7 +37,11 @@ export interface IBaseAudioContext {
   readonly decoder: IAudioDecoder;
 
   createRecorderAdapter(): IRecorderAdapterNode;
-  createOscillator(oscillatorOptions: OscillatorOptions): IOscillatorNode;
+  createOscillator(
+    oscillatorOptions: Omit<OscillatorOptions, 'periodicWave'> & {
+      periodicWave?: IPeriodicWave;
+    }
+  ): IOscillatorNode;
   createConstantSource(
     constantSourceOptions: ConstantSourceOptions
   ): IConstantSourceNode;

@@ -202,8 +202,8 @@ export interface PeriodicWaveConstraints {
 }
 
 export interface PeriodicWaveOptions extends PeriodicWaveConstraints {
-  real?: Float32Array;
-  imag?: Float32Array;
+  real?: number[] | Float32Array;
+  imag?: number[] | Float32Array;
 }
 
 export interface AudioBufferOptions {

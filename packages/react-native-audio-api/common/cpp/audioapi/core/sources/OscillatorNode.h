@@ -33,7 +33,9 @@ class OscillatorNode : public AudioScheduledSourceNode {
   std::shared_ptr<AudioParam> frequencyParam_;
   std::shared_ptr<AudioParam> detuneParam_;
   OscillatorType type_;
-  float phase_ = 0.0;
+  // Match Chromium: accumulate phase in double so +/- frequency stay
+  // phase-accurate over a quantum (float drifts enough to fail WPT).
+  double phase_ = 0.0;
   std::shared_ptr<PeriodicWave> periodicWave_;
 };
 } // namespace audioapi
