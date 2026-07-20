@@ -46,12 +46,12 @@ if [ "$PLATFORM" != "android" ] && [ "$PLATFORM" != "ios" ]; then
     exit 1
 fi
 
-# Use a temporary directory for downloads, ensuring it exists
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Use a temporary directory for downloads, ensuring it exists
 TEMP_DOWNLOAD_DIR="${SCRIPT_DIR}/audioapi-binaries-temp"
+mkdir -p "$TEMP_DOWNLOAD_DIR"
 
 if [ "$PLATFORM" == "android" ]; then
     DOWNLOAD_NAMES=("${ANDROID_DOWNLOAD_NAMES[@]}")
@@ -193,6 +193,7 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
     fi
 
     echo "Unzipping ${name} to ${OUTPUT_DIR}"
+    mkdir -p "$OUTPUT_DIR"
     unzip -o "$ZIP_FILE_PATH" -d "$OUTPUT_DIR"
 
     # Clean up any __MACOSX directories that may have been created
