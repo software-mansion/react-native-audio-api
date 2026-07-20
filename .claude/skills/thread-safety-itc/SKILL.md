@@ -163,7 +163,9 @@ Control-plane synchronization uses two layers — both are non-recursive `std::m
 
 On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because Oboe error callbacks bypass `AudioContext`.
 
-**Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`.
+**Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`. Platform drivers share the `CommonPlayer` abstract base (`common/cpp/audioapi/core/CommonPlayer.h`).
+
+**Player vs recorder threads:** Empirically, playback and recording callbacks run on **different** threads on both platforms (iOS: `AVAudioSourceNode` vs `AVAudioSinkNode` under one `AVAudioEngine`; Android: separate Oboe output vs input streams). Do not assume shared mutable state is single-threaded between player and recorder.
 
 ---
 

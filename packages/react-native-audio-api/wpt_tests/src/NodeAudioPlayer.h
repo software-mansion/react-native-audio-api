@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/CommonPlayer.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <atomic>
@@ -9,21 +10,21 @@
 
 namespace audioapi {
 
-class NodeAudioPlayer final {
+class NodeAudioPlayer final : public CommonPlayer {
  public:
   NodeAudioPlayer(
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount);
-  ~NodeAudioPlayer();
+  ~NodeAudioPlayer() override;
 
-  bool start();
-  void stop();
-  bool resume();
-  void suspend();
-  void cleanup();
+  bool start() override;
+  void stop() override;
+  bool resume() override;
+  void suspend() override;
+  void cleanup() override;
 
-  [[nodiscard]] bool isRunning() const;
+  [[nodiscard]] bool isRunning() const override;
 
  private:
   void run();
