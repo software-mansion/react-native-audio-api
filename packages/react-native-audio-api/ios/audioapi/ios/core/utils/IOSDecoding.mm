@@ -131,14 +131,6 @@ IOSDecoder::~IOSDecoder()
   close();
 }
 
-decoding::DecoderResult IOSDecoder::openUrl(
-    int /*outputSampleRate*/,
-    const std::string & /*url*/,
-    const std::map<std::string, std::string> & /*headers*/)
-{
-  return Err("IOSDecoder::openUrl is not supported (use FFmpeg for remote streams)");
-}
-
 // Sets the interleaved-float client format and caches channel/rate/duration.
 static decoding::DecoderResult configureExtAudioFile(
     ExtAudioFileRef extFile,

@@ -71,12 +71,17 @@ bool isValidDuration(float duration) {
   return duration >= 0.0F && std::isfinite(duration);
 }
 
-AudioDurationResult probeDurationWithFilePath(const std::string &path) {
+namespace {
+
+/// Tries OS decoder then miniaudio. `open` opens the given decoder for the source.
+template <typename OpenFn>
+  requires std::
+      is_invocable_r_v<decoding::DecoderResult, OpenFn, decoding::IncrementalAudioDecoder &>
+    AudioDurationResult probeDurationLocal(OpenFn &&open, const char *errorMessage) {
 #if RN_AUDIO_API_HAS_OS_DECODER
   {
     os_decoder::Decoder platformDecoder;
-    const auto platformOpen = platformDecoder.openFile(0, path);
-    if (platformOpen.is_ok()) {
+    if (open(platformDecoder).is_ok()) {
       auto result = resolveDurationFromDecoder(platformDecoder);
       platformDecoder.close();
       if (result.is_ok()) {
@@ -89,27 +94,26 @@ AudioDurationResult probeDurationWithFilePath(const std::string &path) {
 #endif // RN_AUDIO_API_HAS_OS_DECODER
 
   miniaudio_decoder::MiniAudioDecoder decoder;
-  const auto openResult = decoder.openFile(0, path);
-  if (openResult.is_err()) {
-    return Err("Cannot read duration: file could not be decoded");
+  if (open(decoder).is_err()) {
+    return Err(errorMessage);
   }
   auto result = resolveDurationFromDecoder(decoder);
   decoder.close();
   if (result.is_err()) {
-    return Err("Cannot read duration: file could not be decoded");
+    return Err(errorMessage);
   }
   return result;
 }
 
-AudioDurationResult probeDurationWithMemory(const void *data, size_t size, int sampleRate) {
-  const int sr = sampleRate != 0 ? sampleRate : 0;
-
+template <typename OpenFn>
+  requires std::
+      is_invocable_r_v<decoding::DecoderResult, OpenFn, decoding::IncrementalAudioDecoder &>
+    AudioBufferResult decodeLocal(OpenFn &&open, const char *errorMessage) {
 #if RN_AUDIO_API_HAS_OS_DECODER
   {
     os_decoder::Decoder platformDecoder;
-    const auto platformOpen = platformDecoder.openMemory(sr, data, size);
-    if (platformOpen.is_ok()) {
-      auto result = resolveDurationFromDecoder(platformDecoder);
+    if (open(platformDecoder).is_ok()) {
+      auto result = decodeAll(platformDecoder);
       platformDecoder.close();
       if (result.is_ok()) {
         return result;
@@ -121,16 +125,32 @@ AudioDurationResult probeDurationWithMemory(const void *data, size_t size, int s
 #endif // RN_AUDIO_API_HAS_OS_DECODER
 
   miniaudio_decoder::MiniAudioDecoder decoder;
-  const auto openResult = decoder.openMemory(sr, data, size);
-  if (openResult.is_err()) {
-    return Err("Cannot read duration: audio data could not be decoded");
+  if (open(decoder).is_err()) {
+    return Err(errorMessage);
   }
-  auto result = resolveDurationFromDecoder(decoder);
+  auto result = decodeAll(decoder);
   decoder.close();
   if (result.is_err()) {
-    return Err("Cannot read duration: audio data could not be decoded");
+    return Err(errorMessage);
   }
   return result;
+}
+
+} // namespace
+
+AudioDurationResult probeDurationWithFilePath(const std::string &path) {
+  return probeDurationLocal(
+      [&](decoding::IncrementalAudioDecoder &decoder) { return decoder.openFile(0, path); },
+      "Cannot read duration: file could not be decoded");
+}
+
+AudioDurationResult probeDurationWithMemory(const void *data, size_t size, int sampleRate) {
+  const int sr = sampleRate != 0 ? sampleRate : 0;
+  return probeDurationLocal(
+      [=](decoding::IncrementalAudioDecoder &decoder) {
+        return decoder.openMemory(sr, data, size);
+      },
+      "Cannot read duration: audio data could not be decoded");
 }
 
 AudioDurationResult probeDurationWithUrl(
@@ -157,66 +177,18 @@ AudioDurationResult probeDurationWithUrl(
 
 AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) {
   const int sr = static_cast<int>(sampleRate);
-
-#if RN_AUDIO_API_HAS_OS_DECODER
-  {
-    os_decoder::Decoder platformDecoder;
-    const auto platformOpen = platformDecoder.openFile(sr, path);
-    if (platformOpen.is_ok()) {
-      auto result = decodeAll(platformDecoder);
-      platformDecoder.close();
-      if (result.is_ok()) {
-        return result;
-      }
-    } else {
-      platformDecoder.close();
-    }
-  }
-#endif // RN_AUDIO_API_HAS_OS_DECODER
-
-  miniaudio_decoder::MiniAudioDecoder decoder;
-  const auto openResult = decoder.openFile(sr, path);
-  if (openResult.is_err()) {
-    return Err("Cannot decode file: unsupported or invalid audio format");
-  }
-  auto result = decodeAll(decoder);
-  decoder.close();
-  if (result.is_err()) {
-    return Err("Cannot decode file: unsupported or invalid audio format");
-  }
-  return result;
+  return decodeLocal(
+      [&](decoding::IncrementalAudioDecoder &decoder) { return decoder.openFile(sr, path); },
+      "Cannot decode file: unsupported or invalid audio format");
 }
 
 AudioBufferResult decodeWithMemoryBlock(const void *data, size_t size, float sampleRate) {
   const int sr = static_cast<int>(sampleRate);
-
-#if RN_AUDIO_API_HAS_OS_DECODER
-  {
-    os_decoder::Decoder platformDecoder;
-    const auto platformOpen = platformDecoder.openMemory(sr, data, size);
-    if (platformOpen.is_ok()) {
-      auto result = decodeAll(platformDecoder);
-      platformDecoder.close();
-      if (result.is_ok()) {
-        return result;
-      }
-    } else {
-      platformDecoder.close();
-    }
-  }
-#endif // RN_AUDIO_API_HAS_OS_DECODER
-
-  miniaudio_decoder::MiniAudioDecoder decoder;
-  const auto openResult = decoder.openMemory(sr, data, size);
-  if (openResult.is_err()) {
-    return Err("Cannot decode audio data: unsupported or invalid audio format");
-  }
-  auto result = decodeAll(decoder);
-  decoder.close();
-  if (result.is_err()) {
-    return Err("Cannot decode audio data: unsupported or invalid audio format");
-  }
-  return result;
+  return decodeLocal(
+      [&](decoding::IncrementalAudioDecoder &decoder) {
+        return decoder.openMemory(sr, data, size);
+      },
+      "Cannot decode audio data: unsupported or invalid audio format");
 }
 
 AudioBufferResult decodeWithPCMInBase64(

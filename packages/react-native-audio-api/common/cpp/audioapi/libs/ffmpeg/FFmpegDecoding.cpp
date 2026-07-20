@@ -266,12 +266,6 @@ decoding::DecoderResult FFmpegDecoder::openUrl(
   return initializeDecodedStreams(outputSampleRate, "FFmpegDecoder::openUrl");
 }
 
-decoding::DecoderResult
-FFmpegDecoder::openMemory(int /*outputSampleRate*/, const void * /*data*/, size_t /*size*/) {
-  // Batch / in-memory decode is owned by OS and miniaudio; FFmpeg is for remote URLs.
-  return Err("FFmpegDecoder::openMemory is not supported (use OS or miniaudio for memory decode)");
-}
-
 void FFmpegDecoder::appendFrameResampled(AVFrame *frame) {
   int out_samples = swr_get_out_samples(swr_, frame->nb_samples);
   if (out_samples > max_resampled_samples_) {
@@ -479,9 +473,6 @@ decoding::DecoderResult FFmpegDecoder::openUrl(
     int,
     const std::string &,
     const std::map<std::string, std::string> &) {
-  return Err("FFmpeg is disabled");
-}
-decoding::DecoderResult FFmpegDecoder::openMemory(int, const void *, size_t) {
   return Err("FFmpeg is disabled");
 }
 float FFmpegDecoder::getDurationInSeconds() const {

@@ -3,14 +3,13 @@
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <cstddef>
-#include <map>
 #include <string>
 
 namespace audioapi::decoding {
 using DecoderResult = Result<NoneType, std::string>;
 /**
  * Incremental PCM decoder: openFile or openMemory → readPcmFrames in a loop → close.
- * Shared contract for FFmpeg-based and MiniAudio-based implementations.
+ * Shared contract for OS-based and MiniAudio-based implementations.
  */
 class IncrementalAudioDecoder {
  public:
@@ -25,23 +24,16 @@ class IncrementalAudioDecoder {
   /// @return Ok(None) on success or Err(message) on failure.
   [[nodiscard]] virtual DecoderResult openFile(int outputSampleRate, const std::string &path) = 0;
 
-  /// @brief Opens a remote HTTP(S) URL for incremental decoding via FFmpeg.
-  /// @param outputSampleRate The output sample rate.
-  /// @param url The remote URL (http:// or https://).
-  /// @param headers Optional HTTP request headers (e.g. Authorization).
-  /// @return Ok(None) on success or Err(message) on failure.
-  [[nodiscard]] virtual DecoderResult openUrl(
-      int outputSampleRate,
-      const std::string &url,
-      const std::map<std::string, std::string> &headers = {}) = 0;
-
   /// @brief Opens a memory block for decoding.
   /// @param outputSampleRate The output sample rate.
   /// @param data The data to decode.
   /// @param size The size of the data.
   /// @return Ok(None) on success or Err(message) on failure.
+  /// Default rejects; OS and MiniAudio override with real implementations.
   [[nodiscard]] virtual DecoderResult
-  openMemory(int outputSampleRate, const void *data, size_t size) = 0;
+  openMemory(int /*outputSampleRate*/, const void * /*data*/, size_t /*size*/) {
+    return Err("openMemory is not supported by this decoder");
+  }
 
   /// @brief Reads PCM frames from the decoder.
   /// @param outInterleaved The output buffer for the decoded frames.

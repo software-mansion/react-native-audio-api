@@ -8,13 +8,10 @@
 namespace audioapi {
 namespace {
 
-decoding::DecoderResult openWithDecoder(
+decoding::DecoderResult openLocalWithDecoder(
     decoding::IncrementalAudioDecoder &decoder,
     const SeekDecoderDaemonOptions &options,
     int contextSampleRate) {
-  if (!options.sourceUrl.empty()) {
-    return decoder.openUrl(contextSampleRate, options.sourceUrl, options.httpHeaders);
-  }
   if (!options.filePath.empty()) {
     return decoder.openFile(contextSampleRate, options.filePath);
   }
@@ -40,19 +37,20 @@ SeekDecoderDaemon::SeekDecoderDaemon(
   // Remote HTTP(S) / HLS: FFmpeg owns network demux (byte ranges + playlists).
   if (!options.sourceUrl.empty()) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-    decoder_ = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
-    openResult = openWithDecoder(*decoder_, options, contextSampleRate);
+    auto ffmpegDecoder = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
+    openResult = ffmpegDecoder->openUrl(contextSampleRate, options.sourceUrl, options.httpHeaders);
+    decoder_ = std::move(ffmpegDecoder);
 #endif
   } else {
 #if RN_AUDIO_API_HAS_OS_DECODER
     decoder_ = std::make_unique<os_decoder::Decoder>();
-    openResult = openWithDecoder(*decoder_, options, contextSampleRate);
+    openResult = openLocalWithDecoder(*decoder_, options, contextSampleRate);
 
     if (openResult.is_err()) {
       decoder_->close();
 #endif // RN_AUDIO_API_HAS_OS_DECODER
       decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
-      openResult = openWithDecoder(*decoder_, options, contextSampleRate);
+      openResult = openLocalWithDecoder(*decoder_, options, contextSampleRate);
 #if RN_AUDIO_API_HAS_OS_DECODER
     }
 #endif // RN_AUDIO_API_HAS_OS_DECODER

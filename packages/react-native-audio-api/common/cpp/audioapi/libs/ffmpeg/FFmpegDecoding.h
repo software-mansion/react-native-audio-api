@@ -28,8 +28,7 @@ namespace audioapi::ffmpeg_decoder {
 
 /**
  * FFmpeg decoder for remote HTTP(S) / HLS (`openUrl`). Local file and memory
- * decode use OS / miniaudio instead — `openFile` / `openMemory` remain as
- * interface stubs (or local-file open for path-based demux when needed).
+ * decode use OS / miniaudio instead.
  *
  * Usage: openUrl → readPcmFrames repeatedly → close.
  */
@@ -42,14 +41,12 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   [[nodiscard]] decoding::DecoderResult openFile(int outputSampleRate, const std::string &path)
       override;
 
+  /// Opens a remote HTTP(S) / HLS URL. Not part of IncrementalAudioDecoder —
+  /// only FFmpeg owns network demux.
   [[nodiscard]] decoding::DecoderResult openUrl(
       int outputSampleRate,
       const std::string &url,
-      const std::map<std::string, std::string> &headers = {}) override;
-
-  /// Not used for batch decode (OS / miniaudio own memory). Returns an error.
-  [[nodiscard]] decoding::DecoderResult
-  openMemory(int outputSampleRate, const void *data, size_t size) override;
+      const std::map<std::string, std::string> &headers = {});
 
   [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
 

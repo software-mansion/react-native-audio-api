@@ -14,7 +14,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -328,13 +327,6 @@ AndroidDecoder::AndroidDecoder() = default;
 
 AndroidDecoder::~AndroidDecoder() {
   close();
-}
-
-decoding::DecoderResult AndroidDecoder::openUrl(
-    int /*outputSampleRate*/,
-    const std::string & /*url*/,
-    const std::map<std::string, std::string> & /*headers*/) {
-  return Err("AndroidDecoder::openUrl is not supported (use FFmpeg for remote streams)");
 }
 
 decoding::DecoderResult AndroidDecoder::openFile(int outputSampleRate, const std::string &path) {

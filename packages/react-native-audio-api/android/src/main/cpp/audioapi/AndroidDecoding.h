@@ -4,7 +4,6 @@
 #include <audioapi/utils/Macros.h>
 
 #include <cstddef>
-#include <map>
 #include <memory>
 #include <string>
 
@@ -16,7 +15,7 @@ struct AndroidDecoderState;
  * Android MediaExtractor + MediaCodec incremental decoder.
  *
  * Opens local files or in-memory buffers and pulls interleaved float PCM on
- * demand. `openUrl` / HLS are not supported (callers keep those on FFmpeg).
+ * demand. Remote URL / HLS decoding stays on FFmpeg.
  */
 class AndroidDecoder : public OsDecoderBase {
  public:
@@ -28,10 +27,6 @@ class AndroidDecoder : public OsDecoderBase {
       override;
   [[nodiscard]] decoding::DecoderResult
   openMemory(int outputSampleRate, const void *data, size_t size) override;
-  [[nodiscard]] decoding::DecoderResult openUrl(
-      int outputSampleRate,
-      const std::string &url,
-      const std::map<std::string, std::string> &headers = {}) override;
   [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
   [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 
