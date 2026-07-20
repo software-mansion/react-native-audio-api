@@ -10,12 +10,10 @@
 
 #pragma once
 
-#include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
-#include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/utils/Macros.h>
 #include <cstddef>
 #include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -28,17 +26,12 @@ extern "C" {
 
 namespace audioapi::ffmpeg_decoder {
 
-/// Opaque IO state for openMemory — owns the audio bytes for the decoder's lifetime.
-struct MemoryIOContext {
-  std::vector<uint8_t> data;
-  size_t pos = 0;
-};
-
 /**
- * FFmpeg decoder with incremental read, analogous to ma_decoder:
- *   1) openFile, openUrl, or openMemory
- *   2) readPcmFrames repeatedly; 0 returned = end of stream
- *   3) close when done
+ * FFmpeg decoder for remote HTTP(S) / HLS (`openUrl`). Local file and memory
+ * decode use OS / miniaudio instead — `openFile` / `openMemory` remain as
+ * interface stubs (or local-file open for path-based demux when needed).
+ *
+ * Usage: openUrl → readPcmFrames repeatedly → close.
  */
 class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
  public:
@@ -54,6 +47,7 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
       const std::string &url,
       const std::map<std::string, std::string> &headers = {}) override;
 
+  /// Not used for batch decode (OS / miniaudio own memory). Returns an error.
   [[nodiscard]] decoding::DecoderResult
   openMemory(int outputSampleRate, const void *data, size_t size) override;
 
@@ -101,9 +95,6 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   uint8_t **resampled_data_ = nullptr;
   int max_resampled_samples_ = 0;
 
-  std::unique_ptr<MemoryIOContext> mem_io_;
-  AVIOContext *avio_ctx_ = nullptr;
-
   std::vector<float> leftover_;
   size_t leftover_offset_ = 0;
   int audio_stream_index_ = -1;
@@ -111,8 +102,5 @@ class FFmpegDecoder : public decoding::IncrementalAudioDecoder {
   int output_sample_rate_ = 0;
   size_t total_output_frames_ = 0;
 };
-
-std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
-std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate);
 
 } // namespace audioapi::ffmpeg_decoder

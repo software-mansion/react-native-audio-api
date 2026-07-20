@@ -3,16 +3,12 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
+#include <audioapi/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
-#include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 #include <cstddef>
 #include <thread>
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 
 #include <array>
 #include <atomic>

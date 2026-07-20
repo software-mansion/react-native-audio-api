@@ -1,12 +1,28 @@
 #include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
+#include <audioapi/decoding/OSDecoding.h>
 
-#include <algorithm>
-#include <cmath>
 #include <memory>
 #include <thread>
 #include <utility>
 
 namespace audioapi {
+namespace {
+
+decoding::DecoderResult openWithDecoder(
+    decoding::IncrementalAudioDecoder &decoder,
+    const SeekDecoderDaemonOptions &options,
+    int contextSampleRate) {
+  if (!options.sourceUrl.empty()) {
+    return decoder.openUrl(contextSampleRate, options.sourceUrl, options.httpHeaders);
+  }
+  if (!options.filePath.empty()) {
+    return decoder.openFile(contextSampleRate, options.filePath);
+  }
+  return decoder.openMemory(
+      contextSampleRate, options.memoryData.data(), options.memoryData.size());
+}
+
+} // namespace
 
 SeekDecoderDaemon::SeekDecoderDaemon(
     SeekDecoderDaemonOptions options,
@@ -18,29 +34,34 @@ SeekDecoderDaemon::SeekDecoderDaemon(
       commandReceiver_(std::move(commandReceiver)),
       frameSender_(std::move(frameSender)),
       frameReceiverForDrain_(std::move(frameReceiver)) {
-  if (options.requiresFFmpeg || !options.sourceUrl.empty()) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    decoder_ = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
-#endif
-  } else {
-    decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
-  }
-
+  const int contextSampleRate = static_cast<int>(options.contextSampleRate);
   decoding::DecoderResult openResult = Err("Failed to initialize decoder");
 
-  int contextSampleRate = static_cast<int>(options.contextSampleRate);
-
+  // Remote HTTP(S) / HLS: FFmpeg owns network demux (byte ranges + playlists).
   if (!options.sourceUrl.empty()) {
-    openResult = decoder_->openUrl(contextSampleRate, options.sourceUrl, options.httpHeaders);
-  } else if (!options.filePath.empty()) {
-    openResult = decoder_->openFile(contextSampleRate, options.filePath);
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+    decoder_ = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
+    openResult = openWithDecoder(*decoder_, options, contextSampleRate);
+#endif
   } else {
-    openResult = decoder_->openMemory(
-        contextSampleRate, options.memoryData.data(), options.memoryData.size());
+#if RN_AUDIO_API_HAS_OS_DECODER
+    decoder_ = std::make_unique<os_decoder::Decoder>();
+    openResult = openWithDecoder(*decoder_, options, contextSampleRate);
+
+    if (openResult.is_err()) {
+      decoder_->close();
+#endif // RN_AUDIO_API_HAS_OS_DECODER
+      decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
+      openResult = openWithDecoder(*decoder_, options, contextSampleRate);
+#if RN_AUDIO_API_HAS_OS_DECODER
+    }
+#endif // RN_AUDIO_API_HAS_OS_DECODER
   }
 
   if (openResult.is_err()) {
-    decoder_->close();
+    if (decoder_) {
+      decoder_->close();
+    }
     sharedState_->isDaemonRunning.store(false, std::memory_order_release);
     return;
   }

@@ -29,6 +29,8 @@ react-native-audio-api/
 │   │   └── src/main/cpp/audioapi/
 │   │       └── CMakeLists.txt          # Actual Android C++ build target
 │   ├── common/cpp/audioapi/            # Shared C++ (used by all platforms)
+│   │   ├── decoding/                   # Incremental + OS decoder contracts (no external deps)
+│   │   ├── libs/                       # Third-party wrappers (FFmpeg, miniaudio, pffft, …)
 │   │   └── external/                   # Prebuilt binaries per platform
 │   │       ├── android/                # .a static libs (Opus, Ogg, Vorbis, OpenSSL)
 │   │       ├── iphoneos/               # iOS device .a libs

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
-#include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
@@ -91,7 +91,8 @@ inline constexpr auto SLEEP_DURATION_ON_FULL = std::chrono::milliseconds(10);
 
 namespace audioapi {
 
-/// @brief SeekDecoderDaemon is a dedicated thread worker that manages an audio decoder instance (FFmpeg or MiniAudio).
+/// @brief SeekDecoderDaemon is a dedicated thread worker that manages an audio
+/// decoder instance (FFmpeg for remote URLs/HLS; OS or MiniAudio for local).
 /// It listens for seek commands from the JS thread, performs seeks on the decoder,
 /// decodes audio frames, and sends decoded planar audio data back to the audio thread via a lock-free SPSC channel.
 class SeekDecoderDaemon {

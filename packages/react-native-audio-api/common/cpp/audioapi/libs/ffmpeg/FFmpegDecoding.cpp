@@ -65,40 +65,6 @@ std::string buildFfmpegHttpHeaders(const std::map<std::string, std::string> &hea
 
 } // namespace
 
-int read_packet(void *opaque, uint8_t *buf, int buf_size) {
-  auto *ctx = static_cast<MemoryIOContext *>(opaque);
-  const size_t size = ctx->data.size();
-  if (ctx->pos >= size) {
-    return AVERROR_EOF;
-  }
-  int n = std::min(buf_size, static_cast<int>(size - ctx->pos));
-  memcpy(buf, ctx->data.data() + ctx->pos, n);
-  ctx->pos += static_cast<size_t>(n);
-  return n;
-}
-
-int64_t seek_packet(void *opaque, int64_t offset, int whence) {
-  auto *ctx = static_cast<MemoryIOContext *>(opaque);
-  const size_t size = ctx->data.size();
-  switch (whence) {
-    case SEEK_SET:
-      ctx->pos = static_cast<size_t>(offset);
-      break;
-    case SEEK_CUR:
-      ctx->pos += static_cast<size_t>(offset);
-      break;
-    case SEEK_END:
-      ctx->pos = size + static_cast<size_t>(offset);
-      break;
-    case AVSEEK_SIZE:
-      return static_cast<int64_t>(size);
-    default:
-      return AVERROR(EINVAL);
-  }
-  ctx->pos = std::min(ctx->pos, size);
-  return static_cast<int64_t>(ctx->pos);
-}
-
 int findAudioStreamIndex(AVFormatContext *fmt_ctx) {
   for (unsigned i = 0; i < fmt_ctx->nb_streams; i++) {
     if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -165,10 +131,6 @@ void FFmpegDecoder::close() {
   if (fmt_ctx_ != nullptr) {
     avformat_close_input(&fmt_ctx_);
   }
-  if (avio_ctx_ != nullptr) {
-    avio_context_free(&avio_ctx_);
-  }
-  mem_io_.reset();
   leftover_.clear();
   leftover_offset_ = 0;
   audio_stream_index_ = -1;
@@ -305,50 +267,9 @@ decoding::DecoderResult FFmpegDecoder::openUrl(
 }
 
 decoding::DecoderResult
-FFmpegDecoder::openMemory(int outputSampleRate, const void *data, size_t size) {
-  close();
-  if (data == nullptr || size == 0) {
-    return Err("FFmpegDecoder::openMemory failed: input data is empty");
-  }
-  mem_io_ = std::make_unique<MemoryIOContext>();
-  mem_io_->data.assign(
-      static_cast<const uint8_t *>(data), static_cast<const uint8_t *>(data) + size);
-  mem_io_->pos = 0;
-
-  auto *io_buf = static_cast<uint8_t *>(av_malloc(decoding::IncrementalAudioDecoder::CHUNK_SIZE));
-  if (io_buf == nullptr) {
-    close();
-    return Err("FFmpegDecoder::openMemory failed: av_malloc returned null");
-  }
-  avio_ctx_ = avio_alloc_context(
-      io_buf,
-      static_cast<int>(decoding::IncrementalAudioDecoder::CHUNK_SIZE),
-      0,
-      mem_io_.get(),
-      read_packet,
-      nullptr,
-      seek_packet);
-  if (avio_ctx_ == nullptr) {
-    av_free(io_buf);
-    mem_io_.reset();
-    return Err("FFmpegDecoder::openMemory failed: avio_alloc_context returned null");
-  }
-
-  fmt_ctx_ = avformat_alloc_context();
-  if (fmt_ctx_ == nullptr) {
-    close();
-    return Err("FFmpegDecoder::openMemory failed: avformat_alloc_context returned null");
-  }
-  fmt_ctx_->pb = avio_ctx_;
-
-  const int openInputResult = avformat_open_input(&fmt_ctx_, nullptr, nullptr, nullptr);
-  if (openInputResult < 0) {
-    close();
-    return Err(
-        "FFmpegDecoder::openMemory failed: avformat_open_input failed: " +
-        parseFFmpegError(openInputResult));
-  }
-  return initializeDecodedStreams(outputSampleRate, "FFmpegDecoder::openMemory");
+FFmpegDecoder::openMemory(int /*outputSampleRate*/, const void * /*data*/, size_t /*size*/) {
+  // Batch / in-memory decode is owned by OS and miniaudio; FFmpeg is for remote URLs.
+  return Err("FFmpegDecoder::openMemory is not supported (use OS or miniaudio for memory decode)");
 }
 
 void FFmpegDecoder::appendFrameResampled(AVFrame *frame) {
@@ -544,63 +465,6 @@ size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   return delivered;
 }
 
-static std::shared_ptr<AudioBuffer>
-buildAudioBufferFromInterleaved(std::vector<float> &interleaved, int channels, int sample_rate) {
-  if (interleaved.empty() || channels <= 0) {
-    return nullptr;
-  }
-  size_t frames = interleaved.size() / static_cast<size_t>(channels);
-  auto buf = std::make_shared<AudioBuffer>(frames, channels, static_cast<float>(sample_rate));
-  buf->deinterleaveFrom(interleaved.data(), frames);
-  return buf;
-}
-
-std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate) {
-  FFmpegDecoder dec;
-  const auto openResult = dec.openFile(sample_rate, path);
-  if (openResult.is_err()) {
-    return nullptr;
-  }
-  std::vector<float> acc;
-  std::vector<float> tmp(
-      decoding::IncrementalAudioDecoder::CHUNK_SIZE *
-      static_cast<size_t>(std::max(1, dec.outputChannels())));
-  while (true) {
-    size_t n = dec.readPcmFrames(tmp.data(), decoding::IncrementalAudioDecoder::CHUNK_SIZE);
-    if (n == 0) {
-      break;
-    }
-    acc.insert(
-        acc.end(),
-        tmp.begin(),
-        tmp.begin() + static_cast<ptrdiff_t>(n * static_cast<size_t>(dec.outputChannels())));
-  }
-  return buildAudioBufferFromInterleaved(acc, dec.outputChannels(), dec.outputSampleRate());
-}
-
-std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate) {
-  FFmpegDecoder dec;
-  const auto openResult = dec.openMemory(sample_rate, data, size);
-  if (openResult.is_err()) {
-    return nullptr;
-  }
-  std::vector<float> acc;
-  std::vector<float> tmp(
-      decoding::IncrementalAudioDecoder::CHUNK_SIZE *
-      static_cast<size_t>(std::max(1, dec.outputChannels())));
-  while (true) {
-    size_t n = dec.readPcmFrames(tmp.data(), decoding::IncrementalAudioDecoder::CHUNK_SIZE);
-    if (n == 0) {
-      break;
-    }
-    acc.insert(
-        acc.end(),
-        tmp.begin(),
-        tmp.begin() + static_cast<ptrdiff_t>(n * static_cast<size_t>(dec.outputChannels())));
-  }
-  return buildAudioBufferFromInterleaved(acc, dec.outputChannels(), dec.outputSampleRate());
-}
-
 } // namespace audioapi::ffmpeg_decoder
 
 #else
@@ -631,12 +495,6 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double) {
 }
 size_t FFmpegDecoder::readPcmFrames(float *, size_t) {
   return 0;
-}
-std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &, int) {
-  return nullptr;
-}
-std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *, size_t, int) {
-  return nullptr;
 }
 
 } // namespace audioapi::ffmpeg_decoder

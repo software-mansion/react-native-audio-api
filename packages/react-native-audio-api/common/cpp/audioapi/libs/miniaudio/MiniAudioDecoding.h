@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 

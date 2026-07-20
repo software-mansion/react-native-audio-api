@@ -20,10 +20,6 @@
 #include <memory>
 #include <utility>
 
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-
 namespace audioapi {
 
 AudioFileSourceNode::AudioFileSourceNode(

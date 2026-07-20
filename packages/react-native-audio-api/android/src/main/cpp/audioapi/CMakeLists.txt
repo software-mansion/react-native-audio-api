@@ -102,6 +102,7 @@ set(LINK_LIBRARIES
   fbjni::fbjni
   android
   log
+  mediandk
   oboe::oboe
 )
 

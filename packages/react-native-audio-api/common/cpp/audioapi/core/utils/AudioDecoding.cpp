@@ -1,6 +1,7 @@
 #include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/decoding/OSDecoding.h>
 #include <audioapi/libs/base64/base64.h>
-#include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -53,54 +54,6 @@ AudioBufferResult decodeAll(decoding::IncrementalAudioDecoder &decoder) {
   return Ok(std::move(audioBuffer));
 }
 
-// NOLINTBEGIN(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
-AudioFormat detectAudioFormat(const void *data, size_t size) {
-  if (size < 12) {
-    return AudioFormat::UNKNOWN;
-  }
-  const auto *bytes = static_cast<const unsigned char *>(data);
-
-  // WAV/RIFF
-  if (std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0) {
-    return AudioFormat::WAV;
-  }
-
-  // OGG
-  if (std::memcmp(bytes, "OggS", 4) == 0) {
-    return AudioFormat::OGG;
-  }
-
-  // FLAC
-  if (std::memcmp(bytes, "fLaC", 4) == 0) {
-    return AudioFormat::FLAC;
-  }
-
-  // AAC starts with 0xFF 0xF1 or 0xFF 0xF9
-  if (bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0) {
-    return AudioFormat::AAC;
-  }
-
-  // MP3: "ID3" or 11-bit frame sync (0xFF 0xE0)
-  if (std::memcmp(bytes, "ID3", 3) == 0) {
-    return AudioFormat::MP3;
-  }
-  if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0) {
-    return AudioFormat::MP3;
-  }
-
-  if (std::memcmp(bytes + 4, "ftyp", 4) == 0) {
-    if (std::memcmp(bytes + 8, "M4A ", 4) == 0) {
-      return AudioFormat::M4A;
-    }
-    if (std::memcmp(bytes + 8, "qt  ", 4) == 0) {
-      return AudioFormat::MOV;
-    }
-    return AudioFormat::MP4;
-  }
-  return AudioFormat::UNKNOWN;
-}
-// NOLINTEND(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
-
 bool pathHasExtension(const std::string &path, const std::vector<std::string> &extensions) {
   std::string pathLower = path;
   std::ranges::transform(pathLower, pathLower.begin(), [](unsigned char c) {
@@ -119,64 +72,72 @@ bool isValidDuration(float duration) {
 }
 
 AudioDurationResult probeDurationWithFilePath(const std::string &path) {
-  if (needsFFmpegByPath(path)) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    ffmpeg_decoder::FFmpegDecoder decoder;
-    const auto openResult = decoder.openFile(0, path);
-    if (openResult.is_err()) {
-      return Err("Failed to open file with FFmpeg decoder: " + openResult.unwrap_err());
+#if RN_AUDIO_API_HAS_OS_DECODER
+  {
+    os_decoder::Decoder platformDecoder;
+    const auto platformOpen = platformDecoder.openFile(0, path);
+    if (platformOpen.is_ok()) {
+      auto result = resolveDurationFromDecoder(platformDecoder);
+      platformDecoder.close();
+      if (result.is_ok()) {
+        return result;
+      }
+    } else {
+      platformDecoder.close();
     }
-    auto result = resolveDurationFromDecoder(decoder);
-    decoder.close();
-    return result;
-#else
-    return Err("FFmpeg is disabled, cannot inspect duration with file path");
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
+#endif // RN_AUDIO_API_HAS_OS_DECODER
 
   miniaudio_decoder::MiniAudioDecoder decoder;
   const auto openResult = decoder.openFile(0, path);
   if (openResult.is_err()) {
-    return Err("Failed to open file with miniaudio decoder: " + openResult.unwrap_err());
+    return Err("Cannot read duration: file could not be decoded");
   }
   auto result = resolveDurationFromDecoder(decoder);
   decoder.close();
+  if (result.is_err()) {
+    return Err("Cannot read duration: file could not be decoded");
+  }
   return result;
 }
 
 AudioDurationResult probeDurationWithMemory(const void *data, size_t size, int sampleRate) {
   const int sr = sampleRate != 0 ? sampleRate : 0;
 
+#if RN_AUDIO_API_HAS_OS_DECODER
   {
-    miniaudio_decoder::MiniAudioDecoder decoder;
-    const auto openResult = decoder.openMemory(sr, data, size);
-    if (openResult.is_ok()) {
-      auto result = resolveDurationFromDecoder(decoder);
-      decoder.close();
+    os_decoder::Decoder platformDecoder;
+    const auto platformOpen = platformDecoder.openMemory(sr, data, size);
+    if (platformOpen.is_ok()) {
+      auto result = resolveDurationFromDecoder(platformDecoder);
+      platformDecoder.close();
       if (result.is_ok()) {
         return result;
       }
+    } else {
+      platformDecoder.close();
     }
   }
+#endif // RN_AUDIO_API_HAS_OS_DECODER
 
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-  ffmpeg_decoder::FFmpegDecoder decoder;
+  miniaudio_decoder::MiniAudioDecoder decoder;
   const auto openResult = decoder.openMemory(sr, data, size);
   if (openResult.is_err()) {
-    return Err("Failed to probe duration from memory: " + openResult.unwrap_err());
+    return Err("Cannot read duration: audio data could not be decoded");
   }
   auto result = resolveDurationFromDecoder(decoder);
   decoder.close();
+  if (result.is_err()) {
+    return Err("Cannot read duration: audio data could not be decoded");
+  }
   return result;
-#else
-  return Err("Failed to probe duration from memory");
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 AudioDurationResult probeDurationWithUrl(
     const std::string &url,
     int sampleRate,
     const std::map<std::string, std::string> &headers) {
+  // Remote URL duration probing uses FFmpeg's HTTP/HLS demuxer (byte ranges).
 #if !RN_AUDIO_API_FFMPEG_DISABLED
   ffmpeg_decoder::FFmpegDecoder decoder;
   const auto openResult = decoder.openUrl(sampleRate, url, headers);
@@ -197,57 +158,64 @@ AudioDurationResult probeDurationWithUrl(
 AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) {
   const int sr = static_cast<int>(sampleRate);
 
-  if (needsFFmpegByPath(path)) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    ffmpeg_decoder::FFmpegDecoder decoder;
-    const auto openResult = decoder.openFile(sr, path);
-    if (openResult.is_err()) {
-      return Err("Failed to open file with FFmpeg decoder: " + openResult.unwrap_err());
+#if RN_AUDIO_API_HAS_OS_DECODER
+  {
+    os_decoder::Decoder platformDecoder;
+    const auto platformOpen = platformDecoder.openFile(sr, path);
+    if (platformOpen.is_ok()) {
+      auto result = decodeAll(platformDecoder);
+      platformDecoder.close();
+      if (result.is_ok()) {
+        return result;
+      }
+    } else {
+      platformDecoder.close();
     }
-    auto result = decodeAll(decoder);
-    decoder.close();
-    return result;
-#else
-    return Err("FFmpeg is disabled, cannot decode with file path");
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
+#endif // RN_AUDIO_API_HAS_OS_DECODER
 
   miniaudio_decoder::MiniAudioDecoder decoder;
   const auto openResult = decoder.openFile(sr, path);
   if (openResult.is_err()) {
-    return Err("Failed to open file with miniaudio decoder: " + openResult.unwrap_err());
+    return Err("Cannot decode file: unsupported or invalid audio format");
   }
   auto result = decodeAll(decoder);
   decoder.close();
+  if (result.is_err()) {
+    return Err("Cannot decode file: unsupported or invalid audio format");
+  }
   return result;
 }
 
 AudioBufferResult decodeWithMemoryBlock(const void *data, size_t size, float sampleRate) {
   const int sr = static_cast<int>(sampleRate);
-  const AudioFormat format = detectAudioFormat(data, size);
 
-  if (needsFFmpeg(format)) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    ffmpeg_decoder::FFmpegDecoder decoder;
-    const auto openResult = decoder.openMemory(sr, data, size);
-    if (openResult.is_err()) {
-      return Err("Failed to open memory block with FFmpeg decoder: " + openResult.unwrap_err());
+#if RN_AUDIO_API_HAS_OS_DECODER
+  {
+    os_decoder::Decoder platformDecoder;
+    const auto platformOpen = platformDecoder.openMemory(sr, data, size);
+    if (platformOpen.is_ok()) {
+      auto result = decodeAll(platformDecoder);
+      platformDecoder.close();
+      if (result.is_ok()) {
+        return result;
+      }
+    } else {
+      platformDecoder.close();
     }
-    auto result = decodeAll(decoder);
-    decoder.close();
-    return result;
-#else
-    return Err("FFmpeg is disabled, cannot decode memory block");
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
   }
+#endif // RN_AUDIO_API_HAS_OS_DECODER
 
   miniaudio_decoder::MiniAudioDecoder decoder;
   const auto openResult = decoder.openMemory(sr, data, size);
   if (openResult.is_err()) {
-    return Err("Failed to open memory block with miniaudio decoder: " + openResult.unwrap_err());
+    return Err("Cannot decode audio data: unsupported or invalid audio format");
   }
   auto result = decodeAll(decoder);
   decoder.close();
+  if (result.is_err()) {
+    return Err("Cannot decode audio data: unsupported or invalid audio format");
+  }
   return result;
 }
 
