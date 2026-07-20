@@ -46,7 +46,7 @@ void SpectrumAnalyser::analyze(const DSPAudioArray &timeDomain, float smoothingT
 void SpectrumAnalyser::initializeWindowData(int fftSize) {
   windowData_ = std::make_unique<DSPAudioArray>(static_cast<size_t>(fftSize));
   auto data = windowData_->span();
-  auto size = windowData_->getSize();
+  const auto size = windowData_->getSize();
 
   const auto invSize = 1.0f / static_cast<float>(size);
   const auto alpha = 2.0f * std::numbers::pi_v<float> * invSize;
