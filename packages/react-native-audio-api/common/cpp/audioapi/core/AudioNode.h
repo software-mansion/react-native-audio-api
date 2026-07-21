@@ -9,6 +9,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -28,13 +29,45 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   ~AudioNode() override = default;
   DELETE_COPY_AND_MOVE(AudioNode);
 
+  /// @brief Returns this node's `channelCount` attribute.
+  /// @note Safe to call from any thread: `channelCount_` is atomic because
+  /// source subclasses update it on the audio thread while the JS thread reads
+  /// it during channel-count negotiation.
   [[nodiscard]] size_t getChannelCount() const;
 
   /// @brief Returns this node's `channelCountMode` attribute.
-  /// @note The value is immutable after construction, so this is safe to call
-  /// from any thread.
+  /// @note Read only on the host thread (channel-count negotiation) — never on
+  /// the audio thread — so mutating it from the JS thread via
+  /// `setChannelCountMode` is race-free with audio processing.
   [[nodiscard]] ChannelCountMode getChannelCountMode() const {
     return channelCountMode_;
+  }
+
+  [[nodiscard]] ChannelInterpretation getChannelInterpretation() const {
+    return channelInterpretation_;
+  }
+
+  /// @brief Sets `channelCount`. Drives channel-count negotiation, which reads
+  /// this value on the host thread. Callers must trigger a renegotiation so
+  /// the change propagates to buffer layouts.
+  /// @note Host (JS) thread only. Overridable for node-specific constraints.
+  virtual void setChannelCount(size_t channelCount) {
+    channelCount_ = static_cast<int>(channelCount);
+  }
+
+  /// @brief Sets `channelCountMode`. Read only on the host thread during
+  /// negotiation. Callers must trigger a renegotiation afterwards.
+  /// @note Host (JS) thread only. Overridable for node-specific constraints.
+  virtual void setChannelCountMode(ChannelCountMode channelCountMode) {
+    channelCountMode_ = channelCountMode;
+  }
+
+  /// @brief Sets `channelInterpretation`. This value is read on the audio
+  /// thread in `processInputs` (up/down-mix summing), so it MUST be applied via
+  /// a scheduled audio event rather than mutated directly from the JS thread.
+  /// @note Audio thread only. Overridable for node-specific constraints.
+  virtual void setChannelInterpretation(ChannelInterpretation channelInterpretation) {
+    channelInterpretation_ = channelInterpretation;
   }
 
   [[nodiscard]] float getContextSampleRate() const {
@@ -171,9 +204,16 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   const int numberOfInputs_ = 1;
   const int numberOfOutputs_ = 1;
-  int channelCount_ = 2;
-  const ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
-  const ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
+  /// @brief Number of channels this node presents.
+  ///
+  /// Atomic because it is read on the JS thread during channel-count
+  /// negotiation (`HostGraph`/`getChannelCount`) while source subclasses
+  /// (AudioBufferSource, Streamer, AudioFileSource, RecorderAdapter,
+  /// AudioBufferQueueSource) write it on the audio thread once they learn the
+  /// decoded/buffer channel count. Plain reads/writes here would race.
+  std::atomic<int> channelCount_ = 2;
+  ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
+  ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;
 
   /// @brief Tail-processing audio-thread state. Only mutated when
@@ -181,10 +221,29 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   TailState tailState_ = TailState::FINISHED;
   int tailFramesRemaining_ = 0;
 
+  /// @brief Set by `disable()` when a source finishes, cleared on the next
+  /// `processInputs`. Defers flipping the node to NOT_PROCESSABLE by one
+  /// quantum so the final output produced this quantum is still mixed by
+  /// downstream consumers (which gate on `isProcessable()`). Audio-thread only.
+  bool pendingDisable_ = false;
+
   /// @brief Implementation of processing logic for AudioNode.
   /// Mixes input buffers, runs the tail-state transition (when this node
   /// requires tail processing), and calls processNode.
   void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames) override {
+    // Deferred disable: a source that finished during the PREVIOUS quantum
+    // requested a disable but stayed processable so its final output could be
+    // mixed by downstream consumers that same quantum. Commit the flip now, at
+    // the start of the next quantum, present silence, and stop processing.
+    // Consumers gate mixing on isProcessable(), so from here on this node
+    // contributes silence. See AudioNode::disable().
+    if (pendingDisable_) {
+      pendingDisable_ = false;
+      setProcessableState(utils::graph::GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
+      getOutputBuffer()->zero();
+      return;
+    }
+
     if (requiresTailProcessing_) {
       updateTailStateForQuantum(inputs, numFrames);
     }
@@ -219,7 +278,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// @note Audio Thread only.
   [[nodiscard]] virtual bool isInputSilent(const std::vector<const DSPAudioBuffer *> &inputs) const;
 
-  /// @brief Stops this node from participating in graph processing.
+  /// @brief Requests that this node stop participating in graph processing.
+  /// The transition to NOT_PROCESSABLE is deferred by one quantum (see
+  /// `pendingDisable_`) so the final output produced this quantum is still
+  /// mixed downstream.
   /// @note Audio Thread only. Source nodes call this when playback finishes.
   virtual void disable();
 

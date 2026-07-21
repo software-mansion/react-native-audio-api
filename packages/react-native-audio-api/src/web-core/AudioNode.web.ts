@@ -6,9 +6,6 @@ export default class AudioNode {
   readonly context: BaseAudioContext;
   readonly numberOfInputs: number;
   readonly numberOfOutputs: number;
-  readonly channelCount: number;
-  readonly channelCountMode: ChannelCountMode;
-  readonly channelInterpretation: ChannelInterpretation;
 
   readonly node: globalThis.AudioNode;
 
@@ -17,9 +14,30 @@ export default class AudioNode {
     this.node = node;
     this.numberOfInputs = this.node.numberOfInputs;
     this.numberOfOutputs = this.node.numberOfOutputs;
-    this.channelCount = this.node.channelCount;
-    this.channelCountMode = this.node.channelCountMode;
-    this.channelInterpretation = this.node.channelInterpretation;
+  }
+
+  public get channelCount(): number {
+    return this.node.channelCount;
+  }
+
+  public set channelCount(value: number) {
+    this.node.channelCount = value;
+  }
+
+  public get channelCountMode(): ChannelCountMode {
+    return this.node.channelCountMode as ChannelCountMode;
+  }
+
+  public set channelCountMode(value: ChannelCountMode) {
+    this.node.channelCountMode = value;
+  }
+
+  public get channelInterpretation(): ChannelInterpretation {
+    return this.node.channelInterpretation as ChannelInterpretation;
+  }
+
+  public set channelInterpretation(value: ChannelInterpretation) {
+    this.node.channelInterpretation = value;
   }
 
   public connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {

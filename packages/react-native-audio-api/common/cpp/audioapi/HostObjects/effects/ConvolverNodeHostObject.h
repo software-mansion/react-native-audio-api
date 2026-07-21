@@ -28,7 +28,7 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
-  ConvolverNode *convolverNode_ = nullptr;
+  ConvolverNode *const convolverNode_;
 
   bool normalize_;
   size_t irBytes_ = 0;

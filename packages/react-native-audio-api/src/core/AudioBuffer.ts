@@ -15,6 +15,12 @@ export default class AudioBuffer implements AudioBufferLike {
   /** @internal */
   public readonly buffer: IAudioBuffer;
 
+  // Per the Web Audio spec, getChannelData() must return the same Float32Array
+  // for a given channel across calls (`buffer.getChannelData(0) === ...`). The
+  // native getChannelData creates a fresh view each time, so cache it here.
+  private readonly channelDataCache: (Float32Array<ArrayBuffer> | undefined)[] =
+    [];
+
   constructor(options: AudioBufferOptions);
 
   /** @internal */
@@ -37,9 +43,17 @@ export default class AudioBuffer implements AudioBufferLike {
         `The channel number provided (${channel}) is outside the range [0, ${this.numberOfChannels - 1}]`
       );
     }
-    return wrapFloat32ArrayView(
+
+    const cached = this.channelDataCache[channel];
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const data = wrapFloat32ArrayView(
       this.buffer.getChannelData(channel)
     ) as Float32Array<ArrayBuffer>;
+    this.channelDataCache[channel] = data;
+    return data;
   }
 
   public copyFromChannel(
@@ -53,12 +67,8 @@ export default class AudioBuffer implements AudioBufferLike {
       );
     }
 
-    if (startInChannel < 0 || startInChannel >= this.length) {
-      throw new IndexSizeError(
-        `The startInChannel number provided (${startInChannel}) is outside the range [0, ${this.length - 1}]`
-      );
-    }
-
+    // Per spec, an out-of-range startInChannel copies nothing rather than
+    // throwing; the native layer clamps the copy length.
     this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
   }
 
@@ -73,12 +83,8 @@ export default class AudioBuffer implements AudioBufferLike {
       );
     }
 
-    if (startInChannel < 0 || startInChannel >= this.length) {
-      throw new IndexSizeError(
-        `The startInChannel number provided (${startInChannel}) is outside the range [0, ${this.length - 1}]`
-      );
-    }
-
+    // Per spec, an out-of-range startInChannel copies nothing rather than
+    // throwing; the native layer clamps the copy length.
     this.buffer.copyToChannel(source, channelNumber, startInChannel);
   }
 

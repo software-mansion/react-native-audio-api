@@ -10,7 +10,7 @@ export default class WaveShaperNode extends AudioNode {
 
   constructor(context: BaseAudioContext, options?: WaveShaperOptions) {
     const node = context.context.createWaveShaper(options || {});
-    super(context, node);
+    super(context, node, options);
     if (options?.curve) {
       this._curve =
         options.curve instanceof Float32Array

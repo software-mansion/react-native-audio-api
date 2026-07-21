@@ -31,6 +31,10 @@ class AudioNodeHostObject : public HostObject, public utils::graph::HostNode {
   JSI_PROPERTY_GETTER_DECL(channelCountMode);
   JSI_PROPERTY_GETTER_DECL(channelInterpretation);
 
+  JSI_PROPERTY_SETTER_DECL(channelCount);
+  JSI_PROPERTY_SETTER_DECL(channelCountMode);
+  JSI_PROPERTY_SETTER_DECL(channelInterpretation);
+
   using utils::graph::HostNode::connect;
   using utils::graph::HostNode::disconnect;
 
@@ -42,10 +46,17 @@ class AudioNodeHostObject : public HostObject, public utils::graph::HostNode {
   }
 
  protected:
+  /// Updates host + core channelCount and renegotiates when the value changes.
+  /// Safe to call from the host/JS thread only (negotiation reads these fields).
+  void updateChannelCount(size_t newChannelCount);
+
+  /// @brief The concrete audio-thread payload backing this host object.
+  AudioNode *const audioNode_;
+
   const int numberOfInputs_;
   const int numberOfOutputs_;
   size_t channelCount_;
-  const ChannelCountMode channelCountMode_;
-  const ChannelInterpretation channelInterpretation_;
+  ChannelCountMode channelCountMode_;
+  ChannelInterpretation channelInterpretation_;
 };
 } // namespace audioapi

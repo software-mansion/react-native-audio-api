@@ -165,6 +165,8 @@ On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because O
 
 **Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`. Platform drivers share the `CommonPlayer` abstract base (`common/cpp/audioapi/core/CommonPlayer.h`).
 
+**Graph Channel A producer self-drain:** `Graph::setProducerSelfDrain(true)` makes the JS/main producer drain Channel A after each enqueue. Enable only when there is no audio/render consumer (realtime: construction + after `suspend`/`close` quiescence; offline: before `startRendering` and after a scheduled suspend). Before disabling for `start`/`resume`/`renderAudio`, call `processEvents()` once (still as sole consumer) so the bounded channel is empty, then disable, then start the audio/render consumer; re-enable if start/resume fails. After enabling, call `processEvents()` once to flush backlog (avoids `WAIT_ON_FULL` deadlock if the channel was already full).
+
 ---
 
 ## Common Mistakes

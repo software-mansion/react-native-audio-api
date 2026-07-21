@@ -15,7 +15,12 @@ namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {}
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {
+  // Context starts SUSPENDED with no audio-thread consumer. Let the producer
+  // drain Channel A itself until start()/resume() hands draining to the
+  // audio callback (same pattern as OfflineAudioContext before rendering).
+  getGraph()->setProducerSelfDrain(true);
+}
 
 AudioContext::~AudioContext() {
   if (getState() != ContextState::CLOSED) {
@@ -58,12 +63,19 @@ bool AudioContext::tryStartDriver() {
     return false;
   }
 
+  // Flush while we are still the sole consumer, then hand the channel to the
+  // audio callback. flushing first avoids blocking forever if the bounded
+  // channel was full when self-drain is turned off.
+  getGraph()->processEvents();
+  getGraph()->setProducerSelfDrain(false);
+
   if (audioPlayer_->start()) {
     isInitialized_.store(true, std::memory_order_release);
     setState(ContextState::RUNNING);
     return true;
   }
 
+  getGraph()->setProducerSelfDrain(true);
   return false;
 }
 
@@ -73,6 +85,10 @@ void AudioContext::close() {
 
   audioPlayer_->stop();
   waitForRenderQuiescence();
+  // No audio-thread consumer after stop; allow producer self-drain for any
+  // remaining graph mutations (and flush events already queued).
+  getGraph()->setProducerSelfDrain(true);
+  getGraph()->processEvents();
   processAudioEvents();
   audioPlayer_->cleanup();
 }
@@ -88,9 +104,15 @@ bool AudioContext::resume() {
     return true;
   }
 
-  if (isInitialized_.load(std::memory_order_acquire) && audioPlayer_->resume()) {
-    setState(ContextState::RUNNING);
-    return true;
+  if (isInitialized_.load(std::memory_order_acquire)) {
+    getGraph()->processEvents();
+    getGraph()->setProducerSelfDrain(false);
+    if (audioPlayer_->resume()) {
+      setState(ContextState::RUNNING);
+      return true;
+    }
+    getGraph()->setProducerSelfDrain(true);
+    return false;
   }
 
   return tryStartDriver();
@@ -109,6 +131,10 @@ bool AudioContext::suspend() {
 
   audioPlayer_->suspend();
   waitForRenderQuiescence();
+  // Audio callback is no longer the consumer; enable self-drain so graph
+  // mutations while suspended cannot fill the bounded channel and block.
+  getGraph()->setProducerSelfDrain(true);
+  getGraph()->processEvents();
   processAudioEvents();
   setState(ContextState::SUSPENDED);
   return true;
