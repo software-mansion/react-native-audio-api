@@ -1,11 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
   // eslint-disable-next-line no-var
+  var __createWorkletAudioContext:
+    | ((
+        sampleRate: number
+      ) => import('./WorkletAudioContext').IWorkletAudioContext)
+    | undefined;
+
+  // eslint-disable-next-line no-var
   var __createWorkletNode:
     | ((
         audioContext: unknown,
         shareableWorklet: unknown,
+        domain: import('./types').WorkletNodeDomain,
         bufferLength: number,
+        smoothingTimeConstant: number,
         uiRuntimeHolder: unknown,
         uiSchedulerHolder: unknown
       ) => any)

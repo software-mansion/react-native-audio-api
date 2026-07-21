@@ -43,7 +43,7 @@ class AnalyserNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
-  AnalyserNode *analyserNode_ = nullptr;
+  AnalyserNode *const analyserNode_;
 };
 
 } // namespace audioapi

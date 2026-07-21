@@ -7,6 +7,7 @@
 #include <mutex>
 
 #include <audioapi/android/core/NativeAudioPlayer.hpp>
+#include <audioapi/core/CommonPlayer.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
@@ -15,11 +16,11 @@ using namespace oboe;
 
 class AudioContext;
 
-class AudioPlayer : public AudioStreamDataCallback,
+class AudioPlayer : public CommonPlayer,
+                    public AudioStreamDataCallback,
                     public AudioStreamErrorCallback,
                     public std::enable_shared_from_this<AudioPlayer> {
  public:
-  friend class AudioContext;
   AudioPlayer(
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
@@ -33,13 +34,13 @@ class AudioPlayer : public AudioStreamDataCallback,
     cleanup();
   }
 
-  bool start();
-  void stop();
-  bool resume();
-  void suspend();
-  void cleanup();
+  bool start() override;
+  void stop() override;
+  bool resume() override;
+  void suspend() override;
+  void cleanup() override;
 
-  [[nodiscard]] bool isRunning() const;
+  [[nodiscard]] bool isRunning() const override;
 
   DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;

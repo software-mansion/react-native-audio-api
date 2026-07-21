@@ -165,14 +165,14 @@ export interface BiquadFilterOptions extends AudioNodeOptions {
   gain?: number;
 }
 
-export interface OscillatorOptions {
+export interface OscillatorOptions extends AudioNodeOptions {
   type?: OscillatorType;
   frequency?: number;
   detune?: number;
   periodicWave?: PeriodicWave;
 }
 
-interface BaseAudioBufferSourceOptions {
+interface BaseAudioBufferSourceOptions extends AudioNodeOptions {
   detune?: number;
   playbackRate?: number;
   pitchCorrection?: boolean;
@@ -201,7 +201,7 @@ export interface AudioFileSourceOptions extends AudioNodeOptions {
   preservesPitch?: boolean;
 }
 
-export interface ConstantSourceOptions {
+export interface ConstantSourceOptions extends AudioNodeOptions {
   offset?: number;
 }
 

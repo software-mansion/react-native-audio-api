@@ -29,6 +29,24 @@ describe('Mock Integration Tests', () => {
       expect(context.destination.numberOfOutputs).toBe(1);
     });
 
+    it('should allow updating channelCount, channelCountMode and channelInterpretation', () => {
+      const context = new MockAPI.AudioContext();
+      const gainNode = context.createGain();
+
+      // Defaults per the Web Audio API spec.
+      expect(gainNode.channelCount).toBe(2);
+      expect(gainNode.channelCountMode).toBe('max');
+      expect(gainNode.channelInterpretation).toBe('speakers');
+
+      gainNode.channelCount = 4;
+      gainNode.channelCountMode = 'explicit';
+      gainNode.channelInterpretation = 'discrete';
+
+      expect(gainNode.channelCount).toBe(4);
+      expect(gainNode.channelCountMode).toBe('explicit');
+      expect(gainNode.channelInterpretation).toBe('discrete');
+    });
+
     it('should expose an AudioListener with nine spatialization params', () => {
       const context = new MockAPI.AudioContext();
       const listener = context.listener;

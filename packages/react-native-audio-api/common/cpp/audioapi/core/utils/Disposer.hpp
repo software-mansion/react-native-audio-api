@@ -49,7 +49,8 @@ class Disposer {
   /// @tparam T The type of value to dispose. Must be move-constructible and
   /// fit in N bytes.
   /// @param value The value to dispose (will be moved from).
-  /// @return true if successfully enqueued, false if the channel was full.
+  /// @return true if enqueued for the worker thread, false if the channel was
+  /// full and destruction fell back to the calling thread.
   template <typename T>
   bool dispose(T &&value);
 
@@ -159,7 +160,14 @@ DisposerImpl<N>::~DisposerImpl() {
 
 template <size_t N>
 bool DisposerImpl<N>::doDispose(DisposalPayload<N> &&payload) {
-  return sender_.try_send(std::move(payload)) == audioapi::channels::spsc::ResponseStatus::SUCCESS;
+  // Prefer off-thread destruction, but never drop a payload.
+  // Falling back to the calling thread if the channel is full.
+  if (sender_.try_send(std::move(payload)) == audioapi::channels::spsc::ResponseStatus::SUCCESS) {
+    return true;
+  }
+  payload.destroy();
+  payload.destructor = nullptr;
+  return false;
 }
 
 } // namespace audioapi::utils

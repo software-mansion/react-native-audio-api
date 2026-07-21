@@ -48,12 +48,8 @@ export default class AudioBuffer implements AudioBufferLike {
       );
     }
 
-    if (startInChannel < 0 || startInChannel >= this.length) {
-      throw new IndexSizeError(
-        `The startInChannel number provided (${startInChannel}) is outside the range [0, ${this.length - 1}]`
-      );
-    }
-
+    // Per spec, an out-of-range startInChannel copies nothing rather than
+    // throwing; the browser AudioBuffer clamps the copy itself.
     this.buffer.copyFromChannel(destination, channelNumber, startInChannel);
   }
 
@@ -68,12 +64,8 @@ export default class AudioBuffer implements AudioBufferLike {
       );
     }
 
-    if (startInChannel < 0 || startInChannel >= this.length) {
-      throw new IndexSizeError(
-        `The startInChannel number provided (${startInChannel}) is outside the range [0, ${this.length - 1}]`
-      );
-    }
-
+    // Per spec, an out-of-range startInChannel copies nothing rather than
+    // throwing; the browser AudioBuffer clamps the copy itself.
     this.buffer.copyToChannel(source, channelNumber, startInChannel);
   }
 

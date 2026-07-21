@@ -51,6 +51,9 @@ const COVERAGE_NOTES = {
   'the-analysernode-interface':
     'One failure: minDecibels/maxDecibels are stored as float, so reading back a ' +
     'high-precision double value loses a few digits (cosmetic round-trip mismatch).',
+  'the-audiobuffer-interface':
+    'Remaining failures: acquire-the-content expects AudioBufferSourceNode.start() to ' +
+    'snapshot the buffer contents (we still share the underlying memory).',
   'the-biquadfilternode-interface':
     'The filter runs in double precision, so the static frequency response matches the ' +
     'reference. The remaining failures are the parameter-automation tests, which expect ' +
@@ -58,6 +61,15 @@ const COVERAGE_NOTES = {
     'render quantum (k-rate) and recompute the coefficients once per block. The audible ' +
     'difference is negligible, while computing the coefficient/trig math once per block ' +
     'instead of once per sample makes processing dramatically faster on the audio thread.',
+  'the-audionode-interface':
+    'Indexed connect()/disconnect() overloads and ChannelMerger/ChannelSplitter graphs are ' +
+    'implemented; disconnect and different-contexts audits largely pass. Most remaining ' +
+    'failures are audionode-channel-rules mixing cases (speakers upmix/downmix and ' +
+    'clamped-max). Other gaps: InvalidStateError when disconnecting a non-existent ' +
+    'connection, TypeError for non-AudioNode connect() arguments (we throw InvalidAccessError ' +
+    'first), and connect chaining across unimplemented node types (MediaStream*, ' +
+    'DynamicsCompressor). channelCount, channelCountMode and channelInterpretation are ' +
+    'settable after construction with graph renegotiation.',
 };
 
 const CATEGORY_LABELS = {
@@ -461,7 +473,7 @@ export function formatCoverageMarkdown(report) {
     "      <th style={{ textAlign: 'right' }}>Passing</th>",
     "      <th style={{ textAlign: 'right' }}>Total</th>",
     "      <th style={{ textAlign: 'right' }}>Pass rate</th>",
-    '      <th>Notes</th>',
+    '      <th>Differences</th>',
     '    </tr>',
     '  </thead>',
     '  <tbody>',

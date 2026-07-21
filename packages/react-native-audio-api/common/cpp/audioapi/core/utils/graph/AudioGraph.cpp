@@ -69,6 +69,17 @@ void AudioGraph::process() {
     }
   }
 
+  // Processable links may point to higher-index nodes, so their targets'
+  // will_be_deleted flags are only reliable once the cascade above has fully
+  // settled. Prune links to deleted nodes in a separate pass.
+  for (auto &node : nodes) {
+    if (node.will_be_deleted) {
+      continue;
+    }
+    pool_.removeIf(
+        node.link_head, [this](std::uint32_t lnk) { return nodes[lnk].will_be_deleted; });
+  }
+
   // ── Compute new-position remap (stored in after_compaction_ind) ─────────
   std::uint32_t new_pos = 0;
   for (std::uint32_t i = 0; i < n; i++) {
@@ -89,6 +100,9 @@ void AudioGraph::process() {
     for (auto &inp : pool_.mutableView(nodes[e].input_head)) {
       inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
     }
+    for (auto &lnk : pool_.mutableView(nodes[e].link_head)) {
+      lnk = static_cast<std::uint32_t>(nodes[lnk].after_compaction_ind);
+    }
   }
 
   // ── Pass 2b: compact — shift kept nodes left ───────────────────────────
@@ -100,6 +114,7 @@ void AudioGraph::process() {
     if (b != e) {
       nodes[b] = std::move(nodes[e]);
       nodes[e].input_head = InputPool::kNull; // prevent double-free in truncation
+      nodes[e].link_head = InputPool::kNull;  // prevent double-free in truncation
     }
     nodes[b].handle->index = b;
     b++;
@@ -110,6 +125,7 @@ void AudioGraph::process() {
   for (std::uint32_t i = b; i < n; i++) {
     // Free any lingering pool slots (should already be empty for deleted nodes)
     pool_.freeAll(nodes[i].input_head);
+    pool_.freeAll(nodes[i].link_head);
     // Handle may have been moved-from during compaction, so just null it
     nodes[i].handle = nullptr;
   }
@@ -119,6 +135,51 @@ void AudioGraph::process() {
   for (auto &node : nodes) {
     node.after_compaction_ind = -1;
     node.will_be_deleted = false;
+  }
+}
+
+void AudioGraph::settleProcessableState() {
+  using PS = GraphObject::PROCESSABLE_STATE;
+
+  const auto n = static_cast<std::uint32_t>(nodes.size());
+  if (n == 0) {
+    return;
+  }
+
+  // Promote a single node to CONDITIONAL_PROCESSABLE. Never overwrites an
+  // ALWAYS_PROCESSABLE seed and never re-activates a node that opted out via
+  // excludeFromProcessablePull_. Returns true only on a NOT -> CONDITIONAL
+  // transition, so callers can detect real progress.
+  auto pull = [this](std::uint32_t idx) -> bool {
+    auto &obj = nodes[idx].handle->audioNode;
+    if (obj->processableState_ == PS::NOT_PROCESSABLE && !obj->excludeFromProcessablePull_) {
+      obj->processableState_ = PS::CONDITIONAL_PROCESSABLE;
+      return true;
+    }
+    return false;
+  };
+
+  // Inputs always sit at a lower index than their consumer, but link nodes
+  // can target a higher index. If we switch nodes in higher hierarchy first,
+  // we may miss some nodes in lower hierarchy that are now processable.
+  // We need to iterate again to ensure we process all nodes in the graph.
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    for (std::uint32_t i = n; i-- > 0;) {
+      const PS state = nodes[i].handle->audioNode->processableState_;
+      if (state == PS::NOT_PROCESSABLE) {
+        continue;
+      }
+      for (std::uint32_t inp : pool_.view(nodes[i].input_head)) {
+        pull(inp);
+      }
+      for (std::uint32_t lnk : pool_.view(nodes[i].link_head)) {
+        if (pull(lnk)) {
+          changed = true;
+        }
+      }
+    }
   }
 }
 
@@ -169,10 +230,13 @@ void AudioGraph::kahn_toposort() {
     }
   }
 
-  // Phase 3: remap input indices to new positions (before nodes move)
+  // Phase 3: remap input (and link) indices to new positions (before nodes move)
   for (auto &nd : nodes) {
     for (std::uint32_t &inp : pool_.mutableView(nd.input_head)) {
       inp = static_cast<std::uint32_t>(nodes[inp].after_compaction_ind);
+    }
+    for (std::uint32_t &lnk : pool_.mutableView(nd.link_head)) {
+      lnk = static_cast<std::uint32_t>(nodes[lnk].after_compaction_ind);
     }
   }
 

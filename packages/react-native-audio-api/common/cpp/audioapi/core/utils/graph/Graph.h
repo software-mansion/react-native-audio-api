@@ -9,6 +9,7 @@
 #include <audioapi/utils/SpscChannel.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -39,7 +40,7 @@ namespace audioapi::utils::graph {
 /// ## Audio-thread call order
 /// ```
 /// graph.processEvents();       // drain Channel A, then Channel B (FIFO within each)
-/// graph.process();             // toposort + compaction
+/// graph.process();             // toposort + compaction + settle processable state
 /// for (auto&& [node, inputs] : graph.iter()) { ... }
 /// ```
 class Graph {
@@ -98,7 +99,8 @@ class Graph {
   /// @note Should be called only from the audio thread.
   void processEvents();
 
-  /// @brief Runs toposort + compaction on the audio graph.
+  /// @brief Runs toposort + compaction on the audio graph, then settles every
+  /// node's processable state for the coming quantum (reverse-topo pull).
   /// Allocation-free.
   /// @note Should be called only from the audio thread.
   void process();
@@ -134,11 +136,12 @@ class Graph {
   Res addEdge(HNode *from, HNode *to);
 
   /// @brief Links two nodes so that `to` follows the processable state of
-  /// `from` (one-way). No AudioGraph side effect — purely a host-graph hint
-  /// for propagating the processable state between nodes that share
-  /// processing semantics but not an audio edge (e.g. DelayReader →
-  /// DelayWriter).
-  static void linkNodes(HNode *from, HNode *to);
+  /// `from` (one-way), for nodes that share processing semantics but not an
+  /// audio edge (e.g. DelayReader → DelayWriter, which communicate through a
+  /// ring buffer). Records the link on both the host graph (for cleanup) and
+  /// the audio graph (a `link_head` entry consumed by
+  /// AudioGraph::settleProcessableState()). Idempotent.
+  void linkNodes(HNode *from, HNode *to);
 
   /// @brief Removes a directed edge from → to.
   Res removeEdge(HNode *from, HNode *to);
@@ -146,7 +149,39 @@ class Graph {
   /// @brief Removes all outgoing edges from `from`.
   Res removeAllEdges(HNode *from);
 
+  /// @brief Recomputes channel-count negotiation for `node` (cascading
+  /// downstream) after its `channelCount` / `channelCountMode` changed. Sends
+  /// the resulting buffer-swap event through Channel A.
+  Res renegotiateNodeChannels(HNode *node);
+
   void collectDisposedNodes();
+
+  /// @brief Controls whether the producing (main/JS) thread drains Channel A
+  /// itself right after enqueuing an event.
+  ///
+  /// The event channel is a bounded SPSC queue with a `WAIT_ON_FULL` +
+  /// `ATOMIC_WAIT` sender: once full, `send()` blocks until a consumer
+  /// advances the receive cursor.
+  ///
+  /// Enable self-drain only while there is **no** audio/render consumer:
+  ///   - `OfflineAudioContext`: before `startRendering()`, and again after a
+  ///     scheduled suspend until `resume()` restarts the render thread.
+  ///   - Realtime `AudioContext`: while SUSPENDED / stopped (construction,
+  ///     after `suspend()` / `close()` quiescence). With no callback draining
+  ///     the channel, a large graph would otherwise fill it and block.
+  ///
+  /// It MUST be disabled again *before* the audio/render thread starts so that
+  /// thread becomes the single consumer (the producer must not race it on the
+  /// receiver). Call `processEvents()` once immediately before disabling so the
+  /// bounded channel is empty (otherwise a full queue could block forever with
+  /// no consumer). If start/resume fails, re-enable.
+  ///
+  /// @note Toggle only from the thread that owns graph construction, and only
+  /// while no other thread is consuming the channel. After enabling, call
+  /// `processEvents()` once to flush any backlog already in the channel.
+  void setProducerSelfDrain(bool enabled) {
+    producerSelfDrain_.store(enabled, std::memory_order_release);
+  }
 
  private:
   using OwnedSlotBuffer = std::unique_ptr<InputPool::Slot[]>;
@@ -178,6 +213,19 @@ class Graph {
 
   std::uint32_t poolCapacity_; ///< Pool capacity we have ensured
   std::uint32_t nodeCapacity_; ///< Node vector capacity we have ensured
+
+  /// @brief When set, the producer thread drains Channel A right after each
+  /// enqueue (see setProducerSelfDrain). Default off — realtime contexts rely
+  /// on the audio thread as the consumer.
+  std::atomic<bool> producerSelfDrain_{false};
+
+  /// @brief Drains any pending produced events on the calling (producer)
+  /// thread when self-drain is enabled. No-op otherwise.
+  void drainProducedEventsIfSelfDraining() {
+    if (producerSelfDrain_.load(std::memory_order_acquire)) {
+      processEvents();
+    }
+  }
 
   /// @brief Pre-grows the InputPool when the edge count approaches capacity.
   ///

@@ -35,7 +35,7 @@ class DelayNodeHostObject : public AudioNodeHostObject {
   std::shared_ptr<utils::graph::HostNode> getConnectDestination(int inputIndex) override;
 
  private:
-  DelayNode *delayNode_ = nullptr;
+  DelayNode *const delayNode_;
 
   std::shared_ptr<AudioParamHostObject> delayTimeParam_;
   std::shared_ptr<DelayLine> delayLine_;

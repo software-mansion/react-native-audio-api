@@ -1,4 +1,3 @@
-import { BiquadFilterOptionsValidator } from '../utils/validation';
 import { InvalidAccessError } from '../errors';
 import { IBiquadFilterNode } from '../jsi-interfaces';
 import AudioNode from './AudioNode';
@@ -13,11 +12,10 @@ export default class BiquadFilterNode extends AudioNode {
   readonly gain: AudioParam;
 
   constructor(context: BaseAudioContext, options?: BiquadFilterOptions) {
-    BiquadFilterOptionsValidator.validate(options);
     const biquadFilter: IBiquadFilterNode = context.context.createBiquadFilter(
       options || {}
     );
-    super(context, biquadFilter);
+    super(context, biquadFilter, options);
     this.frequency = new AudioParam(biquadFilter.frequency, context, this);
     this.detune = new AudioParam(biquadFilter.detune, context, this);
     this.Q = new AudioParam(biquadFilter.Q, context, this);

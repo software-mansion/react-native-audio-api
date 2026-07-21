@@ -462,4 +462,53 @@ TEST_F(GraphTest, ChannelCountNegotiation_StereoPanner_DownstreamSeesStereoOutpu
   EXPECT_EQ(channelsOf(dest), 2u);
 }
 
+// ─── Renegotiation after a channelCount / channelCountMode change ─────────
+//
+// `renegotiateNodeChannels` recomputes the channel layout for a node whose attributes
+// changed after construction (the JS setters call this), cascading downstream.
+
+TEST_F(GraphTest, RenegotiateNode_ExplicitCountChange_UpdatesBuffer) {
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(dest), 2u) << "EXPLICIT(2) must ignore the 4-channel input";
+
+  // Simulate `dest.channelCount = 6` from JS, then renegotiate.
+  dest->handle->audioNode->asAudioNode()->setChannelCount(6);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 6u)
+      << "After changing channelCount to 6 and renegotiating, the buffer must be 6 channels";
+}
+
+TEST_F(GraphTest, RenegotiateNode_CascadesDownstream) {
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
+  auto *mid = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, mid).is_ok());
+  ASSERT_TRUE(graph->addEdge(mid, dest).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(mid), 2u);
+  ASSERT_EQ(channelsOf(dest), 2u);
+
+  // Simulate `mid.channelCountMode = 'explicit'; mid.channelCount = 6;`
+  auto *midAudio = mid->handle->audioNode->asAudioNode();
+  midAudio->setChannelCountMode(ChannelCountMode::EXPLICIT);
+  midAudio->setChannelCount(6);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(mid).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(mid), 6u);
+  EXPECT_EQ(channelsOf(dest), 6u)
+      << "MAX-mode downstream must follow the renegotiated 6-channel upstream output";
+}
+
 } // namespace audioapi::utils::graph

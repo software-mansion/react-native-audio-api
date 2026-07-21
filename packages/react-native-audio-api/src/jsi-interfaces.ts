@@ -96,9 +96,9 @@ export interface IAudioNode {
   readonly context: BaseAudioContext;
   readonly numberOfInputs: number;
   readonly numberOfOutputs: number;
-  readonly channelCount: number;
-  readonly channelCountMode: ChannelCountMode;
-  readonly channelInterpretation: ChannelInterpretation;
+  channelCount: number;
+  channelCountMode: ChannelCountMode;
+  channelInterpretation: ChannelInterpretation;
 
   connect(
     destination: IAudioNode | IAudioParam,
