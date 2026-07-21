@@ -4,6 +4,7 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
 #include <atomic>
@@ -11,7 +12,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "audioapi/utils/Macros.h"
 
 namespace audioapi {
 
