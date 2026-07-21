@@ -32,10 +32,9 @@ constructor(options?: AudioContextOptions)
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `baseLatency` | `number` | Processing latency in seconds incurred by the `AudioContext` passing audio from the `AudioDestinationNode` to the audio subsystem. Does not include hardware output latency or audio graph processing time. Equals the render callback duration (`callbackFrames / sampleRate`). Before the first callback fires, falls back to `AVAudioSession.IOBufferDuration` (iOS) or Oboe `framesPerBurst / sampleRate` (Android). Returns `0` when the context is not running. | <ReadOnly /> |
+| `baseLatency` | `number` | Processing latency in seconds incurred by the `AudioContext` passing audio from the `AudioDestinationNode` to the audio subsystem. Does not include hardware output latency or audio graph processing time. Equals the render callback duration (`callbackFrames / sampleRate`). Returns `0` when the context is not running. | <ReadOnly /> |
 | `outputLatency` | `number` | Estimated output latency in seconds — the interval between when the audio system is given a buffer and when the first sample is played by the output device. Can change when the audio route changes; re-query before sync-sensitive work. Returns `0` when the context is not running. On iOS backed by `AVAudioSession.outputLatency`; on Android sampled via Oboe timestamps. | <ReadOnly /> |
 
-`AudioContext` does not define any additional properties.
 Inherits all properties from [`BaseAudioContext`](/docs/core/base-audio-context#properties).
 
 
