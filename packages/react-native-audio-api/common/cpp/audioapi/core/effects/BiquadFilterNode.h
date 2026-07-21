@@ -45,8 +45,7 @@ namespace audioapi {
 
 struct BiquadFilterOptions;
 
-/// @brief computedFrequency(t) = frequency(t) * 2^(detune(t) / 1200).
-/// https://webaudio.github.io/web-audio-api/#computedfrequency
+/// @note https://webaudio.github.io/web-audio-api/#computedfrequency
 inline float combineBiquadFrequency(float frequency, float detune) {
   return frequency * (detune == 0.0f ? 1.0f : std::pow(2.0f, detune / 1200.0f));
 }
@@ -105,7 +104,6 @@ class BiquadFilterNode : public AudioNode {
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> QParam_;
   const std::shared_ptr<AudioParam> gainParam_;
-  // computedFrequency(t) = frequency(t) * 2^(detune(t) / 1200), clamped to [0, Nyquist].
   std::shared_ptr<CompositeAudioParam<combineBiquadFrequency>> computedFrequencyParam_;
   BiquadFilterType type_;
 

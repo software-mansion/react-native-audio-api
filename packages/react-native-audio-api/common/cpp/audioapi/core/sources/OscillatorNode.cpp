@@ -74,8 +74,6 @@ void OscillatorNode::processNode(int framesToProcess) {
 
   auto time =
       context->getCurrentTime() + static_cast<double>(startOffset) / context->getSampleRate();
-  // computedOscFrequency(t) = frequency(t) * 2^(detune(t) / 1200), already clamped to the
-  // oscillator's nominal [-Nyquist, Nyquist] range by the composite param.
   auto computedFreqSpan =
       computedFrequencyParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 

@@ -215,7 +215,7 @@ void setValueAtTime(float value, double startTime);
 
 /// Audio-Thread only methods (idempotent per quantum — see below)
 std::shared_ptr<DSPAudioBuffer> processARateParam(int framesToProcess, double time);
-float processKRateParam(double time); // k-rate is block-wide
+float processKRateParam(double time); // k-rate is quantum-wide
 ```
 
 ---
@@ -245,7 +245,7 @@ gainParam_ = std::make_shared<AudioParam>(
 
 - **K-rate (control-rate)**: one value per render quantum — use when the parameter changes slowly
   ```cpp
-  // Call processKRateParam() for a single block-wide value
+  // Call processKRateParam() for a single quantum-wide value
   float gain = gainParam_->processKRateParam(time);
   // Single value for the whole block
   ```

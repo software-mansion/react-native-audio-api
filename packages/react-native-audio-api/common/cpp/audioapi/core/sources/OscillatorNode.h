@@ -14,8 +14,7 @@ namespace audioapi {
 
 struct OscillatorOptions;
 
-/// @brief computedOscFrequency(t) = frequency(t) * 2^(detune(t) / 1200).
-/// https://webaudio.github.io/web-audio-api/#dom-oscillatornode-frequency
+/// @note https://webaudio.github.io/web-audio-api/#dom-oscillatornode-frequency
 inline float combineOscFrequency(float frequency, float detune) {
   return frequency * (detune == 0.0f ? 1.0f : exp2f(detune * CENTS_TO_RATIO));
 }
@@ -41,7 +40,6 @@ class OscillatorNode : public AudioScheduledSourceNode {
  private:
   std::shared_ptr<AudioParam> frequencyParam_;
   std::shared_ptr<AudioParam> detuneParam_;
-  // computedOscFrequency(t) = frequency(t) * 2^(detune(t) / 1200), clamped to [-Nyquist, Nyquist].
   std::shared_ptr<CompositeAudioParam<combineOscFrequency>> computedFrequencyParam_;
   OscillatorType type_;
   float phase_ = 0.0;
