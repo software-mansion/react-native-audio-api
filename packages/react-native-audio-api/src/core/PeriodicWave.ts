@@ -1,16 +1,8 @@
 import { IPeriodicWave } from '../jsi-interfaces';
 import type BaseAudioContext from './BaseAudioContext';
 import { PeriodicWaveOptions } from '../types';
+import { toFloat32Array } from '../utils';
 import { PeriodicWaveOptionsValidator } from '../utils/validation';
-
-function toFloat32Array(
-  values: number[] | Float32Array | undefined
-): Float32Array | undefined {
-  if (values === undefined) {
-    return undefined;
-  }
-  return values instanceof Float32Array ? values : Float32Array.from(values);
-}
 
 export function generateRealAndImag(options?: PeriodicWaveOptions): {
   real: Float32Array;

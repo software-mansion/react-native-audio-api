@@ -1,18 +1,6 @@
 import { IndexSizeError } from '../../errors';
 import { OptionsValidator, PeriodicWaveOptions } from '../../types';
-
-function assertFiniteSequence(
-  values: ArrayLike<number>,
-  label: 'real' | 'imag'
-): void {
-  for (let i = 0; i < values.length; i++) {
-    if (!Number.isFinite(values[i])) {
-      throw new TypeError(
-        `Failed to construct 'PeriodicWave': The ${label} array must contain only finite values.`
-      );
-    }
-  }
-}
+import { assertFiniteSequence } from '..';
 
 export const PeriodicWaveOptionsValidator: OptionsValidator<PeriodicWaveOptions> =
   {
@@ -35,8 +23,14 @@ export const PeriodicWaveOptionsValidator: OptionsValidator<PeriodicWaveOptions>
             `Failed to construct 'PeriodicWave': The length of the 'real' array (${real.length}) must be at least 2.`
           );
         }
-        assertFiniteSequence(real, 'real');
-        assertFiniteSequence(imag, 'imag');
+        assertFiniteSequence(
+          real,
+          `Failed to construct 'PeriodicWave': The real array must contain only finite values.`
+        );
+        assertFiniteSequence(
+          imag,
+          `Failed to construct 'PeriodicWave': The imag array must contain only finite values.`
+        );
         return;
       }
 
@@ -46,7 +40,10 @@ export const PeriodicWaveOptionsValidator: OptionsValidator<PeriodicWaveOptions>
             `Failed to construct 'PeriodicWave': The length of the 'real' array (${real.length}) must be at least 2.`
           );
         }
-        assertFiniteSequence(real, 'real');
+        assertFiniteSequence(
+          real,
+          `Failed to construct 'PeriodicWave': The real array must contain only finite values.`
+        );
         return;
       }
 
@@ -56,7 +53,10 @@ export const PeriodicWaveOptionsValidator: OptionsValidator<PeriodicWaveOptions>
             `Failed to construct 'PeriodicWave': The length of the 'imag' array (${imag.length}) must be at least 2.`
           );
         }
-        assertFiniteSequence(imag, 'imag');
+        assertFiniteSequence(
+          imag,
+          `Failed to construct 'PeriodicWave': The imag array must contain only finite values.`
+        );
       }
     },
   };
