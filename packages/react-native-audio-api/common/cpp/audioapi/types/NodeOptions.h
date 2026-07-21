@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -50,6 +51,55 @@ struct StereoPannerOptions : AudioNodeOptions {
   }
 
   explicit StereoPannerOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
+  }
+};
+
+// enum class PanningModelType {
+//   EqualPower,
+//   HRTF
+// };
+
+// enum class DistanceModelType {
+//   Inverse,
+//   Linear,
+//   Exponential
+// };
+enum class PanningModelType : std::uint8_t { EqualPower, HRTF };
+
+enum class DistanceModelType : std::uint8_t { Inverse, Linear, Exponential };
+
+struct PannerOptions : public AudioNodeOptions {
+  static constexpr double kDefaultRefDistance = 1.0;
+  static constexpr double kDefaultMaxDistance = 10000.0;
+  static constexpr double kDefaultRolloffFactor = 1.0;
+  static constexpr double kDefaultConeAngle = 360.0;
+  static constexpr double kDefaultConeOuterGain = 0.0;
+
+  PanningModelType panningModel = PanningModelType::EqualPower;
+  DistanceModelType distanceModel = DistanceModelType::Inverse;
+
+  float positionX = 0.0f;
+  float positionY = 0.0f;
+  float positionZ = 0.0f;
+
+  float orientationX = 1.0f;
+  float orientationY = 0.0f;
+  float orientationZ = 0.0f;
+
+  double refDistance = kDefaultRefDistance;
+  double maxDistance = kDefaultMaxDistance;
+  double rolloffFactor = kDefaultRolloffFactor;
+
+  double coneInnerAngle = kDefaultConeAngle;
+  double coneOuterAngle = kDefaultConeAngle;
+  double coneOuterGain = kDefaultConeOuterGain;
+
+  PannerOptions() {
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
+  }
+
+  explicit PannerOptions(const AudioNodeOptions &options) : AudioNodeOptions(options) {
     channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 };
