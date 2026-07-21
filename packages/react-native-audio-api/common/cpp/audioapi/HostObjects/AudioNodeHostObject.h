@@ -46,10 +46,7 @@ class AudioNodeHostObject : public HostObject, public utils::graph::HostNode {
   }
 
  protected:
-  /// @brief The concrete audio-thread payload backing this host object. The
-  /// payload's concrete type is fixed at construction, so this stays valid for
-  /// the whole host-object lifetime. Mirrors the `typedAudioNode<T>()` pointer
-  /// that subclasses cache for their derived type.
+  /// @brief The concrete audio-thread payload backing this host object.
   AudioNode *const audioNode_;
 
   const int numberOfInputs_;
