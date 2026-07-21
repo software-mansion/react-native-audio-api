@@ -47,8 +47,8 @@ class AudioPlayer : public CommonPlayer,
 
   [[nodiscard]] bool isRunning() const override;
 
-  [[nodiscard]] double getBaseLatency() const;
-  [[nodiscard]] double getOutputLatency() const;
+  [[nodiscard]] double getBaseLatency() const override;
+  [[nodiscard]] double getOutputLatency() const override;
 
   DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;
