@@ -2,6 +2,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <algorithm>
 #include <memory>
 
 using namespace audioapi;
@@ -458,6 +459,120 @@ TEST_F(AudioParamTest, ProcessARateClampsEverySample) {
   for (int i = 0; i < 8; ++i) {
     EXPECT_FLOAT_EQ(out[i], 1.0f);
   }
+}
+
+// --- Automation clipping (§ 1.6.3): intrinsic unclamped, output clamped ---
+
+// Spec example: range [0, 1], ramp 0→4 over [0,1] then 4→0 over [1,2].
+// Intrinsic runs with slope ±4; output saturates at 1 while intrinsic ≥ 1,
+// then follows the descending ramp once intrinsic re-enters the range.
+TEST_F(AudioParamTest, SpecOvershootingLinearRampClampsOutput) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(0.0, 0.0);
+  param.linearRampToValueAtTime(4.0, 1.0);
+  param.linearRampToValueAtTime(0.0, 2.0);
+
+  // Ascending: intrinsic = 4*t → hits max at t=0.25
+  EXPECT_FLOAT_EQ(param.process(0.0), 0.0f);
+  EXPECT_FLOAT_EQ(param.process(0.2), 0.8f); // still below max
+  EXPECT_FLOAT_EQ(param.process(0.25), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(0.5), 1.0f); // intrinsic 2 → clamped
+  EXPECT_FLOAT_EQ(param.process(1.0), 1.0f); // intrinsic 4 → clamped
+
+  // Descending: intrinsic = 4 - 4*(t-1) = 8 - 4*t → re-enters range at t=1.75
+  EXPECT_FLOAT_EQ(param.process(1.5), 1.0f); // intrinsic 2 → clamped
+  EXPECT_FLOAT_EQ(param.process(1.75), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(1.9), 0.4f); // intrinsic 0.4 — proves unclamped endpoints
+  EXPECT_FLOAT_EQ(param.process(2.0), 0.0f);
+}
+
+// A-rate quantum that straddles the clamp boundary: early samples follow the
+// unclamped ramp; later samples saturate at maxValue.
+TEST_F(AudioParamTest, SpecOvershootingLinearRampARateStraddlesClamp) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(0.0, 0.0);
+  param.linearRampToValueAtTime(4.0, 1.0);
+
+  // Start just before intrinsic hits 1 (t=0.25). Slope is 4 / sec.
+  constexpr double startTime = 0.249;
+  constexpr int frames = 128;
+  auto out = param.processARateParam(frames, startTime)->getChannel(0)->span();
+  const double timeStep = 1.0 / sampleRate;
+
+  for (int i = 0; i < frames; ++i) {
+    const double t = startTime + static_cast<double>(i) * timeStep;
+    const float intrinsic = static_cast<float>(4.0 * t);
+    const float expected = std::min(intrinsic, 1.0f);
+    EXPECT_NEAR(out[i], expected, 1e-5f) << "i=" << i << " t=" << t;
+  }
+}
+
+// linearRamp whose end lies above max: mid-ramp and end are clamped in output.
+TEST_F(AudioParamTest, LinearRampEndAboveMaxClampsOutput) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(0.5, 0.0);
+  param.linearRampToValueAtTime(2.0, 1.0);
+
+  // intrinsic = 0.5 + 1.5*t
+  EXPECT_FLOAT_EQ(param.process(0.0), 0.5f);
+  EXPECT_FLOAT_EQ(param.process(0.2), 0.8f);
+  EXPECT_FLOAT_EQ(param.process(0.5), 1.0f); // intrinsic 1.25 → clamped
+  EXPECT_FLOAT_EQ(param.process(1.0), 1.0f); // intrinsic 2 → clamped
+}
+
+// exponentialRamp with end above max: output never exceeds maxValue.
+TEST_F(AudioParamTest, ExponentialRampEndAboveMaxClampsOutput) {
+  auto param = TestableAudioParam(0.5, 0.0, 1.0, context);
+  param.setValueAtTime(0.5, 0.0);
+  param.exponentialRampToValueAtTime(4.0, 1.0);
+
+  EXPECT_FLOAT_EQ(param.process(0.0), 0.5f);
+  // Mid-ramp intrinsic = 0.5 * (4/0.5)^0.5 = 0.5 * sqrt(8) ≈ 1.414 → clamped
+  EXPECT_FLOAT_EQ(param.process(0.5), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(1.0), 1.0f);
+}
+
+// setTargetAtTime approaching a target above max: asymptotic approach is clamped.
+TEST_F(AudioParamTest, SetTargetAboveMaxClampsOutput) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(0.0, 0.0);
+  // Small timeConstant → quickly near target 2.0
+  param.setTargetAtTime(2.0, 0.0, 0.01);
+
+  EXPECT_FLOAT_EQ(param.process(0.0), 0.0f);
+  // At t=0.1: 2 + (0-2)*exp(-10) ≈ 2 → clamped to 1
+  EXPECT_FLOAT_EQ(param.process(0.1), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(1.0), 1.0f);
+}
+
+// setValueCurveAtTime with samples outside the nominal range: each output sample clamped.
+TEST_F(AudioParamTest, SetValueCurveOutsideRangeClampsOutput) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  auto curve = std::make_shared<AudioArray>(4);
+  curve->span()[0] = -1.0f;
+  curve->span()[1] = 0.5f;
+  curve->span()[2] = 2.0f;
+  curve->span()[3] = 0.25f;
+  param.setValueCurveAtTime(curve, 4, 0.0, 1.0);
+
+  EXPECT_FLOAT_EQ(param.process(0.0), 0.0f); // -1 → clamped to min
+  EXPECT_FLOAT_EQ(param.process(1.0 / 3.0), 0.5f);
+  EXPECT_FLOAT_EQ(param.process(2.0 / 3.0), 1.0f); // 2 → clamped to max
+  EXPECT_FLOAT_EQ(param.process(1.0), 0.25f);
+}
+
+// cancelAndHold during an overshooting ramp: hold samples unclamped intrinsic (2),
+// but process output still clamps to the nominal range.
+TEST_F(AudioParamTest, CancelAndHoldDuringOvershootClampsOutput) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(0.0, 0.0);
+  param.linearRampToValueAtTime(4.0, 1.0);
+  // At t=0.5 intrinsic = 2; hold stores that unclamped value.
+  param.cancelAndHoldAtTime(0.5);
+
+  EXPECT_FLOAT_EQ(param.process(0.5), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(0.8), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(2.0), 1.0f);
 }
 
 // --- Idempotency (argument-keyed memoization) ---

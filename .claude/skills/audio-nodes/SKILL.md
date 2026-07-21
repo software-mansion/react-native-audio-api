@@ -272,6 +272,10 @@ means `processNode()` should read `context->getCurrentTime()` **once** and threa
 quantum). Consequently, unit tests that re-process the same node must advance the clock (e.g.
 `context->processGraph(buffer.get(), frames)`) between renders.
 
+**Clamping (§ 1.6.3):** automation intrinsic values are computed **without** clamping (see
+`getValueAtTimeUnmodulated` / `ParamRenderQueue`). Clip only in `finalizeKRate` /
+`finalizeARate` after adding modulation — never on the intrinsic alone before modulation.
+
 ### JS → Audio Thread parameter updates
 
 `CrossThreadEventScheduler<T>` is a lock-free SPSC channel. When JS calls `param.setValueAtTime(...)`, it enqueues a lambda on the scheduler. The audio thread drains the queue at the start of each `processARateParam` / `processKRateParam` call.

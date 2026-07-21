@@ -8,7 +8,6 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
-#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <memory>
@@ -41,7 +40,7 @@ class AudioParam : public GeneralizedAudioParam {
   }
 
   void setValue(float value) {
-    value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
+    value_.store(clampToNominalRange(value), std::memory_order_release);
   }
 
   /// @note Audio Thread only
