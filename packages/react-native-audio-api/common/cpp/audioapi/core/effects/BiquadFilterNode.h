@@ -30,6 +30,7 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/CompositeAudioParam.h>
 #include <audioapi/core/types/BiquadFilterType.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #if RN_AUDIO_API_TEST
@@ -37,11 +38,18 @@
 #endif // RN_AUDIO_API_TEST
 
 #include <array>
+#include <cmath>
 #include <memory>
 
 namespace audioapi {
 
 struct BiquadFilterOptions;
+
+/// @brief computedFrequency(t) = frequency(t) * 2^(detune(t) / 1200).
+/// https://webaudio.github.io/web-audio-api/#computedfrequency
+inline float combineBiquadFrequency(float frequency, float detune) {
+  return frequency * (detune == 0.0f ? 1.0f : std::pow(2.0f, detune / 1200.0f));
+}
 
 class BiquadFilterNode : public AudioNode {
 #if RN_AUDIO_API_TEST
@@ -97,6 +105,8 @@ class BiquadFilterNode : public AudioNode {
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> QParam_;
   const std::shared_ptr<AudioParam> gainParam_;
+  // computedFrequency(t) = frequency(t) * 2^(detune(t) / 1200), clamped to [0, Nyquist].
+  std::shared_ptr<CompositeAudioParam<combineBiquadFrequency>> computedFrequencyParam_;
   BiquadFilterType type_;
 
   /// Most recently applied `a2` coefficient, cached on the audio thread by
@@ -125,8 +135,9 @@ class BiquadFilterNode : public AudioNode {
   static FilterCoefficients getAllpassCoefficients(double frequency, double Q);
   static FilterCoefficients
   getNormalizedCoefficients(double b0, double b1, double b2, double a0, double a1, double a2);
+  /// @param computedFrequency Already-combined frequency in Hz (frequency * 2^(detune/1200)).
   FilterCoefficients
-  applyFilter(double frequency, double Q, double gain, double detune, BiquadFilterType type);
+  applyFilter(double computedFrequency, double Q, double gain, BiquadFilterType type);
 };
 
 } // namespace audioapi

@@ -20,6 +20,8 @@ OscillatorNode::OscillatorNode(
       -static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
+  computedFrequencyParam_ = std::make_shared<CompositeAudioParam<combineOscFrequency>>(
+      -getNyquistFrequency(), getNyquistFrequency(), context, frequencyParam_, detuneParam_);
   if (options.periodicWave) {
     periodicWave_ = options.periodicWave;
   } else {
@@ -72,8 +74,10 @@ void OscillatorNode::processNode(int framesToProcess) {
 
   auto time =
       context->getCurrentTime() + static_cast<double>(startOffset) / context->getSampleRate();
-  auto detuneSpan = detuneParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
-  auto freqSpan = frequencyParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  // computedOscFrequency(t) = frequency(t) * 2^(detune(t) / 1200), already clamped to the
+  // oscillator's nominal [-Nyquist, Nyquist] range by the composite param.
+  auto computedFreqSpan =
+      computedFrequencyParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
   const auto tableSize = static_cast<float>(periodicWave_->getPeriodicWaveSize());
   const auto tableScale = periodicWave_->getScale();
@@ -83,8 +87,7 @@ void OscillatorNode::processNode(int framesToProcess) {
   float currentPhase = phase_;
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
-    auto detuneRatio = detuneSpan[i] == 0 ? 1.0f : exp2f(detuneSpan[i] * CENTS_TO_RATIO);
-    auto detunedFrequency = freqSpan[i] * detuneRatio;
+    auto detunedFrequency = computedFreqSpan[i];
     auto phaseIncrement = detunedFrequency * tableScale;
 
     channelSpan[i] = periodicWave_->getSample(detunedFrequency, currentPhase, phaseIncrement);

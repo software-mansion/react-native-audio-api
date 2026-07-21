@@ -49,7 +49,7 @@ TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
 TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   static constexpr int FRAMES_TO_PROCESS = 4;
 
-  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   auto constantSource = TestableConstantSourceNode(context);
   constantSource.start(context->getCurrentTime());
   constantSource.processNode(FRAMES_TO_PROCESS);
@@ -58,6 +58,12 @@ TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 1.0f);
   }
+
+  // Advance the context clock to the next quantum. AudioParam processing is
+  // idempotent per (framesToProcess, time): re-processing at the same time would
+  // (correctly) return the cached value, so a fresh quantum is required to
+  // observe the new offset.
+  context->processGraph(buffer.get(), FRAMES_TO_PROCESS);
 
   constantSource.setOffsetParam(0.5f);
   constantSource.processNode(FRAMES_TO_PROCESS);

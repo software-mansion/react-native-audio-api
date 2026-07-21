@@ -30,7 +30,7 @@ class TestableAudioParam : public AudioParam {
       : AudioParam(defaultValue, minValue, maxValue, context) {}
 
   float process(double time) {
-    return AudioParam::processKRateParam(1, time);
+    return AudioParam::processKRateParam(time);
   }
 };
 
@@ -47,13 +47,15 @@ TEST_F(AudioParamTest, ValueSetters) {
 }
 
 // No events scheduled — falls back to value_.
+// Note: process() is now idempotent per time, so the post-setValue read uses a
+// fresh (monotonically increasing) time, matching how the audio thread advances.
 TEST_F(AudioParamTest, NoEventsReturnsCurrentValue) {
   auto param = TestableAudioParam(0.5, 0.0, 1.0, context);
   EXPECT_FLOAT_EQ(param.process(0.0), 0.5f);
   EXPECT_FLOAT_EQ(param.process(1.0), 0.5f);
 
   param.setValue(0.7f);
-  EXPECT_FLOAT_EQ(param.process(0.0), 0.7f);
+  EXPECT_FLOAT_EQ(param.process(2.0), 0.7f);
 }
 
 // --- Event types ---
@@ -426,6 +428,77 @@ TEST_F(AudioParamTest, CancelAndHoldAtTimeWithSetValueCurveAfterRange) {
   EXPECT_FLOAT_EQ(param.process(0.2), 1.0f);
   EXPECT_FLOAT_EQ(param.process(0.3), 1.0f);
   EXPECT_FLOAT_EQ(param.process(0.4), 1.0f); // event gone — holds
+}
+
+// --- Clamping (process output) ---
+
+// processKRateParam clamps the automated value to [minValue, maxValue].
+TEST_F(AudioParamTest, ProcessKRateClampsAutomatedValue) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(2.0, 0.0); // above max
+  EXPECT_FLOAT_EQ(param.process(0.0), 1.0f);
+
+  param.setValueAtTime(-2.0, 1.0); // below min
+  EXPECT_FLOAT_EQ(param.process(1.0), 0.0f);
+}
+
+// processKRateParam clamps the modulated sum (modulation + automated) to the range.
+TEST_F(AudioParamTest, ProcessKRateClampsModulatedSum) {
+  auto param = TestableAudioParam(0.8, 0.0, 1.0, context);
+  // BridgeNode-style modulation pushes the value above the nominal maximum.
+  param.getInputBuffer()->getChannel(0)->span()[0] = 0.5f; // 0.8 + 0.5 = 1.3
+  EXPECT_FLOAT_EQ(param.process(0.0), 1.0f);
+}
+
+// processARateParam clamps every sample to [minValue, maxValue].
+TEST_F(AudioParamTest, ProcessARateClampsEverySample) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(2.0, 0.0);
+  auto out = param.processARateParam(8, 0.0)->getChannel(0)->span();
+  for (int i = 0; i < 8; ++i) {
+    EXPECT_FLOAT_EQ(out[i], 1.0f);
+  }
+}
+
+// --- Idempotency (argument-keyed memoization) ---
+
+// Repeated processKRateParam for the same time returns the cache; modulation is consumed once.
+TEST_F(AudioParamTest, ProcessKRateIsIdempotent) {
+  auto param = TestableAudioParam(0.5, 0.0, 1.0, context);
+  param.getInputBuffer()->getChannel(0)->span()[0] = 0.3f;
+
+  EXPECT_FLOAT_EQ(param.process(0.0), 0.8f); // 0.5 + 0.3
+  // Modulation buffer was consumed (zeroed) by the first process.
+  EXPECT_FLOAT_EQ(param.getInputBuffer()->getChannel(0)->span()[0], 0.0f);
+  // Repeat call returns the cached value instead of re-reading the (now zero) modulation.
+  EXPECT_FLOAT_EQ(param.process(0.0), 0.8f);
+}
+
+// A different time is a cache miss and recomputes.
+TEST_F(AudioParamTest, ProcessKRateRecomputesForNewTime) {
+  auto param = TestableAudioParam(0.5, 0.0, 1.0, context);
+  param.setValueAtTime(0.2, 0.0);
+  param.setValueAtTime(0.9, 1.0);
+
+  EXPECT_FLOAT_EQ(param.process(0.0), 0.2f);
+  EXPECT_FLOAT_EQ(param.process(1.0), 0.9f);
+}
+
+// Repeated processARateParam for the same (framesToProcess, time) returns the cache;
+// modulation is consumed once.
+TEST_F(AudioParamTest, ProcessARateIsIdempotent) {
+  auto param = TestableAudioParam(0.5, 0.0, 1.0, context);
+  auto input = param.getInputBuffer()->getChannel(0)->span();
+  for (int i = 0; i < 4; ++i) {
+    input[i] = 0.1f;
+  }
+
+  auto out1 = param.processARateParam(4, 0.0)->getChannel(0)->span();
+  EXPECT_FLOAT_EQ(out1[0], 0.6f); // 0.5 + 0.1
+  EXPECT_FLOAT_EQ(param.getInputBuffer()->getChannel(0)->span()[0], 0.0f);
+
+  auto out2 = param.processARateParam(4, 0.0)->getChannel(0)->span();
+  EXPECT_FLOAT_EQ(out2[0], 0.6f); // cache hit, not 0.5
 }
 
 // NOLINTEND
