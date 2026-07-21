@@ -15,6 +15,9 @@ class NativeAudioWorkletsModule
   explicit NativeAudioWorkletsModule(std::shared_ptr<CallInvoker> jsInvoker);
 
   bool install(jsi::Runtime &runtime);
+
+ private:
+  std::shared_ptr<CallInvoker> jsInvoker_;
 };
 
 } // namespace facebook::react

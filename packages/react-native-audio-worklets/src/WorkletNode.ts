@@ -5,16 +5,26 @@ import {
 } from 'react-native-audio-api';
 
 import AudioWorkletsModule from './AudioWorkletsModule';
-import type { WorkletNodeCallback } from './types';
-import { validateBufferLength } from './utils';
+import type { WorkletNodeCallback, WorkletNodeOptions } from './types';
+import {
+  resolveWorkletNodeOptions,
+  validateWorkletSmoothingTimeConstant,
+} from './utils';
+
+export type { WorkletNodeDomain, WorkletNodeOptions } from './types';
+
+interface IWorkletNode {
+  readonly bufferLength: number;
+  smoothingTimeConstant: number;
+}
 
 export default class WorkletNode extends AudioNode {
   constructor(
     context: BaseAudioContext,
     callback: WorkletNodeCallback,
-    bufferLength: number
+    options?: number | WorkletNodeOptions
   ) {
-    const length = validateBufferLength(bufferLength);
+    const resolved = resolveWorkletNodeOptions(options);
 
     const workletsModule = AudioWorkletsModule.workletsModule;
     const shareableWorklet = workletsModule.createSerializable(callback);
@@ -28,11 +38,26 @@ export default class WorkletNode extends AudioNode {
     const node = globalThis.__createWorkletNode(
       context.context,
       shareableWorklet,
-      length,
+      resolved.domain,
+      resolved.bufferLength,
+      resolved.smoothingTimeConstant,
       workletsModule.getUIRuntimeHolder(),
       workletsModule.getUISchedulerHolder()
     );
 
     super(context, node);
+  }
+
+  public get bufferLength(): number {
+    return (this.node as unknown as IWorkletNode).bufferLength;
+  }
+
+  public get smoothingTimeConstant(): number {
+    return (this.node as unknown as IWorkletNode).smoothingTimeConstant;
+  }
+
+  public set smoothingTimeConstant(value: number) {
+    validateWorkletSmoothingTimeConstant(value);
+    (this.node as unknown as IWorkletNode).smoothingTimeConstant = value;
   }
 }

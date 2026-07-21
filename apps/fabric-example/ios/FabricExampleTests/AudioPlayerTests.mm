@@ -1,6 +1,7 @@
 #import <AudioToolbox/AudioServices.h>
 #import <XCTest/XCTest.h>
 
+#import <audioapi/core/CommonPlayer.h>
 #import <audioapi/core/utils/Constants.h>
 #import <audioapi/ios/core/NativeAudioPlayer.h>
 #import <audioapi/ios/system/AudioEngine.h>
@@ -18,22 +19,22 @@ using namespace audioapi;
 
 namespace audioapi {
 
-class IOSAudioPlayer {
+class IOSAudioPlayer : public CommonPlayer {
  public:
   IOSAudioPlayer(
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount,
       std::atomic<uint32_t> &currentRenders);
-  ~IOSAudioPlayer();
+  ~IOSAudioPlayer() override;
 
-  bool start();
-  void stop();
-  bool resume();
-  void suspend();
-  void cleanup();
+  bool start() override;
+  void stop() override;
+  bool resume() override;
+  void suspend() override;
+  void cleanup() override;
 
-  bool isRunning() const;
+  [[nodiscard]] bool isRunning() const override;
 
  protected:
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
