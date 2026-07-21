@@ -8,18 +8,18 @@
  * FFmpeg, you must comply with the terms of the LGPL for FFmpeg itself.
  */
 
-#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-
+#include <audioapi/decoding/backends/FfmpegDecoder.h>
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <chrono>
 #include <cmath>
-#include <cerrno>
 #include <cstring>
 #include <map>
+#include <string>
 #include <thread>
 
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/channel_layout.h>
@@ -28,7 +28,7 @@ extern "C" {
 #include <libavutil/rational.h>
 }
 
-namespace audioapi::ffmpeg_decoder {
+namespace audioapi::decoding::ffmpeg {
 
 namespace {
 
@@ -78,39 +78,39 @@ decoding::DecoderResult
 openCodec(AVFormatContext *fmt_ctx, int &audio_stream_index, AVCodecContext **out_codec) {
   audio_stream_index = findAudioStreamIndex(fmt_ctx);
   if (audio_stream_index < 0) {
-    return Err("FFmpegDecoder::openCodec failed: no audio stream found");
+    return Err("FfmpegDecoder::openCodec failed: no audio stream found");
   }
   AVCodecParameters *codecpar = fmt_ctx->streams[audio_stream_index]->codecpar;
   const AVCodec *codec = avcodec_find_decoder(codecpar->codec_id);
   if (codec == nullptr) {
-    return Err("FFmpegDecoder::openCodec failed: decoder not found");
+    return Err("FfmpegDecoder::openCodec failed: decoder not found");
   }
   AVCodecContext *ctx = avcodec_alloc_context3(codec);
   if (ctx == nullptr) {
-    return Err("FFmpegDecoder::openCodec failed: avcodec_alloc_context3 returned null");
+    return Err("FfmpegDecoder::openCodec failed: avcodec_alloc_context3 returned null");
   }
   const int parametersResult = avcodec_parameters_to_context(ctx, codecpar);
   if (parametersResult < 0) {
     avcodec_free_context(&ctx);
     return Err(
-        "FFmpegDecoder::openCodec failed: avcodec_parameters_to_context failed: " +
+        "FfmpegDecoder::openCodec failed: avcodec_parameters_to_context failed: " +
         parseFFmpegError(parametersResult));
   }
   const int openResult = avcodec_open2(ctx, codec, nullptr);
   if (openResult < 0) {
     avcodec_free_context(&ctx);
     return Err(
-        "FFmpegDecoder::openCodec failed: avcodec_open2 failed: " + parseFFmpegError(openResult));
+        "FfmpegDecoder::openCodec failed: avcodec_open2 failed: " + parseFFmpegError(openResult));
   }
   *out_codec = ctx;
   return Ok(None);
 }
 
-FFmpegDecoder::~FFmpegDecoder() {
+FfmpegDecoder::~FfmpegDecoder() {
   close();
 }
 
-void FFmpegDecoder::close() {
+void FfmpegDecoder::close() {
   if (resampled_data_ != nullptr) {
     av_freep(&resampled_data_[0]);
     av_freep(&resampled_data_);
@@ -140,15 +140,15 @@ void FFmpegDecoder::close() {
   is_hls_streaming_ = false;
 }
 
-void FFmpegDecoder::detectHlsStreamingMode() {
+void FfmpegDecoder::detectHlsStreamingMode() {
   is_hls_streaming_ = fmt_ctx_ != nullptr && fmt_ctx_->iformat != nullptr &&
       fmt_ctx_->iformat->name != nullptr && std::strcmp(fmt_ctx_->iformat->name, "hls") == 0;
 }
 
-decoding::DecoderResult FFmpegDecoder::setupSwr() {
+decoding::DecoderResult FfmpegDecoder::setupSwr() {
   swr_ = swr_alloc();
   if (swr_ == nullptr) {
-    return Err("FFmpegDecoder::setupSwr failed: swr_alloc returned null");
+    return Err("FfmpegDecoder::setupSwr failed: swr_alloc returned null");
   }
   av_opt_set_chlayout(swr_, "in_chlayout", &codec_ctx_->ch_layout, 0);
   av_opt_set_int(swr_, "in_sample_rate", codec_ctx_->sample_rate, 0);
@@ -163,7 +163,7 @@ decoding::DecoderResult FFmpegDecoder::setupSwr() {
   if (swrInitResult < 0) {
     av_channel_layout_uninit(&out_layout);
     return Err(
-        "FFmpegDecoder::setupSwr failed: swr_init failed: " + parseFFmpegError(swrInitResult));
+        "FfmpegDecoder::setupSwr failed: swr_init failed: " + parseFFmpegError(swrInitResult));
   }
   av_channel_layout_uninit(&out_layout);
 
@@ -171,19 +171,19 @@ decoding::DecoderResult FFmpegDecoder::setupSwr() {
       &resampled_data_,
       nullptr,
       output_channels_,
-      decoding::IncrementalAudioDecoder::CHUNK_SIZE,
+      decoding::AudioDecoderBackend::CHUNK_SIZE,
       AV_SAMPLE_FMT_FLT,
       0);
   if (allocResult < 0) {
     return Err(
-        "FFmpegDecoder::setupSwr failed: av_samples_alloc_array_and_samples failed: " +
+        "FfmpegDecoder::setupSwr failed: av_samples_alloc_array_and_samples failed: " +
         parseFFmpegError(allocResult));
   }
-  max_resampled_samples_ = static_cast<int>(decoding::IncrementalAudioDecoder::CHUNK_SIZE);
+  max_resampled_samples_ = static_cast<int>(decoding::AudioDecoderBackend::CHUNK_SIZE);
   return Ok(None);
 }
 
-decoding::DecoderResult FFmpegDecoder::initializeDecodedStreams(
+decoding::DecoderResult FfmpegDecoder::initializeDecodedStreams(
     int outputSampleRate,
     const char *errorContext) {
   const int streamInfoResult = avformat_find_stream_info(fmt_ctx_, nullptr);
@@ -191,8 +191,8 @@ decoding::DecoderResult FFmpegDecoder::initializeDecodedStreams(
     avformat_close_input(&fmt_ctx_);
     fmt_ctx_ = nullptr;
     return Err(
-        std::string(errorContext) + " failed: avformat_find_stream_info failed: " +
-        parseFFmpegError(streamInfoResult));
+        std::string(errorContext) +
+        " failed: avformat_find_stream_info failed: " + parseFFmpegError(streamInfoResult));
   }
   detectHlsStreamingMode();
   auto codecResult = openCodec(fmt_ctx_, audio_stream_index_, &codec_ctx_);
@@ -223,50 +223,47 @@ decoding::DecoderResult FFmpegDecoder::initializeDecodedStreams(
   return Ok(None);
 }
 
-decoding::DecoderResult FFmpegDecoder::openFile(int outputSampleRate, const std::string &path) {
+decoding::DecoderResult FfmpegDecoder::open(const decoding::LocalFileSource &source) {
   close();
-  if (path.empty()) {
-    return Err("FFmpegDecoder::openFile failed: path is empty");
+  if (source.path.empty()) {
+    return Err("FfmpegDecoder::open failed: path is empty");
   }
-  const int openInputResult = avformat_open_input(&fmt_ctx_, path.c_str(), nullptr, nullptr);
+  const int openInputResult = avformat_open_input(&fmt_ctx_, source.path.c_str(), nullptr, nullptr);
   if (openInputResult < 0) {
     fmt_ctx_ = nullptr;
     return Err(
-        "FFmpegDecoder::openFile failed: avformat_open_input failed: " +
+        "FfmpegDecoder::open failed: avformat_open_input failed: " +
         parseFFmpegError(openInputResult));
   }
-  return initializeDecodedStreams(outputSampleRate, "FFmpegDecoder::openFile");
+  return initializeDecodedStreams(source.sampleRate, "FfmpegDecoder::open");
 }
 
-decoding::DecoderResult FFmpegDecoder::openUrl(
-    int outputSampleRate,
-    const std::string &url,
-    const std::map<std::string, std::string> &headers) {
+decoding::DecoderResult FfmpegDecoder::open(const decoding::RemoteUrlSource &source) {
   close();
-  if (url.empty()) {
-    return Err("FFmpegDecoder::openUrl failed: url is empty");
+  if (source.url.empty()) {
+    return Err("FfmpegDecoder::open failed: url is empty");
   }
 
   AVDictionary *options = nullptr;
   av_dict_set(&options, "protocol_whitelist", "file,http,https,tcp,tls,crypto,hls", 0);
 
-  const std::string headerBlock = buildFfmpegHttpHeaders(headers);
+  const std::string headerBlock = buildFfmpegHttpHeaders(source.httpHeaders);
   if (!headerBlock.empty()) {
     av_dict_set(&options, "headers", headerBlock.c_str(), 0);
   }
 
-  const int openInputResult = avformat_open_input(&fmt_ctx_, url.c_str(), nullptr, &options);
+  const int openInputResult = avformat_open_input(&fmt_ctx_, source.url.c_str(), nullptr, &options);
   av_dict_free(&options);
   if (openInputResult < 0) {
     fmt_ctx_ = nullptr;
     return Err(
-        "FFmpegDecoder::openUrl failed: avformat_open_input failed: " +
+        "FfmpegDecoder::open failed: avformat_open_input failed: " +
         parseFFmpegError(openInputResult));
   }
-  return initializeDecodedStreams(outputSampleRate, "FFmpegDecoder::openUrl");
+  return initializeDecodedStreams(source.sampleRate, "FfmpegDecoder::open");
 }
 
-void FFmpegDecoder::appendFrameResampled(AVFrame *frame) {
+void FfmpegDecoder::appendFrameResampled(AVFrame *frame) {
   int out_samples = swr_get_out_samples(swr_, frame->nb_samples);
   if (out_samples > max_resampled_samples_) {
     av_freep(&resampled_data_[0]);
@@ -295,7 +292,7 @@ void FFmpegDecoder::appendFrameResampled(AVFrame *frame) {
   }
 }
 
-decoding::DecoderResult FFmpegDecoder::feedPipeline() {
+decoding::DecoderResult FfmpegDecoder::feedPipeline() {
   int readRetries = 0;
 
   for (;;) {
@@ -310,12 +307,12 @@ decoding::DecoderResult FFmpegDecoder::feedPipeline() {
         return Ok(None);
       }
       if (!is_hls_streaming_) {
-        return Err("FFmpegDecoder::feedPipeline reached end of stream");
+        return Err("FfmpegDecoder::feedPipeline reached end of stream");
       }
       // HLS live: need more segment data — fall through to av_read_frame.
     } else if (r != AVERROR(EAGAIN)) {
       return Err(
-          "FFmpegDecoder::feedPipeline failed: avcodec_receive_frame failed: " +
+          "FfmpegDecoder::feedPipeline failed: avcodec_receive_frame failed: " +
           parseFFmpegError(r));
     }
 
@@ -328,7 +325,7 @@ decoding::DecoderResult FFmpegDecoder::feedPipeline() {
       const int flushResult = avcodec_send_packet(codec_ctx_, nullptr);
       if (flushResult < 0) {
         return Err(
-            "FFmpegDecoder::feedPipeline failed: avcodec_send_packet flush failed: " +
+            "FfmpegDecoder::feedPipeline failed: avcodec_send_packet flush failed: " +
             parseFFmpegError(flushResult));
       }
       continue;
@@ -340,7 +337,7 @@ decoding::DecoderResult FFmpegDecoder::feedPipeline() {
         continue;
       }
       return Err(
-          "FFmpegDecoder::feedPipeline failed: av_read_frame failed: " + parseFFmpegError(r));
+          "FfmpegDecoder::feedPipeline failed: av_read_frame failed: " + parseFFmpegError(r));
     }
     readRetries = 0;
     if (packet_->stream_index != audio_stream_index_) {
@@ -351,12 +348,12 @@ decoding::DecoderResult FFmpegDecoder::feedPipeline() {
     av_packet_unref(packet_);
     if (r < 0) {
       return Err(
-          "FFmpegDecoder::feedPipeline failed: avcodec_send_packet failed: " + parseFFmpegError(r));
+          "FfmpegDecoder::feedPipeline failed: avcodec_send_packet failed: " + parseFFmpegError(r));
     }
   }
 }
 
-float FFmpegDecoder::getDurationInSeconds() const {
+float FfmpegDecoder::getDurationInSeconds() const {
   if (!isOpen() || fmt_ctx_ == nullptr || audio_stream_index_ < 0) {
     return 0;
   }
@@ -388,7 +385,7 @@ float FFmpegDecoder::getDurationInSeconds() const {
   return 0;
 }
 
-float FFmpegDecoder::getCurrentPositionInSeconds() const {
+float FfmpegDecoder::getCurrentPositionInSeconds() const {
   if (!isOpen() || output_sample_rate_ <= 0) {
     return 0;
   }
@@ -397,9 +394,9 @@ float FFmpegDecoder::getCurrentPositionInSeconds() const {
 
 // todo: offload this call to a separate thread because seeking decoder can take a while
 // current implementation suspends audio thread, which disable multiple playbacks
-decoding::DecoderResult FFmpegDecoder::seekToTime(double seconds) {
+decoding::DecoderResult FfmpegDecoder::seekToTime(double seconds) {
   if (!isOpen() || audio_stream_index_ < 0 || output_sample_rate_ <= 0) {
-    return Err("FFmpegDecoder::seekToTime failed: decoder is not open");
+    return Err("FfmpegDecoder::seekToTime failed: decoder is not open");
   }
   float dur = getDurationInSeconds();
   if (dur > 0 && std::isfinite(dur)) {
@@ -407,7 +404,7 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double seconds) {
   } else {
     seconds = std::max(0.0, seconds);
     if (!std::isfinite(seconds)) {
-      return Err("FFmpegDecoder::seekToTime failed: seconds is not finite");
+      return Err("FfmpegDecoder::seekToTime failed: seconds is not finite");
     }
   }
 
@@ -415,7 +412,7 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double seconds) {
   const int seekResult = avformat_seek_file(fmt_ctx_, -1, INT64_MIN, ts, INT64_MAX, 0);
   if (seekResult < 0) {
     return Err(
-        "FFmpegDecoder::seekToTime failed: avformat_seek_file failed: " +
+        "FfmpegDecoder::seekToTime failed: avformat_seek_file failed: " +
         parseFFmpegError(seekResult));
   }
   avcodec_flush_buffers(codec_ctx_);
@@ -426,7 +423,7 @@ decoding::DecoderResult FFmpegDecoder::seekToTime(double seconds) {
   return Ok(None);
 }
 
-size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
+size_t FfmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   if (!isOpen() || outInterleaved == nullptr || frameCount == 0 || output_channels_ <= 0) {
     return 0;
   }
@@ -459,35 +456,43 @@ size_t FFmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   return delivered;
 }
 
-} // namespace audioapi::ffmpeg_decoder
+size_t FfmpegDecoder::getTotalPcmFrameCount() const {
+  const float duration = getDurationInSeconds();
+  if (duration <= 0.0f || output_sample_rate_ <= 0) {
+    return 0;
+  }
+  return static_cast<size_t>(duration * static_cast<float>(output_sample_rate_));
+}
+
+} // namespace audioapi::decoding::ffmpeg
 
 #else
 
-namespace audioapi::ffmpeg_decoder {
-FFmpegDecoder::~FFmpegDecoder() = default;
-void FFmpegDecoder::close() {}
-decoding::DecoderResult FFmpegDecoder::openFile(int, const std::string &) {
+namespace audioapi::decoding::ffmpeg {
+FfmpegDecoder::~FfmpegDecoder() = default;
+void FfmpegDecoder::close() {}
+decoding::DecoderResult FfmpegDecoder::open(const decoding::LocalFileSource &) {
   return Err("FFmpeg is disabled");
 }
-decoding::DecoderResult FFmpegDecoder::openUrl(
-    int,
-    const std::string &,
-    const std::map<std::string, std::string> &) {
+decoding::DecoderResult FfmpegDecoder::open(const decoding::RemoteUrlSource &) {
   return Err("FFmpeg is disabled");
 }
-float FFmpegDecoder::getDurationInSeconds() const {
+float FfmpegDecoder::getDurationInSeconds() const {
   return 0;
 }
-float FFmpegDecoder::getCurrentPositionInSeconds() const {
+float FfmpegDecoder::getCurrentPositionInSeconds() const {
   return 0;
 }
-decoding::DecoderResult FFmpegDecoder::seekToTime(double) {
+decoding::DecoderResult FfmpegDecoder::seekToTime(double) {
   return Err("FFmpeg is disabled");
 }
-size_t FFmpegDecoder::readPcmFrames(float *, size_t) {
+size_t FfmpegDecoder::readPcmFrames(float *, size_t) {
+  return 0;
+}
+size_t FfmpegDecoder::getTotalPcmFrameCount() const {
   return 0;
 }
 
-} // namespace audioapi::ffmpeg_decoder
+} // namespace audioapi::decoding::ffmpeg
 
 #endif // !RN_AUDIO_API_FFMPEG_DISABLED

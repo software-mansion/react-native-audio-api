@@ -29,7 +29,7 @@ react-native-audio-api/
 │   │   └── src/main/cpp/audioapi/
 │   │       └── CMakeLists.txt          # Actual Android C++ build target
 │   ├── common/cpp/audioapi/            # Shared C++ (used by all platforms)
-│   │   ├── decoding/                   # Incremental + OS decoder contracts (no external deps)
+│   │   ├── decoding/                   # Decoder factory, backends, SeekDecoderDaemon, AudioDecoding, AudioFileConcatenator
 │   │   ├── libs/                       # Third-party wrappers (FFmpeg, miniaudio, pffft, …)
 │   │   └── external/                   # Prebuilt binaries per platform
 │   │       ├── android/                # .a static libs (Opus, Ogg, Vorbis, OpenSSL)
@@ -198,7 +198,7 @@ The `build/` directory is deleted after each run.
 ### Key design decisions
 - Completely standalone — no Gradle, no Xcode, no prebuilt Android libraries needed
 - Sources resolved from `node_modules` (symlinked to `packages/` in yarn workspaces)
-- HostObjects, worklets nodes, AudioContext, and FFmpegDecoding are excluded from the test build
+- HostObjects, worklets nodes, AudioContext, and FfmpegDecoder are excluded from the test build
 - Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_FFMPEG_DISABLED=1`
 - Google Test auto-fetched via `FetchContent` if not installed locally
 - New test files in `test/src/**/*.cpp` are picked up automatically by glob — no CMakeLists edit needed

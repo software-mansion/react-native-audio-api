@@ -192,31 +192,31 @@ static decoding::DecoderResult configureExtAudioFile(
   return Ok(None);
 }
 
-decoding::DecoderResult IOSDecoder::openFile(int outputSampleRate, const std::string &path)
+decoding::DecoderResult IOSDecoder::open(const decoding::LocalFileSource &source)
 {
   close();
-  if (path.empty()) {
-    return Err("IOSDecoder::openFile failed: path is empty");
+  if (source.path.empty()) {
+    return Err("IOSDecoder::open failed: path is empty");
   }
 
   @autoreleasepool {
-    NSString *nsPath = [NSString stringWithUTF8String:path.c_str()];
+    NSString *nsPath = [NSString stringWithUTF8String:source.path.c_str()];
     if (nsPath == nil) {
-      return Err("IOSDecoder::openFile failed: invalid path encoding");
+      return Err("IOSDecoder::open failed: invalid path encoding");
     }
     NSURL *url = [NSURL fileURLWithPath:nsPath];
     ExtAudioFileRef extFile = nullptr;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
     OSStatus status = ExtAudioFileOpenURL((__bridge CFURLRef)url, &extFile);
     if (status != noErr || extFile == nullptr) {
-      return Err("IOSDecoder::openFile ExtAudioFileOpenURL failed: " + std::to_string(status));
+      return Err("IOSDecoder::open ExtAudioFileOpenURL failed: " + std::to_string(status));
     }
 
     auto state = std::make_unique<IosDecoderState>();
     state->extFile.reset(extFile);
     auto configured = configureExtAudioFile(
         state->extFile.get(),
-        outputSampleRate,
+        source.sampleRate,
         outputChannels_,
         outputSampleRate_,
         durationSeconds_,
@@ -232,22 +232,21 @@ decoding::DecoderResult IOSDecoder::openFile(int outputSampleRate, const std::st
   }
 }
 
-decoding::DecoderResult IOSDecoder::openMemory(int outputSampleRate, const void *data, size_t size)
+decoding::DecoderResult IOSDecoder::open(const decoding::EncodedMemorySource &source)
 {
   close();
-  if (data == nullptr || size == 0) {
-    return Err("IOSDecoder::openMemory failed: empty input");
+  if (source.data.empty()) {
+    return Err("IOSDecoder::open failed: empty input");
   }
 
   auto state = std::make_unique<IosDecoderState>();
-  state->memory.assign(
-      static_cast<const uint8_t *>(data), static_cast<const uint8_t *>(data) + size);
+  state->memory = source.data;
 
   // Wrap the owned bytes with AudioFile callbacks, then wrap that with
-  // ExtAudioFile so we get the same read/seek/convert path as openFile without
+  // ExtAudioFile so we get the same read/seek/convert path as open without
   // touching the filesystem.
   AudioFileTypeID hint = 0;
-  const char *ext = guessFileTypeExtension(data, size);
+  const char *ext = guessFileTypeExtension(source.data.data(), source.data.size());
   if (std::strcmp(ext, "wav") == 0) {
     hint = kAudioFileWAVEType;
   } else if (std::strcmp(ext, "mp3") == 0) {
@@ -268,8 +267,7 @@ decoding::DecoderResult IOSDecoder::openMemory(int outputSampleRate, const void 
   OSStatus status = AudioFileOpenWithCallbacks(
       state.get(), memoryReadProc, nullptr, memoryGetSizeProc, nullptr, hint, &audioFile);
   if (status != noErr || audioFile == nullptr) {
-    return Err(
-        "IOSDecoder::openMemory AudioFileOpenWithCallbacks failed: " + std::to_string(status));
+    return Err("IOSDecoder::open AudioFileOpenWithCallbacks failed: " + std::to_string(status));
   }
   state->audioFile.reset(audioFile);
 
@@ -277,14 +275,13 @@ decoding::DecoderResult IOSDecoder::openMemory(int outputSampleRate, const void 
   status =
       ExtAudioFileWrapAudioFileID(state->audioFile.get(), static_cast<Boolean>(false), &extFile);
   if (status != noErr || extFile == nullptr) {
-    return Err(
-        "IOSDecoder::openMemory ExtAudioFileWrapAudioFileID failed: " + std::to_string(status));
+    return Err("IOSDecoder::open ExtAudioFileWrapAudioFileID failed: " + std::to_string(status));
   }
   state->extFile.reset(extFile);
 
   auto configured = configureExtAudioFile(
       state->extFile.get(),
-      outputSampleRate,
+      source.sampleRate,
       outputChannels_,
       outputSampleRate_,
       durationSeconds_,

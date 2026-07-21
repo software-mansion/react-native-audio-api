@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/decoding/backends/AudioDecoderBackend.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/Result.hpp>
 
@@ -17,44 +18,39 @@ namespace audioapi {
 
 using AudioFileConcatResult = Result<std::string, std::string>;
 
-class MiniAudioDecoderGuard {
+class AudioDecoderBackendGuard {
  public:
-  MiniAudioDecoderGuard() = default;
-  MiniAudioDecoderGuard(const MiniAudioDecoderGuard &) = delete;
-  MiniAudioDecoderGuard &operator=(const MiniAudioDecoderGuard &) = delete;
+  AudioDecoderBackendGuard() = default;
+  AudioDecoderBackendGuard(const AudioDecoderBackendGuard &) = delete;
+  AudioDecoderBackendGuard &operator=(const AudioDecoderBackendGuard &) = delete;
 
-  MiniAudioDecoderGuard(MiniAudioDecoderGuard &&other) noexcept;
-  MiniAudioDecoderGuard &operator=(MiniAudioDecoderGuard &&other) noexcept;
+  AudioDecoderBackendGuard(AudioDecoderBackendGuard &&other) noexcept;
+  AudioDecoderBackendGuard &operator=(AudioDecoderBackendGuard &&other) noexcept;
 
-  // Closes the owned miniaudio decoder.
-  ~MiniAudioDecoderGuard();
+  ~AudioDecoderBackendGuard();
 
-  // Opens an input file for decoded PCM reads.
-  [[nodiscard]] static Result<MiniAudioDecoderGuard, std::string> open(
-      const std::string &filePath,
-      ma_format outputFormat = ma_format_unknown);
+  [[nodiscard]] static Result<AudioDecoderBackendGuard, std::string> open(
+      const std::string &filePath);
 
-  // Returns the owned miniaudio decoder.
-  [[nodiscard]] ma_decoder *get();
+  [[nodiscard]] size_t readPcmFrames(float *frames, size_t frameCount);
 
-  // Returns the normalized file path represented by this input.
   [[nodiscard]] const std::string &filePath() const;
 
-  // Returns the decoded output sample rate.
   [[nodiscard]] ma_uint32 sampleRate() const;
 
-  // Returns the decoded output channel count.
   [[nodiscard]] ma_uint32 channels() const;
 
-  // Returns the decoded output sample format.
-  [[nodiscard]] ma_format format() const;
+  [[nodiscard]] ma_format format() const {
+    return ma_format_f32;
+  }
+
+  [[nodiscard]] ma_uint64 totalPcmFrames() const;
 
  private:
   void close();
 
   std::string filePath_;
-  std::unique_ptr<ma_decoder> decoder_{nullptr};
-  bool initialized_{false};
+  std::unique_ptr<decoding::AudioDecoderBackend> decoder_;
 };
 
 class MiniAudioEncoderGuard {

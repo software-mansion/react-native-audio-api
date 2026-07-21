@@ -1,35 +1,30 @@
 #pragma once
 
-#include <audioapi/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/decoding/DecoderSource.h>
+#include <audioapi/decoding/backends/AudioDecoderBackend.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
-#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <string>
 #include <vector>
 
-namespace audioapi::miniaudio_decoder {
+namespace audioapi::decoding::miniaudio {
 
 /**
  * MiniAudio-backed incremental decoder (Vorbis/Opus/WAV, etc. via ma_decoder + custom backends).
- * Local file / memory only — remote URLs use FFmpegDecoder::openUrl.
+ * Local file / memory only — remote URLs use FfmpegDecoder.
  */
-class MiniAudioDecoder : public decoding::IncrementalAudioDecoder {
+class MiniAudioDecoder : public AudioDecoderBackend {
  public:
   MiniAudioDecoder() = default;
   ~MiniAudioDecoder() override;
   DELETE_COPY_AND_MOVE(MiniAudioDecoder);
 
-  [[nodiscard]] decoding::DecoderResult openFile(
-      int outputSampleRate,
-      const std::string &path) override;
-  [[nodiscard]] decoding::DecoderResult openMemory(
-      int outputSampleRate,
-      const void *data,
-      size_t size) override;
+  [[nodiscard]] DecoderResult open(const LocalFileSource &source);
+  [[nodiscard]] DecoderResult open(const EncodedMemorySource &source);
+
   [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
   void close() override;
   [[nodiscard]] bool isOpen() const override;
@@ -37,7 +32,8 @@ class MiniAudioDecoder : public decoding::IncrementalAudioDecoder {
   [[nodiscard]] int outputSampleRate() const override;
   [[nodiscard]] float getDurationInSeconds() const override;
   [[nodiscard]] float getCurrentPositionInSeconds() const override;
-  [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
+  [[nodiscard]] DecoderResult seekToTime(double seconds) override;
+  [[nodiscard]] size_t getTotalPcmFrameCount() const override;
 
  private:
   void teardownDecoder();
@@ -50,7 +46,4 @@ class MiniAudioDecoder : public decoding::IncrementalAudioDecoder {
   std::uint64_t totalLengthFrames_ = 0;
 };
 
-std::shared_ptr<AudioBuffer> decodeWithMemoryBlock(const void *data, size_t size, int sample_rate);
-std::shared_ptr<AudioBuffer> decodeWithFilePath(const std::string &path, int sample_rate);
-
-} // namespace audioapi::miniaudio_decoder
+} // namespace audioapi::decoding::miniaudio

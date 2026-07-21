@@ -9,7 +9,8 @@
 
 #include <audioapi/core/AudioContext.h>
 
-#include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
+#include <audioapi/decoding/DecoderSource.h>
+#include <audioapi/decoding/SeekDecoderDaemon.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <algorithm>
 #include <atomic>
@@ -97,12 +98,23 @@ bool AudioFileSourceNode::initDecoder(
           COMMAND_CHANNEL_CAPACITY);
   commandSender_ = std::move(commandSender);
 
+  const int contextSampleRate = static_cast<int>(context->getSampleRate());
+  decoding::DecoderSource source = decoding::EncodedMemorySource{};
+  if (!options.sourceUrl.empty()) {
+    source = decoding::RemoteUrlSource{
+        .url = std::move(options.sourceUrl),
+        .httpHeaders = std::move(options.httpHeaders),
+        .sampleRate = contextSampleRate};
+  } else if (!options.filePath.empty()) {
+    source = decoding::LocalFileSource{
+        .path = std::move(options.filePath), .sampleRate = contextSampleRate};
+  } else {
+    source = decoding::EncodedMemorySource{
+        .data = std::move(options.data), .sampleRate = contextSampleRate};
+  }
+
   SeekDecoderDaemonOptions daemonOptions{
-      .requiresFFmpeg = options.requiresFFmpeg,
-      .filePath = std::move(options.filePath),
-      .sourceUrl = std::move(options.sourceUrl),
-      .httpHeaders = std::move(options.httpHeaders),
-      .memoryData = std::move(options.data),
+      .source = std::move(source),
       .contextSampleRate = context->getSampleRate(),
       .loop = options.loop};
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <audioapi/decoding/OsDecoderBase.h>
+#include <audioapi/decoding/DecoderSource.h>
+#include <audioapi/decoding/backends/OsDecoderBase.h>
 #include <audioapi/utils/Macros.h>
 
 #include <cstddef>
@@ -18,16 +19,14 @@ struct IosDecoderState;
  * Opens local files or in-memory buffers and pulls interleaved float PCM on
  * demand. Remote URL / HLS decoding stays on FFmpeg.
  */
-class IOSDecoder : public OsDecoderBase {
+class IOSDecoder : public decoding::OsDecoderBase {
  public:
   IOSDecoder();
   ~IOSDecoder() override;
   DELETE_COPY_AND_MOVE(IOSDecoder);
 
-  [[nodiscard]] decoding::DecoderResult openFile(int outputSampleRate, const std::string &path)
-      override;
-  [[nodiscard]] decoding::DecoderResult
-  openMemory(int outputSampleRate, const void *data, size_t size) override;
+  [[nodiscard]] decoding::DecoderResult open(const decoding::LocalFileSource &source);
+  [[nodiscard]] decoding::DecoderResult open(const decoding::EncodedMemorySource &source);
   [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
   [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 

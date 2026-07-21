@@ -19,7 +19,7 @@ endforeach()
 
 if (RN_AUDIO_API_FFMPEG_DISABLED)
   list(REMOVE_ITEM COMMON_CPP_SOURCES
-    "${COMMON_CPP_DIR}/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+    "${COMMON_CPP_DIR}/audioapi/decoding/backends/FfmpegDecoder.cpp"
   )
 endif()
 

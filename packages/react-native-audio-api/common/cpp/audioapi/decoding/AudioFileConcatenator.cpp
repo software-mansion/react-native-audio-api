@@ -1,10 +1,13 @@
-#include <audioapi/core/utils/AudioFileConcatenator.h>
+#include <audioapi/decoding/AudioFileConcatenator.h>
+#include <audioapi/decoding/DecoderFactory.h>
+#include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
 #include <algorithm>
 #include <array>
 #include <cctype>
 #include <charconv>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -130,8 +133,8 @@ std::string percentDecode(const std::string &path) {
     }
 
     unsigned int value = 0;
-    auto first = path.data() + i + 1;
-    auto last = first + 2;
+    const auto *first = path.data() + i + 1;
+    const auto *last = first + 2;
     auto result = std::from_chars(first, last, value, 16);
     if (result.ec != std::errc() || result.ptr != last) {
       decoded.push_back(path[i]);
@@ -212,74 +215,72 @@ std::string parseMiniAudioError(ma_result errorCode) {
 
 } // namespace
 
-MiniAudioDecoderGuard::MiniAudioDecoderGuard(MiniAudioDecoderGuard &&other) noexcept
-    : filePath_(std::move(other.filePath_)),
-      decoder_(std::move(other.decoder_)),
-      initialized_(std::exchange(other.initialized_, false)) {}
+AudioDecoderBackendGuard::AudioDecoderBackendGuard(AudioDecoderBackendGuard &&other) noexcept
+    : filePath_(std::move(other.filePath_)), decoder_(std::move(other.decoder_)) {}
 
-MiniAudioDecoderGuard &MiniAudioDecoderGuard::operator=(MiniAudioDecoderGuard &&other) noexcept {
+AudioDecoderBackendGuard &AudioDecoderBackendGuard::operator=(
+    AudioDecoderBackendGuard &&other) noexcept {
   if (this != &other) {
     close();
     filePath_ = std::move(other.filePath_);
     decoder_ = std::move(other.decoder_);
-    initialized_ = std::exchange(other.initialized_, false);
   }
   return *this;
 }
 
-MiniAudioDecoderGuard::~MiniAudioDecoderGuard() {
+AudioDecoderBackendGuard::~AudioDecoderBackendGuard() {
   close();
 }
 
-Result<MiniAudioDecoderGuard, std::string> MiniAudioDecoderGuard::open(
-    const std::string &filePath,
-    ma_format outputFormat) {
-  MiniAudioDecoderGuard input;
+Result<AudioDecoderBackendGuard, std::string> AudioDecoderBackendGuard::open(
+    const std::string &filePath) {
+  AudioDecoderBackendGuard input;
   input.filePath_ = filePath;
-  input.decoder_ = std::make_unique<ma_decoder>();
 
-  ma_decoder_config config = ma_decoder_config_init(outputFormat, 0, 0);
-  const ma_result result = ma_decoder_init_file(filePath.c_str(), &config, input.decoder_.get());
-  if (result != MA_SUCCESS) {
-    return Err(
-        "Failed to open input file '" + filePath +
-        "' with miniaudio: " + parseMiniAudioError(result));
+  auto decoderResult =
+      decoding::createDecoder(decoding::LocalFileSource{.path = filePath, .sampleRate = 0});
+  if (decoderResult.is_err()) {
+    return Err("Failed to open input file '" + filePath + "': " + decoderResult.unwrap_err());
   }
 
-  input.initialized_ = true;
-  if (input.decoder_->outputSampleRate == 0 || input.decoder_->outputChannels == 0) {
+  input.decoder_ = std::move(decoderResult).unwrap();
+  if (!input.decoder_->isOpen() || input.decoder_->outputSampleRate() == 0 ||
+      input.decoder_->outputChannels() == 0) {
+    input.close();
     return Err("Input file '" + filePath + "' is missing required audio parameters.");
   }
 
   return Ok(std::move(input));
 }
 
-ma_decoder *MiniAudioDecoderGuard::get() {
-  return decoder_.get();
+size_t AudioDecoderBackendGuard::readPcmFrames(float *frames, size_t frameCount) {
+  if (decoder_ == nullptr || frames == nullptr || frameCount == 0) {
+    return 0;
+  }
+  return decoder_->readPcmFrames(frames, frameCount);
 }
 
-const std::string &MiniAudioDecoderGuard::filePath() const {
+const std::string &AudioDecoderBackendGuard::filePath() const {
   return filePath_;
 }
 
-ma_uint32 MiniAudioDecoderGuard::sampleRate() const {
-  return decoder_->outputSampleRate;
+ma_uint32 AudioDecoderBackendGuard::sampleRate() const {
+  return static_cast<ma_uint32>(decoder_->outputSampleRate());
 }
 
-ma_uint32 MiniAudioDecoderGuard::channels() const {
-  return decoder_->outputChannels;
+ma_uint32 AudioDecoderBackendGuard::channels() const {
+  return static_cast<ma_uint32>(decoder_->outputChannels());
 }
 
-ma_format MiniAudioDecoderGuard::format() const {
-  return decoder_->outputFormat;
+ma_uint64 AudioDecoderBackendGuard::totalPcmFrames() const {
+  return static_cast<ma_uint64>(decoder_->getTotalPcmFrameCount());
 }
 
-void MiniAudioDecoderGuard::close() {
-  if (initialized_ && decoder_ != nullptr) {
-    ma_decoder_uninit(decoder_.get());
-    initialized_ = false;
+void AudioDecoderBackendGuard::close() {
+  if (decoder_ != nullptr) {
+    decoder_->close();
+    decoder_.reset();
   }
-  decoder_.reset();
 }
 
 MiniAudioEncoderGuard::~MiniAudioEncoderGuard() {
@@ -335,8 +336,8 @@ void MiniAudioEncoderGuard::close() {
 namespace {
 
 AudioFileConcatResult validateCompatibleMiniAudioInput(
-    const MiniAudioDecoderGuard &input,
-    const MiniAudioDecoderGuard &reference) {
+    const AudioDecoderBackendGuard &input,
+    const AudioDecoderBackendGuard &reference) {
   if (input.sampleRate() != reference.sampleRate()) {
     return Err("Input file '" + input.filePath() + "' uses a different sample rate.");
   }
@@ -354,12 +355,11 @@ AudioFileConcatResult validateCompatibleMiniAudioInput(
 
 AudioFileConcatResult openAndValidateMiniAudioInputs(
     const std::vector<std::string> &inputPaths,
-    std::vector<MiniAudioDecoderGuard> &inputs,
-    ma_format outputFormat = ma_format_unknown) {
+    std::vector<AudioDecoderBackendGuard> &inputs) {
   inputs.reserve(inputPaths.size());
 
   for (const auto &inputPath : inputPaths) {
-    auto inputResult = MiniAudioDecoderGuard::open(inputPath, outputFormat);
+    auto inputResult = AudioDecoderBackendGuard::open(inputPath);
     if (inputResult.is_err()) {
       return Err(inputResult.unwrap_err());
     }
@@ -378,7 +378,7 @@ AudioFileConcatResult openAndValidateMiniAudioInputs(
 }
 
 AudioFileConcatResult validateRiffWaveOutputSize(
-    std::vector<MiniAudioDecoderGuard> &inputs,
+    std::vector<AudioDecoderBackendGuard> &inputs,
     ma_uint64 bytesPerFrame) {
   if (bytesPerFrame == 0) {
     return Err("Input files use an unsupported WAV sample format.");
@@ -386,12 +386,9 @@ AudioFileConcatResult validateRiffWaveOutputSize(
 
   ma_uint64 totalDataBytes = 0;
   for (auto &input : inputs) {
-    ma_uint64 frameCount = 0;
-    const ma_result result = ma_decoder_get_length_in_pcm_frames(input.get(), &frameCount);
-    if (result != MA_SUCCESS) {
-      return Err(
-          "Failed to determine decoded frame count for '" + input.filePath() +
-          "' with miniaudio: " + parseMiniAudioError(result));
+    const ma_uint64 frameCount = input.totalPcmFrames();
+    if (frameCount == 0) {
+      return Err("Failed to determine decoded frame count for '" + input.filePath() + "'.");
     }
 
     if (frameCount > (std::numeric_limits<ma_uint64>::max() - totalDataBytes) / bytesPerFrame) {
@@ -422,14 +419,14 @@ AudioFileConcatResult concatAudioFilesWithMiniAudio(
     }
   }
 
-  std::vector<MiniAudioDecoderGuard> inputs;
+  std::vector<AudioDecoderBackendGuard> inputs;
   auto inputValidationResult = openAndValidateMiniAudioInputs(inputPaths, inputs);
   if (inputValidationResult.is_err()) {
     return inputValidationResult;
   }
 
-  const ma_uint64 bytesPerFrame =
-      inputs.front().channels() * ma_get_bytes_per_sample(inputs.front().format());
+  const ma_uint64 bytesPerFrame = static_cast<const ma_uint64>(inputs.front().channels()) *
+      ma_get_bytes_per_sample(inputs.front().format());
   auto outputSizeResult = validateRiffWaveOutputSize(inputs, bytesPerFrame);
   if (outputSizeResult.is_err()) {
     return outputSizeResult;
@@ -442,18 +439,10 @@ AudioFileConcatResult concatAudioFilesWithMiniAudio(
     return outputResult;
   }
 
-  std::vector<uint8_t> buffer(miniaudioChunkFrames * bytesPerFrame);
+  std::vector<float> buffer(miniaudioChunkFrames * inputs.front().channels());
   for (auto &input : inputs) {
     while (true) {
-      ma_uint64 framesRead = 0;
-      const ma_result result =
-          ma_decoder_read_pcm_frames(input.get(), buffer.data(), miniaudioChunkFrames, &framesRead);
-      if (result != MA_SUCCESS && result != MA_AT_END) {
-        return Err(
-            "Failed to decode frames from '" + input.filePath() +
-            "' with miniaudio: " + parseMiniAudioError(result));
-      }
-
+      const size_t framesRead = input.readPcmFrames(buffer.data(), miniaudioChunkFrames);
       if (framesRead == 0) {
         break;
       }
@@ -461,10 +450,6 @@ AudioFileConcatResult concatAudioFilesWithMiniAudio(
       auto writeResult = output.write(input.filePath(), buffer.data(), framesRead);
       if (writeResult.is_err()) {
         return writeResult;
-      }
-
-      if (result == MA_AT_END) {
-        break;
       }
     }
   }
@@ -663,7 +648,7 @@ AudioFileConcatResult createOutput(
   (*outputStream)->codecpar->codec_tag = 0;
   (*outputStream)->time_base = AVRational{.num = 1, .den = inputStream->codecpar->sample_rate};
 
-  if (!(rawOutputContext->oformat->flags & AVFMT_NOFILE)) {
+  if ((rawOutputContext->oformat->flags & AVFMT_NOFILE) == 0) {
     result = avio_open(&rawOutputContext->pb, outputPath.c_str(), AVIO_FLAG_WRITE);
     if (result < 0) {
       return Err("Failed to open output file '" + outputPath + "': " + parseFFmpegError(result));

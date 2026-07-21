@@ -12,7 +12,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>

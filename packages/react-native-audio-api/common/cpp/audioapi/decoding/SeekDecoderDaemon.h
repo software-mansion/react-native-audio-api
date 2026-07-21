@@ -1,31 +1,19 @@
 #pragma once
 
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/decoding/DecoderSource.h>
+#include <audioapi/decoding/backends/AudioDecoderBackend.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/libs/ffmpeg/FFmpegDecoding.h>
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/libs/miniaudio/MiniAudioDecoding.h>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <array>
 #include <atomic>
-#include <map>
 #include <memory>
 #include <optional>
-#include <string>
-#include <vector>
 
 using namespace audioapi::channels::spsc;
 
 struct SeekDecoderDaemonOptions {
-  bool requiresFFmpeg;
-  // source
-  std::string filePath;
-  std::string sourceUrl;
-  std::map<std::string, std::string> httpHeaders;
-  std::vector<uint8_t> memoryData;
-  // playback
+  audioapi::decoding::DecoderSource source;
   float contextSampleRate;
   bool loop;
 };
@@ -91,14 +79,14 @@ inline constexpr auto SLEEP_DURATION_ON_FULL = std::chrono::milliseconds(10);
 
 namespace audioapi {
 
-/// @brief SeekDecoderDaemon is a dedicated thread worker that manages an audio
-/// decoder instance (FFmpeg for remote URLs/HLS; OS or MiniAudio for local).
-/// It listens for seek commands from the JS thread, performs seeks on the decoder,
-/// decodes audio frames, and sends decoded planar audio data back to the audio thread via a lock-free SPSC channel.
+/// @brief SeekDecoderDaemon is a dedicated thread worker that manages an incremental
+/// audio decoder. It listens for seek commands from the JS thread, performs seeks on the
+/// decoder, decodes audio frames, and sends decoded planar audio data back to the audio
+/// thread via a lock-free SPSC channel.
 class SeekDecoderDaemon {
  public:
   SeekDecoderDaemon(
-      SeekDecoderDaemonOptions options,
+      const SeekDecoderDaemonOptions &options,
       std::shared_ptr<AudioFileDecoderState> sharedState,
       CommandReceiver commandReceiver,
       FrameSender frameSender,
@@ -110,7 +98,7 @@ class SeekDecoderDaemon {
   void operator()();
 
  private:
-  std::unique_ptr<decoding::IncrementalAudioDecoder> decoder_;
+  std::unique_ptr<decoding::AudioDecoderBackend> decoder_;
 
   /// @brief Shared state with the AudioFileSourceNode, used for communicating decoder status, metadata, and playback position.
   std::shared_ptr<AudioFileDecoderState> sharedState_;

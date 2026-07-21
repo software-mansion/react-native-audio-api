@@ -1,11 +1,11 @@
 #pragma once
 
-#include <audioapi/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/decoding/backends/AudioDecoderBackend.h>
 #include <audioapi/utils/Macros.h>
 
 #include <cstdint>
 
-namespace audioapi {
+namespace audioapi::decoding {
 
 /**
  * Shared open-state for OS-native incremental decoders (iOS / Android).
@@ -13,7 +13,7 @@ namespace audioapi {
  * Owns the common metadata reset by `close()`; subclasses release platform
  * resources in `releaseImpl()` (e.g. `impl_.reset()`).
  */
-class OsDecoderBase : public decoding::IncrementalAudioDecoder {
+class OsDecoderBase : public AudioDecoderBackend {
  public:
   OsDecoderBase() = default;
   ~OsDecoderBase() override = default;
@@ -52,6 +52,13 @@ class OsDecoderBase : public decoding::IncrementalAudioDecoder {
         static_cast<double>(framePosition_) / static_cast<double>(outputSampleRate_));
   }
 
+  [[nodiscard]] size_t getTotalPcmFrameCount() const override {
+    if (outputSampleRate_ <= 0 || durationSeconds_ <= 0.0) {
+      return 0;
+    }
+    return static_cast<size_t>(durationSeconds_ * static_cast<double>(outputSampleRate_));
+  }
+
  protected:
   /// Drop platform-native decoder resources (ExtAudioFile / MediaCodec, etc.).
   virtual void releaseImpl() = 0;
@@ -63,4 +70,4 @@ class OsDecoderBase : public decoding::IncrementalAudioDecoder {
   bool open_ = false;
 };
 
-} // namespace audioapi
+} // namespace audioapi::decoding

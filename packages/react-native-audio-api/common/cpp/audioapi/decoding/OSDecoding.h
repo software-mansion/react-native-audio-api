@@ -10,7 +10,7 @@
  */
 
 #if defined(__ANDROID__)
-#include <audioapi/AndroidDecoding.h>
+#include <audioapi/android/AndroidDecoding.h>
 #define RN_AUDIO_API_HAS_OS_DECODER 1
 namespace audioapi::os_decoder {
 using Decoder = android_decoder::AndroidDecoder;
