@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <oboe/Oboe.h>
 #include <atomic>
 #include <cassert>
@@ -34,6 +35,8 @@ class AudioPlayer : public AudioStreamDataCallback,
     nativeAudioPlayer_.release();
     cleanup();
   }
+
+  DELETE_COPY_AND_MOVE(AudioPlayer);
 
   bool start();
   void stop();

@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "audioapi/utils/Macros.h"
 
 namespace audioapi {
 
@@ -27,6 +28,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AndroidAudioRecorder() override;
   void cleanup();
+
+  DELETE_COPY_AND_MOVE(AndroidAudioRecorder);
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride) override;
   Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
