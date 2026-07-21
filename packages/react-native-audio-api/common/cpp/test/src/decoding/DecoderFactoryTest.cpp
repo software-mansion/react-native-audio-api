@@ -119,8 +119,8 @@ TEST(DecoderFactoryTest, OpensRawPcmSource) {
       decoding::RawPcmSource{
           .data = std::move(pcmBytes),
           .channelCount = 1,
-          .sampleRate = 44100,
-          .interleaved = true});
+          .interleaved = true,
+          .sampleRate = 44100});
   ASSERT_TRUE(result.is_ok()) << result.unwrap_err();
 
   auto decoder = std::move(result).unwrap();
