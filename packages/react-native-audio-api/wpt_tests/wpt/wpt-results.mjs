@@ -17,7 +17,7 @@ const DOCS_MARKERS = {
 // WPT test categories that map to interfaces actually available (fully or
 // partially) in react-native-audio-api. Keep this in sync with the coverage
 // table in packages/audiodocs/docs/other/web-audio-api-coverage.mdx.
-// Categories that are not yet implemented (e.g. PannerNode, ChannelMergerNode,
+// Categories that are not yet implemented (e.g. PannerNode,
 // DynamicsCompressorNode, MediaStream* nodes, AudioWorklet) are intentionally
 // excluded from the docs summary.
 const AVAILABLE_INTERFACES = {

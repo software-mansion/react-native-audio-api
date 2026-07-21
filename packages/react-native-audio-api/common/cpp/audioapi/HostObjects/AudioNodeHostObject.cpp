@@ -87,9 +87,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
 
     auto source = getConnectSource(output);
     auto destination = toNodeHost->getConnectDestination(input);
-    // Duplicate connections are a no-op per the Web Audio spec, so any Err
-    // (EDGE_ALREADY_EXISTS, cycle, ...) from the graph is intentionally ignored.
-    (void)source->connect(*destination);
+    source->connect(*destination);
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
     param->connectToGraph();
@@ -102,7 +100,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
   // disconnect() — drop every outgoing edge from every output.
   if (args == nullptr || count == 0 || args[0].isUndefined()) {
     for (int output = 0; output < numberOfOutputs_; ++output) {
-      (void)getConnectSource(output)->disconnect();
+      getConnectSource(output)->disconnect();
     }
     return jsi::Value::undefined();
   }
@@ -113,7 +111,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
     if (output < 0 || output >= numberOfOutputs_) {
       throw jsi::JSError(runtime, "IndexSizeError: disconnect() output index out of bounds");
     }
-    (void)getConnectSource(output)->disconnect();
+    getConnectSource(output)->disconnect();
     return jsi::Value::undefined();
   }
 
@@ -143,7 +141,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
     for (int o = outputBegin; o < outputEnd; ++o) {
       auto source = getConnectSource(o);
       for (int i = inputBegin; i < inputEnd; ++i) {
-        (void)source->disconnect(*toNodeHost->getConnectDestination(i));
+        source->disconnect(*toNodeHost->getConnectDestination(i));
       }
     }
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {

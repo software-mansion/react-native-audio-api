@@ -26,7 +26,7 @@ describe('Mock Integration Tests', () => {
       expect(oscillator.type).toBe('sine');
       expect(oscillator.frequency.value).toBe(440);
       expect(gainNode.gain.value).toBe(0.5);
-      expect(context.destination.numberOfOutputs).toBe(0);
+      expect(context.destination.numberOfOutputs).toBe(1);
     });
 
     it('should expose an AudioListener with nine spatialization params', () => {

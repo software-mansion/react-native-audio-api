@@ -7,22 +7,10 @@
 
 namespace audioapi {
 
-namespace {
-AudioNodeOptions makeOutputOptions(int numberOfChannels) {
-  AudioNodeOptions options;
-  options.numberOfInputs = numberOfChannels;
-  options.numberOfOutputs = 1;
-  options.channelCount = numberOfChannels;
-  options.channelCountMode = ChannelCountMode::EXPLICIT;
-  options.channelInterpretation = ChannelInterpretation::DISCRETE;
-  return options;
-}
-} // namespace
-
 ChannelMergerOutputNode::ChannelMergerOutputNode(
     const std::shared_ptr<BaseAudioContext> &context,
     int numberOfChannels)
-    : AudioNode(context, makeOutputOptions(numberOfChannels)) {}
+    : AudioNode(context, ChannelMergerOutputOptions(numberOfChannels)) {}
 
 void ChannelMergerOutputNode::processInputs(
     const std::vector<const DSPAudioBuffer *> &inputs,

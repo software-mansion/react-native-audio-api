@@ -9,23 +9,13 @@
 
 namespace audioapi {
 
-namespace {
-AudioNodeOptions makeOutputOptions() {
-  AudioNodeOptions options;
-  options.numberOfInputs = 1;
-  options.numberOfOutputs = 1;
-  options.channelCount = 1;
-  options.channelCountMode = ChannelCountMode::EXPLICIT;
-  options.channelInterpretation = ChannelInterpretation::DISCRETE;
-  return options;
-}
-} // namespace
-
 ChannelSplitterOutputNode::ChannelSplitterOutputNode(
     const std::shared_ptr<BaseAudioContext> &context,
     std::shared_ptr<DSPAudioBuffer> bus,
     size_t channelIndex)
-    : AudioNode(context, makeOutputOptions()), bus_(std::move(bus)), channelIndex_(channelIndex) {}
+    : AudioNode(context, ChannelSplitterOutputOptions()),
+      bus_(std::move(bus)),
+      channelIndex_(channelIndex) {}
 
 void ChannelSplitterOutputNode::processNode(int framesToProcess) {
   // getInputBuffer() was already zeroed by the base processInputs, so an
