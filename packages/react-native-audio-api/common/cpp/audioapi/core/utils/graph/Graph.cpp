@@ -142,8 +142,8 @@ Graph::Res Graph::removeAllEdges(HNode *from) {
   });
 }
 
-Graph::Res Graph::renegotiateNode(HNode *node) {
-  return hostGraph.renegotiateNode(node).map([&](AGEvent event) {
+Graph::Res Graph::renegotiateNodeChannels(HNode *node) {
+  return hostGraph.renegotiateNodeChannels(node).map([&](AGEvent event) {
     eventSender_.send(std::move(event));
     drainProducedEventsIfSelfDraining();
     return NoneType{};

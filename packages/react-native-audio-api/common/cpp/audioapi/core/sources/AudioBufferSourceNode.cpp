@@ -71,7 +71,7 @@ void AudioBufferSourceNode::setBuffer(
 
   if (buffer == nullptr) {
     loopEnd_ = 0;
-    channelCount_ = 1;
+    channelCount_ = AudioBufferSourceOptions::kDefaultChannelCount;
 
     buffer_ = nullptr;
     processor_->setBuffer(nullptr);

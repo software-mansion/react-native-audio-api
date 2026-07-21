@@ -467,7 +467,7 @@ auto HostGraph::removeAllEdges(Node *from) -> Res {
   });
 }
 
-auto HostGraph::renegotiateNode(Node *node) -> Res {
+auto HostGraph::renegotiateNodeChannels(Node *node) -> Res {
   std::scoped_lock lock(nodesMutex_);
   if (node == nullptr || std::ranges::find(nodes, node) == nodes.end()) {
     return Res::Err(ResultError::NODE_NOT_FOUND);

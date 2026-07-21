@@ -115,6 +115,9 @@ struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
 };
 
 struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
+  /// Spec default when no buffer is set (mono).
+  static constexpr size_t kDefaultChannelCount = 1;
+
   std::shared_ptr<AudioBuffer> buffer = nullptr;
   float loopStart = 0.0f;
   float loopEnd = 0.0f;
@@ -123,7 +126,7 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
 
   explicit AudioBufferSourceOptions(BaseAudioBufferSourceOptions options)
       : BaseAudioBufferSourceOptions(options) {
-    channelCount = 1;
+    channelCount = kDefaultChannelCount;
   }
 };
 

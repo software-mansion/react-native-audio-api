@@ -464,7 +464,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_StereoPanner_DownstreamSeesStereoOutpu
 
 // ─── Renegotiation after a channelCount / channelCountMode change ─────────
 //
-// `renegotiateNode` recomputes the channel layout for a node whose attributes
+// `renegotiateNodeChannels` recomputes the channel layout for a node whose attributes
 // changed after construction (the JS setters call this), cascading downstream.
 
 TEST_F(GraphTest, RenegotiateNode_ExplicitCountChange_UpdatesBuffer) {
@@ -479,7 +479,7 @@ TEST_F(GraphTest, RenegotiateNode_ExplicitCountChange_UpdatesBuffer) {
 
   // Simulate `dest.channelCount = 6` from JS, then renegotiate.
   dest->handle->audioNode->asAudioNode()->setChannelCount(6);
-  ASSERT_TRUE(graph->renegotiateNode(dest).is_ok());
+  ASSERT_TRUE(graph->renegotiateNodeChannels(dest).is_ok());
   graph->processEvents();
 
   EXPECT_EQ(channelsOf(dest), 6u)
@@ -503,7 +503,7 @@ TEST_F(GraphTest, RenegotiateNode_CascadesDownstream) {
   auto *midAudio = mid->handle->audioNode->asAudioNode();
   midAudio->setChannelCountMode(ChannelCountMode::EXPLICIT);
   midAudio->setChannelCount(6);
-  ASSERT_TRUE(graph->renegotiateNode(mid).is_ok());
+  ASSERT_TRUE(graph->renegotiateNodeChannels(mid).is_ok());
   graph->processEvents();
 
   EXPECT_EQ(channelsOf(mid), 6u);

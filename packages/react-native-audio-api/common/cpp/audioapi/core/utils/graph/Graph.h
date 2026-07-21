@@ -152,7 +152,7 @@ class Graph {
   /// @brief Recomputes channel-count negotiation for `node` (cascading
   /// downstream) after its `channelCount` / `channelCountMode` changed. Sends
   /// the resulting buffer-swap event through Channel A.
-  Res renegotiateNode(HNode *node);
+  Res renegotiateNodeChannels(HNode *node);
 
   void collectDisposedNodes();
 

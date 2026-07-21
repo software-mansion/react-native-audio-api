@@ -46,6 +46,10 @@ class AudioNodeHostObject : public HostObject, public utils::graph::HostNode {
   }
 
  protected:
+  /// Updates host + core channelCount and renegotiates when the value changes.
+  /// Safe to call from the host/JS thread only (negotiation reads these fields).
+  void updateChannelCount(size_t newChannelCount);
+
   /// @brief The concrete audio-thread payload backing this host object.
   AudioNode *const audioNode_;
 

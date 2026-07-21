@@ -46,7 +46,7 @@ HostNode::Res HostNode::disconnect() {
 }
 
 HostNode::Res HostNode::renegotiate() {
-  return graph_->renegotiateNode(node_);
+  return graph_->renegotiateNodeChannels(node_);
 }
 
 HostNode::HNode *HostNode::rawNode() const {

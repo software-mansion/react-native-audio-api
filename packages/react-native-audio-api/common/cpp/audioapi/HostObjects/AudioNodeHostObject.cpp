@@ -78,7 +78,10 @@ JSI_PROPERTY_SETTER_IMPL(AudioNodeHostObject, channelCount) {
     return;
   }
 
-  const auto newChannelCount = static_cast<size_t>(count);
+  updateChannelCount(static_cast<size_t>(count));
+}
+
+void AudioNodeHostObject::updateChannelCount(size_t newChannelCount) {
   if (newChannelCount == channelCount_) {
     return;
   }

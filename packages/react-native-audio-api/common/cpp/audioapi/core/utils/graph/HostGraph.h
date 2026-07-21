@@ -167,7 +167,7 @@ class HostGraph {
   /// changes after construction. The returned AGEvent applies the negotiated
   /// buffer swaps on the audio thread and marks the graph dirty.
   /// @return AGEvent to replay on AudioGraph, or NODE_NOT_FOUND.
-  Res renegotiateNode(Node *node);
+  Res renegotiateNodeChannels(Node *node);
 
   /// @brief Current number of live (non-ghost) edges.
   [[nodiscard]] size_t edgeCount() const;
