@@ -1,0 +1,149 @@
+---
+sidebar_label: WorkletAudioContext
+sidebar_position: 2
+---
+
+import { Optional } from '@site/src/components/Badges';
+
+# WorkletAudioContext
+
+:::warning
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
+:::
+
+`WorkletAudioContext` inherits from [`BaseAudioContext`](/docs/core/base-audio-context). It runs an audio-processing graph on a dedicated background thread **without routing audio to the device speakers**.
+
+Use it when you need a self-contained graph for worklet-based analysis or processing — for example, driving a Reanimated visualizer from a [`WorkletNode`](/docs/worklets/worklet-node) while playback happens in a separate [`AudioContext`](/docs/core/audio-context).
+
+## When to use it
+
+| Context | Output | Render driver | Typical use |
+| :--- | :--- | :--- | :--- |
+| [`AudioContext`](/docs/core/audio-context) | Device speakers / headphones | System audio callback | Playback, recording, effects |
+| [`WorkletAudioContext`](/docs/worklets/worklet-audio-context) | Internal sink (discarded) | Software timer on a worker thread | Worklet visualization, isolated processing |
+| [`OfflineAudioContext`](/docs/core/offline-audio-context) | [`AudioBuffer`](/docs/sources/audio-buffer) | Renders as fast as possible | Offline bounce / export |
+
+Unlike [`OfflineAudioContext`](/docs/core/offline-audio-context), `WorkletAudioContext` advances in **real time** at the context sample rate. Unlike [`AudioContext`](/docs/core/audio-context), it does not compete for the hardware audio session.
+
+:::tip
+You can attach worklet nodes to any [`BaseAudioContext`](/docs/core/base-audio-context). `WorkletAudioContext` is the recommended choice when the graph exists only to feed worklet callbacks and does not need speaker output.
+:::
+
+## Constructor
+
+```tsx
+import 'react-native-audio-worklets';
+import { WorkletAudioContext } from 'react-native-audio-worklets';
+
+const context = new WorkletAudioContext();
+```
+
+```tsx
+constructor(options?: WorkletAudioContextOptions)
+```
+
+### `WorkletAudioContextOptions`
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `sampleRate` <Optional /> | `number` | [`AudioManager.getDevicePreferredSampleRate()`](/docs/system/audio-manager#getdevicepreferredsamplerate) | Sample rate for all nodes in this context. |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `NotSupportedError` | `react-native-audio-worklets` is not installed, or `sampleRate` is outside the supported range [`3000`, `768000`]. |
+
+## Example
+
+A common pattern is a dedicated visualization graph: route input into a [`WorkletNode`](/docs/worklets/worklet-node), connect the node to `destination` so the graph stays active, and call `resume()` to start rendering.
+
+```tsx
+import { useEffect, useRef } from 'react';
+import { useSharedValue } from 'react-native-reanimated';
+import { WorkletAudioContext, WorkletNode } from 'react-native-audio-worklets';
+
+function Meter() {
+  const level = useSharedValue(0);
+  const contextRef = useRef<WorkletAudioContext | null>(null);
+
+  useEffect(() => {
+    const context = new WorkletAudioContext();
+    const meter = new WorkletNode(context, (audioData) => {
+      'worklet';
+
+      let peak = 0;
+      for (let i = 0; i < audioData.length; i++) {
+        peak = Math.max(peak, Math.abs(audioData[i]!));
+      }
+
+      level.value = peak;
+    });
+
+    contextRef.current = context;
+
+    const start = async () => {
+      await context.resume();
+      meter.connect(context.destination);
+      // Connect your input source to `meter` here.
+    };
+
+    start();
+
+    return () => {
+      meter.disconnect();
+      context.close().catch(() => {});
+      contextRef.current = null;
+    };
+  }, [level]);
+
+  return null;
+}
+```
+
+## Properties
+
+`WorkletAudioContext` does not define any additional properties.
+Inherits all properties from [`BaseAudioContext`](/docs/core/base-audio-context#properties).
+
+## Methods
+
+Inherits all node-factory methods from [`BaseAudioContext`](/docs/core/base-audio-context#methods) (`createGain`, `createOscillator`, `createAnalyser`, and so on).
+
+It does **not** provide [`AudioContext.createMediaElementSource`](/docs/core/audio-context#createmediaelementsource).
+
+### `close`
+
+Stops the render thread and releases context resources. Safe to call multiple times.
+
+#### Returns `Promise<void>`.
+
+### `resume`
+
+Starts (or resumes) real-time graph rendering on the background thread. The context is created in the `suspended` state — call `resume()` before audio flows through the graph.
+
+#### Returns `Promise<void>`.
+
+### `suspend`
+
+Pauses graph rendering while keeping the context alive. `currentTime` stops advancing until `resume()` is called again.
+
+#### Returns `Promise<void>`.
+
+## Remarks
+
+#### Lifecycle
+
+1. `new WorkletAudioContext()` — context starts **suspended**.
+2. Build the graph and connect nodes (often ending at `context.destination`).
+3. `await context.resume()` — background thread begins processing render quanta.
+4. `await context.suspend()` — pause without tearing down the graph.
+5. `await context.close()` — stop the thread and close the context.
+
+#### `destination`
+
+Every graph needs a sink. Connecting your final node to `context.destination` keeps the render loop pulling audio through the graph. Output written to `destination` is not played on the device — it is consumed internally.
+
+#### Sample rate
+
+Match the `sampleRate` of any external audio you route into this context (for example, recorded microphone data). A mismatch causes resampling artifacts or incorrect timing in worklet callbacks.
