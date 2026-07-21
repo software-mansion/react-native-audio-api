@@ -60,7 +60,8 @@ yarn ios
 
 ## Run iOS Tests
 
-The Fabric example includes a native XCTest target, `FabricExampleTests`, with initial coverage for `AudioEngine` creation and teardown.
+Native unit tests live in `FabricExampleTests` and run inside a minimal host app,
+`FabricExampleTestHost`, which links only `RNAudioAPI` and React Native core.
 
 From `apps/fabric-example`, make sure Pods are installed:
 
@@ -68,15 +69,27 @@ From `apps/fabric-example`, make sure Pods are installed:
 bundle exec pod install
 ```
 
-Then run the tests from the repo root or from `apps/fabric-example`:
+Run all native tests (preferred — skips building the example app):
 
 ```sh
 xcodebuild test \
   -workspace ios/FabricExample.xcworkspace \
-  -scheme FabricExample \
-  -destination 'platform=iOS Simulator,name=iPhone 17 pro,OS=26.4' \
-  -parallelizeTargets
+  -scheme FabricExampleTests \
+  -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
+
+Run a single test class or method:
+
+```sh
+xcodebuild test \
+  -workspace ios/FabricExample.xcworkspace \
+  -scheme FabricExampleTests \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:FabricExampleTests/IOSAudioPlayerTests/testRenderBlockRendersInQuantumSizedChunksWhenRunning
+```
+
+The `FabricExample` scheme still lists the same tests, but uses the lightweight host
+at test time instead of booting Metro / the React Native example app.
 
 If that simulator is not available on your machine, list installed simulators and swap the destination:
 

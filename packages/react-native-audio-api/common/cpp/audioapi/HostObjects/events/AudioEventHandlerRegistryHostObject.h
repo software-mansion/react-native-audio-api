@@ -19,6 +19,10 @@ class AudioEventHandlerRegistryHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(addAudioEventListener);
   JSI_HOST_FUNCTION_DECL(removeAudioEventListener);
 
+  [[nodiscard]] const std::shared_ptr<AudioEventHandlerRegistry> &getEventHandlerRegistry() const {
+    return eventHandlerRegistry_;
+  }
+
  private:
   std::shared_ptr<AudioEventHandlerRegistry> eventHandlerRegistry_;
 };

@@ -173,6 +173,58 @@ rm -rf packages/react-native-audio-api/android/.cxx
 
 ---
 
+## Local Full Validation
+
+CI intentionally skips native Android/iOS builds (expensive). Use the tiered local validation script for pre-PR checks:
+
+```bash
+yarn validate:fast      # CI parity (format, lint, typecheck, enum sync, build, C++ + JS tests)
+yarn validate:graph     # graph tests + ASan (optional; graph path changes)
+yarn validate:android   # yarn workspace … build:android
+yarn validate:ios       # yarn workspace … build:ios (macOS only)
+yarn validate:full      # --fast + --android + --ios
+```
+
+Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
+
+### What CI covers vs what validation tiers add
+
+| Layer | CI (`ci.yml` + `tests.yml`) | Local tiers |
+|---|---|---|
+| TS build (`bob build`) | Yes | `--fast` |
+| C++ test subset (`RunTests.sh`) | Yes | `--fast` |
+| Jest | Yes | `--fast` |
+| Graph tests | No, path-filtered in `graph-tests.yml` | `--graph` |
+| HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
+| Android JNI C++ + Kotlin | **No** | `--android` |
+| iOS ObjC++ | **No** | `--ios` |
+| Prebuilt libs (Opus, FFmpeg, etc.) | **No** | `--android` / `--ios` (via `download-prebuilt-binaries.sh`) |
+| TurboModule codegen, worklets linking | **No** | `--android` / `--ios` |
+
+The C++ test build excludes HostObjects, `AudioContext.cpp`, `FFmpegDecoding.cpp`, and worklet nodes — see [C++ Tests](#c-tests-standalone-build) below. Passing `yarn test` alone does not prove native layers compile.
+
+### Shared prebuild phase (before native tiers)
+
+Before `--android` or `--ios`, the script runs once:
+
+1. `yarn install --immutable` + `yarn build`
+2. [`download-prebuilt-binaries.sh`](../../../packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh) `{android|ios}` (must run from `packages/react-native-audio-api/scripts/`)
+3. `yarn workspace react-native-audio-api test:cpp`
+
+Android (NDK) and iOS (Clang) cannot share object files — reuse is at the prebuild/download level. If `ccache` is installed, `validate.sh` wraps host `CC`/`CXX`; only the host C++ tests (`test:cpp`) honor that — Gradle/NDK and `xcodebuild` use their own toolchains and are unaffected.
+
+### Platform skip behavior
+
+- `--ios` on Linux → skip with message (exit 0)
+- `--android` without `ANDROID_HOME` → fail on explicit `--android`; skip with warning inside `--full`
+- Graph tests are separate from `--full` (slow; CI path-filters them)
+
+### Which tier to run
+
+See the decision table in [post-work-checks](../post-work-checks/SKILL.md).
+
+---
+
 ## C++ Tests (standalone build)
 
 ### Location

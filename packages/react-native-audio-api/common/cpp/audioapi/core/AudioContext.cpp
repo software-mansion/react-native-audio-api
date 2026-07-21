@@ -38,7 +38,6 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       &driverMutex_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
       currentRenders_);
-  audioPlayer_->openAudioStream();
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },

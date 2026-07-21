@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/Graph.h>
 #include "AudioThreadGuard.h"
 
@@ -22,8 +23,9 @@ namespace audioapi::test {
 /// Spawns a dedicated thread that repeatedly:
 ///   1. Processes SPSC events (graph mutations from the main thread)
 ///   2. Runs toposort + compaction
-///   3. Iterates graph objects in topological order, downcasts to `NodeType`,
-///      then calls `process(inputs)` if available
+///   3. Iterates graph objects in topological order and calls
+///      `GraphObject::process()` (including end-of-quantum processable
+///      demotion); ProcessableMockNode values are updated just before that.
 ///
 /// The thread is instrumented with AudioThreadGuard to detect heap
 /// allocations / deallocations and sample context-switch counters.
@@ -105,18 +107,14 @@ class MockGraphProcessor {
     AudioThreadGuard::disarm();
 
     while (running_.load(std::memory_order_acquire)) {
-      // Everything below must be allocation-free.
+      graph_.processEvents();
+
+      // Allocation-free zone: toposort, settle, forward process.
       {
         AudioThreadGuard::Scope guard;
-        graph_.processEvents();
-
-        // Toposort + compact orphaned nodes
         graph_.process();
-
-        // Iterate topological order and call process()
         processNodes();
 
-        // Accumulate stats from this cycle
         allocationViolations_.fetch_add(guard.allocationViolations(), std::memory_order_relaxed);
         involuntaryCS_.fetch_add(guard.involuntaryContextSwitches(), std::memory_order_relaxed);
         voluntaryCS_.fetch_add(guard.voluntaryContextSwitches(), std::memory_order_relaxed);
@@ -124,7 +122,6 @@ class MockGraphProcessor {
       cycles_.fetch_add(1, std::memory_order_relaxed);
     }
 
-    // One final drain after stop signal
     graph_.processEvents();
     {
       AudioThreadGuard::Scope guard;
@@ -138,14 +135,13 @@ class MockGraphProcessor {
     cycles_.fetch_add(1, std::memory_order_relaxed);
   }
 
-  /// @brief Iterates graph objects in topological order and calls process(inputs).
+  /// @brief Iterates graph objects in topological order and calls process().
   void processNodes() {
     for (auto &&[graphObject, inputs] : graph_.iter()) {
-      auto *node = dynamic_cast<NodeType *>(&graphObject);
-      if (!node) {
-        continue;
+      if (auto *node = dynamic_cast<NodeType *>(&graphObject)) {
+        node->collectFromInputGraphObjects(inputs);
       }
-      node->process(inputs);
+      graphObject.process(inputs, audioapi::RENDER_QUANTUM_SIZE);
     }
   }
 

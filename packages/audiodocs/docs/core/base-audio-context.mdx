@@ -10,7 +10,7 @@ import Heading from '@theme/Heading';
 
 The `BaseAudioContext` interface acts as a supervisor of audio-processing graphs. It provides key processing parameters such as current time, output destination or sample rate.
 Additionally, it is responsible for nodes creation and audio-processing graph's lifecycle management.
-However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/docs/core/audio-context), [`OfflineAudioContext`](/docs/core/offline-audio-context).
+However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/docs/core/audio-context), [`OfflineAudioContext`](/docs/core/offline-audio-context), or [`WorkletAudioContext`](/docs/worklets/worklet-audio-context).
 
 #### Audio graph
 
@@ -34,7 +34,7 @@ Each call has a system-level audio callback buffer size, which is a varying numb
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
 :::info
-Concept of system-level audio callback does not apply to [`OfflineAudioContext`](/docs/core/offline-audio-context).
+Concept of system-level audio callback does not apply to [`OfflineAudioContext`](/docs/core/offline-audio-context) or [`WorkletAudioContext`](/docs/worklets/worklet-audio-context).
 :::
 
 ## Properties
@@ -180,61 +180,6 @@ Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 Creates [`WaveShaperNode`](/docs/effects/wave-shaper-node).
 
 **Returns:** `WaveShaperNode`
-
-### `createWorkletNode` <MobileOnly />
-
-Creates [`WorkletNode`](/docs/worklets/worklet-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `worklet` | `(Array<Float32Array>, number) => void` | The worklet to be executed. |
-| `bufferLength` | `number` | The size of the buffer that will be passed to the worklet on each call. |
-| `inputChannelCount` | `number` | The number of channels that the node expects as input (it will get min(expected, provided)). |
-| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
-
-**Errors**
-
-| Error type | Description |
-| :---: | :---- |
-| `Error` | `react-native-worklet` is not found as dependency. |
-| `NotSupportedError` | `bufferLength` < `1`. |
-| `NotSupportedError` | `inputChannelCount` is not in range [`1`, `32`]. |
-
-**Returns:** `WorkletNode`
-
-### `createWorkletSourceNode` <MobileOnly />
-
-Creates [`WorkletSourceNode`](/docs/worklets/worklet-source-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `worklet` | `(Array<Float32Array>, number, number, number) => void` | The worklet to be executed. |
-| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
-
-**Errors**
-
-| Error type | Description |
-| :---: | :---- |
-| `Error` | `react-native-worklet` is not found as dependency. |
-
-**Returns:** `WorkletSourceNode`
-
-### `createWorkletProcessingNode` <MobileOnly />
-
-Creates [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node).
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `worklet` | `(Array<Float32Array>, Array<Float32Array>, number, number) => void` | The worklet to be executed. |
-| `workletRuntime` | `AudioWorkletRuntime` | The kind of runtime to use for the worklet. See [worklet runtimes](/docs/worklets/worklets-introduction#what-kind-of-worklets-are-used-in-react-native-audio-api) for details. |
-
-**Errors**
-
-| Error type | Description |
-| :---: | :---- |
-| `Error` | `react-native-worklet` is not found as dependency. |
-
-**Returns:** `WorkletProcessingNode`
 
 ### `decodeAudioData`
 
