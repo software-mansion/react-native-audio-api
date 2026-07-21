@@ -57,6 +57,12 @@ bool AudioPlayer::openAudioStream() {
 
 bool AudioPlayer::start() {
   std::scoped_lock lock(streamMutex_);
+  if (!isInitialized_.load(std::memory_order_acquire)) {
+    if (!openAudioStream()) {
+      return false;
+    }
+  }
+
   if (mStream_ != nullptr) {
     auto result = mStream_->requestStart() == oboe::Result::OK;
     isRunning_.store(result, std::memory_order_release);

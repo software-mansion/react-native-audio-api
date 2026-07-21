@@ -7,7 +7,7 @@
       buildImplicitDependencies = "YES">
       <BuildActionEntries>
          <BuildActionEntry
-            buildForTesting = "YES"
+            buildForTesting = "NO"
             buildForRunning = "YES"
             buildForProfiling = "YES"
             buildForArchiving = "YES"
@@ -17,6 +17,20 @@
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
                BuildableName = "FabricExample.app"
                BlueprintName = "FabricExample"
+               ReferencedContainer = "container:FabricExample.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B2C3D561E00000100A0A001"
+               BuildableName = "FabricExampleTestHost.app"
+               BlueprintName = "FabricExampleTestHost"
                ReferencedContainer = "container:FabricExample.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>

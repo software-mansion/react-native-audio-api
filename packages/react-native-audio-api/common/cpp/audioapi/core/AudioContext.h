@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/CommonPlayer.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
@@ -9,13 +10,6 @@
 #include <memory>
 
 namespace audioapi {
-#ifdef RN_AUDIO_API_NODE
-class NodeAudioPlayer;
-#elif defined(ANDROID)
-class AudioPlayer;
-#else
-class IOSAudioPlayer;
-#endif
 
 class AudioContext : public BaseAudioContext {
  public:
@@ -44,13 +38,7 @@ class AudioContext : public BaseAudioContext {
   [[nodiscard]] double getOutputLatency() const;
 
  private:
-#ifdef RN_AUDIO_API_NODE
-  std::shared_ptr<NodeAudioPlayer> audioPlayer_;
-#elif defined(ANDROID)
-  std::shared_ptr<AudioPlayer> audioPlayer_;
-#else
-  std::shared_ptr<IOSAudioPlayer> audioPlayer_;
-#endif
+  std::shared_ptr<CommonPlayer> audioPlayer_;
   std::atomic<bool> isInitialized_{false};
   /// Audio I/O callback thread increments around each platform render callback;
   /// control thread waits on suspend/close.

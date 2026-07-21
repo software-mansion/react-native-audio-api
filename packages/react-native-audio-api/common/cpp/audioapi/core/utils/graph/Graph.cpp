@@ -72,6 +72,7 @@ void Graph::processEvents() {
 
 void Graph::process() {
   audioGraph.process();
+  audioGraph.settleProcessableState();
 }
 
 Graph::HNode *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
@@ -115,7 +116,10 @@ Graph::Res Graph::addEdge(HNode *from, HNode *to) {
 }
 
 void Graph::linkNodes(HNode *from, HNode *to) {
-  HostGraph::linkNodes(from, to);
+  if (auto event = hostGraph.linkNodes(from, to)) {
+    sendPoolGrowIfNeeded();
+    eventSender_.send(std::move(*event));
+  }
 }
 
 Graph::Res Graph::removeEdge(HNode *from, HNode *to) {
@@ -139,10 +143,12 @@ void Graph::collectDisposedNodes() {
 }
 
 void Graph::sendPoolGrowIfNeeded() {
-  auto edges = static_cast<std::uint32_t>(hostGraph.edgeCount());
-  // edges > poolCapacity_ / 2 || (poolCapacity_ == 0 && edges > 0) left for clarity
-  if (edges > poolCapacity_ / 2) {
-    std::uint32_t newCap = edges * 2;
+  // The pool backs both audio-edge input lists and processable-link lists, so
+  // both must be counted to keep audio-thread pushes allocation-free.
+  auto slots = static_cast<std::uint32_t>(hostGraph.edgeCount() + hostGraph.linkCount());
+  // slots > poolCapacity_ / 2 || (poolCapacity_ == 0 && slots > 0) left for clarity
+  if (slots > poolCapacity_ / 2) {
+    std::uint32_t newCap = slots * 2;
     auto buf = std::make_unique<InputPool::Slot[]>(newCap);
     eventSender_.send(
         [buf = std::move(buf), newCap](

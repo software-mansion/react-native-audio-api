@@ -7,6 +7,7 @@ typedef struct objc_object NativeAudioPlayer;
 typedef struct objc_object AudioBufferList;
 #endif // __OBJC__
 
+#include <audioapi/core/CommonPlayer.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <atomic>
@@ -16,22 +17,22 @@ namespace audioapi {
 
 class AudioContext;
 
-class IOSAudioPlayer {
+class IOSAudioPlayer : public CommonPlayer {
  public:
   IOSAudioPlayer(
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount,
       std::atomic<uint32_t> &currentRenders);
-  ~IOSAudioPlayer();
+  ~IOSAudioPlayer() override;
 
-  bool start();
-  void stop();
-  bool resume();
-  void suspend();
-  void cleanup();
+  bool start() override;
+  void stop() override;
+  bool resume() override;
+  void suspend() override;
+  void cleanup() override;
 
-  bool isRunning() const;
+  [[nodiscard]] bool isRunning() const override;
 
   [[nodiscard]] double getBaseLatency() const;
   [[nodiscard]] double getOutputLatency() const;

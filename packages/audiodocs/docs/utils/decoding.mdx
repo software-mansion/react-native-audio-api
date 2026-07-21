@@ -24,7 +24,7 @@ Supported file formats:
 - m4a
 - mp4
 
-On mobile, `.aac`, `.mp4`, and `.m4a` are decoded with FFmpeg — see [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used) for more info.
+On mobile, `.aac`, `.mp4`, and `.m4a` are decoded with FFmpeg — see [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used) for more info.
 :::
 
 ## Methods
@@ -39,7 +39,7 @@ Reads the duration of an audio source without decoding the full file into an [`A
 Use this when you only need the encoded file duration. Use [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) when you need sample data for playback or processing.
 
 On mobile, duration is read from file metadata via the native decoder. Local paths, `file://` URIs, remote `http(s):` URLs, and `ArrayBuffer` input are supported.
-Remote URL probing requires FFmpeg in the native build — see [Runtime flags](/docs/flags/runtime-flags#isffmpegenabled).
+Remote URL probing requires FFmpeg in the native build — see [Runtime flags](/docs/other/runtime-flags#isffmpegenabled).
 Asset module ids, base64 data URLs, and blob URLs are rejected explicitly.
 
 On web, this API uses browser audio metadata loading and supports sources the browser can load, such as remote URLs, relative URLs, blob URLs, and data URLs.

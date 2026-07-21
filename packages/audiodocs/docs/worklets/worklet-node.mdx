@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
@@ -9,57 +9,140 @@ import { ReadOnly } from '@site/src/components/Badges';
 # WorkletNode
 
 :::warning
-This node is dependent on `react-native-worklets` and you need to install them in order to use this node. Refer to [getting-started page](/docs/fundamentals/getting-started#possible-additional-dependencies) for more info.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
 :::
 
-The `WorkletNode` interface represents a node in the audio processing graph that can execute a worklet.
+`WorkletNode` is a pass-through analysis node. It accumulates incoming audio frames until `bufferLength` is reached, then invokes your worklet on the **UI runtime** with a read-only snapshot. Audio output is unchanged — modifications inside the callback do not affect the signal.
 
-Worklets are a way to run JavaScript code in the audio rendering thread, allowing for low-latency audio processing. For more information, see our introduction [Introduction to worklets](/docs/worklets/worklets-introduction).
-This node lets you execute a worklet on the UI thread. bufferLength specifies the size of the buffer that will be passed to the worklet on each call. The inputChannelCount specifies the number of channels that will be passed to the worklet.
+For background on runtimes and performance tips, see [How to use audio worklets mindfully](/docs/worklets/introduction#how-to-use-audio-worklets-mindfully).
 
 ## Constructor
 
 ```tsx
-constructor(
-  context: BaseAudioContext,
-  runtime: AudioWorkletRuntime,
-  callback: (audioData: Array<Float32Array>, channelCount: number) => void,
-  bufferLength: number,
-  inputChannelCount: number)
+import { AudioContext } from 'react-native-audio-api';
+import { WorkletNode } from 'react-native-audio-worklets';
+
+const node = new WorkletNode(context, callback, 1024);
+
+// or with explicit options:
+const timeDomainNode = new WorkletNode(context, callback, {
+  domain: 'time-domain',
+  bufferLength: 1024,
+});
+
+const frequencyDomainNode = new WorkletNode(context, callback, {
+  domain: 'frequency-domain',
+  bufferLength: 1024,
+});
 ```
-Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createWorkletNode(worklet, bufferLength, inputChannelCount, workletRuntime)`](/docs/core/base-audio-context#createworkletnode-)
+
+After construction, tune frequency-domain analysis at runtime:
+
+```tsx
+frequencyDomainNode.smoothingTimeConstant = 0.5;
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
+| `callback` | `WorkletNodeCallback` | Worklet invoked on the UI runtime when a snapshot is ready. Must include the `'worklet'` directive. |
+| `options` | `number \| WorkletNodeOptions` | Optional. Pass `bufferLength` directly, `{ domain?, bufferLength? }`, or omit for defaults (`time-domain`, `bufferLength: 1024`). |
+
+### `WorkletNodeOptions`
+
+```tsx
+type WorkletNodeDomain = 'time-domain' | 'frequency-domain';
+
+interface WorkletNodeOptions {
+  domain?: WorkletNodeDomain; // default 'time-domain'
+  bufferLength?: number; // power of 2, 32..32768, default 1024
+  smoothingTimeConstant?: number; // default 0.8, frequency-domain only
+}
+```
+
+| Option | Default | Description |
+| :--- | :---- | :---- |
+| `domain` | `'time-domain'` | Snapshot type passed to the callback. |
+| `bufferLength` | `1024` | Snapshot size: PCM samples (time-domain) or magnitude bins (frequency-domain). In frequency-domain mode the internal FFT size is `bufferLength * 2`. |
+| `smoothingTimeConstant` | `0.8` | Exponential smoothing of linear magnitude bins (`0`..`1`). |
+
+### `WorkletNodeCallback`
+
+```tsx
+type WorkletNodeCallback = (audioData: Float32Array) => void;
+```
+
+| Argument | Description |
+| :--- | :---- |
+| `audioData` | Stable `Float32Array` reused every callback. **Time-domain:** down-mixed mono PCM (`bufferLength` samples). **Frequency-domain:** linear magnitude spectrum (`bufferLength` bins; FFT size `bufferLength * 2`). |
+
+:::caution
+Do **not** assign `audioData` to a Reanimated shared value (or any state read later on the UI thread). The native buffer pool is reused for the next snapshot and may be written from the audio thread after your callback returns.
+
+- **Safe:** compute a scalar inside the callback and assign that (e.g. `amplitude.value = rms`).
+- **Safe:** copy samples if you need waveform data later — `Float32Array.from(audioData)`.
+- **Unsafe:** `waveform.value = audioData` — you keep a live alias, not a frozen snapshot.
+:::
+
+### Errors
+
+| Error type | Condition |
+| :---: | :---- |
+| `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
+| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
+| `IndexSizeError` | `bufferLength` or `smoothingTimeConstant` is out of range. |
+
+## How buffering works
+
+1. Each render quantum appends down-mixed mono frames into an internal buffer.
+2. **Time-domain:** when `bufferLength` frames are collected, the callback is scheduled.
+3. **Frequency-domain:** when `bufferLength * 2` PCM samples are collected, native code runs window + FFT + magnitude smoothing, then schedules the callback with `bufferLength` bins.
+4. While the callback is running, new frames are **skipped** (audio still passes through).
+5. After the callback completes, accumulation starts again from the beginning.
+
+If a single quantum contains more frames than needed to fill the buffer, only the frames required to reach `bufferLength` are copied — the rest are discarded.
 
 ## Example
+
+Oscillator → `WorkletNode` (RMS on UI) → destination, driving Reanimated bars:
+
 ```tsx
-import { AudioContext, AudioRecorder, AudioManager } from 'react-native-audio-api';
+import { AudioContext } from 'react-native-audio-api';
+import { WorkletNode } from 'react-native-audio-worklets';
+import { useSharedValue, withSpring } from 'react-native-reanimated';
 
-AudioManager.setAudioSessionOptions({
-    iosCategory: "playAndRecord",
-    iosMode: "measurement",
-    iosOptions: ["mixWithOthers"],
-})
+function Visualizer() {
+  const amplitude = useSharedValue(0);
 
-// This example shows how we can use a WorkletNode to process microphone audio data in real-time.
-async function App() {
-    const recorder = new AudioRecorder();
+  const start = () => {
+    const ctx = new AudioContext();
 
-    const audioContext = new AudioContext({ sampleRate: 16000 });
-    const worklet = (audioData: Array<Float32Array>, inputChannelCount: number) => {
+    const workletNode = new WorkletNode(
+      ctx,
+      (audioData) => {
         'worklet';
-        // here you have access to the number of input channels and the audio data
-        // audio data is a two dimensional array where first index is the channel number and second is buffer of exactly bufferLength size
-        // !IMPORTANT: here you can only read audio data any modifications will not be reflected in the audio output of this node
-        // !VERY IMPORTANT: please read the Known Issue section below
-    };
-    const workletNode = audioContext.createWorkletNode(worklet, 1024, 2, 'UIRuntime');
 
-    await AudioManager.setAudioSessionActivity(true);
-    adapterNode.connect(workletNode);
-    workletNode.connect(audioContext.destination);
-    recorder.connect(adapterNode);
-    recorder.start();
-    audioContext.resume();
+        let sum = 0;
+        for (let i = 0; i < audioData.length; i++) {
+          sum += audioData[i] * audioData[i];
+        }
+        const rms = Math.sqrt(sum / audioData.length);
+        amplitude.value = withSpring(Math.min(rms * 4, 1));
+      },
+      1024
+    );
+
+    const oscillator = ctx.createOscillator();
+    oscillator.frequency.value = 440;
+    oscillator.connect(workletNode);
+    workletNode.connect(ctx.destination);
+    oscillator.start();
+    ctx.resume();
+  };
+
+  // ...
 }
 ```
 
@@ -69,7 +152,10 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
-`WorkletNode` does not define any additional properties.
+| Property | Type | Description |
+| :--- | :--- | :---- |
+| `bufferLength` <ReadOnly /> | `number` | Snapshot size passed to the callback (set at construction). In frequency-domain mode, internal FFT size is `bufferLength * 2`. |
+| `smoothingTimeConstant` | `number` | Exponential smoothing of linear magnitude bins (`0`..`1`, default `0.8`). Meaningful in frequency-domain mode. |
 
 ## Methods
 
@@ -79,13 +165,14 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 `WorkletNode` does not define any additional methods.
 
-## Known Issue
-It might happen that the worklet side effect is not visible on the UI (when you are using UIRuntime kind). For example you have some animated style which depends on some shared value modified in the worklet.
-This is happening because microtask queue is not always being flushed properly, bla bla bla...
+## Known issue
 
-To workaround this issue just add this line at the end of your worklet callback function:
+When using Reanimated shared values, UI updates from the worklet may not appear immediately because the microtask queue is not always flushed on the UI runtime.
+
+Add this at the end of your callback if you see missing updates:
+
 ```ts
 requestAnimationFrame(() => {});
 ```
-This will ensure that microtask queue is flushed and your UI will be updated properly. But be aware that this might have some performance implications so it is not included by default.
-So use this only after confirming that your worklet side effects are not visible on the UI.
+
+Use only after confirming the issue — it adds a small scheduling cost.

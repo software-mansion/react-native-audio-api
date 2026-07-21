@@ -12,9 +12,13 @@
     @"artwork" : MPMediaItemPropertyArtwork \
   }
 
+// Must match PlaybackNotification.DEFAULT_SKIP_INTERVAL_SECONDS on Android.
+static const NSInteger kDefaultSkipIntervalSeconds = 15;
+
 @implementation PlaybackNotification {
   BOOL _isInitialized;
   NSMutableDictionary *_currentInfo;
+  NSInteger _skipInterval;
 }
 
 - (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
@@ -25,6 +29,7 @@
     _isInitialized = false;
     _isActive = false;
     _currentInfo = [[NSMutableDictionary alloc] init];
+    _skipInterval = kDefaultSkipIntervalSeconds;
   }
 
   return self;
@@ -58,6 +63,8 @@
 
 - (BOOL)showWithOptions:(NSDictionary *)options
 {
+  [self updateSkipIntervalFromOptions:options];
+
   if (!_isInitialized) {
     if (![self initializeWithOptions:options]) {
       return false;
@@ -136,6 +143,24 @@
 }
 
 #pragma mark - Private Methods
+
+- (void)updateSkipIntervalFromOptions:(NSDictionary *)options
+{
+  id skipIntervalValue = options[@"skipInterval"];
+  if (skipIntervalValue == nil) {
+    return;
+  }
+
+  _skipInterval = (NSInteger)[skipIntervalValue doubleValue];
+  [self applySkipIntervals];
+}
+
+- (void)applySkipIntervals
+{
+  MPRemoteCommandCenter *remoteCenter = [MPRemoteCommandCenter sharedCommandCenter];
+  remoteCenter.skipForwardCommand.preferredIntervals = @[ @(_skipInterval) ];
+  remoteCenter.skipBackwardCommand.preferredIntervals = @[ @(_skipInterval) ];
+}
 
 - (void)updateNowPlayingInfo:(NSDictionary *)info
 {
@@ -300,12 +325,12 @@
            withSelector:@selector(onPreviousTrack:)
                 enabled:enabled];
   } else if ([name isEqualToString:@"skipForward"]) {
-    remoteCenter.skipForwardCommand.preferredIntervals = @[ @(15) ];
+    [self applySkipIntervals];
     [self enableCommand:remoteCenter.skipForwardCommand
            withSelector:@selector(onSkipForward:)
                 enabled:enabled];
   } else if ([name isEqualToString:@"skipBackward"]) {
-    remoteCenter.skipBackwardCommand.preferredIntervals = @[ @(15) ];
+    [self applySkipIntervals];
     [self enableCommand:remoteCenter.skipBackwardCommand
            withSelector:@selector(onSkipBackward:)
                 enabled:enabled];

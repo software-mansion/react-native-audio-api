@@ -1,19 +1,18 @@
 #pragma once
 
 #include "MyProcessorNode.h"
-#include <audioapi/HostObjects/AudioNodeHostObject.h>
 
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 using namespace facebook;
 
 class MyProcessorNodeHostObject : public AudioNodeHostObject {
-public:
-  explicit MyProcessorNodeHostObject(
-      const std::shared_ptr<MyProcessorNode> &node)
-      : AudioNodeHostObject(node) {
+ public:
+  explicit MyProcessorNodeHostObject(const std::shared_ptr<BaseAudioContext> &context)
+      : AudioNodeHostObject(
+            context->getGraph(),
+            std::make_unique<MyProcessorNode>(context)) {
     // addGetters(JSI_EXPORT_PROPERTY_GETTER(MyProcessorNodeHostObject, getter));
     // addSetters(JSI_EXPORT_PROPERTY_SETTER(MyProcessorNodeHostObject, setter));
     // addFunctions(JSI_EXPORT_FUNCTION(MyProcessorNodeHostObject, function));
@@ -33,4 +32,5 @@ public:
   //  auto obj = args[0].getObject(runtime);
   //}
 };
+
 } // namespace audioapi
