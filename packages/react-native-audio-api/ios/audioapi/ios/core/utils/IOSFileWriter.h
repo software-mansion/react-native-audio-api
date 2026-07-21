@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/AudioFileWriter.h>
+#include <audioapi/encoding/AudioEncoder.h>
 #include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SlotFreeList.hpp>
@@ -15,9 +16,7 @@
 #ifndef __OBJC__ // when compiled as C++
 typedef struct objc_object NSURL;
 typedef struct objc_object NSString;
-typedef struct objc_object AVAudioFile;
 typedef struct objc_object AVAudioFormat;
-typedef struct objc_object AVAudioConverter;
 #endif // __OBJC__
 
 struct WriterData {
@@ -30,6 +29,7 @@ namespace audioapi {
 class AudioFileProperties;
 class AudioEventHandlerRegistry;
 
+/// iOS recorder file writer; encodes via AudioEncoder on a worker thread.
 class IOSFileWriter : public AudioFileWriter {
  public:
   IOSFileWriter(
@@ -50,16 +50,10 @@ class IOSFileWriter : public AudioFileWriter {
   size_t getFileSizeBytes() const override;
 
  protected:
-  size_t converterInputBufferSize_;
-  size_t converterOutputBufferSize_;
-
-  AVAudioFile *audioFile_;
   AVAudioFormat *bufferFormat_;
-  AVAudioConverter *converter_;
-  NSURL *fileURL_;
-
-  AVAudioPCMBuffer *converterInputBuffer_;
-  AVAudioPCMBuffer *converterOutputBuffer_;
+  std::string filePath_;
+  double inputSampleRate_{0.0};
+  std::unique_ptr<AudioEncoder> encoder_;
 
  private:
   using FreeList = slots::SlotFreeList<FILE_WRITER_POOL_SIZE>;

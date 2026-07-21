@@ -2,7 +2,7 @@
 
 These helpers let you check at runtime which optional native features are compiled into your app. They are synchronous and safe to call from JavaScript after the library has been installed.
 
-Use them to branch UI or loading logic — for example, skip remote metadata preload when FFmpeg is disabled, disable hls streaming, or offer only WAV recording on Android.
+Use them to branch UI or loading logic — for example, skip remote metadata preload when FFmpeg is disabled or disable hls streaming.
 
 :::info Build-time vs runtime
 To **disable** optional libraries at build time (and reduce app size), see [Disabling prebuilt libraries](/docs/other/disabling-prebuilt-libraries). Runtime flags only tell you what ended up in the binary you are running.
@@ -20,7 +20,7 @@ Returns whether the native build includes [`FFmpeg`](https://github.com/FFmpeg/F
 import { isFfmpegEnabled } from 'react-native-audio-api';
 
 if (!isFfmpegEnabled()) {
-  console.warn('Remote URL metadata, streaming, and Android M4A recording require an FFmpeg build.');
+  console.warn('Remote URL metadata and streaming require an FFmpeg build.');
 }
 ```
 </details>
@@ -33,12 +33,19 @@ if (!isFfmpegEnabled()) {
 | Playback | `createFileSource`, [`<Audio>`](/docs/sources/audio-tag) | Remote URL streaming, HLS (`.m3u8`), local `.mp4` / `.m4a` / `.aac`. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. |
 | Decoding | [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) | `.aac`, `.mp4`, `.m4a` (and remote URLs for any format) |
 | Metadata | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](/docs/sources/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing |
-| Recording | [`AudioRecorder`](/docs/inputs/audio-recorder) file output | **Android only:** `M4A`, `FLAC`, and `CAF` (WAV uses miniaudio). iOS uses system AVFoundation instead. |
-| File utils | [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles) | M4A concatenation (WAV uses miniaudio) |
 
 Formats such as `.mp3`, `.wav`, and `.flac` are often handled by miniaudio for **local** decode paths and for **downloaded** remote sources when FFmpeg is disabled.
 
-When `isFfmpegEnabled()` returns `false`, the features in the table above are unavailable or fall back to errors. On **Android**, [`AudioRecorder`](/docs/inputs/audio-recorder) file output is limited to **WAV**.
+:::note Recording and file concatenation are FFmpeg-free
+[`AudioRecorder`](/docs/inputs/audio-recorder) file output and
+[`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles) do **not**
+use FFmpeg on any platform. Recording encodes with system APIs (iOS AVFoundation,
+Android MediaCodec/MediaMuxer). `concatAudioFiles` supports **WAV** (miniaudio) and
+**M4A/MP4 AAC** (system remux). Neither is affected by `isFfmpegEnabled()`.
+See the [per-platform format matrix](/docs/inputs/audio-recorder#fileformat).
+:::
+
+When `isFfmpegEnabled()` returns `false`, the features in the table above are unavailable or fall back to errors.
 
 ### Disabling FFmpeg
 

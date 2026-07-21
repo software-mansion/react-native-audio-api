@@ -20,6 +20,12 @@ import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
 
+const RECORDING_EXTENSION = FileFormat.Wav;
+
+const RECORDING_EXTENSION_NAME_MAP = {
+  [FileFormat.Wav]: 'wav',
+  [FileFormat.M4A]: 'm4a',
+}
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
@@ -130,8 +136,13 @@ const Record: FC = () => {
       return;
     }
 
-    const outputPath = info.paths[0].replace(/[^/]+$/, 'recording.m4a');
+    const extension = RECORDING_EXTENSION_NAME_MAP[RECORDING_EXTENSION];
+    const outputPath = info.paths[0].replace(
+      /[^/]+$/,
+      `recording.${extension}`
+    );
 
+    console.log(info.paths.length);
     const finalPath = await concatAudioFiles(info.paths, outputPath);
     const audioBuffer = await audioContext.decodeAudioData(finalPath);
     setRecordedBuffer(audioBuffer);
@@ -262,7 +273,7 @@ const Record: FC = () => {
   }, [onPauseRecording, onResumeRecording]);
 
   useEffect(() => {
-    Recorder.enableFileOutput({ rotateIntervalBytes: 1_000_000, format: FileFormat.M4A });
+    Recorder.enableFileOutput({ rotateIntervalBytes: 1_000_000, format: RECORDING_EXTENSION });
 
     return () => {
       stopPlayback();

@@ -3,12 +3,8 @@
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/AndroidRecorderCallback.h>
 
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-#include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-
 #include <audioapi/android/core/utils/AndroidRotatingFileWriter.h>
-#include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
+#include <audioapi/android/core/utils/OsAudioFileWriter.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
@@ -272,36 +268,17 @@ Result<NoneType, std::string> AndroidAudioRecorder::enableFileOutput(
 
 std::shared_ptr<AudioFileWriter> AndroidAudioRecorder::createFileWriter(
     const std::shared_ptr<AudioFileProperties> &props) {
-  if (props->format == AudioFileProperties::Format::WAV) {
-    return std::make_shared<MiniAudioFileWriter>(
-        audioEventHandlerRegistry_,
-        props,
-        streamSampleRate_,
-        streamChannelCount_,
-        streamMaxBufferSizeInFrames_);
-  }
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-  return std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
+  return std::make_shared<OsAudioFileWriter>(
       audioEventHandlerRegistry_,
       props,
       streamSampleRate_,
       streamChannelCount_,
       streamMaxBufferSizeInFrames_);
-#else
-  return nullptr;
-#endif
 }
 
 Result<NoneType, std::string> AndroidAudioRecorder::setupFileWriter(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileNameOverride) {
-#if RN_AUDIO_API_FFMPEG_DISABLED
-  if (properties->format != AudioFileProperties::Format::WAV) {
-    return Result<NoneType, std::string>::Err(
-        "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV format instead.");
-  }
-#endif
-
   if (properties->rotateIntervalBytes > 0) {
     fileWriter_ = std::make_shared<AndroidRotatingFileWriter>(
         audioEventHandlerRegistry_,

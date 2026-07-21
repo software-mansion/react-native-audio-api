@@ -1,23 +1,24 @@
 #pragma once
 
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
-#include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/encoding/AudioEncoder.h>
 
-#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <string>
 
 namespace audioapi {
 
-class MiniAudioFileWriter : public AndroidFileWriterBackend {
+/// Android recorder file writer backed by the system AudioEncoder.
+class OsAudioFileWriter : public AndroidFileWriterBackend {
  public:
-  explicit MiniAudioFileWriter(
+  OsAudioFileWriter(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
       float streamSampleRate,
       int32_t streamChannelCount,
       int32_t streamMaxBufferSize);
-  ~MiniAudioFileWriter();
+  ~OsAudioFileWriter() override;
 
   size_t getFileSizeBytes() const override;
 
@@ -29,21 +30,10 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   CloseFileResult closeFile() override;
 
  private:
-  std::atomic<bool> isConverterRequired_{false};
-
-  std::unique_ptr<ma_encoder> encoder_{nullptr};
-  std::unique_ptr<ma_data_converter> converter_{nullptr};
-  void *processingBuffer_{nullptr};
-  ma_uint64 processingBufferLength_{0};
-
-  ma_result initializeConverterIfNeeded();
-  ma_result initializeEncoder(const std::string &fileNameOverride);
-  // TODO: rewrite to use r8brain resampler
-  ma_uint64 convertBuffer(void *data, int numFrames);
-
-  bool isConverterRequired();
   void processWriterData(void *data, int numFrames) override;
   void rollbackFailedOpen();
+
+  std::unique_ptr<AudioEncoder> encoder_;
 };
 
 } // namespace audioapi

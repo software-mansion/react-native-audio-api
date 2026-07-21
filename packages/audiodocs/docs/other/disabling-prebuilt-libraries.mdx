@@ -17,7 +17,7 @@ The available flags are independent and can be combined:
 
 | Flag | What it removes | What stops working |
 | :---: | :---- | :---- |
-| `disableFFmpeg` | FFmpeg shared libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | Streaming, remote playback/metadata, `.aac` / `.mp4` / `.m4a` decode, M4A concat, **Android** non-WAV recording — see [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used) |
+| `disableFFmpeg` | FFmpeg shared libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | Streaming, remote playback/metadata, `.aac` / `.mp4` / `.m4a` decode — see [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used). Recording and `concatAudioFiles` are unaffected. |
 | `disableStaticExternalLibs` | Static libs: `libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile` | Decoding `ogg`, `opus`, `oga` files |
 
 :::info

@@ -20,11 +20,27 @@ class AudioFileProperties {
     Cache = 1,
   };
 
+  // Values must stay in sync with the TypeScript `FileFormat` enum in src/types.ts.
+  // Each value maps to a concrete container+codec via EncoderCapabilities.
+  // Availability is platform-dependent (see EncoderCapabilities::isSupported).
   enum class Format {
     WAV = 0,
     CAF = 1,
     M4A = 2,
     FLAC = 3,
+    AIFF = 4,
+    ALAC = 5,
+    OPUS_OGG = 6,
+    OPUS_WEBM = 7,
+    VORBIS_WEBM = 8,
+    AMR_NB = 9,
+    AMR_WB = 10,
+    AAC_HE = 11,
+    AAC_ELD = 12,
+    IMA4 = 13,
+    ULAW = 14,
+    ALAW = 15,
+    ILBC = 16,
   };
 
   enum class IOSAudioQuality {

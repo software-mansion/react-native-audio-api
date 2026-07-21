@@ -654,17 +654,54 @@ interface AudioRecorderFileOptions {
 
 Describes desired file extension as well as codecs, containers (and muxers!) used to encode the file.
 
+All encoding is done with platform system APIs — iOS AVFoundation and Android MediaCodec/MediaMuxer. FFmpeg is never used for encoding. Because each platform exposes a different set of system encoders, format support is platform-specific.
+
 ```tsx
 enum FileFormat {
   Wav,
   Caf,
   M4A,
   Flac,
+  Aiff,
+  Alac,
+  OpusOgg,
+  OpusWebm,
+  VorbisWebm,
+  AmrNb,
+  AmrWb,
+  AacHe,
+  AacEld,
+  Ima4,
+  Ulaw,
+  Alaw,
+  Ilbc,
 }
 ```
 
-:::caution Android + FFmpeg
-On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used).
+The table below lists which formats each platform can encode with its system APIs:
+
+| `FileFormat` | Container / codec | iOS | Android |
+| :--- | :--- | :---: | :---: |
+| `Wav` | WAV / PCM | ✅ | ✅ |
+| `M4A` | M4A / AAC-LC | ✅ | ✅ |
+| `Flac` | FLAC / FLAC | ✅ | ✅ |
+| `Caf` | CAF / PCM | ✅ | ❌ |
+| `Aiff` | AIFF / PCM | ✅ | ❌ |
+| `Alac` | M4A / Apple Lossless | ✅ | ❌ |
+| `AacHe` | M4A / AAC-HE | ✅ | ❌ |
+| `AacEld` | M4A / AAC-ELD | ✅ | ❌ |
+| `Ima4` | CAF / IMA4 (ADPCM) | ✅ | ❌ |
+| `Ulaw` | WAV / µ-law | ✅ | ❌ |
+| `Alaw` | WAV / a-law | ✅ | ❌ |
+| `Ilbc` | CAF / iLBC | ✅ | ❌ |
+| `OpusOgg` | OGG / Opus | ❌ | ✅ |
+| `OpusWebm` | WebM / Opus | ❌ | ✅ |
+| `VorbisWebm` | WebM / Vorbis | ❌ | ✅ |
+| `AmrNb` | 3GP / AMR-NB | ❌ | ✅ |
+| `AmrWb` | 3GP / AMR-WB | ❌ | ✅ |
+
+:::caution Platform support
+Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusOgg` on iOS) fails when file output is enabled, with a descriptive error. Some Android formats also depend on the device OS version (Opus/OGG muxing requires newer releases); if a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, or `Flac` for the widest cross-platform support.
 :::
 
 #### FileInfo

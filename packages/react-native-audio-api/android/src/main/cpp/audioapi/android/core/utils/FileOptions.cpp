@@ -1,6 +1,7 @@
 #include <android/log.h>
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/system/NativeFileInfo.hpp>
+#include <audioapi/encoding/EncoderCapabilities.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <chrono>
 #include <filesystem>
@@ -48,18 +49,7 @@ std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties)
 }
 
 std::string getFileExtension(const std::shared_ptr<AudioFileProperties> &properties) {
-  switch (properties->format) {
-    case AudioFileProperties::Format::WAV:
-      return "wav";
-    case AudioFileProperties::Format::CAF:
-      return "caf";
-    case AudioFileProperties::Format::M4A:
-      return "m4a";
-    case AudioFileProperties::Format::FLAC:
-      return "flac";
-    default:
-      return "m4a";
-  }
+  return EncoderCapabilities::specForFormat(properties->format).extension;
 }
 
 Result<std::string, std::string> getFilePath(
