@@ -93,6 +93,10 @@ void WorkletAudioContext::run() {
       static_cast<int64_t>(
           (static_cast<double>(audioapi::RENDER_QUANTUM_SIZE) * 1'000'000.0) / getSampleRate()));
 
+  // Deadline pacing keeps the soft clock realtime-aligned; sleeping a full
+  // quantum after process drifts behind and fills the recorder adapter ring.
+  auto nextDeadline = std::chrono::steady_clock::now();
+
   while (true) {
     bool rendered = false;
 
@@ -112,11 +116,19 @@ void WorkletAudioContext::run() {
     }
 
     if (!rendered) {
+      nextDeadline = std::chrono::steady_clock::now();
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;
     }
 
-    std::this_thread::sleep_for(quantumDuration);
+    nextDeadline += quantumDuration;
+    const auto now = std::chrono::steady_clock::now();
+    if (now < nextDeadline) {
+      std::this_thread::sleep_until(nextDeadline);
+    } else {
+      // Late: snap forward instead of catch-up spinning (would drain the ring).
+      nextDeadline = now;
+    }
   }
 }
 

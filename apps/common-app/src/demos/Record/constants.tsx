@@ -3,7 +3,7 @@ const WORKLET_ALLOWED_BUFFER_LENGTH = [
 ] as const;
 
 const constants = {
-  sampleRate: 3125,
+  sampleRate: 48000,
   updateIntervalMS: 32,
   barWidth: 2,
   barGap: 2,
