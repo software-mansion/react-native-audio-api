@@ -48,6 +48,9 @@ This directory contains project-specific configuration for [Claude Code](https:/
 │   ├── flow/
 │   │   ├── SKILL.md           # End-to-end feature flow
 │   │   └── maintenance.md
+│   ├── code-comments/
+│   │   ├── SKILL.md           # Comment style guidelines
+│   │   └── maintenance.md
 │   └── writing-skills/
 │       ├── SKILL.md           # How to write and maintain skill files (meta)
 │       └── maintenance.md

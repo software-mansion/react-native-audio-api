@@ -175,7 +175,7 @@ When the node finishes, fire the `ENDED` event to JS via `audioEventHandlerRegis
 
 ```cpp
 protected:
-  // Audio-thread only
+  /// @note Audio Thread only
   virtual std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) = 0;
@@ -194,12 +194,12 @@ protected:
 ```cpp
 class MyNode : public AudioNode {
  public:
-  // JS-thread only
+  /// @note JS Thread only
   void setSomething(float value);
   float getSomething() const;
 
  protected:
-  // Audio-thread only
+  /// @note Audio Thread only
   std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
@@ -311,7 +311,7 @@ Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while conn
    - `AudioBufferBaseSourceNode` — source that plays back an AudioBuffer with pitch control
 
 2. **Header file** (`core/<category>/MyNode.h`)
-   - Annotate every method with `// JS-thread only` or `// Audio-thread only`
+   - Annotate every method with `/// @note JS Thread only` or `/// @note Audio Thread only`
    - Declare `processNode()` in `protected:`
    - Declare `AudioParam` members for automatable properties
    - Preallocate all buffers you'll need in `private:` state

@@ -32,6 +32,11 @@ packages/custom-node-generator/    # Code generation tooling
 - **Optional FFmpeg**: Audio decoding via FFmpeg can be conditionally compiled out
 - **Audio Worklets**: JavaScript runs on the audio thread via React Native Worklets
 
+### Comment style
+- Follow `code-comments` when adding or editing comments.
+- Prefer self-explanatory code; comment non-obvious invariants, thread constraints, allocation boundaries, and spec deviations only.
+- Normalize new thread tags to `/// @note JS Thread only` / `/// @note Audio Thread only`.
+
 ### Native Module Entry Points
 - iOS: `ios/audioapi/ios/AudioAPIModule.mm`
 - Android: `android/src/main/java/com/swmansion/audioapi/AudioAPIModule.kt`
@@ -90,6 +95,7 @@ Detailed skill files live in `.claude/skills/`. Each skill lives in its own dire
 | `post-work-checks/` | Ordered checklist to run after every change |
 | `flow/` | End-to-end feature implementation flow (tests + docs required) |
 | `utilities/` | Shared DSP and C++/TS utility helpers |
+| `code-comments/` | Comment style — when to comment, what to avoid, language-specific rules |
 | `writing-skills/` | How to write, structure, and maintain skill files |
 
 See `.claude/README.md` for a full description of the Claude Code setup and the `/pre-push-update` command.
