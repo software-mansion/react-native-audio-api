@@ -122,7 +122,7 @@ class GraphObject {
   /// still connected to a processable downstream must stay idle for good,
   /// otherwise the every-quantum reverse pull would re-activate it (it is
   /// still an input of a processable consumer). Audio-thread only.
-  bool excludeFromProcessablePull_ = false;
+  bool alwaysNotProcessable_ = false;
 
  private:
   // Reusable buffer for collecting inputs (avoids allocation per frame)

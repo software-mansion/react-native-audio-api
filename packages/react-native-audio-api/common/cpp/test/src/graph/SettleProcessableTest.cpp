@@ -246,4 +246,28 @@ TEST_F(SettleLinkTest, DisabledSourceIsNotReactivated) {
   EXPECT_EQ(iterCount(), 1u); // consumer only; source stays idle
 }
 
+// Idle sources keep a non-null getOutput() with stale samples. settle zeros
+// those buffers before the render loop so consumers hear silence (fixes
+// audionode-channel-rules WPT ghost echoes).
+TEST_F(SettleLinkTest, IdleInputBuffersAreZeroed) {
+  auto consumerNode = std::make_unique<MockNode>();
+  consumerNode->setProcessable();
+  auto *consumer = graph->addNode(std::move(consumerNode));
+
+  auto srcNode = std::make_unique<DisableMockNode>();
+  auto *srcRaw = srcNode.get();
+  auto *source = graph->addNode(std::move(srcNode));
+
+  ASSERT_TRUE(graph->addEdge(source, consumer).is_ok());
+  processAll();
+
+  (*srcRaw->getOutputBuffer()->getChannel(0))[0] = 1.0f;
+  srcRaw->doDisable();
+  processAll();
+
+  EXPECT_FALSE(srcRaw->isProcessable());
+  EXPECT_NE(srcRaw->getOutput(), nullptr);
+  EXPECT_FLOAT_EQ((*srcRaw->getOutputBuffer()->getChannel(0))[0], 0.0f);
+}
+
 } // namespace audioapi::utils::graph

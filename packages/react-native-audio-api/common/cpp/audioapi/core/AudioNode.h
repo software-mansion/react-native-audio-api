@@ -221,29 +221,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   TailState tailState_ = TailState::FINISHED;
   int tailFramesRemaining_ = 0;
 
-  /// @brief Set by `disable()` when a source finishes, cleared on the next
-  /// `processInputs`. Defers flipping the node to NOT_PROCESSABLE by one
-  /// quantum so the final output produced this quantum is still mixed by
-  /// downstream consumers (which gate on `isProcessable()`). Audio-thread only.
-  bool pendingDisable_ = false;
-
   /// @brief Implementation of processing logic for AudioNode.
   /// Mixes input buffers, runs the tail-state transition (when this node
   /// requires tail processing), and calls processNode.
   void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames) override {
-    // Deferred disable: a source that finished during the PREVIOUS quantum
-    // requested a disable but stayed processable so its final output could be
-    // mixed by downstream consumers that same quantum. Commit the flip now, at
-    // the start of the next quantum, present silence, and stop processing.
-    // Consumers gate mixing on isProcessable(), so from here on this node
-    // contributes silence. See AudioNode::disable().
-    if (pendingDisable_) {
-      pendingDisable_ = false;
-      setProcessableState(utils::graph::GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
-      getOutputBuffer()->zero();
-      return;
-    }
-
     if (requiresTailProcessing_) {
       updateTailStateForQuantum(inputs, numFrames);
     }
@@ -279,9 +260,9 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   [[nodiscard]] virtual bool isInputSilent(const std::vector<const DSPAudioBuffer *> &inputs) const;
 
   /// @brief Requests that this node stop participating in graph processing.
-  /// The transition to NOT_PROCESSABLE is deferred by one quantum (see
-  /// `pendingDisable_`) so the final output produced this quantum is still
-  /// mixed downstream.
+  /// Sets `alwaysNotProcessable_` so settle will not re-activate it;
+  /// the current quantum's output remains available for downstream mixing,
+  /// and the next settle zeros the idle buffer.
   /// @note Audio Thread only. Source nodes call this when playback finishes.
   virtual void disable();
 

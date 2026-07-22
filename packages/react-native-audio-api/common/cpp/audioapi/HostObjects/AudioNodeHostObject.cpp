@@ -4,11 +4,54 @@
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/utils/graph/HostGraph.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace audioapi {
+namespace {
+
+[[noreturn]] void
+throwException(jsi::Runtime &runtime, const char *name, const std::string &message) {
+  auto errorCtor = runtime.global().getPropertyAsFunction(runtime, "Error");
+  auto error = errorCtor.callAsConstructor(runtime, jsi::String::createFromUtf8(runtime, message));
+  auto errorObj = error.asObject(runtime);
+  errorObj.setProperty(runtime, "name", jsi::String::createFromUtf8(runtime, name));
+  throw jsi::JSError(runtime, std::move(error));
+}
+
+bool isMissingEdge(const utils::graph::HostNode::Res &result) {
+  if (result.is_ok()) {
+    return false;
+  }
+  const auto err = result.unwrap_err();
+  return err == utils::graph::HostGraph::ResultError::EDGE_NOT_FOUND ||
+      err == utils::graph::HostGraph::ResultError::NODE_NOT_FOUND;
+}
+
+constexpr const char *kDisconnectNotConnected =
+    "Failed to execute 'disconnect' on 'AudioNode': the given destination is not connected.";
+
+/// Runs `tryRemove` for each candidate edge. Spec: remove matching edges; throw
+/// InvalidAccessError if none existed (or on unexpected graph errors).
+template <typename TryRemove>
+void disconnectMatchingEdges(jsi::Runtime &runtime, TryRemove &&tryRemove) {
+  bool removedAny = false;
+  tryRemove([&](const utils::graph::HostNode::Res &result) {
+    if (result.is_ok()) {
+      removedAny = true;
+    } else if (!isMissingEdge(result)) {
+      throwException(runtime, "InvalidAccessError", kDisconnectNotConnected);
+    }
+  });
+  if (!removedAny) {
+    throwException(runtime, "InvalidAccessError", kDisconnectNotConnected);
+  }
+}
+
+} // namespace
 
 AudioNodeHostObject::AudioNodeHostObject(
     const std::shared_ptr<utils::graph::Graph> &graph,
@@ -208,17 +251,21 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
     const int inputBegin = hasInput ? input : 0;
     const int inputEnd = hasInput ? input + 1 : toNodeHost->numberOfInputs_;
 
-    for (int o = outputBegin; o < outputEnd; ++o) {
-      auto source = getConnectSource(o);
-      for (int i = inputBegin; i < inputEnd; ++i) {
-        source->disconnect(*toNodeHost->getConnectDestination(i));
+    disconnectMatchingEdges(runtime, [&](auto record) {
+      for (int o = outputBegin; o < outputEnd; ++o) {
+        auto source = getConnectSource(o);
+        for (int i = inputBegin; i < inputEnd; ++i) {
+          record(source->disconnect(*toNodeHost->getConnectDestination(i)));
+        }
       }
-    }
+    });
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    for (int o = outputBegin; o < outputEnd; ++o) {
-      graph_->removeEdge(getConnectSource(o)->rawNode(), param->bridgeNode());
-    }
+    disconnectMatchingEdges(runtime, [&](auto record) {
+      for (int o = outputBegin; o < outputEnd; ++o) {
+        record(graph_->removeEdge(getConnectSource(o)->rawNode(), param->bridgeNode()));
+      }
+    });
   }
 
   return jsi::Value::undefined();

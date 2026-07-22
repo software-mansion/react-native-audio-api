@@ -62,14 +62,10 @@ const COVERAGE_NOTES = {
     'difference is negligible, while computing the coefficient/trig math once per block ' +
     'instead of once per sample makes processing dramatically faster on the audio thread.',
   'the-audionode-interface':
-    'Indexed connect()/disconnect() overloads and ChannelMerger/ChannelSplitter graphs are ' +
-    'implemented; disconnect and different-contexts audits largely pass. Most remaining ' +
-    'failures are audionode-channel-rules mixing cases (speakers upmix/downmix and ' +
-    'clamped-max). Other gaps: InvalidStateError when disconnecting a non-existent ' +
-    'connection, TypeError for non-AudioNode connect() arguments (we throw InvalidAccessError ' +
-    'first), and connect chaining across unimplemented node types (MediaStream*, ' +
-    'DynamicsCompressor). channelCount, channelCountMode and channelInterpretation are ' +
-    'settable after construction with graph renegotiation.',
+    'Channel mixing, indexed connect()/disconnect(), and ChannelMerger/Splitter ' +
+    'graphs pass. Remaining failures are connect() chaining across unimplemented ' +
+    'node types (DynamicsCompressor, Panner, ScriptProcessor, MediaStream*) and ' +
+    'legacy 3-arg AudioContext construction (should throw TypeError).',
 };
 
 const CATEGORY_LABELS = {
