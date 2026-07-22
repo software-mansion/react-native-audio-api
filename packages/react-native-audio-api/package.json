@@ -10,16 +10,6 @@
   "module": "lib/module/index.js",
   "react-native": "src/index.ts",
   "types": "lib/typescript/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./lib/typescript/index.d.ts",
-      "react-native": "./src/index.ts",
-      "default": "./lib/module/index.js"
-    },
-    "./wpt-node": {
-      "node": "./wpt_tests/index.js"
-    }
-  },
   "files": [
     "src/",
     "development/react/",
