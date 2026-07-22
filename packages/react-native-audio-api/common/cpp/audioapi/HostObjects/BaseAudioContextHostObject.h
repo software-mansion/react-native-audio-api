@@ -34,6 +34,7 @@ class BaseAudioContextHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(createConstantSource);
   JSI_HOST_FUNCTION_DECL(createGain);
   JSI_HOST_FUNCTION_DECL(createStereoPanner);
+  JSI_HOST_FUNCTION_DECL(createPanner);
   JSI_HOST_FUNCTION_DECL(createBiquadFilter);
   JSI_HOST_FUNCTION_DECL(createIIRFilter);
   JSI_HOST_FUNCTION_DECL(createBufferSource);

@@ -1,27 +1,63 @@
+#include <audioapi/core/AudioListener.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/PannerNode.h>
+#include <audioapi/core/effects/PannerSpatialization.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
-#include <cfloat>
 #include <memory>
 
 namespace audioapi {
 
+namespace {
+
+using panner::Vec3;
+
+} // namespace
+
 PannerNode::PannerNode(
     const std::shared_ptr<BaseAudioContext> &context,
+    AudioListener *listener,
     const PannerOptions &options)
     : AudioNode(context, options),
-      positionXParam_(std::make_shared<AudioParam>(options.positionX, -FLT_MAX, FLT_MAX, context)),
-      positionYParam_(std::make_shared<AudioParam>(options.positionY, -FLT_MAX, FLT_MAX, context)),
-      positionZParam_(std::make_shared<AudioParam>(options.positionZ, -FLT_MAX, FLT_MAX, context)),
+      listener_(listener),
+      positionXParam_(
+          std::make_shared<AudioParam>(
+              options.positionX,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      positionYParam_(
+          std::make_shared<AudioParam>(
+              options.positionY,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      positionZParam_(
+          std::make_shared<AudioParam>(
+              options.positionZ,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
       orientationXParam_(
-          std::make_shared<AudioParam>(options.orientationX, -FLT_MAX, FLT_MAX, context)),
+          std::make_shared<AudioParam>(
+              options.orientationX,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
       orientationYParam_(
-          std::make_shared<AudioParam>(options.orientationY, -FLT_MAX, FLT_MAX, context)),
+          std::make_shared<AudioParam>(
+              options.orientationY,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
       orientationZParam_(
-          std::make_shared<AudioParam>(options.orientationZ, -FLT_MAX, FLT_MAX, context)),
+          std::make_shared<AudioParam>(
+              options.orientationZ,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
       panningModel_(options.panningModel),
       distanceModel_(options.distanceModel),
       refDistance_(options.refDistance),
@@ -142,13 +178,92 @@ size_t PannerNode::getUpstreamChannelCount(size_t /*negotiatedChannelCount*/) co
 
 void PannerNode::processNode(int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr || audioBuffer_ == nullptr) {
+  if (context == nullptr || audioBuffer_ == nullptr || listener_ == nullptr) {
+    outputBuffer_->zero();
     return;
   }
 
-  // TODO (Krok 3): Tutaj zaimplementujemy matematykę 3D, tłumienie dystansu (Inverse)
-  // oraz podział na kanały algorytmem EqualPower. Na czas testu kompilacji
-  // zostawiamy pusty przebieg — węzeł wyprodukuje bezpieczną ciszę w outputBuffer_.
+  const double time = context->getCurrentTime();
+  const bool monoInput = audioBuffer_->getNumberOfChannels() == 1;
+
+  listener_->processForQuantum(framesToProcess, time, context->getCurrentSampleFrame());
+
+  const auto posX =
+      positionXParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  const auto posY =
+      positionYParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  const auto posZ =
+      positionZParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  const auto orientX =
+      orientationXParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  const auto orientY =
+      orientationYParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  const auto orientZ =
+      orientationZParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+
+  const auto listenerPosX = listener_->positionXValues();
+  const auto listenerPosY = listener_->positionYValues();
+  const auto listenerPosZ = listener_->positionZValues();
+  const auto listenerForwardX = listener_->forwardXValues();
+  const auto listenerForwardY = listener_->forwardYValues();
+  const auto listenerForwardZ = listener_->forwardZValues();
+  const auto listenerUpX = listener_->upXValues();
+  const auto listenerUpY = listener_->upYValues();
+  const auto listenerUpZ = listener_->upZValues();
+
+  auto outputLeft = outputBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
+  auto outputRight = outputBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
+
+  auto inputLeftSpan = monoInput ? audioBuffer_->getChannelByType(AudioBuffer::ChannelMono)->span()
+                                 : audioBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
+  auto inputRightSpan =
+      monoInput ? inputLeftSpan : audioBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
+
+  // HRTF is not implemented yet — equal-power panning is used for all models.
+  (void)panningModel_;
+
+  for (int i = 0; i < framesToProcess; ++i) {
+    const size_t idx = static_cast<size_t>(i);
+    const Vec3 sourcePosition{posX[idx], posY[idx], posZ[idx]};
+    const Vec3 sourceOrientation{orientX[idx], orientY[idx], orientZ[idx]};
+    const Vec3 listenerPosition{listenerPosX[idx], listenerPosY[idx], listenerPosZ[idx]};
+    const Vec3 listenerForward{listenerForwardX[idx], listenerForwardY[idx], listenerForwardZ[idx]};
+    const Vec3 listenerUp{listenerUpX[idx], listenerUpY[idx], listenerUpZ[idx]};
+
+    const float azimuth =
+        panner::computeAzimuth(sourcePosition, listenerPosition, listenerForward, listenerUp);
+
+    float gainL = 0.0f;
+    float gainR = 0.0f;
+    // Spec §6.3.1: stereo mix branch uses azimuth after wrapping to [-90, 90].
+    const float wrappedAzimuth = panner::computeEqualPowerGains(azimuth, monoInput, gainL, gainR);
+
+    const float distance = panner::computeDistance(sourcePosition, listenerPosition);
+    const float distanceGain = panner::computeDistanceGain(
+        distanceModel_, distance, refDistance_, maxDistance_, rolloffFactor_);
+    const float coneGain = panner::computeConeGain(
+        sourcePosition,
+        listenerPosition,
+        sourceOrientation,
+        coneInnerAngle_,
+        coneOuterAngle_,
+        coneOuterGain_);
+    const float totalGain = distanceGain * coneGain;
+
+    const float inputL = inputLeftSpan[idx];
+    const float inputR = inputRightSpan[idx];
+
+    if (monoInput) {
+      outputLeft[idx] = inputL * gainL * totalGain;
+      outputRight[idx] = inputL * gainR * totalGain;
+    } else if (wrappedAzimuth <= 0.0f) {
+      outputLeft[idx] = (inputL + inputR * gainL) * totalGain;
+      outputRight[idx] = inputR * gainR * totalGain;
+    } else {
+      outputLeft[idx] = inputL * gainL * totalGain;
+      outputRight[idx] = (inputR + inputL * gainR) * totalGain;
+    }
+  }
 }
 
 } // namespace audioapi

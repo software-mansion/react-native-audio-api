@@ -55,16 +55,6 @@ struct StereoPannerOptions : AudioNodeOptions {
   }
 };
 
-// enum class PanningModelType {
-//   EqualPower,
-//   HRTF
-// };
-
-// enum class DistanceModelType {
-//   Inverse,
-//   Linear,
-//   Exponential
-// };
 enum class PanningModelType : std::uint8_t { EqualPower, HRTF };
 
 enum class DistanceModelType : std::uint8_t { Inverse, Linear, Exponential };

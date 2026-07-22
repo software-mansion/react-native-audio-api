@@ -12,6 +12,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -101,6 +102,79 @@ inline StereoPannerOptions parseStereoPannerOptions(
   auto panValue = optionsObject.getProperty(runtime, "pan");
   if (panValue.isNumber()) {
     options.pan = static_cast<float>(panValue.getNumber());
+  }
+
+  return options;
+}
+
+inline PannerOptions parsePannerOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+  PannerOptions options(parseAudioNodeOptions(runtime, optionsObject));
+
+  auto panningModelValue = optionsObject.getProperty(runtime, "panningModel");
+  if (panningModelValue.isString()) {
+    try {
+      options.panningModel =
+          js_enum_parser::panningModelFromString(panningModelValue.asString(runtime).utf8(runtime));
+    } catch (const std::invalid_argument &) {}
+  }
+
+  auto distanceModelValue = optionsObject.getProperty(runtime, "distanceModel");
+  if (distanceModelValue.isString()) {
+    try {
+      options.distanceModel = js_enum_parser::distanceModelFromString(
+          distanceModelValue.asString(runtime).utf8(runtime));
+    } catch (const std::invalid_argument &) {}
+  }
+
+  auto positionXValue = optionsObject.getProperty(runtime, "positionX");
+  if (positionXValue.isNumber()) {
+    options.positionX = static_cast<float>(positionXValue.getNumber());
+  }
+  auto positionYValue = optionsObject.getProperty(runtime, "positionY");
+  if (positionYValue.isNumber()) {
+    options.positionY = static_cast<float>(positionYValue.getNumber());
+  }
+  auto positionZValue = optionsObject.getProperty(runtime, "positionZ");
+  if (positionZValue.isNumber()) {
+    options.positionZ = static_cast<float>(positionZValue.getNumber());
+  }
+
+  auto orientationXValue = optionsObject.getProperty(runtime, "orientationX");
+  if (orientationXValue.isNumber()) {
+    options.orientationX = static_cast<float>(orientationXValue.getNumber());
+  }
+  auto orientationYValue = optionsObject.getProperty(runtime, "orientationY");
+  if (orientationYValue.isNumber()) {
+    options.orientationY = static_cast<float>(orientationYValue.getNumber());
+  }
+  auto orientationZValue = optionsObject.getProperty(runtime, "orientationZ");
+  if (orientationZValue.isNumber()) {
+    options.orientationZ = static_cast<float>(orientationZValue.getNumber());
+  }
+
+  auto refDistanceValue = optionsObject.getProperty(runtime, "refDistance");
+  if (refDistanceValue.isNumber()) {
+    options.refDistance = refDistanceValue.getNumber();
+  }
+  auto maxDistanceValue = optionsObject.getProperty(runtime, "maxDistance");
+  if (maxDistanceValue.isNumber()) {
+    options.maxDistance = maxDistanceValue.getNumber();
+  }
+  auto rolloffFactorValue = optionsObject.getProperty(runtime, "rolloffFactor");
+  if (rolloffFactorValue.isNumber()) {
+    options.rolloffFactor = rolloffFactorValue.getNumber();
+  }
+  auto coneInnerAngleValue = optionsObject.getProperty(runtime, "coneInnerAngle");
+  if (coneInnerAngleValue.isNumber()) {
+    options.coneInnerAngle = coneInnerAngleValue.getNumber();
+  }
+  auto coneOuterAngleValue = optionsObject.getProperty(runtime, "coneOuterAngle");
+  if (coneOuterAngleValue.isNumber()) {
+    options.coneOuterAngle = coneOuterAngleValue.getNumber();
+  }
+  auto coneOuterGainValue = optionsObject.getProperty(runtime, "coneOuterGain");
+  if (coneOuterGainValue.isNumber()) {
+    options.coneOuterGain = coneOuterGainValue.getNumber();
   }
 
   return options;

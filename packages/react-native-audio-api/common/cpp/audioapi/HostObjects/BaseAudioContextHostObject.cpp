@@ -7,6 +7,7 @@
 #include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/PannerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
@@ -51,6 +52,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPanner),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
@@ -143,6 +145,16 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
       std::make_shared<StereoPannerNodeHostObject>(context_, stereoPannerOptions);
   auto object = jsi::Object::createFromHostObject(runtime, stereoPannerHostObject);
   object.setExternalMemoryPressure(runtime, stereoPannerHostObject->getMemoryPressure());
+  return object;
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPanner) {
+  const auto options = args[0].asObject(runtime);
+  const auto pannerOptions = audioapi::option_parser::parsePannerOptions(runtime, options);
+  auto pannerHostObject =
+      std::make_shared<PannerNodeHostObject>(context_, listener_->audioListener(), pannerOptions);
+  auto object = jsi::Object::createFromHostObject(runtime, pannerHostObject);
+  object.setExternalMemoryPressure(runtime, pannerHostObject->getMemoryPressure());
   return object;
 }
 

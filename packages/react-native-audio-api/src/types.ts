@@ -138,6 +138,27 @@ export interface StereoPannerOptions extends AudioNodeOptions {
   pan?: number;
 }
 
+export type PanningModelType = 'equalpower' | 'HRTF';
+
+export type DistanceModelType = 'linear' | 'inverse' | 'exponential';
+
+export interface PannerOptions extends AudioNodeOptions {
+  panningModel?: PanningModelType;
+  distanceModel?: DistanceModelType;
+  positionX?: number;
+  positionY?: number;
+  positionZ?: number;
+  orientationX?: number;
+  orientationY?: number;
+  orientationZ?: number;
+  refDistance?: number;
+  maxDistance?: number;
+  rolloffFactor?: number;
+  coneInnerAngle?: number;
+  coneOuterAngle?: number;
+  coneOuterGain?: number;
+}
+
 export interface AnalyserOptions extends AudioNodeOptions {
   fftSize?: number;
   minDecibels?: number;

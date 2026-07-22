@@ -1,0 +1,67 @@
+---
+sidebar_position: 7
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import { Optional, ReadOnly } from '@site/src/components/Badges';
+
+# PannerNode
+
+The [`PannerNode`](https://developer.mozilla.org/en-US/docs/Web/API/PannerNode) interface positions an audio source in 3D space relative to the context's [`AudioListener`](/docs/core/audio-listener).
+
+## Constructor
+
+```tsx
+constructor(context: BaseAudioContext, options?: PannerOptions)
+```
+
+### `PannerOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `panningModel` <Optional /> | `'equalpower' \| 'HRTF'` | `'equalpower'` | Spatialization algorithm. Native uses equal-power; `HRTF` is accepted but currently rendered with equal-power. |
+| `distanceModel` <Optional /> | `'linear' \| 'inverse' \| 'exponential'` | `'inverse'` | Distance attenuation model. |
+| `positionX` … `positionZ` <Optional /> | `number` | `0` | Initial source position. |
+| `orientationX` … `orientationZ` <Optional /> | `number` | `(1, 0, 0)` | Initial source orientation. |
+| `refDistance` <Optional /> | `number` | `1` | Reference distance for attenuation. |
+| `maxDistance` <Optional /> | `number` | `10000` | Maximum distance for the linear model. |
+| `rolloffFactor` <Optional /> | `number` | `1` | Rolloff for distance models. |
+| `coneInnerAngle` / `coneOuterAngle` <Optional /> | `number` | `360` | Directional cone angles (degrees). |
+| `coneOuterGain` <Optional /> | `number` | `0` | Gain outside the outer cone. |
+
+You can also create a `PannerNode` via [`BaseAudioContext.createPanner()`](/docs/core/base-audio-context#createpanner).
+
+## Properties
+
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `positionX`, `positionY`, `positionZ` | [`AudioParam`](/docs/core/audio-param) | Source position in 3D space. |
+| `orientationX`, `orientationY`, `orientationZ` | [`AudioParam`](/docs/core/audio-param) | Source orientation vector. |
+| `panningModel` | `PanningModelType` | `'equalpower'` or `'HRTF'`. |
+| `distanceModel` | `DistanceModelType` | `'linear'`, `'inverse'`, or `'exponential'`. |
+| `refDistance`, `maxDistance`, `rolloffFactor` | `number` | Distance model parameters. |
+| `coneInnerAngle`, `coneOuterAngle`, `coneOuterGain` | `number` | Directional cone. |
+
+## Methods
+
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+| Method | Description |
+| :---- | :-------- |
+| `setPosition(x, y, z)` | Sets `positionX/Y/Z.value` (deprecated in the spec; provided for compatibility). |
+| `setOrientation(x, y, z)` | Sets `orientationX/Y/Z.value`. |
+
+## Remarks
+
+- Output is always stereo (2 channels), like [`StereoPannerNode`](/docs/effects/stereo-panner-node).
+- Spatialization uses the context [`listener`](/docs/core/audio-listener) position and orientation.
+- **`HRTF`** panning is not implemented in the native engine yet; selecting it still produces equal-power stereo output.

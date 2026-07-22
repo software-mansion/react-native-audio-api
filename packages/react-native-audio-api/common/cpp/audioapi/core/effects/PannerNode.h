@@ -10,9 +10,14 @@
 
 namespace audioapi {
 
+class AudioListener;
+
 class PannerNode : public AudioNode {
  public:
-  PannerNode(const std::shared_ptr<BaseAudioContext> &context, const PannerOptions &options);
+  PannerNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      AudioListener *listener,
+      const PannerOptions &options);
 
   ~PannerNode() override = default;
 
@@ -60,6 +65,8 @@ class PannerNode : public AudioNode {
   }
 
  private:
+  AudioListener *listener_ = nullptr;
+
   const std::shared_ptr<AudioParam> positionXParam_;
   const std::shared_ptr<AudioParam> positionYParam_;
   const std::shared_ptr<AudioParam> positionZParam_;

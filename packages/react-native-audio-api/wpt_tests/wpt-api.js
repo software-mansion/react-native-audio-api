@@ -35,6 +35,7 @@ const WEB_AUDIO_CLASSES = [
   'OscillatorNode',
   'PeriodicWave',
   'StereoPannerNode',
+  'PannerNode',
   'WaveShaperNode',
 ];
 

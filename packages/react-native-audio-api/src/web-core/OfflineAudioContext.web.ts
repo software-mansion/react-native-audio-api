@@ -13,6 +13,7 @@ import GainNode from './GainNode.web';
 import OscillatorNode from './OscillatorNode.web';
 import PeriodicWave from './PeriodicWave.web';
 import StereoPannerNode from './StereoPannerNode.web';
+import PannerNode from './PannerNode.web';
 import ConstantSourceNode from './ConstantSourceNode.web';
 import WaveShaperNode from './WaveShaperNode.web';
 
@@ -78,6 +79,10 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createStereoPanner(): StereoPannerNode {
     return new StereoPannerNode(this);
+  }
+
+  createPanner(): PannerNode {
+    return new PannerNode(this);
   }
 
   createBiquadFilter(): BiquadFilterNode {

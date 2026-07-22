@@ -53,4 +53,4 @@ All properties are [`AudioParam`](/docs/core/audio-param)s with `minValue`/`maxV
 ## Remarks
 
 - The deprecated Web Audio API methods `setPosition(x, y, z)` and `setOrientation(x, y, z, xUp, yUp, zUp)` are intentionally **not implemented**. Set the corresponding `AudioParam` values directly instead.
-- `PannerNode` — the consumer of these parameters — is not implemented yet, so changing the listener currently has no audible effect. The interface is provided ahead of `PannerNode` support.
+- Used by [`PannerNode`](/docs/effects/panner-node) for 3D spatialization relative to the listener.

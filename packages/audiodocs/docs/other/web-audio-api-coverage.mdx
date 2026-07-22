@@ -43,7 +43,7 @@ We will do our best to ship it as soon as possible!
 | WaveShaperNode | ✅ |
 | AudioContext | 🚧 | Available props and methods: `close`, `suspend`, `resume` |
 | BaseAudioContext | 🚧 | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes |
-| AudioListener | 🚧 | No effect until PannerNode. |
+| AudioListener | ✅ | Used by PannerNode for 3D spatialization. |
 | AudioSinkInfo | ❌ |
 | AudioWorklet | ❌ |
 | AudioWorkletGlobalScope | ❌ |
@@ -54,7 +54,7 @@ We will do our best to ship it as soon as possible!
 | DynamicsCompressorNode | ❌ |
 | MediaStreamAudioDestinationNode | ❌ |
 | MediaStreamAudioSourceNode | ❌ |
-| PannerNode | ❌ |
+| PannerNode | 🚧 | Equal-power spatialization, distance models, and cone gain are implemented. `HRTF` is accepted but currently falls back to equal-power. |
 
 ### Description
 

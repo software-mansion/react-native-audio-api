@@ -22,6 +22,9 @@ import type {
   OverSampleType,
   Result,
   StereoPannerOptions,
+  PannerOptions,
+  PanningModelType,
+  DistanceModelType,
   WaveShaperOptions,
   AudioFileSourceOptions,
 } from './types';
@@ -45,6 +48,7 @@ export interface IBaseAudioContext {
   createStereoPanner(
     stereoPannerOptions: StereoPannerOptions
   ): IStereoPannerNode;
+  createPanner(pannerOptions: PannerOptions): IPannerNode;
   createBiquadFilter: (
     biquadFilterOptions: BiquadFilterOptions
   ) => IBiquadFilterNode;
@@ -107,6 +111,23 @@ export interface IGainNode extends IAudioNode {
 
 export interface IStereoPannerNode extends IAudioNode {
   readonly pan: IAudioParam;
+}
+
+export interface IPannerNode extends IAudioNode {
+  readonly positionX: IAudioParam;
+  readonly positionY: IAudioParam;
+  readonly positionZ: IAudioParam;
+  readonly orientationX: IAudioParam;
+  readonly orientationY: IAudioParam;
+  readonly orientationZ: IAudioParam;
+  panningModel: PanningModelType;
+  distanceModel: DistanceModelType;
+  refDistance: number;
+  maxDistance: number;
+  rolloffFactor: number;
+  coneInnerAngle: number;
+  coneOuterAngle: number;
+  coneOuterGain: number;
 }
 
 export interface IBiquadFilterNode extends IAudioNode {

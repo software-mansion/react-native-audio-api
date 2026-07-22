@@ -18,6 +18,8 @@ export {
 
 export { OscillatorOptionsValidator } from './oscillator';
 
+export { PannerOptionsValidator } from './panner';
+
 export { PeriodicWaveOptionsValidator } from './periodicWave';
 
 export { validateWaveShaperCurve } from './waveShaper';

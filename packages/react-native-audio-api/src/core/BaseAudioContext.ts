@@ -8,6 +8,7 @@ import {
   ContextState,
   DecodeDataInput,
   AudioBufferQueueSourceOptions,
+  PannerOptions,
 } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
@@ -25,6 +26,7 @@ import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import PannerNode from './PannerNode';
 import WaveShaperNode from './WaveShaperNode';
 
 export default class BaseAudioContext {
@@ -91,6 +93,10 @@ export default class BaseAudioContext {
 
   createStereoPanner(): StereoPannerNode {
     return new StereoPannerNode(this);
+  }
+
+  createPanner(options?: PannerOptions): PannerNode {
+    return new PannerNode(this, options);
   }
 
   createBiquadFilter(): BiquadFilterNode {

@@ -13,6 +13,7 @@ import IIRFilterNode from './IIRFilterNode.web';
 import OscillatorNode from './OscillatorNode.web';
 import PeriodicWave from './PeriodicWave.web';
 import StereoPannerNode from './StereoPannerNode.web';
+import PannerNode from './PannerNode.web';
 import WaveShaperNode from './WaveShaperNode.web';
 
 export default interface BaseAudioContext {
@@ -29,6 +30,7 @@ export default interface BaseAudioContext {
   createGain(): GainNode;
   createDelay(maxDelayTime?: number): DelayNode;
   createStereoPanner(): StereoPannerNode;
+  createPanner(): PannerNode;
   createBiquadFilter(): BiquadFilterNode;
   createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode;
   createConvolver(): ConvolverNode;

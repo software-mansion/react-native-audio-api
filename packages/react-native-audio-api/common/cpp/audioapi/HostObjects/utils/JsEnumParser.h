@@ -8,6 +8,7 @@
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/events/AudioEvent.h>
+#include <audioapi/types/NodeOptions.h>
 #include <string>
 
 namespace audioapi::js_enum_parser {
@@ -21,4 +22,8 @@ AudioEvent audioEventFromString(const std::string &event);
 std::string contextStateToString(ContextState state);
 std::string channelCountModeToString(ChannelCountMode mode);
 std::string channelInterpretationToString(ChannelInterpretation interpretation);
+std::string panningModelToString(PanningModelType model);
+PanningModelType panningModelFromString(const std::string &model);
+std::string distanceModelToString(DistanceModelType model);
+DistanceModelType distanceModelFromString(const std::string &model);
 } // namespace audioapi::js_enum_parser
