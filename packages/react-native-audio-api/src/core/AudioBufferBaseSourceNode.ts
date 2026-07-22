@@ -3,14 +3,19 @@ import type BaseAudioContext from './BaseAudioContext';
 import { EventTypeWithValue } from '../events/types';
 import { IAudioBufferBaseSourceNode } from '../jsi-interfaces';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
+import { AudioNodeOptions } from '../types';
 
 export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
   private onPositionChangedCallback?: (event: EventTypeWithValue) => void;
 
-  constructor(context: BaseAudioContext, node: IAudioBufferBaseSourceNode) {
-    super(context, node);
+  constructor(
+    context: BaseAudioContext,
+    node: IAudioBufferBaseSourceNode,
+    options?: AudioNodeOptions
+  ) {
+    super(context, node, options);
 
     this.detune = new AudioParam(node.detune, context, this);
     this.playbackRate = new AudioParam(node.playbackRate, context, this);

@@ -25,6 +25,6 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
   JSI_HOST_FUNCTION_DECL(stop);
 
  protected:
-  AudioScheduledSourceNode *scheduledSourceNode_ = nullptr;
+  AudioScheduledSourceNode *const scheduledSourceNode_;
 };
 } // namespace audioapi

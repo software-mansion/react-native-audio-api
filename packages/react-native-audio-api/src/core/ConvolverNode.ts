@@ -13,7 +13,7 @@ export default class ConvolverNode extends AudioNode {
     const convolverNode: IConvolverNode = context.context.createConvolver(
       options || {}
     );
-    super(context, convolverNode);
+    super(context, convolverNode, options);
 
     if (options?.buffer) {
       this.buffer = options.buffer as AudioBuffer;

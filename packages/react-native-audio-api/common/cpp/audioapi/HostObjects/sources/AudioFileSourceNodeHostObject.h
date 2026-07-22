@@ -48,7 +48,7 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   }
 
  private:
-  AudioFileSourceNode *audioFileSourceNode_ = nullptr;
+  AudioFileSourceNode *const audioFileSourceNode_;
 
   bool loop_;
   double duration_;

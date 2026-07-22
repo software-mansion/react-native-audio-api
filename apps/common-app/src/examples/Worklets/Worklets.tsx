@@ -168,19 +168,15 @@ function Worklets() {
 
     workletNodeRef.current = new WorkletNode(
       ctx,
-      (audioData, numberOfChannels) => {
+      (audioData: Float32Array) => {
         'worklet';
-        if (numberOfChannels < 1) {
-          return;
-        }
 
-        const channel = audioData[0]!;
         let sum = 0;
 
-        for (let i = 0; i < channel.length; i++) {
-          sum += channel[i]! * channel[i]!;
+        for (let i = 0; i < audioData.length; i++) {
+          sum += audioData[i]! * audioData[i]!;
         }
-        const rms = Math.sqrt(sum / channel.length);
+        const rms = Math.sqrt(sum / audioData.length);
         const scaledAmplitude = Math.min(rms * 4, 1);
 
         bar0.value = withSpring(bar1.value, { damping: 18, stiffness: 120 });
@@ -192,7 +188,7 @@ function Worklets() {
           stiffness: 120,
         });
       },
-      1024
+      { domain: 'time-domain', bufferLength: 1024 }
     );
 
     workletSourceRef.current.connect(workletProcessingRef.current);

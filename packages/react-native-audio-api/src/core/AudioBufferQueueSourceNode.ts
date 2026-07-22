@@ -14,7 +14,7 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     options?: AudioBufferQueueSourceOptions
   ) {
     const node = context.context.createBufferQueueSource(options || {});
-    super(context, node);
+    super(context, node, options);
   }
 
   public enqueueBuffer(buffer: AudioBuffer): string {
