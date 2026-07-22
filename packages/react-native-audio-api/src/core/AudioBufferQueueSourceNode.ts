@@ -37,7 +37,7 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     (this.node as IAudioBufferQueueSourceNode).clearBuffers();
   }
 
-  public override start(when: number = 0, offset: number = -1): void {
+  public override start(when: number = 0, offset: number = 0): void {
     if (when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
