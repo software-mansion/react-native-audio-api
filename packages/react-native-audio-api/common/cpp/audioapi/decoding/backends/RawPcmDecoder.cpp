@@ -57,6 +57,7 @@ DecoderResult RawPcmDecoder::openFromBytes(
   outputChannels_ = channelCount;
   outputSampleRate_ = sampleRate;
   framePosition_ = 0;
+  totalPcmFrames_ = numFrames;
   return Ok(None);
 }
 
@@ -84,19 +85,19 @@ size_t RawPcmDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
     return 0;
   }
 
-  const size_t totalFrames = interleavedPcm_.size() / static_cast<size_t>(outputChannels_);
-  if (framePosition_ >= totalFrames) {
+  if (framePosition_ < 0 || static_cast<size_t>(framePosition_) >= totalPcmFrames_) {
     return 0;
   }
 
-  const size_t framesToRead = std::min(frameCount, totalFrames - framePosition_);
+  const size_t framesToRead =
+      std::min(frameCount, totalPcmFrames_ - static_cast<size_t>(framePosition_));
   const auto channelCount = static_cast<size_t>(outputChannels_);
-  const size_t srcOffset = framePosition_ * channelCount;
+  const size_t srcOffset = static_cast<size_t>(framePosition_) * channelCount;
   std::copy_n(
       interleavedPcm_.begin() + static_cast<std::ptrdiff_t>(srcOffset),
       framesToRead * channelCount,
       outInterleaved);
-  framePosition_ += framesToRead;
+  framePosition_ += static_cast<int64_t>(framesToRead);
   return framesToRead;
 }
 
@@ -116,52 +117,18 @@ DecoderResult RawPcmDecoder::seekToTime(double seconds) {
   }
 
   framePosition_ =
-      static_cast<size_t>(std::llround(seconds * static_cast<double>(outputSampleRate_)));
-  const size_t totalFrames = getTotalPcmFrameCount();
-  framePosition_ = std::min(framePosition_, totalFrames);
+      static_cast<int64_t>(std::llround(seconds * static_cast<double>(outputSampleRate_)));
+  framePosition_ = std::min(framePosition_, static_cast<int64_t>(totalPcmFrames_));
   return Ok(None);
 }
 
 void RawPcmDecoder::close() {
   interleavedPcm_.clear();
-  framePosition_ = 0;
-  outputChannels_ = 0;
-  outputSampleRate_ = 0;
+  resetOpenMetadata();
 }
 
 bool RawPcmDecoder::isOpen() const {
   return !interleavedPcm_.empty() && outputChannels_ > 0 && outputSampleRate_ > 0;
-}
-
-int RawPcmDecoder::outputChannels() const {
-  return outputChannels_;
-}
-
-int RawPcmDecoder::outputSampleRate() const {
-  return outputSampleRate_;
-}
-
-float RawPcmDecoder::getDurationInSeconds() const {
-  if (!isOpen()) {
-    return 0.0f;
-  }
-  return static_cast<float>(
-      static_cast<double>(getTotalPcmFrameCount()) / static_cast<double>(outputSampleRate_));
-}
-
-float RawPcmDecoder::getCurrentPositionInSeconds() const {
-  if (!isOpen() || outputSampleRate_ <= 0) {
-    return 0.0f;
-  }
-  return static_cast<float>(
-      static_cast<double>(framePosition_) / static_cast<double>(outputSampleRate_));
-}
-
-size_t RawPcmDecoder::getTotalPcmFrameCount() const {
-  if (!isOpen() || outputChannels_ <= 0) {
-    return 0;
-  }
-  return interleavedPcm_.size() / static_cast<size_t>(outputChannels_);
 }
 
 } // namespace audioapi::decoding::raw_pcm

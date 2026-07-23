@@ -103,11 +103,11 @@ TEST(DecoderFactoryTest, RejectsRemoteUrlWhenFfmpegDisabled) {
   EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot decode remote URL");
 }
 
-TEST(DecoderFactoryTest, RejectsLocalM3u8WhenFfmpegDisabled) {
+TEST(DecoderFactoryTest, RejectsUnsupportedLocalFile) {
   auto result = decoding::createDecoder(
       decoding::LocalFileSource{.path = "/tmp/playlist.m3u8", .sampleRate = 0});
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot decode local HLS (.m3u8) playlists");
+  EXPECT_EQ(result.unwrap_err(), "Cannot open local file: unsupported or invalid audio format");
 }
 
 TEST(DecoderFactoryTest, OpensRawPcmSource) {

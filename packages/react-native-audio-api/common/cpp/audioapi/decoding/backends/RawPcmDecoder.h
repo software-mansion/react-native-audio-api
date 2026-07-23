@@ -5,6 +5,7 @@
 #include <audioapi/utils/Macros.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace audioapi::decoding::raw_pcm {
@@ -22,11 +23,6 @@ class RawPcmDecoder : public AudioDecoderBackend {
   [[nodiscard]] DecoderResult seekToTime(double seconds) override;
   void close() override;
   [[nodiscard]] bool isOpen() const override;
-  [[nodiscard]] int outputChannels() const override;
-  [[nodiscard]] int outputSampleRate() const override;
-  [[nodiscard]] float getDurationInSeconds() const override;
-  [[nodiscard]] float getCurrentPositionInSeconds() const override;
-  [[nodiscard]] size_t getTotalPcmFrameCount() const override;
 
  private:
   [[nodiscard]] DecoderResult openFromBytes(
@@ -37,9 +33,6 @@ class RawPcmDecoder : public AudioDecoderBackend {
       bool interleaved);
 
   std::vector<float> interleavedPcm_;
-  size_t framePosition_ = 0;
-  int outputChannels_ = 0;
-  int outputSampleRate_ = 0;
 };
 
 } // namespace audioapi::decoding::raw_pcm

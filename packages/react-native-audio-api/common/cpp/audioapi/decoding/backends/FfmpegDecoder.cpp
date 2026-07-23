@@ -134,9 +134,7 @@ void FfmpegDecoder::close() {
   leftover_.clear();
   leftover_offset_ = 0;
   audio_stream_index_ = -1;
-  output_channels_ = 0;
-  output_sample_rate_ = 0;
-  total_output_frames_ = 0;
+  resetOpenMetadata();
   is_hls_streaming_ = false;
 }
 
@@ -155,9 +153,9 @@ decoding::DecoderResult FfmpegDecoder::setupSwr() {
   av_opt_set_sample_fmt(swr_, "in_sample_fmt", codec_ctx_->sample_fmt, 0);
 
   AVChannelLayout out_layout;
-  av_channel_layout_default(&out_layout, output_channels_);
+  av_channel_layout_default(&out_layout, outputChannels_);
   av_opt_set_chlayout(swr_, "out_chlayout", &out_layout, 0);
-  av_opt_set_int(swr_, "out_sample_rate", output_sample_rate_, 0);
+  av_opt_set_int(swr_, "out_sample_rate", outputSampleRate_, 0);
   av_opt_set_sample_fmt(swr_, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
   const int swrInitResult = swr_init(swr_);
   if (swrInitResult < 0) {
@@ -170,7 +168,7 @@ decoding::DecoderResult FfmpegDecoder::setupSwr() {
   const int allocResult = av_samples_alloc_array_and_samples(
       &resampled_data_,
       nullptr,
-      output_channels_,
+      outputChannels_,
       decoding::AudioDecoderBackend::CHUNK_SIZE,
       AV_SAMPLE_FMT_FLT,
       0);
@@ -201,8 +199,8 @@ decoding::DecoderResult FfmpegDecoder::initializeDecodedStreams(
     fmt_ctx_ = nullptr;
     return codecResult;
   }
-  output_channels_ = codec_ctx_->ch_layout.nb_channels;
-  output_sample_rate_ = (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
+  outputChannels_ = codec_ctx_->ch_layout.nb_channels;
+  outputSampleRate_ = (outputSampleRate > 0) ? outputSampleRate : codec_ctx_->sample_rate;
 
   packet_ = av_packet_alloc();
   frame_ = av_frame_alloc();
@@ -219,23 +217,45 @@ decoding::DecoderResult FfmpegDecoder::initializeDecodedStreams(
     close();
     return swrResult;
   }
-  total_output_frames_ = 0;
+  framePosition_ = 0;
+  cacheDurationFromContainer();
   return Ok(None);
 }
 
-decoding::DecoderResult FfmpegDecoder::open(const decoding::LocalFileSource &source) {
-  close();
-  if (source.path.empty()) {
-    return Err("FfmpegDecoder::open failed: path is empty");
+void FfmpegDecoder::cacheDurationFromContainer() {
+  if (fmt_ctx_ == nullptr || audio_stream_index_ < 0) {
+    totalPcmFrames_ = 0;
+    return;
   }
-  const int openInputResult = avformat_open_input(&fmt_ctx_, source.path.c_str(), nullptr, nullptr);
-  if (openInputResult < 0) {
-    fmt_ctx_ = nullptr;
-    return Err(
-        "FfmpegDecoder::open failed: avformat_open_input failed: " +
-        parseFFmpegError(openInputResult));
+  AVStream *st = fmt_ctx_->streams[audio_stream_index_];
+  if (st == nullptr) {
+    totalPcmFrames_ = 0;
+    return;
   }
-  return initializeDecodedStreams(source.sampleRate, "FfmpegDecoder::open");
+
+  auto validSeconds = [](double s) -> bool {
+    return s > 0 && std::isfinite(s);
+  };
+
+  // Prefer per-stream duration (e.g. MP4 mdhd) — often exact vs container-level
+  // guesses that trigger AAC “bitrate duration” warnings.
+  if (st->duration != AV_NOPTS_VALUE && st->duration > 0) {
+    double t = static_cast<double>(st->duration) * av_q2d(st->time_base);
+    if (validSeconds(t)) {
+      setTotalPcmFramesFromDuration(t);
+      return;
+    }
+  }
+
+  if (fmt_ctx_->duration != AV_NOPTS_VALUE && fmt_ctx_->duration >= 0) {
+    double t = static_cast<double>(fmt_ctx_->duration) / static_cast<double>(AV_TIME_BASE);
+    if (validSeconds(t)) {
+      setTotalPcmFramesFromDuration(t);
+      return;
+    }
+  }
+
+  totalPcmFrames_ = 0;
 }
 
 decoding::DecoderResult FfmpegDecoder::open(const decoding::RemoteUrlSource &source) {
@@ -272,7 +292,7 @@ void FfmpegDecoder::appendFrameResampled(AVFrame *frame) {
     if (av_samples_alloc_array_and_samples(
             &resampled_data_,
             nullptr,
-            output_channels_,
+            outputChannels_,
             max_resampled_samples_,
             AV_SAMPLE_FMT_FLT,
             0) < 0) {
@@ -286,7 +306,7 @@ void FfmpegDecoder::appendFrameResampled(AVFrame *frame) {
       const_cast<const uint8_t **>(frame->data),
       frame->nb_samples);
   if (converted > 0) {
-    size_t n = static_cast<size_t>(converted) * static_cast<size_t>(output_channels_);
+    size_t n = static_cast<size_t>(converted) * static_cast<size_t>(outputChannels_);
     const float *src = reinterpret_cast<float *>(resampled_data_[0]);
     leftover_.insert(leftover_.end(), src, src + n);
   }
@@ -353,49 +373,10 @@ decoding::DecoderResult FfmpegDecoder::feedPipeline() {
   }
 }
 
-float FfmpegDecoder::getDurationInSeconds() const {
-  if (!isOpen() || fmt_ctx_ == nullptr || audio_stream_index_ < 0) {
-    return 0;
-  }
-  AVStream *st = fmt_ctx_->streams[audio_stream_index_];
-  if (st == nullptr) {
-    return 0;
-  }
-
-  auto validSeconds = [](double s) -> bool {
-    return s > 0 && std::isfinite(s);
-  };
-
-  // Prefer per-stream duration (e.g. MP4 mdhd) — often exact vs container-level
-  // guesses that trigger AAC “bitrate duration” warnings.
-  if (st->duration != AV_NOPTS_VALUE && st->duration > 0) {
-    double t = static_cast<double>(st->duration) * av_q2d(st->time_base);
-    if (validSeconds(t)) {
-      return static_cast<float>(t);
-    }
-  }
-
-  if (fmt_ctx_->duration != AV_NOPTS_VALUE && fmt_ctx_->duration >= 0) {
-    double t = static_cast<double>(fmt_ctx_->duration) / static_cast<double>(AV_TIME_BASE);
-    if (validSeconds(t)) {
-      return static_cast<float>(t);
-    }
-  }
-
-  return 0;
-}
-
-float FfmpegDecoder::getCurrentPositionInSeconds() const {
-  if (!isOpen() || output_sample_rate_ <= 0) {
-    return 0;
-  }
-  return static_cast<float>(total_output_frames_) / static_cast<float>(output_sample_rate_);
-}
-
 // todo: offload this call to a separate thread because seeking decoder can take a while
 // current implementation suspends audio thread, which disable multiple playbacks
 decoding::DecoderResult FfmpegDecoder::seekToTime(double seconds) {
-  if (!isOpen() || audio_stream_index_ < 0 || output_sample_rate_ <= 0) {
+  if (!isOpen() || audio_stream_index_ < 0 || outputSampleRate_ <= 0) {
     return Err("FfmpegDecoder::seekToTime failed: decoder is not open");
   }
   float dur = getDurationInSeconds();
@@ -418,17 +399,17 @@ decoding::DecoderResult FfmpegDecoder::seekToTime(double seconds) {
   avcodec_flush_buffers(codec_ctx_);
   leftover_.clear();
   leftover_offset_ = 0;
-  total_output_frames_ =
-      static_cast<size_t>(std::llround(seconds * static_cast<double>(output_sample_rate_)));
+  framePosition_ =
+      static_cast<int64_t>(std::llround(seconds * static_cast<double>(outputSampleRate_)));
   return Ok(None);
 }
 
 size_t FfmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
-  if (!isOpen() || outInterleaved == nullptr || frameCount == 0 || output_channels_ <= 0) {
+  if (!isOpen() || outInterleaved == nullptr || frameCount == 0 || outputChannels_ <= 0) {
     return 0;
   }
   size_t delivered = 0;
-  const auto ch = static_cast<size_t>(output_channels_);
+  const auto ch = static_cast<size_t>(outputChannels_);
 
   while (delivered < frameCount) {
     size_t need = frameCount - delivered;
@@ -452,16 +433,8 @@ size_t FfmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
       break;
     }
   }
-  total_output_frames_ += delivered;
+  framePosition_ += static_cast<int64_t>(delivered);
   return delivered;
-}
-
-size_t FfmpegDecoder::getTotalPcmFrameCount() const {
-  const float duration = getDurationInSeconds();
-  if (duration <= 0.0f || output_sample_rate_ <= 0) {
-    return 0;
-  }
-  return static_cast<size_t>(duration * static_cast<float>(output_sample_rate_));
 }
 
 } // namespace audioapi::decoding::ffmpeg
@@ -471,25 +444,13 @@ size_t FfmpegDecoder::getTotalPcmFrameCount() const {
 namespace audioapi::decoding::ffmpeg {
 FfmpegDecoder::~FfmpegDecoder() = default;
 void FfmpegDecoder::close() {}
-decoding::DecoderResult FfmpegDecoder::open(const decoding::LocalFileSource &) {
-  return Err("FFmpeg is disabled");
-}
 decoding::DecoderResult FfmpegDecoder::open(const decoding::RemoteUrlSource &) {
   return Err("FFmpeg is disabled");
-}
-float FfmpegDecoder::getDurationInSeconds() const {
-  return 0;
-}
-float FfmpegDecoder::getCurrentPositionInSeconds() const {
-  return 0;
 }
 decoding::DecoderResult FfmpegDecoder::seekToTime(double) {
   return Err("FFmpeg is disabled");
 }
 size_t FfmpegDecoder::readPcmFrames(float *, size_t) {
-  return 0;
-}
-size_t FfmpegDecoder::getTotalPcmFrameCount() const {
   return 0;
 }
 

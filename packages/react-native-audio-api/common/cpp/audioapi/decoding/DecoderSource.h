@@ -59,8 +59,4 @@ using DecoderSource = std::variant<
       extensions, [&pathLower](const std::string &ext) { return pathLower.ends_with(ext); });
 }
 
-[[nodiscard]] inline bool localPathRequiresFfmpeg(const std::string &path) {
-  return pathHasExtension(path, {".m3u8"});
-}
-
 } // namespace audioapi::decoding

@@ -73,13 +73,6 @@ CreateDecoderResult createDecoder(const DecoderSource &source) {
             if (localSource.path.empty()) {
               return Err("DecoderFactory: local file path is empty");
             }
-            if (localPathRequiresFfmpeg(localSource.path)) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-              return createAndOpen<ffmpeg::FfmpegDecoder>(localSource);
-#else
-              return Err("FFmpeg is disabled, cannot decode local HLS (.m3u8) playlists");
-#endif
-            }
             return tryOpenWithOsFallback(
                 localSource, "Cannot open local file: unsupported or invalid audio format");
           },

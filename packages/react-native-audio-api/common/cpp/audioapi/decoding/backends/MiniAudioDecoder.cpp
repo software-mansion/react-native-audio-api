@@ -54,10 +54,7 @@ void MiniAudioDecoder::teardownDecoder() {
     decoder_.reset();
   }
   memoryCopy_.clear();
-  outputChannels_ = 0;
-  outputSampleRate_ = 0;
-  totalOutputFrames_ = 0;
-  totalLengthFrames_ = 0;
+  resetOpenMetadata();
 }
 
 void MiniAudioDecoder::close() {
@@ -66,30 +63,6 @@ void MiniAudioDecoder::close() {
 
 bool MiniAudioDecoder::isOpen() const {
   return decoder_ != nullptr;
-}
-
-int MiniAudioDecoder::outputChannels() const {
-  return outputChannels_;
-}
-
-int MiniAudioDecoder::outputSampleRate() const {
-  return outputSampleRate_;
-}
-
-float MiniAudioDecoder::getDurationInSeconds() const {
-  if (!isOpen() || outputSampleRate_ <= 0 || totalLengthFrames_ == 0) {
-    return 0;
-  }
-  return static_cast<float>(
-      static_cast<double>(totalLengthFrames_) / static_cast<double>(outputSampleRate_));
-}
-
-float MiniAudioDecoder::getCurrentPositionInSeconds() const {
-  if (!isOpen() || outputSampleRate_ <= 0) {
-    return 0;
-  }
-  return static_cast<float>(
-      static_cast<double>(totalOutputFrames_) / static_cast<double>(outputSampleRate_));
 }
 
 DecoderResult MiniAudioDecoder::open(const LocalFileSource &source) {
@@ -111,11 +84,11 @@ DecoderResult MiniAudioDecoder::open(const LocalFileSource &source) {
 
   ma_uint64 length = 0;
   if (ma_decoder_get_length_in_pcm_frames(decoder_.get(), &length) == MA_SUCCESS) {
-    totalLengthFrames_ = static_cast<std::uint64_t>(length);
+    totalPcmFrames_ = static_cast<size_t>(length);
   } else {
-    totalLengthFrames_ = 0;
+    totalPcmFrames_ = 0;
   }
-  totalOutputFrames_ = 0;
+  framePosition_ = 0;
   return Ok(None);
 }
 
@@ -140,16 +113,12 @@ DecoderResult MiniAudioDecoder::open(const EncodedMemorySource &source) {
 
   ma_uint64 length = 0;
   if (ma_decoder_get_length_in_pcm_frames(decoder_.get(), &length) == MA_SUCCESS) {
-    totalLengthFrames_ = static_cast<std::uint64_t>(length);
+    totalPcmFrames_ = static_cast<size_t>(length);
   } else {
-    totalLengthFrames_ = 0;
+    totalPcmFrames_ = 0;
   }
-  totalOutputFrames_ = 0;
+  framePosition_ = 0;
   return Ok(None);
-}
-
-size_t MiniAudioDecoder::getTotalPcmFrameCount() const {
-  return static_cast<size_t>(totalLengthFrames_);
 }
 
 size_t MiniAudioDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
@@ -159,7 +128,7 @@ size_t MiniAudioDecoder::readPcmFrames(float *outInterleaved, size_t frameCount)
   ma_uint64 framesRead = 0;
   ma_decoder_read_pcm_frames(
       decoder_.get(), outInterleaved, static_cast<ma_uint64>(frameCount), &framesRead);
-  totalOutputFrames_ += static_cast<size_t>(framesRead);
+  framePosition_ += static_cast<int64_t>(framesRead);
   return static_cast<size_t>(framesRead);
 }
 
@@ -183,7 +152,7 @@ DecoderResult MiniAudioDecoder::seekToTime(double seconds) {
   if (result != MA_SUCCESS) {
     return Err("MiniAudioDecoder::seekToTime failed: " + parseMiniAudioError(result));
   }
-  totalOutputFrames_ = static_cast<size_t>(frame);
+  framePosition_ = static_cast<int64_t>(frame);
   return Ok(None);
 }
 

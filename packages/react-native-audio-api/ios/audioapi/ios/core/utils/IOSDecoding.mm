@@ -214,12 +214,13 @@ decoding::DecoderResult IOSDecoder::open(const decoding::LocalFileSource &source
 
     auto state = std::make_unique<IosDecoderState>();
     state->extFile.reset(extFile);
+    double durationSeconds = 0.0;
     auto configured = configureExtAudioFile(
         state->extFile.get(),
         source.sampleRate,
         outputChannels_,
         outputSampleRate_,
-        durationSeconds_,
+        durationSeconds,
         state->fileSampleRate);
     if (configured.is_err()) {
       return configured;
@@ -227,6 +228,7 @@ decoding::DecoderResult IOSDecoder::open(const decoding::LocalFileSource &source
 
     impl_ = std::move(state);
     framePosition_ = 0;
+    setTotalPcmFramesFromDuration(durationSeconds);
     open_ = true;
     return Ok(None);
   }
@@ -279,12 +281,13 @@ decoding::DecoderResult IOSDecoder::open(const decoding::EncodedMemorySource &so
   }
   state->extFile.reset(extFile);
 
+  double durationSeconds = 0.0;
   auto configured = configureExtAudioFile(
       state->extFile.get(),
       source.sampleRate,
       outputChannels_,
       outputSampleRate_,
-      durationSeconds_,
+      durationSeconds,
       state->fileSampleRate);
   if (configured.is_err()) {
     return configured;
@@ -292,6 +295,7 @@ decoding::DecoderResult IOSDecoder::open(const decoding::EncodedMemorySource &so
 
   impl_ = std::move(state);
   framePosition_ = 0;
+  setTotalPcmFramesFromDuration(durationSeconds);
   open_ = true;
   return Ok(None);
 }

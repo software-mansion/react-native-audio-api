@@ -352,8 +352,8 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
       options.requiresFFmpeg = true;
     } else {
       options.filePath = path;
-      // Local HLS playlists still need FFmpeg; other local formats use OS/miniaudio.
-      options.requiresFFmpeg = audiodecoding::pathHasExtension(path, {".m3u8"});
+      // Local files use OS/miniaudio — FFmpeg is only for remote/network sources.
+      options.requiresFFmpeg = false;
     }
   } else if (sourceValue.isObject()) {
     auto sourceObj = sourceValue.asObject(runtime);
