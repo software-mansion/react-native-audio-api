@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include <ranges>
+#include <utility>
 #include <vector>
 
 namespace audioapi {
@@ -81,6 +82,21 @@ class GraphObject {
     if (processableState_ == PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
       processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
     }
+  }
+
+  /// @brief Swaps in a pre-reserved input-scratch vector and returns the
+  /// previous one.
+  ///
+  /// `inputBuffers_` is audio-thread-only scratch reused by `process()`. To keep
+  /// `process()` allocation-free without ever mutating it from the JS thread,
+  /// `HostGraph::addEdge` reserves a replacement vector off the audio thread and
+  /// hands it here from the graph-mutation event. The returned old vector is
+  /// then disposed off the audio thread so no `free()` happens during rendering.
+  /// @note Audio thread only.
+  std::vector<const DSPAudioBuffer *> exchangeInputScratch(
+      std::vector<const DSPAudioBuffer *> reserved) {
+    std::swap(inputBuffers_, reserved);
+    return reserved;
   }
 
   /// @brief Downcast helper for JS thread communication with AudioNode.

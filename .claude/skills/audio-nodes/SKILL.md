@@ -289,6 +289,18 @@ Callback IDs are stored as `std::atomic<uint64_t>` on the node. `0` means no lis
 ### JS → Audio (graph mutations: connect/disconnect)
 All graph mutations are queued via `AudioGraphManager` using its own SPSC channel (`addPendingNodeConnection`, `addPendingParamConnection`). The audio thread calls `graphManager_->preProcessGraph()` before each render pass to apply pending changes.
 
+### Settable channel attributes (channelCount / channelCountMode / channelInterpretation)
+These are mutable after construction. `AudioNode` (core) exposes virtual `setChannelCount` / `setChannelCountMode` / `setChannelInterpretation`. `channelCount` and `channelCountMode` are read only on the host thread during negotiation, so the JSI setter updates the core field directly then calls `HostNode::renegotiate()` → `Graph::renegotiateNodeChannels()` → `HostGraph::renegotiateNodeChannels()` (reuses `collectNegotiations` + an `AGEvent` buffer swap, self-drain aware when there is no audio/render consumer — offline construction/suspend and realtime suspended/stopped windows). When `AudioBufferSourceNode` `setBuffer` changes channel width, update `channelCount_` on the host thread then `renegotiate()` so MAX/CLAMPED_MAX downstream nodes update; the audio event still installs the prebuilt buffer (no audio-thread alloc). `channelInterpretation` is read on the audio thread in `processInputs` (`getInputBuffer()->sum(*input, channelInterpretation_)`), so it MUST be applied via `scheduleAudioEvent`, not mutated directly.
+
+### Idle-node stale-buffer gating (isProcessable() at the mix boundary)
+`AudioGraph::iter()` filters to `isProcessable()` nodes, so a node that has gone idle (e.g. a finished source, or the gain feeding off it) is skipped and its output buffer is NOT refreshed — it keeps the samples from an earlier quantum. Because downstream consumers read input buffers via `pool_.view(input_head)` regardless of processable state, that stale buffer would otherwise get re-summed into the destination every quantum, producing ghost echoes (this broke the `audionode-channel-rules` ~170-node discrete-mixing WPT test).
+
+Fix: `GraphObject::process()` skips any input whose `isProcessable()` is false when collecting buffers to mix — an idle node presents silence to its consumers instead of a stale buffer. Nodes are visited in topological order (sources before consumers), so an upstream node's processable state for the quantum is already settled by the time a consumer reads it.
+
+For this gate to be correct, a node must stay `isProcessable()` for the **entire** quantum in which it produces its final output, and flip on the **next** quantum. A one-shot source would otherwise flip to `NOT_PROCESSABLE` mid-quantum (inside `processNode` → `handleStopScheduled` → `disable`), which — since consumers run later in the same topological pass — would drop that final output (produces `0` where a real sample was expected). `AudioNode::disable()` therefore only sets `pendingDisable_`; `AudioNode::processInputs()` commits `setProcessableState(NOT_PROCESSABLE)` at the start of the *next* quantum and presents silence. Deferral lives at this single chokepoint, so no per-source-type edits are needed.
+
+Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while connected they stay `CONDITIONAL_PROCESSABLE` (processable via the first `isProcessable()` branch) so they are never skipped and never go stale; the `tailState_ != FINISHED` branch only matters after a disconnect, where either there is no consumer or consumers correctly gate on `isProcessable()`.
+
 ---
 
 ## Implementing a New Node — Checklist
@@ -328,7 +340,7 @@ All graph mutations are queued via `AudioGraphManager` using its own SPSC channe
 
 7. **Spec compliance**
    - Check the Web Audio API spec for default values, parameter ranges, and behavior
-   - See `web-audio-api.md` skill
+   - See `web-audio-api` skill
 
 8. **Tests and docs** — see the `flow` skill
 

@@ -31,7 +31,7 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   JSI_HOST_FUNCTION_DECL(getOutputLatency);
 
  protected:
-  AudioBufferBaseSourceNode *bufferBaseSourceNode_ = nullptr;
+  AudioBufferBaseSourceNode *const bufferBaseSourceNode_;
 
   std::shared_ptr<AudioParamHostObject> detuneParam_;
   std::shared_ptr<AudioParamHostObject> playbackRateParam_;

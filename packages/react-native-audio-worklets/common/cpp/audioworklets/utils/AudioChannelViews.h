@@ -35,6 +35,9 @@ class AudioChannelViews {
   /// @param activeChannelCount Number of active channels for this callback.
   [[nodiscard]] const jsi::Value *channelsArray(size_t activeChannelCount) const;
 
+  /// @brief Returns the first channel's stable `Float32Array` view (`channelsArray(1)[0]`).
+  [[nodiscard]] const jsi::Value *monoFloat32Channel() const;
+
   /// @brief Native per-channel buffer for audio-thread reads/writes.
   /// @note Audio Thread only. Do not access from JS.
   /// @param channelIndex Zero-based channel index.

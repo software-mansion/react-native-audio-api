@@ -112,14 +112,17 @@ Files: `packages/react-native-audio-api/src/core/`
    import { MyNodeOptions } from '../types';
 
    export default class MyNode extends AudioNode implements IMyNode {
-     constructor(context: BaseAudioContext, options: MyNodeOptions) {
-       const node = context.context.createMyNode(options);
-       super(context, node);
+     constructor(context: BaseAudioContext, options?: MyNodeOptions) {
+       // Node-specific validation (if any) goes here, before create.
+       const node = context.context.createMyNode(options || {});
+       // Pass options so AudioNode validates channelCount / mode / interpretation.
+       super(context, node, options);
      }
      // getters/setters forwarded to (this.node as IMyNode)
    }
    ```
 
+   `MyNodeOptions` must extend `AudioNodeOptions`. Shared `AudioNodeOptions` validation lives in `AudioNode`'s constructor (`validateAudioNodeOptions`) — do not re-validate those fields in per-node validators.
 2. Add a factory method `createMyNode(options?)` to `src/core/BaseAudioContext.ts`.
 
 3. Export from `src/index.ts`.

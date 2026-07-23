@@ -24,7 +24,7 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
       ? { ...options, periodicWave: options.periodicWave.periodicWave }
       : options || {};
     const node = context.context.createOscillator(nativeOptions);
-    super(context, node);
+    super(context, node, options);
     this.frequency = new AudioParam(node.frequency, context, this);
     this.detune = new AudioParam(node.detune, context, this);
   }

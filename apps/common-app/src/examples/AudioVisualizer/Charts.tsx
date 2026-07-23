@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Circle, Path, Skia, PaintStyle } from '@shopify/react-native-skia';
+import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { useCanvas } from './Canvas';
 import { colors } from '../../styles';
@@ -11,8 +12,10 @@ import {
 } from './layout';
 
 interface ChartProps {
-  timeData: Uint8Array;
-  frequencyData: Uint8Array;
+  timeDataSV: SharedValue<Uint8Array>;
+  timeDataTickSV: SharedValue<number>;
+  frequencyDataSV: SharedValue<Uint8Array>;
+  frequencyDataTickSV: SharedValue<number>;
   fftSize: number;
   frequencyBinCount: number;
 }
@@ -22,6 +25,8 @@ function buildTimePath(
   fftSize: number,
   layout: ReturnType<typeof getVisualizerLayout>
 ) {
+  'worklet';
+
   const path = Skia.PathBuilder.Make().build();
   const { cx, cy, innerRadius } = layout;
   const span = innerRadius * 2;
@@ -46,6 +51,8 @@ function buildFrequencyPath(
   frequencyBinCount: number,
   layout: ReturnType<typeof getVisualizerLayout>
 ) {
+  'worklet';
+
   const path = Skia.PathBuilder.Make().build();
   const { cx, cy, outerRadius } = layout;
   const maxSteps = 2 * (frequencyBinCount - 64);
@@ -78,7 +85,7 @@ function buildFrequencyPath(
 
 const TimeChart: React.FC<ChartProps> = (props) => {
   const { size } = useCanvas();
-  const { timeData, fftSize } = props;
+  const { timeDataSV, timeDataTickSV, fftSize } = props;
   const layout = useMemo(
     () => getVisualizerLayout(size.width, size.height),
     [size.width, size.height]
@@ -93,10 +100,10 @@ const TimeChart: React.FC<ChartProps> = (props) => {
     return paint;
   }, []);
 
-  const timePath = useMemo(
-    () => buildTimePath(timeData, fftSize, layout),
-    [fftSize, layout, timeData]
-  );
+  const timePath = useDerivedValue(() => {
+    timeDataTickSV.value;
+    return buildTimePath(timeDataSV.value, fftSize, layout);
+  }, [fftSize, layout, timeDataSV, timeDataTickSV]);
 
   return (
     <>
@@ -119,7 +126,7 @@ const TimeChart: React.FC<ChartProps> = (props) => {
 
 const FrequencyChart: React.FC<ChartProps> = (props) => {
   const { size } = useCanvas();
-  const { frequencyData, frequencyBinCount } = props;
+  const { frequencyDataSV, frequencyDataTickSV, frequencyBinCount } = props;
   const layout = useMemo(
     () => getVisualizerLayout(size.width, size.height),
     [size.width, size.height]
@@ -130,10 +137,14 @@ const FrequencyChart: React.FC<ChartProps> = (props) => {
     [frequencyBinCount, layout.outerRadius]
   );
 
-  const freqPath = useMemo(
-    () => buildFrequencyPath(frequencyData, frequencyBinCount, layout),
-    [frequencyBinCount, frequencyData, layout]
-  );
+  const freqPath = useDerivedValue(() => {
+    frequencyDataTickSV.value;
+    return buildFrequencyPath(
+      frequencyDataSV.value,
+      frequencyBinCount,
+      layout
+    );
+  }, [frequencyBinCount, frequencyDataSV, frequencyDataTickSV, layout]);
 
   return (
     <Path

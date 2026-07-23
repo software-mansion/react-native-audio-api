@@ -83,6 +83,11 @@ class HostNode {
   /// @return Ok on success, Err on not-found
   Res disconnect();
 
+  /// @brief Recomputes channel-count negotiation for this node (cascading
+  /// downstream) after a `channelCount` / `channelCountMode` change.
+  /// @return Ok on success, Err on not-found
+  Res renegotiate();
+
   /// @brief Returns the raw HostGraph::Node pointer (for advanced usage / testing).
   [[nodiscard]] HNode *rawNode() const;
 

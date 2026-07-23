@@ -17,7 +17,7 @@ export default class AnalyserNode extends AudioNode {
     const analyserNode: IAnalyserNode = context.context.createAnalyser(
       options || {}
     );
-    super(context, analyserNode);
+    super(context, analyserNode, options);
   }
 
   public get fftSize(): number {

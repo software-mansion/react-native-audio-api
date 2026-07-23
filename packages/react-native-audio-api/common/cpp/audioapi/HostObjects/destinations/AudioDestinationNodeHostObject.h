@@ -24,7 +24,7 @@ class AudioDestinationNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
-  AudioDestinationNode *destinationNode_ = nullptr;
+  AudioDestinationNode *const destinationNode_;
 };
 
 } // namespace audioapi

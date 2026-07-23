@@ -26,7 +26,7 @@ class StereoPannerNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
-  StereoPannerNode *stereoPannerNode_ = nullptr;
+  StereoPannerNode *const stereoPannerNode_;
 
   std::shared_ptr<AudioParamHostObject> panParam_;
 };
