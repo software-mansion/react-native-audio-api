@@ -5,6 +5,16 @@
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
   },
+  "exports": {
+    ".": {
+      "types": "./lib/typescript/index.d.ts",
+      "react-native": "./src/index.ts",
+      "import": "./lib/module/index.js",
+      "require": "./lib/commonjs/index.js",
+      "default": "./lib/module/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "source": "src/index",
   "main": "lib/module/index.js",
   "module": "lib/module/index.js",
