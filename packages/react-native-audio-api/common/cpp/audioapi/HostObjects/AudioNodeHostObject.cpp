@@ -5,22 +5,13 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/graph/HostGraph.h>
+#include <audioapi/jsi/JsiUtils.h>
 
 #include <memory>
-#include <string>
 #include <utility>
 
 namespace audioapi {
 namespace {
-
-[[noreturn]] void
-throwException(jsi::Runtime &runtime, const char *name, const std::string &message) {
-  auto errorCtor = runtime.global().getPropertyAsFunction(runtime, "Error");
-  auto error = errorCtor.callAsConstructor(runtime, jsi::String::createFromUtf8(runtime, message));
-  auto errorObj = error.asObject(runtime);
-  errorObj.setProperty(runtime, "name", jsi::String::createFromUtf8(runtime, name));
-  throw jsi::JSError(runtime, std::move(error));
-}
 
 bool isMissingEdge(const utils::graph::HostNode::Res &result) {
   if (result.is_ok()) {
@@ -43,11 +34,11 @@ void disconnectMatchingEdges(jsi::Runtime &runtime, TryRemove &&tryRemove) {
     if (result.is_ok()) {
       removedAny = true;
     } else if (!isMissingEdge(result)) {
-      throwException(runtime, "InvalidAccessError", kDisconnectNotConnected);
+      jsiutils::throwException(runtime, "InvalidAccessError", kDisconnectNotConnected);
     }
   });
   if (!removedAny) {
-    throwException(runtime, "InvalidAccessError", kDisconnectNotConnected);
+    jsiutils::throwException(runtime, "InvalidAccessError", kDisconnectNotConnected);
   }
 }
 
@@ -251,19 +242,19 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
     const int inputBegin = hasInput ? input : 0;
     const int inputEnd = hasInput ? input + 1 : toNodeHost->numberOfInputs_;
 
-    disconnectMatchingEdges(runtime, [&](auto record) {
+    disconnectMatchingEdges(runtime, [&](auto onResult) {
       for (int o = outputBegin; o < outputEnd; ++o) {
         auto source = getConnectSource(o);
         for (int i = inputBegin; i < inputEnd; ++i) {
-          record(source->disconnect(*toNodeHost->getConnectDestination(i)));
+          onResult(source->disconnect(*toNodeHost->getConnectDestination(i)));
         }
       }
     });
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    disconnectMatchingEdges(runtime, [&](auto record) {
+    disconnectMatchingEdges(runtime, [&](auto onResult) {
       for (int o = outputBegin; o < outputEnd; ++o) {
-        record(graph_->removeEdge(getConnectSource(o)->rawNode(), param->bridgeNode()));
+        onResult(graph_->removeEdge(getConnectSource(o)->rawNode(), param->bridgeNode()));
       }
     });
   }
