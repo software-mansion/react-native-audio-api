@@ -32,11 +32,6 @@ packages/custom-node-generator/    # Code generation tooling
 - **Optional FFmpeg**: Audio decoding via FFmpeg can be conditionally compiled out
 - **Audio Worklets**: JavaScript runs on the audio thread via React Native Worklets
 
-### Comment style
-- Follow `code-comments` when adding or editing comments.
-- Prefer self-explanatory code; comment non-obvious invariants, thread constraints, allocation boundaries, and spec deviations only.
-- Normalize new thread tags to `/// @note JS Thread only` / `/// @note Audio Thread only`.
-
 ### Native Module Entry Points
 - iOS: `ios/audioapi/ios/AudioAPIModule.mm`
 - Android: `android/src/main/java/com/swmansion/audioapi/AudioAPIModule.kt`
@@ -78,6 +73,9 @@ When implementing anything new, mirror structure and style from these proven fil
 | New scheduled source node | `common/cpp/audioapi/core/sources/OscillatorNode.h` + `.cpp` |
 | New TypeScript API class | `packages/react-native-audio-api/src/core/GainNode.ts` |
 
+### Writing Expressive Code
+- Always follow `expressive-code` skill when adding or editing comments and choosing names.
+
 ---
 
 ## Skills
@@ -95,7 +93,7 @@ Detailed skill files live in `.claude/skills/`. Each skill lives in its own dire
 | `post-work-checks/` | Ordered checklist to run after every change |
 | `flow/` | End-to-end feature implementation flow (tests + docs required) |
 | `utilities/` | Shared DSP and C++/TS utility helpers |
-| `code-comments/` | Comment style — when to comment, what to avoid, language-specific rules |
+| `expressive-code/` | Naming and comment style — self-documenting code, when to comment, anti-patterns |
 | `writing-skills/` | How to write, structure, and maintain skill files |
 
 See `.claude/README.md` for a full description of the Claude Code setup and the `/pre-push-update` command.

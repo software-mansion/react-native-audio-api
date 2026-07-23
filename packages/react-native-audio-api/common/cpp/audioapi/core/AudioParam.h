@@ -85,7 +85,7 @@ class AudioParam {
     return false;
   }
 
-  /// Audio-Thread only methods
+  /// @note Audio Thread only
   /// These methods are called only from the Audio rendering thread.
 
   /// @brief Returns the input buffer where BridgeNode stores mixed modulation signals.

@@ -208,12 +208,12 @@ class MyNode : public AudioNode {
 
 In `AudioParam.h` the pattern is:
 ```cpp
-/// JS-Thread only methods
+/// @note JS Thread only
 [[nodiscard]] inline float getValue() const noexcept { ... }
 void setValue(float value);
 void setValueAtTime(float value, double startTime);
 
-/// Audio-Thread only methods
+/// @note Audio Thread only
 std::shared_ptr<AudioBuffer> processARateParam(int framesToProcess, double time);
 float processKRateParam(int framesToProcess, double time);
 ```

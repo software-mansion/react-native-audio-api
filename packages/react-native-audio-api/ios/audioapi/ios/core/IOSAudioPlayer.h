@@ -36,9 +36,10 @@ class IOSAudioPlayer : public CommonPlayer {
 
  private:
   void clearPendingSaved();
-  /// Audio-thread only. Always pulls the graph in steps of RENDER_QUANTUM_SIZE; if the system
-  /// buffer size is not a multiple of 128, the unused tail of the last quantum is kept (max 128
-  /// frames) and played at the start of the next callback.
+  /// @note Audio Thread only
+  /// Always pulls the graph in steps of RENDER_QUANTUM_SIZE; if the system
+  /// buffer size is not a multiple of 128, the unused tail of the last quantum
+  /// is kept (max 128 frames) and played at the start of the next callback.
   void deliverOutputBuffers(AudioBufferList *outputData, int numFrames);
 
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
