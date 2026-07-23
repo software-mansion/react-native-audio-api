@@ -28,6 +28,8 @@ class NodeAudioPlayer final : public CommonPlayer {
 
  private:
   void run();
+  /// Signal the worker to exit and join it. Safe to call repeatedly.
+  void terminateWorker();
 
   std::function<void(DSPAudioBuffer *, int)> renderAudio_;
   std::shared_ptr<DSPAudioBuffer> buffer_;
