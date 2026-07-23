@@ -94,6 +94,14 @@ const jsi::Value *AudioChannelViews::channelsArray(size_t activeChannelCount) co
   return &channelsArraysByCount_[activeChannelCount];
 }
 
+const jsi::Value *AudioChannelViews::monoFloat32Channel() const {
+  if (jsValuesReleased_ || float32ChannelValues_.empty()) {
+    return nullptr;
+  }
+
+  return float32ChannelValues_.data();
+}
+
 const std::shared_ptr<audioapi::AudioArrayBuffer> &AudioChannelViews::channelBuffer(
     size_t channelIndex) const {
   return channelBuffers_.at(channelIndex);

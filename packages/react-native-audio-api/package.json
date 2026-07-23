@@ -10,19 +10,8 @@
   "module": "lib/module/index.js",
   "react-native": "src/index.ts",
   "types": "lib/typescript/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./lib/typescript/index.d.ts",
-      "react-native": "./src/index.ts",
-      "default": "./lib/module/index.js"
-    },
-    "./wpt-node": {
-      "node": "./wpt_tests/index.js"
-    }
-  },
   "files": [
     "src/",
-    "wpt_tests/",
     "development/react/",
     "mock/",
     "lib/",
@@ -47,7 +36,7 @@
     "!**/__mocks__",
     "!**/.*",
     "!**/node_modules",
-    "!common/cpp/cursor",
+    "!common/cpp/clangd",
     "!common/cpp/test",
     "scripts/setup-rn-audio-api-web.js",
     "scripts/rnaa_utils.rb",
@@ -61,6 +50,8 @@
     "test:full": "yarn test && yarn test:graph",
     "test:graph": "bash common/cpp/test/RunTestsGraph.sh",
     "test:graph:docker": "bash common/cpp/test/RunTestsGraphDocker.sh",
+    "build:android": "cd ../../apps/fabric-example/android && ./gradlew :react-native-audio-api:assembleDebug",
+    "build:ios": "cd ../../apps/fabric-example/ios && pod install && xcodebuild build -workspace FabricExample.xcworkspace -scheme FabricExample -destination 'generic/platform=iOS Simulator' -quiet",
     "typecheck": "tsc --noEmit",
     "lint": "yarn lint:js && yarn lint:cpp && yarn lint:ios && yarn lint:kotlin",
     "lint:js": "eslint src && yarn prettier --check src",

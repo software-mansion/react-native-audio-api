@@ -35,7 +35,7 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
   }
 
  protected:
-  AudioBufferQueueSourceNode *bufferQueueSourceNode_ = nullptr;
+  AudioBufferQueueSourceNode *const bufferQueueSourceNode_;
 
   size_t bufferId_ = 0;
   bool stretchHasBeenInit_ = false;

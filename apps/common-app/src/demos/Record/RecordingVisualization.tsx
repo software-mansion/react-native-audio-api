@@ -6,8 +6,12 @@ import {
   useCanvasRef,
   useCanvasSize,
 } from '@shopify/react-native-skia';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
+import {
+  WorkletAudioContext,
+  WorkletNode,
+} from 'react-native-audio-worklets';
 import {
   cancelAnimation,
   Easing,
@@ -26,9 +30,7 @@ import { RecordingState } from './types';
 
 const { width: windowWidth } = Dimensions.get('window');
 
-const defaultNumBars = Math.floor(
-  windowWidth / (constants.barWidth + constants.barGap)
-);
+const defaultNumBars = Math.floor(windowWidth / constants.barStep);
 
 const historyNumBars = Math.floor(
   windowWidth / (constants.historyBarWidth + constants.historyBarGap)
@@ -48,7 +50,7 @@ interface RecordingVisualizationProps {
 
 interface DrawDefaultWaveformParams {
   normalized: number;
-  size: { width: number; height: number };
+  canvasHeight: number;
   barHeights: number[];
   translateX: SharedValue<number>;
   lastIndex: SharedValue<number>;
@@ -57,7 +59,7 @@ interface DrawDefaultWaveformParams {
 
 interface DrawHistoryWaveformParams {
   normalized: number;
-  lifetimeSize: { width: number; height: number };
+  lifetimeCanvasHeight: number;
   history: number[];
   historyHead: SharedValue<number>;
   durationMS: SharedValue<number>;
@@ -66,14 +68,18 @@ interface DrawHistoryWaveformParams {
 
 function drawDefaultWaveform(params: DrawDefaultWaveformParams) {
   'worklet';
-  const { normalized, size, barHeights, translateX, lastIndex, numBars } =
+  const { normalized, canvasHeight, barHeights, translateX, lastIndex, numBars } =
     params;
 
-  const value = normalized * size.height * 0.8;
+  if (canvasHeight <= 0 || numBars <= 0) {
+    return barHeights;
+  }
+
+  const value = normalized * canvasHeight * 0.8;
   let currentIndex =
     barHeights.length / 2 -
     1 +
-    Math.floor(-translateX.value / (constants.barWidth + constants.barGap));
+    Math.floor(-translateX.value / constants.barStep);
 
   barHeights[currentIndex] = value;
 
@@ -108,13 +114,17 @@ function drawHistoryWaveform(params: DrawHistoryWaveformParams) {
   const {
     history,
     normalized,
-    lifetimeSize,
+    lifetimeCanvasHeight,
     historyHead,
     durationMS,
     historyMidpointMS,
   } = params;
 
-  const value = normalized * lifetimeSize.height * 0.8;
+  if (lifetimeCanvasHeight <= 0) {
+    return history;
+  }
+
+  const value = normalized * lifetimeCanvasHeight * 0.8;
   history[historyHead.value] = value;
   historyHead.value += 1;
 
@@ -153,13 +163,21 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   const translateX = useSharedValue(0);
   const lastIndex = useSharedValue(-1);
   const durationMS = useSharedValue(0);
+  const canvasHeightSV = useSharedValue(0);
+  const lifetimeCanvasHeightSV = useSharedValue(0);
+  const numBarsSV = useSharedValue(0);
+
+  const stateRef = useRef(state);
+  const workletContextRef = useRef<WorkletAudioContext | null>(null);
+  const workletNodeRef = useRef<WorkletNode | null>(null);
+  const workletReadyRef = useRef(false);
 
   const numBars = useMemo(() => {
     if (size.width === 0) {
       return 0;
     }
 
-    return Math.ceil(size.width / (constants.barWidth + constants.barGap)) * 2;
+    return Math.ceil(size.width / constants.barStep) * 2;
   }, [size.width]);
 
   const waveformPath = useDerivedValue(() => {
@@ -171,14 +189,12 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
       return path;
     }
 
-    currentHeights.forEach((height, index) => {
+    currentHeights.forEach((height: number, index: number) => {
       if (height < 0) {
         return;
       }
 
-      const x =
-        index * (constants.barWidth + constants.barGap) +
-        constants.barWidth / 2;
+      const x = index * constants.barStep + constants.barWidth / 2;
       const y1 = (canvasHeight - height) / 2;
       const y2 = (canvasHeight + height) / 2;
 
@@ -250,6 +266,16 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   }, [lifetimeSize]);
 
   useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
+    numBarsSV.value = numBars;
+    canvasHeightSV.value = size.height;
+    lifetimeCanvasHeightSV.value = lifetimeSize.height;
+  }, [numBars, size.height, lifetimeSize.height, numBarsSV, canvasHeightSV, lifetimeCanvasHeightSV]);
+
+  useEffect(() => {
     if (numBars <= 0) {
       return;
     }
@@ -260,29 +286,39 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   }, [numBars, barHeights]);
 
   useEffect(() => {
-    if (numBars <= 0) {
-      return () => {};
+    if (workletContextRef.current != null) {
+      return;
     }
 
-    Recorder.onAudioReady(
-      {
-        sampleRate: constants.sampleRate,
-        channelCount: 1,
-        bufferLength:
-          (constants.updateIntervalMS / 1000.0) * constants.sampleRate,
-      },
-      (event) => {
-        durationMS.value += (event.numFrames / constants.sampleRate) * 1000;
-        const { buffer } = event;
-        const audioData = buffer.getChannelData(0);
+    const workletContext = new WorkletAudioContext({
+      sampleRate: constants.sampleRate,
+    });
+    const workletNode = new WorkletNode(
+      workletContext,
+      (audioData) => {
+        'worklet';
+
+        const canvasHeight = canvasHeightSV.value;
+        const lifetimeCanvasHeight = lifetimeCanvasHeightSV.value;
+        const activeNumBars = numBarsSV.value;
+
+        if (canvasHeight <= 0 || activeNumBars <= 0) {
+          return;
+        }
+
+        durationMS.value +=
+          (audioData.length / constants.sampleRate) * 1000;
 
         let maxValue = 0;
         for (let i = 0; i < audioData.length; i++) {
-          const val = Math.abs(audioData[i]);
-          if (val > maxValue) maxValue = val;
+          const val = Math.abs(audioData[i]!);
+          if (val > maxValue) {
+            maxValue = val;
+          }
         }
 
-        const db = maxValue > 0 ? 20 * Math.log10(maxValue) : constants.minDb;
+        const db =
+          maxValue > 0 ? 20 * Math.log10(maxValue) : constants.minDb;
         let normalized =
           (db - constants.minDb) / (constants.maxDb - constants.minDb);
         normalized = Math.max(0, Math.min(1, normalized));
@@ -292,11 +328,11 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
 
           return drawDefaultWaveform({
             normalized,
-            size,
+            canvasHeight,
             barHeights: heights,
             translateX,
             lastIndex,
-            numBars,
+            numBars: activeNumBars,
           }) as T;
         });
 
@@ -305,21 +341,81 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
 
           return drawHistoryWaveform({
             normalized,
-            lifetimeSize,
+            lifetimeCanvasHeight,
             history: hist,
             historyHead,
             durationMS,
             historyMidpointMS,
           }) as T;
         });
+      },
+      {
+        domain: 'time-domain',
+        bufferLength: constants.workletBufferLength,
       }
     );
 
+    workletContextRef.current = workletContext;
+    workletNodeRef.current = workletNode;
+
+    let cancelled = false;
+
+    const startWorkletGraph = async () => {
+      await workletContext.resume();
+      if (cancelled) {
+        return;
+      }
+
+      workletNode.connect(workletContext.destination);
+      workletReadyRef.current = true;
+
+      const currentState = stateRef.current;
+      if (
+        currentState === RecordingState.Recording ||
+        currentState === RecordingState.Paused
+      ) {
+        Recorder.connect(workletContext, workletNode);
+      }
+    };
+
+    startWorkletGraph();
+
     return () => {
-      Recorder.clearOnAudioReady();
+      cancelled = true;
+      workletReadyRef.current = false;
+      Recorder.disconnect();
+      workletNode.disconnect();
+      workletContextRef.current = null;
+      workletNodeRef.current = null;
+      workletContext.close().catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [numBars, size, lifetimeSize]);
+  }, []);
+
+  useEffect(() => {
+    const workletContext = workletContextRef.current;
+    const workletNode = workletNodeRef.current;
+
+    if (!workletReadyRef.current || !workletContext || !workletNode) {
+      return;
+    }
+
+    const shouldRouteAudio =
+      state === RecordingState.Recording || state === RecordingState.Paused;
+
+    if (!shouldRouteAudio) {
+      Recorder.disconnect();
+      return;
+    }
+
+    workletContext.resume().then(() => {
+      Recorder.connect(workletContext, workletNode);
+    });
+
+    return () => {
+      Recorder.disconnect();
+    };
+  }, [state]);
 
   useEffect(() => {
     if (state === RecordingState.Recording) {
@@ -337,8 +433,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
     } else if (state === RecordingState.Paused) {
       cancelAnimation(translateX);
 
-      const currentIndexOffset =
-        -translateX.value / (constants.barWidth + constants.barGap);
+      const currentIndexOffset = -translateX.value / constants.barStep;
 
       const newBarHeights = [...barHeights.value];
 

@@ -231,6 +231,19 @@ Higher-level DSP blocks. Read each header before use.
 
 ---
 
+### `SpectrumAnalyser.h` — shared windowed-FFT magnitude spectrum
+
+Owns FFT scratch state (Blackman window, temp array, complex scratch, magnitude
+output) for the windowed-FFT → linear-magnitude → exponential-smoothing pipeline.
+Shared by `AnalyserNode` (`core/analysis/`) and `WorkletNode`
+(`react-native-audio-worklets`, frequency-domain mode) to avoid duplicating that
+math — each node keeps its own input buffering/threading and just calls
+`analyze(timeDomain, smoothingTimeConstant)`, then reads `getMagnitudeData()`.
+Exported via `StableAPI.h` for the worklets extension package. Not thread-safe;
+call `analyze()`/`setFFTSize()` from a single thread.
+
+---
+
 ## `src/utils/` — TypeScript utilities
 
 ### `paths.ts`

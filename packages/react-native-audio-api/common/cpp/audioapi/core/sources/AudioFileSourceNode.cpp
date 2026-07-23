@@ -129,7 +129,7 @@ bool AudioFileSourceNode::initDecoder(
     return false;
   }
 
-  channelCount_ = decoderState_->channelCount;
+  channelCount_ = decoderState_->channelCount.load();
   sampleRate_ = decoderState_->sampleRate;
   duration_ = decoderState_->duration;
 

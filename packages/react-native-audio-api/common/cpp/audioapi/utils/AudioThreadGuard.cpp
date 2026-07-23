@@ -1,4 +1,4 @@
-#include "AudioThreadGuard.h"
+#include <audioapi/utils/AudioThreadGuard.h>
 
 #include <sys/resource.h>
 #include <cstdint>

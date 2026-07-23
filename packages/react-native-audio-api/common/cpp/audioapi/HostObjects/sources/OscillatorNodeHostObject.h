@@ -36,7 +36,7 @@ class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
   }
 
  private:
-  OscillatorNode *oscillatorNode_ = nullptr;
+  OscillatorNode *const oscillatorNode_;
 
   std::shared_ptr<AudioParamHostObject> frequencyParam_;
   std::shared_ptr<AudioParamHostObject> detuneParam_;

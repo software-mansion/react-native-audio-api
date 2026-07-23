@@ -20,34 +20,34 @@ UIWorkletsRunner::UIWorkletsRunner(
 void UIWorkletsRunner::deactivate() {
   job_->alive->store(false, std::memory_order_release);
 
-  auto channelViews = job_->channelViews;
-  if (channelViews == nullptr) {
+  auto channelView = job_->channelView;
+  if (channelView == nullptr) {
     return;
   }
 
   auto uiScheduler = job_->uiScheduler.lock();
   if (uiScheduler == nullptr) {
-    channelViews->releaseJsValues();
+    channelView->releaseJsValues();
     return;
   }
 
-  worklets::scheduleOnUI(uiScheduler, [channelViews]() { channelViews->releaseJsValues(); });
+  worklets::scheduleOnUI(uiScheduler, [channelView]() { channelView->releaseJsValues(); });
 }
 
 bool UIWorkletsRunner::isActive() const {
   return job_->alive->load(std::memory_order_acquire);
 }
 
-void UIWorkletsRunner::createChannelViews(size_t frameCount, size_t channelCount) {
+void UIWorkletsRunner::createChannelView(size_t frameCount) {
   auto uiRuntime = job_->uiRuntime.lock();
   if (!uiRuntime) {
     return;
   }
 
-  job_->channelViews = std::make_shared<AudioChannelViews>(uiRuntime, frameCount, channelCount);
+  job_->channelView = std::make_shared<AudioChannelViews>(uiRuntime, frameCount, 1);
 }
 
-void UIWorkletsRunner::call(size_t channelCount, std::function<void()> onComplete) const {
+void UIWorkletsRunner::call(std::function<void()> onComplete) const {
   auto uiRuntime = job_->uiRuntime.lock();
   auto uiScheduler = job_->uiScheduler.lock();
   if (!isActive() || !job_->serializableWorklet || !uiRuntime || !uiScheduler) {
@@ -57,7 +57,6 @@ void UIWorkletsRunner::call(size_t channelCount, std::function<void()> onComplet
     return;
   }
 
-  job_->channelCount = channelCount;
   job_->onComplete = std::move(onComplete);
 
   worklets::scheduleOnUI(uiScheduler, [job = job_]() { runUIWorkletJob(job); });
@@ -76,9 +75,9 @@ void UIWorkletsRunner::runUIWorkletJob(const std::shared_ptr<UIWorkletJob> &job)
   }
 
   auto runtime = job->uiRuntime.lock();
-  auto channelViews = job->channelViews;
+  auto channelView = job->channelView;
   const jsi::Value *audioData =
-      channelViews != nullptr ? channelViews->channelsArray(job->channelCount) : nullptr;
+      channelView != nullptr ? channelView->monoFloat32Channel() : nullptr;
   if (!runtime || !job->uiScheduler.lock() || audioData == nullptr) {
     if (job->onComplete) {
       job->onComplete();
@@ -86,11 +85,7 @@ void UIWorkletsRunner::runUIWorkletJob(const std::shared_ptr<UIWorkletJob> &job)
     return;
   }
 
-  worklets::runSyncOnRuntime(
-      runtime,
-      job->serializableWorklet,
-      *audioData,
-      jsi::Value(static_cast<int>(job->channelCount)));
+  worklets::runSyncOnRuntime(runtime, job->serializableWorklet, *audioData);
 
   if (job->onComplete) {
     job->onComplete();
