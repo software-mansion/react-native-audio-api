@@ -476,8 +476,8 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::LocalFileSource &so
 
   outputChannels_ = state->channels;
   outputSampleRate_ = state->outputRate;
-  durationSeconds_ = state->durationSeconds;
   framePosition_ = 0;
+  setTotalPcmFramesFromDuration(state->durationSeconds);
   impl_ = std::move(state);
   open_ = true;
   return Ok(None);
@@ -502,8 +502,8 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::EncodedMemorySource
 
   outputChannels_ = state->channels;
   outputSampleRate_ = state->outputRate;
-  durationSeconds_ = state->durationSeconds;
   framePosition_ = 0;
+  setTotalPcmFramesFromDuration(state->durationSeconds);
   impl_ = std::move(state);
   open_ = true;
   return Ok(None);
