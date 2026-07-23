@@ -200,6 +200,7 @@ export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode 
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   start: (when?: number, offset?: number) => void;
   pause: () => void;
+  resume: (when?: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onBufferEnded: string;

@@ -65,6 +65,10 @@ void AudioBufferQueueSourceNode::start(double when, double offset) {
   vReadIndex_ = static_cast<double>(buffers_.front().second->getSampleRate() * offset);
 }
 
+void AudioBufferQueueSourceNode::resume(double when) {
+  start(when);
+}
+
 void AudioBufferQueueSourceNode::pause() {
   AudioScheduledSourceNode::stop(0.0);
   isPaused_ = true;
