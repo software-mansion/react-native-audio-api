@@ -1,4 +1,5 @@
 #include <audioapi/decoding/backends/RawPcmDecoder.h>
+#include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/libs/base64/base64.h>
 
 #include <algorithm>
@@ -6,14 +7,6 @@
 #include <cstdint>
 
 namespace audioapi::decoding::raw_pcm {
-namespace {
-
-float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
-  return static_cast<float>(static_cast<int16_t>((byte2 << 8) | byte1)) /
-      static_cast<float>(INT16_MAX);
-}
-
-} // namespace
 
 DecoderResult RawPcmDecoder::openFromBytes(
     const uint8_t *data,
@@ -50,7 +43,7 @@ DecoderResult RawPcmDecoder::openFromBytes(
         offset = (static_cast<size_t>(ch) * numFrames + i) * sizeof(int16_t);
       }
       interleavedPcm_[i * static_cast<size_t>(channelCount) + static_cast<size_t>(ch)] =
-          uint8ToFloat(data[offset], data[offset + 1]);
+          dsp::uint8ToFloat(data[offset], data[offset + 1]);
     }
   }
 

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <span>
 
 namespace audioapi::dsp {
@@ -12,6 +13,12 @@ namespace audioapi::dsp {
 
 [[nodiscard]] inline double sampleFrameToTime(int sampleFrame, float sampleRate) {
   return static_cast<double>(sampleFrame) / sampleRate;
+}
+
+/// Convert little-endian int16 sample bytes to float in [-1, 1].
+[[nodiscard]] inline float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
+  return static_cast<float>(static_cast<int16_t>((byte2 << 8) | byte1)) /
+      static_cast<float>(INT16_MAX);
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) -- function, not variable

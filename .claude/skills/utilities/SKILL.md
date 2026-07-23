@@ -213,7 +213,7 @@ RAII mutex wrapper that can hold `nullptr` (no-op). Supports `Locker::tryLock(mu
 
 ### `AudioUtils.hpp` — inline DSP math
 
-Provides `timeToSampleFrame()`, `sampleFrameToTime()`, `linearInterpolate()`, `linearToDecibels()`, `decibelsToLinear()`.
+Provides `timeToSampleFrame()`, `sampleFrameToTime()`, `linearInterpolate()`, `linearToDecibels()`, `decibelsToLinear()`, `uint8ToFloat()` (LE int16 bytes → float).
 
 For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
