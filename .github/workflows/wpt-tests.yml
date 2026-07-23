@@ -1,0 +1,103 @@
+name: WPT Tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  wpt-run:
+    name: WPT run (${{ matrix.side }})
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [base, head]
+    steps:
+      - name: Resolve checkout ref
+        id: ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.side }}" = "base" ]; then
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "ref=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            else
+              echo "ref=main" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      - name: Checkout with Node
+        uses: ./.github/actions/checkout-with-node
+
+      - name: Setup Yarn
+        uses: ./.github/actions/setup-yarn
+
+      - name: Setup CMake
+        uses: ./.github/actions/setup-cmake
+
+      - name: Run WPT CI report
+        working-directory: packages/react-native-audio-api
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPORT_PATH="./wpt_tests/results/latest.json"
+          mkdir -p ./wpt_tests/results
+
+          # Prefer the dedicated script when present (head / post-merge).
+          # Fall back for older base revisions that lack wpt:ci-report / --allow-failures.
+          if node -e "const p=require('./package.json'); process.exit(p.scripts?.['wpt:ci-report'] ? 0 : 1)"; then
+            yarn wpt:ci-report
+          else
+            yarn wpt:build
+            set +e
+            node ./wpt_tests/wpt/wpt-harness.mjs --report-json "$REPORT_PATH"
+            set -e
+          fi
+
+          test -f "$REPORT_PATH"
+
+      - name: Upload WPT report
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-${{ matrix.side }}
+          path: packages/react-native-audio-api/wpt_tests/results/latest.json
+          if-no-files-found: error
+
+  wpt-compare:
+    name: WPT compare
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: wpt-run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/checkout-with-node
+
+      - name: Download base report
+        uses: actions/download-artifact@v4
+        with:
+          name: wpt-base
+          path: wpt-reports/base
+
+      - name: Download head report
+        uses: actions/download-artifact@v4
+        with:
+          name: wpt-head
+          path: wpt-reports/head
+
+      - name: Compare WPT results
+        working-directory: packages/react-native-audio-api
+        run: >
+          node ./wpt_tests/wpt/wpt-compare.mjs
+          --baseline ../../wpt-reports/base/latest.json
+          --candidate ../../wpt-reports/head/latest.json
