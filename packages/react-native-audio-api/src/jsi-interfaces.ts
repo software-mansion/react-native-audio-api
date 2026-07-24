@@ -70,6 +70,8 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
+  readonly baseLatency: number;
+  readonly outputLatency: number;
   createMediaElementSource: (
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;
@@ -324,6 +326,8 @@ export interface IAudioRecorder {
 
   getCurrentDuration: () => number;
   getFilePath: () => string | null;
+
+  readonly inputLatency: number;
 }
 
 export interface IAudioDecoder {

@@ -560,4 +560,20 @@ static AudioSessionManager *_sharedInstance = nil;
 
   return options;
 }
+
+- (double)outputLatencySeconds
+{
+  return self.audioSession.outputLatency;
+}
+
+- (double)inputLatencySeconds
+{
+  return self.audioSession.inputLatency;
+}
+
+- (double)ioBufferDurationSeconds
+{
+  return self.audioSession.IOBufferDuration;
+}
+
 @end

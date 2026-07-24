@@ -8,6 +8,7 @@
 #include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #include <audioapi/ios/system/AudioEngine.h>
+#include <audioapi/ios/system/AudioSessionManager.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
@@ -20,6 +21,7 @@ IOSAudioPlayer::IOSAudioPlayer(
     : audioBuffer_(nullptr),
       audioPlayer_(nullptr),
       renderAudio_(renderAudio),
+      sampleRate_(sampleRate),
       currentRenders_(currentRenders),
       channelCount_(channelCount),
       isRunning_(false),
@@ -174,6 +176,25 @@ void IOSAudioPlayer::cleanup()
   stop();
   [audioPlayer_ cleanup];
   audioBuffer_ = nullptr;
+}
+
+double IOSAudioPlayer::getBaseLatency() const
+{
+  if (!isRunning()) {
+    return 0.0;
+  }
+
+  return static_cast<double>(RENDER_QUANTUM_SIZE) / static_cast<double>(sampleRate_);
+}
+
+double IOSAudioPlayer::getOutputLatency() const
+{
+  if (!isRunning()) {
+    return 0.0;
+  }
+
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
+  return [sessionManager outputLatencySeconds] + [sessionManager ioBufferDurationSeconds];
 }
 
 } // namespace audioapi

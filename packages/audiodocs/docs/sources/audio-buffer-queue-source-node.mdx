@@ -24,7 +24,7 @@ constructor(context: BaseAudioContext, options?: AudioBufferQueueSourceOptions)
 | `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](/docs/sources/audio-buffer-queue-source-node#properties). |
 
 :::info
-You can also create an `AudioBufferQueueSourceNode` via [`BaseAudioContext.createBufferQueueSource()`](/docs/core/base-audio-context#createbufferqueuesource), which uses default values.
+You can also create an `AudioBufferQueueSourceNode` via [`BaseAudioContext.createBufferQueueSource()`](/docs/core/base-audio-context#create-buffer-queue-source), which uses default values.
 :::
 
 :::caution
@@ -127,7 +127,7 @@ Removes all buffers from the queue. Note that [`onBufferEnded`](audio-buffer-que
 
 #### Returns `undefined`.
 
-### `start` <Overridden /> {#start}
+### `start` <Overridden /> {"#start"}
 
 Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`AudioBuffers`](/docs/sources/audio-buffer), or starts to play immediately.
 

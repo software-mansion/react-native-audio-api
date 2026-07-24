@@ -61,6 +61,8 @@ class AudioRecorder {
   virtual bool isPaused() const = 0;
   virtual bool isIdle() const = 0;
 
+  [[nodiscard]] virtual double getInputLatency() const = 0;
+
  protected:
   bool wantsCallback() const;
   bool wantsFileOutput() const;
@@ -79,6 +81,7 @@ class AudioRecorder {
   mutable std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;
   mutable std::mutex adapterNodeMutex_;
+  mutable std::recursive_mutex streamMutex_;
 
   std::atomic<uint64_t> errorCallbackId_{0};
 
