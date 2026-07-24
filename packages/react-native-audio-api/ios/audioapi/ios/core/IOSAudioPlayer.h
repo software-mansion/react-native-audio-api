@@ -9,6 +9,7 @@ typedef struct objc_object AudioBufferList;
 
 #include <audioapi/core/CommonPlayer.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <atomic>
 #include <cstddef>
@@ -26,6 +27,8 @@ class IOSAudioPlayer : public CommonPlayer {
       std::atomic<uint32_t> &currentRenders);
   ~IOSAudioPlayer() override;
 
+  DELETE_COPY_AND_MOVE(IOSAudioPlayer);
+
   bool start() override;
   void stop() override;
   bool resume() override;
@@ -33,6 +36,9 @@ class IOSAudioPlayer : public CommonPlayer {
   void cleanup() override;
 
   [[nodiscard]] bool isRunning() const override;
+
+  [[nodiscard]] double getBaseLatency() const override;
+  [[nodiscard]] double getOutputLatency() const override;
 
  private:
   void clearPendingSaved();
@@ -43,6 +49,7 @@ class IOSAudioPlayer : public CommonPlayer {
 
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
+  float sampleRate_;
   std::function<void(DSPAudioBuffer *, int)> renderAudio_;
   std::atomic<uint32_t> &currentRenders_;
   int channelCount_;

@@ -19,6 +19,14 @@ export default class AudioContext extends BaseAudioContext {
     );
   }
 
+  public get baseLatency(): number {
+    return (this.context as IAudioContext).baseLatency;
+  }
+
+  public get outputLatency(): number {
+    return (this.context as IAudioContext).outputLatency;
+  }
+
   async close(): Promise<void> {
     return (this.context as IAudioContext).close();
   }

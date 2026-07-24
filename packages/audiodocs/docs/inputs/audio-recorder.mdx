@@ -365,8 +365,9 @@ const audioRecorder = new AudioRecorder();
 ## Properties
 
 | Name | Type | Description |
-| :----: | :----: | :-------- |
+| :--- | :--- | :--- |
 | `options` | [`AudioRecorderFileOptions`](#audiorecorderfileoptions) \| `null` | Active file-output configuration after [`enableFileOutput()`](#enablefileoutput), or `null` when file output is disabled. |
+| `inputLatency` | `number` | Returns the estimated **full** input latency in seconds (from analog input to app delivery). Mirrors [`AudioContext.outputLatency`](/docs/core/audio-context#properties) semantics. Calculated using underlying platform properties (`AVAudioSession` on iOS; Oboe timestamps/burst sizes on Android). Value may change when the audio route changes. Returns `0` when idle. |
 
 ## Methods
 
