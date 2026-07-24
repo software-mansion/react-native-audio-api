@@ -49,7 +49,7 @@ TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
 TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   static constexpr int FRAMES_TO_PROCESS = 4;
 
-  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   auto constantSource = TestableConstantSourceNode(context);
   constantSource.start(context->getCurrentTime());
   constantSource.processNode(FRAMES_TO_PROCESS);
@@ -58,6 +58,9 @@ TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
   for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 1.0f);
   }
+
+  // Advance time because the AudioParam cache key identifies the render quantum.
+  context->processGraph(buffer.get(), FRAMES_TO_PROCESS);
 
   constantSource.setOffsetParam(0.5f);
   constantSource.processNode(FRAMES_TO_PROCESS);
