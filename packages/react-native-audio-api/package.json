@@ -188,8 +188,19 @@
           "esm": true
         }
       ],
-      "typescript",
-      "commonjs"
+      [
+        "commonjs",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.json",
+          "tsc": "../../node_modules/.bin/tsc"
+        }
+      ]
     ]
   },
   "codegenConfig": {
