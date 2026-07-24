@@ -5,6 +5,7 @@
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
   },
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./lib/typescript/index.d.ts",
