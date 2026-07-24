@@ -4,9 +4,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
-#include <audioapi/jsi/HostObject.h>
 #include <audioapi/types/NodeOptions.h>
-#include <jsi/jsi.h>
 #include <memory>
 #include <string>
 #include <utility>
