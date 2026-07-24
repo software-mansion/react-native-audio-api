@@ -79,6 +79,42 @@ TEST_F(WsolaTimeStretcherTest, RequiredInputFramesAt44100Hz) {
   EXPECT_EQ(stretcher_.getRequiredInputFrames(), 2205u);
 }
 
+TEST_F(WsolaTimeStretcherTest, MinInputFramesToRunMatchesSearchSpanNeed) {
+  // Cold start: last candidate needs searchInterval + window - 1 source samples.
+  EXPECT_EQ(stretcher_.getMinInputFramesToRun(), stretcher_.getRequiredInputFrames() - 1u);
+  EXPECT_LE(stretcher_.getMinInputFramesToRun(), stretcher_.getRequiredInputFrames());
+}
+
+TEST_F(WsolaTimeStretcherTest, FeedInputPrimesForImmediateFirstQuantumOutput) {
+  const size_t framesNeeded = stretcher_.getMinInputFramesToRun();
+  ASSERT_GT(framesNeeded, 0u);
+
+  DSPAudioBuffer prime(framesNeeded, 1, kSampleRate);
+  for (size_t i = 0; i < framesNeeded; ++i) {
+    prime.getChannel(0)->span()[i] =
+        std::sin(2.0f * PI * 440.0f * static_cast<float>(i) / kSampleRate);
+  }
+  stretcher_.feedInput(prime, framesNeeded);
+  EXPECT_GE(stretcher_.getBufferedInputFrames(), framesNeeded);
+
+  // One quantum of additional input at rate 1.5 — should emit non-zero in the first process().
+  const size_t inputFrames = inputFramesForQuantum(kPlaybackRate);
+  DSPAudioBuffer input(inputFrames, 1, kSampleRate);
+  DSPAudioBuffer output(kQuantum, 1, kSampleRate);
+  for (size_t i = 0; i < inputFrames; ++i) {
+    input.getChannel(0)->span()[i] =
+        std::sin(2.0f * PI * 440.0f * static_cast<float>(framesNeeded + i) / kSampleRate);
+  }
+
+  stretcher_.process(input, inputFrames, output, kQuantum, kPlaybackRate);
+
+  float peak = 0.0f;
+  for (size_t i = 0; i < output.getSize(); ++i) {
+    peak = std::max(peak, std::abs(output.getChannel(0)->span()[i]));
+  }
+  EXPECT_GT(peak, 0.01f);
+}
+
 TEST_F(WsolaTimeStretcherTest, SchedulingLatencyFormulaMatchesDocumentedConstants) {
   EXPECT_NEAR(schedulingLatencySeconds(1.0f), 0.03f, 1e-6f);
   EXPECT_NEAR(schedulingLatencySeconds(kPlaybackRate), 0.04f, 1e-6f);

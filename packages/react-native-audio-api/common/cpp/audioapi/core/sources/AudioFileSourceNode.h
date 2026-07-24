@@ -188,6 +188,14 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       AudioFileSourceOptions &options);
 
+  /// @brief Starts the SeekDecoderDaemon worker thread if it is not already running.
+  /// @note JS / construction thread only.
+  void startDecoderThread();
+
+  /// @brief Pulls decoded packets into @ref wsolaStretcher_ until primed or @p timeoutMs elapses.
+  /// @note JS / construction thread only — must run before the audio thread consumes @ref frameReceiver_.
+  void primeWsolaInputFromDecoder(size_t timeoutMs);
+
   /// @brief Attempts to read the next chunk of decoded frames from the daemon.
   /// @param outData decoded frames and metadata; only valid if return value is true.
   /// @return false if no decoded frames are available; true if @p outData is filled and ready to process.

@@ -14,10 +14,12 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
 #include <memory>
+#include <thread>
 #include <utility>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -134,7 +136,73 @@ bool AudioFileSourceNode::initDecoder(
       channelCount_,
       context->getSampleRate());
 
+  startDecoderThread();
+  // Wall-clock budget to pull ~50ms of PCM from the decoder (not audio delay).
+  // Local files typically finish well under this; audio-thread warmup covers misses.
+  static constexpr size_t kPrimeTimeoutMs = 0;
+  primeWsolaInputFromDecoder(kPrimeTimeoutMs);
   return true;
+}
+
+void AudioFileSourceNode::startDecoderThread() {
+  if (seekDecoderDaemon_ == nullptr || seekDecoderThread_.joinable()) {
+    return;
+  }
+
+  seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
+  seekDecoderDaemon_.reset();
+}
+
+void AudioFileSourceNode::primeWsolaInputFromDecoder(size_t timeoutMs) {
+  if (frameReceiver_ == nullptr || playbackRateBuffer_ == nullptr) {
+    return;
+  }
+
+  const size_t framesNeeded =
+      std::max(wsolaStretcher_.getRequiredInputFrames(), wsolaStretcher_.getMinInputFramesToRun());
+  if (framesNeeded == 0) {
+    return;
+  }
+
+  const size_t chunkCapacity = std::max(framesNeeded, static_cast<size_t>(RENDER_QUANTUM_SIZE));
+  if (!ensurePlaybackRateBufferSize(chunkCapacity)) {
+    return;
+  }
+
+  using clock = std::chrono::steady_clock;
+  const auto deadline = clock::now() + std::chrono::milliseconds(timeoutMs);
+
+  DecoderData chunk;
+  while (wsolaStretcher_.getBufferedInputFrames() < framesNeeded && clock::now() < deadline) {
+    if (frameReceiver_->try_receive(chunk) != channels::spsc::ResponseStatus::SUCCESS) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      continue;
+    }
+
+    if (chunk.state == StreamState::END_OF_STREAM || chunk.state == StreamState::DISCONTINUOUS) {
+      break;
+    }
+    if (chunk.size == 0) {
+      continue;
+    }
+
+    if (!ensurePlaybackRateBufferSize(chunk.size)) {
+      break;
+    }
+
+    playbackRateBuffer_->zero();
+    size_t totalInputFrames = 0;
+    appendFromInterleaved(
+        chunk.interleavedBuffer.data(), chunk.size, 0, chunk.size, totalInputFrames);
+    if (totalInputFrames == 0) {
+      continue;
+    }
+
+    if (volume_ != 1.0f) {
+      playbackRateBuffer_->scale(volume_);
+    }
+    wsolaStretcher_.feedInput(*playbackRateBuffer_, totalInputFrames);
+  }
 }
 
 void AudioFileSourceNode::setPlaybackRate(float v) {
@@ -385,11 +453,6 @@ void AudioFileSourceNode::start(double when) {
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
   positionChanged_.requestFlush();
-
-  if (seekDecoderDaemon_) {
-    seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
-    seekDecoderDaemon_.reset();
-  }
 }
 
 void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {

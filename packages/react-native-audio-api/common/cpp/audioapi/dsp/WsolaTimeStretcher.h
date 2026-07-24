@@ -18,6 +18,10 @@ class WsolaTimeStretcher {
     return searchIntervalFrames_ + windowSize_;
   }
 
+  /// Minimum input frames needed for @ref canRunIteration at the current analysis
+  /// pointers (search span + target window, accounting for pitchFactor_).
+  [[nodiscard]] size_t getMinInputFramesToRun() const;
+
   [[nodiscard]] size_t getBufferedInputFrames() const {
     return inputQueue_.empty() ? 0 : inputQueue_[0].size();
   }
@@ -25,6 +29,9 @@ class WsolaTimeStretcher {
   [[nodiscard]] size_t getBufferedOutputFrames() const {
     return availableOutputFrames();
   }
+
+  /// Appends PCM to the analysis queue without rendering output (startup prefill).
+  void feedInput(const DSPAudioBuffer &input, size_t inputFrames);
 
   void process(
       const DSPAudioBuffer &input,
@@ -69,6 +76,9 @@ class WsolaTimeStretcher {
   int targetBlockIndex_{0};
   int searchBlockIndex_{0};
   size_t outputReadIndex_{0};
+
+  bool firstSampleFound_ = false;
+  size_t totalFramesOutput_ = 0;
 
   std::vector<float> olaWindow_;
   std::vector<float> transitionWindow_;

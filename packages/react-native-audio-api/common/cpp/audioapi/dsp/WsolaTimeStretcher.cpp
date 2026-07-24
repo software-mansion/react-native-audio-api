@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <vector>
 
@@ -71,6 +72,9 @@ void WsolaTimeStretcher::reset() {
   searchBlockIndex_ = 0;
   outputReadIndex_ = 0;
 
+  firstSampleFound_ = false;
+  totalFramesOutput_ = 0;
+
   for (auto &channel : inputQueue_) {
     channel.clear();
   }
@@ -80,6 +84,25 @@ void WsolaTimeStretcher::reset() {
   for (auto &channel : pendingOverlap_) {
     std::fill(channel.begin(), channel.end(), 0.0f);
   }
+}
+
+size_t WsolaTimeStretcher::getMinInputFramesToRun() const {
+  if (windowSize_ == 0 || searchIntervalFrames_ == 0) {
+    return 0;
+  }
+
+  // Last search candidate starts at searchBlockIndex_ + searchIntervalFrames_ - 1.
+  const int lastCandidateStart = searchBlockIndex_ + static_cast<int>(searchIntervalFrames_) - 1;
+  const int targetNeed = maxSourceIndexForBlock(targetBlockIndex_);
+  const int searchNeed = maxSourceIndexForBlock(lastCandidateStart);
+  return static_cast<size_t>(std::max(targetNeed, searchNeed) + 1);
+}
+
+void WsolaTimeStretcher::feedInput(const DSPAudioBuffer &input, size_t inputFrames) {
+  if (channels_ == 0 || windowSize_ == 0 || inputFrames == 0) {
+    return;
+  }
+  appendInput(input, inputFrames);
 }
 
 void WsolaTimeStretcher::process(
@@ -114,6 +137,31 @@ void WsolaTimeStretcher::process(
       availableOutputFrames() < outputFrames * 2) {
     runOneIteration(playbackRate);
   }
+
+  if (!firstSampleFound_) {
+    for (int i = 0; i < output.getNumberOfChannels(); ++i) {
+      auto *channel = output.getChannel(i);
+      for (int j = 0; j < channel->getSize(); ++j) {
+        if (std::abs(channel->operator[](j)) > 1e-6f) {
+          firstSampleFound_ = true;
+
+          size_t absoluteFrameIndex = totalFramesOutput_ + j;
+          double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
+
+          std::cout << "[WSOLA] Pierwszy dzwiek! "
+                    << "Ramka wyjsciowa: " << absoluteFrameIndex << " | Opoznienie: " << latencyMs
+                    << " ms"
+                    << " | Playback Rate: " << playbackRate << std::endl;
+
+          break;
+        }
+      }
+      if (firstSampleFound_)
+        break;
+    }
+  }
+
+  totalFramesOutput_ += outputFrames;
 }
 
 size_t
@@ -255,13 +303,18 @@ bool WsolaTimeStretcher::canRunIteration() const {
   }
 
   const int inputFrames = static_cast<int>(inputQueue_[0].size());
-  const int searchBlockSize = static_cast<int>(searchIntervalFrames_ + windowSize_ - 1);
 
   if (maxSourceIndexForBlock(targetBlockIndex_) >= inputFrames) {
     return false;
   }
 
-  return maxSourceIndexForBlock(searchBlockIndex_ + searchBlockSize - 1) < inputFrames;
+  // Last search candidate window starts at searchBlockIndex_ + searchIntervalFrames_ - 1
+  // (not searchBlockSize - 1, which double-counted the trailing window).
+  if (searchIntervalFrames_ == 0) {
+    return false;
+  }
+  const int lastCandidateStart = searchBlockIndex_ + static_cast<int>(searchIntervalFrames_) - 1;
+  return maxSourceIndexForBlock(lastCandidateStart) < inputFrames;
 }
 
 bool WsolaTimeStretcher::targetIsWithinSearchRegion() const {
