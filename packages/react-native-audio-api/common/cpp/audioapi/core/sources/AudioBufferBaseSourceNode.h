@@ -16,7 +16,7 @@ namespace audioapi {
 class AudioParam;
 struct BaseAudioBufferSourceOptions;
 
-/// @note https://webaudio.github.io/web-audio-api/#dom-audiobuffersourcenode-playbackrate
+/// @see https://webaudio.github.io/web-audio-api/#computedplaybackrate
 inline float combineComputedPlaybackRate(float playbackRate, float detune) {
   return playbackRate * std::pow(2.0f, detune / static_cast<float>(OCTAVE_RANGE));
 }
@@ -68,8 +68,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   // k-rate params
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;
-  // The simple children above are kept so the pitch-correction path can read
-  // the constituents (rate, pitchFactor) separately.
+  // Pitch correction needs both the combined rate and its individual components.
   std::shared_ptr<CompositeAudioParam<combineComputedPlaybackRate>> computedPlaybackRateParam_;
 
   PositionChangedDispatcher positionChanged_;

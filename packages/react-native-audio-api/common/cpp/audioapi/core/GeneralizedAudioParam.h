@@ -12,7 +12,7 @@
 
 namespace audioapi {
 
-/// @brief Common interface for all audio params.
+/// @brief Shared processing contract for direct and computed audio parameters.
 ///
 /// Enforces the shared @c processKRateParam / @c processARateParam contract and
 /// owns the nominal range, the a-rate output buffer, and the per-quantum
@@ -59,12 +59,10 @@ class GeneralizedAudioParam {
   virtual std::shared_ptr<DSPAudioBuffer> processARateParam(int framesToProcess, double time) = 0;
 
  protected:
-  /// @brief True if the k-rate value for @p time is already cached.
   [[nodiscard]] bool kRateCacheHit(double time) const noexcept {
     return processedKRateTime_.has_value() && processedKRateTime_.value() == time;
   }
 
-  /// @brief True if the a-rate values for (@p framesToProcess, @p time) are already in @c outputBuffer_.
   [[nodiscard]] bool aRateCacheHit(int framesToProcess, double time) const noexcept {
     return processedARateKey_.has_value() && processedARateKey_->first == framesToProcess &&
         processedARateKey_->second == time;
@@ -74,15 +72,12 @@ class GeneralizedAudioParam {
     return std::clamp(raw, minValue_, maxValue_);
   }
 
-  /// @brief Clamp @p raw to the nominal range, cache it, record the k-rate key, and return it.
   float finalizeKRate(float raw, double time) noexcept {
     cachedKRateValue_ = clampToNominalRange(raw);
     processedKRateTime_ = time;
     return cachedKRateValue_;
   }
 
-  /// @brief Clamp the first @p framesToProcess samples of @c outputBuffer_ to the nominal
-  /// range and record the a-rate key.
   void finalizeARate(int framesToProcess, double time);
 
   std::weak_ptr<BaseAudioContext> context_;
@@ -90,11 +85,10 @@ class GeneralizedAudioParam {
   float maxValue_;
   float cachedKRateValue_ = 0.0f;
 
-  // Identity of the last successful process (k-rate / a-rate tracked separately).
+  // Separate cache keys: k-rate by time; a-rate by (framesToProcess, time).
   std::optional<double> processedKRateTime_;
   std::optional<std::pair<int, double>> processedARateKey_;
 
-  // Output buffer for a-rate processing.
   std::shared_ptr<DSPAudioBuffer> outputBuffer_;
 };
 

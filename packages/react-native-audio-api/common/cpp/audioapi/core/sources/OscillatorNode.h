@@ -14,7 +14,7 @@ namespace audioapi {
 
 struct OscillatorOptions;
 
-/// @note https://webaudio.github.io/web-audio-api/#dom-oscillatornode-frequency
+/// @see https://webaudio.github.io/web-audio-api/#computedoscfrequency
 inline float combineOscFrequency(float frequency, float detune) {
   return frequency * (detune == 0.0f ? 1.0f : exp2f(detune * CENTS_TO_RATIO));
 }

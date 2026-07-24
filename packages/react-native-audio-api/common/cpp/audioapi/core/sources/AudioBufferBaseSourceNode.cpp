@@ -78,8 +78,8 @@ void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
     return;
   }
 
-  // Read the context clock once per render quantum and thread it through every
-  // param process call so the idempotent cache keys line up (see plan: Time invariant).
+  // Param caches include time in their key, so every read in this quantum must
+  // use the same value.
   const double time = context->getCurrentTime();
 
   // apply pitch correction only if the playback rate is not 1.0
@@ -104,9 +104,8 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     processingBuffer->zero();
     return;
   }
-  // Read the constituents separately (cache hits — the composite already
-  // processed both children for this quantum). Clamp to the WSOLA-supported
-  // range: stretch buffers are sized for |rate| ≤ MAX_PLAYBACK_RATE.
+  // Pitch correction needs rate and detune separately; clamp rate to the WSOLA
+  // limit (stretch buffers assume |rate| <= MAX_PLAYBACK_RATE).
   const auto rate = std::clamp(
       playbackRateParam_->processKRateParam(time),
       -WsolaTimeStretcher::MAX_PLAYBACK_RATE,

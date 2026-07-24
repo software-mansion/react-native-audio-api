@@ -59,10 +59,7 @@ TEST_F(ConstantSourceTest, ConstantSourceOutputsConstantValue) {
     EXPECT_FLOAT_EQ((*resultBuffer->getChannel(0))[i], 1.0f);
   }
 
-  // Advance the context clock to the next quantum. AudioParam processing is
-  // idempotent per (framesToProcess, time): re-processing at the same time would
-  // (correctly) return the cached value, so a fresh quantum is required to
-  // observe the new offset.
+  // Advance time because the AudioParam cache key identifies the render quantum.
   context->processGraph(buffer.get(), FRAMES_TO_PROCESS);
 
   constantSource.setOffsetParam(0.5f);

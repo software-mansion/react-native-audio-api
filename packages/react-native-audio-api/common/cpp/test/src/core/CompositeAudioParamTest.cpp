@@ -12,8 +12,6 @@ using namespace audioapi;
 
 namespace {
 
-// Local test combine functions — exercise the composite machinery without
-// depending on any concrete node's formula.
 float combineProduct(float a, float b) {
   return a * b;
 }
@@ -46,7 +44,7 @@ TEST_F(CompositeAudioParamTest, KRateCombine) {
   auto composite = std::make_shared<CompositeAudioParam<combineProduct>>(
       -1000.0f, 1000.0f, context, makeParam(3.0f), makeParam(4.0f));
 
-  EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 12.0f); // 3 * 4
+  EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 12.0f);
 }
 
 TEST_F(CompositeAudioParamTest, ARateCombine) {
@@ -59,18 +57,16 @@ TEST_F(CompositeAudioParamTest, ARateCombine) {
   }
 }
 
-// The combine function is a pure function of child values (here: |b|).
 TEST_F(CompositeAudioParamTest, AmplitudeUsesAbsoluteValue) {
   auto composite = std::make_shared<CompositeAudioParam<combineAmplitude>>(
       -1000.0f, 1000.0f, context, makeParam(2.0f), makeParam(-3.0f));
 
-  EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 6.0f); // 2 * |-3|
+  EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 6.0f);
 }
 
 // --- Nominal-range clamping ---
 
 TEST_F(CompositeAudioParamTest, ClampsToNominalRange) {
-  // 3 * 4 = 12, but the composite's nominal range caps at 10.
   auto composite = std::make_shared<CompositeAudioParam<combineProduct>>(
       0.0f, 10.0f, context, makeParam(3.0f), makeParam(4.0f));
 
@@ -95,16 +91,13 @@ TEST_F(CompositeAudioParamTest, ChildrenProcessedInAnyOrderShareCache) {
   // Inject BridgeNode-style modulation into child a.
   a->getInputBuffer()->getChannel(0)->span()[0] = 1.0f;
 
-  // Composite processes both children (a: 2 + 1 = 3, b: 5) -> 15.
   EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 15.0f);
 
-  // Reading the children afterwards is a cache hit — modulation not re-consumed.
   EXPECT_FLOAT_EQ(a->processKRateParam(0.0), 3.0f);
   EXPECT_FLOAT_EQ(b->processKRateParam(0.0), 5.0f);
   EXPECT_FLOAT_EQ(a->getInputBuffer()->getChannel(0)->span()[0], 0.0f);
 }
 
-// Repeated processKRateParam for the same time returns the cache.
 TEST_F(CompositeAudioParamTest, KRateIsIdempotent) {
   auto a = makeParam(2.0f);
   auto b = makeParam(5.0f);
@@ -112,8 +105,8 @@ TEST_F(CompositeAudioParamTest, KRateIsIdempotent) {
       std::make_shared<CompositeAudioParam<combineProduct>>(-1000.0f, 1000.0f, context, a, b);
 
   a->getInputBuffer()->getChannel(0)->span()[0] = 1.0f;
-  EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 15.0f); // (2 + 1) * 5
   // Repeat call: cache hit, modulation not re-consumed.
+  EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 15.0f);
   EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 15.0f);
 }
 
@@ -129,10 +122,10 @@ TEST_F(CompositeAudioParamTest, ARateIsIdempotent) {
   }
 
   auto out1 = composite->processARateParam(4, 0.0)->getChannel(0)->span();
-  EXPECT_FLOAT_EQ(out1[0], 15.0f); // (2 + 1) * 5
+  EXPECT_FLOAT_EQ(out1[0], 15.0f);
 
   auto out2 = composite->processARateParam(4, 0.0)->getChannel(0)->span();
-  EXPECT_FLOAT_EQ(out2[0], 15.0f); // cache hit
+  EXPECT_FLOAT_EQ(out2[0], 15.0f);
 }
 
 // NOLINTEND

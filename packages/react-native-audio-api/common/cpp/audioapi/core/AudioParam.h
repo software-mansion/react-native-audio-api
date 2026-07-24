@@ -15,11 +15,9 @@
 
 namespace audioapi {
 
-/// @brief The (simple) audio param — the only JS-connectable param.
+/// @brief A Web Audio API parameter that accepts graph modulation.
 ///
-/// Owns @c inputBuffer_ (written by @c BridgeNode) and folds that modulation
-/// into the automated value before clamping and caching. The name is preserved
-/// to stay compatible with the spec and the host objects.
+/// It is exposed to JavaScript and receives @c BridgeNode output through @c inputBuffer_.
 class AudioParam : public GeneralizedAudioParam {
  public:
   explicit AudioParam(
@@ -78,9 +76,6 @@ class AudioParam : public GeneralizedAudioParam {
 
     return false;
   }
-
-  /// Audio-Thread only methods
-  /// These methods are called only from the Audio rendering thread.
 
   /// @brief Returns the input buffer where BridgeNode stores mixed modulation signals.
   /// @note Audio Thread only

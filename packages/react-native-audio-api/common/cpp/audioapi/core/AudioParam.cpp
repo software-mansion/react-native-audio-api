@@ -63,8 +63,6 @@ void AudioParam::cancelAndHoldAtTime(double cancelTime) {
 }
 
 std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
-  // Idempotent: a repeated call for the same quantum returns the cached buffer
-  // without re-consuming modulation.
   if (aRateCacheHit(framesToProcess, time)) {
     return outputBuffer_;
   }
@@ -91,14 +89,11 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   // Zero the input buffer so next frame starts clean if no BridgeNode refills it
   inputBuffer_->zero();
 
-  // Clamp to the nominal range and record the (framesToProcess, time) cache key.
   finalizeARate(framesToProcess, time);
   return outputBuffer_;
 }
 
 float AudioParam::processKRateParam(double time) {
-  // Idempotent: a repeated call for the same quantum returns the cached value
-  // without re-consuming modulation.
   if (kRateCacheHit(time)) {
     return cachedKRateValue_;
   }
@@ -110,7 +105,6 @@ float AudioParam::processKRateParam(double time) {
   // Zero the input buffer so next frame starts clean if no BridgeNode refills it
   inputBuffer_->zero();
 
-  // Clamp to the nominal range, cache the value, and record the time cache key.
   return finalizeKRate(raw, time);
 }
 

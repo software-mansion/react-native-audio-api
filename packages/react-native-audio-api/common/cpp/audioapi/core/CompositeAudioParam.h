@@ -26,7 +26,7 @@ struct CombineTraits<R (*)(Args...)> {
   static constexpr std::size_t arity = sizeof...(Args);
 };
 
-// Also accept function references (NTTP decay).
+// Non-type template arguments may retain function-reference types.
 template <typename R, typename... Args>
 struct CombineTraits<R (&)(Args...)> : CombineTraits<R (*)(Args...)> {};
 
@@ -57,7 +57,6 @@ class CompositeAudioParam : public GeneralizedAudioParam {
  public:
   static constexpr std::size_t kArity = detail::CombineTraits<decltype(CombineFunction)>::arity;
 
-  // Fixed args first so the child pack does not swallow min/max/context.
   template <typename... Children>
     requires(sizeof...(Children) == kArity) &&
                 (std::convertible_to<Children, std::shared_ptr<AudioParam>> && ...)
@@ -86,8 +85,7 @@ class CompositeAudioParam : public GeneralizedAudioParam {
       return outputBuffer_;
     }
 
-    // Render each child into its own buffer (idempotent) and gather the spans.
-    // The child buffers stay alive because each child owns its own outputBuffer_.
+    // Process each child (idempotent — cache hit if already processed) and combine.
     const std::array<std::span<const float>, kArity> childSpans =
         [&]<std::size_t... I>(std::index_sequence<I...>) {
           return std::array<std::span<const float>, kArity>{
