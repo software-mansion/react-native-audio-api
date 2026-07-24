@@ -17,7 +17,6 @@
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
-#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -584,33 +583,26 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 double AndroidAudioRecorder::getInputLatency() const {
   std::scoped_lock streamLock(streamMutex_);
 
-  if (mStream_ == nullptr || isIdle()) {
+  if (mStream_ == nullptr || isIdle() || streamSampleRate_ <= 0.0f) {
     return 0.0;
   }
 
-  double baseLatency = 0.0;
-  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
-  if (callbackFrames > 0 && streamSampleRate_ > 0.0f) {
-    baseLatency = static_cast<double>(callbackFrames) / static_cast<double>(streamSampleRate_);
-  } else {
-    const int32_t framesPerBurst = mStream_->getFramesPerBurst();
-    if (framesPerBurst > 0 && streamSampleRate_ > 0.0f) {
-      baseLatency = static_cast<double>(framesPerBurst) / static_cast<double>(streamSampleRate_);
-    }
+  const auto latencyResult = mStream_->calculateLatencyMillis();
+  if (latencyResult && latencyResult.value() > 0.0) {
+    return latencyResult.value() / 1000.0;
   }
 
-  const auto latencyResult = mStream_->calculateLatencyMillis();
-  if (latencyResult) {
-    return std::max(latencyResult.value() / 1000.0, baseLatency);
+  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
+  if (callbackFrames > 0) {
+    return static_cast<double>(callbackFrames) / static_cast<double>(streamSampleRate_);
   }
 
   const int32_t framesPerBurst = mStream_->getFramesPerBurst();
-  if (framesPerBurst > 0 && streamSampleRate_ > 0.0f) {
-    return baseLatency +
-        static_cast<double>(framesPerBurst) / static_cast<double>(streamSampleRate_);
+  if (framesPerBurst > 0) {
+    return static_cast<double>(framesPerBurst) / static_cast<double>(streamSampleRate_);
   }
 
-  return baseLatency;
+  return 0.0;
 }
 
 } // namespace audioapi
