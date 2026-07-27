@@ -9,7 +9,7 @@ export default class GainNode extends AudioNode {
 
   constructor(context: BaseAudioContext, options?: GainOptions) {
     const gainNode: IGainNode = context.context.createGain(options || {});
-    super(context, gainNode);
+    super(context, gainNode, options);
     this.gain = new AudioParam(gainNode.gain, context, this);
   }
 }

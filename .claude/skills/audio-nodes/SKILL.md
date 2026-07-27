@@ -213,9 +213,9 @@ In `AudioParam.h` the pattern is:
 void setValue(float value);
 void setValueAtTime(float value, double startTime);
 
-/// Audio-Thread only methods
-std::shared_ptr<AudioBuffer> processARateParam(int framesToProcess, double time);
-float processKRateParam(int framesToProcess, double time);
+/// Audio-Thread only methods (idempotent per quantum — see below)
+std::shared_ptr<DSPAudioBuffer> processARateParam(int framesToProcess, double time);
+float processKRateParam(double time); // k-rate is quantum-wide
 ```
 
 ---
@@ -245,10 +245,36 @@ gainParam_ = std::make_shared<AudioParam>(
 
 - **K-rate (control-rate)**: one value per render quantum — use when the parameter changes slowly
   ```cpp
-  // Call processKRateParam() for a single block-wide value
-  float gain = gainParam_->processKRateParam(framesToProcess, time);
+  // Call processKRateParam() for a single quantum-wide value
+  float gain = gainParam_->processKRateParam(time);
   // Single value for the whole block
   ```
+
+### Param class hierarchy & idempotency
+
+`AudioParam` and `CompositeAudioParam<CombineFunction>` both derive from the abstract
+`GeneralizedAudioParam` base (`core/GeneralizedAudioParam.h`), which owns the nominal
+range, the a-rate `outputBuffer_`, and the per-quantum memoization state, and centralizes
+clamping via `finalizeKRate` / `finalizeARate`.
+
+- **`AudioParam`** — the only JS-connectable param; owns `inputBuffer_` (BridgeNode modulation).
+- **`CompositeAudioParam<Fn>`** (`core/CompositeAudioParam.h`) — represents a spec
+  `computedValue` (e.g. `computedOscFrequency`). `Fn` is a pure, captureless free function
+  (defined in the owning node's header, next to the composite member) taking float children
+  and returning float; its arity is deduced. It processes each child, folds `Fn` over them,
+  and clamps to its own nominal range. No `inputBuffer_`.
+
+`processKRateParam(time)` / `processARateParam(frames, time)` are **idempotent**: a repeat
+call with the same arguments returns the cached result and does **not** re-consume modulation.
+This is why a composite and a node can both read the same child param in one quantum. It also
+means `processNode()` should read `context->getCurrentTime()` **once** and thread that same
+`double` into every param call so the cache keys match (the context clock is constant within a
+quantum). Consequently, unit tests that re-process the same node must advance the clock (e.g.
+`context->processGraph(buffer.get(), frames)`) between renders.
+
+**Clamping (§ 1.6.3):** automation intrinsic values are computed **without** clamping (see
+`getValueAtTimeUnmodulated` / `ParamRenderQueue`). Clip only in `finalizeKRate` /
+`finalizeARate` after adding modulation — never on the intrinsic alone before modulation.
 
 ### JS → Audio Thread parameter updates
 
@@ -289,6 +315,18 @@ Callback IDs are stored as `std::atomic<uint64_t>` on the node. `0` means no lis
 ### JS → Audio (graph mutations: connect/disconnect)
 All graph mutations are queued via `AudioGraphManager` using its own SPSC channel (`addPendingNodeConnection`, `addPendingParamConnection`). The audio thread calls `graphManager_->preProcessGraph()` before each render pass to apply pending changes.
 
+### Settable channel attributes (channelCount / channelCountMode / channelInterpretation)
+These are mutable after construction. `AudioNode` (core) exposes virtual `setChannelCount` / `setChannelCountMode` / `setChannelInterpretation`. `channelCount` and `channelCountMode` are read only on the host thread during negotiation, so the JSI setter updates the core field directly then calls `HostNode::renegotiate()` → `Graph::renegotiateNodeChannels()` → `HostGraph::renegotiateNodeChannels()` (reuses `collectNegotiations` + an `AGEvent` buffer swap, self-drain aware when there is no audio/render consumer — offline construction/suspend and realtime suspended/stopped windows). When `AudioBufferSourceNode` `setBuffer` changes channel width, update `channelCount_` on the host thread then `renegotiate()` so MAX/CLAMPED_MAX downstream nodes update; the audio event still installs the prebuilt buffer (no audio-thread alloc). `channelInterpretation` is read on the audio thread in `processInputs` (`getInputBuffer()->sum(*input, channelInterpretation_)`), so it MUST be applied via `scheduleAudioEvent`, not mutated directly.
+
+### Idle-node stale-buffer gating (isProcessable() at the mix boundary)
+`AudioGraph::iter()` filters to `isProcessable()` nodes, so a node that has gone idle (e.g. a finished source, or the gain feeding off it) is skipped and its output buffer is NOT refreshed — it keeps the samples from an earlier quantum. Because downstream consumers read input buffers via `pool_.view(input_head)` regardless of processable state, that stale buffer would otherwise get re-summed into the destination every quantum, producing ghost echoes (this broke the `audionode-channel-rules` ~170-node discrete-mixing WPT test).
+
+Fix: `GraphObject::process()` skips any input whose `isProcessable()` is false when collecting buffers to mix — an idle node presents silence to its consumers instead of a stale buffer. Nodes are visited in topological order (sources before consumers), so an upstream node's processable state for the quantum is already settled by the time a consumer reads it.
+
+For this gate to be correct, a node must stay `isProcessable()` for the **entire** quantum in which it produces its final output, and flip on the **next** quantum. A one-shot source would otherwise flip to `NOT_PROCESSABLE` mid-quantum (inside `processNode` → `handleStopScheduled` → `disable`), which — since consumers run later in the same topological pass — would drop that final output (produces `0` where a real sample was expected). `AudioNode::disable()` therefore only sets `pendingDisable_`; `AudioNode::processInputs()` commits `setProcessableState(NOT_PROCESSABLE)` at the start of the *next* quantum and presents silence. Deferral lives at this single chokepoint, so no per-source-type edits are needed.
+
+Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while connected they stay `CONDITIONAL_PROCESSABLE` (processable via the first `isProcessable()` branch) so they are never skipped and never go stale; the `tailState_ != FINISHED` branch only matters after a disconnect, where either there is no consumer or consumers correctly gate on `isProcessable()`.
+
 ---
 
 ## Implementing a New Node — Checklist
@@ -328,7 +366,7 @@ All graph mutations are queued via `AudioGraphManager` using its own SPSC channe
 
 7. **Spec compliance**
    - Check the Web Audio API spec for default values, parameter ranges, and behavior
-   - See `web-audio-api.md` skill
+   - See `web-audio-api` skill
 
 8. **Tests and docs** — see the `flow` skill
 

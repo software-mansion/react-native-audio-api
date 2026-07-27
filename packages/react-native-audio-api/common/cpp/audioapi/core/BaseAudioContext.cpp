@@ -5,7 +5,7 @@
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/CircularArray.hpp>
 #ifdef DEBUG
-#include <test/src/graph/AudioThreadGuard.h>
+#include <audioapi/utils/AudioThreadGuard.h>
 #endif
 #include <memory>
 #include <vector>

@@ -1,6 +1,5 @@
 import { IndexSizeError } from '../../errors';
 import { AnalyserOptions, OptionsValidator } from '../../types';
-import { validateAudioNodeOptions } from './audioNodeOptions';
 
 export const ANALYSER_ALLOWED_FFT_SIZE = [
   32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
@@ -54,8 +53,6 @@ export const AnalyserOptionsValidator: OptionsValidator<AnalyserOptions> = {
     if (!options) {
       return;
     }
-
-    validateAudioNodeOptions(options);
 
     if (options.fftSize !== undefined) {
       validateAnalyserFftSize(options.fftSize);

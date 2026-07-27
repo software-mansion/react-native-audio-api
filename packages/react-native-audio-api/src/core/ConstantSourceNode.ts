@@ -11,7 +11,7 @@ export default class ConstantSourceNode extends AudioScheduledSourceNode {
     const node: IConstantSourceNode = context.context.createConstantSource(
       options || {}
     );
-    super(context, node);
+    super(context, node, options);
     this.offset = new AudioParam(node.offset, context, this);
   }
 }

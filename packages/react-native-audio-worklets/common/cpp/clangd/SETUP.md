@@ -16,4 +16,5 @@ From this directory (`common/cpp/clangd`):
 ./generate-and-copy.sh
 ```
 
-This writes `compile_commands.json` to the package root (`packages/react-native-audio-worklets/`), where clangd picks it up when editing files in this package.
+This writes `compile_commands.json` to the package root and merges it into the
+repo-root `compile_commands.json`.

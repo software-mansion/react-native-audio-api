@@ -26,7 +26,7 @@ class ConstantSourceNodeHostObject : public AudioScheduledSourceNodeHostObject {
   }
 
  private:
-  ConstantSourceNode *constantSourceNode_ = nullptr;
+  ConstantSourceNode *const constantSourceNode_;
 
   std::shared_ptr<AudioParamHostObject> offsetParam_;
 };

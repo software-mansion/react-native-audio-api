@@ -29,6 +29,14 @@ class AudioContext : public BaseAudioContext {
   /// @note This method must be called before the audio context can be used for processing audio.
   void initialize(const AudioDestinationNode *destination) final;
 
+  /// @brief Returns the base latency of the audio context in seconds.
+  /// @returns The base latency in seconds.
+  [[nodiscard]] double getBaseLatency() const;
+
+  /// @brief Returns the output latency of the audio context in seconds.
+  /// @returns The output latency in seconds.
+  [[nodiscard]] double getOutputLatency() const;
+
  private:
   std::shared_ptr<CommonPlayer> audioPlayer_;
   std::atomic<bool> isInitialized_{false};

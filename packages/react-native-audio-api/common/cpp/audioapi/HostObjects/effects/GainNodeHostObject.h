@@ -26,7 +26,7 @@ class GainNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
-  GainNode *gainNode_ = nullptr;
+  GainNode *const gainNode_;
 
   std::shared_ptr<AudioParamHostObject> gainParam_;
 };

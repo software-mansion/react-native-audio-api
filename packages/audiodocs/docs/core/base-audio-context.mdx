@@ -4,12 +4,13 @@ sidebar_position: 1
 
 import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 import DecodeAudioDataDocs from '@site/src/components/DecodeAudioDataDocs/DecodeAudioDataDocs';
+import Heading from '@theme/Heading';
 
 # BaseAudioContext
 
 The `BaseAudioContext` interface acts as a supervisor of audio-processing graphs. It provides key processing parameters such as current time, output destination or sample rate.
 Additionally, it is responsible for nodes creation and audio-processing graph's lifecycle management.
-However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/docs/core/audio-context), [`OfflineAudioContext`](/docs/core/offline-audio-context).
+However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/docs/core/audio-context), [`OfflineAudioContext`](/docs/core/offline-audio-context), or [`WorkletAudioContext`](/docs/worklets/worklet-audio-context).
 
 #### Audio graph
 
@@ -33,7 +34,7 @@ Each call has a system-level audio callback buffer size, which is a varying numb
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
 :::info
-Concept of system-level audio callback does not apply to [`OfflineAudioContext`](/docs/core/offline-audio-context).
+Concept of system-level audio callback does not apply to [`OfflineAudioContext`](/docs/core/offline-audio-context) or [`WorkletAudioContext`](/docs/worklets/worklet-audio-context).
 :::
 
 ## Properties
@@ -90,7 +91,7 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 **Returns:** `AudioBufferSourceNode`
 
-### `createBufferQueueSource` <MobileOnly />
+<Heading as="h3" id="create-buffer-queue-source"><code>createBufferQueueSource</code> <MobileOnly /></Heading>
 
 Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
 

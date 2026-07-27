@@ -29,6 +29,6 @@ class IIRFilterNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
-  IIRFilterNode *iirFilterNode_ = nullptr;
+  IIRFilterNode *const iirFilterNode_;
 };
 } // namespace audioapi

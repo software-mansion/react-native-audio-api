@@ -26,7 +26,25 @@ describe('Mock Integration Tests', () => {
       expect(oscillator.type).toBe('sine');
       expect(oscillator.frequency.value).toBe(440);
       expect(gainNode.gain.value).toBe(0.5);
-      expect(context.destination.numberOfOutputs).toBe(0);
+      expect(context.destination.numberOfOutputs).toBe(1);
+    });
+
+    it('should allow updating channelCount, channelCountMode and channelInterpretation', () => {
+      const context = new MockAPI.AudioContext();
+      const gainNode = context.createGain();
+
+      // Defaults per the Web Audio API spec.
+      expect(gainNode.channelCount).toBe(2);
+      expect(gainNode.channelCountMode).toBe('max');
+      expect(gainNode.channelInterpretation).toBe('speakers');
+
+      gainNode.channelCount = 4;
+      gainNode.channelCountMode = 'explicit';
+      gainNode.channelInterpretation = 'discrete';
+
+      expect(gainNode.channelCount).toBe(4);
+      expect(gainNode.channelCountMode).toBe('explicit');
+      expect(gainNode.channelInterpretation).toBe('discrete');
     });
 
     it('should expose an AudioListener with nine spatialization params', () => {

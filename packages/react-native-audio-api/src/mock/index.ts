@@ -502,7 +502,7 @@ class AudioDestinationNodeMock extends AudioNodeMock {
 
   constructor(context: BaseAudioContextMock) {
     super(context, {});
-    this.numberOfOutputs = 0;
+    this.numberOfOutputs = 1;
   }
 }
 
@@ -557,6 +557,10 @@ class BaseAudioContextMock {
 
   get state(): ContextState {
     return this._state;
+  }
+
+  get baseLatency(): number {
+    return 0.005;
   }
 
   createBuffer(
@@ -651,6 +655,10 @@ class BaseAudioContextMock {
 class AudioContextMock extends BaseAudioContextMock {
   constructor(options?: AudioContextOptions) {
     super(options);
+  }
+
+  get outputLatency(): number {
+    return 0.01;
   }
 
   close(): Promise<void> {
@@ -794,6 +802,10 @@ class AudioRecorderMock {
 
   getCurrentDuration(): number {
     return this._currentDuration;
+  }
+
+  getInputLatency(): number {
+    return 0.01;
   }
 
   onError(

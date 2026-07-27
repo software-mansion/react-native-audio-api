@@ -30,6 +30,7 @@ Golden references: `GainNodeHostObject.h/.cpp` (effect node), `OscillatorNodeHos
 - **Clear callback IDs in the destructor** for any HO that registers audio events. Otherwise the audio thread fires into a destroyed JS function.
 - **Call `setExternalMemoryPressure`** when returning HOs or typed arrays backed by large native buffers.
 - **Shadow state must be initialized** from `options` in the constructor — JS may read a property before ever setting it.
+- **Typed node pointers are `T *const`.** Mirror `AudioNode *const audioNode_` — declare as `GainNode *const gainNode_;` (const pointer, mutable object), initialize in the ctor initializer list via `typedAudioNode<T>(node_)`. Never use `T *foo_ = nullptr`.
 
 ---
 

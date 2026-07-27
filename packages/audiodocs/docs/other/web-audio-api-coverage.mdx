@@ -41,7 +41,7 @@ We will do our best to ship it as soon as possible!
 | PeriodicWave | ✅ |
 | StereoPannerNode | ✅ |
 | WaveShaperNode | ✅ |
-| AudioContext | 🚧 | Available props and methods: `close`, `suspend`, `resume` |
+| AudioContext | 🚧 | Available props and methods: `baseLatency`, `outputLatency`, `close`, `suspend`, `resume` |
 | BaseAudioContext | 🚧 | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes |
 | AudioListener | 🚧 | No effect until PannerNode. |
 | AudioSinkInfo | ❌ |
@@ -84,7 +84,7 @@ live status.
 
 {/* wpt-summary:start */}
 
-_Last updated: 2026-07-06. Numbers come from the local WPT smoke run and are a snapshot, not a live badge._
+_Last updated: 2026-07-07. Numbers come from the local WPT smoke run and are a snapshot, not a live badge._
 
 <table>
   <thead>
@@ -98,11 +98,11 @@ _Last updated: 2026-07-06. Numbers come from the local WPT smoke run and are a s
   </thead>
   <tbody>
     <tr style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21' }}><td>AnalyserNode</td><td style={{ textAlign: 'right' }}>138</td><td style={{ textAlign: 'right' }}>139</td><td style={{ textAlign: 'right' }}>99.3%</td><td>One failure: minDecibels/maxDecibels are stored as float, so reading back a high-precision double value loses a few digits (cosmetic round-trip mismatch).</td></tr>
-    <tr style={{ backgroundColor: 'hsl(101, 85%, 72%)', color: '#1c1e21' }}><td>AudioBuffer</td><td style={{ textAlign: 'right' }}>105</td><td style={{ textAlign: 'right' }}>125</td><td style={{ textAlign: 'right' }}>84.0%</td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(117, 85%, 72%)', color: '#1c1e21' }}><td>AudioBuffer</td><td style={{ textAlign: 'right' }}>139</td><td style={{ textAlign: 'right' }}>142</td><td style={{ textAlign: 'right' }}>97.9%</td><td>Remaining failures: acquire-the-content expects AudioBufferSourceNode.start() to snapshot the buffer contents (we still share the underlying memory), and audiobuffer-reuse needs ChannelMergerNode, which is not yet available.</td></tr>
     <tr style={{ backgroundColor: 'hsl(45, 85%, 72%)', color: '#1c1e21' }}><td>AudioBufferSourceNode</td><td style={{ textAlign: 'right' }}>109</td><td style={{ textAlign: 'right' }}>289</td><td style={{ textAlign: 'right' }}>37.7%</td><td></td></tr>
     <tr style={{ backgroundColor: 'hsl(42, 85%, 72%)', color: '#1c1e21' }}><td>AudioContext</td><td style={{ textAlign: 'right' }}>40</td><td style={{ textAlign: 'right' }}>115</td><td style={{ textAlign: 'right' }}>34.8%</td><td></td></tr>
     <tr style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21' }}><td>AudioDestinationNode</td><td style={{ textAlign: 'right' }}>0</td><td style={{ textAlign: 'right' }}>1</td><td style={{ textAlign: 'right' }}>0.0%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(98, 85%, 72%)', color: '#1c1e21' }}><td>AudioNode</td><td style={{ textAlign: 'right' }}>50</td><td style={{ textAlign: 'right' }}>61</td><td style={{ textAlign: 'right' }}>82.0%</td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(116, 85%, 72%)', color: '#1c1e21' }}><td>AudioNode</td><td style={{ textAlign: 'right' }}>228</td><td style={{ textAlign: 'right' }}>238</td><td style={{ textAlign: 'right' }}>95.8%</td><td>Remaining failures are tests that depend on ChannelMergerNode or ChannelSplitterNode (not yet implemented) or on indexed connect()/disconnect() overloads with output/input parameters (not yet implemented). Examples: disconnect audits that build multi-output graphs with a splitter, connect-method-chaining with an out-of-range output index, and chaining across every node type including ChannelMerger. A few other assertions fail only in the Node WPT harness (iframe AudioContext, MediaElement source wiring) or check argument-type errors we do not surface before cross-context validation. channelCount, channelCountMode and channelInterpretation are settable after construction with graph renegotiation, and the audionode-channel-rules discrete-mixing conformance test passes.</td></tr>
     <tr style={{ backgroundColor: 'hsl(72, 85%, 72%)', color: '#1c1e21' }}><td>AudioParam</td><td style={{ textAlign: 'right' }}>300</td><td style={{ textAlign: 'right' }}>499</td><td style={{ textAlign: 'right' }}>60.1%</td><td></td></tr>
     <tr style={{ backgroundColor: 'hsl(111, 85%, 72%)', color: '#1c1e21' }}><td>BiquadFilterNode</td><td style={{ textAlign: 'right' }}>236</td><td style={{ textAlign: 'right' }}>255</td><td style={{ textAlign: 'right' }}>92.5%</td><td>Parameters are k-rate instead of a-rate. The audible difference is negligible, while computing the coefficient math once per block instead of once per sample makes processing much faster on the audio thread.</td></tr>
     <tr style={{ backgroundColor: 'hsl(98, 85%, 72%)', color: '#1c1e21' }}><td>ConstantSourceNode</td><td style={{ textAlign: 'right' }}>49</td><td style={{ textAlign: 'right' }}>60</td><td style={{ textAlign: 'right' }}>81.7%</td><td></td></tr>
@@ -116,7 +116,7 @@ _Last updated: 2026-07-06. Numbers come from the local WPT smoke run and are a s
     <tr style={{ backgroundColor: 'hsl(74, 85%, 72%)', color: '#1c1e21' }}><td>PeriodicWave</td><td style={{ textAlign: 'right' }}>19</td><td style={{ textAlign: 'right' }}>31</td><td style={{ textAlign: 'right' }}>61.3%</td><td></td></tr>
     <tr style={{ backgroundColor: 'hsl(81, 85%, 72%)', color: '#1c1e21' }}><td>StereoPannerNode</td><td style={{ textAlign: 'right' }}>68</td><td style={{ textAlign: 'right' }}>101</td><td style={{ textAlign: 'right' }}>67.3%</td><td></td></tr>
     <tr style={{ backgroundColor: 'hsl(85, 85%, 72%)', color: '#1c1e21' }}><td>WaveShaperNode</td><td style={{ textAlign: 'right' }}>53</td><td style={{ textAlign: 'right' }}>75</td><td style={{ textAlign: 'right' }}>70.7%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(78, 85%, 72%)', color: '#1c1e21' }}><td><strong>Total</strong></td><td style={{ textAlign: 'right' }}>1503</td><td style={{ textAlign: 'right' }}>2322</td><td style={{ textAlign: 'right' }}><strong>64.7%</strong></td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(75, 85%, 72%)', color: '#1c1e21' }}><td><strong>Total</strong></td><td style={{ textAlign: 'right' }}>1468</td><td style={{ textAlign: 'right' }}>2336</td><td style={{ textAlign: 'right' }}><strong>62.8%</strong></td><td></td></tr>
   </tbody>
 </table>
 

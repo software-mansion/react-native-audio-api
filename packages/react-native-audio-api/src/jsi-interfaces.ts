@@ -70,6 +70,8 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
+  readonly baseLatency: number;
+  readonly outputLatency: number;
   createMediaElementSource: (
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;
@@ -88,9 +90,9 @@ export interface IAudioNode {
   readonly context: BaseAudioContext;
   readonly numberOfInputs: number;
   readonly numberOfOutputs: number;
-  readonly channelCount: number;
-  readonly channelCountMode: ChannelCountMode;
-  readonly channelInterpretation: ChannelInterpretation;
+  channelCount: number;
+  channelCountMode: ChannelCountMode;
+  channelInterpretation: ChannelInterpretation;
 
   connect(destination: IAudioNode | IAudioParam): void;
   disconnect(destination?: IAudioNode | IAudioParam): void;
@@ -324,6 +326,8 @@ export interface IAudioRecorder {
 
   getCurrentDuration: () => number;
   getFilePath: () => string | null;
+
+  readonly inputLatency: number;
 }
 
 export interface IAudioDecoder {
