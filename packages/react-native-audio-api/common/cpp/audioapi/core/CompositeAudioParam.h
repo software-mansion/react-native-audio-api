@@ -26,7 +26,8 @@ struct CombineTraits<R (*)(Args...)> {
   static constexpr std::size_t arity = sizeof...(Args);
 };
 
-// Non-type template arguments may retain function-reference types.
+// A function used as a non-type template argument can retain either pointer or
+// reference type; both forms must use the same signature validation.
 template <typename R, typename... Args>
 struct CombineTraits<R (&)(Args...)> : CombineTraits<R (*)(Args...)> {};
 
@@ -36,7 +37,7 @@ template <auto CombineFunction>
 concept ValidCombineFunction =
     requires { typename detail::CombineTraits<decltype(CombineFunction)>; };
 
-/// @brief A composite (computed) audio param — a pure function of its children.
+/// @brief Combines child parameters into a spec-defined computed value.
 ///
 /// Directly corresponds to a spec @c computedValue formula (e.g.
 /// @c computedOscFrequency, @c computedFrequency, @c computedPlaybackRate). The
@@ -46,11 +47,11 @@ concept ValidCombineFunction =
 /// internals. Children are always simple @c AudioParam s — no composites of
 /// composites.
 ///
-/// The composite is not JS-connectable, so it has no @c inputBuffer_ of its
-/// own. @c processXRateParam processes each child (idempotent — safe if already
-/// processed), applies @c CombineFunction, clamps to the composite's nominal
-/// range, and caches the result. @c CombineFunction is inlined and the process
-/// methods are statically resolved — no dispatch overhead on the audio thread.
+/// The composite is internal rather than JavaScript-connectable, so it has no
+/// modulation input of its own. Processing a child with the same cache key used
+/// by another consumer reuses that child's result instead of consuming its
+/// modulation twice. The combined result is then clamped and cached against the
+/// composite's own nominal range.
 template <auto CombineFunction>
   requires ValidCombineFunction<CombineFunction>
 class CompositeAudioParam : public GeneralizedAudioParam {
@@ -72,7 +73,6 @@ class CompositeAudioParam : public GeneralizedAudioParam {
       return cachedKRateValue_;
     }
 
-    // Process each child (idempotent — cache hit if already processed) and combine.
     const float raw = [&]<std::size_t... I>(std::index_sequence<I...>) {
       return CombineFunction(children_[I]->processKRateParam(time)...);
     }(std::make_index_sequence<kArity>{});
@@ -85,7 +85,7 @@ class CompositeAudioParam : public GeneralizedAudioParam {
       return outputBuffer_;
     }
 
-    // Process each child (idempotent — cache hit if already processed) and combine.
+    // Each span borrows storage owned by its corresponding child, which outlives this call.
     const std::array<std::span<const float>, kArity> childSpans =
         [&]<std::size_t... I>(std::index_sequence<I...>) {
           return std::array<std::span<const float>, kArity>{

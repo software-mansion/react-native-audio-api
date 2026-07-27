@@ -52,10 +52,15 @@ Some code fragments require additional non-obvious explanations that cannot be e
   * Behavioral contracts.
     * Including **interfaces**, **abstract classes**, and **virtual methods**.
 
+### Depth of Comments
+When you decide a fragment requires a comment, make sure that it is helpful for a person, who didn't participate in the process of writing it. It must not contain mental shortcuts. It should be explicit and easy to understand. It is better to write a medium-sized in-depth comment, than to write a short comment that takes long time to parse it.
+
 ### Comment Style
 Use the appropriate documentation style for each programming language. C and C++ typically use Doxygen, while JS and TS use JSDoc.
 
 ## Common Anti-Patterns
+* Discarding important and/or unobvious details.
+  * Class/method signature doesn't always explain semantics fully. In such a case it is mandatory to make a note about an unobvious behavior and/or requirement.
 * Increasing coupling, which makes maintenance harder.
   * Repeating the same or similar comments in many places about the same entity.
     * When adding a comment about a method, for example, place it only in the most important location (such as the header file), so it is easy to find.

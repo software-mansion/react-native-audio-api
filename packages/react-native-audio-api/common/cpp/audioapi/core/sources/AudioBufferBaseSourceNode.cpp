@@ -104,8 +104,9 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     processingBuffer->zero();
     return;
   }
-  // Pitch correction needs rate and detune separately; clamp rate to the WSOLA
-  // limit (stretch buffers assume |rate| <= MAX_PLAYBACK_RATE).
+  // WSOLA receives playback speed and pitch as separate inputs, unlike regular
+  // playback, which uses their spec-defined product. Its intermediate buffer
+  // is sized only for |rate| <= MAX_PLAYBACK_RATE.
   const auto rate = std::clamp(
       playbackRateParam_->processKRateParam(time),
       -WsolaTimeStretcher::MAX_PLAYBACK_RATE,

@@ -81,12 +81,10 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   auto inputData = inputBuffer_->getChannel(0)->span();
   auto outputData = outputBuffer_->getChannel(0)->span();
 
-  // Compute: modulation + automated parameter value → output buffer
   for (int i = 0; i < framesToProcess; i++, timeCache += timeStep) {
     outputData[i] = inputData[i] + getValueAtTimeUnmodulated(timeCache);
   }
 
-  // Zero the input buffer so next frame starts clean if no BridgeNode refills it
   inputBuffer_->zero();
 
   finalizeARate(framesToProcess, time);
@@ -102,7 +100,6 @@ float AudioParam::processKRateParam(double time) {
   float modulation = inputBuffer_->getChannel(0)->span()[0];
   float raw = modulation + getValueAtTimeUnmodulated(time);
 
-  // Zero the input buffer so next frame starts clean if no BridgeNode refills it
   inputBuffer_->zero();
 
   return finalizeKRate(raw, time);

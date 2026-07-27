@@ -72,6 +72,9 @@ void OscillatorNode::processNode(int framesToProcess) {
     return;
   }
 
+  // Align a-rate automation with the first audible sample. updatePlaybackInfo may
+  // leave a silent prefix when start/stop truncates the quantum; advancing time by
+  // that prefix keeps frequency automation from running early on those silent frames.
   auto time =
       context->getCurrentTime() + static_cast<double>(startOffset) / context->getSampleRate();
   auto computedFreqSpan =

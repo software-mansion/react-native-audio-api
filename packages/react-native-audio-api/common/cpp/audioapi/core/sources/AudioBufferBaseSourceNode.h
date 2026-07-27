@@ -65,10 +65,10 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
 
-  // k-rate params
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;
-  // Pitch correction needs both the combined rate and its individual components.
+  // Regular playback uses the spec-defined product; WSOLA needs playback rate
+  // and detune independently to control speed and pitch.
   std::shared_ptr<CompositeAudioParam<combineComputedPlaybackRate>> computedPlaybackRateParam_;
 
   PositionChangedDispatcher positionChanged_;
