@@ -136,11 +136,51 @@ Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`Audio
 | `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
 | `offset` <Optional /> | `number` | The position, in seconds, within the first enqueued audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the first enqueued buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties), it’s automatically clamped to the valid range. |
 
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `when` or `offset` is negative number. |
+| `InvalidStateError` | If the node has already been started once. |
+
+#### Returns `undefined`.
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `when` is negative number. |
+| `InvalidStateError` | If the node has not been started yet or has already been stopped |
+
+#### Returns `undefined`.
 
 ### `pause`
 
 Stops audio immediately. Unlike [`stop()`](/docs/sources/audio-scheduled-source-node#stop), which fully stops playback and clears the queued buffers,
 pause() halts the audio while keeping the current playback position, allowing you to resume from the same point later.
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `InvalidStateError` |  If the node has not been started yet, has already been stopped, or is already paused. |
+
+#### Returns `undefined`.
+
+### `resume`
+
+Resumes audio playback with a specified delay. If no time is given, it resumes immediately.
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to resume. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0.0`, the node resumes playing immediately. <br /> Default: `0.0`. |
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `when` is negative number. |
+| `InvalidStateError` | If the node has not been started yet, has already been stopped, or is not currently paused. |
 
 #### Returns `undefined`.
 

@@ -29,6 +29,8 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   /// @note Audio Thread only
   void pause();
 
+  void resume(double when);
+
   /// @note Audio Thread only
   void enqueueBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,
