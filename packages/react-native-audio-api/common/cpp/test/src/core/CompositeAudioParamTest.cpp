@@ -105,7 +105,7 @@ TEST_F(CompositeAudioParamTest, KRateIsIdempotent) {
       std::make_shared<CompositeAudioParam<combineProduct>>(-1000.0f, 1000.0f, context, a, b);
 
   a->getInputBuffer()->getChannel(0)->span()[0] = 1.0f;
-  // Repeat call: cache hit, modulation not re-consumed.
+  // Repeat call - cache hit, modulation not re-consumed.
   EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 15.0f);
   EXPECT_FLOAT_EQ(composite->processKRateParam(0.0), 15.0f);
 }
