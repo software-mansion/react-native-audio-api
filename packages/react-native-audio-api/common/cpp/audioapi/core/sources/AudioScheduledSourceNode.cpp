@@ -3,14 +3,15 @@
 #include <audioapi/dsp/AudioUtils.hpp>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
-
 #if !RN_AUDIO_API_TEST
 #include <audioapi/core/AudioContext.h>
 #endif // RN_AUDIO_API_TEST
 
 #include <algorithm>
+#include <chrono>
 #include <limits>
 #include <memory>
+#include <thread>
 
 namespace audioapi {
 
@@ -38,6 +39,21 @@ void AudioScheduledSourceNode::start(double when) {
 
 void AudioScheduledSourceNode::stop(double when) {
   stopTime_ = when;
+  auto context = context_.lock();
+  auto startFrame = dsp::timeToSampleFrame(startTime_, context->getSampleRate());
+  auto stopFrame = dsp::timeToSampleFrame(stopTime_, context->getSampleRate());
+  // if stop is requested before start, mark as finished
+  if (stopFrame <= startFrame) {
+    // Fire-and-forget: defer finish/disable off the caller thread.
+    static constexpr double kMillisecondsPerSecond = 1000.0;
+    std::thread([this]() {
+      std::this_thread::sleep_for(
+          std::chrono::milliseconds(static_cast<int>(stopTime_ * kMillisecondsPerSecond)));
+      playbackState_ = PlaybackState::FINISHED;
+      disable();
+    }).detach();
+    return;
+  }
 }
 
 bool AudioScheduledSourceNode::isUnscheduled() const {
