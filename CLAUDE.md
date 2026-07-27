@@ -74,7 +74,8 @@ When implementing anything new, mirror structure and style from these proven fil
 | New TypeScript API class | `packages/react-native-audio-api/src/core/GainNode.ts` |
 
 ### Writing Expressive Code
-- Always follow `expressive-code` skill when adding or editing comments and choosing names.
+
+Before adding or modifying source code, read and follow `.claude/skills/expressive-code/SKILL.md`. This applies to every coding task.
 
 ---
 
