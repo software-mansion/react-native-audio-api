@@ -100,6 +100,13 @@ class PromiseVendor {
   /// @note IMPORTANT: This function is not thread-safe and should be called from a single thread only. (comes from underlying ThreadPool implementation)
   jsi::Value createAsyncPromise(std::function<void(Promise &&)> &&function);
 
+  /// @brief Creates a promise and runs `function` synchronously on the calling thread.
+  /// @param function Receives a Promise to resolve/reject later (e.g. after an
+  /// audio-thread control message). Unlike `createAsyncPromise`, this does not
+  /// hop to the promise-vendor thread pool — use it when the caller must remain
+  /// the SPSC producer (JS thread) for `scheduleAudioEvent`.
+  jsi::Value createPromise(std::function<void(Promise &&)> &&function);
+
  private:
   jsi::Runtime *runtime_;
   std::shared_ptr<react::CallInvoker> callInvoker_;

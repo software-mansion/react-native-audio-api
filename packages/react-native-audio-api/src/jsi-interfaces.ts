@@ -75,14 +75,14 @@ export interface IAudioContext extends IBaseAudioContext {
   createMediaElementSource: (
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;
-  close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  close(): Promise<undefined>;
+  resume(): Promise<undefined>;
+  suspend(): Promise<undefined>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
-  resume(): Promise<void>;
-  suspend(suspendTime: number): Promise<void>;
+  resume(): Promise<undefined>;
+  suspend(suspendTime: number): Promise<undefined>;
   startRendering(): Promise<IAudioBuffer>;
 }
 

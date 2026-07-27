@@ -2,11 +2,11 @@
 
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/CommonPlayer.h>
+#include <audioapi/core/types/ContextPromise.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
 #include <atomic>
-#include <functional>
 #include <memory>
 
 namespace audioapi {
@@ -19,9 +19,9 @@ class AudioContext : public BaseAudioContext {
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
 
-  void close();
-  bool resume();
-  bool suspend();
+  void close(const std::shared_ptr<ContextPromise> &promise = nullptr);
+  bool resume(const std::shared_ptr<ContextPromise> &promise);
+  bool suspend(const std::shared_ptr<ContextPromise> &promise);
   bool start();
 
   /// @brief Initializes native audio player and assigns the audio destination node to the context.

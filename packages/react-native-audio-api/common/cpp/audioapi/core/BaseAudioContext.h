@@ -71,12 +71,16 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   template <typename F>
   bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
     std::scoped_lock lock(driverMutex_);
-    if (!isDriverRunning()) {
-      event(*this);
-      return true;
+    if (isDriverRunning()) {
+      return audioEventScheduler_.scheduleEvent(std::forward<F>(event));
     }
 
-    return audioEventScheduler_.scheduleEvent(std::forward<F>(event));
+    // Sole consumer while the driver is stopped: drain any control messages that
+    // were queued before the driver stopped (or before this sync call), then
+    // run the new event. Keeps FIFO with the SPSC even on the sync path.
+    audioEventScheduler_.processAllEvents(*this);
+    event(*this);
+    return true;
   }
 
   /// @brief Schedule an audio event produced on the JS runtime's finalizer
@@ -103,8 +107,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::atomic<std::size_t> currentSampleFrame_{0};
   const AudioDestinationNode *destination_;
 
-  /// Serializes context lifecycle and driver control across the JS thread and the
-  /// promise-vendor thread pool (`resume` / `suspend` / `close` / offline render).
+  /// Serializes context lifecycle and driver control across the JS thread and
+  /// control-message execution (`scheduleAudioEvent` sync path / offline render).
   mutable std::mutex driverMutex_;
   std::atomic<ContextState> state_;
 

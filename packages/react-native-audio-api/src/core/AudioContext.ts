@@ -27,16 +27,16 @@ export default class AudioContext extends BaseAudioContext {
     return (this.context as IAudioContext).outputLatency;
   }
 
-  async close(): Promise<void> {
+  async close(): Promise<undefined> {
     return (this.context as IAudioContext).close();
   }
 
-  async resume(): Promise<void> {
-    await (this.context as IAudioContext).resume();
+  async resume(): Promise<undefined> {
+    return (this.context as IAudioContext).resume();
   }
 
-  async suspend(): Promise<void> {
-    await (this.context as IAudioContext).suspend();
+  async suspend(): Promise<undefined> {
+    return (this.context as IAudioContext).suspend();
   }
 
   createMediaElementSource(
