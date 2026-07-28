@@ -3,6 +3,8 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/graph/Graph.h>
+#include <audioapi/core/utils/graph/HostGraph.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -35,9 +37,15 @@ class TestableAudioBufferSourceNode : public AudioBufferSourceNode {
 
   using AudioBufferSourceNode::getCurrentPosition;
   using AudioBufferSourceNode::initStretch;
-  using AudioBufferSourceNode::processNode;
   using AudioBufferSourceNode::setBuffer;
 };
+
+/// Recovers the concrete audio node owned by a graph node that was just added
+/// via Graph::addNode (the unique_ptr payload lives inside the NodeHandle).
+template <typename NodeT>
+NodeT *nodeOf(utils::graph::HostGraph::Node *hostNode) {
+  return static_cast<NodeT *>(hostNode->handle->audioNode->asAudioNode());
+}
 
 } // namespace
 
@@ -45,13 +53,29 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
-  std::shared_ptr<AudioDestinationNode> destination;
+  utils::graph::HostGraph::Node *destinationHostNode = nullptr;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(1, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry);
-    destination = std::make_shared<AudioDestinationNode>(context);
+    auto destination = std::make_unique<AudioDestinationNode>(context);
     context->initialize(destination.get());
+    destinationHostNode = context->getGraph()->addNode(std::move(destination));
+  }
+
+  /// Registers `node` in the context graph and connects it to the destination
+  /// so `processGraph()` will pull through it. Returns the live node pointer
+  /// (ownership lives in the graph).
+  TestableAudioBufferSourceNode *addNode(std::unique_ptr<TestableAudioBufferSourceNode> node) {
+    auto *hostNode = context->getGraph()->addNode(std::move(node));
+    EXPECT_TRUE(context->getGraph()->addEdge(hostNode, destinationHostNode).is_ok());
+    return nodeOf<TestableAudioBufferSourceNode>(hostNode);
+  }
+
+  /// Renders one quantum through the real graph pull path.
+  void processGraph() {
+    auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
+    context->processGraph(out.get(), QUANTUM);
   }
 
   void fillPlaybackRateModulation(TestableAudioBufferSourceNode &node, float modulation) {
@@ -65,10 +89,7 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
   /// Renders one quantum after refilling BridgeNode-style modulation on playbackRate.
   void renderQuantumWithModulation(TestableAudioBufferSourceNode &node, float modulation) {
     fillPlaybackRateModulation(node, modulation);
-    node.processNode(QUANTUM);
-    auto clockBuffer =
-        std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
-    context->processGraph(clockBuffer.get(), QUANTUM);
+    processGraph();
   }
 
   std::unique_ptr<TestableAudioBufferSourceNode> makeNode(bool pitchCorrection) {
@@ -110,18 +131,18 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
 TEST_F(
     AudioBufferSourceNodeTest,
     PitchCorrectionKeepsPlaybackRateModulationAcrossProcessKRateCalls) {
-  auto node = makeNode(/*pitchCorrection=*/true);
+  auto *node = addNode(makeNode(/*pitchCorrection=*/true));
 
   for (size_t q = 0; q < NUM_QUANTA; ++q) {
     renderQuantumWithModulation(*node, MODULATION);
   }
 
-  const double renderedSeconds =
+  constexpr double RENDERED_SECONDS =
       static_cast<double>(NUM_QUANTA * QUANTUM) / static_cast<double>(SAMPLE_RATE);
-  const double expectedPosition = 2.0 * renderedSeconds;
-  const double tolerance = 2.0 * QUANTUM / static_cast<double>(SAMPLE_RATE);
+  constexpr double EXPECTED_POSITION = 2.0 * RENDERED_SECONDS;
+  constexpr double TOLERANCE = 2.0 * QUANTUM / static_cast<double>(SAMPLE_RATE);
 
-  EXPECT_NEAR(node->getCurrentPosition(), expectedPosition, tolerance)
+  EXPECT_NEAR(node->getCurrentPosition(), EXPECTED_POSITION, TOLERANCE)
       << "Expected ~2x source consumption when pitchCorrection is on and playbackRate "
          "is modulated via inputBuffer_ (BridgeNode path). ~1x means the first "
          "processKRateParam call zeroed modulation before the stretch branch read it.";
@@ -130,18 +151,18 @@ TEST_F(
 /// Control: without pitchCorrection the gate short-circuits, so processKRateParam runs
 /// once and modulation is applied. This must pass even on the buggy mainline path.
 TEST_F(AudioBufferSourceNodeTest, WithoutPitchCorrectionPlaybackRateModulationAdvancesAt2x) {
-  auto node = makeNode(/*pitchCorrection=*/false);
+  auto *node = addNode(makeNode(/*pitchCorrection=*/false));
 
   for (size_t q = 0; q < NUM_QUANTA; ++q) {
     renderQuantumWithModulation(*node, MODULATION);
   }
 
-  const double renderedSeconds =
+  constexpr double RENDERED_SECONDS =
       static_cast<double>(NUM_QUANTA * QUANTUM) / static_cast<double>(SAMPLE_RATE);
-  const double expectedPosition = 2.0 * renderedSeconds;
-  const double tolerance = 2.0 * QUANTUM / static_cast<double>(SAMPLE_RATE);
+  constexpr double EXPECTED_POSITION = 2.0 * RENDERED_SECONDS;
+  constexpr double TOLERANCE = 2.0 * QUANTUM / static_cast<double>(SAMPLE_RATE);
 
-  EXPECT_NEAR(node->getCurrentPosition(), expectedPosition, tolerance);
+  EXPECT_NEAR(node->getCurrentPosition(), EXPECTED_POSITION, TOLERANCE);
 }
 
 // NOLINTEND
