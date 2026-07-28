@@ -4,7 +4,7 @@ project(rnaudioapi_test)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(ENABLE_COVERAGE "Enable Clang coverage instrumentation for gcovr" OFF)
+option(ENABLE_COVERAGE "Enable Clang LLVM source-based coverage" OFF)
 
 if(ENABLE_COVERAGE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   message(FATAL_ERROR "ENABLE_COVERAGE requires Clang (got ${CMAKE_CXX_COMPILER_ID})")
@@ -115,12 +115,19 @@ target_link_libraries(tests
 )
 
 if(ENABLE_COVERAGE)
-  # Clang gcov-compatible coverage (--coverage). Used instead of
-  # -fprofile-instr-generate/-fcoverage-mapping because Apple Clang 21 emits
-  # LLVM coverage JSON v3, which current gcovr releases only parse as v2.
-  target_compile_options(rnaudioapi PRIVATE --coverage -O0 -g)
-  target_compile_options(tests PRIVATE --coverage -O0 -g)
-  target_link_options(tests PRIVATE --coverage)
+  target_compile_options(rnaudioapi PRIVATE
+    -fprofile-instr-generate
+    -fcoverage-mapping
+    -O0
+    -g
+  )
+  target_compile_options(tests PRIVATE
+    -fprofile-instr-generate
+    -fcoverage-mapping
+    -O0
+    -g
+  )
+  target_link_options(tests PRIVATE -fprofile-instr-generate)
 endif()
 
 include(GoogleTest)

@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# Build the gtest suite with Clang coverage instrumentation and emit a gcovr
-# HTML report. Uses Clang's gcov-compatible --coverage mode plus
-# `llvm-cov gcov` so gcovr works with Apple Clang (native LLVM JSON v3 from
-# Apple Clang 21 is not yet readable by released gcovr).
+# Build the gtest suite with Clang LLVM source-based coverage and emit an
+# llvm-cov HTML report. Uses Xcode llvm-profdata/llvm-cov on macOS (no gcovr).
 #
 # From packages/react-native-audio-api:
 #   yarn test:cpp:coverage
@@ -13,69 +11,74 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../.." && pwd)"
 readonly BUILD_DIR="${SCRIPT_DIR}/build-coverage"
 readonly COVERAGE_HTML_DIR="${SCRIPT_DIR}/coverage-html"
+readonly PROFDATA_FILE="${BUILD_DIR}/coverage.profdata"
 readonly GRAPH_FILTER="AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:Seeds/*"
+readonly IGNORE_FILENAME_REGEX='(/common/cpp/test/|/_deps/|/googletest|/gmock|/audioapi/libs/)'
 
-ensure_llvm_cov_on_path() {
-  if command -v llvm-cov >/dev/null 2>&1; then
-    return
-  fi
-
+resolve_llvm_tool() {
+  local tool_name="$1"
   if [[ "$(uname -s)" == "Darwin" ]]; then
-    local llvm_cov_path
-    llvm_cov_path="$(xcrun --find llvm-cov)"
-    export PATH="$(dirname "$llvm_cov_path"):${PATH}"
-  fi
-
-  if ! command -v llvm-cov >/dev/null 2>&1; then
-    echo "error: llvm-cov not found (install Xcode CLT or an llvm package)" >&2
-    exit 1
+    xcrun --find "$tool_name"
+  else
+    command -v "$tool_name"
   fi
 }
 
-require_gcovr() {
-  if ! command -v gcovr >/dev/null 2>&1; then
-    echo "error: gcovr not found. Install with: brew install gcovr" >&2
+require_llvm_tools() {
+  LLVM_PROFDATA="$(resolve_llvm_tool llvm-profdata)" || {
+    echo "error: llvm-profdata not found (install Xcode CLT or an llvm package)" >&2
     exit 1
-  fi
+  }
+  LLVM_COV="$(resolve_llvm_tool llvm-cov)" || {
+    echo "error: llvm-cov not found (install Xcode CLT or an llvm package)" >&2
+    exit 1
+  }
 }
 
 parallel_job_count() {
   sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 10
 }
 
-ensure_llvm_cov_on_path
-require_gcovr
+require_llvm_tools
 
 cmake -S . -B "$BUILD_DIR" -Wno-dev -DENABLE_COVERAGE=ON
 cmake --build "$BUILD_DIR" --target tests -j "$(parallel_job_count)"
 
-find "$BUILD_DIR" -name '*.gcda' -delete
+rm -f "$BUILD_DIR"/default-*.profraw "$PROFDATA_FILE"
 rm -rf "$COVERAGE_HTML_DIR"
 
 (
   cd "$BUILD_DIR"
+  export LLVM_PROFILE_FILE="${BUILD_DIR}/default-%p.profraw"
   ./tests --gtest_print_time=1 --gtest_filter="-${GRAPH_FILTER}"
 )
 
+shopt -s nullglob
+profraw_files=("$BUILD_DIR"/default-*.profraw)
+shopt -u nullglob
+
+if (( ${#profraw_files[@]} == 0 )); then
+  echo "error: no .profraw files produced under ${BUILD_DIR}" >&2
+  exit 1
+fi
+
+"$LLVM_PROFDATA" merge -sparse "${profraw_files[@]}" -o "$PROFDATA_FILE"
+
+"$LLVM_COV" report \
+  "$BUILD_DIR/tests" \
+  -instr-profile="$PROFDATA_FILE" \
+  -ignore-filename-regex="$IGNORE_FILENAME_REGEX"
+
 mkdir -p "$COVERAGE_HTML_DIR"
 
-# gcovr resolves non-absolute --filter/--exclude paths against cwd, not --root.
-cd "$REPO_ROOT"
-
-# .cpp units resolve via node_modules/...; headers often via packages/...
-gcovr \
-  --gcov-executable "llvm-cov gcov" \
-  --root "$REPO_ROOT" \
-  --filter 'packages/react-native-audio-api/common/cpp/audioapi/' \
-  --filter 'node_modules/react-native-audio-api/common/cpp/audioapi/' \
-  --exclude 'packages/react-native-audio-api/common/cpp/audioapi/libs/' \
-  --exclude 'node_modules/react-native-audio-api/common/cpp/audioapi/libs/' \
-  --html-details "$COVERAGE_HTML_DIR/index.html" \
-  --txt - \
-  "$BUILD_DIR"
+"$LLVM_COV" show \
+  "$BUILD_DIR/tests" \
+  -instr-profile="$PROFDATA_FILE" \
+  -ignore-filename-regex="$IGNORE_FILENAME_REGEX" \
+  -format=html \
+  -output-dir="$COVERAGE_HTML_DIR"
 
 echo
 echo "Coverage HTML report: ${COVERAGE_HTML_DIR}/index.html"
