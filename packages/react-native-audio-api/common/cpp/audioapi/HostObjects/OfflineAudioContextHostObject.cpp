@@ -1,28 +1,11 @@
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 
-#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/types/ContextState.h>
 #include <memory>
-#include <string>
 #include <utility>
 
 namespace audioapi {
-namespace {
-
-std::shared_ptr<OfflineAudioContextResultPromise> makeResultPromise(Promise &&promise) {
-  auto jsiPromise = std::make_shared<Promise>(std::move(promise));
-  return std::make_shared<OfflineAudioContextResultPromise>(
-      [jsiPromise](const std::shared_ptr<AudioBuffer> &audioBuffer) {
-        auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
-        jsiPromise->resolve([audioBufferHostObject](jsi::Runtime &runtime) {
-          return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-        });
-      },
-      [jsiPromise](const std::string &message) { jsiPromise->reject(message); });
-}
-
-} // namespace
 
 OfflineAudioContextHostObject::OfflineAudioContextHostObject(
     int numberOfChannels,
@@ -49,7 +32,8 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
   context_->getGraph()->collectDisposedNodes();
   auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
   return promiseVendor_->createPromise([this, audioContext](Promise &&promise) {
-    auto contextPromise = makeContextPromise(std::move(promise), context_, ContextState::RUNNING);
+    auto contextPromise = ContextPromiseResolverVoid::makeContextPromise(
+        std::move(promise), context_, ContextState::RUNNING);
     audioContext->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
       dynamic_cast<OfflineAudioContext &>(context).resume(contextPromise);
     });
@@ -62,7 +46,8 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
   auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
 
   return promiseVendor_->createPromise([this, audioContext, when](Promise &&promise) {
-    auto contextPromise = makeContextPromise(std::move(promise), context_, ContextState::SUSPENDED);
+    auto contextPromise = ContextPromiseResolverVoid::makeContextPromise(
+        std::move(promise), context_, ContextState::SUSPENDED);
     audioContext->scheduleAudioEvent([contextPromise, when](BaseAudioContext &context) {
       dynamic_cast<OfflineAudioContext &>(context).suspend(when, contextPromise);
     });
@@ -72,7 +57,8 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, startRendering) {
   auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
   return promiseVendor_->createPromise([audioContext](Promise &&promise) {
-    auto resultPromise = makeResultPromise(std::move(promise));
+    auto resultPromise = OfflineAudioContextResultPromise::makeOfflineAudioContextResultPromise(
+        std::move(promise), audioContext);
     audioContext->scheduleAudioEvent([resultPromise](BaseAudioContext &context) {
       dynamic_cast<OfflineAudioContext &>(context).startRendering(resultPromise);
     });

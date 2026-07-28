@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/core/types/ContextState.h>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
@@ -60,10 +59,5 @@ class BaseAudioContextHostObject : public HostObject {
 
   std::shared_ptr<AudioDestinationNodeHostObject> destination_;
   std::shared_ptr<AudioListenerHostObject> listener_;
-
-  static std::shared_ptr<ContextPromiseResolver<>> makeContextPromise(
-      Promise &&promise,
-      const std::shared_ptr<BaseAudioContext> &audioContext,
-      ContextState nextState);
 };
 } // namespace audioapi
