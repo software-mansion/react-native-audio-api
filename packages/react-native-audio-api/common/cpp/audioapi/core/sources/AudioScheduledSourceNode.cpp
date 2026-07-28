@@ -44,13 +44,14 @@ void AudioScheduledSourceNode::stop(double when) {
   auto stopFrame = dsp::timeToSampleFrame(stopTime_, context->getSampleRate());
   // if stop is requested before start, mark as finished
   if (stopFrame <= startFrame) {
-    // Fire-and-forget: defer finish/disable off the caller thread.
+    playbackState_ = PlaybackState::FINISHED;
+    AudioNode::disable();
+    // Fire-and-forget: defer event dispatch off the caller thread.
     static constexpr double kMillisecondsPerSecond = 1000.0;
     std::thread([this]() {
       std::this_thread::sleep_for(
           std::chrono::milliseconds(static_cast<int>(stopTime_ * kMillisecondsPerSecond)));
-      playbackState_ = PlaybackState::FINISHED;
-      disable();
+      onEndedEvent_.dispatchEmpty();
     }).detach();
     return;
   }
