@@ -35,18 +35,18 @@ OfflineAudioContext::OfflineAudioContext(
   getGraph()->setProducerSelfDrain(true);
 }
 
-void OfflineAudioContext::resume(const std::shared_ptr<ContextPromise> &promise) {
+void OfflineAudioContext::resume(const std::shared_ptr<ContextPromiseResolver<>> &promise) {
   // Control-message body: no locking. Serialized by `scheduleAudioEvent`
   // (sync under `driverMutex_`, or drained on the offline render thread which
   // already holds `driverMutex_` around `processGraph`).
   if (!renderingStarted_ || getState() == ContextState::CLOSED) {
-    ContextPromise::reject(
+    ContextPromiseResolver<>::reject(
         promise, "Cannot resume an offline audio context that is not suspended.");
     return;
   }
 
   if (getState() == ContextState::RUNNING) {
-    ContextPromise::reject(
+    ContextPromiseResolver<>::reject(
         promise, "Cannot resume an offline audio context that is already running.");
     return;
   }
@@ -54,19 +54,21 @@ void OfflineAudioContext::resume(const std::shared_ptr<ContextPromise> &promise)
   renderAudio(promise);
 }
 
-bool OfflineAudioContext::suspend(double when, const std::shared_ptr<ContextPromise> &promise) {
+bool OfflineAudioContext::suspend(
+    double when,
+    const std::shared_ptr<ContextPromiseResolver<>> &promise) {
   // Control-message body: no locking (see `resume`).
   auto frame = static_cast<size_t>(when * getSampleRate());
   frame = RENDER_QUANTUM_SIZE * ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
 
   if (frame == 0 || frame <= currentSampleFrame_ || frame >= length_) {
-    ContextPromise::reject(
+    ContextPromiseResolver<>::reject(
         promise, "The suspend time must be within the remaining render duration.");
     return false;
   }
 
   if (scheduledSuspends_.contains(frame)) {
-    ContextPromise::reject(
+    ContextPromiseResolver<>::reject(
         promise,
         "cannot schedule more than one suspend at frame " + std::to_string(frame) + " (" +
             std::to_string(when) + " seconds)");
@@ -77,15 +79,15 @@ bool OfflineAudioContext::suspend(double when, const std::shared_ptr<ContextProm
   return true;
 }
 
-void OfflineAudioContext::renderAudio(const std::shared_ptr<ContextPromise> &resumePromise) {
+void OfflineAudioContext::renderAudio(
+    const std::shared_ptr<ContextPromiseResolver<>> &resumePromise) {
   // Flush while we are still the sole consumer, then hand the channel to the
   // render thread.
   getGraph()->processEvents();
   getGraph()->setProducerSelfDrain(false);
 
   std::thread([this, resumePromise = resumePromise]() mutable {
-    setState(ContextState::RUNNING);
-    ContextPromise::resolve(resumePromise);
+    ContextPromiseResolver<>::resolve(resumePromise);
 
     while (currentSampleFrame_ < length_) {
       Locker locker(driverMutex_);
@@ -105,7 +107,6 @@ void OfflineAudioContext::renderAudio(const std::shared_ptr<ContextPromise> &res
         assert(currentSampleFrame_ < length_);
         auto promise = std::move(suspend->second);
         scheduledSuspends_.erase(currentSampleFrame_);
-        setState(ContextState::SUSPENDED);
         processAudioEvents();
         // The render thread is about to exit; with no consumer again, let the
         // producer self-drain any graph mutations made from the suspend
@@ -113,7 +114,7 @@ void OfflineAudioContext::renderAudio(const std::shared_ptr<ContextPromise> &res
         getGraph()->setProducerSelfDrain(true);
         getGraph()->processEvents();
         locker.unlock();
-        ContextPromise::resolve(promise);
+        ContextPromiseResolver<>::resolve(promise);
         return;
       }
     }
@@ -134,7 +135,10 @@ void OfflineAudioContext::startRendering(
 
   renderingStarted_ = true;
   resultPromise_ = promise;
-  renderAudio(nullptr);
+  auto runningStatePromise = std::make_shared<ContextPromiseResolver<>>(
+      [self = shared_from_this()]() { self->setState(ContextState::RUNNING); },
+      [](const std::string &) {});
+  renderAudio(runningStatePromise);
 }
 
 bool OfflineAudioContext::isDriverRunning() const {

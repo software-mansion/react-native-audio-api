@@ -23,9 +23,26 @@
 #include <audioapi/core/utils/AudioDecoding.h>
 
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace audioapi {
+
+std::shared_ptr<ContextPromiseResolver<>> BaseAudioContextHostObject::makeContextPromise(
+    Promise &&promise,
+    const std::shared_ptr<BaseAudioContext> &audioContext,
+    ContextState nextState) {
+  auto jsiPromise = std::make_shared<Promise>(std::move(promise));
+  return std::make_shared<ContextPromiseResolver<>>(
+      [jsiPromise, audioContext, nextState]() {
+        // Spec: update the state attribute in the same follow-up task that
+        // resolves the lifecycle promise (before statechange reactions).
+        audioContext->setState(nextState);
+        jsiPromise->resolve([](jsi::Runtime &runtime) { return jsi::Value::undefined(); });
+      },
+      [jsiPromise](const std::string &message) { jsiPromise->reject(message); });
+}
 
 BaseAudioContextHostObject::BaseAudioContextHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
