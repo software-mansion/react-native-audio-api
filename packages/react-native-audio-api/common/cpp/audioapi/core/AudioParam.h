@@ -17,7 +17,10 @@ namespace audioapi {
 
 /// @brief A Web Audio API parameter that accepts graph modulation.
 ///
-/// It is exposed to JavaScript and receives @c BridgeNode output through @c inputBuffer_.
+/// A @c BridgeNode writes modulation into @c inputBuffer_. Processing adds that
+/// modulation to the intrinsic automation value, clamps the final result, and
+/// clears the buffer so disconnected inputs cannot leave stale modulation.
+/// Calls served from the base-class cache return before consuming the buffer.
 class AudioParam : public GeneralizedAudioParam {
  public:
   explicit AudioParam(
@@ -110,9 +113,11 @@ class AudioParam : public GeneralizedAudioParam {
     eventRenderQueue_.push(std::move(event));
   }
 
-  /// @note Audio Thread only
-  /// @note Uses @c eventRenderQueue_ (single-threaded, no synchronization).
-  /// @note The value returned is unmodulated — modulation is applied inside @c processXRateParam().
+  /// @note Audio Thread only. @c eventRenderQueue_ is unsynchronized and must
+  /// not be accessed from another thread. When automation is active, this also
+  /// updates @c value_ so JavaScript @c getValue() observes the latest intrinsic
+  /// sample; BridgeNode modulation is applied only by @c processKRateParam /
+  /// @c processARateParam.
   float getValueAtTimeUnmodulated(double time);
 };
 

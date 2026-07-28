@@ -134,7 +134,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   /// @brief Tail-processing lifecycle state.
   ///
-  /// Audio-thread only. Drives the "node has a non-zero impulse response that
+  /// Drives the "node has a non-zero impulse response that
   /// must be played out after its inputs go silent" behavior required by the
   /// Web Audio spec for nodes such as BiquadFilter, Delay and Convolver.
   ///
@@ -148,6 +148,8 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// - subsequent silent quanta                 : tailFramesRemaining_ -= numFrames
   ///                                              once <= 0, SIGNALLED_TO_STOP -> FINISHED
   /// - silent quantum while FINISHED            : stay FINISHED
+  ///
+  /// @note Audio Thread only
   enum class TailState : std::uint8_t {
     ACTIVE,
     SIGNALLED_TO_STOP,
@@ -224,7 +226,8 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// @brief Set by `disable()` when a source finishes, cleared on the next
   /// `processInputs`. Defers flipping the node to NOT_PROCESSABLE by one
   /// quantum so the final output produced this quantum is still mixed by
-  /// downstream consumers (which gate on `isProcessable()`). Audio-thread only.
+  /// downstream consumers (which gate on `isProcessable()`).
+  /// @note Audio Thread only
   bool pendingDisable_ = false;
 
   /// @brief Implementation of processing logic for AudioNode.

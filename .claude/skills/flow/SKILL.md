@@ -74,7 +74,7 @@ See the `audio-nodes` skill for the full contract. **If unsure which base class 
 
 1. Create `core/<category>/MyNode.h` and `MyNode.cpp`.
 2. Subclass the right base (`AudioNode`, `AudioScheduledSourceNode`, `AudioBufferBaseSourceNode`).
-3. Annotate every method with `// JS-thread only` or `// Audio-thread only`.
+3. Annotate every method with `/// @note JS Thread only` or `/// @note Audio Thread only`.
 4. Declare `processNode()` in `protected:` — audio thread.
 5. Preallocate all `AudioParam`s and scratch buffers in the constructor (JS thread).
 6. Add `createMyNode(const MyNodeOptions &options)` factory to `BaseAudioContext`.

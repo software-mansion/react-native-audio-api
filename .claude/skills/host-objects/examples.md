@@ -20,7 +20,7 @@ class GainNodeHostObject : public AudioNodeHostObject {
       const std::shared_ptr<BaseAudioContext> &context,
       const GainOptions &options);
 
-  // JS-thread only
+  /// @note JS Thread only
   JSI_PROPERTY_GETTER_DECL(gain);
 };
 
@@ -66,7 +66,7 @@ class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
       const std::shared_ptr<BaseAudioContext> &context,
       const OscillatorOptions &options);
 
-  // JS-thread only
+  /// @note JS Thread only
   JSI_PROPERTY_GETTER_DECL(frequency);
   JSI_PROPERTY_GETTER_DECL(detune);
   JSI_PROPERTY_GETTER_DECL(type);

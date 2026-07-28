@@ -36,8 +36,8 @@
 #include <memory>
 #include <numbers>
 
-// https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
-// formulas for filters
+// Coefficient formulas are adapted from the Web Audio Audio EQ Cookbook:
+// https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers, readability-identifier-length)
 
 namespace audioapi {
@@ -141,7 +141,7 @@ void BiquadFilterNode::getFrequencyResponse(
     const double normalizedFreq = static_cast<double>(frequencyArray[i]) / nyquist;
 
     if (normalizedFreq < 0.0 || normalizedFreq > 1.0) {
-      // Out-of-bounds frequencies should return NaN.
+      // Web Audio requires NaN for frequencies outside [0, Nyquist].
       magResponseOutput[i] = std::nanf("");
       phaseResponseOutput[i] = std::nanf("");
       continue;
