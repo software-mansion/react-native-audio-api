@@ -218,6 +218,23 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       invokeHandlerWithEventName:audioapi::AudioEvent::ROUTE_CHANGE
                          payload:audioapi::StringPayload{
                                      .name = "reason", .reason = [reasonStr UTF8String]}];
+
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
+
+  switch (routeChangeReason) {
+    case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
+    case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [sessionManager markInactive];
+        [audioEngine restartAudioEngine];
+      });
+      break;
+    }
+    default:
+      break;
+  }
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification

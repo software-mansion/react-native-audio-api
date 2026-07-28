@@ -26,7 +26,8 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 #ifdef ANDROID
   audioRecorder_ = std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry);
 #else
-  audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry);
+  audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, callInvoker);
+  std::static_pointer_cast<IOSAudioRecorder>(audioRecorder_)->bindLifetime();
 #endif
 
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);

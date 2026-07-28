@@ -1,12 +1,13 @@
 #pragma once
 
 #ifdef __OBJC__ // when compiled as Objective-C
-#import <NativeAudioRecorder.h>
+#import <audioapi/ios/core/NativeAudioRecorder.h>
 #else
 typedef struct objc_object NSURL;
 typedef struct objc_object AVAudioFile;
 typedef struct objc_object AudioBufferList;
 typedef struct objc_object NativeAudioRecorder;
+typedef struct objc_object AVAudioFormat;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
@@ -15,9 +16,14 @@ typedef struct objc_object NativeAudioRecorder;
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
+
+namespace facebook::react {
+class CallInvoker;
+}
 
 namespace audioapi {
 
@@ -27,10 +33,15 @@ class AudioFileProperties;
 class AudioEventHandlerRegistry;
 class AudioFileWriter;
 
-class IOSAudioRecorder : public AudioRecorder {
+class IOSAudioRecorder : public AudioRecorder,
+                         public std::enable_shared_from_this<IOSAudioRecorder> {
  public:
-  IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  IOSAudioRecorder(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker);
   ~IOSAudioRecorder() override;
+
+  void bindLifetime();
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
   Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
@@ -67,6 +78,20 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<std::string, std::string> setupFileWriter(
       const std::shared_ptr<AudioFileProperties> &properties,
       const std::string &fileNameOverride = "");
+  Result<NoneType, std::string> reprepareForLiveInput();
+  void scheduleReprepareForLiveInput();
+  void handleInputConfigurationChange();
+  Result<NoneType, std::string> reprepareFileWriter(
+      AVAudioFormat *inputFormat,
+      int maxInputBufferLength);
+  Result<NoneType, std::string> reprepareCallback(
+      AVAudioFormat *inputFormat,
+      int maxInputBufferLength);
+  void reprepareAdapter(AVAudioFormat *inputFormat, int maxInputBufferLength);
+  void runSideEffects(const AudioBufferList *inputBuffer, int numFrames);
+
+  std::weak_ptr<AudioRecorder> lifetime_;
+  std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
 
   std::vector<std::string> recordingSegmentPaths_;
   std::atomic<float> streamSampleRate_{0.0f};
