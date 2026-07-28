@@ -104,3 +104,10 @@ packages/react-native-audio-api/common/cpp/audioapi/external/ffmpeg_ios/
 
 # Clangd cache
 .cache
+
+# C++ gtest coverage (Clang --coverage + gcovr)
+build-coverage/
+*.gcda
+*.gcno
+*.gcov
+coverage-html/

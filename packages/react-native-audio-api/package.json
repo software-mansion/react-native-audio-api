@@ -47,6 +47,7 @@
     "test": "yarn test:js && yarn test:cpp",
     "test:js": "jest",
     "test:cpp": "bash common/cpp/test/RunTests.sh",
+    "test:cpp:coverage": "bash common/cpp/test/RunCoverage.sh",
     "test:full": "yarn test && yarn test:graph",
     "test:graph": "bash common/cpp/test/RunTestsGraph.sh",
     "test:graph:docker": "bash common/cpp/test/RunTestsGraphDocker.sh",
