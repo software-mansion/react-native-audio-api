@@ -52,6 +52,9 @@ class WsolaTimeStretcher {
   static constexpr float INPUT_LATENCY_MS = 20.0f;
   static constexpr float OUTPUT_LATENCY_MS = 10.0f;
 
+  /// Scratch capacity for one cold-start warmup (~window+search) plus one max-rate quantum.
+  [[nodiscard]] static size_t scratchBufferFrames(float sampleRate);
+
  private:
   static constexpr float OLA_WINDOW_MS = 20.0f;
   static constexpr float SEARCH_INTERVAL_MS = 30.0f;
@@ -78,6 +81,8 @@ class WsolaTimeStretcher {
   size_t outputReadIndex_{0};
 
   bool firstSampleFound_ = false;
+  bool firstRelativeSampleFound_ = false;
+  float outputPeakAbs_ = 0.0f;
   size_t totalFramesOutput_ = 0;
 
   std::vector<float> olaWindow_;

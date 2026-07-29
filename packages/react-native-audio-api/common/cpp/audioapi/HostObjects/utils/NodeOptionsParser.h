@@ -2,6 +2,7 @@
 
 #include <audioapi/jsi/RuntimeObserver.h>
 #include <jsi/jsi.h>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>

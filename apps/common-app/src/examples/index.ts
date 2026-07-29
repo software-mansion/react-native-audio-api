@@ -14,6 +14,7 @@ import Record from './Record/Record';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
+import WsolaScheduleSplit from './WsolaScheduleSplit';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -31,6 +32,7 @@ type NavigationParamList = {
   AudioTag: undefined;
   ConvolverIR: undefined;
   ChannelCount: undefined;
+  WsolaScheduleSplit: undefined;
   AudioParamPipeline: undefined;
   TestScreen: undefined;
 };
@@ -128,5 +130,11 @@ export const Examples: Example[] = [
     title: 'Channel Count',
     Icon: icons.Columns3,
     screen: ChannelCount,
+  },
+  {
+    key: 'WsolaScheduleSplit',
+    title: 'WSOLA Schedule Split',
+    Icon: icons.Split,
+    screen: WsolaScheduleSplit,
   },
 ] as const;

@@ -137,10 +137,8 @@ bool AudioFileSourceNode::initDecoder(
       context->getSampleRate());
 
   startDecoderThread();
-  // Wall-clock budget to pull ~50ms of PCM from the decoder (not audio delay).
-  // Local files typically finish well under this; audio-thread warmup covers misses.
-  static constexpr size_t kPrimeTimeoutMs = 0;
-  primeWsolaInputFromDecoder(kPrimeTimeoutMs);
+  // Fill WSOLA's analysis queue before the audio thread runs (no wall-clock budget).
+  primeWsolaInputFromDecoder();
   return true;
 }
 
@@ -153,7 +151,7 @@ void AudioFileSourceNode::startDecoderThread() {
   seekDecoderDaemon_.reset();
 }
 
-void AudioFileSourceNode::primeWsolaInputFromDecoder(size_t timeoutMs) {
+void AudioFileSourceNode::primeWsolaInputFromDecoder() {
   if (frameReceiver_ == nullptr || playbackRateBuffer_ == nullptr) {
     return;
   }
@@ -169,11 +167,8 @@ void AudioFileSourceNode::primeWsolaInputFromDecoder(size_t timeoutMs) {
     return;
   }
 
-  using clock = std::chrono::steady_clock;
-  const auto deadline = clock::now() + std::chrono::milliseconds(timeoutMs);
-
   DecoderData chunk;
-  while (wsolaStretcher_.getBufferedInputFrames() < framesNeeded && clock::now() < deadline) {
+  while (wsolaStretcher_.getBufferedInputFrames() < framesNeeded) {
     if (frameReceiver_->try_receive(chunk) != channels::spsc::ResponseStatus::SUCCESS) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;
@@ -558,14 +553,12 @@ size_t AudioFileSourceNode::renderWithWsolaPitchPreservation(
     DecoderData &incoming,
     int framesToProcess,
     float activeRate) {
+  // Prefill happens only in primeWsolaInputFromDecoder(); here feed one quantum.
   const auto requestedInputFrames =
       static_cast<size_t>(std::ceil(activeRate * static_cast<float>(framesToProcess)));
-  const size_t bufferedInputFrames = wsolaStretcher_.getBufferedInputFrames();
-  const size_t requiredInputFrames = wsolaStretcher_.getRequiredInputFrames();
-  const size_t warmupFramesNeeded =
-      bufferedInputFrames < requiredInputFrames ? requiredInputFrames - bufferedInputFrames : 0;
-  const size_t inputFrames = accumulateStretchInput(
-      incoming, activeRate, framesToProcess, requestedInputFrames + warmupFramesNeeded);
+
+  const size_t inputFrames =
+      accumulateStretchInput(incoming, activeRate, framesToProcess, requestedInputFrames);
   if (inputFrames == 0) {
     processingBuffer->zero();
     return 0;

@@ -11,6 +11,8 @@
 #include <memory>
 #include <utility>
 
+#include <iostream>
+
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
@@ -42,6 +44,49 @@ void AudioBufferBaseSourceNode::initStretch(
     const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer) {
   wsolaStretcher_.configure(channelCount, sampleRate);
   playbackRateBuffer_ = playbackRateBuffer;
+  wsolaPrimeDebugPending_ = true;
+}
+
+void AudioBufferBaseSourceNode::primeWsolaInput() {
+  if (!pitchCorrection_ || playbackRateBuffer_ == nullptr || isEmpty()) {
+    return;
+  }
+
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    return;
+  }
+
+  const float rate = std::fabs(
+      playbackRateParam_->processKRateParam(RENDER_QUANTUM_SIZE, context->getCurrentTime()));
+  // WSOLA path is only used when |rate| != 1; skip priming otherwise.
+  if (rate == 0.0f || rate == 1.0f) {
+    return;
+  }
+
+  wsolaStretcher_.reset();
+
+  const size_t framesNeeded =
+      std::max(wsolaStretcher_.getRequiredInputFrames(), wsolaStretcher_.getMinInputFramesToRun());
+  if (framesNeeded == 0) {
+    return;
+  }
+
+  const size_t inputFrames = std::min(framesNeeded, playbackRateBuffer_->getSize());
+  playbackRateBuffer_->zero();
+
+  // 1:1 forward copy into WSOLA's analysis queue; advances vReadIndex_ so the
+  // cursor stays aligned with what was fed before the first output quantum.
+  runBufferProcessor(playbackRateBuffer_, 0, inputFrames, 1.0f, false);
+  wsolaStretcher_.feedInput(*playbackRateBuffer_, inputFrames);
+
+  if (wsolaPrimeDebugPending_) {
+    wsolaPrimeDebugPending_ = false;
+    std::cout << "[AudioBufferBaseSourceNode] [WSOLA prime at start]"
+              << " buffered=" << wsolaStretcher_.getBufferedInputFrames()
+              << " required=" << framesNeeded << std::endl
+              << std::endl;
+  }
 }
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
@@ -94,8 +139,13 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       -WsolaTimeStretcher::MAX_PLAYBACK_RATE,
       WsolaTimeStretcher::MAX_PLAYBACK_RATE);
 
-  const int framesNeededToStretch =
-      std::max(1, static_cast<int>(std::ceil(rate * framesToProcess)));
+  // Prefill happens only in primeWsolaInput() at start(); here feed one quantum's
+  // worth of input for the current rate.
+  const float absRate = std::fabs(rate);
+  const size_t requestedInputFrames = std::max(
+      size_t{1}, static_cast<size_t>(std::ceil(absRate * static_cast<float>(framesToProcess))));
+  const size_t inputFrames = std::min(requestedInputFrames, playbackRateBuffer_->getSize());
+  const int framesNeededToStretch = static_cast<int>(inputFrames);
 
   playbackRateBuffer_->zero();
 
@@ -117,12 +167,12 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       2.0f, // NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       detune / static_cast<float>(SEMITONES_PER_OCTAVE));
 
-  const float bufferPlaybackRate = rate >= 0.0f ? rate : -rate;
-  runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, bufferPlaybackRate, false);
+  // Non-interpolated path uses rate only for direction; abs keeps forward copies 1:1.
+  runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, absRate, false);
 
   wsolaStretcher_.process(
       *playbackRateBuffer_,
-      static_cast<size_t>(framesNeededToStretch),
+      inputFrames,
       *processingBuffer,
       static_cast<size_t>(framesToProcess),
       rate,

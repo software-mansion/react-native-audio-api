@@ -21,6 +21,15 @@ float periodicHann(size_t n, size_t size) {
 
 } // namespace
 
+size_t WsolaTimeStretcher::scratchBufferFrames(float sampleRate) {
+  const float sr = sampleRate > 0.0f ? sampleRate : DEFAULT_SAMPLE_RATE;
+  // Match configure(): window (+1 if odd) + search, plus one max-rate quantum.
+  size_t window = framesFromMs(sr, OLA_WINDOW_MS);
+  window += window & 1U;
+  return window + framesFromMs(sr, SEARCH_INTERVAL_MS) +
+      static_cast<size_t>(MAX_PLAYBACK_RATE * RENDER_QUANTUM_SIZE);
+}
+
 void WsolaTimeStretcher::configure(size_t channels, float sampleRate) {
   channels_ = channels;
   sampleRate_ = sampleRate > 0.0f ? sampleRate : DEFAULT_SAMPLE_RATE;
@@ -73,6 +82,8 @@ void WsolaTimeStretcher::reset() {
   outputReadIndex_ = 0;
 
   firstSampleFound_ = false;
+  firstRelativeSampleFound_ = false;
+  outputPeakAbs_ = 0.0f;
   totalFramesOutput_ = 0;
 
   for (auto &channel : inputQueue_) {
@@ -138,26 +149,49 @@ void WsolaTimeStretcher::process(
     runOneIteration(playbackRate);
   }
 
-  if (!firstSampleFound_) {
+  if (!firstSampleFound_ || !firstRelativeSampleFound_) {
+    // Absolute floor catches any non-zero; relative waits for a meaningful peak so
+    // quiet leading content does not look like algorithmic latency.
+    constexpr float kAbsoluteThreshold = 1e-6f;
+    constexpr float kRelativeFraction = 0.5f;
+    constexpr float kMinPeakForRelative = 0.05f;
+
     for (int i = 0; i < output.getNumberOfChannels(); ++i) {
       auto *channel = output.getChannel(i);
       for (int j = 0; j < channel->getSize(); ++j) {
-        if (std::abs(channel->operator[](j)) > 1e-6f) {
+        const float absSample = std::abs(channel->operator[](j));
+        outputPeakAbs_ = std::max(outputPeakAbs_, absSample);
+
+        if (!firstSampleFound_ && absSample > kAbsoluteThreshold) {
           firstSampleFound_ = true;
-
-          size_t absoluteFrameIndex = totalFramesOutput_ + j;
-          double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
-
-          std::cout << "[WSOLA] Pierwszy dzwiek! "
+          const size_t absoluteFrameIndex = totalFramesOutput_ + static_cast<size_t>(j);
+          const double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
+          std::cout << "[WSOLA] Pierwszy dzwiek (abs>1e-6)! "
                     << "Ramka wyjsciowa: " << absoluteFrameIndex << " | Opoznienie: " << latencyMs
                     << " ms"
                     << " | Playback Rate: " << playbackRate << std::endl;
+        }
 
+        if (!firstRelativeSampleFound_ && outputPeakAbs_ >= kMinPeakForRelative &&
+            absSample >= kRelativeFraction * outputPeakAbs_) {
+          firstRelativeSampleFound_ = true;
+          const size_t absoluteFrameIndex = totalFramesOutput_ + static_cast<size_t>(j);
+          const double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
+          std::cout << "[WSOLA] Pierwszy dzwiek (rel>=" << kRelativeFraction
+                    << "*peak, peak>=" << kMinPeakForRelative << ")! "
+                    << "Ramka wyjsciowa: " << absoluteFrameIndex << " | Opoznienie: " << latencyMs
+                    << " ms"
+                    << " | peak=" << outputPeakAbs_ << " | Playback Rate: " << playbackRate
+                    << std::endl;
+        }
+
+        if (firstSampleFound_ && firstRelativeSampleFound_) {
           break;
         }
       }
-      if (firstSampleFound_)
+      if (firstSampleFound_ && firstRelativeSampleFound_) {
         break;
+      }
     }
   }
 

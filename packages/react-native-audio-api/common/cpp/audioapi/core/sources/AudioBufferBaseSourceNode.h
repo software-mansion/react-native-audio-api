@@ -25,6 +25,12 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       float sampleRate,
       const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer);
 
+  /// @brief Prefills WSOLA from the current @ref vReadIndex_ until the analysis queue is full.
+  /// Call from @c start() after the read cursor is set. Advances @ref vReadIndex_ by the
+  /// frames fed. This is the only WSOLA prefill path for buffer sources.
+  /// @note Audio Thread only
+  void primeWsolaInput();
+
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
@@ -56,6 +62,8 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   const bool pitchCorrection_;
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
+  /// Debug: one-shot log of WSOLA prime-at-start.
+  bool wsolaPrimeDebugPending_{true};
 
   // k-rate params
   const std::shared_ptr<AudioParam> detuneParam_;

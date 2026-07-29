@@ -192,9 +192,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @note JS / construction thread only.
   void startDecoderThread();
 
-  /// @brief Pulls decoded packets into @ref wsolaStretcher_ until primed or @p timeoutMs elapses.
+  /// @brief Blocks until @ref wsolaStretcher_ has enough PCM for the first OLA iteration,
+  /// or the decoder signals EOS/discontinuity.
   /// @note JS / construction thread only — must run before the audio thread consumes @ref frameReceiver_.
-  void primeWsolaInputFromDecoder(size_t timeoutMs);
+  void primeWsolaInputFromDecoder();
 
   /// @brief Attempts to read the next chunk of decoded frames from the daemon.
   /// @param outData decoded frames and metadata; only valid if return value is true.
