@@ -56,13 +56,13 @@ class ContextPromiseResolver {
     }
   }
 
-  static std::shared_ptr<ContextPromiseResolverVoid> makeContextPromise(
+  static std::shared_ptr<ContextPromiseResolverVoid> makeContextPromiseResolver(
       Promise &&promise,
       const std::shared_ptr<BaseAudioContext> &audioContext,
       ContextState nextState)
     requires(sizeof...(Args) == 0);
 
-  static std::shared_ptr<OfflineAudioContextResultPromise> makeOfflineAudioContextResultPromise(
+  static std::shared_ptr<OfflineAudioContextResultPromise> makeOfflineAudioContextResultResolver(
       Promise &&promise,
       const std::shared_ptr<BaseAudioContext> &audioContext)
     requires(sizeof...(Args) == 1);

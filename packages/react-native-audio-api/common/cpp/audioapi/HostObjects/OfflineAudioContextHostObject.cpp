@@ -30,11 +30,10 @@ OfflineAudioContextHostObject::OfflineAudioContextHostObject(
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
   context_->getGraph()->collectDisposedNodes();
-  auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
-  return promiseVendor_->createPromise([this, audioContext](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolverVoid::makeContextPromise(
+  return promiseVendor_->createPromise([this](Promise &&promise) {
+    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
         std::move(promise), context_, ContextState::RUNNING);
-    audioContext->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
+    context_->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
       dynamic_cast<OfflineAudioContext &>(context).resume(contextPromise);
     });
   });
@@ -43,23 +42,20 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
   context_->getGraph()->collectDisposedNodes();
   double when = args[0].getNumber();
-  auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
-
-  return promiseVendor_->createPromise([this, audioContext, when](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolverVoid::makeContextPromise(
+  return promiseVendor_->createPromise([this, when](Promise &&promise) {
+    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
         std::move(promise), context_, ContextState::SUSPENDED);
-    audioContext->scheduleAudioEvent([contextPromise, when](BaseAudioContext &context) {
+    context_->scheduleAudioEvent([contextPromise, when](BaseAudioContext &context) {
       dynamic_cast<OfflineAudioContext &>(context).suspend(when, contextPromise);
     });
   });
 }
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, startRendering) {
-  auto audioContext = std::static_pointer_cast<OfflineAudioContext>(context_);
-  return promiseVendor_->createPromise([audioContext](Promise &&promise) {
-    auto resultPromise = OfflineAudioContextResultPromise::makeOfflineAudioContextResultPromise(
-        std::move(promise), audioContext);
-    audioContext->scheduleAudioEvent([resultPromise](BaseAudioContext &context) {
+  return promiseVendor_->createPromise([this](Promise &&promise) {
+    auto resultPromise = OfflineAudioContextResultPromise::makeOfflineAudioContextResultResolver(
+        std::move(promise), context_);
+    context_->scheduleAudioEvent([resultPromise](BaseAudioContext &context) {
       dynamic_cast<OfflineAudioContext &>(context).startRendering(resultPromise);
     });
   });

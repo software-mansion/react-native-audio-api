@@ -29,41 +29,35 @@ AudioContextHostObject::AudioContextHostObject(
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
   context_->getGraph()->collectDisposedNodes();
-  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  return promiseVendor_->createPromise(
-      [this, audioContext = std::move(audioContext)](Promise &&promise) {
-        auto contextPromise = ContextPromiseResolverVoid::makeContextPromise(
-            std::move(promise), context_, ContextState::CLOSED);
-        audioContext->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
-          dynamic_cast<AudioContext &>(context).close(contextPromise);
-        });
-      });
+  return promiseVendor_->createPromise([this](Promise &&promise) {
+    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
+        std::move(promise), context_, ContextState::CLOSED);
+    context_->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
+      dynamic_cast<AudioContext &>(context).close(contextPromise);
+    });
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
   context_->getGraph()->collectDisposedNodes();
-  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  return promiseVendor_->createPromise(
-      [this, audioContext = std::move(audioContext)](Promise &&promise) {
-        auto contextPromise = ContextPromiseResolverVoid::makeContextPromise(
-            std::move(promise), context_, ContextState::RUNNING);
-        audioContext->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
-          dynamic_cast<AudioContext &>(context).resume(contextPromise);
-        });
-      });
+  return promiseVendor_->createPromise([this](Promise &&promise) {
+    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
+        std::move(promise), context_, ContextState::RUNNING);
+    context_->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
+      dynamic_cast<AudioContext &>(context).resume(contextPromise);
+    });
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   context_->getGraph()->collectDisposedNodes();
-  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  return promiseVendor_->createPromise(
-      [this, audioContext = std::move(audioContext)](Promise &&promise) {
-        auto contextPromise = ContextPromiseResolverVoid::makeContextPromise(
-            std::move(promise), context_, ContextState::SUSPENDED);
-        audioContext->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
-          dynamic_cast<AudioContext &>(context).suspend(contextPromise);
-        });
-      });
+  return promiseVendor_->createPromise([this](Promise &&promise) {
+    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
+        std::move(promise), context_, ContextState::SUSPENDED);
+    context_->scheduleAudioEvent([contextPromise](BaseAudioContext &context) {
+      dynamic_cast<AudioContext &>(context).suspend(contextPromise);
+    });
+  });
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, outputLatency) {

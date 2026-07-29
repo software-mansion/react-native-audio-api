@@ -13,7 +13,7 @@
 namespace audioapi {
 
 template <>
-std::shared_ptr<ContextPromiseResolverVoid> ContextPromiseResolver<>::makeContextPromise(
+std::shared_ptr<ContextPromiseResolverVoid> ContextPromiseResolver<>::makeContextPromiseResolver(
     Promise &&promise,
     const std::shared_ptr<BaseAudioContext> &audioContext,
     ContextState nextState) {
@@ -30,7 +30,7 @@ std::shared_ptr<ContextPromiseResolverVoid> ContextPromiseResolver<>::makeContex
 
 template <>
 std::shared_ptr<OfflineAudioContextResultPromise>
-ContextPromiseResolver<std::shared_ptr<AudioBuffer>>::makeOfflineAudioContextResultPromise(
+ContextPromiseResolver<std::shared_ptr<AudioBuffer>>::makeOfflineAudioContextResultResolver(
     Promise &&promise,
     const std::shared_ptr<BaseAudioContext> &audioContext) {
   auto jsiPromise = std::make_shared<Promise>(std::move(promise));
