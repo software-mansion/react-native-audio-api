@@ -87,12 +87,7 @@ void AudioContext::close(const std::shared_ptr<ContextPromiseResolverVoid> &prom
   }
 
   audioPlayer_->stop();
-
-  // Waiting for render quiescence from inside an in-flight audio callback
-  // self-deadlocks on `currentRenders_`.
-  if (currentRenders_.load(std::memory_order_acquire) == 0) {
-    waitForRenderQuiescence();
-  }
+  waitForRenderQuiescence();
 
   // No audio-thread consumer after stop; allow producer self-drain for any
   // remaining graph mutations (and flush events already queued).
@@ -146,12 +141,7 @@ bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolverVoid> &pr
 
   if (getState() != ContextState::SUSPENDED) {
     audioPlayer_->suspend();
-
-    // Waiting for render quiescence from inside an in-flight audio callback
-    // self-deadlocks on `currentRenders_`.
-    if (currentRenders_.load(std::memory_order_acquire) == 0) {
-      waitForRenderQuiescence();
-    }
+    waitForRenderQuiescence();
 
     // Audio callback is no longer the consumer; enable self-drain so graph
     // mutations while suspended cannot fill the bounded channel and block.
