@@ -30,7 +30,7 @@ OfflineAudioContextHostObject::OfflineAudioContextHostObject(
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
   return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
+    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
         std::move(promise), context_, ContextState::RUNNING);
     context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
       dynamic_cast<OfflineAudioContext &>(context).resume(contextPromise);
@@ -41,7 +41,7 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
   double when = args[0].getNumber();
   return promiseVendor_->createPromise([this, when](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
+    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
         std::move(promise), context_, ContextState::SUSPENDED);
     context_->scheduleContextPromise([contextPromise, when](BaseAudioContext &context) {
       dynamic_cast<OfflineAudioContext &>(context).suspend(when, contextPromise);

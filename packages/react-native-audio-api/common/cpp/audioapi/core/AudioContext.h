@@ -19,9 +19,9 @@ class AudioContext : public BaseAudioContext {
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
 
-  void close(const std::shared_ptr<ContextPromiseResolverVoid> &promise = nullptr);
-  bool resume(const std::shared_ptr<ContextPromiseResolverVoid> &promise);
-  bool suspend(const std::shared_ptr<ContextPromiseResolverVoid> &promise);
+  void close(const std::shared_ptr<ContextPromiseResolver<void>> &promise = nullptr);
+  bool resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise);
+  bool suspend(const std::shared_ptr<ContextPromiseResolver<void>> &promise);
   bool start();
 
   /// @brief Initializes native audio player and assigns the audio destination node to the context.

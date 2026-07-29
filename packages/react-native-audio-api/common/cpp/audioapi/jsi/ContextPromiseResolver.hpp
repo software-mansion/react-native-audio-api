@@ -1,9 +1,11 @@
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -14,33 +16,75 @@ class Promise;
 class BaseAudioContext;
 enum class ContextState : std::uint8_t;
 
-// ContextPromise<> is a special template for no value promises.
-// ContextPromise<T> is a general template for value promises.
-template <typename... Args>
-  requires(sizeof...(Args) <= 1)
+template <typename T>
 class ContextPromiseResolver;
 
-using ContextPromiseResolverVoid = ContextPromiseResolver<>;
 using OfflineAudioContextResultPromise = ContextPromiseResolver<std::shared_ptr<AudioBuffer>>;
 
-template <typename... Args>
-  requires(sizeof...(Args) <= 1)
+namespace detail {
+
+template <typename T>
+struct ContextPromiseResolveFn {
+  using type = std::function<void(const T &)>;
+};
+
+template <>
+struct ContextPromiseResolveFn<void> {
+  using type = std::function<void()>;
+};
+
+struct ContextPromiseNoValue {};
+
+template <typename T>
+using ContextPromiseResolveValue =
+    std::conditional_t<std::is_same_v<T, void>, ContextPromiseNoValue, T>;
+
+} // namespace detail
+
+/// Lifecycle / rendering promise bridge to JSI.
+/// @tparam T Value type resolved into the promise, or `void` for lifecycle ops.
+template <typename T>
 class ContextPromiseResolver {
  public:
   ContextPromiseResolver(
-      std::function<void(const Args &...)> resolve,
+      std::function<void()> resolve,
       std::function<void(const std::string &)> reject)
+    requires std::same_as<T, void>
       : resolve_(std::move(resolve)), reject_(std::move(reject)) {}
 
-  void resolve(const Args &...values) const {
-    resolve_(values...);
+  ContextPromiseResolver(
+      std::function<void(const detail::ContextPromiseResolveValue<T> &)> resolve,
+      std::function<void(const std::string &)> reject)
+    requires(!std::same_as<T, void>)
+      : resolve_(std::move(resolve)), reject_(std::move(reject)) {}
+
+  void resolve() const
+    requires std::same_as<T, void>
+  {
+    resolve_();
+  }
+
+  void resolve(const detail::ContextPromiseResolveValue<T> &value) const
+    requires(!std::same_as<T, void>)
+  {
+    resolve_(value);
+  }
+
+  static void resolve(const std::shared_ptr<ContextPromiseResolver<T>> &promise)
+    requires std::same_as<T, void>
+  {
+    if (promise != nullptr) {
+      promise->resolve();
+    }
   }
 
   static void resolve(
-      const std::shared_ptr<ContextPromiseResolver<Args...>> &promise,
-      const Args &...values) {
+      const std::shared_ptr<ContextPromiseResolver<T>> &promise,
+      const detail::ContextPromiseResolveValue<T> &value)
+    requires(!std::same_as<T, void>)
+  {
     if (promise != nullptr) {
-      promise->resolve(values...);
+      promise->resolve(value);
     }
   }
 
@@ -49,26 +93,26 @@ class ContextPromiseResolver {
   }
 
   static void reject(
-      const std::shared_ptr<ContextPromiseResolver<Args...>> &promise,
+      const std::shared_ptr<ContextPromiseResolver<T>> &promise,
       const std::string &message) {
     if (promise != nullptr) {
       promise->reject(message);
     }
   }
 
-  static std::shared_ptr<ContextPromiseResolverVoid> makeContextPromiseResolver(
+  static std::shared_ptr<ContextPromiseResolver<void>> makeContextPromiseResolver(
       Promise &&promise,
       const std::shared_ptr<BaseAudioContext> &audioContext,
       ContextState nextState)
-    requires(sizeof...(Args) == 0);
+    requires std::same_as<T, void>;
 
   static std::shared_ptr<OfflineAudioContextResultPromise> makeOfflineAudioContextResultResolver(
       Promise &&promise,
       const std::shared_ptr<BaseAudioContext> &audioContext)
-    requires(sizeof...(Args) == 1);
+    requires(!std::same_as<T, void>);
 
  private:
-  std::function<void(const Args &...)> resolve_;
+  detail::ContextPromiseResolveFn<T>::type resolve_;
   std::function<void(const std::string &)> reject_;
 };
 

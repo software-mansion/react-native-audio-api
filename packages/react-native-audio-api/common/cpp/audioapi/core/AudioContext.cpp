@@ -80,9 +80,9 @@ bool AudioContext::tryStartDriver() {
   return false;
 }
 
-void AudioContext::close(const std::shared_ptr<ContextPromiseResolverVoid> &promise) {
+void AudioContext::close(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolverVoid::reject(promise, "Cannot close a closed audio context.");
+    ContextPromiseResolver<void>::reject(promise, "Cannot close a closed audio context.");
     return;
   }
 
@@ -96,17 +96,17 @@ void AudioContext::close(const std::shared_ptr<ContextPromiseResolverVoid> &prom
   processAudioEvents();
   audioPlayer_->cleanup();
 
-  ContextPromiseResolverVoid::resolve(promise);
+  ContextPromiseResolver<void>::resolve(promise);
 }
 
-bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolverVoid> &promise) {
+bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolverVoid::reject(promise, "Cannot resume a closed audio context.");
+    ContextPromiseResolver<void>::reject(promise, "Cannot resume a closed audio context.");
     return false;
   }
 
   if (getState() == ContextState::RUNNING && isDriverRunning()) {
-    ContextPromiseResolverVoid::resolve(promise);
+    ContextPromiseResolver<void>::resolve(promise);
     return true;
   }
 
@@ -125,17 +125,17 @@ bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolverVoid> &pro
 
   if (result) {
     // Visible RUNNING is applied in the promise resolve task (CallInvoker).
-    ContextPromiseResolverVoid::resolve(promise);
+    ContextPromiseResolver<void>::resolve(promise);
   } else {
-    ContextPromiseResolverVoid::reject(promise, "Failed to resume audio context.");
+    ContextPromiseResolver<void>::reject(promise, "Failed to resume audio context.");
   }
   return result;
 }
 
-bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolverVoid> &promise) {
+bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
   // Control-message body: no locking (see `close`).
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolverVoid::reject(promise, "Cannot suspend a closed audio context.");
+    ContextPromiseResolver<void>::reject(promise, "Cannot suspend a closed audio context.");
     return false;
   }
 
@@ -151,7 +151,7 @@ bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolverVoid> &pr
   }
 
   // Visible SUSPENDED is applied in the promise resolve task (CallInvoker).
-  ContextPromiseResolverVoid::resolve(promise);
+  ContextPromiseResolver<void>::resolve(promise);
   return true;
 }
 

@@ -29,7 +29,7 @@ AudioContextHostObject::AudioContextHostObject(
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
   return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
+    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
         std::move(promise), context_, ContextState::CLOSED);
     context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
       dynamic_cast<AudioContext &>(context).close(contextPromise);
@@ -39,7 +39,7 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
   return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
+    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
         std::move(promise), context_, ContextState::RUNNING);
     context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
       dynamic_cast<AudioContext &>(context).resume(contextPromise);
@@ -49,7 +49,7 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolverVoid::makeContextPromiseResolver(
+    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
         std::move(promise), context_, ContextState::SUSPENDED);
     context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
       dynamic_cast<AudioContext &>(context).suspend(contextPromise);

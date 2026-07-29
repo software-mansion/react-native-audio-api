@@ -13,12 +13,13 @@
 namespace audioapi {
 
 template <>
-std::shared_ptr<ContextPromiseResolverVoid> ContextPromiseResolver<>::makeContextPromiseResolver(
+std::shared_ptr<ContextPromiseResolver<void>>
+ContextPromiseResolver<void>::makeContextPromiseResolver(
     Promise &&promise,
     const std::shared_ptr<BaseAudioContext> &audioContext,
     ContextState nextState) {
   auto jsiPromise = std::make_shared<Promise>(std::move(promise));
-  return std::make_shared<ContextPromiseResolverVoid>(
+  return std::make_shared<ContextPromiseResolver<void>>(
       [jsiPromise, audioContext, nextState]() {
         // Spec: update the state attribute in the same follow-up task that
         // resolves the lifecycle promise (before statechange reactions).
