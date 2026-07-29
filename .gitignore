@@ -105,7 +105,7 @@ packages/react-native-audio-api/common/cpp/audioapi/external/ffmpeg_ios/
 # Clangd cache
 .cache
 
-# C++ gtest coverage (Clang LLVM source-based + llvm-cov)
+# C++ tests coverage (Clang LLVM source-based + llvm-cov)
 build-coverage/
 *.profraw
 *.profdata

@@ -15,7 +15,7 @@ readonly BUILD_DIR="${SCRIPT_DIR}/build-coverage"
 readonly COVERAGE_HTML_DIR="${SCRIPT_DIR}/coverage-html"
 readonly PROFDATA_FILE="${BUILD_DIR}/coverage.profdata"
 readonly GRAPH_FILTER="AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:Seeds/*"
-readonly IGNORE_FILENAME_REGEX='(/common/cpp/test/|/_deps/|/googletest|/gmock|/audioapi/libs/)'
+readonly IGNORE_FILENAME_REGEX='(/common/cpp/test/|/_deps/|/googletest|/gmock|/audioapi/libs/|/r8brain/|/jsi/|/HostObjects/)'
 
 resolve_llvm_tool() {
   local tool_name="$1"
@@ -68,17 +68,18 @@ fi
 
 "$LLVM_COV" report \
   "$BUILD_DIR/tests" \
-  -instr-profile="$PROFDATA_FILE" \
-  -ignore-filename-regex="$IGNORE_FILENAME_REGEX"
+  --instr-profile="$PROFDATA_FILE" \
+  --ignore-filename-regex="$IGNORE_FILENAME_REGEX"
 
 mkdir -p "$COVERAGE_HTML_DIR"
 
 "$LLVM_COV" show \
   "$BUILD_DIR/tests" \
-  -instr-profile="$PROFDATA_FILE" \
-  -ignore-filename-regex="$IGNORE_FILENAME_REGEX" \
-  -format=html \
-  -output-dir="$COVERAGE_HTML_DIR"
+  --instr-profile="$PROFDATA_FILE" \
+  --ignore-filename-regex="$IGNORE_FILENAME_REGEX" \
+  --Xdemangler=c++filt \
+  --format=html \
+  --output-dir="$COVERAGE_HTML_DIR"
 
 echo
 echo "Coverage HTML report: ${COVERAGE_HTML_DIR}/index.html"
