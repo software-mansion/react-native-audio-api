@@ -211,6 +211,10 @@ export default class AudioRecorder {
     return this.recorder.getCurrentDuration();
   }
 
+  get inputLatency(): number {
+    return this.recorder.inputLatency;
+  }
+
   onError(callback: (error: OnRecorderErrorEventType) => void): void {
     if (this.onErrorSubscription) {
       this.recorder.clearOnError();

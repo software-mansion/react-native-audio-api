@@ -1,19 +1,27 @@
 #pragma once
 
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/GeneralizedAudioParam.h>
 #include <audioapi/core/types/ParamEventType.h>
 #include <audioapi/core/utils/param/ParamRenderQueue.h>
 #include <audioapi/core/utils/param/RenderParamEvent.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
+#include <atomic>
 #include <cstddef>
 #include <memory>
 #include <utility>
 
 namespace audioapi {
 
-class AudioParam {
+/// @brief A Web Audio API parameter that accepts graph modulation.
+///
+/// A @c BridgeNode writes modulation into @c inputBuffer_. Processing adds that
+/// modulation to the intrinsic automation value, clamps the final result, and
+/// clears the buffer so disconnected inputs cannot leave stale modulation.
+/// Calls served from the base-class cache return before consuming the buffer.
+class AudioParam : public GeneralizedAudioParam {
  public:
   explicit AudioParam(
       float defaultValue,
@@ -21,6 +29,9 @@ class AudioParam {
       float maxValue,
       const std::shared_ptr<BaseAudioContext> &context);
 
+  /// @note JS Thread only
+  /// @return the cached value from last @c processKRateParam() / last sample of last
+  /// @c processARateParam().
   [[nodiscard]] float getValue() const noexcept {
     return value_.load(std::memory_order_relaxed);
   }
@@ -29,24 +40,8 @@ class AudioParam {
     return defaultValue_;
   }
 
-  [[nodiscard]] float getMinValue() const noexcept {
-    return minValue_;
-  }
-
-  [[nodiscard]] float getMaxValue() const noexcept {
-    return maxValue_;
-  }
-
   void setValue(float value) {
-    value_.store(std::clamp(value, minValue_, maxValue_), std::memory_order_release);
-  }
-
-  /// @note JS Thread only
-  [[nodiscard]] double getCurrentTime() const noexcept {
-    if (auto context = context_.lock()) {
-      return context->getCurrentTime();
-    }
-    return 0.0;
+    value_.store(clampToNominalRange(value), std::memory_order_release);
   }
 
   /// @note Audio Thread only
@@ -85,9 +80,6 @@ class AudioParam {
     return false;
   }
 
-  /// Audio-Thread only methods
-  /// These methods are called only from the Audio rendering thread.
-
   /// @brief Returns the input buffer where BridgeNode stores mixed modulation signals.
   /// @note Audio Thread only
   [[nodiscard]] std::shared_ptr<DSPAudioBuffer> getInputBuffer() const {
@@ -95,25 +87,23 @@ class AudioParam {
   }
 
   /// @note Audio Thread only
-  std::shared_ptr<DSPAudioBuffer> processARateParam(int framesToProcess, double time);
+  /// @note Add BridgeNode modulation from @c inputBuffer_ on top of the automated value,
+  /// clamp, cache, then zero @c inputBuffer_. Idempotent for the same args.
+  std::shared_ptr<DSPAudioBuffer> processARateParam(int framesToProcess, double time) final;
 
   /// @note Audio Thread only
-  float processKRateParam(int framesToProcess, double time);
+  /// @note Add BridgeNode modulation from @c inputBuffer_ on top of the automated value,
+  /// clamp, cache, then zero @c inputBuffer_. Idempotent for the same args.
+  float processKRateParam(double time) final;
 
  private:
-  // Core parameter state
-  std::weak_ptr<BaseAudioContext> context_;
   std::atomic<float> value_;
   float defaultValue_;
-  float minValue_;
-  float maxValue_;
 
   ParamRenderQueue eventRenderQueue_;
 
-  // Input modulation buffer - filled by BridgeNode during graph processing
+  // Input modulation buffer - filled by BridgeNode during graph processing.
   std::shared_ptr<DSPAudioBuffer> inputBuffer_;
-  // Output buffer for a-rate processing - contains modulation + param value
-  std::shared_ptr<DSPAudioBuffer> outputBuffer_;
 
   /// @brief Update the parameter queue with a new event.
   /// @param event The new event to add to the queue.
@@ -123,7 +113,12 @@ class AudioParam {
     eventRenderQueue_.push(std::move(event));
   }
 
-  float getValueAtTime(double time);
+  /// @note Audio Thread only. @c eventRenderQueue_ is unsynchronized and must
+  /// not be accessed from another thread. When automation is active, this also
+  /// updates @c value_ so JavaScript @c getValue() observes the latest intrinsic
+  /// sample; BridgeNode modulation is applied only by @c processKRateParam /
+  /// @c processARateParam.
+  float getValueAtTimeUnmodulated(double time);
 };
 
 } // namespace audioapi

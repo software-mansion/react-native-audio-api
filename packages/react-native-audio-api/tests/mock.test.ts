@@ -9,6 +9,8 @@ describe('React Native Audio API Mocks', () => {
       expect(context.sampleRate).toBe(44100);
       expect(context.currentTime).toBe(0);
       expect(context.state).toBe('running');
+      expect(context.baseLatency).toBe(0.005);
+      expect(context.outputLatency).toBe(0.01);
       expect(context.destination).toBeInstanceOf(MockAPI.AudioDestinationNode);
     });
 
@@ -42,6 +44,7 @@ describe('React Native Audio API Mocks', () => {
 
       expect(context.sampleRate).toBe(44100);
       expect(context.length).toBe(44100);
+      expect(context.baseLatency).toBe(0.005);
     });
 
     it('should start rendering and return an AudioBuffer', async () => {
@@ -215,6 +218,7 @@ describe('React Native Audio API Mocks', () => {
       expect(recorder.isRecording()).toBe(false);
       expect(recorder.isPaused()).toBe(false);
       expect(recorder.getCurrentDuration()).toBe(0);
+      expect(recorder.getInputLatency()).toBe(0.01);
       expect(recorder.options).toBeNull();
     });
 

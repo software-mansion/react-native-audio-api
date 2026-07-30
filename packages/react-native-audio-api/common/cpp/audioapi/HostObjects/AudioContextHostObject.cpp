@@ -3,8 +3,8 @@
 #include <audioapi/HostObjects/sources/AudioFileSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/MediaElementAudioSourceNodeHostObject.h>
 #include <audioapi/core/AudioContext.h>
+#include <audioapi/core/types/ContextState.h>
 #include <memory>
-#include <string>
 #include <utility>
 
 namespace audioapi {
@@ -18,6 +18,8 @@ AudioContextHostObject::AudioContextHostObject(
           std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry),
           runtime,
           callInvoker) {
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, outputLatency));
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, baseLatency));
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
@@ -26,47 +28,43 @@ AudioContextHostObject::AudioContextHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
-  context_->getGraph()->collectDisposedNodes();
-  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
-    return [audioContext](jsi::Runtime &runtime) {
-      audioContext->close();
-      return jsi::Value::undefined();
-    };
+  return promiseVendor_->createPromise([this](Promise &&promise) {
+    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
+        std::move(promise), context_, ContextState::CLOSED);
+    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
+      dynamic_cast<AudioContext &>(context).close(contextPromise);
+    });
   });
-
-  return promise;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
-  context_->getGraph()->collectDisposedNodes();
-  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
-    const auto result = audioContext->resume();
-    return [result](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-      if (result) {
-        return jsi::Value::undefined();
-      }
-      return std::string("Failed to resume audio context.");
-    };
+  return promiseVendor_->createPromise([this](Promise &&promise) {
+    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
+        std::move(promise), context_, ContextState::RUNNING);
+    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
+      dynamic_cast<AudioContext &>(context).resume(contextPromise);
+    });
   });
-  return promise;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
-  context_->getGraph()->collectDisposedNodes();
-  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-  auto promise = promiseVendor_->createAsyncPromise([audioContext = std::move(audioContext)]() {
-    const auto result = audioContext->suspend();
-    return [result](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-      if (result) {
-        return jsi::Value::undefined();
-      }
-      return std::string("Failed to suspend audio context.");
-    };
+  return promiseVendor_->createPromise([this](Promise &&promise) {
+    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
+        std::move(promise), context_, ContextState::SUSPENDED);
+    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
+      dynamic_cast<AudioContext &>(context).suspend(contextPromise);
+    });
   });
+}
 
-  return promise;
+JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, outputLatency) {
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+  return {audioContext->getOutputLatency()};
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, baseLatency) {
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+  return {audioContext->getBaseLatency()};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {

@@ -1,10 +1,13 @@
 #pragma once
 
+#include <audioapi/core/CompositeAudioParam.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 
+#include <cmath>
 #include <cstdint>
 #include <memory>
 
@@ -12,6 +15,11 @@ namespace audioapi {
 
 class AudioParam;
 struct BaseAudioBufferSourceOptions;
+
+/// @see https://webaudio.github.io/web-audio-api/#computedplaybackrate
+inline float combineComputedPlaybackRate(float playbackRate, float detune) {
+  return playbackRate * std::pow(2.0f, detune / static_cast<float>(OCTAVE_RANGE));
+}
 
 class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
  public:
@@ -57,21 +65,23 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
 
-  // k-rate params
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;
+  // Regular playback uses the spec-defined product; WSOLA needs playback rate
+  // and detune independently to control speed and pitch.
+  std::shared_ptr<CompositeAudioParam<combineComputedPlaybackRate>> computedPlaybackRateParam_;
 
   PositionChangedDispatcher positionChanged_;
 
   void processWithPitchCorrection(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess);
+      int framesToProcess,
+      double time);
 
   void processWithoutPitchCorrection(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-      int framesToProcess);
-
-  float getComputedPlaybackRateValue(int framesToProcess, double time);
+      int framesToProcess,
+      double time);
 };
 
 } // namespace audioapi

@@ -25,6 +25,8 @@ class NodeAudioPlayer final : public CommonPlayer {
   void cleanup() override;
 
   [[nodiscard]] bool isRunning() const override;
+  [[nodiscard]] double getOutputLatency() const override;
+  [[nodiscard]] double getBaseLatency() const override;
 
  private:
   void run();

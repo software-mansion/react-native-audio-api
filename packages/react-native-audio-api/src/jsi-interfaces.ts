@@ -70,17 +70,19 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
+  readonly baseLatency: number;
+  readonly outputLatency: number;
   createMediaElementSource: (
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;
-  close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  close(): Promise<undefined>;
+  resume(): Promise<undefined>;
+  suspend(): Promise<undefined>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
-  resume(): Promise<void>;
-  suspend(suspendTime: number): Promise<void>;
+  resume(): Promise<undefined>;
+  suspend(suspendTime: number): Promise<undefined>;
   startRendering(): Promise<IAudioBuffer>;
 }
 
@@ -200,6 +202,7 @@ export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode 
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   start: (when?: number, offset?: number) => void;
   pause: () => void;
+  resume: (when?: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onBufferEnded: string;
@@ -324,6 +327,8 @@ export interface IAudioRecorder {
 
   getCurrentDuration: () => number;
   getFilePath: () => string | null;
+
+  readonly inputLatency: number;
 }
 
 export interface IAudioDecoder {

@@ -172,6 +172,13 @@ interface BaseAudioBufferSourceOptions extends AudioNodeOptions {
 
 export type AudioBufferQueueSourceOptions = BaseAudioBufferSourceOptions;
 
+export enum AudioBufferQueueSourceState {
+  IDLE,
+  PLAYING,
+  PAUSED,
+  STOPPED,
+}
+
 export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: AudioBufferLike;
   loop?: boolean;

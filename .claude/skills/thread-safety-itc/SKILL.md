@@ -129,6 +129,7 @@ Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is de
 | Property written by audio thread, JS reads it | `std::atomic<T>` on C++ node; getter reads directly |
 | Non-primitive, can be written by audio thread | Triple buffer (see `AnalyserNode` for reference) |
 | CPU-heavy work, must not block JS or audio | `TaskOffloader` on a dedicated worker thread |
+| Context lifecycle (`resume`/`suspend`/`close`) | `scheduleContextPromise` → `pendingPromisesOffloader_` |
 
 ---
 
@@ -159,13 +160,31 @@ Control-plane synchronization uses two layers — both are non-recursive `std::m
 | Context | `BaseAudioContext::driverMutex_` (`AudioContext` + `OfflineAudioContext`) | `start` / `resume` / `suspend` / `close` (live); `resume` / `suspend` / `startRendering` (offline) — JS thread vs promise-pool |
 | Engine | `AudioEngine` mutex (iOS only) | Process-wide `AVAudioEngine` graph: attach/detach, engine start/stop, interruptions, recorder paths |
 
-`AudioContext::initialize()`, `createMediaElementSource()`, and `isDriverRunning()` are JS-thread-only — do not take `driverMutex_`. `getState()` reads atomics and `isDriverRunning()` lock-free; do not acquire `driverMutex_` from there.
+`AudioContext::initialize()`, `createMediaElementSource()`, and `isDriverRunning()` are JS-thread-only — do not take `driverMutex_`. `getState()` returns the atomic control-thread state only (do not gate on `isDriverRunning()`); do not acquire `driverMutex_` from there.
 
 On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because Oboe error callbacks bypass `AudioContext`.
 
 **Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`. Platform drivers share the `CommonPlayer` abstract base (`common/cpp/audioapi/core/CommonPlayer.h`).
 
 **Graph Channel A producer self-drain:** `Graph::setProducerSelfDrain(true)` makes the JS/main producer drain Channel A after each enqueue. Enable only when there is no audio/render consumer (realtime: construction + after `suspend`/`close` quiescence; offline: before `startRendering` and after a scheduled suspend). Before disabling for `start`/`resume`/`renderAudio`, call `processEvents()` once (still as sole consumer) so the bounded channel is empty, then disable, then start the audio/render consumer; re-enable if start/resume fails. After enabling, call `processEvents()` once to flush backlog (avoids `WAIT_ON_FULL` deadlock if the channel was already full).
+
+**Context lifecycle promises:** HostObjects wrap JSI `Promise`s via `ContextPromiseResolver`
+(`jsi/ContextPromiseResolver.hpp`); tasks are queued as `ContextPromiseTask`
+(`core/types/ContextPromiseTask.h`). Lifecycle
+ops (`resume` / `suspend` / `close` / offline start) are **control messages** on
+`pendingPromisesOffloader_` via `scheduleContextPromise` from the JS thread
+(`PromiseVendor::createPromise`, not the multi-worker `createAsyncPromise` — that would violate
+SPSC single-producer). A dedicated `TaskOffloader` worker thread drains the queue under
+`driverMutex_`, runs `collectDisposedNodes()` (host-graph ghost cleanup — never on the audio
+thread), then executes the lifecycle body and settles the promise on the CallInvoker. The
+`TaskOffloader` destructor joins the worker and drains any queued control messages. When the driver
+is stopped, `scheduleAudioEvent` still drains already-queued SPSC events then runs
+the new event synchronously under `driverMutex_` (FIFO with prior messages). Control-message
+bodies must not re-lock `driverMutex_` or `waitForRenderQuiescence()` while `currentRenders_ > 0`
+(audio-callback self-deadlock). Apply the visible `state` attribute and settle the promise
+together in the `ContextPromise` resolve task (CallInvoker), after driver work — so `.state`
+still reads the prior value until settlement (needed when `resume()` then `suspend()` are issued
+back-to-back).
 
 ---
 

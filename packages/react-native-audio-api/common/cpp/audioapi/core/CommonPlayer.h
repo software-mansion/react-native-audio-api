@@ -16,6 +16,9 @@ class CommonPlayer {
   virtual void suspend() = 0;
   virtual void cleanup() = 0;
 
+  [[nodiscard]] virtual double getBaseLatency() const = 0;
+  [[nodiscard]] virtual double getOutputLatency() const = 0;
+
   [[nodiscard]] virtual bool isRunning() const = 0;
 };
 

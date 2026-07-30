@@ -46,6 +46,14 @@ export default class AudioContext implements BaseAudioContext {
     return this.context.state as ContextState;
   }
 
+  public get baseLatency(): number {
+    return this.context.baseLatency;
+  }
+
+  public get outputLatency(): number {
+    return this.context.outputLatency;
+  }
+
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this);
   }

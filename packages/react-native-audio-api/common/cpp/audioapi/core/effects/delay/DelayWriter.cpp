@@ -25,8 +25,7 @@ void DelayWriter::processNode(int framesToProcess) {
   delayLine_->syncReadSnapshotForQuantum(context->getCurrentSampleFrame());
 
   auto delayBuffer = delayLine_->getBuffer();
-  auto delayTime = delayLine_->getDelayTimeParam()->processKRateParam(
-      framesToProcess, context->getCurrentTime());
+  auto delayTime = delayLine_->getDelayTimeParam()->processKRateParam(context->getCurrentTime());
   const size_t readForWrite = delayLine_->readSnapshotForWrite();
   auto writeIndex =
       static_cast<size_t>(static_cast<float>(readForWrite) + delayTime * context->getSampleRate()) %
