@@ -37,8 +37,7 @@ ChannelMergerNodeHostObject::ChannelMergerNodeHostObject(
   }
 }
 
-std::shared_ptr<utils::graph::HostNode> ChannelMergerNodeHostObject::getConnectDestination(
-    int inputIndex) {
+std::shared_ptr<utils::graph::HostNode> ChannelMergerNodeHostObject::getInput(int inputIndex) {
   return inputHostNodes_[static_cast<size_t>(inputIndex)];
 }
 

@@ -38,8 +38,7 @@ ChannelSplitterNodeHostObject::ChannelSplitterNodeHostObject(
   }
 }
 
-std::shared_ptr<utils::graph::HostNode> ChannelSplitterNodeHostObject::getConnectSource(
-    int outputIndex) {
+std::shared_ptr<utils::graph::HostNode> ChannelSplitterNodeHostObject::getOutput(int outputIndex) {
   return outputHostNodes_[static_cast<size_t>(outputIndex)];
 }
 

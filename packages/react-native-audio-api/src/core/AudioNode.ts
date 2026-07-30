@@ -81,16 +81,16 @@ export default class AudioNode {
 
     if (destination instanceof AudioParam) {
       this.node.connect(destination.audioParam, output);
-    } else {
-      if (input < 0 || input >= destination.numberOfInputs) {
-        throw new IndexSizeError(
-          `The input index provided (${input}) is outside the range [0, ${destination.numberOfInputs})`
-        );
-      }
-
-      this.node.connect(destination.node, output, input);
-      return destination;
+      return;
     }
+    if (input < 0 || input >= destination.numberOfInputs) {
+      throw new IndexSizeError(
+        `The input index provided (${input}) is outside the range [0, ${destination.numberOfInputs})`
+      );
+    }
+
+    this.node.connect(destination.node, output, input);
+    return destination;
   }
 
   public disconnect(): void;

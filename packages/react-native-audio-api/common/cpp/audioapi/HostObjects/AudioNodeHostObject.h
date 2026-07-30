@@ -54,14 +54,14 @@ class AudioNodeHostObject : public HostObject,
   /// (Delay, ChannelSplitter) route each output to a dedicated internal host
   /// node.
   /// @note JS thread only.
-  virtual std::shared_ptr<utils::graph::HostNode> getConnectSource(int outputIndex);
+  virtual std::shared_ptr<utils::graph::HostNode> getOutput(int outputIndex);
 
   /// @brief Returns the graph host node that incoming edges for the given
   /// input index should terminate at. The default returns `this` for input 0.
   /// Composite nodes (Delay, ChannelMerger) route each input to a dedicated
   /// internal host node.
   /// @note JS thread only.
-  virtual std::shared_ptr<utils::graph::HostNode> getConnectDestination(int inputIndex);
+  virtual std::shared_ptr<utils::graph::HostNode> getInput(int inputIndex);
   /// Updates host + core channelCount and renegotiates when the value changes.
   /// Safe to call from the host/JS thread only (negotiation reads these fields).
   void updateChannelCount(size_t newChannelCount);

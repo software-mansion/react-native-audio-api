@@ -28,6 +28,9 @@ constexpr const char *kDisconnectNotConnected =
 /// Runs `tryRemove` for each candidate edge. Spec: remove matching edges; throw
 /// InvalidAccessError if none existed (or on unexpected graph errors).
 template <typename TryRemove>
+  requires requires(TryRemove &&tryRemove) {
+    tryRemove([](const utils::graph::HostNode::Res &) {});
+  }
 void disconnectMatchingEdges(jsi::Runtime &runtime, TryRemove &&tryRemove) {
   bool removedAny = false;
   tryRemove([&](const utils::graph::HostNode::Res &result) {
@@ -100,12 +103,11 @@ JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelInterpretation) {
       runtime, js_enum_parser::channelInterpretationToString(channelInterpretation_));
 }
 
-std::shared_ptr<utils::graph::HostNode> AudioNodeHostObject::getConnectSource(int /*outputIndex*/) {
+std::shared_ptr<utils::graph::HostNode> AudioNodeHostObject::getOutput(int /*outputIndex*/) {
   return shared_from_this();
 }
 
-std::shared_ptr<utils::graph::HostNode> AudioNodeHostObject::getConnectDestination(
-    int /*inputIndex*/) {
+std::shared_ptr<utils::graph::HostNode> AudioNodeHostObject::getInput(int /*inputIndex*/) {
   return shared_from_this();
 }
 
@@ -178,24 +180,24 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
   const int output = (count > 1 && args[1].isNumber()) ? static_cast<int>(args[1].getNumber()) : 0;
   const int input = (count > 2 && args[2].isNumber()) ? static_cast<int>(args[2].getNumber()) : 0;
 
-  if (output < 0 || output >= numberOfOutputs_) {
+  if (output >= numberOfOutputs_) {
     throw jsi::JSError(runtime, "IndexSizeError: connect() output index out of bounds");
   }
 
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto toNodeHost = obj.getHostObject<AudioNodeHostObject>(runtime);
 
-    if (input < 0 || input >= toNodeHost->numberOfInputs_) {
+    if (input >= toNodeHost->numberOfInputs_) {
       throw jsi::JSError(runtime, "IndexSizeError: connect() input index out of bounds");
     }
 
-    auto source = getConnectSource(output);
-    auto destination = toNodeHost->getConnectDestination(input);
+    auto source = getOutput(output);
+    auto destination = toNodeHost->getInput(input);
     source->connect(*destination);
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
     param->connectToGraph();
-    graph_->addEdge(getConnectSource(output)->rawNode(), param->bridgeNode());
+    graph_->addEdge(getOutput(output)->rawNode(), param->bridgeNode());
   }
   return jsi::Value::undefined();
 }
@@ -204,7 +206,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
   // disconnect() — drop every outgoing edge from every output.
   if (args == nullptr || count == 0 || args[0].isUndefined()) {
     for (int output = 0; output < numberOfOutputs_; ++output) {
-      getConnectSource(output)->disconnect();
+      getOutput(output)->disconnect();
     }
     return jsi::Value::undefined();
   }
@@ -215,7 +217,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
     if (output < 0 || output >= numberOfOutputs_) {
       throw jsi::JSError(runtime, "IndexSizeError: disconnect() output index out of bounds");
     }
-    getConnectSource(output)->disconnect();
+    getOutput(output)->disconnect();
     return jsi::Value::undefined();
   }
 
@@ -244,9 +246,9 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
 
     disconnectMatchingEdges(runtime, [&](auto onResult) {
       for (int o = outputBegin; o < outputEnd; ++o) {
-        auto source = getConnectSource(o);
+        auto source = getOutput(o);
         for (int i = inputBegin; i < inputEnd; ++i) {
-          onResult(source->disconnect(*toNodeHost->getConnectDestination(i)));
+          onResult(source->disconnect(*toNodeHost->getInput(i)));
         }
       }
     });
@@ -254,7 +256,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
     disconnectMatchingEdges(runtime, [&](auto onResult) {
       for (int o = outputBegin; o < outputEnd; ++o) {
-        onResult(graph_->removeEdge(getConnectSource(o)->rawNode(), param->bridgeNode()));
+        onResult(graph_->removeEdge(getOutput(o)->rawNode(), param->bridgeNode()));
       }
     });
   }

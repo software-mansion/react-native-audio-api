@@ -28,7 +28,7 @@ class ChannelSplitterNodeHostObject : public AudioNodeHostObject {
   [[nodiscard]] size_t getMemoryPressure() const override;
 
  protected:
-  std::shared_ptr<utils::graph::HostNode> getConnectSource(int outputIndex) override;
+  std::shared_ptr<utils::graph::HostNode> getOutput(int outputIndex) override;
 
  private:
   ChannelSplitterInputNode *inputNode_ = nullptr;

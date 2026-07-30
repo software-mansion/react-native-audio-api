@@ -28,7 +28,7 @@ class ChannelMergerNodeHostObject : public AudioNodeHostObject {
   [[nodiscard]] size_t getMemoryPressure() const override;
 
  protected:
-  std::shared_ptr<utils::graph::HostNode> getConnectDestination(int inputIndex) override;
+  std::shared_ptr<utils::graph::HostNode> getInput(int inputIndex) override;
 
  private:
   ChannelMergerOutputNode *outputNode_ = nullptr;
