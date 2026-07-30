@@ -3,9 +3,23 @@ name: Tests
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      run_cpp_tests:
+        description: Run C++ tests (GCC)
+        type: boolean
+        default: true
+      run_cpp_coverage:
+        description: Run C++ coverage (Clang / llvm-cov)
+        type: boolean
+        default: true
+      run_js_tests:
+        description: Run JS integration tests
+        type: boolean
+        default: true
 
 jobs:
   cpp-tests:
+    if: github.event_name == 'pull_request' || inputs.run_cpp_tests
     uses: ./.github/workflows/cpp-job.yml
     with:
       name: C++ tests
@@ -13,9 +27,11 @@ jobs:
       run: yarn test:cpp
 
   cpp-coverage:
+    if: github.event_name == 'pull_request' || inputs.run_cpp_coverage
     uses: ./.github/workflows/cpp-coverage-job.yml
 
   js-tests:
+    if: github.event_name == 'pull_request' || inputs.run_js_tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
