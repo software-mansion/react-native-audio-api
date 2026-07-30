@@ -425,13 +425,14 @@ inline ChannelMergerOptions parseChannelMergerOptions(
   }
 
   auto channelInterpretationValue = optionsObject.getProperty(runtime, "channelInterpretation");
-  if (channelInterpretationValue.isString()) {
-    auto channelInterpretationStr = channelInterpretationValue.asString(runtime).utf8(runtime);
-    if (channelInterpretationStr == "speakers") {
-      options.channelInterpretation = ChannelInterpretation::SPEAKERS;
-    } else if (channelInterpretationStr == "discrete") {
-      options.channelInterpretation = ChannelInterpretation::DISCRETE;
-    }
+  if (!channelInterpretationValue.isString()) {
+    return options;
+  }
+  auto channelInterpretationStr = channelInterpretationValue.asString(runtime).utf8(runtime);
+  if (channelInterpretationStr == "speakers") {
+    options.channelInterpretation = ChannelInterpretation::SPEAKERS;
+  } else if (channelInterpretationStr == "discrete") {
+    options.channelInterpretation = ChannelInterpretation::DISCRETE;
   }
 
   return options;
