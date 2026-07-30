@@ -13,6 +13,8 @@ typedef struct objc_object NativeAudioRecorder;
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/utils/Result.hpp>
 
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -54,6 +56,8 @@ class IOSAudioRecorder : public AudioRecorder {
       uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 
+  [[nodiscard]] double getInputLatency() const override;
+
  protected:
   NativeAudioRecorder *nativeRecorder_;
 
@@ -65,6 +69,9 @@ class IOSAudioRecorder : public AudioRecorder {
       const std::string &fileNameOverride = "");
 
   std::vector<std::string> recordingSegmentPaths_;
+  std::atomic<float> streamSampleRate_{0.0f};
+  /// Updated on the audio thread from each input callback `numFrames`.
+  std::atomic<int32_t> lastCallbackFrameCount_{0};
 };
 
 } // namespace audioapi

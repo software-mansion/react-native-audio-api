@@ -26,6 +26,8 @@
 #include <audioapi/core/utils/Constants.h>
 
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace audioapi {

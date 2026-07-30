@@ -180,6 +180,13 @@ interface BaseAudioBufferSourceOptions extends AudioNodeOptions {
 
 export type AudioBufferQueueSourceOptions = BaseAudioBufferSourceOptions;
 
+export enum AudioBufferQueueSourceState {
+  IDLE,
+  PLAYING,
+  PAUSED,
+  STOPPED,
+}
+
 export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: AudioBufferLike;
   loop?: boolean;
@@ -210,8 +217,8 @@ export interface PeriodicWaveConstraints {
 }
 
 export interface PeriodicWaveOptions extends PeriodicWaveConstraints {
-  real?: Float32Array;
-  imag?: Float32Array;
+  real?: number[] | Float32Array;
+  imag?: number[] | Float32Array;
 }
 
 export interface AudioBufferOptions {

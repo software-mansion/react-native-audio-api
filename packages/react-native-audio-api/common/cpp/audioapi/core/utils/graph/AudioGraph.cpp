@@ -149,11 +149,11 @@ void AudioGraph::settleProcessableState() {
 
   // Promote a single node to CONDITIONAL_PROCESSABLE. Never overwrites an
   // ALWAYS_PROCESSABLE seed and never re-activates a node that opted out via
-  // alwaysNotProcessable_. Returns true only on a NOT -> CONDITIONAL
+  // excludeFromProcessablePull_. Returns true only on a NOT -> CONDITIONAL
   // transition, so callers can detect real progress.
   auto pull = [this](std::uint32_t idx) -> bool {
     auto &obj = nodes[idx].handle->audioNode;
-    if (obj->processableState_ == PS::NOT_PROCESSABLE && !obj->alwaysNotProcessable_) {
+    if (obj->processableState_ == PS::NOT_PROCESSABLE && !obj->excludeFromProcessablePull_) {
       obj->processableState_ = PS::CONDITIONAL_PROCESSABLE;
       return true;
     }
@@ -180,15 +180,6 @@ void AudioGraph::settleProcessableState() {
           changed = true;
         }
       }
-    }
-  }
-
-  // Idle nodes are skipped by iter() and would otherwise keep their last
-  // output samples forever. Zero those buffers here
-  for (auto &node : nodes) {
-    const auto *audio = node.handle->audioNode->asAudioNode();
-    if (audio != nullptr && !audio->isProcessable()) {
-      audio->getOutputBuffer()->zero();
     }
   }
 }

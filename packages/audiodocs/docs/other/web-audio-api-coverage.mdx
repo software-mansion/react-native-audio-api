@@ -43,7 +43,7 @@ We will do our best to ship it as soon as possible!
 | PeriodicWave | ✅ |
 | StereoPannerNode | ✅ |
 | WaveShaperNode | ✅ |
-| AudioContext | 🚧 | Available props and methods: `close`, `suspend`, `resume` |
+| AudioContext | 🚧 | Available props and methods: `baseLatency`, `outputLatency`, `close`, `suspend`, `resume` |
 | BaseAudioContext | 🚧 | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes |
 | AudioListener | 🚧 | No effect until PannerNode. |
 | AudioSinkInfo | ❌ |
@@ -84,7 +84,7 @@ live status.
 
 {/* wpt-summary:start */}
 
-_Last updated: 2026-07-21. Numbers come from the local WPT smoke run and are a snapshot, not a live badge._
+_Last updated: 2026-07-23. Numbers come from the local WPT smoke run and are a snapshot, not a live badge._
 
 <table>
   <thead>
@@ -113,12 +113,12 @@ _Last updated: 2026-07-21. Numbers come from the local WPT smoke run and are a s
     <tr style={{ backgroundColor: 'hsl(112, 85%, 72%)', color: '#1c1e21' }}><td>GainNode</td><td style={{ textAlign: 'right' }}>14</td><td style={{ textAlign: 'right' }}>15</td><td style={{ textAlign: 'right' }}>93.3%</td><td></td></tr>
     <tr style={{ backgroundColor: 'hsl(88, 85%, 72%)', color: '#1c1e21' }}><td>IIRFilterNode</td><td style={{ textAlign: 'right' }}>85</td><td style={{ textAlign: 'right' }}>116</td><td style={{ textAlign: 'right' }}>73.3%</td><td></td></tr>
     <tr style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21' }}><td>MediaElementAudioSourceNode</td><td style={{ textAlign: 'right' }}>0</td><td style={{ textAlign: 'right' }}>7</td><td style={{ textAlign: 'right' }}>0.0%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(61, 85%, 72%)', color: '#1c1e21' }}><td>OfflineAudioContext</td><td style={{ textAlign: 'right' }}>35</td><td style={{ textAlign: 'right' }}>69</td><td style={{ textAlign: 'right' }}>50.7%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(93, 85%, 72%)', color: '#1c1e21' }}><td>OscillatorNode</td><td style={{ textAlign: 'right' }}>72</td><td style={{ textAlign: 'right' }}>93</td><td style={{ textAlign: 'right' }}>77.4%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(80, 85%, 72%)', color: '#1c1e21' }}><td>PeriodicWave</td><td style={{ textAlign: 'right' }}>22</td><td style={{ textAlign: 'right' }}>33</td><td style={{ textAlign: 'right' }}>66.7%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(93, 85%, 72%)', color: '#1c1e21' }}><td>StereoPannerNode</td><td style={{ textAlign: 'right' }}>94</td><td style={{ textAlign: 'right' }}>121</td><td style={{ textAlign: 'right' }}>77.7%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(102, 85%, 72%)', color: '#1c1e21' }}><td>WaveShaperNode</td><td style={{ textAlign: 'right' }}>67</td><td style={{ textAlign: 'right' }}>79</td><td style={{ textAlign: 'right' }}>84.8%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(90, 85%, 72%)', color: '#1c1e21' }}><td><strong>Total</strong></td><td style={{ textAlign: 'right' }}>2231</td><td style={{ textAlign: 'right' }}>2985</td><td style={{ textAlign: 'right' }}><strong>74.7%</strong></td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(52, 85%, 72%)', color: '#1c1e21' }}><td>OfflineAudioContext</td><td style={{ textAlign: 'right' }}>30</td><td style={{ textAlign: 'right' }}>69</td><td style={{ textAlign: 'right' }}>43.5%</td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(118, 85%, 72%)', color: '#1c1e21' }}><td>OscillatorNode</td><td style={{ textAlign: 'right' }}>102</td><td style={{ textAlign: 'right' }}>104</td><td style={{ textAlign: 'right' }}>98.1%</td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(116, 85%, 72%)', color: '#1c1e21' }}><td>PeriodicWave</td><td style={{ textAlign: 'right' }}>30</td><td style={{ textAlign: 'right' }}>31</td><td style={{ textAlign: 'right' }}>96.8%</td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(81, 85%, 72%)', color: '#1c1e21' }}><td>StereoPannerNode</td><td style={{ textAlign: 'right' }}>68</td><td style={{ textAlign: 'right' }}>101</td><td style={{ textAlign: 'right' }}>67.3%</td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(85, 85%, 72%)', color: '#1c1e21' }}><td>WaveShaperNode</td><td style={{ textAlign: 'right' }}>53</td><td style={{ textAlign: 'right' }}>75</td><td style={{ textAlign: 'right' }}>70.7%</td><td></td></tr>
+    <tr style={{ backgroundColor: 'hsl(80, 85%, 72%)', color: '#1c1e21' }}><td><strong>Total</strong></td><td style={{ textAlign: 'right' }}>1549</td><td style={{ textAlign: 'right' }}>2333</td><td style={{ textAlign: 'right' }}><strong>66.5%</strong></td><td></td></tr>
   </tbody>
 </table>
 

@@ -52,11 +52,8 @@ bool AudioNode::requiresTailProcessing() const {
 }
 
 void AudioNode::disable() {
-  // Sticky opt-out from settle's reverse-topo pull: a finished source must
-  // not be re-activated while still connected to a processable consumer.
-  // This quantum's output stays intact for downstream consumers; the next
-  // settle zeros the idle buffer so it cannot leak as a ghost echo.
-  alwaysNotProcessable_ = true;
+  // schedule clearing up node buffers in the next quantum
+  pendingDisable_ = true;
 }
 
 namespace {

@@ -87,7 +87,9 @@ react-native-audio-api*.tgz
 
 # Envs
 .env
-.cursor
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/*.mdc
 
 compile_commands.json
 openssl-prebuilt/

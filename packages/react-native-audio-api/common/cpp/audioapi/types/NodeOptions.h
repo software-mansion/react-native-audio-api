@@ -40,6 +40,10 @@ struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
   AudioScheduledSourceNodeOptions() {
     numberOfInputs = 0;
   }
+
+  explicit AudioScheduledSourceNodeOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
+    numberOfInputs = 0;
+  }
 };
 
 struct GainOptions : AudioNodeOptions {
@@ -109,6 +113,8 @@ struct OscillatorOptions : AudioScheduledSourceNodeOptions {
   float frequency = kDefaultFrequency;
   float detune = 0.0f;
   OscillatorType type = OscillatorType::SINE;
+
+  using AudioScheduledSourceNodeOptions::AudioScheduledSourceNodeOptions;
 };
 
 struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
