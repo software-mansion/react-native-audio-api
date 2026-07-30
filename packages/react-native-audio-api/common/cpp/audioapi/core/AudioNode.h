@@ -239,7 +239,8 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     // contributes silence. See AudioNode::disable().
     if (pendingDisable_) {
       pendingDisable_ = false;
-      setProcessableState(utils::graph::GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
+      // do not mark this node as processable in the next quantum
+      excludeFromProcessablePull_ = true;
       getOutputBuffer()->zero();
       return;
     }
