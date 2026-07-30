@@ -17,7 +17,7 @@ const DOCS_MARKERS = {
 // WPT test categories that map to interfaces actually available (fully or
 // partially) in react-native-audio-api. Keep this in sync with the coverage
 // table in packages/audiodocs/docs/other/web-audio-api-coverage.mdx.
-// Categories that are not yet implemented (e.g. PannerNode, ChannelMergerNode,
+// Categories that are not yet implemented (e.g. PannerNode,
 // DynamicsCompressorNode, MediaStream* nodes, AudioWorklet) are intentionally
 // excluded from the docs summary.
 const AVAILABLE_INTERFACES = {
@@ -28,6 +28,8 @@ const AVAILABLE_INTERFACES = {
   'the-audionode-interface': 'AudioNode',
   'the-audioparam-interface': 'AudioParam',
   'the-biquadfilternode-interface': 'BiquadFilterNode',
+  'the-channelmergernode-interface': 'ChannelMergerNode',
+  'the-channelsplitternode-interface': 'ChannelSplitterNode',
   'the-constantsourcenode-interface': 'ConstantSourceNode',
   'the-convolvernode-interface': 'ConvolverNode',
   'the-delaynode-interface': 'DelayNode',
@@ -51,8 +53,7 @@ const COVERAGE_NOTES = {
     'high-precision double value loses a few digits (cosmetic round-trip mismatch).',
   'the-audiobuffer-interface':
     'Remaining failures: acquire-the-content expects AudioBufferSourceNode.start() to ' +
-    'snapshot the buffer contents (we still share the underlying memory), and ' +
-    'audiobuffer-reuse needs ChannelMergerNode, which is not yet available.',
+    'snapshot the buffer contents (we still share the underlying memory).',
   'the-biquadfilternode-interface':
     'The filter runs in double precision, so the static frequency response matches the ' +
     'reference. The remaining failures are the parameter-automation tests, which expect ' +
@@ -61,15 +62,10 @@ const COVERAGE_NOTES = {
     'difference is negligible, while computing the coefficient/trig math once per block ' +
     'instead of once per sample makes processing dramatically faster on the audio thread.',
   'the-audionode-interface':
-    'Remaining failures are tests that depend on ChannelMergerNode or ChannelSplitterNode ' +
-    '(not yet implemented) or on indexed connect()/disconnect() overloads with output/input ' +
-    'parameters (not yet implemented). Examples: disconnect audits that build multi-output ' +
-    'graphs with a splitter, connect-method-chaining with an out-of-range output index, and ' +
-    'chaining across every node type including ChannelMerger. A few other assertions fail only ' +
-    'in the Node WPT harness (iframe AudioContext, MediaElement source wiring) or check ' +
-    'argument-type errors we do not surface before cross-context validation. channelCount, ' +
-    'channelCountMode and channelInterpretation are settable after construction with graph ' +
-    'renegotiation, and the audionode-channel-rules discrete-mixing conformance test passes.',
+    'Channel mixing, indexed connect()/disconnect(), and ChannelMerger/Splitter ' +
+    'graphs pass. Remaining failures are connect() chaining across unimplemented ' +
+    'node types (DynamicsCompressor, Panner, ScriptProcessor, MediaStream*) and ' +
+    'legacy 3-arg AudioContext construction (should throw TypeError).',
 };
 
 const CATEGORY_LABELS = {

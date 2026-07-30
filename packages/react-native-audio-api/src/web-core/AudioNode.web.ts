@@ -40,7 +40,11 @@ export default class AudioNode {
     this.node.channelInterpretation = value;
   }
 
-  public connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+  public connect(
+    destination: AudioNode | AudioParam,
+    output: number = 0,
+    input: number = 0
+  ): AudioNode | AudioParam {
     if (this.context !== destination.context) {
       throw new Error(
         'Source and destination are from different BaseAudioContexts'
@@ -48,24 +52,44 @@ export default class AudioNode {
     }
 
     if (destination instanceof AudioParam) {
-      this.node.connect(destination.param);
+      this.node.connect(destination.param, output);
     } else {
-      this.node.connect(destination.node);
+      this.node.connect(destination.node, output, input);
     }
 
     return destination;
   }
 
-  public disconnect(destination?: AudioNode | AudioParam): void {
-    if (destination === undefined) {
+  public disconnect(
+    destinationOrOutput?: AudioNode | AudioParam | number,
+    output?: number,
+    input?: number
+  ): void {
+    if (destinationOrOutput === undefined) {
       this.node.disconnect();
       return;
     }
 
-    if (destination instanceof AudioParam) {
-      this.node.disconnect(destination.param);
+    if (typeof destinationOrOutput === 'number') {
+      this.node.disconnect(destinationOrOutput);
       return;
     }
-    this.node.disconnect(destination.node);
+
+    if (destinationOrOutput instanceof AudioParam) {
+      if (output === undefined) {
+        this.node.disconnect(destinationOrOutput.param);
+      } else {
+        this.node.disconnect(destinationOrOutput.param, output);
+      }
+      return;
+    }
+
+    if (output === undefined) {
+      this.node.disconnect(destinationOrOutput.node);
+    } else if (input === undefined) {
+      this.node.disconnect(destinationOrOutput.node, output);
+    } else {
+      this.node.disconnect(destinationOrOutput.node, output, input);
+    }
   }
 }
