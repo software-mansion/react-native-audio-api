@@ -260,7 +260,7 @@ range, the a-rate `outputBuffer_`, and the per-quantum memoization state, and ce
 clamping via `finalizeKRate` / `finalizeARate`.
 
 - **`AudioParam`** — the only JS-connectable param; owns `inputBuffer_` (BridgeNode modulation).
-- **`CompositeAudioParam<Fn>`** (`core/CompositeAudioParam.h`) — represents a spec
+- **`CompositeAudioParam<Fn>`** (`core/CompositeAudioParam.hpp`) — represents a spec
   `computedValue` (e.g. `computedOscFrequency`). `Fn` is a pure, captureless free function
   (defined in the owning node's header, next to the composite member) taking float children
   and returning float; its arity is deduced. It processes each child, folds `Fn` over them,

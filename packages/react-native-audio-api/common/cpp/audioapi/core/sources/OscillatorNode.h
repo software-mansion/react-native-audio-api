@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/AudioParam.h>
-#include <audioapi/core/CompositeAudioParam.h>
+#include <audioapi/core/CompositeAudioParam.hpp>
 #include <audioapi/core/effects/PeriodicWave.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/types/OscillatorType.h>

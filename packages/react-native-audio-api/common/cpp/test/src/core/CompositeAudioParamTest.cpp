@@ -1,5 +1,5 @@
 #include <audioapi/core/AudioParam.h>
-#include <audioapi/core/CompositeAudioParam.h>
+#include <audioapi/core/CompositeAudioParam.hpp>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
