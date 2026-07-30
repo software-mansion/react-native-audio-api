@@ -18,11 +18,15 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
 
     OscillatorOptionsValidator.validate(options);
 
-    const node = context.context.createOscillator(options || {});
+    // Native createOscillator expects the JSI PeriodicWave HostObject, not the
+    // TS wrapper (same unwrap as setPeriodicWave).
+    const nativeOptions = options?.periodicWave
+      ? { ...options, periodicWave: options.periodicWave.periodicWave }
+      : options || {};
+    const node = context.context.createOscillator(nativeOptions);
     super(context, node, options);
     this.frequency = new AudioParam(node.frequency, context, this);
     this.detune = new AudioParam(node.detune, context, this);
-    this.type = node.type;
   }
 
   public get type(): OscillatorType {

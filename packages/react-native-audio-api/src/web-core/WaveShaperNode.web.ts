@@ -1,11 +1,8 @@
 import AudioNode from './AudioNode.web';
 import BaseAudioContext from './BaseAudioContext.web';
 import { WaveShaperOptions } from '../types';
+import { toFloat32Array } from '../utils';
 import { validateWaveShaperCurve } from '../utils/validation';
-
-function toFloat32Array(curve: number[] | Float32Array): Float32Array {
-  return curve instanceof Float32Array ? curve : Float32Array.from(curve);
-}
 
 export default class WaveShaperNode extends AudioNode {
   private curveWasSet = false;

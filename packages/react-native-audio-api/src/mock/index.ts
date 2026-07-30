@@ -29,6 +29,7 @@ import {
   StereoPannerOptions,
   WaveShaperOptions,
 } from '../types';
+import { toFloat32Array } from '../utils';
 
 /* eslint-disable no-useless-constructor */
 
@@ -308,10 +309,7 @@ class WaveShaperNodeMock extends AudioNodeMock {
   constructor(context: BaseAudioContextMock, options?: WaveShaperOptions) {
     super(context, {});
     if (options?.curve) {
-      this._curve =
-        options.curve instanceof Float32Array
-          ? options.curve
-          : Float32Array.from(options.curve);
+      this._curve = toFloat32Array(options.curve);
       this.curveWasSet = true;
     }
     if (options?.oversample) {
