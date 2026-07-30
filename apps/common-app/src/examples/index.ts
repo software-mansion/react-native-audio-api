@@ -37,6 +37,7 @@ type NavigationParamList = {
   WavScheduleSplit: undefined;
   AudioParamPipeline: undefined;
   TestScreen: undefined;
+  LatencyValidation: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;

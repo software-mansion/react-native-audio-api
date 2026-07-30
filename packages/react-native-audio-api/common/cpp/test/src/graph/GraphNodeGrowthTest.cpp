@@ -1,10 +1,10 @@
 #include <audioapi/core/utils/graph/Graph.h>
+#include <audioapi/utils/AudioThreadGuard.h>
 #include <gtest/gtest.h>
 #include <chrono>
 #include <memory>
 #include <thread>
 #include <vector>
-#include "AudioThreadGuard.h"
 #include "MockGraphProcessor.h"
 #include "TestGraphUtils.h"
 

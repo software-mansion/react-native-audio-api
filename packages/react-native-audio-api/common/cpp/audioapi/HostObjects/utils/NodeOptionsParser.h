@@ -222,7 +222,7 @@ inline BiquadFilterOptions parseBiquadFilterOptions(
 inline OscillatorOptions parseOscillatorOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
-  OscillatorOptions options;
+  OscillatorOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto typeValue = optionsObject.getProperty(runtime, "type");
   if (typeValue.isString()) {

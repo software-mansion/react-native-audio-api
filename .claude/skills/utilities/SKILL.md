@@ -262,6 +262,19 @@ call `analyze()`/`setFFTSize()` from a single thread.
 
 ## `src/utils/` — TypeScript utilities
 
+### `index.ts`
+
+```ts
+import { clamp, toFloat32Array, assertFiniteSequence } from './utils';
+
+clamp(value, min, max)                         // clamp a number to [min, max]
+toFloat32Array(values)                         // number[] → Float32Array (passthrough if already)
+toFloat32Array(undefined)                      // → undefined (overload)
+assertFiniteSequence(values, errorMessage)     // throws TypeError if any value is non-finite
+```
+
+Use `toFloat32Array` when accepting `number[] | Float32Array` options. Use `assertFiniteSequence` in options validators (e.g. PeriodicWave `real`/`imag`).
+
 ### `paths.ts`
 
 ```ts

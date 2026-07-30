@@ -23,6 +23,8 @@
 #include <audioapi/core/utils/AudioDecoding.h>
 
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace audioapi {

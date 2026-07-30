@@ -46,6 +46,14 @@ export default class AudioContext implements BaseAudioContext {
     return this.context.state as ContextState;
   }
 
+  public get baseLatency(): number {
+    return this.context.baseLatency;
+  }
+
+  public get outputLatency(): number {
+    return this.context.outputLatency;
+  }
+
   createOscillator(): OscillatorNode {
     return new OscillatorNode(this);
   }
@@ -121,12 +129,6 @@ export default class AudioContext implements BaseAudioContext {
     imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
-    if (real.length !== imag.length) {
-      throw new InvalidAccessError(
-        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
-      );
-    }
-
     return new PeriodicWave(this, { real, imag, ...constraints });
   }
 

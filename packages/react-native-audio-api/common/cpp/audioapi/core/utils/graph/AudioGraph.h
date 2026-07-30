@@ -180,8 +180,9 @@ class AudioGraph {
   /// after a disconnect and would otherwise re-activate its whole upstream
   /// cone.
   ///
-  /// Allocation-free. Audio-thread only. Call after process() (indices and
+  /// Allocation-free. Call after process() (indices and
   /// topological order must be settled) and before the forward iter() pass.
+  /// @note Audio Thread only
   void settleProcessableState();
 
  private:

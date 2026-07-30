@@ -175,7 +175,7 @@ When the node finishes, fire the `ENDED` event to JS via `audioEventHandlerRegis
 
 ```cpp
 protected:
-  // Audio-thread only
+  /// @note Audio Thread only
   virtual std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) = 0;
@@ -194,12 +194,12 @@ protected:
 ```cpp
 class MyNode : public AudioNode {
  public:
-  // JS-thread only
+  /// @note JS Thread only
   void setSomething(float value);
   float getSomething() const;
 
  protected:
-  // Audio-thread only
+  /// @note Audio Thread only
   std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;
@@ -208,14 +208,14 @@ class MyNode : public AudioNode {
 
 In `AudioParam.h` the pattern is:
 ```cpp
-/// JS-Thread only methods
+/// @note JS Thread only
 [[nodiscard]] inline float getValue() const noexcept { ... }
 void setValue(float value);
 void setValueAtTime(float value, double startTime);
 
-/// Audio-Thread only methods
-std::shared_ptr<AudioBuffer> processARateParam(int framesToProcess, double time);
-float processKRateParam(int framesToProcess, double time);
+/// Audio-Thread only methods (idempotent per quantum — see below)
+std::shared_ptr<DSPAudioBuffer> processARateParam(int framesToProcess, double time);
+float processKRateParam(double time); // k-rate is quantum-wide
 ```
 
 ---
@@ -245,10 +245,36 @@ gainParam_ = std::make_shared<AudioParam>(
 
 - **K-rate (control-rate)**: one value per render quantum — use when the parameter changes slowly
   ```cpp
-  // Call processKRateParam() for a single block-wide value
-  float gain = gainParam_->processKRateParam(framesToProcess, time);
+  // Call processKRateParam() for a single quantum-wide value
+  float gain = gainParam_->processKRateParam(time);
   // Single value for the whole block
   ```
+
+### Param class hierarchy & idempotency
+
+`AudioParam` and `CompositeAudioParam<CombineFunction>` both derive from the abstract
+`GeneralizedAudioParam` base (`core/GeneralizedAudioParam.h`), which owns the nominal
+range, the a-rate `outputBuffer_`, and the per-quantum memoization state, and centralizes
+clamping via `finalizeKRate` / `finalizeARate`.
+
+- **`AudioParam`** — the only JS-connectable param; owns `inputBuffer_` (BridgeNode modulation).
+- **`CompositeAudioParam<Fn>`** (`core/CompositeAudioParam.h`) — represents a spec
+  `computedValue` (e.g. `computedOscFrequency`). `Fn` is a pure, captureless free function
+  (defined in the owning node's header, next to the composite member) taking float children
+  and returning float; its arity is deduced. It processes each child, folds `Fn` over them,
+  and clamps to its own nominal range. No `inputBuffer_`.
+
+`processKRateParam(time)` / `processARateParam(frames, time)` are **idempotent**: a repeat
+call with the same arguments returns the cached result and does **not** re-consume modulation.
+This is why a composite and a node can both read the same child param in one quantum. It also
+means `processNode()` should read `context->getCurrentTime()` **once** and thread that same
+`double` into every param call so the cache keys match (the context clock is constant within a
+quantum). Consequently, unit tests that re-process the same node must advance the clock (e.g.
+`context->processGraph(buffer.get(), frames)`) between renders.
+
+**Clamping (§ 1.6.3):** automation intrinsic values are computed **without** clamping (see
+`getValueAtTimeUnmodulated` / `ParamRenderQueue`). Clip only in `finalizeKRate` /
+`finalizeARate` after adding modulation — never on the intrinsic alone before modulation.
 
 ### JS → Audio Thread parameter updates
 
@@ -311,7 +337,7 @@ Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while conn
    - `AudioBufferBaseSourceNode` — source that plays back an AudioBuffer with pitch control
 
 2. **Header file** (`core/<category>/MyNode.h`)
-   - Annotate every method with `// JS-thread only` or `// Audio-thread only`
+   - Annotate every method with `/// @note JS Thread only` or `/// @note Audio Thread only`
    - Declare `processNode()` in `protected:`
    - Declare `AudioParam` members for automatable properties
    - Preallocate all buffers you'll need in `private:` state

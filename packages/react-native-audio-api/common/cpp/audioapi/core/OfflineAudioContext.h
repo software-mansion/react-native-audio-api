@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/jsi/ContextPromiseResolver.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
@@ -8,9 +9,6 @@
 #include <unordered_map>
 
 namespace audioapi {
-
-using OfflineAudioContextSuspendCallback = std::function<void()>;
-using OfflineAudioContextResultCallback = std::function<void(std::shared_ptr<AudioBuffer>)>;
 
 class OfflineAudioContext : public BaseAudioContext {
  public:
@@ -22,13 +20,14 @@ class OfflineAudioContext : public BaseAudioContext {
   ~OfflineAudioContext() override = default;
   DELETE_COPY_AND_MOVE(OfflineAudioContext);
 
-  void resume();
-  void suspend(double when, const OfflineAudioContextSuspendCallback &callback);
-  void startRendering(OfflineAudioContextResultCallback callback);
+  void resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise);
+  bool suspend(double when, const std::shared_ptr<ContextPromiseResolver<void>> &promise);
+  void startRendering(const std::shared_ptr<OfflineAudioContextResultPromise> &promise);
 
  private:
-  std::unordered_map<size_t, OfflineAudioContextSuspendCallback> scheduledSuspends_;
-  OfflineAudioContextResultCallback resultCallback_;
+  std::unordered_map<size_t, std::shared_ptr<ContextPromiseResolver<void>>> scheduledSuspends_;
+  std::shared_ptr<OfflineAudioContextResultPromise> resultPromise_;
+  bool renderingStarted_{false};
 
   const size_t length_;
   size_t currentSampleFrame_;
@@ -36,7 +35,7 @@ class OfflineAudioContext : public BaseAudioContext {
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   std::shared_ptr<AudioBuffer> resultBuffer_;
 
-  void renderAudio();
+  void renderAudio(const std::shared_ptr<ContextPromiseResolver<void>> &resumePromise);
 
   bool isDriverRunning() const override;
 };

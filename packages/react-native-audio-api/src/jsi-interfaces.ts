@@ -28,6 +28,13 @@ import type {
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
 
+export interface IOscillatorOptions extends Omit<
+  OscillatorOptions,
+  'periodicWave'
+> {
+  periodicWave?: IPeriodicWave;
+}
+
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly listener: IAudioListener;
@@ -37,7 +44,7 @@ export interface IBaseAudioContext {
   readonly decoder: IAudioDecoder;
 
   createRecorderAdapter(): IRecorderAdapterNode;
-  createOscillator(oscillatorOptions: OscillatorOptions): IOscillatorNode;
+  createOscillator(oscillatorOptions: IOscillatorOptions): IOscillatorNode;
   createConstantSource(
     constantSourceOptions: ConstantSourceOptions
   ): IConstantSourceNode;
@@ -70,17 +77,19 @@ export interface IBaseAudioContext {
 }
 
 export interface IAudioContext extends IBaseAudioContext {
+  readonly baseLatency: number;
+  readonly outputLatency: number;
   createMediaElementSource: (
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;
-  close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  close(): Promise<undefined>;
+  resume(): Promise<undefined>;
+  suspend(): Promise<undefined>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
-  resume(): Promise<void>;
-  suspend(suspendTime: number): Promise<void>;
+  resume(): Promise<undefined>;
+  suspend(suspendTime: number): Promise<undefined>;
   startRendering(): Promise<IAudioBuffer>;
 }
 
@@ -200,6 +209,7 @@ export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode 
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   start: (when?: number, offset?: number) => void;
   pause: () => void;
+  resume: (when?: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onBufferEnded: string;
@@ -324,6 +334,8 @@ export interface IAudioRecorder {
 
   getCurrentDuration: () => number;
   getFilePath: () => string | null;
+
+  readonly inputLatency: number;
 }
 
 export interface IAudioDecoder {

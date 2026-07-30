@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
-#include <utility>
 
 #include <iostream>
 
@@ -32,6 +31,13 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
               MOST_NEGATIVE_SINGLE_FLOAT,
               MOST_POSITIVE_SINGLE_FLOAT,
               context)),
+      computedPlaybackRateParam_(
+          std::make_shared<CompositeAudioParam<combineComputedPlaybackRate>>(
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context,
+              playbackRateParam_,
+              detuneParam_)),
       positionChanged_(
           context->getAudioEventHandlerRegistry(),
           static_cast<int>(context->getSampleRate())) {
@@ -111,12 +117,21 @@ void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
     return;
   }
 
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    audioBuffer_->zero();
+    return;
+  }
+
+  // Param caches include time in their key, so every read in this quantum must
+  // use the same value.
+  const double time = context->getCurrentTime();
+
   // apply pitch correction only if the playback rate is not 1.0
-  if (pitchCorrection_ &&
-      getComputedPlaybackRateValue(framesToProcess, context_.lock()->getCurrentTime()) != 1.0f) {
-    processWithPitchCorrection(audioBuffer_, framesToProcess);
+  if (pitchCorrection_ && computedPlaybackRateParam_->processKRateParam(time) != 1.0f) {
+    processWithPitchCorrection(audioBuffer_, framesToProcess, time);
   } else {
-    processWithoutPitchCorrection(audioBuffer_, framesToProcess);
+    processWithoutPitchCorrection(audioBuffer_, framesToProcess, time);
   }
 
   handleStopScheduled();
@@ -124,7 +139,8 @@ void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
 
 void AudioBufferBaseSourceNode::processWithPitchCorrection(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+    int framesToProcess,
+    double time) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
@@ -133,9 +149,11 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     processingBuffer->zero();
     return;
   }
-  const double time = context->getCurrentTime();
+  // WSOLA receives playback speed and pitch as separate inputs, unlike regular
+  // playback, which uses their spec-defined product. Its intermediate buffer
+  // is sized only for |rate| <= MAX_PLAYBACK_RATE.
   const auto rate = std::clamp(
-      playbackRateParam_->processKRateParam(framesToProcess, time),
+      playbackRateParam_->processKRateParam(time),
       -WsolaTimeStretcher::MAX_PLAYBACK_RATE,
       WsolaTimeStretcher::MAX_PLAYBACK_RATE);
 
@@ -162,7 +180,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
     return;
   }
 
-  const auto detune = detuneParam_->processKRateParam(framesToProcess, time) / 100.0f;
+  const auto detune = detuneParam_->processKRateParam(time) / 100.0f;
   const float pitchFactor = std::pow(
       2.0f, // NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       detune / static_cast<float>(SEMITONES_PER_OCTAVE));
@@ -185,7 +203,8 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 
 void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
-    int framesToProcess) {
+    int framesToProcess,
+    double time) {
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
@@ -195,8 +214,7 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
     return;
   }
 
-  auto computedPlaybackRate =
-      getComputedPlaybackRateValue(framesToProcess, context->getCurrentTime());
+  auto computedPlaybackRate = computedPlaybackRateParam_->processKRateParam(time);
 
   updatePlaybackInfo(
       processingBuffer,
@@ -220,18 +238,6 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   if (isPlaying()) {
     positionChanged_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
   }
-}
-
-float AudioBufferBaseSourceNode::getComputedPlaybackRateValue(int framesToProcess, double time) {
-  auto playbackRate = std::clamp(
-      playbackRateParam_->processKRateParam(framesToProcess, time),
-      -WsolaTimeStretcher::MAX_PLAYBACK_RATE,
-      WsolaTimeStretcher::MAX_PLAYBACK_RATE);
-  auto detune = std::pow(
-      2.0f, //NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
-      detuneParam_->processKRateParam(framesToProcess, time) / static_cast<float>(OCTAVE_RANGE));
-
-  return playbackRate * detune;
 }
 
 } // namespace audioapi

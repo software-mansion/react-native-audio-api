@@ -2,7 +2,7 @@
 
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/Graph.h>
-#include "AudioThreadGuard.h"
+#include <audioapi/utils/AudioThreadGuard.h>
 
 #include <atomic>
 #include <cstddef>
