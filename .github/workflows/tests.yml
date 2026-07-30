@@ -32,14 +32,4 @@ jobs:
 
   js-tests:
     if: github.event_name == 'pull_request' || inputs.run_js_tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      - name: Run JS integration tests
-        working-directory: packages/react-native-audio-api
-        run: yarn build && yarn test:js
+    uses: ./.github/workflows/js-job.yml
