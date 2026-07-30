@@ -21,8 +21,6 @@ const DC_ONES_DURATION_SECONDS = TARGET_HALF_SECONDS * 2;
 const MIN_PLAYBACK_RATE = 0.5;
 const MAX_PLAYBACK_RATE = 5;
 const PLAYBACK_RATE_STEP = 0.1;
-/** Wall-clock silence inserted at the cut so you can hear where it is. */
-const CUT_SILENCE_PAUSE_SECONDS = 0.15;
 /** RMS window used to detect “lady speaking” / high energy. */
 const ENERGY_WINDOW_SECONDS = 0.03;
 /** Step when scanning for the loudest cut near mid-file. */
@@ -47,11 +45,17 @@ const SAMPLE_LABELS: Record<SampleAsset, string> = {
 
 /** Equal halves around a high-energy cut. */
 type SplitPlan = {
+  /** Absolute cut frame in the original buffer. */
+  cutFrame: number;
+  /** Frames in each half. */
+  halfFrames: number;
   /** Absolute cut time in the original buffer (seconds). */
   cutSeconds: number;
   /** Content length of each half (seconds). */
   halfSeconds: number;
-  /** Start of the pruned region in the original buffer. */
+  /** Start frame of the pruned region. */
+  regionStartFrame: number;
+  /** Start of the pruned region in the original buffer (seconds). */
   regionStartSeconds: number;
   /** Total pruned content length (= 2 × halfSeconds). */
   regionDurationSeconds: number;
@@ -80,23 +84,19 @@ function createDcOnesBuffer(
   return buffer;
 }
 
-function sliceAudioBuffer(
+/** Frame-accurate slice so half A end and half B start share the same cut frame. */
+function sliceAudioBufferFrames(
   context: AudioContext,
   source: AudioBuffer,
-  startSeconds: number,
-  durationSeconds: number
+  startFrame: number,
+  frameCount: number
 ): AudioBuffer {
-  const sampleRate = source.sampleRate;
-  const startFrame = Math.floor(startSeconds * sampleRate);
-  const frameCount = Math.min(
-    Math.floor(durationSeconds * sampleRate),
-    source.length - startFrame
-  );
-
+  const safeStart = Math.max(0, Math.min(startFrame, source.length));
+  const safeCount = Math.max(0, Math.min(frameCount, source.length - safeStart));
   const sliced = context.createBuffer(
     source.numberOfChannels,
-    frameCount,
-    sampleRate
+    Math.max(1, safeCount),
+    source.sampleRate
   );
 
   for (let channel = 0; channel < source.numberOfChannels; channel += 1) {
@@ -106,7 +106,7 @@ function sliceAudioBuffer(
     // so every slice would become the first half.
     sliced
       .getChannelData(channel)
-      .set(channelData.subarray(startFrame, startFrame + frameCount));
+      .set(channelData.subarray(safeStart, safeStart + safeCount));
   }
 
   return sliced;
@@ -158,15 +158,24 @@ function findSpeechSplitPlans(
   );
 
   if (maxCutFrame <= minCutFrame) {
-    const cutSeconds = duration / 2;
-    const halfSeconds = Math.min(targetHalfSeconds, cutSeconds, duration - cutSeconds);
+    const cutFrame = Math.floor(length / 2);
+    const halfFrames = Math.min(
+      Math.floor(targetHalfSeconds * sampleRate),
+      cutFrame,
+      length - cutFrame
+    );
+    const cutSeconds = cutFrame / sampleRate;
+    const halfSeconds = halfFrames / sampleRate;
     return [
       {
+        cutFrame,
+        halfFrames,
         cutSeconds,
         halfSeconds,
-        regionStartSeconds: cutSeconds - halfSeconds,
+        regionStartFrame: cutFrame - halfFrames,
+        regionStartSeconds: (cutFrame - halfFrames) / sampleRate,
         regionDurationSeconds: halfSeconds * 2,
-        cutRms: windowRms(channel, Math.floor(cutSeconds * sampleRate), windowFrames),
+        cutRms: windowRms(channel, cutFrame, windowFrames),
         fragmentIndex: 1,
       },
     ];
@@ -213,16 +222,21 @@ function findSpeechSplitPlans(
   selected.sort((a, b) => a.frame - b.frame);
 
   return selected.map((peak, index) => {
-    const cutSeconds = peak.frame / sampleRate;
-    const halfSeconds = Math.min(
-      targetHalfSeconds,
-      cutSeconds,
-      duration - cutSeconds
+    const cutFrame = peak.frame;
+    const halfFrames = Math.min(
+      Math.floor(targetHalfSeconds * sampleRate),
+      cutFrame,
+      length - cutFrame
     );
+    const cutSeconds = cutFrame / sampleRate;
+    const halfSeconds = halfFrames / sampleRate;
     return {
+      cutFrame,
+      halfFrames,
       cutSeconds,
       halfSeconds,
-      regionStartSeconds: cutSeconds - halfSeconds,
+      regionStartFrame: cutFrame - halfFrames,
+      regionStartSeconds: (cutFrame - halfFrames) / sampleRate,
       regionDurationSeconds: halfSeconds * 2,
       cutRms: peak.rms,
       fragmentIndex: index + 1,
@@ -243,7 +257,6 @@ const WsolaScheduleSplit: FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [sample, setSample] = useState<SampleAsset>('voice');
   const [playbackRate, setPlaybackRate] = useState(2);
-  const [silencePauseEnabled, setSilencePauseEnabled] = useState(true);
   const [fragmentIndex, setFragmentIndex] = useState(0);
   const [plans, setPlans] = useState<SplitPlan[]>([]);
   const [status, setStatus] = useState('Idle');
@@ -364,7 +377,6 @@ const WsolaScheduleSplit: FC = () => {
       const rate = playbackRate;
       // Pitch correction only when stretching; rate 1 is the plain path.
       const pitchCorrection = rate !== 1;
-      const silencePause = silencePauseEnabled ? CUT_SILENCE_PAUSE_SECONDS : 0;
 
       setIsLoading(true);
       stopSources();
@@ -392,25 +404,24 @@ const WsolaScheduleSplit: FC = () => {
         }
 
         const halfContent = split.halfSeconds;
-        const firstHalfWallSeconds = halfContent / rate;
-        const fullWallSeconds = (halfContent * 2) / rate + silencePause;
+        const halfFrames = split.halfFrames;
+        // Wall time must follow how many context frames the node will emit at this
+        // rate (1 buffer frame per context frame when sample rates match).
+        const firstHalfWallSeconds =
+          halfFrames / context.sampleRate / rate;
+        const fullWallSeconds = (halfFrames * 2) / context.sampleRate / rate;
         const t0 = context.currentTime + START_DELAY_SECONDS;
         const joinWall = t0 + firstHalfWallSeconds;
-        const secondStart = joinWall + silencePause;
 
-        // Unbroken without a pause: one continuous buffer. With a pause (or glued):
-        // two halves so we can insert wall-clock silence between them.
-        const playAsTwoHalves = mode === 'glued' || silencePause > 0;
-
-        if (!playAsTwoHalves) {
-          const continuous = sliceAudioBuffer(
+        if (mode === 'unbroken') {
+          const continuous = sliceAudioBufferFrames(
             context,
             full,
-            split.regionStartSeconds,
-            split.regionDurationSeconds
+            split.regionStartFrame,
+            halfFrames * 2
           );
           const source = context.createBufferSource({
-            pitchCorrection
+            pitchCorrection,
           });
           source.playbackRate.value = rate;
           source.buffer = continuous;
@@ -430,33 +441,30 @@ const WsolaScheduleSplit: FC = () => {
 
           setStatus(
             [
-              `sample=${sample} mode=unbroken (no cut, no silence pause)`,
+              `sample=${sample} mode=unbroken (no cut)`,
               `pitchCorrection=${pitchCorrection} rate=${rate}`,
+              `ctxSr=${context.sampleRate} bufSr=${full.sampleRate} halfFrames=${halfFrames}`,
               `speech cut would be @ content ${halfContent.toFixed(3)}s of pruned clip`,
               `  (fragment #${split.fragmentIndex}, absolute ${split.cutSeconds.toFixed(3)}s, rms=${split.cutRms.toFixed(3)})`,
-              `pruned=${continuous.duration.toFixed(2)}s  [${split.regionStartSeconds.toFixed(
-                3
-              )}, ${(
-                split.regionStartSeconds + split.regionDurationSeconds
-              ).toFixed(3)})s`,
+              `pruned=${continuous.duration.toFixed(2)}s frames=${continuous.length}`,
               `cut → wall ~${joinWall.toFixed(3)}s`,
-              `source.start(${t0.toFixed(3)})  wallDuration=${(halfContent * 2 / rate).toFixed(3)}s`,
+              `source.start(${t0.toFixed(3)})  wallDuration=${fullWallSeconds.toFixed(3)}s`,
             ].join('\n')
           );
           return;
         }
 
-        const firstHalf = sliceAudioBuffer(
+        const firstHalf = sliceAudioBufferFrames(
           context,
           full,
-          split.regionStartSeconds,
-          halfContent
+          split.regionStartFrame,
+          halfFrames
         );
-        const secondHalf = sliceAudioBuffer(
+        const secondHalf = sliceAudioBufferFrames(
           context,
           full,
-          split.cutSeconds,
-          halfContent
+          split.cutFrame,
+          halfFrames
         );
 
         const source1 = context.createBufferSource({
@@ -476,10 +484,14 @@ const WsolaScheduleSplit: FC = () => {
 
         sourcesRef.current = [source1, source2];
 
+        // Prefer measured buffer length so join matches what half A will actually emit.
+        const joinFromBuffer =
+          t0 + firstHalf.length / context.sampleRate / rate;
+
         source1.onEnded = () => {
           setStatus(
             (prev) =>
-              `${prev}\nfirst ended @ ${context.currentTime.toFixed(3)}s (expected ~${joinWall.toFixed(3)}) ← cut/join`
+              `${prev}\nfirst ended @ ${context.currentTime.toFixed(3)}s (expected ~${joinFromBuffer.toFixed(3)}) ← cut/join`
           );
           source1.disconnect();
         };
@@ -493,25 +505,21 @@ const WsolaScheduleSplit: FC = () => {
         };
 
         source1.start(t0);
-        source2.start(t0 + firstHalf.duration);
+        source2.start(joinFromBuffer);
         setIsRunning(true);
 
         setStatus(
           [
-            `sample=${sample} mode=${mode}`,
+            `sample=${sample} mode=glued`,
             `pitchCorrection=${pitchCorrection} rate=${rate}`,
-            `silencePause=${silencePause > 0 ? `${silencePause}s wall` : 'off'}`,
-            `fragment #${split.fragmentIndex} cut @ absolute ${split.cutSeconds.toFixed(3)}s (rms=${split.cutRms.toFixed(3)})`,
-            `pruned 2×${halfContent.toFixed(2)}s around cut`,
-            `halfA=[${split.regionStartSeconds.toFixed(3)}, ${split.cutSeconds.toFixed(
-              3
-            )}) + halfB=[${split.cutSeconds.toFixed(3)}, ${(
-              split.cutSeconds + halfContent
-            ).toFixed(3)})`,
-            `join/endA ~${joinWall.toFixed(3)}s, halfB.start ~${secondStart.toFixed(3)}s`,
+            `ctxSr=${context.sampleRate} bufSr=${full.sampleRate} halfFrames=${halfFrames}`,
+            `firstHalf.len=${firstHalf.length} dur=${firstHalf.duration.toFixed(4)}s`,
+            `fragment #${split.fragmentIndex} cutFrame=${split.cutFrame} @ ${split.cutSeconds.toFixed(3)}s (rms=${split.cutRms.toFixed(3)})`,
+            `halfA frames [${split.regionStartFrame}, ${split.cutFrame}) + halfB [${split.cutFrame}, ${split.cutFrame + halfFrames})`,
+            `join at wall ~${joinFromBuffer.toFixed(3)}s (= ${firstHalf.length}/${context.sampleRate}/${rate})`,
             `source1.start(${t0.toFixed(3)})`,
-            `source2.start(${secondStart.toFixed(3)})`,
-            `wallDuration≈${fullWallSeconds.toFixed(3)}s`,
+            `source2.start(${joinFromBuffer.toFixed(3)})`,
+            `wallDuration≈${(firstHalf.length * 2) / context.sampleRate / rate}s`,
           ].join('\n')
         );
       } catch (error) {
@@ -528,7 +536,6 @@ const WsolaScheduleSplit: FC = () => {
       loadFullBuffer,
       playbackRate,
       sample,
-      silencePauseEnabled,
       stopSources,
     ]
   );
@@ -547,9 +554,8 @@ const WsolaScheduleSplit: FC = () => {
     isLoading ? 'Loading…' : isRunning ? 'Running…' : idle;
 
   const halfContent = plan?.halfSeconds ?? TARGET_HALF_SECONDS;
-  const silencePause = silencePauseEnabled ? CUT_SILENCE_PAUSE_SECONDS : 0;
   const halfWallSeconds = halfContent / playbackRate;
-  const fullWallSeconds = (halfContent * 2) / playbackRate + silencePause;
+  const fullWallSeconds = (halfContent * 2) / playbackRate;
   const rateLabel = playbackRate.toFixed(1);
   const halfWallLabel = halfWallSeconds.toFixed(2);
   const fullWallLabel = fullWallSeconds.toFixed(2);
@@ -568,9 +574,8 @@ const WsolaScheduleSplit: FC = () => {
         <Text style={styles.caption}>
           Detects up to {MAX_SPEECH_FRAGMENTS} distinct high-energy speech peaks
           (≥ {MIN_PEAK_SEPARATION_SECONDS} s apart), then prunes equal halves ≤{' '}
-          {TARGET_HALF_SECONDS}s around the selected cut. Optional{' '}
-          {CUT_SILENCE_PAUSE_SECONDS} s wall silence marks the join. Rate 1 = no
-          pitch correction; ≠ 1 = WSOLA.
+          {TARGET_HALF_SECONDS}s around the selected cut. Rate 1 = no pitch
+          correction; ≠ 1 = WSOLA.
         </Text>
         <Spacer.Vertical size={24} />
         <Text style={styles.sectionLabel}>Sample</Text>
@@ -614,19 +619,11 @@ const WsolaScheduleSplit: FC = () => {
           step={PLAYBACK_RATE_STEP}
           minLabelWidth={40}
         />
-        <Spacer.Vertical size={16} />
-        <Button
-          title={`${silencePauseEnabled ? '●' : '○'} Cut silence pause (${CUT_SILENCE_PAUSE_SECONDS} s)`}
-          onPress={() => setSilencePauseEnabled((prev) => !prev)}
-          disabled={busy}
-        />
         <Spacer.Vertical size={24} />
         <Text style={styles.sectionLabel}>
           Fragment #{plan?.fragmentIndex ?? '…'} cut @ {cutLabel}s (rms {rmsLabel})
-          · 2×{halfContentLabel}s content → ~{fullWallLabel}s wall
-          {silencePause > 0
-            ? ` (join @ ${halfWallLabel}s + ${silencePause}s silence)`
-            : ` (join @ ${halfWallLabel}s)`}
+          · 2×{halfContentLabel}s content → ~{fullWallLabel}s wall (join @{' '}
+          {halfWallLabel}s)
         </Text>
         <Spacer.Vertical size={8} />
         <Button
