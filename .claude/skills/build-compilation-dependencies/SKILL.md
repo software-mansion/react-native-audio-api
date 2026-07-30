@@ -193,6 +193,7 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 |---|---|---|
 | TS build (`bob build`) | Yes | `--fast` |
 | C++ test subset (`RunTests.sh`) | Yes | `--fast` |
+| C++ coverage (`RunCoverage.sh`, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
 | Jest | Yes | `--fast` |
 | Graph tests | No, path-filtered in `graph-tests.yml` | `--graph` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
@@ -245,14 +246,16 @@ cd build && make -j10
 
 The `build/` directory is deleted after each run.
 
-### Coverage (local macOS / Clang)
+### Coverage (Clang / llvm-cov)
 
 ```bash
 yarn workspace react-native-audio-api test:cpp:coverage
 # open packages/react-native-audio-api/common/cpp/test/coverage-html/index.html
 ```
 
-`RunCoverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), runs the same gtest filter as `RunTests.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux). CI is not wired yet — a later job can reuse the script and publish `coverage-html/`.
+`RunCoverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the same gtest filter as `RunTests.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
+
+CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM apt packages, separate from the GCC `cpp-tests` job). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`.
 
 > **Generated build trees must be named `build*`.** The C++ linters walk the filesystem with `find` and never consult git, so a `.gitignore` entry does not keep generated sources out of them. Exclusion happens by directory name in two places that must stay in sync: `**/build*/**` in `.clang-format-ignore` (used by `format:check:common`) and `-type d -name 'build*' -prune` in `scripts/cpplint.sh`. A CMake binary directory outside that prefix makes the pre-commit hook fail on generated files such as `CMakeFiles/*/CompilerIdCXX/CMakeCXXCompilerId.cpp`. CI never hits this because it checks out a clean tree.
 

@@ -10,7 +10,10 @@ jobs:
     with:
       name: C++ tests
       working-directory: packages/react-native-audio-api
-      run: bash common/cpp/test/RunTests.sh
+      run: yarn test:cpp
+
+  cpp-coverage:
+    uses: ./.github/workflows/cpp-coverage-job.yml
 
   js-tests:
     runs-on: ubuntu-latest
