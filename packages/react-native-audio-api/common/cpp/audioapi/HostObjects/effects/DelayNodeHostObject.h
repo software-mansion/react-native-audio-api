@@ -31,8 +31,8 @@ class DelayNodeHostObject : public AudioNodeHostObject {
   // A delay is a composite node: audio written through the writer sub-node is
   // read back (delayed) through the reader sub-node. Outgoing edges therefore
   // originate at the reader, incoming edges terminate at the writer.
-  std::shared_ptr<utils::graph::HostNode> getConnectSource(int outputIndex) override;
-  std::shared_ptr<utils::graph::HostNode> getConnectDestination(int inputIndex) override;
+  std::shared_ptr<utils::graph::HostNode> getInput(int outputIndex) override;
+  std::shared_ptr<utils::graph::HostNode> getOutput(int inputIndex) override;
 
  private:
   DelayNode *const delayNode_;

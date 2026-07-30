@@ -12,12 +12,13 @@
 
 namespace audioapi {
 
-template <>
-std::shared_ptr<ContextPromiseResolver<void>>
-ContextPromiseResolver<void>::makeContextPromiseResolver(
+template <typename T>
+std::shared_ptr<ContextPromiseResolver<void>> ContextPromiseResolver<T>::makeContextPromiseResolver(
     Promise &&promise,
     const std::shared_ptr<BaseAudioContext> &audioContext,
-    ContextState nextState) {
+    ContextState nextState)
+  requires std::same_as<T, void>
+{
   auto jsiPromise = std::make_shared<Promise>(std::move(promise));
   return std::make_shared<ContextPromiseResolver<void>>(
       [jsiPromise, audioContext, nextState]() {
@@ -29,11 +30,13 @@ ContextPromiseResolver<void>::makeContextPromiseResolver(
       [jsiPromise](const std::string &message) { jsiPromise->reject(message); });
 }
 
-template <>
+template <typename T>
 std::shared_ptr<OfflineAudioContextResultPromise>
-ContextPromiseResolver<std::shared_ptr<AudioBuffer>>::makeOfflineAudioContextResultResolver(
+ContextPromiseResolver<T>::makeOfflineAudioContextResultResolver(
     Promise &&promise,
-    const std::shared_ptr<BaseAudioContext> &audioContext) {
+    const std::shared_ptr<BaseAudioContext> &audioContext)
+  requires(!std::same_as<T, void>)
+{
   auto jsiPromise = std::make_shared<Promise>(std::move(promise));
   return std::make_shared<OfflineAudioContextResultPromise>(
       [jsiPromise, audioContext](const std::shared_ptr<AudioBuffer> &audioBuffer) {
@@ -47,5 +50,16 @@ ContextPromiseResolver<std::shared_ptr<AudioBuffer>>::makeOfflineAudioContextRes
       },
       [jsiPromise](const std::string &message) { jsiPromise->reject(message); });
 }
+
+template std::shared_ptr<ContextPromiseResolver<void>>
+ContextPromiseResolver<void>::makeContextPromiseResolver(
+    Promise &&,
+    const std::shared_ptr<BaseAudioContext> &,
+    ContextState);
+
+template std::shared_ptr<OfflineAudioContextResultPromise>
+ContextPromiseResolver<std::shared_ptr<AudioBuffer>>::makeOfflineAudioContextResultResolver(
+    Promise &&,
+    const std::shared_ptr<BaseAudioContext> &);
 
 } // namespace audioapi
