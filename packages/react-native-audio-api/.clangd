@@ -9,27 +9,3 @@ CompileFlags:
 Diagnostics:
   ClangTidy:
     FastCheckFilter: Loose
-
-# Android: prefer the NDK compile database from a local Gradle/CMake configure.
-# Run common/cpp/clangd/setup-platform-headers.sh after changing NDK / SDK paths.
----
-If:
-  PathMatch: .*/android/.*\.(c|cc|cpp|cxx|h|hh|hpp|hxx)$
-CompileFlags:
-  CompilationDatabase: android/.cxx/tools/debug/arm64-v8a
-
-# iOS / ObjC++: iPhoneOS SDK (unversioned Xcode symlink) so system frameworks resolve.
----
-If:
-  PathMatch: .*/ios/.*\.(c|cc|cpp|cxx|h|hh|hpp|hxx|m|mm)$
-CompileFlags:
-  Add:
-    - -xobjective-c++
-    - -std=c++20
-    - -fobjc-arc
-    - --target=arm64-apple-ios15.0
-    - -isysroot
-    - /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
-    - -F/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks
-    - -Icommon/cpp
-    - -Iios
