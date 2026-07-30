@@ -47,6 +47,15 @@ DelayNodeHostObject::DelayNodeHostObject(
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }
 
+std::shared_ptr<utils::graph::HostNode> DelayNodeHostObject::getConnectSource(int /*outputIndex*/) {
+  return delayReaderHostNode_;
+}
+
+std::shared_ptr<utils::graph::HostNode> DelayNodeHostObject::getConnectDestination(
+    int /*inputIndex*/) {
+  return delayWriterHostNode_;
+}
+
 JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
   return jsi::Object::createFromHostObject(runtime, delayTimeParam_);
 }

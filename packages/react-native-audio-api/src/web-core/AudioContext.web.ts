@@ -8,6 +8,8 @@ import AudioDestinationNode from './AudioDestinationNode.web';
 import AudioListener from './AudioListener.web';
 import BaseAudioContext from './BaseAudioContext.web';
 import BiquadFilterNode from './BiquadFilterNode.web';
+import ChannelMergerNode from './ChannelMergerNode.web';
+import ChannelSplitterNode from './ChannelSplitterNode.web';
 import ConvolverNode from './ConvolverNode.web';
 import DelayNode from './DelayNode.web';
 import GainNode from './GainNode.web';
@@ -80,6 +82,20 @@ export default class AudioContext implements BaseAudioContext {
 
   createConvolver(): ConvolverNode {
     return new ConvolverNode(this);
+  }
+
+  createChannelMerger(numberOfInputs?: number): ChannelMergerNode {
+    return new ChannelMergerNode(
+      this,
+      numberOfInputs !== undefined ? { numberOfInputs } : undefined
+    );
+  }
+
+  createChannelSplitter(numberOfOutputs?: number): ChannelSplitterNode {
+    return new ChannelSplitterNode(
+      this,
+      numberOfOutputs !== undefined ? { numberOfOutputs } : undefined
+    );
   }
 
   createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {

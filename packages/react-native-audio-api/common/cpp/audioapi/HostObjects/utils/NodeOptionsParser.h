@@ -412,6 +412,48 @@ inline DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &
   return options;
 }
 
+inline ChannelMergerOptions parseChannelMergerOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  // channelCount / channelCountMode are fixed by the spec and validated in TS.
+  // channelInterpretation remains configurable.
+  ChannelMergerOptions options;
+
+  auto numberOfInputsValue = optionsObject.getProperty(runtime, "numberOfInputs");
+  if (numberOfInputsValue.isNumber()) {
+    options.numberOfInputs = static_cast<int>(numberOfInputsValue.getNumber());
+  }
+
+  auto channelInterpretationValue = optionsObject.getProperty(runtime, "channelInterpretation");
+  if (!channelInterpretationValue.isString()) {
+    return options;
+  }
+  auto channelInterpretationStr = channelInterpretationValue.asString(runtime).utf8(runtime);
+  if (channelInterpretationStr == "speakers") {
+    options.channelInterpretation = ChannelInterpretation::SPEAKERS;
+  } else if (channelInterpretationStr == "discrete") {
+    options.channelInterpretation = ChannelInterpretation::DISCRETE;
+  }
+
+  return options;
+}
+
+inline ChannelSplitterOptions parseChannelSplitterOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  // The Web Audio spec fixes channelCount/mode/interpretation for a splitter;
+  // channelCount tracks numberOfOutputs.
+  ChannelSplitterOptions options;
+
+  auto numberOfOutputsValue = optionsObject.getProperty(runtime, "numberOfOutputs");
+  if (numberOfOutputsValue.isNumber()) {
+    options.numberOfOutputs = static_cast<int>(numberOfOutputsValue.getNumber());
+    options.channelCount = options.numberOfOutputs;
+  }
+
+  return options;
+}
+
 inline IIRFilterOptions parseIIRFilterOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {

@@ -1,0 +1,74 @@
+---
+sidebar_position: 3
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import { Optional } from '@site/src/components/Badges';
+
+# ChannelSplitterNode
+
+The `ChannelSplitterNode` interface separates the individual channels of an audio signal into a set of mono outputs. It is an [`AudioNode`](/docs/core/audio-node) with a single input and a variable number of single-channel outputs.
+
+Channel `i` of the input signal is exposed on output `i`. This is the counterpart of [`ChannelMergerNode`](/docs/effects/channel-merger-node).
+
+## Constructor
+
+```tsx
+constructor(context: BaseAudioContext, options?: ChannelSplitterOptions)
+```
+
+### `ChannelSplitterOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `numberOfOutputs` <Optional /> | `number` | `6` | Number of outputs to split into. Must be in the range `1` – `32`. |
+
+You can also create a `ChannelSplitterNode` via the [`BaseAudioContext.createChannelSplitter(numberOfOutputs?: number)`](/docs/core/base-audio-context#createchannelsplitter) factory method, which uses default values when called without arguments.
+
+## Example
+
+```tsx
+import { AudioContext } from 'react-native-audio-api';
+
+const ctx = new AudioContext();
+const splitter = ctx.createChannelSplitter(2);
+
+source.connect(splitter);
+
+const leftGain = ctx.createGain();
+const rightGain = ctx.createGain();
+
+splitter.connect(leftGain, 0);
+splitter.connect(rightGain, 1);
+```
+
+## Properties
+
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={6} channelCount={6} channelCountMode="explicit" channelInterpretation="discrete" />
+
+`ChannelSplitterNode` does not define any additional properties.
+
+## Methods
+
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`ChannelSplitterNode` does not define any additional methods.
+
+## Remarks
+
+#### `numberOfOutputs`
+- Default value is `6`.
+- Nominal range is `1` – `32`. Values outside this range throw an `IndexSizeError`.
+- Cannot be changed after construction.
+
+#### Channel configuration
+- `channelCount` equals `numberOfOutputs`, `channelCountMode` is fixed at `explicit`, and `channelInterpretation` is fixed at `discrete`. Attempts to change them throw an error.
+- Use the `output` argument of [`connect`](/docs/core/audio-node#methods) to target a specific channel, e.g. `splitter.connect(node, 1)` routes channel `1` downstream.
+- An output whose corresponding input channel does not exist emits a single channel of silence.
