@@ -2,8 +2,6 @@
 #import <AudioEngine.h>
 #import <AudioSessionManager.h>
 #import <Foundation/Foundation.h>
-#import <ReactCommon/CallInvoker.h>
-
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -69,9 +67,8 @@ static void cleanupStartedRecorder(
 /// This "method" should be called from the JS thread only.
 /// @param audioEventHandlerRegistry Shared pointer to the AudioEventHandlerRegistry for event handling.
 IOSAudioRecorder::IOSAudioRecorder(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker)
-    : AudioRecorder(audioEventHandlerRegistry), jsCallInvoker_(jsCallInvoker)
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
     if (numFrames > 0) {
@@ -84,11 +81,6 @@ IOSAudioRecorder::IOSAudioRecorder(
   nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock];
 
   nativeRecorder_.onInputConfigurationChange = ^{ this->handleInputConfigurationChange(); };
-}
-
-void IOSAudioRecorder::bindLifetime()
-{
-  lifetime_ = shared_from_this();
 }
 
 void IOSAudioRecorder::runSideEffects(const AudioBufferList *inputBuffer, int numFrames)
@@ -135,24 +127,7 @@ void IOSAudioRecorder::handleInputConfigurationChange()
     return;
   }
 
-  scheduleReprepareForLiveInput();
-}
-
-void IOSAudioRecorder::scheduleReprepareForLiveInput()
-{
-  if (jsCallInvoker_ == nullptr) {
-    reprepareForLiveInput();
-    return;
-  }
-
-  auto recorder = lifetime_.lock();
-  if (recorder == nullptr) {
-    return;
-  }
-
-  jsCallInvoker_->invokeAsync([recorder](facebook::jsi::Runtime &) {
-    static_cast<IOSAudioRecorder *>(recorder.get())->reprepareForLiveInput();
-  });
+  reprepareForLiveInput();
 }
 
 Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()

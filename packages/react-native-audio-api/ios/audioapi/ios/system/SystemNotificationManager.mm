@@ -219,17 +219,12 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                          payload:audioapi::StringPayload{
                                      .name = "reason", .reason = [reasonStr UTF8String]}];
 
-  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
-
   switch (routeChangeReason) {
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
     case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
-      dispatch_async(dispatch_get_main_queue(), ^{
-        [sessionManager markInactive];
-        [audioEngine restartAudioEngine];
-      });
+    handleEngineConfigurationChange:
+      nil;
       break;
     }
     default:

@@ -16,14 +16,9 @@ typedef struct objc_object AVAudioFormat;
 
 #include <atomic>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
-
-namespace facebook::react {
-class CallInvoker;
-}
 
 namespace audioapi {
 
@@ -33,15 +28,10 @@ class AudioFileProperties;
 class AudioEventHandlerRegistry;
 class AudioFileWriter;
 
-class IOSAudioRecorder : public AudioRecorder,
-                         public std::enable_shared_from_this<IOSAudioRecorder> {
+class IOSAudioRecorder : public AudioRecorder {
  public:
-  IOSAudioRecorder(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const std::shared_ptr<facebook::react::CallInvoker> &jsCallInvoker);
+  IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
-
-  void bindLifetime();
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
   Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
@@ -79,7 +69,6 @@ class IOSAudioRecorder : public AudioRecorder,
       const std::shared_ptr<AudioFileProperties> &properties,
       const std::string &fileNameOverride = "");
   Result<NoneType, std::string> reprepareForLiveInput();
-  void scheduleReprepareForLiveInput();
   void handleInputConfigurationChange();
   Result<NoneType, std::string> reprepareFileWriter(
       AVAudioFormat *inputFormat,
@@ -89,9 +78,6 @@ class IOSAudioRecorder : public AudioRecorder,
       int maxInputBufferLength);
   void reprepareAdapter(AVAudioFormat *inputFormat, int maxInputBufferLength);
   void runSideEffects(const AudioBufferList *inputBuffer, int numFrames);
-
-  std::weak_ptr<AudioRecorder> lifetime_;
-  std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker_;
 
   std::vector<std::string> recordingSegmentPaths_;
   std::atomic<float> streamSampleRate_{0.0f};

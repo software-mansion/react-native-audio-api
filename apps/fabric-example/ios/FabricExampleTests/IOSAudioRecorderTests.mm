@@ -209,7 +209,7 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
  public:
   explicit TestableIOSAudioRecorder(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-      : IOSAudioRecorder(audioEventHandlerRegistry, nullptr) {}
+      : IOSAudioRecorder(audioEventHandlerRegistry) {}
 
   NativeAudioRecorder *replaceNativeRecorder(NativeAudioRecorder *nativeRecorder)
   {
