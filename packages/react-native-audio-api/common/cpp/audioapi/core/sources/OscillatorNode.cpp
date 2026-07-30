@@ -5,6 +5,7 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <cmath>
 #include <memory>
 
 namespace audioapi {
@@ -80,12 +81,13 @@ void OscillatorNode::processNode(int framesToProcess) {
   auto computedFreqSpan =
       computedFrequencyParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
-  const auto tableSize = static_cast<float>(periodicWave_->getPeriodicWaveSize());
+  const auto tableSize = static_cast<double>(periodicWave_->getPeriodicWaveSize());
+  const auto invTableSize = 1.0 / tableSize;
   const auto tableScale = periodicWave_->getScale();
   const auto numChannels = audioBuffer_->getNumberOfChannels();
 
   auto channelSpan = audioBuffer_->getChannel(0)->span();
-  float currentPhase = phase_;
+  double currentPhase = phase_;
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
     auto detunedFrequency = computedFreqSpan[i];
@@ -93,13 +95,9 @@ void OscillatorNode::processNode(int framesToProcess) {
 
     channelSpan[i] = periodicWave_->getSample(detunedFrequency, currentPhase, phaseIncrement);
 
-    currentPhase += phaseIncrement;
-
-    if (currentPhase >= tableSize) {
-      currentPhase -= tableSize;
-    } else if (currentPhase < 0.0f) {
-      currentPhase += tableSize;
-    }
+    currentPhase += static_cast<double>(phaseIncrement);
+    // Chromium-style wrap: works for negative increments in one step.
+    currentPhase -= std::floor(currentPhase * invTableSize) * tableSize;
   }
 
   phase_ = currentPhase;

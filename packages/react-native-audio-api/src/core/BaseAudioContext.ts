@@ -1,8 +1,4 @@
-import {
-  InvalidAccessError,
-  InvalidStateError,
-  NotSupportedError,
-} from '../errors';
+import { InvalidStateError, NotSupportedError } from '../errors';
 import { IBaseAudioContext } from '../jsi-interfaces';
 import {
   ContextState,
@@ -157,11 +153,6 @@ export default class BaseAudioContext {
     imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
-    if (real.length !== imag.length) {
-      throw new InvalidAccessError(
-        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
-      );
-    }
     return new PeriodicWave(this, { real, imag, ...constraints });
   }
 

@@ -28,6 +28,13 @@ import type {
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
 
+export interface IOscillatorOptions extends Omit<
+  OscillatorOptions,
+  'periodicWave'
+> {
+  periodicWave?: IPeriodicWave;
+}
+
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly listener: IAudioListener;
@@ -37,7 +44,7 @@ export interface IBaseAudioContext {
   readonly decoder: IAudioDecoder;
 
   createRecorderAdapter(): IRecorderAdapterNode;
-  createOscillator(oscillatorOptions: OscillatorOptions): IOscillatorNode;
+  createOscillator(oscillatorOptions: IOscillatorOptions): IOscillatorNode;
   createConstantSource(
     constantSourceOptions: ConstantSourceOptions
   ): IConstantSourceNode;
@@ -75,14 +82,14 @@ export interface IAudioContext extends IBaseAudioContext {
   createMediaElementSource: (
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;
-  close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  close(): Promise<undefined>;
+  resume(): Promise<undefined>;
+  suspend(): Promise<undefined>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
-  resume(): Promise<void>;
-  suspend(suspendTime: number): Promise<void>;
+  resume(): Promise<undefined>;
+  suspend(suspendTime: number): Promise<undefined>;
   startRendering(): Promise<IAudioBuffer>;
 }
 

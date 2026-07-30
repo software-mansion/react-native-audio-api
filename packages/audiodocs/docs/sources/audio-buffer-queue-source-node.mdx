@@ -145,15 +145,6 @@ Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`Audio
 
 #### Returns `undefined`.
 
-#### Errors:
-
-| Error type | Description |
-| :---: | :---- |
-| `RangeError` | `when` is negative number. |
-| `InvalidStateError` | If the node has not been started yet or has already been stopped |
-
-#### Returns `undefined`.
-
 ### `pause`
 
 Stops audio immediately. Unlike [`stop()`](/docs/sources/audio-scheduled-source-node#stop), which fully stops playback and clears the queued buffers,
