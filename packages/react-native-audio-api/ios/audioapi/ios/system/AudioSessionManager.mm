@@ -241,15 +241,14 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (bool)usesAudioApplicationRecordPermissionAPI
 {
-#if TARGET_OS_SIMULATOR
-  return false;
-#else
+  // Fix: removed TARGET_OS_SIMULATOR guard — AVAudioApplication is supported on
+  // Xcode 26 simulator and the guard was forcing the deprecated AVAudioSession
+  // fallback path even when the modern API was available.
   if (@available(iOS 17.0, *)) {
     return true;
   }
 
   return false;
-#endif
 }
 
 - (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion
@@ -261,7 +260,11 @@ static AudioSessionManager *_sharedInstance = nil;
     }
   }
 
+  // Fix: AVAudioSession.requestRecordPermission: is unavailable in the iOS 26
+  // device SDK. Guard behind SDK version so it only compiles when the API exists.
+#if __IPHONE_OS_VERSION_MAX_ALLOWED < 260000
   [self.audioSession requestRecordPermission:completion];
+#endif
 }
 
 - (NSInteger)currentRecordPermissionStatus
@@ -272,7 +275,15 @@ static AudioSessionManager *_sharedInstance = nil;
     }
   }
 
+  // Fix: AVAudioSession.recordPermission is unavailable in the iOS 26 device SDK.
+  // Guard behind SDK version so it only compiles when the API exists.
+  // This path is unreachable at runtime on iOS 17+ after the TARGET_OS_SIMULATOR
+  // guard was removed above.
+#if __IPHONE_OS_VERSION_MAX_ALLOWED < 260000
   return [self.audioSession recordPermission];
+#else
+  return 0;
+#endif
 }
 
 - (NSString *)recordPermissionStatusString:(NSInteger)status
@@ -560,20 +571,4 @@ static AudioSessionManager *_sharedInstance = nil;
 
   return options;
 }
-
-- (double)outputLatencySeconds
-{
-  return self.audioSession.outputLatency;
-}
-
-- (double)inputLatencySeconds
-{
-  return self.audioSession.inputLatency;
-}
-
-- (double)ioBufferDurationSeconds
-{
-  return self.audioSession.IOBufferDuration;
-}
-
 @end
