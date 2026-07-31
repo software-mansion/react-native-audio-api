@@ -14,6 +14,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -33,9 +34,16 @@ constexpr float kOnesThreshold = 0.5f;
 /// so WSOLA has enough PCM to emit (see sufficientPartFrames()).
 constexpr size_t kScheduleUnitFrames = 128;
 
-/// Placeholder join compensation (seconds). An agent/search should replace this
-/// with the formula that makes ContiguousOnesAfterJoin pass.
+/// Default join compensation (seconds). Override without rebuilding via:
+///   WSOLA_KL_SECONDS=-0.026 ./build/tests --gtest_filter='WsolaScheduleJoinLatencyTest.*'
 constexpr double kL = 0.0;
+
+double joinCompensationSeconds() {
+  if (const char *env = std::getenv("WSOLA_KL_SECONDS")) {
+    return std::atof(env);
+  }
+  return kL;
+}
 
 size_t sufficientPartFrames() {
   WsolaTimeStretcher stretcher;
@@ -128,6 +136,7 @@ NodeT *nodeOf(utils::graph::HostGraph::Node *hostNode) {
 /// kL is a stub (0). An agent should derive the formula for L that makes this pass.
 /// No search loop here — single fixed L only.
 TEST(WsolaScheduleJoinLatencyTest, ContiguousOnesAfterJoin) {
+  const double L = joinCompensationSeconds();
   const size_t x = sufficientPartFrames();
   // Ideal wall-clock ones from two abutted parts (OLA soft edges ⇒ allow < 100%).
   const size_t idealOnes = static_cast<size_t>(
@@ -169,7 +178,7 @@ TEST(WsolaScheduleJoinLatencyTest, ContiguousOnesAfterJoin) {
   const double contentDur = static_cast<double>(x) /
       (static_cast<double>(kSampleRate) * static_cast<double>(kPlaybackRate));
   b1->start(0.0, 0.0);
-  b2->start(contentDur + kL, 0.0);
+  b2->start(contentDur + L, 0.0);
 
   std::vector<float> output;
   output.reserve(captureFrames);
@@ -186,10 +195,10 @@ TEST(WsolaScheduleJoinLatencyTest, ContiguousOnesAfterJoin) {
   const OnesRun run = longestOnesRun(output);
   const size_t runs = countOnesRuns(output);
 
-  EXPECT_EQ(runs, 1u) << "Gap in ones ⇒ L is wrong. kL=" << kL << "s onesStart=" << run.start
+  EXPECT_EQ(runs, 1u) << "Gap in ones ⇒ L is wrong. L=" << L << "s onesStart=" << run.start
                       << " onesLen=" << run.length;
   EXPECT_GE(run.start, 1u) << "Expected leading zeros from WSOLA latency before ones";
-  EXPECT_GE(run.length, minOnes) << "Contiguous ones too short (need ≥90% of 2*x/rate). kL=" << kL
+  EXPECT_GE(run.length, minOnes) << "Contiguous ones too short (need ≥90% of 2*x/rate). L=" << L
                                  << "s onesLen=" << run.length << " min=" << minOnes
                                  << " ideal=" << idealOnes;
 }
