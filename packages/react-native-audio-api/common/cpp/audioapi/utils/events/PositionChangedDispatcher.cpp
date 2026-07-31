@@ -1,4 +1,4 @@
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 
 #include <algorithm>

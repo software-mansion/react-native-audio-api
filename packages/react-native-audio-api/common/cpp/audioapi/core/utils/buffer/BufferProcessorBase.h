@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/buffer/BufferProcessingDirection.h>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 #include <cstddef>

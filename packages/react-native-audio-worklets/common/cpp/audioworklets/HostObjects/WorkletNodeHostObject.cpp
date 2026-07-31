@@ -1,6 +1,6 @@
 #include <audioworklets/HostObjects/WorkletNodeHostObject.h>
 
-#include <audioapi/HostObjects/TypedAudioNodePtr.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/core/BaseAudioContext.h>
 
 #include <memory>

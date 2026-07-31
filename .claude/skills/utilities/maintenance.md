@@ -17,6 +17,6 @@ Review this skill when `pre-push-update` reports changes in:
 | `common/cpp/audioapi/utils/Benchmark.hpp` | `api.md` — function names, return type |
 | `common/cpp/audioapi/core/utils/AudioDestructor.hpp` | `api.md` — `tryAddForDeconstruction` signature, capacity |
 | `common/cpp/audioapi/core/utils/ParamChangeEvent.hpp` | `api.md` — constructor args, getters/setters |
-| `common/cpp/audioapi/dsp/AudioUtils.hpp` | `api.md` — new DSP helpers added or signatures changed |
+| `common/cpp/audioapi/dsp/AudioUtils.h` | `api.md` — new DSP helpers added or signatures changed |
 | `common/cpp/audioapi/core/utils/Constants.h` | Constants section in `SKILL.md` |
 | `src/utils/**` | TypeScript utils section in `SKILL.md` |
