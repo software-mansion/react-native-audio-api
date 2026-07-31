@@ -19,6 +19,8 @@ import {
   AudioBufferSourceOptions,
   AudioBufferQueueSourceOptions,
   BiquadFilterOptions,
+  ChannelMergerOptions,
+  ChannelSplitterOptions,
   ConstantSourceOptions,
   ConvolverOptions,
   DelayOptions,
@@ -29,6 +31,7 @@ import {
   StereoPannerOptions,
   WaveShaperOptions,
 } from '../types';
+import { toFloat32Array } from '../utils';
 
 /* eslint-disable no-useless-constructor */
 
@@ -182,15 +185,65 @@ class AudioNodeMock {
   }
 
   public connect(
-    destination: AudioNodeMock | AudioParamMock
+    destination: AudioNodeMock | AudioParamMock,
+    output: number = 0,
+    input: number = 0
   ): AudioNodeMock | void {
+    if (output < 0 || output >= this.numberOfOutputs) {
+      throw new IndexSizeErrorMock(
+        `The output index provided (${output}) is outside the range [0, ${this.numberOfOutputs})`
+      );
+    }
+
     if (destination instanceof AudioParamMock) {
       return;
     }
+
+    if (input < 0 || input >= destination.numberOfInputs) {
+      throw new IndexSizeErrorMock(
+        `The input index provided (${input}) is outside the range [0, ${destination.numberOfInputs})`
+      );
+    }
+
     return destination;
   }
 
-  public disconnect(_destination?: AudioNodeMock): void {}
+  public disconnect(
+    destinationOrOutput?: AudioNodeMock | AudioParamMock | number,
+    output?: number,
+    input?: number
+  ): void {
+    if (typeof destinationOrOutput === 'number') {
+      if (
+        destinationOrOutput < 0 ||
+        destinationOrOutput >= this.numberOfOutputs
+      ) {
+        throw new IndexSizeErrorMock(
+          `The output index provided (${destinationOrOutput}) is outside the range [0, ${this.numberOfOutputs})`
+        );
+      }
+      return;
+    }
+
+    if (
+      output !== undefined &&
+      (output < 0 || output >= this.numberOfOutputs)
+    ) {
+      throw new IndexSizeErrorMock(
+        `The output index provided (${output}) is outside the range [0, ${this.numberOfOutputs})`
+      );
+    }
+
+    if (
+      destinationOrOutput instanceof AudioNodeMock &&
+      input !== undefined &&
+      (input < 0 || input >= destinationOrOutput.numberOfInputs)
+    ) {
+      throw new IndexSizeErrorMock(
+        `The input index provided (${input}) is outside the range [0, ${destinationOrOutput.numberOfInputs})`
+      );
+    }
+  }
 }
 
 class AudioScheduledSourceNodeMock extends AudioNodeMock {
@@ -246,6 +299,98 @@ class DelayNodeMock extends AudioNodeMock {
     super(context, {});
     this.delayTime = new AudioParamMock({}, context);
     this.delayTime.maxValue = 1;
+  }
+}
+
+class ChannelMergerNodeMock extends AudioNodeMock {
+  constructor(context: BaseAudioContextMock, options?: ChannelMergerOptions) {
+    super(context, {});
+
+    if (options?.numberOfInputs !== undefined) {
+      const { numberOfInputs } = options;
+      if (
+        !Number.isInteger(numberOfInputs) ||
+        numberOfInputs < 1 ||
+        numberOfInputs > 32
+      ) {
+        throw new IndexSizeErrorMock(
+          `The numberOfInputs value (${numberOfInputs}) is outside the range [1, 32]`
+        );
+      }
+    }
+
+    if (options?.channelCount !== undefined && options.channelCount !== 1) {
+      throw new InvalidStateErrorMock(
+        `ChannelMergerNode channelCount cannot be changed from 1`
+      );
+    }
+
+    if (
+      options?.channelCountMode !== undefined &&
+      options.channelCountMode !== 'explicit'
+    ) {
+      throw new InvalidStateErrorMock(
+        `ChannelMergerNode channelCountMode cannot be changed from 'explicit'`
+      );
+    }
+
+    this.numberOfInputs = options?.numberOfInputs ?? 6;
+    this.numberOfOutputs = 1;
+    this.channelCount = 1;
+    this.channelCountMode = 'explicit';
+    this.channelInterpretation = options?.channelInterpretation ?? 'speakers';
+  }
+}
+
+class ChannelSplitterNodeMock extends AudioNodeMock {
+  constructor(context: BaseAudioContextMock, options?: ChannelSplitterOptions) {
+    super(context, {});
+    const numberOfOutputs = options?.numberOfOutputs ?? 6;
+
+    if (options?.numberOfOutputs !== undefined) {
+      if (
+        !Number.isInteger(numberOfOutputs) ||
+        numberOfOutputs < 1 ||
+        numberOfOutputs > 32
+      ) {
+        throw new IndexSizeErrorMock(
+          `The numberOfOutputs value (${numberOfOutputs}) is outside the range [1, 32]`
+        );
+      }
+    }
+
+    if (
+      options?.channelCount !== undefined &&
+      options.channelCount !== numberOfOutputs
+    ) {
+      throw new InvalidStateErrorMock(
+        `ChannelSplitterNode channelCount cannot be changed from ${numberOfOutputs}`
+      );
+    }
+
+    if (
+      options?.channelCountMode !== undefined &&
+      options.channelCountMode !== 'explicit'
+    ) {
+      throw new InvalidStateErrorMock(
+        `ChannelSplitterNode channelCountMode cannot be changed from 'explicit'`
+      );
+    }
+
+    if (
+      options?.channelInterpretation !== undefined &&
+      options.channelInterpretation !== 'discrete'
+    ) {
+      throw new InvalidStateErrorMock(
+        `ChannelSplitterNode channelInterpretation cannot be changed from 'discrete'`
+      );
+    }
+
+    this.numberOfInputs = 1;
+    this.numberOfOutputs = numberOfOutputs;
+    this.channelCount = numberOfOutputs;
+    this.channelCountMode = 'explicit';
+    this.channelInterpretation = 'discrete';
   }
 }
 
@@ -308,10 +453,7 @@ class WaveShaperNodeMock extends AudioNodeMock {
   constructor(context: BaseAudioContextMock, options?: WaveShaperOptions) {
     super(context, {});
     if (options?.curve) {
-      this._curve =
-        options.curve instanceof Float32Array
-          ? options.curve
-          : Float32Array.from(options.curve);
+      this._curve = toFloat32Array(options.curve);
       this.curveWasSet = true;
     }
     if (options?.oversample) {
@@ -559,6 +701,10 @@ class BaseAudioContextMock {
     return this._state;
   }
 
+  get baseLatency(): number {
+    return 0.005;
+  }
+
   createBuffer(
     numberOfChannels: number,
     length: number,
@@ -599,12 +745,18 @@ class BaseAudioContextMock {
     return new AudioBufferSourceNodeMock(this, options);
   }
 
-  createChannelMerger(_numberOfInputs?: number): AudioNodeMock {
-    return new AudioNodeMock(this, {});
+  createChannelMerger(numberOfInputs?: number): ChannelMergerNodeMock {
+    return new ChannelMergerNodeMock(
+      this,
+      numberOfInputs !== undefined ? { numberOfInputs } : undefined
+    );
   }
 
-  createChannelSplitter(_numberOfOutputs?: number): AudioNodeMock {
-    return new AudioNodeMock(this, {});
+  createChannelSplitter(numberOfOutputs?: number): ChannelSplitterNodeMock {
+    return new ChannelSplitterNodeMock(
+      this,
+      numberOfOutputs !== undefined ? { numberOfOutputs } : undefined
+    );
   }
 
   createConstantSource(
@@ -651,6 +803,10 @@ class BaseAudioContextMock {
 class AudioContextMock extends BaseAudioContextMock {
   constructor(options?: AudioContextOptions) {
     super(options);
+  }
+
+  get outputLatency(): number {
+    return 0.01;
   }
 
   close(): Promise<void> {
@@ -794,6 +950,10 @@ class AudioRecorderMock {
 
   getCurrentDuration(): number {
     return this._currentDuration;
+  }
+
+  getInputLatency(): number {
+    return 0.01;
   }
 
   onError(
@@ -1034,6 +1194,8 @@ export const AudioRecorder = AudioRecorderMock;
 export const AudioScheduledSourceNode = AudioScheduledSourceNodeMock;
 export const BaseAudioContext = BaseAudioContextMock;
 export const BiquadFilterNode = BiquadFilterNodeMock;
+export const ChannelMergerNode = ChannelMergerNodeMock;
+export const ChannelSplitterNode = ChannelSplitterNodeMock;
 export const ConstantSourceNode = ConstantSourceNodeMock;
 export const ConvolverNode = ConvolverNodeMock;
 export const DelayNode = DelayNodeMock;
@@ -1085,6 +1247,8 @@ export type AudioRecorder = AudioRecorderMock;
 export type AudioScheduledSourceNode = AudioScheduledSourceNodeMock;
 export type BaseAudioContext = BaseAudioContextMock;
 export type BiquadFilterNode = BiquadFilterNodeMock;
+export type ChannelMergerNode = ChannelMergerNodeMock;
+export type ChannelSplitterNode = ChannelSplitterNodeMock;
 export type ConstantSourceNode = ConstantSourceNodeMock;
 export type ConvolverNode = ConvolverNodeMock;
 export type DelayNode = DelayNodeMock;
@@ -1143,6 +1307,8 @@ export default {
   AudioScheduledSourceNode: AudioScheduledSourceNodeMock,
   BaseAudioContext: BaseAudioContextMock,
   BiquadFilterNode: BiquadFilterNodeMock,
+  ChannelMergerNode: ChannelMergerNodeMock,
+  ChannelSplitterNode: ChannelSplitterNodeMock,
   ConstantSourceNode: ConstantSourceNodeMock,
   ConvolverNode: ConvolverNodeMock,
   DelayNode: DelayNodeMock,

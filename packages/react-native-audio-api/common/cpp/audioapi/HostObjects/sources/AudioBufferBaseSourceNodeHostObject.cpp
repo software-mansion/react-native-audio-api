@@ -6,7 +6,6 @@
 #include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/types/NodeOptions.h>
 
-#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>

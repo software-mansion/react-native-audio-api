@@ -4,6 +4,7 @@ sidebar_position: 1
 
 import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 import DecodeAudioDataDocs from '@site/src/components/DecodeAudioDataDocs/DecodeAudioDataDocs';
+import Heading from '@theme/Heading';
 
 # BaseAudioContext
 
@@ -90,7 +91,7 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 **Returns:** `AudioBufferSourceNode`
 
-### `createBufferQueueSource` <MobileOnly />
+<Heading as="h3" id="create-buffer-queue-source"><code>createBufferQueueSource</code> <MobileOnly /></Heading>
 
 Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
 
@@ -99,6 +100,26 @@ Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-n
 | `options` <Optional /> | [`AudioBufferQueueSourceOptions`](/docs/sources/audio-buffer-queue-source-node#audiobufferqueuesourceoptions) | Constructor options for [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node). |
 
 **Returns:** `AudioBufferQueueSourceNode`
+
+### `createChannelMerger`
+
+Creates [`ChannelMergerNode`](/docs/effects/channel-merger-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `numberOfInputs` <Optional /> | `number` | Number of inputs to merge (range `1` – `32`, default `6`). |
+
+**Returns:** `ChannelMergerNode`
+
+### `createChannelSplitter`
+
+Creates [`ChannelSplitterNode`](/docs/effects/channel-splitter-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `numberOfOutputs` <Optional /> | `number` | Number of outputs to split into (range `1` – `32`, default `6`). |
+
+**Returns:** `ChannelSplitterNode`
 
 ### `createConstantSource`
 

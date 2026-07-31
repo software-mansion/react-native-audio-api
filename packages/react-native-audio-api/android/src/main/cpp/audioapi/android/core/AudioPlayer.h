@@ -1,7 +1,10 @@
 #pragma once
 
+#include <audioapi/utils/Macros.h>
 #include <oboe/Oboe.h>
 #include <atomic>
+#include <cassert>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -34,6 +37,8 @@ class AudioPlayer : public CommonPlayer,
     cleanup();
   }
 
+  DELETE_COPY_AND_MOVE(AudioPlayer);
+
   bool start() override;
   void stop() override;
   bool resume() override;
@@ -41,6 +46,9 @@ class AudioPlayer : public CommonPlayer,
   void cleanup() override;
 
   [[nodiscard]] bool isRunning() const override;
+
+  [[nodiscard]] double getBaseLatency() const override;
+  [[nodiscard]] double getOutputLatency() const override;
 
   DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;
@@ -51,11 +59,14 @@ class AudioPlayer : public CommonPlayer,
   std::function<void(DSPAudioBuffer *, int)> renderAudio_;
   std::atomic<uint32_t> &currentRenders_;
   std::shared_ptr<AudioStream> mStream_;
+  mutable std::recursive_mutex streamMutex_;
   std::shared_ptr<DSPAudioBuffer> buffer_;
   std::atomic<bool> isInitialized_{false};
   float sampleRate_;
   int channelCount_;
   std::atomic<bool> isRunning_;
+  /// Updated on the audio thread from each Oboe callback `numFrames`.
+  std::atomic<int32_t> lastCallbackFrameCount_{0};
   std::mutex *driverMutex_;
   std::weak_ptr<AudioContext> context_;
 

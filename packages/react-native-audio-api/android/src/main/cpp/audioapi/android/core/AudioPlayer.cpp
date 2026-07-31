@@ -29,6 +29,7 @@ AudioPlayer::AudioPlayer(
       context_(context) {}
 
 bool AudioPlayer::openAudioStream() {
+  std::scoped_lock lock(streamMutex_);
   AudioStreamBuilder builder;
 
   builder.setSharingMode(SharingMode::Exclusive)
@@ -55,6 +56,7 @@ bool AudioPlayer::openAudioStream() {
 }
 
 bool AudioPlayer::start() {
+  std::scoped_lock lock(streamMutex_);
   if (!isInitialized_.load(std::memory_order_acquire)) {
     if (!openAudioStream()) {
       return false;
@@ -71,13 +73,16 @@ bool AudioPlayer::start() {
 }
 
 void AudioPlayer::stop() {
+  std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
+    lastCallbackFrameCount_.store(0, std::memory_order_release);
     mStream_->requestStop();
   }
 }
 
 bool AudioPlayer::resume() {
+  std::scoped_lock lock(streamMutex_);
   if (isRunning()) {
     return true;
   }
@@ -92,6 +97,7 @@ bool AudioPlayer::resume() {
 }
 
 void AudioPlayer::suspend() {
+  std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
     mStream_->requestPause();
@@ -99,6 +105,7 @@ void AudioPlayer::suspend() {
 }
 
 void AudioPlayer::cleanup() {
+  std::scoped_lock lock(streamMutex_);
   isInitialized_.store(false, std::memory_order_release);
 
   if (mStream_ != nullptr) {
@@ -108,6 +115,7 @@ void AudioPlayer::cleanup() {
 }
 
 bool AudioPlayer::isRunning() const {
+  std::scoped_lock lock(streamMutex_);
   return mStream_ != nullptr && mStream_->getState() == oboe::StreamState::Started &&
       isRunning_.load(std::memory_order_acquire);
 }
@@ -116,6 +124,10 @@ DataCallbackResult
 AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return DataCallbackResult::Continue;
+  }
+
+  if (numFrames > 0) {
+    lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
   }
 
   const CurrentRenderScope renderScope(currentRenders_);
@@ -151,7 +163,7 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   }
 
   // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
-  std::scoped_lock lock(*driverMutex_);
+  std::scoped_lock lock(*driverMutex_, streamMutex_);
 
   auto context = context_.lock();
   if (context == nullptr || context->isClosed()) {
@@ -168,5 +180,49 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (openAudioStream()) {
     resume();
   }
+}
+
+double AudioPlayer::getBaseLatency() const {
+  std::scoped_lock lock(streamMutex_);
+  if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) || !isRunning()) {
+    return 0.0;
+  }
+
+  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
+  if (callbackFrames > 0 && sampleRate_ > 0.0f) {
+    return static_cast<double>(callbackFrames) / static_cast<double>(sampleRate_);
+  }
+
+  const int32_t framesPerBurst = mStream_->getFramesPerBurst();
+  if (framesPerBurst > 0) {
+    return static_cast<double>(framesPerBurst) / static_cast<double>(sampleRate_);
+  }
+
+  return static_cast<double>(RENDER_QUANTUM_SIZE) / static_cast<double>(sampleRate_);
+}
+
+double AudioPlayer::getOutputLatency() const {
+  std::scoped_lock lock(streamMutex_);
+  if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) || !isRunning()) {
+    return 0.0;
+  }
+
+  double minBaseLatency = 0.0;
+  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
+  if (callbackFrames > 0 && sampleRate_ > 0.0f) {
+    minBaseLatency = static_cast<double>(callbackFrames) / static_cast<double>(sampleRate_);
+  } else if (sampleRate_ > 0.0f) {
+    const int32_t framesPerBurst = mStream_->getFramesPerBurst();
+    minBaseLatency =
+        static_cast<double>(framesPerBurst > 0 ? framesPerBurst : RENDER_QUANTUM_SIZE) /
+        static_cast<double>(sampleRate_);
+  }
+
+  const auto latencyResult = mStream_->calculateLatencyMillis();
+  if (latencyResult) {
+    return std::max(latencyResult.value() / 1000.0, minBaseLatency);
+  }
+
+  return minBaseLatency;
 }
 } // namespace audioapi

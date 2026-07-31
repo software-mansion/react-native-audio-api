@@ -56,4 +56,8 @@
                resolve:(RCTPromiseResolveBlock)resolve
                 reject:(RCTPromiseRejectBlock)reject;
 
+- (double)outputLatencySeconds;
+- (double)inputLatencySeconds;
+- (double)ioBufferDurationSeconds;
+
 @end

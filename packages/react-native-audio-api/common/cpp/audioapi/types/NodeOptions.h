@@ -30,10 +30,18 @@ struct AudioDestinationOptions : AudioNodeOptions {
     numberOfOutputs = 1;
     channelCountMode = ChannelCountMode::EXPLICIT;
   }
+
+  explicit AudioDestinationOptions(int channels) : AudioDestinationOptions() {
+    channelCount = channels;
+  }
 };
 
 struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
   AudioScheduledSourceNodeOptions() {
+    numberOfInputs = 0;
+  }
+
+  explicit AudioScheduledSourceNodeOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     numberOfInputs = 0;
   }
 };
@@ -105,6 +113,8 @@ struct OscillatorOptions : AudioScheduledSourceNodeOptions {
   float frequency = kDefaultFrequency;
   float detune = 0.0f;
   OscillatorType type = OscillatorType::SINE;
+
+  using AudioScheduledSourceNodeOptions::AudioScheduledSourceNodeOptions;
 };
 
 struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
@@ -162,6 +172,72 @@ struct DelayOptions : AudioNodeOptions {
     requiresTailProcessing = true;
   }
 };
+
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+struct ChannelMergerOptions : AudioNodeOptions {
+  ChannelMergerOptions() {
+    numberOfInputs = 6;
+    numberOfOutputs = 1;
+    channelCount = 1;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+    channelInterpretation = ChannelInterpretation::SPEAKERS;
+  }
+};
+
+/// Per-input fan-in node for ChannelMerger (mono EXPLICIT / SPEAKERS).
+struct ChannelMergerInputOptions : AudioNodeOptions {
+  ChannelMergerInputOptions() {
+    numberOfInputs = 1;
+    numberOfOutputs = 1;
+    channelCount = 1;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+    channelInterpretation = ChannelInterpretation::SPEAKERS;
+  }
+};
+
+/// Multi-channel output bus for ChannelMerger (EXPLICIT / DISCRETE).
+struct ChannelMergerOutputOptions : AudioNodeOptions {
+  explicit ChannelMergerOutputOptions(int numberOfChannels) {
+    numberOfInputs = numberOfChannels;
+    numberOfOutputs = 1;
+    channelCount = numberOfChannels;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+    channelInterpretation = ChannelInterpretation::DISCRETE;
+  }
+};
+
+struct ChannelSplitterOptions : AudioNodeOptions {
+  ChannelSplitterOptions() {
+    numberOfInputs = 1;
+    numberOfOutputs = 6;
+    channelCount = 6;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+    channelInterpretation = ChannelInterpretation::DISCRETE;
+  }
+};
+
+/// Multi-channel input bus for ChannelSplitter (EXPLICIT / DISCRETE).
+struct ChannelSplitterInputOptions : AudioNodeOptions {
+  explicit ChannelSplitterInputOptions(int numberOfChannels) {
+    numberOfInputs = 1;
+    numberOfOutputs = numberOfChannels;
+    channelCount = numberOfChannels;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+    channelInterpretation = ChannelInterpretation::DISCRETE;
+  }
+};
+
+/// Per-output fan-out node for ChannelSplitter (mono EXPLICIT / DISCRETE).
+struct ChannelSplitterOutputOptions : AudioNodeOptions {
+  ChannelSplitterOutputOptions() {
+    numberOfInputs = 1;
+    numberOfOutputs = 1;
+    channelCount = 1;
+    channelCountMode = ChannelCountMode::EXPLICIT;
+    channelInterpretation = ChannelInterpretation::DISCRETE;
+  }
+};
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
 
 struct IIRFilterOptions : AudioNodeOptions {
   std::vector<float> feedforward;

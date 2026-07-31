@@ -13,7 +13,8 @@ import type BaseAudioContext from '../core/BaseAudioContext';
 import { probeDuration } from '../core/AudioFileUtils';
 import { NotSupportedError } from '../errors';
 import { NativeAudioAPIModule } from '../specs';
-import { base64ToArrayBuffer, isFfmpegEnabled } from '../utils';
+import { isFfmpegEnabled } from '../utils/flags';
+import { base64ToArrayBuffer } from '../utils';
 import {
   isRemoteHttpUrl,
   loadRemoteHttpSource,

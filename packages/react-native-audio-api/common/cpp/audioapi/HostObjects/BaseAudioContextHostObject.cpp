@@ -3,6 +3,8 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/ChannelMergerNodeHostObject.h>
+#include <audioapi/HostObjects/effects/ChannelSplitterNodeHostObject.h>
 #include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
 #include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
@@ -21,8 +23,11 @@
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/core/utils/Constants.h>
 
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace audioapi {
@@ -30,11 +35,13 @@ namespace audioapi {
 BaseAudioContextHostObject::BaseAudioContextHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    const std::shared_ptr<react::CallInvoker> &callInvoker,
+    int destinationChannelCount)
     : context_(context),
       promiseVendor_(std::make_shared<PromiseVendor>(runtime, callInvoker)),
       callInvoker_(callInvoker) {
-  destination_ = std::make_shared<AudioDestinationNodeHostObject>(context_);
+  destination_ = std::make_shared<AudioDestinationNodeHostObject>(
+      context_, AudioDestinationOptions(destinationChannelCount));
   listener_ = std::make_shared<AudioListenerHostObject>(context_);
 
   addGetters(
@@ -59,7 +66,9 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWaveShaper));
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWaveShaper),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createChannelMerger),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createChannelSplitter));
 }
 
 // Explicitly define destructors here, as they to exist in order to act as a
@@ -133,6 +142,36 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createDelay) {
   auto jsiObject = jsi::Object::createFromHostObject(runtime, delayNodeHostObject);
   jsiObject.setExternalMemoryPressure(runtime, delayNodeHostObject->getMemoryPressure());
   return jsiObject;
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createChannelMerger) {
+  const auto options = args[0].asObject(runtime);
+  const auto mergerOptions = audioapi::option_parser::parseChannelMergerOptions(runtime, options);
+  if (mergerOptions.numberOfInputs < 1 || mergerOptions.numberOfInputs > MAX_CHANNEL_COUNT) {
+    throw jsi::JSError(
+        runtime,
+        "IndexSizeError: numberOfInputs for ChannelMergerNode must be in the range [1, 32]");
+  }
+  auto mergerHostObject = std::make_shared<ChannelMergerNodeHostObject>(context_, mergerOptions);
+  auto object = jsi::Object::createFromHostObject(runtime, mergerHostObject);
+  object.setExternalMemoryPressure(runtime, mergerHostObject->getMemoryPressure());
+  return object;
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createChannelSplitter) {
+  const auto options = args[0].asObject(runtime);
+  const auto splitterOptions =
+      audioapi::option_parser::parseChannelSplitterOptions(runtime, options);
+  if (splitterOptions.numberOfOutputs < 1 || splitterOptions.numberOfOutputs > MAX_CHANNEL_COUNT) {
+    throw jsi::JSError(
+        runtime,
+        "IndexSizeError: numberOfOutputs for ChannelSplitterNode must be in the range [1, 32]");
+  }
+  auto splitterHostObject =
+      std::make_shared<ChannelSplitterNodeHostObject>(context_, splitterOptions);
+  auto object = jsi::Object::createFromHostObject(runtime, splitterHostObject);
+  object.setExternalMemoryPressure(runtime, splitterHostObject->getMemoryPressure());
+  return object;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
