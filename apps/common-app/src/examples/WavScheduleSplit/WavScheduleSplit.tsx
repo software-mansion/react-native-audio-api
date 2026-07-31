@@ -6,7 +6,7 @@ import {
   AudioContext,
 } from 'react-native-audio-api';
 
-import { Button, Container, Spacer } from '../../components';
+import { Button, Container, Slider, Spacer } from '../../components';
 import { colors } from '../../styles';
 
 /**
@@ -21,6 +21,10 @@ import { colors } from '../../styles';
  * Tone control (440 Hz continuous):
  *   → ffmpeg-tone-part{1,2}.wav
  */
+const START_DELAY_SECONDS = 0.4;
+const MIN_PLAYBACK_RATE = 0.5;
+const MAX_PLAYBACK_RATE = 3;
+const PLAYBACK_RATE_STEP = 0.1;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const PAD_P1 = require('./ffmpeg-pad-part1.wav') as number;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -33,8 +37,6 @@ const MUSIC_CONT_P2 = require('./ffmpeg-music-cont-part2.wav') as number;
 const TONE_P1 = require('./ffmpeg-tone-part1.wav') as number;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const TONE_P2 = require('./ffmpeg-tone-part2.wav') as number;
-
-const START_DELAY_SECONDS = 0.4;
 
 type SampleKey = 'pad' | 'musicCont' | 'tone';
 
@@ -69,10 +71,11 @@ const SAMPLES: Record<
  */
 const WavScheduleSplit: FC = () => {
   const [sample, setSample] = useState<SampleKey>('pad');
+  const [playbackRate, setPlaybackRate] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(
-    'Ready — continuous WAV parts → decode → start(t0 + buffer1.duration)'
+    'Ready — continuous WAV parts → decode → start(t0 + buffer1.duration / rate)'
   );
   const [eventLog, setEventLog] = useState<string[]>([]);
   const contextRef = useRef<AudioContext | null>(null);
@@ -140,14 +143,20 @@ const WavScheduleSplit: FC = () => {
 
     try {
       const { context, buffer1, buffer2 } = await loadDecodedPair();
+      const rate = playbackRate;
+      const pitchCorrection = rate !== 1;
 
-      const sourceNode1 = context.createBufferSource();
+      const sourceNode1 = context.createBufferSource({ pitchCorrection });
       sourceNode1.buffer = buffer1;
-      const sourceNode2 = context.createBufferSource();
+      sourceNode1.playbackRate.value = rate;
+      const sourceNode2 = context.createBufferSource({ pitchCorrection });
       sourceNode2.buffer = buffer2;
+      sourceNode2.playbackRate.value = rate;
 
       const t0 = context.currentTime + START_DELAY_SECONDS;
-      const joinAt = t0 + buffer1.duration;
+      // Wall-clock length of part1 at this rate (content duration / rate).
+      const contentDur = buffer1.duration / rate;
+      const joinAt = t0 + contentDur;
       sourceNode1.connect(context.destination);
       sourceNode2.connect(context.destination);
       sourcesRef.current = [sourceNode1, sourceNode2];
@@ -173,18 +182,19 @@ const WavScheduleSplit: FC = () => {
 
       setStatus(
         [
-          `glued · ${SAMPLES[sample].label}`,
+          `glued · ${SAMPLES[sample].label} · rate=${rate.toFixed(1)} pitchCorrection=${pitchCorrection}`,
           SAMPLES[sample].hint,
           `buffer1.duration=${buffer1.duration.toFixed(4)}s len=${buffer1.length}`,
           `buffer2.duration=${buffer2.duration.toFixed(4)}s len=${buffer2.length}`,
+          `contentDur=${contentDur.toFixed(4)}s (duration/rate)`,
           `bufSr=${buffer1.sampleRate} ctxSr=${context.sampleRate}`,
           `source1.start(${t0.toFixed(3)})`,
-          `source2.start(${joinAt.toFixed(3)})`,
+          `source2.start(${joinAt.toFixed(3)})  ← joinAt (expected)`,
           `Waiting for onEnded…`,
         ].join('\n')
       );
       appendLog(
-        `scheduled · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)}`
+        `scheduled · rate=${rate.toFixed(1)} · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)} (joinAt expected)`
       );
     } catch (error) {
       console.error(error);
@@ -193,7 +203,7 @@ const WavScheduleSplit: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [appendLog, loadDecodedPair, sample, stopSources]);
+  }, [appendLog, loadDecodedPair, playbackRate, sample, stopSources]);
 
   const playUnbroken = useCallback(async () => {
     setIsLoading(true);
@@ -202,6 +212,8 @@ const WavScheduleSplit: FC = () => {
 
     try {
       const { context, buffer1, buffer2 } = await loadDecodedPair();
+      const rate = playbackRate;
+      const pitchCorrection = rate !== 1;
 
       const length = buffer1.length + buffer2.length;
       const continuous = context.createBuffer(
@@ -215,13 +227,14 @@ const WavScheduleSplit: FC = () => {
         out.set(buffer2.getChannelData(ch), buffer1.length);
       }
 
-      const source = context.createBufferSource();
+      const source = context.createBufferSource({ pitchCorrection });
       source.buffer = continuous;
+      source.playbackRate.value = rate;
       source.connect(context.destination);
       sourcesRef.current = [source];
 
       const t0 = context.currentTime + START_DELAY_SECONDS;
-      const joinWouldBe = t0 + buffer1.duration;
+      const joinWouldBe = t0 + buffer1.duration / rate;
       source.onEnded = () => {
         const now = context.currentTime;
         source.disconnect();
@@ -233,13 +246,13 @@ const WavScheduleSplit: FC = () => {
 
       setStatus(
         [
-          `unbroken · ${SAMPLES[sample].label} · single source`,
+          `unbroken · ${SAMPLES[sample].label} · rate=${rate.toFixed(1)} pitchCorrection=${pitchCorrection}`,
           `duration=${continuous.duration.toFixed(4)}s`,
           `join would be @ ${joinWouldBe.toFixed(3)}s`,
           `source.start(${t0.toFixed(3)})`,
         ].join('\n')
       );
-      appendLog(`scheduled unbroken · start ${t0.toFixed(3)}`);
+      appendLog(`scheduled unbroken · rate=${rate.toFixed(1)} · start ${t0.toFixed(3)}`);
     } catch (error) {
       console.error(error);
       setStatus(`Error: ${String(error)}`);
@@ -247,11 +260,12 @@ const WavScheduleSplit: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [appendLog, loadDecodedPair, sample, stopSources]);
+  }, [appendLog, loadDecodedPair, playbackRate, sample, stopSources]);
 
   const busy = isLoading || isRunning;
   const playLabel = (idle: string) =>
     isLoading ? 'Loading…' : isRunning ? 'Running…' : idle;
+  const rateLabel = playbackRate.toFixed(1);
 
   return (
     <Container>
@@ -292,14 +306,26 @@ const WavScheduleSplit: FC = () => {
         })}
 
         <Spacer.Vertical size={24} />
+        <Text style={styles.section}>Playback rate</Text>
+        <Slider
+          label="Rate"
+          value={playbackRate}
+          onValueChange={setPlaybackRate}
+          min={MIN_PLAYBACK_RATE}
+          max={MAX_PLAYBACK_RATE}
+          step={PLAYBACK_RATE_STEP}
+          minLabelWidth={40}
+        />
+
+        <Spacer.Vertical size={24} />
         <Button
-          title={playLabel('Play glued (t0 + buffer1.duration)')}
+          title={playLabel(`Play glued (rate ${rateLabel})`)}
           onPress={() => void playGlued()}
           disabled={busy}
         />
         <Spacer.Vertical size={12} />
         <Button
-          title={playLabel('Play unbroken (concat PCM)')}
+          title={playLabel(`Play unbroken (rate ${rateLabel})`)}
           onPress={() => void playUnbroken()}
           disabled={busy}
         />
