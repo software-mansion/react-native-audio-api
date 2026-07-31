@@ -5,7 +5,6 @@
 @interface AudioSessionManager ()
 
 - (id)microphoneUsageDescriptionValue;
-- (bool)usesAudioApplicationRecordPermissionAPI;
 - (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion;
 - (NSInteger)currentRecordPermissionStatus;
 - (NSString *)recordPermissionStatusString:(NSInteger)status;
@@ -88,22 +87,19 @@ static AudioSessionManager *_sharedInstance = nil;
       self.audioSession.mode,
       (unsigned long)self.audioSession.categoryOptions);
 
-  if (@available(iOS 13.0, *)) {
-    if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording !=
-        self.allowHapticsAndSounds) {
-      NSError *hapticsError = nil;
-      [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSounds
-                                                                 error:&hapticsError];
+  if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording != self.allowHapticsAndSounds) {
+    NSError *hapticsError = nil;
+    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSounds
+                                                               error:&hapticsError];
 
-      if (hapticsError != nil) {
-        NSLog(
-            @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
-            [hapticsError debugDescription]);
-        if (outError != nil) {
-          *outError = hapticsError;
-        }
-        return false;
+    if (hapticsError != nil) {
+      NSLog(
+          @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
+          [hapticsError debugDescription]);
+      if (outError != nil) {
+        *outError = hapticsError;
       }
+      return false;
     }
   }
 
@@ -239,74 +235,24 @@ static AudioSessionManager *_sharedInstance = nil;
   return [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
 }
 
-- (bool)usesAudioApplicationRecordPermissionAPI
-{
-  // Fix: removed TARGET_OS_SIMULATOR guard — AVAudioApplication is supported on
-  // Xcode 26 simulator and the guard was forcing the deprecated AVAudioSession
-  // fallback path even when the modern API was available.
-  if (@available(iOS 17.0, *)) {
-    return true;
-  }
-
-  return false;
-}
-
 - (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion
 {
-  if ([self usesAudioApplicationRecordPermissionAPI]) {
-    if (@available(iOS 17.0, *)) {
-      [AVAudioApplication requestRecordPermissionWithCompletionHandler:completion];
-      return;
-    }
-  }
-
-  // Fix: AVAudioSession.requestRecordPermission: is unavailable in the iOS 26
-  // device SDK. Guard behind SDK version so it only compiles when the API exists.
-#if __IPHONE_OS_VERSION_MAX_ALLOWED < 260000
-  [self.audioSession requestRecordPermission:completion];
-#endif
+  [AVAudioApplication requestRecordPermissionWithCompletionHandler:completion];
 }
 
 - (NSInteger)currentRecordPermissionStatus
 {
-  if ([self usesAudioApplicationRecordPermissionAPI]) {
-    if (@available(iOS 17.0, *)) {
-      return [[AVAudioApplication sharedInstance] recordPermission];
-    }
-  }
-
-  // Fix: AVAudioSession.recordPermission is unavailable in the iOS 26 device SDK.
-  // Guard behind SDK version so it only compiles when the API exists.
-  // This path is unreachable at runtime on iOS 17+ after the TARGET_OS_SIMULATOR
-  // guard was removed above.
-#if __IPHONE_OS_VERSION_MAX_ALLOWED < 260000
-  return [self.audioSession recordPermission];
-#else
-  return 0;
-#endif
+  return [[AVAudioApplication sharedInstance] recordPermission];
 }
 
 - (NSString *)recordPermissionStatusString:(NSInteger)status
 {
-  if ([self usesAudioApplicationRecordPermissionAPI]) {
-    switch (status) {
-      case AVAudioApplicationRecordPermissionUndetermined:
-        return @"Undetermined";
-      case AVAudioApplicationRecordPermissionGranted:
-        return @"Granted";
-      case AVAudioApplicationRecordPermissionDenied:
-        return @"Denied";
-      default:
-        return @"Undetermined";
-    }
-  }
-
   switch (status) {
-    case AVAudioSessionRecordPermissionUndetermined:
+    case AVAudioApplicationRecordPermissionUndetermined:
       return @"Undetermined";
-    case AVAudioSessionRecordPermissionGranted:
+    case AVAudioApplicationRecordPermissionGranted:
       return @"Granted";
-    case AVAudioSessionRecordPermissionDenied:
+    case AVAudioApplicationRecordPermissionDenied:
       return @"Denied";
     default:
       return @"Undetermined";
