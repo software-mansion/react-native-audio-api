@@ -106,7 +106,7 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
   vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
 
   // Prefill WSOLA from the start cursor before the first quantum.
-  primeWsolaInput();
+  // primeWsolaInput();
 }
 
 void AudioBufferSourceNode::disable() {

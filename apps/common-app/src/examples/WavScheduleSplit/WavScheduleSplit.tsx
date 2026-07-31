@@ -4,6 +4,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import {
   AudioBufferSourceNode,
   AudioContext,
+  GainNode,
 } from 'react-native-audio-api';
 
 import { Button, Container, Slider, Spacer } from '../../components';
@@ -25,6 +26,32 @@ const START_DELAY_SECONDS = 0.4;
 const MIN_PLAYBACK_RATE = 0.5;
 const MAX_PLAYBACK_RATE = 3;
 const PLAYBACK_RATE_STEP = 0.1;
+/** Join pull-in (ms). Negative starts part2 earlier. Ones-test used -30; real audio often needs less (or 0). */
+const MIN_JOIN_COMPENSATION_MS = -100;
+const MAX_JOIN_COMPENSATION_MS = 100;
+const JOIN_COMPENSATION_STEP_MS = 1;
+const DEFAULT_JOIN_COMPENSATION_MS = 0;
+/** Soft handoff at the join (equal-power curves; masks pop / phase clash). */
+const CROSSFADE_SECONDS = 0.1;
+const CROSSFADE_CURVE_STEPS = 32;
+
+function equalPowerFadeOut(steps: number): Float32Array {
+  const curve = new Float32Array(steps);
+  for (let i = 0; i < steps; i += 1) {
+    const t = i / (steps - 1);
+    curve[i] = Math.cos((Math.PI / 2) * t);
+  }
+  return curve;
+}
+
+function equalPowerFadeIn(steps: number): Float32Array {
+  const curve = new Float32Array(steps);
+  for (let i = 0; i < steps; i += 1) {
+    const t = i / (steps - 1);
+    curve[i] = Math.sin((Math.PI / 2) * t);
+  }
+  return curve;
+}
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const PAD_P1 = require('./ffmpeg-pad-part1.wav') as number;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -72,14 +99,18 @@ const SAMPLES: Record<
 const WavScheduleSplit: FC = () => {
   const [sample, setSample] = useState<SampleKey>('pad');
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [joinCompensationMs, setJoinCompensationMs] = useState(
+    DEFAULT_JOIN_COMPENSATION_MS
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(
-    'Ready — continuous WAV parts → decode → start(t0 + buffer1.duration / rate)'
+    'Ready — continuous WAV parts → decode → start(t0 + buffer1.duration / rate + L)'
   );
   const [eventLog, setEventLog] = useState<string[]>([]);
   const contextRef = useRef<AudioContext | null>(null);
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const gainsRef = useRef<GainNode[]>([]);
 
   const appendLog = useCallback((line: string) => {
     setEventLog((prev) => [...prev, line]);
@@ -106,7 +137,15 @@ const WavScheduleSplit: FC = () => {
         // already disconnected
       }
     }
+    for (const gain of gainsRef.current) {
+      try {
+        gain.disconnect();
+      } catch {
+        // already disconnected
+      }
+    }
     sourcesRef.current = [];
+    gainsRef.current = [];
     setIsRunning(false);
   }, []);
 
@@ -156,27 +195,78 @@ const WavScheduleSplit: FC = () => {
       const t0 = context.currentTime + START_DELAY_SECONDS;
       // Wall-clock length of part1 at this rate (content duration / rate).
       const contentDur = buffer1.duration / rate;
-      const joinAt = t0 + contentDur;
-      sourceNode1.connect(context.destination);
-      sourceNode2.connect(context.destination);
+      // Only apply L on the WSOLA path; rate 1 has no stretcher latency.
+      const joinCompensation = pitchCorrection
+        ? joinCompensationMs / 1000
+        : 0;
+      const joinAt = t0 + contentDur + joinCompensation;
+
+      const gainNode1 = context.createGain();
+      const gainNode2 = context.createGain();
+      // Mute part2 from t=now so the first rendered samples are never at full gain
+      // before the joinAt automation event (common Web Audio pop source).
+      const scheduleNow = context.currentTime;
+      gainNode1.gain.setValueAtTime(1, scheduleNow);
+      gainNode2.gain.setValueAtTime(0, scheduleNow);
+
+      sourceNode1.connect(gainNode1);
+      gainNode1.connect(context.destination);
+      sourceNode2.connect(gainNode2);
+      gainNode2.connect(context.destination);
       sourcesRef.current = [sourceNode1, sourceNode2];
+      gainsRef.current = [gainNode1, gainNode2];
 
       sourceNode1.onEnded = () => {
         const now = context.currentTime;
-        const deltaMs = (now - joinAt) * 1000;
-        sourceNode1.disconnect();
+        const expectedEnd = t0 + contentDur;
+        const deltaMs = (now - expectedEnd) * 1000;
+        try {
+          sourceNode1.disconnect();
+        } catch {
+          // already disconnected
+        }
+        try {
+          gainNode1.disconnect();
+        } catch {
+          // already disconnected
+        }
         appendLog(
-          `FIRST finished @ ${now.toFixed(3)}s  (expected join ${joinAt.toFixed(3)}s, Δ ${deltaMs.toFixed(1)} ms)`
+          `FIRST finished @ ${now.toFixed(3)}s  (content end ${expectedEnd.toFixed(3)}s, Δ ${deltaMs.toFixed(1)} ms; joinAt ${joinAt.toFixed(3)}s)`
         );
       };
       sourceNode2.onEnded = () => {
         const now = context.currentTime;
-        sourceNode2.disconnect();
+        try {
+          sourceNode2.disconnect();
+        } catch {
+          // already disconnected
+        }
+        try {
+          gainNode2.disconnect();
+        } catch {
+          // already disconnected
+        }
         setIsRunning(false);
         appendLog(`SECOND finished @ ${now.toFixed(3)}s`);
       };
 
+      // Always crossfade at the join (even L=0): two WSOLA streams meet with a
+      // phase discontinuity; a hard splice still clicks.
+      const fadeEnd = joinAt + CROSSFADE_SECONDS;
+      // Curves alone (no setValueAtTime at joinAt) — same-time events can conflict.
+      gainNode1.gain.setValueCurveAtTime(
+        equalPowerFadeOut(CROSSFADE_CURVE_STEPS),
+        joinAt,
+        CROSSFADE_SECONDS
+      );
+      gainNode2.gain.setValueCurveAtTime(
+        equalPowerFadeIn(CROSSFADE_CURVE_STEPS),
+        joinAt,
+        CROSSFADE_SECONDS
+      );
+
       sourceNode1.start(t0);
+      sourceNode1.stop(fadeEnd);
       sourceNode2.start(joinAt);
       setIsRunning(true);
 
@@ -187,14 +277,16 @@ const WavScheduleSplit: FC = () => {
           `buffer1.duration=${buffer1.duration.toFixed(4)}s len=${buffer1.length}`,
           `buffer2.duration=${buffer2.duration.toFixed(4)}s len=${buffer2.length}`,
           `contentDur=${contentDur.toFixed(4)}s (duration/rate)`,
+          `joinCompensation=${(joinCompensation * 1000).toFixed(1)} ms`,
+          `crossfade=${(CROSSFADE_SECONDS * 1000).toFixed(0)} ms (equal-power)`,
           `bufSr=${buffer1.sampleRate} ctxSr=${context.sampleRate}`,
-          `source1.start(${t0.toFixed(3)})`,
+          `source1.start(${t0.toFixed(3)}) stop(${fadeEnd.toFixed(3)})`,
           `source2.start(${joinAt.toFixed(3)})  ← joinAt (expected)`,
           `Waiting for onEnded…`,
         ].join('\n')
       );
       appendLog(
-        `scheduled · rate=${rate.toFixed(1)} · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)} (joinAt expected)`
+        `scheduled · rate=${rate.toFixed(1)} · L=${(joinCompensation * 1000).toFixed(1)}ms · crossfade ${(CROSSFADE_SECONDS * 1000).toFixed(0)}ms · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)}`
       );
     } catch (error) {
       console.error(error);
@@ -203,7 +295,14 @@ const WavScheduleSplit: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [appendLog, loadDecodedPair, playbackRate, sample, stopSources]);
+  }, [
+    appendLog,
+    joinCompensationMs,
+    loadDecodedPair,
+    playbackRate,
+    sample,
+    stopSources,
+  ]);
 
   const playUnbroken = useCallback(async () => {
     setIsLoading(true);
@@ -266,6 +365,7 @@ const WavScheduleSplit: FC = () => {
   const playLabel = (idle: string) =>
     isLoading ? 'Loading…' : isRunning ? 'Running…' : idle;
   const rateLabel = playbackRate.toFixed(1);
+  const joinLabel = `${joinCompensationMs} ms`;
 
   return (
     <Container>
@@ -277,8 +377,9 @@ const WavScheduleSplit: FC = () => {
         <Text style={styles.title}>WAV schedule split</Text>
         <Text style={styles.caption}>
           Continuous sources cut with ffmpeg (5 s + rest) → decode each →
-          source2.start(t0 + buffer1.duration). Prefer the pad to hear join
-          gaps clearly.
+          source2.start(t0 + duration/rate + L). Every glued play uses a{' '}
+          {(CROSSFADE_SECONDS * 1000).toFixed(0)} ms equal-power gain crossfade at
+          the join.
         </Text>
 
         <Spacer.Vertical size={20} />
@@ -317,9 +418,26 @@ const WavScheduleSplit: FC = () => {
           minLabelWidth={40}
         />
 
+        <Spacer.Vertical size={16} />
+        <Text style={styles.section}>Join compensation L</Text>
+        <Text style={styles.hint}>
+          Tune L for timing; the crossfade always runs. If a dip remains, try L
+          near −10…−30 ms. Compare glued vs unbroken.
+        </Text>
+        <Spacer.Vertical size={8} />
+        <Slider
+          label="L ms"
+          value={joinCompensationMs}
+          onValueChange={setJoinCompensationMs}
+          min={MIN_JOIN_COMPENSATION_MS}
+          max={MAX_JOIN_COMPENSATION_MS}
+          step={JOIN_COMPENSATION_STEP_MS}
+          minLabelWidth={40}
+        />
+
         <Spacer.Vertical size={24} />
         <Button
-          title={playLabel(`Play glued (rate ${rateLabel})`)}
+          title={playLabel(`Play glued (rate ${rateLabel}, L ${joinLabel})`)}
           onPress={() => void playGlued()}
           disabled={busy}
         />

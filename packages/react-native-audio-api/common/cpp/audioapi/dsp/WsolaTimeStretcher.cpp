@@ -85,6 +85,8 @@ void WsolaTimeStretcher::reset() {
   firstRelativeSampleFound_ = false;
   outputPeakAbs_ = 0.0f;
   totalFramesOutput_ = 0;
+  drainEofSilencePadded_ = false;
+  drainPendingFlushed_ = false;
 
   for (auto &channel : inputQueue_) {
     channel.clear();
@@ -205,8 +207,6 @@ WsolaTimeStretcher::drainOutput(DSPAudioBuffer &output, size_t outputFrames, flo
   }
 
   size_t rendered = 0;
-  bool paddedSilence = false;
-  bool flushedPending = false;
   while (rendered < outputFrames) {
     rendered += writeOutput(output, rendered, outputFrames - rendered);
     if (rendered >= outputFrames) {
@@ -217,9 +217,10 @@ WsolaTimeStretcher::drainOutput(DSPAudioBuffer &output, size_t outputFrames, flo
     }
 
     // Pad one analysis window of silence so the last partial search/target region
-    // can still form hops (no heap growth — skip if capacity would be exceeded).
-    if (!paddedSilence && hopSize_ > 0 && !inputQueue_.empty()) {
-      paddedSilence = true;
+    // can still form hops. Once per drain session (not per quantum) — otherwise
+    // each quantum re-pads and playback never ends.
+    if (!drainEofSilencePadded_ && hopSize_ > 0 && !inputQueue_.empty()) {
+      drainEofSilencePadded_ = true;
       const size_t pad = searchIntervalFrames_ + windowSize_;
       bool canPad = true;
       for (const auto &channel : inputQueue_) {
@@ -237,8 +238,8 @@ WsolaTimeStretcher::drainOutput(DSPAudioBuffer &output, size_t outputFrames, flo
     }
 
     // Flush leftover half-window once so EOF does not discard pendingOverlap_.
-    if (!flushedPending && hopSize_ > 0) {
-      flushedPending = true;
+    if (!drainPendingFlushed_ && hopSize_ > 0) {
+      drainPendingFlushed_ = true;
       for (size_t channel = 0; channel < channels_; ++channel) {
         auto &outQueue = outputQueue_[channel];
         compactOutputQueueIfNeeded();

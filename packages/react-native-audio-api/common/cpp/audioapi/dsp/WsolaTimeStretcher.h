@@ -85,6 +85,10 @@ class WsolaTimeStretcher {
   float outputPeakAbs_ = 0.0f;
   size_t totalFramesOutput_ = 0;
 
+  /// Persist across @ref drainOutput quanta so EOF silence is padded only once.
+  bool drainEofSilencePadded_{false};
+  bool drainPendingFlushed_{false};
+
   std::vector<float> olaWindow_;
   std::vector<float> transitionWindow_;
   std::vector<std::vector<float>> inputQueue_;
