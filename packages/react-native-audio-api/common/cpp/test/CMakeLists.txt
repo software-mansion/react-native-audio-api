@@ -4,10 +4,15 @@ project(rnaudioapi_test)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(ENABLE_COVERAGE "Enable Clang LLVM source-based coverage" OFF)
+
+if(ENABLE_COVERAGE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  message(FATAL_ERROR "ENABLE_COVERAGE requires Clang (got ${CMAKE_CXX_COMPILER_ID})")
+endif()
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-interference-size)
 endif()
-
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
@@ -109,19 +114,38 @@ target_link_libraries(tests
   GTest::gmock
 )
 
-# --- Thread Sanitizer build ---
-add_executable(tests_tsan ${test_src} ${AUDIO_THREAD_GUARD_SRC})
-target_compile_options(tests_tsan PRIVATE -fsanitize=thread -g -O1)
-target_link_options(tests_tsan PRIVATE -fsanitize=thread)
-target_link_libraries(tests_tsan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
-
-# --- Address + Undefined Behavior Sanitizer build ---
-add_executable(tests_asan ${test_src} ${AUDIO_THREAD_GUARD_SRC})
-target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -g -O1)
-target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
-target_link_libraries(tests_asan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+if(ENABLE_COVERAGE)
+  target_compile_options(rnaudioapi PRIVATE
+    -fprofile-instr-generate
+    -fcoverage-mapping
+    -O0
+    -g
+  )
+  target_compile_options(tests PRIVATE
+    -fprofile-instr-generate
+    -fcoverage-mapping
+    -O0
+    -g
+  )
+  target_link_options(tests PRIVATE -fprofile-instr-generate)
+endif()
 
 include(GoogleTest)
 gtest_discover_tests(tests DISCOVERY_MODE PRE_TEST)
-gtest_discover_tests(tests_tsan DISCOVERY_MODE PRE_TEST)
-gtest_discover_tests(tests_asan DISCOVERY_MODE PRE_TEST)
+
+if(NOT ENABLE_COVERAGE)
+  # --- Thread Sanitizer build ---
+  add_executable(tests_tsan ${test_src} ${AUDIO_THREAD_GUARD_SRC})
+  target_compile_options(tests_tsan PRIVATE -fsanitize=thread -g -O1)
+  target_link_options(tests_tsan PRIVATE -fsanitize=thread)
+  target_link_libraries(tests_tsan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+
+  # --- Address + Undefined Behavior Sanitizer build ---
+  add_executable(tests_asan ${test_src} ${AUDIO_THREAD_GUARD_SRC})
+  target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -g -O1)
+  target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
+  target_link_libraries(tests_asan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+
+  gtest_discover_tests(tests_tsan DISCOVERY_MODE PRE_TEST)
+  gtest_discover_tests(tests_asan DISCOVERY_MODE PRE_TEST)
+endif()
