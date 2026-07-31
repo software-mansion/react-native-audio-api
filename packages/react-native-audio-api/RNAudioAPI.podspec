@@ -10,7 +10,7 @@ $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED = ENV['DISABLE_AUDIOAPI_STATIC_EXTER
 
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
-ios_min_version = '14.0'
+ios_min_version = '17.0' # was '14.0'
 
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
 static_external_libs_flag = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? '-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1 -DMA_NO_LIBOPUS=1 -DMA_NO_LIBVORBIS=1' : ''
