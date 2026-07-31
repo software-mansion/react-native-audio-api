@@ -1,0 +1,73 @@
+---
+sidebar_position: 2
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import { Optional } from '@site/src/components/Badges';
+
+# ChannelMergerNode
+
+The `ChannelMergerNode` interface combines multiple mono inputs into a single output whose channels correspond, in order, to the node's inputs. It is an [`AudioNode`](/docs/core/audio-node) with a variable number of single-channel inputs and one output.
+
+Each input is treated as a single channel: the signal connected to input `i` becomes channel `i` of the output. This is the counterpart of [`ChannelSplitterNode`](/docs/effects/channel-splitter-node).
+
+## Constructor
+
+```tsx
+constructor(context: BaseAudioContext, options?: ChannelMergerOptions)
+```
+
+### `ChannelMergerOptions`
+
+Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `numberOfInputs` <Optional /> | `number` | `6` | Number of inputs to merge. Must be in the range `1` – `32`. |
+
+You can also create a `ChannelMergerNode` via the [`BaseAudioContext.createChannelMerger(numberOfInputs?: number)`](/docs/core/base-audio-context#createchannelmerger) factory method, which uses default values when called without arguments.
+
+## Example
+
+```tsx
+import { AudioContext } from 'react-native-audio-api';
+
+const ctx = new AudioContext();
+const merger = ctx.createChannelMerger(2);
+
+const left = ctx.createOscillator();
+const right = ctx.createOscillator();
+
+left.connect(merger, 0, 0);
+right.connect(merger, 0, 1);
+
+merger.connect(ctx.destination);
+```
+
+## Properties
+
+Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+<AudioNodePropsTable numberOfInputs={6} numberOfOutputs={1} channelCount={1} channelCountMode="explicit" channelInterpretation="speakers" />
+
+`ChannelMergerNode` does not define any additional properties.
+
+## Methods
+
+Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+<AudioNodeMethodsTable />
+
+`ChannelMergerNode` does not define any additional methods.
+
+## Remarks
+
+#### `numberOfInputs`
+- Default value is `6`.
+- Nominal range is `1` – `32`. Values outside this range throw an `IndexSizeError`.
+- Cannot be changed after construction.
+
+#### Channel configuration
+- `channelCount` is fixed at `1` and `channelCountMode` is fixed at `explicit`. Attempts to change them throw an error.
+- Use the `input` argument of [`connect`](/docs/core/audio-node#methods) to target a specific input, e.g. `source.connect(merger, 0, 2)` routes into channel `2`.

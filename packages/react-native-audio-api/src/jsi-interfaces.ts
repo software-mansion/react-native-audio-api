@@ -10,6 +10,8 @@ import type {
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
+  ChannelMergerOptions,
+  ChannelSplitterOptions,
   ConstantSourceOptions,
   ConvolverOptions,
   ContextState,
@@ -71,6 +73,12 @@ export interface IBaseAudioContext {
   createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: ConvolverOptions) => IConvolverNode;
   createWaveShaper: (waveShaperOptions: WaveShaperOptions) => IWaveShaperNode;
+  createChannelMerger: (
+    channelMergerOptions: ChannelMergerOptions
+  ) => IChannelMergerNode;
+  createChannelSplitter: (
+    channelSplitterOptions: ChannelSplitterOptions
+  ) => IChannelSplitterNode;
   createFileSource: (
     audioFileOptions: AudioFileSourceOptions
   ) => IAudioFileSourceNode | null; // null when FFmpeg is not enabled, but needed
@@ -101,8 +109,16 @@ export interface IAudioNode {
   channelCountMode: ChannelCountMode;
   channelInterpretation: ChannelInterpretation;
 
-  connect(destination: IAudioNode | IAudioParam): void;
-  disconnect(destination?: IAudioNode | IAudioParam): void;
+  connect(
+    destination: IAudioNode | IAudioParam,
+    output?: number,
+    input?: number
+  ): void;
+  disconnect(
+    destinationOrOutput?: IAudioNode | IAudioParam | number,
+    output?: number,
+    input?: number
+  ): void;
 }
 
 export interface IDelayNode extends IAudioNode {
@@ -113,6 +129,10 @@ export interface IDelayNode extends IAudioNode {
 export interface IGainNode extends IAudioNode {
   readonly gain: IAudioParam;
 }
+
+export interface IChannelMergerNode extends IAudioNode {}
+
+export interface IChannelSplitterNode extends IAudioNode {}
 
 export interface IStereoPannerNode extends IAudioNode {
   readonly pan: IAudioParam;

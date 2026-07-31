@@ -2,16 +2,50 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/TypedAudioNodePtr.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
-#include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioNode.h>
-#include <audioapi/core/effects/delay/host_nodes/DelayReaderHostNode.h>
-#include <audioapi/core/effects/delay/host_nodes/DelayWriterHostNode.h>
+#include <audioapi/core/utils/graph/HostGraph.h>
+#include <audioapi/jsi/JsiUtils.h>
 
 #include <memory>
 #include <utility>
 
 namespace audioapi {
+namespace {
+
+bool isMissingEdge(const utils::graph::HostNode::Res &result) {
+  if (result.is_ok()) {
+    return false;
+  }
+  const auto err = result.unwrap_err();
+  return err == utils::graph::HostGraph::ResultError::EDGE_NOT_FOUND ||
+      err == utils::graph::HostGraph::ResultError::NODE_NOT_FOUND;
+}
+
+constexpr const char *kDisconnectNotConnected =
+    "Failed to execute 'disconnect' on 'AudioNode': the given destination is not connected.";
+
+/// Runs `tryRemove` for each candidate edge. Spec: remove matching edges; throw
+/// InvalidAccessError if none existed (or on unexpected graph errors).
+template <typename TryRemove>
+  requires requires(TryRemove &&tryRemove) {
+    tryRemove([](const utils::graph::HostNode::Res &) {});
+  }
+void disconnectMatchingEdges(jsi::Runtime &runtime, TryRemove &&tryRemove) {
+  bool removedAny = false;
+  tryRemove([&](const utils::graph::HostNode::Res &result) {
+    if (result.is_ok()) {
+      removedAny = true;
+    } else if (!isMissingEdge(result)) {
+      jsiutils::throwException(runtime, "InvalidAccessError", kDisconnectNotConnected);
+    }
+  });
+  if (!removedAny) {
+    jsiutils::throwException(runtime, "InvalidAccessError", kDisconnectNotConnected);
+  }
+}
+
+} // namespace
 
 AudioNodeHostObject::AudioNodeHostObject(
     const std::shared_ptr<utils::graph::Graph> &graph,
@@ -67,6 +101,14 @@ JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelCountMode) {
 JSI_PROPERTY_GETTER_IMPL(AudioNodeHostObject, channelInterpretation) {
   return jsi::String::createFromUtf8(
       runtime, js_enum_parser::channelInterpretationToString(channelInterpretation_));
+}
+
+std::shared_ptr<utils::graph::HostNode> AudioNodeHostObject::getOutput(int /*outputIndex*/) {
+  return shared_from_this();
+}
+
+std::shared_ptr<utils::graph::HostNode> AudioNodeHostObject::getInput(int /*inputIndex*/) {
+  return shared_from_this();
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioNodeHostObject, channelCount) {
@@ -135,45 +177,88 @@ JSI_PROPERTY_SETTER_IMPL(AudioNodeHostObject, channelInterpretation) {
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
   auto obj = args[0].getObject(runtime);
 
+  const int output = (count > 1 && args[1].isNumber()) ? static_cast<int>(args[1].getNumber()) : 0;
+  const int input = (count > 2 && args[2].isNumber()) ? static_cast<int>(args[2].getNumber()) : 0;
+
+  if (output >= numberOfOutputs_) {
+    throw jsi::JSError(runtime, "IndexSizeError: connect() output index out of bounds");
+  }
+
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto toNodeHost = obj.getHostObject<AudioNodeHostObject>(runtime);
 
-    // source is a delay node: route through its reader
-    if (auto *fromDelay = dynamic_cast<DelayNodeHostObject *>(this); fromDelay != nullptr) {
-      fromDelay->delayReaderHostNode_->connect(*toNodeHost);
-      return jsi::Value::undefined();
+    if (input >= toNodeHost->numberOfInputs_) {
+      throw jsi::JSError(runtime, "IndexSizeError: connect() input index out of bounds");
     }
 
-    // destination is a delay node: route through its writer
-    if (auto *toDelay = dynamic_cast<DelayNodeHostObject *>(toNodeHost.get()); toDelay != nullptr) {
-      connect(*toDelay->delayWriterHostNode_);
-      return jsi::Value::undefined();
-    }
-
-    connect(*toNodeHost);
+    auto source = getOutput(output);
+    auto destination = toNodeHost->getInput(input);
+    source->connect(*destination);
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
     param->connectToGraph();
-    graph_->addEdge(node_, param->bridgeNode());
+    graph_->addEdge(getOutput(output)->rawNode(), param->bridgeNode());
   }
   return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
-  // protect direct usage of raw jsi classes
-  if (args == nullptr || args[0].isUndefined()) {
-    disconnect();
+  // disconnect() — drop every outgoing edge from every output.
+  if (args == nullptr || count == 0 || args[0].isUndefined()) {
+    for (int output = 0; output < numberOfOutputs_; ++output) {
+      getOutput(output)->disconnect();
+    }
+    return jsi::Value::undefined();
+  }
+
+  // disconnect(output) — drop every outgoing edge from a single output.
+  if (args[0].isNumber()) {
+    const int output = static_cast<int>(args[0].getNumber());
+    if (output < 0 || output >= numberOfOutputs_) {
+      throw jsi::JSError(runtime, "IndexSizeError: disconnect() output index out of bounds");
+    }
+    getOutput(output)->disconnect();
     return jsi::Value::undefined();
   }
 
   auto obj = args[0].getObject(runtime);
+  const bool hasOutput = count > 1 && args[1].isNumber();
+  const bool hasInput = count > 2 && args[2].isNumber();
+  const int output = hasOutput ? static_cast<int>(args[1].getNumber()) : 0;
+  const int input = hasInput ? static_cast<int>(args[2].getNumber()) : 0;
+
+  if (hasOutput && (output < 0 || output >= numberOfOutputs_)) {
+    throw jsi::JSError(runtime, "IndexSizeError: disconnect() output index out of bounds");
+  }
+
+  const int outputBegin = hasOutput ? output : 0;
+  const int outputEnd = hasOutput ? output + 1 : numberOfOutputs_;
+
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
-    auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
-    disconnect(*node);
+    auto toNodeHost = obj.getHostObject<AudioNodeHostObject>(runtime);
+
+    if (hasInput && (input < 0 || input >= toNodeHost->numberOfInputs_)) {
+      throw jsi::JSError(runtime, "IndexSizeError: disconnect() input index out of bounds");
+    }
+
+    const int inputBegin = hasInput ? input : 0;
+    const int inputEnd = hasInput ? input + 1 : toNodeHost->numberOfInputs_;
+
+    disconnectMatchingEdges(runtime, [&](auto onResult) {
+      for (int o = outputBegin; o < outputEnd; ++o) {
+        auto source = getOutput(o);
+        for (int i = inputBegin; i < inputEnd; ++i) {
+          onResult(source->disconnect(*toNodeHost->getInput(i)));
+        }
+      }
+    });
   } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    // Disconnect source → bridge
-    graph_->removeEdge(node_, param->bridgeNode());
+    disconnectMatchingEdges(runtime, [&](auto onResult) {
+      for (int o = outputBegin; o < outputEnd; ++o) {
+        onResult(graph_->removeEdge(getOutput(o)->rawNode(), param->bridgeNode()));
+      }
+    });
   }
 
   return jsi::Value::undefined();

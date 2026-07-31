@@ -134,6 +134,14 @@ export interface GainOptions extends AudioNodeOptions {
   gain?: number;
 }
 
+export interface ChannelMergerOptions extends AudioNodeOptions {
+  numberOfInputs?: number;
+}
+
+export interface ChannelSplitterOptions extends AudioNodeOptions {
+  numberOfOutputs?: number;
+}
+
 export interface StereoPannerOptions extends AudioNodeOptions {
   pan?: number;
 }

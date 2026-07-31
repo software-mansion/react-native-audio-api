@@ -14,8 +14,8 @@ import Record from './Record/Record';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
-// import WsolaScheduleSplit from './WsolaScheduleSplit';
 import WavScheduleSplit from './WavScheduleSplit';
+import ChannelMergerSplitter from './ChannelMergerSplitter';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -32,6 +32,7 @@ type NavigationParamList = {
   Worklets: undefined;
   AudioTag: undefined;
   ConvolverIR: undefined;
+  ChannelMergerSplitter: undefined;
   ChannelCount: undefined;
   WsolaScheduleSplit: undefined;
   WavScheduleSplit: undefined;
@@ -129,17 +130,17 @@ export const Examples: Example[] = [
     screen: ConvolverIR,
   },
   {
+    key: 'ChannelMergerSplitter',
+    title: 'Channel Merger / Splitter',
+    Icon: icons.Split,
+    screen: ChannelMergerSplitter,
+  },
+  {
     key: 'ChannelCount',
     title: 'Channel Count',
     Icon: icons.Columns3,
     screen: ChannelCount,
   },
-  // {
-  //   key: 'WsolaScheduleSplit',
-  //   title: 'WSOLA Schedule Split',
-  //   Icon: icons.Split,
-  //   screen: WsolaScheduleSplit,
-  // },
   {
     key: 'WavScheduleSplit',
     title: 'WAV Schedule Split',
