@@ -81,6 +81,10 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   PositionChangedDispatcher positionChanged_;
 
+  /// True after buffer EOF (or stop) while WSOLA still has tail to flush.
+  bool wsolaDrainPending_{false};
+  float wsolaEofDrainRate_{1.0f};
+
   void processWithPitchCorrection(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
@@ -90,6 +94,11 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
       double time);
+
+  /// Flush remaining WSOLA output after PCM is exhausted (mirrors AudioFileSourceNode).
+  void processWsolaDrain(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess);
 };
 
 } // namespace audioapi

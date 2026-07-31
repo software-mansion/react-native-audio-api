@@ -63,13 +63,13 @@ void AudioBufferBaseSourceNode::primeWsolaInput() {
     return;
   }
 
-  const float rate = std::fabs(
-      playbackRateParam_->processKRateParam(RENDER_QUANTUM_SIZE, context->getCurrentTime()));
+  const float rate = std::fabs(playbackRateParam_->processKRateParam(context->getCurrentTime()));
   // WSOLA path is only used when |rate| != 1; skip priming otherwise.
   if (rate == 0.0f || rate == 1.0f) {
     return;
   }
 
+  wsolaDrainPending_ = false;
   wsolaStretcher_.reset();
 
   const size_t framesNeeded =
@@ -83,7 +83,11 @@ void AudioBufferBaseSourceNode::primeWsolaInput() {
 
   // 1:1 forward copy into WSOLA's analysis queue; advances vReadIndex_ so the
   // cursor stays aligned with what was fed before the first output quantum.
+  // Preserve playbackState_: runBufferProcessor can mark STOP_SCHEDULED if the
+  // prime consumes through EOF, which would finish the node before first output.
+  const auto savedState = playbackState_;
   runBufferProcessor(playbackRateBuffer_, 0, inputFrames, 1.0f, false);
+  playbackState_ = savedState;
   wsolaStretcher_.feedInput(*playbackRateBuffer_, inputFrames);
 
   if (wsolaPrimeDebugPending_) {
@@ -127,8 +131,9 @@ void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
   // use the same value.
   const double time = context->getCurrentTime();
 
-  // apply pitch correction only if the playback rate is not 1.0
-  if (pitchCorrection_ && computedPlaybackRateParam_->processKRateParam(time) != 1.0f) {
+  if (wsolaDrainPending_) {
+    processWsolaDrain(audioBuffer_, framesToProcess);
+  } else if (pitchCorrection_ && computedPlaybackRateParam_->processKRateParam(time) != 1.0f) {
     processWithPitchCorrection(audioBuffer_, framesToProcess, time);
   } else {
     processWithoutPitchCorrection(audioBuffer_, framesToProcess, time);
@@ -196,9 +201,34 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       rate,
       pitchFactor);
 
+  // Buffer cursor (or stop) hit EOF this quantum. Stay alive and drain WSOLA's
+  // remaining OLA tail — otherwise primed/queued PCM is discarded and onEnded
+  // fires early vs audible duration.
+  if (isStopScheduled()) {
+    playbackState_ = PlaybackState::PLAYING;
+    wsolaDrainPending_ = true;
+    wsolaEofDrainRate_ = absRate > 0.0f ? absRate : 1.0f;
+  }
+
   if (isPlaying()) {
     positionChanged_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
   }
+}
+
+void AudioBufferBaseSourceNode::processWsolaDrain(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    int framesToProcess) {
+  const auto frames = static_cast<size_t>(framesToProcess);
+  processingBuffer->zero();
+
+  const size_t drained = wsolaStretcher_.drainOutput(*processingBuffer, frames, wsolaEofDrainRate_);
+  if (drained >= frames) {
+    // Still flushing a full quantum — keep playing until the stretcher is empty.
+    return;
+  }
+
+  wsolaDrainPending_ = false;
+  playbackState_ = PlaybackState::STOP_SCHEDULED;
 }
 
 void AudioBufferBaseSourceNode::processWithoutPitchCorrection(

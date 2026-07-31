@@ -205,14 +205,54 @@ WsolaTimeStretcher::drainOutput(DSPAudioBuffer &output, size_t outputFrames, flo
   }
 
   size_t rendered = 0;
+  bool paddedSilence = false;
+  bool flushedPending = false;
   while (rendered < outputFrames) {
     rendered += writeOutput(output, rendered, outputFrames - rendered);
     if (rendered >= outputFrames) {
       break;
     }
-    if (!runOneIteration(playbackRate)) {
-      break;
+    if (runOneIteration(playbackRate)) {
+      continue;
     }
+
+    // Pad one analysis window of silence so the last partial search/target region
+    // can still form hops (no heap growth — skip if capacity would be exceeded).
+    if (!paddedSilence && hopSize_ > 0 && !inputQueue_.empty()) {
+      paddedSilence = true;
+      const size_t pad = searchIntervalFrames_ + windowSize_;
+      bool canPad = true;
+      for (const auto &channel : inputQueue_) {
+        if (channel.size() + pad > channel.capacity()) {
+          canPad = false;
+          break;
+        }
+      }
+      if (canPad) {
+        for (auto &channel : inputQueue_) {
+          channel.insert(channel.end(), pad, 0.0f);
+        }
+        continue;
+      }
+    }
+
+    // Flush leftover half-window once so EOF does not discard pendingOverlap_.
+    if (!flushedPending && hopSize_ > 0) {
+      flushedPending = true;
+      for (size_t channel = 0; channel < channels_; ++channel) {
+        auto &outQueue = outputQueue_[channel];
+        compactOutputQueueIfNeeded();
+        if (outQueue.size() + hopSize_ > outQueue.capacity()) {
+          break;
+        }
+        for (size_t frame = 0; frame < hopSize_; ++frame) {
+          outQueue.push_back(pendingOverlap_[channel][frame] * olaWindow_[hopSize_ + frame]);
+          pendingOverlap_[channel][frame] = 0.0f;
+        }
+      }
+      continue;
+    }
+    break;
   }
 
   return rendered;

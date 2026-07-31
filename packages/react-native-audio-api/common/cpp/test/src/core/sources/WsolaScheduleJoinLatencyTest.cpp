@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -34,9 +35,11 @@ constexpr float kOnesThreshold = 0.5f;
 /// so WSOLA has enough PCM to emit (see sufficientPartFrames()).
 constexpr size_t kScheduleUnitFrames = 128;
 
-/// Default join compensation (seconds). Override without rebuilding via:
-///   WSOLA_KL_SECONDS=-0.026 ./build/tests --gtest_filter='WsolaScheduleJoinLatencyTest.*'
-constexpr double kL = 0.0;
+/// Join compensation with priming + EOF drain. Empirically runs==1 near
+/// -712/kSampleRate; matches WSOLA's published INPUT+OUTPUT latency (20+10 ms).
+constexpr double kL = -(static_cast<double>(WsolaTimeStretcher::INPUT_LATENCY_MS) +
+                        static_cast<double>(WsolaTimeStretcher::OUTPUT_LATENCY_MS)) /
+    1000.0;
 
 double joinCompensationSeconds() {
   if (const char *env = std::getenv("WSOLA_KL_SECONDS")) {
@@ -50,8 +53,10 @@ size_t sufficientPartFrames() {
   stretcher.configure(1, static_cast<float>(kSampleRate));
   const size_t minIn =
       std::max(stretcher.getRequiredInputFrames(), stretcher.getMinInputFramesToRun());
-  // Enough ones after cold-start fill to emit a sustained run.
-  const size_t needed = minIn + 4 * kScheduleUnitFrames;
+  // Long enough that fixed OLA/threshold losses stay inside the 10% onesLen slack:
+  // ones ≈ 2*x/rate - O(minIn) ≥ 0.9 * 2*x/rate  ⇒  x ≳ 5 * minIn * rate.
+  const size_t needed = static_cast<size_t>(
+      std::ceil(5.0 * static_cast<double>(minIn) * static_cast<double>(kPlaybackRate)));
   const size_t units = (needed + kScheduleUnitFrames - 1) / kScheduleUnitFrames;
   return units * kScheduleUnitFrames;
 }
@@ -194,6 +199,32 @@ TEST(WsolaScheduleJoinLatencyTest, ContiguousOnesAfterJoin) {
 
   const OnesRun run = longestOnesRun(output);
   const size_t runs = countOnesRuns(output);
+
+  // Temporary diagnostics for L discovery.
+  {
+    std::cout << "[L search] L=" << L << "s x=" << x << " contentDur=" << contentDur
+              << "s runs=" << runs << " ideal=" << idealOnes << " min=" << minOnes << std::endl;
+    size_t i = 0;
+    size_t prevEnd = 0;
+    bool first = true;
+    while (i < output.size()) {
+      if (output[i] < kOnesThreshold) {
+        ++i;
+        continue;
+      }
+      const size_t start = i;
+      while (i < output.size() && output[i] >= kOnesThreshold) {
+        ++i;
+      }
+      std::cout << "[L search]   run [" << start << ", " << i << ") len=" << (i - start);
+      if (!first) {
+        std::cout << " gapBefore=" << (start - prevEnd);
+      }
+      std::cout << std::endl;
+      prevEnd = i;
+      first = false;
+    }
+  }
 
   EXPECT_EQ(runs, 1u) << "Gap in ones ⇒ L is wrong. L=" << L << "s onesStart=" << run.start
                       << " onesLen=" << run.length;
