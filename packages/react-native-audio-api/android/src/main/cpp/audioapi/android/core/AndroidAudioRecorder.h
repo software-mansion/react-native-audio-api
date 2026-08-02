@@ -25,7 +25,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
                              public std::enable_shared_from_this<AndroidAudioRecorder> {
  public:
   explicit AndroidAudioRecorder(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::string &inputPreset = "");
   ~AndroidAudioRecorder() override;
   void cleanup();
 
@@ -63,6 +64,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
  private:
   std::shared_ptr<AudioBuffer> deinterleavingBuffer_;
 
+  std::string inputPreset_;
   std::atomic<float> streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;

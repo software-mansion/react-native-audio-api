@@ -5,6 +5,7 @@
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <memory>
+#include <string>
 
 namespace audioapi {
 using namespace facebook;
@@ -17,7 +18,8 @@ class AudioRecorderHostObject : public HostObject {
   AudioRecorderHostObject(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker);
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      const std::string &androidInputPreset);
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);

@@ -17,7 +17,7 @@ declare global {
     sampleRate: number
   ) => IOfflineAudioContext;
 
-  var createAudioRecorder: () => IAudioRecorder;
+  var createAudioRecorder: (androidInputPreset: string) => IAudioRecorder;
 
   var createAudioBuffer: (
     numberOfChannels: number,

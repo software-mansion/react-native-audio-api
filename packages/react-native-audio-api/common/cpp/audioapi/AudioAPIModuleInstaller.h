@@ -117,8 +117,12 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
+          std::string androidInputPreset;
+          if (count > 0 && args[0].isString()) {
+            androidInputPreset = args[0].getString(runtime).utf8(runtime);
+          }
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry, &runtime, jsCallInvoker);
+              audioEventHandlerRegistry, &runtime, jsCallInvoker, androidInputPreset);
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 

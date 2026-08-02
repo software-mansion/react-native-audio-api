@@ -39,6 +39,29 @@ function withDefaultOptions(
   };
 }
 
+/**
+ * Options applied when the recorder is created.
+ */
+export interface AudioRecorderOptions {
+  /**
+   * Android only: the Oboe input preset for the capture stream. Android
+   * routes the microphone through a preprocessing chain selected by this
+   * preset; Oboe's implicit default is `voiceRecognition`, which applies NO
+   * acoustic echo cancellation. Duplex voice use cases (VoIP-style apps that
+   * play audio while recording) should pass `voiceCommunication` to engage
+   * the platform AEC/NS chain. Has no effect on iOS.
+   */
+  androidInputPreset?: AndroidInputPreset;
+}
+
+export type AndroidInputPreset =
+  | 'generic'
+  | 'camcorder'
+  | 'voiceRecognition'
+  | 'voiceCommunication'
+  | 'unprocessed'
+  | 'voicePerformance';
+
 export default class AudioRecorder {
   protected onAudioReadySubscription: AudioEventSubscription | null = null;
   protected onErrorSubscription: AudioEventSubscription | null = null;
@@ -51,8 +74,8 @@ export default class AudioRecorder {
     globalThis.AudioEventEmitter
   );
 
-  constructor() {
-    this.recorder = globalThis.createAudioRecorder();
+  constructor(options?: AudioRecorderOptions) {
+    this.recorder = globalThis.createAudioRecorder(options?.androidInputPreset ?? '');
   }
 
   /**

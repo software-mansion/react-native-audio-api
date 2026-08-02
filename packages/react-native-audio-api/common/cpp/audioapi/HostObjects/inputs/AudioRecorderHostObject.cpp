@@ -22,10 +22,13 @@ namespace audioapi {
 AudioRecorderHostObject::AudioRecorderHostObject(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker) {
+    const std::shared_ptr<react::CallInvoker> &callInvoker,
+    const std::string &androidInputPreset) {
 #ifdef ANDROID
-  audioRecorder_ = std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry);
+  audioRecorder_ = std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry, androidInputPreset);
 #else
+  // The input preset is an Android concept (Oboe); iOS configures its input
+  // through the AVAudioSession mode instead.
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry);
 #endif
 
