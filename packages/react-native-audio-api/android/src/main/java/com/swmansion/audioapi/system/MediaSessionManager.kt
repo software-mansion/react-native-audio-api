@@ -83,6 +83,14 @@ object MediaSessionManager {
     this.notificationRegistry = NotificationRegistry(this.reactContext, this.audioAPIModule)
   }
 
+  /** The system output volume on the volumeChange event's own scale:
+   * STREAM_MUSIC volume as a 0..1 fraction of its maximum. */
+  fun getSystemVolume(): Double {
+    val current = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toDouble()
+    val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toDouble()
+    return if (max > 0) current / max else 0.0
+  }
+
   fun getDevicePreferredSampleRate(): Double {
     val sampleRate = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
     return sampleRate.toDouble()
