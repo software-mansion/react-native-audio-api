@@ -70,8 +70,6 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   const bool pitchCorrection_;
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
-  /// Debug: one-shot log of WSOLA prime-at-start.
-  bool wsolaPrimeDebugPending_{true};
 
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;
@@ -81,9 +79,17 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   PositionChangedDispatcher positionChanged_;
 
-  /// True after buffer EOF (or stop) while WSOLA still has tail to flush.
+  /// True after natural PCM EOF while WSOLA still has OLA tail to flush.
+  /// Not armed for explicit stop(when) — that must cut without draining.
   bool wsolaDrainPending_{false};
   float wsolaEofDrainRate_{1.0f};
+
+  /// Content accounting in output-time frames: PCM consumed / rate vs frames
+  /// emitted. The EOF drain stops once emitted catches up with consumed, so the
+  /// OLA tail cannot spill past the source's nominal end and double over a
+  /// subsequently scheduled source.
+  double wsolaExpectedOutputFrames_{0.0};
+  double wsolaEmittedOutputFrames_{0.0};
 
   void processWithPitchCorrection(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,

@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <limits>
 #include <vector>
 
@@ -81,10 +80,7 @@ void WsolaTimeStretcher::reset() {
   searchBlockIndex_ = 0;
   outputReadIndex_ = 0;
 
-  firstSampleFound_ = false;
-  firstRelativeSampleFound_ = false;
-  outputPeakAbs_ = 0.0f;
-  totalFramesOutput_ = 0;
+  firstSynthesisIteration_ = true;
   drainEofSilencePadded_ = false;
   drainPendingFlushed_ = false;
 
@@ -150,54 +146,6 @@ void WsolaTimeStretcher::process(
       availableOutputFrames() < outputFrames * 2) {
     runOneIteration(playbackRate);
   }
-
-  if (!firstSampleFound_ || !firstRelativeSampleFound_) {
-    // Absolute floor catches any non-zero; relative waits for a meaningful peak so
-    // quiet leading content does not look like algorithmic latency.
-    constexpr float kAbsoluteThreshold = 1e-6f;
-    constexpr float kRelativeFraction = 0.5f;
-    constexpr float kMinPeakForRelative = 0.05f;
-
-    for (int i = 0; i < output.getNumberOfChannels(); ++i) {
-      auto *channel = output.getChannel(i);
-      for (int j = 0; j < channel->getSize(); ++j) {
-        const float absSample = std::abs(channel->operator[](j));
-        outputPeakAbs_ = std::max(outputPeakAbs_, absSample);
-
-        if (!firstSampleFound_ && absSample > kAbsoluteThreshold) {
-          firstSampleFound_ = true;
-          const size_t absoluteFrameIndex = totalFramesOutput_ + static_cast<size_t>(j);
-          const double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
-          std::cout << "[WSOLA] Pierwszy dzwiek (abs>1e-6)! "
-                    << "Ramka wyjsciowa: " << absoluteFrameIndex << " | Opoznienie: " << latencyMs
-                    << " ms"
-                    << " | Playback Rate: " << playbackRate << std::endl;
-        }
-
-        if (!firstRelativeSampleFound_ && outputPeakAbs_ >= kMinPeakForRelative &&
-            absSample >= kRelativeFraction * outputPeakAbs_) {
-          firstRelativeSampleFound_ = true;
-          const size_t absoluteFrameIndex = totalFramesOutput_ + static_cast<size_t>(j);
-          const double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
-          std::cout << "[WSOLA] Pierwszy dzwiek (rel>=" << kRelativeFraction
-                    << "*peak, peak>=" << kMinPeakForRelative << ")! "
-                    << "Ramka wyjsciowa: " << absoluteFrameIndex << " | Opoznienie: " << latencyMs
-                    << " ms"
-                    << " | peak=" << outputPeakAbs_ << " | Playback Rate: " << playbackRate
-                    << std::endl;
-        }
-
-        if (firstSampleFound_ && firstRelativeSampleFound_) {
-          break;
-        }
-      }
-      if (firstSampleFound_ && firstRelativeSampleFound_) {
-        break;
-      }
-    }
-  }
-
-  totalFramesOutput_ += outputFrames;
 }
 
 size_t
@@ -345,6 +293,18 @@ bool WsolaTimeStretcher::runOneIteration(float playbackRate) {
       for (size_t frame = 0; frame < windowSize_; ++frame) {
         optimalBlock_[channel][frame] = optimalBlock_[channel][frame] * transitionWindow_[frame] +
             targetBlock_[channel][frame] * transitionWindow_[windowSize_ + frame];
+      }
+    }
+  }
+
+  if (firstSynthesisIteration_) {
+    firstSynthesisIteration_ = false;
+    // Fake the previous grain: its trailing half is this block's leading half
+    // (identical content), so the COLA window pair sums to unity and output
+    // starts at full amplitude instead of fading in from silence.
+    for (size_t channel = 0; channel < channels_; ++channel) {
+      for (size_t frame = 0; frame < hopSize_; ++frame) {
+        pendingOverlap_[channel][frame] = optimalBlock_[channel][frame];
       }
     }
   }

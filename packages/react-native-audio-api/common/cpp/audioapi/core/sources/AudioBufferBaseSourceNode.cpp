@@ -10,8 +10,6 @@
 #include <cmath>
 #include <memory>
 
-#include <iostream>
-
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
@@ -50,7 +48,6 @@ void AudioBufferBaseSourceNode::initStretch(
     const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer) {
   wsolaStretcher_.configure(channelCount, sampleRate);
   playbackRateBuffer_ = playbackRateBuffer;
-  wsolaPrimeDebugPending_ = true;
 }
 
 void AudioBufferBaseSourceNode::primeWsolaInput() {
@@ -90,13 +87,9 @@ void AudioBufferBaseSourceNode::primeWsolaInput() {
   playbackState_ = savedState;
   wsolaStretcher_.feedInput(*playbackRateBuffer_, inputFrames);
 
-  if (wsolaPrimeDebugPending_) {
-    wsolaPrimeDebugPending_ = false;
-    std::cout << "[AudioBufferBaseSourceNode] [WSOLA prime at start]"
-              << " buffered=" << wsolaStretcher_.getBufferedInputFrames()
-              << " required=" << framesNeeded << std::endl
-              << std::endl;
-  }
+  // Primed PCM will occupy inputFrames / rate of output time once played back.
+  wsolaExpectedOutputFrames_ = static_cast<double>(inputFrames) / static_cast<double>(rate);
+  wsolaEmittedOutputFrames_ = 0.0;
 }
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
@@ -131,8 +124,19 @@ void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
   // use the same value.
   const double time = context->getCurrentTime();
 
+  // if (pitchCorrection_) {
+  //   if (wsolaDrainPending_) {
+  //     processWsolaDrain(audioBuffer_, framesToProcess);
+  //   } else {
+  //     processWithPitchCorrection(audioBuffer_, framesToProcess, time);
+  //   }
+  // } else {
+  //   processWithoutPitchCorrection(audioBuffer_, framesToProcess, time);
+  // }
+
   if (wsolaDrainPending_) {
     processWsolaDrain(audioBuffer_, framesToProcess);
+    // TODO: check if we want to use interpolation path for 1.0 playback speed when pitch correction is enabled
   } else if (pitchCorrection_ && computedPlaybackRateParam_->processKRateParam(time) != 1.0f) {
     processWithPitchCorrection(audioBuffer_, framesToProcess, time);
   } else {
@@ -161,20 +165,13 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       playbackRateParam_->processKRateParam(time),
       -WsolaTimeStretcher::MAX_PLAYBACK_RATE,
       WsolaTimeStretcher::MAX_PLAYBACK_RATE);
-
-  // Prefill happens only in primeWsolaInput() at start(); here feed one quantum's
-  // worth of input for the current rate.
   const float absRate = std::fabs(rate);
-  const size_t requestedInputFrames = std::max(
-      size_t{1}, static_cast<size_t>(std::ceil(absRate * static_cast<float>(framesToProcess))));
-  const size_t inputFrames = std::min(requestedInputFrames, playbackRateBuffer_->getSize());
-  const int framesNeededToStretch = static_cast<int>(inputFrames);
 
-  playbackRateBuffer_->zero();
-
+  // Output-quantum domain: startOffset/offsetLength describe the audible span of
+  // this quantum, so pre-start and post-stop zeroing lands in the real output.
   updatePlaybackInfo(
-      playbackRateBuffer_,
-      framesNeededToStretch,
+      processingBuffer,
+      framesToProcess,
       startOffset,
       offsetLength,
       context->getSampleRate(),
@@ -190,21 +187,46 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       2.0f, // NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       detune / static_cast<float>(SEMITONES_PER_OCTAVE));
 
+  // Prefill happens only in primeWsolaInput() at start(); here feed input sized to
+  // the audible span. Feed real PCM only — leading start-quantum silence must not
+  // enter the analysis queue, or it surfaces as a dropout at the moment the primed
+  // input is consumed (mid-quantum starts would inject up to a quantum of zeros
+  // between primed and streamed input).
+  const size_t requestedInputFrames = std::max(
+      size_t{1}, static_cast<size_t>(std::ceil(absRate * static_cast<float>(offsetLength))));
+  const size_t inputFrames = std::min(requestedInputFrames, playbackRateBuffer_->getSize());
+
+  playbackRateBuffer_->zero();
+
   // Non-interpolated path uses rate only for direction; abs keeps forward copies 1:1.
-  runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, absRate, false);
+  // updatePlaybackInfo may already have armed STOP_SCHEDULED from an explicit stop(when).
+  // runBufferProcessor arms it only on natural PCM EOF — drain that case only.
+  const bool stopFromExplicitSchedule = isStopScheduled();
+  const double readIndexBefore = vReadIndex_;
+  runBufferProcessor(playbackRateBuffer_, 0, inputFrames, absRate, false);
+  // Cursor delta = PCM actually consumed (EOF quantum feeds less than requested).
+  wsolaExpectedOutputFrames_ +=
+      std::fabs(vReadIndex_ - readIndexBefore) / static_cast<double>(absRate);
 
   wsolaStretcher_.process(
-      *playbackRateBuffer_,
-      inputFrames,
-      *processingBuffer,
-      static_cast<size_t>(framesToProcess),
-      rate,
-      pitchFactor);
+      *playbackRateBuffer_, inputFrames, *processingBuffer, offsetLength, rate, pitchFactor);
+  wsolaEmittedOutputFrames_ += static_cast<double>(offsetLength);
 
-  // Buffer cursor (or stop) hit EOF this quantum. Stay alive and drain WSOLA's
-  // remaining OLA tail — otherwise primed/queued PCM is discarded and onEnded
-  // fires early vs audible duration.
-  if (isStopScheduled()) {
+  if (startOffset > 0) {
+    // Mid-quantum start: WSOLA rendered [0, offsetLength); shift into the
+    // scheduled position so sound does not begin before startTime_.
+    for (size_t i = 0; i < processingBuffer->getNumberOfChannels(); ++i) {
+      auto *channel = processingBuffer->getChannel(i);
+      for (size_t j = offsetLength; j > 0; --j) {
+        (*channel)[j - 1 + startOffset] = (*channel)[j - 1];
+      }
+    }
+    processingBuffer->zero(0, startOffset);
+  }
+
+  // Natural EOF: keep playing while WSOLA flushes its OLA tail. Explicit stop(when)
+  // must cut immediately — draining would overlap the next scheduled source.
+  if (isStopScheduled() && !stopFromExplicitSchedule) {
     playbackState_ = PlaybackState::PLAYING;
     wsolaDrainPending_ = true;
     wsolaEofDrainRate_ = absRate > 0.0f ? absRate : 1.0f;
@@ -221,9 +243,22 @@ void AudioBufferBaseSourceNode::processWsolaDrain(
   const auto frames = static_cast<size_t>(framesToProcess);
   processingBuffer->zero();
 
-  const size_t drained = wsolaStretcher_.drainOutput(*processingBuffer, frames, wsolaEofDrainRate_);
-  if (drained >= frames) {
-    // Still flushing a full quantum — keep playing until the stretcher is empty.
+  // Cap the drain at the content's remaining output time. The stretcher can
+  // synthesize more than the content is worth; the surplus would play on top of
+  // a source scheduled right after this one (audible doubling at the join).
+  const double remainingContent = wsolaExpectedOutputFrames_ - wsolaEmittedOutputFrames_;
+  const size_t framesWanted = remainingContent <= 0.0
+      ? 0
+      : std::min(frames, static_cast<size_t>(std::ceil(remainingContent)));
+
+  const size_t drained = framesWanted == 0
+      ? 0
+      : wsolaStretcher_.drainOutput(*processingBuffer, framesWanted, wsolaEofDrainRate_);
+  wsolaEmittedOutputFrames_ += static_cast<double>(drained);
+
+  const bool contentDelivered = wsolaEmittedOutputFrames_ >= wsolaExpectedOutputFrames_;
+  if (drained >= frames && !contentDelivered) {
+    // Still flushing full quanta — keep playing until the content is delivered.
     return;
   }
 
