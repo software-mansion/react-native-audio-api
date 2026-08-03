@@ -1,6 +1,6 @@
 #include <audioapi/core/utils/buffer/BufferProcessingDirection.h>
 #include <audioapi/core/utils/buffer/BufferProcessorBase.h>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 #include <algorithm>

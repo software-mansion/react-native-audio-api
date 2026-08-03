@@ -69,7 +69,7 @@ oscillatorNode->scheduleAudioEvent(std::move(event));
 
 Send events from the audio thread back to JS (e.g. `ended`, `loopEnded`, `positionChanged`).
 
-**Prefer `EventCaller<AudioEvent::X>`** — a small RAII helper templated on the event type. `dispatch()` requires a payload matching `EventPayloadFor<AudioEvent::X, Payload>` (see `AudioEventPayloadMapping.h`).
+**Prefer `EventCaller<AudioEvent::X>`** — a small RAII helper templated on the event type. `dispatch()` requires a payload matching `EventPayloadFor<AudioEvent::X, Payload>` (see `AudioEventPayloadMapping.hpp`).
 
 ```cpp
 // Node member (composition — one EventCaller per event)
