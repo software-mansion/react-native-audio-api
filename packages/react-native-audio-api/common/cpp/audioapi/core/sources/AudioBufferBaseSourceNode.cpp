@@ -86,10 +86,6 @@ void AudioBufferBaseSourceNode::primeWsolaInput() {
   runBufferProcessor(playbackRateBuffer_, 0, inputFrames, 1.0f, false);
   playbackState_ = savedState;
   wsolaStretcher_.feedInput(*playbackRateBuffer_, inputFrames);
-
-  // Primed PCM will occupy inputFrames / rate of output time once played back.
-  wsolaExpectedOutputFrames_ = static_cast<double>(inputFrames) / static_cast<double>(rate);
-  wsolaEmittedOutputFrames_ = 0.0;
 }
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
@@ -202,15 +198,10 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
   // updatePlaybackInfo may already have armed STOP_SCHEDULED from an explicit stop(when).
   // runBufferProcessor arms it only on natural PCM EOF — drain that case only.
   const bool stopFromExplicitSchedule = isStopScheduled();
-  const double readIndexBefore = vReadIndex_;
   runBufferProcessor(playbackRateBuffer_, 0, inputFrames, absRate, false);
-  // Cursor delta = PCM actually consumed (EOF quantum feeds less than requested).
-  wsolaExpectedOutputFrames_ +=
-      std::fabs(vReadIndex_ - readIndexBefore) / static_cast<double>(absRate);
 
   wsolaStretcher_.process(
       *playbackRateBuffer_, inputFrames, *processingBuffer, offsetLength, rate, pitchFactor);
-  wsolaEmittedOutputFrames_ += static_cast<double>(offsetLength);
 
   if (startOffset > 0) {
     // Mid-quantum start: WSOLA rendered [0, offsetLength); shift into the
@@ -243,22 +234,9 @@ void AudioBufferBaseSourceNode::processWsolaDrain(
   const auto frames = static_cast<size_t>(framesToProcess);
   processingBuffer->zero();
 
-  // Cap the drain at the content's remaining output time. The stretcher can
-  // synthesize more than the content is worth; the surplus would play on top of
-  // a source scheduled right after this one (audible doubling at the join).
-  const double remainingContent = wsolaExpectedOutputFrames_ - wsolaEmittedOutputFrames_;
-  const size_t framesWanted = remainingContent <= 0.0
-      ? 0
-      : std::min(frames, static_cast<size_t>(std::ceil(remainingContent)));
-
-  const size_t drained = framesWanted == 0
-      ? 0
-      : wsolaStretcher_.drainOutput(*processingBuffer, framesWanted, wsolaEofDrainRate_);
-  wsolaEmittedOutputFrames_ += static_cast<double>(drained);
-
-  const bool contentDelivered = wsolaEmittedOutputFrames_ >= wsolaExpectedOutputFrames_;
-  if (drained >= frames && !contentDelivered) {
-    // Still flushing full quanta — keep playing until the content is delivered.
+  const size_t drained = wsolaStretcher_.drainOutput(*processingBuffer, frames, wsolaEofDrainRate_);
+  if (drained >= frames) {
+    // Still flushing a full quantum — keep playing until the stretcher is empty.
     return;
   }
 

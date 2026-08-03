@@ -80,7 +80,6 @@ void WsolaTimeStretcher::reset() {
   searchBlockIndex_ = 0;
   outputReadIndex_ = 0;
 
-  firstSynthesisIteration_ = true;
   drainEofSilencePadded_ = false;
   drainPendingFlushed_ = false;
 
@@ -293,18 +292,6 @@ bool WsolaTimeStretcher::runOneIteration(float playbackRate) {
       for (size_t frame = 0; frame < windowSize_; ++frame) {
         optimalBlock_[channel][frame] = optimalBlock_[channel][frame] * transitionWindow_[frame] +
             targetBlock_[channel][frame] * transitionWindow_[windowSize_ + frame];
-      }
-    }
-  }
-
-  if (firstSynthesisIteration_) {
-    firstSynthesisIteration_ = false;
-    // Fake the previous grain: its trailing half is this block's leading half
-    // (identical content), so the COLA window pair sums to unity and output
-    // starts at full amplitude instead of fading in from silence.
-    for (size_t channel = 0; channel < channels_; ++channel) {
-      for (size_t frame = 0; frame < hopSize_; ++frame) {
-        pendingOverlap_[channel][frame] = optimalBlock_[channel][frame];
       }
     }
   }

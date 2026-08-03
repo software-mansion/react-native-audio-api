@@ -84,13 +84,6 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   bool wsolaDrainPending_{false};
   float wsolaEofDrainRate_{1.0f};
 
-  /// Content accounting in output-time frames: PCM consumed / rate vs frames
-  /// emitted. The EOF drain stops once emitted catches up with consumed, so the
-  /// OLA tail cannot spill past the source's nominal end and double over a
-  /// subsequently scheduled source.
-  double wsolaExpectedOutputFrames_{0.0};
-  double wsolaEmittedOutputFrames_{0.0};
-
   void processWithPitchCorrection(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,

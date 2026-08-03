@@ -331,14 +331,6 @@ Do **not** gate `GraphObject::process()` on `isProcessable()` of inputs: CONDITI
 
 Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while connected they stay `CONDITIONAL_PROCESSABLE`; after disconnect they stay `isProcessable()` via the tail override until the impulse decays, so settle does not zero them mid-tail.
 
-### WSOLA (pitchCorrection) source invariants
-Hard-won invariants for `AudioBufferBaseSourceNode::processWithPitchCorrection` and back-to-back scheduled joins (`b2.start(t1 + D/pr)`, join compensation L = 0):
-
-- **Feed real PCM only.** Never let `updatePlaybackInfo`-zeroed start-quantum frames enter the WSOLA analysis queue; mid-quantum starts must instead shift WSOLA's rendered output into `startOffset` after synthesis. Injected zeros surface later as a ~1-quantum dropout when the primed input is consumed.
-- **Content accounting caps the EOF drain.** The stretcher can synthesize more output than the content is worth. Track consumed PCM (in output-time frames, `vReadIndex_` delta / rate) vs frames emitted, and stop the drain when emitted catches up — otherwise the surplus tail plays on top of the next scheduled source (±6 dB doubling/cancellation at the join, rate-dependent).
-- **Seed the first OLA overlap.** After `reset()`, `pendingOverlap_` is zeros, so the first grain fades in over half a window (~10 ms even when primed). `WsolaTimeStretcher` seeds `pendingOverlap_` with the first block's leading half on the first iteration (COLA windows then sum to unity) so output starts at full amplitude.
-- **Residual, accepted:** a single-sample phase step at a splice of two independent WSOLA states (they cannot be phase-aligned) and a ~2 ms sub-threshold notch at slowdown rates. Guarded by `WsolaScheduleJoinLatencyTest.JoinWaveformDiagnostic` (supports `WSOLA_RATE` / `WSOLA_KL_SECONDS` env overrides).
-
 ---
 
 ## Implementing a New Node — Checklist
