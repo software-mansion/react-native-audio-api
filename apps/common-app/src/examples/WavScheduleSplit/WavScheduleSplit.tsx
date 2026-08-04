@@ -1,7 +1,12 @@
 import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { AudioBufferSourceNode, AudioContext } from 'react-native-audio-api';
+import {
+  AudioBuffer,
+  AudioBufferSourceNode,
+  AudioContext,
+  OfflineAudioContext,
+} from 'react-native-audio-api';
 
 import { Button, Container, Slider, Spacer } from '../../components';
 import { colors } from '../../styles';
@@ -17,6 +22,8 @@ import { colors } from '../../styles';
  *
  * Tone control (440 Hz continuous):
  *   → ffmpeg-tone-part{1,2}.wav
+ *
+ * DC ones: synthetic fill(1) — offline dump of first frames counts WSOLA zeros.
  */
 const START_DELAY_SECONDS = 0.4;
 const MIN_PLAYBACK_RATE = 0.5;
@@ -27,6 +34,13 @@ const MIN_JOIN_COMPENSATION_MS = -100;
 const MAX_JOIN_COMPENSATION_MS = 100;
 const JOIN_COMPENSATION_STEP_MS = 1;
 const DEFAULT_JOIN_COMPENSATION_MS = 0;
+/** Each half of the synthetic ones sample (seconds). */
+const ONES_HALF_SECONDS = 5;
+/** Match WsolaTimeStretcher::kFirstOutputFramesToDump. */
+const LEADING_ZERO_PROBE_FRAMES = 255;
+/** Extra offline length so cold-start latency still fits inside the capture. */
+const LEADING_ZERO_CAPTURE_FRAMES = LEADING_ZERO_PROBE_FRAMES * 16;
+const ZERO_THRESHOLD = 1e-6;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const PAD_P1 = require('./ffmpeg-pad-part1.wav') as number;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -40,12 +54,16 @@ const TONE_P1 = require('./ffmpeg-tone-part1.wav') as number;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const TONE_P2 = require('./ffmpeg-tone-part2.wav') as number;
 
-type SampleKey = 'pad' | 'musicCont' | 'tone';
+type SampleKey = 'pad' | 'musicCont' | 'tone' | 'ones';
 
-const SAMPLES: Record<
-  SampleKey,
-  { label: string; hint: string; part1: number; part2: number }
-> = {
+type WavSample = {
+  label: string;
+  hint: string;
+  part1?: number;
+  part2?: number;
+};
+
+const SAMPLES: Record<SampleKey, WavSample> = {
   pad: {
     label: 'Continuous pad',
     hint: 'steady chord bed — best for hearing a join gap',
@@ -64,7 +82,38 @@ const SAMPLES: Record<
     part1: TONE_P1,
     part2: TONE_P2,
   },
+  ones: {
+    label: 'DC ones (1.0)',
+    hint: 'synthetic fill(1) — use “Dump first frames” for leading zeros',
+  },
 };
+
+function createDcOnesBuffer(
+  context: AudioContext | OfflineAudioContext,
+  durationSeconds: number
+): AudioBuffer {
+  const sampleRate = context.sampleRate;
+  const length = Math.max(1, Math.floor(durationSeconds * sampleRate));
+  const buffer = context.createBuffer(1, length, sampleRate);
+  buffer.getChannelData(0).fill(1);
+  return buffer;
+}
+
+function countLeadingZeros(samples: Float32Array, threshold = ZERO_THRESHOLD): number {
+  let n = 0;
+  while (n < samples.length && Math.abs(samples[n]!) < threshold) {
+    n += 1;
+  }
+  return n;
+}
+
+function formatFrameDump(samples: Float32Array): string {
+  const parts: string[] = [];
+  for (let i = 0; i < samples.length; i += 1) {
+    parts.push(`${i}:${samples[i]!.toFixed(4)}`);
+  }
+  return parts.join(' ');
+}
 
 /**
  * Experiment:
@@ -129,9 +178,15 @@ const WavScheduleSplit: FC = () => {
       await context.resume();
     }
 
+    if (sample === 'ones') {
+      const buffer1 = createDcOnesBuffer(context, ONES_HALF_SECONDS);
+      const buffer2 = createDcOnesBuffer(context, ONES_HALF_SECONDS);
+      return { context, buffer1, buffer2 };
+    }
+
     const { part1, part2 } = SAMPLES[sample];
-    const uri1 = Image.resolveAssetSource(part1).uri;
-    const uri2 = Image.resolveAssetSource(part2).uri;
+    const uri1 = Image.resolveAssetSource(part1!).uri;
+    const uri2 = Image.resolveAssetSource(part2!).uri;
 
     const arrayBuffer1 = await fetch(uri1).then((res) => res.arrayBuffer());
     const arrayBuffer2 = await fetch(uri2).then((res) => res.arrayBuffer());
@@ -140,6 +195,64 @@ const WavScheduleSplit: FC = () => {
     const buffer2 = await context.decodeAudioData(arrayBuffer2);
     return { context, buffer1, buffer2 };
   }, [getContext, sample]);
+
+  const dumpFirstOnesFrames = useCallback(async () => {
+    setIsLoading(true);
+    setEventLog([]);
+
+    try {
+      const live = getContext();
+      if (live.state === 'suspended') {
+        await live.resume();
+      }
+
+      const rate = playbackRate;
+      const sampleRate = live.sampleRate;
+      const offline = new OfflineAudioContext(
+        1,
+        LEADING_ZERO_CAPTURE_FRAMES,
+        sampleRate
+      );
+      const ones = createDcOnesBuffer(
+        offline,
+        LEADING_ZERO_CAPTURE_FRAMES / sampleRate + 1
+      );
+      const source = offline.createBufferSource({ pitchCorrection: true });
+      source.buffer = ones;
+      source.playbackRate.value = rate;
+      source.connect(offline.destination);
+      source.start(0);
+
+      const rendered = await offline.startRendering();
+      const channel = rendered.getChannelData(0);
+      const firstFrames = channel.subarray(0, LEADING_ZERO_PROBE_FRAMES);
+      const leadingZeros = countLeadingZeros(firstFrames);
+      const dump = formatFrameDump(firstFrames);
+
+      console.log(
+        `[WavScheduleSplit] first ${LEADING_ZERO_PROBE_FRAMES} frames · rate=${rate.toFixed(1)} · leadingZeros=${leadingZeros}`
+      );
+      console.log(`[WavScheduleSplit] frames: ${dump}`);
+
+      setStatus(
+        [
+          `ones probe · rate=${rate.toFixed(1)} pitchCorrection=true`,
+          `ctxSr=${sampleRate} capture=${LEADING_ZERO_CAPTURE_FRAMES}`,
+          `leadingZeros in first ${LEADING_ZERO_PROBE_FRAMES}=${leadingZeros}`,
+          `see console + event log for per-frame dump`,
+        ].join('\n')
+      );
+      appendLog(
+        `leadingZeros=${leadingZeros}/${LEADING_ZERO_PROBE_FRAMES} · rate=${rate.toFixed(1)}`
+      );
+      appendLog(dump);
+    } catch (error) {
+      console.error(error);
+      setStatus(`Error: ${String(error)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [appendLog, getContext, playbackRate]);
 
   const playGlued = useCallback(async () => {
     setIsLoading(true);
@@ -355,8 +468,9 @@ const WavScheduleSplit: FC = () => {
         <Spacer.Vertical size={16} />
         <Text style={styles.section}>Join compensation L</Text>
         <Text style={styles.hint}>
-          With priming + drain, try L ≈ −30 ms. Without priming, L ≈ 0 often
-          works. Compare glued vs unbroken.
+          Buffer sources no longer prime/drain WSOLA — cold-start join gaps are
+          expected. Compare glued vs unbroken; use DC ones + dump for leading
+          zeros.
         </Text>
         <Spacer.Vertical size={8} />
         <Slider
@@ -379,6 +493,16 @@ const WavScheduleSplit: FC = () => {
         <Button
           title={playLabel(`Play unbroken (rate ${rateLabel})`)}
           onPress={() => void playUnbroken()}
+          disabled={busy}
+        />
+        <Spacer.Vertical size={12} />
+        <Button
+          title={
+            isLoading
+              ? 'Loading…'
+              : `Dump first ${LEADING_ZERO_PROBE_FRAMES} frames (ones, rate ${rateLabel})`
+          }
+          onPress={() => void dumpFirstOnesFrames()}
           disabled={busy}
         />
         <Spacer.Vertical size={12} />
