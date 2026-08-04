@@ -3,6 +3,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <optional>
 
@@ -113,6 +114,86 @@ TEST_F(WsolaTimeStretcherTest, FeedInputPrimesForImmediateFirstQuantumOutput) {
     peak = std::max(peak, std::abs(output.getChannel(0)->span()[i]));
   }
   EXPECT_GT(peak, 0.01f);
+}
+
+/// Mirrors AudioBufferBaseSourceNode::primeWsolaInput sizing, then checks the
+/// previous primed-latency metric: leading output zeros before |x| > 1e-6.
+TEST_F(WsolaTimeStretcherTest, PrimedOnesBufferLeadingZerosNearZero) {
+  constexpr float kRate = 1.3f;
+  constexpr float kAbsThreshold = 1e-6f;
+
+  // Same formula as primeWsolaInput(): max(required, minToRun).
+  const size_t framesNeeded =
+      std::max(stretcher_.getRequiredInputFrames(), stretcher_.getMinInputFramesToRun());
+  ASSERT_GT(framesNeeded, 0u);
+
+  auto fillOnes = [](DSPAudioBuffer &buf) {
+    auto *ch = buf.getChannel(0)->begin();
+    std::fill(ch, ch + buf.getSize(), 1.0f);
+  };
+
+  DSPAudioBuffer ones(framesNeeded, 1, kSampleRate);
+  fillOnes(ones);
+
+  stretcher_.reset();
+  stretcher_.feedInput(ones, framesNeeded);
+  ASSERT_GE(stretcher_.getBufferedInputFrames(), stretcher_.getMinInputFramesToRun());
+
+  const size_t inputFrames = inputFramesForQuantum(kRate);
+  DSPAudioBuffer input(inputFrames, 1, kSampleRate);
+  DSPAudioBuffer output(kQuantum, 1, kSampleRate);
+  fillOnes(input);
+
+  stretcher_.process(input, inputFrames, output, kQuantum, kRate);
+
+  const auto *out = output.getChannel(0)->begin();
+  size_t leadingZeros = 0;
+  while (leadingZeros < output.getSize() && std::abs(out[leadingZeros]) <= kAbsThreshold) {
+    ++leadingZeros;
+  }
+  float peak = 0.0f;
+  for (size_t i = 0; i < output.getSize(); ++i) {
+    peak = std::max(peak, std::abs(out[i]));
+  }
+
+  // Ones probe: post-prime leading-zero latency must be ~0 (Hann may zero sample 0).
+  EXPECT_GT(peak, 0.5f) << "ones probe should be loud after COLA seed";
+  EXPECT_LT(leadingZeros, output.getSize()) << "no non-zero output in first quantum";
+  EXPECT_LE(leadingZeros, 1u) << "primed leading-zero onset; got " << leadingZeros;
+}
+
+TEST_F(WsolaTimeStretcherTest, ColdStartOnesLeadingZerosManyQuanta) {
+  constexpr float kRate = 1.3f;
+  constexpr float kAbsThreshold = 1e-6f;
+
+  stretcher_.reset();
+  ASSERT_EQ(stretcher_.getBufferedInputFrames(), 0u);
+
+  size_t leadingZeros = 0;
+  bool sawNonZero = false;
+  const size_t inputFrames = inputFramesForQuantum(kRate);
+  DSPAudioBuffer input(inputFrames, 1, kSampleRate);
+  DSPAudioBuffer output(kQuantum, 1, kSampleRate);
+  auto *in = input.getChannel(0)->begin();
+  std::fill(in, in + input.getSize(), 1.0f);
+
+  for (size_t pass = 0; pass < 64 && !sawNonZero; ++pass) {
+    stretcher_.process(input, inputFrames, output, kQuantum, kRate);
+    const auto *out = output.getChannel(0)->begin();
+    size_t zerosInQuantum = 0;
+    while (zerosInQuantum < output.getSize() && std::abs(out[zerosInQuantum]) <= kAbsThreshold) {
+      ++zerosInQuantum;
+    }
+    if (zerosInQuantum < output.getSize()) {
+      leadingZeros += zerosInQuantum;
+      sawNonZero = true;
+    } else {
+      leadingZeros += kQuantum;
+    }
+  }
+
+  ASSERT_TRUE(sawNonZero);
+  EXPECT_GE(leadingZeros, kQuantum) << "cold-start leading zeros (no prime); got " << leadingZeros;
 }
 
 TEST_F(WsolaTimeStretcherTest, SchedulingLatencyFormulaMatchesDocumentedConstants) {

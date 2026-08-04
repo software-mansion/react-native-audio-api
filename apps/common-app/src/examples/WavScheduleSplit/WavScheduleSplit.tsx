@@ -149,7 +149,7 @@ const WavScheduleSplit: FC = () => {
     try {
       const { context, buffer1, buffer2 } = await loadDecodedPair();
       const rate = playbackRate;
-      const pitchCorrection = rate !== 1;
+      const pitchCorrection = true;
 
       const sourceNode1 = context.createBufferSource({ pitchCorrection });
       sourceNode1.buffer = buffer1;
@@ -187,13 +187,18 @@ const WavScheduleSplit: FC = () => {
       };
       sourceNode2.onEnded = () => {
         const now = context.currentTime;
+        const contentDur2 = buffer2.duration / rate;
+        const expectedEnd2 = joinAt + contentDur2;
+        const deltaMs2 = (now - expectedEnd2) * 1000;
         try {
           sourceNode2.disconnect();
         } catch {
           // already disconnected
         }
         setIsRunning(false);
-        appendLog(`SECOND finished @ ${now.toFixed(3)}s`);
+        appendLog(
+          `SECOND finished @ ${now.toFixed(3)}s  (content end ${expectedEnd2.toFixed(3)}s, Δ ${deltaMs2.toFixed(1)} ms; started ${joinAt.toFixed(3)}s)`
+        );
       };
 
       sourceNode1.start(t0);
@@ -211,11 +216,12 @@ const WavScheduleSplit: FC = () => {
           `bufSr=${buffer1.sampleRate} ctxSr=${context.sampleRate}`,
           `source1.start(${t0.toFixed(3)})`,
           `source2.start(${joinAt.toFixed(3)})  ← joinAt (expected)`,
+          `source2 expected end ${(joinAt + buffer2.duration / rate).toFixed(3)}s`,
           `Waiting for onEnded…`,
         ].join('\n')
       );
       appendLog(
-        `scheduled · rate=${rate.toFixed(1)} · L=${(joinCompensation * 1000).toFixed(1)}ms · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)}`
+        `scheduled · rate=${rate.toFixed(1)} · L=${(joinCompensation * 1000).toFixed(1)}ms · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)} · secondEnds~${(joinAt + buffer2.duration / rate).toFixed(3)}`
       );
     } catch (error) {
       console.error(error);
@@ -241,7 +247,7 @@ const WavScheduleSplit: FC = () => {
     try {
       const { context, buffer1, buffer2 } = await loadDecodedPair();
       const rate = playbackRate;
-      const pitchCorrection = rate !== 1;
+      const pitchCorrection = true;
 
       const length = buffer1.length + buffer2.length;
       const continuous = context.createBuffer(

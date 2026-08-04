@@ -29,6 +29,7 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
   JSI_HOST_FUNCTION_DECL(pause);
   JSI_HOST_FUNCTION_DECL(resume);
   JSI_HOST_FUNCTION_DECL(enqueueBuffer);
+  JSI_HOST_FUNCTION_DECL(endOfStream);
   JSI_HOST_FUNCTION_DECL(dequeueBuffer);
   JSI_HOST_FUNCTION_DECL(clearBuffers);
 

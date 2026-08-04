@@ -300,7 +300,11 @@ TEST(WsolaScheduleJoinLatencyTest, ContiguousOnesAfterJoin) {
 
   EXPECT_EQ(runs, 1u) << "Gap in ones ⇒ L is wrong. L=" << L << "s onesStart=" << run.start
                       << " onesLen=" << run.length;
-  EXPECT_GE(run.start, 1u) << "Expected leading zeros from WSOLA latency before ones";
+  // Primed + COLA-seeded synthesis emits from the scheduled start; allow only
+  // sub-quantum jitter before the ones run.
+  EXPECT_LE(run.start, static_cast<size_t>(kQuantum))
+      << "Ones should begin near the scheduled start (not after WSOLA latency). start="
+      << run.start;
   EXPECT_GE(run.length, minOnes) << "Contiguous ones too short (need ≥90% of 2*x/rate). L=" << L
                                  << "s onesLen=" << run.length << " min=" << minOnes
                                  << " ideal=" << idealOnes;
@@ -403,7 +407,8 @@ TEST(WsolaScheduleJoinLatencyTest, ContiguousSineEnergyAfterJoin) {
 
   EXPECT_EQ(runs, 1u) << "Energy gap ⇒ L is wrong for sine. L=" << L << "s start=" << run.start
                       << " len=" << run.length;
-  EXPECT_GE(run.start, 1u) << "Expected leading silence from WSOLA latency before sine";
+  EXPECT_LE(run.start, static_cast<size_t>(kQuantum))
+      << "Sine energy should begin near the scheduled start. start=" << run.start;
   EXPECT_GE(run.length, minActive) << "Active energy too short. L=" << L << "s len=" << run.length
                                    << " min=" << minActive << " ideal=" << idealActive;
 }

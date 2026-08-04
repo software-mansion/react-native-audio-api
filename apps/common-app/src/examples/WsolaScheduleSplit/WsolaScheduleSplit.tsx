@@ -376,7 +376,7 @@ const WsolaScheduleSplit: FC = () => {
     async (mode: RunMode) => {
       const rate = playbackRate;
       // Pitch correction only when stretching; rate 1 is the plain path.
-      const pitchCorrection = rate !== 1;
+      const pitchCorrection = true;
 
       setIsLoading(true);
       stopSources();

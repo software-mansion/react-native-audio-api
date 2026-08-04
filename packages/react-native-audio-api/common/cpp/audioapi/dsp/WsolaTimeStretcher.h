@@ -80,9 +80,19 @@ class WsolaTimeStretcher {
   int searchBlockIndex_{0};
   size_t outputReadIndex_{0};
 
+  /// First OLA iteration after reset seeds @ref pendingOverlap_ with the leading
+  /// block so output starts at full amplitude (no half-window fade-in).
+  bool firstSynthesisIteration_{true};
+
   /// Persist across @ref drainOutput quanta so EOF silence is padded only once.
   bool drainEofSilencePadded_{false};
   bool drainPendingFlushed_{false};
+
+  /// Startup-latency probe: first absolute / relative non-zero output sample.
+  bool firstSampleFound_{false};
+  bool firstRelativeSampleFound_{false};
+  float outputPeakAbs_{0.0f};
+  size_t totalFramesOutput_{0};
 
   std::vector<float> olaWindow_;
   std::vector<float> transitionWindow_;

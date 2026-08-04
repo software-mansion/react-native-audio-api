@@ -32,10 +32,14 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   void resume(double when);
 
   /// @note Audio Thread only
-  void enqueueBuffer(
-      const std::shared_ptr<AudioBuffer> &buffer,
-      size_t bufferId,
-      const std::shared_ptr<AudioBuffer> &tailBuffer);
+  void enqueueBuffer(const std::shared_ptr<AudioBuffer> &buffer, size_t bufferId);
+
+  /// @brief Declares that no further buffers will be enqueued.
+  /// Once the queue empties after this call, playback treats that as natural EOF
+  /// (WSOLA drain when pitch correction is on, then finish). Without this call,
+  /// an empty queue is only an underrun and the node stays alive.
+  /// @note Audio Thread only
+  void endOfStream();
 
   /// @note Audio Thread only
   void dequeueBuffer(size_t bufferId);
@@ -71,14 +75,17 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
 
   bool isPaused_ = false;
-  bool addExtraTailFrames_ = false;
-  std::shared_ptr<AudioBuffer> tailBuffer_;
+  /// True after @ref endOfStream(); empty queue then means EOF, not underrun.
+  bool endOfStream_ = false;
 
   double playedBuffersDuration_ = 0;
 
   EventCaller<AudioEvent::BUFFER_ENDED> onBufferEndedEvent_;
 
   std::unique_ptr<QueueBufferProcessor> processor_;
+
+  /// Arms STOP_SCHEDULED when endOfStream_ and the queue is empty.
+  void armNaturalEofIfNeeded();
 };
 
 } // namespace audioapi
