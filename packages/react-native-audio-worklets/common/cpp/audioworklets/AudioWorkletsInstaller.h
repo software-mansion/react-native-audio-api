@@ -10,7 +10,7 @@
 #include <worklets/WorkletRuntime/WorkletRuntime.h>
 
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <jsi/jsi.h>
 #include <memory>
@@ -69,7 +69,7 @@ class AudioWorkletsInstaller {
   }
 
  private:
-  static std::shared_ptr<audioapi::AudioEventHandlerRegistry> getAudioEventHandlerRegistryOrThrow(
+  static std::shared_ptr<audioapi::IAudioEventHandlerRegistry> getAudioEventHandlerRegistryOrThrow(
       jsi::Runtime &runtime) {
     auto emitter = runtime.global().getProperty(runtime, "AudioEventEmitter");
     if (!emitter.isObject()) {

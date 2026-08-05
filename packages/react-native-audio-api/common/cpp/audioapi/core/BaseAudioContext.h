@@ -22,7 +22,6 @@
 
 namespace audioapi {
 
-class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
 class PeriodicWave;
 class AudioDestinationNode;

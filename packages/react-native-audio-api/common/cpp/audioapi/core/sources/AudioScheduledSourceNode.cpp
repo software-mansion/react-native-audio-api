@@ -1,7 +1,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/dsp/AudioUtils.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
 #if !RN_AUDIO_API_TEST
 #include <audioapi/core/AudioContext.h>

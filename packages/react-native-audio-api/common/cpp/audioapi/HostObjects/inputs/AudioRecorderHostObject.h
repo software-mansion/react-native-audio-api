@@ -10,12 +10,12 @@ namespace audioapi {
 using namespace facebook;
 
 class AudioRecorder;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AudioRecorderHostObject : public HostObject {
  public:
   AudioRecorderHostObject(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker);
 
