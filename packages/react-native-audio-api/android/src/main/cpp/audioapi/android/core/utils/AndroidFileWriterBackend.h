@@ -23,7 +23,7 @@ class AudioFileProperties;
 class AndroidFileWriterBackend : public AudioFileWriter {
  public:
   explicit AndroidFileWriterBackend(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties);
 
   void writeAudioData(AudioDataType data, int numFrames) override;

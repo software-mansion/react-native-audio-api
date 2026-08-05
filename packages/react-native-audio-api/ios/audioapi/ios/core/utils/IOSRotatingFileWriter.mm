@@ -3,7 +3,7 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/RotatingFileWriter.h>
 
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/IOSRotatingFileWriter.h>
 #include <audioapi/utils/AudioFileProperties.h>
@@ -15,7 +15,7 @@
 namespace audioapi {
 
 IOSRotatingFileWriter::IOSRotatingFileWriter(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     size_t rotateIntervalBytes,
     WriterFactory writerFactory,

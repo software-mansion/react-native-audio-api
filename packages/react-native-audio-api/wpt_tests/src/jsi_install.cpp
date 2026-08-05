@@ -9,6 +9,7 @@
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <jsi/jsi.h>
 
@@ -24,6 +25,7 @@ using audioapi::AudioBufferHostObject;
 using audioapi::AudioContextHostObject;
 using audioapi::AudioEventHandlerRegistry;
 using audioapi::AudioEventHandlerRegistryHostObject;
+using audioapi::IAudioEventHandlerRegistry;
 using audioapi::OfflineAudioContextHostObject;
 using facebook::jsi::Function;
 using facebook::jsi::JSError;
@@ -108,7 +110,7 @@ void parseOfflineContextArgs(
 
 void installOfflineBindings(
     Runtime &runtime,
-    const std::shared_ptr<AudioEventHandlerRegistry> &eventRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &eventRegistry,
     const std::shared_ptr<SyncCallInvoker> &callInvoker) {
   auto createOfflineAudioContext = Function::createFromHostFunction(
       runtime,
@@ -165,7 +167,7 @@ void installOfflineBindings(
 
 void installAudioContextBinding(
     Runtime &runtime,
-    const std::shared_ptr<AudioEventHandlerRegistry> &eventRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &eventRegistry,
     const std::shared_ptr<SyncCallInvoker> &callInvoker) {
   auto createAudioContext = Function::createFromHostFunction(
       runtime,
@@ -206,7 +208,7 @@ void installUnsupportedGlobal(Runtime &runtime, const char *name) {
 
 void installAudioEventEmitter(
     Runtime &runtime,
-    const std::shared_ptr<AudioEventHandlerRegistry> &eventRegistry) {
+    const std::shared_ptr<IAudioEventHandlerRegistry> &eventRegistry) {
   auto eventEmitter = std::make_shared<AudioEventHandlerRegistryHostObject>(eventRegistry);
   runtime.global().setProperty(
       runtime,

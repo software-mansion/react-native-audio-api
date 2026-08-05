@@ -14,13 +14,13 @@ namespace audioapi {
 class AudioFileWriter;
 class AudioFileProperties;
 class AudioRecorderCallback;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
   enum class RecorderState : uint8_t { Idle = 0, Recording, Paused };
   explicit AudioRecorder(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
       : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
   AudioRecorder(const AudioRecorder &) = delete;
   AudioRecorder(AudioRecorder &&) = delete;
@@ -89,7 +89,7 @@ class AudioRecorder {
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
-  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
 };
 

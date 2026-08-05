@@ -7,9 +7,9 @@
 #include <cstdint>
 #include <memory>
 
-// interface exists only for the sake of testing
-// in every other case, AudioEventHandlerRegistry is used
-// when looking for implementations, look for AudioEventHandlerRegistry
+// Production modules depend on this interface so tests
+// can inject a mock. The concrete AudioEventHandlerRegistry is
+// constructed only at platform bootstrap (AudioAPIModule / WPT install).
 
 namespace audioapi {
 
