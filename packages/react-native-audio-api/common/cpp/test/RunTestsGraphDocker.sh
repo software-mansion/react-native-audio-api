@@ -1,26 +1,48 @@
 #!/bin/bash
 
-# This script builds and runs the AddressSanitizer-enabled tests in a Linux Docker container from macOS.
-# Usage: ./run_graph_tests_in_docker.sh
-# Make sure to run from the root of your repo or adjust paths accordingly.
+print_help() {
+  cat <<'EOF'
+Usage: RunTestsGraphDocker.sh [RunTests.sh args…]
 
-set -e
+Thin Docker wrapper around RunTests.sh (Linux leak/ASan parity from macOS).
+Forwards all arguments into the container. If none are given, runs:
+  extended graph
 
-# Absolute path to the repo root on the host (macOS)
-REPO_ROOT=$(cd "$(dirname "$0")/../../../../.." && pwd)
+Examples:
+  RunTestsGraphDocker.sh
+  RunTestsGraphDocker.sh extended graph --tsan
+  RunTestsGraphDocker.sh --help   # this help (container not started)
+  GTEST_FILTER='GraphTest.*' RunTestsGraphDocker.sh extended graph
 
-# Name for the Docker image/container
+See RunTests.sh --help and TESTING.md.
+EOF
+}
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../.." && pwd)"
+
 IMAGE_NAME=asan-graph-test
 CONTAINER_NAME=asan-graph-test-container
 
-# Build the Docker image (Dockerfile must be in the test dir)
-docker build -t $IMAGE_NAME "${REPO_ROOT}/packages/react-native-audio-api/common/cpp/test"
+if [[ $# -eq 1 && ( "$1" == "--help" || "$1" == "-h" ) ]]; then
+  print_help
+  exit 0
+fi
 
-# Run the container, mounting the entire repo for source access
+if [[ $# -eq 0 ]]; then
+  set -- extended graph
+fi
+
+docker build -t "$IMAGE_NAME" "${SCRIPT_DIR}"
+
 docker run --rm -it \
-  --name $CONTAINER_NAME \
+  --name "$CONTAINER_NAME" \
   -v "$REPO_ROOT:/workspace" \
   -w /workspace/packages/react-native-audio-api/common/cpp/test \
   -e ASAN_OPTIONS=detect_leaks=1:verbosity=2 \
-  $IMAGE_NAME \
-  bash RunTestsGraph.sh
+  ${GTEST_FILTER:+-e GTEST_FILTER="$GTEST_FILTER"} \
+  ${GRAPH_FILTER:+-e GRAPH_FILTER="$GRAPH_FILTER"} \
+  "$IMAGE_NAME" \
+  bash RunTests.sh "$@"

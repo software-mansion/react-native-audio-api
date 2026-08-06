@@ -5,24 +5,28 @@ on:
   workflow_dispatch:
     inputs:
       run_cpp_tests:
-        description: Run C++ tests (GCC)
+        description: Run C++ smoke tests (GCC)
         type: boolean
         default: true
       run_cpp_coverage:
-        description: Run C++ coverage (Clang / llvm-cov)
+        description: Run C++ coverage (Clang / llvm-cov, smoke)
         type: boolean
         default: true
       run_js_tests:
         description: Run JS integration tests
         type: boolean
         default: true
+      run_cpp_extended_graph:
+        description: Run C++ extended category graph
+        type: boolean
+        default: false
 
 jobs:
   cpp-tests:
     if: github.event_name == 'pull_request' || inputs.run_cpp_tests
     uses: ./.github/workflows/cpp-job.yml
     with:
-      name: C++ tests
+      name: C++ smoke
       working-directory: packages/react-native-audio-api
       run: yarn test:cpp
 
@@ -33,3 +37,19 @@ jobs:
   js-tests:
     if: github.event_name == 'pull_request' || inputs.run_js_tests
     uses: ./.github/workflows/js-job.yml
+
+  # One thin entry per extended category: paths + categories stay here;
+  # filter/setup/run logic lives in cpp-extended-job.yml.
+  cpp-extended-graph:
+    if: github.event_name == 'pull_request' || inputs.run_cpp_extended_graph
+    uses: ./.github/workflows/cpp-extended-job.yml
+    with:
+      name: C++ extended (graph)
+      categories: graph
+      force: ${{ github.event_name == 'workflow_dispatch' }}
+      path_filters: |
+        run:
+          - 'packages/react-native-audio-api/common/cpp/audioapi/core/utils/graph/**'
+          - 'packages/react-native-audio-api/common/cpp/test/src/graph/**'
+          - 'packages/react-native-audio-api/common/cpp/test/filters.sh'
+          - 'packages/react-native-audio-api/common/cpp/test/RunTests.sh'
