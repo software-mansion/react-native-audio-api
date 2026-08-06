@@ -1,0 +1,78 @@
+name: C++ Extended Job
+
+# Reusable runner for one (or more) C++ extended categories.
+# Path filtering and setup live here so tests.yml only declares a thin per-category entry.
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: Job display name
+        required: true
+        type: string
+      categories:
+        description: Space-separated extended categories (e.g. graph)
+        required: true
+        type: string
+      force:
+        description: Skip path filter and always run (manual workflow_dispatch)
+        required: false
+        type: boolean
+        default: false
+      path_filters:
+        description: >
+          dorny/paths-filter YAML document with a single top-level key `run`
+          listing globs that should trigger this category on pull_request.
+        required: true
+        type: string
+
+jobs:
+  run:
+    name: ${{ inputs.name }}
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    defaults:
+      run:
+        working-directory: packages/react-native-audio-api/common/cpp/test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Path filter
+        if: ${{ inputs.force == false }}
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: ${{ inputs.path_filters }}
+
+      - name: Decide whether to run
+        id: decide
+        working-directory: .
+        run: |
+          if [[ "${{ inputs.force }}" == "true" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ steps.filter.outputs.run }}" == "true" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No matching path changes; skipping ${{ inputs.name }}."
+          fi
+
+      - name: Checkout with Node
+        if: steps.decide.outputs.run == 'true'
+        uses: ./.github/actions/checkout-with-node
+
+      - name: Setup Yarn
+        if: steps.decide.outputs.run == 'true'
+        uses: ./.github/actions/setup-yarn
+
+      - name: Setup CMake
+        if: steps.decide.outputs.run == 'true'
+        uses: ./.github/actions/setup-cmake
+
+      - name: ${{ inputs.name }}
+        if: steps.decide.outputs.run == 'true'
+        run: bash RunTests.sh extended ${{ inputs.categories }}

@@ -1,21 +1,47 @@
 #!/bin/bash
 
-# Build the gtest suite with Clang LLVM source-based coverage and emit an
-# llvm-cov HTML report. Uses Xcode llvm-profdata/llvm-cov on macOS (no gcovr).
-#
-# From packages/react-native-audio-api:
-#   yarn test:cpp:coverage
+print_help() {
+  cat <<'EOF'
+Usage: RunCoverage.sh
+
+Build the C++ gtest suite with Clang LLVM source-based coverage and emit an
+llvm-cov HTML report under coverage-html/. Always uses the smoke filter
+(unsanitized). Override with GTEST_FILTER if needed.
+
+  yarn test:cpp:coverage
+
+Options:
+  --help, -h  Show this help.
+EOF
+}
 
 set -euo pipefail
+
+if [[ $# -gt 0 ]]; then
+  case "$1" in
+    --help|-h)
+      print_help
+      exit 0
+      ;;
+    *)
+      echo "error: unexpected argument '$1'" >&2
+      print_help >&2
+      exit 1
+      ;;
+  esac
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# shellcheck source=filters.sh
+source "${SCRIPT_DIR}/filters.sh"
+
 readonly BUILD_DIR="${SCRIPT_DIR}/build-coverage"
 readonly COVERAGE_HTML_DIR="${SCRIPT_DIR}/coverage-html"
 readonly PROFDATA_FILE="${BUILD_DIR}/coverage.profdata"
-readonly GRAPH_FILTER="AudioGraphTest.*:AudioGraphFuzzTest.*:GraphTest.*:GraphFuzzTest.*:GraphCycleDebugTest.*:HostGraphTest.*:Seeds/*"
 readonly IGNORE_FILENAME_REGEX='(/common/cpp/test/|/_deps/|/googletest|/gmock|/audioapi/libs/|/r8brain/|/jsi/|/HostObjects/)'
+readonly FILTER="${GTEST_FILTER:-$(cpp_test_smoke_filter)}"
 
 resolve_llvm_tool() {
   local tool_name="$1"
@@ -57,7 +83,8 @@ rm -rf "$COVERAGE_HTML_DIR"
 (
   cd "$BUILD_DIR"
   export LLVM_PROFILE_FILE="${BUILD_DIR}/default-%p.profraw"
-  ./tests --gtest_print_time=1 --gtest_filter="-${GRAPH_FILTER}"
+  echo "=== Coverage run (smoke filter=${FILTER}) ==="
+  ./tests --gtest_print_time=1 --gtest_filter="${FILTER}"
 )
 
 shopt -s nullglob
