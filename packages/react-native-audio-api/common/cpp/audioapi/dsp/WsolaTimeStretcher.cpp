@@ -86,23 +86,11 @@ void WsolaTimeStretcher::reset() {
   drainPendingFlushed_ = false;
 
   firstSampleFound_ = false;
-  firstRelativeSampleFound_ = false;
-  outputPeakAbs_ = 0.0f;
   totalFramesOutput_ = 0;
 
   firstFramesDumpPrinted_ = false;
-  firstInputFramesDump_.clear();
-  firstInputFramesDump_.reserve(kFirstFramesToDump);
   firstOutputFramesDump_.clear();
   firstOutputFramesDump_.reserve(kFirstFramesToDump);
-
-  lastSourceInputFrames_.clear();
-  lastSourceInputFrames_.reserve(kFirstFramesToDump);
-  drainTailDumpPrinted_ = false;
-  drainOutputFrames_.clear();
-  drainOutputFrames_.reserve(kFirstFramesToDump);
-  drainSilencePadFrames_ = 0;
-  totalDrainOutputFrames_ = 0;
 
   for (auto &channel : inputQueue_) {
     channel.clear();
@@ -167,12 +155,8 @@ void WsolaTimeStretcher::process(
     runOneIteration(playbackRate);
   }
 
-  if (!firstSampleFound_ || !firstRelativeSampleFound_) {
-    // Absolute floor catches any non-zero; relative waits for a meaningful peak so
-    // quiet leading content does not look like algorithmic latency.
+  if (!firstSampleFound_) {
     constexpr float kAbsoluteThreshold = 1e-6f;
-    constexpr float kRelativeFraction = 0.5f;
-    constexpr float kMinPeakForRelative = 0.05f;
 
     for (size_t i = 0; i < output.getNumberOfChannels(); ++i) {
       auto *channel = output.getChannel(i);
@@ -181,9 +165,7 @@ void WsolaTimeStretcher::process(
       const size_t framesToScan = std::min(outputFrames, channel->getSize());
       for (size_t j = 0; j < framesToScan; ++j) {
         const float absSample = std::abs((*channel)[j]);
-        outputPeakAbs_ = std::max(outputPeakAbs_, absSample);
-
-        if (!firstSampleFound_ && absSample > kAbsoluteThreshold) {
+        if (absSample > kAbsoluteThreshold) {
           firstSampleFound_ = true;
           const size_t absoluteFrameIndex = totalFramesOutput_ + j;
           const double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
@@ -191,33 +173,16 @@ void WsolaTimeStretcher::process(
                     << "Ramka wyjsciowa: " << absoluteFrameIndex << " | Opoznienie: " << latencyMs
                     << " ms"
                     << " | Playback Rate: " << playbackRate << std::endl;
-        }
-
-        if (!firstRelativeSampleFound_ && outputPeakAbs_ >= kMinPeakForRelative &&
-            absSample >= kRelativeFraction * outputPeakAbs_) {
-          firstRelativeSampleFound_ = true;
-          const size_t absoluteFrameIndex = totalFramesOutput_ + j;
-          const double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
-          std::cout << "[WSOLA] Pierwszy dzwiek (rel>=" << kRelativeFraction
-                    << "*peak, peak>=" << kMinPeakForRelative << ")! "
-                    << "Ramka wyjsciowa: " << absoluteFrameIndex << " | Opoznienie: " << latencyMs
-                    << " ms"
-                    << " | peak=" << outputPeakAbs_ << " | Playback Rate: " << playbackRate
-                    << std::endl;
-        }
-
-        if (firstSampleFound_ && firstRelativeSampleFound_) {
           break;
         }
       }
-      if (firstSampleFound_ && firstRelativeSampleFound_) {
+      if (firstSampleFound_) {
         break;
       }
     }
   }
 
-  // One-shot: collect then print the first 255 ch0 output frames of the requested
-  // span, paired with the first 255 ch0 input frames fed (incl. prime via appendInput).
+  // One-shot: collect then print the first 255 ch0 output frames after reset.
   if (!firstFramesDumpPrinted_ && output.getNumberOfChannels() > 0) {
     auto *channel = output.getChannel(0);
     const size_t framesToDump = std::min(outputFrames, channel->getSize());
@@ -236,22 +201,10 @@ void WsolaTimeStretcher::process(
 
       std::cout << "[WSOLA] first " << kFirstFramesToDump
                 << " frames · leadingZeros=" << leadingZeros << " · rate=" << playbackRate
-                << " · inputCollected=" << firstInputFramesDump_.size() << std::endl;
-      std::cout << "[WSOLA] input:";
-      for (size_t i = 0; i < firstInputFramesDump_.size(); ++i) {
-        std::cout << ' ' << i << ':' << firstInputFramesDump_[i];
-      }
-      std::cout << std::endl;
+                << std::endl;
       std::cout << "[WSOLA] output:";
       for (size_t i = 0; i < firstOutputFramesDump_.size(); ++i) {
         std::cout << ' ' << i << ':' << firstOutputFramesDump_[i];
-      }
-      std::cout << std::endl;
-      const size_t paired = std::min(firstInputFramesDump_.size(), firstOutputFramesDump_.size());
-      std::cout << "[WSOLA] paired:";
-      for (size_t i = 0; i < paired; ++i) {
-        std::cout << ' ' << i << ":in=" << firstInputFramesDump_[i]
-                  << ",out=" << firstOutputFramesDump_[i];
       }
       std::cout << std::endl;
     }
@@ -278,130 +231,73 @@ WsolaTimeStretcher::drainOutput(DSPAudioBuffer &output, size_t outputFrames, flo
 
     // Pad one analysis window of silence so the last partial search/target region
     // can still form hops. Once per drain session (not per quantum) — otherwise
-    // each quantum re-pads and playback never ends.
+    // each quantum re-pads and playback never ends. Set the flag only after a
+    // successful insert so a capacity miss can retry (after compact or next quantum).
     if (!drainEofSilencePadded_ && hopSize_ > 0 && !inputQueue_.empty()) {
-      drainEofSilencePadded_ = true;
       const size_t pad = searchIntervalFrames_ + windowSize_;
-      bool canPad = true;
-      for (const auto &channel : inputQueue_) {
-        if (channel.size() + pad > channel.capacity()) {
-          canPad = false;
-          break;
+      auto tryInsertEofSilencePad = [&]() {
+        for (const auto &channel : inputQueue_) {
+          if (channel.size() + pad > channel.capacity()) {
+            return false;
+          }
         }
-      }
-      if (canPad) {
-        drainSilencePadFrames_ = pad;
         for (auto &channel : inputQueue_) {
           channel.insert(channel.end(), pad, 0.0f);
         }
+        drainEofSilencePadded_ = true;
+        return true;
+      };
+
+      if (tryInsertEofSilencePad()) {
         continue;
+      }
+
+      // Free consumed analysis frames, then retry once before giving up.
+      const int earliestUsedIndex = std::min(targetBlockIndex_, searchBlockIndex_);
+      if (earliestUsedIndex > 0) {
+        compactInputQueue(static_cast<size_t>(earliestUsedIndex), playbackRate);
+        if (tryInsertEofSilencePad()) {
+          continue;
+        }
       }
     }
 
     // Flush leftover half-window once so EOF does not discard pendingOverlap_.
+    // Commit only when every channel has room — otherwise a mid-loop break would
+    // leave channels desynced while drainPendingFlushed_ blocked retries.
     if (!drainPendingFlushed_ && hopSize_ > 0) {
-      drainPendingFlushed_ = true;
+      compactOutputQueueIfNeeded();
+
+      bool canFlush = true;
       for (size_t channel = 0; channel < channels_; ++channel) {
-        auto &outQueue = outputQueue_[channel];
-        compactOutputQueueIfNeeded();
-        if (outQueue.size() + hopSize_ > outQueue.capacity()) {
+        if (outputQueue_[channel].size() + hopSize_ > outputQueue_[channel].capacity()) {
+          canFlush = false;
           break;
         }
-        for (size_t frame = 0; frame < hopSize_; ++frame) {
-          outQueue.push_back(pendingOverlap_[channel][frame] * olaWindow_[hopSize_ + frame]);
-          pendingOverlap_[channel][frame] = 0.0f;
-        }
       }
-      continue;
+
+      if (canFlush) {
+        for (size_t channel = 0; channel < channels_; ++channel) {
+          auto &outQueue = outputQueue_[channel];
+          for (size_t frame = 0; frame < hopSize_; ++frame) {
+            outQueue.push_back(pendingOverlap_[channel][frame] * olaWindow_[hopSize_ + frame]);
+            pendingOverlap_[channel][frame] = 0.0f;
+          }
+        }
+        drainPendingFlushed_ = true;
+        continue;
+      }
     }
     break;
   }
 
-  // Rolling last-N drain outputs; print once the stretcher cannot fill the request.
-  if (!drainTailDumpPrinted_ && output.getNumberOfChannels() > 0 && rendered > 0) {
-    auto *channel = output.getChannel(0);
-    const size_t framesToRecord = std::min(rendered, channel->getSize());
-    for (size_t j = 0; j < framesToRecord; ++j) {
-      if (drainOutputFrames_.size() >= kFirstFramesToDump) {
-        drainOutputFrames_.erase(drainOutputFrames_.begin());
-      }
-      drainOutputFrames_.push_back((*channel)[j]);
-    }
-    totalDrainOutputFrames_ += framesToRecord;
-  }
-
-  if (!drainTailDumpPrinted_ && rendered < outputFrames && !drainOutputFrames_.empty()) {
-    printDrainTailDump(playbackRate);
-  }
-
   return rendered;
-}
-
-void WsolaTimeStretcher::finalizeDrainTailDump(float playbackRate) {
-  printDrainTailDump(playbackRate);
-}
-
-void WsolaTimeStretcher::printDrainTailDump(float playbackRate) {
-  if (drainTailDumpPrinted_ || drainOutputFrames_.empty()) {
-    return;
-  }
-  drainTailDumpPrinted_ = true;
-
-  size_t trailingZeros = 0;
-  for (size_t i = drainOutputFrames_.size(); i > 0; --i) {
-    if (std::abs(drainOutputFrames_[i - 1]) >= kDumpZeroThreshold) {
-      break;
-    }
-    ++trailingZeros;
-  }
-
-  std::cout << "[WSOLA] drain tail · drainedTotal=" << totalDrainOutputFrames_
-            << " · last=" << drainOutputFrames_.size() << " · trailingZeros=" << trailingZeros
-            << " · silencePad=" << drainSilencePadFrames_ << " · rate=" << playbackRate
-            << std::endl;
-  std::cout << "[WSOLA] drain note: no source PCM during drain — analysis pad is zeros; "
-               "lastSourceInput is the final appendInput window before EOF"
-            << std::endl;
-  std::cout << "[WSOLA] lastSourceInput:";
-  for (size_t i = 0; i < lastSourceInputFrames_.size(); ++i) {
-    std::cout << ' ' << i << ':' << lastSourceInputFrames_[i];
-  }
-  std::cout << std::endl;
-  std::cout << "[WSOLA] drainOutput:";
-  for (size_t i = 0; i < drainOutputFrames_.size(); ++i) {
-    std::cout << ' ' << i << ':' << drainOutputFrames_[i];
-  }
-  std::cout << std::endl;
-  const size_t paired = std::min(lastSourceInputFrames_.size(), drainOutputFrames_.size());
-  std::cout << "[WSOLA] drainPaired (sourceTail vs drainOut, not time-aligned):";
-  for (size_t i = 0; i < paired; ++i) {
-    std::cout << ' ' << i << ":src=" << lastSourceInputFrames_[i]
-              << ",drain=" << drainOutputFrames_[i];
-  }
-  std::cout << std::endl;
 }
 
 void WsolaTimeStretcher::appendInput(const DSPAudioBuffer &input, size_t inputFrames) {
   const size_t frames = std::min(inputFrames, input.getSize());
   if (frames == 0) {
     return;
-  }
-
-  if (input.getNumberOfChannels() > 0) {
-    const float *source = input.getChannel(0)->begin();
-    // Record early ch0 PCM (prime + process feeds) for the startup dump.
-    if (!firstFramesDumpPrinted_) {
-      for (size_t i = 0; i < frames && firstInputFramesDump_.size() < kFirstFramesToDump; ++i) {
-        firstInputFramesDump_.push_back(source[i]);
-      }
-    }
-    // Rolling last-N source inputs for drain-tail comparison.
-    for (size_t i = 0; i < frames; ++i) {
-      if (lastSourceInputFrames_.size() >= kFirstFramesToDump) {
-        lastSourceInputFrames_.erase(lastSourceInputFrames_.begin());
-      }
-      lastSourceInputFrames_.push_back(source[i]);
-    }
   }
 
   for (size_t channel = 0; channel < channels_; ++channel) {

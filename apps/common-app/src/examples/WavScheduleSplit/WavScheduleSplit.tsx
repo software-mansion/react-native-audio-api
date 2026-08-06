@@ -123,6 +123,7 @@ function formatFrameDump(samples: Float32Array): string {
 const WavScheduleSplit: FC = () => {
   const [sample, setSample] = useState<SampleKey>('pad');
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [pitchCorrection, setPitchCorrection] = useState(true);
   const [joinCompensationMs, setJoinCompensationMs] = useState(
     DEFAULT_JOIN_COMPENSATION_MS
   );
@@ -217,7 +218,7 @@ const WavScheduleSplit: FC = () => {
         offline,
         LEADING_ZERO_CAPTURE_FRAMES / sampleRate + 1
       );
-      const source = offline.createBufferSource({ pitchCorrection: true });
+      const source = offline.createBufferSource({ pitchCorrection });
       source.buffer = ones;
       source.playbackRate.value = rate;
       source.connect(offline.destination);
@@ -230,20 +231,20 @@ const WavScheduleSplit: FC = () => {
       const dump = formatFrameDump(firstFrames);
 
       console.log(
-        `[WavScheduleSplit] first ${LEADING_ZERO_PROBE_FRAMES} frames · rate=${rate.toFixed(1)} · leadingZeros=${leadingZeros}`
+        `[WavScheduleSplit] first ${LEADING_ZERO_PROBE_FRAMES} frames · rate=${rate.toFixed(1)} · leadingZeros=${leadingZeros} · wsola=${pitchCorrection}`
       );
       console.log(`[WavScheduleSplit] frames: ${dump}`);
 
       setStatus(
         [
-          `ones probe · rate=${rate.toFixed(1)} pitchCorrection=true`,
+          `ones probe · rate=${rate.toFixed(1)} pitchCorrection=${pitchCorrection}`,
           `ctxSr=${sampleRate} capture=${LEADING_ZERO_CAPTURE_FRAMES}`,
           `leadingZeros in first ${LEADING_ZERO_PROBE_FRAMES}=${leadingZeros}`,
           `see console + event log for per-frame dump`,
         ].join('\n')
       );
       appendLog(
-        `leadingZeros=${leadingZeros}/${LEADING_ZERO_PROBE_FRAMES} · rate=${rate.toFixed(1)}`
+        `leadingZeros=${leadingZeros}/${LEADING_ZERO_PROBE_FRAMES} · rate=${rate.toFixed(1)} · wsola=${pitchCorrection}`
       );
       appendLog(dump);
     } catch (error) {
@@ -252,7 +253,7 @@ const WavScheduleSplit: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [appendLog, getContext, playbackRate]);
+  }, [appendLog, getContext, pitchCorrection, playbackRate]);
 
   const playGlued = useCallback(async () => {
     setIsLoading(true);
@@ -262,7 +263,6 @@ const WavScheduleSplit: FC = () => {
     try {
       const { context, buffer1, buffer2 } = await loadDecodedPair();
       const rate = playbackRate;
-      const pitchCorrection = true;
 
       const sourceNode1 = context.createBufferSource({ pitchCorrection });
       sourceNode1.buffer = buffer1;
@@ -274,11 +274,10 @@ const WavScheduleSplit: FC = () => {
       const t0 = context.currentTime + START_DELAY_SECONDS;
       // Wall-clock length of part1 at this rate (content duration / rate).
       const contentDur = buffer1.duration / rate;
-      // Only apply L on the WSOLA path; rate 1 has no stretcher latency.
+      // L only useful on the WSOLA path; without it the join is a plain hard splice.
       const joinCompensation = pitchCorrection
         ? joinCompensationMs / 1000
         : 0;
-      // const joinAt = t0 + contentDur + joinCompensation;
       const joinAt = t0 + contentDur + joinCompensation;
 
       sourceNode1.connect(context.destination);
@@ -334,7 +333,7 @@ const WavScheduleSplit: FC = () => {
         ].join('\n')
       );
       appendLog(
-        `scheduled · rate=${rate.toFixed(1)} · L=${(joinCompensation * 1000).toFixed(1)}ms · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)} · secondEnds~${(joinAt + buffer2.duration / rate).toFixed(3)}`
+        `scheduled · rate=${rate.toFixed(1)} · wsola=${pitchCorrection} · L=${(joinCompensation * 1000).toFixed(1)}ms · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)} · secondEnds~${(joinAt + buffer2.duration / rate).toFixed(3)}`
       );
     } catch (error) {
       console.error(error);
@@ -347,6 +346,7 @@ const WavScheduleSplit: FC = () => {
     appendLog,
     joinCompensationMs,
     loadDecodedPair,
+    pitchCorrection,
     playbackRate,
     sample,
     stopSources,
@@ -360,7 +360,6 @@ const WavScheduleSplit: FC = () => {
     try {
       const { context, buffer1, buffer2 } = await loadDecodedPair();
       const rate = playbackRate;
-      const pitchCorrection = true;
 
       const length = buffer1.length + buffer2.length;
       const continuous = context.createBuffer(
@@ -399,7 +398,9 @@ const WavScheduleSplit: FC = () => {
           `source.start(${t0.toFixed(3)})`,
         ].join('\n')
       );
-      appendLog(`scheduled unbroken · rate=${rate.toFixed(1)} · start ${t0.toFixed(3)}`);
+      appendLog(
+        `scheduled unbroken · rate=${rate.toFixed(1)} · wsola=${pitchCorrection} · start ${t0.toFixed(3)}`
+      );
     } catch (error) {
       console.error(error);
       setStatus(`Error: ${String(error)}`);
@@ -407,13 +408,14 @@ const WavScheduleSplit: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [appendLog, loadDecodedPair, playbackRate, sample, stopSources]);
+  }, [appendLog, loadDecodedPair, pitchCorrection, playbackRate, sample, stopSources]);
 
   const busy = isLoading || isRunning;
   const playLabel = (idle: string) =>
     isLoading ? 'Loading…' : isRunning ? 'Running…' : idle;
   const rateLabel = playbackRate.toFixed(1);
   const joinLabel = `${joinCompensationMs} ms`;
+  const wsolaLabel = pitchCorrection ? 'WSOLA' : 'raw';
 
   return (
     <Container>
@@ -425,8 +427,8 @@ const WavScheduleSplit: FC = () => {
         <Text style={styles.title}>WAV schedule split</Text>
         <Text style={styles.caption}>
           Continuous sources cut with ffmpeg (5 s + rest) → decode each →
-          source2.start(t0 + duration/rate + L). Hard splice at the join —
-          tune L to close the gap.
+          source2.start(t0 + duration/rate + L). Compare with / without WSOLA
+          (especially at rate 1) and tune L on the WSOLA path.
         </Text>
 
         <Spacer.Vertical size={20} />
@@ -454,6 +456,25 @@ const WavScheduleSplit: FC = () => {
         })}
 
         <Spacer.Vertical size={24} />
+        <Text style={styles.section}>WSOLA</Text>
+        <Text style={styles.hint}>
+          pitchCorrection on buffer sources. At rate 1, off = plain playback;
+          on = WSOLA still runs (prime/drain path).
+        </Text>
+        <Spacer.Vertical size={8} />
+        <Button
+          title={pitchCorrection ? '● With WSOLA' : '○ With WSOLA'}
+          onPress={() => setPitchCorrection(true)}
+          disabled={busy}
+        />
+        <Spacer.Vertical size={8} />
+        <Button
+          title={!pitchCorrection ? '● Without WSOLA' : '○ Without WSOLA'}
+          onPress={() => setPitchCorrection(false)}
+          disabled={busy}
+        />
+
+        <Spacer.Vertical size={24} />
         <Text style={styles.section}>Playback rate</Text>
         <Slider
           label="Rate"
@@ -468,9 +489,8 @@ const WavScheduleSplit: FC = () => {
         <Spacer.Vertical size={16} />
         <Text style={styles.section}>Join compensation L</Text>
         <Text style={styles.hint}>
-          Buffer sources no longer prime/drain WSOLA — cold-start join gaps are
-          expected. Compare glued vs unbroken; use DC ones + dump for leading
-          zeros.
+          Applied only when WSOLA is on. Without WSOLA the join is a hard
+          splice at duration/rate (L ignored).
         </Text>
         <Spacer.Vertical size={8} />
         <Slider
@@ -485,13 +505,15 @@ const WavScheduleSplit: FC = () => {
 
         <Spacer.Vertical size={24} />
         <Button
-          title={playLabel(`Play glued (rate ${rateLabel}, L ${joinLabel})`)}
+          title={playLabel(
+            `Play glued (${wsolaLabel}, rate ${rateLabel}, L ${joinLabel})`
+          )}
           onPress={() => void playGlued()}
           disabled={busy}
         />
         <Spacer.Vertical size={12} />
         <Button
-          title={playLabel(`Play unbroken (rate ${rateLabel})`)}
+          title={playLabel(`Play unbroken (${wsolaLabel}, rate ${rateLabel})`)}
           onPress={() => void playUnbroken()}
           disabled={busy}
         />
@@ -500,7 +522,7 @@ const WavScheduleSplit: FC = () => {
           title={
             isLoading
               ? 'Loading…'
-              : `Dump first ${LEADING_ZERO_PROBE_FRAMES} frames (ones, rate ${rateLabel})`
+              : `Dump first ${LEADING_ZERO_PROBE_FRAMES} frames (ones, ${wsolaLabel}, rate ${rateLabel})`
           }
           onPress={() => void dumpFirstOnesFrames()}
           disabled={busy}

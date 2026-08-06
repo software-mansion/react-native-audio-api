@@ -45,9 +45,6 @@ class WsolaTimeStretcher {
   /// @return Number of frames written to @p output.
   size_t drainOutput(DSPAudioBuffer &output, size_t outputFrames, float playbackRate);
 
-  /// Prints the drain-tail dump if drain ended via content budget (not stretcher-dry).
-  void finalizeDrainTailDump(float playbackRate);
-
   // some arbitrary value has to be set here to limit the size of the buffer for wsola algorithm
   static constexpr float MAX_PLAYBACK_RATE = 4;
 
@@ -93,24 +90,13 @@ class WsolaTimeStretcher {
   bool drainEofSilencePadded_{false};
   bool drainPendingFlushed_{false};
 
-  /// Startup-latency probe: first absolute / relative non-zero output sample.
+  /// Startup-latency probe: first absolute non-zero output sample.
   bool firstSampleFound_{false};
-  bool firstRelativeSampleFound_{false};
-  float outputPeakAbs_{0.0f};
   size_t totalFramesOutput_{0};
 
-  /// One-shot dump of the first @c kFirstFramesToDump ch0 in/out samples after reset.
+  /// One-shot dump of the first @c kFirstFramesToDump ch0 output samples after reset.
   bool firstFramesDumpPrinted_{false};
-  std::vector<float> firstInputFramesDump_;
   std::vector<float> firstOutputFramesDump_;
-
-  /// Rolling last-@c kFirstFramesToDump source inputs (appendInput) for drain compare.
-  std::vector<float> lastSourceInputFrames_;
-  /// Drain-tail probe: last drain output frames + silence-pad size; printed once dry.
-  bool drainTailDumpPrinted_{false};
-  std::vector<float> drainOutputFrames_;
-  size_t drainSilencePadFrames_{0};
-  size_t totalDrainOutputFrames_{0};
 
   std::vector<float> olaWindow_;
   std::vector<float> transitionWindow_;
@@ -143,7 +129,6 @@ class WsolaTimeStretcher {
   void updateOutputTime(float playbackRate, double timeChange);
   void removeOldInputFrames(float playbackRate);
   void compactInputQueue(size_t synthesisFramesToRemove, float playbackRate);
-  void printDrainTailDump(float playbackRate);
 };
 
 } // namespace audioapi

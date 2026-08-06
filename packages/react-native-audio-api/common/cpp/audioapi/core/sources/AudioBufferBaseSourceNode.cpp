@@ -257,7 +257,6 @@ void AudioBufferBaseSourceNode::processWsolaDrain(
 
   const double remaining = wsolaExpectedOutputFrames_ - wsolaEmittedOutputFrames_;
   if (remaining <= 0.0) {
-    wsolaStretcher_.finalizeDrainTailDump(wsolaEofDrainRate_);
     wsolaDrainPending_ = false;
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     return;
@@ -275,7 +274,6 @@ void AudioBufferBaseSourceNode::processWsolaDrain(
     return;
   }
 
-  wsolaStretcher_.finalizeDrainTailDump(wsolaEofDrainRate_);
   wsolaDrainPending_ = false;
   playbackState_ = PlaybackState::STOP_SCHEDULED;
 }
