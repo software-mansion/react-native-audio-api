@@ -19,14 +19,16 @@ Run these checks after any code change and before opening a PR.
 
 ## Quick Reference — Local Validation Tiers
 
-CI always runs the **fast** tier (format, lint, typecheck, enum sync, TS build, C++ + JS tests). Graph tests run in a separate path-filtered workflow (`graph-tests.yml`). CI does **not** build Android Gradle, iOS pods, or example apps. Use `validate.sh` locally to close that gap:
+CI always runs the **fast** tier (format, lint, typecheck, enum sync, TS build, C++ smoke + JS tests). Extended C++ categories (e.g. graph) run from `tests.yml` when matching paths change, or via `workflow_dispatch` booleans. CI does **not** build Android Gradle, iOS pods, or example apps. Use `validate.sh` locally to close that gap:
 
 ```bash
-yarn validate:fast      # CI parity — always run before opening a PR
-yarn validate:graph     # graph tests (when graph/audio-thread code changes)
-yarn validate:android   # Android native build (requires ANDROID_HOME)
-yarn validate:ios       # iOS native build (macOS only)
-yarn validate:full      # --fast + --android + --ios (skips unavailable platforms)
+yarn validate:fast          # CI parity — always run before opening a PR
+yarn validate:cpp           # C++ smoke
+yarn validate:cpp-extended  # C++ extended (all categories)
+yarn validate:graph         # legacy alias: extended category graph only
+yarn validate:android       # Android native build (requires ANDROID_HOME)
+yarn validate:ios           # iOS native build (macOS only)
+yarn validate:full          # --fast + C++ extended + --android + --ios
 ```
 
 Equivalent: `./scripts/validate.sh --fast` (etc.)
@@ -42,7 +44,7 @@ Equivalent: `./scripts/validate.sh --fast` (etc.)
 | `ios/audioapi/` | `--fast` + `--ios` |
 | `CMakeLists.txt`, `build.gradle`, `podspec` | `--full` |
 
-Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `yarn validate:graph`.
+Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `yarn validate:graph` or `yarn validate:cpp-extended` (extended category `graph`).
 
 ---
 
@@ -73,7 +75,7 @@ Hooks run when lefthook is installed (`lefthook install`).
 
 **If a hook fails, the commit is aborted.** Fix the issue and re-commit — do NOT use `--no-verify`.
 
-There is no pre-push hook — `yarn validate:fast` (and native/graph tiers) are run manually before opening a PR. Native builds (`validate:android`, `validate:ios`, `validate:full`) and graph tests (`validate:graph`) are never run by lefthook.
+There is no pre-push hook — `yarn validate:fast` (and native/C++ extended tiers) are run manually before opening a PR. Native builds (`validate:android`, `validate:ios`, `validate:full`) and extended C++ (`validate:cpp-extended` / legacy `validate:graph`) are never run by lefthook.
 
 ---
 
@@ -92,24 +94,28 @@ yarn validate:fast
 ```bash
 yarn validate:android   # yarn workspace … build:android (~3–4 min)
 yarn validate:ios       # yarn workspace … build:ios (macOS only)
-yarn validate:full      # --fast + --android + --ios
+yarn validate:full      # --fast + C++ extended + --android + --ios
 ```
 
 The Gradle project resolves through the `node_modules/react-native-audio-api` workspace symlink, so local edits in `packages/react-native-audio-api/` are picked up.
 
-### Graph tests (when graph / audio-thread code changes)
+### Extended graph (when graph / audio-thread code changes)
 
 ```bash
-yarn validate:graph
+yarn validate:graph              # legacy alias: extended category graph
+yarn validate:cpp-extended       # all extended categories
+# or: yarn workspace react-native-audio-api test:cpp:extended -- graph
 ```
 
 ### C++ tests only
 
 ```bash
-yarn workspace react-native-audio-api run test:cpp
+yarn validate:cpp                                            # smoke via validate.sh
+yarn workspace react-native-audio-api run test:cpp           # smoke
+yarn workspace react-native-audio-api run test:cpp:full      # smoke + all extended
 ```
 
-**When**: after any change to `common/cpp/audioapi/core/`, `dsp/`, or `utils/` C++ files. Prefer this for a fast C++-only loop without running Jest; run `yarn validate:fast` before opening a PR.
+**When**: after any change to `common/cpp/audioapi/core/`, `dsp/`, or `utils/` C++ files. Prefer smoke for a fast C++-only loop; see `common/cpp/test/TESTING.md`. Run `yarn validate:fast` before opening a PR.
 
 ### Library unit tests (JS + C++)
 
@@ -162,7 +168,7 @@ Later steps may surface issues caused by earlier ones — run in this order:
 2. `yarn lint` — catch remaining code issues
 3. `yarn typecheck` — catch TypeScript errors
 4. `yarn validate:fast` — full CI-parity gate (or `yarn test` / `test:cpp` for a quick local loop; always run `--fast` before opening a PR)
-5. `yarn validate:graph` — when graph / audio-thread code changed
+5. `yarn validate:cpp-extended` / `yarn validate:graph` — when graph / audio-thread code changed
 6. `yarn validate:android` / `yarn validate:ios` / `yarn validate:full` — when native code or build files changed (see decision table above)
 
 ---

@@ -39,7 +39,7 @@ react-native-audio-api/
 │   │       └── include_ffmpeg/         # Headers for FFmpeg
 │   ├── common/cpp/test/
 │   │   ├── CMakeLists.txt              # Standalone test build (no Android/iOS)
-│   │   ├── RunTests.sh                 # Test runner script
+│   │   ├── RunTests.sh / filters.sh    # smoke|extended|full (+ categories)
 │   │   └── src/                        # Google Test files
 │   ├── RNAudioAPI.podspec              # CocoaPods spec for iOS
 │   └── scripts/
@@ -185,10 +185,12 @@ CI intentionally skips native Android/iOS builds (expensive). Use the tiered loc
 
 ```bash
 yarn validate:fast      # CI parity (format, lint, typecheck, enum sync, build, C++ + JS tests)
-yarn validate:graph     # graph tests + ASan (optional; graph path changes)
+yarn validate:cpp       # C++ smoke
+yarn validate:cpp-extended  # C++ extended (all categories)
+yarn validate:graph     # legacy alias: extended category graph only
 yarn validate:android   # yarn workspace … build:android
 yarn validate:ios       # yarn workspace … build:ios (macOS only)
-yarn validate:full      # --fast + --android + --ios
+yarn validate:full      # --fast + C++ extended + --android + --ios
 ```
 
 Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
@@ -198,10 +200,10 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 | Layer | CI (`ci.yml` + `tests.yml`) | Local tiers |
 |---|---|---|
 | TS build (`bob build`) | Yes | `--fast` |
-| C++ test subset (`RunTests.sh`) | Yes | `--fast` |
-| C++ coverage (`RunCoverage.sh`, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
+| C++ smoke (`RunTests.sh`) | Yes | `--fast` |
+| C++ coverage (`RunCoverage.sh`, smoke, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
 | Jest | Yes | `--fast` |
-| Graph tests | No, path-filtered in `graph-tests.yml` | `--graph` |
+| Extended C++ by category (e.g. graph) | Path change or manual dispatch in `tests.yml` | `--cpp-extended` / `--graph` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
 | Android JNI C++ + Kotlin | **No** | `--android` |
 | iOS ObjC++ | **No** | `--ios` |
@@ -224,7 +226,7 @@ Android (NDK) and iOS (Clang) cannot share object files — reuse is at the preb
 
 - `--ios` on Linux → skip with message (exit 0)
 - `--android` without `ANDROID_HOME` → fail on explicit `--android`; skip with warning inside `--full`
-- Graph tests are separate from `--full` (slow; CI path-filters them)
+- `--full` includes C++ extended (all categories) after `--fast`’s smoke, so local full covers C++ full + native builds
 
 ### Which tier to run
 
@@ -239,18 +241,12 @@ See the decision table in [post-work-checks](../post-work-checks/SKILL.md).
 
 ### How to run
 ```bash
-yarn test   # from monorepo root — runs RunTests.sh
+yarn test   # Jest + C++ smoke
+yarn workspace react-native-audio-api test:cpp:smoke|extended|full
+yarn workspace react-native-audio-api test:cpp:extended -- graph
 ```
 
-`RunTests.sh` does:
-```bash
-cd packages/react-native-audio-api/common/cpp/test
-cmake -S . -B build -Wno-dev
-cd build && make -j10
-./tests --gtest_print_time=1
-```
-
-The `build/` directory is deleted after each run.
+`RunTests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. `yarn test:graph` is a legacy alias for `extended graph`.
 
 ### Coverage (Clang / llvm-cov)
 
@@ -259,7 +255,7 @@ yarn workspace react-native-audio-api test:cpp:coverage
 # open packages/react-native-audio-api/common/cpp/test/coverage-html/index.html
 ```
 
-`RunCoverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the same gtest filter as `RunTests.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
+`RunCoverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the **smoke** filter from `filters.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
 
 CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM apt packages, separate from the GCC `cpp-tests` job). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. Manual `workflow_dispatch` on `tests.yml` accepts booleans `run_cpp_tests` / `run_cpp_coverage` / `run_js_tests` (default true); PRs always run all three.
 

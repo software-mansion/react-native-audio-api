@@ -1,14 +1,35 @@
 #!/usr/bin/env bash
-# validate.sh — tiered local validation for react-native-audio-api
-#
-# Usage:
-#   ./scripts/validate.sh --fast       # CI parity (format, lint, typecheck, tests, build)
-#   ./scripts/validate.sh --graph      # graph tests (optional, graph changes)
-#   ./scripts/validate.sh --android    # Android native build (requires Android SDK)
-#   ./scripts/validate.sh --ios        # iOS native build (macOS only)
-#   ./scripts/validate.sh --full       # --fast + --android + --ios (with graceful skips)
-#
-# Local-only — not wired into CI.
+
+print_help() {
+  cat <<'EOF'
+Usage: ./scripts/validate.sh [tiers…]
+
+Local-only validation (not run in CI). Combine flags as needed.
+
+Tiers:
+  --fast           CI parity: format, lint, typecheck, enum sync, build, C++ smoke + JS
+  --cpp            C++ smoke only
+  --cpp-extended   C++ extended (all registered categories)
+  --cpp-full       C++ full (smoke, then all extended categories)
+  --android        Android native build (requires ANDROID_HOME)
+  --ios            iOS native build (macOS only)
+  --full           --fast + C++ extended (all categories) + --android + --ios
+                   (C++ full = smoke from --fast + extended; skips unavailable platforms)
+
+Legacy aliases:
+  --graph          Same as C++ extended category graph only
+                   (prefer --cpp-extended, or yarn test:cpp:extended -- graph)
+
+Examples:
+  yarn validate:fast
+  yarn validate:cpp
+  yarn validate:cpp-extended
+  yarn validate:full
+
+Options:
+  --help, -h       Show this help.
+EOF
+}
 
 set -euo pipefail
 
@@ -18,6 +39,9 @@ LIBRARY_DIR="$REPO_ROOT/packages/react-native-audio-api"
 SCRIPTS_DIR="$LIBRARY_DIR/scripts"
 
 RUN_FAST=false
+RUN_CPP=false
+RUN_CPP_EXTENDED=false
+RUN_CPP_FULL=false
 RUN_GRAPH=false
 RUN_ANDROID=false
 RUN_IOS=false
@@ -59,7 +83,7 @@ run_prebuild_core() {
   log_step "Prebuild: yarn build"
   (cd "$REPO_ROOT" && yarn build)
 
-  log_step "Prebuild: C++ tests (shared layer compile check)"
+  log_step "Prebuild: C++ smoke (shared layer compile check)"
   (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp)
 
   PREBUILD_CORE_DONE=true
@@ -90,7 +114,7 @@ EOF
 }
 
 run_fast() {
-  log_step "Tier 0 (--fast): CI parity checks"
+  log_step "Tier (--fast): CI parity checks"
 
   log_step "yarn install --immutable"
   (cd "$REPO_ROOT" && yarn install --immutable)
@@ -119,10 +143,29 @@ run_fast() {
   PREBUILD_CORE_DONE=true
 }
 
-run_graph() {
-  log_step "Tier 1 (--graph): graph tests"
+run_cpp() {
+  log_step "C++ smoke (--cpp)"
   run_prebuild_core
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:graph)
+  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:smoke)
+}
+
+run_cpp_extended() {
+  log_step "C++ extended all categories (--cpp-extended)"
+  run_prebuild_core
+  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:extended)
+}
+
+run_cpp_full() {
+  log_step "C++ full (--cpp-full)"
+  run_prebuild_core
+  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:full)
+}
+
+# Legacy alias: extended category graph only.
+run_graph() {
+  log_step "C++ extended category graph (--graph, legacy alias)"
+  run_prebuild_core
+  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:extended -- graph)
 }
 
 run_android() {
@@ -141,7 +184,7 @@ run_android() {
     exit 1
   fi
 
-  log_step "Tier 2 (--android): Android native build"
+  log_step "Tier (--android): Android native build"
 
   run_prebuild_for_platform android
 
@@ -169,7 +212,7 @@ run_ios() {
     exit 1
   fi
 
-  log_step "Tier 3 (--ios): iOS native build"
+  log_step "Tier (--ios): iOS native build"
 
   run_prebuild_for_platform ios
 
@@ -180,28 +223,11 @@ run_ios() {
 run_full() {
   log_step "Full local validation (--full)"
   run_fast
+  # --fast already ran C++ smoke; extended completes C++ full without re-running smoke.
+  log_step "C++ extended all categories (remainder of C++ full)"
+  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:extended)
   run_android true
   run_ios true
-}
-
-usage() {
-  cat <<'EOF'
-Usage: ./scripts/validate.sh [--fast] [--graph] [--android] [--ios] [--full]
-
-Tiers:
-  --fast     CI parity: format, lint, typecheck, enum sync, build, C++ + JS tests
-  --graph    Graph tests (optional; run when graph/audio-thread code changes)
-  --android  Android native build via yarn workspace … build:android (requires ANDROID_HOME)
-  --ios      iOS native build via yarn workspace … build:ios (macOS only)
-  --full     --fast + --android + --ios (skips unavailable platforms with a warning)
-
-Examples:
-  yarn validate:fast
-  yarn validate:android
-  yarn validate:full
-
-Local-only — not run in CI.
-EOF
 }
 
 while [[ $# -gt 0 ]]; do
@@ -209,7 +235,17 @@ while [[ $# -gt 0 ]]; do
     --fast)
       RUN_FAST=true
       ;;
+    --cpp)
+      RUN_CPP=true
+      ;;
+    --cpp-extended)
+      RUN_CPP_EXTENDED=true
+      ;;
+    --cpp-full)
+      RUN_CPP_FULL=true
+      ;;
     --graph)
+      # Legacy alias for extended category graph only.
       RUN_GRAPH=true
       ;;
     --android)
@@ -219,34 +255,44 @@ while [[ $# -gt 0 ]]; do
       RUN_IOS=true
       ;;
     --full)
-    RUN_FULL=true
+      RUN_FULL=true
       ;;
     --help|-h)
-      usage
+      print_help
       exit 0
       ;;
     *)
       echo "Unknown option: $1" >&2
-      usage >&2
+      print_help >&2
       exit 1
       ;;
   esac
   shift
 done
 
-if [[ "$RUN_FAST" == false && "$RUN_GRAPH" == false && "$RUN_ANDROID" == false && "$RUN_IOS" == false && "$RUN_FULL" == false ]]; then
-  usage >&2
+if [[ "$RUN_FAST" == false && "$RUN_CPP" == false && "$RUN_CPP_EXTENDED" == false && "$RUN_CPP_FULL" == false && "$RUN_GRAPH" == false && "$RUN_ANDROID" == false && "$RUN_IOS" == false && "$RUN_FULL" == false ]]; then
+  print_help >&2
   exit 1
 fi
 
 cd "$REPO_ROOT"
 
+enable_ccache_if_available
 
 if [[ "$RUN_FULL" == true ]]; then
   run_full
 fi
 if [[ "$RUN_FAST" == true && "$RUN_FULL" == false ]]; then
   run_fast
+fi
+if [[ "$RUN_CPP" == true ]]; then
+  run_cpp
+fi
+if [[ "$RUN_CPP_EXTENDED" == true ]]; then
+  run_cpp_extended
+fi
+if [[ "$RUN_CPP_FULL" == true ]]; then
+  run_cpp_full
 fi
 if [[ "$RUN_GRAPH" == true ]]; then
   run_graph
