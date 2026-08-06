@@ -192,9 +192,9 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @note JS / construction thread only.
   void startDecoderThread();
 
-  /// @brief Blocks until @ref wsolaStretcher_ has enough PCM for the first OLA iteration,
-  /// or the decoder signals EOS/discontinuity.
-  /// @note JS / construction thread only — must run before the audio thread consumes @ref frameReceiver_.
+  /// @brief Synchronously pre-fills @ref wsolaStretcher_ with real PCM frames
+  /// so it can perform its first Overlap-Add (OLA) iteration without startup latency.
+  /// @note JS / main thread only — must run before the audio thread begins processing graph quanta.
   void primeWsolaInputFromDecoder();
 
   /// @brief Attempts to read the next chunk of decoded frames from the daemon.

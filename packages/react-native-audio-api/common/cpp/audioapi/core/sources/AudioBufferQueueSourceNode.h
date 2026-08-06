@@ -75,7 +75,9 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
 
   bool isPaused_ = false;
-  /// True after @ref endOfStream(); empty queue then means EOF, not underrun.
+  /// Set to true by @ref endOfStream().
+  /// When true, an empty queue indicates EOF (drain and stop);
+  /// when false, an empty queue is treated as a temporary underrun (keep waiting).
   bool endOfStream_ = false;
 
   double playedBuffersDuration_ = 0;
@@ -84,7 +86,6 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   std::unique_ptr<QueueBufferProcessor> processor_;
 
-  /// Arms STOP_SCHEDULED when endOfStream_ and the queue is empty.
   void armNaturalEofIfNeeded();
 };
 

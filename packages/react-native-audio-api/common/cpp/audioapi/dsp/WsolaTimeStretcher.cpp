@@ -23,7 +23,6 @@ float periodicHann(size_t n, size_t size) {
 
 size_t WsolaTimeStretcher::scratchBufferFrames(float sampleRate) {
   const float sr = sampleRate > 0.0f ? sampleRate : DEFAULT_SAMPLE_RATE;
-  // Match configure(): window (+1 if odd) + search, plus one max-rate quantum.
   size_t window = framesFromMs(sr, OLA_WINDOW_MS);
   window += window & 1U;
   return window + framesFromMs(sr, SEARCH_INTERVAL_MS) +
@@ -106,7 +105,6 @@ size_t WsolaTimeStretcher::getMinInputFramesToRun() const {
     return 0;
   }
 
-  // Last search candidate starts at searchBlockIndex_ + searchIntervalFrames_ - 1.
   const int lastCandidateStart = searchBlockIndex_ + static_cast<int>(searchIntervalFrames_) - 1;
   const int targetNeed = maxSourceIndexForBlock(targetBlockIndex_);
   const int searchNeed = maxSourceIndexForBlock(lastCandidateStart);
@@ -158,8 +156,6 @@ void WsolaTimeStretcher::process(
 
     for (size_t i = 0; i < output.getNumberOfChannels(); ++i) {
       auto *channel = output.getChannel(i);
-      // Only the requested span — getSize() may be a full quantum while outputFrames
-      // is a mid-quantum audible length; the tail is zeroed padding, not WSOLA output.
       const size_t framesToScan = std::min(outputFrames, channel->getSize());
       for (size_t j = 0; j < framesToScan; ++j) {
         const float absSample = std::abs((*channel)[j]);
@@ -180,7 +176,6 @@ void WsolaTimeStretcher::process(
     }
   }
 
-  // One-shot: collect then print the first 255 ch0 output frames after reset.
   if (!firstFramesDumpPrinted_ && output.getNumberOfChannels() > 0) {
     auto *channel = output.getChannel(0);
     const size_t framesToDump = std::min(outputFrames, channel->getSize());
@@ -323,9 +318,6 @@ bool WsolaTimeStretcher::runOneIteration(float playbackRate) {
 
   if (firstSynthesisIteration_) {
     firstSynthesisIteration_ = false;
-    // Fake the previous grain: its trailing half is this block's leading half
-    // (identical content), so the COLA window pair sums to unity and output
-    // starts at full amplitude instead of fading in from silence.
     for (size_t channel = 0; channel < channels_; ++channel) {
       for (size_t frame = 0; frame < hopSize_; ++frame) {
         pendingOverlap_[channel][frame] = optimalBlock_[channel][frame];

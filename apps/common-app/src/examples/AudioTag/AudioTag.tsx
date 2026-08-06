@@ -1,10 +1,11 @@
 import React, {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 import {
   Audio,
   AudioTagHandle,
@@ -96,25 +97,41 @@ const AudioTag: React.FC = () => {
     // console.log('onVolumeChange', volume);
   }, []);
 
+  const audioTagElement = useMemo(
+    () => (
+      <Audio
+        source={DEMO_AUDIO_URL}
+        ref={audioRef}
+        context={audioContextRef.current}
+        loop
+        controls
+        onLoadStart={handleLoadStart}
+        onLoad={handleLoad}
+        onError={handleError}
+        onPositionChange={handlePositionChange}
+        onEnded={handleEnded}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onVolumeChange={handleVolumeEvent}
+      />
+    ),
+    [
+      handleEnded,
+      handleError,
+      handleLoad,
+      handleLoadStart,
+      handlePause,
+      handlePlay,
+      handlePositionChange,
+      handleVolumeEvent,
+    ]
+  );
+
   return (
     <Container disablePadding>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <View style={{ width: '90%' }}>
-          <Audio
-            source={DEMO_AUDIO_URL}
-            ref={audioRef}
-            context={audioContextRef.current}
-            loop
-            controls
-            onLoadStart={handleLoadStart}
-            onLoad={handleLoad}
-            onError={handleError}
-            onPositionChange={handlePositionChange}
-            onEnded={handleEnded}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onVolumeChange={handleVolumeEvent}
-          />
+          {audioTagElement}
           <Spacer.Vertical size={20} />
           <Slider
             label="Volume"
