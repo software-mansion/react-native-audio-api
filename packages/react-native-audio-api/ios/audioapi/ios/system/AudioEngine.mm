@@ -38,6 +38,7 @@
 - (AVAudioFormat *)currentInputConnectionFormat;
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId;
 - (BOOL)materializeInputNodeIfNeeded;
+- (void)syncVoiceProcessingWithSessionMode;
 - (void)materializeTrackedNodesIfNeeded;
 
 - (AVAudioFormat *)liveInputFormat;
@@ -186,6 +187,8 @@ static AudioEngine *_sharedInstance = nil;
     return YES;
   }
 
+  [self syncVoiceProcessingWithSessionMode];
+
   AVAudioFormat *inputFormat = [self currentInputConnectionFormat];
 
   if (inputFormat == nil) {
@@ -197,6 +200,33 @@ static AudioEngine *_sharedInstance = nil;
   [self.audioEngine attachNode:self.inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:inputFormat];
   return YES;
+}
+
+// Voice-chat session modes imply Apple's voice-processing I/O (echo
+// cancellation, noise suppression, AGC). Without it, speaker output loops back
+// into the microphone — full-duplex apps (VoIP, voice agents) hear themselves
+// and speech detection self-triggers. Must run before the input format is read
+// (voice processing changes the hardware format) and while the engine is
+// stopped.
+- (void)syncVoiceProcessingWithSessionMode
+{
+  AVAudioSessionMode mode = self.sessionManager.desiredMode;
+  BOOL wantsVoiceProcessing = [mode isEqualToString:AVAudioSessionModeVoiceChat] ||
+      [mode isEqualToString:AVAudioSessionModeVideoChat];
+
+  AVAudioInputNode *systemInputNode = self.audioEngine.inputNode;
+  if (systemInputNode.isVoiceProcessingEnabled == wantsVoiceProcessing) {
+    return;
+  }
+
+  if (self.audioEngine.isRunning) {
+    [self.audioEngine stop];
+  }
+
+  NSError *vpError = nil;
+  if (![systemInputNode setVoiceProcessingEnabled:wantsVoiceProcessing error:&vpError]) {
+    NSLog(@"[AudioEngine] setVoiceProcessingEnabled:%d failed: %@", wantsVoiceProcessing, vpError);
+  }
 }
 
 - (void)materializeTrackedNodesIfNeeded
