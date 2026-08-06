@@ -1,5 +1,5 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/HostObjects/TypedAudioNodePtr.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/ConstantSourceNode.h>

@@ -54,6 +54,12 @@ react-native-audio-api/
 
 ---
 
+## C++ Header File Extensions
+
+In `common/cpp/audioapi/`: `.hpp` = header-only templates; `.h` = non-template (usually with a `.cpp`). Vendored code is excluded.
+
+---
+
 ## Prebuilt Binaries
 
 External libraries (Opus, Ogg, Vorbis, OpenSSL, FFmpeg) are **not compiled from source** — they are downloaded as prebuilt `.a` / `.so` / `.xcframework` archives from:

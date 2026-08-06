@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/CompositeAudioParam.h>
+#include <audioapi/core/CompositeAudioParam.hpp>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>

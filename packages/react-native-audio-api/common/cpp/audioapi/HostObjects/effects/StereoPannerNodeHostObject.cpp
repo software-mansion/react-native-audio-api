@@ -1,7 +1,7 @@
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 
 #include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/HostObjects/TypedAudioNodePtr.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/types/NodeOptions.h>

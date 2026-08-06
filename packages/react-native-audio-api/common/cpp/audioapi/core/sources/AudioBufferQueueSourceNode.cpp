@@ -3,8 +3,8 @@
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/buffer/QueueBufferProcessor.h>
-#include <audioapi/dsp/AudioUtils.hpp>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 

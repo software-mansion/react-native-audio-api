@@ -1,13 +1,13 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/events/AudioEventPayload.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <memory>
 #include <string>
 
 namespace audioapi {
 
 AudioFileWriter::AudioFileWriter(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties)
     : errorEvent_(audioEventHandlerRegistry), fileProperties_(fileProperties) {}
 
