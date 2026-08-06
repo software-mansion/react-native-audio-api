@@ -11,20 +11,6 @@ import {
 import { Button, Container, Slider, Spacer } from '../../components';
 import { colors } from '../../styles';
 
-/**
- * Continuous sources cut with ffmpeg (first 5s + rest):
- *
- * Sustained chord pad (best join probe — steady level, no drums/silence):
- *   lavfi sine stack → source → -t 5 / -ss 5 → ffmpeg-pad-part{1,2}.wav
- *
- * Real music, smoother track (track4.mp3 — lowest level jumpiness):
- *   ffmpeg -i track4.mp3 -t 15 … → -t 5 / -ss 5 → ffmpeg-music-cont-part{1,2}.wav
- *
- * Tone control (440 Hz continuous):
- *   → ffmpeg-tone-part{1,2}.wav
- *
- * DC ones: synthetic fill(1) — offline dump of first frames counts WSOLA zeros.
- */
 const START_DELAY_SECONDS = 0.4;
 const MIN_PLAYBACK_RATE = 0.5;
 const MAX_PLAYBACK_RATE = 3;
@@ -72,19 +58,19 @@ const SAMPLES: Record<SampleKey, WavSample> = {
   },
   musicCont: {
     label: 'Music · track4 (smoother)',
-    hint: 'real track, more continuous than track3',
+    hint: 'real track, more continuous',
     part1: MUSIC_CONT_P1,
     part2: MUSIC_CONT_P2,
   },
   tone: {
     label: 'Tone 440 Hz',
-    hint: 'pure continuous tone — any join is obvious',
+    hint: 'pure continuous tone',
     part1: TONE_P1,
     part2: TONE_P2,
   },
   ones: {
     label: 'DC ones (1.0)',
-    hint: 'synthetic fill(1) — use “Dump first frames” for leading zeros',
+    hint: 'synthetic fill(1) — use “Dump first frames” for printing/debugging the primed output samples',
   },
 };
 
@@ -427,8 +413,8 @@ const WavScheduleSplit: FC = () => {
         <Text style={styles.title}>WAV schedule split</Text>
         <Text style={styles.caption}>
           Continuous sources cut with ffmpeg (5 s + rest) → decode each →
-          source2.start(t0 + duration/rate + L). Compare with / without WSOLA
-          (especially at rate 1) and tune L on the WSOLA path.
+          source2.start(t0 + duration/rate + L. L should be 0, correctly. Compare with / without WSOLA
+          (especially at rate 1). 
         </Text>
 
         <Spacer.Vertical size={20} />
@@ -489,8 +475,7 @@ const WavScheduleSplit: FC = () => {
         <Spacer.Vertical size={16} />
         <Text style={styles.section}>Join compensation L</Text>
         <Text style={styles.hint}>
-          Applied only when WSOLA is on. Without WSOLA the join is a hard
-          splice at duration/rate (L ignored).
+          Applied only when WSOLA is on. L should be 0, correctly.
         </Text>
         <Spacer.Vertical size={8} />
         <Slider

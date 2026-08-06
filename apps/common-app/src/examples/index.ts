@@ -15,9 +15,6 @@ import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
 import WavScheduleSplit from './WavScheduleSplit';
-import QueueSourceTest from './QueueSourceTest/QueueSourceTest';
-import WsolaCompare from './WsolaCompare/WsolaCompare';
-import SpeechScheduleSplit from './SpeechScheduleSplit/SpeechScheduleSplit';
 import ChannelMergerSplitter from './ChannelMergerSplitter';
 
 type NavigationParamList = {
@@ -37,11 +34,7 @@ type NavigationParamList = {
   ConvolverIR: undefined;
   ChannelMergerSplitter: undefined;
   ChannelCount: undefined;
-  WsolaScheduleSplit: undefined;
   WavScheduleSplit: undefined;
-  QueueSourceTest: undefined;
-  WsolaCompare: undefined;
-  SpeechScheduleSplit: undefined;
   AudioParamPipeline: undefined;
   TestScreen: undefined;
   LatencyValidation: undefined;
@@ -63,24 +56,6 @@ export interface Example {
 }
 
 export const Examples: Example[] = [
-  {
-    key: 'SpeechScheduleSplit',
-    title: 'Speech Schedule Split',
-    Icon: icons.Mic,
-    screen: SpeechScheduleSplit,
-  },
-  {
-    key: 'WsolaCompare',
-    title: 'WSOLA Compare',
-    Icon: icons.AudioWaveform,
-    screen: WsolaCompare,
-  },
-  {
-    key: 'QueueSourceTest',
-    title: 'Queue Source (TEMP)',
-    Icon: icons.ListMusic,
-    screen: QueueSourceTest,
-  },
   {
     key: 'DrumMachine',
     title: 'Drum Machine',

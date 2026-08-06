@@ -86,10 +86,6 @@ class WsolaTimeStretcher {
   /// block so output starts at full amplitude (no half-window fade-in).
   bool firstSynthesisIteration_{true};
 
-  /// Persist across @ref drainOutput quanta so EOF silence is padded only once.
-  bool drainEofSilencePadded_{false};
-  bool drainPendingFlushed_{false};
-
   /// Startup-latency probe: first absolute non-zero output sample.
   bool firstSampleFound_{false};
   size_t totalFramesOutput_{0};

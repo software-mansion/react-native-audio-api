@@ -82,8 +82,6 @@ void WsolaTimeStretcher::reset() {
   outputReadIndex_ = 0;
 
   firstSynthesisIteration_ = true;
-  drainEofSilencePadded_ = false;
-  drainPendingFlushed_ = false;
 
   firstSampleFound_ = false;
   totalFramesOutput_ = 0;
@@ -225,70 +223,9 @@ WsolaTimeStretcher::drainOutput(DSPAudioBuffer &output, size_t outputFrames, flo
     if (rendered >= outputFrames) {
       break;
     }
-    if (runOneIteration(playbackRate)) {
-      continue;
+    if (!runOneIteration(playbackRate)) {
+      break;
     }
-
-    // Pad one analysis window of silence so the last partial search/target region
-    // can still form hops. Once per drain session (not per quantum) — otherwise
-    // each quantum re-pads and playback never ends. Set the flag only after a
-    // successful insert so a capacity miss can retry (after compact or next quantum).
-    if (!drainEofSilencePadded_ && hopSize_ > 0 && !inputQueue_.empty()) {
-      const size_t pad = searchIntervalFrames_ + windowSize_;
-      auto tryInsertEofSilencePad = [&]() {
-        for (const auto &channel : inputQueue_) {
-          if (channel.size() + pad > channel.capacity()) {
-            return false;
-          }
-        }
-        for (auto &channel : inputQueue_) {
-          channel.insert(channel.end(), pad, 0.0f);
-        }
-        drainEofSilencePadded_ = true;
-        return true;
-      };
-
-      if (tryInsertEofSilencePad()) {
-        continue;
-      }
-
-      // Free consumed analysis frames, then retry once before giving up.
-      const int earliestUsedIndex = std::min(targetBlockIndex_, searchBlockIndex_);
-      if (earliestUsedIndex > 0) {
-        compactInputQueue(static_cast<size_t>(earliestUsedIndex), playbackRate);
-        if (tryInsertEofSilencePad()) {
-          continue;
-        }
-      }
-    }
-
-    // Flush leftover half-window once so EOF does not discard pendingOverlap_.
-    // Commit only when every channel has room — otherwise a mid-loop break would
-    // leave channels desynced while drainPendingFlushed_ blocked retries.
-    if (!drainPendingFlushed_ && hopSize_ > 0) {
-      compactOutputQueueIfNeeded();
-
-      bool canFlush = true;
-      for (size_t channel = 0; channel < channels_; ++channel) {
-        if (outputQueue_[channel].size() + hopSize_ > outputQueue_[channel].capacity()) {
-          canFlush = false;
-          break;
-        }
-      }
-
-      if (canFlush) {
-        for (size_t channel = 0; channel < channels_; ++channel) {
-          auto &outQueue = outputQueue_[channel];
-          for (size_t frame = 0; frame < hopSize_; ++frame) {
-            outQueue.push_back(pendingOverlap_[channel][frame] * olaWindow_[hopSize_ + frame]);
-            pendingOverlap_[channel][frame] = 0.0f;
-          }
-        }
-        drainPendingFlushed_ = true;
-        continue;
-      }
-    }
-    break;
   }
 
   return rendered;

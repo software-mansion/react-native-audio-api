@@ -335,9 +335,9 @@ Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while conn
 Hard-won invariants for `AudioBufferBaseSourceNode::processWithPitchCorrection` and back-to-back scheduled joins (`b2.start(t1 + D/pr)`, join compensation L = 0):
 
 - **Feed real PCM only.** Never let `updatePlaybackInfo`-zeroed start-quantum frames enter the WSOLA analysis queue; mid-quantum starts must instead shift WSOLA's rendered output into `startOffset` after synthesis.
-- **Content accounting caps the EOF drain.** Track PCM consumed (in output-time frames, `vReadIndex_` delta / rate) vs frames emitted, and stop draining when emitted catches expected — otherwise silence-padded OLA hops spill past `duration/rate` and overlap the next scheduled source.
+- **EOF drain.** After natural PCM EOF, keep calling `drainOutput` for full quanta while it fills them; stop when a quantum is under-filled (stretcher dry). No content-budget expected/emitted accounting.
 - **COLA startup seeding.** On the first synthesis iteration after reset, seed `pendingOverlap_` with the leading half of the first block so output starts at full amplitude (no half-window fade-in).
-- **WSOLA whenever `pitchCorrection` is on.** Including `playbackRate == 1` — do not bypass to the non-WSOLA path at unity rate.
+- **WSOLA whenever `pitchCorrection` is on.** Including `playbackRate == 1` — do not bypass to the non-WSOLA path at unity rate (buffer-source priming may still skip `|rate| == 1`).
 - **Queue EOF needs `endOfStream()`.** An empty queue without that signal is only an underrun; with it, the base drain path runs even when `isEmpty()`.
 
 `AudioFileSourceNode` still has its own prime/drain path (not yet shared).
