@@ -10,7 +10,9 @@ namespace audioapi::test {
 
 TEST(AnalyserNodeTest, TrivialConstruct) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  auto context = std::make_shared<OfflineAudioContext>(2, 128, 44100.0f, registry);
+  constexpr size_t LENGTH = 128;
+  constexpr float SAMPLE_RATE = 44100.0f;
+  auto context = std::make_shared<OfflineAudioContext>(2, LENGTH, SAMPLE_RATE, registry);
   AnalyserNode analyser(context, AnalyserOptions{});
   EXPECT_EQ(analyser.getFFTSize(), AnalyserOptions::kDefaultFftSize);
 }
