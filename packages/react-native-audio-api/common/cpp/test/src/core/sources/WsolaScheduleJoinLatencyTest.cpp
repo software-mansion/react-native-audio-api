@@ -25,6 +25,10 @@ using namespace audioapi;
 
 // NOLINTBEGIN
 
+// This test was created to empirically verify the theoritical join latency calculation.
+// If we have two audio buffers, b1 and b2, and we want to schedule b2 to play after b1,
+// the correct formula is: b1.start(t1) b2.start(t1 + D/pr) where D = x / sr (buffer duration), pr = playbackRate.
+// However, this code was run to test the join latency calculation
 namespace {
 
 constexpr int kSampleRate = 24000;
@@ -34,9 +38,7 @@ constexpr float kOnesThreshold = 0.5f;
 
 constexpr size_t kScheduleUnitFrames = 128;
 
-/// Additive join pull-in on top of t1 + D/pr.
-/// Since the WSOLA path stopped feeding start-quantum silence into the analysis
-/// queue, no compensation is needed: with priming+drain the correct join is L=0.
+/// The correct value is 0.
 /// Override via WSOLA_KL_SECONDS to explore other schedules.
 constexpr double kL = 0.0;
 
