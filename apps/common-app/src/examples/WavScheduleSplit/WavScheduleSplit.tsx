@@ -20,6 +20,8 @@ const MIN_JOIN_COMPENSATION_MS = -100;
 const MAX_JOIN_COMPENSATION_MS = 100;
 const JOIN_COMPENSATION_STEP_MS = 1;
 const DEFAULT_JOIN_COMPENSATION_MS = 0;
+/** Optional gap between part1 end and part2 start when silence break is on. */
+const SILENCE_BREAK_SECONDS = 1;
 /** Each half of the synthetic ones sample (seconds). */
 const ONES_HALF_SECONDS = 5;
 /** Match WsolaTimeStretcher::kFirstOutputFramesToDump. */
@@ -110,6 +112,7 @@ const WavScheduleSplit: FC = () => {
   const [sample, setSample] = useState<SampleKey>('pad');
   const [playbackRate, setPlaybackRate] = useState(1);
   const [pitchCorrection, setPitchCorrection] = useState(true);
+  const [silenceBreak, setSilenceBreak] = useState(false);
   const [joinCompensationMs, setJoinCompensationMs] = useState(
     DEFAULT_JOIN_COMPENSATION_MS
   );
@@ -260,11 +263,12 @@ const WavScheduleSplit: FC = () => {
       const t0 = context.currentTime + START_DELAY_SECONDS;
       // Wall-clock length of part1 at this rate (content duration / rate).
       const contentDur = buffer1.duration / rate;
-      // L only useful on the WSOLA path; without it the join is a plain hard splice.
+      // L should be 0, only left for testing.
       const joinCompensation = pitchCorrection
         ? joinCompensationMs / 1000
         : 0;
-      const joinAt = t0 + contentDur + joinCompensation;
+      const silenceGap = silenceBreak ? SILENCE_BREAK_SECONDS : 0;
+      const joinAt = t0 + contentDur + joinCompensation + silenceGap;
 
       sourceNode1.connect(context.destination);
       sourceNode2.connect(context.destination);
@@ -311,6 +315,7 @@ const WavScheduleSplit: FC = () => {
           `buffer2.duration=${buffer2.duration.toFixed(4)}s len=${buffer2.length}`,
           `contentDur=${contentDur.toFixed(4)}s (duration/rate)`,
           `joinCompensation=${(joinCompensation * 1000).toFixed(1)} ms`,
+          `silenceBreak=${silenceGap.toFixed(1)}s`,
           `bufSr=${buffer1.sampleRate} ctxSr=${context.sampleRate}`,
           `source1.start(${t0.toFixed(3)})`,
           `source2.start(${joinAt.toFixed(3)})  ← joinAt (expected)`,
@@ -319,7 +324,7 @@ const WavScheduleSplit: FC = () => {
         ].join('\n')
       );
       appendLog(
-        `scheduled · rate=${rate.toFixed(1)} · wsola=${pitchCorrection} · L=${(joinCompensation * 1000).toFixed(1)}ms · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)} · secondEnds~${(joinAt + buffer2.duration / rate).toFixed(3)}`
+        `scheduled · rate=${rate.toFixed(1)} · wsola=${pitchCorrection} · L=${(joinCompensation * 1000).toFixed(1)}ms · gap=${silenceGap.toFixed(1)}s · first→${t0.toFixed(3)}  second→${joinAt.toFixed(3)} · secondEnds~${(joinAt + buffer2.duration / rate).toFixed(3)}`
       );
     } catch (error) {
       console.error(error);
@@ -335,6 +340,7 @@ const WavScheduleSplit: FC = () => {
     pitchCorrection,
     playbackRate,
     sample,
+    silenceBreak,
     stopSources,
   ]);
 
@@ -402,6 +408,7 @@ const WavScheduleSplit: FC = () => {
   const rateLabel = playbackRate.toFixed(1);
   const joinLabel = `${joinCompensationMs} ms`;
   const wsolaLabel = pitchCorrection ? 'WSOLA' : 'raw';
+  const gapLabel = silenceBreak ? `gap ${SILENCE_BREAK_SECONDS}s` : 'no gap';
 
   return (
     <Container>
@@ -489,9 +496,32 @@ const WavScheduleSplit: FC = () => {
         />
 
         <Spacer.Vertical size={24} />
+        <Text style={styles.section}>Silence break</Text>
+        <Text style={styles.hint}>
+          Glued only: delay part2 by {SILENCE_BREAK_SECONDS}s after part1’s
+          content end (plus L). Off = back-to-back join.
+        </Text>
+        <Spacer.Vertical size={8} />
+        <Button
+          title={
+            silenceBreak
+              ? `● ${SILENCE_BREAK_SECONDS}s silence between parts`
+              : `○ ${SILENCE_BREAK_SECONDS}s silence between parts`
+          }
+          onPress={() => setSilenceBreak(true)}
+          disabled={busy}
+        />
+        <Spacer.Vertical size={8} />
+        <Button
+          title={!silenceBreak ? '● Back-to-back join' : '○ Back-to-back join'}
+          onPress={() => setSilenceBreak(false)}
+          disabled={busy}
+        />
+
+        <Spacer.Vertical size={24} />
         <Button
           title={playLabel(
-            `Play glued (${wsolaLabel}, rate ${rateLabel}, L ${joinLabel})`
+            `Play glued (${wsolaLabel}, rate ${rateLabel}, L ${joinLabel}, ${gapLabel})`
           )}
           onPress={() => void playGlued()}
           disabled={busy}

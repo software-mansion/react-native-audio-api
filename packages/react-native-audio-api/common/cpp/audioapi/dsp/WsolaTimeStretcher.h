@@ -82,10 +82,6 @@ class WsolaTimeStretcher {
   int searchBlockIndex_{0};
   size_t outputReadIndex_{0};
 
-  /// First OLA iteration after reset seeds @ref pendingOverlap_ with the leading
-  /// block so output starts at full amplitude (no half-window fade-in).
-  bool firstSynthesisIteration_{true};
-
   /// Startup-latency probe: first absolute non-zero output sample.
   bool firstSampleFound_{false};
   size_t totalFramesOutput_{0};

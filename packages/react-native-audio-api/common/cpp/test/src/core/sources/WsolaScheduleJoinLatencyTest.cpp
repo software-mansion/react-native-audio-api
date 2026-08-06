@@ -302,11 +302,13 @@ TEST(WsolaScheduleJoinLatencyTest, ContiguousOnesAfterJoin) {
 
   EXPECT_EQ(runs, 1u) << "Gap in ones ⇒ L is wrong. L=" << L << "s onesStart=" << run.start
                       << " onesLen=" << run.length;
-  // Primed + COLA-seeded synthesis emits from the scheduled start; allow only
-  // sub-quantum jitter before the ones run.
-  EXPECT_LE(run.start, static_cast<size_t>(kQuantum))
-      << "Ones should begin near the scheduled start (not after WSOLA latency). start="
-      << run.start;
+  // First OLA hop fades in from silence (no startup seed); ones cross the
+  // threshold partway through that hop (~10 ms / half-window).
+  const size_t maxLeadingFadeFrames =
+      static_cast<size_t>(std::lround(0.01 * static_cast<double>(kSampleRate))) +
+      static_cast<size_t>(kQuantum);
+  EXPECT_LE(run.start, maxLeadingFadeFrames)
+      << "Ones should begin within the first-hop fade-in. start=" << run.start;
   EXPECT_GE(run.length, minOnes) << "Contiguous ones too short (need ≥90% of 2*x/rate). L=" << L
                                  << "s onesLen=" << run.length << " min=" << minOnes
                                  << " ideal=" << idealOnes;

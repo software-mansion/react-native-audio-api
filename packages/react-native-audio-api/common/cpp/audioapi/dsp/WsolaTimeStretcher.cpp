@@ -80,8 +80,6 @@ void WsolaTimeStretcher::reset() {
   searchBlockIndex_ = 0;
   outputReadIndex_ = 0;
 
-  firstSynthesisIteration_ = true;
-
   firstSampleFound_ = false;
   totalFramesOutput_ = 0;
 
@@ -316,15 +314,6 @@ bool WsolaTimeStretcher::runOneIteration(float playbackRate) {
     }
   }
 
-  if (firstSynthesisIteration_) {
-    firstSynthesisIteration_ = false;
-    for (size_t channel = 0; channel < channels_; ++channel) {
-      for (size_t frame = 0; frame < hopSize_; ++frame) {
-        pendingOverlap_[channel][frame] = optimalBlock_[channel][frame];
-      }
-    }
-  }
-
   for (size_t channel = 0; channel < channels_; ++channel) {
     auto &output = outputQueue_[channel];
     compactOutputQueueIfNeeded();
@@ -359,8 +348,6 @@ bool WsolaTimeStretcher::canRunIteration() const {
     return false;
   }
 
-  // Last search candidate window starts at searchBlockIndex_ + searchIntervalFrames_ - 1
-  // (not searchBlockSize - 1, which double-counted the trailing window).
   if (searchIntervalFrames_ == 0) {
     return false;
   }
