@@ -53,6 +53,8 @@ class IOSAudioRecorder : public AudioRecorder {
       uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 
+  [[nodiscard]] double getInputLatency() const override;
+
  protected:
   NativeAudioRecorder *nativeRecorder_;
 };

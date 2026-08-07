@@ -637,7 +637,7 @@
   XCTAssertEqual(self.audioEngine.createdFakeEngines.count, 2UL);
 }
 
-- (void)testOnInterruptionEndWithResumeFailureEndsIdle {
+- (void)testOnInterruptionEndWithResumeFailureLeavesRestartPending {
   [self attachSourceNodeToAudioEngine];
 
   self.audioEngine.state = AudioEngineStateInterrupted;
@@ -648,7 +648,9 @@
 
   [self.audioEngine onInterruptionEnd:true];
 
-  XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  XCTAssertFalse([self.audioEngine isEngineRunning]);
+  XCTAssertTrue([self.audioEngine isRestartPending]);
 }
 
 - (void)testStartIfNecessaryReturnsFalseWhenGraphEmpty {
@@ -934,6 +936,174 @@
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
   XCTAssertFalse(self.audioEngine.sessionDeactivationInvalidatedGraph);
   XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
+}
+
+- (NSError *)refusedStartError {
+  return [NSError errorWithDomain:@"AudioEngineTests"
+                             code:560557684
+                         userInfo:nil];
+}
+
+// Drives the engine into the state left behind by a configuration change whose restart
+// the system refused, which is what a locked device or a session held by another
+// application produces in practice.
+- (void)makeRestartPendingWithRefusedStart {
+  [self attachSourceNodeToAudioEngine];
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.nextCreatedEngineStartError = [self refusedStartError];
+
+  [self.audioEngine restartAudioEngine];
+}
+
+- (void)testRestartAudioEngineReportsStoppedEngineWhenStartIsRefused {
+  [self makeRestartPendingWithRefusedStart];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  XCTAssertFalse([self.audioEngine isEngineRunning]);
+  XCTAssertTrue([self.audioEngine isRestartPending]);
+  XCTAssertTrue(self.audioEngine.graphNeedsRebuild);
+}
+
+- (void)testRetryPendingRestartIfNeededRestartsEngineOnceStartSucceeds {
+  [self makeRestartPendingWithRefusedStart];
+
+  [self.audioEngine retryPendingRestartIfNeeded];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertTrue([self.audioEngine isEngineRunning]);
+  XCTAssertFalse([self.audioEngine isRestartPending]);
+  XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
+}
+
+- (void)testRetryPendingRestartIfNeededKeepsPendingWhileStartStaysRefused {
+  [self makeRestartPendingWithRefusedStart];
+  self.audioEngine.nextCreatedEngineStartError = [self refusedStartError];
+
+  [self.audioEngine retryPendingRestartIfNeeded];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  XCTAssertFalse([self.audioEngine isEngineRunning]);
+  XCTAssertTrue([self.audioEngine isRestartPending]);
+}
+
+- (void)testRetryPendingRestartIfNeededDoesNothingWithoutPendingRestart {
+  [self attachSourceNodeToAudioEngine];
+  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+
+  [self.audioEngine retryPendingRestartIfNeeded];
+
+  XCTAssertEqual(fakeEngine.startCallCount, 0);
+  XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 0);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
+}
+
+- (void)testRetryPendingRestartIfNeededStandsDownWhenGraphWasTornDown {
+  [self makeRestartPendingWithRefusedStart];
+
+  NSString *sourceNodeId = self.audioEngine.sourceNodes.allKeys.firstObject;
+  [self.audioEngine detachSourceNodeWithId:sourceNodeId];
+  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  NSInteger startCallCountBeforeRetry = fakeEngine.startCallCount;
+
+  [self.audioEngine retryPendingRestartIfNeeded];
+
+  XCTAssertFalse([self.audioEngine isRestartPending]);
+  XCTAssertEqual(fakeEngine.startCallCount, startCallCountBeforeRetry);
+}
+
+- (void)testStopIfNecessaryClearsPendingRestart {
+  [self makeRestartPendingWithRefusedStart];
+
+  [self.audioEngine stopIfNecessary];
+
+  XCTAssertFalse([self.audioEngine isRestartPending]);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
+}
+
+- (void)testPauseIfNecessaryClearsPendingRestart {
+  [self makeRestartPendingWithRefusedStart];
+
+  [self.audioEngine pauseIfNecessary];
+
+  XCTAssertFalse([self.audioEngine isRestartPending]);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+}
+
+- (void)testRestartAudioEngineResumesEngineWhenRestartWasPending {
+  [self makeRestartPendingWithRefusedStart];
+
+  [self.audioEngine restartAudioEngine];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertTrue([self.audioEngine isEngineRunning]);
+  XCTAssertFalse([self.audioEngine isRestartPending]);
+}
+
+// A rebuild required while the state already says running used to be reached twice,
+// because starting the engine delegated back to the rebuild-and-resume path which
+// started the engine again. Counting the calls pins the single pass down.
+- (void)testStartIfNecessaryRebuildsAndStartsExactlyOnceWhenStateIsRunning {
+  [self attachSourceNodeToAudioEngine];
+  FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.graphNeedsRebuild = YES;
+
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+
+  FakeAudioEngine *newEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(newEngine, oldEngine);
+  XCTAssertEqual(self.audioEngine.createdFakeEngines.count, 2UL);
+  XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
+  XCTAssertEqual(newEngine.prepareCallCount, 1);
+  XCTAssertEqual(newEngine.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+}
+
+// A configuration change arriving while the engine is interrupted cannot start it, and the
+// system does not always follow the interruption with an end notification. The engine has to
+// remember that it is still meant to run, or nothing restarts it.
+- (void)testRestartWhileInterruptedArmsPendingRestart {
+  [self attachSourceNodeToAudioEngine];
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+  self.audioEngine.state = AudioEngineStateInterrupted;
+
+  [self.audioEngine restartAudioEngine];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateInterrupted);
+  XCTAssertFalse([self.audioEngine isEngineRunning]);
+  XCTAssertTrue([self.audioEngine isRestartPending]);
+}
+
+- (void)testRetryPendingRestartIfNeededResumesEngineInterruptedDuringRestart {
+  [self attachSourceNodeToAudioEngine];
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+  self.audioEngine.state = AudioEngineStateInterrupted;
+  [self.audioEngine restartAudioEngine];
+
+  [self.audioEngine retryPendingRestartIfNeeded];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertTrue([self.audioEngine isEngineRunning]);
+  XCTAssertFalse([self.audioEngine isRestartPending]);
+}
+
+- (void)testRestartWhilePausedDoesNotArmPendingRestart {
+  [self attachSourceNodeToAudioEngine];
+  self.audioEngine.state = AudioEngineStatePaused;
+
+  [self.audioEngine restartAudioEngine];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  XCTAssertFalse([self.audioEngine isRestartPending]);
+}
+
+- (void)testRestartWhileInterruptedWithoutGraphDoesNotArmPendingRestart {
+  self.audioEngine.state = AudioEngineStateInterrupted;
+
+  [self.audioEngine restartAudioEngine];
+
+  XCTAssertFalse([self.audioEngine isRestartPending]);
 }
 
 - (void)testConcurrentStartIfNecessaryDoesNotCrash {

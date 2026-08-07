@@ -31,6 +31,21 @@ yarn validate:full      # --fast + --android + --ios (skips unavailable platform
 
 Equivalent: `./scripts/validate.sh --fast` (etc.)
 
+### iOS unit tests (not covered by any tier)
+
+`validate:ios` only builds the pod. The Objective-C++ XCTest suite in `apps/fabric-example/ios/FabricExampleTests/` (engine, session manager, notification manager, player, recorder) is run by neither CI nor `validate.sh`, so changes under `ios/audioapi/` must be exercised by hand:
+
+```bash
+cd apps/fabric-example/ios
+xcodebuild test -workspace FabricExample.xcworkspace -scheme FabricExampleTests \
+  -destination 'platform=iOS Simulator,name=<an installed simulator>' \
+  -only-testing:FabricExampleTests/AudioEngineTests   # omit to run everything
+```
+
+Check `xcrun simctl list devices available` first — an unavailable `-destination` makes xcodebuild print the device list and fail in a way that is easy to mistake for a passing run when its output is piped. Run `pod install` if the build reports the sandbox is out of sync; it can also rewrite prebuilt-pod checksums in the tracked `Podfile.lock`, which should not be committed with unrelated work.
+
+Because these tests are never run automatically, they rot. Several test files hand-declare mirror copies of C++ classes (`IOSAudioPlayer` in `AudioPlayerTests.mm`, `IOSAudioRecorder` in `IOSAudioRecorderTests.mm`) to reach protected members; adding a pure virtual to a base class makes those mirrors abstract and breaks compilation of the whole target. Add the matching override to the mirror when changing `CommonPlayer` or `AudioRecorder`.
+
 ### Which tier to run
 
 | Changed paths | Minimum validation |
