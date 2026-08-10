@@ -24,6 +24,7 @@ export default class AudioParam {
 
   public set value(value: number) {
     this.audioParam.value = value;
+    this.setValueAtTime(value, this.context.currentTime);
   }
 
   public setValueAtTime(value: number, startTime: number): AudioParam {
