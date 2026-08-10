@@ -45,6 +45,10 @@ HostNode::Res HostNode::disconnect() {
   return graph_->removeAllEdges(node_);
 }
 
+HostNode::Res HostNode::renegotiate() {
+  return graph_->renegotiateNodeChannels(node_);
+}
+
 HostNode::HNode *HostNode::rawNode() const {
   return node_;
 }

@@ -2,6 +2,7 @@ import AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
 import { IWaveShaperNode } from '../jsi-interfaces';
 import { WaveShaperOptions } from '../types';
+import { toFloat32Array } from '../utils';
 import { validateWaveShaperCurve } from '../utils/validation';
 
 export default class WaveShaperNode extends AudioNode {
@@ -10,12 +11,9 @@ export default class WaveShaperNode extends AudioNode {
 
   constructor(context: BaseAudioContext, options?: WaveShaperOptions) {
     const node = context.context.createWaveShaper(options || {});
-    super(context, node);
+    super(context, node, options);
     if (options?.curve) {
-      this._curve =
-        options.curve instanceof Float32Array
-          ? options.curve
-          : Float32Array.from(options.curve);
+      this._curve = toFloat32Array(options.curve);
       this.curveWasSet = true;
     }
   }

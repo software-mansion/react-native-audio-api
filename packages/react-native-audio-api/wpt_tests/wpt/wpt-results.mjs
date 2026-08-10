@@ -17,7 +17,7 @@ const DOCS_MARKERS = {
 // WPT test categories that map to interfaces actually available (fully or
 // partially) in react-native-audio-api. Keep this in sync with the coverage
 // table in packages/audiodocs/docs/other/web-audio-api-coverage.mdx.
-// Categories that are not yet implemented (e.g. PannerNode, ChannelMergerNode,
+// Categories that are not yet implemented (e.g. PannerNode,
 // DynamicsCompressorNode, MediaStream* nodes, AudioWorklet) are intentionally
 // excluded from the docs summary.
 const AVAILABLE_INTERFACES = {
@@ -28,6 +28,8 @@ const AVAILABLE_INTERFACES = {
   'the-audionode-interface': 'AudioNode',
   'the-audioparam-interface': 'AudioParam',
   'the-biquadfilternode-interface': 'BiquadFilterNode',
+  'the-channelmergernode-interface': 'ChannelMergerNode',
+  'the-channelsplitternode-interface': 'ChannelSplitterNode',
   'the-constantsourcenode-interface': 'ConstantSourceNode',
   'the-convolvernode-interface': 'ConvolverNode',
   'the-delaynode-interface': 'DelayNode',
@@ -49,6 +51,9 @@ const COVERAGE_NOTES = {
   'the-analysernode-interface':
     'One failure: minDecibels/maxDecibels are stored as float, so reading back a ' +
     'high-precision double value loses a few digits (cosmetic round-trip mismatch).',
+  'the-audiobuffer-interface':
+    'Remaining failures: acquire-the-content expects AudioBufferSourceNode.start() to ' +
+    'snapshot the buffer contents (we still share the underlying memory).',
   'the-biquadfilternode-interface':
     'The filter runs in double precision, so the static frequency response matches the ' +
     'reference. The remaining failures are the parameter-automation tests, which expect ' +
@@ -56,6 +61,11 @@ const COVERAGE_NOTES = {
     'render quantum (k-rate) and recompute the coefficients once per block. The audible ' +
     'difference is negligible, while computing the coefficient/trig math once per block ' +
     'instead of once per sample makes processing dramatically faster on the audio thread.',
+  'the-audionode-interface':
+    'Channel mixing, indexed connect()/disconnect(), and ChannelMerger/Splitter ' +
+    'graphs pass. Remaining failures are connect() chaining across unimplemented ' +
+    'node types (DynamicsCompressor, Panner, ScriptProcessor, MediaStream*) and ' +
+    'legacy 3-arg AudioContext construction (should throw TypeError).',
 };
 
 const CATEGORY_LABELS = {
@@ -459,7 +469,7 @@ export function formatCoverageMarkdown(report) {
     "      <th style={{ textAlign: 'right' }}>Passing</th>",
     "      <th style={{ textAlign: 'right' }}>Total</th>",
     "      <th style={{ textAlign: 'right' }}>Pass rate</th>",
-    '      <th>Notes</th>',
+    '      <th>Differences</th>',
     '    </tr>',
     '  </thead>',
     '  <tbody>',

@@ -87,7 +87,9 @@ react-native-audio-api*.tgz
 
 # Envs
 .env
-.cursor
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/*.mdc
 
 compile_commands.json
 openssl-prebuilt/
@@ -102,3 +104,9 @@ packages/react-native-audio-api/common/cpp/audioapi/external/ffmpeg_ios/
 
 # Clangd cache
 .cache
+
+# C++ tests coverage (Clang LLVM source-based + llvm-cov)
+build-coverage/
+*.profraw
+*.profdata
+coverage-html/

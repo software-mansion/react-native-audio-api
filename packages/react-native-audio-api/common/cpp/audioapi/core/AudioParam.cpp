@@ -1,11 +1,10 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/param/ParamRenderEventFactory.hpp>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/core/utils/param/ParamRenderEventFactory.h>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <memory>
-#include <utility>
 
 namespace audioapi {
 
@@ -14,18 +13,14 @@ AudioParam::AudioParam(
     float minValue,
     float maxValue,
     const std::shared_ptr<BaseAudioContext> &context)
-    : context_(context),
+    : GeneralizedAudioParam(minValue, maxValue, context),
       value_(defaultValue),
       defaultValue_(defaultValue),
-      minValue_(minValue),
-      maxValue_(maxValue),
       eventRenderQueue_(defaultValue),
       inputBuffer_(
-          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
-      outputBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {}
 
-float AudioParam::getValueAtTime(double time) {
+float AudioParam::getValueAtTimeUnmodulated(double time) {
   auto value = eventRenderQueue_.computeValueAtTime(time);
   if (!value.has_value()) {
     return value_.load(std::memory_order_relaxed);
@@ -68,6 +63,10 @@ void AudioParam::cancelAndHoldAtTime(double cancelTime) {
 }
 
 std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProcess, double time) {
+  if (aRateCacheHit(framesToProcess, time)) {
+    return outputBuffer_;
+  }
+
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (context == nullptr) {
     outputBuffer_->zero();
@@ -82,26 +81,28 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   auto inputData = inputBuffer_->getChannel(0)->span();
   auto outputData = outputBuffer_->getChannel(0)->span();
 
-  // Compute: modulation + automated parameter value → output buffer
-  for (size_t i = 0; i < framesToProcess; i++, timeCache += timeStep) {
-    outputData[i] = inputData[i] + getValueAtTime(timeCache);
+  for (int i = 0; i < framesToProcess; i++, timeCache += timeStep) {
+    outputData[i] = inputData[i] + getValueAtTimeUnmodulated(timeCache);
   }
 
-  // Zero the input buffer so next frame starts clean if no BridgeNode refills it
   inputBuffer_->zero();
 
+  finalizeARate(framesToProcess, time);
   return outputBuffer_;
 }
 
-float AudioParam::processKRateParam(int framesToProcess, double time) {
+float AudioParam::processKRateParam(double time) {
+  if (kRateCacheHit(time)) {
+    return cachedKRateValue_;
+  }
+
   // Return block-rate parameter value plus first sample of input modulation
   float modulation = inputBuffer_->getChannel(0)->span()[0];
-  float result = modulation + getValueAtTime(time);
+  float raw = modulation + getValueAtTimeUnmodulated(time);
 
-  // Zero the input buffer so next frame starts clean if no BridgeNode refills it
   inputBuffer_->zero();
 
-  return result;
+  return finalizeKRate(raw, time);
 }
 
 } // namespace audioapi

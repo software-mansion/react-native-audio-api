@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/param/RenderParamEvent.h>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <utility>

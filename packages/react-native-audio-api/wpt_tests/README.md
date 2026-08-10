@@ -75,4 +75,4 @@ The published conformance summary lives in the docs, not here:
 
 ## Scope
 
-The Node harness exports only spec Web Audio API classes via `wpt-api.js` (no recorder, decoder, or worklet nodes). Failures for unimplemented spec APIs (e.g. `PannerNode`, `ChannelMergerNode`) are expected until those nodes land.
+The Node harness exports only spec Web Audio API classes via `wpt-api.js` (no recorder, decoder, or worklet nodes). Failures for unimplemented spec APIs (e.g. `PannerNode`, `DynamicsCompressorNode`) are expected until those nodes land.

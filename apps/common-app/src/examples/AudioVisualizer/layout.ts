@@ -22,10 +22,14 @@ export function getVisualizerLayout(width: number, height: number): VisualizerLa
 }
 
 export function sampleExp(value: number) {
+  'worklet';
+
   return Math.exp(2.5 * value) / 4 - 0.2;
 }
 
 export function weightWithIndex(value: number, index: number, indexMax: number) {
+  'worklet';
+
   if (index < indexMax / 2) {
     return value * Math.max(index / (indexMax / 2), 0.5);
   }

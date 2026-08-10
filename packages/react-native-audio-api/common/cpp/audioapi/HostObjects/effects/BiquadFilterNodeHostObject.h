@@ -36,7 +36,7 @@ class BiquadFilterNodeHostObject : public AudioNodeHostObject {
   }
 
  private:
-  BiquadFilterNode *biquadFilterNode_ = nullptr;
+  BiquadFilterNode *const biquadFilterNode_;
 
   std::shared_ptr<AudioParamHostObject> frequencyParam_;
   std::shared_ptr<AudioParamHostObject> detuneParam_;

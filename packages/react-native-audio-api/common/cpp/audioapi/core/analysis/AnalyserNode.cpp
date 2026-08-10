@@ -1,12 +1,11 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <algorithm>
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 
@@ -14,13 +13,14 @@ AnalyserNode::AnalyserNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AnalyserOptions &options)
     : AudioNode(context, options),
+      fftSize_(options.fftSize),
       inputArray_(std::make_unique<CircularDSPAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(
           std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
       minDecibels_(options.minDecibels),
       maxDecibels_(options.maxDecibels),
-      smoothingTimeConstant_(options.smoothingTimeConstant) {
-  setFFTSize(options.fftSize);
+      smoothingTimeConstant_(options.smoothingTimeConstant),
+      spectrumAnalyser_(options.fftSize) {
   setProcessableState(GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE);
 }
 
@@ -29,19 +29,16 @@ void AnalyserNode::setFFTSize(int fftSize) {
     return;
   }
 
-  fft_ = std::make_unique<dsp::FFT>(fftSize);
-  complexData_ = std::vector<std::complex<float>>(fftSize);
-  magnitudeArray_ = std::make_unique<DSPAudioArray>(fftSize / 2);
-  tempArray_ = std::make_unique<DSPAudioArray>(fftSize);
-  initializeWindowData(fftSize);
+  spectrumAnalyser_.setFFTSize(fftSize);
   fftSize_.store(fftSize, std::memory_order_release);
 }
 
 void AnalyserNode::getFloatFrequencyData(float *data, int length) {
   doFFTAnalysis();
 
-  length = std::min(static_cast<int>(magnitudeArray_->getSize()), length);
-  auto magnitudeSpan = magnitudeArray_->span();
+  const auto &magnitudeArray = spectrumAnalyser_.getMagnitudeData();
+  length = std::min(static_cast<int>(magnitudeArray.getSize()), length);
+  auto magnitudeSpan = magnitudeArray.span();
 
   for (int i = 0; i < length; i++) {
     data[i] = dsp::linearToDecibels(magnitudeSpan[i]);
@@ -51,8 +48,9 @@ void AnalyserNode::getFloatFrequencyData(float *data, int length) {
 void AnalyserNode::getByteFrequencyData(uint8_t *data, int length) {
   doFFTAnalysis();
 
-  auto magnitudeBufferData = magnitudeArray_->span();
-  length = std::min(static_cast<int>(magnitudeArray_->getSize()), length);
+  const auto &magnitudeArray = spectrumAnalyser_.getMagnitudeData();
+  auto magnitudeBufferData = magnitudeArray.span();
+  length = std::min(static_cast<int>(magnitudeArray.getSize()), length);
 
   const auto rangeScaleFactor =
       maxDecibels_ == minDecibels_ ? 1 : 1 / (maxDecibels_ - minDecibels_);
@@ -122,40 +120,7 @@ void AnalyserNode::doFFTAnalysis() {
 
   lastAnalyzedSequence_ = frame->sequenceNumber;
 
-  // Copy the snapshot from the triple buffer and apply the window.
-  tempArray_->copy(frame->timeDomain, 0, 0, fftSize);
-  tempArray_->multiply(*windowData_, fftSize);
-
-  // do fft analysis - get frequency domain data
-  fft_->doFFT(*tempArray_, complexData_);
-
-  // Zero out nquist component
-  complexData_[0] = std::complex<float>(complexData_[0].real(), 0);
-
-  const float magnitudeScale = 1.0f / static_cast<float>(fftSize);
-  auto magnitudeBufferData = magnitudeArray_->span();
-
-  for (int i = 0; i < magnitudeArray_->getSize(); i++) {
-    auto scalarMagnitude = std::abs(complexData_[i]) * magnitudeScale;
-    magnitudeBufferData[i] = smoothingTimeConstant_ * magnitudeBufferData[i] +
-        (1 - smoothingTimeConstant_) * scalarMagnitude;
-  }
-}
-
-void AnalyserNode::initializeWindowData(int fftSize) {
-  windowData_ = std::make_unique<DSPAudioArray>(fftSize);
-  auto data = windowData_->span();
-  auto size = windowData_->getSize();
-
-  const auto invSize = 1.0f / static_cast<float>(size);
-  const auto alpha = 2.0f * std::numbers::pi_v<float> * invSize;
-
-  for (size_t i = 0; i < size; ++i) {
-    const auto phase = alpha * static_cast<float>(i);
-    // 4*PI*x is just 2 * (2*PI*x)
-    const auto window = 0.42f - 0.50f * std::cos(phase) + 0.08f * std::cos(2.0f * phase);
-    data[i] = window;
-  }
+  spectrumAnalyser_.analyze(frame->timeDomain, smoothingTimeConstant_);
 }
 
 } // namespace audioapi

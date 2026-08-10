@@ -1,6 +1,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 
-#include <audioapi/HostObjects/TypedAudioNodePtr.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
@@ -28,7 +28,8 @@ AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, dequeueBuffer),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, clearBuffers),
-      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause));
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, resume));
 }
 
 AudioBufferQueueSourceNodeHostObject::~AudioBufferQueueSourceNodeHostObject() {
@@ -60,6 +61,16 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, pause) {
   };
   bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
+  return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, resume) {
+  auto handle = node_->handle;
+  auto event =
+      [handle, node = bufferQueueSourceNode_, when = args[0].getNumber()](BaseAudioContext &) {
+        node->resume(when);
+      };
+  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();
 }
 

@@ -1,11 +1,11 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/AudioDecoding.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/CircularArray.hpp>
 #ifdef DEBUG
-#include <test/src/graph/AudioThreadGuard.h>
+#include <audioapi/utils/AudioThreadGuard.h>
 #endif
 #include <memory>
 #include <vector>
@@ -18,6 +18,19 @@ BaseAudioContext::BaseAudioContext(
     : state_(ContextState::SUSPENDED),
       sampleRate_(sampleRate),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      pendingPromisesOffloader_(
+          std::make_unique<task_offloader::TaskOffloader<
+              ContextPromiseTask,
+              PENDING_PROMISES_OVERFLOW_STRATEGY,
+              PENDING_PROMISES_WAIT_STRATEGY>>(
+              PENDING_PROMISES_CAPACITY,
+              [this](const ContextPromiseTask &task) {
+                if (!task.operation) {
+                  return;
+                }
+                std::scoped_lock lock(driverMutex_);
+                task.operation(*this);
+              })),
       audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY),
       gcAudioEventScheduler_(GC_AUDIO_SCHEDULER_CAPACITY),
       disposer_(

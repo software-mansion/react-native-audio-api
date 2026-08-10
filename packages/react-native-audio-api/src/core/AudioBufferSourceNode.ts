@@ -17,7 +17,7 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
     // so pass the buffer through the setter below instead of the options.
     const { buffer, ...nativeOptions } = options ?? {};
     const node = context.context.createBufferSource(nativeOptions);
-    super(context, node);
+    super(context, node, options);
 
     if (buffer != null) {
       this.buffer = buffer as AudioBuffer;

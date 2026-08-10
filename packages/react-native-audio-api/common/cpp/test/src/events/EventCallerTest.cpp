@@ -1,4 +1,4 @@
-#include <audioapi/events/AudioEventPayloadMapping.h>
+#include <audioapi/events/AudioEventPayloadMapping.hpp>
 #include <audioapi/events/EventCaller.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

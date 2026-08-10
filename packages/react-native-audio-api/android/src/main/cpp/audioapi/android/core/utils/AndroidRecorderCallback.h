@@ -14,7 +14,7 @@
 
 namespace audioapi {
 
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 struct CallbackData {
   size_t slot = std::numeric_limits<size_t>::max();
@@ -24,7 +24,7 @@ struct CallbackData {
 class AndroidRecorderCallback : public AudioRecorderCallback {
  public:
   AndroidRecorderCallback(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       size_t bufferLength,
       int channelCount,

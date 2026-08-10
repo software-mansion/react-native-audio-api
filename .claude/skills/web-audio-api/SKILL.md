@@ -108,7 +108,7 @@ When adding a new RN-specific feature that should also work on web, implement th
 Current status (from `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`):
 
 ### Fully implemented ✅
-`AnalyserNode`, `AudioBuffer`, `AudioBufferSourceNode`, `AudioDestinationNode`, `AudioNode`, `AudioParam`, `AudioScheduledSourceNode`, `BiquadFilterNode`, `ConstantSourceNode`, `ConvolverNode`, `DelayNode`, `GainNode`, `IIRFilterNode`, `OfflineAudioContext`, `OscillatorNode`, `PeriodicWave`, `StereoPannerNode`, `WaveShaperNode`
+`AnalyserNode`, `AudioBuffer`, `AudioBufferSourceNode`, `AudioDestinationNode`, `AudioNode`, `AudioParam`, `AudioScheduledSourceNode`, `BiquadFilterNode`, `ChannelMergerNode`, `ChannelSplitterNode`, `ConstantSourceNode`, `ConvolverNode`, `DelayNode`, `GainNode`, `IIRFilterNode`, `OfflineAudioContext`, `OscillatorNode`, `PeriodicWave`, `StereoPannerNode`, `WaveShaperNode`, `MediaElementAudioSourceNode`
 
 ### Partially implemented 🚧
 | Interface | What's available |
@@ -119,7 +119,7 @@ Current status (from `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`)
 | `PannerNode` | Equal-power spatialization, distance models, cone gain; `HRTF` accepted but falls back to equal-power |
 
 ### Not yet implemented ❌
-`AudioSinkInfo`, `AudioWorklet`, `AudioWorkletGlobalScope`, `AudioWorkletNode`, `AudioWorkletProcessor`, `ChannelMergerNode`, `ChannelSplitterNode`, `DynamicsCompressorNode`, `MediaElementAudioSourceNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`
+`AudioSinkInfo`, `AudioWorklet`, `AudioWorkletGlobalScope`, `AudioWorkletNode`, `AudioWorkletProcessor`, `DynamicsCompressorNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`, `PannerNode`
 
 **Goal**: everything in the Web Audio API spec should eventually be in this library. If you implement a node from the ❌ list, update the coverage table in `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
 

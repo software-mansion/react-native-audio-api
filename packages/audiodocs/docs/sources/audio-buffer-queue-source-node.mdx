@@ -24,7 +24,7 @@ constructor(context: BaseAudioContext, options?: AudioBufferQueueSourceOptions)
 | `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](/docs/sources/audio-buffer-queue-source-node#properties). |
 
 :::info
-You can also create an `AudioBufferQueueSourceNode` via [`BaseAudioContext.createBufferQueueSource()`](/docs/core/base-audio-context#createbufferqueuesource), which uses default values.
+You can also create an `AudioBufferQueueSourceNode` via [`BaseAudioContext.createBufferQueueSource()`](/docs/core/base-audio-context#create-buffer-queue-source), which uses default values.
 :::
 
 :::caution
@@ -127,7 +127,7 @@ Removes all buffers from the queue. Note that [`onBufferEnded`](audio-buffer-que
 
 #### Returns `undefined`.
 
-### `start` <Overridden /> {#start}
+### `start` <Overridden /> {"#start"}
 
 Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`AudioBuffers`](/docs/sources/audio-buffer), or starts to play immediately.
 
@@ -136,11 +136,42 @@ Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`Audio
 | `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
 | `offset` <Optional /> | `number` | The position, in seconds, within the first enqueued audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the first enqueued buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties), it’s automatically clamped to the valid range. |
 
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `when` or `offset` is negative number. |
+| `InvalidStateError` | If the node has already been started once. |
+
+#### Returns `undefined`.
 
 ### `pause`
 
 Stops audio immediately. Unlike [`stop()`](/docs/sources/audio-scheduled-source-node#stop), which fully stops playback and clears the queued buffers,
 pause() halts the audio while keeping the current playback position, allowing you to resume from the same point later.
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `InvalidStateError` |  If the node has not been started yet, has already been stopped, or is already paused. |
+
+#### Returns `undefined`.
+
+### `resume`
+
+Resumes audio playback with a specified delay. If no time is given, it resumes immediately.
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to resume. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0.0`, the node resumes playing immediately. <br /> Default: `0.0`. |
+
+#### Errors:
+
+| Error type | Description |
+| :---: | :---- |
+| `RangeError` | `when` is negative number. |
+| `InvalidStateError` | If the node has not been started yet, has already been stopped, or is not currently paused. |
 
 #### Returns `undefined`.
 

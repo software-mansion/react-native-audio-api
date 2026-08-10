@@ -1,8 +1,4 @@
-import {
-  InvalidAccessError,
-  InvalidStateError,
-  NotSupportedError,
-} from '../errors';
+import { InvalidStateError, NotSupportedError } from '../errors';
 import { IBaseAudioContext } from '../jsi-interfaces';
 import {
   ContextState,
@@ -18,6 +14,8 @@ import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 import AudioDestinationNode from './AudioDestinationNode';
 import AudioListener from './AudioListener';
 import BiquadFilterNode from './BiquadFilterNode';
+import ChannelMergerNode from './ChannelMergerNode';
+import ChannelSplitterNode from './ChannelSplitterNode';
 import ConstantSourceNode from './ConstantSourceNode';
 import ConvolverNode from './ConvolverNode';
 import DelayNode from './DelayNode';
@@ -163,11 +161,6 @@ export default class BaseAudioContext {
     imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
-    if (real.length !== imag.length) {
-      throw new InvalidAccessError(
-        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
-      );
-    }
     return new PeriodicWave(this, { real, imag, ...constraints });
   }
 
@@ -181,5 +174,19 @@ export default class BaseAudioContext {
 
   createWaveShaper(): WaveShaperNode {
     return new WaveShaperNode(this);
+  }
+
+  createChannelMerger(numberOfInputs?: number): ChannelMergerNode {
+    return new ChannelMergerNode(
+      this,
+      numberOfInputs !== undefined ? { numberOfInputs } : undefined
+    );
+  }
+
+  createChannelSplitter(numberOfOutputs?: number): ChannelSplitterNode {
+    return new ChannelSplitterNode(
+      this,
+      numberOfOutputs !== undefined ? { numberOfOutputs } : undefined
+    );
   }
 }

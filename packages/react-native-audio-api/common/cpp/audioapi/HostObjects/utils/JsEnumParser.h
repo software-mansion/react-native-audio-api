@@ -21,9 +21,11 @@ BiquadFilterType filterTypeFromString(const std::string &type);
 AudioEvent audioEventFromString(const std::string &event);
 std::string contextStateToString(ContextState state);
 std::string channelCountModeToString(ChannelCountMode mode);
+ChannelCountMode channelCountModeFromString(const std::string &mode);
 std::string channelInterpretationToString(ChannelInterpretation interpretation);
 std::string panningModelToString(PanningModelType model);
 PanningModelType panningModelFromString(const std::string &model);
 std::string distanceModelToString(DistanceModelType model);
 DistanceModelType distanceModelFromString(const std::string &model);
+ChannelInterpretation channelInterpretationFromString(const std::string &interpretation);
 } // namespace audioapi::js_enum_parser

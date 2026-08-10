@@ -7,6 +7,7 @@ import chalk from 'chalk';
 import wptRunner from 'wpt-runner';
 
 import { wrapAudioNodeConstructors } from './wrap-audio-node-constructors.mjs';
+import { applyChannelMergerSplitterAttributeLocks } from './wpt-only/channel-merger-splitter-attribute-locks.mjs';
 import {
   wrapAudioBufferCopyMethods,
   wrapWebAudioRealmErrors,
@@ -149,6 +150,7 @@ export function createWptEnvironment() {
     Object.assign(window, audioApiForWindow);
     alignGlobalRealmConstructors(window);
     wrapAudioNodeConstructors(window);
+    applyChannelMergerSplitterAttributeLocks(window);
     wrapWebAudioRealmErrors(window);
     wrapAudioBufferCopyMethods(window);
     if (window.navigator == null) {

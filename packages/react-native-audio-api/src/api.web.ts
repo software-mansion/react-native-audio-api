@@ -10,6 +10,8 @@ export { default as AudioParam } from './web-core/AudioParam.web';
 export { default as AudioScheduledSourceNode } from './web-core/AudioScheduledSourceNode.web';
 export { default as BaseAudioContext } from './web-core/BaseAudioContext.web';
 export { default as BiquadFilterNode } from './web-core/BiquadFilterNode.web';
+export { default as ChannelMergerNode } from './web-core/ChannelMergerNode.web';
+export { default as ChannelSplitterNode } from './web-core/ChannelSplitterNode.web';
 export { default as DelayNode } from './web-core/DelayNode.web';
 export { default as GainNode } from './web-core/GainNode.web';
 export { default as MediaElementAudioSourceNode } from './web-core/MediaElementAudioSourceNode.web';

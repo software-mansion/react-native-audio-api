@@ -17,7 +17,7 @@ class AudioListener {
  public:
   explicit AudioListener(const std::shared_ptr<BaseAudioContext> &context);
 
-  /// JS-thread only param accessors.
+  /// @note JS Thread only
   [[nodiscard]] std::shared_ptr<AudioParam> getPositionXParam() const {
     return positionXParam_;
   }

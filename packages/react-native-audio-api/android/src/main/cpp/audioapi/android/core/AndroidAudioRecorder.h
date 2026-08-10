@@ -4,8 +4,11 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -15,16 +18,18 @@ namespace audioapi {
 class AudioFileProperties;
 class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AndroidAudioRecorder : public oboe::AudioStreamCallback,
                              public AudioRecorder,
                              public std::enable_shared_from_this<AndroidAudioRecorder> {
  public:
   explicit AndroidAudioRecorder(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AndroidAudioRecorder() override;
   void cleanup();
+
+  DELETE_COPY_AND_MOVE(AndroidAudioRecorder);
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride) override;
   Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
@@ -49,6 +54,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   void connect(const std::shared_ptr<utils::graph::NodeHandle> &node) override;
   void disconnect() override;
 
+  [[nodiscard]] double getInputLatency() const override;
+
   oboe::DataCallbackResult
   onAudioReady(oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) override;
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
@@ -56,7 +63,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
  private:
   std::shared_ptr<AudioBuffer> deinterleavingBuffer_;
 
-  float streamSampleRate_;
+  std::atomic<float> streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;
 
@@ -64,6 +71,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
 
   std::shared_ptr<oboe::AudioStream> mStream_;
   std::vector<std::string> recordingSegmentPaths_;
+  /// Updated on the audio thread from each input callback `numFrames`.
+  std::atomic<int32_t> lastCallbackFrameCount_{0};
   Result<NoneType, std::string> openAudioStream();
   std::shared_ptr<AudioFileWriter> createFileWriter(
       const std::shared_ptr<AudioFileProperties> &props);

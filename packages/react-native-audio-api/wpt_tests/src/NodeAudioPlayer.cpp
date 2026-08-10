@@ -43,9 +43,19 @@ void NodeAudioPlayer::stop() {
   isPaused_.store(true, std::memory_order_release);
   isRunning_.store(false, std::memory_order_release);
 
-  if (worker_.joinable()) {
-    worker_.join();
+  if (!worker_.joinable()) {
+    return;
   }
+
+  // `AudioContext::close()` may run as an SPSC control message on this worker
+  // (inside `processGraph` → `processAudioEvents`). Joining ourselves throws
+  // `resource_deadlock_would_occur`. Signal exit and let a non-worker caller
+  // (destructor / later `stop()` from the JS thread) join.
+  if (std::this_thread::get_id() == worker_.get_id()) {
+    return;
+  }
+
+  worker_.join();
 }
 
 bool NodeAudioPlayer::resume() {
@@ -73,11 +83,24 @@ void NodeAudioPlayer::suspend() {
 
 void NodeAudioPlayer::cleanup() {
   stop();
-  isInitialized_.store(false, std::memory_order_release);
+  // Only clear the initialized flag once the worker has been joined. If `stop()`
+  // ran on the worker, keep `isInitialized_` so a later JS-thread `stop()` /
+  // destructor can still join.
+  if (!worker_.joinable()) {
+    isInitialized_.store(false, std::memory_order_release);
+  }
 }
 
 bool NodeAudioPlayer::isRunning() const {
   return isRunning_.load(std::memory_order_acquire);
+}
+
+double NodeAudioPlayer::getOutputLatency() const {
+  return 0.0;
+}
+
+double NodeAudioPlayer::getBaseLatency() const {
+  return 0.0;
 }
 
 void NodeAudioPlayer::run() {

@@ -12,7 +12,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
@@ -102,12 +102,16 @@ static void cleanupStartedRecorder(
 /// This constructor initializes the receiver block and native side recorder wrapper (AVAudioSinkNode).
 /// All other necessary fields (like buffers) are initialized in start() method.
 /// This "method" should be called from the JS thread only.
-/// @param audioEventHandlerRegistry Shared pointer to the AudioEventHandlerRegistry for event handling.
+/// @param audioEventHandlerRegistry Shared pointer to the IAudioEventHandlerRegistry for event handling.
 IOSAudioRecorder::IOSAudioRecorder(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
+    if (numFrames > 0) {
+      lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
+    }
+
     if (usesFileOutput()) {
       if (auto lock = Locker::tryLock(fileWriterMutex_)) {
         fileWriter_->writeAudioData(inputBuffer, numFrames);
@@ -228,6 +232,8 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
 
   // Estimate the maximum input buffer lengths that can be expected from the sink node
   size_t maxInputBufferLength = [nativeRecorder_ getResolvedBufferSize];
+  streamSampleRate_ = static_cast<float>(recorderFormatSampleRate(inputFormat));
+  lastCallbackFrameCount_.store(0, std::memory_order_release);
   bool fileWasOpened = false;
 
   if (wantsFileOutput()) {
@@ -310,6 +316,8 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
 
     [nativeRecorder_ setInputArmed:false];
     state_.store(RecorderState::Idle, std::memory_order_release);
+    lastCallbackFrameCount_.store(0, std::memory_order_release);
+    streamSampleRate_ = 0.0f;
     [nativeRecorder_ stop];
 
     hadFileOutput = usesFileOutput();
@@ -608,6 +616,25 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
     callbackOutputConfigured_.store(true, std::memory_order_release);
   }
   return Result<NoneType, std::string>::Ok(None);
+}
+
+double IOSAudioRecorder::getInputLatency() const
+{
+  if (isIdle()) {
+    return 0.0;
+  }
+
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
+
+  double baseLatency = 0.0;
+  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
+  if (callbackFrames > 0 && streamSampleRate_ > 0.0f) {
+    baseLatency = static_cast<double>(callbackFrames) / static_cast<double>(streamSampleRate_);
+  } else {
+    baseLatency = [sessionManager ioBufferDurationSeconds];
+  }
+
+  return baseLatency + [sessionManager inputLatencySeconds];
 }
 
 /// @brief Clears the audio data callback.

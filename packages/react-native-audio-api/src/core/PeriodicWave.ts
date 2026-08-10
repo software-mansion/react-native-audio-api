@@ -1,43 +1,20 @@
 import { IPeriodicWave } from '../jsi-interfaces';
 import type BaseAudioContext from './BaseAudioContext';
 import { PeriodicWaveOptions } from '../types';
+import { normalizePeriodicWaveOptions } from '../utils/periodicWave';
 import { PeriodicWaveOptionsValidator } from '../utils/validation';
-
-export function generateRealAndImag(
-  options?: PeriodicWaveOptions
-): PeriodicWaveOptions {
-  let real: Float32Array | undefined;
-  let imag: Float32Array | undefined;
-  if (!options || (!options.real && !options.imag)) {
-    real = new Float32Array(2);
-    imag = new Float32Array(2);
-    imag[1] = 1;
-  } else {
-    real = options.real;
-    imag = options.imag;
-    PeriodicWaveOptionsValidator.validate(options);
-    if (real && !imag) {
-      imag = new Float32Array(real.length);
-    } else if (!real && imag) {
-      real = new Float32Array(imag.length);
-    }
-  }
-  const norm: boolean = options?.disableNormalization
-    ? options.disableNormalization
-    : false;
-  return { real, imag, disableNormalization: norm };
-}
 
 export default class PeriodicWave {
   /** @internal */
   public readonly periodicWave: IPeriodicWave;
 
   constructor(context: BaseAudioContext, options?: PeriodicWaveOptions) {
-    const finalOptions = generateRealAndImag(options);
+    PeriodicWaveOptionsValidator.validate(options);
+    const finalOptions = normalizePeriodicWaveOptions(options);
     this.periodicWave = context.context.createPeriodicWave(
-      finalOptions.real!,
-      finalOptions.imag!,
-      finalOptions.disableNormalization!
+      finalOptions.real,
+      finalOptions.imag,
+      finalOptions.disableNormalization
     );
   }
 }

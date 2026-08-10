@@ -1,5 +1,5 @@
 import { ContextState, OfflineAudioContextOptions } from '../types';
-import { InvalidAccessError, NotSupportedError } from '../errors';
+import { NotSupportedError } from '../errors';
 import { assertSupportedSampleRate } from '../utils/validation';
 import BaseAudioContext from './BaseAudioContext.web';
 import AnalyserNode from './AnalyserNode.web';
@@ -19,6 +19,8 @@ import WaveShaperNode from './WaveShaperNode.web';
 
 import ConvolverNode from './ConvolverNode.web';
 import DelayNode from './DelayNode.web';
+import ChannelMergerNode from './ChannelMergerNode.web';
+import ChannelSplitterNode from './ChannelSplitterNode.web';
 
 export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
@@ -93,6 +95,20 @@ export default class OfflineAudioContext implements BaseAudioContext {
     return new ConvolverNode(this);
   }
 
+  createChannelMerger(numberOfInputs?: number): ChannelMergerNode {
+    return new ChannelMergerNode(
+      this,
+      numberOfInputs !== undefined ? { numberOfInputs } : undefined
+    );
+  }
+
+  createChannelSplitter(numberOfOutputs?: number): ChannelSplitterNode {
+    return new ChannelSplitterNode(
+      this,
+      numberOfOutputs !== undefined ? { numberOfOutputs } : undefined
+    );
+  }
+
   createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
     return new IIRFilterNode(this, { feedforward, feedback });
   }
@@ -130,12 +146,6 @@ export default class OfflineAudioContext implements BaseAudioContext {
     imag: Float32Array,
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave {
-    if (real.length !== imag.length) {
-      throw new InvalidAccessError(
-        `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
-      );
-    }
-
     return new PeriodicWave(this, { real, imag, ...constraints });
   }
 

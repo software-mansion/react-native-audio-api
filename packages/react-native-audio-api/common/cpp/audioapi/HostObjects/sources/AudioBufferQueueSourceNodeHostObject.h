@@ -3,6 +3,8 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 
+#include <audioapi/jsi/HostObject.h>
+#include <audioapi/utils/Macros.h>
 #include <memory>
 
 namespace audioapi {
@@ -19,11 +21,13 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
       const BaseAudioBufferSourceOptions &options);
 
   ~AudioBufferQueueSourceNodeHostObject() override;
+  DELETE_COPY_AND_MOVE(AudioBufferQueueSourceNodeHostObject);
 
   JSI_PROPERTY_SETTER_DECL(onBufferEnded);
 
-  JSI_HOST_FUNCTION_DECL(start);
+  JSI_HOST_FUNCTION_DECL(start) override;
   JSI_HOST_FUNCTION_DECL(pause);
+  JSI_HOST_FUNCTION_DECL(resume);
   JSI_HOST_FUNCTION_DECL(enqueueBuffer);
   JSI_HOST_FUNCTION_DECL(dequeueBuffer);
   JSI_HOST_FUNCTION_DECL(clearBuffers);
@@ -35,7 +39,7 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
   }
 
  protected:
-  AudioBufferQueueSourceNode *bufferQueueSourceNode_ = nullptr;
+  AudioBufferQueueSourceNode *const bufferQueueSourceNode_;
 
   size_t bufferId_ = 0;
   bool stretchHasBeenInit_ = false;

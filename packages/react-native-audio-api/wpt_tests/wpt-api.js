@@ -26,6 +26,8 @@ const WEB_AUDIO_CLASSES = [
   'AudioScheduledSourceNode',
   'BaseAudioContext',
   'BiquadFilterNode',
+  'ChannelMergerNode',
+  'ChannelSplitterNode',
   'ConstantSourceNode',
   'ConvolverNode',
   'DelayNode',

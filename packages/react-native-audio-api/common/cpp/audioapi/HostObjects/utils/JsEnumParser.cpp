@@ -178,6 +178,19 @@ std::string channelCountModeToString(ChannelCountMode mode) {
   }
 }
 
+ChannelCountMode channelCountModeFromString(const std::string &mode) {
+  if (mode == "max") {
+    return ChannelCountMode::MAX;
+  }
+  if (mode == "clamped-max") {
+    return ChannelCountMode::CLAMPED_MAX;
+  }
+  if (mode == "explicit") {
+    return ChannelCountMode::EXPLICIT;
+  }
+  throw std::invalid_argument("Unknown channel count mode");
+}
+
 std::string channelInterpretationToString(ChannelInterpretation interpretation) {
   switch (interpretation) {
     case ChannelInterpretation::SPEAKERS:
@@ -231,6 +244,16 @@ DistanceModelType distanceModelFromString(const std::string &model) {
     return DistanceModelType::Exponential;
 
   throw std::invalid_argument("Invalid distance model: " + model);
+}
+
+ChannelInterpretation channelInterpretationFromString(const std::string &interpretation) {
+  if (interpretation == "speakers") {
+    return ChannelInterpretation::SPEAKERS;
+  }
+  if (interpretation == "discrete") {
+    return ChannelInterpretation::DISCRETE;
+  }
+  throw std::invalid_argument("Unknown channel interpretation");
 }
 } // namespace audioapi::js_enum_parser
 

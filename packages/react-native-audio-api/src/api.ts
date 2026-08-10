@@ -16,6 +16,8 @@ export { default as AudioRecorder } from './core/AudioRecorder';
 export { default as AudioScheduledSourceNode } from './core/AudioScheduledSourceNode';
 export { default as BaseAudioContext } from './core/BaseAudioContext';
 export { default as BiquadFilterNode } from './core/BiquadFilterNode';
+export { default as ChannelMergerNode } from './core/ChannelMergerNode';
+export { default as ChannelSplitterNode } from './core/ChannelSplitterNode';
 export { default as ConstantSourceNode } from './core/ConstantSourceNode';
 export { default as ConvolverNode } from './core/ConvolverNode';
 export { default as DelayNode } from './core/DelayNode';

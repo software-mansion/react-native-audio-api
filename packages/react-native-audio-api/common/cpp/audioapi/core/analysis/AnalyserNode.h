@@ -2,18 +2,16 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/dsp/FFT.h>
+#include <audioapi/dsp/SpectrumAnalyser.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/TripleBuffer.hpp>
 
 #include <atomic>
-#include <complex>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 
@@ -90,11 +88,7 @@ class AnalyserNode : public AudioNode {
   float smoothingTimeConstant_;
 
   // JS Thread data structures
-  std::unique_ptr<dsp::FFT> fft_;
-  std::unique_ptr<DSPAudioArray> tempArray_;
-  std::unique_ptr<DSPAudioArray> windowData_;
-  std::vector<std::complex<float>> complexData_;
-  std::unique_ptr<DSPAudioArray> magnitudeArray_;
+  dsp::SpectrumAnalyser spectrumAnalyser_;
 
   struct AnalysisFrame {
     DSPAudioArray timeDomain;
@@ -115,8 +109,6 @@ class AnalyserNode : public AudioNode {
   size_t lastAnalyzedSequence_ = 0; // JS thread only
 
   void doFFTAnalysis();
-
-  void initializeWindowData(int fftSize);
 };
 
 } // namespace audioapi

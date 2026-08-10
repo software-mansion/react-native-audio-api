@@ -20,7 +20,7 @@ class IOSRotatingFileWriter : public IOSFileWriter, public RotatingFileWriter {
       std::function<std::shared_ptr<AudioFileWriter>(const std::shared_ptr<AudioFileProperties> &)>;
 
   IOSRotatingFileWriter(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
       size_t rotateIntervalBytes,
       WriterFactory writerFactory,

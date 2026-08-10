@@ -9,8 +9,6 @@ export {
   validateAnalyserSmoothingTimeConstant,
 } from './analyser';
 
-export { BiquadFilterOptionsValidator } from './biquadFilter';
-
 export {
   ConvolverOptionsValidator,
   validateConvolverBufferChannelCount,
