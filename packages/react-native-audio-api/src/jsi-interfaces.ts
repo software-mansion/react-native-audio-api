@@ -227,6 +227,7 @@ export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode 
 
   // returns bufferId
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
+  endOfStream: () => void;
   start: (when?: number, offset?: number) => void;
   pause: () => void;
   resume: (when?: number) => void;

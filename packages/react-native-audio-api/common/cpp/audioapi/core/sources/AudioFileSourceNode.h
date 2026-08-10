@@ -188,6 +188,15 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       AudioFileSourceOptions &options);
 
+  /// @brief Starts the SeekDecoderDaemon worker thread if it is not already running.
+  /// @note JS / construction thread only.
+  void startDecoderThread();
+
+  /// @brief Synchronously pre-fills @ref wsolaStretcher_ with real PCM frames
+  /// so it can perform its first Overlap-Add (OLA) iteration without startup latency.
+  /// @note JS / main thread only — must run before the audio thread begins processing graph quanta.
+  void primeWsolaInputFromDecoder();
+
   /// @brief Attempts to read the next chunk of decoded frames from the daemon.
   /// @param outData decoded frames and metadata; only valid if return value is true.
   /// @return false if no decoded frames are available; true if @p outData is filled and ready to process.

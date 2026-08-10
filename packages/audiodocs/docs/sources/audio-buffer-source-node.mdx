@@ -206,7 +206,7 @@ subscription.remove(); // removal of the subscription
 - Default value is `1.0`.
 - Nominal range is -∞ to ∞.
 - For example value of `1.0` plays audio at normal speed, whereas value of `2.0` plays audio twice as fast as normal speed.
-- When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses the WSOLA pitch-correction algorithm when the rate is not `1.0`.
+- When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses the WSOLA pitch-correction algorithm (including when the rate is `1.0`).
 
 #### `buffer`
 - If is null, it outputs a single channel of silence (all samples are equal to `0.0`).

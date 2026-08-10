@@ -4,6 +4,7 @@ import {
   ContextState,
   DecodeDataInput,
   AudioBufferQueueSourceOptions,
+  AudioBufferSourceOptions,
 } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
@@ -95,9 +96,9 @@ export default class BaseAudioContext {
     return new BiquadFilterNode(this);
   }
 
-  createBufferSource(options?: {
-    pitchCorrection: boolean;
-  }): AudioBufferSourceNode {
+  createBufferSource(
+    options?: AudioBufferSourceOptions
+  ): AudioBufferSourceNode {
     if (options !== undefined) {
       return new AudioBufferSourceNode(this, options);
     } else {

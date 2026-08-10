@@ -331,6 +331,16 @@ Do **not** gate `GraphObject::process()` on `isProcessable()` of inputs: CONDITI
 
 Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while connected they stay `CONDITIONAL_PROCESSABLE`; after disconnect they stay `isProcessable()` via the tail override until the impulse decays, so settle does not zero them mid-tail.
 
+### WSOLA (pitchCorrection) source invariants
+Hard-won invariants for `AudioBufferBaseSourceNode::processWithPitchCorrection` and back-to-back scheduled joins (`b2.start(t1 + D/pr)`, join compensation L = 0):
+
+- **Feed real PCM only.** Never let `updatePlaybackInfo`-zeroed start-quantum frames enter the WSOLA analysis queue; mid-quantum starts must instead shift WSOLA's rendered output into `startOffset` after synthesis.
+- **EOF drain.** After natural PCM EOF, keep calling `drainOutput` for full quanta while it fills them; stop when a quantum is under-filled (stretcher dry).
+- **WSOLA whenever `pitchCorrection` is on.** Including `playbackRate == 1` — do not bypass to the non-WSOLA path at unity rate (buffer-source priming may still skip `|rate| == 1`).
+- **Queue EOF needs `endOfStream()`.** An empty queue without that signal is only an underrun; with it, the base drain path runs even when `isEmpty()`.
+
+`AudioFileSourceNode` still has its own prime/drain path (not yet shared).
+
 ---
 
 ## Implementing a New Node — Checklist

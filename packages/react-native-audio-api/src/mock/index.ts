@@ -609,6 +609,8 @@ class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
     return Math.random().toString(36).substr(2, 9);
   }
 
+  endOfStream(): void {}
+
   dequeueBuffer(_bufferId: string): void {}
   clearBuffers(): void {}
   pause(): void {}

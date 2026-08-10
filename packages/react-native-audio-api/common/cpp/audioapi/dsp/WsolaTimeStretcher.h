@@ -18,6 +18,10 @@ class WsolaTimeStretcher {
     return searchIntervalFrames_ + windowSize_;
   }
 
+  /// Minimum input frames needed for @ref canRunIteration at the current analysis
+  /// pointers (search span + target window, accounting for pitchFactor_).
+  [[nodiscard]] size_t getMinInputFramesToRun() const;
+
   [[nodiscard]] size_t getBufferedInputFrames() const {
     return inputQueue_.empty() ? 0 : inputQueue_[0].size();
   }
@@ -25,6 +29,9 @@ class WsolaTimeStretcher {
   [[nodiscard]] size_t getBufferedOutputFrames() const {
     return availableOutputFrames();
   }
+
+  /// Appends PCM to the analysis queue without rendering output (startup prefill).
+  void feedInput(const DSPAudioBuffer &input, size_t inputFrames);
 
   void process(
       const DSPAudioBuffer &input,
@@ -45,11 +52,16 @@ class WsolaTimeStretcher {
   static constexpr float INPUT_LATENCY_MS = 20.0f;
   static constexpr float OUTPUT_LATENCY_MS = 10.0f;
 
+  /// Scratch capacity for one cold-start warmup (~window+search) plus one max-rate quantum.
+  [[nodiscard]] static size_t scratchBufferFrames(float sampleRate);
+
  private:
   static constexpr float OLA_WINDOW_MS = 20.0f;
   static constexpr float SEARCH_INTERVAL_MS = 30.0f;
   static constexpr size_t SEARCH_DECIMATION = 12;
   static constexpr size_t QUEUE_COMPACT_THRESHOLD_FRAMES = 4096;
+  static constexpr size_t kFirstFramesToDump = 255;
+  static constexpr float kDumpZeroThreshold = 1e-6f;
 
   size_t channels_{0};
   float sampleRate_{0.0f};
@@ -69,6 +81,14 @@ class WsolaTimeStretcher {
   int targetBlockIndex_{0};
   int searchBlockIndex_{0};
   size_t outputReadIndex_{0};
+
+  /// Startup-latency probe: first absolute non-zero output sample.
+  bool firstSampleFound_{false};
+  size_t totalFramesOutput_{0};
+
+  /// One-shot dump of the first @c kFirstFramesToDump ch0 output samples after reset.
+  bool firstFramesDumpPrinted_{false};
+  std::vector<float> firstOutputFramesDump_;
 
   std::vector<float> olaWindow_;
   std::vector<float> transitionWindow_;

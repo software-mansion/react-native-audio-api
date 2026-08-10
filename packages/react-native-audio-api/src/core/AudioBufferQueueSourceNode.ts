@@ -27,6 +27,16 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     );
   }
 
+  /**
+   * Declares that no further buffers will be enqueued. Once the queue empties
+   * after this call, the node finishes (flushing the WSOLA OLA tail when
+   * pitchCorrection is enabled). Without this call, an empty queue is only an
+   * underrun and playback stays alive.
+   */
+  public endOfStream(): void {
+    (this.node as IAudioBufferQueueSourceNode).endOfStream();
+  }
+
   public dequeueBuffer(bufferId: string): void {
     const id = parseInt(bufferId, 10);
     if (isNaN(id) || id < 0) {

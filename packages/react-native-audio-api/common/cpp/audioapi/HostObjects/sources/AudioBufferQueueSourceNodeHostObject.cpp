@@ -26,6 +26,7 @@ AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, enqueueBuffer),
+      JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, endOfStream),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, dequeueBuffer),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, clearBuffers),
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, pause),
@@ -96,33 +97,35 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
 
   copiedBuffer->sum(*audioBufferHostObject->audioBuffer_);
 
-  std::shared_ptr<AudioBuffer> tailBuffer = nullptr;
-
   if (pitchCorrection_ && !stretchHasBeenInit_) {
     initStretch(
         static_cast<int>(copiedBuffer->getNumberOfChannels()), copiedBuffer->getSampleRate());
-    auto extraTailFrames =
-        static_cast<size_t>((inputLatency_ + outputLatency_) * copiedBuffer->getSampleRate());
-    tailBuffer = std::make_shared<AudioBuffer>(
-        extraTailFrames, copiedBuffer->getNumberOfChannels(), copiedBuffer->getSampleRate());
-    tailBuffer->zero();
     stretchHasBeenInit_ = true;
   }
 
   auto event = [node = bufferQueueSourceNode_,
                 copiedBuffer,
                 bufferId = bufferId_,
-                tailBuffer,
                 swapBuffer,
                 channelCount = channelCount_](BaseAudioContext &) {
     if (swapBuffer) {
       node->setChannelCount(static_cast<int>(channelCount));
     }
-    node->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
+    node->enqueueBuffer(copiedBuffer, bufferId);
   };
   bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
   return jsi::String::createFromUtf8(runtime, std::to_string(bufferId_++));
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, endOfStream) {
+  auto handle = node_->handle;
+  auto event = [handle, node = bufferQueueSourceNode_](BaseAudioContext &) {
+    node->endOfStream();
+  };
+  bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
+
+  return jsi::Value::undefined();
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, dequeueBuffer) {

@@ -52,6 +52,7 @@ function App() {
     const buffer2 = ...; // Load another audio buffer if needed
     audioBufferQueue.enqueueBuffer(buffer1);
     audioBufferQueue.enqueueBuffer(buffer2);
+    audioBufferQueue.endOfStream();
     audioBufferQueue.connect(audioContextRef.current.destination);
     audioBufferQueue.start(audioContextRef.current.currentTime);
 }
@@ -110,6 +111,21 @@ Adds another buffer to queue. Returns `bufferId` that can be used to identify th
 | `buffer` | [`AudioBuffer`](/docs/sources/audio-buffer) | Buffer with next data. |
 
 #### Returns `string`.
+
+### `endOfStream`
+
+Declares that no further buffers will be enqueued. Once the queue empties after this call, the node treats that as end-of-stream: with [`pitchCorrection`](#constructor) enabled it flushes the WSOLA OLA tail (same drain path as [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node)), then finishes and fires [`onEnded`](/docs/sources/audio-scheduled-source-node#onended). Without this call, an empty queue is only an underrun — the node stays alive and waits for more buffers.
+
+Call after the last `enqueueBuffer` (before or after `start`):
+
+```tsx
+queue.enqueueBuffer(chunk1);
+queue.enqueueBuffer(chunk2);
+queue.endOfStream();
+queue.start();
+```
+
+#### Returns `undefined`.
 
 ### `dequeueBuffer`
 
@@ -234,7 +250,7 @@ audioBufferQueueSourceNode.onBufferEnded = (event) => { //setting callback
 - Default value is `1.0`.
 - Nominal range is -∞ to ∞.
 - For example value of `1.0` plays audio at normal speed, whereas value of `2.0` plays audio twice as fast as normal speed.
-- When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses the WSOLA pitch-correction algorithm when the rate is not `1.0`.
+- When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses the WSOLA pitch-correction algorithm (including when the rate is `1.0`).
 
 ### `OnBufferEndEventType`
 

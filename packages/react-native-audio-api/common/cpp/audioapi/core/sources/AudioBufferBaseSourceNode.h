@@ -33,6 +33,12 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       float sampleRate,
       const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer);
 
+  /// @brief Prefills WSOLA from the current @ref vReadIndex_ until the analysis queue is full.
+  /// Call from @c start() after the read cursor is set. Advances @ref vReadIndex_ by the
+  /// frames fed. This is the only WSOLA prefill path for buffer sources.
+  /// @note Audio Thread only
+  void primeWsolaInput();
+
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
@@ -73,6 +79,11 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   PositionChangedDispatcher positionChanged_;
 
+  /// True after natural PCM EOF while WSOLA still has OLA tail to flush.
+  /// Not armed for explicit stop(when) — that must cut without draining.
+  bool wsolaDrainPending_{false};
+  float wsolaEofDrainRate_{1.0f};
+
   void processWithPitchCorrection(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
@@ -82,6 +93,11 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
       double time);
+
+  /// Flush remaining WSOLA output after PCM is exhausted (mirrors AudioFileSourceNode).
+  void processWsolaDrain(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess);
 };
 
 } // namespace audioapi

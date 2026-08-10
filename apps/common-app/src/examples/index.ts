@@ -14,6 +14,7 @@ import Record from './Record/Record';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
+import WavScheduleSplit from './WavScheduleSplit';
 import ChannelMergerSplitter from './ChannelMergerSplitter';
 
 type NavigationParamList = {
@@ -33,6 +34,7 @@ type NavigationParamList = {
   ConvolverIR: undefined;
   ChannelMergerSplitter: undefined;
   ChannelCount: undefined;
+  WavScheduleSplit: undefined;
   AudioParamPipeline: undefined;
   TestScreen: undefined;
   LatencyValidation: undefined;
@@ -137,5 +139,11 @@ export const Examples: Example[] = [
     title: 'Channel Count',
     Icon: icons.Columns3,
     screen: ChannelCount,
+  },
+  {
+    key: 'WavScheduleSplit',
+    title: 'WAV Schedule Split',
+    Icon: icons.AudioLines,
+    screen: WavScheduleSplit,
   },
 ] as const;

@@ -4,11 +4,13 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/graph/HostGraph.h>
+#include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <cmath>
 #include <memory>
 #include <vector>
 
@@ -34,12 +36,25 @@ std::shared_ptr<AudioBuffer> makeRampBuffer(size_t frames, size_t startValue) {
   return buffer;
 }
 
+std::shared_ptr<AudioBuffer> makeOnesBuffer(size_t frames) {
+  auto buffer = std::make_shared<AudioBuffer>(frames, 1, (float)SAMPLE_RATE);
+  auto *data = buffer->getChannel(0)->begin();
+  for (size_t i = 0; i < frames; ++i) {
+    data[i] = 1.0f;
+  }
+  return buffer;
+}
+
 class TestableQueueSourceNode : public AudioBufferQueueSourceNode {
  public:
-  explicit TestableQueueSourceNode(const std::shared_ptr<BaseAudioContext> &context)
-      : AudioBufferQueueSourceNode(context, BaseAudioBufferSourceOptions()) {}
+  explicit TestableQueueSourceNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const BaseAudioBufferSourceOptions &options = BaseAudioBufferSourceOptions())
+      : AudioBufferQueueSourceNode(context, options) {}
 
   using AudioBufferQueueSourceNode::getCurrentPosition;
+  using AudioBufferQueueSourceNode::initStretch;
+  using AudioBufferQueueSourceNode::isFinished;
   using AudioBufferQueueSourceNode::processNode;
 };
 
@@ -87,7 +102,7 @@ TEST_F(AudioBufferQueueSourceTest, ConsumesExactlyOneFramePerRenderedFrame) {
   constexpr size_t BUFFER_FRAMES = 1000;
   constexpr size_t BUFFER_COUNT = 3;
   for (size_t b = 0; b < BUFFER_COUNT; ++b) {
-    node.enqueueBuffer(makeRampBuffer(BUFFER_FRAMES, b * BUFFER_FRAMES), b, nullptr);
+    node.enqueueBuffer(makeRampBuffer(BUFFER_FRAMES, b * BUFFER_FRAMES), b);
   }
 
   node.start(0.0);
@@ -122,7 +137,7 @@ TEST_F(AudioBufferQueueSourceTest, StreamingEnqueueKeepsPaceAndContinuity) {
   size_t produced = 0;
   size_t chunkId = 0;
 
-  node.enqueueBuffer(makeRampBuffer(CHUNK_FRAMES, produced), chunkId++, nullptr);
+  node.enqueueBuffer(makeRampBuffer(CHUNK_FRAMES, produced), chunkId++);
   produced += CHUNK_FRAMES;
 
   node.start(0.0);
@@ -134,7 +149,7 @@ TEST_F(AudioBufferQueueSourceTest, StreamingEnqueueKeepsPaceAndContinuity) {
   for (size_t q = 0; q < TOTAL_QUANTA; ++q) {
     // Keep ~1 chunk of headroom queued, mirroring realtime arrival.
     if (expected + CHUNK_FRAMES > produced) {
-      node.enqueueBuffer(makeRampBuffer(CHUNK_FRAMES, produced), chunkId++, nullptr);
+      node.enqueueBuffer(makeRampBuffer(CHUNK_FRAMES, produced), chunkId++);
       produced += CHUNK_FRAMES;
     }
 
@@ -188,7 +203,7 @@ TEST_F(AudioBufferQueueSourceTest, FullGraphRenderPreservesPaceAndSilence) {
     for (size_t i = 0; i < CHUNK_FRAMES; ++i) {
       channel[i] = ((produced + i) % IMPULSE_PERIOD == 0) ? 1.0f : 0.0f;
     }
-    node->enqueueBuffer(buffer, chunkId++, nullptr);
+    node->enqueueBuffer(buffer, chunkId++);
     produced += CHUNK_FRAMES;
   };
 
@@ -220,6 +235,72 @@ TEST_F(AudioBufferQueueSourceTest, FullGraphRenderPreservesPaceAndSilence) {
     }
     rendered += QUANTUM;
   }
+}
+
+/// With pitchCorrection, endOfStream() must flush the WSOLA OLA tail and finish
+/// the node — not hang in PLAYING after the last enqueued buffer is consumed.
+TEST_F(AudioBufferQueueSourceTest, PitchCorrectionEndOfStreamDrainsAndFinishes) {
+  constexpr float kRate = 1.3f;
+  constexpr size_t kPartFrames = 4800; // 200 ms @ 24 kHz
+
+  BaseAudioBufferSourceOptions options;
+  options.pitchCorrection = true;
+  options.playbackRate = kRate;
+
+  TestableQueueSourceNode node(context, options);
+  auto playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
+      WsolaTimeStretcher::scratchBufferFrames(static_cast<float>(SAMPLE_RATE)),
+      1,
+      static_cast<float>(SAMPLE_RATE));
+  node.initStretch(1, static_cast<float>(SAMPLE_RATE), playbackRateBuffer);
+  node.setChannelCount(1);
+
+  node.enqueueBuffer(makeOnesBuffer(kPartFrames), 0);
+  node.endOfStream();
+  node.start(0.0);
+
+  const size_t idealOut = static_cast<size_t>(
+      std::lround(static_cast<double>(kPartFrames) / static_cast<double>(kRate)));
+  const size_t captureQuanta = (idealOut + SAMPLE_RATE / 2) / QUANTUM + 8;
+
+  size_t onesFrames = 0;
+  bool sawOnes = false;
+  for (size_t q = 0; q < captureQuanta; ++q) {
+    auto out = renderQuantum(node);
+    ASSERT_NE(out, nullptr);
+    auto channel = out->getChannel(0)->span();
+    for (int i = 0; i < QUANTUM; ++i) {
+      if (channel[i] > 0.5f) {
+        sawOnes = true;
+        ++onesFrames;
+      }
+    }
+    if (node.isFinished()) {
+      break;
+    }
+  }
+
+  EXPECT_TRUE(sawOnes);
+  EXPECT_TRUE(node.isFinished()) << "endOfStream + empty queue must finish after WSOLA drain";
+  // Allow OLA soft edges / uncapped drain surplus; require most of the content.
+  EXPECT_GE(onesFrames, (idealOut * 85) / 100);
+}
+
+/// Empty queue without endOfStream is an underrun: node must stay alive (not finish).
+TEST_F(AudioBufferQueueSourceTest, EmptyQueueWithoutEndOfStreamDoesNotFinish) {
+  TestableQueueSourceNode node(context);
+  node.enqueueBuffer(makeRampBuffer(QUANTUM, 0), 0);
+  node.start(0.0);
+
+  // Exhaust the single buffer.
+  (void)renderQuantum(node);
+  EXPECT_FALSE(node.isFinished());
+
+  // Several more quanta of underrun silence — still not finished.
+  for (int i = 0; i < 16; ++i) {
+    (void)renderQuantum(node);
+  }
+  EXPECT_FALSE(node.isFinished());
 }
 
 // NOLINTEND

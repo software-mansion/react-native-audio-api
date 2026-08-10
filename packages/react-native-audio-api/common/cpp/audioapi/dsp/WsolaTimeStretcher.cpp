@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <vector>
 
@@ -19,6 +20,14 @@ float periodicHann(size_t n, size_t size) {
 }
 
 } // namespace
+
+size_t WsolaTimeStretcher::scratchBufferFrames(float sampleRate) {
+  const float sr = sampleRate > 0.0f ? sampleRate : DEFAULT_SAMPLE_RATE;
+  size_t window = framesFromMs(sr, OLA_WINDOW_MS);
+  window += window & 1U;
+  return window + framesFromMs(sr, SEARCH_INTERVAL_MS) +
+      static_cast<size_t>(MAX_PLAYBACK_RATE * RENDER_QUANTUM_SIZE);
+}
 
 void WsolaTimeStretcher::configure(size_t channels, float sampleRate) {
   channels_ = channels;
@@ -71,6 +80,13 @@ void WsolaTimeStretcher::reset() {
   searchBlockIndex_ = 0;
   outputReadIndex_ = 0;
 
+  firstSampleFound_ = false;
+  totalFramesOutput_ = 0;
+
+  firstFramesDumpPrinted_ = false;
+  firstOutputFramesDump_.clear();
+  firstOutputFramesDump_.reserve(kFirstFramesToDump);
+
   for (auto &channel : inputQueue_) {
     channel.clear();
   }
@@ -80,6 +96,24 @@ void WsolaTimeStretcher::reset() {
   for (auto &channel : pendingOverlap_) {
     std::fill(channel.begin(), channel.end(), 0.0f);
   }
+}
+
+size_t WsolaTimeStretcher::getMinInputFramesToRun() const {
+  if (windowSize_ == 0 || searchIntervalFrames_ == 0) {
+    return 0;
+  }
+
+  const int lastCandidateStart = searchBlockIndex_ + static_cast<int>(searchIntervalFrames_) - 1;
+  const int targetNeed = maxSourceIndexForBlock(targetBlockIndex_);
+  const int searchNeed = maxSourceIndexForBlock(lastCandidateStart);
+  return static_cast<size_t>(std::max(targetNeed, searchNeed) + 1);
+}
+
+void WsolaTimeStretcher::feedInput(const DSPAudioBuffer &input, size_t inputFrames) {
+  if (channels_ == 0 || windowSize_ == 0 || inputFrames == 0) {
+    return;
+  }
+  appendInput(input, inputFrames);
 }
 
 void WsolaTimeStretcher::process(
@@ -114,6 +148,60 @@ void WsolaTimeStretcher::process(
       availableOutputFrames() < outputFrames * 2) {
     runOneIteration(playbackRate);
   }
+
+  if (!firstSampleFound_) {
+    constexpr float kAbsoluteThreshold = 1e-6f;
+
+    for (size_t i = 0; i < output.getNumberOfChannels(); ++i) {
+      auto *channel = output.getChannel(i);
+      const size_t framesToScan = std::min(outputFrames, channel->getSize());
+      for (size_t j = 0; j < framesToScan; ++j) {
+        const float absSample = std::abs((*channel)[j]);
+        if (absSample > kAbsoluteThreshold) {
+          firstSampleFound_ = true;
+          const size_t absoluteFrameIndex = totalFramesOutput_ + j;
+          const double latencyMs = (static_cast<double>(absoluteFrameIndex) / sampleRate_) * 1000.0;
+          std::cout << "[WSOLA] Pierwszy dzwiek (abs>1e-6)! "
+                    << "Ramka wyjsciowa: " << absoluteFrameIndex << " | Opoznienie: " << latencyMs
+                    << " ms"
+                    << " | Playback Rate: " << playbackRate << std::endl;
+          break;
+        }
+      }
+      if (firstSampleFound_) {
+        break;
+      }
+    }
+  }
+
+  if (!firstFramesDumpPrinted_ && output.getNumberOfChannels() > 0) {
+    auto *channel = output.getChannel(0);
+    const size_t framesToDump = std::min(outputFrames, channel->getSize());
+    for (size_t j = 0; j < framesToDump && firstOutputFramesDump_.size() < kFirstFramesToDump;
+         ++j) {
+      firstOutputFramesDump_.push_back((*channel)[j]);
+    }
+
+    if (firstOutputFramesDump_.size() >= kFirstFramesToDump) {
+      firstFramesDumpPrinted_ = true;
+      size_t leadingZeros = 0;
+      while (leadingZeros < firstOutputFramesDump_.size() &&
+             std::abs(firstOutputFramesDump_[leadingZeros]) < kDumpZeroThreshold) {
+        ++leadingZeros;
+      }
+
+      std::cout << "[WSOLA] first " << kFirstFramesToDump
+                << " frames · leadingZeros=" << leadingZeros << " · rate=" << playbackRate
+                << std::endl;
+      std::cout << "[WSOLA] output:";
+      for (size_t i = 0; i < firstOutputFramesDump_.size(); ++i) {
+        std::cout << ' ' << i << ':' << firstOutputFramesDump_[i];
+      }
+      std::cout << std::endl;
+    }
+  }
+
+  totalFramesOutput_ += outputFrames;
 }
 
 size_t
@@ -255,13 +343,16 @@ bool WsolaTimeStretcher::canRunIteration() const {
   }
 
   const int inputFrames = static_cast<int>(inputQueue_[0].size());
-  const int searchBlockSize = static_cast<int>(searchIntervalFrames_ + windowSize_ - 1);
 
   if (maxSourceIndexForBlock(targetBlockIndex_) >= inputFrames) {
     return false;
   }
 
-  return maxSourceIndexForBlock(searchBlockIndex_ + searchBlockSize - 1) < inputFrames;
+  if (searchIntervalFrames_ == 0) {
+    return false;
+  }
+  const int lastCandidateStart = searchBlockIndex_ + static_cast<int>(searchIntervalFrames_) - 1;
+  return maxSourceIndexForBlock(lastCandidateStart) < inputFrames;
 }
 
 bool WsolaTimeStretcher::targetIsWithinSearchRegion() const {

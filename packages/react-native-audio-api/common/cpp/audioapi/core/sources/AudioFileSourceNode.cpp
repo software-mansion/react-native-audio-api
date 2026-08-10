@@ -14,10 +14,12 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
 #include <memory>
+#include <thread>
 #include <utility>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
@@ -134,7 +136,68 @@ bool AudioFileSourceNode::initDecoder(
       channelCount_,
       context->getSampleRate());
 
+  startDecoderThread();
+  // Fill WSOLA's analysis queue before the audio thread runs (no wall-clock budget).
+  primeWsolaInputFromDecoder();
   return true;
+}
+
+void AudioFileSourceNode::startDecoderThread() {
+  if (seekDecoderDaemon_ == nullptr || seekDecoderThread_.joinable()) {
+    return;
+  }
+
+  seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
+  seekDecoderDaemon_.reset();
+}
+
+void AudioFileSourceNode::primeWsolaInputFromDecoder() {
+  if (frameReceiver_ == nullptr || playbackRateBuffer_ == nullptr) {
+    return;
+  }
+
+  const size_t framesNeeded =
+      std::max(wsolaStretcher_.getRequiredInputFrames(), wsolaStretcher_.getMinInputFramesToRun());
+  if (framesNeeded == 0) {
+    return;
+  }
+
+  const size_t chunkCapacity = std::max(framesNeeded, static_cast<size_t>(RENDER_QUANTUM_SIZE));
+  if (!ensurePlaybackRateBufferSize(chunkCapacity)) {
+    return;
+  }
+
+  DecoderData chunk;
+  while (wsolaStretcher_.getBufferedInputFrames() < framesNeeded) {
+    if (frameReceiver_->try_receive(chunk) != channels::spsc::ResponseStatus::SUCCESS) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      continue;
+    }
+
+    if (chunk.state == StreamState::END_OF_STREAM || chunk.state == StreamState::DISCONTINUOUS) {
+      break;
+    }
+    if (chunk.size == 0) {
+      continue;
+    }
+
+    if (!ensurePlaybackRateBufferSize(chunk.size)) {
+      break;
+    }
+
+    playbackRateBuffer_->zero();
+    size_t totalInputFrames = 0;
+    appendFromInterleaved(
+        chunk.interleavedBuffer.data(), chunk.size, 0, chunk.size, totalInputFrames);
+    if (totalInputFrames == 0) {
+      continue;
+    }
+
+    if (volume_ != 1.0f) {
+      playbackRateBuffer_->scale(volume_);
+    }
+    wsolaStretcher_.feedInput(*playbackRateBuffer_, totalInputFrames);
+  }
 }
 
 void AudioFileSourceNode::setPlaybackRate(float v) {
@@ -385,11 +448,6 @@ void AudioFileSourceNode::start(double when) {
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
   positionChanged_.requestFlush();
-
-  if (seekDecoderDaemon_) {
-    seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
-    seekDecoderDaemon_.reset();
-  }
 }
 
 void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {
@@ -495,14 +553,12 @@ size_t AudioFileSourceNode::renderWithWsolaPitchPreservation(
     DecoderData &incoming,
     int framesToProcess,
     float activeRate) {
+  // Prefill happens only in primeWsolaInputFromDecoder(); here feed one quantum.
   const auto requestedInputFrames =
       static_cast<size_t>(std::ceil(activeRate * static_cast<float>(framesToProcess)));
-  const size_t bufferedInputFrames = wsolaStretcher_.getBufferedInputFrames();
-  const size_t requiredInputFrames = wsolaStretcher_.getRequiredInputFrames();
-  const size_t warmupFramesNeeded =
-      bufferedInputFrames < requiredInputFrames ? requiredInputFrames - bufferedInputFrames : 0;
-  const size_t inputFrames = accumulateStretchInput(
-      incoming, activeRate, framesToProcess, requestedInputFrames + warmupFramesNeeded);
+
+  const size_t inputFrames =
+      accumulateStretchInput(incoming, activeRate, framesToProcess, requestedInputFrames);
   if (inputFrames == 0) {
     processingBuffer->zero();
     return 0;

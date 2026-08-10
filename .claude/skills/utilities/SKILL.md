@@ -231,6 +231,22 @@ Higher-level DSP blocks. Read each header before use.
 
 ---
 
+### `WsolaTimeStretcher.h` — pitch-preserving time stretch
+
+Needs ~`getRequiredInputFrames()` of PCM in its internal queue before the first OLA
+iteration.
+
+- **File / AudioTag:** early `SeekDecoderDaemon` fills the SPSC; construction
+  `primeWsolaInputFromDecoder()` waits until the analysis queue is full (no wall-clock
+  deadline). No first-quantum warmup — process only feeds the current quantum.
+- **Buffer sources:** `AudioBufferSourceNode::start` calls `primeWsolaInput()` after
+  setting `vReadIndex_` (advances cursor by frames fed). Prefill happens only there;
+  `processWithPitchCorrection` feeds one quantum's input. Compare cold-start with DC
+  ones sample + abs/relative first-sound logs in `WsolaTimeStretcher`. Scratch sized
+  with `scratchBufferFrames(sampleRate)`.
+
+---
+
 ### `SpectrumAnalyser.h` — shared windowed-FFT magnitude spectrum
 
 Owns FFT scratch state (Blackman window, temp array, complex scratch, magnitude

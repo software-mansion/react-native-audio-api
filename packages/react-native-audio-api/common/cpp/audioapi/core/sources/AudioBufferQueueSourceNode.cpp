@@ -2,7 +2,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferQueueSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/core/utils/Locker.h>
 #include <audioapi/core/utils/buffer/QueueBufferProcessor.h>
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
@@ -20,12 +19,6 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     const BaseAudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options),
       onBufferEndedEvent_(context->getAudioEventHandlerRegistry()) {
-  if (options.pitchCorrection) {
-    // If pitch correction is enabled, add extra frames at the end
-    // to compensate for processing latency.
-    addExtraTailFrames_ = true;
-  }
-
   auto *disposer = context->getDisposer();
 
   auto onBufferConsumed = [this, disposer](
@@ -52,21 +45,28 @@ void AudioBufferQueueSourceNode::start(double when) {
   isPaused_ = false;
   stopTime_ = -1.0;
   AudioScheduledSourceNode::start(when);
+  primeWsolaInput();
 }
 
 void AudioBufferQueueSourceNode::start(double when, double offset) {
-  start(when);
+  isPaused_ = false;
+  stopTime_ = -1.0;
+  AudioScheduledSourceNode::start(when);
 
-  if (buffers_.empty() || offset < 0) {
-    return;
+  if (!buffers_.empty() && offset >= 0) {
+    offset = std::min(offset, buffers_.front().second->getDuration());
+    vReadIndex_ = static_cast<double>(buffers_.front().second->getSampleRate() * offset);
   }
 
-  offset = std::min(offset, buffers_.front().second->getDuration());
-  vReadIndex_ = static_cast<double>(buffers_.front().second->getSampleRate() * offset);
+  // Prefill after the start cursor is set so priming matches the offset.
+  primeWsolaInput();
 }
 
 void AudioBufferQueueSourceNode::resume(double when) {
-  start(when);
+  // Do not clear endOfStream_ — pause/resume must preserve the EOF signal.
+  isPaused_ = false;
+  stopTime_ = -1.0;
+  AudioScheduledSourceNode::start(when);
 }
 
 void AudioBufferQueueSourceNode::pause() {
@@ -76,17 +76,15 @@ void AudioBufferQueueSourceNode::pause() {
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    size_t bufferId,
-    const std::shared_ptr<AudioBuffer> &tailBuffer) {
+    size_t bufferId) {
   buffers_.emplace_back(bufferId, buffer);
+  // More PCM after an EOS mark means the stream continues.
+  endOfStream_ = false;
+}
 
-  if (tailBuffer != nullptr) {
-    tailBuffer_ = tailBuffer;
-  }
-
-  if (tailBuffer_ != nullptr) {
-    addExtraTailFrames_ = true;
-  }
+void AudioBufferQueueSourceNode::endOfStream() {
+  endOfStream_ = true;
+  armNaturalEofIfNeeded();
 }
 
 void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
@@ -99,6 +97,7 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
       context->getDisposer()->dispose(std::move(buffers_.front().second));
       buffers_.pop_front();
       vReadIndex_ = 0.0;
+      armNaturalEofIfNeeded();
       return;
     }
 
@@ -108,6 +107,7 @@ void AudioBufferQueueSourceNode::dequeueBuffer(const size_t bufferId) {
       if (it->first == bufferId) {
         context->getDisposer()->dispose(std::move(it->second));
         buffers_.erase(it);
+        armNaturalEofIfNeeded();
         return;
       }
     }
@@ -122,6 +122,7 @@ void AudioBufferQueueSourceNode::clearBuffers() {
 
     buffers_.clear();
     vReadIndex_ = 0.0;
+    armNaturalEofIfNeeded();
   }
 }
 
@@ -169,6 +170,17 @@ bool AudioBufferQueueSourceNode::isEmpty() const {
   return buffers_.empty();
 }
 
+void AudioBufferQueueSourceNode::armNaturalEofIfNeeded() {
+  if (!endOfStream_ || !buffers_.empty()) {
+    return;
+  }
+  if (isFinished() || isStopScheduled() || isUnscheduled()) {
+    return;
+  }
+  // Natural EOF (no explicit stopTime_): base processNode drains WSOLA then finishes.
+  playbackState_ = PlaybackState::STOP_SCHEDULED;
+}
+
 void AudioBufferQueueSourceNode::runBufferProcessor(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
@@ -181,21 +193,17 @@ void AudioBufferQueueSourceNode::runBufferProcessor(
 
   if (buffers_.empty()) {
     processingBuffer->zero(startOffset, offsetLength);
+    armNaturalEofIfNeeded();
     return;
-  }
-
-  if (addExtraTailFrames_ && tailBuffer_ != nullptr) {
-    processor_->setPendingTail(tailBuffer_);
   }
 
   processor_->setPosition(vReadIndex_);
   processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
-
-  if (processor_->didConsumeTail()) {
-    addExtraTailFrames_ = false;
-  }
-
   vReadIndex_ = processor_->getPosition();
+
+  if (processor_->atBoundary() && processor_->shouldStop()) {
+    armNaturalEofIfNeeded();
+  }
 }
 
 } // namespace audioapi
