@@ -1,4 +1,4 @@
-#include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <gtest/gtest.h>
 
@@ -109,6 +109,28 @@ TEST(AudioDecodingTest, RejectsInvalidDurationMetadataFromMemory) {
   auto result = audiodecoding::probeDurationWithMemory(invalid.data(), invalid.size(), 0);
 
   EXPECT_TRUE(result.is_err());
+}
+
+TEST(AudioDecodingTest, DecodesLocalWavFile) {
+  const std::string input = writeDurationWavFile("audio-decode.wav");
+
+  auto result = audiodecoding::decodeWithFilePath(input, static_cast<float>(sampleRate));
+  ASSERT_TRUE(result.is_ok()) << result.unwrap_err();
+  EXPECT_EQ(result.unwrap()->getSize(), sampleRate / 2);
+
+  removeFile(input);
+}
+
+TEST(AudioDecodingTest, DecodesMemoryWav) {
+  const std::string input = writeDurationWavFile("audio-decode-memory.wav");
+  const auto bytes = readFileBytes(input);
+
+  auto result = audiodecoding::decodeWithMemoryBlock(
+      bytes.data(), bytes.size(), static_cast<float>(sampleRate));
+  ASSERT_TRUE(result.is_ok()) << result.unwrap_err();
+  EXPECT_EQ(result.unwrap()->getSize(), sampleRate / 2);
+
+  removeFile(input);
 }
 
 TEST(AudioDecodingTest, ReturnsDisabledErrorForUrlProbeWhenFFmpegIsUnavailable) {

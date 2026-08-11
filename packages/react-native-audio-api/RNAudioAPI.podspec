@@ -30,7 +30,7 @@ Pod::Spec.new do |s|
 
   s.subspec "audioapi" do |ss|
     ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h,hpp}"
-    ss.exclude_files = $RN_AUDIO_API_FFMPEG_DISABLED ? ["common/cpp/audioapi/libs/ffmpeg/**"] : []
+    ss.exclude_files = $RN_AUDIO_API_FFMPEG_DISABLED ? ["common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp"] : []
     ss.header_dir = "audioapi"
     ss.header_mappings_dir = "common/cpp/audioapi"
 
@@ -56,7 +56,7 @@ Pod::Spec.new do |s|
     end
   end
 
-  s.ios.frameworks = 'Accelerate', 'AVFoundation', 'MediaPlayer'
+  s.ios.frameworks = 'Accelerate', 'AVFoundation', 'AudioToolbox', 'MediaPlayer'
 
   s.prepare_command = <<-CMD
     chmod +x scripts/download-prebuilt-binaries.sh

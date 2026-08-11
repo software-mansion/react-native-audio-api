@@ -63,7 +63,7 @@ async function downloadRemoteHttpSource(
 
 /**
  * Stream via native URL when FFmpeg is enabled and byte ranges work (or HLS);
- * otherwise download fully so miniaudio can decode without FFmpeg.
+ * otherwise download fully so OS / miniaudio can decode without FFmpeg.
  */
 export async function loadRemoteHttpSource(
   url: string,
