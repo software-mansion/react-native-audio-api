@@ -29,7 +29,7 @@
   "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
   "react-native": "src/index.ts",
-  "types": "./lib/typescript/commonjs/index.d.ts",
+  "types": "lib/typescript/commonjs/index.d.ts",
   "files": [
     "src/",
     "development/react/",
