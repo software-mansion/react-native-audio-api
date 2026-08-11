@@ -15,7 +15,7 @@ if [ $# -ge 1 ] && [ "$1" = "generate_nightly_version" ]; then
     fi
 fi
 
-yarn bob build
+yarn build
 
 npm pack
 

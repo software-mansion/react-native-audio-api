@@ -33,6 +33,7 @@ Pod::Spec.new do |s|
     "USE_HEADERMAP" => "YES",
     "DEFINES_MODULE" => "YES",
     "HEADER_SEARCH_PATHS" => [
+      '"$(PODS_TARGET_SRCROOT)/common/cpp"',
       '"$(PODS_TARGET_SRCROOT)/ReactCommon"',
       '"$(PODS_TARGET_SRCROOT)"',
       '"$(PODS_ROOT)/RCT-Folly"',
