@@ -31,6 +31,7 @@ packages/custom-node-generator/    # Code generation tooling
 - **New Architecture Ready**: Supports both old Bridge and new TurboModules/Fabric
 - **Optional FFmpeg**: Audio decoding via FFmpeg can be conditionally compiled out
 - **Audio Worklets**: JavaScript runs on the audio thread via React Native Worklets
+- **Notification-Driven Foreground Service (Android)**: `NotificationRegistry.showNotification` → `ForegroundServiceManager.subscribe` → `CentralizedForegroundService`; service lifetime follows notification visibility, never recorder/player state. The library manifest is empty — consuming apps declare the `<service>` (Expo plugin `withAudioAPI.ts` or manually), where `android:stopWithTask` (plugin option `androidFSStopWithTask`) decides whether the service and an in-progress recording survive task removal
 
 ### Native Module Entry Points
 - iOS: `ios/audioapi/ios/AudioAPIModule.mm`

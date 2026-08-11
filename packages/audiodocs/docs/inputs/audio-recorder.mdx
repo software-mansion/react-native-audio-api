@@ -93,6 +93,48 @@ Additionally to be able to record audio while application is in the background, 
   </TabItem>
 </Tabs>
 
+### Keeping the recording alive when the app is closed
+
+By default the foreground service stops when the user swipes the app away from the recents screen (`android:stopWithTask="true"`), which kills the app process and ends any in-progress recording. You can opt into letting the service — and therefore the process, the JS runtime, and the active recording — survive task removal:
+
+<Tabs queryString="platform">
+  <TabItem value="expo" label="Expo" default>
+    Set the `androidFSStopWithTask` option of the [expo plugin](/docs/other/audio-api-plugin#androidfsstopwithtask) to `false`:
+
+    ```json
+    {
+      "plugins": [
+        [
+          "react-native-audio-api",
+          {
+            "androidFSStopWithTask": false
+          }
+        ]
+      ]
+    }
+    ```
+
+  </TabItem>
+  <TabItem value="android" label="Android">
+    In a bare react-native application, set `android:stopWithTask="false"` on the service entry in your `AndroidManifest.xml`:
+
+    ```xml
+    <service android:stopWithTask="false" android:name="com.swmansion.audioapi.system.CentralizedForegroundService" android:foregroundServiceType="microphone" />
+    ```
+
+  </TabItem>
+</Tabs>
+
+For the recording to actually survive, all of the following must hold:
+
+- The foreground service only exists while a library notification is shown. Call [`RecordingNotificationManager.show()`](/docs/system/recording-notification-manager#show) while the app is still in the foreground — before the user leaves the app — otherwise there is no service to keep alive.
+- `androidFSTypes` must include `"microphone"` (manifest `foregroundServiceType="microphone"`), and on Android 14+ (API 34) the app needs the `android.permission.FOREGROUND_SERVICE_MICROPHONE` permission.
+- Android's while-in-use rule applies: microphone access must begin while the app is in the foreground. Starting a recording from the background is not possible.
+
+:::caution
+Even with `stopWithTask="false"`, the system can still kill the process (memory pressure, OEM battery managers). Recording cannot self-restart from the background — the user has to reopen the app. To limit data loss in that case, tune the file-output options [`androidFlushIntervalMs`](/docs/inputs/audio-recorder#androidflushintervalms) and [`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions).
+:::
+
 ## Examples
 
 <Tabs group="usage">
