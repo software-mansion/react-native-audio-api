@@ -91,4 +91,5 @@ export interface IAudioManager {
   checkNotificationPermissions(): Promise<PermissionStatus>;
   getDevicesInfo(): Promise<AudioDevicesInfo>;
   setInputDevice(deviceId: string): Promise<void>;
+  getSystemVolume(): number;
 }
