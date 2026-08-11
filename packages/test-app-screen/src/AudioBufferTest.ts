@@ -94,9 +94,9 @@ export const audioBufferFormatsTest = async (audioContextRef: React.RefObject<Au
 }
 
 export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<AudioContext | null>, setTestingInfo: (value: React.SetStateAction<string>) => void) => {
-  for (const channelsStr in CHANNELS_MAP) {
-    const channels = parseInt(channelsStr, 10);
-    const url = CHANNELS_MAP.get(channels)!;
+  const lastChannelCount = Math.max(...CHANNELS_MAP.keys());
+  for (const [channels, url] of CHANNELS_MAP) {
+    console.log(`Testing audio buffer with ${channels} channels`);
     const expectedDuration = DURATIONS_MAP.get(channels)!;
     setTestingInfo(`Loading audio buffer with ${channels} channels`);
     await fetch(url, {
@@ -121,7 +121,7 @@ export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<A
             bufferSource.connect(audioContextRef.current!.destination);
             bufferSource.start();
             await new Promise(resolve => setTimeout(resolve, 4000));
-            if (channels === Object.keys(CHANNELS_MAP).length) {
+            if (channels === lastChannelCount) {
               bufferSource.onEnded = () => {
                 setTestingInfo('Audio buffer channels test completed.');
               };
