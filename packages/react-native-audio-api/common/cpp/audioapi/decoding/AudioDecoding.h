@@ -1,7 +1,6 @@
 #pragma once
 
-#include <audioapi/core/types/AudioFormat.h>
-#include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
+#include <audioapi/decoding/backends/AudioDecoderBackend.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <cstddef>
@@ -24,8 +23,6 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
     int inputChannelCount,
     bool interleaved);
 
-[[nodiscard]] AudioFormat detectAudioFormat(const void *data, size_t size);
-
 [[nodiscard]] bool pathHasExtension(
     const std::string &path,
     const std::vector<std::string> &extensions);
@@ -34,24 +31,12 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
 [[nodiscard]] bool isValidDuration(float duration);
 
 [[nodiscard]] inline AudioDurationResult resolveDurationFromDecoder(
-    decoding::IncrementalAudioDecoder &decoder) {
+    decoding::AudioDecoderBackend &decoder) {
   const float duration = decoder.getDurationInSeconds();
   if (!isValidDuration(duration)) {
     return Err("Audio duration metadata is unavailable");
   }
   return Ok(duration);
-}
-
-[[nodiscard]] inline bool needsFFmpeg(AudioFormat format) {
-  return format == AudioFormat::MP4 || format == AudioFormat::M4A || format == AudioFormat::AAC;
-}
-
-[[nodiscard]] inline bool needsFFmpegByPath(const std::string &path) {
-  return pathHasExtension(path, {".mp4", ".m4a", ".aac"});
-}
-
-[[nodiscard]] inline float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
-  return static_cast<float>(static_cast<int16_t>((byte2 << CHAR_BIT) | byte1)) / INT16_MAX;
 }
 
 [[nodiscard]] AudioDurationResult probeDurationWithFilePath(const std::string &path);

@@ -7,15 +7,24 @@ type FileSourceNode = NonNullable<
 const AUDIO_URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3';
 
-const SUPPORTED_FORMATS = [
-  'mp3',
-  'wav',
-  'aac',
-  'flac',
-  'ogg',
-  'opus',
-  'm4a',
-  'mp4',
+const ESPRESSIF_STEREO =
+  'https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.';
+
+const FORMAT_FIXTURES: { format: string; url: string }[] = [
+  ...['mp3', 'wav', 'aac', 'flac', 'ogg', 'opus', 'm4a', 'mp4', 'aiff'].map(
+    (format) => ({
+      format,
+      url: ESPRESSIF_STEREO + format,
+    })
+  ),
+  {
+    format: 'aif',
+    url: ESPRESSIF_STEREO + 'aiff',
+  },
+  {
+    format: 'caf',
+    url: 'https://samples.ffmpeg.org/A-codecs/caf/ComputerData05.caf',
+  },
 ];
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -176,8 +185,7 @@ export const audioTagFormatsTest = async (
   ctx: AudioContext,
   setInfo: (info: string) => void
 ) => {
-  for (const format of SUPPORTED_FORMATS) {
-    const url = `https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.${format}`;
+  for (const { format, url } of FORMAT_FIXTURES) {
     setInfo(`AudioTag formats: loading ${format}...`);
 
     try {

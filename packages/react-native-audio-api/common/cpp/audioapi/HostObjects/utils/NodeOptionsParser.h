@@ -12,7 +12,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
@@ -348,11 +348,12 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     const auto path = sourceValue.asString(runtime).utf8(runtime);
     if (audiodecoding::isHttpUrl(path)) {
       options.sourceUrl = path;
+      // Remote progressive / HLS streaming uses FFmpeg's HTTP demuxer.
       options.requiresFFmpeg = true;
     } else {
       options.filePath = path;
-      options.requiresFFmpeg =
-          audiodecoding::pathHasExtension(path, {".mp4", ".m4a", ".aac", ".m3u8"});
+      // Local files use OS/miniaudio — FFmpeg is only for remote/network sources.
+      options.requiresFFmpeg = false;
     }
   } else if (sourceValue.isObject()) {
     auto sourceObj = sourceValue.asObject(runtime);
@@ -371,10 +372,9 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
       auto arrayBuffer = sourceObj.getArrayBuffer(runtime);
       auto *data = arrayBuffer.data(runtime);
       auto size = arrayBuffer.size(runtime);
-      auto format = audiodecoding::detectAudioFormat(data, size);
-      options.requiresFFmpeg = format == AudioFormat::MP4 || format == AudioFormat::M4A ||
-          format == AudioFormat::AAC || format == AudioFormat::M3U8;
       options.data = std::vector<uint8_t>(data, data + size);
+      // In-memory sources decode via OS / miniaudio — never FFmpeg.
+      options.requiresFFmpeg = false;
     }
   }
 
@@ -388,7 +388,7 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
   if (options.requiresFFmpeg) {
     throw jsi::JSError(
         runtime,
-        "AudioFileSourceNode: remote URLs and formats (.mp4, .m4a, .aac, .m3u8) require FFmpeg, "
+        "AudioFileSourceNode: remote URL streaming and HLS (.m3u8) require FFmpeg, "
         "which is disabled in this build.");
   }
 #endif

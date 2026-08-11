@@ -22,8 +22,8 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/AudioDecoding.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/decoding/AudioDecoding.h>
 
 #include <memory>
 #include <string>
