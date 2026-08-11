@@ -41,7 +41,7 @@ inline ma_format getDataFormat(const std::shared_ptr<AudioFileProperties> &prope
 }
 
 MiniAudioFileWriter::MiniAudioFileWriter(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     float streamSampleRate,
     int32_t streamChannelCount,

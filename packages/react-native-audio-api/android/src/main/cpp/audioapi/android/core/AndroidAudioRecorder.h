@@ -18,14 +18,14 @@ namespace audioapi {
 class AudioFileProperties;
 class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AndroidAudioRecorder : public oboe::AudioStreamCallback,
                              public AudioRecorder,
                              public std::enable_shared_from_this<AndroidAudioRecorder> {
  public:
   explicit AndroidAudioRecorder(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AndroidAudioRecorder() override;
   void cleanup();
 

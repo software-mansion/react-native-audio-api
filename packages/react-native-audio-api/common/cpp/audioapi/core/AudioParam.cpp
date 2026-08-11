@@ -1,7 +1,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/param/ParamRenderEventFactory.hpp>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/core/utils/param/ParamRenderEventFactory.h>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <memory>

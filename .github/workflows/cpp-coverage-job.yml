@@ -1,0 +1,38 @@
+name: C++ Coverage Job
+
+on:
+  workflow_call:
+
+jobs:
+  run:
+    name: C++ coverage
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout with Node
+        uses: ./.github/actions/checkout-with-node
+
+      - name: Setup Yarn
+        uses: ./.github/actions/setup-yarn
+
+      - name: Setup CMake
+        uses: ./.github/actions/setup-cmake
+
+      - name: Install Clang and LLVM coverage tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm
+
+      - name: Run C++ coverage
+        working-directory: packages/react-native-audio-api
+        run: yarn test:cpp:coverage
+
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-coverage-html
+          path: packages/react-native-audio-api/common/cpp/test/coverage-html
+          retention-days: 14

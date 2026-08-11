@@ -8,7 +8,7 @@
 
 namespace audioapi {
 AndroidFileWriterBackend::AndroidFileWriterBackend(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties)
     : AudioFileWriter(audioEventHandlerRegistry, fileProperties) {}
 

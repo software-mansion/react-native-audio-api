@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/TypedAudioNodePtr.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/IIRFilterNode.h>

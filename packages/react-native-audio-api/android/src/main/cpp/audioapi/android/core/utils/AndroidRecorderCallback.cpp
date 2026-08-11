@@ -1,7 +1,7 @@
 #include <android/log.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/android/core/utils/AndroidRecorderCallback.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/CircularArray.hpp>
@@ -26,7 +26,7 @@ namespace audioapi {
 /// @param channelCount The user desired channel count
 /// @param callbackId The callback identifier
 AndroidRecorderCallback::AndroidRecorderCallback(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     float sampleRate,
     size_t bufferLength,
     int channelCount,

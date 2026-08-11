@@ -242,7 +242,8 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     // contributes silence. See AudioNode::disable().
     if (pendingDisable_) {
       pendingDisable_ = false;
-      setProcessableState(utils::graph::GraphObject::PROCESSABLE_STATE::NOT_PROCESSABLE);
+      // do not mark this node as processable in the next quantum
+      excludeFromProcessablePull_ = true;
       getOutputBuffer()->zero();
       return;
     }
@@ -282,9 +283,9 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   [[nodiscard]] virtual bool isInputSilent(const std::vector<const DSPAudioBuffer *> &inputs) const;
 
   /// @brief Requests that this node stop participating in graph processing.
-  /// The transition to NOT_PROCESSABLE is deferred by one quantum (see
-  /// `pendingDisable_`) so the final output produced this quantum is still
-  /// mixed downstream.
+  /// Sets `alwaysNotProcessable_` so settle will not re-activate it;
+  /// the current quantum's output remains available for downstream mixing,
+  /// and the next settle zeros the idle buffer.
   /// @note Audio Thread only. Source nodes call this when playback finishes.
   virtual void disable();
 

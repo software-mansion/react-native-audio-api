@@ -5,8 +5,24 @@
   "bin": {
     "setup-rn-audio-api-web": "./scripts/setup-rn-audio-api-web.js"
   },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./lib/typescript/index.d.ts",
+      "react-native": "./src/index.ts",
+      "import": "./lib/module/index.js",
+      "require": "./lib/commonjs/index.js",
+      "default": "./lib/module/index.js"
+    },
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "type": "commonjs",
   "source": "src/index",
-  "main": "lib/module/index.js",
+  "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
   "react-native": "src/index.ts",
   "types": "lib/typescript/index.d.ts",
@@ -47,6 +63,7 @@
     "test": "yarn test:js && yarn test:cpp",
     "test:js": "jest",
     "test:cpp": "bash common/cpp/test/RunTests.sh",
+    "test:cpp:coverage": "bash common/cpp/test/RunCoverage.sh",
     "test:full": "yarn test && yarn test:graph",
     "test:graph": "bash common/cpp/test/RunTestsGraph.sh",
     "test:graph:docker": "bash common/cpp/test/RunTestsGraphDocker.sh",
@@ -70,8 +87,8 @@
     "format:android:kotlin": "ktlint -F 'android/src/main/java/**/*.kt'",
     "format:ios": "find ios/audioapi/ios -type f \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | xargs clang-format -i",
     "format:common": "find common/cpp/ \\( -path 'common/cpp/audioapi/libs' -prune -o -path 'common/cpp/audioapi/external' -prune -o -type f \\( -iname \"*.h\" -o -iname \"*.cpp\" -o -iname \"*.hpp\" \\) -print \\) | xargs clang-format -i",
-    "build": "bob build",
-    "prepare": "bob build",
+    "build": "./scripts/build.sh",
+    "prepare": "./scripts/build.sh",
     "node:build": "cmake-js compile -d wpt_tests",
     "wpt:build": "yarn build && yarn node:build",
     "wpt:only": "node ./wpt_tests/wpt/wpt-harness.mjs",
@@ -175,8 +192,19 @@
           "esm": true
         }
       ],
-      "typescript",
-      "commonjs"
+      [
+        "commonjs",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.json",
+          "tsc": "../../node_modules/.bin/tsc"
+        }
+      ]
     ]
   },
   "codegenConfig": {

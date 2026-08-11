@@ -134,6 +134,14 @@ export interface GainOptions extends AudioNodeOptions {
   gain?: number;
 }
 
+export interface ChannelMergerOptions extends AudioNodeOptions {
+  numberOfInputs?: number;
+}
+
+export interface ChannelSplitterOptions extends AudioNodeOptions {
+  numberOfOutputs?: number;
+}
+
 export interface StereoPannerOptions extends AudioNodeOptions {
   pan?: number;
 }
@@ -209,8 +217,8 @@ export interface PeriodicWaveConstraints {
 }
 
 export interface PeriodicWaveOptions extends PeriodicWaveConstraints {
-  real?: Float32Array;
-  imag?: Float32Array;
+  real?: number[] | Float32Array;
+  imag?: number[] | Float32Array;
 }
 
 export interface AudioBufferOptions {

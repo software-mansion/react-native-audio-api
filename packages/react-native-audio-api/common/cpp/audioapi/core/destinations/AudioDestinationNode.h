@@ -13,8 +13,10 @@ class BaseAudioContext;
 
 class AudioDestinationNode : public AudioNode {
  public:
-  explicit AudioDestinationNode(const std::shared_ptr<BaseAudioContext> &context)
-      : AudioNode(context, AudioDestinationOptions()) {
+  explicit AudioDestinationNode(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const AudioDestinationOptions &options = AudioDestinationOptions())
+      : AudioNode(context, options) {
     processableState_ = GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE;
   }
 
