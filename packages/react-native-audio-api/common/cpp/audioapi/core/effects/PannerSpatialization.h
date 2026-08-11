@@ -8,6 +8,12 @@
 
 namespace audioapi::panner {
 
+constexpr float DEG_90 = 90.0f;
+constexpr float DEG_180 = 180.0f;
+constexpr float DEG_270 = 270.0f;
+constexpr float DEG_360 = 360.0f;
+constexpr float DEG_450 = 450.0f;
+
 struct Vec3 {
   float x = 0.0f;
   float y = 0.0f;
@@ -23,11 +29,11 @@ inline float magnitude(const Vec3 &v) {
 }
 
 inline Vec3 subtract(const Vec3 &a, const Vec3 &b) {
-  return {a.x - b.x, a.y - b.y, a.z - b.z};
+  return {.x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z};
 }
 
 inline Vec3 scale(const Vec3 &v, float s) {
-  return {v.x * s, v.y * s, v.z * s};
+  return {.x = v.x * s, .y = v.y * s, .z = v.z * s};
 }
 
 inline Vec3 normalize(const Vec3 &v) {
@@ -40,23 +46,25 @@ inline Vec3 normalize(const Vec3 &v) {
 
 inline Vec3 cross(const Vec3 &a, const Vec3 &b) {
   return {
-      a.y * b.z - a.z * b.y,
-      a.z * b.x - a.x * b.z,
-      a.x * b.y - a.y * b.x,
+      .x = a.y * b.z - a.z * b.y,
+      .y = a.z * b.x - a.x * b.z,
+      .z = a.x * b.y - a.y * b.x,
   };
 }
 
-/// Azimuth in degrees — https://webaudio.github.io/web-audio-api/#Spatialization-azimuth-elevation
+/// https://www.w3.org/TR/webaudio-1.0/#azimuth-elevation
+/// Elevation calculation is not implemented due to elevation not being used.
 inline float computeAzimuth(
     const Vec3 &sourcePosition,
     const Vec3 &listenerPosition,
     const Vec3 &listenerForward,
     const Vec3 &listenerUp) {
+
   Vec3 sourceListener = subtract(sourcePosition, listenerPosition);
+  sourceListener = normalize(sourceListener);
   if (magnitude(sourceListener) == 0.0f) {
     return 0.0f;
   }
-  sourceListener = normalize(sourceListener);
 
   Vec3 listenerRight = cross(listenerForward, listenerUp);
   if (magnitude(listenerRight) == 0.0f) {
@@ -71,48 +79,35 @@ inline float computeAzimuth(
   Vec3 projectedSource = normalize(subtract(sourceListener, scale(up, upProjection)));
 
   float azimuth =
-      180.0f * std::acos(std::clamp(dot(projectedSource, listenerRightNorm), -1.0f, 1.0f)) / PI;
+      DEG_180 * std::acos(std::clamp(dot(projectedSource, listenerRightNorm), -1.0f, 1.0f)) / PI;
 
-  if (dot(projectedSource, listenerForwardNorm) < 0.0f) {
-    azimuth = 360.0f - azimuth;
+  const float frontBack = dot(projectedSource, listenerForwardNorm);
+  if (frontBack < 0.0f) {
+    azimuth = DEG_360 - azimuth;
   }
 
-  if (azimuth >= 0.0f && azimuth <= 270.0f) {
-    azimuth = 90.0f - azimuth;
+  if (azimuth >= 0.0f && azimuth <= DEG_270) {
+    azimuth = DEG_90 - azimuth;
   } else {
-    azimuth = 450.0f - azimuth;
+    azimuth = DEG_450 - azimuth;
   }
 
   return azimuth;
 }
 
-inline float wrapAzimuthForEqualPower(float azimuth) {
-  azimuth = std::max(-180.0f, azimuth);
-  azimuth = std::min(180.0f, azimuth);
-  if (azimuth < -90.0f) {
-    azimuth = -180.0f - azimuth;
-  } else if (azimuth > 90.0f) {
-    azimuth = 180.0f - azimuth;
-  }
+inline float clampAzimuth(float azimuth) {
+  azimuth = std::max(-1 * DEG_180, azimuth);
+  azimuth = std::min(DEG_180, azimuth);
+
   return azimuth;
 }
 
-/// Returns azimuth wrapped to [-90, 90] and writes equal-power L/R gains.
-inline float computeEqualPowerGains(float azimuth, bool monoInput, float &gainL, float &gainR) {
-  azimuth = wrapAzimuthForEqualPower(azimuth);
-
-  float x = 0.0f;
-  if (monoInput) {
-    x = (azimuth + 90.0f) / 180.0f;
-  } else if (azimuth <= 0.0f) {
-    x = (azimuth + 90.0f) / 90.0f;
-  } else {
-    x = azimuth / 90.0f;
+inline float wrapAzimuth(float azimuth) {
+  if (azimuth < -1 * DEG_90) {
+    azimuth = -1 * DEG_180 - azimuth;
+  } else if (azimuth > DEG_90) {
+    azimuth = DEG_180 - azimuth;
   }
-
-  const float angle = x * (PI / 2.0f);
-  gainL = std::cos(angle);
-  gainR = std::sin(angle);
   return azimuth;
 }
 
@@ -126,16 +121,19 @@ inline float computeDistanceGain(
     double refDistance,
     double maxDistance,
     double rolloffFactor) {
-  const float dRef = static_cast<float>(refDistance);
-  const float dMax = static_cast<float>(maxDistance);
-  float f = static_cast<float>(rolloffFactor);
+  const auto dRef = static_cast<float>(refDistance);
+  const auto dMax = static_cast<float>(maxDistance);
+  auto f = static_cast<float>(rolloffFactor);
 
   switch (model) {
     case DistanceModelType::Linear: {
       const float dRefClamped = std::min(dRef, dMax);
       const float dMaxClamped = std::max(dRef, dMax);
+
       distance = std::clamp(distance, dRefClamped, dMaxClamped);
+
       f = std::clamp(f, 0.0f, 1.0f);
+
       if (dRefClamped == dMaxClamped) {
         return 1.0f - f;
       }
@@ -171,19 +169,18 @@ inline float computeConeGain(
   if (magnitude(sourceOrientation) == 0.0f) {
     return 1.0f;
   }
-  if (coneInnerAngle == 360.0 && coneOuterAngle == 360.0) {
+  if (coneInnerAngle == DEG_360 && coneOuterAngle == DEG_360) {
     return 1.0f;
   }
 
-  // Vector from the source toward the listener (matches browser ConeEffect).
   const Vec3 sourceToListener = normalize(subtract(listenerPosition, sourcePosition));
   const Vec3 normalizedOrientation = normalize(sourceOrientation);
 
-  const float angle = 180.0f *
+  const float angle = DEG_180 *
       std::acos(std::clamp(dot(sourceToListener, normalizedOrientation), -1.0f, 1.0f)) / PI;
   const float absAngle = std::abs(angle);
-  const float absInnerAngle = static_cast<float>(std::abs(coneInnerAngle) / 2.0);
-  const float absOuterAngle = static_cast<float>(std::abs(coneOuterAngle) / 2.0);
+  const auto absInnerAngle = static_cast<float>(std::abs(coneInnerAngle) / 2.0);
+  const auto absOuterAngle = static_cast<float>(std::abs(coneOuterAngle) / 2.0);
 
   if (absAngle <= absInnerAngle) {
     return 1.0f;

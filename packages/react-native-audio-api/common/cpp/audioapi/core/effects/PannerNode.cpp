@@ -14,6 +14,12 @@ namespace {
 
 using panner::Vec3;
 
+using panner::DEG_180;
+using panner::DEG_270;
+using panner::DEG_360;
+using panner::DEG_450;
+using panner::DEG_90;
+
 } // namespace
 
 PannerNode::PannerNode(
@@ -223,20 +229,52 @@ void PannerNode::processNode(int framesToProcess) {
   (void)panningModel_;
 
   for (int i = 0; i < framesToProcess; ++i) {
-    const size_t idx = static_cast<size_t>(i);
-    const Vec3 sourcePosition{posX[idx], posY[idx], posZ[idx]};
-    const Vec3 sourceOrientation{orientX[idx], orientY[idx], orientZ[idx]};
-    const Vec3 listenerPosition{listenerPosX[idx], listenerPosY[idx], listenerPosZ[idx]};
-    const Vec3 listenerForward{listenerForwardX[idx], listenerForwardY[idx], listenerForwardZ[idx]};
-    const Vec3 listenerUp{listenerUpX[idx], listenerUpY[idx], listenerUpZ[idx]};
+    const auto idx = static_cast<size_t>(i);
+    const Vec3 sourcePosition{.x = posX[idx], .y = posY[idx], .z = posZ[idx]};
+    const Vec3 sourceOrientation{.x = orientX[idx], .y = orientY[idx], .z = orientZ[idx]};
+    const Vec3 listenerPosition{
+        .x = listenerPosX[idx], .y = listenerPosY[idx], .z = listenerPosZ[idx]};
+    const Vec3 listenerForward{
+        .x = listenerForwardX[idx], .y = listenerForwardY[idx], .z = listenerForwardZ[idx]};
+    const Vec3 listenerUp{.x = listenerUpX[idx], .y = listenerUpY[idx], .z = listenerUpZ[idx]};
 
-    const float azimuth =
+    float azimuth =
         panner::computeAzimuth(sourcePosition, listenerPosition, listenerForward, listenerUp);
 
-    float gainL = 0.0f;
-    float gainR = 0.0f;
-    // Spec §6.3.1: stereo mix branch uses azimuth after wrapping to [-90, 90].
-    const float wrappedAzimuth = panner::computeEqualPowerGains(azimuth, monoInput, gainL, gainR);
+    azimuth = panner::clampAzimuth(azimuth);
+    azimuth = panner::wrapAzimuth(azimuth);
+
+    float x;
+    if (monoInput) {
+      x = (azimuth + DEG_90) / DEG_180;
+    } else {
+      if (azimuth <= 0.0f) {
+        x = (azimuth + DEG_90) / DEG_90;
+      } else {
+        x = azimuth / DEG_90;
+      }
+    }
+
+    float gainL = std::cos(x * PI / 2.0f);
+    float gainR = std::sin(x * PI / 2.0f);
+
+    const float inputL = inputLeftSpan[idx];
+    const float inputR = inputRightSpan[idx];
+
+    const float input = inputL;
+
+    if (monoInput) {
+      outputLeft[idx] = input * gainL;
+      outputRight[idx] = input * gainR;
+    } else {
+      if (azimuth <= 0.0f) {
+        outputLeft[idx] = inputL + inputR * gainL;
+        outputRight[idx] = inputR * gainR;
+      } else {
+        outputLeft[idx] = inputL * gainL;
+        outputRight[idx] = inputR + inputL * gainR;
+      }
+    }
 
     const float distance = panner::computeDistance(sourcePosition, listenerPosition);
     const float distanceGain = panner::computeDistanceGain(
@@ -248,21 +286,10 @@ void PannerNode::processNode(int framesToProcess) {
         coneInnerAngle_,
         coneOuterAngle_,
         coneOuterGain_);
-    const float totalGain = distanceGain * coneGain;
+    const float totalGain = coneGain * distanceGain;
 
-    const float inputL = inputLeftSpan[idx];
-    const float inputR = inputRightSpan[idx];
-
-    if (monoInput) {
-      outputLeft[idx] = inputL * gainL * totalGain;
-      outputRight[idx] = inputL * gainR * totalGain;
-    } else if (wrappedAzimuth <= 0.0f) {
-      outputLeft[idx] = (inputL + inputR * gainL) * totalGain;
-      outputRight[idx] = inputR * gainR * totalGain;
-    } else {
-      outputLeft[idx] = inputL * gainL * totalGain;
-      outputRight[idx] = (inputR + inputL * gainR) * totalGain;
-    }
+    outputLeft[idx] = totalGain * outputLeft[idx];
+    outputRight[idx] = totalGain * outputRight[idx];
   }
 }
 

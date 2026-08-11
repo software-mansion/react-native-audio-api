@@ -89,6 +89,9 @@ const PannerNodeExample: FC = () => {
   // source away from the listener and hits coneOuterGain (silence) — that
   // looked like a panning bug at X≈±1.
   const [coneEnabled, setConeEnabled] = useState(false);
+  const [coneInnerAngle, setConeInnerAngle] = useState(60);
+  const [coneOuterAngle, setConeOuterAngle] = useState(90);
+  const [coneOuterGain, setConeOuterGain] = useState(0);
   const [distanceModel, setDistanceModel] =
     useState<DistanceModelType>('inverse');
   const [rolloffFactor, setRolloffFactor] = useState(1);
@@ -109,11 +112,17 @@ const PannerNodeExample: FC = () => {
     };
   }, []);
 
-  const applyCone = (panner: PannerNode, enabled: boolean) => {
+  const applyCone = (
+    panner: PannerNode,
+    enabled: boolean,
+    inner = coneInnerAngle,
+    outer = coneOuterAngle,
+    outerGain = coneOuterGain
+  ) => {
     if (enabled) {
-      panner.coneInnerAngle = 60;
-      panner.coneOuterAngle = 90;
-      panner.coneOuterGain = 0;
+      panner.coneInnerAngle = inner;
+      panner.coneOuterAngle = Math.max(outer, inner);
+      panner.coneOuterGain = outerGain;
     } else {
       panner.coneInnerAngle = 360;
       panner.coneOuterAngle = 360;
@@ -230,7 +239,7 @@ const PannerNodeExample: FC = () => {
             }
             setHint(
               next
-                ? 'Cone on — orientation affects loudness'
+                ? 'Cone on — use Inner/Outer angle + Outer gain with orientation'
                 : 'Cone off (360°) — orientation has no effect'
             );
           }}>
@@ -239,6 +248,70 @@ const PannerNodeExample: FC = () => {
           </Text>
         </Pressable>
         <Spacer.Vertical size={12} />
+
+        <Text style={styles.section}>Cone</Text>
+        <Slider
+          label="Inner °"
+          value={coneInnerAngle}
+          onValueChange={(value) => {
+            setConeInnerAngle(value);
+            const outer = Math.max(coneOuterAngle, value);
+            if (outer !== coneOuterAngle) {
+              setConeOuterAngle(outer);
+            }
+            if (pannerRef.current && coneEnabled) {
+              applyCone(pannerRef.current, true, value, outer, coneOuterGain);
+            }
+          }}
+          min={0}
+          max={360}
+          step={1}
+          minLabelWidth={LABEL_WIDTH}
+        />
+        <Spacer.Vertical size={10} />
+        <Slider
+          label="Outer °"
+          value={coneOuterAngle}
+          onValueChange={(value) => {
+            const outer = Math.max(value, coneInnerAngle);
+            setConeOuterAngle(outer);
+            if (pannerRef.current && coneEnabled) {
+              applyCone(
+                pannerRef.current,
+                true,
+                coneInnerAngle,
+                outer,
+                coneOuterGain
+              );
+            }
+          }}
+          min={0}
+          max={360}
+          step={1}
+          minLabelWidth={LABEL_WIDTH}
+        />
+        <Spacer.Vertical size={10} />
+        <Slider
+          label="Outer gain"
+          value={coneOuterGain}
+          onValueChange={(value) => {
+            setConeOuterGain(value);
+            if (pannerRef.current && coneEnabled) {
+              applyCone(
+                pannerRef.current,
+                true,
+                coneInnerAngle,
+                coneOuterAngle,
+                value
+              );
+            }
+          }}
+          min={0}
+          max={1}
+          step={0.01}
+          minLabelWidth={LABEL_WIDTH}
+        />
+        <Spacer.Vertical size={16} />
 
         <Text style={styles.section}>Distance model</Text>
         <View style={styles.row}>
