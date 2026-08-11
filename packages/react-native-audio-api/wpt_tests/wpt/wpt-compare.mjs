@@ -3,19 +3,32 @@ import path from 'node:path';
 
 function printUsageAndExit() {
   console.error(
-    'Usage: node wpt-compare.mjs --baseline <base.json> --candidate <head.json>'
+    'Usage: node wpt-compare.mjs --baseline <base.json> --candidate <head.json> ' +
+      '[--markdown-out <report.md>] [--baseline-label <text>] [--candidate-label <text>]'
   );
   process.exit(1);
 }
 
 function parseArgs(argv) {
-  const args = { baseline: null, candidate: null };
+  const args = {
+    baseline: null,
+    candidate: null,
+    markdownOut: null,
+    baselineLabel: null,
+    candidateLabel: null,
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--baseline') {
       args.baseline = argv[++i];
     } else if (arg === '--candidate') {
       args.candidate = argv[++i];
+    } else if (arg === '--markdown-out') {
+      args.markdownOut = argv[++i];
+    } else if (arg === '--baseline-label') {
+      args.baselineLabel = argv[++i];
+    } else if (arg === '--candidate-label') {
+      args.candidateLabel = argv[++i];
     } else if (arg === '--help' || arg === '-h') {
       printUsageAndExit();
     } else {
@@ -26,6 +39,8 @@ function parseArgs(argv) {
   if (!args.baseline || !args.candidate) {
     printUsageAndExit();
   }
+  args.baselineLabel ??= args.baseline;
+  args.candidateLabel ??= args.candidate;
   return args;
 }
 
@@ -65,6 +80,15 @@ function appendStepSummary(markdown) {
     return;
   }
   fs.appendFileSync(summaryPath, `${markdown}\n`);
+}
+
+function writeMarkdownReport(markdown, outputPath) {
+  if (!outputPath) {
+    return;
+  }
+  const absolute = path.resolve(outputPath);
+  fs.mkdirSync(path.dirname(absolute), { recursive: true });
+  fs.writeFileSync(absolute, `${markdown}\n`);
 }
 
 const options = parseArgs(process.argv.slice(2));
@@ -114,60 +138,67 @@ const baselineSummaryPass = baseline.summary.pass ?? 0;
 const candidateSummaryPass = candidate.summary.pass ?? 0;
 const summaryDelta = candidateSummaryPass - baselineSummaryPass;
 
-if (summaryDelta < 0) {
-  regressions.push({
-    key: '__summary__',
-    label: 'Overall summary',
-    base: baselineSummaryPass,
-    head: candidateSummaryPass,
-    delta: summaryDelta,
-  });
-} else if (summaryDelta > 0) {
-  improvements.push({
-    key: '__summary__',
-    label: 'Overall summary',
-    base: baselineSummaryPass,
-    head: candidateSummaryPass,
-    delta: summaryDelta,
-  });
-}
+// A category present in the baseline but skipped in the candidate run drops out of both
+// pass maps, so the per-category diff stays clean while the overall pass count falls.
+// The summary therefore needs a regression check of its own.
+const summaryRegressed = summaryDelta < 0;
+const hasRegression = regressions.length > 0 || summaryRegressed;
 
-const formatRow = ({ label, base, head, delta }) => {
-  const sign = delta > 0 ? '+' : '';
-  return `| ${label} | ${base} | ${head} | ${sign}${delta} |`;
-};
+const signed = (delta) => `${delta > 0 ? '+' : ''}${delta}`;
+
+const formatRow = ({ label, base, head, delta }) =>
+  `| ${label} | ${base} | ${head} | ${signed(delta)} |`;
+
+const tableHeader = [
+  '| Spec section | Base pass | Head pass | Delta |',
+  '| --- | ---: | ---: | ---: |',
+];
+
+const verdict = hasRegression
+  ? `**FAIL** — ${regressions.length} regressed section(s)`
+  : '**PASS** — no regressions';
 
 const lines = [
   '## WPT non-regression comparison',
   '',
-  `Baseline: \`${options.baseline}\` · Candidate: \`${options.candidate}\``,
+  `${verdict} · ${improvements.length} improved section(s) · overall ${baselineSummaryPass} → ${candidateSummaryPass} (${signed(summaryDelta)})`,
   '',
-  `| Spec section | Base pass | Head pass | Delta |`,
-  `| --- | ---: | ---: | ---: |`,
 ];
 
-for (const row of [...regressions, ...improvements, ...unchanged]) {
-  if (row.key === '__summary__') {
-    continue;
-  }
-  lines.push(formatRow(row));
+const changed = [...regressions, ...improvements];
+if (changed.length > 0) {
+  lines.push(...tableHeader, ...changed.map(formatRow), '');
+}
+
+// Unchanged sections outnumber changed ones on almost every run, so they are collapsed
+// to keep the PR comment readable without dropping the full picture.
+if (unchanged.length > 0) {
+  lines.push(
+    `<details><summary>Unchanged sections (${unchanged.length})</summary>`,
+    '',
+    ...tableHeader,
+    ...unchanged.map(formatRow),
+    '',
+    '</details>',
+    ''
+  );
 }
 
 lines.push(
-  `| **Overall summary** | ${baselineSummaryPass} | ${candidateSummaryPass} | ${
-    summaryDelta > 0 ? '+' : ''
-  }${summaryDelta} |`,
-  ''
+  `<sub>Baseline: \`${options.baselineLabel}\` · Candidate: \`${options.candidateLabel}\`</sub>`
 );
 
-if (regressions.length > 0) {
-  lines.push(`**Result: FAIL** — ${regressions.length} regression(s).`);
+if (hasRegression) {
   console.error(`WPT regression: ${regressions.length} worse result(s) vs baseline.`);
   for (const row of regressions) {
     console.error(`  - ${row.label}: ${row.head} pass (was ${row.base}, delta ${row.delta})`);
   }
+  if (summaryRegressed) {
+    console.error(
+      `  - Overall summary: ${candidateSummaryPass} pass (was ${baselineSummaryPass}, delta ${summaryDelta})`
+    );
+  }
 } else {
-  lines.push('**Result: PASS** — all pass counts are equal or greater than baseline.');
   console.log('WPT non-regression check passed.');
 }
 
@@ -181,5 +212,6 @@ if (improvements.length > 0) {
 const markdown = lines.join('\n');
 console.log(`\n${markdown}\n`);
 appendStepSummary(markdown);
+writeMarkdownReport(markdown, options.markdownOut);
 
-process.exit(regressions.length > 0 ? 1 : 0);
+process.exit(hasRegression ? 1 : 0);

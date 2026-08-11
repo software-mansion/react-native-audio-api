@@ -2,7 +2,15 @@ name: WPT Tests
 
 on:
   pull_request:
+    # ready_for_review is not a default type, but drafts are skipped below, so without it a
+    # pull request opened as a draft would never get a report until its next push.
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+
+# Superseded runs are cancelled so that only the newest commit's report reaches the comment.
+concurrency:
+  group: wpt-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   wpt-run:
@@ -73,7 +81,10 @@ jobs:
 
   wpt-compare:
     name: WPT compare
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    # Runs even when wpt-run failed, so the PR still gets a report comment explaining why.
+    if: >
+      !cancelled() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     needs: wpt-run
     runs-on: ubuntu-latest
     steps:
@@ -85,19 +96,54 @@ jobs:
 
       - name: Download base report
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: wpt-base
           path: wpt-reports/base
 
       - name: Download head report
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: wpt-head
           path: wpt-reports/head
 
       - name: Compare WPT results
+        id: compare
+        # A regression must not skip the upload below; the job fails in its last step instead.
+        continue-on-error: true
         working-directory: packages/react-native-audio-api
         run: >
           node ./wpt_tests/wpt/wpt-compare.mjs
           --baseline ../../wpt-reports/base/latest.json
           --candidate ../../wpt-reports/head/latest.json
+          --markdown-out ../../wpt-comment/report.md
+          --baseline-label "${{ github.event.pull_request.base.sha || 'main' }}"
+          --candidate-label "${{ github.event.pull_request.head.sha || github.sha }}"
+
+      - name: Assemble PR comment payload
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p wpt-comment
+          echo "${{ github.event.pull_request.number }}" > wpt-comment/pr-number.txt
+          if [ ! -s wpt-comment/report.md ]; then
+            {
+              echo '## WPT non-regression comparison'
+              echo
+              echo '**ERROR** — the comparison did not produce a report; the test run itself likely failed.'
+            } > wpt-comment/report.md
+          fi
+
+      - name: Upload PR comment payload
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpt-comment
+          path: wpt-comment/
+          if-no-files-found: error
+
+      - name: Fail on WPT regression
+        if: steps.compare.outcome != 'success' || needs.wpt-run.result != 'success'
+        run: exit 1
