@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/types/ContextPromiseTask.h>
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/utils/Constants.h>
@@ -7,6 +8,7 @@
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
+#include <audioapi/utils/TaskOffloader.hpp>
 
 #include <audioapi/utils/Macros.h>
 #include <atomic>
@@ -20,7 +22,6 @@
 
 namespace audioapi {
 
-class AudioEventHandlerRegistry;
 class IAudioEventHandlerRegistry;
 class PeriodicWave;
 class AudioDestinationNode;
@@ -71,12 +72,16 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   template <typename F>
   bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
     std::scoped_lock lock(driverMutex_);
-    if (!isDriverRunning()) {
-      event(*this);
-      return true;
+    if (isDriverRunning()) {
+      return audioEventScheduler_.scheduleEvent(std::forward<F>(event));
     }
 
-    return audioEventScheduler_.scheduleEvent(std::forward<F>(event));
+    // Sole consumer while the driver is stopped: drain any control messages that
+    // were queued before the driver stopped (or before this sync call), then
+    // run the new event. Keeps FIFO with the SPSC even on the sync path.
+    audioEventScheduler_.processAllEvents(*this);
+    event(*this);
+    return true;
   }
 
   /// @brief Schedule an audio event produced on the JS runtime's finalizer
@@ -97,14 +102,24 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     return gcAudioEventScheduler_.scheduleEvent(std::forward<F>(event));
   }
 
+  /// @brief Queue a lifecycle control message on the pending-promises worker thread.
+  /// Serialized with other lifecycle ops via `driverMutex_`. Graph host-node cleanup
+  /// (`collectDisposedNodes`) runs on the worker before the operation body.
+  template <typename F>
+  void scheduleContextPromise(F &&operation) {
+    ContextPromiseTask task;
+    task.operation = std::forward<F>(operation);
+    pendingPromisesOffloader_->getSender()->send(std::move(task));
+  }
+
   void processGraph(DSPAudioBuffer *buffer, int numFrames);
 
  protected:
   std::atomic<std::size_t> currentSampleFrame_{0};
   const AudioDestinationNode *destination_;
 
-  /// Serializes context lifecycle and driver control across the JS thread and the
-  /// promise-vendor thread pool (`resume` / `suspend` / `close` / offline render).
+  /// Serializes context lifecycle and driver control across the JS thread,
+  /// pending-promises worker, and offline render thread.
   mutable std::mutex driverMutex_;
   std::atomic<ContextState> state_;
 
@@ -128,6 +143,18 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   static constexpr size_t GC_AUDIO_SCHEDULER_CAPACITY = 256;
+  static constexpr size_t PENDING_PROMISES_CAPACITY = 64;
+  static constexpr auto PENDING_PROMISES_OVERFLOW_STRATEGY =
+      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
+  static constexpr auto PENDING_PROMISES_WAIT_STRATEGY =
+      audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
+
+  std::unique_ptr<task_offloader::TaskOffloader<
+      ContextPromiseTask,
+      PENDING_PROMISES_OVERFLOW_STRATEGY,
+      PENDING_PROMISES_WAIT_STRATEGY>>
+      pendingPromisesOffloader_;
+
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
   /// Dedicated single-producer SPSC scheduler for events produced on the
   /// JS runtime's finalizer (GC) thread. Keeps `audioEventScheduler_`

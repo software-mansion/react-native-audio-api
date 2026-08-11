@@ -57,7 +57,7 @@ class PeriodicWave {
   [[nodiscard]] int getPeriodicWaveSize() const;
   [[nodiscard]] float getScale() const;
 
-  float getSample(float fundamentalFrequency, float phase, float phaseIncrement);
+  float getSample(float fundamentalFrequency, double phase, float phaseIncrement);
 
  private:
   explicit PeriodicWave(float sampleRate, bool disableNormalization);
@@ -97,7 +97,7 @@ class PeriodicWave {
   // interpolation is determined by the phase increment. Returns the
   // interpolated sample.
   [[nodiscard]] float doInterpolation(
-      float phase,
+      double phase,
       float phaseIncrement,
       float waveTableInterpolationFactor,
       const DSPAudioArray &lowerWaveData,

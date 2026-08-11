@@ -74,6 +74,27 @@ jsi::Value PromiseVendor::createAsyncPromise(std::function<void(Promise &&)> &&f
   return promiseCtor.callAsConstructor(runtime, std::move(promiseFunction));
 }
 
+jsi::Value PromiseVendor::createPromise(std::function<void(Promise &&)> &&function) {
+  auto &runtime = *runtime_;
+  auto callInvoker = callInvoker_;
+  auto promiseCtor = runtime.global().getPropertyAsFunction(runtime, "Promise");
+  auto promiseLambda = [callInvoker = std::move(callInvoker), function = std::move(function)](
+                           jsi::Runtime &runtime,
+                           const jsi::Value &thisValue,
+                           const jsi::Value *arguments,
+                           size_t count) mutable -> jsi::Value {
+    auto resolveLocal = arguments[0].asObject(runtime).asFunction(runtime);
+    auto rejectLocal = arguments[1].asObject(runtime).asFunction(runtime);
+
+    Promise promise(std::move(callInvoker), std::move(resolveLocal), std::move(rejectLocal));
+    function(std::move(promise));
+    return jsi::Value::undefined();
+  };
+  auto promiseFunction = jsi::Function::createFromHostFunction(
+      runtime, jsi::PropNameID::forUtf8(runtime, "promise"), 2, std::move(promiseLambda));
+  return promiseCtor.callAsConstructor(runtime, std::move(promiseFunction));
+}
+
 void PromiseVendor::asyncPromiseJob(
     const std::shared_ptr<react::CallInvoker> &callInvoker,
     const std::function<PromiseResolver()> &function,

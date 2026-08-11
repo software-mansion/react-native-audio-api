@@ -14,13 +14,13 @@ namespace audioapi {
 class AudioFileWriter;
 class AudioFileProperties;
 class AudioRecorderCallback;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
   enum class RecorderState : uint8_t { Idle = 0, Recording, Paused };
   explicit AudioRecorder(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
       : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
   AudioRecorder(const AudioRecorder &) = delete;
   AudioRecorder(AudioRecorder &&) = delete;
@@ -61,6 +61,8 @@ class AudioRecorder {
   virtual bool isPaused() const = 0;
   virtual bool isIdle() const = 0;
 
+  [[nodiscard]] virtual double getInputLatency() const = 0;
+
  protected:
   bool wantsCallback() const;
   bool wantsFileOutput() const;
@@ -79,6 +81,7 @@ class AudioRecorder {
   mutable std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;
   mutable std::mutex adapterNodeMutex_;
+  mutable std::recursive_mutex streamMutex_;
 
   std::atomic<uint64_t> errorCallbackId_{0};
 
@@ -86,7 +89,7 @@ class AudioRecorder {
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
-  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
 };
 

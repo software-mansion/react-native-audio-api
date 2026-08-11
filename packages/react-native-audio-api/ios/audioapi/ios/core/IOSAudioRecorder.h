@@ -13,6 +13,8 @@ typedef struct objc_object NativeAudioRecorder;
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/utils/Result.hpp>
 
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -22,12 +24,12 @@ namespace audioapi {
 class RecorderCallback;
 class RecorderAdapterNode;
 class AudioFileProperties;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 class AudioFileWriter;
 
 class IOSAudioRecorder : public AudioRecorder {
  public:
-  IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  IOSAudioRecorder(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
@@ -54,6 +56,8 @@ class IOSAudioRecorder : public AudioRecorder {
       uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 
+  [[nodiscard]] double getInputLatency() const override;
+
  protected:
   NativeAudioRecorder *nativeRecorder_;
 
@@ -65,6 +69,9 @@ class IOSAudioRecorder : public AudioRecorder {
       const std::string &fileNameOverride = "");
 
   std::vector<std::string> recordingSegmentPaths_;
+  std::atomic<float> streamSampleRate_{0.0f};
+  /// Updated on the audio thread from each input callback `numFrames`.
+  std::atomic<int32_t> lastCallbackFrameCount_{0};
 };
 
 } // namespace audioapi

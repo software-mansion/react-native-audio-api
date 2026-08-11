@@ -8,7 +8,7 @@ import { Optional, Overridden, MobileOnly } from '@site/src/components/Badges';
 import InteractivePlayground from '@site/src/components/InteractivePlayground';
 import { useAudioBufferSourcePlayground } from '@site/src/components/InteractivePlayground/AudioBufferSourceExample/useAudioBufferSourcePlayground';
 import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
-
+import Heading from '@theme/Heading';
 
 # AudioBufferSourceNode
 
@@ -126,7 +126,7 @@ source.start(startTime - latency);
 ```
 </details>
 
-### `start` <Overridden /> {#start}
+<Heading as="h3" id="start"><code>start</code> <Overridden /></Heading>
 
 Schedules the `AudioBufferSourceNode` to start playback of audio data contained in the associated [`AudioBuffer`](/docs/sources/audio-buffer), or starts to play immediately.
 

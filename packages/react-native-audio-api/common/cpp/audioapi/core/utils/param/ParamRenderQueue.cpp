@@ -1,6 +1,6 @@
 #include <audioapi/core/types/ParamEventType.h>
 #include <audioapi/core/utils/param/ParamQueueBase.hpp>
-#include <audioapi/core/utils/param/ParamRenderEventFactory.hpp>
+#include <audioapi/core/utils/param/ParamRenderEventFactory.h>
 #include <audioapi/core/utils/param/ParamRenderQueue.h>
 #include <cstddef>
 #include <optional>

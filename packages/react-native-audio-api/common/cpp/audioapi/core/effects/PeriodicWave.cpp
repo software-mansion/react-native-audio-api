@@ -30,6 +30,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <vector>
 
@@ -89,7 +90,7 @@ float PeriodicWave::getScale() const {
   return scale_;
 }
 
-float PeriodicWave::getSample(float fundamentalFrequency, float phase, float phaseIncrement) {
+float PeriodicWave::getSample(float fundamentalFrequency, double phase, float phaseIncrement) {
   WaveTableSource source = getWaveDataForFundamentalFrequency(fundamentalFrequency);
 
   return doInterpolation(
@@ -253,7 +254,7 @@ WaveTableSource PeriodicWave::getWaveDataForFundamentalFrequency(float fundament
 }
 
 float PeriodicWave::doInterpolation(
-    float phase,
+    double phase,
     float phaseIncrement,
     float waveTableInterpolationFactor,
     const DSPAudioArray &lowerWaveData,
@@ -264,13 +265,17 @@ float PeriodicWave::doInterpolation(
   // We use linear, 3-point Lagrange, or 5-point Lagrange interpolation based on
   // the value of phase increment. https://dlmf.nist.gov/3.3#ii
 
-  int index = static_cast<int>(phase);
-  auto factor = phase - static_cast<float>(index);
+  const auto index = static_cast<int>(phase);
+  const auto factor = static_cast<float>(phase - static_cast<double>(index));
 
-  if (phaseIncrement >= interpolate2Point) { // linear interpolation
-    auto indices = std::array<int, 2>{};
-    indices[0] = (index + 0) & (getPeriodicWaveSize() - 1);
-    indices[1] = (index + 1) & (getPeriodicWaveSize() - 1);
+  // Use |phaseIncrement| so negative frequencies select the same
+  // interpolation method as their positive counterparts.
+  const float absPhaseIncrement = std::fabs(phaseIncrement);
+
+  if (absPhaseIncrement >= interpolate2Point) { // linear interpolation
+    auto indices = std::array<unsigned, 2>{};
+    indices[0] = (index + 0) & static_cast<unsigned>(getPeriodicWaveSize() - 1);
+    indices[1] = (index + 1) & static_cast<unsigned>(getPeriodicWaveSize() - 1);
 
     auto lowerWaveDataSample1 = lowerWaveData[indices[0]];
     auto lowerWaveDataSample2 = lowerWaveData[indices[1]];
@@ -279,9 +284,9 @@ float PeriodicWave::doInterpolation(
 
     lowerWaveDataSample = (1 - factor) * lowerWaveDataSample1 + factor * lowerWaveDataSample2;
     higherWaveDataSample = (1 - factor) * higherWaveDataSample1 + factor * higherWaveDataSample2;
-  } else if (phaseIncrement >= interpolate3Point) { // 3-point Lagrange
-                                                    // interpolation
-    auto indices = std::array<int, 3>{};
+  } else if (absPhaseIncrement >= interpolate3Point) { // 3-point Lagrange
+                                                       // interpolation
+    auto indices = std::array<unsigned, 3>{};
 
     for (int i = 0; i < 3; i++) {
       indices[i] = (index + i - 1) & (getPeriodicWaveSize() - 1);

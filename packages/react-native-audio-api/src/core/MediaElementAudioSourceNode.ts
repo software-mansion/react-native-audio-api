@@ -33,8 +33,29 @@ export default class MediaElementAudioSourceNode extends AudioNode {
     this.mediaElement = options.mediaElement;
   }
 
-  public override disconnect(destination?: AudioNode | AudioParam): void {
-    super.disconnect(destination);
+  public override disconnect(): void;
+  public override disconnect(output: number): void;
+  public override disconnect(
+    destination: AudioNode,
+    output?: number,
+    input?: number
+  ): void;
+
+  public override disconnect(destination: AudioParam, output?: number): void;
+  public override disconnect(
+    destinationOrOutput?: AudioNode | AudioParam | number,
+    output?: number,
+    input?: number
+  ): void {
+    if (destinationOrOutput === undefined) {
+      super.disconnect();
+    } else if (typeof destinationOrOutput === 'number') {
+      super.disconnect(destinationOrOutput);
+    } else if (destinationOrOutput instanceof AudioParam) {
+      super.disconnect(destinationOrOutput, output);
+    } else {
+      super.disconnect(destinationOrOutput, output, input);
+    }
 
     const fileSourceNode = (
       this.mediaElement as InternalAudioTagHandle

@@ -31,6 +31,7 @@ packages/custom-node-generator/    # Code generation tooling
 - **New Architecture Ready**: Supports both old Bridge and new TurboModules/Fabric
 - **Optional FFmpeg**: Audio decoding via FFmpeg can be conditionally compiled out
 - **Audio Worklets**: JavaScript runs on the audio thread via React Native Worklets
+- **Testable C++ dependencies**: consumers take interface types (`std::shared_ptr<I…>`); construct concrete implementations only at platform bootstrap. Example: audio event registry (use `IAudioEventHandlerRegistry` more often than `AudioEventHandlerRegistry`).
 
 ### Native Module Entry Points
 - iOS: `ios/audioapi/ios/AudioAPIModule.mm`
@@ -73,6 +74,10 @@ When implementing anything new, mirror structure and style from these proven fil
 | New scheduled source node | `common/cpp/audioapi/core/sources/OscillatorNode.h` + `.cpp` |
 | New TypeScript API class | `packages/react-native-audio-api/src/core/GainNode.ts` |
 
+### Writing Expressive Code
+
+Before adding or modifying source code, read and follow `.claude/skills/expressive-code/SKILL.md`. This applies to every coding task.
+
 ---
 
 ## Skills
@@ -90,6 +95,7 @@ Detailed skill files live in `.claude/skills/`. Each skill lives in its own dire
 | `post-work-checks/` | Ordered checklist to run after every change |
 | `flow/` | End-to-end feature implementation flow (tests + docs required) |
 | `utilities/` | Shared DSP and C++/TS utility helpers |
+| `expressive-code/` | Naming and comment style — self-documenting code, when to comment, anti-patterns |
 | `writing-skills/` | How to write, structure, and maintain skill files |
 
 See `.claude/README.md` for a full description of the Claude Code setup and the `/pre-push-update` command.

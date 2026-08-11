@@ -50,10 +50,6 @@ class AudioPlayer {
     });
     this.sourceNode.buffer = this.audioBuffer;
     this.sourceNode.playbackRate.value = this.playbackRate;
-    const volume1 = this.audioContext.createGain();
-    const volume2 = this.audioContext.createGain();
-    volume1.gain.value = 0.5;
-    volume2.gain.value = 0.5;
     this.volumeNode = this.audioContext.createGain();
     this.volumeNode.gain.value = this.volume;
 
@@ -86,6 +82,8 @@ class AudioPlayer {
     }
 
     this.sourceNode?.stop(this.audioContext.currentTime);
+    this.sourceNode?.disconnect();
+    this.volumeNode?.disconnect();
 
     await this.audioContext.suspend();
     PlaybackNotificationManager.show({

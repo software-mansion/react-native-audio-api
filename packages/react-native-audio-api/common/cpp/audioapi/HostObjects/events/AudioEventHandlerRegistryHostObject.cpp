@@ -1,13 +1,13 @@
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <memory>
 
 namespace audioapi {
 
 AudioEventHandlerRegistryHostObject::AudioEventHandlerRegistryHostObject(
-    const std::shared_ptr<AudioEventHandlerRegistry> &eventHandlerRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry> &eventHandlerRegistry)
     : eventHandlerRegistry_(eventHandlerRegistry) {
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, addAudioEventListener),

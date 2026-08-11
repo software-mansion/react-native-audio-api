@@ -1,10 +1,11 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <cmath>
 #include <memory>
 
 namespace audioapi {
@@ -20,6 +21,8 @@ OscillatorNode::OscillatorNode(
       -static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       static_cast<float>(OCTAVE_RANGE) * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
+  computedFrequencyParam_ = std::make_shared<CompositeAudioParam<combineOscFrequency>>(
+      -getNyquistFrequency(), getNyquistFrequency(), context, frequencyParam_, detuneParam_);
   if (options.periodicWave) {
     periodicWave_ = options.periodicWave;
   } else {
@@ -70,32 +73,31 @@ void OscillatorNode::processNode(int framesToProcess) {
     return;
   }
 
+  // Align a-rate automation with the first audible sample. updatePlaybackInfo may
+  // leave a silent prefix when start/stop truncates the quantum; advancing time by
+  // that prefix keeps frequency automation from running early on those silent frames.
   auto time =
       context->getCurrentTime() + static_cast<double>(startOffset) / context->getSampleRate();
-  auto detuneSpan = detuneParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
-  auto freqSpan = frequencyParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
+  auto computedFreqSpan =
+      computedFrequencyParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
-  const auto tableSize = static_cast<float>(periodicWave_->getPeriodicWaveSize());
+  const auto tableSize = static_cast<double>(periodicWave_->getPeriodicWaveSize());
+  const auto invTableSize = 1.0 / tableSize;
   const auto tableScale = periodicWave_->getScale();
   const auto numChannels = audioBuffer_->getNumberOfChannels();
 
   auto channelSpan = audioBuffer_->getChannel(0)->span();
-  float currentPhase = phase_;
+  double currentPhase = phase_;
 
   for (size_t i = startOffset; i < offsetLength; i += 1) {
-    auto detuneRatio = detuneSpan[i] == 0 ? 1.0f : exp2f(detuneSpan[i] * CENTS_TO_RATIO);
-    auto detunedFrequency = freqSpan[i] * detuneRatio;
+    auto detunedFrequency = computedFreqSpan[i];
     auto phaseIncrement = detunedFrequency * tableScale;
 
     channelSpan[i] = periodicWave_->getSample(detunedFrequency, currentPhase, phaseIncrement);
 
-    currentPhase += phaseIncrement;
-
-    if (currentPhase >= tableSize) {
-      currentPhase -= tableSize;
-    } else if (currentPhase < 0.0f) {
-      currentPhase += tableSize;
-    }
+    currentPhase += static_cast<double>(phaseIncrement);
+    // Chromium-style wrap: works for negative increments in one step.
+    currentPhase -= std::floor(currentPhase * invTableSize) * tableSize;
   }
 
   phase_ = currentPhase;
