@@ -32,6 +32,7 @@ packages/custom-node-generator/    # Code generation tooling
 - **Optional FFmpeg**: Audio decoding via FFmpeg can be conditionally compiled out
 - **Audio Worklets**: JavaScript runs on the audio thread via React Native Worklets
 - **Testable C++ dependencies**: consumers take interface types (`std::shared_ptr<I…>`); construct concrete implementations only at platform bootstrap. Example: audio event registry (use `IAudioEventHandlerRegistry` more often than `AudioEventHandlerRegistry`).
+- **Notification-Driven Foreground Service (Android)**: `NotificationRegistry.showNotification` → `ForegroundServiceManager.subscribe` → `CentralizedForegroundService`; service lifetime follows notification visibility, never recorder/player state. The library manifest is empty — consuming apps declare the `<service>` (Expo plugin `withAudioAPI.ts` or manually), where `android:stopWithTask` (plugin option `androidFSStopWithTask`) decides whether the service and an in-progress recording survive task removal
 
 ### Native Module Entry Points
 - iOS: `ios/audioapi/ios/AudioAPIModule.mm`

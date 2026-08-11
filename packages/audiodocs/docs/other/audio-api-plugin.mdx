@@ -18,6 +18,7 @@ interface Options {
   androidPermissions: string[];
   androidForegroundService: boolean;
   androidFSTypes: string[];
+  androidFSStopWithTask?: boolean;
 }
 ```
 
@@ -133,3 +134,15 @@ Types description:
 Runtime prerequisites:
 
 - Request and be granted the RECORD_AUDIO runtime permission.
+
+### `androidFSStopWithTask`
+
+Defaults to `true`.
+
+Controls the `android:stopWithTask` attribute of the Foreground Service injected by the plugin. With the default value (`true`), the service stops when the user swipes the app away from the recents screen.
+
+Set it to `false` to emit `android:stopWithTask="false"` on the service entry — on task removal the service keeps running, which keeps the app process (and e.g. an in-progress recording) alive.
+
+:::info
+The Foreground Service only exists while a library notification is shown, so this option has an effect only if a notification (e.g. via `RecordingNotificationManager.show()`) is displayed before the user closes the app. See [keeping the recording alive when the app is closed](/docs/inputs/audio-recorder#keeping-the-recording-alive-when-the-app-is-closed) for the full set of requirements.
+:::
