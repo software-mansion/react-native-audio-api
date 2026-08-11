@@ -29,7 +29,9 @@ Golden references: `GainNodeHostObject.h/.cpp` (effect node), `OscillatorNodeHos
 - **Match property names exactly.** The string in `JSI_EXPORT_PROPERTY_GETTER` becomes the JS property name. A typo means the property doesn't exist in JS.
 - **Clear callback IDs in the destructor** for any HO that registers audio events. Otherwise the audio thread fires into a destroyed JS function.
 - **Call `setExternalMemoryPressure`** when returning HOs or typed arrays backed by large native buffers.
+- **Use `jsiutils::throwException()`** from `audioapi/jsi/JsiUtils.h` when throwing a named JS error (for example, `InvalidAccessError`) instead of rebuilding the `Error` object in a HostObject.
 - **Shadow state must be initialized** from `options` in the constructor — JS may read a property before ever setting it.
+- **Typed node pointers are `T *const`.** Mirror `AudioNode *const audioNode_` — declare as `GainNode *const gainNode_;` (const pointer, mutable object), initialize in the ctor initializer list via `typedAudioNode<T>(node_)`. Never use `T *foo_ = nullptr`.
 
 ---
 
@@ -72,6 +74,8 @@ HostObjects/
 │   ├── StereoPannerNodeHostObject.h/.cpp
 │   ├── WaveShaperNodeHostObject.h/.cpp
 │   ├── ConvolverNodeHostObject.h/.cpp
+│   ├── ChannelMergerNodeHostObject.h/.cpp   # Composite: routes inputs to slot hosts
+│   ├── ChannelSplitterNodeHostObject.h/.cpp # Composite: routes outputs from slot hosts
 │   ├── WorkletNodeHostObject.h/.cpp
 │   └── WorkletProcessingNodeHostObject.h/.cpp
 ├── sources/

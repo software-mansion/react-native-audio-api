@@ -282,7 +282,8 @@ class InnerChannel {
       : capacity_(next_power_of_2(capacity)),
         capacity_mask_(capacity_ - 1),
         buffer_(
-            static_cast<T *>(operator new[](capacity_ * sizeof(T), std::align_val_t{alignof(T)}))) {
+            static_cast<T *>(
+                ::operator new[](capacity_ * sizeof(T), std::align_val_t{alignof(T)}))) {
     // Initialize reader state for overwrite strategy
     if constexpr (Strategy == OverflowStrategy::OVERWRITE_ON_FULL) {
       oldestOccupied_.store(false, std::memory_order_relaxed);
@@ -301,8 +302,11 @@ class InnerChannel {
       i = next_index(i);
     }
 
-    // Deallocate the buffer
-    ::operator delete[](buffer_, capacity_ * sizeof(T), std::align_val_t{alignof(T)});
+    // Pair with aligned new[] above. Prefer the (ptr, align) overload — the
+    // sized (ptr, size, align) form is unavailable under Clang + libstdc++ when
+    // sized deallocation is not enabled (Ubuntu CI coverage builds).
+    // We choose higher compatibility over negligible performance improvements.
+    ::operator delete[](buffer_, std::align_val_t{alignof(T)});
   }
 
   /// @brief Try to send a value to the channel

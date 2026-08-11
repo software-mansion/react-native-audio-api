@@ -29,6 +29,9 @@ react-native-audio-api/
 │   │   └── src/main/cpp/audioapi/
 │   │       └── CMakeLists.txt          # Actual Android C++ build target
 │   ├── common/cpp/audioapi/            # Shared C++ (used by all platforms)
+│   │   ├── decoding/                   # Decoder factory, backends, SeekDecoderDaemon, AudioDecoding, AudioFileConcatenator
+│   │   ├── encoding/                   # AudioEncoder interface, EncoderCapabilities, OS encoder/remux selector headers
+│   │   ├── libs/                       # Third-party wrappers (FFmpeg, miniaudio, pffft, …)
 │   │   └── external/                   # Prebuilt binaries per platform
 │   │       ├── android/                # .a static libs (Opus, Ogg, Vorbis, OpenSSL)
 │   │       ├── iphoneos/               # iOS device .a libs
@@ -51,6 +54,12 @@ react-native-audio-api/
         └── ios/
             └── Podfile                 # Consumer Podfile (new arch enabled)
 ```
+
+---
+
+## C++ Header File Extensions
+
+In `common/cpp/audioapi/`: `.hpp` = header-only templates; `.h` = non-template (usually with a `.cpp`). Vendored code is excluded.
 
 ---
 
@@ -193,6 +202,7 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 |---|---|---|
 | TS build (`bob build`) | Yes | `--fast` |
 | C++ test subset (`RunTests.sh`) | Yes | `--fast` |
+| C++ coverage (`RunCoverage.sh`, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
 | Jest | Yes | `--fast` |
 | Graph tests | No, path-filtered in `graph-tests.yml` | `--graph` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
@@ -245,10 +255,23 @@ cd build && make -j10
 
 The `build/` directory is deleted after each run.
 
+### Coverage (Clang / llvm-cov)
+
+```bash
+yarn workspace react-native-audio-api test:cpp:coverage
+# open packages/react-native-audio-api/common/cpp/test/coverage-html/index.html
+```
+
+`RunCoverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the same gtest filter as `RunTests.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
+
+CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM apt packages, separate from the GCC `cpp-tests` job). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. Manual `workflow_dispatch` on `tests.yml` accepts booleans `run_cpp_tests` / `run_cpp_coverage` / `run_js_tests` (default true); PRs always run all three.
+
+> **Generated build trees must be named `build*`.** The C++ linters walk the filesystem with `find` and never consult git, so a `.gitignore` entry does not keep generated sources out of them. Exclusion happens by directory name in two places that must stay in sync: `**/build*/**` in `.clang-format-ignore` (used by `format:check:common`) and `-type d -name 'build*' -prune` in `scripts/cpplint.sh`. A CMake binary directory outside that prefix makes the pre-commit hook fail on generated files such as `CMakeFiles/*/CompilerIdCXX/CMakeCXXCompilerId.cpp`. CI never hits this because it checks out a clean tree.
+
 ### Key design decisions
 - Completely standalone — no Gradle, no Xcode, no prebuilt Android libraries needed
 - Sources resolved from `node_modules` (symlinked to `packages/` in yarn workspaces)
-- HostObjects, worklets nodes, AudioContext, and FFmpegDecoding are excluded from the test build
+- HostObjects, worklets nodes, AudioContext, and FfmpegDecoder are excluded from the test build
 - Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_FFMPEG_DISABLED=1`
 - Google Test auto-fetched via `FetchContent` if not installed locally
 - New test files in `test/src/**/*.cpp` are picked up automatically by glob — no CMakeLists edit needed
@@ -268,6 +291,8 @@ For `MockAudioEventHandlerRegistry`, `TestableXxx` pattern, and full CMakeLists 
 | `HAVE_X86_SSE2` | Set by CMake SIMD detection | Not used | Set by CMake SIMD detection |
 | `HAVE_ACCELERATE` | Not set | `GCC_PREPROCESSOR_DEFINITIONS` | Not set |
 | `RN_AUDIO_API_TEST` | Not set | Not set | Always set to 1 |
+
+**OS-API selector headers** (`decoding/OSDecoding.h`, `encoding/OSEncoding.h`, `encoding/OSRemux.h`): common code reaches platform implementations through `#if defined(__ANDROID__)` / `#elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST)` dispatch. The Apple branch must exclude `RN_AUDIO_API_TEST` because desktop test builds run on macOS (where `__APPLE__` is defined) but do not compile the `ios/` sources. Platform glue selected this way lives in `android/src/main/cpp/audioapi/android/` (e.g. `AndroidDecoding`, `AndroidEncoding`, `AndroidRemux`) and `ios/audioapi/ios/core/utils/` (e.g. `IOSDecoding`, `IOSEncoding`, `IOSRemux`) — both picked up automatically by the CMake glob / podspec glob, no build-file edits needed.
 
 ---
 

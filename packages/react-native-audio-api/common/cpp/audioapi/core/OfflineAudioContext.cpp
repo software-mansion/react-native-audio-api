@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
+#include <string>
 #include <thread>
 #include <utility>
 
@@ -25,39 +26,69 @@ OfflineAudioContext::OfflineAudioContext(
       currentSampleFrame_(0),
       audioBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels, sampleRate)),
-      resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {}
+      resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {
+  // The graph is built entirely before startRendering() spawns the render
+  // (consumer) thread. Until then there is no consumer draining the bounded
+  // graph-event channel, so a large graph would otherwise fill it and block
+  // the producer forever. Let the producing thread drain it itself for now;
+  // renderAudio() hands draining back to the render thread.
+  getGraph()->setProducerSelfDrain(true);
+}
 
-void OfflineAudioContext::resume() {
-  std::scoped_lock lock(driverMutex_);
-
-  if (getState() == ContextState::RUNNING) {
+void OfflineAudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+  // Control-message body: no locking. Serialized by `scheduleAudioEvent`
+  // (sync under `driverMutex_`, or drained on the offline render thread which
+  // already holds `driverMutex_` around `processGraph`).
+  if (!renderingStarted_ || getState() == ContextState::CLOSED) {
+    ContextPromiseResolver<void>::reject(
+        promise, "Cannot resume an offline audio context that is not suspended.");
     return;
   }
 
-  renderAudio();
+  if (getState() == ContextState::RUNNING) {
+    ContextPromiseResolver<void>::reject(
+        promise, "Cannot resume an offline audio context that is already running.");
+    return;
+  }
+
+  renderAudio(promise);
 }
 
-void OfflineAudioContext::suspend(double when, const std::function<void()> &callback) {
-  std::scoped_lock lock(driverMutex_);
-
-  // we can only suspend once per render quantum at the end of the quantum
-  // first quantum is [0, RENDER_QUANTUM_SIZE)
+bool OfflineAudioContext::suspend(
+    double when,
+    const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+  // Control-message body: no locking (see `resume`).
   auto frame = static_cast<size_t>(when * getSampleRate());
   frame = RENDER_QUANTUM_SIZE * ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
 
-  if (scheduledSuspends_.contains(frame)) {
-    throw std::runtime_error(
-        "cannot schedule more than one suspend at frame " + std::to_string(frame) + " (" +
-        std::to_string(when) + " seconds)");
+  if (frame == 0 || frame <= currentSampleFrame_ || frame >= length_) {
+    ContextPromiseResolver<void>::reject(
+        promise, "The suspend time must be within the remaining render duration.");
+    return false;
   }
 
-  scheduledSuspends_.emplace(frame, callback);
+  if (scheduledSuspends_.contains(frame)) {
+    ContextPromiseResolver<void>::reject(
+        promise,
+        "cannot schedule more than one suspend at frame " + std::to_string(frame) + " (" +
+            std::to_string(when) + " seconds)");
+    return false;
+  }
+
+  scheduledSuspends_.emplace(frame, promise);
+  return true;
 }
 
-void OfflineAudioContext::renderAudio() {
-  setState(ContextState::RUNNING);
+void OfflineAudioContext::renderAudio(
+    const std::shared_ptr<ContextPromiseResolver<void>> &resumePromise) {
+  // Flush while we are still the sole consumer, then hand the channel to the
+  // render thread.
+  getGraph()->processEvents();
+  getGraph()->setProducerSelfDrain(false);
 
-  std::thread([this]() {
+  std::thread([this, resumePromise = resumePromise]() mutable {
+    ContextPromiseResolver<void>::resolve(resumePromise);
+
     while (currentSampleFrame_ < length_) {
       Locker locker(driverMutex_);
       int framesToProcess =
@@ -74,27 +105,38 @@ void OfflineAudioContext::renderAudio() {
       auto suspend = scheduledSuspends_.find(currentSampleFrame_);
       if (suspend != scheduledSuspends_.end()) {
         assert(currentSampleFrame_ < length_);
-        auto callback = suspend->second;
+        auto promise = std::move(suspend->second);
         scheduledSuspends_.erase(currentSampleFrame_);
-        setState(ContextState::SUSPENDED);
         processAudioEvents();
+        // The render thread is about to exit; with no consumer again, let the
+        // producer self-drain any graph mutations made from the suspend
+        // callback until resume() restarts rendering.
+        getGraph()->setProducerSelfDrain(true);
+        getGraph()->processEvents();
         locker.unlock();
-        callback();
+        ContextPromiseResolver<void>::resolve(promise);
         return;
       }
     }
 
-    // Rendering completed
-    resultCallback_(resultBuffer_);
-    setState(ContextState::CLOSED);
+    OfflineAudioContextResultPromise::resolve(resultPromise_, resultBuffer_);
   }).detach();
 }
 
-void OfflineAudioContext::startRendering(OfflineAudioContextResultCallback callback) {
-  std::scoped_lock lock(driverMutex_);
+void OfflineAudioContext::startRendering(
+    const std::shared_ptr<OfflineAudioContextResultPromise> &promise) {
+  if (renderingStarted_) {
+    OfflineAudioContextResultPromise::reject(
+        promise, "Offline audio rendering has already started.");
+    return;
+  }
 
-  resultCallback_ = std::move(callback);
-  renderAudio();
+  renderingStarted_ = true;
+  resultPromise_ = promise;
+  auto runningStatePromise = std::make_shared<ContextPromiseResolver<void>>(
+      [self = shared_from_this()]() { self->setState(ContextState::RUNNING); },
+      [](const std::string &) {});
+  renderAudio(runningStatePromise);
 }
 
 bool OfflineAudioContext::isDriverRunning() const {

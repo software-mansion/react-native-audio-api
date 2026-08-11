@@ -44,7 +44,7 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   }
 
  protected:
-  AudioBufferSourceNode *audioBufferSourceNode_ = nullptr;
+  AudioBufferSourceNode *const audioBufferSourceNode_;
 
   bool loop_;
   bool loopSkip_;

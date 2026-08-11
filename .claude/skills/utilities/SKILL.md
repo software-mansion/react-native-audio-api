@@ -211,9 +211,9 @@ RAII mutex wrapper that can hold `nullptr` (no-op). Supports `Locker::tryLock(mu
 
 ## `common/cpp/audioapi/dsp/` — DSP helpers
 
-### `AudioUtils.hpp` — inline DSP math
+### `AudioUtils.h` — inline DSP math
 
-Provides `timeToSampleFrame()`, `sampleFrameToTime()`, `linearInterpolate()`, `linearToDecibels()`, `decibelsToLinear()`.
+Provides `timeToSampleFrame()`, `sampleFrameToTime()`, `linearInterpolate()`, `linearToDecibels()`, `decibelsToLinear()`, `uint8ToFloat()` (LE int16 bytes → float).
 
 For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
@@ -231,7 +231,33 @@ Higher-level DSP blocks. Read each header before use.
 
 ---
 
+### `SpectrumAnalyser.h` — shared windowed-FFT magnitude spectrum
+
+Owns FFT scratch state (Blackman window, temp array, complex scratch, magnitude
+output) for the windowed-FFT → linear-magnitude → exponential-smoothing pipeline.
+Shared by `AnalyserNode` (`core/analysis/`) and `WorkletNode`
+(`react-native-audio-worklets`, frequency-domain mode) to avoid duplicating that
+math — each node keeps its own input buffering/threading and just calls
+`analyze(timeDomain, smoothingTimeConstant)`, then reads `getMagnitudeData()`.
+Exported via `StableAPI.h` for the worklets extension package. Not thread-safe;
+call `analyze()`/`setFFTSize()` from a single thread.
+
+---
+
 ## `src/utils/` — TypeScript utilities
+
+### `index.ts`
+
+```ts
+import { clamp, toFloat32Array, assertFiniteSequence } from './utils';
+
+clamp(value, min, max)                         // clamp a number to [min, max]
+toFloat32Array(values)                         // number[] → Float32Array (passthrough if already)
+toFloat32Array(undefined)                      // → undefined (overload)
+assertFiniteSequence(values, errorMessage)     // throws TypeError if any value is non-finite
+```
+
+Use `toFloat32Array` when accepting `number[] | Float32Array` options. Use `assertFiniteSequence` in options validators (e.g. PeriodicWave `real`/`imag`).
 
 ### `paths.ts`
 

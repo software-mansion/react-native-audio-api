@@ -3,7 +3,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/jsi/JsiUtils.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -20,7 +20,7 @@
 namespace audioapi {
 
 AudioRecorderHostObject::AudioRecorderHostObject(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker) {
 #ifdef ANDROID
@@ -47,6 +47,8 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnError),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration));
+
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, inputLatency));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
@@ -217,6 +219,10 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getCurrentDuration) {
   double duration = audioRecorder_->getCurrentDuration();
   return jsi::Value(duration);
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioRecorderHostObject, inputLatency) {
+  return jsi::Value(audioRecorder_->getInputLatency());
 }
 
 } // namespace audioapi

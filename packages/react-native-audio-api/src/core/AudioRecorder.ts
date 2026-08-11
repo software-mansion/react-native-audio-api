@@ -3,7 +3,7 @@ import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
 } from '../events/types';
-import { IAudioRecorder } from '../jsi-interfaces';
+import { IAudioRecorder, IRecorderAdapterNode } from '../jsi-interfaces';
 import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
@@ -45,6 +45,7 @@ export default class AudioRecorder {
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
   private isFileOutputEnabled: boolean = false;
+  private adapterNode: IRecorderAdapterNode | null = null;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
     globalThis.AudioEventEmitter
@@ -114,10 +115,15 @@ export default class AudioRecorder {
 
   /** Connects the recorder to a destination node. */
   connect(context: BaseAudioContext, destination: AudioNode): AudioNode {
-    const adapter = context.context.createRecorderAdapter();
-    this.recorder.connect(adapter);
+    if (this.adapterNode == null) {
+      const adapter = context.context.createRecorderAdapter();
+      this.adapterNode = adapter;
+      this.recorder.connect(adapter);
+    }
+
     // @ts-expect-error node is protected, but we need to access it here
-    adapter.connect(destination.node);
+    this.adapterNode.connect(destination.node);
+
     return destination;
   }
 
@@ -129,6 +135,7 @@ export default class AudioRecorder {
    */
   disconnect(): void {
     this.recorder.disconnect();
+    this.adapterNode = null;
   }
 
   /**
@@ -202,6 +209,10 @@ export default class AudioRecorder {
 
   getCurrentDuration(): number {
     return this.recorder.getCurrentDuration();
+  }
+
+  get inputLatency(): number {
+    return this.recorder.inputLatency;
   }
 
   onError(callback: (error: OnRecorderErrorEventType) => void): void {

@@ -13,7 +13,7 @@ namespace audioapi {
 class OsAudioFileWriter : public AndroidFileWriterBackend {
  public:
   OsAudioFileWriter(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
       float streamSampleRate,
       int32_t streamChannelCount,

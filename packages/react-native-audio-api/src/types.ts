@@ -150,6 +150,14 @@ export interface GainOptions extends AudioNodeOptions {
   gain?: number;
 }
 
+export interface ChannelMergerOptions extends AudioNodeOptions {
+  numberOfInputs?: number;
+}
+
+export interface ChannelSplitterOptions extends AudioNodeOptions {
+  numberOfOutputs?: number;
+}
+
 export interface StereoPannerOptions extends AudioNodeOptions {
   pan?: number;
 }
@@ -173,20 +181,27 @@ export interface BiquadFilterOptions extends AudioNodeOptions {
   gain?: number;
 }
 
-export interface OscillatorOptions {
+export interface OscillatorOptions extends AudioNodeOptions {
   type?: OscillatorType;
   frequency?: number;
   detune?: number;
   periodicWave?: PeriodicWave;
 }
 
-interface BaseAudioBufferSourceOptions {
+interface BaseAudioBufferSourceOptions extends AudioNodeOptions {
   detune?: number;
   playbackRate?: number;
   pitchCorrection?: boolean;
 }
 
 export type AudioBufferQueueSourceOptions = BaseAudioBufferSourceOptions;
+
+export enum AudioBufferQueueSourceState {
+  IDLE,
+  PLAYING,
+  PAUSED,
+  STOPPED,
+}
 
 export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: AudioBufferLike;
@@ -209,7 +224,7 @@ export interface AudioFileSourceOptions extends AudioNodeOptions {
   preservesPitch?: boolean;
 }
 
-export interface ConstantSourceOptions {
+export interface ConstantSourceOptions extends AudioNodeOptions {
   offset?: number;
 }
 
@@ -218,8 +233,8 @@ export interface PeriodicWaveConstraints {
 }
 
 export interface PeriodicWaveOptions extends PeriodicWaveConstraints {
-  real?: Float32Array;
-  imag?: Float32Array;
+  real?: number[] | Float32Array;
+  imag?: number[] | Float32Array;
 }
 
 export interface AudioBufferOptions {

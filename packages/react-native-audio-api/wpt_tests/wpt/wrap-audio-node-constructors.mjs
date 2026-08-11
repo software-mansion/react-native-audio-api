@@ -13,6 +13,8 @@ const AUDIO_NODE_CONSTRUCTORS = [
   { name: 'AnalyserNode' },
   { name: 'AudioBufferSourceNode' },
   { name: 'BiquadFilterNode' },
+  { name: 'ChannelMergerNode' },
+  { name: 'ChannelSplitterNode' },
   { name: 'ConstantSourceNode' },
   { name: 'ConvolverNode' },
   { name: 'DelayNode' },

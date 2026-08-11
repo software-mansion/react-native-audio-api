@@ -6,7 +6,7 @@
 #include <memory>
 
 #if defined(__ANDROID__)
-#include <audioapi/AndroidEncoding.h>
+#include <audioapi/android/AndroidEncoding.h>
 #define RN_AUDIO_API_HAS_OS_ENCODER 1
 namespace audioapi::os_encoder {
 using Encoder = android_encoder::AndroidEncoder;

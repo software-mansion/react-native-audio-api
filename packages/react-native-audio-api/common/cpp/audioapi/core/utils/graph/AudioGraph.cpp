@@ -1,3 +1,4 @@
+#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/graph/AudioGraph.h>
 #include <utility>
 

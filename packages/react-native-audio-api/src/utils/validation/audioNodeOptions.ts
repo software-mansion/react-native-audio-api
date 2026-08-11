@@ -1,9 +1,22 @@
 import { NotSupportedError } from '../../errors';
 import { AudioNodeOptions } from '../../types';
 
-const MAX_CHANNEL_COUNT = 32;
+export const MAX_CHANNEL_COUNT = 32;
 const VALID_CHANNEL_COUNT_MODES = ['max', 'clamped-max', 'explicit'];
 const VALID_CHANNEL_INTERPRETATIONS = ['speakers', 'discrete'];
+
+/** Validates a `channelCount` attribute value (constructor options or setter). */
+export function validateChannelCount(channelCount: number): void {
+  if (
+    !Number.isInteger(channelCount) ||
+    channelCount < 1 ||
+    channelCount > MAX_CHANNEL_COUNT
+  ) {
+    throw new NotSupportedError(
+      `The channelCount value (${channelCount}) must be an integer between 1 and ${MAX_CHANNEL_COUNT}`
+    );
+  }
+}
 
 export function validateAudioNodeOptions(options?: AudioNodeOptions): void {
   if (!options) {
@@ -11,16 +24,7 @@ export function validateAudioNodeOptions(options?: AudioNodeOptions): void {
   }
 
   if (options.channelCount !== undefined) {
-    const { channelCount } = options;
-    if (
-      !Number.isInteger(channelCount) ||
-      channelCount < 1 ||
-      channelCount > MAX_CHANNEL_COUNT
-    ) {
-      throw new NotSupportedError(
-        `The channelCount value (${channelCount}) must be an integer between 1 and ${MAX_CHANNEL_COUNT}`
-      );
-    }
+    validateChannelCount(options.channelCount);
   }
 
   if (

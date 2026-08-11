@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/jsi/RuntimeInstanceCache.h>
+#include <audioapi/jsi/RuntimeInstanceCache.hpp>
 
 #include <jsi/jsi.h>
 #include <map>

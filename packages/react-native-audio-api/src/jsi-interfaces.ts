@@ -10,6 +10,8 @@ import type {
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
+  ChannelMergerOptions,
+  ChannelSplitterOptions,
   ConstantSourceOptions,
   ConvolverOptions,
   ContextState,
@@ -28,6 +30,13 @@ import type {
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
 
+export interface IOscillatorOptions extends Omit<
+  OscillatorOptions,
+  'periodicWave'
+> {
+  periodicWave?: IPeriodicWave;
+}
+
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly listener: IAudioListener;
@@ -37,7 +46,7 @@ export interface IBaseAudioContext {
   readonly decoder: IAudioDecoder;
 
   createRecorderAdapter(): IRecorderAdapterNode;
-  createOscillator(oscillatorOptions: OscillatorOptions): IOscillatorNode;
+  createOscillator(oscillatorOptions: IOscillatorOptions): IOscillatorNode;
   createConstantSource(
     constantSourceOptions: ConstantSourceOptions
   ): IConstantSourceNode;
@@ -64,23 +73,31 @@ export interface IBaseAudioContext {
   createAnalyser: (analyserOptions: AnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: ConvolverOptions) => IConvolverNode;
   createWaveShaper: (waveShaperOptions: WaveShaperOptions) => IWaveShaperNode;
+  createChannelMerger: (
+    channelMergerOptions: ChannelMergerOptions
+  ) => IChannelMergerNode;
+  createChannelSplitter: (
+    channelSplitterOptions: ChannelSplitterOptions
+  ) => IChannelSplitterNode;
   createFileSource: (
     audioFileOptions: AudioFileSourceOptions
   ) => IAudioFileSourceNode | null; // null when FFmpeg is not enabled, but needed
 }
 
 export interface IAudioContext extends IBaseAudioContext {
+  readonly baseLatency: number;
+  readonly outputLatency: number;
   createMediaElementSource: (
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;
-  close(): Promise<void>;
-  resume(): Promise<void>;
-  suspend(): Promise<void>;
+  close(): Promise<undefined>;
+  resume(): Promise<undefined>;
+  suspend(): Promise<undefined>;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
-  resume(): Promise<void>;
-  suspend(suspendTime: number): Promise<void>;
+  resume(): Promise<undefined>;
+  suspend(suspendTime: number): Promise<undefined>;
   startRendering(): Promise<IAudioBuffer>;
 }
 
@@ -88,12 +105,20 @@ export interface IAudioNode {
   readonly context: BaseAudioContext;
   readonly numberOfInputs: number;
   readonly numberOfOutputs: number;
-  readonly channelCount: number;
-  readonly channelCountMode: ChannelCountMode;
-  readonly channelInterpretation: ChannelInterpretation;
+  channelCount: number;
+  channelCountMode: ChannelCountMode;
+  channelInterpretation: ChannelInterpretation;
 
-  connect(destination: IAudioNode | IAudioParam): void;
-  disconnect(destination?: IAudioNode | IAudioParam): void;
+  connect(
+    destination: IAudioNode | IAudioParam,
+    output?: number,
+    input?: number
+  ): void;
+  disconnect(
+    destinationOrOutput?: IAudioNode | IAudioParam | number,
+    output?: number,
+    input?: number
+  ): void;
 }
 
 export interface IDelayNode extends IAudioNode {
@@ -104,6 +129,10 @@ export interface IDelayNode extends IAudioNode {
 export interface IGainNode extends IAudioNode {
   readonly gain: IAudioParam;
 }
+
+export interface IChannelMergerNode extends IAudioNode {}
+
+export interface IChannelSplitterNode extends IAudioNode {}
 
 export interface IStereoPannerNode extends IAudioNode {
   readonly pan: IAudioParam;
@@ -200,6 +229,7 @@ export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode 
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   start: (when?: number, offset?: number) => void;
   pause: () => void;
+  resume: (when?: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onBufferEnded: string;
@@ -324,6 +354,8 @@ export interface IAudioRecorder {
 
   getCurrentDuration: () => number;
   getFilePath: () => string | null;
+
+  readonly inputLatency: number;
 }
 
 export interface IAudioDecoder {

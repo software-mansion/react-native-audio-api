@@ -16,14 +16,6 @@
     "reason": "requires browser visibility/permission-policy infrastructure"
   },
   {
-    "pattern": "audionode-channel-rules.html",
-    "reason": "hangs native offline renderer on large discrete-mixing graphs (engine bug, tracked separately)"
-  },
-  {
-    "pattern": "audiobuffersource-null.html",
-    "reason": "SIGSEGV in Node WPT runner when buffer is set then cleared to null before offline render (engine bug, tracked separately)"
-  },
-  {
     "pattern": "-crash.html",
     "reason": "browser crashtests without testharness stall the Node runner"
   },
@@ -40,6 +32,10 @@
     "reason": "requires WPT /common/get-host-info.sub.js and cross-origin iframe infrastructure not available in Node harness"
   },
   {
+    "pattern": "audionode-iframe",
+    "reason": "requires iframe DOM infrastructure; Node/jsdom harness cannot create a separate AudioContext realm in an iframe"
+  },
+  {
     "pattern": "cors-check.https.html",
     "reason": "requires WPT /common/get-host-info.sub.js and cross-origin infrastructure not available in Node harness"
   },
@@ -54,5 +50,9 @@
   {
     "pattern": "test-analyser-minimum.html",
     "reason": "requires createScriptProcessor (ScriptProcessorNode), which is not implemented"
+  },
+  {
+    "pattern": "the-channelmergernode-interface/active-processing.https.html",
+    "reason": "requires AudioWorklet"
   }
 ]

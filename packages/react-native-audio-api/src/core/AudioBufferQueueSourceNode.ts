@@ -1,20 +1,24 @@
 import { IAudioBufferQueueSourceNode } from '../jsi-interfaces';
 import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
-import { RangeError } from '../errors';
+import { InvalidStateError, RangeError } from '../errors';
 import type BaseAudioContext from './BaseAudioContext';
-import { AudioBufferQueueSourceOptions } from '../types';
+import {
+  AudioBufferQueueSourceOptions,
+  AudioBufferQueueSourceState,
+} from '../types';
 import { OnBufferEndEventType } from '../events/types';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
   private onBufferEndedCallback?: (event: OnBufferEndEventType) => void;
+  private state: AudioBufferQueueSourceState = AudioBufferQueueSourceState.IDLE;
 
   constructor(
     context: BaseAudioContext,
     options?: AudioBufferQueueSourceOptions
   ) {
     const node = context.context.createBufferQueueSource(options || {});
-    super(context, node);
+    super(context, node, options);
   }
 
   public enqueueBuffer(buffer: AudioBuffer): string {
@@ -37,7 +41,7 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     (this.node as IAudioBufferQueueSourceNode).clearBuffers();
   }
 
-  public override start(when: number = 0, offset: number = -1): void {
+  public override start(when: number = 0, offset: number = 0): void {
     if (when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
@@ -50,6 +54,11 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
       );
     }
 
+    if (this.state !== AudioBufferQueueSourceState.IDLE) {
+      throw new InvalidStateError('Cannot call start more than once');
+    }
+    this.state = AudioBufferQueueSourceState.PLAYING;
+
     (this.node as IAudioBufferQueueSourceNode).start(when, offset);
   }
 
@@ -59,6 +68,7 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
         `when must be a finite non-negative number: ${when}`
       );
     }
+    this.state = AudioBufferQueueSourceState.STOPPED;
 
     (this.node as IAudioBufferQueueSourceNode).stop(when);
   }
@@ -89,6 +99,30 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
   }
 
   public pause(): void {
+    if (this.state !== AudioBufferQueueSourceState.PLAYING) {
+      throw new InvalidStateError(
+        'Cannot call pause when the node is not playing'
+      );
+    }
+    this.state = AudioBufferQueueSourceState.PAUSED;
+
     (this.node as IAudioBufferQueueSourceNode).pause();
+  }
+
+  public resume(when: number = 0): void {
+    if (when < 0) {
+      throw new RangeError(
+        `when must be a finite non-negative number: ${when}`
+      );
+    }
+
+    if (this.state !== AudioBufferQueueSourceState.PAUSED) {
+      throw new InvalidStateError(
+        'Cannot call resume without calling pause first'
+      );
+    }
+    this.state = AudioBufferQueueSourceState.PLAYING;
+
+    (this.node as IAudioBufferQueueSourceNode).resume(when);
   }
 }

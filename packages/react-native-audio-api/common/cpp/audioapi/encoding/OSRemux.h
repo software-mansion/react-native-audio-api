@@ -6,7 +6,7 @@
 #include <vector>
 
 #if defined(__ANDROID__)
-#include <audioapi/AndroidRemux.h>
+#include <audioapi/android/AndroidRemux.h>
 #define RN_AUDIO_API_HAS_OS_REMUX 1
 #elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST)
 #include <audioapi/ios/core/utils/IOSRemux.h>

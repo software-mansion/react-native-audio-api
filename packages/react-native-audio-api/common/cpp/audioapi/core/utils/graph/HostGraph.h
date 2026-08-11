@@ -161,6 +161,14 @@ class HostGraph {
   /// @return single AGEvent that removes all inputs on the AudioGraph side, or NODE_NOT_FOUND.
   Res removeAllEdges(Node *from);
 
+  /// @brief Recomputes channel-count negotiation starting at `node` (and
+  /// cascading downstream toward AudioDestinationNode), without any structural
+  /// change. Used when a node's `channelCount` / `channelCountMode` attribute
+  /// changes after construction. The returned AGEvent applies the negotiated
+  /// buffer swaps on the audio thread and marks the graph dirty.
+  /// @return AGEvent to replay on AudioGraph, or NODE_NOT_FOUND.
+  Res renegotiateNodeChannels(Node *node);
+
   /// @brief Current number of live (non-ghost) edges.
   [[nodiscard]] size_t edgeCount() const;
 

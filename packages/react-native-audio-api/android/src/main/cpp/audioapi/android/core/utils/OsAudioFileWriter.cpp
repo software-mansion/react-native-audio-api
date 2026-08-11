@@ -1,4 +1,4 @@
-#include <audioapi/AndroidEncoding.h>
+#include <audioapi/android/AndroidEncoding.h>
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/core/utils/OsAudioFileWriter.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
@@ -14,7 +14,7 @@
 namespace audioapi {
 
 OsAudioFileWriter::OsAudioFileWriter(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     float streamSampleRate,
     int32_t streamChannelCount,

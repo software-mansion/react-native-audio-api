@@ -1,12 +1,11 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/HostObjects/TypedAudioNodePtr.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 #include <audioapi/core/sources/AudioBufferBaseSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/types/NodeOptions.h>
 
-#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>

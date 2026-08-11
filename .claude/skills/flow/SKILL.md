@@ -74,7 +74,7 @@ See the `audio-nodes` skill for the full contract. **If unsure which base class 
 
 1. Create `core/<category>/MyNode.h` and `MyNode.cpp`.
 2. Subclass the right base (`AudioNode`, `AudioScheduledSourceNode`, `AudioBufferBaseSourceNode`).
-3. Annotate every method with `// JS-thread only` or `// Audio-thread only`.
+3. Annotate every method with `/// @note JS Thread only` or `/// @note Audio Thread only`.
 4. Declare `processNode()` in `protected:` — audio thread.
 5. Preallocate all `AudioParam`s and scratch buffers in the constructor (JS thread).
 6. Add `createMyNode(const MyNodeOptions &options)` factory to `BaseAudioContext`.
@@ -112,14 +112,17 @@ Files: `packages/react-native-audio-api/src/core/`
    import { MyNodeOptions } from '../types';
 
    export default class MyNode extends AudioNode implements IMyNode {
-     constructor(context: BaseAudioContext, options: MyNodeOptions) {
-       const node = context.context.createMyNode(options);
-       super(context, node);
+     constructor(context: BaseAudioContext, options?: MyNodeOptions) {
+       // Node-specific validation (if any) goes here, before create.
+       const node = context.context.createMyNode(options || {});
+       // Pass options so AudioNode validates channelCount / mode / interpretation.
+       super(context, node, options);
      }
      // getters/setters forwarded to (this.node as IMyNode)
    }
    ```
 
+   `MyNodeOptions` must extend `AudioNodeOptions`. Shared `AudioNodeOptions` validation lives in `AudioNode`'s constructor (`validateAudioNodeOptions`) — do not re-validate those fields in per-node validators.
 2. Add a factory method `createMyNode(options?)` to `src/core/BaseAudioContext.ts`.
 
 3. Export from `src/index.ts`.

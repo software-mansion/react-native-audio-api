@@ -14,4 +14,7 @@ std::string argToString(
     size_t index,
     const std::string &defaultValue = "");
 
+[[noreturn]] void
+throwException(jsi::Runtime &runtime, const char *name, const std::string &message);
+
 } // namespace audioapi::jsiutils

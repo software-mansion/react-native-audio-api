@@ -29,8 +29,8 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/software-mansion/react-native-audio-api.git", :tag => "#{s.version}" }
 
   s.subspec "audioapi" do |ss|
-    ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h,hpp}", "common/cpp/test/src/graph/AudioThreadGuard.cpp"
-    ss.exclude_files = $RN_AUDIO_API_FFMPEG_DISABLED ? ["common/cpp/audioapi/libs/ffmpeg/**"] : []
+    ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h,hpp}"
+    ss.exclude_files = $RN_AUDIO_API_FFMPEG_DISABLED ? ["common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp"] : []
     ss.header_dir = "audioapi"
     ss.header_mappings_dir = "common/cpp/audioapi"
 
@@ -56,7 +56,7 @@ Pod::Spec.new do |s|
     end
   end
 
-  s.ios.frameworks = 'Accelerate', 'AVFoundation', 'MediaPlayer'
+  s.ios.frameworks = 'Accelerate', 'AVFoundation', 'AudioToolbox', 'MediaPlayer'
 
   s.prepare_command = <<-CMD
     chmod +x scripts/download-prebuilt-binaries.sh
@@ -138,6 +138,7 @@ Pod::Spec.new do |s|
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
     "GCC_PREPROCESSOR_DEFINITIONS[config=Debug]" => '$(inherited) HAVE_ACCELERATE=1 DEBUG=1',
+    "EXCLUDED_SOURCE_FILE_NAMES[config=Release]" => 'AudioThreadGuard.cpp',
     'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{ffmpeg_flag} #{static_external_libs_flag}",
   }
 

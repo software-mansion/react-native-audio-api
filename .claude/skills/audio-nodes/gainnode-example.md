@@ -13,16 +13,16 @@ namespace audioapi {
 
 class GainNode : public AudioNode {
  public:
-  // JS-thread only
+  /// @note JS Thread only
   explicit GainNode(
       const std::shared_ptr<BaseAudioContext> &context,
       const GainOptions &options);
 
-  // JS-thread only
+  /// @note JS Thread only
   [[nodiscard]] std::shared_ptr<AudioParam> getGainParam() const;
 
  protected:
-  // Audio-thread only
+  /// @note Audio Thread only
   std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
       int framesToProcess) override;

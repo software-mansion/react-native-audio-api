@@ -142,7 +142,6 @@ const Record: FC = () => {
       `recording.${extension}`
     );
 
-    console.log(info.paths.length);
     const finalPath = await concatAudioFiles(info.paths, outputPath);
     const audioBuffer = await audioContext.decodeAudioData(finalPath);
     setRecordedBuffer(audioBuffer);

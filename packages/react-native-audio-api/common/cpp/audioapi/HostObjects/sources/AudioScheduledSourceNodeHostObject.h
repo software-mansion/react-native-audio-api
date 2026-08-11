@@ -3,6 +3,7 @@
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/types/NodeOptions.h>
 
+#include <audioapi/utils/Macros.h>
 #include <memory>
 
 namespace audioapi {
@@ -18,13 +19,14 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
       const AudioScheduledSourceNodeOptions &options = AudioScheduledSourceNodeOptions());
 
   ~AudioScheduledSourceNodeHostObject() override;
+  DELETE_COPY_AND_MOVE(AudioScheduledSourceNodeHostObject);
 
   JSI_PROPERTY_SETTER_DECL(onEnded);
 
-  JSI_HOST_FUNCTION_DECL(start);
+  virtual JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);
 
  protected:
-  AudioScheduledSourceNode *scheduledSourceNode_ = nullptr;
+  AudioScheduledSourceNode *const scheduledSourceNode_;
 };
 } // namespace audioapi

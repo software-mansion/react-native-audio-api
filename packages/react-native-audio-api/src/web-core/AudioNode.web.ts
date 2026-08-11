@@ -6,9 +6,6 @@ export default class AudioNode {
   readonly context: BaseAudioContext;
   readonly numberOfInputs: number;
   readonly numberOfOutputs: number;
-  readonly channelCount: number;
-  readonly channelCountMode: ChannelCountMode;
-  readonly channelInterpretation: ChannelInterpretation;
 
   readonly node: globalThis.AudioNode;
 
@@ -17,12 +14,37 @@ export default class AudioNode {
     this.node = node;
     this.numberOfInputs = this.node.numberOfInputs;
     this.numberOfOutputs = this.node.numberOfOutputs;
-    this.channelCount = this.node.channelCount;
-    this.channelCountMode = this.node.channelCountMode;
-    this.channelInterpretation = this.node.channelInterpretation;
   }
 
-  public connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+  public get channelCount(): number {
+    return this.node.channelCount;
+  }
+
+  public set channelCount(value: number) {
+    this.node.channelCount = value;
+  }
+
+  public get channelCountMode(): ChannelCountMode {
+    return this.node.channelCountMode as ChannelCountMode;
+  }
+
+  public set channelCountMode(value: ChannelCountMode) {
+    this.node.channelCountMode = value;
+  }
+
+  public get channelInterpretation(): ChannelInterpretation {
+    return this.node.channelInterpretation as ChannelInterpretation;
+  }
+
+  public set channelInterpretation(value: ChannelInterpretation) {
+    this.node.channelInterpretation = value;
+  }
+
+  public connect(
+    destination: AudioNode | AudioParam,
+    output: number = 0,
+    input: number = 0
+  ): AudioNode | AudioParam {
     if (this.context !== destination.context) {
       throw new Error(
         'Source and destination are from different BaseAudioContexts'
@@ -30,24 +52,44 @@ export default class AudioNode {
     }
 
     if (destination instanceof AudioParam) {
-      this.node.connect(destination.param);
+      this.node.connect(destination.param, output);
     } else {
-      this.node.connect(destination.node);
+      this.node.connect(destination.node, output, input);
     }
 
     return destination;
   }
 
-  public disconnect(destination?: AudioNode | AudioParam): void {
-    if (destination === undefined) {
+  public disconnect(
+    destinationOrOutput?: AudioNode | AudioParam | number,
+    output?: number,
+    input?: number
+  ): void {
+    if (destinationOrOutput === undefined) {
       this.node.disconnect();
       return;
     }
 
-    if (destination instanceof AudioParam) {
-      this.node.disconnect(destination.param);
+    if (typeof destinationOrOutput === 'number') {
+      this.node.disconnect(destinationOrOutput);
       return;
     }
-    this.node.disconnect(destination.node);
+
+    if (destinationOrOutput instanceof AudioParam) {
+      if (output === undefined) {
+        this.node.disconnect(destinationOrOutput.param);
+      } else {
+        this.node.disconnect(destinationOrOutput.param, output);
+      }
+      return;
+    }
+
+    if (output === undefined) {
+      this.node.disconnect(destinationOrOutput.node);
+    } else if (input === undefined) {
+      this.node.disconnect(destinationOrOutput.node, output);
+    } else {
+      this.node.disconnect(destinationOrOutput.node, output, input);
+    }
   }
 }

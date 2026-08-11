@@ -17,7 +17,9 @@ using namespace facebook;
 
 class AudioNode;
 
-class AudioNodeHostObject : public HostObject, public utils::graph::HostNode {
+class AudioNodeHostObject : public HostObject,
+                            public utils::graph::HostNode,
+                            public std::enable_shared_from_this<AudioNodeHostObject> {
  public:
   explicit AudioNodeHostObject(
       const std::shared_ptr<utils::graph::Graph> &graph,
@@ -31,6 +33,10 @@ class AudioNodeHostObject : public HostObject, public utils::graph::HostNode {
   JSI_PROPERTY_GETTER_DECL(channelCountMode);
   JSI_PROPERTY_GETTER_DECL(channelInterpretation);
 
+  JSI_PROPERTY_SETTER_DECL(channelCount);
+  JSI_PROPERTY_SETTER_DECL(channelCountMode);
+  JSI_PROPERTY_SETTER_DECL(channelInterpretation);
+
   using utils::graph::HostNode::connect;
   using utils::graph::HostNode::disconnect;
 
@@ -42,10 +48,31 @@ class AudioNodeHostObject : public HostObject, public utils::graph::HostNode {
   }
 
  protected:
+  /// @brief Returns the graph host node that outgoing edges for the given
+  /// output index should originate from. The default returns `this` for
+  /// output 0 — nodes with a single output need no override. Composite nodes
+  /// (Delay, ChannelSplitter) route each output to a dedicated internal host
+  /// node.
+  /// @note JS thread only.
+  virtual std::shared_ptr<utils::graph::HostNode> getOutput(int outputIndex);
+
+  /// @brief Returns the graph host node that incoming edges for the given
+  /// input index should terminate at. The default returns `this` for input 0.
+  /// Composite nodes (Delay, ChannelMerger) route each input to a dedicated
+  /// internal host node.
+  /// @note JS thread only.
+  virtual std::shared_ptr<utils::graph::HostNode> getInput(int inputIndex);
+  /// Updates host + core channelCount and renegotiates when the value changes.
+  /// Safe to call from the host/JS thread only (negotiation reads these fields).
+  void updateChannelCount(size_t newChannelCount);
+
+  /// @brief The concrete audio-thread payload backing this host object.
+  AudioNode *const audioNode_;
+
   const int numberOfInputs_;
   const int numberOfOutputs_;
   size_t channelCount_;
-  const ChannelCountMode channelCountMode_;
-  const ChannelInterpretation channelInterpretation_;
+  ChannelCountMode channelCountMode_;
+  ChannelInterpretation channelInterpretation_;
 };
 } // namespace audioapi

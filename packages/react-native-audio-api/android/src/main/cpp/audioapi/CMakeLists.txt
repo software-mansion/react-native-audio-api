@@ -19,9 +19,12 @@ endforeach()
 
 if (RN_AUDIO_API_FFMPEG_DISABLED)
   list(REMOVE_ITEM COMMON_CPP_SOURCES
-    "${COMMON_CPP_DIR}/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+    "${COMMON_CPP_DIR}/audioapi/decoding/backends/FfmpegDecoder.cpp"
   )
 endif()
+
+# Debug-only: operator new/delete overrides must not ship in Release.
+list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*AudioThreadGuard\\.cpp$")
 
 set_source_files_properties(
   ${DSP_CPP_SOURCES}
@@ -44,9 +47,9 @@ set(JNI_LIBS_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs)
 
 add_library(react-native-audio-api SHARED ${ANDROID_CPP_SOURCES} ${COMMON_CPP_SOURCES})
 
-# Debug-only allocation auditor used by BaseAudioContext::processGraph (mirrors iOS podspec).
+# Debug-only allocation auditor used by BaseAudioContext::processGraph.
 target_sources(react-native-audio-api PRIVATE
-  $<$<CONFIG:Debug>:${COMMON_CPP_DIR}/test/src/graph/AudioThreadGuard.cpp>
+  $<$<CONFIG:Debug>:${COMMON_CPP_DIR}/audioapi/utils/AudioThreadGuard.cpp>
 )
 
 if (NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)

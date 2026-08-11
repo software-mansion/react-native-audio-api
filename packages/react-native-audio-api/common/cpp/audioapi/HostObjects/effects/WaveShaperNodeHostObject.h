@@ -33,7 +33,7 @@ class WaveShaperNodeHostObject : public AudioNodeHostObject {
  private:
   void scheduleCurveUpdate(const std::shared_ptr<AudioArray> &curve);
 
-  WaveShaperNode *waveShaperNode_ = nullptr;
+  WaveShaperNode *const waveShaperNode_;
 
   OverSampleType oversample_;
   size_t curveMemoryPressure_{0};

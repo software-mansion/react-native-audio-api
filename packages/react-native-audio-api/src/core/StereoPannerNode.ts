@@ -11,7 +11,7 @@ export default class StereoPannerNode extends AudioNode {
     const pan: IStereoPannerNode = context.context.createStereoPanner(
       options || {}
     );
-    super(context, pan);
+    super(context, pan, options);
     this.pan = new AudioParam(pan.pan, context, this);
   }
 }

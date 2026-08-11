@@ -36,8 +36,8 @@
 #include <memory>
 #include <numbers>
 
-// https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html - math
-// formulas for filters
+// Coefficient formulas are adapted from the Web Audio Audio EQ Cookbook:
+// https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers, readability-identifier-length)
 
 namespace audioapi {
@@ -73,6 +73,13 @@ BiquadFilterNode::BiquadFilterNode(
               MOST_NEGATIVE_SINGLE_FLOAT,
               BIQUAD_GAIN_DB_FACTOR * LOG10_MOST_POSITIVE_SINGLE_FLOAT,
               context)),
+      computedFrequencyParam_(
+          std::make_shared<CompositeAudioParam<combineBiquadFrequency>>(
+              0.0f,
+              getNyquistFrequency(),
+              context,
+              frequencyParam_,
+              detuneParam_)),
       type_(options.type) {}
 
 void BiquadFilterNode::setType(BiquadFilterType type) {
@@ -120,12 +127,12 @@ void BiquadFilterNode::getFrequencyResponse(
     float *phaseResponseOutput,
     const size_t length,
     BiquadFilterType type) {
-  const double frequency = frequencyParam_->getValue();
+  const float frequency = frequencyParam_->getValue();
   const double Q = QParam_->getValue();
   const double gain = gainParam_->getValue();
-  const double detune = detuneParam_->getValue();
+  const float detune = detuneParam_->getValue();
 
-  const auto coeffs = applyFilter(frequency, Q, gain, detune, type);
+  const auto coeffs = applyFilter(combineBiquadFrequency(frequency, detune), Q, gain, type);
 
   const double nyquist = getNyquistFrequency();
 
@@ -134,7 +141,7 @@ void BiquadFilterNode::getFrequencyResponse(
     const double normalizedFreq = static_cast<double>(frequencyArray[i]) / nyquist;
 
     if (normalizedFreq < 0.0 || normalizedFreq > 1.0) {
-      // Out-of-bounds frequencies should return NaN.
+      // Web Audio requires NaN for frequencies outside [0, Nyquist].
       magResponseOutput[i] = std::nanf("");
       phaseResponseOutput[i] = std::nanf("");
       continue;
@@ -362,19 +369,15 @@ BiquadFilterNode::FilterCoefficients BiquadFilterNode::getNormalizedCoefficients
 }
 
 BiquadFilterNode::FilterCoefficients BiquadFilterNode::applyFilter(
-    double frequency,
+    double computedFrequency,
     double Q,
     double gain,
-    double detune,
     BiquadFilterType type) {
+  // `computedFrequency` already folds in detune (see `combineBiquadFrequency`).
   // NyquistFrequency is half of the sample rate.
   // Normalized frequency is therefore:
   // frequency / (sampleRate / 2) = (2 * frequency) / sampleRate
-  double normalizedFrequency = frequency / getNyquistFrequency();
-
-  if (detune != 0.0) {
-    normalizedFrequency *= std::pow(2.0, detune / 1200.0);
-  }
+  double normalizedFrequency = computedFrequency / getNyquistFrequency();
 
   FilterCoefficients coeffs = {.b0 = 1.0, .b1 = 0.0, .b2 = 0.0, .a1 = 0.0, .a2 = 0.0};
 
@@ -416,12 +419,11 @@ void BiquadFilterNode::processNode(int framesToProcess) {
 
     // k-rate: sample the parameters once per render quantum and reuse the
     // resulting coefficients for every frame in the block.
-    const float frequency = frequencyParam_->processKRateParam(framesToProcess, currentTime);
-    const float detune = detuneParam_->processKRateParam(framesToProcess, currentTime);
-    const float Q = QParam_->processKRateParam(framesToProcess, currentTime);
-    const float gain = gainParam_->processKRateParam(framesToProcess, currentTime);
+    const float computedFrequency = computedFrequencyParam_->processKRateParam(currentTime);
+    const float Q = QParam_->processKRateParam(currentTime);
+    const float gain = gainParam_->processKRateParam(currentTime);
 
-    const auto coeffs = applyFilter(frequency, Q, gain, detune, type_);
+    const auto coeffs = applyFilter(computedFrequency, Q, gain, type_);
 
     lastA2_ = coeffs.a2;
 
