@@ -340,8 +340,9 @@ size_t produceResampled(AndroidDecoderState &state) {
   }
 }
 
-// Selects the audio track and reads container metadata. MediaCodec is started
-// lazily on the first read/seek so probeDuration() avoids codec spin-up cost.
+// Selects the audio track and reads container metadata. Metadata channels/rate
+// are provisional — settleCodecOutputFormat() replaces them with what MediaCodec
+// actually produces before open() publishes them.
 decoding::DecoderResult configureExtractorMetadata(
     AndroidDecoderState &state,
     int outputSampleRate) {
@@ -423,6 +424,24 @@ decoding::DecoderResult ensureCodecStarted(AndroidDecoderState &state) {
   return Ok(None);
 }
 
+// Starts the codec and pumps it until it commits to an output format, so
+// channels/rate are final before callers size buffers against outputChannels().
+// Track metadata can disagree with what the codec produces — HE-AAC v2 declares
+// one channel in the container and decodes to two — and learning that only
+// during the first read would overflow buffers already sized from the metadata.
+// Frames decoded here stay in nativeLeftover and are served by the first read.
+decoding::DecoderResult settleCodecOutputFormat(AndroidDecoderState &state) {
+  if (auto started = ensureCodecStarted(state); started.is_err()) {
+    return started;
+  }
+
+  while (availableFrames(state.nativeLeftover, state.nativeCursor, state.channels) == 0 &&
+         !state.outputEnded) {
+    pumpCodec(state);
+  }
+  return Ok(None);
+}
+
 decoding::DecoderResult attachMemoryExtractor(
     AndroidDecoderState &state,
     const std::vector<uint8_t> &data) {
@@ -469,9 +488,13 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::LocalFileSource &so
     return Err("AndroidDecoder::open setDataSource failed");
   }
 
-  auto configured = configureExtractorMetadata(*state, source.sampleRate);
-  if (configured.is_err()) {
+  if (auto configured = configureExtractorMetadata(*state, source.sampleRate);
+      configured.is_err()) {
     return configured;
+  }
+
+  if (auto settled = settleCodecOutputFormat(*state); settled.is_err()) {
+    return settled;
   }
 
   outputChannels_ = state->channels;
@@ -495,9 +518,13 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::EncodedMemorySource
     return attached;
   }
 
-  auto configured = configureExtractorMetadata(*state, source.sampleRate);
-  if (configured.is_err()) {
+  if (auto configured = configureExtractorMetadata(*state, source.sampleRate);
+      configured.is_err()) {
     return configured;
+  }
+
+  if (auto settled = settleCodecOutputFormat(*state); settled.is_err()) {
+    return settled;
   }
 
   outputChannels_ = state->channels;
@@ -521,23 +548,19 @@ size_t AndroidDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   }
 
   size_t filled = 0; // frames
-  const int initialChannels = state.channels;
+  // The caller sized outInterleaved from outputChannels(), so this call must
+  // never write wider frames than that. open() settles the codec format up
+  // front, so a change here is anomalous — stop rather than overflow, and keep
+  // the published layout stable for the frames already written.
+  const int callerChannels = outputChannels_;
 
   while (filled < frameCount) {
-    // Keep OsDecoderBase metadata aligned with codec output (may change on
-    // AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED).
-    outputChannels_ = state.channels;
+    if (state.channels != callerChannels) {
+      break;
+    }
     outputSampleRate_ = state.outputRate;
-    if (outputChannels_ <= 0) {
-      break;
-    }
-    // Avoid mixing channel layouts inside a single caller buffer.
-    if (filled > 0 && state.channels != initialChannels) {
-      outputChannels_ = initialChannels;
-      break;
-    }
 
-    const int ch = outputChannels_;
+    const int ch = callerChannels;
     const bool resample = state.resampler != nullptr;
     std::vector<float> &served = resample ? state.outLeftover : state.nativeLeftover;
     size_t &cursor = resample ? state.outCursor : state.nativeCursor;
@@ -566,14 +589,6 @@ size_t AndroidDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
     }
   }
 
-  // Prefer metadata that matches frames actually written this call when a
-  // mid-read format change forced an early return.
-  if (filled > 0 && state.channels != initialChannels) {
-    outputChannels_ = initialChannels;
-  } else {
-    outputChannels_ = state.channels;
-    outputSampleRate_ = state.outputRate;
-  }
   framePosition_ += static_cast<int64_t>(filled);
   return filled;
 }

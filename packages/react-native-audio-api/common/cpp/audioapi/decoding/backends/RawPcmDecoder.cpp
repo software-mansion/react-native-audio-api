@@ -1,5 +1,5 @@
 #include <audioapi/decoding/backends/RawPcmDecoder.h>
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/libs/base64/base64.h>
 
 #include <algorithm>

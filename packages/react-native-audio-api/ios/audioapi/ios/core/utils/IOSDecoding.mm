@@ -45,11 +45,13 @@ using AudioFilePtr = std::unique_ptr<std::remove_pointer_t<AudioFileID>, AudioFi
 // Native reader state kept out of the shared header so Core Audio types never
 // leak into cross-platform code. Owned by IOSDecoder::impl_.
 struct IosDecoderState {
-  // Declaration order matters: ExtAudioFile wraps AudioFile for openMemory(),
-  // so extFile must be destroyed first (members destroy in reverse order).
+  // Declaration order matters (members destroy in reverse order): ExtAudioFile
+  // wraps AudioFile for openMemory(), so extFile must be destroyed first, and
+  // both may read through memoryReadProc while closing — so the buffer that
+  // callback serves has to outlive them and must be declared first.
+  std::vector<uint8_t> memory;
   AudioFilePtr audioFile;
   ExtAudioFilePtr extFile;
-  std::vector<uint8_t> memory;
   // File-native sample rate, used to translate seek time into file frames
   // (ExtAudioFileSeek positions in the file's rate, not the client rate).
   double fileSampleRate = 0.0;
