@@ -3,6 +3,10 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/types/ContextState.h>
 
+#ifdef ANDROID
+#include <fbjni/fbjni.h>
+#endif
+
 #include <chrono>
 #include <memory>
 #include <thread>
@@ -89,6 +93,14 @@ bool WorkletAudioContext::isDriverRunning() const {
 }
 
 void WorkletAudioContext::run() {
+#ifdef ANDROID
+  facebook::jni::ThreadScope::WithClassLoader([this]() { renderLoop(); });
+#else
+  renderLoop();
+#endif
+}
+
+void WorkletAudioContext::renderLoop() {
   const auto quantumDuration = std::chrono::microseconds(
       static_cast<int64_t>(
           (static_cast<double>(audioapi::RENDER_QUANTUM_SIZE) * 1'000'000.0) / getSampleRate()));
