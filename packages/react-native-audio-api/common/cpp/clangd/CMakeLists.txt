@@ -80,14 +80,25 @@ target_link_libraries(rnaudioapi_cursor ${LINK_LIBRARIES} gtest gmock gtest_main
 # ============================================================================
 if(APPLE)
   enable_language(OBJCXX)
+  enable_language(OBJC)
 
   set(IOS_DIR ${COMMON_CPP_DIR}/../../ios)
+  # The podspec compiles both .mm (Objective-C++) and plain .m (Objective-C,
+  # e.g. NativeAudioPlayer.m/NativeAudioRecorder.m) — source_files = "ios/audioapi/**/*.{mm,h,m,hpp}".
+  # Kept as separate targets: a shared OBJECT library set CMAKE_CXX_STANDARD's
+  # "-std=c++20" on the .m (plain Objective-C) sources too, which clang
+  # rejects outright for that language.
   file(GLOB_RECURSE IOS_MM_SOURCES CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.mm")
+  file(GLOB_RECURSE IOS_M_SOURCES CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.m")
 
   add_library(rnaudioapi_cursor_ios OBJECT ${IOS_MM_SOURCES})
-  set_source_files_properties(${IOS_MM_SOURCES} PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+  add_library(rnaudioapi_cursor_ios_objc OBJECT ${IOS_M_SOURCES})
+  set_source_files_properties(${IOS_MM_SOURCES} ${IOS_M_SOURCES} PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 
   target_compile_definitions(rnaudioapi_cursor_ios PRIVATE
+    RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
+  )
+  target_compile_definitions(rnaudioapi_cursor_ios_objc PRIVATE
     RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
   )
 
@@ -101,6 +112,7 @@ if(APPLE)
   )
   if(IOS_SDK_PATH)
     target_compile_options(rnaudioapi_cursor_ios PRIVATE -isysroot "${IOS_SDK_PATH}")
+    target_compile_options(rnaudioapi_cursor_ios_objc PRIVATE -isysroot "${IOS_SDK_PATH}")
   endif()
 
   # React/Pod headers (React-Core, ReactCommon, ReactCodegen, ...) — rather
@@ -124,9 +136,7 @@ if(APPLE)
     message(WARNING "clangd/CMakeLists.txt: ${PODS_XCCONFIG} not found — run `pod install` in apps/fabric-example/ios to resolve React/Pod headers for iOS files.")
   endif()
 
-  target_include_directories(
-    rnaudioapi_cursor_ios
-    PRIVATE
+  set(IOS_EXTRA_INCLUDES
     "${COMMON_CPP_DIR}"
     "${IOS_DIR}"
     # CocoaPods' header_mappings_dir flattens ios/audioapi's own headers so
@@ -137,4 +147,6 @@ if(APPLE)
     "${IOS_DIR}/audioapi/ios/system"
     ${IOS_POD_INCLUDE_DIRS}
   )
+  target_include_directories(rnaudioapi_cursor_ios PRIVATE ${IOS_EXTRA_INCLUDES})
+  target_include_directories(rnaudioapi_cursor_ios_objc PRIVATE ${IOS_EXTRA_INCLUDES})
 endif()
