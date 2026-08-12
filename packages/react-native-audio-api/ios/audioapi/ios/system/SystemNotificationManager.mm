@@ -263,7 +263,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
-  NSLog(@"[NotificationManager] Audio engine configuration has changed, restarting audio engine.");
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 

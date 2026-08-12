@@ -56,7 +56,6 @@
 - (void)resetInputNode;
 - (void)rebuildAudioEngineAndResumeIfNeeded;
 - (BOOL)graphRequiresRebuild;
-- (NSString *)describeInputNodeAvailability;
 - (void)handleRefusedRestart;
 - (void)markRestartPending;
 - (void)clearPendingRestart;
@@ -76,22 +75,6 @@
 static const NSTimeInterval kInitialRestartRetryDelay = 2.0;
 static const NSTimeInterval kMaximumRestartRetryDelay = 32.0;
 static const NSUInteger kMaximumRestartRetryCount = 6;
-
-static NSString *AudioEngineStateName(AudioEngineState state)
-{
-  switch (state) {
-    case AudioEngineState::AudioEngineStateIdle:
-      return @"idle";
-    case AudioEngineState::AudioEngineStateRunning:
-      return @"running";
-    case AudioEngineState::AudioEngineStatePaused:
-      return @"paused";
-    case AudioEngineState::AudioEngineStateInterrupted:
-      return @"interrupted";
-  }
-
-  return @"unknown";
-}
 
 @implementation AudioEngine
 
@@ -431,7 +414,6 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   if (![self startEngine]) {
-    NSLog(@"[AudioEngine] Audio engine restart after interruption was refused.");
     [self handleRefusedRestart];
   }
 }
@@ -462,11 +444,6 @@ static AudioEngine *_sharedInstance = nil;
   self.sessionDeactivationInvalidatedGraph = false;
 
   if (!shouldResume) {
-    NSLog(
-        @"[AudioEngine] Graph rebuilt without resuming, engine is %@ (input node %@).",
-        AudioEngineStateName(self.state),
-        [self describeInputNodeAvailability]);
-
     // An interruption suspends an engine that is still meant to be running, and the system
     // does not always follow one with an end notification. Arming the retry ladder here
     // means the next opportunity resumes the engine, rather than leaving it stopped until
@@ -481,10 +458,7 @@ static AudioEngine *_sharedInstance = nil;
 
   if (![self startEngine]) {
     [self handleRefusedRestart];
-    return;
   }
-
-  NSLog(@"[AudioEngine] Graph rebuilt and engine restarted.");
 }
 
 - (void)rebuildAudioEngine
@@ -553,18 +527,6 @@ static AudioEngine *_sharedInstance = nil;
 {
   return self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
       self.sessionDeactivationInvalidatedGraph;
-}
-
-/// Reports whether a registered input node is currently materialized. This distinguishes a
-/// healthy rebuild from one that silently dropped the microphone because the route reported
-/// no usable format, which is the state a rebuild leaves behind mid route change.
-- (NSString *)describeInputNodeAvailability
-{
-  if (self.inputRegistration == nil) {
-    return @"not requested";
-  }
-
-  return self.inputNode != nil ? @"materialized" : @"missing live input format";
 }
 
 /// Records that the system refused to start the engine and queues another attempt.
