@@ -3,20 +3,21 @@
 #import <AudioSessionManager.h>
 #import <Foundation/Foundation.h>
 
+#include <algorithm>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
 
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
+#include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/EncodedAudioFileWriter.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
-#include <audioapi/ios/core/utils/IOSFileWriter.h>
-#include <audioapi/ios/core/utils/IOSRecorderCallback.h>
-#include <audioapi/ios/core/utils/IOSRotatingFileWriter.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -26,6 +27,51 @@
 #include <audioapi/utils/Result.hpp>
 
 namespace audioapi {
+
+namespace {
+
+/// @brief Repacks a CoreAudio input buffer as interleaved float32, the format every
+/// consumer downstream expects. Returns nullptr — dropping the buffer — when the layout no
+/// longer matches what we were configured with, which happens if the input node is rebuilt
+/// on a route change while a recording is in flight.
+const float *interleaveAudioInput(
+    const AudioBufferList *input,
+    int numFrames,
+    int channelCount,
+    std::vector<float> &scratch)
+{
+  if (input == nullptr || numFrames <= 0 || channelCount <= 0 || channelCount > MAX_CHANNEL_COUNT) {
+    return nullptr;
+  }
+
+  const auto frames = static_cast<size_t>(numFrames);
+  const size_t samples = frames * static_cast<size_t>(channelCount);
+
+  // Mono, or an already-interleaved format: hand CoreAudio's own buffer straight through.
+  if (input->mNumberBuffers == 1) {
+    if (input->mBuffers[0].mDataByteSize < samples * sizeof(float)) {
+      return nullptr;
+    }
+    return static_cast<const float *>(input->mBuffers[0].mData);
+  }
+
+  if (input->mNumberBuffers != static_cast<UInt32>(channelCount) || samples > scratch.size()) {
+    return nullptr;
+  }
+
+  const float *channelPointers[MAX_CHANNEL_COUNT];
+  for (int channel = 0; channel < channelCount; ++channel) {
+    if (input->mBuffers[channel].mDataByteSize < frames * sizeof(float)) {
+      return nullptr;
+    }
+    channelPointers[channel] = static_cast<const float *>(input->mBuffers[channel].mData);
+  }
+
+  dsp::interleave(channelPointers, static_cast<size_t>(channelCount), scratch.data(), frames);
+  return scratch.data();
+}
+
+} // namespace
 
 static inline NSNumber *recorderFormatNumber(id format, NSString *key)
 {
@@ -108,32 +154,15 @@ IOSAudioRecorder::IOSAudioRecorder(
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
-    if (numFrames > 0) {
-      lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
+    // The mic hands us planar float32; everything downstream takes interleaved float32,
+    // so normalize once here and let the shared fan-out do the rest.
+    const float *interleaved =
+        interleaveAudioInput(inputBuffer, numFrames, inputChannelCount_, interleaveScratch_);
+    if (interleaved == nullptr) {
+      return;
     }
 
-    if (usesFileOutput()) {
-      if (auto lock = Locker::tryLock(fileWriterMutex_)) {
-        fileWriter_->writeAudioData(inputBuffer, numFrames);
-      }
-    }
-
-    if (usesCallback()) {
-      if (auto lock = Locker::tryLock(callbackMutex_)) {
-        std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
-            ->receiveAudioData(inputBuffer, numFrames);
-      }
-    }
-
-    if (isConnected()) {
-      if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
-        auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get());
-        for (size_t channel = 0; channel < adapterNode->getChannelCount(); ++channel) {
-          auto *data = static_cast<float *>(inputBuffer->mBuffers[channel].mData);
-          adapterNode->buff_[channel]->write(data, numFrames);
-        }
-      }
-    }
+    onAudioFrames(interleaved, numFrames);
   };
 
   nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock];
@@ -233,6 +262,11 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
   // Estimate the maximum input buffer lengths that can be expected from the sink node
   size_t maxInputBufferLength = [nativeRecorder_ getResolvedBufferSize];
   streamSampleRate_ = static_cast<float>(recorderFormatSampleRate(inputFormat));
+
+  // The audio thread reads these before taking any consumer mutex, so they may only be
+  // touched while the input is disarmed — i.e. here and in stop().
+  inputChannelCount_ = static_cast<int32_t>(recorderFormatChannelCount(inputFormat));
+  interleaveScratch_.assign(maxInputBufferLength * static_cast<size_t>(inputChannelCount_), 0.0F);
   lastCallbackFrameCount_.store(0, std::memory_order_release);
   bool fileWasOpened = false;
 
@@ -260,8 +294,10 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
     }
 
     dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-    auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
-                              ->prepare(inputFormat, maxInputBufferLength);
+    auto callbackResult = dataCallback_->prepare(
+        static_cast<float>(recorderFormatSampleRate(inputFormat)),
+        static_cast<int>(recorderFormatChannelCount(inputFormat)),
+        maxInputBufferLength);
 
     if (callbackResult.is_err()) {
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, fileWasOpened);
@@ -277,6 +313,11 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
   }
 
   if (wantsConnection() && adapterNodeHandle_ != nullptr) {
+    // The shared fan-out deinterleaves through this before writing to the adapter node.
+    deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
+        maxInputBufferLength,
+        recorderFormatChannelCount(inputFormat),
+        recorderFormatSampleRate(inputFormat));
     static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
         ->init(
             maxInputBufferLength,
@@ -315,6 +356,9 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
     }
 
     [nativeRecorder_ setInputArmed:false];
+    // Safe only because the input is now disarmed: the audio thread reads these unlocked.
+    interleaveScratch_.clear();
+    inputChannelCount_ = 0;
     state_.store(RecorderState::Idle, std::memory_order_release);
     lastCallbackFrameCount_.store(0, std::memory_order_release);
     streamSampleRate_ = 0.0f;
@@ -412,7 +456,7 @@ Result<NoneType, std::string> IOSAudioRecorder::enableFileOutput(
 std::shared_ptr<AudioFileWriter> IOSAudioRecorder::createFileWriter(
     const std::shared_ptr<AudioFileProperties> &props)
 {
-  return std::make_shared<IOSFileWriter>(audioEventHandlerRegistry_, props);
+  return std::make_shared<EncodedAudioFileWriter>(audioEventHandlerRegistry_, props);
 }
 
 Result<std::string, std::string> IOSAudioRecorder::setupFileWriter(
@@ -420,7 +464,7 @@ Result<std::string, std::string> IOSAudioRecorder::setupFileWriter(
     const std::string &fileNameOverride)
 {
   if (properties->rotateIntervalBytes > 0) {
-    fileWriter_ = std::make_shared<IOSRotatingFileWriter>(
+    fileWriter_ = std::make_shared<RotatingFileWriter>(
         audioEventHandlerRegistry_,
         properties,
         properties->rotateIntervalBytes,
@@ -436,10 +480,14 @@ Result<std::string, std::string> IOSAudioRecorder::setupFileWriter(
 
   fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
-  auto backend = std::static_pointer_cast<IOSFileWriter>(fileWriter_);
-  auto fileResult = backend->openFile(
-      [nativeRecorder_ getResolvedInputFormat],
-      [nativeRecorder_ getResolvedBufferSize],
+  AVAudioFormat *inputFormat = [nativeRecorder_ getResolvedInputFormat];
+  const auto channelCount = static_cast<int32_t>(recorderFormatChannelCount(inputFormat));
+  const auto maxFramesPerBuffer = static_cast<int32_t>([nativeRecorder_ getResolvedBufferSize]);
+
+  auto fileResult = fileWriter_->openFile(
+      static_cast<float>(recorderFormatSampleRate(inputFormat)),
+      channelCount,
+      maxFramesPerBuffer,
       fileNameOverride);
 
   if (!fileResult.is_ok()) {
@@ -487,11 +535,12 @@ void IOSAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &
       return;
     }
 
+    const size_t maxFrames = [nativeRecorder_ getResolvedBufferSize];
+    // The shared fan-out deinterleaves through this before writing to the adapter node.
+    deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
+        maxFrames, resolvedInputFormat.channelCount, resolvedInputFormat.sampleRate);
     static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
-        ->init(
-            [nativeRecorder_ getBufferSize],
-            resolvedInputFormat.channelCount,
-            resolvedInputFormat.sampleRate);
+        ->init(maxFrames, resolvedInputFormat.channelCount, resolvedInputFormat.sampleRate);
     connectedConfigured_.store(true, std::memory_order_release);
   }
 }
@@ -508,6 +557,7 @@ void IOSAudioRecorder::disconnect()
     hadConnection = isConnected();
     connectedConfigured_.store(false, std::memory_order_release);
     isConnected_.store(false, std::memory_order_release);
+    deinterleavingBuffer_ = nullptr;
     adapterNodeHandle = std::move(adapterNodeHandle_);
   }
 
@@ -590,7 +640,7 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
 {
   std::scoped_lock lock(callbackMutex_, errorCallbackMutex_);
 
-  dataCallback_ = std::make_shared<IOSRecorderCallback>(
+  dataCallback_ = std::make_shared<AudioRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
   dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
   callbackOutputEnabled_.store(true, std::memory_order_release);
@@ -603,8 +653,10 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
       return Result<NoneType, std::string>::Err("Recorder input format is unavailable");
     }
 
-    auto result = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
-                      ->prepare(resolvedInputFormat, [nativeRecorder_ getResolvedBufferSize]);
+    auto result = dataCallback_->prepare(
+        static_cast<float>(recorderFormatSampleRate(resolvedInputFormat)),
+        static_cast<int>(recorderFormatChannelCount(resolvedInputFormat)),
+        [nativeRecorder_ getResolvedBufferSize]);
 
     if (result.is_err()) {
       callbackOutputEnabled_.store(false, std::memory_order_release);

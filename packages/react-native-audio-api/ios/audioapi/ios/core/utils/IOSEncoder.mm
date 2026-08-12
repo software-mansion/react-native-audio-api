@@ -1,15 +1,17 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
+#include <audioapi/dsp/VectorMath.h>
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
-#include <audioapi/ios/core/utils/IOSEncoding.h>
+#include <audioapi/ios/core/utils/IOSEncoder.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
 
 #include <algorithm>
 #include <limits>
 #include <string>
+#include <vector>
 
 namespace audioapi::ios_encoder {
 
@@ -123,7 +125,7 @@ OpenEncoderResult IOSEncoder::open(
         [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
                                          sampleRate:inputFormat.sampleRate
                                            channels:(AVAudioChannelCount)inputFormat.channelCount
-                                        interleaved:inputFormat.isInterleaved ? YES : NO];
+                                        interleaved:NO];
     if (impl_->inputFormat == nil) {
       return OpenEncoderResult::Err("Failed to build input AVAudioFormat");
     }
@@ -179,23 +181,24 @@ EncodeResult IOSEncoder::encode(const void *data, int numFrames)
   if (!isOpen() || impl_->audioFile == nil) {
     return EncodeResult::Err("Encoder is not open");
   }
-  const auto *audioBufferList = static_cast<const AudioBufferList *>(data);
-  if (audioBufferList == nullptr || numFrames <= 0) {
+  const auto *interleavedFrames = static_cast<const float *>(data);
+  if (interleavedFrames == nullptr || numFrames <= 0) {
     return EncodeResult::Err("Invalid encode input");
+  }
+  if (static_cast<AVAudioFrameCount>(numFrames) > impl_->converterInputBuffer.frameCapacity) {
+    return EncodeResult::Err("Encode input exceeds the buffer size declared at open()");
   }
 
   @autoreleasepool {
     NSError *error = nil;
 
-    UInt32 buffersToCopy = std::min<UInt32>(
-        audioBufferList->mNumberBuffers,
-        impl_->converterInputBuffer.mutableAudioBufferList->mNumberBuffers);
-    for (UInt32 i = 0; i < buffersToCopy; ++i) {
-      memcpy(
-          impl_->converterInputBuffer.mutableAudioBufferList->mBuffers[i].mData,
-          audioBufferList->mBuffers[i].mData,
-          audioBufferList->mBuffers[i].mDataByteSize);
-    }
+    // The internal format is planar (pinned at open), so floatChannelData is one
+    // pointer per channel. Mono degenerates to a single memcpy inside dsp::deinterleave.
+    dsp::deinterleave(
+        interleavedFrames,
+        impl_->converterInputBuffer.floatChannelData,
+        static_cast<size_t>(impl_->inputChannelCount),
+        static_cast<size_t>(numFrames));
     impl_->converterInputBuffer.frameLength = numFrames;
 
     AVAudioFormat *fileFormat = [impl_->audioFile processingFormat];

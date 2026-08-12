@@ -1,4 +1,4 @@
-#include <audioapi/android/AndroidEncoding.h>
+#include <audioapi/android/AndroidEncoder.h>
 
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>

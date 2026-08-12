@@ -33,6 +33,8 @@ class AudioEncoder {
       size_t maxBufferSizeInFrames,
       const std::string &filePath) = 0;
 
+  /// @p data points to numFrames * inputFormat.channelCount float32 samples in
+  /// channel-interleaved order, valid only for the duration of the call.
   virtual EncodeResult encode(const void *data, int numFrames) = 0;
 
   /// Flushes and closes the output file. Returns {sizeMB, durationSeconds}.

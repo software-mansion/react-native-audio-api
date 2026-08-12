@@ -149,6 +149,8 @@ See the `utilities` skill for full API.
 
 **Pitfall — file writer / recorder shutdown:** `TaskOffloader::shutdown()` drains the SPSC queue before joining the worker. Call it (or destroy the offloader) only after `isFileOpen_` is cleared so the audio thread stops enqueueing. Otherwise rotated or closed M4A segments lose seconds of buffered audio. Types with a `.slot` member use `slot == size_t max` as the shutdown sentinel.
 
+**Pitfall — the task type cannot be a nested struct.** `TaskOffloader<T>` constrains `T` with `std::default_initializable`. A task struct carrying default member initializers (which the `.slot` sentinel requires) does *not* satisfy that constraint while its enclosing class is still incomplete, so `using Offloader = TaskOffloader<NestedTask, …>;` inside the class fails to compile with "constraints not satisfied". Making the struct `public` does not help — it is not an access problem. Declare the task type at **namespace scope** instead (`PendingFileWrite`, `PendingCallbackFrames`). Dropping the initializers to satisfy the constraint is worse: `T{}` would then produce `slot == 0`, a valid slot index, making the shutdown sentinel indistinguishable from real work.
+
 ---
 
 ## Driver synchronization (layered model)

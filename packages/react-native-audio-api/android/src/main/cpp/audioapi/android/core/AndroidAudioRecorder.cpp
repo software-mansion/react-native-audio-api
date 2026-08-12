@@ -1,13 +1,12 @@
 #include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
-#include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
-#include <audioapi/android/core/utils/AndroidRecorderCallback.h>
 
-#include <audioapi/android/core/utils/AndroidRotatingFileWriter.h>
-#include <audioapi/android/core/utils/OsAudioFileWriter.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/EncodedAudioFileWriter.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularArray.hpp>
@@ -128,8 +127,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
     }
 
     dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-    std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
-        ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    dataCallback_->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
     callbackOutputConfigured_.store(true, std::memory_order_release);
   }
 
@@ -265,19 +263,14 @@ Result<NoneType, std::string> AndroidAudioRecorder::enableFileOutput(
 
 std::shared_ptr<AudioFileWriter> AndroidAudioRecorder::createFileWriter(
     const std::shared_ptr<AudioFileProperties> &props) {
-  return std::make_shared<OsAudioFileWriter>(
-      audioEventHandlerRegistry_,
-      props,
-      streamSampleRate_,
-      streamChannelCount_,
-      streamMaxBufferSizeInFrames_);
+  return std::make_shared<EncodedAudioFileWriter>(audioEventHandlerRegistry_, props);
 }
 
 Result<NoneType, std::string> AndroidAudioRecorder::setupFileWriter(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileNameOverride) {
   if (properties->rotateIntervalBytes > 0) {
-    fileWriter_ = std::make_shared<AndroidRotatingFileWriter>(
+    fileWriter_ = std::make_shared<RotatingFileWriter>(
         audioEventHandlerRegistry_,
         properties,
         properties->rotateIntervalBytes,
@@ -293,8 +286,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::setupFileWriter(
 
   fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
-  auto backend = std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_);
-  auto fileResult = backend->openFile(
+  auto fileResult = fileWriter_->openFile(
       streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_, fileNameOverride);
 
   if (!fileResult.is_ok()) {
@@ -368,15 +360,14 @@ Result<NoneType, std::string> AndroidAudioRecorder::setOnAudioReadyCallback(
     int channelCount,
     uint64_t callbackId) {
   std::scoped_lock callbackLock(callbackMutex_, errorCallbackMutex_);
-  dataCallback_ = std::make_shared<AndroidRecorderCallback>(
+  dataCallback_ = std::make_shared<AudioRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
   dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
   callbackOutputEnabled_.store(true, std::memory_order_release);
   callbackOutputConfigured_.store(false, std::memory_order_release);
 
   if (!isIdle()) {
-    std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
-        ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    dataCallback_->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
     callbackOutputConfigured_.store(true, std::memory_order_release);
   }
 
@@ -449,46 +440,8 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
     return oboe::DataCallbackResult::Continue;
   }
 
-  if (numFrames > 0) {
-    lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
-  }
-
-  if (usesFileOutput()) {
-    if (auto fileWriterLock = Locker::tryLock(fileWriterMutex_)) {
-      auto fileWriter = fileWriter_;
-      if (usesFileOutput() && fileWriter != nullptr) {
-        fileWriter->writeAudioData(audioData, numFrames);
-      }
-    }
-  }
-
-  if (usesCallback()) {
-    if (auto callbackLock = Locker::tryLock(callbackMutex_)) {
-      auto dataCallback = std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_);
-      if (usesCallback() && dataCallback != nullptr) {
-        dataCallback->receiveAudioData(audioData, numFrames);
-      }
-    }
-  }
-
-  if (isConnected()) {
-    if (auto adapterLock = Locker::tryLock(adapterNodeMutex_)) {
-      auto adapterNodeHandle = adapterNodeHandle_;
-      auto deinterleavingBuffer = deinterleavingBuffer_;
-      if (!isConnected() || adapterNodeHandle == nullptr || deinterleavingBuffer == nullptr) {
-        return oboe::DataCallbackResult::Continue;
-      }
-
-      auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get());
-
-      auto const data = static_cast<float *>(audioData);
-      deinterleavingBuffer->deinterleaveFrom(data, numFrames);
-
-      for (size_t ch = 0; ch < streamChannelCount_; ++ch) {
-        adapterNode->buff_[ch]->write(*deinterleavingBuffer->getChannel(ch), numFrames);
-      }
-    }
-  }
+  // Oboe already delivers interleaved float32 — the format every consumer expects.
+  onAudioFrames(static_cast<const float *>(audioData), numFrames);
 
   return oboe::DataCallbackResult::Continue;
 }

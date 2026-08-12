@@ -4,13 +4,14 @@
 #include <jsi/jsi.h>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace audioapi {
 
 AudioFileProperties::AudioFileProperties(
     FileDirectory directory,
-    const std::string &subDirectory,
-    const std::string &fileNamePrefix,
+    std::string subDirectory,
+    std::string fileNamePrefix,
     int channelCount,
     size_t rotateIntervalBytes,
     Format format,
@@ -21,8 +22,8 @@ AudioFileProperties::AudioFileProperties(
     int androidFlushIntervalMs,
     IOSAudioQuality iosAudioQuality)
     : directory(directory),
-      subDirectory(subDirectory),
-      fileNamePrefix(fileNamePrefix),
+      subDirectory(std::move(subDirectory)),
+      fileNamePrefix(std::move(fileNamePrefix)),
       channelCount(channelCount),
       rotateIntervalBytes(rotateIntervalBytes),
       format(format),

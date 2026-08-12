@@ -292,7 +292,7 @@ For `MockAudioEventHandlerRegistry`, `TestableXxx` pattern, and full CMakeLists 
 | `HAVE_ACCELERATE` | Not set | `GCC_PREPROCESSOR_DEFINITIONS` | Not set |
 | `RN_AUDIO_API_TEST` | Not set | Not set | Always set to 1 |
 
-**OS-API selector headers** (`decoding/OSDecoding.h`, `encoding/OSEncoding.h`, `encoding/OSRemux.h`): common code reaches platform implementations through `#if defined(__ANDROID__)` / `#elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST)` dispatch. The Apple branch must exclude `RN_AUDIO_API_TEST` because desktop test builds run on macOS (where `__APPLE__` is defined) but do not compile the `ios/` sources. Platform glue selected this way lives in `android/src/main/cpp/audioapi/android/` (e.g. `AndroidDecoding`, `AndroidEncoding`, `AndroidRemux`) and `ios/audioapi/ios/core/utils/` (e.g. `IOSDecoding`, `IOSEncoding`, `IOSRemux`) — both picked up automatically by the CMake glob / podspec glob, no build-file edits needed.
+**OS-API selector headers** (`decoding/OSDecoding.h`, `encoding/OSEncoding.h`, `encoding/OSRemux.h`): common code reaches platform implementations through `#if defined(__ANDROID__)` / `#elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST)` dispatch. The Apple branch must exclude `RN_AUDIO_API_TEST` because desktop test builds run on macOS (where `__APPLE__` is defined) but do not compile the `ios/` sources. Platform glue selected this way lives in `android/src/main/cpp/audioapi/android/` (e.g. `AndroidDecoding`, `AndroidEncoder`, `AndroidRemux`) and `ios/audioapi/ios/core/utils/` (e.g. `IOSDecoding`, `IOSEncoder`, `IOSRemux`) — both picked up automatically by the CMake glob / podspec glob, no build-file edits needed.
 
 ---
 

@@ -34,17 +34,6 @@ if (!isFfmpegEnabled()) {
 
 Batch decoding ([`decodeAudioData`](/docs/utils/decoding#decodeaudiodata)) uses OS APIs on mobile (and miniaudio for formats like Ogg/Opus) — not FFmpeg. Without FFmpeg, remote progressive sources can still be fully downloaded in JS and decoded that way; HLS and in-place URL streaming remain unavailable.
 
-:::note Recording and file concatenation are FFmpeg-free
-[`AudioRecorder`](/docs/inputs/audio-recorder) file output and
-[`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles) do **not**
-use FFmpeg on any platform. Recording encodes with system APIs (iOS AVFoundation,
-Android MediaCodec/MediaMuxer). `concatAudioFiles` supports **WAV** (miniaudio) and
-**M4A/MP4 AAC** (system remux). Neither is affected by `isFfmpegEnabled()`.
-See the [per-platform format matrix](/docs/inputs/audio-recorder#fileformat).
-:::
-
-When `isFfmpegEnabled()` returns `false`, the streaming/metadata features in the table above are unavailable or fall back to errors.
-
 ### Disabling FFmpeg
 
 FFmpeg is enabled by default. To omit it — for example because of symbol clashes with another FFmpeg build in your project — see [Disabling prebuilt libraries](/docs/other/disabling-prebuilt-libraries).

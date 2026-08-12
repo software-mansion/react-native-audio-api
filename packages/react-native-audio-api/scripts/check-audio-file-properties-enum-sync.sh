@@ -27,7 +27,7 @@ fi
 # Extract "Name=Value" lines from a C++ nested enum class.
 extract_cpp_enum() {
   local enum_name="$1"
-  sed -n "/enum class ${enum_name} {/,/};/p" "$CPP_FILE" |
+  sed -n "/enum class ${enum_name}[[:space:]]*[:{]/,/};/p" "$CPP_FILE" |
     grep -E '^\s*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=' |
     sed -E 's/^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=[[:space:]]*([0-9]+).*/\1=\2/' |
     sed 's/[[:space:]]*$//'

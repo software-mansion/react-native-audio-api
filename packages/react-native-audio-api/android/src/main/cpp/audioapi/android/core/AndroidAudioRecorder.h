@@ -17,7 +17,6 @@ namespace audioapi {
 
 class AudioFileProperties;
 class AndroidRecorderCallback;
-class AndroidFileWriterBackend;
 class IAudioEventHandlerRegistry;
 
 class AndroidAudioRecorder : public oboe::AudioStreamCallback,
@@ -61,8 +60,6 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
  private:
-  std::shared_ptr<AudioBuffer> deinterleavingBuffer_;
-
   std::atomic<float> streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;
@@ -71,8 +68,6 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
 
   std::shared_ptr<oboe::AudioStream> mStream_;
   std::vector<std::string> recordingSegmentPaths_;
-  /// Updated on the audio thread from each input callback `numFrames`.
-  std::atomic<int32_t> lastCallbackFrameCount_{0};
   Result<NoneType, std::string> openAudioStream();
   std::shared_ptr<AudioFileWriter> createFileWriter(
       const std::shared_ptr<AudioFileProperties> &props);

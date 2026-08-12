@@ -68,10 +68,16 @@ class IOSAudioRecorder : public AudioRecorder {
       const std::shared_ptr<AudioFileProperties> &properties,
       const std::string &fileNameOverride = "");
 
+  /// Channel count the recorder was configured with; the audio thread drops any buffer
+  /// whose layout stops matching it (e.g. after a route change).
+  int32_t inputChannelCount_{0};
+
+  /// Holds the mic's planar input repacked as interleaved float32 for every consumer.
+  /// Sized on the JS thread under fileWriterMutex_; never resized from the audio thread.
+  std::vector<float> interleaveScratch_;
+
   std::vector<std::string> recordingSegmentPaths_;
   std::atomic<float> streamSampleRate_{0.0f};
-  /// Updated on the audio thread from each input callback `numFrames`.
-  std::atomic<int32_t> lastCallbackFrameCount_{0};
 };
 
 } // namespace audioapi

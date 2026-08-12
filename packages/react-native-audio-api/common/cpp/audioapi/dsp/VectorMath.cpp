@@ -26,6 +26,7 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <algorithm>
+#include <cstring>
 
 #if defined(HAVE_ACCELERATE)
 #include <Accelerate/Accelerate.h>
@@ -861,5 +862,71 @@ float sumOfSquares(const float *inputVector, size_t numberOfElementsToProcess) {
 }
 
 #endif
+
+namespace {
+// Transposing frame-by-frame thrashes the cache once the channel count grows, so the
+// generic paths below walk the data in blocks that stay resident. Mirrors AudioBuffer.
+constexpr size_t kInterleaveBlockSize = 128;
+} // namespace
+
+void interleave(
+    const float *const *inputChannels,
+    size_t numberOfChannels,
+    float *outputInterleaved,
+    size_t numberOfFrames) {
+  if (numberOfFrames == 0 || numberOfChannels == 0) {
+    return;
+  }
+
+  if (numberOfChannels == 1) {
+    std::memcpy(outputInterleaved, inputChannels[0], numberOfFrames * sizeof(float));
+    return;
+  }
+
+  if (numberOfChannels == 2) {
+    interleaveStereo(inputChannels[0], inputChannels[1], outputInterleaved, numberOfFrames);
+    return;
+  }
+
+  for (size_t blockStart = 0; blockStart < numberOfFrames; blockStart += kInterleaveBlockSize) {
+    size_t blockEnd = std::min(blockStart + kInterleaveBlockSize, numberOfFrames);
+    for (size_t frame = blockStart; frame < blockEnd; ++frame) {
+      float *destinationFrame = outputInterleaved + (frame * numberOfChannels);
+      for (size_t channel = 0; channel < numberOfChannels; ++channel) {
+        destinationFrame[channel] = inputChannels[channel][frame];
+      }
+    }
+  }
+}
+
+void deinterleave(
+    const float *inputInterleaved,
+    float *const *outputChannels,
+    size_t numberOfChannels,
+    size_t numberOfFrames) {
+  if (numberOfFrames == 0 || numberOfChannels == 0) {
+    return;
+  }
+
+  if (numberOfChannels == 1) {
+    std::memcpy(outputChannels[0], inputInterleaved, numberOfFrames * sizeof(float));
+    return;
+  }
+
+  if (numberOfChannels == 2) {
+    deinterleaveStereo(inputInterleaved, outputChannels[0], outputChannels[1], numberOfFrames);
+    return;
+  }
+
+  for (size_t blockStart = 0; blockStart < numberOfFrames; blockStart += kInterleaveBlockSize) {
+    size_t blockEnd = std::min(blockStart + kInterleaveBlockSize, numberOfFrames);
+    for (size_t frame = blockStart; frame < blockEnd; ++frame) {
+      const float *sourceFrame = inputInterleaved + (frame * numberOfChannels);
+      for (size_t channel = 0; channel < numberOfChannels; ++channel) {
+        outputChannels[channel][frame] = sourceFrame[channel];
+      }
+    }
+  }
+}
 
 } // namespace audioapi::dsp

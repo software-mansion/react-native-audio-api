@@ -655,7 +655,7 @@ interface AudioRecorderFileOptions {
 
 Describes desired file extension as well as codecs, containers (and muxers!) used to encode the file.
 
-All encoding is done with platform system APIs — iOS AVFoundation and Android MediaCodec/MediaMuxer. FFmpeg is never used for encoding. Because each platform exposes a different set of system encoders, format support is platform-specific.
+All encoding is done with platform system APIs — iOS AVFoundation and Android MediaCodec/MediaMuxer. Because each platform exposes a different set of system encoders, format support is platform-specific.
 
 ```tsx
 enum FileFormat {

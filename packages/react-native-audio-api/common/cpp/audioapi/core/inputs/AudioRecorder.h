@@ -64,6 +64,12 @@ class AudioRecorder {
   [[nodiscard]] virtual double getInputLatency() const = 0;
 
  protected:
+  /// Audio thread. Fans one normalized buffer out to the file writer, the JS callback and
+  /// the adapter node. @p interleavedFrames holds numFrames * channelCount float32 samples in
+  /// channel-interleaved order and is valid only for the duration of the call. Every branch
+  /// takes its mutex with tryLock and drops the buffer rather than block the audio thread.
+  void onAudioFrames(const float *interleavedFrames, int numFrames);
+
   bool wantsCallback() const;
   bool wantsFileOutput() const;
   bool wantsConnection() const;
@@ -91,6 +97,11 @@ class AudioRecorder {
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
+  /// Scratch for the adapter-node branch, which needs planar channels. Allocated on the JS
+  /// thread when a node connects; snapshotted by the audio thread so it cannot be freed mid-use.
+  std::shared_ptr<AudioBuffer> deinterleavingBuffer_ = nullptr;
+  /// Updated on the audio thread from each input callback `numFrames`.
+  std::atomic<int32_t> lastCallbackFrameCount_{0};
 };
 
 } // namespace audioapi
