@@ -5,8 +5,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(COMMON_CPP_DIR ${CMAKE_SOURCE_DIR}/..)
 
-# Toggle: set to 1 to enable test mode, 0 for normal mode
-set(RN_AUDIO_API_TEST 0)
+# common/cpp/test/*.cpp is globbed in below unconditionally, and the real
+# test build (common/cpp/test/CMakeLists.txt) always compiles with this set
+# to 1 — test-only members like AudioGraph::Node::test_node_identifier__ only
+# exist under it, so 0 here would guarantee clangd errors on every test file.
+set(RN_AUDIO_API_TEST 1)
 set(REACT_NATIVE_DIR ../../../../../node_modules/react-native)
 
 include(FetchContent)
