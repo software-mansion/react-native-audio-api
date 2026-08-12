@@ -8,12 +8,19 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "react-native": "./src/index.ts",
-      "import": {
+      "react-native": {
         "types": "./lib/typescript/module/index.d.ts",
         "default": "./lib/module/index.js"
       },
-      "require": {
+      "module": {
+        "types": "./lib/typescript/module/index.d.ts",
+        "default": "./lib/module/index.js"
+      },
+      "module-sync": {
+        "types": "./lib/typescript/module/index.d.ts",
+        "default": "./lib/module/index.js"
+      },
+      "default": {
         "types": "./lib/typescript/commonjs/index.d.ts",
         "default": "./lib/commonjs/index.js"
       }
