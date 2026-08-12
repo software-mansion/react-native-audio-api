@@ -26,7 +26,9 @@ class AudioEventHandlerRegistry;
 
 class IOSAudioRecorder : public AudioRecorder {
  public:
-  IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  IOSAudioRecorder(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      bool voiceProcessingEnabled = false);
   ~IOSAudioRecorder() override;
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
@@ -52,6 +54,8 @@ class IOSAudioRecorder : public AudioRecorder {
       int channelCount,
       uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
+
+  [[nodiscard]] double getInputLatency() const override;
 
  protected:
   NativeAudioRecorder *nativeRecorder_;
@@ -171,8 +175,9 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture()
 
 - (instancetype)init
 {
-  if (self = [super initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {
-      }]) {
+  if (self = [super
+           initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+          voiceProcessingEnabled:NO]) {
     self.mockResolvedInputFormat =
         [[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100 channels:2];
     self.mockResolvedBufferSize = 512;

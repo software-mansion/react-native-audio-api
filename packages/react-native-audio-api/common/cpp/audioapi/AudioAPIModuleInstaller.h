@@ -16,6 +16,8 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 
 #include <memory>
+#include <string>
+
 namespace audioapi {
 
 using namespace facebook;
@@ -121,8 +123,18 @@ class AudioAPIModuleInstaller {
           if (count > 0 && args[0].isString()) {
             androidInputPreset = args[0].getString(runtime).utf8(runtime);
           }
+
+          bool iosVoiceProcessing = false;
+          if (count > 1 && args[1].isBool()) {
+            iosVoiceProcessing = args[1].getBool();
+          }
+
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry, &runtime, jsCallInvoker, androidInputPreset);
+              audioEventHandlerRegistry,
+              &runtime,
+              jsCallInvoker,
+              androidInputPreset,
+              iosVoiceProcessing);
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 

@@ -17,6 +17,7 @@
 @interface AudioEngineInputRegistration : NSObject
 
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverBlock;
+@property (nonatomic, assign) BOOL voiceProcessingEnabled;
 
 @end
 
@@ -26,6 +27,9 @@
 @interface AudioEngine () {
   std::mutex _engineLock;
   BOOL _isRebuildingAudioEngine;
+  /// Tracks whether voice processing is currently engaged on the system input
+  /// node of the live engine instance. Reset whenever the engine is recreated.
+  BOOL _voiceProcessingApplied;
 }
 
 @property (nonatomic, strong)
@@ -38,6 +42,7 @@
 - (AVAudioFormat *)currentInputConnectionFormat;
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId;
 - (BOOL)materializeInputNodeIfNeeded;
+- (void)applyVoiceProcessing;
 - (void)materializeTrackedNodesIfNeeded;
 
 - (AVAudioFormat *)liveInputFormat;
@@ -86,6 +91,7 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceFormats = [[NSMutableDictionary alloc] init];
   self.inputNode = nil;
   self.graphNeedsRebuild = hadGraph;
+  _voiceProcessingApplied = NO;
 
   if (!preserveSessionDeactivationState) {
     self.sessionDeactivationInvalidatedGraph = false;
@@ -186,6 +192,8 @@ static AudioEngine *_sharedInstance = nil;
     return YES;
   }
 
+  [self applyVoiceProcessing];
+
   AVAudioFormat *inputFormat = [self currentInputConnectionFormat];
 
   if (inputFormat == nil) {
@@ -199,8 +207,54 @@ static AudioEngine *_sharedInstance = nil;
   return YES;
 }
 
+// Apple's voice-processing I/O (echo cancellation, noise suppression, AGC) is
+// opt-in per recorder. Without it, full-duplex apps (VoIP, voice agents) hear
+// their own speaker output looped back into the microphone. Toggling it is only
+// allowed while the engine is stopped, and it changes the hardware input format,
+// so this has to run before the input connection format is read.
+- (void)applyVoiceProcessing
+{
+  BOOL wantsVoiceProcessing = self.inputRegistration.voiceProcessingEnabled;
+
+  // A freshly created engine has voice processing off, so for playback-only
+  // graphs there is nothing to undo - and reading `inputNode` would needlessly
+  // pull the microphone into the engine.
+  if (!wantsVoiceProcessing && !_voiceProcessingApplied) {
+    return;
+  }
+
+  if (self.audioEngine == nil) {
+    return;
+  }
+
+  AVAudioInputNode *systemInputNode = self.audioEngine.inputNode;
+
+  if (systemInputNode.isVoiceProcessingEnabled == wantsVoiceProcessing) {
+    _voiceProcessingApplied = wantsVoiceProcessing;
+    return;
+  }
+
+  if ([self.audioEngine isRunning]) {
+    [self.audioEngine stop];
+  }
+
+  NSError *error = nil;
+
+  if (![systemInputNode setVoiceProcessingEnabled:wantsVoiceProcessing error:&error]) {
+    NSLog(
+        @"[AudioEngine] Error while setting voice processing to %@: %@",
+        wantsVoiceProcessing ? @"true" : @"false",
+        [error debugDescription]);
+    return;
+  }
+
+  _voiceProcessingApplied = wantsVoiceProcessing;
+}
+
 - (void)materializeTrackedNodesIfNeeded
 {
+  [self applyVoiceProcessing];
+
   NSArray<NSString *> *sourceNodeIds =
       [[self.sourceRegistrations allKeys] sortedArrayUsingSelector:@selector(compare:)];
   for (NSString *sourceNodeId in sourceNodeIds) {
@@ -253,6 +307,7 @@ static AudioEngine *_sharedInstance = nil;
 }
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
+                  voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
 {
   std::scoped_lock lock(_engineLock);
   [self createAudioEngineIfNeeded];
@@ -263,6 +318,7 @@ static AudioEngine *_sharedInstance = nil;
 
   AudioEngineInputRegistration *registration = [[AudioEngineInputRegistration alloc] init];
   registration.receiverBlock = receiverBlock;
+  registration.voiceProcessingEnabled = voiceProcessingEnabled;
   self.inputRegistration = registration;
 
   [self materializeInputNodeIfNeeded];

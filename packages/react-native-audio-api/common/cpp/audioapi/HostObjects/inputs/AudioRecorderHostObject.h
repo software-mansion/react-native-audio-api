@@ -19,7 +19,8 @@ class AudioRecorderHostObject : public HostObject {
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker,
-      const std::string &androidInputPreset);
+      const std::string &androidInputPreset,
+      bool iosVoiceProcessing);
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);

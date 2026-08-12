@@ -103,8 +103,11 @@ static void cleanupStartedRecorder(
 /// All other necessary fields (like buffers) are initialized in start() method.
 /// This "method" should be called from the JS thread only.
 /// @param audioEventHandlerRegistry Shared pointer to the AudioEventHandlerRegistry for event handling.
+/// @param voiceProcessingEnabled Whether the capture chain runs through Apple's voice-processing I/O
+/// (echo cancellation, noise suppression, automatic gain control).
 IOSAudioRecorder::IOSAudioRecorder(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    bool voiceProcessingEnabled)
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
@@ -136,7 +139,8 @@ IOSAudioRecorder::IOSAudioRecorder(
     }
   };
 
-  nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock];
+  nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock
+                                                voiceProcessingEnabled:voiceProcessingEnabled];
 }
 
 IOSAudioRecorder::~IOSAudioRecorder()

@@ -12,8 +12,10 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 @property (nonatomic, strong) AVAudioFormat *resolvedInputFormat;
 @property (nonatomic, assign) int resolvedBufferSize;
 @property (atomic, assign) BOOL inputArmed;
+@property (nonatomic, assign) BOOL voiceProcessingEnabled;
 
-- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock;
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
+               voiceProcessingEnabled:(BOOL)voiceProcessingEnabled;
 
 - (int)getBufferSize;
 - (AVAudioFormat *)getResolvedInputFormat;

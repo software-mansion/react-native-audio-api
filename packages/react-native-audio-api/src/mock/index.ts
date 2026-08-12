@@ -1,3 +1,4 @@
+import type { AudioRecorderOptions } from '../core/AudioRecorder';
 import {
   AudioContextOptions,
   AudioRecorderCallbackOptions,
@@ -860,7 +861,8 @@ class AudioRecorderMock {
   private onAudioReadySubscription: MockEventSubscription | null = null;
   private onErrorSubscription: MockEventSubscription | null = null;
 
-  constructor() {}
+  // Options only configure the native capture chain, so the mock ignores them.
+  constructor(_options?: AudioRecorderOptions) {}
 
   enableFileOutput(
     options?: AudioRecorderFileOptions

@@ -38,7 +38,10 @@ export * from './Audio';
 export { default as Audio } from './Audio';
 export { default as AudioControls } from './Audio/controls/AudioControls';
 export type { MediaElementAudioSourceOptions } from './core/MediaElementAudioSourceNode';
-export type { AudioRecorderOptions, AndroidInputPreset } from './core/AudioRecorder';
+export type {
+  AudioRecorderOptions,
+  AndroidInputPreset,
+} from './core/AudioRecorder';
 export type { default as AudioEventSubscription } from './events/AudioEventSubscription';
 export { default as FilePreset } from './utils/filePresets';
 
