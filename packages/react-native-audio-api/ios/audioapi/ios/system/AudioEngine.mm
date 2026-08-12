@@ -569,12 +569,14 @@ static AudioEngine *_sharedInstance = nil;
 
 /// Records that the system refused to start the engine and queues another attempt.
 ///
-/// The engine is left in the paused state rather than the running one: `getState` and
-/// `isEngineRunning` feed player and recorder status, so reporting a running engine that
-/// the system never started would hide the failure from every consumer.
+/// The engine is never left reporting the running state: `getState` and `isEngineRunning`
+/// feed player and recorder status, so a running engine the system never started would hide
+/// the failure from every consumer. It is left paused when something is still tracked and
+/// meant to be running, or idle when nothing is.
 - (void)handleRefusedRestart
 {
-  self.state = AudioEngineState::AudioEngineStatePaused;
+  self.state = [self hasTrackedGraph] ? AudioEngineState::AudioEngineStatePaused
+                                      : AudioEngineState::AudioEngineStateIdle;
   [self markRestartPending];
 }
 
