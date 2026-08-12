@@ -19,12 +19,46 @@ namespace {
 
 constexpr size_t kSampleBufferBytes = 256 * 1024;
 
+// MPEG-4 Audio Object Types carried in the AudioSpecificConfig (ISO/IEC 14496-3).
+constexpr int kAudioObjectTypeAacLc = 2;
+constexpr int kAudioObjectTypeEscape = 31;
+
 struct TrackInfo {
   std::string mime;
   int32_t sampleRate{0};
   int32_t channelCount{0};
+  int audioObjectType{0};
   std::vector<uint8_t> csd0;
 };
+
+// Reads the leading audioObjectType from an AudioSpecificConfig. Returns 0 when
+// the config is too short to classify.
+//
+// Note this only sees the *base* object type. HE-AAC that uses implicit SBR
+// signalling declares AAC-LC here and hides the SBR extension in the payload,
+// so such files are indistinguishable from plain AAC-LC at this level — the
+// same blind spot AVFoundation has on iOS.
+[[nodiscard]] int audioObjectTypeFromAudioSpecificConfig(const std::vector<uint8_t> &csd0) {
+  if (csd0.empty()) {
+    return 0;
+  }
+
+  const int objectType = (csd0[0] >> 3) & 0x1F;
+  if (objectType != kAudioObjectTypeEscape) {
+    return objectType;
+  }
+
+  // Escape value: the real type is the next 6 bits, biased by 32.
+  if (csd0.size() < 2) {
+    return 0;
+  }
+  return 32 + (((csd0[0] & 0x07) << 3) | ((csd0[1] >> 5) & 0x07));
+}
+
+// Mirrors IOSRemux's `isAacFormatId`: only plain AAC-LC is remuxable.
+[[nodiscard]] bool isAacLcTrack(const TrackInfo &info) {
+  return info.mime == "audio/mp4a-latm" && info.audioObjectType == kAudioObjectTypeAacLc;
+}
 
 class ExtractorGuard {
  public:
@@ -194,6 +228,7 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
       const auto *bytes = static_cast<const uint8_t *>(csd);
       candidate.csd0.assign(bytes, bytes + csdSize);
     }
+    candidate.audioObjectType = audioObjectTypeFromAudioSpecificConfig(candidate.csd0);
 
     AMediaFormat_delete(format);
     trackIndex = i;
@@ -331,10 +366,10 @@ AndroidRemuxResult concatAudioFiles(
     return refResult;
   }
 
-  if (referenceInfo.mime != "audio/mp4a-latm") {
+  if (!isAacLcTrack(referenceInfo)) {
     return Err(
         "Input file '" + inputPaths.front() +
-        "' is not AAC-in-M4A/MP4; only AAC remux is supported.");
+        "' is not AAC-LC-in-M4A/MP4; only AAC-LC concat is supported.");
   }
 
   for (size_t i = 1; i < inputPaths.size(); ++i) {
@@ -344,6 +379,12 @@ AndroidRemuxResult concatAudioFiles(
     auto result = openAndFindAudioTrack(inputPaths[i], extractor, trackIndex, info);
     if (result.is_err()) {
       return result;
+    }
+
+    if (!isAacLcTrack(info)) {
+      return Err(
+          "Input file '" + inputPaths[i] +
+          "' is not AAC-LC-in-M4A/MP4; only AAC-LC concat is supported.");
     }
 
     auto validation = validateCompatible(info, referenceInfo, inputPaths[i]);

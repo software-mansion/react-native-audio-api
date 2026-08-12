@@ -25,14 +25,8 @@ const std::vector<Format> kAllFormats = {
     Format::OPUS_OGG,
     Format::OPUS_WEBM,
     Format::VORBIS_WEBM,
-    Format::AMR_NB,
-    Format::AMR_WB,
-    Format::AAC_HE,
-    Format::AAC_ELD,
-    Format::IMA4,
     Format::ULAW,
     Format::ALAW,
-    Format::ILBC,
 };
 
 } // namespace

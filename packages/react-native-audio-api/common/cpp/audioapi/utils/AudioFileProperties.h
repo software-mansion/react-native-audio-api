@@ -33,14 +33,8 @@ class AudioFileProperties {
     OPUS_OGG = 6,
     OPUS_WEBM = 7,
     VORBIS_WEBM = 8,
-    AMR_NB = 9,
-    AMR_WB = 10,
-    AAC_HE = 11,
-    AAC_ELD = 12,
-    IMA4 = 13,
-    ULAW = 14,
-    ALAW = 15,
-    ILBC = 16,
+    ULAW = 9,
+    ALAW = 10,
   };
 
   enum class IOSAudioQuality {

@@ -28,24 +28,10 @@ EncoderOutputSpec EncoderCapabilities::specForFormat(Format format) {
       return {.container = AudioContainer::WEBM, .codec = AudioCodec::OPUS, .extension = "webm"};
     case Format::VORBIS_WEBM:
       return {.container = AudioContainer::WEBM, .codec = AudioCodec::VORBIS, .extension = "webm"};
-    case Format::AMR_NB:
-      return {
-          .container = AudioContainer::THREE_GP, .codec = AudioCodec::AMR_NB, .extension = "3gp"};
-    case Format::AMR_WB:
-      return {
-          .container = AudioContainer::THREE_GP, .codec = AudioCodec::AMR_WB, .extension = "3gp"};
-    case Format::AAC_HE:
-      return {.container = AudioContainer::M4A, .codec = AudioCodec::AAC_HE, .extension = "m4a"};
-    case Format::AAC_ELD:
-      return {.container = AudioContainer::M4A, .codec = AudioCodec::AAC_ELD, .extension = "m4a"};
-    case Format::IMA4:
-      return {.container = AudioContainer::CAF, .codec = AudioCodec::IMA4, .extension = "caf"};
     case Format::ULAW:
       return {.container = AudioContainer::WAV, .codec = AudioCodec::ULAW, .extension = "wav"};
     case Format::ALAW:
       return {.container = AudioContainer::WAV, .codec = AudioCodec::ALAW, .extension = "wav"};
-    case Format::ILBC:
-      return {.container = AudioContainer::CAF, .codec = AudioCodec::ILBC, .extension = "caf"};
   }
   return {.container = AudioContainer::WAV, .codec = AudioCodec::PCM, .extension = "wav"};
 }
@@ -57,14 +43,10 @@ std::vector<EncoderOutputSpec> EncoderCapabilities::probe() {
       {.container = AudioContainer::CAF, .codec = AudioCodec::PCM, .extension = "caf"},
       {.container = AudioContainer::AIFF, .codec = AudioCodec::PCM, .extension = "aiff"},
       {.container = AudioContainer::M4A, .codec = AudioCodec::AAC, .extension = "m4a"},
-      {.container = AudioContainer::M4A, .codec = AudioCodec::AAC_HE, .extension = "m4a"},
-      {.container = AudioContainer::M4A, .codec = AudioCodec::AAC_ELD, .extension = "m4a"},
       {.container = AudioContainer::M4A, .codec = AudioCodec::ALAC, .extension = "m4a"},
       {.container = AudioContainer::FLAC, .codec = AudioCodec::FLAC, .extension = "flac"},
-      {.container = AudioContainer::CAF, .codec = AudioCodec::IMA4, .extension = "caf"},
       {.container = AudioContainer::WAV, .codec = AudioCodec::ULAW, .extension = "wav"},
       {.container = AudioContainer::WAV, .codec = AudioCodec::ALAW, .extension = "wav"},
-      {.container = AudioContainer::CAF, .codec = AudioCodec::ILBC, .extension = "caf"},
   };
 #elif defined(__ANDROID__)
   return {
@@ -74,8 +56,6 @@ std::vector<EncoderOutputSpec> EncoderCapabilities::probe() {
       {.container = AudioContainer::OGG, .codec = AudioCodec::OPUS, .extension = "ogg"},
       {.container = AudioContainer::WEBM, .codec = AudioCodec::OPUS, .extension = "webm"},
       {.container = AudioContainer::WEBM, .codec = AudioCodec::VORBIS, .extension = "webm"},
-      {.container = AudioContainer::THREE_GP, .codec = AudioCodec::AMR_NB, .extension = "3gp"},
-      {.container = AudioContainer::THREE_GP, .codec = AudioCodec::AMR_WB, .extension = "3gp"},
   };
 #else
   return {};

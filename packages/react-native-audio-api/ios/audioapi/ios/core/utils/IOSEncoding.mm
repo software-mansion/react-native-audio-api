@@ -30,24 +30,14 @@ static AudioFormatID audioFormatIdForCodec(AudioCodec codec)
       return kAudioFormatLinearPCM;
     case AudioCodec::AAC:
       return kAudioFormatMPEG4AAC;
-    case AudioCodec::AAC_HE:
-      return kAudioFormatMPEG4AAC_HE;
-    case AudioCodec::AAC_ELD:
-      return kAudioFormatMPEG4AAC_ELD;
-    case AudioCodec::AAC_HE_V2:
-      return kAudioFormatMPEG4AAC_HE_V2;
     case AudioCodec::ALAC:
       return kAudioFormatAppleLossless;
     case AudioCodec::FLAC:
       return kAudioFormatFLAC;
-    case AudioCodec::IMA4:
-      return kAudioFormatAppleIMA4;
     case AudioCodec::ULAW:
       return kAudioFormatULaw;
     case AudioCodec::ALAW:
       return kAudioFormatALaw;
-    case AudioCodec::ILBC:
-      return kAudioFormatiLBC;
     default:
       return kAudioFormatLinearPCM;
   }
@@ -65,10 +55,7 @@ static NSDictionary *buildFileSettings(
   settings[AVNumberOfChannelsKey] = @(properties->channelCount);
   settings[AVEncoderAudioQualityKey] = @(ios::fileoptions::getQuality(properties));
 
-  const bool isAac = formatId == kAudioFormatMPEG4AAC || formatId == kAudioFormatMPEG4AAC_HE ||
-      formatId == kAudioFormatMPEG4AAC_ELD || formatId == kAudioFormatMPEG4AAC_HE_V2;
-
-  if (isAac && properties->bitRate > 0) {
+  if (formatId == kAudioFormatMPEG4AAC && properties->bitRate > 0) {
     settings[AVEncoderBitRateKey] = @(properties->bitRate);
   }
 

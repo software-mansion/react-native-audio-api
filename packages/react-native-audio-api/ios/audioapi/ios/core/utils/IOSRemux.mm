@@ -38,8 +38,7 @@ struct AudioFormatFingerprint {
 
 [[nodiscard]] bool isAacFormatId(AudioFormatID formatId)
 {
-  return formatId == kAudioFormatMPEG4AAC || formatId == kAudioFormatMPEG4AAC_HE ||
-      formatId == kAudioFormatMPEG4AAC_HE_V2 || formatId == kAudioFormatMPEG4AAC_ELD;
+  return formatId == kAudioFormatMPEG4AAC;
 }
 
 [[nodiscard]] AVFileType fileTypeForExtension(const std::string &extension)
@@ -133,7 +132,7 @@ IOSRemuxResult concatAudioFiles(
 
       if (!isAacFormatId(fingerprint.formatId)) {
         return Err(
-            "Input file '" + path + "' is not AAC-in-M4A/MP4; only AAC concat is supported.");
+            "Input file '" + path + "' is not AAC-LC-in-M4A/MP4; only AAC-LC concat is supported.");
       }
 
       if (!hasReference) {

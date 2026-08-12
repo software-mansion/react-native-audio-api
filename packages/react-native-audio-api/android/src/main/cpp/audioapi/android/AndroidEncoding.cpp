@@ -63,7 +63,7 @@ class IEncoderBackend {
   virtual ~IEncoderBackend() = default;
 
   // Opens the backend. `desiredSampleRate`/`desiredChannelCount` come from the
-  // file properties; the backend may override them (e.g. AMR/Opus) via the out
+  // file properties; the backend may override them (e.g. Opus) via the out
   // parameters, which the caller then resamples/channel-maps to.
   virtual std::string open(
       int desiredSampleRate,
@@ -432,7 +432,7 @@ class MediaCodecBackend : public IEncoderBackend {
 };
 
 // ---------------------------------------------------------------------------
-// Muxed backend — AAC / AMR / Opus / Vorbis via AMediaMuxer.
+// Muxed backend — AAC / Opus / Vorbis via AMediaMuxer.
 // ---------------------------------------------------------------------------
 
 class MuxedBackend : public MediaCodecBackend {
@@ -456,24 +456,6 @@ class MuxedBackend : public MediaCodecBackend {
         mime = "audio/mp4a-latm";
         isAac = true;
         muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4;
-        break;
-      case AudioCodec::AMR_NB:
-        mime = "audio/3gpp";
-        sampleRate = 8000;
-        channels = 1;
-        if (bitRate <= 0) {
-          bitRate = 12200;
-        }
-        muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_THREE_GPP;
-        break;
-      case AudioCodec::AMR_WB:
-        mime = "audio/amr-wb";
-        sampleRate = 16000;
-        channels = 1;
-        if (bitRate <= 0) {
-          bitRate = 23850;
-        }
-        muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_THREE_GPP;
         break;
       case AudioCodec::OPUS:
         mime = "audio/opus";
@@ -732,8 +714,6 @@ OpenEncoderResult AndroidEncoder::open(
       backend_ = std::make_unique<FlacBackend>();
       break;
     case AudioCodec::AAC:
-    case AudioCodec::AMR_NB:
-    case AudioCodec::AMR_WB:
     case AudioCodec::OPUS:
     case AudioCodec::VORBIS:
       backend_ = std::make_unique<MuxedBackend>();

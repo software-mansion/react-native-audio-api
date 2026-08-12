@@ -73,14 +73,8 @@ export enum FileFormat {
   OpusOgg = 6,
   OpusWebm = 7,
   VorbisWebm = 8,
-  AmrNb = 9,
-  AmrWb = 10,
-  AacHe = 11,
-  AacEld = 12,
-  Ima4 = 13,
-  Ulaw = 14,
-  Alaw = 15,
-  Ilbc = 16,
+  Ulaw = 9,
+  Alaw = 10,
 }
 
 export enum IOSAudioQuality {
