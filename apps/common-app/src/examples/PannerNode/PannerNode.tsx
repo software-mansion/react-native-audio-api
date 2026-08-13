@@ -103,7 +103,7 @@ const PannerNodeExample: FC = () => {
     useState<DistanceModelType>('inverse');
   const [rolloffFactor, setRolloffFactor] = useState(1);
   const [hint, setHint] = useState(
-    'Use headphones. Listener orientation forward is -Z. Move source and/or listener. Cone OFF: source "Pos X" pans L/R. Turn Cone ON to test orientation together with inner and outer angle and outer gain.'
+    'Equal-power model. Use headphones. Listener orientation forward is -Z. Move source and/or listener. Cone OFF: source "Pos X" pans L/R. Turn Cone ON to test orientation together with inner and outer angle and outer gain.'
   );
 
   const audioContextRef = useRef<AudioContext | null>(null);
