@@ -4,7 +4,6 @@
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <memory>
-#include <mutex>
 #include <thread>
 
 namespace audioworklets {
@@ -29,7 +28,6 @@ class WorkletAudioContext : public audioapi::BaseAudioContext {
   bool shouldStop_{false};
   bool isInitialized_{false};
 
-  /// Thread entry point; keeps the thread JVM-attached on Android.
   void run();
   void renderLoop();
   bool isDriverRunning() const override;

@@ -93,11 +93,7 @@ bool WorkletAudioContext::isDriverRunning() const {
 }
 
 void WorkletAudioContext::run() {
-#ifdef ANDROID
-  facebook::jni::ThreadScope::WithClassLoader([this]() { renderLoop(); });
-#else
   renderLoop();
-#endif
 }
 
 void WorkletAudioContext::renderLoop() {
@@ -108,6 +104,10 @@ void WorkletAudioContext::renderLoop() {
   // Deadline pacing keeps the soft clock realtime-aligned; sleeping a full
   // quantum after process drifts behind and fills the recorder adapter ring.
   auto nextDeadline = std::chrono::steady_clock::now();
+#ifdef ANDROID
+  // worklet nodes touch jni, so we need to attach this thread to tje jniEnv
+  auto threadScope = facebook::jni::ThreadScope();
+#endif
 
   while (true) {
     bool rendered = false;
