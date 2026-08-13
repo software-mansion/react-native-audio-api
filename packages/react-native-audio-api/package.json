@@ -108,6 +108,8 @@
     "wpt:filter": "node ./wpt_tests/wpt/wpt-harness.mjs --filter",
     "wpt:report": "yarn wpt:build && node ./wpt_tests/wpt/wpt-harness.mjs --report-json ./wpt_tests/results/latest.json --write-markdown ./wpt_tests/results/latest.md",
     "wpt:report:docs": "yarn wpt:build && node ./wpt_tests/wpt/wpt-harness.mjs --report-json ./wpt_tests/results/latest.json --write-markdown ./wpt_tests/results/latest.md --update-docs",
+    "wpt:ci-report": "yarn wpt:build && node ./wpt_tests/wpt/wpt-harness.mjs --report-json ./wpt_tests/results/latest.json --allow-failures",
+    "wpt:compare": "node ./wpt_tests/wpt/wpt-compare.mjs",
     "wpt:markdown": "node ./wpt_tests/wpt/wpt-markdown.mjs --from-json ./wpt_tests/results/latest.json",
     "create:package": "./scripts/create-package.sh",
     "prepack": "cp ../../README.md ./README.md",
