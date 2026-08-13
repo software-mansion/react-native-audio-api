@@ -34,6 +34,29 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 
 You can also create a `PannerNode` via [`BaseAudioContext.createPanner()`](/docs/core/base-audio-context#createpanner).
 
+## Example
+
+Position a tone to the listener's left. Use headphones to hear the pan clearly. The default listener faces `-Z`.
+
+```tsx
+import { AudioContext } from 'react-native-audio-api';
+
+const ctx = new AudioContext();
+const osc = ctx.createOscillator();
+const panner = ctx.createPanner();
+
+panner.panningModel = 'equalpower';
+panner.positionX.value = -3;
+panner.positionY.value = 0;
+panner.positionZ.value = -1;
+
+osc.connect(panner);
+panner.connect(ctx.destination);
+osc.start();
+```
+
+To move the listener instead of the source, set [`ctx.listener`](/docs/core/audio-listener) position params the same way.
+
 ## Properties
 
 Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
