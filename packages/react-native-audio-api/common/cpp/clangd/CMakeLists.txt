@@ -5,11 +5,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(COMMON_CPP_DIR ${CMAKE_SOURCE_DIR}/..)
 
-# common/cpp/test/*.cpp is globbed in below unconditionally, and the real
-# test build (common/cpp/test/CMakeLists.txt) always compiles with this set
-# to 1 — test-only members like AudioGraph::Node::test_node_identifier__ only
-# exist under it, so 0 here would guarantee clangd errors on every test file.
-set(RN_AUDIO_API_TEST 1)
+# =1 swaps real types for dummy stand-ins too (e.g. JsiBuffer), so production
+# code needs =0; only test/*.cpp needs =1 — split via separate targets below.
+set(RN_AUDIO_API_TEST 0)
 set(REACT_NATIVE_DIR ../../../../../node_modules/react-native)
 
 include(FetchContent)
@@ -22,10 +20,11 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 # -------------------------------------
 
-file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c" "${COMMON_CPP_DIR}/test/*.cpp")
+file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.cpp" "${COMMON_CPP_DIR}/audioapi/*.c")
 list(REMOVE_ITEM COMMON_CPP_SOURCES
   "${COMMON_CPP_DIR}/audioapi/HostObjects/inputs/AudioRecorderHostObject.cpp"
 )
+file(GLOB_RECURSE TEST_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/test/*.cpp")
 
 set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
 set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include_ffmpeg)
@@ -48,9 +47,7 @@ target_compile_definitions(rnaudioapi_cursor PRIVATE
   RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
 )
 
-target_include_directories(
-  rnaudioapi_cursor
-  PRIVATE
+set(COMMON_EXTRA_INCLUDES
   "${COMMON_CPP_DIR}"
   "${INCLUDE_DIR}"
   "${INCLUDE_DIR}/opus"
@@ -61,33 +58,61 @@ target_include_directories(
   "${COMMON_CPP_DIR}/../../ios"
   "${googletest_SOURCE_DIR}/googletest/include"
 )
+target_include_directories(rnaudioapi_cursor PRIVATE ${COMMON_EXTRA_INCLUDES})
 
 target_include_directories(rnaudioapi_cursor PUBLIC ${INCLUDE_LIBRARIES})
 
 target_link_libraries(rnaudioapi_cursor ${LINK_LIBRARIES} gtest gmock gtest_main)
 
-# Android JNI glue (android/src/main/cpp/audioapi) is intentionally NOT built
-# here: those sources only compile correctly with the NDK's own clang++ given
-# --target=...-linux-android and --sysroot=<ndk>/sysroot. Bolting the NDK
-# sysroot onto the host AppleClang via a plain -I mixes NDK libc headers with
-# macOS's libc++, which breaks even <string>/<cmath>. generate-and-copy.sh
-# instead merges in the real compile commands Gradle already produced under
-# android/.cxx/ (see that script for details).
+# Mirrors common/cpp/test/CMakeLists.txt's definitions exactly.
+add_library(rnaudioapi_cursor_test OBJECT ${TEST_CPP_SOURCES})
+target_compile_definitions(rnaudioapi_cursor_test PRIVATE
+  RN_AUDIO_API_TEST=1
+  RN_AUDIO_API_FFMPEG_DISABLED=1
+  RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1
+  MA_NO_LIBOPUS=1
+  MA_NO_LIBVORBIS=1
+)
+target_include_directories(rnaudioapi_cursor_test PRIVATE ${COMMON_EXTRA_INCLUDES})
+# OBJECT libs never link, but this still pulls in gtest/gmock's include dirs.
+target_link_libraries(rnaudioapi_cursor_test PRIVATE gtest gmock gtest_main)
 
-# ============================================================================
-# iOS Objective-C++ glue (ios/audioapi/ios) — OBJECT library purely so clangd
-# gets a compile command per file; never actually linked.
-# ============================================================================
+# Headers have no compile command of their own, so clangd falls back to
+# "inferred from <whatever .cpp/.mm you most recently opened>" — session-order
+# dependent and breaks badly across platforms (e.g. borrowed iOS flags can
+# lose <span>). Force real per-header entries instead of relying on that.
+file(GLOB_RECURSE COMMON_CPP_HEADERS CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioapi/*.h" "${COMMON_CPP_DIR}/audioapi/*.hpp")
+# Vendored code isn't self-contained (e.g. FFmpeg needs -D__STDC_CONSTANT_MACROS
+# from its caller) and was never meant to compile standalone.
+list(FILTER COMMON_CPP_HEADERS EXCLUDE REGEX "/audioapi/external/")
+list(FILTER COMMON_CPP_HEADERS EXCLUDE REGEX "/audioapi/libs/")
+list(FILTER COMMON_CPP_HEADERS EXCLUDE REGEX "/audioapi/dsp/r8brain/")
+
+add_library(rnaudioapi_cursor_headers OBJECT ${COMMON_CPP_HEADERS})
+set_source_files_properties(${COMMON_CPP_HEADERS} PROPERTIES
+  HEADER_FILE_ONLY OFF
+  LANGUAGE CXX
+)
+target_compile_definitions(rnaudioapi_cursor_headers PRIVATE
+  RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
+)
+target_include_directories(rnaudioapi_cursor_headers PRIVATE ${COMMON_EXTRA_INCLUDES})
+
+# Android JNI glue (android/src/main/cpp/audioapi) isn't built here: it only
+# compiles correctly with the NDK's own clang++ (--target/--sysroot); bolting
+# the NDK sysroot onto AppleClang breaks even <string>/<cmath>.
+# generate-and-copy.sh merges in Gradle's real android/.cxx/ commands instead.
+
+# iOS Objective-C++ glue (ios/audioapi/ios) — OBJECT libs purely for compile
+# commands; never actually linked.
 if(APPLE)
   enable_language(OBJCXX)
   enable_language(OBJC)
 
   set(IOS_DIR ${COMMON_CPP_DIR}/../../ios)
-  # The podspec compiles both .mm (Objective-C++) and plain .m (Objective-C,
-  # e.g. NativeAudioPlayer.m/NativeAudioRecorder.m) — source_files = "ios/audioapi/**/*.{mm,h,m,hpp}".
-  # Kept as separate targets: a shared OBJECT library set CMAKE_CXX_STANDARD's
-  # "-std=c++20" on the .m (plain Objective-C) sources too, which clang
-  # rejects outright for that language.
+  # Podspec compiles both .mm and plain .m (NativeAudioPlayer.m etc). Separate
+  # targets: a shared lib would leak CMAKE_CXX_STANDARD's -std=c++20 onto .m,
+  # which clang rejects outright for plain Objective-C.
   file(GLOB_RECURSE IOS_MM_SOURCES CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.mm")
   file(GLOB_RECURSE IOS_M_SOURCES CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.m")
 
@@ -115,10 +140,8 @@ if(APPLE)
     target_compile_options(rnaudioapi_cursor_ios_objc PRIVATE -isysroot "${IOS_SDK_PATH}")
   endif()
 
-  # React/Pod headers (React-Core, ReactCommon, ReactCodegen, ...) — rather
-  # than re-deriving every pod's header path by hand, reuse whatever
-  # `pod install` already resolved for the example app. Requires
-  # `cd apps/fabric-example/ios && pod install` to have been run at least once.
+  # Reuse whatever `pod install` already resolved for the example app rather
+  # than re-deriving every pod's header path by hand. Requires having run it.
   set(FABRIC_EXAMPLE_IOS_DIR ${COMMON_CPP_DIR}/../../../../apps/fabric-example/ios)
   set(PODS_ROOT "${FABRIC_EXAMPLE_IOS_DIR}/Pods")
   set(PODS_XCCONFIG "${FABRIC_EXAMPLE_IOS_DIR}/Pods/Target Support Files/Pods-FabricExample/Pods-FabricExample.debug.xcconfig")
@@ -139,14 +162,32 @@ if(APPLE)
   set(IOS_EXTRA_INCLUDES
     "${COMMON_CPP_DIR}"
     "${IOS_DIR}"
-    # CocoaPods' header_mappings_dir flattens ios/audioapi's own headers so
-    # Xcode can resolve bare `#import <NativeAudioPlayer.h>`-style includes
-    # via its headermap; a plain include path needs to point directly at the
-    # containing folder to reproduce that.
+    # Xcode's headermap resolves bare `#import <NativeAudioPlayer.h>` via
+    # CocoaPods' header_mappings_dir; a plain -I needs the containing folder.
     "${IOS_DIR}/audioapi/ios/core"
     "${IOS_DIR}/audioapi/ios/system"
     ${IOS_POD_INCLUDE_DIRS}
   )
   target_include_directories(rnaudioapi_cursor_ios PRIVATE ${IOS_EXTRA_INCLUDES})
   target_include_directories(rnaudioapi_cursor_ios_objc PRIVATE ${IOS_EXTRA_INCLUDES})
+
+  # Same reasoning as the common headers above. These headers also rely on
+  # their .mm caller having already #imported AVFoundation (see the
+  # `#ifndef __OBJC__` guard in e.g. IOSRecorderCallback.h) — `-include`
+  # reproduces that here.
+  file(GLOB_RECURSE IOS_HEADERS CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.h")
+
+  add_library(rnaudioapi_cursor_ios_headers OBJECT ${IOS_HEADERS})
+  set_source_files_properties(${IOS_HEADERS} PROPERTIES
+    HEADER_FILE_ONLY OFF
+    LANGUAGE OBJCXX
+    COMPILE_FLAGS "-include AVFoundation/AVFoundation.h"
+  )
+  target_compile_definitions(rnaudioapi_cursor_ios_headers PRIVATE
+    RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
+  )
+  target_include_directories(rnaudioapi_cursor_ios_headers PRIVATE ${IOS_EXTRA_INCLUDES})
+  if(IOS_SDK_PATH)
+    target_compile_options(rnaudioapi_cursor_ios_headers PRIVATE -isysroot "${IOS_SDK_PATH}")
+  endif()
 endif()

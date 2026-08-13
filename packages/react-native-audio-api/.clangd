@@ -10,25 +10,10 @@ Diagnostics:
     FastCheckFilter: Loose
 
 ---
-# -std=c++20 is invalid for plain Objective-C (.m) sources — clang's driver
-# rejects it outright. Scoped out here instead of left in the unconditional
-# block above, which applied it to every file regardless of language.
+# clang rejects -std=c++20 outright for plain Objective-C (.m).
 If:
   PathExclude: .*\.m
 CompileFlags:
   Add:
     - -std=c++20
 
----
-# ios/audioapi/ios headers use `#ifndef __OBJC__` to fall back to opaque
-# typedefs for AVFoundation types (AVAudioFormat, etc.) so they stay
-# includable from plain C++. That means opening one directly (rather than via
-# its owning .mm, which already #imports AVFoundation) parses with __OBJC__
-# defined but no AVFoundation import — force both here.
-If:
-  # PathMatch fully-matches, and which root it's relative to isn't
-  # documented reliably — no leading anchor, so it matches whether clangd
-  # resolves this against the package dir, the repo root, or an absolute path.
-  PathMatch: .*ios/audioapi/ios/.*\.h
-CompileFlags:
-  Add: [-x, objective-c++, -include, AVFoundation/AVFoundation.h]
