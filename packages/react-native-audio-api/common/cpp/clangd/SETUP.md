@@ -2,15 +2,21 @@
 
 **Generate compile_commands.json**
 
-From this directory (`common/cpp/clangd`):
-
 ```bash
-./generate-and-copy.sh
+yarn setup:clangd
 ```
 
-This generates entries for `common/cpp`, the Android JNI glue (`android/src/main/cpp/audioapi`), and the iOS Objective-C++ glue (`ios/audioapi/ios`), then copies the result to the repo root.
+Generates entries for `common/cpp` (sources + headers), the iOS Objective-C++/Objective-C glue (`ios/audioapi/ios`), and merges in Android's real NDK-compiled entries from `android/.cxx` (see `generate-and-copy.sh`), then copies the result to the repo root.
 
-**Prerequisites for full header resolution**
+**Prerequisites**
 
-- **Android**: `fbjni`/`oboe`/`react-android` headers are resolved from your local Gradle dependency cache (`~/.gradle/caches`, or `$GRADLE_USER_HOME`), and the NDK sysroot from `$ANDROID_HOME/ndk`. Build the Android app (or open it in Android Studio) at least once to populate the cache — a missing cache just means fewer include paths, not a hard failure.
-- **iOS**: React/Pod headers are reused from whatever `apps/fabric-example/ios/Pods` already has, via its generated xcconfig. Run `pod install` there at least once (see the [build skill](../../../../.claude/skills/build-compilation-dependencies/SKILL.md)).
+- **Android**: needs a real Gradle build's `android/.cxx` output — this CMakeLists.txt can't safely reproduce NDK cross-compile flags itself.
+- **iOS**: needs `apps/fabric-example/ios/Pods` — reuses its generated xcconfig for React/Pod header paths.
+
+If either is missing or stale (e.g. after a dependency bump), refresh both first:
+
+```bash
+yarn setup:clangd:clean
+```
+
+This runs `pod deintegrate && pod install` and a full Android build, then regenerates — slow, only needed when native deps/config actually change.

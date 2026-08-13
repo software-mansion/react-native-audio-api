@@ -8,6 +8,13 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
 PACKAGE_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 WORKLETS_DB="$REPO_ROOT/packages/react-native-audio-worklets/compile_commands.json"
 
+# --clean: refresh the real Pods/Gradle builds this script depends on before
+# regenerating. Slow — only needed after native deps/config actually change.
+if [[ "${1:-}" == "--clean" ]]; then
+  (cd "$REPO_ROOT/apps/fabric-example/ios" && pod deintegrate && pod install)
+  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api run build:android)
+fi
+
 cmake -B build .
 cp build/compile_commands.json "$REPO_ROOT/compile_commands.json"
 
@@ -30,13 +37,10 @@ print(f"Preserved worklets entries in {root_db} (total {len(by_file)})")
 PY
 fi
 
-# Merge in Android compile commands Gradle already produced under android/.cxx.
-# Those sources only compile correctly with the NDK's own clang++ plus
-# --target=...-linux-android --sysroot=<ndk>/sysroot; this CMakeLists.txt
-# can't reproduce that safely with the host compiler (mixing NDK libc headers
-# into macOS's libc++ breaks even <string>/<cmath>), so we reuse Gradle's real
-# build instead of guessing flags. Requires having built the Android app (or
-# opened it in Android Studio) at least once.
+# Merge in Android compile commands Gradle already produced under android/.cxx
+# — those sources need the NDK's own clang++ (--target/--sysroot), which this
+# CMakeLists.txt can't reproduce safely with the host compiler. Requires
+# having built the Android app (or opened it in Android Studio) once.
 python3 - <<PY
 import json
 from pathlib import Path
@@ -52,10 +56,8 @@ else:
     newest = max(android_dbs, key=lambda p: p.stat().st_mtime)
     entries = json.loads(newest.read_text())
 
-    # Entries point at node_modules/react-native-audio-api (the yarn workspace
-    # symlink target Gradle resolved through) — rewrite every occurrence
-    # (the "file" field and every -I path in "command") to the real path so
-    # clangd matches the files actually open in the editor.
+    # Rewrite the node_modules symlink path Gradle resolved through to the
+    # real path, so clangd matches the files open in the editor.
     node_modules_dir = str(repo_root / "node_modules" / "react-native-audio-api")
     real_dir = str(package_dir)
 
