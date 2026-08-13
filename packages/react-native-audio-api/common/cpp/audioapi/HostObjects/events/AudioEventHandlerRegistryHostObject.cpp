@@ -14,6 +14,11 @@ AudioEventHandlerRegistryHostObject::AudioEventHandlerRegistryHostObject(
       JSI_EXPORT_FUNCTION(AudioEventHandlerRegistryHostObject, removeAudioEventListener));
 }
 
+// Key function: this out-of-line definition is what pins the vtable and typeinfo to this
+// translation unit. Keep it out-of-line — defaulting it in the header would make it inline
+// again and bring the duplicate-typeinfo problem back.
+AudioEventHandlerRegistryHostObject::~AudioEventHandlerRegistryHostObject() = default;
+
 JSI_HOST_FUNCTION_IMPL(AudioEventHandlerRegistryHostObject, addAudioEventListener) {
   auto eventName = args[0].getString(runtime).utf8(runtime);
   auto callback = std::make_shared<jsi::Function>(args[1].getObject(runtime).getFunction(runtime));

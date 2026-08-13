@@ -9,7 +9,6 @@
 #include <memory>
 #include <mutex>
 
-#include <audioapi/android/core/NativeAudioPlayer.hpp>
 #include <audioapi/core/CommonPlayer.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
@@ -33,7 +32,6 @@ class AudioPlayer : public CommonPlayer,
       std::atomic<uint32_t> &currentRenders);
 
   ~AudioPlayer() override {
-    nativeAudioPlayer_.release();
     cleanup();
   }
 
@@ -71,8 +69,6 @@ class AudioPlayer : public CommonPlayer,
   std::weak_ptr<AudioContext> context_;
 
   bool openAudioStream();
-
-  facebook::jni::global_ref<NativeAudioPlayer> nativeAudioPlayer_;
 };
 
 } // namespace audioapi

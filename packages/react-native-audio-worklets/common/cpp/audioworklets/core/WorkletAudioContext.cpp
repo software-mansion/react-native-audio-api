@@ -3,6 +3,10 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/types/ContextState.h>
 
+#ifdef ANDROID
+#include <fbjni/fbjni.h>
+#endif
+
 #include <chrono>
 #include <memory>
 #include <thread>
@@ -96,6 +100,10 @@ void WorkletAudioContext::run() {
   // Deadline pacing keeps the soft clock realtime-aligned; sleeping a full
   // quantum after process drifts behind and fills the recorder adapter ring.
   auto nextDeadline = std::chrono::steady_clock::now();
+#ifdef ANDROID
+  // worklet nodes touch jni, so we need to attach this thread to the jniEnv
+  auto threadScope = facebook::jni::ThreadScope();
+#endif
 
   while (true) {
     bool rendered = false;
