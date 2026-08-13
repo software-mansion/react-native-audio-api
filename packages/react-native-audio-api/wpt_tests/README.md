@@ -32,8 +32,9 @@ From `packages/react-native-audio-api`:
 
 ## Maintainer conformance report
 
-Full WPT runs are intentionally manual. CI keeps a small smoke subset; maintainers
-refresh the public conformance table after local runs.
+Full WPT runs are intentionally manual for docs refresh. CI runs the smoke profile
+twice on every PR (base branch vs head), compares per-category pass counts, and
+fails only when any category or the overall summary regresses relative to base.
 
 A full smoke run completes in well under 5 minutes and is deterministic: the same
 run always produces identical, complete numbers.
@@ -50,11 +51,17 @@ run always produces identical, complete numbers.
      `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`
 4. Review and commit the docs change. Raw result files stay local by default.
 
+CI helpers:
+
+- `yarn wpt:ci-report`: build + smoke run with `--allow-failures` (always writes JSON)
+- `yarn wpt:compare --baseline <base.json> --candidate <head.json>`: non-regression gate
+
 Useful flags:
 
 - `--profile smoke` (default): `the-audio-api` subtree, aligned with wpt.fyi
 - `--profile full`: entire vendored `webaudio/` tree
 - `--report-json <path>` / `--write-markdown <path>`: custom output locations
+- `--allow-failures`: exit 0 after a completed run even when assertions fail
 - `--update-docs`: rewrite the summary block in the audiodocs coverage page
 - `yarn wpt:markdown`: regenerate markdown from an existing JSON report
 
