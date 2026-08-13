@@ -16,6 +16,8 @@ class AudioEventHandlerRegistryHostObject : public HostObject {
   explicit AudioEventHandlerRegistryHostObject(
       const std::shared_ptr<IAudioEventHandlerRegistry> &eventHandlerRegistry);
 
+  ~AudioEventHandlerRegistryHostObject() override;
+
   JSI_HOST_FUNCTION_DECL(addAudioEventListener);
   JSI_HOST_FUNCTION_DECL(removeAudioEventListener);
 

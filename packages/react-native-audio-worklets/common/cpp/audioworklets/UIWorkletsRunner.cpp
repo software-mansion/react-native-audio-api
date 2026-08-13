@@ -1,6 +1,8 @@
 #include <audioworklets/UIWorkletsRunner.h>
 #include <jsi/jsi.h>
-
+#ifdef ANDROID
+#include <fbjni/fbjni.h>
+#endif
 #include <memory>
 #include <utility>
 
@@ -31,7 +33,13 @@ void UIWorkletsRunner::deactivate() {
     return;
   }
 
+#ifdef ANDROID
+  facebook::jni::ThreadScope::WithClassLoader([uiScheduler, channelView]() {
+    worklets::scheduleOnUI(uiScheduler, [channelView]() { channelView->releaseJsValues(); });
+  });
+#else
   worklets::scheduleOnUI(uiScheduler, [channelView]() { channelView->releaseJsValues(); });
+#endif
 }
 
 bool UIWorkletsRunner::isActive() const {
