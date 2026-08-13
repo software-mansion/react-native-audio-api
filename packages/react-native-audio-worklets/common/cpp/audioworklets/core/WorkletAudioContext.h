@@ -29,7 +29,6 @@ class WorkletAudioContext : public audioapi::BaseAudioContext {
   bool isInitialized_{false};
 
   void run();
-  void renderLoop();
   bool isDriverRunning() const override;
 };
 

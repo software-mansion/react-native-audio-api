@@ -93,10 +93,6 @@ bool WorkletAudioContext::isDriverRunning() const {
 }
 
 void WorkletAudioContext::run() {
-  renderLoop();
-}
-
-void WorkletAudioContext::renderLoop() {
   const auto quantumDuration = std::chrono::microseconds(
       static_cast<int64_t>(
           (static_cast<double>(audioapi::RENDER_QUANTUM_SIZE) * 1'000'000.0) / getSampleRate()));
