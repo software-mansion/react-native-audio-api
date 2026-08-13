@@ -101,7 +101,7 @@ void WorkletAudioContext::run() {
   // quantum after process drifts behind and fills the recorder adapter ring.
   auto nextDeadline = std::chrono::steady_clock::now();
 #ifdef ANDROID
-  // worklet nodes touch jni, so we need to attach this thread to tje jniEnv
+  // worklet nodes touch jni, so we need to attach this thread to the jniEnv
   auto threadScope = facebook::jni::ThreadScope();
 #endif
 
