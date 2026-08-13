@@ -49,14 +49,6 @@ TEST_F(PannerTest, PannerCanBeCreated) {
   ASSERT_NE(panner, nullptr);
 }
 
-TEST_F(PannerTest, PannerCanBeCreatedWithCone) {
-  auto panner = std::make_shared<PannerNode>(context, listener.get(), PannerOptions());
-  panner->setConeInnerAngle(60);
-  panner->setConeOuterAngle(90);
-  panner->setConeOuterGain(0);
-  ASSERT_NE(panner, nullptr);
-}
-
 struct PannerTestParams {
   Vec3 sourcePosition;
   Vec3 sourceOrientation;
@@ -266,7 +258,7 @@ INSTANTIATE_TEST_SUITE_P(
             {0.0f, 0.0f, 0.0f},
             {0.0f, 0.0f, -1.0f},
             {0.0f, 1.0f, 0.0f},
-            -4.37114e-08f,
+            0.0f,
             1.0f},
         PannerTestParams{
             {0.0f, 0.0f, -1.0f},
@@ -284,5 +276,83 @@ INSTANTIATE_TEST_SUITE_P(
             {0.0f, 1.0f, 0.0f},
             1.0f,
             0.0f}));
+
+TEST_F(PannerTest, PositionXAudioRateProcessing) {
+  static constexpr int FRAMES_TO_PROCESS = 4;
+  TestablePannerNode panNode(context, listener.get());
+
+  auto monoInputBuffer = std::make_shared<DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < monoInputBuffer->getSize(); ++i) {
+    (*monoInputBuffer->getChannelByType(AudioBuffer::ChannelMono))[i] = 1.0f;
+  }
+
+  // Test only the change in positionX parameter
+  panNode.setRolloffFactor(0.0f);
+  panNode.getPositionZParam()->setValue(-1.0f);
+
+  panNode.setInputBuffer(monoInputBuffer);
+
+  auto posXparam = panNode.getPositionXParam();
+  const double startTime = context->getCurrentTime();
+  const double endTime = startTime + (static_cast<double>(FRAMES_TO_PROCESS) / sampleRate);
+
+  posXparam->setValueAtTime(-1.0f, startTime);
+  posXparam->linearRampToValueAtTime(1.0f, endTime);
+
+  panNode.processNode(FRAMES_TO_PROCESS);
+
+  auto resultBuffer = panNode.getOutputBuffer();
+  const auto outLeft = resultBuffer->getChannelByType(AudioBuffer::ChannelLeft)->span();
+  const auto outRight = resultBuffer->getChannelByType(AudioBuffer::ChannelRight)->span();
+
+  EXPECT_GT(outLeft[0], outLeft[1]);
+  EXPECT_GT(outLeft[1], outLeft[2]);
+  EXPECT_GT(outLeft[2], outLeft[3]);
+
+  EXPECT_LT(outRight[0], outRight[1]);
+  EXPECT_LT(outRight[1], outRight[2]);
+  EXPECT_LT(outRight[2], outRight[3]);
+}
+
+TEST_F(PannerTest, ConeAngles) {
+  static constexpr int FRAMES_TO_PROCESS = 4;
+  TestablePannerNode panNode(context, listener.get());
+  panNode.setConeInnerAngle(60);
+  panNode.setConeOuterAngle(90);
+  panNode.setConeOuterGain(0.0f);
+
+  auto monoInputBuffer = std::make_shared<DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < monoInputBuffer->getSize(); ++i) {
+    (*monoInputBuffer->getChannelByType(AudioBuffer::ChannelMono))[i] = 1.0f;
+  }
+
+  panNode.setInputBuffer(monoInputBuffer);
+
+  constexpr float POSITION_Z_INFRONT = -1.0f;
+  // The source is facing backwards, sound should not be heard by the listener
+  constexpr float ORIENTATION_Z_BEHIND = -1.0f;
+  panNode.getPositionZParam()->setValue(POSITION_Z_INFRONT);
+  panNode.getOrientationXParam()->setValue(0.0f);
+  panNode.getOrientationYParam()->setValue(0.0f);
+  panNode.getOrientationZParam()->setValue(ORIENTATION_Z_BEHIND);
+
+  panNode.processNode(FRAMES_TO_PROCESS);
+
+  auto resultBuffer = panNode.getOutputBuffer();
+
+  constexpr float TOLERANCE = 1e-5f;
+  constexpr float EXPECTED_SILENCE = 0.0f;
+
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_NEAR(
+        (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
+        EXPECTED_SILENCE,
+        TOLERANCE);
+    EXPECT_NEAR(
+        (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
+        EXPECTED_SILENCE,
+        TOLERANCE);
+  }
+}
 
 // NOLINTEND
