@@ -11,7 +11,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
@@ -65,9 +65,9 @@ static void cleanupStartedRecorder(
 /// This constructor initializes the receiver block and native side recorder wrapper (AVAudioSinkNode).
 /// All other necessary fields (like buffers) are initialized in start() method.
 /// This "method" should be called from the JS thread only.
-/// @param audioEventHandlerRegistry Shared pointer to the AudioEventHandlerRegistry for event handling.
+/// @param audioEventHandlerRegistry Shared pointer to the IAudioEventHandlerRegistry for event handling.
 IOSAudioRecorder::IOSAudioRecorder(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {

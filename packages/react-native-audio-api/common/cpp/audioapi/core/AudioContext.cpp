@@ -9,6 +9,7 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <memory>
+#include <string>
 #include <thread>
 
 namespace audioapi {
@@ -24,7 +25,8 @@ AudioContext::AudioContext(
 
 AudioContext::~AudioContext() {
   if (getState() != ContextState::CLOSED) {
-    close();
+    std::scoped_lock lock(driverMutex_);
+    close(nullptr);
   }
 }
 
@@ -71,6 +73,10 @@ bool AudioContext::tryStartDriver() {
 
   if (audioPlayer_->start()) {
     isInitialized_.store(true, std::memory_order_release);
+    // The driver also starts implicitly, from the first
+    // `AudioScheduledSourceNode::start()`. Publish RUNNING here so the visible state
+    // never reports SUSPENDED while the graph is actually rendering; `resume()`
+    // reaches the same state through its promise task.
     setState(ContextState::RUNNING);
     return true;
   }
@@ -79,64 +85,78 @@ bool AudioContext::tryStartDriver() {
   return false;
 }
 
-void AudioContext::close() {
-  std::scoped_lock lock(driverMutex_);
-  setState(ContextState::CLOSED);
+void AudioContext::close(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+  if (getState() == ContextState::CLOSED) {
+    ContextPromiseResolver<void>::reject(promise, "Cannot close a closed audio context.");
+    return;
+  }
 
   audioPlayer_->stop();
   waitForRenderQuiescence();
+
   // No audio-thread consumer after stop; allow producer self-drain for any
   // remaining graph mutations (and flush events already queued).
   getGraph()->setProducerSelfDrain(true);
   getGraph()->processEvents();
   processAudioEvents();
   audioPlayer_->cleanup();
+
+  ContextPromiseResolver<void>::resolve(promise);
 }
 
-bool AudioContext::resume() {
-  std::scoped_lock lock(driverMutex_);
-
+bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
   if (getState() == ContextState::CLOSED) {
+    ContextPromiseResolver<void>::reject(promise, "Cannot resume a closed audio context.");
     return false;
   }
 
-  if (getState() == ContextState::RUNNING) {
+  if (getState() == ContextState::RUNNING && isDriverRunning()) {
+    ContextPromiseResolver<void>::resolve(promise);
     return true;
   }
 
+  bool result = false;
   if (isInitialized_.load(std::memory_order_acquire)) {
     getGraph()->processEvents();
     getGraph()->setProducerSelfDrain(false);
     if (audioPlayer_->resume()) {
-      setState(ContextState::RUNNING);
-      return true;
+      result = true;
+    } else {
+      getGraph()->setProducerSelfDrain(true);
     }
-    getGraph()->setProducerSelfDrain(true);
-    return false;
+  } else {
+    result = tryStartDriver();
   }
 
-  return tryStartDriver();
+  if (result) {
+    // Visible RUNNING is applied in the promise resolve task (CallInvoker).
+    ContextPromiseResolver<void>::resolve(promise);
+  } else {
+    ContextPromiseResolver<void>::reject(promise, "Failed to resume audio context.");
+  }
+  return result;
 }
 
-bool AudioContext::suspend() {
-  std::scoped_lock lock(driverMutex_);
-
+bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+  // Control-message body: no locking (see `close`).
   if (getState() == ContextState::CLOSED) {
+    ContextPromiseResolver<void>::reject(promise, "Cannot suspend a closed audio context.");
     return false;
   }
 
-  if (getState() == ContextState::SUSPENDED) {
-    return true;
+  if (getState() != ContextState::SUSPENDED) {
+    audioPlayer_->suspend();
+    waitForRenderQuiescence();
+
+    // Audio callback is no longer the consumer; enable self-drain so graph
+    // mutations while suspended cannot fill the bounded channel and block.
+    getGraph()->setProducerSelfDrain(true);
+    getGraph()->processEvents();
+    processAudioEvents();
   }
 
-  audioPlayer_->suspend();
-  waitForRenderQuiescence();
-  // Audio callback is no longer the consumer; enable self-drain so graph
-  // mutations while suspended cannot fill the bounded channel and block.
-  getGraph()->setProducerSelfDrain(true);
-  getGraph()->processEvents();
-  processAudioEvents();
-  setState(ContextState::SUSPENDED);
+  // Visible SUSPENDED is applied in the promise resolve task (CallInvoker).
+  ContextPromiseResolver<void>::resolve(promise);
   return true;
 }
 

@@ -18,7 +18,7 @@ typedef void *AudioDataType;
 namespace audioapi {
 
 class AudioFileProperties;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 using OpenFileResult = Result<std::string, std::string>;
 using CloseFileResult = Result<std::tuple<double, double>, std::string>;
@@ -28,7 +28,7 @@ class AudioFileWriter {
   DELETE_COPY_AND_MOVE(AudioFileWriter);
 
   AudioFileWriter(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties);
   virtual ~AudioFileWriter() = default;
 

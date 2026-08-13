@@ -25,9 +25,13 @@ class NodeAudioPlayer final : public CommonPlayer {
   void cleanup() override;
 
   [[nodiscard]] bool isRunning() const override;
+  [[nodiscard]] double getOutputLatency() const override;
+  [[nodiscard]] double getBaseLatency() const override;
 
  private:
   void run();
+  /// Signal the worker to exit and join it. Safe to call repeatedly.
+  void terminateWorker();
 
   std::function<void(DSPAudioBuffer *, int)> renderAudio_;
   std::shared_ptr<DSPAudioBuffer> buffer_;

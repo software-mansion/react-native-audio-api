@@ -1,5 +1,10 @@
 <!DOCTYPE html>
 <title>Smoke tests for standard nodes with renderSizeHint</title>
+<!-- Local deviation from upstream WPT: 60 subtests in one file, 15 of which render
+     4608000 frames at 768000Hz. ~1.5s locally, but close enough to the default 10s
+     cap that a slow CI runner truncates the tail and discards the unreported
+     subtests, flapping the base-vs-head pass count between 52/60 and 49/58. -->
+<meta name="timeout" content="long">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script>

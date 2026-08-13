@@ -28,12 +28,12 @@ struct WriterData {
 namespace audioapi {
 
 class AudioFileProperties;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class IOSFileWriter : public AudioFileWriter {
  public:
   IOSFileWriter(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties);
   ~IOSFileWriter() override;
 

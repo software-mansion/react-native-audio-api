@@ -125,7 +125,7 @@ file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioa
 ```cmake
 if(RN_AUDIO_API_FFMPEG_DISABLED)
   list(REMOVE_ITEM COMMON_CPP_SOURCES
-    "${COMMON_CPP_DIR}/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+    "${COMMON_CPP_DIR}/audioapi/decoding/backends/FfmpegDecoder.cpp"
   )
 endif()
 ```
@@ -262,7 +262,7 @@ This means **tests build against the installed/published version of the library*
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")  # no JSI in tests
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")            # worklets not compiled
 list(REMOVE_ITEM RNAUDIOAPI_SRC ... "AudioContext.cpp")                         # needs real audio I/O
-list(REMOVE_ITEM RNAUDIOAPI_SRC ... "FFmpegDecoding.cpp")                       # FFmpeg disabled in tests
+list(REMOVE_ITEM RNAUDIOAPI_SRC ... "FfmpegDecoder.cpp")                       # FFmpeg disabled in tests
 ```
 
 ### Compile definitions always set in tests

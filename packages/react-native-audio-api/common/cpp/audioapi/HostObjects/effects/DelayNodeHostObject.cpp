@@ -1,5 +1,5 @@
 #include <audioapi/HostObjects/AudioParamHostObject.h>
-#include <audioapi/HostObjects/TypedAudioNodePtr.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
@@ -45,6 +45,14 @@ DelayNodeHostObject::DelayNodeHostObject(
   graph_->linkNodes(delayReaderHostNode_->rawNode(), delayWriterHostNode_->rawNode());
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
+}
+
+std::shared_ptr<utils::graph::HostNode> DelayNodeHostObject::getInput(int /*outputIndex*/) {
+  return delayReaderHostNode_;
+}
+
+std::shared_ptr<utils::graph::HostNode> DelayNodeHostObject::getOutput(int /*inputIndex*/) {
+  return delayWriterHostNode_;
 }
 
 JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {

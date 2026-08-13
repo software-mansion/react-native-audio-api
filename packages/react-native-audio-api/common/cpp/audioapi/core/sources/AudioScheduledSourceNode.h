@@ -11,8 +11,6 @@
 
 namespace audioapi {
 
-class IAudioEventHandlerRegistry;
-
 class AudioScheduledSourceNode : public AudioNode {
  public:
   // UNSCHEDULED: The node is not scheduled to play.

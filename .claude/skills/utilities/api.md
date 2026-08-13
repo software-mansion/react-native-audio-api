@@ -239,10 +239,10 @@ Used exclusively within `AudioParamEventQueue`. Do not construct outside of `Aud
 
 ---
 
-## `AudioUtils.hpp` — inline DSP math
+## `AudioUtils.h` — inline DSP math
 
 ```cpp
-#include <audioapi/dsp/AudioUtils.hpp>
+#include <audioapi/dsp/AudioUtils.h>
 using namespace audioapi::dsp;
 
 size_t frame = timeToSampleFrame(time, sampleRate);   // double → size_t

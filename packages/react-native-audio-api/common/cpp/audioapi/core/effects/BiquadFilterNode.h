@@ -30,7 +30,7 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
-#include <audioapi/core/CompositeAudioParam.h>
+#include <audioapi/core/CompositeAudioParam.hpp>
 #include <audioapi/core/types/BiquadFilterType.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #if RN_AUDIO_API_TEST

@@ -15,12 +15,12 @@
 
 namespace audioapi {
 
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AudioRecorderCallback {
  public:
   AudioRecorderCallback(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       size_t bufferLength,
       int channelCount,

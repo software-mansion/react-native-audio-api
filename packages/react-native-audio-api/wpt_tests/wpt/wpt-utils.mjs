@@ -32,6 +32,8 @@ const WEB_AUDIO_CLASSES = [
   'AudioScheduledSourceNode',
   'BaseAudioContext',
   'BiquadFilterNode',
+  'ChannelMergerNode',
+  'ChannelSplitterNode',
   'ConstantSourceNode',
   'ConvolverNode',
   'DelayNode',
@@ -49,6 +51,8 @@ export const WRAPPED_NODE_CONSTRUCTORS = new Set([
   'AnalyserNode',
   'AudioBufferSourceNode',
   'BiquadFilterNode',
+  'ChannelMergerNode',
+  'ChannelSplitterNode',
   'ConstantSourceNode',
   'ConvolverNode',
   'DelayNode',
@@ -93,10 +97,33 @@ export function toWindowRealmError(window, error) {
   return error;
 }
 
+function isThenable(value) {
+  return value != null && typeof value.then === 'function';
+}
+
+/**
+ * Library classes load in Node's realm; jsdom tests use `window.Promise`.
+ * `nodePromise instanceof window.Promise` is false across realms, which breaks
+ * WPT checks like `assert_true(p instanceof Promise)`. Re-wrap thenables into
+ * the window realm and map rejection reasons to window errors.
+ */
+function toWindowRealmPromise(window, thenable) {
+  return new window.Promise((resolve, reject) => {
+    thenable.then(
+      (value) => resolve(value),
+      (error) => reject(toWindowRealmError(window, error))
+    );
+  });
+}
+
 function wrapWithRealmErrors(window, fn) {
   return function (...args) {
     try {
-      return fn.apply(this, args);
+      const result = fn.apply(this, args);
+      if (isThenable(result)) {
+        return toWindowRealmPromise(window, result);
+      }
+      return result;
     } catch (error) {
       throw toWindowRealmError(window, error);
     }

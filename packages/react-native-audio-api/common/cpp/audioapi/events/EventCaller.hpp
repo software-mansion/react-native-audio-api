@@ -2,7 +2,7 @@
 
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/AudioEventPayload.h>
-#include <audioapi/events/AudioEventPayloadMapping.h>
+#include <audioapi/events/AudioEventPayloadMapping.hpp>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/Macros.h>
 

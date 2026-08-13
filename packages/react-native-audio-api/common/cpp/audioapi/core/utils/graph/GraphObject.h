@@ -121,7 +121,8 @@ class GraphObject {
   /// Used to make `disable()` sticky: a source that finished playback while
   /// still connected to a processable downstream must stay idle for good,
   /// otherwise the every-quantum reverse pull would re-activate it (it is
-  /// still an input of a processable consumer). Audio-thread only.
+  /// still an input of a processable consumer).
+  /// @note Audio Thread only
   bool excludeFromProcessablePull_ = false;
 
  private:

@@ -208,7 +208,7 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture()
 class TestableIOSAudioRecorder : public IOSAudioRecorder {
  public:
   explicit TestableIOSAudioRecorder(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
       : IOSAudioRecorder(audioEventHandlerRegistry) {}
 
   NativeAudioRecorder *replaceNativeRecorder(NativeAudioRecorder *nativeRecorder)
@@ -281,7 +281,7 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
   self.audioEngine = [[FakeIOSRecorderAudioEngine alloc] init];
   self.nativeRecorder = [[FakeNativeAudioRecorder alloc] init];
 
-  _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<AudioEventHandlerRegistry>());
+  _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<IAudioEventHandlerRegistry>());
   self.originalNativeRecorder = _recorder->replaceNativeRecorder(self.nativeRecorder);
   self.nativeRecorder.onInputConfigurationChange = self.originalNativeRecorder.onInputConfigurationChange;
 }

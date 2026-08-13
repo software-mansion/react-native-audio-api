@@ -12,7 +12,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
@@ -221,7 +221,7 @@ inline BiquadFilterOptions parseBiquadFilterOptions(
 inline OscillatorOptions parseOscillatorOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
-  OscillatorOptions options;
+  OscillatorOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto typeValue = optionsObject.getProperty(runtime, "type");
   if (typeValue.isString()) {
@@ -348,11 +348,12 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     const auto path = sourceValue.asString(runtime).utf8(runtime);
     if (audiodecoding::isHttpUrl(path)) {
       options.sourceUrl = path;
+      // Remote progressive / HLS streaming uses FFmpeg's HTTP demuxer.
       options.requiresFFmpeg = true;
     } else {
       options.filePath = path;
-      options.requiresFFmpeg =
-          audiodecoding::pathHasExtension(path, {".mp4", ".m4a", ".aac", ".m3u8"});
+      // Local files use OS/miniaudio — FFmpeg is only for remote/network sources.
+      options.requiresFFmpeg = false;
     }
   } else if (sourceValue.isObject()) {
     auto sourceObj = sourceValue.asObject(runtime);
@@ -371,10 +372,9 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
       auto arrayBuffer = sourceObj.getArrayBuffer(runtime);
       auto *data = arrayBuffer.data(runtime);
       auto size = arrayBuffer.size(runtime);
-      auto format = audiodecoding::detectAudioFormat(data, size);
-      options.requiresFFmpeg = format == AudioFormat::MP4 || format == AudioFormat::M4A ||
-          format == AudioFormat::AAC || format == AudioFormat::M3U8;
       options.data = std::vector<uint8_t>(data, data + size);
+      // In-memory sources decode via OS / miniaudio — never FFmpeg.
+      options.requiresFFmpeg = false;
     }
   }
 
@@ -388,7 +388,7 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
   if (options.requiresFFmpeg) {
     throw jsi::JSError(
         runtime,
-        "AudioFileSourceNode: remote URLs and formats (.mp4, .m4a, .aac, .m3u8) require FFmpeg, "
+        "AudioFileSourceNode: remote URL streaming and HLS (.m3u8) require FFmpeg, "
         "which is disabled in this build.");
   }
 #endif
@@ -407,6 +407,48 @@ inline DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &
   auto delayTimeValue = optionsObject.getProperty(runtime, "delayTime");
   if (delayTimeValue.isNumber()) {
     options.delayTime = static_cast<float>(delayTimeValue.getNumber());
+  }
+
+  return options;
+}
+
+inline ChannelMergerOptions parseChannelMergerOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  // channelCount / channelCountMode are fixed by the spec and validated in TS.
+  // channelInterpretation remains configurable.
+  ChannelMergerOptions options;
+
+  auto numberOfInputsValue = optionsObject.getProperty(runtime, "numberOfInputs");
+  if (numberOfInputsValue.isNumber()) {
+    options.numberOfInputs = static_cast<int>(numberOfInputsValue.getNumber());
+  }
+
+  auto channelInterpretationValue = optionsObject.getProperty(runtime, "channelInterpretation");
+  if (!channelInterpretationValue.isString()) {
+    return options;
+  }
+  auto channelInterpretationStr = channelInterpretationValue.asString(runtime).utf8(runtime);
+  if (channelInterpretationStr == "speakers") {
+    options.channelInterpretation = ChannelInterpretation::SPEAKERS;
+  } else if (channelInterpretationStr == "discrete") {
+    options.channelInterpretation = ChannelInterpretation::DISCRETE;
+  }
+
+  return options;
+}
+
+inline ChannelSplitterOptions parseChannelSplitterOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  // The Web Audio spec fixes channelCount/mode/interpretation for a splitter;
+  // channelCount tracks numberOfOutputs.
+  ChannelSplitterOptions options;
+
+  auto numberOfOutputsValue = optionsObject.getProperty(runtime, "numberOfOutputs");
+  if (numberOfOutputsValue.isNumber()) {
+    options.numberOfOutputs = static_cast<int>(numberOfOutputsValue.getNumber());
+    options.channelCount = options.numberOfOutputs;
   }
 
   return options;

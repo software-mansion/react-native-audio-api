@@ -60,7 +60,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
 
     this.isSuspended = false;
 
-    await (this.context as IOfflineAudioContext).resume();
+    return (this.context as IOfflineAudioContext).resume();
   }
 
   async suspend(suspendTime: number): Promise<undefined> {
@@ -82,7 +82,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
 
     this.isSuspended = true;
 
-    await (this.context as IOfflineAudioContext).suspend(suspendTime);
+    return (this.context as IOfflineAudioContext).suspend(suspendTime);
   }
 
   async startRendering(): Promise<AudioBuffer> {

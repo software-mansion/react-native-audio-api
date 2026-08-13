@@ -1,0 +1,97 @@
+name: WPT report comment
+
+# Runs separately from "WPT Tests" because a pull_request run from a fork gets a read-only
+# GITHUB_TOKEN and cannot comment. A workflow_run job executes in the context of the base
+# repository, so it can write the comment for fork and same-repo pull requests alike.
+#
+# NOTE: workflow_run only ever runs the version of this file on the default branch. Changes
+# here take effect after merging, not on the pull request that introduces them.
+on:
+  workflow_run:
+    workflows: ['WPT Tests']
+    types: [completed]
+
+jobs:
+  comment:
+    name: Post WPT report
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    # Queued rather than cancelled: two runs commenting at once would both find no existing
+    # comment and each create one, which is the duplication this job exists to avoid.
+    concurrency:
+      group: wpt-report-comment-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Download comment payload
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: wpt-comment
+          path: wpt-comment
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post or update the report comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Hidden marker that identifies this bot's comment, so every push edits the
+            // same one instead of appending a new comment per run.
+            const marker = '<!-- wpt-non-regression-report -->';
+            const run = context.payload.workflow_run;
+
+            const readPayloadFile = (name) => {
+              try {
+                return fs.readFileSync(`wpt-comment/${name}`, 'utf8').trim();
+              } catch {
+                return null;
+              }
+            };
+
+            // The payload carries the number because workflow_run.pull_requests is empty
+            // for pull requests opened from a fork.
+            const payloadNumber = Number(readPayloadFile('pr-number.txt'));
+            const prNumber = Number.isInteger(payloadNumber) && payloadNumber > 0
+              ? payloadNumber
+              : run.pull_requests?.[0]?.number;
+
+            if (!prNumber) {
+              core.info('No pull request number available; skipping the WPT comment.');
+              return;
+            }
+
+            const report = readPayloadFile('report.md') ??
+              '## WPT non-regression comparison\n\n**ERROR** — the run produced no report.';
+
+            const body = [
+              marker,
+              report,
+              '',
+              `<sub>[Workflow run](${run.html_url}) · this comment is updated on every push.</sub>`,
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }

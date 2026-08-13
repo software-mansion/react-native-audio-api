@@ -2,7 +2,7 @@
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/CircularArray.hpp>
 
 #include <audioapi/events/AudioEventPayload.h>
@@ -20,7 +20,7 @@ namespace audioapi {
 /// @param channelCount The user desired channel count
 /// @param callbackId The callback identifier
 AudioRecorderCallback::AudioRecorderCallback(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     float sampleRate,
     size_t bufferLength,
     int channelCount,
