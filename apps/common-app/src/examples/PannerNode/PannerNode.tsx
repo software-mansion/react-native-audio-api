@@ -18,13 +18,22 @@ const DISTANCE_MODELS: DistanceModelType[] = [
   'exponential',
 ];
 
-type SpatialState = {
+type Vec3State = {
   positionX: number;
   positionY: number;
   positionZ: number;
+};
+
+type SpatialState = Vec3State & {
   orientationX: number;
   orientationY: number;
   orientationZ: number;
+};
+
+const INITIAL_LISTENER: Vec3State = {
+  positionX: 0,
+  positionY: 0,
+  positionZ: 0,
 };
 
 const INITIAL_SPATIAL: SpatialState = {
@@ -48,19 +57,19 @@ const PRESETS: Preset[] = [
     label: 'Center',
     spatial: { ...INITIAL_SPATIAL },
     coneEnabled: false,
-    hint: 'In front of listener (cone off) — move Pos X for L/R pan',
+    hint: 'In front of the listener',
   },
   {
     label: 'Left',
     spatial: { ...INITIAL_SPATIAL, positionX: -3 },
     coneEnabled: false,
-    hint: 'Stronger in the left ear (cone off)',
+    hint: 'Stronger in the left ear (with cone off)',
   },
   {
     label: 'Right',
     spatial: { ...INITIAL_SPATIAL, positionX: 3 },
     coneEnabled: false,
-    hint: 'Stronger in the right ear (cone off)',
+    hint: 'Stronger in the right ear (with cone off)',
   },
   {
     label: 'Far',
@@ -77,7 +86,7 @@ const PRESETS: Preset[] = [
       orientationZ: -1,
     },
     coneEnabled: true,
-    hint: 'Cone on + facing away — should be much quieter / silent',
+    hint: 'Cone on + facing away - steer with inner and outer angle and outer gain',
   },
 ];
 
@@ -85,9 +94,7 @@ const PannerNodeExample: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gain, setGain] = useState(0.4);
   const [spatial, setSpatial] = useState<SpatialState>(INITIAL_SPATIAL);
-  // Cone off by default: with a narrow cone, moving Pos X quickly points the
-  // source away from the listener and hits coneOuterGain (silence) — that
-  // looked like a panning bug at X≈±1.
+  const [listener, setListener] = useState<Vec3State>(INITIAL_LISTENER);
   const [coneEnabled, setConeEnabled] = useState(false);
   const [coneInnerAngle, setConeInnerAngle] = useState(60);
   const [coneOuterAngle, setConeOuterAngle] = useState(90);
@@ -96,7 +103,7 @@ const PannerNodeExample: FC = () => {
     useState<DistanceModelType>('inverse');
   const [rolloffFactor, setRolloffFactor] = useState(1);
   const [hint, setHint] = useState(
-    'Use headphones. Cone OFF: Pos X pans L/R, Pos Z is distance. Turn Cone ON only to test orientation.'
+    'Use headphones. Listener orientation forward is -Z. Move source and/or listener. Cone OFF: source "Pos X" pans L/R. Turn Cone ON to test orientation together with inner and outer angle and outer gain.'
   );
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -143,6 +150,16 @@ const PannerNodeExample: FC = () => {
     panner.orientationZ.value = next.orientationZ;
   };
 
+  const applyListener = (next: Vec3State) => {
+    const ctx = audioContextRef.current;
+    if (!ctx) {
+      return;
+    }
+    ctx.listener.positionX.value = next.positionX;
+    ctx.listener.positionY.value = next.positionY;
+    ctx.listener.positionZ.value = next.positionZ;
+  };
+
   const updateSpatial = <K extends keyof SpatialState>(
     key: K,
     value: SpatialState[K]
@@ -150,6 +167,17 @@ const PannerNodeExample: FC = () => {
     setSpatial((prev) => {
       const next = { ...prev, [key]: value };
       applySpatial(next);
+      return next;
+    });
+  };
+
+  const updateListener = <K extends keyof Vec3State>(
+    key: K,
+    value: Vec3State[K]
+  ) => {
+    setListener((prev) => {
+      const next = { ...prev, [key]: value };
+      applyListener(next);
       return next;
     });
   };
@@ -172,6 +200,7 @@ const PannerNodeExample: FC = () => {
     pannerRef.current.rolloffFactor = rolloffFactor;
     applyCone(pannerRef.current, coneEnabled);
     applySpatial(spatial);
+    applyListener(listener);
 
     oscillatorRef.current.connect(gainRef.current);
     gainRef.current.connect(pannerRef.current);
@@ -194,6 +223,8 @@ const PannerNodeExample: FC = () => {
   const applyPreset = (preset: Preset) => {
     setSpatial(preset.spatial);
     applySpatial(preset.spatial);
+    setListener(INITIAL_LISTENER);
+    applyListener(INITIAL_LISTENER);
     if (preset.coneEnabled !== undefined) {
       setConeEnabled(preset.coneEnabled);
       if (pannerRef.current) {
@@ -239,7 +270,7 @@ const PannerNodeExample: FC = () => {
             }
             setHint(
               next
-                ? 'Cone on — use Inner/Outer angle + Outer gain with orientation'
+                ? 'Cone on — use inner/outer angle + outer gain with orientation'
                 : 'Cone off (360°) — orientation has no effect'
             );
           }}>
@@ -365,7 +396,41 @@ const PannerNodeExample: FC = () => {
         />
         <Spacer.Vertical size={16} />
 
-        <Text style={styles.section}>Position</Text>
+        <Text style={styles.section}>Listener position</Text>
+        <Spacer.Vertical size={10} />
+        <Slider
+          label="Listener X"
+          value={listener.positionX}
+          onValueChange={(value) => updateListener('positionX', value)}
+          min={-8}
+          max={8}
+          step={0.1}
+          minLabelWidth={LABEL_WIDTH}
+        />
+        <Spacer.Vertical size={10} />
+        <Slider
+          label="Listener Y"
+          value={listener.positionY}
+          onValueChange={(value) => updateListener('positionY', value)}
+          min={-8}
+          max={8}
+          step={0.1}
+          minLabelWidth={LABEL_WIDTH}
+        />
+        <Spacer.Vertical size={10} />
+        <Slider
+          label="Listener Z"
+          value={listener.positionZ}
+          onValueChange={(value) => updateListener('positionZ', value)}
+          min={-12}
+          max={4}
+          step={0.1}
+          minLabelWidth={LABEL_WIDTH}
+        />
+        <Spacer.Vertical size={16} />
+
+        <Text style={styles.section}>Source position</Text>
+        <Spacer.Vertical size={10} />
         <Slider
           label="Pos X"
           value={spatial.positionX}
@@ -397,7 +462,7 @@ const PannerNodeExample: FC = () => {
         />
         <Spacer.Vertical size={16} />
 
-        <Text style={styles.section}>Orientation</Text>
+        <Text style={styles.section}>Source orientation</Text>
         <Slider
           label="Ori X"
           value={spatial.orientationX}
