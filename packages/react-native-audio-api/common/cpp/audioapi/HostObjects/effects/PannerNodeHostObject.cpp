@@ -97,9 +97,15 @@ JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, panningModel) {
 }
 
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, panningModel) {
+  const auto modelStr = value.toString(runtime).utf8(runtime);
+  if (modelStr == "HRTF") {
+    throw jsi::JSError(
+        runtime, "NotSupportedError: panningModel 'HRTF' is not supported yet; use 'equalpower'");
+  }
+
   PanningModelType parsedModel;
   try {
-    parsedModel = js_enum_parser::panningModelFromString(value.asString(runtime).utf8(runtime));
+    parsedModel = js_enum_parser::panningModelFromString(modelStr);
   } catch (const std::invalid_argument &) {
     return;
   }

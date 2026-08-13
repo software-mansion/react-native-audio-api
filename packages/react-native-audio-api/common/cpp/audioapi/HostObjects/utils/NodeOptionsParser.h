@@ -112,9 +112,13 @@ inline PannerOptions parsePannerOptions(jsi::Runtime &runtime, const jsi::Object
 
   auto panningModelValue = optionsObject.getProperty(runtime, "panningModel");
   if (panningModelValue.isString()) {
+    const auto modelStr = panningModelValue.asString(runtime).utf8(runtime);
+    if (modelStr == "HRTF") {
+      throw jsi::JSError(
+          runtime, "NotSupportedError: panningModel 'HRTF' is not supported yet; use 'equalpower'");
+    }
     try {
-      options.panningModel =
-          js_enum_parser::panningModelFromString(panningModelValue.asString(runtime).utf8(runtime));
+      options.panningModel = js_enum_parser::panningModelFromString(modelStr);
     } catch (const std::invalid_argument &) {}
   }
 

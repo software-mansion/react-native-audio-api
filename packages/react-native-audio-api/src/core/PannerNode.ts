@@ -1,6 +1,6 @@
 import { IPannerNode } from '../jsi-interfaces';
 import { DistanceModelType, PannerOptions, PanningModelType } from '../types';
-import { InvalidStateError, RangeError } from '../errors';
+import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
 import { PannerOptionsValidator } from '../utils/validation';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
@@ -31,6 +31,11 @@ export default class PannerNode extends AudioNode {
   }
 
   public set panningModel(value: PanningModelType) {
+    if (value === 'HRTF') {
+      throw new NotSupportedError(
+        "panningModel 'HRTF' is not supported yet; use 'equalpower'"
+      );
+    }
     (this.node as IPannerNode).panningModel = value;
   }
 

@@ -530,6 +530,11 @@ class PannerNodeMock extends AudioNodeMock {
     this.orientationX.value = 1;
 
     if (options?.panningModel !== undefined) {
+      if (options.panningModel === 'HRTF') {
+        throw new NotSupportedErrorMock(
+          "panningModel 'HRTF' is not supported yet; use 'equalpower'"
+        );
+      }
       this._panningModel = options.panningModel;
     }
     if (options?.distanceModel !== undefined) {
@@ -578,6 +583,11 @@ class PannerNodeMock extends AudioNodeMock {
   }
 
   set panningModel(value: PanningModelType) {
+    if (value === 'HRTF') {
+      throw new NotSupportedErrorMock(
+        "panningModel 'HRTF' is not supported yet; use 'equalpower'"
+      );
+    }
     this._panningModel = value;
   }
 

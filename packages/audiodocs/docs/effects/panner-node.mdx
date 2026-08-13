@@ -22,9 +22,9 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `panningModel` <Optional /> | `'equalpower' \| 'HRTF'` | `'equalpower'` | Spatialization algorithm. Native uses equal-power; `HRTF` is accepted but currently rendered with equal-power. |
+| `panningModel` <Optional /> | `'equalpower' \| 'HRTF'` | `'equalpower'` | Spatialization algorithm. Native supports `'equalpower'` only; `'HRTF'` throws `NotSupportedError`. |
 | `distanceModel` <Optional /> | `'linear' \| 'inverse' \| 'exponential'` | `'inverse'` | Distance attenuation model. |
-| `positionX` … `positionZ` <Optional /> | `number` | `0` | Initial source position. |
+| `positionX` … `positionZ` <Optional /> | `number` | `(0, 0, 0)` | Initial source position. |
 | `orientationX` … `orientationZ` <Optional /> | `number` | `(1, 0, 0)` | Initial source orientation. |
 | `refDistance` <Optional /> | `number` | `1` | Reference distance for attenuation. |
 | `maxDistance` <Optional /> | `number` | `10000` | Maximum distance for the linear model. |
@@ -44,7 +44,7 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 | :----: | :----: | :-------- |
 | `positionX`, `positionY`, `positionZ` | [`AudioParam`](/docs/core/audio-param) | Source position in 3D space. |
 | `orientationX`, `orientationY`, `orientationZ` | [`AudioParam`](/docs/core/audio-param) | Source orientation vector. |
-| `panningModel` | `PanningModelType` | `'equalpower'` or `'HRTF'`. |
+| `panningModel` | `PanningModelType` | `'equalpower'` (native). `'HRTF'` throws `NotSupportedError` on native. |
 | `distanceModel` | `DistanceModelType` | `'linear'`, `'inverse'`, or `'exponential'`. |
 | `refDistance`, `maxDistance`, `rolloffFactor` | `number` | Distance model parameters. |
 | `coneInnerAngle`, `coneOuterAngle`, `coneOuterGain` | `number` | Directional cone. |
@@ -64,4 +64,4 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 - Output is always stereo (2 channels), like [`StereoPannerNode`](/docs/effects/stereo-panner-node).
 - Spatialization uses the context [`listener`](/docs/core/audio-listener) position and orientation.
-- **`HRTF`** panning is not implemented in the native engine yet; selecting it still produces equal-power stereo output.
+- On native, setting `panningModel` to `'HRTF'` throws `NotSupportedError`. Use `'equalpower'`.

@@ -1,10 +1,16 @@
-import { InvalidStateError, RangeError } from '../../errors';
+import { InvalidStateError, NotSupportedError, RangeError } from '../../errors';
 import type { OptionsValidator, PannerOptions } from '../../types';
 
 export const PannerOptionsValidator: OptionsValidator<PannerOptions> = {
   validate(options?: PannerOptions): void {
     if (!options) {
       return;
+    }
+
+    if (options.panningModel === 'HRTF') {
+      throw new NotSupportedError(
+        "panningModel 'HRTF' is not supported yet; use 'equalpower'"
+      );
     }
 
     if (options.refDistance !== undefined && options.refDistance < 0) {
