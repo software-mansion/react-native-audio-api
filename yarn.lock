@@ -5517,7 +5517,7 @@ __metadata:
     react-native-background-timer: "npm:2.4.1"
     react-native-gesture-handler: "npm:3.1.0"
     react-native-reanimated: "npm:4.6.0-nightly-20260812-0f8cf6dcc"
-    react-native-safe-area-context: "npm:5.7.0"
+    react-native-safe-area-context: "npm:5.9.0"
     react-native-screens: "npm:4.27.0"
     react-native-svg: "npm:15.15.4"
     react-native-worklets: "npm:0.12.0"
@@ -12077,13 +12077,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-safe-area-context@npm:5.7.0":
-  version: 5.7.0
-  resolution: "react-native-safe-area-context@npm:5.7.0"
+"react-native-safe-area-context@npm:5.9.0":
+  version: 5.9.0
+  resolution: "react-native-safe-area-context@npm:5.9.0"
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 10/9f5d3469c18c90c527c4068560ce4dcc7689e9fc8ddc68b8a5e76c94a6eafdba975ced89a48e08fecfd1303331e8c2498722bc249fcd87b1c5ea64ef3abd1d00
+  checksum: 10/695e46337a8a2c855116f662bb49f83b9894f0e5881733a301719494f520fbafbd2437093a4dd4c2b96cce960d7b92674f8f6cfbd9ab2b1eaeaf72297e6a5125
   languageName: node
   linkType: hard
 
