@@ -1,4 +1,4 @@
-#include <audioapi/HostObjects/TypedAudioNodePtr.h>
+#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/types/NodeOptions.h>

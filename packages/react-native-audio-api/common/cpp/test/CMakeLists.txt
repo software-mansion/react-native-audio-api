@@ -53,7 +53,7 @@ set(AUDIO_THREAD_GUARD_SRC
 
 list(REMOVE_ITEM RNAUDIOAPI_SRC
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/core/AudioContext.cpp"
-  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp"
 )
 
 file(GLOB_RECURSE RNAUDIOAPI_LIBS

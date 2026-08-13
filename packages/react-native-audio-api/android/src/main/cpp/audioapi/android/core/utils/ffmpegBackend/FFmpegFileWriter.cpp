@@ -33,7 +33,7 @@ constexpr int defaultFlushInterval = 100;
 namespace audioapi::android::ffmpeg {
 
 FFmpegAudioFileWriter::FFmpegAudioFileWriter(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     float streamSampleRate,
     int32_t streamChannelCount,

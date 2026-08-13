@@ -22,12 +22,12 @@ struct CallbackData {
 
 namespace audioapi {
 
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class IOSRecorderCallback : public AudioRecorderCallback {
  public:
   IOSRecorderCallback(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       size_t bufferLength,
       int channelCount,

@@ -168,4 +168,4 @@ const MyAudioTagWrapper : React.FC = () => {
 
 ## Remarks
 
-- **FFmpeg:** HLS and several compressed formats require an FFmpeg build for URL streaming. Without FFmpeg, remote sources are downloaded and decoded with miniaudio where supported. See [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used).
+- **FFmpeg:** Remote URL streaming (HTTP byte ranges) and HLS require an FFmpeg build. Without FFmpeg, remote progressive sources are downloaded fully and decoded with OS APIs / miniaudio where supported. See [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used).

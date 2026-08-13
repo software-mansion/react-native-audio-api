@@ -12,7 +12,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
@@ -106,7 +106,7 @@ static void cleanupStartedRecorder(
 /// @param voiceProcessingEnabled Whether the capture chain runs through Apple's voice-processing I/O
 /// (echo cancellation, noise suppression, automatic gain control).
 IOSAudioRecorder::IOSAudioRecorder(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     bool voiceProcessingEnabled)
     : AudioRecorder(audioEventHandlerRegistry)
 {

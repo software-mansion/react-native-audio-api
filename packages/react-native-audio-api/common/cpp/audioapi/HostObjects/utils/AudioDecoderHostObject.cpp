@@ -1,6 +1,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
-#include <audioapi/core/utils/AudioDecoding.h>
+#include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>

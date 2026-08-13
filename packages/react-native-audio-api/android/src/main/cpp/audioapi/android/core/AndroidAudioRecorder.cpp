@@ -12,7 +12,7 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
@@ -53,7 +53,7 @@ std::optional<oboe::InputPreset> inputPresetFromString(const std::string &name) 
 } // namespace
 
 AndroidAudioRecorder::AndroidAudioRecorder(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::string &inputPreset)
     : AudioRecorder(audioEventHandlerRegistry),
       inputPreset_(inputPreset),
