@@ -1,3 +1,5 @@
+#import <UIKit/UIKit.h>
+
 #import <audioapi/events/AudioEvent.h>
 #import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
@@ -88,6 +90,19 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                               selector:@selector(handleInterruption:)
                                   name:AVAudioSessionInterruptionNotification
                                 object:nil];
+  // Returning to the foreground is the most reliable moment at which the system stops
+  // refusing to start the engine, since the refusals happen while the device is locked.
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleApplicationDidBecomeActive:)
+                                  name:UIApplicationDidBecomeActiveNotification
+                                object:nil];
+}
+
+- (void)handleApplicationDidBecomeActive:(NSNotification *)notification
+{
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+
+  dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine retryPendingRestartIfNeeded]; });
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath
@@ -143,6 +158,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   } else {
     dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
   }
+
+  // Whoever owns interruption handling, an ended interruption is an opportunity to finish a
+  // restart that was refused or deferred earlier. `onInterruptionEnd` above only recovers an
+  // engine still marked interrupted, and a configuration change arriving during the
+  // interruption can have moved it out of that state; this covers what it leaves behind.
+  // Queued after it, so a successful resume clears the pending restart and this does nothing.
+  dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine retryPendingRestartIfNeeded]; });
 }
 
 - (void)handleSecondaryAudio:(NSNotification *)notification
@@ -218,6 +240,11 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       invokeHandlerWithEventName:audioapi::AudioEvent::ROUTE_CHANGE
                          payload:audioapi::StringPayload{
                                      .name = "reason", .reason = [reasonStr UTF8String]}];
+
+  // A new route can lift whatever made the system refuse an earlier restart, and it
+  // arrives without an engine configuration change whenever the engine is not running.
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+  dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine retryPendingRestartIfNeeded]; });
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification

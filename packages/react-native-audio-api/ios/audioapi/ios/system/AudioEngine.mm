@@ -25,13 +25,25 @@
 
 @interface AudioEngine () {
   std::mutex _engineLock;
-  BOOL _isRebuildingAudioEngine;
+
+  /// Set when the engine should be running but the system refused to start it.
+  BOOL _restartPending;
+
+  /// Number of backoff retries already spent on the current pending restart.
+  NSUInteger _restartRetryCount;
+
+  /// Incremented whenever scheduled retries become obsolete, so that a retry already
+  /// queued on the main queue can recognise itself as stale and do nothing.
+  NSUInteger _restartRetryGeneration;
 }
 
 @property (nonatomic, strong)
     NSMutableDictionary<NSString *, AudioEngineSourceRegistration *> *sourceRegistrations;
 @property (nonatomic, strong) AudioEngineInputRegistration *inputRegistration;
 
+// Every method below assumes the caller already holds `_engineLock`; the public methods
+// declared in the header acquire it. `_engineLock` is not recursive, so these must never
+// be reached through a public method.
 - (void)createAudioEngineIfNeeded;
 - (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState;
 - (BOOL)hasTrackedGraph;
@@ -43,8 +55,26 @@
 - (AVAudioFormat *)liveInputFormat;
 - (void)resetInputNode;
 - (void)rebuildAudioEngineAndResumeIfNeeded;
+- (BOOL)graphRequiresRebuild;
+- (void)handleRefusedRestart;
+- (void)markRestartPending;
+- (void)clearPendingRestart;
+- (void)scheduleRestartRetry;
+
+/// Runs a scheduled retry. Unlike the helpers above this one acquires `_engineLock`
+/// itself, because it is invoked from the main queue by `scheduleRestartRetry`.
+- (void)retryPendingRestartForGeneration:(NSUInteger)generation;
 
 @end
+
+/// Backoff for restarts the system refused, doubling from the initial delay up to the
+/// maximum one. The schedule is bounded rather than endless because the conditions that
+/// cause a refusal (a locked device, another application holding the session) routinely
+/// outlast any reasonable polling window; once it is exhausted the engine stays pending
+/// and waits for `retryPendingRestartIfNeeded` to signal that conditions have changed.
+static const NSTimeInterval kInitialRestartRetryDelay = 2.0;
+static const NSTimeInterval kMaximumRestartRetryDelay = 32.0;
+static const NSUInteger kMaximumRestartRetryCount = 6;
 
 @implementation AudioEngine
 
@@ -122,6 +152,7 @@ static AudioEngine *_sharedInstance = nil;
 - (void)cleanup
 {
   std::scoped_lock lock(_engineLock);
+  [self clearPendingRestart];
   [self destroyAudioEngine];
   self.state = AudioEngineState::AudioEngineStateIdle;
   self.sourceRegistrations = nil;
@@ -366,7 +397,6 @@ static AudioEngine *_sharedInstance = nil;
 - (void)onInterruptionEnd:(bool)shouldResume
 {
   std::scoped_lock lock(_engineLock);
-  NSError *error = nil;
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
     return;
@@ -374,25 +404,18 @@ static AudioEngine *_sharedInstance = nil;
 
   [self stopEngine];
   [self rebuildAudioEngine];
+  // The graph is fresh, so the deactivation that invalidated the previous one is settled.
+  // Leaving the flag raised would make the start below rebuild a second time.
+  self.sessionDeactivationInvalidatedGraph = false;
 
   if (!shouldResume) {
     self.state = AudioEngineState::AudioEngineStatePaused;
     return;
   }
 
-  [self.audioEngine prepare];
-  [self.audioEngine startAndReturnError:&error];
-
-  if (error != nil) {
-    NSLog(
-        @"Error while restarting the audio engine after interruption: %@",
-        [error debugDescription]);
-    self.state = AudioEngineState::AudioEngineStateIdle;
-    return;
+  if (![self startEngine]) {
+    [self handleRefusedRestart];
   }
-
-  self.state = AudioEngineState::AudioEngineStateRunning;
-  self.sessionDeactivationInvalidatedGraph = false;
 }
 
 - (AudioEngineState)getState
@@ -409,11 +432,9 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)rebuildAudioEngineAndResumeIfNeeded
 {
-  if (_isRebuildingAudioEngine) {
-    return;
-  }
-
-  _isRebuildingAudioEngine = YES;
+  // A restart already pending means the engine is meant to be running even though its
+  // state currently says otherwise, so this rebuild must resume it as well.
+  BOOL shouldResume = self.state == AudioEngineState::AudioEngineStateRunning || _restartPending;
 
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
@@ -422,11 +443,22 @@ static AudioEngine *_sharedInstance = nil;
   [self rebuildAudioEngine];
   self.sessionDeactivationInvalidatedGraph = false;
 
-  if (self.state == AudioEngineState::AudioEngineStateRunning) {
-    [self startEngine];
+  if (!shouldResume) {
+    // An interruption suspends an engine that is still meant to be running, and the system
+    // does not always follow one with an end notification. Arming the retry ladder here
+    // means the next opportunity resumes the engine, rather than leaving it stopped until
+    // something on the JavaScript side happens to start it again. Only an interruption
+    // qualifies: an idle or paused engine was stopped deliberately.
+    if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
+      [self markRestartPending];
+    }
+
+    return;
   }
 
-  _isRebuildingAudioEngine = NO;
+  if (![self startEngine]) {
+    [self handleRefusedRestart];
+  }
 }
 
 - (void)rebuildAudioEngine
@@ -454,9 +486,13 @@ static AudioEngine *_sharedInstance = nil;
     return false;
   }
 
-  if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
-      self.sessionDeactivationInvalidatedGraph) {
-    [self rebuildAudioEngineAndResumeIfNeeded];
+  if ([self graphRequiresRebuild]) {
+    if ([self.audioEngine isRunning]) {
+      [self.audioEngine stop];
+    }
+
+    [self rebuildAudioEngine];
+    self.sessionDeactivationInvalidatedGraph = false;
   } else {
     [self materializeTrackedNodesIfNeeded];
   }
@@ -476,11 +512,145 @@ static AudioEngine *_sharedInstance = nil;
 
   self.state = AudioEngineState::AudioEngineStateRunning;
   self.sessionDeactivationInvalidatedGraph = false;
+
+  if (_restartPending) {
+    NSLog(
+        @"[AudioEngine] Audio engine restart succeeded after %lu scheduled retry(-ies).",
+        (unsigned long)_restartRetryCount);
+  }
+
+  [self clearPendingRestart];
   return true;
+}
+
+- (BOOL)graphRequiresRebuild
+{
+  return self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
+      self.sessionDeactivationInvalidatedGraph;
+}
+
+/// Records that the system refused to start the engine and queues another attempt.
+///
+/// The engine is never left reporting the running state: `getState` and `isEngineRunning`
+/// feed player and recorder status, so a running engine the system never started would hide
+/// the failure from every consumer. It is left paused when something is still tracked and
+/// meant to be running, or idle when nothing is.
+- (void)handleRefusedRestart
+{
+  self.state = [self hasTrackedGraph] ? AudioEngineState::AudioEngineStatePaused
+                                      : AudioEngineState::AudioEngineStateIdle;
+  [self markRestartPending];
+}
+
+/// Records that the engine should be running even though it is not, and queues an attempt.
+///
+/// The graph is marked for rebuild because a graph assembled while the route was unsettled
+/// can be missing its input node. An engine with nothing attached has nothing to restart,
+/// so the pending state is dropped rather than retried forever.
+- (void)markRestartPending
+{
+  if (![self hasTrackedGraph]) {
+    [self clearPendingRestart];
+    return;
+  }
+
+  _restartPending = YES;
+  self.graphNeedsRebuild = YES;
+
+  [self scheduleRestartRetry];
+}
+
+- (void)clearPendingRestart
+{
+  _restartPending = NO;
+  _restartRetryCount = 0;
+  _restartRetryGeneration += 1;
+}
+
+- (void)scheduleRestartRetry
+{
+  if (_restartRetryCount >= kMaximumRestartRetryCount) {
+    NSLog(
+        @"[AudioEngine] Audio engine restart is still refused after %lu attempts. Waiting for the "
+        @"application to return to the foreground or for the audio route to change.",
+        (unsigned long)_restartRetryCount);
+    return;
+  }
+
+  NSTimeInterval delay =
+      MIN(kInitialRestartRetryDelay * static_cast<NSTimeInterval>(1u << _restartRetryCount),
+          kMaximumRestartRetryDelay);
+  _restartRetryCount += 1;
+
+  NSLog(
+      @"[AudioEngine] Audio engine restart is pending, retrying in %.0f s (attempt %lu of %lu).",
+      delay,
+      (unsigned long)_restartRetryCount,
+      (unsigned long)kMaximumRestartRetryCount);
+
+  // Bumping the generation invalidates any retry queued earlier, so that an immediate
+  // attempt through `retryPendingRestartIfNeeded` cannot leave two retries racing.
+  NSUInteger generation = ++_restartRetryGeneration;
+  __weak AudioEngine *weakSelf = self;
+
+  dispatch_after(
+      dispatch_time(DISPATCH_TIME_NOW, static_cast<int64_t>(delay * NSEC_PER_SEC)),
+      dispatch_get_main_queue(),
+      ^{ [weakSelf retryPendingRestartForGeneration:generation]; });
+}
+
+- (void)retryPendingRestartForGeneration:(NSUInteger)generation
+{
+  std::scoped_lock lock(_engineLock);
+
+  if (!_restartPending || generation != _restartRetryGeneration) {
+    return;
+  }
+
+  if (![self hasTrackedGraph]) {
+    [self clearPendingRestart];
+    return;
+  }
+
+  if (![self startEngine]) {
+    [self scheduleRestartRetry];
+  }
+}
+
+- (void)retryPendingRestartIfNeeded
+{
+  std::scoped_lock lock(_engineLock);
+
+  if (!_restartPending) {
+    return;
+  }
+
+  if (![self hasTrackedGraph]) {
+    [self clearPendingRestart];
+    return;
+  }
+
+  // An external trigger is evidence that conditions changed, so the backoff starts over
+  // and a pending restart that already exhausted its schedule becomes retryable again.
+  _restartRetryCount = 0;
+
+  if (![self startEngine]) {
+    [self handleRefusedRestart];
+  }
+}
+
+- (bool)isRestartPending
+{
+  std::scoped_lock lock(_engineLock);
+  return _restartPending;
 }
 
 - (void)stopEngine
 {
+  // Stopping expresses that the engine is no longer meant to run, which retires any
+  // restart the system had refused.
+  [self clearPendingRestart];
+
   if (self.state == AudioEngineState::AudioEngineStateIdle) {
     return;
   }
@@ -510,6 +680,8 @@ static AudioEngine *_sharedInstance = nil;
 - (void)pauseIfNecessary
 {
   std::scoped_lock lock(_engineLock);
+  [self clearPendingRestart];
+
   if (self.state == AudioEngineState::AudioEngineStatePaused) {
     return;
   }
