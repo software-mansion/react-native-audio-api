@@ -32,10 +32,10 @@
 
       "Read(**)",
 
-      "WebFetch(https://webaudio.github.io/*)",
-      "WebFetch(https://developer.mozilla.org/*)",
-      "WebFetch(https://en.cppreference.com/*)",
-      "WebFetch(https://reactnative.dev/*)",
+      "WebFetch(domain:webaudio.github.io)",
+      "WebFetch(domain:developer.mozilla.org)",
+      "WebFetch(domain:en.cppreference.com)",
+      "WebFetch(domain:reactnative.dev)",
       "WebSearch(*)",
 
       "Write(.claude/**)",

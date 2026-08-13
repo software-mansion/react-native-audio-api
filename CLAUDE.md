@@ -20,7 +20,7 @@ packages/custom-node-generator/    # Code generation tooling
 ### Layers (from JS to hardware)
 
 1. **TypeScript API** (`src/`) — node implementations (`src/core/`), browser passthrough (`src/web-core/`), platform system APIs (`src/system/`), TurboModule specs (`src/specs/`), hooks, events, utils
-2. **C++ Engine** (`common/cpp/audioapi/`) — node engine (`core/`), SIMD DSP (`dsp/`), JSI HostObjects, audio events, prebuilt external libraries (`external/`)
+2. **C++ Engine** (`common/cpp/audioapi/`) — node engine (`core/`), incremental/OS decoding (`decoding/`), SIMD DSP (`dsp/`), JSI HostObjects, audio events, third-party wrappers (`libs/` — FFmpeg, miniaudio, etc.), prebuilt binaries (`external/`)
 3. **Android Native** (`android/`) — CMake + Gradle, Kotlin module, C++ JNI glue (`src/main/cpp/`), Oboe 1.9.3 audio I/O
 4. **iOS Native** (`ios/audioapi/ios/`) — Objective-C++ (`.mm`), CocoaPods (`RNAudioAPI.podspec`), CoreAudio I/O
 

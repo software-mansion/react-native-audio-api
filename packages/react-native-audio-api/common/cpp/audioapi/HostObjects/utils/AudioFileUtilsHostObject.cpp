@@ -1,7 +1,7 @@
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
-#include <audioapi/core/utils/AudioDecoding.h>
-#include <audioapi/core/utils/AudioFileConcatenator.h>
+#include <audioapi/decoding/AudioDecoding.h>
+#include <audioapi/decoding/AudioFileConcatenator.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>

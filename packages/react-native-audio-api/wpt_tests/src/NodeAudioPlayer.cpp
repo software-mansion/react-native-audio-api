@@ -17,7 +17,22 @@ NodeAudioPlayer::NodeAudioPlayer(
       channelCount_(channelCount) {}
 
 NodeAudioPlayer::~NodeAudioPlayer() {
-  stop();
+  // Always join here — do not gate on isInitialized_. After cleanup()/stop()
+  // the flag may already be false while a joinable worker still exists, and
+  // process.exit() finalizers must not leave orphan audio threads.
+  terminateWorker();
+}
+
+void NodeAudioPlayer::terminateWorker() {
+  shouldStop_.store(true, std::memory_order_release);
+  isPaused_.store(true, std::memory_order_release);
+  isRunning_.store(false, std::memory_order_release);
+
+  if (worker_.joinable()) {
+    worker_.join();
+  }
+
+  isInitialized_.store(false, std::memory_order_release);
 }
 
 bool NodeAudioPlayer::start() {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/android/core/NativeAudioRecorder.hpp>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -66,8 +65,6 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   std::atomic<float> streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;
-
-  facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
 
   std::shared_ptr<oboe::AudioStream> mStream_;
   std::vector<std::string> recordingSegmentPaths_;
