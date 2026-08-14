@@ -123,6 +123,16 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   mutable std::mutex driverMutex_;
   std::atomic<ContextState> state_;
 
+  /// @brief Joins the pending-promises worker after draining any queued
+  /// lifecycle tasks. Idempotent.
+  ///
+  /// Derived-class destructors MUST call this as their first teardown step:
+  /// the drained task bodies lock `driverMutex_` and touch the player, graph,
+  /// and disposer, all of which start being destroyed once the destructor bodies return.
+  void joinPendingPromiseWorker() {
+    pendingPromisesOffloader_->shutdown();
+  }
+
   /// Debug-only: `driverMutex_` must already be held by the calling thread.
   void assertDriverMutexHeld() const {
 #ifndef NDEBUG

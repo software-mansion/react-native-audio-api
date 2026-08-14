@@ -47,11 +47,13 @@ void AudioScheduledSourceNode::stop(double when) {
     playbackState_ = PlaybackState::FINISHED;
     AudioNode::disable();
     // Fire-and-forget: defer event dispatch off the caller thread.
-    static constexpr double kMillisecondsPerSecond = 1000.0;
-    std::thread([this]() {
-      std::this_thread::sleep_for(
-          std::chrono::milliseconds(static_cast<int>(stopTime_ * kMillisecondsPerSecond)));
-      onEndedEvent_.dispatchEmpty();
+    auto delay =
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(when));
+    std::thread([weakSelf = weak_from_this(), delay]() {
+      std::this_thread::sleep_for(delay);
+      if (auto self = std::static_pointer_cast<AudioScheduledSourceNode>(weakSelf.lock())) {
+        self->onEndedEvent_.dispatchEmpty();
+      }
     }).detach();
     return;
   }
