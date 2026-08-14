@@ -31,6 +31,10 @@ class IOSDecoder : public decoding::OsDecoderBase {
   [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 
  private:
+  [[nodiscard]] decoding::DecoderResult finishOpen(
+      std::unique_ptr<IosDecoderState> state,
+      int requestedSampleRate);
+
   void releaseImpl() override;
 
   // Opaque Core Audio state (defined in IOSDecoding.mm).

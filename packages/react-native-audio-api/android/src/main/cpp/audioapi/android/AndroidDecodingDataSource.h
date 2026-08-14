@@ -11,7 +11,8 @@ struct AMediaExtractor;
 namespace audioapi::android_decoder {
 
 // AMediaDataSource / setDataSourceCustom require API 28. minSdk may be lower, so
-// implementations live in AndroidDecodingDataSource.cpp (compiled at API 28).
+// AndroidDecodingDataSource.cpp weak-links these symbols and guards every call;
+// below this level callers must use the temp-file fallback instead.
 constexpr int kMediaDataSourceMinApiLevel = 28;
 
 struct MemoryDataSourceContext {
@@ -19,7 +20,8 @@ struct MemoryDataSourceContext {
   size_t size = 0;
 };
 
-/// Opaque owning handle for AMediaDataSource (defined in the API 28 translation unit).
+/// Opaque owning handle for AMediaDataSource (kept as void* so NDK media types
+/// stay out of cross-platform includes).
 class AndroidMemoryDataSource {
  public:
   AndroidMemoryDataSource() = default;

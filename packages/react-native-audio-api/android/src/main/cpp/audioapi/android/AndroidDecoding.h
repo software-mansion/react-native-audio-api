@@ -32,6 +32,10 @@ class AndroidDecoder : public decoding::OsDecoderBase {
   [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 
  private:
+  [[nodiscard]] decoding::DecoderResult finishOpen(
+      std::unique_ptr<AndroidDecoderState> state,
+      int sampleRate);
+
   void releaseImpl() override;
 
   // Opaque NDK state (defined in AndroidDecoding.cpp).
