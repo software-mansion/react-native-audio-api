@@ -18,7 +18,7 @@ worklets_preprocessor_flag = worklets_enabled ? '-DRN_AUDIO_API_ENABLE_WORKLETS=
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
 static_external_libs_flag = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? '-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1 -DMA_NO_LIBOPUS=1 -DMA_NO_LIBVORBIS=1' : ''
 skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_DISABLED ? 'skipffmpeg' : ''
-prepare_command_prefix = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS=1 ' : ''
+download_script_env_prefix = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS=1 ' : ''
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"
@@ -67,18 +67,60 @@ Pod::Spec.new do |s|
 
   s.prepare_command = <<-CMD
     chmod +x scripts/download-prebuilt-binaries.sh
-    #{prepare_command_prefix}scripts/download-prebuilt-binaries.sh ios #{skip_ffmpeg_argument}
+    #{download_script_env_prefix}scripts/download-prebuilt-binaries.sh ios #{skip_ffmpeg_argument}
   CMD
 
   external_dir_relative = "common/cpp/audioapi/external"
   lib_dir = "$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_audio_api_dir]}/#{external_dir_relative}/$(PLATFORM_NAME)"
+  ffmpeg_dir = "$(PODS_ROOT)/#{$audio_api_config[:dynamic_frameworks_audio_api_dir]}/#{external_dir_relative}/ffmpeg_ios"
 
-  s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_DISABLED ? [] : [
-    'common/cpp/audioapi/external/ffmpeg_ios/libavcodec.xcframework',
-    'common/cpp/audioapi/external/ffmpeg_ios/libavformat.xcframework',
-    'common/cpp/audioapi/external/ffmpeg_ios/libavutil.xcframework',
-    'common/cpp/audioapi/external/ffmpeg_ios/libswresample.xcframework'
-  ]
+  ffmpeg_framework_names =  %w[libavcodec libavformat libavutil libswresample]
+  static_external_libs_names = %w[libopusfile libopus libogg libvorbis libvorbisenc libvorbisfile]
+
+  # `prepare_command` hydrates binaries on a fresh `pod install` so CocoaPods can
+  # register all vendored `.xcframework`s in `[CP] Copy XCFrameworks`. When `Pods/`
+  # is restored from cache while `node_modules/` is reinstalled, `prepare_command`
+  # does not re-run — the build-time phase below re-hydrates on every build.
+  #
+  # It must run at `:before_headers` so it lands ahead of CocoaPods' own
+  # `[CP] Copy XCFrameworks` phase, which consumes the FFmpeg xcframeworks. If it
+  # ran later (e.g. `:before_compile`, which is after Copy XCFrameworks), Xcode
+  # would reject the build when the xcframeworks are missing before we download.
+  #
+  # `output_files` declares everything the linker (`-force_load` static libs in
+  # `s.xcconfig`) and Copy XCFrameworks (FFmpeg) consume, so Xcode's build graph
+  # knows this phase produces them.
+  unless $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED && $RN_AUDIO_API_FFMPEG_DISABLED
+    download_output_files = []
+
+    unless $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
+      static_external_libs_names.each do |lib|
+        download_output_files << "#{lib_dir}/#{lib}.a"
+      end
+    end
+
+    unless $RN_AUDIO_API_FFMPEG_DISABLED
+      ffmpeg_framework_names.each do |framework|
+        download_output_files << "#{ffmpeg_dir}/#{framework}.xcframework"
+      end
+    end
+
+    s.script_phase = {
+      :name => 'Download RNAudioAPI prebuilt binaries',
+      :execution_position => :before_headers,
+      :always_out_of_date => '1',
+      :output_files => download_output_files,
+      :script => <<-SCRIPT
+        cd "$PODS_TARGET_SRCROOT"
+        chmod +x scripts/download-prebuilt-binaries.sh
+        #{download_script_env_prefix}scripts/download-prebuilt-binaries.sh ios #{skip_ffmpeg_argument}
+      SCRIPT
+    }
+  end
+
+  s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_DISABLED ? [] : ffmpeg_framework_names.map { |framework|
+    "common/cpp/audioapi/external/ffmpeg_ios/#{framework}.xcframework"
+  }
 
   s.pod_target_xcconfig = {
     "USE_HEADERMAP" => "YES",
@@ -133,14 +175,9 @@ Pod::Spec.new do |s|
     'OTHER_LDFLAGS' => %W[
       $(inherited)
     ]
-    .concat($RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? [] : %W[
-      -force_load #{lib_dir}/libopusfile.a
-      -force_load #{lib_dir}/libopus.a
-      -force_load #{lib_dir}/libogg.a
-      -force_load #{lib_dir}/libvorbis.a
-      -force_load #{lib_dir}/libvorbisenc.a
-      -force_load #{lib_dir}/libvorbisfile.a
-    ])
+    .concat($RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? [] : static_external_libs_names.flat_map { |lib|
+      ['-force_load', "#{lib_dir}/#{lib}.a"]
+    })
     .join(" "),
   }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
