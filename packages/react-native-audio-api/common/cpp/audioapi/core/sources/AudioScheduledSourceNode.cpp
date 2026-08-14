@@ -1,6 +1,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/dsp/AudioUtils.h>
+#include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
 #if !RN_AUDIO_API_TEST
@@ -8,10 +9,8 @@
 #endif // RN_AUDIO_API_TEST
 
 #include <algorithm>
-#include <chrono>
 #include <limits>
 #include <memory>
-#include <thread>
 
 namespace audioapi {
 
@@ -46,15 +45,9 @@ void AudioScheduledSourceNode::stop(double when) {
   if (stopFrame <= startFrame) {
     playbackState_ = PlaybackState::FINISHED;
     AudioNode::disable();
-    // Fire-and-forget: defer event dispatch off the caller thread.
-    auto delay =
-        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(when));
-    std::thread([weakSelf = weak_from_this(), delay]() {
-      std::this_thread::sleep_for(delay);
-      if (auto self = std::static_pointer_cast<AudioScheduledSourceNode>(weakSelf.lock())) {
-        self->onEndedEvent_.dispatchEmpty();
-      }
-    }).detach();
+    // The node never plays, so the render path will not fire onended. Defer a
+    // dispatch until the context clock reaches the requested stop time
+    context->deferEmptyEventDispatch(AudioEvent::ENDED, onEndedEvent_.getCallbackId(), when);
     return;
   }
 }

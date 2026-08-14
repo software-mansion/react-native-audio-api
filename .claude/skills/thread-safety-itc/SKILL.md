@@ -95,6 +95,8 @@ Throttled events (e.g. `positionChanged`) use `PositionChangedDispatcher`, which
 - Clear callbacks in the **most-derived HostObject first** (each layer clears its own events; base destructors run afterward and clear parent events)
 - Do **not** inherit `EventCaller` on multiple node bases (ambiguous API); add member `EventCaller` fields per event instead
 
+**Time-delayed dispatch outside the node's lifetime** (e.g. firing `ended` at a context time the render path will not reach for this node): use `BaseAudioContext::deferEmptyEventDispatch(event, callbackId, dueTime)`. The context keeps a preallocated pending list drained each quantum in `processAudioEvents()`; the context clock is the timer (suspend pauses it, offline fires at render speed) and the context holds no node reference. Never use a detached timer thread for this — spawning a thread from an audio-event body runs on the audio thread (allocation + syscalls), and every capture choice has been a real bug in `AudioScheduledSourceNode::stop()`: raw `this` was a use-after-free, `weak_from_this().lock()` ran the node destructor on the timer thread (bypassing the graph's disposal path), and `std::move`-ing the `EventCaller` member raced the JS/GC-thread `assignCallbackId` paths (the registry `shared_ptr` inside `EventCaller` is only safe for concurrent access while it is never mutated — which is why `EventCaller` is non-movable).
+
 Low-level registry API (used internally by `EventCaller`):
 
 ```cpp

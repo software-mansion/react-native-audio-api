@@ -1,7 +1,9 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
+#include <audioapi/events/AudioEvent.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
@@ -127,6 +129,30 @@ TEST_F(AudioScheduledSourceTest, IsFinishedStateSetCorrectly) {
   sourceNode.playFrames(RENDER_QUANTUM);
   sourceNode.playFrames(1);
   EXPECT_TRUE(sourceNode.isFinished());
+}
+
+TEST_F(AudioScheduledSourceTest, StopBeforeStartFiresEndedWhenContextTimeReachesStopTime) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 42;
+  auto sourceNode = TestableAudioScheduledSourceNode(context);
+  sourceNode.assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+
+  sourceNode.start(2 * RENDER_QUANTUM_TIME);
+  sourceNode.stop(RENDER_QUANTUM_TIME);
+  EXPECT_TRUE(sourceNode.isFinished());
+
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .Times(0);
+  sourceNode.playFrames(RENDER_QUANTUM); // context time is still before the stop time
+
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+  sourceNode.playFrames(RENDER_QUANTUM); // context time reaches the stop time
+
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID)).Times(1);
 }
 
 // NOLINTEND

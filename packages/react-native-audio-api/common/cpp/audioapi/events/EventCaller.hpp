@@ -20,21 +20,14 @@ class EventCaller {
       : eventHandlerRegistry_(audioEventHandlerRegistry) {}
 
   ~EventCaller() {
-    const auto callbackId = getCallbackId();
-    if (callbackId == 0) {
-      return;
-    }
-
-    unregisterCallback(callbackId);
-    callbackId_.store(0, std::memory_order_release);
+    unregisterCallback();
   }
 
   DELETE_COPY_AND_MOVE(EventCaller);
 
   void assignCallbackId(uint64_t callbackId) noexcept {
-    const auto previousCallbackId = getCallbackId();
-    if (previousCallbackId != callbackId) {
-      unregisterCallback(previousCallbackId);
+    if (getCallbackId() != callbackId) {
+      unregisterCallback();
     }
 
     callbackId_.store(callbackId, std::memory_order_release);
@@ -48,12 +41,14 @@ class EventCaller {
     return getCallbackId() != 0;
   }
 
-  void unregisterCallback(uint64_t callbackId) const {
-    if (eventHandlerRegistry_ == nullptr || callbackId == 0) {
+  void unregisterCallback() {
+    auto id = getCallbackId();
+    callbackId_.store(0, std::memory_order_release);
+    if (eventHandlerRegistry_ == nullptr || id == 0) {
       return;
     }
 
-    eventHandlerRegistry_->unregisterHandler(Event, callbackId);
+    eventHandlerRegistry_->unregisterHandler(Event, id);
   }
 
   bool dispatchEmpty() const noexcept

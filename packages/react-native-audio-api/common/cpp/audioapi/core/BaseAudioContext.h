@@ -6,6 +6,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/graph/Graph.h>
+#include <audioapi/events/AudioEvent.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
@@ -15,6 +16,7 @@
 #include <cassert>
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -67,7 +69,14 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     // finalization that clears the callback id).
     audioEventScheduler_.processAllEvents(*this);
     gcAudioEventScheduler_.processAllEvents(*this);
+    dispatchDueDeferredEvents();
   }
+
+  /// @brief Schedules a one-shot, payload-less event dispatch for when
+  /// `currentTime` reaches `dueTime`.
+  /// @note Runs on the render-serialized domain (audio thread, or the
+  /// synchronous `scheduleAudioEvent` path) — same as audio event bodies.
+  void deferEmptyEventDispatch(AudioEvent event, uint64_t callbackId, double dueTime);
 
   template <typename F>
   bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
@@ -173,6 +182,22 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
   std::shared_ptr<utils::graph::Graph> graph_;
+
+  struct DeferredEmptyEvent {
+    double dueTime;
+    AudioEvent event;
+    uint64_t callbackId;
+  };
+
+  /// Reserved up front so `deferEmptyEventDispatch` stays allocation-free on
+  /// the audio thread until this many dispatches are pending at once.
+  static constexpr size_t DEFERRED_EMPTY_EVENTS_CAPACITY = 16;
+
+  /// Render-serialized only (audio thread or the synchronous
+  /// `scheduleAudioEvent` path) — no lock, so no other thread may touch it.
+  std::vector<DeferredEmptyEvent> deferredEmptyEvents_;
+
+  void dispatchDueDeferredEvents();
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };

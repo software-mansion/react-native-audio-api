@@ -125,6 +125,8 @@ bool AudioFileSourceNode::initDecoder(
       std::move(frameSender),
       frameReceiver_);
 
+  seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
+
   if (!decoderState_->isReady.load(std::memory_order_acquire)) {
     return false;
   }
@@ -393,11 +395,6 @@ void AudioFileSourceNode::start(double when) {
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
   positionChanged_.requestFlush();
-
-  if (seekDecoderDaemon_) {
-    seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
-    seekDecoderDaemon_.reset();
-  }
 }
 
 void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {
