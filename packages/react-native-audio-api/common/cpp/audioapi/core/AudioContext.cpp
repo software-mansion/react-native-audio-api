@@ -15,8 +15,11 @@
 namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    AudioContextLatencyHint latencyHint)
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+      latencyHint_(latencyHint),
+      isInitialized_(false) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
   // drain Channel A itself until start()/resume() hands draining to the
   // audio callback (same pattern as OfflineAudioContext before rendering).
@@ -44,7 +47,8 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       destination_->getChannelCount(),
       &driverMutex_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
-      currentRenders_);
+      currentRenders_,
+      latencyHint_);
 #else
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },

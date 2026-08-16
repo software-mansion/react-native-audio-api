@@ -60,7 +60,7 @@ class AudioAPIModuleInstaller {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
-        1,
+        2,
         [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
@@ -68,8 +68,20 @@ class AudioAPIModuleInstaller {
             size_t count) -> jsi::Value {
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
+          // Unknown strings fall back to INTERACTIVE, matching how browsers
+          // treat an unrecognised latencyHint.
+          auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
+          if (count > 1 && args[1].isString()) {
+            auto hint = args[1].getString(runtime).utf8(runtime);
+            if (hint == "balanced") {
+              latencyHint = AudioContextLatencyHint::BALANCED;
+            } else if (hint == "playback") {
+              latencyHint = AudioContextLatencyHint::PLAYBACK;
+            }
+          }
+
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              sampleRate, audioEventHandlerRegistry, &runtime, jsCallInvoker);
+              sampleRate, audioEventHandlerRegistry, &runtime, jsCallInvoker, latencyHint);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });

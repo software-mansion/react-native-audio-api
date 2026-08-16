@@ -13,20 +13,38 @@
 
 namespace audioapi {
 
+namespace {
+
+PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
+  switch (latencyHint) {
+    case AudioContextLatencyHint::BALANCED:
+      return PerformanceMode::None;
+    case AudioContextLatencyHint::PLAYBACK:
+      return PerformanceMode::PowerSaving;
+    case AudioContextLatencyHint::INTERACTIVE:
+      return PerformanceMode::LowLatency;
+  }
+  return PerformanceMode::LowLatency;
+}
+
+} // namespace
+
 AudioPlayer::AudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
     std::mutex *driverMutex,
     const std::shared_ptr<AudioContext> &context,
-    std::atomic<uint32_t> &currentRenders)
+    std::atomic<uint32_t> &currentRenders,
+    AudioContextLatencyHint latencyHint)
     : renderAudio_(renderAudio),
       currentRenders_(currentRenders),
       sampleRate_(sampleRate),
       channelCount_(channelCount),
       isRunning_(false),
       driverMutex_(driverMutex),
-      context_(context) {}
+      context_(context),
+      latencyHint_(latencyHint) {}
 
 bool AudioPlayer::openAudioStream() {
   std::scoped_lock lock(streamMutex_);
@@ -35,7 +53,7 @@ bool AudioPlayer::openAudioStream() {
   builder.setSharingMode(SharingMode::Exclusive)
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setPerformanceMode(performanceModeFor(latencyHint_))
       ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)

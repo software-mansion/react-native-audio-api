@@ -33,7 +33,10 @@ export default class AudioContext implements BaseAudioContext {
       assertSupportedSampleRate(options.sampleRate);
     }
 
-    this.context = new window.AudioContext({ sampleRate: options?.sampleRate });
+    this.context = new window.AudioContext({
+      sampleRate: options?.sampleRate,
+      latencyHint: options?.latencyHint,
+    });
 
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);

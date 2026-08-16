@@ -45,8 +45,21 @@ export type OscillatorType =
   | 'triangle'
   | 'custom';
 
+export type AudioContextLatencyCategory =
+  | 'balanced'
+  | 'interactive'
+  | 'playback';
+
 export interface AudioContextOptions {
   sampleRate?: number;
+  /**
+   * What the context should optimize its output stream for. Defaults to
+   * `interactive` (the lowest latency the platform offers). `balanced` and
+   * `playback` trade output latency for a deeper buffer, which on Android moves
+   * multi-source playback off the underrun-prone low-latency path. Numeric
+   * hints are not supported yet.
+   */
+  latencyHint?: AudioContextLatencyCategory;
 }
 
 export interface OfflineAudioContextOptions {
