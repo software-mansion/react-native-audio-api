@@ -1,71 +1,53 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, TextInput } from 'react-native';
-import Animated, {
-  useAnimatedProps,
-  useSharedValue,
-} from 'react-native-reanimated';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
 
 import { audioRecorder as Recorder } from '../../singletons';
 import { colors } from '../../styles';
 import { RecordingState } from './types';
 
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+const IDLE_DURATION = '00:00:000';
+
+function formatDuration(elapsedSeconds: number) {
+  const minutes = Math.floor((elapsedSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, '0');
+  const seconds = Math.floor(elapsedSeconds % 60)
+    .toString()
+    .padStart(2, '0');
+  const milliseconds = Math.floor((elapsedSeconds % 1) * 1000)
+    .toString()
+    .padStart(3, '0');
+
+  return `${minutes}:${seconds}:${milliseconds}`;
+}
 
 interface RecordingTimeProps {
   state: RecordingState;
 }
 
 const RecordingTime: React.FC<RecordingTimeProps> = ({ state }) => {
-  const durationStringSV = useSharedValue('00:00:000');
-  const isMountedSV = useSharedValue(true);
+  const [durationString, setDurationString] = useState(IDLE_DURATION);
 
   useEffect(() => {
-    isMountedSV.value = true;
     if (![RecordingState.Recording, RecordingState.Paused].includes(state)) {
-      durationStringSV.value = '00:00:00';
+      setDurationString(IDLE_DURATION);
       return;
     }
 
-    const interval = setInterval(() => {
-      if (!isMountedSV.value) {
-        return;
-      }
+    const refreshDuration = () =>
+      setDurationString(formatDuration(Recorder.getCurrentDuration()));
 
-      const elapsedSeconds = Recorder.getCurrentDuration();
-
-      const minutes = Math.floor((elapsedSeconds % 3600) / 60)
-        .toString()
-        .padStart(2, '0');
-      const seconds = Math.floor(elapsedSeconds % 60)
-        .toString()
-        .padStart(2, '0');
-      const milliseconds = Math.floor((elapsedSeconds % 1) * 1000)
-        .toString()
-        .padStart(3, '0');
-
-      durationStringSV.value = `${minutes}:${seconds}:${milliseconds}`;
-    }, 100);
+    // Also refresh immediately so a paused or resynced screen shows the real
+    // duration before the first interval tick.
+    refreshDuration();
+    const interval = setInterval(refreshDuration, 100);
 
     return () => {
-      isMountedSV.value = false;
       clearInterval(interval);
     };
-  }, [state, durationStringSV, isMountedSV]);
+  }, [state]);
 
-  const animatedText = useAnimatedProps(() => {
-    return {
-      text: durationStringSV.value,
-      defaultValue: '00:00:000',
-    };
-  });
-
-  return (
-    <AnimatedTextInput
-      editable={false}
-      animatedProps={animatedText}
-      style={styles.text}
-    />
-  );
+  return <Text style={styles.text}>{durationString}</Text>;
 };
 
 export default RecordingTime;
