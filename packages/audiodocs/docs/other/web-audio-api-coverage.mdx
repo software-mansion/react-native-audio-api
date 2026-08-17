@@ -77,48 +77,48 @@ harness, which lets us measure spec conformance with the same assertions a
 browser is held to. Each test file contains many individual assertions; the
 numbers below count assertions, not files.
 
-The table below is a snapshot from a local run and only lists the interfaces
-that are currently available in the library. It is refreshed manually by
-maintainers, so treat it as an approximate conformance indicator rather than a
-live status.
+The table below shows two runs of the suite: one for the latest stable release
+of `react-native-audio-api` published on npm, and one for the current `main`
+branch. It only lists the interfaces that are currently available in the
+library and is refreshed manually by maintainers, so treat it as an approximate
+conformance indicator rather than a live status.
 
 {/* wpt-summary:start */}
 
-_Last updated: 2026-07-23. Numbers come from the local WPT smoke run and are a snapshot, not a live badge._
+_Last updated: 2026-08-17._
 
 <table>
   <thead>
     <tr>
       <th>Interface</th>
-      <th style={{ textAlign: 'right' }}>Passing</th>
-      <th style={{ textAlign: 'right' }}>Total</th>
-      <th style={{ textAlign: 'right' }}>Pass rate</th>
+      <th style={{ textAlign: 'right' }}>v0.13.3 (latest)</th>
+      <th style={{ textAlign: 'right' }}>v1.0.0-nightly-fd1d87d-20260817</th>
       <th>Differences</th>
     </tr>
   </thead>
   <tbody>
-    <tr style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21' }}><td>AnalyserNode</td><td style={{ textAlign: 'right' }}>138</td><td style={{ textAlign: 'right' }}>139</td><td style={{ textAlign: 'right' }}>99.3%</td><td>One failure: minDecibels/maxDecibels are stored as float, so reading back a high-precision double value loses a few digits (cosmetic round-trip mismatch).</td></tr>
-    <tr style={{ backgroundColor: 'hsl(118, 85%, 72%)', color: '#1c1e21' }}><td>AudioBuffer</td><td style={{ textAlign: 'right' }}>140</td><td style={{ textAlign: 'right' }}>142</td><td style={{ textAlign: 'right' }}>98.6%</td><td>Remaining failures: acquire-the-content expects AudioBufferSourceNode.start() to snapshot the buffer contents (we still share the underlying memory).</td></tr>
-    <tr style={{ backgroundColor: 'hsl(42, 85%, 72%)', color: '#1c1e21' }}><td>AudioBufferSourceNode</td><td style={{ textAlign: 'right' }}>98</td><td style={{ textAlign: 'right' }}>283</td><td style={{ textAlign: 'right' }}>34.6%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(48, 85%, 72%)', color: '#1c1e21' }}><td>AudioContext</td><td style={{ textAlign: 'right' }}>46</td><td style={{ textAlign: 'right' }}>115</td><td style={{ textAlign: 'right' }}>40.0%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21' }}><td>AudioDestinationNode</td><td style={{ textAlign: 'right' }}>0</td><td style={{ textAlign: 'right' }}>1</td><td style={{ textAlign: 'right' }}>0.0%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(118, 85%, 72%)', color: '#1c1e21' }}><td>AudioNode</td><td style={{ textAlign: 'right' }}>261</td><td style={{ textAlign: 'right' }}>264</td><td style={{ textAlign: 'right' }}>98.9%</td><td>Indexed connect()/disconnect() overloads and ChannelMerger/ChannelSplitter graphs are implemented; disconnect and different-contexts audits largely pass. Most remaining failures are audionode-channel-rules mixing cases (speakers upmix/downmix and clamped-max). Other gaps: InvalidStateError when disconnecting a non-existent connection, TypeError for non-AudioNode connect() arguments (we throw InvalidAccessError first), and connect chaining across unimplemented node types (MediaStream*, DynamicsCompressor). channelCount, channelCountMode and channelInterpretation are settable after construction with graph renegotiation.</td></tr>
-    <tr style={{ backgroundColor: 'hsl(93, 85%, 72%)', color: '#1c1e21' }}><td>AudioParam</td><td style={{ textAlign: 'right' }}>597</td><td style={{ textAlign: 'right' }}>771</td><td style={{ textAlign: 'right' }}>77.4%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(113, 85%, 72%)', color: '#1c1e21' }}><td>BiquadFilterNode</td><td style={{ textAlign: 'right' }}>232</td><td style={{ textAlign: 'right' }}>246</td><td style={{ textAlign: 'right' }}>94.3%</td><td>The filter runs in double precision, so the static frequency response matches the reference. The remaining failures are the parameter-automation tests, which expect per-sample (a-rate) coefficient updates; we sample the params once per 128-frame render quantum (k-rate) and recompute the coefficients once per block. The audible difference is negligible, while computing the coefficient/trig math once per block instead of once per sample makes processing dramatically faster on the audio thread.</td></tr>
-    <tr style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21' }}><td>ChannelMergerNode</td><td style={{ textAlign: 'right' }}>30</td><td style={{ textAlign: 'right' }}>30</td><td style={{ textAlign: 'right' }}>100.0%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21' }}><td>ChannelSplitterNode</td><td style={{ textAlign: 'right' }}>7</td><td style={{ textAlign: 'right' }}>7</td><td style={{ textAlign: 'right' }}>100.0%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(103, 85%, 72%)', color: '#1c1e21' }}><td>ConstantSourceNode</td><td style={{ textAlign: 'right' }}>54</td><td style={{ textAlign: 'right' }}>63</td><td style={{ textAlign: 'right' }}>85.7%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(64, 85%, 72%)', color: '#1c1e21' }}><td>ConvolverNode</td><td style={{ textAlign: 'right' }}>134</td><td style={{ textAlign: 'right' }}>253</td><td style={{ textAlign: 'right' }}>53.0%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(91, 85%, 72%)', color: '#1c1e21' }}><td>DelayNode</td><td style={{ textAlign: 'right' }}>105</td><td style={{ textAlign: 'right' }}>138</td><td style={{ textAlign: 'right' }}>76.1%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(112, 85%, 72%)', color: '#1c1e21' }}><td>GainNode</td><td style={{ textAlign: 'right' }}>14</td><td style={{ textAlign: 'right' }}>15</td><td style={{ textAlign: 'right' }}>93.3%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(88, 85%, 72%)', color: '#1c1e21' }}><td>IIRFilterNode</td><td style={{ textAlign: 'right' }}>85</td><td style={{ textAlign: 'right' }}>116</td><td style={{ textAlign: 'right' }}>73.3%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21' }}><td>MediaElementAudioSourceNode</td><td style={{ textAlign: 'right' }}>0</td><td style={{ textAlign: 'right' }}>7</td><td style={{ textAlign: 'right' }}>0.0%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(52, 85%, 72%)', color: '#1c1e21' }}><td>OfflineAudioContext</td><td style={{ textAlign: 'right' }}>30</td><td style={{ textAlign: 'right' }}>69</td><td style={{ textAlign: 'right' }}>43.5%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(118, 85%, 72%)', color: '#1c1e21' }}><td>OscillatorNode</td><td style={{ textAlign: 'right' }}>102</td><td style={{ textAlign: 'right' }}>104</td><td style={{ textAlign: 'right' }}>98.1%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(116, 85%, 72%)', color: '#1c1e21' }}><td>PeriodicWave</td><td style={{ textAlign: 'right' }}>30</td><td style={{ textAlign: 'right' }}>31</td><td style={{ textAlign: 'right' }}>96.8%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(81, 85%, 72%)', color: '#1c1e21' }}><td>StereoPannerNode</td><td style={{ textAlign: 'right' }}>68</td><td style={{ textAlign: 'right' }}>101</td><td style={{ textAlign: 'right' }}>67.3%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(85, 85%, 72%)', color: '#1c1e21' }}><td>WaveShaperNode</td><td style={{ textAlign: 'right' }}>53</td><td style={{ textAlign: 'right' }}>75</td><td style={{ textAlign: 'right' }}>70.7%</td><td></td></tr>
-    <tr style={{ backgroundColor: 'hsl(80, 85%, 72%)', color: '#1c1e21' }}><td><strong>Total</strong></td><td style={{ textAlign: 'right' }}>1549</td><td style={{ textAlign: 'right' }}>2333</td><td style={{ textAlign: 'right' }}><strong>66.5%</strong></td><td></td></tr>
+    <tr><td>AnalyserNode</td><td style={{ backgroundColor: 'hsl(103, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>119/139 (85.6%)</td><td style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>138/139 (99.3%)</td><td>One failure: minDecibels/maxDecibels are stored as float, so reading back a high-precision double value loses a few digits (cosmetic round-trip mismatch).</td></tr>
+    <tr><td>AudioBuffer</td><td style={{ backgroundColor: 'hsl(103, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>122/142 (85.9%)</td><td style={{ backgroundColor: 'hsl(118, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>140/142 (98.6%)</td><td>Remaining failures: acquire-the-content expects AudioBufferSourceNode.start() to snapshot the buffer contents (we still share the underlying memory).</td></tr>
+    <tr><td>AudioBufferSourceNode</td><td style={{ backgroundColor: 'hsl(97, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>203/252 (80.6%)</td><td style={{ backgroundColor: 'hsl(100, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>209/252 (82.9%)</td><td></td></tr>
+    <tr><td>AudioContext</td><td style={{ backgroundColor: 'hsl(47, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>45/116 (38.8%)</td><td style={{ backgroundColor: 'hsl(60, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>58/116 (50.0%)</td><td></td></tr>
+    <tr><td>AudioDestinationNode</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/1 (0.0%)</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/1 (0.0%)</td><td></td></tr>
+    <tr><td>AudioNode</td><td style={{ backgroundColor: 'hsl(71, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>141/238 (59.2%)</td><td style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>261/264 (98.9%)</td><td>Channel mixing, indexed connect()/disconnect(), and ChannelMerger/Splitter graphs pass. Remaining failures are connect() chaining across unimplemented node types (DynamicsCompressor, Panner, ScriptProcessor, MediaStream*) and legacy 3-arg AudioContext construction (should throw TypeError).</td></tr>
+    <tr><td>AudioParam</td><td style={{ backgroundColor: 'hsl(76, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>314/499 (62.9%)</td><td style={{ backgroundColor: 'hsl(93, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>599/771 (77.7%)</td><td></td></tr>
+    <tr><td>BiquadFilterNode</td><td style={{ backgroundColor: 'hsl(110, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>232/253 (91.7%)</td><td style={{ backgroundColor: 'hsl(113, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>232/246 (94.3%)</td><td>The filter runs in double precision, so the static frequency response matches the reference. The remaining failures are the parameter-automation tests, which expect per-sample (a-rate) coefficient updates; we sample the params once per 128-frame render quantum (k-rate) and recompute the coefficients once per block. The audible difference is negligible, while computing the coefficient/trig math once per block instead of once per sample makes processing dramatically faster on the audio thread.</td></tr>
+    <tr><td>ChannelMergerNode</td><td style={{ backgroundColor: 'hsl(34, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>7/25 (28.0%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>30/30 (100.0%)</td><td></td></tr>
+    <tr><td>ChannelSplitterNode</td><td style={{ backgroundColor: 'hsl(34, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>2/7 (28.6%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>7/7 (100.0%)</td><td></td></tr>
+    <tr><td>ConstantSourceNode</td><td style={{ backgroundColor: 'hsl(110, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>55/60 (91.7%)</td><td style={{ backgroundColor: 'hsl(112, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>59/63 (93.7%)</td><td></td></tr>
+    <tr><td>ConvolverNode</td><td style={{ backgroundColor: 'hsl(68, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>96/170 (56.5%)</td><td style={{ backgroundColor: 'hsl(81, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>170/253 (67.2%)</td><td></td></tr>
+    <tr><td>DelayNode</td><td style={{ backgroundColor: 'hsl(80, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>88/132 (66.7%)</td><td style={{ backgroundColor: 'hsl(90, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>104/138 (75.4%)</td><td></td></tr>
+    <tr><td>GainNode</td><td style={{ backgroundColor: 'hsl(88, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>11/15 (73.3%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>15/15 (100.0%)</td><td></td></tr>
+    <tr><td>IIRFilterNode</td><td style={{ backgroundColor: 'hsl(80, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>57/85 (67.1%)</td><td style={{ backgroundColor: 'hsl(90, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>87/116 (75.0%)</td><td></td></tr>
+    <tr><td>MediaElementAudioSourceNode</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/7 (0.0%)</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/7 (0.0%)</td><td></td></tr>
+    <tr><td>OfflineAudioContext</td><td style={{ backgroundColor: 'hsl(59, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>34/69 (49.3%)</td><td style={{ backgroundColor: 'hsl(61, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>35/69 (50.7%)</td><td></td></tr>
+    <tr><td>OscillatorNode</td><td style={{ backgroundColor: 'hsl(105, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>81/93 (87.1%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>104/104 (100.0%)</td><td></td></tr>
+    <tr><td>PeriodicWave</td><td style={{ backgroundColor: 'hsl(74, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>19/31 (61.3%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>33/33 (100.0%)</td><td></td></tr>
+    <tr><td>StereoPannerNode</td><td style={{ backgroundColor: 'hsl(88, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>74/101 (73.3%)</td><td style={{ backgroundColor: 'hsl(99, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>100/121 (82.6%)</td><td></td></tr>
+    <tr><td>WaveShaperNode</td><td style={{ backgroundColor: 'hsl(98, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>61/75 (81.3%)</td><td style={{ backgroundColor: 'hsl(114, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>75/79 (94.9%)</td><td></td></tr>
+    <tr><td><strong>Total</strong></td><td style={{ backgroundColor: 'hsl(84, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}><strong>1761/2510 (70.2%)</strong></td><td style={{ backgroundColor: 'hsl(99, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}><strong>2456/2966 (82.8%)</strong></td><td></td></tr>
   </tbody>
 </table>
 
