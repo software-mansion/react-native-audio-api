@@ -24,6 +24,7 @@ import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDI
 import com.swmansion.audioapi.system.notification.NotificationRegistry
 import com.swmansion.audioapi.system.notification.PlaybackNotification
 import com.swmansion.audioapi.system.notification.PlaybackNotificationReceiver
+import com.swmansion.audioapi.system.notification.RecordingNotification
 import java.lang.ref.WeakReference
 
 object MediaSessionManager {
@@ -268,6 +269,30 @@ object MediaSessionManager {
 
   fun hideNotification(key: String) {
     notificationRegistry.hideNotification(key)
+  }
+
+  /**
+   * Hides the recording notification without knowing its JS-chosen key. Used by the
+   * notification stop action, which also unwinds the foreground service through the
+   * registry's unsubscribe path.
+   */
+  fun hideRecordingNotification() {
+    if (!::notificationRegistry.isInitialized) {
+      return
+    }
+    notificationRegistry.hideNotificationByNotificationId(RecordingNotification.ID)
+  }
+
+  /**
+   * Flips the recording notification between its pause and resume looks. Used by
+   * native-initiated pause/resume, which can't go through [showNotification] — there
+   * is no JS to supply options.
+   */
+  fun setRecordingNotificationPaused(paused: Boolean) {
+    if (!::notificationRegistry.isInitialized) {
+      return
+    }
+    notificationRegistry.updateRecordingNotificationPausedState(paused)
   }
 
   fun isNotificationActive(key: String): Boolean = notificationRegistry.isNotificationActive(key)

@@ -31,8 +31,9 @@ packages/custom-node-generator/    # Code generation tooling
 - **New Architecture Ready**: Supports both old Bridge and new TurboModules/Fabric
 - **Optional FFmpeg**: Audio decoding via FFmpeg can be conditionally compiled out
 - **Audio Worklets**: JavaScript runs on the audio thread via React Native Worklets
-- **Testable C++ dependencies**: consumers take interface types (`std::shared_ptr<I…>`); construct concrete implementations only at platform bootstrap. Example: audio event registry (use `IAudioEventHandlerRegistry` more often than `AudioEventHandlerRegistry`).
 - **Notification-Driven Foreground Service (Android)**: `NotificationRegistry.showNotification` → `ForegroundServiceManager.subscribe` → `CentralizedForegroundService`; service lifetime follows notification visibility, never recorder/player state. The library manifest is empty — consuming apps declare the `<service>` (Expo plugin `withAudioAPI.ts` or manually), where `android:stopWithTask` (plugin option `androidFSStopWithTask`) decides whether the service and an in-progress recording survive task removal
+- **JS-Independent Recorder Control (Android)**: the recording notification's stop action must work after task removal, when no JS listener is reachable. `ActiveRecorderHandle` (common C++, one-slot `weak_ptr` registered by `AudioRecorderHostObject`) exposes the live recorder process-globally; Kotlin reaches it through the static-JNI `NativeRecorderControl` object (no HybridData/React context needed — the reverse of the `NativeFileInfo` pattern). Results of a native stop are stashed consume-once in the handle
+- **Testable C++ dependencies**: consumers take interface types (`std::shared_ptr<I…>`); construct concrete implementations only at platform bootstrap. Example: audio event registry (use `IAudioEventHandlerRegistry` more often than `AudioEventHandlerRegistry`).
 
 ### Native Module Entry Points
 - iOS: `ios/audioapi/ios/AudioAPIModule.mm`

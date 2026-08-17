@@ -117,6 +117,8 @@ yarn workspace react-native-audio-api run test:cpp
 yarn test   # from monorepo root — runs test:js + test:cpp
 ```
 
+**Gotcha**: jest resolves `react-native-audio-api/mock` through `mock/package.json` → the built `lib/` output, not `src/`. After editing `src/mock/` (or any API the tests import), run `yarn build` in the package first, or tests exercise the stale build ("X is not a function" for newly added members).
+
 **When**: after any change to C++ files or TypeScript files in `src/`. Prefer this for a quick local test loop covering both TS and C++ logic; run `yarn validate:fast` before opening a PR.
 
 ### AudioEvent enum sync check

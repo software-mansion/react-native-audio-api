@@ -77,14 +77,50 @@ export interface RecordingNotificationInfo {
   paused?: boolean;
   smallIconResourceName?: string;
   largeIconResourceName?: string;
+  /**
+   * Action icon; ignored on Android 12+ where the system renders text-only
+   * actions.
+   */
   pauseIconResourceName?: string;
+  /**
+   * Action icon; ignored on Android 12+ where the system renders text-only
+   * actions.
+   */
   resumeIconResourceName?: string;
   color?: number;
+  /**
+   * Shows a stop action that ends the recording natively — it works even when
+   * the app task has been removed and JS is unreachable. A live app is
+   * additionally notified through the `recordingNotificationStop` event.
+   * Default: false.
+   */
+  showStopAction?: boolean;
+  /**
+   * Action icon; ignored on Android 12+ where the system renders text-only
+   * actions.
+   */
+  stopIconResourceName?: string;
+  /** Label of the pause action. Default: 'Pause'. */
+  pauseActionTitle?: string;
+  /** Label of the resume action. Default: 'Resume'. */
+  resumeActionTitle?: string;
+  /** Label of the stop action. Default: 'Stop'. */
+  stopActionTitle?: string;
+  /**
+   * URI attached to the notification tap intent, e.g. `myapp://record`.
+   * Delivered through React Native's `Linking` (initial URL on cold start,
+   * `url` event otherwise), so it can route to a specific screen. Without it,
+   * tapping the notification opens the app's launcher activity.
+   */
+  deepLinkUri?: string;
+  /** Shows the elapsed recording time in the notification. Default: false. */
+  usesChronometer?: boolean;
 }
 
 export interface RecordingNotificationEvent {
   recordingNotificationPause: EventEmptyType;
   recordingNotificationResume: EventEmptyType;
+  recordingNotificationStop: EventEmptyType;
 }
 
 export type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
