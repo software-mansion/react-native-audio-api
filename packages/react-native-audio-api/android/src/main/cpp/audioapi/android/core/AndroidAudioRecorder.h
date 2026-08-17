@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/android/core/NativeAudioRecorder.hpp>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -18,14 +17,14 @@ namespace audioapi {
 class AudioFileProperties;
 class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AndroidAudioRecorder : public oboe::AudioStreamCallback,
                              public AudioRecorder,
                              public std::enable_shared_from_this<AndroidAudioRecorder> {
  public:
   explicit AndroidAudioRecorder(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AndroidAudioRecorder() override;
   void cleanup();
 
@@ -66,8 +65,6 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   std::atomic<float> streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;
-
-  facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
 
   std::shared_ptr<oboe::AudioStream> mStream_;
   std::vector<std::string> recordingSegmentPaths_;

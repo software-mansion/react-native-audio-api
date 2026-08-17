@@ -16,7 +16,7 @@ Copyright (c) The WebKit Authors
 In addition we utilize FFmpeg library under GNU Lesser General Public License (LGPL) version 2.1 or later
 
 - Source: https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0
-- Used in audio decoding module [packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/FFmpegDecoding.cpp)
+- Used in audio decoding module [packages/react-native-audio-api/common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp)
 - Instruction for relinking: [packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/INSTRUCTIONS.md](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/INSTRUCTIONS.md)
 
 Other LGPL components may be included as dependencies.

@@ -1,7 +1,6 @@
-#include <audioapi/core/utils/decoding/SeekDecoderDaemon.h>
+#include <audioapi/decoding/DecoderFactory.h>
+#include <audioapi/decoding/SeekDecoderDaemon.h>
 
-#include <algorithm>
-#include <cmath>
 #include <memory>
 #include <thread>
 #include <utility>
@@ -9,7 +8,7 @@
 namespace audioapi {
 
 SeekDecoderDaemon::SeekDecoderDaemon(
-    SeekDecoderDaemonOptions options,
+    const SeekDecoderDaemonOptions &options,
     std::shared_ptr<AudioFileDecoderState> sharedState,
     CommandReceiver commandReceiver,
     FrameSender frameSender,
@@ -18,32 +17,13 @@ SeekDecoderDaemon::SeekDecoderDaemon(
       commandReceiver_(std::move(commandReceiver)),
       frameSender_(std::move(frameSender)),
       frameReceiverForDrain_(std::move(frameReceiver)) {
-  if (options.requiresFFmpeg || !options.sourceUrl.empty()) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
-    decoder_ = std::make_unique<ffmpeg_decoder::FFmpegDecoder>();
-#endif
-  } else {
-    decoder_ = std::make_unique<miniaudio_decoder::MiniAudioDecoder>();
-  }
-
-  decoding::DecoderResult openResult = Err("Failed to initialize decoder");
-
-  int contextSampleRate = static_cast<int>(options.contextSampleRate);
-
-  if (!options.sourceUrl.empty()) {
-    openResult = decoder_->openUrl(contextSampleRate, options.sourceUrl, options.httpHeaders);
-  } else if (!options.filePath.empty()) {
-    openResult = decoder_->openFile(contextSampleRate, options.filePath);
-  } else {
-    openResult = decoder_->openMemory(
-        contextSampleRate, options.memoryData.data(), options.memoryData.size());
-  }
-
-  if (openResult.is_err()) {
-    decoder_->close();
+  auto decoderResult = decoding::createDecoder(options.source);
+  if (decoderResult.is_err()) {
     sharedState_->isDaemonRunning.store(false, std::memory_order_release);
     return;
   }
+
+  decoder_ = std::move(decoderResult).unwrap();
 
   sharedState_->channelCount.store(decoder_->outputChannels(), std::memory_order_release);
   sharedState_->sampleRate.store(

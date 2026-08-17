@@ -1,9 +1,40 @@
 import { AudioContext, AudioBuffer } from "react-native-audio-api";
 import { PCM_DATA } from "./constants";
 
-const SUPPORTED_FORMATS = ['mp3', 'wav', 'aac', 'flac', 'ogg', 'opus', 'm4a', 'mp4'];
-const EXPECTED_BUFFER_DURATION = 16;
-const EXPECTED_CHANNELS = 2;
+const ESPRESSIF_STEREO =
+  'https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.';
+
+type FormatFixture = {
+  format: string;
+  url: string;
+  expectedDuration: number;
+  expectedChannels: number;
+};
+
+// Newly supported OS-path containers: aif/aiff (same AIFF bytes) and caf.
+const FORMAT_FIXTURES: FormatFixture[] = [
+  ...['mp3', 'wav', 'aac', 'flac', 'ogg', 'opus', 'm4a', 'mp4', 'aiff'].map(
+    (format) => ({
+      format,
+      url: ESPRESSIF_STEREO + format,
+      expectedDuration: 16,
+      expectedChannels: 2,
+    })
+  ),
+  {
+    // Same AIFF bytes as `.aiff` (Espressif has no `.aif` URL); decode is magic-based.
+    format: 'aif',
+    url: ESPRESSIF_STEREO + 'aiff',
+    expectedDuration: 16,
+    expectedChannels: 2,
+  },
+  {
+    format: 'caf',
+    url: 'https://samples.ffmpeg.org/A-codecs/caf/ComputerData05.caf',
+    expectedDuration: 0.51,
+    expectedChannels: 2,
+  },
+];
 
 const CHANNELS_MAP: Map<number, string> = new Map([
   [1, 'https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.mp3'],
@@ -20,9 +51,9 @@ const DURATIONS_MAP: Map<number, number> = new Map([
 ]);
 
 export const audioBufferFormatsTest = async (audioContextRef: React.RefObject<AudioContext | null>, setTestingInfo: (value: React.SetStateAction<string>) => void) => {
-  let buffers: AudioBuffer[] = [];
-  for (const format of SUPPORTED_FORMATS) {
-    const url = 'https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.' + format;
+  const buffers: { format: string; buffer: AudioBuffer }[] = [];
+  for (const fixture of FORMAT_FIXTURES) {
+    const { format, url, expectedDuration, expectedChannels } = fixture;
     setTestingInfo(`Loading audio buffer: ${format}`);
     await fetch(url, {
       headers: {
@@ -34,22 +65,22 @@ export const audioBufferFormatsTest = async (audioContextRef: React.RefObject<Au
         try {
           const audioBuffer = await audioContextRef.current!.decodeAudioData(arrayBuffer);
           console.log(`Decoded ${format} buffer:`, audioBuffer);
-          if (Math.abs(audioBuffer.duration - EXPECTED_BUFFER_DURATION) > 0.3) {
+          if (Math.abs(audioBuffer.duration - expectedDuration) > 0.3) {
             throw new Error(`Unexpected buffer duration: ${audioBuffer.duration}`);
           }
-          if (audioBuffer.numberOfChannels !== EXPECTED_CHANNELS) {
+          if (audioBuffer.numberOfChannels !== expectedChannels) {
             throw new Error(`Unexpected number of channels: ${audioBuffer.numberOfChannels}`);
           }
-          buffers.push(audioBuffer);
+          buffers.push({ format, buffer: audioBuffer });
         } catch (error) {
           setTestingInfo(`Error decoding audio buffer: ${format} - ${error}`);
         }
       })
   }
   for (let i = 0; i < buffers.length; i++) {
-    setTestingInfo(`Playing ${SUPPORTED_FORMATS[i]} buffer`);
+    setTestingInfo(`Playing ${buffers[i].format} buffer`);
     const bufferSource = audioContextRef.current!.createBufferSource();
-    bufferSource.buffer = buffers[i];
+    bufferSource.buffer = buffers[i].buffer;
     bufferSource.connect(audioContextRef.current!.destination);
     bufferSource.start();
     await new Promise(resolve => setTimeout(resolve, 4000));
@@ -63,9 +94,9 @@ export const audioBufferFormatsTest = async (audioContextRef: React.RefObject<Au
 }
 
 export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<AudioContext | null>, setTestingInfo: (value: React.SetStateAction<string>) => void) => {
-  for (const channelsStr in CHANNELS_MAP) {
-    const channels = parseInt(channelsStr, 10);
-    const url = CHANNELS_MAP.get(channels)!;
+  const lastChannelCount = Math.max(...CHANNELS_MAP.keys());
+  for (const [channels, url] of CHANNELS_MAP) {
+    console.log(`Testing audio buffer with ${channels} channels`);
     const expectedDuration = DURATIONS_MAP.get(channels)!;
     setTestingInfo(`Loading audio buffer with ${channels} channels`);
     await fetch(url, {
@@ -90,7 +121,7 @@ export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<A
             bufferSource.connect(audioContextRef.current!.destination);
             bufferSource.start();
             await new Promise(resolve => setTimeout(resolve, 4000));
-            if (channels === Object.keys(CHANNELS_MAP).length) {
+            if (channels === lastChannelCount) {
               bufferSource.onEnded = () => {
                 setTestingInfo('Audio buffer channels test completed.');
               };

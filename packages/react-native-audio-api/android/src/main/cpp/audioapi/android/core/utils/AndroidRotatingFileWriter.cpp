@@ -9,7 +9,7 @@
 namespace audioapi {
 
 AndroidRotatingFileWriter::AndroidRotatingFileWriter(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     size_t rotateIntervalBytes,
     WriterFactory writerFactory,

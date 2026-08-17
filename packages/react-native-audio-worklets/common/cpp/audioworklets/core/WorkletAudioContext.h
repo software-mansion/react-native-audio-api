@@ -4,7 +4,6 @@
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <memory>
-#include <mutex>
 #include <thread>
 
 namespace audioworklets {

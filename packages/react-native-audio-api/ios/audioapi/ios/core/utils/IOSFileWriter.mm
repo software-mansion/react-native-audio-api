@@ -1,7 +1,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/IOSFileWriter.h>
 #include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
@@ -17,7 +17,7 @@ using ios::copyIntoOwnedAudioBufferList;
 using ios::OwnedAudioBufferListPtr;
 
 IOSFileWriter::IOSFileWriter(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties)
     : AudioFileWriter(audioEventHandlerRegistry, fileProperties)
 {

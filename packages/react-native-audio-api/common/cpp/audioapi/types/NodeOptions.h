@@ -265,16 +265,6 @@ struct IIRFilterOptions : AudioNodeOptions {
 struct WaveShaperOptions : AudioNodeOptions {
   std::shared_ptr<AudioArray> curve{nullptr};
   OverSampleType oversample = OverSampleType::OVERSAMPLE_NONE;
-
-  WaveShaperOptions() {
-    // to change after graph processing improvement - should be max
-    channelCountMode = ChannelCountMode::CLAMPED_MAX;
-  }
-
-  explicit WaveShaperOptions(const AudioNodeOptions &options) : AudioNodeOptions(options) {
-    // to change after graph processing improvement - should be max
-    channelCountMode = ChannelCountMode::CLAMPED_MAX;
-  }
 };
 
 } // namespace audioapi

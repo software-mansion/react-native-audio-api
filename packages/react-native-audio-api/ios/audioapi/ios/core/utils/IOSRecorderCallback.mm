@@ -4,7 +4,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
-#include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/ios/core/utils/OwnedAudioBufferList.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -22,7 +22,7 @@ using ios::copyIntoOwnedAudioBufferList;
 using ios::OwnedAudioBufferListPtr;
 
 IOSRecorderCallback::IOSRecorderCallback(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     float sampleRate,
     size_t bufferLength,
     int channelCount,

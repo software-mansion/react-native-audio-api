@@ -1,4 +1,4 @@
-#include <audioapi/core/utils/AudioFileConcatenator.h>
+#include <audioapi/decoding/AudioFileConcatenator.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <gtest/gtest.h>
 

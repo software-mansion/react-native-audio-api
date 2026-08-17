@@ -24,12 +24,12 @@ namespace audioapi {
 class RecorderCallback;
 class RecorderAdapterNode;
 class AudioFileProperties;
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 class AudioFileWriter;
 
 class IOSAudioRecorder : public AudioRecorder {
  public:
-  IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  IOSAudioRecorder(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
