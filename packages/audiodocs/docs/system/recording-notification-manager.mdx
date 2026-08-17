@@ -10,7 +10,7 @@ import {
 # RecordingNotificationManager <Android />
 
 The `RecordingNotificationManager` provides system integration with [`AudioRecorder`](/docs/inputs/audio-recorder) on Android.
-It can send events about pausing and resuming to your application.
+It shows a standard notification with pause/resume and (optionally) stop actions, can route notification taps to a specific screen, and sends action events to your application.
 
 :::note iOS
 `RecordingNotificationManager` is not available on iOS. For a recording indicator on the Lock Screen and in the Dynamic Island, use a [Live Activity](https://docs.expo.dev/versions/latest/sdk/widgets/) built with [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/).
@@ -23,9 +23,10 @@ RecordingNotificationManager.show({
   contentText: 'Recording...',
   paused: false,
   smallIconResourceName: 'icon_to_display',
-  pauseIconResourceName: 'pause_icon',
-  resumeIconResourceName: 'resume_icon',
   color: 0xff6200,
+  showStopAction: true,
+  deepLinkUri: 'myapp://record',
+  usesChronometer: true,
 });
 
 const pauseEventListener = RecordingNotificationManager.addEventListener('recordingNotificationPause', () => {
@@ -34,11 +35,37 @@ const pauseEventListener = RecordingNotificationManager.addEventListener('record
 const resumeEventListener = RecordingNotificationManager.addEventListener('recordingNotificationResume', () => {
   console.log('Notification resume action received');
 });
+const stopEventListener = RecordingNotificationManager.addEventListener('recordingNotificationStop', () => {
+  console.log('Notification stop action received');
+});
 
 pauseEventListener.remove();
 resumeEventListener.remove();
+stopEventListener.remove();
 RecordingNotificationManager.hide();
 ```
+
+## Native action handling
+
+All notification actions act on the recorder **natively**, without a JS round-trip. This matters when the recording outlives the app UI (see [keeping the recording alive when the app is closed](/docs/inputs/audio-recorder#keeping-the-recording-alive-when-the-app-is-closed)) — pause, resume and stop keep working even after the app task has been removed and no JS listener is reachable.
+
+- **Pause / resume** pause or resume the recorder and flip the notification's action button. The matching event (`recordingNotificationPause` / `recordingNotificationResume`) still fires so a live app can sync its UI — handlers calling `AudioRecorder.pause()` / `resume()` again are harmless, the recorder ignores same-state transitions.
+- **Stop** (`showStopAction: true`) stops the recorder and finalizes the output files (their info becomes available through [`AudioRecorder.takeLastRecordingResult()`](/docs/inputs/audio-recorder#takelastrecordingresult)), emits `recordingNotificationStop`, then hides the notification, which also stops the foreground service. Unlike pause/resume, your `recordingNotificationStop` listener should **not** call `AudioRecorder.stop()` — the recording is already stopped. Collect the files with `AudioRecorder.takeLastRecordingResult()` instead.
+
+## Routing the notification tap
+
+By default, tapping the notification opens the app's launcher activity. Set `deepLinkUri` to attach a URI to the tap intent; React Native delivers it through [`Linking`](https://reactnative.dev/docs/linking) (`getInitialURL()` on cold start, the `url` event otherwise). With React Navigation, map it to a screen with a [`linking` config](https://reactnavigation.org/docs/deep-linking/):
+
+```tsx
+const linking = {
+  prefixes: ['myapp://'],
+  config: { screens: { RecordScreen: 'record' } },
+};
+
+<NavigationContainer linking={linking}>
+```
+
+No `AndroidManifest.xml` changes are needed — the notification uses an explicit launch intent, so the URI does not go through intent filters. (If you also want the same URI to work from a browser or `adb`, declare your own scheme intent filter, e.g. via Expo's `scheme` option.)
 
 ## Methods
 
@@ -46,7 +73,7 @@ RecordingNotificationManager.hide();
 
 Shows the recording notification with the parameters.
 
-Metadata is saved between calls, so after the initial pass to the show method, you need only call it with elements that are supposed to change.
+Metadata is saved between calls, so after the initial pass to the show method, you need only call it with elements that are supposed to change. The only exception is `paused`, which resets to `false` when absent.
 
 | Parameter |Type| Description|
 | :---: | :---: | :---- |
@@ -60,8 +87,7 @@ Resource name is a path to resource placed in res/drawable folder. It has to be 
 :::
 
 :::caution
-If nothing is displayed, even though your name is correct, try decreasing size of your resource.
-Notification can look vastly different on different android devices.
+The notification uses the standard Android template, so its exact look varies between devices and Android versions. On Android 12+ the system renders actions as text buttons — the `pauseIconResourceName`, `resumeIconResourceName` and `stopIconResourceName` icons only show up on older versions; use the `*ActionTitle` options to control the visible labels.
 :::
 
 ### `hide`
@@ -97,12 +123,19 @@ Adds an event listener for notification actions.
 interface RecordingNotificationInfo {
   title?: string;
   contentText?: string;
-  paused?: boolean; // flag indicating whether to display pauseIcon or resumeIcon
+  paused?: boolean; // flag indicating whether to display the pause or the resume action
   smallIconResourceName?: string;
   largeIconResourceName?: string;
-  pauseIconResourceName?: string;
-  resumeIconResourceName?: string;
-  color?: number; //
+  pauseIconResourceName?: string; // ignored on Android 12+
+  resumeIconResourceName?: string; // ignored on Android 12+
+  color?: number;
+  showStopAction?: boolean; // shows the native stop action, default: false
+  stopIconResourceName?: string; // ignored on Android 12+
+  pauseActionTitle?: string; // default: 'Pause'
+  resumeActionTitle?: string; // default: 'Resume'
+  stopActionTitle?: string; // default: 'Stop'
+  deepLinkUri?: string; // URI attached to the notification tap intent
+  usesChronometer?: boolean; // shows the elapsed recording time, default: false
 }
 ```
 </details>
@@ -117,6 +150,7 @@ interface EventEmptyType {}
 interface RecordingNotificationEvent {
   recordingNotificationPause: EventEmptyType;
   recordingNotificationResume: EventEmptyType;
+  recordingNotificationStop: EventEmptyType;
 }
 
 type RecordingNotificationEventName = keyof RecordingNotificationEvent;

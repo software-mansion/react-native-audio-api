@@ -556,11 +556,15 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       return;
     }
 
+    const auto stateBeforeTeardown = state_.load(std::memory_order_acquire);
+
     cleanup();
 
     auto streamResult = openAudioStream();
 
     if (!streamResult.is_ok()) {
+      // Deliberately left Idle (by cleanup()): restoring Paused here would let a later
+      // resume() start a stream that no longer exists.
       uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
 
       if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
@@ -575,8 +579,13 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       return;
     }
 
-    mStream_->requestStart();
-    state_.store(RecorderState::Recording, std::memory_order_release);
+    // Restore the interrupted session's state instead of unconditionally recording —
+    // a paused session must stay paused, or the reopened stream would silently turn
+    // the microphone back on against an explicit user action.
+    if (stateBeforeTeardown == RecorderState::Recording) {
+      mStream_->requestStart();
+    }
+    state_.store(stateBeforeTeardown, std::memory_order_release);
   }
 }
 

@@ -148,6 +148,8 @@ AudioEvent audioEventFromString(const std::string &event) {
     return AudioEvent::BUFFER_ENDED;
   if (event == "recorderError")
     return AudioEvent::RECORDER_ERROR;
+  if (event == "recordingNotificationStop")
+    return AudioEvent::RECORDING_NOTIFICATION_STOP;
 
   throw std::invalid_argument("Unknown audio event: " + event);
 }

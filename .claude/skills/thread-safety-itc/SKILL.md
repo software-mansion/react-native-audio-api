@@ -130,6 +130,7 @@ Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is de
 | Non-primitive, can be written by audio thread | Triple buffer (see `AnalyserNode` for reference) |
 | CPU-heavy work, must not block JS or audio | `TaskOffloader` on a dedicated worker thread |
 | Context lifecycle (`resume`/`suspend`/`close`) | `scheduleContextPromise` → `pendingPromisesOffloader_` |
+| Platform code (Kotlin) must reach a C++ object with no JS runtime alive | Process-global handle (`ActiveRecorderHandle` — mutex + `weak_ptr`, registered by the HostObject ctor/dtor) + static-JNI `JavaClass` (`NativeRecorderControl`, no HybridData needed). Blocking calls run on a Kotlin executor (`goAsync()` in receivers), never a detached `std::thread` — Kotlin threads are already JNI-attached |
 
 ---
 

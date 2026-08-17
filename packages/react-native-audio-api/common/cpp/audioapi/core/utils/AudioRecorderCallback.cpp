@@ -76,10 +76,6 @@ void AudioRecorderCallback::invokeCallback(
   framesEmitted_ += numFrames;
 }
 
-void AudioRecorderCallback::assignOnErrorCallbackId(uint64_t callbackId) {
-  errorEvent_.assignCallbackId(callbackId);
-}
-
 /// @brief Invokes the error callback with the provided message.
 /// @param message The error message to be sent to the callback.
 void AudioRecorderCallback::invokeOnErrorCallback(const std::string &message) {

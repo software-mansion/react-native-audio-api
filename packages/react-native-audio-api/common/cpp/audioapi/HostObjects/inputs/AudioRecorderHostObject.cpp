@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiPromise.h>
@@ -28,6 +29,7 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry);
 #endif
+  ActiveRecorderHandle::global().setRecorder(audioRecorder_);
 
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
 
@@ -49,6 +51,10 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration));
 
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, inputLatency));
+}
+
+AudioRecorderHostObject::~AudioRecorderHostObject() {
+  ActiveRecorderHandle::global().clearRecorder(audioRecorder_.get());
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
