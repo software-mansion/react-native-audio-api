@@ -851,6 +851,8 @@ class OfflineAudioContextMock extends BaseAudioContextMock {
 }
 
 class AudioRecorderMock {
+  private static lastCreated: AudioRecorderMock | null = null;
+
   private _isRecording: boolean = false;
   private _isPaused: boolean = false;
   private _currentDuration: number = 0;
@@ -860,7 +862,18 @@ class AudioRecorderMock {
   private onAudioReadySubscription: MockEventSubscription | null = null;
   private onErrorSubscription: MockEventSubscription | null = null;
 
-  constructor() {}
+  constructor() {
+    AudioRecorderMock.lastCreated = this;
+  }
+
+  static isRecordingOngoing(): boolean {
+    const recorder = AudioRecorderMock.lastCreated;
+    return recorder != null && (recorder._isRecording || recorder._isPaused);
+  }
+
+  static takeLastRecordingResult(): FileInfo | null {
+    return null;
+  }
 
   enableFileOutput(
     options?: AudioRecorderFileOptions

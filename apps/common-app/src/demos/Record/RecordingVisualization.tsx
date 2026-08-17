@@ -22,7 +22,6 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Spacer } from '../../components';
 import { audioRecorder as Recorder } from '../../singletons';
 import constants from './constants';
 import TimeStream from './TimeStream';
@@ -32,16 +31,8 @@ const { width: windowWidth } = Dimensions.get('window');
 
 const defaultNumBars = Math.floor(windowWidth / constants.barStep);
 
-const historyNumBars = Math.floor(
-  windowWidth / (constants.historyBarWidth + constants.historyBarGap)
-);
-
 function getInitialWaveform() {
   return new Array(defaultNumBars * 2).fill(-1);
-}
-
-function getInitialHistory() {
-  return new Array(historyNumBars * 10).fill(-1);
 }
 
 interface RecordingVisualizationProps {
@@ -55,15 +46,6 @@ interface DrawDefaultWaveformParams {
   translateX: SharedValue<number>;
   lastIndex: SharedValue<number>;
   numBars: number;
-}
-
-interface DrawHistoryWaveformParams {
-  normalized: number;
-  lifetimeCanvasHeight: number;
-  history: number[];
-  historyHead: SharedValue<number>;
-  durationMS: SharedValue<number>;
-  historyMidpointMS: SharedValue<number>;
 }
 
 function drawDefaultWaveform(params: DrawDefaultWaveformParams) {
@@ -108,63 +90,23 @@ function drawDefaultWaveform(params: DrawDefaultWaveformParams) {
   return barHeights;
 }
 
-function drawHistoryWaveform(params: DrawHistoryWaveformParams) {
-  'worklet';
-
-  const {
-    history,
-    normalized,
-    lifetimeCanvasHeight,
-    historyHead,
-    durationMS,
-    historyMidpointMS,
-  } = params;
-
-  if (lifetimeCanvasHeight <= 0) {
-    return history;
-  }
-
-  const value = normalized * lifetimeCanvasHeight * 0.8;
-  history[historyHead.value] = value;
-  historyHead.value += 1;
-
-  // downsample if needed
-  if (historyHead.value >= history.length) {
-    const halfLength = history.length / 2;
-
-    for (let i = 0; i < halfLength; i++) {
-      history[i] = Math.max(history[2 * i], history[2 * i + 1]);
-    }
-
-    historyHead.value = halfLength;
-    historyMidpointMS.value = durationMS.value;
-  }
-
-  return history;
-}
-
 const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   state,
 }) => {
   const canvasRef = useCanvasRef();
-  const lifetimeCanvasRef = useCanvasRef();
 
   const { size } = useCanvasSize(canvasRef);
-  const { size: lifetimeSize } = useCanvasSize(lifetimeCanvasRef);
   const barHeights = useSharedValue<number[]>(getInitialWaveform());
-
-  const history = useSharedValue<number[]>(getInitialHistory());
-  const historyHead = useSharedValue(0);
-  const historyMidpointMS = useSharedValue(0);
-  const historyRenderer = useSharedValue<number[]>(
-    new Array(historyNumBars).fill(-1)
-  );
 
   const translateX = useSharedValue(0);
   const lastIndex = useSharedValue(-1);
-  const durationMS = useSharedValue(0);
+  // The worklet only accumulates duration from buffers it sees while this component
+  // is mounted; when the screen re-attaches to an already-running recording, start
+  // from the recorder's real elapsed time. Seeding here (not in an effect) matters:
+  // TimeStream's children position their ticks from this value during their own
+  // mount, which happens before any parent effect could run.
+  const durationMS = useSharedValue(Recorder.getCurrentDuration() * 1000);
   const canvasHeightSV = useSharedValue(0);
-  const lifetimeCanvasHeightSV = useSharedValue(0);
   const numBarsSV = useSharedValue(0);
 
   const stateRef = useRef(state);
@@ -205,66 +147,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
     return path;
   }, [size, numBars]);
 
-  const historyWaveformPath = useDerivedValue(() => {
-    const path = Skia.PathBuilder.Make().build();
-    const canvasHeight = lifetimeSize.height;
-    const values = historyRenderer.value;
-
-    if (historyHead.value < historyNumBars) {
-      // render as it is
-      for (let i = 0; i < historyHead.value; i++) {
-        values[i] = history.value[i];
-
-        if (values[i] < 0) {
-          continue;
-        }
-
-        const x =
-          i * (constants.historyBarWidth + constants.historyBarGap) +
-          constants.historyBarWidth / 2;
-        const y1 = (canvasHeight - values[i]) / 2;
-        const y2 = (canvasHeight + values[i]) / 2;
-
-        path.moveTo(x, y1);
-        path.lineTo(x, y2);
-      }
-
-      return path;
-    }
-
-    const ratio = historyHead.value / historyNumBars;
-
-    // render rest
-    for (let i = 0; i < historyNumBars; i++) {
-      let maxVal = -1;
-      const startIndex = Math.floor(i * ratio);
-      const endIndex = Math.floor((i + 1) * ratio);
-
-      for (let j = startIndex; j < endIndex; j++) {
-        if (history.value[j] > maxVal) {
-          maxVal = history.value[j];
-        }
-      }
-
-      values[i] = maxVal;
-
-      if (values[i] < 0) {
-        continue;
-      }
-
-      const x =
-        i * (constants.historyBarWidth + constants.historyBarGap) +
-        constants.historyBarWidth / 2;
-      const y1 = (canvasHeight - values[i]) / 2;
-      const y2 = (canvasHeight + values[i]) / 2;
-
-      path.moveTo(x, y1);
-      path.lineTo(x, y2);
-    }
-
-    return path;
-  }, [lifetimeSize]);
-
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
@@ -272,8 +154,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   useEffect(() => {
     numBarsSV.value = numBars;
     canvasHeightSV.value = size.height;
-    lifetimeCanvasHeightSV.value = lifetimeSize.height;
-  }, [numBars, size.height, lifetimeSize.height, numBarsSV, canvasHeightSV, lifetimeCanvasHeightSV]);
+  }, [numBars, size.height, numBarsSV, canvasHeightSV]);
 
   useEffect(() => {
     if (numBars <= 0) {
@@ -299,7 +180,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
         'worklet';
 
         const canvasHeight = canvasHeightSV.value;
-        const lifetimeCanvasHeight = lifetimeCanvasHeightSV.value;
         const activeNumBars = numBarsSV.value;
 
         if (canvasHeight <= 0 || activeNumBars <= 0) {
@@ -333,19 +213,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
             translateX,
             lastIndex,
             numBars: activeNumBars,
-          }) as T;
-        });
-
-        history.modify(<T extends number[]>(hist: T) => {
-          'worklet';
-
-          return drawHistoryWaveform({
-            normalized,
-            lifetimeCanvasHeight,
-            history: hist,
-            historyHead,
-            durationMS,
-            historyMidpointMS,
           }) as T;
         });
       },
@@ -419,6 +286,13 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
 
   useEffect(() => {
     if (state === RecordingState.Recording) {
+      if (size.width === 0) {
+        // Canvas not measured yet (mounting straight into an ongoing recording).
+        // Starting the scroll animation now would pin translateX at 0 and draw the
+        // waveform off-screen; this effect re-runs once the size arrives.
+        return;
+      }
+
       const animationTarget = -size.width;
       const animationDuration = 1000 * (size.width / constants.pixelsPerSecond);
 
@@ -450,26 +324,10 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
       cancelAnimation(translateX);
       translateX.value = 0;
       barHeights.value = Array(numBars).fill(-1);
-      historyRenderer.value = Array(historyNumBars).fill(-1);
-      history.value = Array(historyNumBars * 10).fill(-1);
-      historyHead.value = 0;
-      historyMidpointMS.value = 0;
       durationMS.value = 0;
       lastIndex.value = -1;
     }
-  }, [
-    state,
-    size,
-    translateX,
-    barHeights,
-    numBars,
-    durationMS,
-    lastIndex,
-    history,
-    historyHead,
-    historyMidpointMS,
-    historyRenderer,
-  ]);
+  }, [state, size, translateX, barHeights, numBars, durationMS, lastIndex]);
 
   const transformPath = useDerivedValue(() => [
     {
@@ -498,20 +356,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
           durationMS={durationMS}
         />
       </View>
-      <Spacer.Vertical size={32} />
-      <View style={styles.lifetimeContainer}>
-        <Canvas style={styles.canvas} ref={lifetimeCanvasRef}>
-          <Group>
-            <Path
-              path={historyWaveformPath}
-              style="stroke"
-              strokeWidth={constants.historyBarWidth}
-              strokeCap="round"
-              color="#ff6259"
-            />
-          </Group>
-        </Canvas>
-      </View>
     </>
   );
 };
@@ -530,12 +374,5 @@ const styles = StyleSheet.create({
   timeStreamContainer: {
     height: 20,
     marginTop: 8,
-  },
-  lifetimeContainer: {
-    marginTop: 16,
-    height: 75,
-    width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
-    flexDirection: 'column',
   },
 });

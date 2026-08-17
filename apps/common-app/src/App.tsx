@@ -181,10 +181,21 @@ const MainTabsScreen: FC = () => {
   );
 };
 
+// Routes notification taps (e.g. the recording notification's `deepLinkUri`)
+// straight to the right screen instead of the app's entry screen.
+const linking = {
+  prefixes: ['audioapi-example://'],
+  config: {
+    screens: {
+      RecordDemo: 'record',
+    },
+  },
+};
+
 const App: FC = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <Stack.Navigator
           screenOptions={{
             headerShown: true,

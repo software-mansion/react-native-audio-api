@@ -6,7 +6,7 @@ toc_max_heading_level: 5
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import { Optional } from '@site/src/components/Badges';
+import { Android, Optional } from '@site/src/components/Badges';
 
 # AudioRecorder
 
@@ -134,6 +134,21 @@ For the recording to actually survive, all of the following must hold:
 :::caution
 Even with `stopWithTask="false"`, the system can still kill the process (memory pressure, OEM battery managers). Recording cannot self-restart from the background — the user has to reopen the app. To limit data loss in that case, tune the file-output options [`androidFlushIntervalMs`](/docs/inputs/audio-recorder#androidflushintervalms) and [`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions).
 :::
+
+A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](/docs/system/recording-notification-manager#the-stop-action) (`showStopAction: true`), which stops the recording natively even when no JS is reachable.
+
+When the app is opened again, reconcile the UI with what happened while it was away:
+
+```tsx
+if (AudioRecorder.isRecordingOngoing()) {
+  // the recording is still running — re-attach the UI to it
+} else {
+  const info = AudioRecorder.takeLastRecordingResult();
+  if (info) {
+    // the recording was stopped from the notification; info.paths holds the files
+  }
+}
+```
 
 ## Examples
 
@@ -495,11 +510,42 @@ Returns the current recording duration when file output is enabled.
 const duration = audioRecorder.getCurrentDuration();
 ```
 
+### `isRecordingOngoing`
+
+**Static.** Returns `true` while any recording session is ongoing (recording or paused), regardless of which `AudioRecorder` instance started it. Use it after an app relaunch to detect a recording that [outlived the app UI](/docs/inputs/audio-recorder#keeping-the-recording-alive-when-the-app-is-closed).
+
+#### Returns `boolean`.
+
+```tsx
+if (AudioRecorder.isRecordingOngoing()) {
+  // re-attach the UI to the still-running recording
+}
+```
+
+### `takeLastRecordingResult` <Android />
+
+**Static.** Returns the [`FileInfo`](/docs/inputs/audio-recorder#fileinfo) of a recording that was stopped natively — through the [recording notification's stop action](/docs/system/recording-notification-manager#the-stop-action) — or `null` if there is none. Consume-once: the result is cleared on read, so a second call returns `null`.
+
+Recordings stopped through [`stop`](/docs/inputs/audio-recorder#stop) resolve their promise with the file info instead and never appear here.
+
+#### Returns [`FileInfo`](/docs/inputs/audio-recorder#fileinfo) or `null`.
+
+```tsx
+const info = AudioRecorder.takeLastRecordingResult();
+if (info) {
+  // the recording was stopped from the notification; info.paths holds the files
+}
+```
+
 ### `enableFileOutput`
 
 Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file.
 
 For further information, see [`AudioRecorderFileOptions`](#audiorecorderfileoptions).
+
+:::caution
+Calling `enableFileOutput` while a recording is ongoing replaces the file writer: output continues into a new file and [`getCurrentDuration`](#getcurrentduration) resets. When re-mounting a screen that may be resyncing with a still-running recording, guard the call with [`isRecordingOngoing`](#isrecordingongoing).
+:::
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |

@@ -56,6 +56,27 @@ export default class AudioRecorder {
   }
 
   /**
+   * Checks whether any recording session is ongoing (recording or paused),
+   * regardless of which `AudioRecorder` instance started it. Use it after an
+   * app relaunch to detect a recording that outlived the UI (Android foreground
+   * service with `stopWithTask: false`).
+   */
+  static isRecordingOngoing(): boolean {
+    return globalThis.isRecordingOngoing?.() ?? false;
+  }
+
+  /**
+   * Returns the file info of a recording that was stopped natively (e.g. via
+   * the recording notification stop action), or `null` if there is none.
+   * Consume-once: the result is cleared on read, so a second call returns
+   * `null`. Recordings stopped through {@link stop} resolve their promise with
+   * the file info instead and never appear here.
+   */
+  static takeLastRecordingResult(): FileInfo | null {
+    return globalThis.takeLastRecordingResult?.() ?? null;
+  }
+
+  /**
    * Enables writing recorded audio to a file using the provided options.
    *
    * When {@link AudioRecorderFileOptions.rotateIntervalBytes} is greater than
