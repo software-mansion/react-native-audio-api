@@ -120,7 +120,8 @@ const config = {
     },
     footer: {
       links: [],
-      copyright: `All trademarks and copyrights belong to their respective owners.`,
+      copyright:
+        'All trademarks and copyrights belong to their respective owners. Read about our ',
     },
     prism: {
       additionalLanguages: ['bash', 'cmake'],
