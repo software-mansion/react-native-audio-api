@@ -14,7 +14,8 @@ export default class AudioContext extends BaseAudioContext {
 
     super(
       globalThis.createAudioContext(
-        options?.sampleRate || AudioManager.getDevicePreferredSampleRate()
+        options?.sampleRate || AudioManager.getDevicePreferredSampleRate(),
+        options?.latencyHint
       )
     );
   }

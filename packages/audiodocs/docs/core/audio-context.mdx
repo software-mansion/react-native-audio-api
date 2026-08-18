@@ -21,6 +21,7 @@ constructor(options?: AudioContextOptions)
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
 | `sampleRate` <Optional /> | `number` | - | The preferred sample rate for the context. |
+| `latencyHint` <Optional /> | `'interactive' \| 'balanced' \| 'playback'` | `'interactive'` | What the context should optimize its output stream for. `interactive` requests the lowest latency the platform offers; `balanced` and `playback` trade output latency for a deeper buffer, which favours glitch-free sustained playback (many simultaneous sources, low-end devices). On Android these map to Oboe's `LowLatency`, `None` and `PowerSaving` performance modes; on iOS the hint is currently accepted but does not change the stream; on web it is passed to the browser's `AudioContext`. Numeric hints are not supported yet. |
 
 #### Errors
 
