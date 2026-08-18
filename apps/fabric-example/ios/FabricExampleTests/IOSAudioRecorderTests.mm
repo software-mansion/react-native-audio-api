@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 
 #import <audioapi/core/OfflineAudioContext.h>
+#import <audioapi/ios/core/IOSAudioRecorder.h>
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
@@ -21,41 +22,6 @@ static NSString *NSStringFromStdString(const std::string &value)
 }
 
 namespace audioapi {
-
-class IAudioEventHandlerRegistry;
-
-class IOSAudioRecorder : public AudioRecorder {
- public:
-  IOSAudioRecorder(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
-  ~IOSAudioRecorder() override;
-
-  Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
-  Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
-
-  Result<NoneType, std::string> enableFileOutput(
-      std::shared_ptr<AudioFileProperties> properties) override;
-  void disableFileOutput() override;
-
-  void connect(const std::shared_ptr<utils::graph::NodeHandle> &node) override;
-  void disconnect() override;
-
-  void pause() override;
-  void resume() override;
-
-  bool isRecording() const override;
-  bool isPaused() const override;
-  bool isIdle() const override;
-
-  Result<NoneType, std::string> setOnAudioReadyCallback(
-      float sampleRate,
-      size_t bufferLength,
-      int channelCount,
-      uint64_t callbackId) override;
-  void clearOnAudioReadyCallback() override;
-
- protected:
-  NativeAudioRecorder *nativeRecorder_;
-};
 
 struct RecorderAdapterTestFixture {
   std::shared_ptr<OfflineAudioContext> context;
@@ -317,6 +283,7 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
 
   _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<IAudioEventHandlerRegistry>());
   self.originalNativeRecorder = _recorder->replaceNativeRecorder(self.nativeRecorder);
+  self.nativeRecorder.onInputConfigurationChange = self.originalNativeRecorder.onInputConfigurationChange;
 }
 
 - (void)tearDown
