@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { ConvolverNode, AudioNode, AudioContext } from 'react-native-audio-api';
 import { makeEchoCurve } from './curves';
 
@@ -18,6 +18,8 @@ export default function EchoPedal({
   const [isActive, setIsActive] = useState(false);
 
   const convolverNodeRef = useRef<ConvolverNode | null>(null);
+  // Whether inputNode is currently routed through the convolver (vs bypassed)
+  const isChainConnectedRef = useRef(false);
 
   useEffect(() => {
     if (inputNode == null || outputNode == null) {
@@ -31,7 +33,7 @@ export default function EchoPedal({
   }, [isActive, inputNode, outputNode]);
 
   const applyEffect = (context: AudioContext, inputNode: AudioNode, outputNode: AudioNode) => {
-    if (convolverNodeRef.current) {
+    if (isChainConnectedRef.current && convolverNodeRef.current) {
       inputNode.disconnect(convolverNodeRef.current);
       convolverNodeRef.current.disconnect();
     }
@@ -44,19 +46,26 @@ export default function EchoPedal({
     // Reconnect audio graph
     inputNode.connect(convolver).connect(outputNode);
     inputNode.disconnect(outputNode);
+    isChainConnectedRef.current = true;
   };
 
   const discardEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
     inputNode.connect(outputNode);
-    if (convolverNodeRef.current) {
+    if (isChainConnectedRef.current && convolverNodeRef.current) {
       convolverNodeRef.current.disconnect();
       inputNode.disconnect(convolverNodeRef.current);
+      isChainConnectedRef.current = false;
     }
   };
 
   const togglePower = () => {
     setIsActive((prev) => !prev);
   };
+
+  const powerGesture = useTapGesture({
+    runOnJS: true,
+    onDeactivate: togglePower,
+  });
 
   return (
     <View style={styles.pedalBody}>
@@ -78,11 +87,7 @@ export default function EchoPedal({
               },
             ]}
           />
-          <GestureDetector
-            gesture={Gesture.Tap()
-              .runOnJS(true)
-              .onEnd(togglePower)}
-          >
+          <GestureDetector gesture={powerGesture}>
             <View style={[styles.stompSwitch]}>
               <View style={styles.stompInner} />
             </View>

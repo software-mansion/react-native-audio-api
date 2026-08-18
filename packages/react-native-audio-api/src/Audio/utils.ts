@@ -129,7 +129,8 @@ export function resolveSourcePath(source: AudioSource): string {
   }
 
   if (typeof source === 'number') {
-    return Image.resolveAssetSource(source).uri;
+    const uri = Image.resolveAssetSource(source)?.uri;
+    return uri ?? '';
   }
 
   return source.uri ?? '';

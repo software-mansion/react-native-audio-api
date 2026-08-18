@@ -1,9 +1,10 @@
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import {
-  Gesture,
-  GestureUpdateEvent,
-  PanGestureHandlerEventPayload,
-  TapGestureHandlerEventPayload,
+  usePanGesture,
+  useTapGesture,
+  useSimultaneousGestures,
+  PanGestureActiveEvent,
+  TapGestureEvent,
 } from 'react-native-gesture-handler';
 
 import {
@@ -54,9 +55,7 @@ export default function useGestures(params: GestureParams) {
     return tArray;
   }, []);
 
-  function onPanEvent(
-    event: GestureUpdateEvent<PanGestureHandlerEventPayload>
-  ) {
+  function onPanEvent(event: PanGestureActiveEvent) {
     'worklet';
     const x = event.x - canvasRect.x;
     const y = event.y - canvasRect.y;
@@ -79,9 +78,7 @@ export default function useGestures(params: GestureParams) {
     });
   }
 
-  function onTapEvent(
-    event: GestureUpdateEvent<TapGestureHandlerEventPayload>
-  ) {
+  function onTapEvent(event: TapGestureEvent) {
     'worklet';
 
     const x = event.x - canvasRect.x;
@@ -94,16 +91,17 @@ export default function useGestures(params: GestureParams) {
     });
   }
 
-  const pan = Gesture.Pan()
-    .onStart(onPanEvent)
-    .onChange(onPanEvent)
-    .onEnd(() => {
+  const pan = usePanGesture({
+    onActivate: onPanEvent,
+    onUpdate: onPanEvent,
+    onDeactivate: () => {
       for (let i = 0; i < initialHovers.length; i++) {
         hovers.value[i] = false;
       }
-    });
+    },
+  });
 
-  const tap = Gesture.Tap().onEnd(onTapEvent);
+  const tap = useTapGesture({ onDeactivate: onTapEvent });
 
-  return Gesture.Simultaneous(pan, tap);
+  return useSimultaneousGestures(pan, tap);
 }
