@@ -58,4 +58,53 @@ If you have a use case for any of not yet available interfaces,
 contact us or [create issue](https://github.com/software-mansion/react-native-audio-api).
 We will do our best to ship it as soon as possible!
 
-:::
+We run those exact tests against `react-native-audio-api` through a small Node
+harness, which lets us measure spec conformance with the same assertions a
+browser is held to. Each test file contains many individual assertions; the
+numbers below count assertions, not files.
+
+The table below shows two runs of the suite: one for the latest stable release
+of `react-native-audio-api` published on npm, and one for the current `main`
+branch. It only lists the interfaces that are currently available in the
+library and is refreshed manually by maintainers, so treat it as an approximate
+conformance indicator rather than a live status.
+
+{/* wpt-summary:start */}
+
+_Last updated: 2026-08-17._
+
+<table>
+  <thead>
+    <tr>
+      <th>Interface</th>
+      <th style={{ textAlign: 'right' }}>v0.13.3 (latest)</th>
+      <th style={{ textAlign: 'right' }}>v1.0.0-nightly-fd1d87d-20260817</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>AnalyserNode</td><td style={{ backgroundColor: 'hsl(103, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>119/139 (85.6%)</td><td style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>138/139 (99.3%)</td></tr>
+    <tr><td>AudioBuffer</td><td style={{ backgroundColor: 'hsl(103, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>122/142 (85.9%)</td><td style={{ backgroundColor: 'hsl(118, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>140/142 (98.6%)</td></tr>
+    <tr><td>AudioBufferSourceNode</td><td style={{ backgroundColor: 'hsl(97, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>203/252 (80.6%)</td><td style={{ backgroundColor: 'hsl(100, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>209/252 (82.9%)</td></tr>
+    <tr><td>AudioContext</td><td style={{ backgroundColor: 'hsl(47, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>45/116 (38.8%)</td><td style={{ backgroundColor: 'hsl(60, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>58/116 (50.0%)</td></tr>
+    <tr><td>AudioDestinationNode</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/1 (0.0%)</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/1 (0.0%)</td></tr>
+    <tr><td>AudioNode</td><td style={{ backgroundColor: 'hsl(71, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>141/238 (59.2%)</td><td style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>261/264 (98.9%)</td></tr>
+    <tr><td>AudioParam</td><td style={{ backgroundColor: 'hsl(76, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>314/499 (62.9%)</td><td style={{ backgroundColor: 'hsl(93, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>599/771 (77.7%)</td></tr>
+    <tr><td>BiquadFilterNode</td><td style={{ backgroundColor: 'hsl(110, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>232/253 (91.7%)</td><td style={{ backgroundColor: 'hsl(113, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>232/246 (94.3%)</td></tr>
+    <tr><td>ChannelMergerNode</td><td style={{ backgroundColor: 'hsl(34, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>7/25 (28.0%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>30/30 (100.0%)</td></tr>
+    <tr><td>ChannelSplitterNode</td><td style={{ backgroundColor: 'hsl(34, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>2/7 (28.6%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>7/7 (100.0%)</td></tr>
+    <tr><td>ConstantSourceNode</td><td style={{ backgroundColor: 'hsl(110, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>55/60 (91.7%)</td><td style={{ backgroundColor: 'hsl(112, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>59/63 (93.7%)</td></tr>
+    <tr><td>ConvolverNode</td><td style={{ backgroundColor: 'hsl(68, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>96/170 (56.5%)</td><td style={{ backgroundColor: 'hsl(81, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>170/253 (67.2%)</td></tr>
+    <tr><td>DelayNode</td><td style={{ backgroundColor: 'hsl(80, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>88/132 (66.7%)</td><td style={{ backgroundColor: 'hsl(90, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>104/138 (75.4%)</td></tr>
+    <tr><td>GainNode</td><td style={{ backgroundColor: 'hsl(88, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>11/15 (73.3%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>15/15 (100.0%)</td></tr>
+    <tr><td>IIRFilterNode</td><td style={{ backgroundColor: 'hsl(80, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>57/85 (67.1%)</td><td style={{ backgroundColor: 'hsl(90, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>87/116 (75.0%)</td></tr>
+    <tr><td>MediaElementAudioSourceNode</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/7 (0.0%)</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/7 (0.0%)</td></tr>
+    <tr><td>OfflineAudioContext</td><td style={{ backgroundColor: 'hsl(59, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>34/69 (49.3%)</td><td style={{ backgroundColor: 'hsl(61, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>35/69 (50.7%)</td></tr>
+    <tr><td>OscillatorNode</td><td style={{ backgroundColor: 'hsl(105, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>81/93 (87.1%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>104/104 (100.0%)</td></tr>
+    <tr><td>PeriodicWave</td><td style={{ backgroundColor: 'hsl(74, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>19/31 (61.3%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>33/33 (100.0%)</td></tr>
+    <tr><td>StereoPannerNode</td><td style={{ backgroundColor: 'hsl(88, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>74/101 (73.3%)</td><td style={{ backgroundColor: 'hsl(99, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>100/121 (82.6%)</td></tr>
+    <tr><td>WaveShaperNode</td><td style={{ backgroundColor: 'hsl(98, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>61/75 (81.3%)</td><td style={{ backgroundColor: 'hsl(114, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>75/79 (94.9%)</td></tr>
+    <tr><td><strong>Total</strong></td><td style={{ backgroundColor: 'hsl(84, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}><strong>1761/2510 (70.2%)</strong></td><td style={{ backgroundColor: 'hsl(99, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}><strong>2456/2966 (82.8%)</strong></td></tr>
+  </tbody>
+</table>
+
+{/* wpt-summary:end */}
