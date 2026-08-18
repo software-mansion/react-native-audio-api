@@ -33,7 +33,8 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
                                  channelCount:(AVAudioChannelCount)channelCount;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
-- (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock;
+- (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
+              onInputConfigurationChange:(void (^)(void))onInputConfigurationChange;
 - (void)detachInputNode;
 - (AVAudioFormat *)getLiveInputFormat;
 

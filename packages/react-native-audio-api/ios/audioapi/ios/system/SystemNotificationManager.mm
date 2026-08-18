@@ -218,6 +218,18 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       invokeHandlerWithEventName:audioapi::AudioEvent::ROUTE_CHANGE
                          payload:audioapi::StringPayload{
                                      .name = "reason", .reason = [reasonStr UTF8String]}];
+
+  switch (routeChangeReason) {
+    case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
+    case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
+    handleEngineConfigurationChange:
+      nil;
+      break;
+    }
+    default:
+      break;
+  }
 }
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
