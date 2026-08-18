@@ -17,6 +17,7 @@
 @interface AudioEngineInputRegistration : NSObject
 
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverBlock;
+@property (nonatomic, copy) void (^onInputConfigurationChange)(void);
 
 @end
 
@@ -43,6 +44,7 @@
 - (AVAudioFormat *)liveInputFormat;
 - (void)resetInputNode;
 - (void)rebuildAudioEngineAndResumeIfNeeded;
+- (void)notifyConfigurationChanges;
 
 @end
 
@@ -161,6 +163,27 @@ static AudioEngine *_sharedInstance = nil;
   [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
 }
 
+- (AVAudioFormat *)liveInputFormat
+{
+  if (self.audioEngine == nil) {
+    return nil;
+  }
+
+  AVAudioInputNode *engineInputNode = self.audioEngine.inputNode;
+
+  if (engineInputNode == nil) {
+    return nil;
+  }
+
+  AVAudioFormat *inputFormat = [engineInputNode outputFormatForBus:0];
+
+  if (inputFormat == nil || inputFormat.sampleRate <= 0 || inputFormat.channelCount == 0) {
+    return nil;
+  }
+
+  return inputFormat;
+}
+
 - (AVAudioFormat *)currentInputConnectionFormat
 {
   AVAudioFormat *inputFormat = [self liveInputFormat];
@@ -184,6 +207,14 @@ static AudioEngine *_sharedInstance = nil;
 
   if (self.inputNode != nil) {
     return YES;
+  }
+
+  NSError *sessionError = nil;
+  if (![self.sessionManager ensureActive:true error:&sessionError]) {
+    NSLog(
+        @"Error while activating audio session before input materialization: %@",
+        [sessionError debugDescription]);
+    return NO;
   }
 
   AVAudioFormat *inputFormat = [self currentInputConnectionFormat];
@@ -253,6 +284,7 @@ static AudioEngine *_sharedInstance = nil;
 }
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
+              onInputConfigurationChange:(void (^)(void))onInputConfigurationChange
 {
   std::scoped_lock lock(_engineLock);
   [self createAudioEngineIfNeeded];
@@ -263,6 +295,7 @@ static AudioEngine *_sharedInstance = nil;
 
   AudioEngineInputRegistration *registration = [[AudioEngineInputRegistration alloc] init];
   registration.receiverBlock = receiverBlock;
+  registration.onInputConfigurationChange = onInputConfigurationChange;
   self.inputRegistration = registration;
 
   [self materializeInputNodeIfNeeded];
@@ -292,30 +325,8 @@ static AudioEngine *_sharedInstance = nil;
   [self resetInputNode];
 }
 
-- (AVAudioFormat *)liveInputFormat
-{
-  if (self.audioEngine == nil) {
-    return nil;
-  }
-
-  AVAudioInputNode *engineInputNode = self.audioEngine.inputNode;
-
-  if (engineInputNode == nil) {
-    return nil;
-  }
-
-  AVAudioFormat *inputFormat = [engineInputNode outputFormatForBus:0];
-
-  if (inputFormat == nil || inputFormat.sampleRate <= 0 || inputFormat.channelCount == 0) {
-    return nil;
-  }
-
-  return inputFormat;
-}
-
 - (AVAudioFormat *)getLiveInputFormat
 {
-  std::scoped_lock lock(_engineLock);
   return [self liveInputFormat];
 }
 
@@ -377,6 +388,7 @@ static AudioEngine *_sharedInstance = nil;
 
   if (!shouldResume) {
     self.state = AudioEngineState::AudioEngineStatePaused;
+    [self notifyConfigurationChanges];
     return;
   }
 
@@ -388,11 +400,20 @@ static AudioEngine *_sharedInstance = nil;
         @"Error while restarting the audio engine after interruption: %@",
         [error debugDescription]);
     self.state = AudioEngineState::AudioEngineStateIdle;
+    [self notifyConfigurationChanges];
     return;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
   self.sessionDeactivationInvalidatedGraph = false;
+  [self notifyConfigurationChanges];
+}
+
+- (void)notifyConfigurationChanges
+{
+  if (self.inputRegistration != nil && self.inputRegistration.onInputConfigurationChange != nil) {
+    self.inputRegistration.onInputConfigurationChange();
+  }
 }
 
 - (AudioEngineState)getState
@@ -425,6 +446,8 @@ static AudioEngine *_sharedInstance = nil;
   if (self.state == AudioEngineState::AudioEngineStateRunning) {
     [self startEngine];
   }
+
+  [self notifyConfigurationChanges];
 
   _isRebuildingAudioEngine = NO;
 }
@@ -497,6 +520,7 @@ static AudioEngine *_sharedInstance = nil;
   std::scoped_lock lock(_engineLock);
   if (self.state == AudioEngineState::AudioEngineStateRunning && self.audioEngine != nil &&
       [self.audioEngine isRunning]) {
+    [self materializeTrackedNodesIfNeeded];
     return true;
   }
 

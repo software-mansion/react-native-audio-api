@@ -7,6 +7,8 @@
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -41,6 +43,7 @@ class RecorderAdapterNode : public AudioNode {
  private:
   void readFrames(AudioBuffer &target, size_t framesToRead);
   void processResampled(int framesToProcess);
+  void waitForProcessQuiescence() const;
 
   std::unique_ptr<r8b::MultiChannelResampler> resampler_;
   bool needsResampling_ = false;
@@ -53,6 +56,10 @@ class RecorderAdapterNode : public AudioNode {
   // Accumulates resampled output across calls
   AudioBuffer overflowBuffer_;
   size_t overflowSize_ = 0;
+
+  std::atomic<bool> isInitialized_{false};
+  /// Incremented around each processNode() call; adapterCleanup waits for quiescence.
+  std::atomic<uint32_t> currentProcesses_{0};
 };
 
 } // namespace audioapi

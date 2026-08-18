@@ -140,6 +140,23 @@ OpenFileResult IOSFileWriter::openFile(
   }
 }
 
+OpenFileResult IOSFileWriter::reopenForInputFormatChange(
+    AVAudioFormat *bufferFormat,
+    size_t maxInputBufferLength)
+{
+  @autoreleasepool {
+    if (isFileOpen()) {
+      auto closeResult = closeFile();
+      if (closeResult.is_err()) {
+        return OpenFileResult::Err(
+            "Failed to finalize recording segment: " + closeResult.unwrap_err());
+      }
+    }
+
+    return openFile(bufferFormat, maxInputBufferLength, "");
+  }
+}
+
 void IOSFileWriter::rollbackFailedOpen()
 {
   offloader_.reset();
