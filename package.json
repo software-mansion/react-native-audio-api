@@ -24,7 +24,9 @@
     "validate:graph": "bash scripts/validate.sh --graph",
     "validate:android": "bash scripts/validate.sh --android",
     "validate:ios": "bash scripts/validate.sh --ios",
-    "validate:full": "bash scripts/validate.sh --full"
+    "validate:full": "bash scripts/validate.sh --full",
+    "setup:clangd": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh",
+    "setup:clangd:clean": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh --clean"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "17.0.2",

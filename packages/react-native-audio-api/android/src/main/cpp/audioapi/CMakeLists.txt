@@ -40,6 +40,15 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang")
   )
 endif()
 
+# AMediaDataSource (API 28) is weak-linked so the library still loads on older
+# devices; calls are guarded with __builtin_available and the guard is enforced
+# at compile time. Requires NDK r26+.
+set_source_files_properties(
+  "${ANDROID_CPP_DIR}/audioapi/android/AndroidDecodingDataSource.cpp"
+  PROPERTIES
+  COMPILE_FLAGS "-D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__ -Werror=unguarded-availability"
+)
+
 set(INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include)
 set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include_ffmpeg)
 set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external/android)
