@@ -59,10 +59,22 @@ program
     '--update-docs',
     'Replace the WPT summary block in the audiodocs Web Audio API coverage page',
     false
+  )
+  .option(
+    '--allow-failures',
+    'Exit 0 after a completed run even when assertions fail (still writes reports)',
+    false
   );
 
 program.parse(process.argv);
 const options = program.opts();
+
+const exitForFailures = failures => {
+  if (failures > 0 && !options.allowFailures) {
+    return 1;
+  }
+  return 0;
+};
 
 if (!['smoke', 'full'].includes(options.profile)) {
   console.error(chalk.red(`Invalid --profile value: ${options.profile}`));
@@ -131,7 +143,8 @@ const handleSignal = signal => {
   console.error(chalk.yellow(`\nReceived ${signal}; printing partial summary.`));
   printHarnessSummary();
   writeReports();
-  process.exit(numFail > 0 ? 1 : signalExitCode[signal] ?? 1);
+  // Interrupted runs always exit non-zero; --allow-failures only applies to completed runs.
+  process.exit(signalExitCode[signal] ?? 1);
 };
 
 process.on('SIGHUP', () => handleSignal('SIGHUP'));
@@ -187,7 +200,7 @@ try {
 
   printHarnessSummary();
   writeReports();
-  process.exit(numFail > 0 ? 1 : 0);
+  process.exit(exitForFailures(numFail));
 } catch (error) {
   printHarnessSummary();
   writeReports();

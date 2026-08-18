@@ -13,6 +13,7 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 @property (nonatomic, assign) int resolvedBufferSize;
 @property (atomic, assign) BOOL inputArmed;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
+@property (nonatomic, copy) void (^onInputConfigurationChange)(void);
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
                voiceProcessingEnabled:(BOOL)voiceProcessingEnabled;
@@ -20,6 +21,7 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 - (int)getBufferSize;
 - (AVAudioFormat *)getResolvedInputFormat;
 - (int)getResolvedBufferSize;
+- (BOOL)refreshResolvedInputFormatReturningChanged:(BOOL *)formatChanged;
 - (BOOL)start:(NSError **)error;
 
 - (void)stop;

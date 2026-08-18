@@ -59,22 +59,43 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
 - (int)getBufferSize
 {
-  // NOTE: this method should be called only after the session is activated
   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+  double sampleRate = audioSession.sampleRate;
 
-  // TMPfix: it seems that buffer duration in some cases (background/device change) can switch
-  // to longer values, exceeding buffer size predicted after session start
-  // since it is just a couple of buffers we can set min value of 200ms
-  // to enforce we always have enough frames allocated to pass further down the pipeline
+  if (self.resolvedInputFormat != nil && self.resolvedInputFormat.sampleRate > 0) {
+    sampleRate = self.resolvedInputFormat.sampleRate;
+  }
+
   float bufferDuration = MAX(audioSession.IOBufferDuration, 0.2);
-
-  // IOS returns buffer duration rounded, but expects the buffer size to be power of two in runtime
-  return nextPowerOfTwo(ceil(bufferDuration * audioSession.sampleRate));
+  return nextPowerOfTwo(ceil(bufferDuration * sampleRate));
 }
 
 - (int)getResolvedBufferSize
 {
   return self.resolvedBufferSize;
+}
+
+- (BOOL)refreshResolvedInputFormatReturningChanged:(BOOL *)formatChanged
+{
+  AVAudioFormat *liveFormat = [self readLiveInputFormat];
+
+  if (liveFormat == nil || liveFormat.sampleRate <= 0 || liveFormat.channelCount == 0) {
+    return NO;
+  }
+
+  AVAudioFormat *previousFormat = self.resolvedInputFormat;
+  BOOL changed = previousFormat == nil || previousFormat.sampleRate != liveFormat.sampleRate ||
+      previousFormat.channelCount != liveFormat.channelCount ||
+      previousFormat.isInterleaved != liveFormat.isInterleaved;
+
+  self.resolvedInputFormat = liveFormat;
+  self.resolvedBufferSize = [self getBufferSize];
+
+  if (formatChanged != nil) {
+    *formatChanged = changed;
+  }
+
+  return YES;
 }
 
 - (BOOL)start:(NSError **)error
@@ -96,7 +117,8 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
   [audioEngine stopIfNecessary];
   [audioEngine attachInputNodeWithReceiverBlock:self.receiverSinkBlock
-                         voiceProcessingEnabled:self.voiceProcessingEnabled];
+                         voiceProcessingEnabled:self.voiceProcessingEnabled
+                     onInputConfigurationChange:self.onInputConfigurationChange];
 
   if (![audioEngine startIfNecessary]) {
     [audioEngine detachInputNode];
@@ -131,8 +153,6 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   self.inputArmed = NO;
   [audioEngine detachInputNode];
   [audioEngine stopIfPossible];
-  // This makes sure that the engine releases the input properly when we no longer need it
-  // (i.e. no more misleading dot)
   [audioEngine restartAudioEngine];
   self.resolvedInputFormat = nil;
   self.resolvedBufferSize = 0;
@@ -153,7 +173,11 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   assert(audioEngine != nil);
 
   if ([audioEngine startIfNecessary]) {
-    self.inputArmed = YES;
+    if (self.onInputConfigurationChange != nil) {
+      self.onInputConfigurationChange();
+    } else {
+      self.inputArmed = YES;
+    }
   }
 }
 
@@ -164,6 +188,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   self.resolvedBufferSize = 0;
   self.receiverBlock = nil;
   self.receiverSinkBlock = nil;
+  self.onInputConfigurationChange = nil;
 }
 
 @end

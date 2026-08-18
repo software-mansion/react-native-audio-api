@@ -115,12 +115,14 @@
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
+             onInputConfigurationChange:(void (^)(void))onInputConfigurationChange
 {
   self.attachInputNodeCallCount += 1;
   self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
   self.lastAttachedInputNode = self.inputNode;
   self.lastAttachedReceiverBlock = receiverBlock;
   self.lastAttachedVoiceProcessingEnabled = voiceProcessingEnabled;
+  (void)onInputConfigurationChange;
 }
 
 - (bool)startIfNecessary
