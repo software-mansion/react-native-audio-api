@@ -1,8 +1,10 @@
 #include <audioapi/decoding/AudioFileConcatenator.h>
 #include <audioapi/decoding/DecoderFactory.h>
 #include <audioapi/decoding/DecoderSource.h>
+#include <audioapi/encoding/OSEncoding.h>
 #include <audioapi/encoding/OSRemux.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/utils/AudioFileProperties.h>
 
 #include <algorithm>
 #include <cctype>
@@ -118,6 +120,12 @@ bool isMiniaudioOutputPath(const std::string &path) {
 // M4A/MP4 remux via OS APIs. WAV stays on the miniaudio PCM path above.
 bool isOsRemuxOutputPath(const std::string &path) {
   return hasExtension(path, {"m4a", "mp4"});
+}
+
+// FLAC has no remux path on either platform; concat decodes the inputs and
+// re-encodes losslessly through the system FLAC encoder.
+bool isOsFlacEncoderOutputPath(const std::string &path) {
+  return hasExtension(path, {"flac"});
 }
 
 bool extensionsCompatibleForRemux(const std::string &inputPath, const std::string &outputPath) {
@@ -258,7 +266,7 @@ void MiniAudioEncoderGuard::close() {
 
 namespace {
 
-AudioFileConcatResult validateCompatibleMiniAudioInput(
+AudioFileConcatResult validateCompatibleDecodedInput(
     const AudioDecoderBackendGuard &input,
     const AudioDecoderBackendGuard &reference) {
   if (input.sampleRate() != reference.sampleRate()) {
@@ -276,7 +284,7 @@ AudioFileConcatResult validateCompatibleMiniAudioInput(
   return Ok(input.filePath());
 }
 
-AudioFileConcatResult openAndValidateMiniAudioInputs(
+AudioFileConcatResult openAndValidateDecodedInputs(
     const std::vector<std::string> &inputPaths,
     std::vector<AudioDecoderBackendGuard> &inputs) {
   inputs.reserve(inputPaths.size());
@@ -290,7 +298,7 @@ AudioFileConcatResult openAndValidateMiniAudioInputs(
     inputs.emplace_back(std::move(inputResult).unwrap());
 
     if (inputs.size() > 1) {
-      auto validationResult = validateCompatibleMiniAudioInput(inputs.back(), inputs.front());
+      auto validationResult = validateCompatibleDecodedInput(inputs.back(), inputs.front());
       if (validationResult.is_err()) {
         return validationResult;
       }
@@ -343,7 +351,7 @@ AudioFileConcatResult concatAudioFilesWithMiniAudio(
   }
 
   std::vector<AudioDecoderBackendGuard> inputs;
-  auto inputValidationResult = openAndValidateMiniAudioInputs(inputPaths, inputs);
+  auto inputValidationResult = openAndValidateDecodedInputs(inputPaths, inputs);
   if (inputValidationResult.is_err()) {
     return inputValidationResult;
   }
@@ -393,6 +401,92 @@ AudioFileConcatResult concatAudioFilesWithOsRemux(
   return remuxConcatAudioFiles(inputPaths, outputPath);
 }
 
+#if RN_AUDIO_API_HAS_OS_ENCODER
+constexpr int defaultFlacCompressionLevel = 5;
+
+std::shared_ptr<AudioFileProperties> makeFlacOutputProperties(
+    ma_uint32 sampleRate,
+    ma_uint32 channels) {
+  // Directory, prefix, and rotation are recorder concerns; the concat encoder
+  // receives an explicit output path, so they stay at neutral values.
+  return std::make_shared<AudioFileProperties>(
+      AudioFileProperties::FileDirectory::Cache,
+      /*subDirectory*/ std::string(),
+      /*fileNamePrefix*/ std::string(),
+      static_cast<int>(channels),
+      /*rotateIntervalBytes*/ 0,
+      AudioFileProperties::Format::FLAC,
+      static_cast<float>(sampleRate),
+      /*bitRate*/ 0,
+      AudioFileProperties::BitDepth::Bit16,
+      defaultFlacCompressionLevel,
+      /*androidFlushIntervalMs*/ 0,
+      AudioFileProperties::IOSAudioQuality::Max);
+}
+#endif
+
+AudioFileConcatResult concatAudioFilesWithOsFlacEncoder(
+    const std::vector<std::string> &inputPaths,
+    const std::string &outputPath) {
+  for (const auto &inputPath : inputPaths) {
+    if (!hasExtension(inputPath, {"flac"})) {
+      return Err(
+          "concatAudioFiles FLAC output requires all input files to use the FLAC extension.");
+    }
+  }
+
+#if !RN_AUDIO_API_HAS_OS_ENCODER
+  (void)outputPath;
+  return Err("concatAudioFiles FLAC output requires iOS or Android.");
+#else
+  std::vector<AudioDecoderBackendGuard> inputs;
+  auto inputValidationResult = openAndValidateDecodedInputs(inputPaths, inputs);
+  if (inputValidationResult.is_err()) {
+    return inputValidationResult;
+  }
+
+  const ma_uint32 sampleRate = inputs.front().sampleRate();
+  const ma_uint32 channels = inputs.front().channels();
+
+  auto encoder = createOsEncoder(makeFlacOutputProperties(sampleRate, channels));
+  auto openResult = encoder->open(
+      StreamFormat{
+          .sampleRate = static_cast<float>(sampleRate), .channelCount = static_cast<int>(channels)},
+      EncoderOutputSpec{
+          .container = AudioContainer::FLAC, .codec = AudioCodec::FLAC, .extension = "flac"},
+      static_cast<size_t>(miniaudioChunkFrames),
+      outputPath);
+  if (openResult.is_err()) {
+    return Err("Failed to open FLAC output '" + outputPath + "': " + openResult.unwrap_err());
+  }
+
+  std::vector<float> buffer(miniaudioChunkFrames * channels);
+  for (auto &input : inputs) {
+    while (true) {
+      const size_t framesRead = input.readPcmFrames(buffer.data(), miniaudioChunkFrames);
+      if (framesRead == 0) {
+        break;
+      }
+
+      auto encodeResult = encoder->encode(buffer.data(), static_cast<int>(framesRead));
+      if (encodeResult.is_err()) {
+        encoder->close();
+        return Err(
+            "Failed to encode frames from '" + input.filePath() +
+            "': " + encodeResult.unwrap_err());
+      }
+    }
+  }
+
+  auto closeResult = encoder->close();
+  if (closeResult.is_err()) {
+    return Err("Failed to finalize FLAC output '" + outputPath + "': " + closeResult.unwrap_err());
+  }
+
+  return Ok(outputPath);
+#endif
+}
+
 } // namespace
 
 std::string normalizeFilePath(const std::string &path) {
@@ -429,7 +523,12 @@ AudioFileConcatResult concatAudioFiles(
         .map([&outputPath](const std::string &) { return outputPath; });
   }
 
-  return Err("concatAudioFiles supports WAV and M4A/MP4 output.");
+  if (isOsFlacEncoderOutputPath(normalizedOutputPath)) {
+    return concatAudioFilesWithOsFlacEncoder(normalizedInputPaths, normalizedOutputPath)
+        .map([&outputPath](const std::string &) { return outputPath; });
+  }
+
+  return Err("concatAudioFiles supports WAV, M4A/MP4, and FLAC output.");
 }
 
 } // namespace audioapi

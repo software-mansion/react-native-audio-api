@@ -220,21 +220,30 @@ TEST(AudioFileConcatenatorTest, RejectsUnsupportedOutputFormat) {
   auto result = concatAudioFiles({"/tmp/input.ogg"}, "/tmp/output.ogg");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV and M4A/MP4 output.");
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A/MP4, and FLAC output.");
 }
 
-TEST(AudioFileConcatenatorTest, RejectsFLACOutputAsUnsupported) {
+TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForFLACOnDesktop) {
   auto result = concatAudioFiles({"/tmp/input.flac"}, "/tmp/output.flac");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV and M4A/MP4 output.");
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles FLAC output requires iOS or Android.");
+}
+
+TEST(AudioFileConcatenatorTest, RejectsFLACOutputWithNonFlacInputs) {
+  auto result = concatAudioFiles({"/tmp/input.wav"}, "/tmp/output.flac");
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(
+      result.unwrap_err(),
+      "concatAudioFiles FLAC output requires all input files to use the FLAC extension.");
 }
 
 TEST(AudioFileConcatenatorTest, RejectsMismatchedRemuxExtensions) {
   auto result = concatAudioFiles({"/tmp/input.m4a"}, "/tmp/output.caf");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV and M4A/MP4 output.");
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A/MP4, and FLAC output.");
 }
 
 // NOLINTEND

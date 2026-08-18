@@ -21,21 +21,24 @@ recording is finished.
 :::
 
 :::caution
-**WAV and M4A concatenation is only supported.**
+**Only WAV, M4A, and FLAC concatenation is supported** — the recording formats
+available on both iOS and Android.
 
 WAV uses miniaudio (PCM remux). M4A/MP4 remuxes AAC packets with system APIs —
-iOS AVFoundation and Android MediaExtractor/MediaMuxer.
+iOS AVFoundation and Android MediaExtractor/MediaMuxer. FLAC decodes the
+segments and re-encodes them losslessly through the system FLAC encoder.
 :::
 
 :::tip Segment size and quality
-`concatAudioFiles` joins segments losslessly for **WAV** (PCM remux). For **M4A**,
+`concatAudioFiles` joins segments losslessly for **WAV** (PCM remux) and
+**FLAC** (lossless re-encode). For **M4A**,
 Android remuxes the encoded AAC packets losslessly, while iOS re-encodes the
 joined audio once through AVFoundation. Each rotated chunk is
 a separate AAC encode, so very small
 [`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions)
 values can still produce clicks, muffled joins, or timing gaps after concatenation.
 
-If playback quality is poor after joining rotated M4A files, increase `rotateIntervalBytes` (for example **≥ 200 KB**) or record without rotation. WAV segments are less sensitive, but the same guidance applies below roughly **512 KB–1 MB** per segment.
+If playback quality is poor after joining rotated M4A files, increase `rotateIntervalBytes` (for example **≥ 200 KB**) or record without rotation. WAV and FLAC segments are less sensitive, but the same guidance applies below roughly **512 KB–1 MB** per segment.
 :::
 
 ### `concatAudioFiles`
@@ -64,8 +67,8 @@ come from the same recorder configuration:
 - compatible codec parameters.
 
 Use an output path with an extension that matches the input files, for example
-joining `.m4a` segments into an `.m4a` output file or `.wav` segments into a
-`.wav` output file.
+joining `.m4a` segments into an `.m4a` output file, `.wav` segments into a
+`.wav` output file, or `.flac` segments into a `.flac` output file.
 
 <details>
 <summary>Example usage with rotated recordings</summary>
