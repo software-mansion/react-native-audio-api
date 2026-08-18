@@ -94,6 +94,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     const audioBuffer = await (
       this.context as IOfflineAudioContext
     ).startRendering();
+    this.contextState = 'closed';
 
     return new AudioBuffer(audioBuffer);
   }
