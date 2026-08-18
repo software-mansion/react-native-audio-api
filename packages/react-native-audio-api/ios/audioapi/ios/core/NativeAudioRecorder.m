@@ -26,9 +26,11 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 }
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
+               voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
 {
   if (self = [super init]) {
     self.receiverBlock = [receiverBlock copy];
+    self.voiceProcessingEnabled = voiceProcessingEnabled;
     self.inputArmed = NO;
     self.resolvedBufferSize = 0;
 
@@ -115,6 +117,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
   [audioEngine stopIfNecessary];
   [audioEngine attachInputNodeWithReceiverBlock:self.receiverSinkBlock
+                         voiceProcessingEnabled:self.voiceProcessingEnabled
                      onInputConfigurationChange:self.onInputConfigurationChange];
 
   if (![audioEngine startIfNecessary]) {

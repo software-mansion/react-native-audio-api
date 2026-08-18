@@ -66,8 +66,10 @@ static void cleanupStartedRecorder(
 /// All other necessary fields (like buffers) are initialized in start() method.
 /// This "method" should be called from the JS thread only.
 /// @param audioEventHandlerRegistry Shared pointer to the IAudioEventHandlerRegistry for event handling.
+/// @param options Creation-time capture chain configuration; only the iOS fields are read.
 IOSAudioRecorder::IOSAudioRecorder(
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const AudioRecorderOptions &options)
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
@@ -78,7 +80,8 @@ IOSAudioRecorder::IOSAudioRecorder(
     runSideEffects(inputBuffer, numFrames);
   };
 
-  nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock];
+  nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock
+                                                voiceProcessingEnabled:options.iosVoiceProcessing];
 
   nativeRecorder_.onInputConfigurationChange = ^{ this->handleInputConfigurationChange(); };
 }

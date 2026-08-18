@@ -34,6 +34,7 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
+                  voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
               onInputConfigurationChange:(void (^)(void))onInputConfigurationChange;
 - (void)detachInputNode;
 - (AVAudioFormat *)getLiveInputFormat;
