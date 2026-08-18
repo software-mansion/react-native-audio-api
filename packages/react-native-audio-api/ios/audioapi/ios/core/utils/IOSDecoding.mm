@@ -18,27 +18,19 @@
 namespace audioapi::ios_decoder {
 namespace {
 
-struct ExtAudioFileDeleter {
-  void operator()(std::remove_pointer_t<ExtAudioFileRef> *file) const
+template <auto DisposeFn>
+struct FnDeleter {
+  void operator()(auto *file) const
   {
     if (file != nullptr) {
-      ExtAudioFileDispose(file);
-    }
-  }
-};
-
-struct AudioFileDeleter {
-  void operator()(std::remove_pointer_t<AudioFileID> *file) const
-  {
-    if (file != nullptr) {
-      AudioFileClose(file);
+      DisposeFn(file);
     }
   }
 };
 
 using ExtAudioFilePtr =
-    std::unique_ptr<std::remove_pointer_t<ExtAudioFileRef>, ExtAudioFileDeleter>;
-using AudioFilePtr = std::unique_ptr<std::remove_pointer_t<AudioFileID>, AudioFileDeleter>;
+    std::unique_ptr<std::remove_pointer_t<ExtAudioFileRef>, FnDeleter<ExtAudioFileDispose>>;
+using AudioFilePtr = std::unique_ptr<std::remove_pointer_t<AudioFileID>, FnDeleter<AudioFileClose>>;
 
 } // namespace
 
@@ -90,37 +82,37 @@ SInt64 memoryGetSizeProc(void *inClientData)
 }
 
 // Sniffs a container hint from the leading magic bytes so AudioFile can pick the
-// right parser for in-memory data.
+// right parser for in-memory data. Returns 0 when the container is unrecognized.
 // NOLINTBEGIN(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
-const char *guessFileTypeExtension(const void *data, size_t size)
+AudioFileTypeID guessFileTypeHint(const void *data, size_t size)
 {
   if (data == nullptr || size < 12) {
-    return "bin";
+    return 0;
   }
   const auto *bytes = static_cast<const unsigned char *>(data);
   if (std::memcmp(bytes, "RIFF", 4) == 0 && std::memcmp(bytes + 8, "WAVE", 4) == 0) {
-    return "wav";
+    return kAudioFileWAVEType;
   }
   if (std::memcmp(bytes, "fLaC", 4) == 0) {
-    return "flac";
+    return kAudioFileFLACType;
   }
   if (bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0) {
-    return "aac";
+    return kAudioFileAAC_ADTSType;
   }
   if (std::memcmp(bytes, "ID3", 3) == 0 || (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0)) {
-    return "mp3";
+    return kAudioFileMP3Type;
   }
   if (std::memcmp(bytes + 4, "ftyp", 4) == 0) {
-    return "m4a";
+    return kAudioFileM4AType;
   }
   if (std::memcmp(bytes, "caff", 4) == 0) {
-    return "caf";
+    return kAudioFileCAFType;
   }
   if (std::memcmp(bytes, "FORM", 4) == 0 &&
       (std::memcmp(bytes + 8, "AIFF", 4) == 0 || std::memcmp(bytes + 8, "AIFC", 4) == 0)) {
-    return "aiff";
+    return kAudioFileAIFFType;
   }
-  return "bin";
+  return 0;
 }
 // NOLINTEND(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
 
@@ -133,15 +125,12 @@ IOSDecoder::~IOSDecoder()
   close();
 }
 
-// Sets the interleaved-float client format and caches channel/rate/duration.
-static decoding::DecoderResult configureExtAudioFile(
-    ExtAudioFileRef extFile,
-    int requestedSampleRate,
-    int &outChannels,
-    int &outSampleRate,
-    double &outDurationSeconds,
-    double &outFileSampleRate)
+decoding::DecoderResult IOSDecoder::finishOpeningDecoder(
+    std::unique_ptr<IosDecoderState> state,
+    int requestedSampleRate)
 {
+  ExtAudioFileRef extFile = state->extFile.get();
+
   AudioStreamBasicDescription fileFormat{};
   UInt32 propSize = sizeof(fileFormat);
   OSStatus status = ExtAudioFileGetProperty(
@@ -185,12 +174,17 @@ static decoding::DecoderResult configureExtAudioFile(
     fileLengthFrames = 0; // Unknown (e.g. raw ADTS AAC) — report duration 0.
   }
 
-  outChannels = channels;
-  outSampleRate = outRate;
-  outFileSampleRate = fileFormat.mSampleRate;
-  outDurationSeconds = fileFormat.mSampleRate > 0
+  const double durationSeconds = fileFormat.mSampleRate > 0
       ? static_cast<double>(fileLengthFrames) / static_cast<double>(fileFormat.mSampleRate)
       : 0.0;
+
+  state->fileSampleRate = fileFormat.mSampleRate;
+  outputChannels_ = channels;
+  outputSampleRate_ = outRate;
+  framePosition_ = 0;
+  setTotalPcmFramesFromDuration(durationSeconds);
+  impl_ = std::move(state);
+  open_ = true;
   return Ok(None);
 }
 
@@ -216,23 +210,7 @@ decoding::DecoderResult IOSDecoder::open(const decoding::LocalFileSource &source
 
     auto state = std::make_unique<IosDecoderState>();
     state->extFile.reset(extFile);
-    double durationSeconds = 0.0;
-    auto configured = configureExtAudioFile(
-        state->extFile.get(),
-        source.sampleRate,
-        outputChannels_,
-        outputSampleRate_,
-        durationSeconds,
-        state->fileSampleRate);
-    if (configured.is_err()) {
-      return configured;
-    }
-
-    impl_ = std::move(state);
-    framePosition_ = 0;
-    setTotalPcmFramesFromDuration(durationSeconds);
-    open_ = true;
-    return Ok(None);
+    return finishOpeningDecoder(std::move(state), source.sampleRate);
   }
 }
 
@@ -249,23 +227,7 @@ decoding::DecoderResult IOSDecoder::open(const decoding::EncodedMemorySource &so
   // Wrap the owned bytes with AudioFile callbacks, then wrap that with
   // ExtAudioFile so we get the same read/seek/convert path as open without
   // touching the filesystem.
-  AudioFileTypeID hint = 0;
-  const char *ext = guessFileTypeExtension(source.data.data(), source.data.size());
-  if (std::strcmp(ext, "wav") == 0) {
-    hint = kAudioFileWAVEType;
-  } else if (std::strcmp(ext, "mp3") == 0) {
-    hint = kAudioFileMP3Type;
-  } else if (std::strcmp(ext, "aac") == 0) {
-    hint = kAudioFileAAC_ADTSType;
-  } else if (std::strcmp(ext, "m4a") == 0) {
-    hint = kAudioFileM4AType;
-  } else if (std::strcmp(ext, "caf") == 0) {
-    hint = kAudioFileCAFType;
-  } else if (std::strcmp(ext, "aiff") == 0) {
-    hint = kAudioFileAIFFType;
-  } else if (std::strcmp(ext, "flac") == 0) {
-    hint = kAudioFileFLACType;
-  }
+  const AudioFileTypeID hint = guessFileTypeHint(source.data.data(), source.data.size());
 
   AudioFileID audioFile = nullptr;
   OSStatus status = AudioFileOpenWithCallbacks(
@@ -283,23 +245,7 @@ decoding::DecoderResult IOSDecoder::open(const decoding::EncodedMemorySource &so
   }
   state->extFile.reset(extFile);
 
-  double durationSeconds = 0.0;
-  auto configured = configureExtAudioFile(
-      state->extFile.get(),
-      source.sampleRate,
-      outputChannels_,
-      outputSampleRate_,
-      durationSeconds,
-      state->fileSampleRate);
-  if (configured.is_err()) {
-    return configured;
-  }
-
-  impl_ = std::move(state);
-  framePosition_ = 0;
-  setTotalPcmFramesFromDuration(durationSeconds);
-  open_ = true;
-  return Ok(None);
+  return finishOpeningDecoder(std::move(state), source.sampleRate);
 }
 
 size_t IOSDecoder::readPcmFrames(float *outInterleaved, size_t frameCount)
