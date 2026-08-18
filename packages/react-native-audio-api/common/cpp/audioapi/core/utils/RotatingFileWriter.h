@@ -35,6 +35,13 @@ class RotatingFileWriter final : public AudioFileWriter {
 
   void writeAudioData(const float *interleavedFrames, int numFrames) override;
 
+  /// Closes the current segment like a rotation — folding its size and duration into the
+  /// cumulative totals — and opens the next one with the new stream format.
+  OpenFileResult reprepareStreamFormat(
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t maxFramesPerBuffer);
+
   [[nodiscard]] std::string getFilePath() const override;
   [[nodiscard]] double getCurrentDuration() const override;
   [[nodiscard]] size_t getFileSizeBytes() const override;
@@ -43,7 +50,7 @@ class RotatingFileWriter final : public AudioFileWriter {
   /// Checking the file size costs a stat(), so only do it every Nth write.
   static constexpr int FILE_SIZE_CHECK_WRITE_INTERVAL = 10;
 
-  void rotateFiles();
+  OpenFileResult rotateFiles();
   OpenFileResult openInnerWriter();
 
   WriterFactory writerFactory_;

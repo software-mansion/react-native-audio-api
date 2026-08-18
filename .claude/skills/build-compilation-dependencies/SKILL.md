@@ -275,8 +275,30 @@ CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.ym
 - Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_FFMPEG_DISABLED=1`
 - Google Test auto-fetched via `FetchContent` if not installed locally
 - New test files in `test/src/**/*.cpp` are picked up automatically by glob — no CMakeLists edit needed
+- `jsi.cpp` is compiled into the static lib so library members that reference JSI symbols (e.g. `AudioFileProperties::CreateFromJSIValue`) link when a test first pulls them in; a static-lib member costs nothing unless demanded. If a new test triggers `Undefined symbols: facebook::jsi::...`, the referenced runtime source is missing from the lib — add it there rather than stubbing the symbol
 
 For `MockAudioEventHandlerRegistry`, `TestableXxx` pattern, and full CMakeLists analysis see [build-details.md](build-details.md#c-test-build--commoncpptestcmakeliststxt--detailed-analysis).
+
+---
+
+## WPT Node bindings build (`wpt_tests/CMakeLists.txt`)
+
+Builds the C++ engine as a Node.js addon (`.node`, via cmake-js + microsoft/node-api-jsi) so Web Platform Tests can run against it: `yarn workspace react-native-audio-api node:build` (part of `yarn wpt`). The engine is always compiled from the workspace `common/cpp` sources.
+
+The JS wrapper layer (`lib/commonjs` classes and error types) is resolved by `wpt_tests/package-root.js`. By default it uses the workspace build output of `yarn build`; set `RN_AUDIO_API_APP_ROOT` to an app directory to load the `react-native-audio-api` JS installed for that app instead (e.g. a published npm release):
+
+```bash
+RN_AUDIO_API_APP_ROOT=/path/to/app yarn wpt:only
+```
+
+Classes missing from an older package version are skipped with a warning, so their tests fail at runtime instead of crashing the harness at load. Note the native addon is NOT swapped by this env var — only the JS layer.
+
+Resolution pitfalls learned the hard way (both handled inside `package-root.js`):
+
+- Yarn (node-modules linker) may **hoist** the app's pinned npm copy to the monorepo root `node_modules` rather than `<app>/node_modules`, so the package must be resolved with Node resolution from the app directory, not a hard-coded `<app>/node_modules/<pkg>` path. If `yarn install` claims success but the copy is missing everywhere, delete `.yarn/install-state.gz` and reinstall.
+- `require.resolve('react-native-audio-api/...', { paths: [appRoot] })` from a file *inside* the workspace package still resolves to the workspace itself (Node package **self-reference** beats the `paths` option). Use `createRequire(path.join(appRoot, 'anything.js'))` to anchor resolution in the app.
+
+`yarn wpt:report:docs` runs the suite twice (workspace `main`, then the stable release pinned in `apps/common-app` via `wpt:report:stable`) and regenerates the side-by-side table in `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
 
 ---
 

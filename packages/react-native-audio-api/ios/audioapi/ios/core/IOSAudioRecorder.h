@@ -1,12 +1,13 @@
 #pragma once
 
 #ifdef __OBJC__ // when compiled as Objective-C
-#import <NativeAudioRecorder.h>
+#import <audioapi/ios/core/NativeAudioRecorder.h>
 #else
 typedef struct objc_object NSURL;
 typedef struct objc_object AVAudioFile;
 typedef struct objc_object AudioBufferList;
 typedef struct objc_object NativeAudioRecorder;
+typedef struct objc_object AVAudioFormat;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
@@ -67,6 +68,15 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<std::string, std::string> setupFileWriter(
       const std::shared_ptr<AudioFileProperties> &properties,
       const std::string &fileNameOverride = "");
+  Result<NoneType, std::string> reprepareForLiveInput();
+  void handleInputConfigurationChange();
+  Result<NoneType, std::string> reprepareFileWriter(
+      AVAudioFormat *inputFormat,
+      int maxInputBufferLength);
+  Result<NoneType, std::string> reprepareCallback(
+      AVAudioFormat *inputFormat,
+      int maxInputBufferLength);
+  void reprepareAdapter(AVAudioFormat *inputFormat, int maxInputBufferLength);
 
   /// Channel count the recorder was configured with; the audio thread drops any buffer
   /// whose layout stops matching it (e.g. after a route change).

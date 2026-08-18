@@ -5,13 +5,19 @@ import { fileURLToPath } from 'node:url';
 import { program } from 'commander';
 
 import {
+  formatCoverageComparisonMarkdown,
   formatCoverageMarkdown,
   updateDocsSection,
   writeReportFiles,
 } from './wpt-results.mjs';
 
 const harnessDir = path.dirname(fileURLToPath(import.meta.url));
-const defaultMarkdownReportPath = path.join(harnessDir, '..', 'results', 'latest.md');
+const defaultMarkdownReportPath = path.join(
+  harnessDir,
+  '..',
+  'results',
+  'latest.md'
+);
 const defaultDocsPath = path.join(
   harnessDir,
   '..',
@@ -24,7 +30,15 @@ const defaultDocsPath = path.join(
 );
 
 program
-  .requiredOption('--from-json <path>', 'Structured JSON report produced by wpt-harness')
+  .requiredOption(
+    '--from-json <path>',
+    'Structured JSON report produced by wpt-harness'
+  )
+  .option(
+    '--baseline-json <path>',
+    'Baseline JSON report (latest stable release run); renders the docs summary as a side-by-side comparison',
+    null
+  )
   .option(
     '--write-markdown <path>',
     'Output markdown report path',
@@ -48,7 +62,13 @@ writeReportFiles({
 });
 
 if (options.updateDocs) {
-  updateDocsSection(defaultDocsPath, formatCoverageMarkdown(report));
+  const summary = options.baselineJson
+    ? formatCoverageComparisonMarkdown(
+        report,
+        JSON.parse(fs.readFileSync(options.baselineJson, 'utf8'))
+      )
+    : formatCoverageMarkdown(report);
+  updateDocsSection(defaultDocsPath, summary);
 }
 
 console.log(`Wrote markdown report: ${options.writeMarkdown}`);

@@ -87,7 +87,22 @@ size_t RotatingFileWriter::getFileSizeBytes() const {
   return currentWriter_ != nullptr ? currentWriter_->getFileSizeBytes() : 0;
 }
 
-void RotatingFileWriter::rotateFiles() {
+OpenFileResult RotatingFileWriter::reprepareStreamFormat(
+    float streamSampleRate,
+    int32_t streamChannelCount,
+    int32_t maxFramesPerBuffer) {
+  if (currentWriter_ == nullptr) {
+    return OpenFileResult::Err("No file open");
+  }
+
+  streamSampleRate_ = streamSampleRate;
+  streamChannelCount_ = streamChannelCount;
+  maxFramesPerBuffer_ = maxFramesPerBuffer;
+
+  return rotateFiles();
+}
+
+OpenFileResult RotatingFileWriter::rotateFiles() {
   auto rotatedClose = currentWriter_->closeFile();
   if (rotatedClose.is_ok()) {
     const auto &segment = rotatedClose.unwrap();
@@ -95,7 +110,7 @@ void RotatingFileWriter::rotateFiles() {
     cumulativeDurationSec_ += std::get<1>(segment);
   }
 
-  openInnerWriter();
+  return openInnerWriter();
 }
 
 OpenFileResult RotatingFileWriter::openInnerWriter() {

@@ -1,6 +1,9 @@
 name: DOCS Build and publish audio api docs
 
 on:
+  push:
+    branches:
+      - docs/stable
   workflow_dispatch:
 
 permissions:
