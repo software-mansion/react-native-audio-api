@@ -18,7 +18,7 @@ packages/audiodocs/
 │   ├── fundamentals/      # Getting started, installation, best practices
 │   ├── guides/            # Tutorials (piano keyboard, noise, ADSR envelope)
 │   ├── core/              # AudioContext, AudioNode, AudioParam, BaseAudioContext
-│   ├── sources/           # Oscillator, BufferSource, ConstantSource, MediaElement
+│   ├── sources/           # Oscillator, BufferSource, ConstantSource, MediaElement, Audio tag
 │   ├── effects/           # Gain, BiquadFilter, Convolver, Dynamics, StereoPanner, Delay, IIR...
 │   ├── analysis/          # AnalyserNode
 │   ├── inputs/            # AudioRecorder
@@ -28,7 +28,8 @@ packages/audiodocs/
 │   ├── types/             # Enum docs (OscillatorType, BiquadFilterType...)
 │   ├── utils/             # Utility functions (decoding, file utils)
 │   ├── react/             # React-specific hooks and helpers
-│   └── experimental/      # Experimental APIs
+│   ├── flags/             # Runtime feature flags (e.g. FFmpeg availability)
+│   └── other/             # Misc pages (e.g. WPT coverage report)
 ├── src/
 │   ├── components/        # Custom MDX components
 │   ├── examples/          # Standalone interactive demo implementations
