@@ -118,14 +118,14 @@ bool AudioFileSourceNode::initDecoder(
       .contextSampleRate = context->getSampleRate(),
       .loop = options.loop};
 
-  seekDecoderDaemon_ = std::make_unique<SeekDecoderDaemon>(
+  auto deamon = std::make_unique<SeekDecoderDaemon>(
       std::move(daemonOptions),
       decoderState_,
       std::move(commandReceiver),
       std::move(frameSender),
       frameReceiver_);
 
-  seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
+  seekDecoderThread_ = std::thread(std::move(*deamon));
 
   if (!decoderState_->isReady.load(std::memory_order_acquire)) {
     return false;

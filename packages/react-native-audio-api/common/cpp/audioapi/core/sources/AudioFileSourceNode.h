@@ -255,7 +255,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       float playbackRate);
 
   /// @brief Daemon thread for decoding and seeking
-  std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
   std::thread seekDecoderThread_;
 
   /// @brief Signals the daemon to stop and joins its thread. Idempotent; safe
