@@ -55,6 +55,17 @@ export default class AudioContext extends BaseAudioContext {
     return (this.context as IAudioContext).suspend();
   }
 
+  /**
+   * @internal Called by AudioScheduledSourceNode.start(). The native driver
+   * can start implicitly from the first scheduled source, with no promise to
+   * carry the transition, so this publishes the state that follows.
+   */
+  public override markRunningOnSourceStart(): void {
+    if (this.contextState === 'suspended') {
+      this.contextState = 'running';
+    }
+  }
+
   createMediaElementSource(
     mediaElement: AudioTagHandle
   ): MediaElementAudioSourceNode {

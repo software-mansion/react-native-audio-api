@@ -77,8 +77,11 @@ export default class OfflineAudioContext extends BaseAudioContext {
       );
     }
 
+    const result = await (this.context as IOfflineAudioContext).suspend(
+      suspendTime
+    );
     this.contextState = 'suspended';
-    return (this.context as IOfflineAudioContext).suspend(suspendTime);
+    return result;
   }
 
   async startRendering(): Promise<AudioBuffer> {
