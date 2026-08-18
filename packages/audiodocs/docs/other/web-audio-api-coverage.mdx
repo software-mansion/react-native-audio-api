@@ -59,6 +59,14 @@ contact us or [create issue](https://github.com/software-mansion/react-native-au
 We will do our best to ship it as soon as possible!
 :::
 
+## Web Platform Tests (WPT)
+
+The [Web Platform Tests](https://web-platform-tests.org/) project is the
+cross-browser test suite that browser vendors use to verify their
+implementations against the official web specifications. Its `webaudio` subtree
+is the same suite that powers the public
+[wpt.fyi Web Audio dashboard](https://wpt.fyi/results/webaudio/the-audio-api?label=experimental&label=master&aligned).
+
 We run those exact tests against `react-native-audio-api` through a small Node
 harness, which lets us measure spec conformance with the same assertions a
 browser is held to. Each test file contains many individual assertions; the
