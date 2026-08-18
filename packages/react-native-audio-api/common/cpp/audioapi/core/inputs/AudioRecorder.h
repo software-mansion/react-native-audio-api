@@ -4,6 +4,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
