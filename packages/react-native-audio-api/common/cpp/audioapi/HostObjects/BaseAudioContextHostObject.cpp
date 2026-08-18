@@ -47,7 +47,6 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, listener),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
@@ -83,11 +82,6 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, listener) {
   return jsi::Object::createFromHostObject(runtime, listener_);
-}
-
-JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
-  return jsi::String::createFromUtf8(
-      runtime, js_enum_parser::contextStateToString(context_->getState()));
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {

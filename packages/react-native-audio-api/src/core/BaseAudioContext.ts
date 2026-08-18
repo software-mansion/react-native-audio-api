@@ -38,12 +38,21 @@ export default class BaseAudioContext {
     this.sampleRate = context.sampleRate;
   }
 
+  protected contextState: ContextState = 'suspended';
+
   public get currentTime(): number {
     return this.context.currentTime;
   }
 
   public get state(): ContextState {
-    return this.context.state;
+    return this.contextState;
+  }
+
+  /* @internal Called by AudioScheduledSourceNode.start(). */
+  public markRunningOnSourceStart(): void {
+    if (this.contextState === 'suspended') {
+      this.contextState = 'running';
+    }
   }
 
   public async decodeAudioData(
