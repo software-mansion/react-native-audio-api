@@ -3,6 +3,7 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/AudioRecorderOptions.h>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
@@ -25,7 +26,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
  public:
   explicit AndroidAudioRecorder(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const std::string &inputPreset = "");
+      AudioRecorderOptions options = {});
   ~AndroidAudioRecorder() override;
   void cleanup();
 

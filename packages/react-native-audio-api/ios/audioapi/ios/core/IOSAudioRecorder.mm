@@ -65,12 +65,11 @@ static void cleanupStartedRecorder(
 /// This constructor initializes the receiver block and native side recorder wrapper (AVAudioSinkNode).
 /// All other necessary fields (like buffers) are initialized in start() method.
 /// This "method" should be called from the JS thread only.
-/// @param audioEventHandlerRegistry Shared pointer to the AudioEventHandlerRegistry for event handling.
-/// @param voiceProcessingEnabled Whether the capture chain runs through Apple's voice-processing I/O
-/// (echo cancellation, noise suppression, automatic gain control).
+/// @param audioEventHandlerRegistry Shared pointer to the IAudioEventHandlerRegistry for event handling.
+/// @param options Creation-time capture chain configuration; only the iOS fields are read.
 IOSAudioRecorder::IOSAudioRecorder(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    bool voiceProcessingEnabled)
+    const AudioRecorderOptions &options)
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
@@ -82,7 +81,7 @@ IOSAudioRecorder::IOSAudioRecorder(
   };
 
   nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock
-                                                voiceProcessingEnabled:voiceProcessingEnabled];
+                                                voiceProcessingEnabled:options.iosVoiceProcessing];
 
   nativeRecorder_.onInputConfigurationChange = ^{ this->handleInputConfigurationChange(); };
 }

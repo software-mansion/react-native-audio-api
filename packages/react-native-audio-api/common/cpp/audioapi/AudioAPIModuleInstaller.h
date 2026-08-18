@@ -11,12 +11,13 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/AudioRecorderOptions.h>
 
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <memory>
-#include <string>
+#include <utility>
 
 namespace audioapi {
 
@@ -113,28 +114,17 @@ class AudioAPIModuleInstaller {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioRecorder"),
-        0,
+        1,
         [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          std::string androidInputPreset;
-          if (count > 0 && args[0].isString()) {
-            androidInputPreset = args[0].getString(runtime).utf8(runtime);
-          }
-
-          bool iosVoiceProcessing = false;
-          if (count > 1 && args[1].isBool()) {
-            iosVoiceProcessing = args[1].getBool();
-          }
+          auto options = count > 0 ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
+                                   : AudioRecorderOptions{};
 
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry,
-              &runtime,
-              jsCallInvoker,
-              androidInputPreset,
-              iosVoiceProcessing);
+              audioEventHandlerRegistry, &runtime, jsCallInvoker, std::move(options));
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 

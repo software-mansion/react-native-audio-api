@@ -8,6 +8,7 @@
 #include <audioapi/jsi/JsiUtils.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/AudioRecorderOptions.h>
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #else
@@ -23,18 +24,12 @@ AudioRecorderHostObject::AudioRecorderHostObject(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker,
-    const std::string &androidInputPreset,
-    bool iosVoiceProcessing) {
+    AudioRecorderOptions options) {
 #ifdef ANDROID
-  // Voice processing is an iOS concept (AVAudioEngine); Android selects its
-  // input preprocessing chain through the Oboe input preset instead.
   audioRecorder_ =
-      std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry, androidInputPreset);
+      std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry, std::move(options));
 #else
-  // The input preset is an Android concept (Oboe); iOS gets echo cancellation
-  // from the voice-processing I/O unit instead.
-  audioRecorder_ =
-      std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, iosVoiceProcessing);
+  audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, options);
 #endif
 
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);

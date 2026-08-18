@@ -1,8 +1,8 @@
-import type { AudioRecorderOptions } from '../core/AudioRecorder';
 import {
   AudioContextOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
+  AudioRecorderOptions,
   AudioRecorderStartOptions,
   BiquadFilterType,
   ChannelCountMode,
