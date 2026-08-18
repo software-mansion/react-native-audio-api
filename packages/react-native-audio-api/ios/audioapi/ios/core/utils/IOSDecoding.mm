@@ -125,7 +125,7 @@ IOSDecoder::~IOSDecoder()
   close();
 }
 
-decoding::DecoderResult IOSDecoder::finishOpen(
+decoding::DecoderResult IOSDecoder::finishOpeningDecoder(
     std::unique_ptr<IosDecoderState> state,
     int requestedSampleRate)
 {
@@ -210,7 +210,7 @@ decoding::DecoderResult IOSDecoder::open(const decoding::LocalFileSource &source
 
     auto state = std::make_unique<IosDecoderState>();
     state->extFile.reset(extFile);
-    return finishOpen(std::move(state), source.sampleRate);
+    return finishOpeningDecoder(std::move(state), source.sampleRate);
   }
 }
 
@@ -245,7 +245,7 @@ decoding::DecoderResult IOSDecoder::open(const decoding::EncodedMemorySource &so
   }
   state->extFile.reset(extFile);
 
-  return finishOpen(std::move(state), source.sampleRate);
+  return finishOpeningDecoder(std::move(state), source.sampleRate);
 }
 
 size_t IOSDecoder::readPcmFrames(float *outInterleaved, size_t frameCount)

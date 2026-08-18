@@ -31,7 +31,7 @@ class IOSDecoder : public decoding::OsDecoderBase {
   [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
 
  private:
-  [[nodiscard]] decoding::DecoderResult finishOpen(
+  [[nodiscard]] decoding::DecoderResult finishOpeningDecoder(
       std::unique_ptr<IosDecoderState> state,
       int requestedSampleRate);
 

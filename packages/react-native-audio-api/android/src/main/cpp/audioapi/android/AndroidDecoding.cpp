@@ -480,7 +480,7 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::LocalFileSource &so
     return Err("AndroidDecoder::open setDataSource failed");
   }
 
-  return finishOpen(std::move(state), source.sampleRate);
+  return finishOpeningDecoder(std::move(state), source.sampleRate);
 }
 
 decoding::DecoderResult AndroidDecoder::open(const decoding::EncodedMemorySource &source) {
@@ -495,10 +495,10 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::EncodedMemorySource
     return attached;
   }
 
-  return finishOpen(std::move(state), source.sampleRate);
+  return finishOpeningDecoder(std::move(state), source.sampleRate);
 }
 
-decoding::DecoderResult AndroidDecoder::finishOpen(
+decoding::DecoderResult AndroidDecoder::finishOpeningDecoder(
     std::unique_ptr<AndroidDecoderState> state,
     int sampleRate) {
   if (auto configured = configureExtractorMetadata(*state, sampleRate); configured.is_err()) {
