@@ -3,9 +3,17 @@ Documentation:
 
 CompileFlags:
   Add:
-    - -std=c++20
     - -Wall
 
 Diagnostics:
   ClangTidy:
     FastCheckFilter: Loose
+
+---
+# clang rejects -std=c++20 outright for plain Objective-C (.m).
+If:
+  PathExclude: .*\.m
+CompileFlags:
+  Add:
+    - -std=c++20
+
