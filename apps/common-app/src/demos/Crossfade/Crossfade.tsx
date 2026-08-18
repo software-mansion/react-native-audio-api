@@ -15,7 +15,7 @@ import {
   Dimensions,
   Pressable,
 } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -241,19 +241,19 @@ const Crossfade: FC = () => {
   const progressPercent =
     trackDuration > 0 ? (playbackPosition / trackDuration) * 100 : 0;
 
-  const panGesture = Gesture.Pan()
-    .activeOffsetX([-20, 20])
-    .onStart(() => {
+  const panGesture = usePanGesture({
+    activeOffsetX: [-20, 20],
+    onActivate: () => {
       swipeStartProgress.value = progress.value;
-    })
-    .onUpdate((event) => {
+    },
+    onUpdate: (event) => {
       const p = Math.max(
         0,
         Math.min(1, swipeStartProgress.value - event.translationX / ARTWORK_SIZE),
       );
       progress.value = p;
-    })
-    .onEnd(() => {
+    },
+    onDeactivate: () => {
       const p = progress.value;
       const snapTo = p < 0.5 ? 0 : 1;
       progress.value = withSpring(snapTo, {
@@ -261,7 +261,8 @@ const Crossfade: FC = () => {
         stiffness: 300,
       });
       swipeEndSnapTo.value = snapTo;
-    });
+    },
+  });
 
   const track1TileStyle = useAnimatedStyle(() => {
     const p = progress.value;

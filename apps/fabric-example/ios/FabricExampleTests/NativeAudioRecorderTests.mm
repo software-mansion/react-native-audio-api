@@ -113,11 +113,13 @@
 }
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
+             onInputConfigurationChange:(void (^)(void))onInputConfigurationChange
 {
   self.attachInputNodeCallCount += 1;
   self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
   self.lastAttachedInputNode = self.inputNode;
   self.lastAttachedReceiverBlock = receiverBlock;
+  (void)onInputConfigurationChange;
 }
 
 - (bool)startIfNecessary
