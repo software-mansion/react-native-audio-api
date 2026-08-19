@@ -29,29 +29,29 @@ export default class AudioContext extends BaseAudioContext {
   }
 
   async close(): Promise<undefined> {
-    if (this.contextState === 'closed') {
+    if (this._state === 'closed') {
       throw new InvalidStateError('Cannot close a closed audio context.');
     }
 
-    this.contextState = 'closed';
+    this._state = 'closed';
     return (this.context as IAudioContext).close();
   }
 
   async resume(): Promise<undefined> {
-    if (this.contextState === 'closed') {
+    if (this._state === 'closed') {
       throw new InvalidStateError('Cannot resume a closed audio context.');
     }
 
-    this.contextState = 'running';
+    this._state = 'running';
     return (this.context as IAudioContext).resume();
   }
 
   async suspend(): Promise<undefined> {
-    if (this.contextState === 'closed') {
+    if (this._state === 'closed') {
       throw new InvalidStateError('Cannot suspend a closed audio context.');
     }
 
-    this.contextState = 'suspended';
+    this._state = 'suspended';
     return (this.context as IAudioContext).suspend();
   }
 
@@ -61,8 +61,8 @@ export default class AudioContext extends BaseAudioContext {
    * carry the transition, so this publishes the state that follows.
    */
   public override markRunningOnSourceStart(): void {
-    if (this.contextState === 'suspended') {
-      this.contextState = 'running';
+    if (this._state === 'suspended') {
+      this._state = 'running';
       (this.context as IAudioContext).resume();
     }
   }

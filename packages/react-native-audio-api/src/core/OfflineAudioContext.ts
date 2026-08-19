@@ -50,13 +50,13 @@ export default class OfflineAudioContext extends BaseAudioContext {
       );
     }
 
-    if (!(this.contextState === 'suspended')) {
+    if (!(this._state === 'suspended')) {
       throw new InvalidStateError(
         'Cannot resume an OfflineAudioContext that is not suspended'
       );
     }
 
-    this.contextState = 'running';
+    this._state = 'running';
     return (this.context as IOfflineAudioContext).resume();
   }
 
@@ -77,10 +77,14 @@ export default class OfflineAudioContext extends BaseAudioContext {
       );
     }
 
+    if (this._state === 'closed') {
+      throw new InvalidStateError('the rendering is already finished');
+    }
+
     const result = await (this.context as IOfflineAudioContext).suspend(
       suspendTime
     );
-    this.contextState = 'suspended';
+    this._state = 'suspended';
     return result;
   }
 
@@ -90,11 +94,11 @@ export default class OfflineAudioContext extends BaseAudioContext {
     }
 
     this.isRendering = true;
-    this.contextState = 'running';
+    this._state = 'running';
     const audioBuffer = await (
       this.context as IOfflineAudioContext
     ).startRendering();
-    this.contextState = 'closed';
+    this._state = 'closed';
 
     return new AudioBuffer(audioBuffer);
   }

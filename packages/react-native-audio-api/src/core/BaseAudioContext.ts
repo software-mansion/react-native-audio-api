@@ -38,14 +38,14 @@ export default class BaseAudioContext {
     this.sampleRate = context.sampleRate;
   }
 
-  protected contextState: ContextState = 'suspended';
+  protected _state: ContextState = 'suspended';
 
   public get currentTime(): number {
     return this.context.currentTime;
   }
 
   public get state(): ContextState {
-    return this.contextState;
+    return this._state;
   }
 
   /**
