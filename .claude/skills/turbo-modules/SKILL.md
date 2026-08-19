@@ -127,6 +127,11 @@ Each `get*Function()` private method creates a `jsi::Function` via `jsi::Functio
 
 **Adding a new top-level global**: add a `static jsi::Function getCreateXxxFunction(...)` private method and a `setProperty("createXxx", ...)` call in `injectJSIBindings`. This is only needed for objects that JS creates directly (not objects created as properties of another HostObject).
 
+**Construction-time options** (e.g. `new AudioRecorder({ androidInputPreset, iosVoiceProcessing })`) travel as positional args of these factory functions — there is no options object and no TurboModule method involved. Three rules:
+- Parse defensively — `if (count > N && args[N].isBool())` — and keep the no-arg behavior as the default, so an older JS bundle against a newer binary still works.
+- Update `src/AudioAPIModule/globals.d.ts` in the same change; it is the only type contract for these globals.
+- Platform-specific options are passed to *both* platforms and consumed by the `#ifdef ANDROID` branch in the HostObject constructor; the other platform ignores its counterpart. Name them with the platform prefix (`androidInputPreset`, `iosVoiceProcessing`) so the asymmetry is visible from JS.
+
 ---
 
 ## iOS Native Module (`AudioAPIModule.mm`)

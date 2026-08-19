@@ -14,19 +14,50 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/AudioRecorderOptions.h>
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace audioapi {
 
+namespace {
+/// Maps the JS-facing preset name to Oboe's InputPreset. An unknown or empty
+/// name yields no preset call, preserving Oboe's own default
+/// (InputPreset::VoiceRecognition) exactly as before this option existed.
+std::optional<oboe::InputPreset> inputPresetFromString(const std::string &name) {
+  if (name == "generic") {
+    return oboe::InputPreset::Generic;
+  }
+  if (name == "camcorder") {
+    return oboe::InputPreset::Camcorder;
+  }
+  if (name == "voiceRecognition") {
+    return oboe::InputPreset::VoiceRecognition;
+  }
+  if (name == "voiceCommunication") {
+    return oboe::InputPreset::VoiceCommunication;
+  }
+  if (name == "unprocessed") {
+    return oboe::InputPreset::Unprocessed;
+  }
+  if (name == "voicePerformance") {
+    return oboe::InputPreset::VoicePerformance;
+  }
+  return std::nullopt;
+}
+} // namespace
+
 AndroidAudioRecorder::AndroidAudioRecorder(
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    AudioRecorderOptions options)
     : AudioRecorder(audioEventHandlerRegistry),
+      inputPreset_(std::move(options.androidInputPreset)),
       streamSampleRate_(0.0),
       streamChannelCount_(0),
       streamMaxBufferSizeInFrames_(0) {}
@@ -73,6 +104,10 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
       ->setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium)
       ->setDataCallback(shared_from_this())
       ->setErrorCallback(shared_from_this());
+
+  if (auto preset = inputPresetFromString(inputPreset_)) {
+    builder.setInputPreset(*preset);
+  }
 
   auto result = builder.openStream(mStream_);
 

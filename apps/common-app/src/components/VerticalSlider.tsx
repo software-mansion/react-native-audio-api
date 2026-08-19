@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -64,17 +64,17 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
     onValueChange(val);
   };
 
-  const gesture = Gesture.Pan()
-    .onStart(() => {
+  const gesture = usePanGesture({
+    onActivate: () => {
       startValue.value = progress.value;
-    })
-    .onUpdate((e) => {
+    },
+    onUpdate: (e) => {
       const change = -e.translationY / TRACK_HEIGHT;
       const newValue = startValue.value + change;
       const clampedValue = Math.min(Math.max(newValue, 0), 1);
       progress.value = clampedValue;
-    })
-    .onEnd(() => {
+    },
+    onDeactivate: () => {
       if (possibleValues && possibleValues.length > 0) {
         const snappedValue = findClosestValue(progress.value);
         progress.value = withSpring(snappedValue);
@@ -83,7 +83,8 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
         const finalValue = Math.min(Math.max(progress.value, 0), 1);
         scheduleOnRN(handleValueChange, finalValue);
       }
-    });
+    },
+  });
 
   const thumbStyle = useAnimatedStyle(() => {
     const translateY = (1 - progress.value) * TRACK_HEIGHT;

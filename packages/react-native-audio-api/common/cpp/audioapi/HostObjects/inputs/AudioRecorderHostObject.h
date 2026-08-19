@@ -3,6 +3,7 @@
 #include <ReactCommon/CallInvoker.h>
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
+#include <audioapi/utils/AudioRecorderOptions.h>
 
 #include <memory>
 
@@ -17,7 +18,9 @@ class AudioRecorderHostObject : public HostObject {
   AudioRecorderHostObject(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker);
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      AudioRecorderOptions options);
+
   ~AudioRecorderHostObject() override;
 
   JSI_HOST_FUNCTION_DECL(start);

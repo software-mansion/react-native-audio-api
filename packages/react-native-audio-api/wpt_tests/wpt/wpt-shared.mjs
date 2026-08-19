@@ -14,8 +14,15 @@ import {
 } from './wpt-utils.mjs';
 
 const require = createRequire(import.meta.url);
-const { setFloat32ArrayViewFactory } = require('../../lib/commonjs/errors/index.js');
+const packageRoot = require('../package-root.js');
+const errorsModule = require(
+  path.join(packageRoot, 'lib/commonjs/errors/index.js')
+);
 const createRequestAnimationFrame = require('./mocks/requestAnimationFrame.js');
+
+// Older package versions (loaded via RN_AUDIO_API_APP_ROOT) may predate this hook.
+const setFloat32ArrayViewFactory =
+  errorsModule.setFloat32ArrayViewFactory ?? (() => {});
 
 export const harnessDir = path.dirname(new URL(import.meta.url).pathname);
 export const testsPath = path.join(harnessDir, '..', 'webaudio');
@@ -37,11 +44,13 @@ export function getProfileAllowlist(profile = 'smoke') {
 }
 
 export function profileMatches(name, profile = 'smoke') {
-  return getProfileAllowlist(profile).some(prefix => name.includes(prefix));
+  return getProfileAllowlist(profile).some((prefix) => name.includes(prefix));
 }
 
 export function walkHtmlFiles(rootDir, prefix = '') {
-  const entries = fs.readdirSync(path.join(rootDir, prefix), { withFileTypes: true });
+  const entries = fs.readdirSync(path.join(rootDir, prefix), {
+    withFileTypes: true,
+  });
   let files = [];
   for (const entry of entries) {
     const rel = path.join(prefix, entry.name);
@@ -59,7 +68,7 @@ export function smokeFilter(name, profile = 'smoke') {
 }
 
 export function getSkippedByPolicy(name) {
-  return skipList.find(item => name.includes(item.pattern));
+  return skipList.find((item) => name.includes(item.pattern));
 }
 
 export function normalizeTestPath(filePath) {
@@ -115,8 +124,11 @@ export function collectSelectedTestPaths({
 
 export function loadNodeAudioApi() {
   const nodeAudioApi = require('../index.js');
-  const { TypeError: _TypeError, RangeError: _RangeError, ...audioApiForWindow } =
-    nodeAudioApi;
+  const {
+    TypeError: _TypeError,
+    RangeError: _RangeError,
+    ...audioApiForWindow
+  } = nodeAudioApi;
   return { nodeAudioApi, audioApiForWindow };
 }
 
@@ -139,7 +151,7 @@ export function createWptEnvironment() {
     cancelPendingAnimationFrames();
   });
 
-  const setup = window => {
+  const setup = (window) => {
     cleanupEmitter.emit('cleanup');
 
     setFloat32ArrayViewFactory(
@@ -175,7 +187,7 @@ export function createSequentialFilter({
 }) {
   const extraFilterRe = new RegExp(filterRegexp);
 
-  return name => {
+  return (name) => {
     if (getSkippedByPolicy(name) != null) {
       return false;
     }
@@ -203,27 +215,27 @@ export async function runSequentialWpt({ filter, reporter }) {
 
 export function createReporter(handlers) {
   return {
-    startSuite: name => handlers.startSuite?.(name),
-    pass: message => handlers.pass?.(message),
-    fail: message => handlers.fail?.(message),
-    reportStack: stack => handlers.reportStack?.(stack),
+    startSuite: (name) => handlers.startSuite?.(name),
+    pass: (message) => handlers.pass?.(message),
+    fail: (message) => handlers.fail?.(message),
+    reportStack: (stack) => handlers.reportStack?.(stack),
   };
 }
 
 export function createConsoleReporter({ numPassRef, numFailRef }) {
   return createReporter({
-    startSuite: name => {
+    startSuite: (name) => {
       console.log(`\n${chalk.bold.underline(path.join(testsPath, name))}\n`);
     },
-    pass: message => {
+    pass: (message) => {
       numPassRef.value += 1;
       console.log(chalk.green(`  √ ${message}`));
     },
-    fail: message => {
+    fail: (message) => {
       numFailRef.value += 1;
       console.log(chalk.red(`  × ${message}`));
     },
-    reportStack: stack => {
+    reportStack: (stack) => {
       console.log(chalk.dim(`    ${stack}`));
     },
   });
