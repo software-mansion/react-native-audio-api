@@ -598,8 +598,6 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     auto streamResult = openAudioStream();
 
     if (!streamResult.is_ok()) {
-      // Deliberately left Idle (by cleanup()): restoring Paused here would let a later
-      // resume() start a stream that no longer exists.
       uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
 
       if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
