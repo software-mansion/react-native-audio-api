@@ -2,6 +2,7 @@ import {
   AudioContextOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
+  AudioRecorderOptions,
   AudioRecorderStartOptions,
   BiquadFilterType,
   ChannelCountMode,
@@ -862,7 +863,7 @@ class AudioRecorderMock {
   private onAudioReadySubscription: MockEventSubscription | null = null;
   private onErrorSubscription: MockEventSubscription | null = null;
 
-  constructor() {
+  constructor(_options?: AudioRecorderOptions) {
     AudioRecorderMock.lastCreated = this;
   }
 

@@ -2,12 +2,14 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <thread>
 #include <vector>
 
 namespace audioapi {
@@ -59,15 +61,24 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sample
 }
 
 void RecorderAdapterNode::adapterCleanup() {
+  isInitialized_.store(false, std::memory_order_release);
+  waitForProcessQuiescence();
+
   needsResampling_ = false;
   buff_.clear();
   resampler_.reset();
   overflowSize_ = 0;
+}
 
-  isInitialized_.store(false, std::memory_order_release);
+void RecorderAdapterNode::waitForProcessQuiescence() const {
+  while (currentProcesses_.load(std::memory_order_acquire) != 0) {
+    std::this_thread::yield();
+  }
 }
 
 void RecorderAdapterNode::processNode(int framesToProcess) {
+  const CurrentRenderScope processScope(currentProcesses_);
+
   if (!isInitialized_.load(std::memory_order_acquire)) {
     audioBuffer_->zero();
     return;
