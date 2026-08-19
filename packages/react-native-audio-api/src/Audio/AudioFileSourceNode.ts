@@ -106,9 +106,37 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     }
   }
 
+  startBufferingTracking(
+    onBufferingChange: (buffering: boolean) => void
+  ): void {
+    if (!this.node) {
+      return;
+    }
+    this.stopBufferingTracking();
+    const sub = this.emitter.addAudioEventListener(
+      'bufferingStateChanged',
+      (event) => {
+        onBufferingChange(event.value);
+      }
+    );
+    (this.node as IAudioFileSourceNode).onBufferingStateChanged =
+      sub.subscriptionId;
+  }
+
+  stopBufferingTracking(): void {
+    if (this.node) {
+      (this.node as IAudioFileSourceNode).onBufferingStateChanged = '0';
+    }
+  }
+
+  isBuffering(): boolean {
+    return (this.node as IAudioFileSourceNode).buffering;
+  }
+
   private resetNodeAndSubscriptions(): void {
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';
+      (this.node as IAudioFileSourceNode).onBufferingStateChanged = '0';
       (this.node as IAudioFileSourceNode).onEnded = '0';
       this.node.disconnect(undefined);
     }

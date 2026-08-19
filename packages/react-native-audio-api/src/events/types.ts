@@ -7,6 +7,10 @@ export interface EventTypeWithValue {
   value: number;
 }
 
+export interface EventTypeWithBool {
+  value: boolean;
+}
+
 export type InterruptionType = 'began' | 'ended';
 
 export interface OnInterruptionEventType {
@@ -75,6 +79,14 @@ interface AudioAPIEvents {
   positionChanged: EventTypeWithValue;
   bufferEnded: OnBufferEndEventType;
   recorderError: OnRecorderErrorEventType;
+  /**
+   * Fires when an `<Audio>` source starts or stops stalling on decoded data — a
+   * real network/decoder stall (debounced natively against normal decode-ahead
+   * jitter), not a deliberate pause. `value` is true while stalled. See
+   * `AudioTagPlaybackState`'s `'buffering'` state and the
+   * `onWaiting`/`onPlaying` props on `<Audio>`.
+   */
+  bufferingStateChanged: EventTypeWithBool;
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;

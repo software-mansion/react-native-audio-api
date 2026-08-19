@@ -42,13 +42,29 @@ const Audio = React.memo(
       onPlay,
       onPause,
       onVolumeChange,
+      onWaiting,
+      onPlaying,
     } = useStableAudioProps(props);
     const [volumeState, setVolumeState] = useState<number | null>(null);
     const [mutedState, setMutedState] = useState<boolean | null>(null);
     const [ready, setReady] = useState(false);
     const [playbackState, setPlaybackState] =
       useState<AudioTagPlaybackState>('idle');
+    const [isBuffering, setIsBuffering] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
+
+    // 'buffering' is a UI-facing overlay on top of the 'playing' intent, not a
+    // fourth state tracked alongside it — see AudioTagPlaybackState's doc
+    // comment. Keeping it derived (rather than folding it into playbackState
+    // directly) avoids the buffering-subscription effect below tearing itself
+    // down every time a stall starts/ends.
+    const publicPlaybackState = useMemo<AudioTagPlaybackState>(
+      () =>
+        playbackState === 'playing' && isBuffering
+          ? 'buffering'
+          : playbackState,
+      [playbackState, isBuffering]
+    );
 
     const path = useMemo(() => resolveSourcePath(source), [source]);
 
@@ -207,6 +223,29 @@ const Audio = React.memo(
       };
     }, [onPositionChange, playbackState, fileSourceRef]);
 
+    useEffect(() => {
+      if (playbackState !== 'playing') {
+        // Not an active stall (paused/idle/ended) — clear any stale flag from
+        // a stall that was in progress when playback stopped.
+        setIsBuffering(false);
+        return;
+      }
+
+      const fileSource = fileSourceRef.current;
+      fileSource?.startBufferingTracking((buffering) => {
+        setIsBuffering(buffering);
+        if (buffering) {
+          onWaiting();
+        } else {
+          onPlaying();
+        }
+      });
+
+      return () => {
+        fileSource?.stopBufferingTracking();
+      };
+    }, [onWaiting, onPlaying, playbackState, fileSourceRef]);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -240,7 +279,7 @@ const Audio = React.memo(
         ready,
         setMuted: setMutedState,
         muted: effectiveMutedState,
-        playbackState,
+        playbackState: publicPlaybackState,
         currentTime,
         duration,
         autoPlay,
@@ -261,7 +300,7 @@ const Audio = React.memo(
         ready,
         setMutedState,
         effectiveMutedState,
-        playbackState,
+        publicPlaybackState,
         currentTime,
         duration,
         autoPlay,

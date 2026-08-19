@@ -5,6 +5,7 @@
 #include <audioapi/decoding/SeekDecoderDaemon.h>
 #include <audioapi/decoding/backends/AudioDecoderBackend.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 #include <cstddef>
@@ -24,6 +25,12 @@ struct AudioFileSourceOptions;
 class MediaElementAudioSourceNode;
 
 inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
+
+/// @brief How long the render thread must go without a decoded frame before a
+/// buffering-state-change event fires. Debounces normal decode-ahead jitter
+/// (a single starved quantum is common and not a real stall) from a genuine
+/// network/decoder stall a UI would want to show a spinner for.
+inline constexpr auto ON_BUFFERING_STATE_DEBOUNCE_INTERVAL = 0.15f;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
@@ -122,8 +129,27 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
+  /// @brief Registers the JS callback for buffering-state-change events (see
+  /// @ref updateBufferingState). Pass 0 to unregister.
+  void assignOnBufferingStateChangeCallbackId(uint64_t callbackId);
+
+  /// @brief True while the render thread has been unable to obtain a decoded
+  /// frame for longer than @ref ON_BUFFERING_STATE_DEBOUNCE_INTERVAL.
+  [[nodiscard]] bool isBuffering() const {
+    return isBuffering_.load(std::memory_order_acquire);
+  }
+
  protected:
   void processNode(int framesToProcess) override;
+
+  /// @brief Debounces render-thread frame starvation into a buffering-state
+  /// event. @p hasData is true whenever this render quantum had a decoded
+  /// chunk available (fresh or previously stashed) to play; false when the
+  /// decoder daemon has nothing ready yet. Protected (rather than private)
+  /// so tests can drive it directly without racing the real decoder daemon
+  /// thread for genuine starvation — see AudioFileSourceNodeTest.cpp.
+  /// @note Audio thread only.
+  void updateBufferingState(bool hasData, int framesToProcess);
 
  private:
   std::shared_ptr<AudioFileDecoderState> decoderState_;
@@ -177,6 +203,16 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       float activeRate);
 
   PositionChangedDispatcher positionChanged_;
+
+  /// @brief Fired (audio thread) when the render thread starts/stops going
+  /// without decoded frames for longer than the debounce interval. See
+  /// @ref updateBufferingState.
+  EventCaller<AudioEvent::BUFFERING_STATE_CHANGE> onBufferingStateChangeEvent_;
+  std::atomic<bool> isBuffering_{false};
+  /// @brief Frames accumulated (at context sample rate) since the last frame
+  /// chunk was available. Reset whenever a chunk is obtained.
+  int starvedFrames_{0};
+  const int bufferingStartThresholdFrames_;
 
   /// @brief Sets up SPSC channels, constructs the SeekDecoderDaemon, and initialises metadata from the opened decoder.
   /// @return false if the source could not be opened; caller must not set isInitialized_.

@@ -38,6 +38,8 @@ export function withPropsDefaults(
     onPlay: props.onPlay ?? noop,
     onPause: props.onPause ?? noop,
     onVolumeChange: props.onVolumeChange ?? noopNumber,
+    onWaiting: props.onWaiting ?? noop,
+    onPlaying: props.onPlaying ?? noop,
   };
 }
 
@@ -72,6 +74,8 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
     onPlay,
     onPause,
     onVolumeChange,
+    onWaiting,
+    onPlaying,
   } = withPropsDefaults(props, resolvedContext);
 
   return useMemo(
@@ -98,6 +102,8 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       onPlay,
       onPause,
       onVolumeChange,
+      onWaiting,
+      onPlaying,
     }),
     [
       autoPlay,
@@ -119,6 +125,8 @@ export function useStableAudioProps(props: AudioProps): AudioPropsBase {
       onPlay,
       onPause,
       onVolumeChange,
+      onWaiting,
+      onPlaying,
     ]
   );
 }
