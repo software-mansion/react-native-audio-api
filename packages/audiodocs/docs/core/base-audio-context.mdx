@@ -10,17 +10,17 @@ import Heading from '@theme/Heading';
 
 The `BaseAudioContext` interface acts as a supervisor of audio-processing graphs. It provides key processing parameters such as current time, output destination or sample rate.
 Additionally, it is responsible for nodes creation and audio-processing graph's lifecycle management.
-However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](/docs/core/audio-context), [`OfflineAudioContext`](/docs/core/offline-audio-context), or [`WorkletAudioContext`](/docs/worklets/worklet-audio-context).
+However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](./audio-context.mdx), [`OfflineAudioContext`](./offline-audio-context.mdx), or [`WorkletAudioContext`](../worklets/worklet-audio-context.mdx).
 
 #### Audio graph
 
 An audio graph is a structured representation of audio processing elements and their connections within an audio context.
 The graph consists of various types of nodes, each performing specific audio operations, connected in a network that defines the audio signal flow.
 In general we can distinguish four types of nodes:
-- Source nodes (e.g [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), [`OscillatorNode`](/docs/sources/oscillator-node))
-- Effect nodes (e.g [`GainNode`](/docs/effects/gain-node), [`BiquadFilterNode`](/docs/effects/biquad-filter-node))
-- Analysis nodes (e.g [`AnalyserNode`](/docs/analysis/analyser-node))
-- Destination nodes (e.g [`AudioDestinationNode`](/docs/destinations/audio-destination-node))
+- Source nodes (e.g [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx), [`OscillatorNode`](../sources/oscillator-node.mdx))
+- Effect nodes (e.g [`GainNode`](../effects/gain-node.mdx), [`BiquadFilterNode`](../effects/biquad-filter-node.mdx))
+- Analysis nodes (e.g [`AnalyserNode`](../analysis/analyser-node.mdx))
+- Destination nodes (e.g [`AudioDestinationNode`](../destinations/audio-destination-node.mdx))
 
 ![](/img/audio-graph.png)
 
@@ -29,12 +29,12 @@ In general we can distinguish four types of nodes:
 Audio graph rendering is done in blocks of sample-frames. The number of sample-frames in a block is called render quantum size, and the block itself is called a render quantum.
 By default render quantum size value is `128` and it is a constant.
 
-The [`AudioContext`](/docs/core/audio-context) rendering thread is driven by a system-level audio callback.
+The [`AudioContext`](./audio-context.mdx) rendering thread is driven by a system-level audio callback.
 Each call has a system-level audio callback buffer size, which is a varying number of sample-frames that needs to be computed on time before the next system-level audio callback arrives,
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
 :::info
-Concept of system-level audio callback does not apply to [`OfflineAudioContext`](/docs/core/offline-audio-context) or [`WorkletAudioContext`](/docs/worklets/worklet-audio-context).
+Concept of system-level audio callback does not apply to [`OfflineAudioContext`](./offline-audio-context.mdx) or [`WorkletAudioContext`](../worklets/worklet-audio-context.mdx).
 :::
 
 ## Properties
@@ -42,28 +42,28 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
 | `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from `0.0`. | <ReadOnly /> |
-| `destination` | [`AudioDestinationNode`](/docs/destinations/audio-destination-node) | Final output destination associated with the context. | <ReadOnly /> |
-| `listener` | [`AudioListener`](/docs/core/audio-listener) | Listener used for 3D spatialization, shared by all `PannerNode`s in the context. | <ReadOnly /> |
+| `destination` | [`AudioDestinationNode`](../destinations/audio-destination-node.mdx) | Final output destination associated with the context. | <ReadOnly /> |
+| `listener` | [`AudioListener`](./audio-listener.mdx) | Listener used for 3D spatialization, shared by all `PannerNode`s in the context. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
-| `state` | [`ContextState`](/docs/core/base-audio-context#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
+| `state` | [`ContextState`](./base-audio-context.mdx#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
 
 ## Methods
 
 ### `createAnalyser`
 
-Creates [`AnalyserNode`](/docs/analysis/analyser-node).
+Creates [`AnalyserNode`](../analysis/analyser-node.mdx).
 
 **Returns:** `AnalyserNode`
 
 ### `createBiquadFilter`
 
-Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
+Creates [`BiquadFilterNode`](../effects/biquad-filter-node.mdx).
 
 **Returns:** `BiquadFilterNode`
 
 ### `createBuffer`
 
-Creates [`AudioBuffer`](/docs/sources/audio-buffer).
+Creates [`AudioBuffer`](../sources/audio-buffer.mdx).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -83,7 +83,7 @@ Creates [`AudioBuffer`](/docs/sources/audio-buffer).
 
 ### `createBufferSource`
 
-Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
+Creates [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -93,17 +93,17 @@ Creates [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node).
 
 <Heading as="h3" id="create-buffer-queue-source"><code>createBufferQueueSource</code> <MobileOnly /></Heading>
 
-Creates [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node).
+Creates [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `options` <Optional /> | [`AudioBufferQueueSourceOptions`](/docs/sources/audio-buffer-queue-source-node#audiobufferqueuesourceoptions) | Constructor options for [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node). |
+| `options` <Optional /> | [`AudioBufferQueueSourceOptions`](../sources/audio-buffer-queue-source-node.mdx#audiobufferqueuesourceoptions) | Constructor options for [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx). |
 
 **Returns:** `AudioBufferQueueSourceNode`
 
 ### `createChannelMerger`
 
-Creates [`ChannelMergerNode`](/docs/effects/channel-merger-node).
+Creates [`ChannelMergerNode`](../effects/channel-merger-node.mdx).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -113,7 +113,7 @@ Creates [`ChannelMergerNode`](/docs/effects/channel-merger-node).
 
 ### `createChannelSplitter`
 
-Creates [`ChannelSplitterNode`](/docs/effects/channel-splitter-node).
+Creates [`ChannelSplitterNode`](../effects/channel-splitter-node.mdx).
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -123,19 +123,19 @@ Creates [`ChannelSplitterNode`](/docs/effects/channel-splitter-node).
 
 ### `createConstantSource`
 
-Creates [`ConstantSourceNode`](/docs/sources/constant-source-node).
+Creates [`ConstantSourceNode`](../sources/constant-source-node.mdx).
 
 **Returns:** `ConstantSourceNode`
 
 ### `createConvolver`
 
-Creates [`ConvolverNode`](/docs/effects/convolver-node).
+Creates [`ConvolverNode`](../effects/convolver-node.mdx).
 
 **Returns:** `ConvolverNode`
 
 ### `createDelay`
 
-Creates [`DelayNode`](/docs/effects/delay-node)
+Creates [`DelayNode`](../effects/delay-node.mdx)
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -145,25 +145,25 @@ Creates [`DelayNode`](/docs/effects/delay-node)
 
 ### `createGain`
 
-Creates [`GainNode`](/docs/effects/gain-node).
+Creates [`GainNode`](../effects/gain-node.mdx).
 
 **Returns:** `GainNode`
 
 ### `createIIRFilter`
 
-Creates [`IIRFilterNode`](/docs/effects/iir-filter-node).
+Creates [`IIRFilterNode`](../effects/iir-filter-node.mdx).
 
 **Returns:** `IIRFilterNode`
 
 ### `createOscillator`
 
-Creates [`OscillatorNode`](/docs/sources/oscillator-node).
+Creates [`OscillatorNode`](../sources/oscillator-node.mdx).
 
 **Returns:** `OscillatorNode`
 
 ### `createPeriodicWave`
 
-Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
+Creates [`PeriodicWave`](../effects/periodic-wave.mdx). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -181,9 +181,9 @@ Creates [`PeriodicWave`](/docs/effects/periodic-wave). This waveform specifies a
 
 ### `createRecorderAdapter`
 
-Creates a `RecorderAdapterNode` — an [`AudioNode`](/docs/core/audio-node) that
-adapts an [`AudioRecorder`](/docs/inputs/audio-recorder) into the audio graph.
-Feed it using [`AudioRecorder.connect`](/docs/inputs/audio-recorder#connect) and
+Creates a `RecorderAdapterNode` — an [`AudioNode`](./audio-node.mdx) that
+adapts an [`AudioRecorder`](../inputs/audio-recorder.mdx) into the audio graph.
+Feed it using [`AudioRecorder.connect`](../inputs/audio-recorder.mdx#connect) and
 connect it downstream like any other node. Produces silence until a recorder is
 connected to it.
 
@@ -191,13 +191,13 @@ connected to it.
 
 ### `createStereoPanner`
 
-Creates [`StereoPannerNode`](/docs/effects/stereo-panner-node).
+Creates [`StereoPannerNode`](../effects/stereo-panner-node.mdx).
 
 **Returns:** `StereoPannerNode`
 
 ### `createWaveShaper`
 
-Creates [`WaveShaperNode`](/docs/effects/wave-shaper-node).
+Creates [`WaveShaperNode`](../effects/wave-shaper-node.mdx).
 
 **Returns:** `WaveShaperNode`
 
@@ -239,7 +239,7 @@ const buffer = await this.audioContext.decodeAudioData(data, 4800, 2, false);
 **Acceptable values:**
 - `suspended`
 
-The audio context has been suspended (with one of [`suspend`](/docs/core/audio-context#suspend) or [`OfflineAudioContext.suspend`](/docs/core/offline-audio-context#suspend)).
+The audio context has been suspended (with one of [`suspend`](./audio-context.mdx#suspend) or [`OfflineAudioContext.suspend`](./offline-audio-context.mdx#suspend)).
 
 - `running`
 
@@ -247,4 +247,4 @@ The audio context is running normally.
 
 - `closed`
 
-The audio context has been closed (with [`close`](/docs/core/audio-context#close) method).
+The audio context has been closed (with [`close`](./audio-context.mdx#close) method).

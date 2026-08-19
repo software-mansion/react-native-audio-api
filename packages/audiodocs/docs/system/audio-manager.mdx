@@ -54,7 +54,7 @@ Always verify valid category and option combinations in [Apple's AVAudioSession 
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors). |
+| options | [`SessionOptions`](./audio-manager.mdx#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors). |
 
 #### Returns `undefined`.
 
@@ -133,7 +133,7 @@ Adds a callback to be invoked upon hearing an event.
 | `name` | [`SystemEventName`](audio-manager#systemeventname) | Name of an event listener. |
 | `callback` | [`SystemEventCallback`](audio-manager#systemeventcallback) | Callback that will be invoked upon hearing an event. |
 
-#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise.
+#### Returns [`AudioEventSubscription`](./audio-manager.mdx#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise.
 
 ### `requestRecordingPermissions`
 
