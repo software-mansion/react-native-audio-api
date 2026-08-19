@@ -81,9 +81,9 @@ import { AudioBuffer, AudioContext } from 'react-native-audio-api';
 type PR<T> = Partial<Record<KeyName, T>>;
 
 const sourceList: PR<string> = {
-  A: 'https://software-mansion.github.io/react-native-audio-api/audio/sounds/C4.mp3',
-  C: 'https://software-mansion.github.io/react-native-audio-api/audio/sounds/Ds4.mp3',
-  E: 'https://software-mansion.github.io/react-native-audio-api/audio/sounds/Fs4.mp3',
+  A: 'https://software-mansion.github.io/react-native-audio-api/audio/sounds/A3.mp3',
+  C: 'https://software-mansion.github.io/react-native-audio-api/audio/sounds/C4.mp3',
+  E: 'https://software-mansion.github.io/react-native-audio-api/audio/sounds/E4.mp3',
 };
 ```
 
@@ -317,15 +317,15 @@ Each piano key has its own dominant frequency (e.g., the frequency of the `A4` k
 
 ![Piano keys frequencies](/img/frequencies-on-piano.jpg)
 
-For our example, let's use these frequencies as the base for our calculations:
+Our five keys span the notes from `A3` up to `E4`, so these are the frequencies we will base our calculations on:
 
 ```tsx
 const noteToFrequency = {
-  A: 261.626, // real piano middle C
-  B: 277.193, // Db
-  C: 311.127, // Eb
-  D: 329.628, // E
-  E: 369.994, // Gb
+  A: 220.0, // A3
+  B: 246.942, // B3
+  C: 261.626, // C4 - middle C
+  D: 293.665, // D4
+  E: 329.628, // E4
 };
 ```
 
@@ -359,8 +359,8 @@ const onKeyPressIn = (which: KeyName) => {
 
   if (!buffer) {
     const closestKey = getClosest(which);
-    const closestBuffer = bufferMapRef.current[closestKey];
-    playbackRate = noteToFrequency[closestKey] / noteToFrequency[which];
+    buffer = bufferMapRef.current[closestKey];
+    playbackRate = noteToFrequency[which] / noteToFrequency[closestKey];
   }
 
   const source = aCtx.createBufferSource();
