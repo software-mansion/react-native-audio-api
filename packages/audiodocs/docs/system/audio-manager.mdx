@@ -110,6 +110,12 @@ and tries to reactivate the audio session as soon as there is "silence", althoug
 Internally, the method uses `AVAudioSessionSilenceSecondaryAudioHintNotification` as well as
 interval polling to check if other audio is playing.
 
+### `getSystemVolume`
+
+Reads the current system output volume as a 0..1 fraction of its maximum.
+
+#### Returns `number`.
+
 ### `observeVolumeChanges`
 
 | Parameter | Type | Description |
