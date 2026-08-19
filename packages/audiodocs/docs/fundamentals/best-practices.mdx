@@ -7,32 +7,32 @@ sidebar_position: 3
 When working with audio in a web or mobile application, following best practices ensures optimal performance,
 user experience, and maintainability. Here are some key best practices to consider when using the React Native Audio API:
 
-## [**AudioContext**](/docs/core/audio-context) Management
+## [**AudioContext**](../core/audio-context.mdx) Management
 
 - **Single Audio Context**: Create one instance of `AudioContext` in order to easily and efficiently manage the audio layer's state in your application.
-  Creating many instances could lead to undefined behavior. Some of them could still be in [`running`](/docs/core/base-audio-context#contextstate) state while others could be
-  [`suspended`](/docs/core/base-audio-context#contextstate) or [`closed`](/docs/core/base-audio-context#contextstate), if you do not manage them by yourself.
+  Creating many instances could lead to undefined behavior. Some of them could still be in [`running`](../core/base-audio-context.mdx#contextstate) state while others could be
+  [`suspended`](../core/base-audio-context.mdx#contextstate) or [`closed`](../core/base-audio-context.mdx#contextstate), if you do not manage them by yourself.
 
-- **Resume before play**: On mobile, `AudioContext` may start in the [`suspended`](/docs/core/base-audio-context#contextstate) state. Call [`resume()`](/docs/core/audio-context#resume) before starting playback or recording that depends on the context.
+- **Resume before play**: On mobile, `AudioContext` may start in the [`suspended`](../core/base-audio-context.mdx#contextstate) state. Call [`resume()`](../core/audio-context.mdx#resume) before starting playback or recording that depends on the context.
 
-- **Clean up**: Always close the `AudioContext` using the [`close()`](/docs/core/audio-context#close) method when it is no longer needed.
-  This releases system audio resources and prevents memory leaks. For long-lived apps that keep audio available in the background, prefer [`suspend()`](/docs/core/audio-context#suspend) / [`resume()`](/docs/core/audio-context#resume) over repeatedly creating and closing contexts.
+- **Clean up**: Always close the `AudioContext` using the [`close()`](../core/audio-context.mdx#close) method when it is no longer needed.
+  This releases system audio resources and prevents memory leaks. For long-lived apps that keep audio available in the background, prefer [`suspend()`](../core/audio-context.mdx#suspend) / [`resume()`](../core/audio-context.mdx#resume) over repeatedly creating and closing contexts.
 
 - **Suspend when not in use**: Suspend the `AudioContext` when audio is not needed to save system resources and battery life, especially on mobile devices.
-  Running `AudioContext` is still playing silence even if there is no playing source node connected to the [`destination`](/docs/core/base-audio-context#properties).
+  Running `AudioContext` is still playing silence even if there is no playing source node connected to the [`destination`](../core/base-audio-context.mdx#properties).
   Additionally, on iOS devices, the state of the `AudioContext` is directly related with state of the lock screen. If a running `AudioContext` exists, it is impossible to set lock screen state to `state_paused`.
 
-- **Configure the audio session early**: Set [`AudioManager.setAudioSessionOptions()`](/docs/system/audio-manager) once at startup — for example `iosCategory: 'playback'` for media apps or `iosCategory: 'playAndRecord'` when recording and playback coexist.
+- **Configure the audio session early**: Set [`AudioManager.setAudioSessionOptions()`](../system/audio-manager.mdx) once at startup — for example `iosCategory: 'playback'` for media apps or `iosCategory: 'playAndRecord'` when recording and playback coexist.
 
-## [**AudioRecorder**](/docs/inputs/audio-recorder) Management
+## [**AudioRecorder**](../inputs/audio-recorder.mdx) Management
 
 - **Single AudioRecorder**: It is preferred to create only a single instance of the `AudioRecorder` class for the best performance, memory, and battery consumption. While an idle recorder has minimal impact, switching between separate recorder instances might have a noticeable impact on the device.
 
-- **Activate the session before recording**: Call [`AudioManager.setAudioSessionActivity(true)`](/docs/system/audio-manager) and enable [`observeAudioInterruptions()`](/docs/system/audio-manager#observeaudiointerruptions) before [`start()`](/docs/inputs/audio-recorder#start) or [`resume()`](/docs/inputs/audio-recorder#resume).
+- **Activate the session before recording**: Call [`AudioManager.setAudioSessionActivity(true)`](../system/audio-manager.mdx) and enable [`observeAudioInterruptions()`](../system/audio-manager.mdx#observeaudiointerruptions) before [`start()`](../inputs/audio-recorder.mdx#start) or [`resume()`](../inputs/audio-recorder.mdx#resume).
 
-- **Rotate files for crash resilience**: When recording to disk, set [`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions) (for example every 1 MB) so a crash only loses the current segment. Merge segments afterward with [`concatAudioFiles()`](/docs/utils/file-concatenation#concataudiofiles).
+- **Rotate files for crash resilience**: When recording to disk, set [`rotateIntervalBytes`](../inputs/audio-recorder.mdx#audiorecorderfileoptions) (for example every 1 MB) so a crash only loses the current segment. Merge segments afterward with [`concatAudioFiles()`](../utils/file-concatenation.mdx#concataudiofiles).
 
-- **Subscribe and unsubscribe to callbacks**: If you use [`onAudioReady()`](/docs/inputs/audio-recorder#onaudioready) for metering or visualization, always clear the callback when recording stops or the component unmounts. Use a lower sample rate for analysis callbacks than for playback to reduce CPU usage.
+- **Subscribe and unsubscribe to callbacks**: If you use [`onAudioReady()`](../inputs/audio-recorder.mdx#onaudioready) for metering or visualization, always clear the callback when recording stops or the component unmounts. Use a lower sample rate for analysis callbacks than for playback to reduce CPU usage.
 
 ## Architecture
 
@@ -47,33 +47,33 @@ user experience, and maintainability. Here are some key best practices to consid
 
 - **Guard concurrent sessions**: Use a state machine (for example `idle` → `recording` → `paused`) and reject overlapping `start()` / `stop()` calls. This prevents duplicate recorder sessions and simplifies error recovery.
 
-- **Clean up at the app root**: On provider unmount, remove [`AudioManager`](/docs/system/audio-manager) event listeners, hide [`PlaybackNotificationManager`](/docs/system/playback-notification-manager) / [`RecordingNotificationManager`](/docs/system/recording-notification-manager) notifications, and reset recorder state.
+- **Clean up at the app root**: On provider unmount, remove [`AudioManager`](../system/audio-manager.mdx) event listeners, hide [`PlaybackNotificationManager`](../system/playback-notification-manager.mdx) / [`RecordingNotificationManager`](../system/recording-notification-manager.mdx) notifications, and reset recorder state.
 
 ## Source nodes and audio graph
 
-- **Scheduled source nodes are single-use**: [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node), [`OscillatorNode`](/docs/sources/oscillator-node), and other [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) subclasses can be [`start()`](/docs/sources/audio-scheduled-source-node#start)ed only once. Create a new node to replay a sound, but reuse the same [`AudioBuffer`](/docs/sources/audio-buffer) — nodes are inexpensive to create.
+- **Scheduled source nodes are single-use**: [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx), [`OscillatorNode`](../sources/oscillator-node.mdx), and other [`AudioScheduledSourceNode`](../sources/audio-scheduled-source-node.mdx) subclasses can be [`start()`](../sources/audio-scheduled-source-node.mdx#start)ed only once. Create a new node to replay a sound, but reuse the same [`AudioBuffer`](../sources/audio-buffer.mdx) — nodes are inexpensive to create.
 
-- **Use [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node) for chunked playback**: When audio arrives in segments (streaming TTS, progressive download), enqueue buffers into a queue source node rather than recreating the entire graph per chunk.
+- **Use [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx) for chunked playback**: When audio arrives in segments (streaming TTS, progressive download), enqueue buffers into a queue source node rather than recreating the entire graph per chunk.
 
-## [**AudioParam**](/docs/core/audio-param) changes
+## [**AudioParam**](../core/audio-param.mdx) changes
 
-- **Schedule smooth transitions**: Direct, immediate changes to `gain`, `frequency`, or other parameters can cause audible clicks. Use [`linearRampToValueAtTime()`](/docs/core/audio-param#linearramptovalueattime), [`exponentialRampToValueAtTime()`](/docs/core/audio-param#exponentialramptovalueattime), or [`setTargetAtTime()`](/docs/core/audio-param#settargetattime) for fades, sweeps, and envelope shapes.
+- **Schedule smooth transitions**: Direct, immediate changes to `gain`, `frequency`, or other parameters can cause audible clicks. Use [`linearRampToValueAtTime()`](../core/audio-param.mdx#linearramptovalueattime), [`exponentialRampToValueAtTime()`](../core/audio-param.mdx#exponentialramptovalueattime), or [`setTargetAtTime()`](../core/audio-param.mdx#settargetattime) for fades, sweeps, and envelope shapes.
 
 ## System integration
 
-- **Handle audio interruptions**: Listen for `interruption` events via [`AudioManager.addSystemEventListener()`](/docs/system/audio-manager#addsystemeventlistener). Pause playback or recording when `event.type === 'began'`. On `ended`, resume only if `event.shouldResume` is `true` — a short delay (around 1 second) before resuming gives the OS time to settle.
+- **Handle audio interruptions**: Listen for `interruption` events via [`AudioManager.addSystemEventListener()`](../system/audio-manager.mdx#addsystemeventlistener). Pause playback or recording when `event.type === 'began'`. On `ended`, resume only if `event.shouldResume` is `true` — a short delay (around 1 second) before resuming gives the OS time to settle.
 
-- **Configure background audio in Expo**: For background playback or recording, enable the required options in the [`react-native-audio-api` Expo plugin](/docs/other/audio-api-plugin) — iOS background mode, Android foreground service, and the appropriate permissions.
+- **Configure background audio in Expo**: For background playback or recording, enable the required options in the [`react-native-audio-api` Expo plugin](../other/audio-api-plugin.mdx) — iOS background mode, Android foreground service, and the appropriate permissions.
 
-- **Wire lock-screen and notification controls once per session**: Register [`PlaybackNotificationManager`](/docs/system/playback-notification-manager) or [`RecordingNotificationManager`](/docs/system/recording-notification-manager) listeners when a session starts and remove them on cleanup. On iOS, lock-screen play/pause state follows the `AudioContext` — you must [`suspend()`](/docs/core/audio-context#suspend) the context to show paused. For recording indicators on iOS, use a Live Activity with [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/) instead of `RecordingNotificationManager`.
+- **Wire lock-screen and notification controls once per session**: Register [`PlaybackNotificationManager`](../system/playback-notification-manager.mdx) or [`RecordingNotificationManager`](../system/recording-notification-manager.mdx) listeners when a session starts and remove them on cleanup. On iOS, lock-screen play/pause state follows the `AudioContext` — you must [`suspend()`](../core/audio-context.mdx#suspend) the context to show paused. For recording indicators on iOS, use a Live Activity with [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/) instead of `RecordingNotificationManager`.
 
 ## Performance
 
-- **Throttle position callbacks**: Set [`onPositionChangedInterval`](/docs/sources/audio-buffer-queue-source-node#properties) on queue source nodes to limit how often progress events fire. Avoid driving UI updates on every audio buffer.
+- **Throttle position callbacks**: Set [`onPositionChangedInterval`](../sources/audio-buffer-queue-source-node.mdx#properties) on queue source nodes to limit how often progress events fire. Avoid driving UI updates on every audio buffer.
 
-- **Avoid per-frame allocations in visualizations**: When passing analyser or recorder data into Reanimated shared values, mutate the existing `Float32Array` in place rather than allocating a new one each frame. See the [audio visualization guide](/docs/guides/audio-visualization) for patterns.
+- **Avoid per-frame allocations in visualizations**: When passing analyser or recorder data into Reanimated shared values, mutate the existing `Float32Array` in place rather than allocating a new one each frame. See the [audio visualization guide](../guides/audio-visualization.mdx) for patterns.
 
-- **Decouple analysis rate from playback rate**: Metering and waveform previews do not need the same sample rate as playback. Use a lower rate for [`onAudioReady()`](/docs/inputs/audio-recorder#onaudioready) or [`AnalyserNode`](/docs/analysis/analyser-node) when full fidelity is not required.
+- **Decouple analysis rate from playback rate**: Metering and waveform previews do not need the same sample rate as playback. Use a lower rate for [`onAudioReady()`](../inputs/audio-recorder.mdx#onaudioready) or [`AnalyserNode`](../analysis/analyser-node.mdx) when full fidelity is not required.
 
 ## Debugging
 

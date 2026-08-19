@@ -5,7 +5,7 @@ These helpers let you check at runtime which optional native features are compil
 Use them to branch UI or loading logic — for example, skip remote metadata preload when FFmpeg is disabled, disable hls streaming, or offer only WAV recording on Android.
 
 :::info Build-time vs runtime
-To **disable** optional libraries at build time (and reduce app size), see [Disabling prebuilt libraries](/docs/other/disabling-prebuilt-libraries). Runtime flags only tell you what ended up in the binary you are running.
+To **disable** optional libraries at build time (and reduce app size), see [Disabling prebuilt libraries](./disabling-prebuilt-libraries.mdx). Runtime flags only tell you what ended up in the binary you are running.
 :::
 
 ## `isFfmpegEnabled`
@@ -29,15 +29,15 @@ if (!isFfmpegEnabled()) {
 
 | Area | API | Requires FFmpeg for |
 | :---: | :---: | :---- |
-| Streaming | [`Audio tag`](/docs/sources/audio-tag), `createFileSource` | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
-| Metadata | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](/docs/sources/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing |
-| Recording | [`AudioRecorder`](/docs/inputs/audio-recorder) file output | **Android only:** `M4A`, `FLAC`, and `CAF` (WAV uses miniaudio). iOS uses system AVFoundation instead. |
-| File utils | [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles) | M4A concatenation (WAV uses miniaudio) |
+| Streaming | [`Audio tag`](../sources/audio-tag.mdx), `createFileSource` | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
+| Metadata | [`getAudioDuration`](../utils/decoding.mdx#getaudioduration), [`<Audio>`](../sources/audio-tag.mdx) `preload="metadata"` | Remote `http(s):` URL duration probing |
+| Recording | [`AudioRecorder`](../inputs/audio-recorder.mdx) file output | **Android only:** `M4A`, `FLAC`, and `CAF` (WAV uses miniaudio). iOS uses system AVFoundation instead. |
+| File utils | [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles) | M4A concatenation (WAV uses miniaudio) |
 
-Batch decoding ([`decodeAudioData`](/docs/utils/decoding#decodeaudiodata)) uses OS APIs on mobile (and miniaudio for formats like Ogg/Opus) — not FFmpeg. Without FFmpeg, remote progressive sources can still be fully downloaded in JS and decoded that way; HLS and in-place URL streaming remain unavailable.
+Batch decoding ([`decodeAudioData`](../utils/decoding.mdx#decodeaudiodata)) uses OS APIs on mobile (and miniaudio for formats like Ogg/Opus) — not FFmpeg. Without FFmpeg, remote progressive sources can still be fully downloaded in JS and decoded that way; HLS and in-place URL streaming remain unavailable.
 
-When `isFfmpegEnabled()` returns `false`, the streaming/metadata features in the table above are unavailable or fall back to errors. On **Android**, [`AudioRecorder`](/docs/inputs/audio-recorder) file output is limited to **WAV**.
+When `isFfmpegEnabled()` returns `false`, the streaming/metadata features in the table above are unavailable or fall back to errors. On **Android**, [`AudioRecorder`](../inputs/audio-recorder.mdx) file output is limited to **WAV**.
 
 ### Disabling FFmpeg
 
-FFmpeg is enabled by default. To omit it — for example because of symbol clashes with another FFmpeg build in your project — see [Disabling prebuilt libraries](/docs/other/disabling-prebuilt-libraries).
+FFmpeg is enabled by default. To omit it — for example because of symbol clashes with another FFmpeg build in your project — see [Disabling prebuilt libraries](./disabling-prebuilt-libraries.mdx).

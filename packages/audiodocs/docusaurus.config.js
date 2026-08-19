@@ -66,6 +66,18 @@ const config = {
           breadcrumbs: false,
           sidebarCollapsible: false,
           sidebarPath: require.resolve('./sidebars.js'),
+          lastVersion: 'latest',
+          versions: {
+            latest: {
+              label: 'Latest',
+              path: '',
+            },
+            current: {
+              label: 'Next',
+              path: 'next',
+              banner: 'unreleased',
+            },
+          },
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           editUrl:
@@ -109,6 +121,10 @@ const config = {
         srcDark: 'img/logo-hero.svg',
       },
       items: [
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
+        },
         {
           'href':
             'https://github.com/software-mansion/react-native-audio-api',

@@ -10,7 +10,7 @@ import { useOscillatorPlayground } from '@site/src/components/InteractivePlaygro
 
 # OscillatorNode
 
-The `OscillatorNode` is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which represents a simple periodic wave signal.
+The `OscillatorNode` is an [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx) which represents a simple periodic wave signal.
 Similar to all of `AudioScheduledSourceNodes`, it can be started only once. If you want to play the same sound again you have to create a new one.
 
 <InteractivePlayground tag="OscillatorNode" usePlayground={useOscillatorPlayground} />
@@ -23,16 +23,16 @@ constructor(context: BaseAudioContext, options?: OscillatorOptions)
 
 ### `OscillatorOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `type` <Optional /> | [`OscillatorType`](/docs/types/oscillator-type) | `sine` | Initial value for [`type`](/docs/sources/oscillator-node#properties). |
-| `frequency` <Optional /> | `number` | `440.0` | Initial value for [`frequency`](/docs/sources/oscillator-node#properties). |
-| `detune` <Optional /> | `number` | `0.0` | Initial value for [`detune`](/docs/sources/oscillator-node#properties). |
+| `type` <Optional /> | [`OscillatorType`](../types/oscillator-type.mdx) | `sine` | Initial value for [`type`](./oscillator-node.mdx#properties). |
+| `frequency` <Optional /> | `number` | `440.0` | Initial value for [`frequency`](./oscillator-node.mdx#properties). |
+| `detune` <Optional /> | `number` | `0.0` | Initial value for [`detune`](./oscillator-node.mdx#properties). |
 
 :::info
-You can also create an `OscillatorNode` via [`BaseAudioContext.createOscillator()`](/docs/core/base-audio-context#createoscillator), which uses default values.
+You can also create an `OscillatorNode` via [`BaseAudioContext.createOscillator()`](../core/base-audio-context.mdx#createoscillator), which uses default values.
 :::
 
 ## Example
@@ -57,19 +57,19 @@ function App() {
 
 ## Properties
 
-Inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+Inherits all properties from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Default value | Description |
 | :----: | :----: | :----: | :------- |
-| `detune` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | `0.0` |[`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
-| `frequency` <ReadOnly /> | [`AudioParam`](/docs/core/audio-param) | `440.0` | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing frequency of wave in herzs. |
-| `type` | [`OscillatorType`](/docs/types/oscillator-type)| `sine` | String value represening type of wave. |
+| `detune` <ReadOnly /> | [`AudioParam`](../core/audio-param.mdx) | `0.0` |[`a-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `frequency` <ReadOnly /> | [`AudioParam`](../core/audio-param.mdx) | `440.0` | [`a-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing frequency of wave in herzs. |
+| `type` | [`OscillatorType`](../types/oscillator-type.mdx)| `sine` | String value represening type of wave. |
 
 ## Methods
 
-Inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+Inherits all methods from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#methods).
 
 ### `setPeriodicWave`
 
@@ -77,7 +77,7 @@ Sets any periodic wave.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `wave` | [`PeriodicWave`](/docs/effects/periodic-wave) | Data representing custom wave ([see for reference](/docs/core/base-audio-context#createperiodicwave)). |
+| `wave` | [`PeriodicWave`](../effects/periodic-wave.mdx) | Data representing custom wave ([see for reference](../core/base-audio-context.mdx#createperiodicwave)). |
 
 #### Returns `undefined`.
 
@@ -90,4 +90,4 @@ Sets any periodic wave.
 #### `frequency`
 - `440.0` Hz is equivalent to piano note A4.
 - Nominal range is: $-\frac{\text{sampleRate}}{2}$ to $\frac{\text{sampleRate}}{2}$
-(`sampleRate` value is taken from [`AudioContext`](/docs/core/base-audio-context#properties))
+(`sampleRate` value is taken from [`AudioContext`](../core/base-audio-context.mdx#properties))
