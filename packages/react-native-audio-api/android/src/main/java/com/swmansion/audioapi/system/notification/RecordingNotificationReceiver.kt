@@ -18,12 +18,6 @@ class RecordingNotificationReceiver(
     const val ACTION_RESUME = "com.swmansion.audioapi.RECORDING_NOTIFICATION_RESUME"
     const val ACTION_STOP = "com.swmansion.audioapi.RECORDING_NOTIFICATION_STOP"
 
-    @Deprecated("Misleading name — it never stopped anything.", ReplaceWith("ACTION_PAUSE"))
-    const val NOTIFICATION_RECORDING_STOPPED = ACTION_PAUSE
-
-    @Deprecated("Renamed for consistency with the other actions.", ReplaceWith("ACTION_RESUME"))
-    const val NOTIFICATION_RECORDING_RESUMED = ACTION_RESUME
-
     private const val TAG = "RecordingNotificationReceiver"
 
     private val controlExecutor = Executors.newSingleThreadExecutor()
