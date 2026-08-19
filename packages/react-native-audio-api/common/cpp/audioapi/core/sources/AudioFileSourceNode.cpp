@@ -54,27 +54,6 @@ AudioFileSourceNode::AudioFileSourceNode(
   }
 }
 
-AudioFileSourceNode::~AudioFileSourceNode() {
-  stopDaemonThread();
-}
-
-void AudioFileSourceNode::stopDaemonThread() {
-  decoderState_->isDaemonRunning.store(false, std::memory_order_release);
-
-  // commandSender_ is only created in initDecoder(); skip if construction failed early
-  // (e.g. neither filePath nor data provided) or teardown already completed.
-  if (!seekDecoderThread_.joinable() && seekDecoderDaemon_ == nullptr) {
-    return;
-  }
-
-  // Send a dummy command to unblock the daemon thread if it's waiting.
-  // The command channel uses OVERWRITE_ON_FULL, so this never blocks.
-  commandSender_.send(SeekRequest{0});
-  if (seekDecoderThread_.joinable()) {
-    seekDecoderThread_.join();
-  }
-}
-
 void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
   const double delta = static_cast<double>(framesPlayed) / sampleRate_;
   const double position = currentTime_.fetch_add(delta) + delta;
@@ -118,16 +97,14 @@ bool AudioFileSourceNode::initDecoder(
       .contextSampleRate = context->getSampleRate(),
       .loop = options.loop};
 
-  auto deamon = std::make_unique<SeekDecoderDaemon>(
-      std::move(daemonOptions),
+  seekDecoderDaemon_ = std::make_unique<SeekDecoderDaemon>(
+      daemonOptions,
       decoderState_,
       std::move(commandReceiver),
       std::move(frameSender),
       frameReceiver_);
 
-  seekDecoderThread_ = std::thread(std::move(*deamon));
-
-  if (!decoderState_->isReady.load(std::memory_order_acquire)) {
+  if (!seekDecoderDaemon_->isOpen()) {
     return false;
   }
 
@@ -434,7 +411,12 @@ void AudioFileSourceNode::pause() {
 }
 
 void AudioFileSourceNode::disable() {
-  stopDaemonThread();
+  // Null when construction failed before initDecoder() ran (e.g. no file path,
+  // URL or data given).
+  if (seekDecoderDaemon_ != nullptr) {
+    seekDecoderDaemon_->requestStop();
+  }
+
   filePaused_ = false;
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
