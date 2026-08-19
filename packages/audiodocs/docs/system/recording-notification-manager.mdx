@@ -87,7 +87,7 @@ Resource name is a path to resource placed in res/drawable folder. It has to be 
 :::
 
 :::caution
-The notification uses the standard Android template, so its exact look varies between devices and Android versions. On Android 12+ the system renders actions as text buttons — the `pauseIconResourceName`, `resumeIconResourceName` and `stopIconResourceName` icons only show up on older versions; use the `*ActionTitle` options to control the visible labels.
+The notification uses the standard Android template, so its exact look varies between devices and Android versions.
 :::
 
 ### `hide`
@@ -126,11 +126,8 @@ interface RecordingNotificationInfo {
   paused?: boolean; // flag indicating whether to display the pause or the resume action
   smallIconResourceName?: string;
   largeIconResourceName?: string;
-  pauseIconResourceName?: string; // ignored on Android 12+
-  resumeIconResourceName?: string; // ignored on Android 12+
   color?: number;
   showStopAction?: boolean; // shows the native stop action, default: false
-  stopIconResourceName?: string; // ignored on Android 12+
   pauseActionTitle?: string; // default: 'Pause'
   resumeActionTitle?: string; // default: 'Resume'
   stopActionTitle?: string; // default: 'Stop'

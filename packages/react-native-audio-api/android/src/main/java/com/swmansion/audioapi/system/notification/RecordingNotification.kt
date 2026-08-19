@@ -140,7 +140,6 @@ class RecordingNotification(
           RecordingNotificationReceiver.ACTION_RESUME,
           REQUEST_CODE_RESUME,
           state.resumeActionTitle ?: "Resume",
-          resolveDrawable(context, state.resumeIconResourceName) ?: android.R.drawable.ic_media_play,
         ),
       )
     } else {
@@ -150,7 +149,6 @@ class RecordingNotification(
           RecordingNotificationReceiver.ACTION_PAUSE,
           REQUEST_CODE_PAUSE,
           state.pauseActionTitle ?: "Pause",
-          resolveDrawable(context, state.pauseIconResourceName) ?: android.R.drawable.ic_media_pause,
         ),
       )
     }
@@ -162,7 +160,6 @@ class RecordingNotification(
           RecordingNotificationReceiver.ACTION_STOP,
           REQUEST_CODE_STOP,
           state.stopActionTitle ?: "Stop",
-          resolveDrawable(context, state.stopIconResourceName) ?: R.drawable.stop,
         ),
       )
     }
@@ -173,7 +170,6 @@ class RecordingNotification(
     action: String,
     requestCode: Int,
     title: String,
-    iconResId: Int,
   ): NotificationCompat.Action {
     val intent = Intent(action).apply { `package` = context.packageName }
     val pendingIntent =
@@ -183,7 +179,7 @@ class RecordingNotification(
         intent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
-    return NotificationCompat.Action(iconResId, title, pendingIntent)
+    return NotificationCompat.Action(null, title, pendingIntent)
   }
 
   // The system chronometer always ticks against wall time, so the recording's paused
@@ -243,24 +239,6 @@ class RecordingNotification(
         options.getString("largeIconResourceName")
       } else {
         state.largeIconResourceName
-      }
-    state.pauseIconResourceName =
-      if (options?.hasKey("pauseIconResourceName") == true) {
-        options.getString("pauseIconResourceName")
-      } else {
-        state.pauseIconResourceName
-      }
-    state.resumeIconResourceName =
-      if (options?.hasKey("resumeIconResourceName") == true) {
-        options.getString("resumeIconResourceName")
-      } else {
-        state.resumeIconResourceName
-      }
-    state.stopIconResourceName =
-      if (options?.hasKey("stopIconResourceName") == true) {
-        options.getString("stopIconResourceName")
-      } else {
-        state.stopIconResourceName
       }
     state.backgroundColor = if (options?.hasKey("color") == true) options.getInt("color") else state.backgroundColor
     state.showStopAction =
