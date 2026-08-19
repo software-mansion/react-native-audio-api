@@ -63,6 +63,7 @@ export default class AudioContext extends BaseAudioContext {
   public override markRunningOnSourceStart(): void {
     if (this.contextState === 'suspended') {
       this.contextState = 'running';
+      (this.context as IAudioContext).resume();
     }
   }
 
