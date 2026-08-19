@@ -6,7 +6,7 @@ toc_max_heading_level: 5
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import { Optional } from '@site/src/components/Badges';
+import { Optional, IOS, Android } from '@site/src/components/Badges';
 
 # AudioRecorder
 
@@ -347,10 +347,10 @@ export default MyRecorder;
 ## Constructor
 
 ```tsx
-constructor()
+constructor(options?: AudioRecorderOptions)
 ```
 
-Creates a new `AudioRecorder` instance.
+Creates a new `AudioRecorder` instance, optionally configuring the platform capture chain - see [`AudioRecorderOptions`](#audiorecorderoptions).
 
 :::info
 It is preferred to create only a single instance of `AudioRecorder` for the best performance, memory, and battery consumption. While an idle recorder has minimal impact, switching between separate recorder instances might have a noticeable impact on the device.
@@ -360,6 +360,15 @@ It is preferred to create only a single instance of `AudioRecorder` for the best
 import { AudioRecorder } from 'react-native-audio-api';
 
 const audioRecorder = new AudioRecorder();
+```
+
+Full-duplex voice apps (playing audio while recording) need platform echo cancellation on both platforms, otherwise the speaker output leaks back into the microphone:
+
+```tsx
+const audioRecorder = new AudioRecorder({
+  androidInputPreset: 'voiceCommunication',
+  iosVoiceProcessing: true,
+});
 ```
 
 ## Properties
@@ -379,7 +388,7 @@ Starts the stream from the system audio input device.
 | :---: | :---: | :---- |
 | `options` <Optional /> | [`AudioRecorderStartOptions`](#audiorecorderstartoptions) | Optional recording start configuration. |
 
-#### Returns `Promise<Result<{}>>`.
+###### Returns `Promise<Result<{}>>`.
 
 ```tsx
 const result = await audioRecorder.start({
@@ -395,7 +404,7 @@ Stops the input stream and cleans up each input access method.
 
 For details on the returned file information, see [`FileInfo`](#fileinfo).
 
-#### Returns `Promise<Result<FileInfo>>`.
+###### Returns `Promise<Result<FileInfo>>`.
 
 ```tsx
 const result = await audioRecorder.stop();
@@ -427,7 +436,7 @@ audioRecorder.resume();
 
 Returns `true` if the recorder is in an active recording state.
 
-#### Returns `boolean`.
+###### Returns `boolean`.
 
 ```tsx
 const isRecording = audioRecorder.isRecording();
@@ -437,7 +446,7 @@ const isRecording = audioRecorder.isRecording();
 
 Returns `true` if the recorder is in a paused state.
 
-#### Returns `boolean`.
+###### Returns `boolean`.
 
 ```tsx
 const isPaused = audioRecorder.isPaused();
@@ -447,7 +456,7 @@ const isPaused = audioRecorder.isPaused();
 
 Returns the current recording duration when file output is enabled.
 
-#### Returns `number`.
+###### Returns `number`.
 
 ```tsx
 const duration = audioRecorder.getCurrentDuration();
@@ -463,7 +472,7 @@ For further information, see [`AudioRecorderFileOptions`](#audiorecorderfileopti
 | :---: | :---: | :---- |
 | `options` <Optional /> | [`AudioRecorderFileOptions`](#audiorecorderfileoptions) | File output configuration. |
 
-#### Returns `Result<{}>`.
+###### Returns `Result<{}>`.
 
 ```tsx
 audioRecorder.enableFileOutput();
@@ -490,7 +499,7 @@ For further information, see [`AudioRecorderCallbackOptions`](#audiorecordercall
 | `options` | [`AudioRecorderCallbackOptions`](#audiorecordercallbackoptions) | Preferred callback buffer configuration. |
 | `callback` | `(event: OnAudioReadyEventType) => void` | Function invoked when a new audio buffer is available. |
 
-#### Returns `Result<void>`.
+###### Returns `Result<void>`.
 
 ```tsx
 const sampleRate = 16000;
@@ -563,6 +572,40 @@ audioRecorder.clearOnError();
 ```
 
 ## Types
+
+#### `AudioRecorderOptions`
+
+```tsx
+interface AudioRecorderOptions {
+  androidInputPreset?: AndroidInputPreset;
+  iosVoiceProcessing?: boolean;
+}
+```
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :---: | :---- |
+| `androidInputPreset` <Optional /> <Android /> | [`AndroidInputPreset`](#androidinputpreset) | `'voiceRecognition'` | Preprocessing chain applied to the capture stream. The platform default, `voiceRecognition`, applies **no** acoustic echo cancellation - use `voiceCommunication` to engage the platform AEC/NS chain. |
+| `iosVoiceProcessing` <Optional /> <IOS /> | `boolean` | `false` | Runs the capture chain through Apple's voice-processing I/O: acoustic echo cancellation, noise suppression and automatic gain control. |
+
+Both options are applied when the capture stream is created and cannot be changed afterwards - create a new recorder to switch configuration. Each option is ignored on the other platform.
+
+:::caution
+Voice processing changes the hardware input format and engages a shared platform processing unit, so the resolved sample rate and channel count of the recorded audio may differ from the raw microphone format.
+:::
+
+#### `AndroidInputPreset`
+
+```tsx
+type AndroidInputPreset =
+  | 'generic'
+  | 'camcorder'
+  | 'voiceRecognition'
+  | 'voiceCommunication'
+  | 'unprocessed'
+  | 'voicePerformance';
+```
+
+Names of Oboe's [`InputPreset`](https://github.com/google/oboe/blob/0da326e4ef878eac0c032e11ea84ca0a6811aafd/include/oboe/Definitions.h#L470) values, which select the preprocessing chain the capture stream is opened with.
 
 #### `AudioRecorderStartOptions`
 
