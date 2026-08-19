@@ -47,7 +47,7 @@ void AudioScheduledSourceNode::stop(double when) {
     AudioNode::disable();
     // The node never plays, so the render path will not fire onended. Defer a
     // dispatch until the context clock reaches the requested stop time
-    context->deferEmptyEventDispatch(AudioEvent::ENDED, onEndedEvent_.getCallbackId(), when);
+    onEndedEvent_.deferEmpty(context->getDeferredEvents(), when);
     return;
   }
 }

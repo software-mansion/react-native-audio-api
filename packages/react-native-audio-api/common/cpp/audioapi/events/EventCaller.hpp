@@ -3,6 +3,7 @@
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/AudioEventPayload.h>
 #include <audioapi/events/AudioEventPayloadMapping.hpp>
+#include <audioapi/events/DeferredEventQueue.hpp>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/Macros.h>
 
@@ -61,6 +62,17 @@ class EventCaller {
     requires EventPayloadFor<Event, EmptyPayload>
   {
     return dispatchFromAudioThread(EmptyPayload{});
+  }
+
+  /// @brief Hands this event to @p queue to be fired once the context clock
+  /// reaches @p dueTime, for emitters that will not be ticked again.
+  /// @return Whatever `DeferredEventQueue::defer` reports — false when no
+  /// callback is assigned, or when the queue has no room left.
+  /// @note Render-serialized only — same domain as `queue`.
+  bool deferEmpty(DeferredEventQueue &queue, double dueTime) const
+    requires EventPayloadFor<Event, EmptyPayload>
+  {
+    return queue.defer(Event, getCallbackId(), dueTime);
   }
 
   template <typename Payload>

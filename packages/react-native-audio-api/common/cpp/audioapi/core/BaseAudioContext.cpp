@@ -35,39 +35,8 @@ BaseAudioContext::BaseAudioContext(
       gcAudioEventScheduler_(GC_AUDIO_SCHEDULER_CAPACITY),
       disposer_(
           std::make_unique<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>>(AUDIO_SCHEDULER_CAPACITY)),
-      graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())) {
-  deferredEmptyEvents_.reserve(DEFERRED_EMPTY_EVENTS_CAPACITY);
-}
-
-void BaseAudioContext::deferEmptyEventDispatch(
-    AudioEvent event,
-    uint64_t callbackId,
-    double dueTime) {
-  if (callbackId == 0) {
-    return;
-  }
-
-  deferredEmptyEvents_.push_back({.dueTime = dueTime, .event = event, .callbackId = callbackId});
-}
-
-void BaseAudioContext::dispatchDueDeferredEvents() {
-  if (deferredEmptyEvents_.empty()) {
-    return;
-  }
-
-  const auto now = getCurrentTime();
-  std::erase_if(deferredEmptyEvents_, [&](const DeferredEmptyEvent &deferred) {
-    if (deferred.dueTime > now) {
-      return false;
-    }
-
-    if (audioEventHandlerRegistry_ != nullptr) {
-      audioEventHandlerRegistry_->dispatchEventFromAudioThread(
-          deferred.event, deferred.callbackId, AudioEventPayload{EmptyPayload{}});
-    }
-    return true;
-  });
-}
+      graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())),
+      deferredEvents_(audioEventHandlerRegistry) {}
 
 void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
   destination_ = destination;

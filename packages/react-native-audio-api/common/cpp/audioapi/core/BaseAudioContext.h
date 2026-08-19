@@ -7,6 +7,7 @@
 #include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/events/AudioEvent.h>
+#include <audioapi/events/DeferredEventQueue.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
@@ -69,14 +70,16 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     // finalization that clears the callback id).
     audioEventScheduler_.processAllEvents(*this);
     gcAudioEventScheduler_.processAllEvents(*this);
-    dispatchDueDeferredEvents();
+    deferredEvents_.dispatchDue(getCurrentTime());
   }
 
-  /// @brief Schedules a one-shot, payload-less event dispatch for when
-  /// `currentTime` reaches `dueTime`.
-  /// @note Runs on the render-serialized domain (audio thread, or the
-  /// synchronous `scheduleAudioEvent` path) — same as audio event bodies.
-  void deferEmptyEventDispatch(AudioEvent event, uint64_t callbackId, double dueTime);
+  /// @brief Queue for events whose emitter cannot fire them itself, dispatched
+  /// as `currentTime` reaches their due time. Owned here because the render
+  /// loop is the only thing that advances the clock.
+  /// @note Render-serialized only, like the queue itself.
+  [[nodiscard]] DeferredEventQueue &getDeferredEvents() {
+    return deferredEvents_;
+  }
 
   template <typename F>
   bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
@@ -183,21 +186,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
   std::shared_ptr<utils::graph::Graph> graph_;
 
-  struct DeferredEmptyEvent {
-    double dueTime;
-    AudioEvent event;
-    uint64_t callbackId;
-  };
-
-  /// Reserved up front so `deferEmptyEventDispatch` stays allocation-free on
-  /// the audio thread until this many dispatches are pending at once.
-  static constexpr size_t DEFERRED_EMPTY_EVENTS_CAPACITY = 16;
-
-  /// Render-serialized only (audio thread or the synchronous
-  /// `scheduleAudioEvent` path) — no lock, so no other thread may touch it.
-  std::vector<DeferredEmptyEvent> deferredEmptyEvents_;
-
-  void dispatchDueDeferredEvents();
+  DeferredEventQueue deferredEvents_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };

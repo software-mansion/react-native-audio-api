@@ -155,4 +155,77 @@ TEST_F(AudioScheduledSourceTest, StopBeforeStartFiresEndedWhenContextTimeReaches
   EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID)).Times(1);
 }
 
+TEST_F(AudioScheduledSourceTest, DeferredEndedEventsFireInDueTimeOrderNotInsertionOrder) {
+  static constexpr uint64_t LATE_CALLBACK_ID = 43;
+  static constexpr uint64_t EARLY_CALLBACK_ID = 44;
+
+  auto lateNode = TestableAudioScheduledSourceNode(context);
+  lateNode.assignOnEndedCallbackId(LATE_CALLBACK_ID);
+  lateNode.start(3 * RENDER_QUANTUM_TIME);
+  lateNode.stop(2 * RENDER_QUANTUM_TIME);
+
+  // Deferred after the later one, so insertion order is the reverse of due-time order.
+  auto earlyNode = TestableAudioScheduledSourceNode(context);
+  earlyNode.assignOnEndedCallbackId(EARLY_CALLBACK_ID);
+  earlyNode.start(2 * RENDER_QUANTUM_TIME);
+  earlyNode.stop(RENDER_QUANTUM_TIME);
+
+  EXPECT_CALL(
+      *eventRegistry, dispatchEventFromAudioThread(AudioEvent::ENDED, testing::_, testing::_))
+      .Times(0);
+  lateNode.playFrames(RENDER_QUANTUM); // context time is still 0
+
+  EXPECT_CALL(
+      *eventRegistry, dispatchEventFromAudioThread(AudioEvent::ENDED, LATE_CALLBACK_ID, testing::_))
+      .Times(0);
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(AudioEvent::ENDED, EARLY_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+  lateNode.playFrames(RENDER_QUANTUM); // context time reaches the earlier stop time
+
+  EXPECT_CALL(
+      *eventRegistry, dispatchEventFromAudioThread(AudioEvent::ENDED, LATE_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+  lateNode.playFrames(RENDER_QUANTUM); // context time reaches the later stop time
+
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, testing::_))
+      .Times(testing::AnyNumber());
+}
+
+TEST_F(AudioScheduledSourceTest, DeferredEndedEventsDueInTheSameQuantumFireInDueTimeOrder) {
+  static constexpr uint64_t LATER_CALLBACK_ID = 45;
+  static constexpr uint64_t SOONER_CALLBACK_ID = 46;
+
+  // Both due times land inside the first rendered quantum, so a single sweep
+  // dispatches both and the sweep order is observable.
+  auto laterNode = TestableAudioScheduledSourceNode(context);
+  laterNode.assignOnEndedCallbackId(LATER_CALLBACK_ID);
+  laterNode.start(0.75 * RENDER_QUANTUM_TIME);
+  laterNode.stop(0.5 * RENDER_QUANTUM_TIME);
+
+  auto soonerNode = TestableAudioScheduledSourceNode(context);
+  soonerNode.assignOnEndedCallbackId(SOONER_CALLBACK_ID);
+  soonerNode.start(0.5 * RENDER_QUANTUM_TIME);
+  soonerNode.stop(0.25 * RENDER_QUANTUM_TIME);
+
+  laterNode.playFrames(RENDER_QUANTUM); // context time is still 0, nothing is due
+
+  testing::Sequence dueTimeOrder;
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
+      .InSequence(dueTimeOrder)
+      .WillOnce(testing::Return(true));
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
+      .InSequence(dueTimeOrder)
+      .WillOnce(testing::Return(true));
+  laterNode.playFrames(RENDER_QUANTUM); // both due times have passed
+
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, testing::_))
+      .Times(testing::AnyNumber());
+}
+
 // NOLINTEND
