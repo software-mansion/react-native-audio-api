@@ -23,7 +23,7 @@
 }
 
 footer.footer {
-  --ifm-footer-padding-vertical: 40px;
+  --ifm-footer-padding-vertical: 32px;
 }
 
 @media (max-width: 996px) {
