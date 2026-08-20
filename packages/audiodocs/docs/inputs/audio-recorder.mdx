@@ -99,7 +99,7 @@ By default the foreground service stops when the user swipes the app away from t
 
 <Tabs queryString="platform">
   <TabItem value="expo" label="Expo" default>
-    Set the `androidFSStopWithTask` option of the [expo plugin](/docs/other/audio-api-plugin#androidfsstopwithtask) to `false`:
+    Set the `androidFSStopWithTask` option of the [expo plugin](../other/audio-api-plugin#androidfsstopwithtask) to `false`:
 
     ```json
     {
@@ -127,12 +127,12 @@ By default the foreground service stops when the user swipes the app away from t
 
 For the recording to actually survive, all of the following must hold:
 
-- The foreground service only exists while a library notification is shown. Call [`RecordingNotificationManager.show()`](/docs/system/recording-notification-manager#show) while the app is still in the foreground — before the user leaves the app — otherwise there is no service to keep alive.
+- The foreground service only exists while a library notification is shown. Call [`RecordingNotificationManager.show()`](../system/recording-notification-manager.mdx#show) while the app is still in the foreground — before the user leaves the app — otherwise there is no service to keep alive.
 - `androidFSTypes` must include `"microphone"` (manifest `foregroundServiceType="microphone"`), and on Android 14+ (API 34) the app needs the `android.permission.FOREGROUND_SERVICE_MICROPHONE` permission.
 - Android's while-in-use rule applies: microphone access must begin while the app is in the foreground. Starting a recording from the background is not possible.
 
 :::caution
-Even with `stopWithTask="false"`, the system can still kill the process (memory pressure, OEM battery managers). Recording cannot self-restart from the background — the user has to reopen the app. To limit data loss in that case, tune the file-output options [`androidFlushIntervalMs`](/docs/inputs/audio-recorder#androidflushintervalms) and [`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions).
+Even with `stopWithTask="false"`, the system can still kill the process (memory pressure, OEM battery managers). Recording cannot self-restart from the background — the user has to reopen the app. To limit data loss in that case, tune the file-output options [`androidFlushIntervalMs`](#audiorecorderfileoptions) and [`rotateIntervalBytes`](#audiorecorderfileoptions).
 :::
 
 A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](/docs/system/recording-notification-manager#the-stop-action) (`showStopAction: true`), which stops the recording natively even when no JS is reachable.
@@ -778,7 +778,7 @@ interface AudioRecorderFileOptions {
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
 - `subDirectory` - If configured it will create the recording inside requested directory (default: `undefined`).
 - `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
-- <span id="androidflushintervalms"></span>`androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
+- `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
   - Higher values are more battery - and storage-efficient.
 
