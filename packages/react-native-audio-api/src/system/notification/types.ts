@@ -37,6 +37,14 @@ export interface PlaybackNotificationInfo {
   state?: 'playing' | 'paused';
   /** Skip interval in seconds for skipForward/skipBackward. Default: 15 */
   skipInterval?: number;
+  /**
+   * Marks the current item as a live stream (e.g. live radio) rather than a
+   * track with a known duration. iOS-only: maps to
+   * `MPNowPlayingInfoPropertyIsLiveStream`, which drives the "Live" label the
+   * system shows on the lock screen and CarPlay Now Playing UI. Has no effect
+   * on Android, which has no equivalent system indicator.
+   */
+  isLiveStream?: boolean;
 }
 
 /// Available playback control actions.

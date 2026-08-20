@@ -24,24 +24,24 @@ constructor(context: BaseAudioContext, options?: ConvolverOptions)
 
 ### `ConvolverOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `buffer` <Optional /> | [`AudioBuffer`](/docs/sources/audio-buffer) |  | Initial value for [`buffer`](/docs/effects/convolver-node#properties). |
-| `disableNormalization` <Optional /> | `boolean` | `false` | When `true`, disables equal-power normalization of the impulse response (inverse of [`normalize`](/docs/effects/convolver-node#properties)). |
+| `buffer` <Optional /> | [`AudioBuffer`](../sources/audio-buffer.mdx) |  | Initial value for [`buffer`](./convolver-node.mdx#properties). |
+| `disableNormalization` <Optional /> | `boolean` | `false` | When `true`, disables equal-power normalization of the impulse response (inverse of [`normalize`](./convolver-node.mdx#properties)). |
 
-You can also create a `ConvolverNode` via the [`BaseAudioContext.createConvolver()`](/docs/core/base-audio-context#createconvolver) factory method, which uses default values.
+You can also create a `ConvolverNode` via the [`BaseAudioContext.createConvolver()`](../core/base-audio-context.mdx#createconvolver) factory method, which uses default values.
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `buffer` | [`AudioBuffer`](/docs/sources/audio-buffer) | Associated AudioBuffer. |
+| `buffer` | [`AudioBuffer`](../sources/audio-buffer.mdx) | Associated AudioBuffer. |
 | `normalize` | `boolean` | Whether the impulse response from the buffer will be scaled by an equal-power normalization when the buffer attribute is set. |
 
 :::caution
@@ -50,7 +50,7 @@ Linear convolution is a heavy computational process, so if your audio has some w
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 

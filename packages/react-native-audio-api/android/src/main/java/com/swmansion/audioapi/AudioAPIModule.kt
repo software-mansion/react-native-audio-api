@@ -147,6 +147,8 @@ class AudioAPIModule(
     MediaSessionManager.observeVolumeChanges(enabled)
   }
 
+  override fun getSystemVolume(): Double = MediaSessionManager.getSystemVolume()
+
   override fun requestRecordingPermissions(promise: Promise) {
     val permissionRequestListener = PermissionRequestListener(promise)
     MediaSessionManager.requestRecordingPermissions(permissionRequestListener)

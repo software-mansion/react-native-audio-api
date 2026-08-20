@@ -26,17 +26,17 @@ interface PlayingNote {
 const Keys = ['A', 'B', 'C', 'D', 'E'] as const;
 
 const sourceList: Partial<Record<KeyName, string>> = {
-  A: '/react-native-audio-api/audio/sounds/C4.mp3',
-  C: '/react-native-audio-api/audio/sounds/Ds4.mp3',
-  E: '/react-native-audio-api/audio/sounds/Fs4.mp3',
+  A: '/react-native-audio-api/audio/sounds/A3.mp3',
+  C: '/react-native-audio-api/audio/sounds/C4.mp3',
+  E: '/react-native-audio-api/audio/sounds/E4.mp3',
 };
 
 const noteToFrequency = {
-  A: 261.626,
-  B: 277.193,
-  C: 311.127,
-  D: 329.628,
-  E: 369.994,
+  A: 220.0, // A3
+  B: 246.942, // B3
+  C: 261.626, // C4
+  D: 293.665, // D4
+  E: 329.628, // E4
 };
 
 function getClosest(key: KeyName) {

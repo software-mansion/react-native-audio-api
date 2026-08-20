@@ -3,6 +3,10 @@ const path = require('path');
 
 const monorepoRoot = path.resolve(__dirname, '../..');
 const appsRoot = path.resolve(monorepoRoot, 'apps');
+const libraryRoot = path.resolve(
+  monorepoRoot,
+  'packages/react-native-audio-api'
+);
 
 const defaultConfig = getDefaultConfig(__dirname);
 /**
@@ -15,6 +19,17 @@ const config = {
   watchFolders: [monorepoRoot, appsRoot],
   resolver: {
     assetExts: [...defaultConfig.resolver.assetExts, 'ogg', 'flac', 'opus'],
+    resolveRequest: (context, moduleName, platform) => {
+      // Override the consumer resolution to point to the source code
+      // so that there is no need for manual rebuild on every change in TS.
+      if (moduleName === 'react-native-audio-api') {
+        return {
+          filePath: path.resolve(libraryRoot, 'src/index.ts'),
+          type: 'sourceFile',
+        };
+      }
+      return context.resolveRequest(context, moduleName, platform);
+    },
   },
   /* we are rewriting requests because due to monorepo structure, the assets are found with '../../../' prefix
   and we redirect them to the correct path without relative prefixes */
