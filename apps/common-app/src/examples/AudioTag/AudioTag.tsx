@@ -16,8 +16,8 @@ import {
 
 import { Button, Container, Slider, Spacer } from '../../components';
 
-const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/m4a/sample4.m4a';
-// const DEMO_AUDIO_URL = 'https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8';
+// const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/m4a/sample4.m4a';
+const DEMO_AUDIO_URL = 'https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8';
 // const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/mp3/sample4.mp3';
 
 const AudioTag: React.FC = () => {
@@ -96,6 +96,12 @@ const AudioTag: React.FC = () => {
   const handleVolumeEvent = useCallback((volume: number) => {
     // console.log('onVolumeChange', volume);
   }, []);
+  const handleWaiting = useCallback(() => {
+    console.log('onWaiting');
+  }, []);
+  const handlePlaying = useCallback(() => {
+    console.log('onPlaying');
+  }, []);
 
   const audioTagElement = useMemo(
     () => (
@@ -113,6 +119,8 @@ const AudioTag: React.FC = () => {
         onPlay={handlePlay}
         onPause={handlePause}
         onVolumeChange={handleVolumeEvent}
+        onWaiting={handleWaiting}
+        onPlaying={handlePlaying}
       />
     ),
     [
@@ -122,8 +130,10 @@ const AudioTag: React.FC = () => {
       handleLoadStart,
       handlePause,
       handlePlay,
+      handlePlaying,
       handlePositionChange,
       handleVolumeEvent,
+      handleWaiting,
     ]
   );
 
@@ -156,7 +166,11 @@ const AudioTag: React.FC = () => {
         </View>
         <Spacer.Vertical size={12} />
         <Button
-          title={!mediaElementRoute ? 'Route via MediaElement node' : 'Route without MediaElement node'}
+          title={
+            !mediaElementRoute
+              ? 'Route via MediaElement node'
+              : 'Route without MediaElement node'
+          }
           onPress={handleMediaElementRouteChange}
           width={screenWidth * 0.8}
         />

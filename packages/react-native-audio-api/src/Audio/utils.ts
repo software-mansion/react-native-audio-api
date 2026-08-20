@@ -2,7 +2,16 @@ import { useMemo } from 'react';
 import { Image, Platform } from 'react-native';
 import AudioContext from '../core/AudioContext';
 import type BaseAudioContext from '../core/BaseAudioContext';
-import { AudioProps, AudioPropsBase, AudioSource } from './types';
+import {
+  AudioProps,
+  AudioPropsBase,
+  AudioSource,
+  AudioTagPlaybackState,
+} from './types';
+
+export function isPlaybackActive(state: AudioTagPlaybackState): boolean {
+  return state === 'playing' || state === 'buffering';
+}
 
 const noop = () => {};
 const noopError = (_error: Error) => {};
