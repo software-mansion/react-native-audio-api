@@ -54,6 +54,24 @@ void cleanupInstallState(void *data) {
   gInstallStates.erase(env);
 }
 
+/// Advertised GC cost of one audio context HostObject. A context owns worker
+/// threads (promise offloader, disposer, per-context pools) and buffers that
+/// live outside the V8 heap; without this hint V8 sees a tiny object and lets
+/// abandoned contexts linger for the rest of the process.
+constexpr size_t kAudioContextExternalMemoryPressure = 8 * 1024 * 1024;
+
+Object makeContextObject(
+    Runtime &rt,
+    const std::shared_ptr<facebook::jsi::HostObject> &hostObject) {
+  auto object = Object::createFromHostObject(rt, hostObject);
+  try {
+    object.setExternalMemoryPressure(rt, kAudioContextExternalMemoryPressure);
+  } catch (...) {
+    // Runtimes without instrumentation support just skip the hint.
+  }
+  return object;
+}
+
 napi_value makeBoolean(napi_env env, bool value) {
   napi_value result;
   napi_get_boolean(env, value, &result);
@@ -135,7 +153,7 @@ void installOfflineBindings(
             &rt,
             callInvoker);
 
-        return Object::createFromHostObject(rt, hostObject);
+        return makeContextObject(rt, hostObject);
       });
   runtime.global().setProperty(runtime, "createOfflineAudioContext", createOfflineAudioContext);
 
@@ -189,7 +207,7 @@ void installAudioContextBinding(
             &rt,
             callInvoker);
 
-        return Object::createFromHostObject(rt, hostObject);
+        return makeContextObject(rt, hostObject);
       });
 
   runtime.global().setProperty(runtime, "createAudioContext", createAudioContext);
