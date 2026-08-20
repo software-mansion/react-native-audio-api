@@ -8,7 +8,7 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # DelayNode
 
-The `DelayNode` interface represents latency in an audio signal by a given amount of time. It is an [`AudioNode`](/docs/core/audio-node) that applies time shift to incoming signal f.e.
+The `DelayNode` interface represents latency in an audio signal by a given amount of time. It is an [`AudioNode`](../core/audio-node.mdx) that applies time shift to incoming signal f.e.
 if `delayTime` value is `0.5`, it means that audio will be played after `0.5` seconds.
 
 :::info
@@ -23,24 +23,24 @@ constructor(context: BaseAudioContext, options?: DelayOptions)
 
 ### `DelayOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
 | `maxDelayTime` <Optional /> | `number` | `1.0` | Maximum amount of time, in seconds, to buffer delayed values. |
-| `delayTime` <Optional /> | `number` | `0.0` | Initial value for [`delayTime`](/docs/effects/delay-node#properties). |
+| `delayTime` <Optional /> | `number` | `0.0` | Initial value for [`delayTime`](./delay-node.mdx#properties). |
 
-You can also create a `DelayNode` via the [`BaseAudioContext.createDelay(maxDelayTime?: number)`](/docs/core/base-audio-context#createdelay) factory method, which uses default values when called without arguments.
+You can also create a `DelayNode` via the [`BaseAudioContext.createDelay(maxDelayTime?: number)`](../core/base-audio-context.mdx#createdelay) factory method, which uses default values when called without arguments.
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `delayTime`| <ReadOnly /> [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing value of time shift to apply. |
+| `delayTime`| <ReadOnly /> [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing value of time shift to apply. |
 
 :::warning
 In web audio api specs `delayTime` is an `a-rate` param.
@@ -48,7 +48,7 @@ In web audio api specs `delayTime` is an `a-rate` param.
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 

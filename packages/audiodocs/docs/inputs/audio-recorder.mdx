@@ -18,7 +18,7 @@ import { Optional, IOS, Android } from '@site/src/components/Badges';
 
 ## Configuration
 
-To access microphone you need to make sure your app has required permission configuration - check [getting started permission section](/docs/fundamentals/getting-started#special-permissions) for more information.
+To access microphone you need to make sure your app has required permission configuration - check [getting started permission section](../fundamentals/getting-started.mdx#special-permissions) for more information.
 
 Additionally to be able to record audio while application is in the background, you need to enable background mode on iOS and configure foreground service on android.
 
@@ -47,7 +47,7 @@ Additionally to be able to record audio while application is in the background, 
     }
     ```
 
-    For more configuration options, check out the [Expo plugin section](/docs/other/audio-api-plugin).
+    For more configuration options, check out the [Expo plugin section](../other/audio-api-plugin.mdx).
 
   </TabItem>
   <TabItem value="iOS" label="iOS">
@@ -418,7 +418,7 @@ const audioRecorder = new AudioRecorder({
 | Name | Type | Description |
 | :--- | :--- | :--- |
 | `options` | [`AudioRecorderFileOptions`](#audiorecorderfileoptions) \| `null` | Active file-output configuration after [`enableFileOutput()`](#enablefileoutput), or `null` when file output is disabled. |
-| `inputLatency` | `number` | Returns the estimated **full** input latency in seconds (from analog input to app delivery). Mirrors [`AudioContext.outputLatency`](/docs/core/audio-context#properties) semantics. Calculated using underlying platform properties (`AVAudioSession` on iOS; Oboe timestamps/burst sizes on Android). Value may change when the audio route changes. Returns `0` when idle. |
+| `inputLatency` | `number` | Returns the estimated **full** input latency in seconds (from analog input to app delivery). Mirrors [`AudioContext.outputLatency`](../core/audio-context.mdx#properties) semantics. Calculated using underlying platform properties (`AVAudioSession` on iOS; Oboe timestamps/burst sizes on Android). Value may change when the audio route changes. Returns `0` when idle. |
 
 ## Methods
 
@@ -568,14 +568,14 @@ audioRecorder.clearOnAudioReady();
 
 ### `connect`
 
-Routes captured audio into an audio graph by creating a recorder adapter with [`BaseAudioContext.createRecorderAdapter()`](/docs/core/base-audio-context#createrecorderadapter), connecting the recorder to it, and wiring it to `destination`.
+Routes captured audio into an audio graph by creating a recorder adapter with [`BaseAudioContext.createRecorderAdapter()`](../core/base-audio-context.mdx#createrecorderadapter), connecting the recorder to it, and wiring it to `destination`.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | Audio context used to create the recorder adapter. |
-| `destination` | [`AudioNode`](/docs/core/audio-node) | Destination node in the audio graph. |
+| `context` | [`BaseAudioContext`](../core/base-audio-context.mdx) | Audio context used to create the recorder adapter. |
+| `destination` | [`AudioNode`](../core/audio-node.mdx) | Destination node in the audio graph. |
 
-###### Returns [`AudioNode`](/docs/core/audio-node).
+#### Returns [`AudioNode`](../core/audio-node.mdx).
 
 ```tsx
 audioRecorder.connect(audioContext, audioContext.destination);
@@ -723,7 +723,7 @@ interface AudioRecorderFileOptions {
 ```
 
 - `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
-- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles).
+- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles).
   - Use a large enough value for your format. Very small thresholds rotate often, which increases the chance of audible gaps or muffled joins after concatenation — especially for **M4A**, where each segment is a separate AAC encode.
   - Practical starting points: **≥ 1 MB** for WAV, **≥ 200 KB** for M4A (adjust upward if you still hear artifacts at segment boundaries).
   - This option controls segment file size, not RAM usage. For crash-resilience tuning on Android, use `androidFlushIntervalMs` instead.
@@ -750,7 +750,7 @@ enum FileFormat {
 ```
 
 :::caution Android + FFmpeg
-On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used).
+On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](../other/runtime-flags.mdx#where-ffmpeg-is-used).
 :::
 
 #### FileInfo

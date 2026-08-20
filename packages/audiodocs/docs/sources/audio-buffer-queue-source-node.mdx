@@ -8,7 +8,7 @@ import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 
 # AudioBufferQueueSourceNode <MobileOnly />
 
-The `AudioBufferQueueSourceNode` is an [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node) which represents a player that consists of many short buffers.
+The `AudioBufferQueueSourceNode` is an [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx) which represents a player that consists of many short buffers.
 
 ## Constructor
 
@@ -19,12 +19,12 @@ constructor(context: BaseAudioContext, options?: AudioBufferQueueSourceOptions)
 ### `AudioBufferQueueSourceOptions`
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](/docs/sources/audio-buffer-queue-source-node#properties). |
-| `playbackRate` <Optional /> | `number` | `1.0` | Initial value for [`playbackRate`](/docs/sources/audio-buffer-queue-source-node#properties). |
-| `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](/docs/sources/audio-buffer-queue-source-node#properties). |
+| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](./audio-buffer-queue-source-node.mdx#properties). |
+| `playbackRate` <Optional /> | `number` | `1.0` | Initial value for [`playbackRate`](./audio-buffer-queue-source-node.mdx#properties). |
+| `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](./audio-buffer-queue-source-node.mdx#properties). |
 
 :::info
-You can also create an `AudioBufferQueueSourceNode` via [`BaseAudioContext.createBufferQueueSource()`](/docs/core/base-audio-context#create-buffer-queue-source), which uses default values.
+You can also create an `AudioBufferQueueSourceNode` via [`BaseAudioContext.createBufferQueueSource()`](../core/base-audio-context.mdx#create-buffer-queue-source), which uses default values.
 :::
 
 :::caution
@@ -59,22 +59,22 @@ function App() {
 
 ## Properties
 
-Inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#properties).
+Inherits all properties from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated buffer" channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
-| `playbackRate` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
+| `detune` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `playbackRate` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
 
 ## Methods
 
-It inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#methods).
+It inherits all methods from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#methods).
 
 ### `getLatency`
 
-Returns an estimated scheduling compensation for the WSOLA pitch-correction path, in seconds. Use this value when calling [`start()`](/docs/sources/audio-scheduled-source-node#start) — do not hardcode a fixed delay.
+Returns an estimated scheduling compensation for the WSOLA pitch-correction path, in seconds. Use this value when calling [`start()`](./audio-scheduled-source-node.mdx#start) — do not hardcode a fixed delay.
 
 | Condition | Returned value |
 | :---: | :---- |
@@ -107,7 +107,7 @@ Adds another buffer to queue. Returns `bufferId` that can be used to identify th
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `buffer` | [`AudioBuffer`](/docs/sources/audio-buffer) | Buffer with next data. |
+| `buffer` | [`AudioBuffer`](./audio-buffer.mdx) | Buffer with next data. |
 
 #### Returns `string`.
 
@@ -129,12 +129,12 @@ Removes all buffers from the queue. Note that [`onBufferEnded`](audio-buffer-que
 
 ### `start` <Overridden /> {"#start"}
 
-Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`AudioBuffers`](/docs/sources/audio-buffer), or starts to play immediately.
+Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`AudioBuffers`](./audio-buffer.mdx), or starts to play immediately.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
-| `offset` <Optional /> | `number` | The position, in seconds, within the first enqueued audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the first enqueued buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties), it’s automatically clamped to the valid range. |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](../core/base-audio-context.mdx#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
+| `offset` <Optional /> | `number` | The position, in seconds, within the first enqueued audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the first enqueued buffer. If the offset exceeds the buffer’s [`duration`](./audio-buffer.mdx#properties), it’s automatically clamped to the valid range. |
 
 #### Errors:
 
@@ -147,7 +147,7 @@ Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`Audio
 
 ### `pause`
 
-Stops audio immediately. Unlike [`stop()`](/docs/sources/audio-scheduled-source-node#stop), which fully stops playback and clears the queued buffers,
+Stops audio immediately. Unlike [`stop()`](./audio-scheduled-source-node.mdx#stop), which fully stops playback and clears the queued buffers,
 pause() halts the audio while keeping the current playback position, allowing you to resume from the same point later.
 
 #### Errors:
@@ -164,7 +164,7 @@ Resumes audio playback with a specified delay. If no time is given, it resumes i
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to resume. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to `0.0`, the node resumes playing immediately. <br /> Default: `0.0`. |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to resume. If `when` is less than [`AudioContext.currentTime`](../core/base-audio-context.mdx#properties) or set to `0.0`, the node resumes playing immediately. <br /> Default: `0.0`. |
 
 #### Errors:
 
@@ -177,7 +177,7 @@ Resumes audio playback with a specified delay. If no time is given, it resumes i
 
 ## Events
 
-It inherits all events from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node#events).
+It inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).
 
 ### `onPositionChanged` <MobileOnly />
 

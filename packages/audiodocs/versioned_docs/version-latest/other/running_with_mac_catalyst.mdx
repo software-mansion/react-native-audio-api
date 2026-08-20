@@ -1,0 +1,170 @@
+---
+id: maccatalyst
+sidebar_label: Running with Mac Catalyst
+---
+
+# Running with Mac Catalyst
+
+Mac Catalyst allows you to run your iOS apps natively on macOS. This guide covers the necessary changes to your Podfile to enable Mac Catalyst support for your React Native app with `react-native-audio-api`.
+
+## Podfile Configuration
+
+To build your app for Mac Catalyst, you need to make several changes to your `ios/Podfile`:
+
+### 1. Enable building React Native from source
+
+Add this environment variable at the top of your Podfile:
+
+```ruby
+ENV['RCT_BUILD_FROM_SOURCE'] = '1'
+```
+
+### 2. Enable static frameworks
+
+Add `use_frameworks!` with static linkage inside your target block:
+
+```ruby
+target 'YourApp' do
+  config = use_native_modules!
+  use_frameworks! :linkage => :static
+
+  # ... rest of your configuration
+end
+```
+
+### 3. Update post_install with Mac Catalyst support
+
+Replace your existing `post_install` block with one that enables Mac Catalyst:
+
+```ruby
+post_install do |installer|
+  react_native_post_install(
+    installer,
+    config[:reactNativePath],
+    :mac_catalyst_enabled => true,
+  )
+end
+```
+
+### 4. Hermes Framework Fix (RN 0.83.x only)
+
+:::note
+This step is only required for React Native 0.83.x. There's a [known issue](https://github.com/facebook/react-native/issues/55540) where the Hermes framework bundle structure is ambiguous on Mac Catalyst. If you're on a different version, you can skip this step.
+:::
+
+If you're using React Native 0.83.x, extend your `post_install` block with the following fix that restructures the Hermes framework to follow the correct macOS bundle layout:
+
+```ruby
+post_install do |installer|
+  react_native_post_install(
+    installer,
+    config[:reactNativePath],
+    :mac_catalyst_enabled => true,
+  )
+
+  # Hermes Mac Catalyst framework layout fix (RN 0.83.x)
+  require 'fileutils'
+
+  hermes_fw = File.join(__dir__,
+    'Pods/hermes-engine/destroot/Library/Frameworks/universal/hermesvm.xcframework',
+    'ios-arm64_x86_64-maccatalyst/hermesvm.framework'
+  )
+
+  if File.directory?(hermes_fw)
+    Dir.chdir(hermes_fw) do
+      FileUtils.mkdir_p('Versions/A')
+      File.symlink('A', 'Versions/Current') unless File.exist?('Versions/Current')
+
+      if File.exist?('hermesvm') && !File.symlink?('hermesvm')
+        FileUtils.mkdir_p('Versions/Current')
+        FileUtils.mv('hermesvm', 'Versions/Current/hermesvm')
+        File.symlink('Versions/Current/hermesvm', 'hermesvm')
+      end
+
+      FileUtils.mkdir_p('Versions/Current/Resources')
+      if File.exist?('Resources') && !File.symlink?('Resources')
+        FileUtils.rm_rf('Resources')
+      end
+      File.symlink('Versions/Current/Resources', 'Resources') unless File.exist?('Resources')
+    end
+  end
+  # ⬆️ End of Hermes fix ⬆️
+  end
+end
+```
+
+## Complete Example
+
+Here's a complete Podfile configured for Mac Catalyst (includes Hermes fix for RN 0.83.x — remove the Hermes section if you're on a different version):
+
+```ruby
+ENV['RCT_NEW_ARCH_ENABLED'] = '1'
+ENV['RCT_BUILD_FROM_SOURCE'] = '1'
+
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+platform :ios, min_ios_version_supported
+prepare_react_native_project!
+
+target 'YourApp' do
+  config = use_native_modules!
+  use_frameworks! :linkage => :static
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :hermes_enabled => true,
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :privacy_file_aggregation_enabled => true
+  )
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => true,
+    )
+
+    # ⬇️ Hermes fix for RN 0.83.x only - remove if using different version ⬇️
+    require 'fileutils'
+
+    hermes_fw = File.join(__dir__,
+      'Pods/hermes-engine/destroot/Library/Frameworks/universal/hermesvm.xcframework',
+      'ios-arm64_x86_64-maccatalyst/hermesvm.framework'
+    )
+
+    if File.directory?(hermes_fw)
+      Dir.chdir(hermes_fw) do
+        FileUtils.mkdir_p('Versions/A')
+        File.symlink('A', 'Versions/Current') unless File.exist?('Versions/Current')
+
+        if File.exist?('hermesvm') && !File.symlink?('hermesvm')
+          FileUtils.mkdir_p('Versions/Current')
+          FileUtils.mv('hermesvm', 'Versions/Current/hermesvm')
+          File.symlink('Versions/Current/hermesvm', 'hermesvm')
+        end
+
+        FileUtils.mkdir_p('Versions/Current/Resources')
+        if File.exist?('Resources') && !File.symlink?('Resources')
+          FileUtils.rm_rf('Resources')
+        end
+        File.symlink('Versions/Current/Resources', 'Resources') unless File.exist?('Resources')
+      end
+    end
+    # ⬆️ End of Hermes fix ⬆️
+  end
+end
+```
+
+## Building for Mac Catalyst
+
+After updating your Podfile:
+
+1. Run `pod install` to regenerate the Pods project
+2. Open your `.xcworkspace` in Xcode
+3. Select your target and go to **General** → **Deployment Info**
+4. Check **Mac (Designed for iPad)** or **Mac Catalyst** depending on your Xcode version
+5. Build and run targeting "My Mac"

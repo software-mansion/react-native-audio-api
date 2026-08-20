@@ -32,6 +32,7 @@ interface Spec extends TurboModule {
   observeAudioInterruptions(focusType: AudioFocusType, enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
   observeVolumeChanges(enabled: boolean): void;
+  getSystemVolume(): number;
 
   // Permissions
   requestRecordingPermissions(): Promise<PermissionStatus>;

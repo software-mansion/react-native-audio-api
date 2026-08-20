@@ -40,7 +40,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | Name | Type | Default | Description |
 | :---: | :---: | :----: | :---- |
 | `source` | `AudioSource` | — | Asset id (`require(...)`), string URI/path, or `{ uri?, headers? }` for HTTP(S). |
-| `context` | `BaseAudioContext` | — | Optional. Native: implicit [`AudioContext`](/docs/core/audio-context) when omitted. Web: unused for HTML element playback. |
+| `context` | `BaseAudioContext` | — | Optional. Native: implicit [`AudioContext`](../core/audio-context.mdx) when omitted. Web: unused for HTML element playback. |
 | `autoPlay` | `boolean` | `false` | Start playback after load. |
 | `controls` | `boolean` | `false` | When `true`, renders default `AudioControls` above `children`. |
 | `loop` | `boolean` | `false` | Loop playback. |
@@ -73,7 +73,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 
 #### `metadata` (native)
 
-For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](/docs/utils/decoding#getaudioduration). This requires an FFmpeg-enabled build — check with [`isFfmpegEnabled`](/docs/other/runtime-flags#isffmpegenabled).
+For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](../utils/decoding.mdx#getaudioduration). This requires an FFmpeg-enabled build — check with [`isFfmpegEnabled`](../other/runtime-flags.mdx#isffmpegenabled).
 
 When FFmpeg is disabled, `preload="metadata"` is treated as `none`: the source is not fetched and duration stays unknown until playback starts.
 
@@ -168,4 +168,4 @@ const MyAudioTagWrapper : React.FC = () => {
 
 ## Remarks
 
-- **FFmpeg:** Remote URL streaming (HTTP byte ranges) and HLS require an FFmpeg build. Without FFmpeg, remote progressive sources are downloaded fully and decoded with OS APIs / miniaudio where supported. See [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used).
+- **FFmpeg:** Remote URL streaming (HTTP byte ranges) and HLS require an FFmpeg build. Without FFmpeg, remote progressive sources are downloaded fully and decoded with OS APIs / miniaudio where supported. See [Runtime flags](../other/runtime-flags.mdx#where-ffmpeg-is-used).
