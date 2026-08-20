@@ -280,7 +280,7 @@ object MediaSessionManager {
     if (!::notificationRegistry.isInitialized) {
       return
     }
-    notificationRegistry.hideNotificationByNotificationId(RecordingNotification.ID)
+    notificationRegistry.hideNotification(RecordingNotification.ID)
   }
 
   /**

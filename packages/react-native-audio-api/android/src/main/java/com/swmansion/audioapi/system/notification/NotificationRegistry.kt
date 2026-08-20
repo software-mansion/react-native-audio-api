@@ -1,6 +1,5 @@
 package com.swmansion.audioapi.system.notification
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.util.Log
 import androidx.annotation.RequiresPermission
@@ -113,7 +112,7 @@ class NotificationRegistry(
    *
    * @param id The Android notification ID, e.g. [RecordingNotification.ID]
    */
-  fun hideNotificationByNotificationId(id: Int) {
+  fun hideNotification(id: Int) {
     notifications.entries
       .firstOrNull { it.value.getNotificationId() == id }
       ?.let { hideNotification(it.key) }
@@ -125,7 +124,6 @@ class NotificationRegistry(
    * is unreachable. No-op unless the recording notification is currently visible —
    * which also means the POST_NOTIFICATIONS permission was already granted.
    */
-  @SuppressLint("MissingPermission")
   fun updateRecordingNotificationPausedState(paused: Boolean) {
     val entry =
       notifications.entries.firstOrNull {
