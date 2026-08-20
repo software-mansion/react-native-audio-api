@@ -42,7 +42,9 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     if (!(this.node as IAudioFileSourceNode).routedThroughMediaElement) {
       this.connect(this.context.destination);
     }
+    // copied from audioscheduledsourcenode, so it can bypass requirement of being started only once
     (this.node as IAudioScheduledSourceNode).start(this.context.currentTime);
+    this.context.markRunningOnSourceStart();
   }
 
   pause(): void {

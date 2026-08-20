@@ -16,8 +16,8 @@ import {
 
 import { Button, Container, Slider, Spacer } from '../../components';
 
-// const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/m4a/sample4.m4a';
-const DEMO_AUDIO_URL = 'https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8';
+const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/m4a/sample4.m4a';
+// const DEMO_AUDIO_URL = 'https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8';
 // const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/mp3/sample4.mp3';
 
 const AudioTag: React.FC = () => {
@@ -97,10 +97,10 @@ const AudioTag: React.FC = () => {
     // console.log('onVolumeChange', volume);
   }, []);
   const handleWaiting = useCallback(() => {
-    console.log('onWaiting');
+    // console.log('onWaiting');
   }, []);
   const handlePlaying = useCallback(() => {
-    console.log('onPlaying');
+    // console.log('onPlaying');
   }, []);
 
   const audioTagElement = useMemo(
