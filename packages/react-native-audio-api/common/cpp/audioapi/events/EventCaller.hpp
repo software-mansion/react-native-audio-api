@@ -3,6 +3,7 @@
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/AudioEventPayload.h>
 #include <audioapi/events/AudioEventPayloadMapping.hpp>
+#include <audioapi/events/DeferredEventQueue.hpp>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/Macros.h>
 
@@ -20,21 +21,14 @@ class EventCaller {
       : eventHandlerRegistry_(audioEventHandlerRegistry) {}
 
   ~EventCaller() {
-    const auto callbackId = getCallbackId();
-    if (callbackId == 0) {
-      return;
-    }
-
-    unregisterCallback(callbackId);
-    callbackId_.store(0, std::memory_order_release);
+    unregisterCallback();
   }
 
   DELETE_COPY_AND_MOVE(EventCaller);
 
   void assignCallbackId(uint64_t callbackId) noexcept {
-    const auto previousCallbackId = getCallbackId();
-    if (previousCallbackId != callbackId) {
-      unregisterCallback(previousCallbackId);
+    if (getCallbackId() != callbackId) {
+      unregisterCallback();
     }
 
     callbackId_.store(callbackId, std::memory_order_release);
@@ -48,12 +42,14 @@ class EventCaller {
     return getCallbackId() != 0;
   }
 
-  void unregisterCallback(uint64_t callbackId) const {
-    if (eventHandlerRegistry_ == nullptr || callbackId == 0) {
+  void unregisterCallback() {
+    auto id = getCallbackId();
+    callbackId_.store(0, std::memory_order_release);
+    if (eventHandlerRegistry_ == nullptr || id == 0) {
       return;
     }
 
-    eventHandlerRegistry_->unregisterHandler(Event, callbackId);
+    eventHandlerRegistry_->unregisterHandler(Event, id);
   }
 
   bool dispatchEmpty() const noexcept
@@ -66,6 +62,17 @@ class EventCaller {
     requires EventPayloadFor<Event, EmptyPayload>
   {
     return dispatchFromAudioThread(EmptyPayload{});
+  }
+
+  /// @brief Hands this event to @p queue to be fired once the context clock
+  /// reaches @p dueTime, for emitters that will not be ticked again.
+  /// @return Whatever `DeferredEventQueue::defer` reports — false when no
+  /// callback is assigned, or when the queue has no room left.
+  /// @note Render-serialized only — same domain as `queue`.
+  bool deferEmpty(DeferredEventQueue &queue, double dueTime) const
+    requires EventPayloadFor<Event, EmptyPayload>
+  {
+    return queue.defer(Event, getCallbackId(), dueTime);
   }
 
   template <typename Payload>

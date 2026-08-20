@@ -71,11 +71,28 @@ TEST(EventCallerTest, DispatchForwardsPayload) {
 TEST(EventCallerTest, UnregisterForwardsEventAndCallbackId) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
   EventCaller<AudioEvent::POSITION_CHANGED> eventCaller(registry);
+  eventCaller.assignCallbackId(POSITION_CALLBACK_ID);
 
   EXPECT_CALL(*registry, unregisterHandler(AudioEvent::POSITION_CHANGED, POSITION_CALLBACK_ID))
       .Times(1);
 
-  eventCaller.unregisterCallback(POSITION_CALLBACK_ID);
+  eventCaller.unregisterCallback();
+
+  EXPECT_FALSE(eventCaller.hasCallback());
+}
+
+TEST(EventCallerTest, ReassigningSameCallbackIdKeepsHandlerRegistered) {
+  auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
+  EventCaller<AudioEvent::ENDED> eventCaller(registry);
+  eventCaller.assignCallbackId(ENDED_CALLBACK_ID);
+
+  EXPECT_CALL(*registry, unregisterHandler(testing::_, testing::_)).Times(0);
+
+  eventCaller.assignCallbackId(ENDED_CALLBACK_ID);
+
+  EXPECT_EQ(eventCaller.getCallbackId(), ENDED_CALLBACK_ID);
+
+  EXPECT_CALL(*registry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID)).Times(1);
 }
 
 TEST(EventCallerTest, AssignCallbackIdUnregistersPreviousCallback) {

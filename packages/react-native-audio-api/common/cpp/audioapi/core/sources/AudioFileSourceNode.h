@@ -8,7 +8,6 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 #include <cstddef>
-#include <thread>
 
 #include <array>
 #include <atomic>
@@ -34,10 +33,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   explicit AudioFileSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       AudioFileSourceOptions &options);
-  ~AudioFileSourceNode() override;
-  DELETE_COPY_AND_MOVE(AudioFileSourceNode);
 
-  /// @brief Closes the decoder and tears down offloaded seek workers.
+  /// @brief Signals the decoding daemon to wind down and clears playback state.
+  /// The daemon itself is joined and torn down by the destructor.
+  /// @note Audio thread only.
   void disable() override;
 
   /// @brief Schedules playback; auto-connects to the destination when not media-routed.
@@ -254,13 +253,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       int framesToProcess,
       float playbackRate);
 
-  /// @brief Daemon thread for decoding and seeking
+  /// @brief Owns the decoding thread. `~SeekDecoderDaemon` requests a stop and
+  /// joins, which is safe here because audio nodes are destroyed on the JS
+  /// runtime's GC thread, never on the audio thread.
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
-  std::thread seekDecoderThread_;
-
-  /// @brief Signals the daemon to stop and joins its thread. Idempotent; safe
-  /// to call from both disable() and the destructor.
-  void stopDaemonThread();
 
   /// @brief Connects to the destination when leaving media routing while playback is active.
   /// @note Audio thread only.
