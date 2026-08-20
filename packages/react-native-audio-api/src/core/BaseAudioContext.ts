@@ -25,6 +25,11 @@ import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import WaveShaperNode from './WaveShaperNode';
 
+export interface ContextStateChangeEvent {
+  type: 'statechange';
+  target: BaseAudioContext;
+}
+
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly listener: AudioListener;
@@ -38,14 +43,62 @@ export default class BaseAudioContext {
     this.sampleRate = context.sampleRate;
   }
 
+  /**
+   * The spec's [[control thread state]]: written synchronously the moment an
+   * operation is accepted, so the NEXT call validates against what has already
+   * been requested (e.g. close() right after resume() must see 'running').
+   * Never exposed — the `state` attribute reports acknowledged reality
+   * instead.
+   */
   protected _state: ContextState = 'suspended';
+
+  /**
+   * The `state` attribute value: published only once a transition is
+   * acknowledged (the operation's promise resolved, rendering reached the
+   * suspend point, the offline render completed). Continuations of the
+   * operation's promise observe the new value; `statechange` fires afterwards.
+   */
+  private publishedState: ContextState = 'suspended';
+
+  /**
+   * Web Audio API `statechange` event handler. Fired from a queued task after
+   * the `state` attribute changes — after the operation's promise resolution
+   * and all of its microtasks, matching the spec's media-element-task order.
+   */
+  public onstatechange: ((event: ContextStateChangeEvent) => void) | null =
+    null;
+
+  /**
+   * Record that a state transition has been requested ([[control thread
+   * state]]).
+   */
+  protected setControlState(nextState: ContextState): void {
+    this._state = nextState;
+  }
+
+  /**
+   * Publish an acknowledged transition to the `state` attribute and dispatch
+   * `statechange`. Also aligns the control ledger, for transitions the control
+   * side could not anticipate (an offline render reaching its suspend point).
+   */
+  protected publishState(nextState: ContextState): void {
+    this._state = nextState;
+    if (this.publishedState === nextState) {
+      return;
+    }
+
+    this.publishedState = nextState;
+    setTimeout(() => {
+      this.onstatechange?.({ type: 'statechange', target: this });
+    }, 0);
+  }
 
   public get currentTime(): number {
     return this.context.currentTime;
   }
 
   public get state(): ContextState {
-    return this._state;
+    return this.publishedState;
   }
 
   /**

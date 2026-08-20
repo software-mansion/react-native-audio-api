@@ -32,8 +32,6 @@ export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode 
   public set onPositionChanged(
     callback: ((event: EventTypeWithValue) => void) | null
   ) {
-    // See the note in AudioScheduledSourceNode.onEnded: the native registry holds a
-    // strong reference, so the outgoing handler must be released here.
     this.onPositionChangedSubscription?.remove();
     this.onPositionChangedSubscription = null;
 

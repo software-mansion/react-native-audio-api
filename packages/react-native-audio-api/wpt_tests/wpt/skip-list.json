@@ -54,5 +54,17 @@
   {
     "pattern": "the-channelmergernode-interface/active-processing.https.html",
     "reason": "requires AudioWorklet"
+  },
+  {
+    "pattern": "the-audiocontext-interface/constructor-allowed-to-start",
+    "reason": "waits for the autoplay suspended->running statechange; this library starts the native driver lazily (first source start() or resume()), never from the constructor, so the transition never happens and every subtest hangs to the 10s harness timeout"
+  },
+  {
+    "pattern": "the-audiocontext-interface/audiocontext-suspend-resume-close",
+    "reason": "waits for the autoplay suspended->running statechange; this library starts the native driver lazily (first source start() or resume()), never from the constructor, so the transition never happens and every subtest hangs to the 10s harness timeout"
+  },
+  {
+    "pattern": "the-audiocontext-interface/audiocontext-state-change-after-close",
+    "reason": "waits for the autoplay suspended->running statechange; this library starts the native driver lazily (first source start() or resume()), never from the constructor, so the transition never happens and every subtest hangs to the 10s harness timeout"
   }
 ]
