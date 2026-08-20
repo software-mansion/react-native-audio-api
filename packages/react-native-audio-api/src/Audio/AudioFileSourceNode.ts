@@ -1,4 +1,4 @@
-import { AudioEventEmitter } from '../events';
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
 import type { EventEmptyType } from '../events/types';
 import type {
   IAudioFileSourceNode,
@@ -18,16 +18,21 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     globalThis.AudioEventEmitter
   );
 
+  private endedSubscription: AudioEventSubscription | null = null;
+  private positionSubscription: AudioEventSubscription | null = null;
+  private bufferingSubscription: AudioEventSubscription | null = null;
+
   attach(options: AttachFileSourceOptions): { duration: number } {
     this.resetNodeAndSubscriptions();
 
-    const sub = this.emitter.addAudioEventListener(
+    this.endedSubscription = this.emitter.addAudioEventListener(
       'ended',
       (_event: EventEmptyType) => {
         options.onEnded();
       }
     );
-    (this.node as IAudioFileSourceNode).onEnded = sub.subscriptionId;
+    (this.node as IAudioFileSourceNode).onEnded =
+      this.endedSubscription.subscriptionId;
 
     return {
       duration: (this.node as IAudioFileSourceNode).duration,
@@ -93,16 +98,20 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
       return;
     }
     this.stopPositionTracking();
-    const sub = this.emitter.addAudioEventListener(
+    this.positionSubscription = this.emitter.addAudioEventListener(
       'positionChanged',
       (event) => {
         onTime(event.value);
       }
     );
-    (this.node as IAudioFileSourceNode).onPositionChanged = sub.subscriptionId;
+    (this.node as IAudioFileSourceNode).onPositionChanged =
+      this.positionSubscription.subscriptionId;
   }
 
   stopPositionTracking(): void {
+    this.positionSubscription?.remove();
+    this.positionSubscription = null;
+
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';
     }
@@ -115,26 +124,32 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
       return;
     }
     this.stopBufferingTracking();
-    const sub = this.emitter.addAudioEventListener(
+    this.bufferingSubscription = this.emitter.addAudioEventListener(
       'bufferingStateChanged',
       (event) => {
         onBufferingChange(event.value);
       }
     );
     (this.node as IAudioFileSourceNode).onBufferingStateChanged =
-      sub.subscriptionId;
+      this.bufferingSubscription.subscriptionId;
   }
 
   stopBufferingTracking(): void {
+    this.bufferingSubscription?.remove();
+    this.bufferingSubscription = null;
+
     if (this.node) {
       (this.node as IAudioFileSourceNode).onBufferingStateChanged = '0';
     }
   }
 
   private resetNodeAndSubscriptions(): void {
+    this.stopPositionTracking();
+    this.stopBufferingTracking();
+    this.endedSubscription?.remove();
+    this.endedSubscription = null;
+
     if (this.node) {
-      (this.node as IAudioFileSourceNode).onPositionChanged = '0';
-      (this.node as IAudioFileSourceNode).onBufferingStateChanged = '0';
       (this.node as IAudioFileSourceNode).onEnded = '0';
       this.node.disconnect(undefined);
     }
