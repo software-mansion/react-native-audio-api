@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 /**
- * Event-handler attributes (`onended`, `onloopended`, `onpositionchanged`, ...) must not
+ * Event-handler attributes (`onEnded`, `onloopended`, `onpositionchanged`, ...) must not
  * accumulate listener registrations in the native AudioEventHandlerRegistry.
  *
  * The registry is process-global and stores each handler as a `std::shared_ptr<jsi::Function>`,

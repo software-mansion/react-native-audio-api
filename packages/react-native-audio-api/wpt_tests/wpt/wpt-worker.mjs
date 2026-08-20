@@ -23,6 +23,26 @@ import {
   normalizeTestPath,
   runSequentialWpt,
 } from './wpt-shared.mjs';
+import { getCurrentTestWindow } from './wpt-utils.mjs';
+
+// In a browser, an exception thrown from an event handler (e.g. an assert
+// inside `oncomplete`) surfaces as a window `error` event, which testharness
+// turns into a fast harness failure. In Node the same throw would kill this
+// worker. Forward it into the running test's window so the file fails
+// immediately instead of crashing the batch or idling into the 10s timeout.
+process.on('uncaughtException', (error) => {
+  const window = getCurrentTestWindow();
+  try {
+    window.dispatchEvent(
+      new window.ErrorEvent('error', {
+        error,
+        message: String(error?.message ?? error),
+      })
+    );
+  } catch {
+    console.error('uncaught exception with no active test window:', error);
+  }
+});
 
 function send(message) {
   // The parent may already have killed us (e.g. its inactivity watchdog fired

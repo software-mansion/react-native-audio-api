@@ -33,8 +33,9 @@ export default class AudioContext extends BaseAudioContext {
       throw new InvalidStateError('Cannot close a closed audio context.');
     }
 
-    this._state = 'closed';
-    return (this.context as IAudioContext).close();
+    this.setControlState('closed');
+    await (this.context as IAudioContext).close();
+    this.publishState('closed');
   }
 
   async resume(): Promise<undefined> {
@@ -42,8 +43,9 @@ export default class AudioContext extends BaseAudioContext {
       throw new InvalidStateError('Cannot resume a closed audio context.');
     }
 
-    this._state = 'running';
-    return (this.context as IAudioContext).resume();
+    this.setControlState('running');
+    await (this.context as IAudioContext).resume();
+    this.publishState('running');
   }
 
   async suspend(): Promise<undefined> {
@@ -51,8 +53,9 @@ export default class AudioContext extends BaseAudioContext {
       throw new InvalidStateError('Cannot suspend a closed audio context.');
     }
 
-    this._state = 'suspended';
-    return (this.context as IAudioContext).suspend();
+    this.setControlState('suspended');
+    await (this.context as IAudioContext).suspend();
+    this.publishState('suspended');
   }
 
   /**
@@ -62,8 +65,13 @@ export default class AudioContext extends BaseAudioContext {
    */
   public override markRunningOnSourceStart(): void {
     if (this._state === 'suspended') {
-      this._state = 'running';
-      (this.context as IAudioContext).resume();
+      this.setControlState('running');
+      (this.context as IAudioContext)
+        .resume()
+        .then(() => this.publishState('running'))
+        .catch(() => {
+          // The driver refused to start; the attribute keeps reporting reality.
+        });
     }
   }
 
