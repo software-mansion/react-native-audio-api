@@ -122,7 +122,6 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   }
 
   public set onLoopEnded(callback: ((event: EventEmptyType) => void) | null) {
-    // See the note in AudioScheduledSourceNode.onEnded.
     this.onLoopEndedSubscription?.remove();
     this.onLoopEndedSubscription = null;
 
