@@ -25,3 +25,17 @@ jobs:
           cd packages/audiodocs
           yarn install --frozen-lockfile
           yarn build
+
+      - name: Check docs llms.txt
+        run: |
+          file=packages/audiodocs/build/llms.txt
+          if [ ! -s "$file" ]; then
+            echo "::error::$file is missing or empty"
+            exit 1
+          fi
+          count=$(grep -cE '^- \[[^]]+\]\(https://docs\.swmansion\.com/react-native-audio-api/[^)]+\)' "$file" || true)
+          if [ "$count" -eq 0 ]; then
+            echo "::error::$file lists no pages"
+            exit 1
+          fi
+          echo "llms.txt lists $count pages"
