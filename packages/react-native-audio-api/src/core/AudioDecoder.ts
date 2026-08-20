@@ -51,9 +51,12 @@ class AudioDecoder {
   }
 
   private resolveToStringSource(input: number | string): string {
-    return typeof input === 'number'
-      ? Image.resolveAssetSource(input).uri
-      : input;
+    if (typeof input === 'string') {
+      return input;
+    }
+
+    const uri = Image.resolveAssetSource(input)?.uri;
+    return uri ?? '';
   }
 
   private async decodeFromRemoteUrl(

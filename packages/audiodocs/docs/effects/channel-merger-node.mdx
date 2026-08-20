@@ -8,9 +8,9 @@ import { Optional } from '@site/src/components/Badges';
 
 # ChannelMergerNode
 
-The `ChannelMergerNode` interface combines multiple mono inputs into a single output whose channels correspond, in order, to the node's inputs. It is an [`AudioNode`](/docs/core/audio-node) with a variable number of single-channel inputs and one output.
+The `ChannelMergerNode` interface combines multiple mono inputs into a single output whose channels correspond, in order, to the node's inputs. It is an [`AudioNode`](../core/audio-node.mdx) with a variable number of single-channel inputs and one output.
 
-Each input is treated as a single channel: the signal connected to input `i` becomes channel `i` of the output. This is the counterpart of [`ChannelSplitterNode`](/docs/effects/channel-splitter-node).
+Each input is treated as a single channel: the signal connected to input `i` becomes channel `i` of the output. This is the counterpart of [`ChannelSplitterNode`](./channel-splitter-node.mdx).
 
 ## Constructor
 
@@ -20,13 +20,13 @@ constructor(context: BaseAudioContext, options?: ChannelMergerOptions)
 
 ### `ChannelMergerOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
 | `numberOfInputs` <Optional /> | `number` | `6` | Number of inputs to merge. Must be in the range `1` – `32`. |
 
-You can also create a `ChannelMergerNode` via the [`BaseAudioContext.createChannelMerger(numberOfInputs?: number)`](/docs/core/base-audio-context#createchannelmerger) factory method, which uses default values when called without arguments.
+You can also create a `ChannelMergerNode` via the [`BaseAudioContext.createChannelMerger(numberOfInputs?: number)`](../core/base-audio-context.mdx#createchannelmerger) factory method, which uses default values when called without arguments.
 
 ## Example
 
@@ -47,7 +47,7 @@ merger.connect(ctx.destination);
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={6} numberOfOutputs={1} channelCount={1} channelCountMode="explicit" channelInterpretation="speakers" />
 
@@ -55,7 +55,7 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 
@@ -70,4 +70,4 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 #### Channel configuration
 - `channelCount` is fixed at `1` and `channelCountMode` is fixed at `explicit`. Attempts to change them throw an error.
-- Use the `input` argument of [`connect`](/docs/core/audio-node#methods) to target a specific input, e.g. `source.connect(merger, 0, 2)` routes into channel `2`.
+- Use the `input` argument of [`connect`](../core/audio-node.mdx#methods) to target a specific input, e.g. `source.connect(merger, 0, 2)` routes into channel `2`.

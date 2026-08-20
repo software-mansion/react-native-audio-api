@@ -148,21 +148,10 @@ AudioEvent audioEventFromString(const std::string &event) {
     return AudioEvent::BUFFER_ENDED;
   if (event == "recorderError")
     return AudioEvent::RECORDER_ERROR;
+  if (event == "bufferingStateChanged")
+    return AudioEvent::BUFFERING_STATE_CHANGE;
 
   throw std::invalid_argument("Unknown audio event: " + event);
-}
-
-std::string contextStateToString(ContextState state) {
-  switch (state) {
-    case ContextState::SUSPENDED:
-      return "suspended";
-    case ContextState::RUNNING:
-      return "running";
-    case ContextState::CLOSED:
-      return "closed";
-    default:
-      throw std::invalid_argument("Unknown context state");
-  }
 }
 
 std::string channelCountModeToString(ChannelCountMode mode) {

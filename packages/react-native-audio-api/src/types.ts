@@ -111,6 +111,34 @@ export interface FilePresetType {
   flacCompressionLevel: FlacCompressionLevel;
 }
 
+export type AndroidInputPreset =
+  | 'generic'
+  | 'camcorder'
+  | 'voiceRecognition'
+  | 'voiceCommunication'
+  | 'unprocessed'
+  | 'voicePerformance';
+
+/** Configures the platform capture chain when the recorder is created. */
+export interface AudioRecorderOptions {
+  /**
+   * Preprocessing chain applied to the capture stream (Android only), mapped to
+   * Oboe's
+   * [`InputPreset`](https://github.com/google/oboe/blob/0da326e4ef878eac0c032e11ea84ca0a6811aafd/include/oboe/Definitions.h#L470).
+   * The platform default, `voiceRecognition`, applies no acoustic echo
+   * cancellation - use `voiceCommunication` to engage the platform AEC/NS
+   * chain.
+   */
+  androidInputPreset?: AndroidInputPreset;
+
+  /**
+   * Runs the capture chain through Apple's voice-processing I/O (iOS only):
+   * acoustic echo cancellation, noise suppression and automatic gain control.
+   * Defaults to `false`, which keeps the raw microphone signal.
+   */
+  iosVoiceProcessing?: boolean;
+}
+
 export interface AudioRecorderFileOptions {
   channelCount?: number;
   rotateIntervalBytes?: number;

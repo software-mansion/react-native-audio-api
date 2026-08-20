@@ -421,9 +421,8 @@
 
 - (void)testDetachSourceNodeKeepsGraphNeedsRebuildWhenInputRemains {
   NSString *sourceNodeId = [self attachSourceNodeToAudioEngine];
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachSourceNodeWithId:sourceNodeId];
@@ -435,9 +434,8 @@
 
 - (void)testAttachInputNodeStoresAndConnectsInput {
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
 
   AVAudioSinkNode *inputNode = self.audioEngine.inputNode;
   XCTAssertNotNil(inputNode);
@@ -456,9 +454,8 @@
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   fakeEngine.fakeInputNode.outputFormat = nil;
 
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
 
   XCTAssertNil(self.audioEngine.inputNode);
   XCTAssertEqual(fakeEngine.attachNodeCallCount, 0);
@@ -485,9 +482,8 @@
 }
 
 - (void)testDetachInputNodeClearsGraphOnlyWhenNoSourcesRemain {
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachInputNode];
@@ -496,9 +492,8 @@
   XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
 
   [self attachSourceNodeToAudioEngine];
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachInputNode];
@@ -511,9 +506,8 @@
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   fakeEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
 
   [self.audioEngine onSessionDeactivated];
   [self.audioEngine detachInputNode];
@@ -735,9 +729,8 @@
 
 - (void)
     testStartIfNecessaryRebuildsAfterSessionDeactivationEvenWhenTeardownClearsGraph {
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
 
   FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
   oldEngine.fakeRunning = YES;
@@ -754,9 +747,8 @@
   AVAudioFormat *recoveredInputFormat =
       [self testInputFormatWithSampleRate:48000 channelCount:1];
   self.audioEngine.nextCreatedEngineInputFormat = recoveredInputFormat;
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
   AVAudioSinkNode *recoveredInputNode = self.audioEngine.inputNode;
 
   XCTAssertTrue([self.audioEngine startIfNecessary]);
@@ -777,9 +769,8 @@
 }
 
 - (void)testStartIfNecessaryRebuildsInputNodeWithFreshInstance {
-  [self.audioEngine
-      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
   FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
   AVAudioSinkNode *oldInputNode = self.audioEngine.inputNode;
   AVAudioFormat *replacementInputFormat =
@@ -1000,8 +991,8 @@
   for (NSInteger index = 0; index < 10; index += 1) {
     dispatch_group_enter(group);
     dispatch_async(queue, ^{
-      [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-             onInputConfigurationChange:nil];
+  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
       [self.audioEngine startIfNecessary];
       dispatch_group_leave(group);
     });

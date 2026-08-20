@@ -35,7 +35,8 @@ BaseAudioContext::BaseAudioContext(
       gcAudioEventScheduler_(GC_AUDIO_SCHEDULER_CAPACITY),
       disposer_(
           std::make_unique<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>>(AUDIO_SCHEDULER_CAPACITY)),
-      graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())) {}
+      graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())),
+      deferredEvents_(audioEventHandlerRegistry) {}
 
 void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
   destination_ = destination;

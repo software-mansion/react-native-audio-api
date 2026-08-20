@@ -37,10 +37,11 @@ constexpr int64_t kCodecTimeoutUs = 5000;
 // input without ever flagging EOS output (defensive against a stuck codec).
 constexpr int kMaxTryAgainAfterEos = 200;
 
-struct MediaExtractorDeleter {
-  void operator()(AMediaExtractor *extractor) const {
-    if (extractor != nullptr) {
-      AMediaExtractor_delete(extractor);
+template <auto DeleteFn>
+struct FnDeleter {
+  void operator()(auto *ptr) const {
+    if (ptr != nullptr) {
+      DeleteFn(ptr);
     }
   }
 };
@@ -54,17 +55,9 @@ struct MediaCodecDeleter {
   }
 };
 
-struct FileDeleter {
-  void operator()(FILE *file) const {
-    if (file != nullptr) {
-      fclose(file);
-    }
-  }
-};
-
-using MediaExtractorPtr = std::unique_ptr<AMediaExtractor, MediaExtractorDeleter>;
+using MediaExtractorPtr = std::unique_ptr<AMediaExtractor, FnDeleter<AMediaExtractor_delete>>;
 using MediaCodecPtr = std::unique_ptr<AMediaCodec, MediaCodecDeleter>;
-using FilePtr = std::unique_ptr<FILE, FileDeleter>;
+using FilePtr = std::unique_ptr<FILE, FnDeleter<fclose>>;
 
 decoding::DecoderResult attachMemoryExtractorViaTempFile(
     AMediaExtractor *extractor,
@@ -447,7 +440,7 @@ decoding::DecoderResult settleCodecOutputFormat(AndroidDecoderState &state) {
 
 decoding::DecoderResult attachMemoryExtractor(
     AndroidDecoderState &state,
-    const std::vector<uint8_t> &data) {
+    std::vector<uint8_t> data) {
   state.extractor.reset(AMediaExtractor_new());
   if (state.extractor == nullptr) {
     return Err("AndroidDecoder::open: AMediaExtractor_new failed");
@@ -455,13 +448,12 @@ decoding::DecoderResult attachMemoryExtractor(
 
   AMediaExtractor *extractor = state.extractor.get();
   if (android_get_device_api_level() >= kMediaDataSourceMinApiLevel) {
-    std::vector<uint8_t> owned = data;
     return attachMemoryExtractorViaDataSource(
         extractor,
         state.dataSource,
         state.encodedMemory,
         state.memorySourceContext,
-        std::move(owned));
+        std::move(data));
   }
 
   return attachMemoryExtractorViaTempFile(extractor, state.tempFile, data);
@@ -516,22 +508,7 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::LocalFileSource &so
     return Err("AndroidDecoder::open setDataSourceFd failed");
   }
 
-  if (auto configured = configureExtractorMetadata(*state, source.sampleRate);
-      configured.is_err()) {
-    return configured;
-  }
-
-  if (auto settled = settleCodecOutputFormat(*state); settled.is_err()) {
-    return settled;
-  }
-
-  outputChannels_ = state->channels;
-  outputSampleRate_ = state->outputRate;
-  framePosition_ = 0;
-  setTotalPcmFramesFromDuration(state->durationSeconds);
-  impl_ = std::move(state);
-  open_ = true;
-  return Ok(None);
+  return finishOpeningDecoder(std::move(state), source.sampleRate);
 }
 
 decoding::DecoderResult AndroidDecoder::open(const decoding::EncodedMemorySource &source) {
@@ -546,8 +523,13 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::EncodedMemorySource
     return attached;
   }
 
-  if (auto configured = configureExtractorMetadata(*state, source.sampleRate);
-      configured.is_err()) {
+  return finishOpeningDecoder(std::move(state), source.sampleRate);
+}
+
+decoding::DecoderResult AndroidDecoder::finishOpeningDecoder(
+    std::unique_ptr<AndroidDecoderState> state,
+    int sampleRate) {
+  if (auto configured = configureExtractorMetadata(*state, sampleRate); configured.is_err()) {
     return configured;
   }
 
@@ -588,19 +570,19 @@ size_t AndroidDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
     }
     outputSampleRate_ = state.outputRate;
 
-    const int ch = callerChannels;
     const bool resample = state.resampler != nullptr;
     std::vector<float> &served = resample ? state.outLeftover : state.nativeLeftover;
     size_t &cursor = resample ? state.outCursor : state.nativeCursor;
 
-    const size_t avail = availableFrames(served, cursor, ch);
+    const size_t avail = availableFrames(served, cursor, callerChannels);
     if (avail > 0) {
       const size_t take = std::min(avail, frameCount - filled);
+      const size_t samples = take * static_cast<size_t>(callerChannels);
       std::memcpy(
-          outInterleaved + filled * static_cast<size_t>(ch),
+          outInterleaved + filled * static_cast<size_t>(callerChannels),
           served.data() + cursor,
-          take * static_cast<size_t>(ch) * sizeof(float));
-      cursor += take * static_cast<size_t>(ch);
+          samples * sizeof(float));
+      cursor += samples;
       filled += take;
       continue;
     }

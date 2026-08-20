@@ -6,9 +6,9 @@
 #include <audioapi/decoding/backends/AudioDecoderBackend.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/events/BufferingStateDispatcher.h>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 #include <cstddef>
-#include <thread>
 
 #include <array>
 #include <atomic>
@@ -25,6 +25,9 @@ class MediaElementAudioSourceNode;
 
 inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 
+/// @brief Debounce interval for BufferingStateDispatcher — see its header.
+inline constexpr auto ON_BUFFERING_STATE_DEBOUNCE_INTERVAL = 0.15f;
+
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
 class AudioFileSourceNode : public AudioScheduledSourceNode {
@@ -34,10 +37,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   explicit AudioFileSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
       AudioFileSourceOptions &options);
-  ~AudioFileSourceNode() override;
-  DELETE_COPY_AND_MOVE(AudioFileSourceNode);
 
-  /// @brief Closes the decoder and tears down offloaded seek workers.
+  /// @brief Signals the decoding daemon to wind down and clears playback state.
+  /// The daemon itself is joined and torn down by the destructor.
+  /// @note Audio thread only.
   void disable() override;
 
   /// @brief Schedules playback; auto-connects to the destination when not media-routed.
@@ -122,6 +125,17 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
+  /// @brief Registers the JS callback for buffering-state-change events.
+  /// Pass 0 to unregister.
+  void assignOnBufferingStateChangeCallbackId(uint64_t callbackId);
+
+  /// @brief True while the render thread has been unable to obtain a decoded
+  /// frame for longer than @ref ON_BUFFERING_STATE_DEBOUNCE_INTERVAL. Not
+  /// exposed to JS (event-driven there); kept for tests.
+  [[nodiscard]] bool isBuffering() const {
+    return bufferingStateDispatcher_.isBuffering();
+  }
+
  protected:
   void processNode(int framesToProcess) override;
 
@@ -177,6 +191,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       float activeRate);
 
   PositionChangedDispatcher positionChanged_;
+
+  /// @brief Owns the buffering-state debounce/dispatch logic; see
+  /// BufferingStateDispatcher.h for the policy.
+  BufferingStateDispatcher bufferingStateDispatcher_;
 
   /// @brief Sets up SPSC channels, constructs the SeekDecoderDaemon, and initialises metadata from the opened decoder.
   /// @return false if the source could not be opened; caller must not set isInitialized_.
@@ -254,13 +272,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       int framesToProcess,
       float playbackRate);
 
-  /// @brief Daemon thread for decoding and seeking
+  /// @brief Owns the decoding thread. `~SeekDecoderDaemon` requests a stop and
+  /// joins, which is safe here because audio nodes are destroyed on the JS
+  /// runtime's GC thread, never on the audio thread.
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
-  std::thread seekDecoderThread_;
-
-  /// @brief Signals the daemon to stop and joins its thread. Idempotent; safe
-  /// to call from both disable() and the destructor.
-  void stopDaemonThread();
 
   /// @brief Connects to the destination when leaving media routing while playback is active.
   /// @note Audio thread only.

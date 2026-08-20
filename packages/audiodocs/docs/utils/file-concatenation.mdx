@@ -11,7 +11,7 @@ You can concatenate existing audio files without creating an `AudioContext` usin
 the exported [`concatAudioFiles`](#concataudiofiles) function.
 
 This is useful when recording with the
-[`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions)
+[`rotateIntervalBytes`](../inputs/audio-recorder.mdx#audiorecorderfileoptions)
 option. Rotation keeps long recordings split into smaller files while recording,
 and `concatAudioFiles` can join those files back into one file after the
 recording is finished.
@@ -35,7 +35,7 @@ segments and re-encodes them losslessly through the system FLAC encoder.
 Android remuxes the encoded AAC packets losslessly, while iOS re-encodes the
 joined audio once through AVFoundation. Each rotated chunk is
 a separate AAC encode, so very small
-[`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions)
+[`rotateIntervalBytes`](../inputs/audio-recorder#audiorecorderfileoptions)
 values can still produce clicks, muffled joins, or timing gaps after concatenation.
 
 If playback quality is poor after joining rotated M4A files, increase `rotateIntervalBytes` (for example **≥ 200 KB**) or record without rotation. WAV and FLAC segments are less sensitive, but the same guidance applies below roughly **512 KB–1 MB** per segment.

@@ -95,6 +95,8 @@ Throttled events (e.g. `positionChanged`) use `PositionChangedDispatcher`, which
 - Clear callbacks in the **most-derived HostObject first** (each layer clears its own events; base destructors run afterward and clear parent events)
 - Do **not** inherit `EventCaller` on multiple node bases (ambiguous API); add member `EventCaller` fields per event instead
 
+**Time-delayed dispatch outside the node's lifetime** (e.g. firing `ended` at a context time the render path will not reach for this node): use `BaseAudioContext::deferEmptyEventDispatch(event, callbackId, dueTime)`. The context keeps a preallocated pending list drained each quantum in `processAudioEvents()`; the context clock is the timer (suspend pauses it, offline fires at render speed) and the context holds no node reference. Never use a detached timer thread for this — spawning a thread from an audio-event body runs on the audio thread (allocation + syscalls), and every capture choice has been a real bug in `AudioScheduledSourceNode::stop()`: raw `this` was a use-after-free, `weak_from_this().lock()` ran the node destructor on the timer thread (bypassing the graph's disposal path), and `std::move`-ing the `EventCaller` member raced the JS/GC-thread `assignCallbackId` paths (the registry `shared_ptr` inside `EventCaller` is only safe for concurrent access while it is never mutated — which is why `EventCaller` is non-movable).
+
 Low-level registry API (used internally by `EventCaller`):
 
 ```cpp
@@ -168,7 +170,7 @@ On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because O
 
 **Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`. Platform drivers share the `CommonPlayer` abstract base (`common/cpp/audioapi/core/CommonPlayer.h`).
 
-**Graph Channel A producer self-drain:** `Graph::setProducerSelfDrain(true)` makes the JS/main producer drain Channel A after each enqueue. Enable only when there is no audio/render consumer (realtime: construction + after `suspend`/`close` quiescence; offline: before `startRendering` and after a scheduled suspend). Before disabling for `start`/`resume`/`renderAudio`, call `processEvents()` once (still as sole consumer) so the bounded channel is empty, then disable, then start the audio/render consumer; re-enable if start/resume fails. After enabling, call `processEvents()` once to flush backlog (avoids `WAIT_ON_FULL` deadlock if the channel was already full).
+**Graph producer self-drain:** `Graph::enableProducerSelfDrain()` makes producer threads drain the event channels themselves after each enqueue; `disableProducerSelfDrain()` hands consumption back to the audio/render thread. Both flush the channels internally (no separate `processEvents()` call needed) and serialize with in-flight drains via `selfDrainMutex_`, because two producers can drain concurrently: the JS thread (mutations) and the GC finalizer thread (`removeNode`, which self-drains after its Channel B orphan send — otherwise a finalizer burst with no consumer fills the bounded channel and blocks forever, e.g. at process exit). Enable only when there is no audio/render consumer (realtime: construction + after `suspend`/`close` quiescence; offline: before `startRendering` and after a scheduled suspend); disable *before* starting the audio/render consumer; re-enable if start/resume fails.
 
 **Context lifecycle promises:** HostObjects wrap JSI `Promise`s via `ContextPromiseResolver`
 (`jsi/ContextPromiseResolver.hpp`); tasks are queued as `ContextPromiseTask`
@@ -179,8 +181,15 @@ ops (`resume` / `suspend` / `close` / offline start) are **control messages** on
 SPSC single-producer). A dedicated `TaskOffloader` worker thread drains the queue under
 `driverMutex_`, runs `collectDisposedNodes()` (host-graph ghost cleanup — never on the audio
 thread), then executes the lifecycle body and settles the promise on the CallInvoker. The
-`TaskOffloader` destructor joins the worker and drains any queued control messages. When the driver
-is stopped, `scheduleAudioEvent` still drains already-queued SPSC events then runs
+`TaskOffloader` destructor joins the worker and drains any queued control messages — which is why
+`~AudioContext` / `~OfflineAudioContext` MUST call `joinPendingPromiseWorker()` as their first
+statement (and never while holding `driverMutex_`): default member destruction order would join the
+worker last, letting drained tasks run against an already-destroyed player/graph/disposer. The
+offline render thread is likewise owned (`renderThread_` + `stopRendering_` flag, joined in the
+destructor, detach only when the last context reference drops on the render thread itself); the
+render lambda must release its `resumePromise` right after resolving, since resolver callbacks
+capture the context and would otherwise make the render thread its own context's last owner. When
+the driver is stopped, `scheduleAudioEvent` still drains already-queued SPSC events then runs
 the new event synchronously under `driverMutex_` (FIFO with prior messages). Control-message
 bodies must not re-lock `driverMutex_` or `waitForRenderQuiescence()` while `currentRenders_ > 0`
 (audio-callback self-deadlock). Apply the visible `state` attribute and settle the promise

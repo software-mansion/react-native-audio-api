@@ -12,6 +12,8 @@ typedef struct objc_object AVAudioFormat;
 
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
+#include <audioapi/utils/AudioRecorderOptions.h>
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 
 #include <atomic>
@@ -30,8 +32,12 @@ class AudioFileWriter;
 
 class IOSAudioRecorder : public AudioRecorder {
  public:
-  IOSAudioRecorder(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+  explicit IOSAudioRecorder(
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const AudioRecorderOptions &options = {});
   ~IOSAudioRecorder() override;
+
+  DELETE_COPY_AND_MOVE(IOSAudioRecorder);
 
   Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
   Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;

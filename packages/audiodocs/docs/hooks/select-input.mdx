@@ -59,11 +59,11 @@ function AudioInputSelector() {
 
 | Name | Type | Description |
 | :----: | :----: | :---- |
-| `availableInputs` | [`AudioDeviceInfo[]`](/docs/system/audio-manager#audiodeviceinfo) | List of available audio input devices under the current device configuration. |
-| `currentInput` | [`AudioDeviceInfo`](/docs/system/audio-manager#audiodeviceinfo) \| `null` | The currently selected audio input device, or `null` if none is yet selected by the system. |
+| `availableInputs` | [`AudioDeviceInfo[]`](../system/audio-manager.mdx#audiodeviceinfo) | List of available audio input devices under the current device configuration. |
+| `currentInput` | [`AudioDeviceInfo`](../system/audio-manager.mdx#audiodeviceinfo) \| `null` | The currently selected audio input device, or `null` if none is yet selected by the system. |
 | `onSelectInput` | `(device: AudioDeviceInfo) => Promise<void>` | Selects the given device as the current input. Resolves once the device is selected; throws otherwise. |
 
 ## Related
 
-- [AudioManager](/docs/system/audio-manager) - For managing audio sessions and permissions
-- [AudioRecorder](/docs/inputs/audio-recorder) - For capturing audio from the selected input device
+- [AudioManager](../system/audio-manager.mdx) - For managing audio sessions and permissions
+- [AudioRecorder](../inputs/audio-recorder.mdx) - For capturing audio from the selected input device

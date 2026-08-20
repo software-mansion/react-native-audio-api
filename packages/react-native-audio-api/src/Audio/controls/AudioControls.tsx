@@ -8,15 +8,18 @@ import {
   Text,
   View,
 } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedRef,
   useSharedValue,
 } from 'react-native-reanimated';
 import { useAudioTagContext } from '../AudioTagContext';
+import { isPlaybackActive } from '../utils';
 import {
   formatTime,
   timeFromLocationX,
+  useBufferingSweep,
   useExpandableTrackHeight,
 } from './audioControlUtils';
 
@@ -29,6 +32,12 @@ const TRACK_BAR_HEIGHT = 12;
 const TRACK_BAR_HEIGHT_PRESSED = 18;
 const TRACK_BAR_ANIM_MS = 150;
 const SCRUB_PAN_MIN_DISTANCE = 8;
+const BUFFERING_SWEEP_MS = 1100;
+const BUFFERING_SWEEP_WIDTH_RATIO = 0.35;
+// Opacity ramp faking a soft-edged gradient band
+const BUFFERING_SWEEP_SLICE_OPACITIES = [
+  0.04, 0.18, 0.45, 0.6, 0.45, 0.18, 0.04,
+];
 
 const AudioControls: React.FC = () => {
   const {
@@ -52,6 +61,13 @@ const AudioControls: React.FC = () => {
   const [scrubTime, setScrubTime] = useState<number | null>(null);
   const progressTrackRef = useAnimatedRef<View>();
   const progressMetricsWidth = useSharedValue(0);
+  const isBuffering = playbackState === 'buffering';
+  const bufferingSweepStyle = useBufferingSweep(
+    isBuffering,
+    progressMetricsWidth,
+    BUFFERING_SWEEP_WIDTH_RATIO,
+    BUFFERING_SWEEP_MS
+  );
   const durationRef = useRef(duration);
   durationRef.current = duration;
 
@@ -141,20 +157,19 @@ const AudioControls: React.FC = () => {
   }, [onStart, onUpdate, onEnd, onCancel, onTapSeek]);
 
   const onPlayPausePress = useCallback(() => {
-    if (playbackState === 'playing') {
+    if (isPlaybackActive(playbackState)) {
       pause();
     } else {
       play();
     }
   }, [playbackState, pause, play]);
 
-  const onProgressTrackLayout = useCallback(() => {
-    progressTrackRef.current?.measureInWindow(
-      (_left: number, _y: number, width: number, _h: number) => {
-        progressMetricsWidth.value = width;
-      }
-    );
-  }, [progressMetricsWidth, progressTrackRef]);
+  const onProgressTrackLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      progressMetricsWidth.value = event.nativeEvent.layout.width;
+    },
+    [progressMetricsWidth]
+  );
 
   if (!ready) {
     return (
@@ -171,7 +186,7 @@ const AudioControls: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.topRow}>
         <Pressable style={styles.playPause} onPress={onPlayPausePress}>
-          {playbackState === 'playing' ? (
+          {isPlaybackActive(playbackState) ? (
             <Image source={PauseIcon} style={{ width: 24, height: 24 }} />
           ) : (
             <Image source={PlayIcon} style={{ width: 24, height: 24 }} />
@@ -195,6 +210,18 @@ const AudioControls: React.FC = () => {
               <View
                 style={[styles.trackFill, { width: `${progress * 100}%` }]}
               />
+              {isBuffering && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={[styles.bufferingSweep, bufferingSweepStyle]}>
+                  {BUFFERING_SWEEP_SLICE_OPACITIES.map((opacity, index) => (
+                    <View
+                      key={index}
+                      style={[styles.bufferingSweepSlice, { opacity }]}
+                    />
+                  ))}
+                </Animated.View>
+              )}
             </Animated.View>
           </View>
         </GestureDetector>
@@ -261,6 +288,17 @@ const styles = StyleSheet.create({
   },
   trackFill: {
     height: '100%',
+    backgroundColor: '#000',
+  },
+  bufferingSweep: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    flexDirection: 'row',
+  },
+  bufferingSweepSlice: {
+    flex: 1,
     backgroundColor: '#000',
   },
   volumeIcon: {

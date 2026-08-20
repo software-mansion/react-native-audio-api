@@ -42,6 +42,7 @@ class IOSAudioPlayer : public CommonPlayer {
  protected:
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
+  float sampleRate_;
   std::function<void(DSPAudioBuffer *, int)> renderAudio_;
   std::atomic<uint32_t> &currentRenders_;
   int channelCount_;
