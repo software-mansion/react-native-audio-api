@@ -2,7 +2,7 @@ import { IAudioScheduledSourceNode } from '../jsi-interfaces';
 import AudioNode from './AudioNode';
 import { InvalidStateError, RangeError } from '../errors';
 import { EventEmptyType } from '../events/types';
-import { AudioEventEmitter } from '../events';
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
 
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
@@ -11,6 +11,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
   );
 
   private onEndedCallback?: (event: EventEmptyType) => void;
+  private onEndedSubscription: AudioEventSubscription | null = null;
 
   public start(when: number = 0): void {
     if (when < 0) {
@@ -49,6 +50,9 @@ export default class AudioScheduledSourceNode extends AudioNode {
   }
 
   public set onEnded(callback: ((event: EventEmptyType) => void) | null) {
+    this.onEndedSubscription?.remove();
+    this.onEndedSubscription = null;
+
     if (!callback) {
       (this.node as IAudioScheduledSourceNode).onEnded = '0';
       this.onEndedCallback = undefined;
@@ -56,8 +60,12 @@ export default class AudioScheduledSourceNode extends AudioNode {
     }
 
     this.onEndedCallback = callback;
-    const sub = this.audioEventEmitter.addAudioEventListener('ended', callback);
+    this.onEndedSubscription = this.audioEventEmitter.addAudioEventListener(
+      'ended',
+      callback
+    );
 
-    (this.node as IAudioScheduledSourceNode).onEnded = sub.subscriptionId;
+    (this.node as IAudioScheduledSourceNode).onEnded =
+      this.onEndedSubscription.subscriptionId;
   }
 }

@@ -5,6 +5,8 @@
  */
 
 import {
+  getCurrentTestWindow,
+  patchPrototypeOnce,
   toWindowRealmError,
   WRAPPED_NODE_CONSTRUCTORS,
 } from './wpt-utils.mjs';
@@ -92,22 +94,21 @@ function wrapAudioNodeConnectDisconnect(window) {
     return;
   }
 
-  const originalConnect = AudioNode.prototype.connect;
-  const originalDisconnect = AudioNode.prototype.disconnect;
-
-  AudioNode.prototype.connect = function connect(...args) {
-    try {
-      return originalConnect.apply(this, args);
-    } catch (error) {
-      throw toWindowRealmError(window, error);
-    }
-  };
-
-  AudioNode.prototype.disconnect = function disconnect(...args) {
-    try {
-      return originalDisconnect.apply(this, args);
-    } catch (error) {
-      throw toWindowRealmError(window, error);
-    }
-  };
+  // AudioNode is shared by every test window, so these go on once and resolve the
+  // window at call time — see patchPrototypeOnce.
+  for (const methodName of ['connect', 'disconnect']) {
+    patchPrototypeOnce(
+      AudioNode.prototype,
+      methodName,
+      (original) =>
+        function (...args) {
+          try {
+            return original.apply(this, args);
+          } catch (error) {
+            throw toWindowRealmError(getCurrentTestWindow(), error);
+          }
+        },
+      'connect-realm-errors'
+    );
+  }
 }
