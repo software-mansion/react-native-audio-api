@@ -109,10 +109,8 @@ CloseFileResult EncodedAudioFileWriter::closeFile() {
     return CloseFileResult::Err("file is not open: " + filePath_);
   }
 
-  isFileOpen_.store(false, std::memory_order_release);
-
-  // Drains the worker queue before finalizing the encoder below.
   cleanupPreallocatedInputPool();
+  isFileOpen_.store(false, std::memory_order_release);
 
   auto closeResult = encoder_->close();
   encoder_.reset();

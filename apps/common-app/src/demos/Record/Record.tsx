@@ -141,7 +141,6 @@ const Record: FC = () => {
     }
 
     const extension = RECORDING_EXTENSION_NAME_MAP[RECORDING_EXTENSION];
-    console.log(info.paths.length);
     const outputPath = info.paths[0].replace(
       /[^/]+$/,
       `recording.${extension}`
