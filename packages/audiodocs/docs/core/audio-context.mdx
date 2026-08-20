@@ -7,7 +7,7 @@ import { Optional } from '@site/src/components/Badges';
 
 # AudioContext
 
-The `AudioContext` interface inherits from [`BaseAudioContext`](/docs/core/base-audio-context).
+The `AudioContext` interface inherits from [`BaseAudioContext`](./base-audio-context.mdx).
 It is responsible for supervising and managing audio-processing graph.
 
 ## Constructor
@@ -35,22 +35,22 @@ constructor(options?: AudioContextOptions)
 | `baseLatency` | `number` | Processing latency in seconds incurred by the `AudioContext` passing audio from the `AudioDestinationNode` to the audio subsystem. Does not include hardware output latency or audio graph processing time. Equals the render callback duration (`callbackFrames / sampleRate`). Returns `0` when the context is not running. | <ReadOnly /> |
 | `outputLatency` | `number` | Estimated output latency in seconds — the interval between when the audio system is given a buffer and when the first sample is played by the output device. Can change when the audio route changes; re-query before sync-sensitive work. Returns `0` when the context is not running. On iOS backed by `AVAudioSession.outputLatency`; on Android sampled via Oboe timestamps. | <ReadOnly /> |
 
-Inherits all properties from [`BaseAudioContext`](/docs/core/base-audio-context#properties).
+Inherits all properties from [`BaseAudioContext`](./base-audio-context.mdx#properties).
 
 
 ## Methods
 
-Inherits all methods from [`BaseAudioContext`](/docs/core/base-audio-context#methods).
+Inherits all methods from [`BaseAudioContext`](./base-audio-context.mdx#methods).
 
 ### `createMediaElementSource`
 
-Creates [`MediaElementAudioSourceNode`](/docs/sources/media-element-audio-source-node), routing media playback into the audio graph.
+Creates [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-node.mdx), routing media playback into the audio graph.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](/docs/sources/audio-tag#ref-handle-audiotaghandle-methods) (native) | Media element to route into the graph. On native, wait for [`onLoad`](/docs/sources/audio-tag#props-audioprops) on `<Audio>` before calling. |
+| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](../sources/audio-tag.mdx#ref-handle-audiotaghandle-methods) (native) | Media element to route into the graph. On native, wait for [`onLoad`](../sources/audio-tag.mdx#props-audioprops) on `<Audio>` before calling. |
 
-#### Returns [`MediaElementAudioSourceNode`](/docs/sources/media-element-audio-source-node).
+#### Returns [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-node.mdx).
 
 ### `close`
 

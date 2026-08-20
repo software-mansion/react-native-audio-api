@@ -8,14 +8,14 @@ import { ReadOnly } from '@site/src/components/Badges';
 # WorkletSourceNode
 
 :::warning
-Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](./introduction.mdx) for installation.
 :::
 
-`WorkletSourceNode` is a scheduled source that generates audio synchronously on the **audio worklet runtime** each render quantum. It extends [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node), so you can `start()` and `stop()` it at specific times.
+`WorkletSourceNode` is a scheduled source that generates audio synchronously on the **audio worklet runtime** each render quantum. It extends [`AudioScheduledSourceNode`](../sources/audio-scheduled-source-node.mdx), so you can `start()` and `stop()` it at specific times.
 
 Use it for custom synthesizers, procedural generators, and other nodes that **produce** audio rather than process an existing input.
 
-For runtime differences and performance tips, see [How to use audio worklets mindfully](/docs/worklets/introduction#how-to-use-audio-worklets-mindfully).
+For runtime differences and performance tips, see [How to use audio worklets mindfully](./introduction.mdx#how-to-use-audio-worklets-mindfully).
 
 ## Constructor
 
@@ -30,7 +30,7 @@ const node = new WorkletSourceNode(context, callback);
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
+| `context` | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node. |
 | `callback` | `WorkletSourceNodeCallback` | Worklet invoked on the audio runtime each render quantum. Must include the `'worklet'` directive. |
 
 ### `WorkletSourceNodeCallback`
@@ -113,7 +113,7 @@ Use this for phase-continuous oscillators, LFOs, and envelopes.
 
 ## Properties
 
-Inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node).
+Inherits all properties from [`AudioScheduledSourceNode`](../sources/audio-scheduled-source-node.mdx).
 
 <AudioNodePropsTable
   numberOfInputs={0}
@@ -125,7 +125,7 @@ Inherits all properties from [`AudioScheduledSourceNode`](/docs/sources/audio-sc
 
 ## Methods
 
-Inherits all methods from [`AudioScheduledSourceNode`](/docs/sources/audio-scheduled-source-node), including `start()` and `stop()`.
+Inherits all methods from [`AudioScheduledSourceNode`](../sources/audio-scheduled-source-node.mdx), including `start()` and `stop()`.
 
 ## Performance considerations
 
@@ -133,6 +133,6 @@ Callbacks run synchronously on the audio path each render quantum. Keep worklet 
 
 ## See also
 
-- [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node) — process an existing signal with a worklet
-- [`WorkletNode`](/docs/worklets/worklet-node) — read-only snapshots on the UI runtime for visualizers
-- [Worklets introduction](/docs/worklets/introduction)
+- [`WorkletProcessingNode`](./worklet-processing-node.mdx) — process an existing signal with a worklet
+- [`WorkletNode`](./worklet-node.mdx) — read-only snapshots on the UI runtime for visualizers
+- [Worklets introduction](./introduction.mdx)

@@ -129,7 +129,7 @@ bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &p
   }
 
   if (result) {
-    // Visible RUNNING is applied in the promise resolve task (CallInvoker).
+    // Visible RUNNING is applied inside the resolver
     ContextPromiseResolver<void>::resolve(promise);
   } else {
     ContextPromiseResolver<void>::reject(promise, "Failed to resume audio context.");
@@ -155,7 +155,7 @@ bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolver<void>> &
     processAudioEvents();
   }
 
-  // Visible SUSPENDED is applied in the promise resolve task (CallInvoker).
+  // Visible SUSPENDED is applied inside the resolver
   ContextPromiseResolver<void>::resolve(promise);
   return true;
 }

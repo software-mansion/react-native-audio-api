@@ -19,25 +19,25 @@ constructor(context: BaseAudioContext, options?: WaveShaperOptions)
 
 ### `WaveShaperOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `curve` <Optional /> | `number[] \| Float32Array` | - | Initial value for [`curve`](/docs/effects/wave-shaper-node#properties). |
-| `oversample` <Optional /> | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | `'none'` | Initial value for [`oversample`](/docs/effects/wave-shaper-node#properties). |
+| `curve` <Optional /> | `number[] \| Float32Array` | - | Initial value for [`curve`](./wave-shaper-node.mdx#properties). |
+| `oversample` <Optional /> | [`OverSampleType`](./wave-shaper-node.mdx#oversampletype) | `'none'` | Initial value for [`oversample`](./wave-shaper-node.mdx#properties). |
 
-You can also create a `WaveShaperNode` via the [`BaseAudioContext.createWaveShaper()`](/docs/core/base-audio-context#createwaveshaper) factory method, which uses default values.
+You can also create a `WaveShaperNode` via the [`BaseAudioContext.createWaveShaper()`](../core/base-audio-context.mdx#createwaveshaper) factory method, which uses default values.
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
 | `curve` | `Float32Array \| null` | The shaping curve used for the waveshaping effect. |
-| `oversample` | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) | Specifies what type of oversampling should be used when applying the shaping curve. |
+| `oversample` | [`OverSampleType`](./wave-shaper-node.mdx#oversampletype) | Specifies what type of oversampling should be used when applying the shaping curve. |
 
 #### Errors
 
@@ -47,7 +47,7 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 

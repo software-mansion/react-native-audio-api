@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "moduleSuffixes": [".ios", ".android", ".native", ""],
     "paths": {
       "@/*": ["../common-app/src/*"]

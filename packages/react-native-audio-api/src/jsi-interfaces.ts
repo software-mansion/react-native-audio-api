@@ -14,7 +14,6 @@ import type {
   ChannelSplitterOptions,
   ConstantSourceOptions,
   ConvolverOptions,
-  ContextState,
   DelayOptions,
   FileInfo,
   GainOptions,
@@ -40,7 +39,6 @@ export interface IOscillatorOptions extends Omit<
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly listener: IAudioListener;
-  readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
   readonly decoder: IAudioDecoder;

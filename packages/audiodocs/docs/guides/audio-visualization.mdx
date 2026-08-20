@@ -6,7 +6,7 @@ import InteractiveExample from '@site/src/components/InteractiveExample';
 
 # Audio visualization
 
-In this section, we will get familiar with [`AnalyserNode`](/docs/analysis/analyser-node) and how to extract audio data in order to create a simple real-time visualization of the sounds.
+In this section, we will get familiar with [`AnalyserNode`](../analysis/analyser-node.mdx) and how to extract audio data in order to create a simple real-time visualization of the sounds.
 
 ## Base application
 
@@ -102,12 +102,12 @@ export default AudioVisualizer;
 
 ## Analyser setup
 
-To obtain frequency and time-domain data, we need to utilize the [`AnalyserNode`](/docs/analysis/analyser-node).
-It is an [`AudioNode`](/docs/core/audio-node) that passes data unchanged from input to output while enabling the extraction of this data in two domains: time and frequency.
+To obtain frequency and time-domain data, we need to utilize the [`AnalyserNode`](../analysis/analyser-node.mdx).
+It is an [`AudioNode`](../core/audio-node.mdx) that passes data unchanged from input to output while enabling the extraction of this data in two domains: time and frequency.
 
-We will use two specific [`AnalyserNode`](/docs/analysis/analyser-node) methods:
-- [`getByteTimeDomainData`](/docs/analysis/analyser-node#getbytetimedomaindata)
-- [`getByteFrequencyData`](/docs/analysis/analyser-node#getbytefrequencydata)
+We will use two specific [`AnalyserNode`](../analysis/analyser-node.mdx) methods:
+- [`getByteTimeDomainData`](../analysis/analyser-node.mdx#getbytetimedomaindata)
+- [`getByteFrequencyData`](../analysis/analyser-node.mdx#getbytefrequencydata)
 
 These methods will allow us to acquire the necessary data for our analysis.
 
@@ -239,7 +239,7 @@ We utilize the [`requestAnimationFrame`](https://reactnative.dev/docs/timers) me
 
 To render both the time as well as frequency domain visualizations, we will use our beloved graphic library — [`react-native-skia`](https://shopify.github.io/react-native-skia/).
 
-If you would like to know more about time and frequency domains, have a look at the [Time domain vs Frequency domain](/docs/analysis/analyser-node#time-domain-vs-frequency-domain) section of the AnalyserNode documentation.
+If you would like to know more about time and frequency domains, have a look at the [Time domain vs Frequency domain](../analysis/analyser-node.mdx#time-domain-vs-frequency-domain) section of the AnalyserNode documentation.
 
 The examples below show how to render time-domain and frequency-domain data, respectively:
 
@@ -259,7 +259,7 @@ import FrequencyDomainSrc from '!!raw-loader!@site/src/examples/SeeYourSound/Fre
 
 ## Summary
 
-In this guide, we have learned how to extract audio data using [`AnalyserNode`](/docs/analysis/analyser-node), what types of data we can obtain and how to visualize them. To sum up:
+In this guide, we have learned how to extract audio data using [`AnalyserNode`](../analysis/analyser-node.mdx), what types of data we can obtain and how to visualize them. To sum up:
 
 - `AnalyserNode` is a sniffer node that provides real time access to audio data
 - There are two domains of audio data: `frequency` and `time`
@@ -267,4 +267,4 @@ In this guide, we have learned how to extract audio data using [`AnalyserNode`](
 
 ## What's next?
 
-In [the next section](/docs/guides/custom-audio-effects), we will learn how to create our own processing node, utilizing react native turbo-modules.
+In [the next section](./custom-audio-effects.mdx), we will learn how to create our own processing node, utilizing react native turbo-modules.
