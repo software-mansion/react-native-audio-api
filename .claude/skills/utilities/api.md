@@ -129,30 +129,40 @@ Use `NoneType` / `None` for void variants: `Result<NoneType, std::string>`.
 
 ---
 
-## `RingBiDirectionalBuffer.hpp` — compile-time capacity ring deque
+## `BoundedPriorityQueue.hpp` — fixed-capacity sorted queue
 
-Non-thread-safe bounded ring buffer with push/pop from both ends. Capacity is a **compile-time** power-of-two template parameter.
+Non-thread-safe sorted container with a **compile-time** capacity. Wraps `std::multiset` over an in-object `FixedBlockPool`, so no operation touches the heap.
 
 ```cpp
-RingBiDirectionalBuffer<MyEvent, 128> queue;  // capacity must be power of 2
+BoundedPriorityQueue<MyEvent, 64, ByTime> queue;  // capacity, comparator
 
-queue.pushBack(event);   // add to back, returns false if full
-queue.pushFront(event);  // add to front, returns false if full
+queue.push(event);       // insert in sorted order, false if full (never grows)
 
 MyEvent e;
-queue.popFront(e);       // remove from front into e, returns false if empty
-queue.popBack(e);        // remove from back into e, returns false if empty
-queue.popFront();        // discard front element
-queue.popBack();         // discard back element
+queue.pop(e);            // remove smallest into e, false if empty
+queue.pop();             // discard smallest
 
-const MyEvent &front = queue.peekFront();   // const peek, no removal
-MyEvent &back = queue.peekBackMut();        // mutable peek
+const MyEvent &front = queue.peekFront();  // smallest
+const MyEvent &back = queue.peekBack();    // largest
 
 queue.isEmpty(); queue.isFull();
-queue.size(); queue.getCapacity();          // real capacity = getCapacity() - 1
+queue.size();
+
+// Heterogeneous lookups need a transparent comparator (`using is_transparent = void;`)
+auto it = queue.lowerBound(time);   // first element with key >= time
+auto it = queue.upperBound(time);   // first element with key > time
+queue.erase(it, queue.end());       // range erase
+
+auto node = queue.extract(it);      // detach without deallocating
+node.value().time = newTime;        // mutate the key while detached
+queue.insert(queue.upperBound(newTime), std::move(node));  // reinsert, no allocation
 ```
 
-Used for `AudioParamEventQueue` (parameter automation event storage on the audio thread).
+Template arguments are constrained: positive capacity, move-constructible `T`, and a comparator that is a strict weak ordering over `T`; `push` requires the argument to construct a `T`, and `lowerBound`/`upperBound` require the comparator to accept the key type. Misuse is a constraint failure naming the violated requirement, not a wall of container errors.
+
+Storage is `Capacity * roundUp(sizeof(T) + 4 * sizeof(void *), alignof(node))` bytes, in-object and reserved up front. `PoolAllocator::allocate` `static_assert`s the real node type against the slot size, so an insufficient estimate is a compile error, never a runtime `bad_alloc`.
+
+Used by `ParamQueueBase` (parameter automation event storage on the audio thread) and `DeferredEventQueue` (pending `onended` dispatches).
 
 ---
 
