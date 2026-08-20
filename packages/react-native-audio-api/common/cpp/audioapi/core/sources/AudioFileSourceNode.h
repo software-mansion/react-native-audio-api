@@ -6,6 +6,7 @@
 #include <audioapi/dsp/WsolaTimeStretcher.h>
 #include <audioapi/libs/decoding/IncrementalAudioDecoder.h>
 #include <audioapi/types/NodeOptions.h>
+#include <audioapi/utils/events/BufferingStateDispatcher.h>
 #include <audioapi/utils/events/PositionChangedDispatcher.h>
 #include <cstddef>
 #include <thread>
@@ -28,6 +29,9 @@ struct AudioFileSourceOptions;
 class MediaElementAudioSourceNode;
 
 inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
+
+/// @brief Debounce interval for BufferingStateDispatcher — see its header.
+inline constexpr auto ON_BUFFERING_STATE_DEBOUNCE_INTERVAL = 0.15f;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
 /// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
@@ -125,6 +129,17 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
   void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
+  /// @brief Registers the JS callback for buffering-state-change events.
+  /// Pass 0 to unregister.
+  void assignOnBufferingStateChangeCallbackId(uint64_t callbackId);
+
+  /// @brief True while the render thread has been unable to obtain a decoded
+  /// frame for longer than @ref ON_BUFFERING_STATE_DEBOUNCE_INTERVAL. Not
+  /// exposed to JS (event-driven there); kept for tests.
+  [[nodiscard]] bool isBuffering() const {
+    return bufferingStateDispatcher_.isBuffering();
+  }
+
  protected:
   /// @brief Outputs silence when media-routed; otherwise decodes into @p processingBuffer.
   std::shared_ptr<DSPAudioBuffer> processNode(
@@ -182,6 +197,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
       float activeRate);
 
   PositionChangedDispatcher positionChanged_;
+
+  /// @brief Owns the buffering-state debounce/dispatch logic; see
+  /// BufferingStateDispatcher.h for the policy.
+  BufferingStateDispatcher bufferingStateDispatcher_;
 
   /// @brief Sets up SPSC channels, constructs the SeekDecoderDaemon, and initialises metadata from the opened decoder.
   /// @return false if the source could not be opened; caller must not set isInitialized_.

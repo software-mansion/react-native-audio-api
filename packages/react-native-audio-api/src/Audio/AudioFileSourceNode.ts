@@ -39,6 +39,10 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
   }
 
   play(): void {
+    if (!(this.node as IAudioFileSourceNode).routedThroughMediaElement) {
+      this.connect(this.context.destination);
+    }
+    // copied from audioscheduledsourcenode, so it can bypass requirement of being started only once
     (this.node as IAudioScheduledSourceNode).start(this.context.currentTime);
   }
 
@@ -103,9 +107,33 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     }
   }
 
+  startBufferingTracking(
+    onBufferingChange: (buffering: boolean) => void
+  ): void {
+    if (!this.node) {
+      return;
+    }
+    this.stopBufferingTracking();
+    const sub = this.emitter.addAudioEventListener(
+      'bufferingStateChanged',
+      (event) => {
+        onBufferingChange(event.value);
+      }
+    );
+    (this.node as IAudioFileSourceNode).onBufferingStateChanged =
+      sub.subscriptionId;
+  }
+
+  stopBufferingTracking(): void {
+    if (this.node) {
+      (this.node as IAudioFileSourceNode).onBufferingStateChanged = '0';
+    }
+  }
+
   private resetNodeAndSubscriptions(): void {
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';
+      (this.node as IAudioFileSourceNode).onBufferingStateChanged = '0';
       (this.node as IAudioFileSourceNode).onEnded = '0';
       this.node.disconnect(undefined);
     }

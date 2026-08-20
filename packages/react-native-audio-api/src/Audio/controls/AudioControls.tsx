@@ -12,9 +12,11 @@ import {
 } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
 import { useAudioTagContext } from '../AudioTagContext';
+import { isPlaybackActive } from '../utils';
 import {
   formatTime,
   timeFromLocationX,
+  useBufferingSweep,
   useExpandableTrackHeight,
 } from './audioControlUtils';
 
@@ -26,6 +28,12 @@ import MuteIcon from './icons/speaker-x.png';
 const TRACK_BAR_HEIGHT = 12;
 const TRACK_BAR_HEIGHT_PRESSED = 18;
 const TRACK_BAR_ANIM_MS = 150;
+const BUFFERING_SWEEP_MS = 1100;
+const BUFFERING_SWEEP_WIDTH_RATIO = 0.35;
+// Opacity ramp faking a soft-edged gradient band
+const BUFFERING_SWEEP_SLICE_OPACITIES = [
+  0.04, 0.18, 0.45, 0.6, 0.45, 0.18, 0.04,
+];
 
 const AudioControls: React.FC = () => {
   const {
@@ -47,6 +55,14 @@ const AudioControls: React.FC = () => {
   );
 
   const [scrubTime, setScrubTime] = useState<number | null>(null);
+  const [trackWidth, setTrackWidth] = useState(0);
+  const isBuffering = playbackState === 'buffering';
+  const bufferingSweepStyle = useBufferingSweep(
+    isBuffering,
+    trackWidth,
+    BUFFERING_SWEEP_WIDTH_RATIO,
+    BUFFERING_SWEEP_MS
+  );
 
   const scrub = useRef({
     startX: 0,
@@ -104,7 +120,7 @@ const AudioControls: React.FC = () => {
   );
 
   const onPlayPausePress = useCallback(() => {
-    if (playbackState === 'playing') {
+    if (isPlaybackActive(playbackState)) {
       pause();
     } else {
       play();
@@ -112,7 +128,9 @@ const AudioControls: React.FC = () => {
   }, [playbackState, pause, play]);
 
   const onProgressTrackLayout = useCallback((event: LayoutChangeEvent) => {
-    scrub.current.trackWidth = event.nativeEvent.layout.width;
+    const { width } = event.nativeEvent.layout;
+    scrub.current.trackWidth = width;
+    setTrackWidth(width);
   }, []);
 
   if (!ready) {
@@ -130,7 +148,7 @@ const AudioControls: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.topRow}>
         <Pressable style={styles.playPause} onPress={onPlayPausePress}>
-          {playbackState === 'playing' ? (
+          {isPlaybackActive(playbackState) ? (
             <Image source={PauseIcon} style={styles.icon} />
           ) : (
             <Image source={PlayIcon} style={styles.icon} />
@@ -149,6 +167,18 @@ const AudioControls: React.FC = () => {
           <Animated.View
             style={[styles.trackInner, progressTrackAnim.animatedStyle]}>
             <View style={[styles.trackFill, { width: `${progress * 100}%` }]} />
+            {isBuffering && (
+              <Animated.View
+                pointerEvents="none"
+                style={[styles.bufferingSweep, bufferingSweepStyle]}>
+                {BUFFERING_SWEEP_SLICE_OPACITIES.map((opacity, index) => (
+                  <View
+                    key={index}
+                    style={[styles.bufferingSweepSlice, { opacity }]}
+                  />
+                ))}
+              </Animated.View>
+            )}
           </Animated.View>
         </View>
 
@@ -218,6 +248,17 @@ const styles = StyleSheet.create({
   },
   trackFill: {
     height: '100%',
+    backgroundColor: '#000',
+  },
+  bufferingSweep: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    flexDirection: 'row',
+  },
+  bufferingSweepSlice: {
+    flex: 1,
     backgroundColor: '#000',
   },
   volumeIcon: {

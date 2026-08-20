@@ -17,8 +17,10 @@ constexpr uint64_t POSITION_CALLBACK_ID = 19;
 static_assert(EventPayloadFor<AudioEvent::ENDED, EmptyPayload>);
 static_assert(EventPayloadFor<AudioEvent::POSITION_CHANGED, DoubleValuePayload>);
 static_assert(EventPayloadFor<AudioEvent::RECORDER_ERROR, StringPayload>);
+static_assert(EventPayloadFor<AudioEvent::BUFFERING_STATE_CHANGE, BoolValuePayload>);
 static_assert(!EventPayloadFor<AudioEvent::ENDED, StringPayload>);
 static_assert(!EventPayloadFor<AudioEvent::RECORDER_ERROR, EmptyPayload>);
+static_assert(!EventPayloadFor<AudioEvent::BUFFERING_STATE_CHANGE, EmptyPayload>);
 } // namespace
 
 TEST(EventCallerTest, AssignAndGetCallbackId) {

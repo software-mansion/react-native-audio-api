@@ -1,5 +1,5 @@
-import { useMemo, useRef } from 'react';
-import { Animated } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing } from 'react-native';
 
 export function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) {
@@ -52,4 +52,58 @@ export function useExpandableTrackHeight(
       collapse: () => animateTo(trackBarHeight),
     };
   }, [height, trackBarHeight, trackBarHeightPressed, trackBarAnimMs]);
+}
+
+/**
+ * Indeterminate buffering sweep: a highlight that repeatedly travels the width
+ * of the progress track while playback is stalled. It says "still waiting", not
+ * "this much is buffered" — there is no buffered-ahead figure behind it.
+ *
+ * `trackWidth` is the measured track width, known only after the first layout.
+ */
+export function useBufferingSweep(
+  isBuffering: boolean,
+  trackWidth: number,
+  sweepWidthRatio: number,
+  sweepDurationMs: number
+) {
+  const sweepProgress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isBuffering) {
+      return;
+    }
+
+    const loop = Animated.loop(
+      Animated.timing(sweepProgress, {
+        toValue: 1,
+        duration: sweepDurationMs,
+        easing: Easing.bezier(0.455, 0.03, 0.515, 0.955), // in-out quad
+        useNativeDriver: true,
+      })
+    );
+    loop.start();
+
+    return () => {
+      loop.stop();
+      sweepProgress.setValue(0);
+    };
+  }, [isBuffering, sweepDurationMs, sweepProgress]);
+
+  return useMemo(() => {
+    const sweepWidth = trackWidth * sweepWidthRatio;
+    // Travel the track plus the sweep's own width, starting one width off the
+    // left edge, so it slides fully in and fully out instead of popping.
+    return {
+      width: sweepWidth,
+      transform: [
+        {
+          translateX: sweepProgress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-sweepWidth, trackWidth],
+          }),
+        },
+      ],
+    };
+  }, [sweepProgress, trackWidth, sweepWidthRatio]);
 }
