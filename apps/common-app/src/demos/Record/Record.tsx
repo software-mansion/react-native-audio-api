@@ -63,8 +63,6 @@ const Record: FC = () => {
       contentText: paused ? 'Paused recording' : 'Recording...',
       paused,
       smallIconResourceName: 'logo',
-      pauseIconResourceName: 'pause',
-      resumeIconResourceName: 'resume',
       color: 0xff6200,
       showStopAction: true,
       stopIconResourceName: 'stop',

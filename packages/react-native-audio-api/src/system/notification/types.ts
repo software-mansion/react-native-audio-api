@@ -69,16 +69,6 @@ export interface RecordingNotificationInfo {
   paused?: boolean;
   smallIconResourceName?: string;
   largeIconResourceName?: string;
-  /**
-   * Action icon; ignored on Android 12+ where the system renders text-only
-   * actions.
-   */
-  pauseIconResourceName?: string;
-  /**
-   * Action icon; ignored on Android 12+ where the system renders text-only
-   * actions.
-   */
-  resumeIconResourceName?: string;
   color?: number;
   /**
    * Shows a stop action that ends the recording natively — it works even when
@@ -87,11 +77,6 @@ export interface RecordingNotificationInfo {
    * Default: false.
    */
   showStopAction?: boolean;
-  /**
-   * Action icon; ignored on Android 12+ where the system renders text-only
-   * actions.
-   */
-  stopIconResourceName?: string;
   /** Label of the pause action. Default: 'Pause'. */
   pauseActionTitle?: string;
   /** Label of the resume action. Default: 'Resume'. */
