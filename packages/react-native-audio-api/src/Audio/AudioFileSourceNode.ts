@@ -129,10 +129,6 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     }
   }
 
-  isBuffering(): boolean {
-    return (this.node as IAudioFileSourceNode).buffering;
-  }
-
   private resetNodeAndSubscriptions(): void {
     if (this.node) {
       (this.node as IAudioFileSourceNode).onPositionChanged = '0';

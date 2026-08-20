@@ -25,7 +25,6 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_PROPERTY_GETTER_DECL(currentTime);
   JSI_PROPERTY_GETTER_DECL(duration);
   JSI_PROPERTY_GETTER_DECL(routedThroughMediaElement);
-  JSI_PROPERTY_GETTER_DECL(buffering);
 
   JSI_PROPERTY_SETTER_DECL(volume);
   JSI_PROPERTY_SETTER_DECL(playbackRate);

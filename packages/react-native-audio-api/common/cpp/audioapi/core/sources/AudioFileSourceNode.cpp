@@ -35,8 +35,8 @@ AudioFileSourceNode::AudioFileSourceNode(
           context->getAudioEventHandlerRegistry(),
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL),
           true),
-      onBufferingStateChangeEvent_(context->getAudioEventHandlerRegistry()),
-      bufferingStartThresholdFrames_(
+      bufferingStateDispatcher_(
+          context->getAudioEventHandlerRegistry(),
           static_cast<int>(context->getSampleRate() * ON_BUFFERING_STATE_DEBOUNCE_INTERVAL)) {
   decoderState_->playbackRate.store(options.playbackRate, std::memory_order_release);
   decoderState_->preservesPitch.store(options.preservesPitch, std::memory_order_release);
@@ -89,28 +89,7 @@ void AudioFileSourceNode::assignOnPositionChangedCallbackId(uint64_t callbackId)
 }
 
 void AudioFileSourceNode::assignOnBufferingStateChangeCallbackId(uint64_t callbackId) {
-  onBufferingStateChangeEvent_.assignCallbackId(callbackId);
-}
-
-void AudioFileSourceNode::updateBufferingState(bool hasData, int framesToProcess) {
-  if (!onBufferingStateChangeEvent_.hasCallback()) {
-    return;
-  }
-
-  if (hasData) {
-    starvedFrames_ = 0;
-    if (isBuffering_.exchange(false, std::memory_order_acq_rel)) {
-      onBufferingStateChangeEvent_.dispatchFromAudioThread(BoolValuePayload{.value = false});
-    }
-    return;
-  }
-
-  starvedFrames_ += framesToProcess;
-  if (!isBuffering_.load(std::memory_order_acquire) &&
-      starvedFrames_ >= bufferingStartThresholdFrames_) {
-    isBuffering_.store(true, std::memory_order_release);
-    onBufferingStateChangeEvent_.dispatchFromAudioThread(BoolValuePayload{.value = true});
-  }
+  bufferingStateDispatcher_.assignCallbackId(callbackId);
 }
 
 bool AudioFileSourceNode::initDecoder(
@@ -464,7 +443,7 @@ void AudioFileSourceNode::pause() {
   filePaused_ = true;
   // A deliberate pause is not a stall — don't leave a stale "buffering" state
   // observed by JS once processDecodedOutput() stops being called below.
-  updateBufferingState(/* hasData */ true, 0);
+  bufferingStateDispatcher_.advance(/* hasData */ true, 0);
 }
 
 void AudioFileSourceNode::disable() {
@@ -472,7 +451,7 @@ void AudioFileSourceNode::disable() {
   filePaused_ = false;
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
-  updateBufferingState(/* hasData */ true, 0);
+  bufferingStateDispatcher_.advance(/* hasData */ true, 0);
 
   AudioScheduledSourceNode::disable();
 }
@@ -753,12 +732,12 @@ void AudioFileSourceNode::processDecodedOutput(
   const bool hasFreshChunk = needsFreshDecoderChunk && readNextFrameChunk(incoming);
 
   if (!hasFreshChunk && pendingDecoderChunk_.size == 0) {
-    updateBufferingState(/* hasData */ false, framesToProcess);
+    bufferingStateDispatcher_.advance(/* hasData */ false, framesToProcess);
     processingBuffer->zero();
     return;
   }
 
-  updateBufferingState(/* hasData */ true, framesToProcess);
+  bufferingStateDispatcher_.advance(/* hasData */ true, framesToProcess);
 
   if (hasFreshChunk && incoming.state == StreamState::END_OF_STREAM) {
     currentTime_.store(duration_, std::memory_order_release);

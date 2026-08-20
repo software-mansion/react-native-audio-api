@@ -53,11 +53,8 @@ const Audio = React.memo(
     const [isBuffering, setIsBuffering] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
 
-    // 'buffering' is a UI-facing overlay on top of the 'playing' intent, not a
-    // fourth state tracked alongside it — see AudioTagPlaybackState's doc
-    // comment. Keeping it derived (rather than folding it into playbackState
-    // directly) avoids the buffering-subscription effect below tearing itself
-    // down every time a stall starts/ends.
+    // Derived rather than folded into playbackState directly, so the
+    // buffering-subscription effect below isn't torn down on every stall.
     const publicPlaybackState = useMemo<AudioTagPlaybackState>(
       () =>
         playbackState === 'playing' && isBuffering

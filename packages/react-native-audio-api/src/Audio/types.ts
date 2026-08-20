@@ -24,10 +24,8 @@ export type AudioSource = AudioURISource | AudioRequireSource | string;
 export type PreloadType = 'auto' | 'metadata' | 'none';
 
 /**
- * `'buffering'` is a sub-state of `'playing'`: playback was started and hasn't
- * been paused/stopped, but the render thread is currently stalled waiting on
- * decoded data (a real network/decoder stall, debounced natively against normal
- * decode-ahead jitter — see `onWaiting`/`onPlaying`).
+ * `'buffering'` is a sub-state of `'playing'` — stalled on decoded data. See
+ * `onWaiting`/`onPlaying`.
  */
 export type AudioTagPlaybackState = 'idle' | 'playing' | 'paused' | 'buffering';
 
@@ -90,15 +88,13 @@ interface AudioEventProps {
   onPause: TMPEmptyEventHandler;
   onVolumeChange: TMPNumberEventHandler;
   /**
-   * Fires when playback stalls waiting on decoded data — mirrors the HTML
-   * `<audio>`/`<video>` `waiting` event. Not fired for a deliberate pause/seek,
-   * only for a genuine stall while `playbackState === 'playing'`.
+   * Fires on a genuine stall (not a deliberate pause) — mirrors HTML media's
+   * `waiting`.
    */
   onWaiting: TMPEmptyEventHandler;
   /**
-   * Fires when playback resumes after a stall reported via `onWaiting` —
-   * mirrors the HTML `<audio>`/`<video>` `playing` event. Not fired for the
-   * initial `play()` call — see `onPlay` for that.
+   * Fires when playback resumes after `onWaiting` — mirrors HTML media's
+   * `playing`.
    */
   onPlaying: TMPEmptyEventHandler;
 }

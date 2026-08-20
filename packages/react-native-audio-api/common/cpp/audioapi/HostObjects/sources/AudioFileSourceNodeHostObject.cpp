@@ -35,8 +35,7 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, currentTime),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, duration),
-      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, routedThroughMediaElement),
-      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, buffering));
+      JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, routedThroughMediaElement));
   addSetters(
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onPositionChanged),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onBufferingStateChanged),
@@ -120,10 +119,6 @@ JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, duration) {
 
 JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, routedThroughMediaElement) {
   return {audioFileSourceNode_->isRoutedThroughMediaElement()};
-}
-
-JSI_PROPERTY_GETTER_IMPL(AudioFileSourceNodeHostObject, buffering) {
-  return {audioFileSourceNode_->isBuffering()};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, pause) {

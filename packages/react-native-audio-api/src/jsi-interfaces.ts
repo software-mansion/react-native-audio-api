@@ -241,12 +241,6 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   readonly currentTime: number;
   readonly duration: number;
   readonly routedThroughMediaElement: boolean;
-  /**
-   * True once the render thread has gone without a decoded frame for longer
-   * than the native debounce interval — i.e. genuinely stalled, not just normal
-   * decode-ahead jitter. See `onBufferingStateChanged`.
-   */
-  readonly buffering: boolean;
   pause: () => void;
   seekToTime: (seconds: number) => void;
 
