@@ -27,6 +27,16 @@ struct DoubleValuePayload {
   }
 };
 
+struct BoolValuePayload {
+  bool value;
+
+  facebook::jsi::Object toJsiObject(facebook::jsi::Runtime &rt) const {
+    facebook::jsi::Object obj(rt);
+    obj.setProperty(rt, "value", value);
+    return obj;
+  }
+};
+
 struct InterruptionPayload {
   std::string type;
   bool shouldResume;
@@ -90,6 +100,7 @@ struct AudioReadyPayload {
 using AudioEventPayload = std::variant<
     EmptyPayload,
     DoubleValuePayload,
+    BoolValuePayload,
     InterruptionPayload,
     StringPayload,
     BufferEndedPayload,

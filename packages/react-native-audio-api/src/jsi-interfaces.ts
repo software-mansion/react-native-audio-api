@@ -246,6 +246,7 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onPositionChanged: string;
+  onBufferingStateChanged: string;
 }
 
 export interface IMediaElementAudioSourceNode extends IAudioNode {}

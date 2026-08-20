@@ -7,6 +7,10 @@ export interface EventTypeWithValue {
   value: number;
 }
 
+export interface EventTypeWithBool {
+  value: boolean;
+}
+
 export type InterruptionType = 'began' | 'ended';
 
 export interface OnInterruptionEventType {
@@ -75,6 +79,8 @@ interface AudioAPIEvents {
   positionChanged: EventTypeWithValue;
   bufferEnded: OnBufferEndEventType;
   recorderError: OnRecorderErrorEventType;
+  /** `value` is true while an `<Audio>` source is stalled on decoded data. */
+  bufferingStateChanged: EventTypeWithBool;
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;
