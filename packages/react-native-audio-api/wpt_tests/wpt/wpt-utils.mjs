@@ -46,6 +46,71 @@ const WEB_AUDIO_CLASSES = [
   'WaveShaperNode',
 ];
 
+/**
+ * The jsdom window of the test file currently running.
+ *
+ * The Web Audio classes are loaded once and shared by every test window, so their
+ * prototypes must be patched once, not per window. A patch that closed over its
+ * `window` would keep that window — and every AudioContext created in it — alive for
+ * the rest of the run, so the shared patches read the current window from here instead.
+ */
+let currentTestWindow = null;
+
+export function setCurrentTestWindow(window) {
+  currentTestWindow = window;
+}
+
+export function getCurrentTestWindow() {
+  return currentTestWindow;
+}
+
+/** Prototype -> "layer:member" pairs already patched, so setup() cannot chain wrappers. */
+const patchedPrototypeMembers = new WeakMap();
+
+/**
+ * Claim `prototype[key]` for one patch layer. Returns false if that layer already
+ * claimed it, which is how repeated setup() calls avoid stacking a new wrapper on the
+ * previous one.
+ *
+ * Layers are independent and compose: several of them legitimately wrap the same member
+ * (realm errors around the Float32Array assertion, say), and each must land exactly once.
+ */
+function claimPrototypeMember(prototype, key, layer) {
+  let patched = patchedPrototypeMembers.get(prototype);
+  if (patched == null) {
+    patched = new Set();
+    patchedPrototypeMembers.set(prototype, patched);
+  }
+  const claim = `${layer}:${key}`;
+  if (patched.has(claim)) {
+    return false;
+  }
+  patched.add(claim);
+  return true;
+}
+
+/**
+ * Install `wrap(original)` as `prototype[methodName]`, at most once per prototype.
+ * Later calls are no-ops, which keeps the wrapper depth at one however many test
+ * files run.
+ *
+ * @param {object} prototype
+ * @param {string} methodName
+ * @param {(original: Function) => Function} wrap
+ * @param {string} layer identifies the patch, so independent layers can each apply once
+ */
+export function patchPrototypeOnce(prototype, methodName, wrap, layer) {
+  if (prototype == null || typeof prototype[methodName] !== 'function') {
+    return;
+  }
+
+  if (!claimPrototypeMember(prototype, methodName, layer)) {
+    return;
+  }
+
+  prototype[methodName] = wrap(prototype[methodName]);
+}
+
 /** Node constructors already wrapped for invalid-argument TypeErrors. */
 export const WRAPPED_NODE_CONSTRUCTORS = new Set([
   'AnalyserNode',
@@ -116,21 +181,26 @@ function toWindowRealmPromise(window, thenable) {
   });
 }
 
-function wrapWithRealmErrors(window, fn) {
+function wrapWithRealmErrors(fn) {
   return function (...args) {
     try {
       const result = fn.apply(this, args);
       if (isThenable(result)) {
-        return toWindowRealmPromise(window, result);
+        return toWindowRealmPromise(getCurrentTestWindow(), result);
       }
       return result;
     } catch (error) {
-      throw toWindowRealmError(window, error);
+      throw toWindowRealmError(getCurrentTestWindow(), error);
     }
   };
 }
 
-function wrapPrototypeMembers(window, ctor) {
+/**
+ * Wrap every method and accessor on `ctor.prototype` so errors surface in the test's
+ * realm. The Web Audio classes are shared by all test windows, so each member is
+ * wrapped once and the wrapper looks the window up per call.
+ */
+function wrapPrototypeMembers(ctor) {
   if (typeof ctor !== 'function') {
     return;
   }
@@ -146,24 +216,30 @@ function wrapPrototypeMembers(window, ctor) {
       continue;
     }
 
-    if (desc.get != null || desc.set != null) {
+    const isAccessor = desc.get != null || desc.set != null;
+    if (!isAccessor && typeof desc.value !== 'function') {
+      continue;
+    }
+    if (!claimPrototypeMember(proto, key, 'realm-errors')) {
+      continue;
+    }
+
+    if (isAccessor) {
       const replacement = { ...desc };
       if (desc.get != null) {
-        replacement.get = wrapWithRealmErrors(window, desc.get);
+        replacement.get = wrapWithRealmErrors(desc.get);
       }
       if (desc.set != null) {
-        replacement.set = wrapWithRealmErrors(window, desc.set);
+        replacement.set = wrapWithRealmErrors(desc.set);
       }
       Object.defineProperty(proto, key, replacement);
       continue;
     }
 
-    if (typeof desc.value === 'function') {
-      Object.defineProperty(proto, key, {
-        ...desc,
-        value: wrapWithRealmErrors(window, desc.value),
-      });
-    }
+    Object.defineProperty(proto, key, {
+      ...desc,
+      value: wrapWithRealmErrors(desc.value),
+    });
   }
 }
 
@@ -188,7 +264,7 @@ function wrapConstructorWithRealmErrors(window, name) {
 
 export function wrapWebAudioRealmErrors(window) {
   for (const name of WEB_AUDIO_CLASSES) {
-    wrapPrototypeMembers(window, window[name]);
+    wrapPrototypeMembers(window[name]);
 
     if (!WRAPPED_NODE_CONSTRUCTORS.has(name)) {
       wrapConstructorWithRealmErrors(window, name);
@@ -224,29 +300,25 @@ export function wrapAudioBufferCopyMethods(window) {
     return;
   }
 
-  const originalCopyFromChannel = AudioBuffer.prototype.copyFromChannel;
-  const originalCopyToChannel = AudioBuffer.prototype.copyToChannel;
+  patchPrototypeOnce(
+    AudioBuffer.prototype,
+    'copyFromChannel',
+    (original) =>
+      function copyFromChannel(destination, channelNumber, startInChannel = 0) {
+        assertFloat32Array(destination, 'destination', getCurrentTestWindow());
+        return original.call(this, destination, channelNumber, startInChannel);
+      },
+    'float32-assert'
+  );
 
-  AudioBuffer.prototype.copyFromChannel = function copyFromChannel(
-    destination,
-    channelNumber,
-    startInChannel = 0
-  ) {
-    assertFloat32Array(destination, 'destination', window);
-    return originalCopyFromChannel.call(
-      this,
-      destination,
-      channelNumber,
-      startInChannel
-    );
-  };
-
-  AudioBuffer.prototype.copyToChannel = function copyToChannel(
-    source,
-    channelNumber,
-    startInChannel = 0
-  ) {
-    assertFloat32Array(source, 'source', window);
-    return originalCopyToChannel.call(this, source, channelNumber, startInChannel);
-  };
+  patchPrototypeOnce(
+    AudioBuffer.prototype,
+    'copyToChannel',
+    (original) =>
+      function copyToChannel(source, channelNumber, startInChannel = 0) {
+        assertFloat32Array(source, 'source', getCurrentTestWindow());
+        return original.call(this, source, channelNumber, startInChannel);
+      },
+    'float32-assert'
+  );
 }

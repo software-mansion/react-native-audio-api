@@ -10,6 +10,11 @@
  * library's core constructors.
  */
 
+import {
+  getCurrentTestWindow,
+  patchPrototypeOnce,
+} from '../wpt-utils.mjs';
+
 /**
  * @param {object} node
  * @param {{
@@ -93,13 +98,16 @@ function lockMergerOrSplitterInstance(instance, window) {
   return instance;
 }
 
-function wrapFactory(original, window) {
+function wrapFactory(original) {
   if (typeof original !== 'function') {
     return original;
   }
 
   return function (...args) {
-    return lockMergerOrSplitterInstance(original.apply(this, args), window);
+    return lockMergerOrSplitterInstance(
+      original.apply(this, args),
+      getCurrentTestWindow()
+    );
   };
 }
 
@@ -136,18 +144,19 @@ export function applyChannelMergerSplitterAttributeLocks(window) {
       continue;
     }
 
+    // Context prototypes are shared by every test window; patch them once.
     const proto = Ctor.prototype;
-    if (typeof proto.createChannelMerger === 'function') {
-      proto.createChannelMerger = wrapFactory(
-        proto.createChannelMerger,
-        window
-      );
-    }
-    if (typeof proto.createChannelSplitter === 'function') {
-      proto.createChannelSplitter = wrapFactory(
-        proto.createChannelSplitter,
-        window
-      );
-    }
+    patchPrototypeOnce(
+      proto,
+      'createChannelMerger',
+      wrapFactory,
+      'merger-splitter-lock'
+    );
+    patchPrototypeOnce(
+      proto,
+      'createChannelSplitter',
+      wrapFactory,
+      'merger-splitter-lock'
+    );
   }
 }
