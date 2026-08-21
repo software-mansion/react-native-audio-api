@@ -1,5 +1,6 @@
 import AudioBuffer from '../core/AudioBuffer';
 import { NotificationEvents } from '../system';
+import { ContextState } from '../types';
 
 export interface EventEmptyType {}
 
@@ -34,6 +35,10 @@ export interface OnRouteChangeEventType {
 
 export interface OnRecorderErrorEventType {
   message: string;
+}
+
+export interface OnStateChangeEventType {
+  state: ContextState;
 }
 
 type SystemEvents = {
@@ -81,6 +86,7 @@ interface AudioAPIEvents {
   recorderError: OnRecorderErrorEventType;
   /** `value` is true while an `<Audio>` source is stalled on decoded data. */
   bufferingStateChanged: EventTypeWithBool;
+  stateChange: OnStateChangeEventType;
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;

@@ -51,6 +51,9 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
 }
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, startRendering) {
+  // No promise acknowledges this first transition; rendering counts as
+  // running from the moment it is requested, synchronously with the call.
+  context_->setPublishedState(ContextState::RUNNING);
   return promiseVendor_->createPromise([this](Promise &&promise) {
     auto resultPromise = OfflineAudioContextResultPromise::makeOfflineAudioContextResultResolver(
         std::move(promise), context_);
