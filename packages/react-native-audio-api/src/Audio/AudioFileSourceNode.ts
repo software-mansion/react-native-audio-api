@@ -18,21 +18,21 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     globalThis.AudioEventEmitter
   );
 
-  private endedSubscription: AudioEventSubscription | null = null;
+  private attachedEndedSubscription: AudioEventSubscription | null = null;
   private positionSubscription: AudioEventSubscription | null = null;
   private bufferingSubscription: AudioEventSubscription | null = null;
 
   attach(options: AttachFileSourceOptions): { duration: number } {
     this.resetNodeAndSubscriptions();
 
-    this.endedSubscription = this.emitter.addAudioEventListener(
+    this.attachedEndedSubscription = this.emitter.addAudioEventListener(
       'ended',
       (_event: EventEmptyType) => {
         options.onEnded();
       }
     );
     (this.node as IAudioFileSourceNode).onEnded =
-      this.endedSubscription.subscriptionId;
+      this.attachedEndedSubscription.subscriptionId;
 
     return {
       duration: (this.node as IAudioFileSourceNode).duration,
@@ -146,8 +146,8 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
   private resetNodeAndSubscriptions(): void {
     this.stopPositionTracking();
     this.stopBufferingTracking();
-    this.endedSubscription?.remove();
-    this.endedSubscription = null;
+    this.attachedEndedSubscription?.remove();
+    this.attachedEndedSubscription = null;
 
     if (this.node) {
       (this.node as IAudioFileSourceNode).onEnded = '0';

@@ -7,8 +7,12 @@
 
 namespace audioapi::dsp {
 
+/// Round to the nearest frame, matching Blink and the WPT reference
+/// (audit-util.js). Truncation lands one frame late whenever
+/// `time * sampleRate` computes fractionally below the intended integer
+/// (e.g. 0.03 * 44100 = 1322.9999...).
 [[nodiscard]] inline size_t timeToSampleFrame(double time, float sampleRate) {
-  return static_cast<size_t>(time * sampleRate);
+  return static_cast<size_t>(0.5 + time * sampleRate);
 }
 
 [[nodiscard]] inline double sampleFrameToTime(int sampleFrame, float sampleRate) {
