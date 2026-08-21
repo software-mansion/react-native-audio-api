@@ -22,6 +22,42 @@
   z-index: 100;
 }
 
+footer.footer {
+  --ifm-footer-padding-vertical: 32px;
+}
+
+@media (max-width: 996px) {
+  footer.footer {
+    --ifm-footer-padding-vertical: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  footer.footer {
+    --ifm-footer-padding-vertical: 20px;
+  }
+}
+
+footer .footer__bottom [class*='footer__copyright'] {
+  justify-content: center;
+  padding-bottom: var(--swm-footer-copyright-padding-bottom);
+}
+
+footer .footer__bottom [class*='footer__copyright'] p {
+  text-align: center;
+}
+
+footer .footer__bottom [class*='footer__copyright'] a,
+footer .footer__bottom [class*='footer__copyright'] a:hover {
+  text-decoration: none;
+}
+
+@media (max-width: 996px) {
+  footer .footer__bottom [class*='footer__copyright'] {
+    align-items: center;
+  }
+}
+
 .docusaurus-mermaid-container {
   display: flex;
   justify-content: center;
