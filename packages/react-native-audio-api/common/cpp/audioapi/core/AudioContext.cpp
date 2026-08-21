@@ -70,10 +70,10 @@ bool AudioContext::tryStartDriver() {
 
   if (audioPlayer_->start()) {
     isInitialized_.store(true, std::memory_order_release);
-    // The driver also starts implicitly, from the first
-    // `AudioScheduledSourceNode::start()`. Publish RUNNING here so the visible state
+    // Publish RUNNING here so the visible state
     // never reports SUSPENDED while the graph is actually rendering; `resume()`
-    // reaches the same state through its promise task.
+    // reaches the same state through its promise task (its dispatch then
+    // dedupes against this one).
     setState(ContextState::RUNNING);
     return true;
   }

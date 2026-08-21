@@ -35,7 +35,6 @@ export default class AudioContext extends BaseAudioContext {
 
     this.setControlState('closed');
     await (this.context as IAudioContext).close();
-    this.publishState('closed');
   }
 
   async resume(): Promise<undefined> {
@@ -45,7 +44,6 @@ export default class AudioContext extends BaseAudioContext {
 
     this.setControlState('running');
     await (this.context as IAudioContext).resume();
-    this.publishState('running');
   }
 
   async suspend(): Promise<undefined> {
@@ -55,7 +53,6 @@ export default class AudioContext extends BaseAudioContext {
 
     this.setControlState('suspended');
     await (this.context as IAudioContext).suspend();
-    this.publishState('suspended');
   }
 
   /**
@@ -66,12 +63,9 @@ export default class AudioContext extends BaseAudioContext {
   public override markRunningOnSourceStart(): void {
     if (this._state === 'suspended') {
       this.setControlState('running');
-      (this.context as IAudioContext)
-        .resume()
-        .then(() => this.publishState('running'))
-        .catch(() => {
-          // The driver refused to start; the attribute keeps reporting reality.
-        });
+      (this.context as IAudioContext).resume().catch(() => {
+        // The driver refused to start; the attribute keeps reporting reality.
+      });
     }
   }
 

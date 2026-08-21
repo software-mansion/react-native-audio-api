@@ -227,6 +227,33 @@ const buffer = await this.audioContext.decodeAudioData(data, 4800, 2, false);
 ```
 </details>
 
+## Events
+
+### `onstatechange`
+
+Sets (or removes, when `null` is assigned) a callback fired whenever the context's [`state`](./base-audio-context.mdx#properties) changes to a different value.
+
+The event is dispatched by the native audio engine once a transition is **acknowledged** — after the promise of the operation that caused it ([`resume`](./audio-context.mdx#resume), [`suspend`](./audio-context.mdx#suspend), [`close`](./audio-context.mdx#close), [`OfflineAudioContext.startRendering`](./offline-audio-context.mdx#startrendering)) has resolved. Code awaiting that promise always observes the new `state` value first; the `statechange` callback runs in a later task.
+
+It also fires for transitions no method call requested, e.g. when the context starts running implicitly because a source node's `start()` engaged the audio driver.
+
+The callback receives an event object:
+
+| Field | Type | Description |
+| :---: | :---: | :---- |
+| `type` | `string` | Always `'statechange'`. |
+| `target` | [`BaseAudioContext`](./base-audio-context.mdx) | The context whose state changed. |
+
+```tsx
+const audioContext = new AudioContext();
+
+audioContext.onstatechange = (event) => {
+  console.log(`state is now ${event.target.state}`);
+};
+
+await audioContext.resume(); // logs "state is now running" shortly after
+```
+
 ## Remarks
 
 #### `currentTime`

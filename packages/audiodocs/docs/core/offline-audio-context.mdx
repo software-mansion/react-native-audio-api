@@ -49,3 +49,31 @@ Resume time progression in audio context when it has been suspended.
 Starts rendering the audio, taking into account the current connections and the current scheduled changes.
 
 #### Returns `Promise<AudioBuffer>`.
+
+## Events
+
+Inherits [`onstatechange`](./base-audio-context.mdx#onstatechange) from [`BaseAudioContext`](./base-audio-context.mdx#events). It fires when rendering starts (`running`), when a scheduled [`suspend`](./offline-audio-context.mdx#suspend) point is reached (`suspended`), after [`resume`](./offline-audio-context.mdx#resume) (`running`), and when rendering finishes (`closed`).
+
+### `oncomplete`
+
+Sets (or removes, when `null` is assigned) a callback fired when rendering has finished. It is dispatched after the `closed` [`statechange`](./base-audio-context.mdx#onstatechange), so the two events always arrive in spec order. The callback receives an event object:
+
+| Field | Type | Description |
+| :---: | :---: | :---- |
+| `type` | `string` | Always `'complete'`. |
+| `target` | [`OfflineAudioContext`](./offline-audio-context.mdx) | The context that finished rendering. |
+| `renderedBuffer` | [`AudioBuffer`](../sources/audio-buffer.mdx) | The rendered audio. |
+
+```tsx
+const offlineContext = new OfflineAudioContext({
+  numberOfChannels: 2,
+  length: 44100,
+  sampleRate: 44100,
+});
+
+offlineContext.oncomplete = (event) => {
+  console.log(`rendered ${event.renderedBuffer.duration}s of audio`);
+};
+
+await offlineContext.startRendering();
+```

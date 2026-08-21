@@ -18,6 +18,7 @@ BaseAudioContext::BaseAudioContext(
     : state_(ContextState::SUSPENDED),
       sampleRate_(sampleRate),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      stateChangeEvent_(audioEventHandlerRegistry),
       pendingPromisesOffloader_(
           std::make_unique<task_offloader::TaskOffloader<
               ContextPromiseTask,
@@ -62,6 +63,21 @@ std::size_t BaseAudioContext::getCurrentSampleFrame() const {
 
 double BaseAudioContext::getCurrentTime() const {
   return static_cast<double>(getCurrentSampleFrame()) / getSampleRate();
+}
+
+void BaseAudioContext::assignOnStateChangeCallbackId(uint64_t callbackId) {
+  stateChangeEvent_.assignCallbackId(callbackId);
+}
+
+void BaseAudioContext::dispatchStateChange(ContextState state) {
+  if (lastDispatchedState_.exchange(state, std::memory_order_acq_rel) == state) {
+    return;
+  }
+
+  // FIFO with the promise resolution the caller just enqueued, so the event
+  // fires between this transition's continuations and the next transition's —
+  // the handler observes each state, not just the final one.
+  stateChangeEvent_.dispatch(StringPayload{.name = "state", .reason = contextStateToString(state)});
 }
 
 void BaseAudioContext::setState(ContextState state) {
