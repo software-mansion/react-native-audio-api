@@ -1,5 +1,6 @@
 import { InvalidStateError, NotSupportedError } from '../errors';
 import { assertSupportedSampleRate } from '../utils/validation';
+import { OnStateChangeEventType } from '../events/types';
 import { IOfflineAudioContext } from '../jsi-interfaces';
 import { OfflineAudioContextOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
@@ -14,6 +15,8 @@ export interface OfflineAudioCompletionEvent {
 export default class OfflineAudioContext extends BaseAudioContext {
   private isRendering: boolean;
   private duration: number;
+  /** Set when startRendering() resolves; consumed by the `closed` statechange. */
+  private pendingRenderedBuffer: AudioBuffer | null;
 
   /**
    * Web Audio API `complete` event handler, dispatched when startRendering()
@@ -55,6 +58,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
 
     this.isRendering = false;
     this.oncomplete = null;
+    this.pendingRenderedBuffer = null;
   }
 
   async resume(): Promise<undefined> {
@@ -72,7 +76,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
 
     this.setControlState('running');
     await (this.context as IOfflineAudioContext).resume();
-    this.publishState('running');
   }
 
   async suspend(suspendTime: number): Promise<undefined> {
@@ -101,7 +104,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     const result = await (this.context as IOfflineAudioContext).suspend(
       suspendTime
     );
-    this.publishState('suspended');
+    this.setControlState('suspended');
     return result;
   }
 
@@ -111,23 +114,34 @@ export default class OfflineAudioContext extends BaseAudioContext {
     }
 
     this.isRendering = true;
-    this.publishState('running');
+    this.setControlState('running');
     const audioBuffer = await (
       this.context as IOfflineAudioContext
     ).startRendering();
-    this.publishState('closed');
+    this.setControlState('closed');
 
     const renderedBuffer = new AudioBuffer(audioBuffer);
-    // A task, not a microtask: `statechange` (queued by publishState above)
-    // must fire before `complete`, per the spec's ordering.
-    setTimeout(() => {
-      this.oncomplete?.({
-        type: 'complete',
-        target: this,
-        renderedBuffer,
-      });
-    }, 0);
+    // `complete` is fired by onNativeStateChange when the native `closed`
+    // statechange lands — a strictly later task than this continuation — so
+    // `statechange` always precedes `complete`, per the spec's ordering.
+    this.pendingRenderedBuffer = renderedBuffer;
 
     return renderedBuffer;
+  }
+
+  protected override onNativeStateChange(event: OnStateChangeEventType): void {
+    super.onNativeStateChange(event);
+
+    if (event.state !== 'closed' || this.pendingRenderedBuffer === null) {
+      return;
+    }
+
+    const renderedBuffer = this.pendingRenderedBuffer;
+    this.pendingRenderedBuffer = null;
+    this.oncomplete?.({
+      type: 'complete',
+      target: this,
+      renderedBuffer,
+    });
   }
 }
