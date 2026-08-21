@@ -8,11 +8,9 @@ import {
   AudioBufferQueueSourceState,
 } from '../types';
 import { OnBufferEndEventType } from '../events/types';
-import { AudioEventSubscription } from '../events';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
   private onBufferEndedCallback?: (event: OnBufferEndEventType) => void;
-  private onBufferEndedSubscription: AudioEventSubscription | null = null;
   private state: AudioBufferQueueSourceState = AudioBufferQueueSourceState.IDLE;
 
   constructor(
@@ -62,7 +60,6 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     this.state = AudioBufferQueueSourceState.PLAYING;
 
     (this.node as IAudioBufferQueueSourceNode).start(when, offset);
-    this.context.markRunningOnSourceStart();
   }
 
   public override stop(when: number = 0): void {
@@ -85,9 +82,6 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
   public set onBufferEnded(
     callback: ((event: OnBufferEndEventType) => void) | null
   ) {
-    this.onBufferEndedSubscription?.remove();
-    this.onBufferEndedSubscription = null;
-
     if (!callback) {
       (this.node as IAudioBufferQueueSourceNode).onBufferEnded = '0';
       this.onBufferEndedCallback = undefined;
@@ -95,11 +89,13 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     }
 
     this.onBufferEndedCallback = callback;
-    this.onBufferEndedSubscription =
-      this.audioEventEmitter.addAudioEventListener('bufferEnded', callback);
+    const sub = this.audioEventEmitter.addAudioEventListener(
+      'bufferEnded',
+      callback
+    );
 
     (this.node as IAudioBufferQueueSourceNode).onBufferEnded =
-      this.onBufferEndedSubscription.subscriptionId;
+      sub.subscriptionId;
   }
 
   public pause(): void {
