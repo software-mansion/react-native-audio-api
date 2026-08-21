@@ -25,7 +25,12 @@ std::shared_ptr<ContextPromiseResolver<void>> ContextPromiseResolver<T>::makeCon
         // Spec: update the state attribute in the same follow-up task that
         // resolves the lifecycle promise (before statechange reactions).
         audioContext->setState(nextState);
-        jsiPromise->resolve([](jsi::Runtime &runtime) { return jsi::Value::undefined(); });
+        // Publishes the JS-visible state on the JS thread
+        jsiPromise->resolve([audioContext, nextState](jsi::Runtime &runtime) {
+          audioContext->setPublishedState(nextState);
+          return jsi::Value::undefined();
+        });
+        audioContext->dispatchStateChange(nextState);
       },
       [jsiPromise](const std::string &message) { jsiPromise->reject(message); });
 }
@@ -44,9 +49,14 @@ ContextPromiseResolver<T>::makeOfflineAudioContextResultResolver(
         // resolves the startRendering promise (before statechange reactions).
         audioContext->setState(ContextState::CLOSED);
         auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
-        jsiPromise->resolve([audioBufferHostObject](jsi::Runtime &runtime) {
+        // Published in the resolution task, as above.
+        jsiPromise->resolve([audioContext, audioBufferHostObject](jsi::Runtime &runtime) {
+          audioContext->setPublishedState(ContextState::CLOSED);
           return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
         });
+        // Behind the resolve enqueue, as above; the TS layer orders the
+        // `complete` event after this statechange lands.
+        audioContext->dispatchStateChange(ContextState::CLOSED);
       },
       [jsiPromise](const std::string &message) { jsiPromise->reject(message); });
 }
