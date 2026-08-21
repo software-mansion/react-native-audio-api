@@ -99,6 +99,16 @@ const baselineCategories = categoryPassMap(baseline);
 const candidateCategories = categoryPassMap(candidate);
 
 /**
+ * The audit harness interleaves real assertion failures (`X <assertion>`) with
+ * roll-up lines that embed a running count — `< [task] 3 out of 3 assertions
+ * were failed.` and `# AUDIT TASK RUNNER FINISHED: 6 out of 17 tasks were
+ * failed.`. Fixing an assertion rewrites those counts, so a literal set
+ * difference reads the improved roll-up as a brand-new failure. Only the
+ * assertion lines identify a subtest, so only they gate the comparison.
+ */
+const isAssertionFailure = (message) => message.startsWith('X ');
+
+/**
  * Exact per-file comparison. Category pass counts cannot see an equal-count
  * swap (test X regresses while test Y starts passing), so when both reports
  * carry per-file data — reports written before it exists fall back to the
@@ -129,10 +139,10 @@ function compareFiles(baselineReport, candidateReport) {
       continue;
     }
 
-    const baseFailures = new Set(base.failures ?? []);
-    const subtests = (head.failures ?? []).filter(
-      (message) => !baseFailures.has(message)
-    );
+    const baseFailures = new Set((base.failures ?? []).filter(isAssertionFailure));
+    const subtests = (head.failures ?? [])
+      .filter(isAssertionFailure)
+      .filter((message) => !baseFailures.has(message));
     if (subtests.length > 0) {
       newFailures.push({ path: filePath, subtests });
     }
