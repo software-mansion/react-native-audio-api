@@ -5,9 +5,22 @@ import { OfflineAudioContextOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
 import BaseAudioContext from './BaseAudioContext';
 
+export interface OfflineAudioCompletionEvent {
+  type: 'complete';
+  target: OfflineAudioContext;
+  renderedBuffer: AudioBuffer;
+}
+
 export default class OfflineAudioContext extends BaseAudioContext {
   private isRendering: boolean;
   private duration: number;
+
+  /**
+   * Web Audio API `complete` event handler, dispatched when startRendering()
+   * finishes. Kept alongside the promise because plenty of code (and the WPT
+   * suite) never awaits the promise and relies on this event alone.
+   */
+  public oncomplete: ((event: OfflineAudioCompletionEvent) => void) | null;
 
   constructor(options: OfflineAudioContextOptions);
   constructor(numberOfChannels: number, length: number, sampleRate: number);
@@ -41,6 +54,7 @@ export default class OfflineAudioContext extends BaseAudioContext {
     }
 
     this.isRendering = false;
+    this.oncomplete = null;
   }
 
   async resume(): Promise<undefined> {
@@ -56,8 +70,9 @@ export default class OfflineAudioContext extends BaseAudioContext {
       );
     }
 
-    this._state = 'running';
-    return (this.context as IOfflineAudioContext).resume();
+    this.setControlState('running');
+    await (this.context as IOfflineAudioContext).resume();
+    this.publishState('running');
   }
 
   async suspend(suspendTime: number): Promise<undefined> {
@@ -81,10 +96,12 @@ export default class OfflineAudioContext extends BaseAudioContext {
       throw new InvalidStateError('the rendering is already finished');
     }
 
+    // The suspend promise resolves when rendering reaches the suspend point —
+    // the acknowledgment the spec publishes the state change on.
     const result = await (this.context as IOfflineAudioContext).suspend(
       suspendTime
     );
-    this._state = 'suspended';
+    this.publishState('suspended');
     return result;
   }
 
@@ -94,12 +111,23 @@ export default class OfflineAudioContext extends BaseAudioContext {
     }
 
     this.isRendering = true;
-    this._state = 'running';
+    this.publishState('running');
     const audioBuffer = await (
       this.context as IOfflineAudioContext
     ).startRendering();
-    this._state = 'closed';
+    this.publishState('closed');
 
-    return new AudioBuffer(audioBuffer);
+    const renderedBuffer = new AudioBuffer(audioBuffer);
+    // A task, not a microtask: `statechange` (queued by publishState above)
+    // must fire before `complete`, per the spec's ordering.
+    setTimeout(() => {
+      this.oncomplete?.({
+        type: 'complete',
+        target: this,
+        renderedBuffer,
+      });
+    }, 0);
+
+    return renderedBuffer;
   }
 }
