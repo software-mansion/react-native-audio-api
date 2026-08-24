@@ -152,6 +152,8 @@ Uses ObjC++ with `RCT_EXPORT_MODULE` and `RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD
 4. Create `AudioEventHandlerRegistry` (owns JS callbacks, needs runtime + callInvoker)
 5. Call `AudioAPIModuleInstaller::injectJSIBindings(...)`
 
+**Lazy `AVAudioEngine` invariant**: allocating the `AudioEngine` ObjC object at install does NOT create the underlying `AVAudioEngine`. It is created on demand by `createAudioEngineIfNeeded` (first node attach, engine start, rebuild), so apps that only use session management and notifications never allocate it. Every reader of `self.audioEngine` inside `AudioEngine.mm` must either nil-guard or call `createAudioEngineIfNeeded` first, and system-driven restart paths (`restartAudioEngine`) must not resurrect an engine when there is no tracked graph.
+
 **New Architecture support** (`getTurboModule`):
 ```objc
 #ifdef RCT_NEW_ARCH_ENABLED

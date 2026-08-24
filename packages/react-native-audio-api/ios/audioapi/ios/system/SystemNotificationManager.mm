@@ -222,11 +222,9 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   switch (routeChangeReason) {
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
-    case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
-    handleEngineConfigurationChange:
-      nil;
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange:
+      [self handleEngineConfigurationChange:nil];
       break;
-    }
     default:
       break;
   }
@@ -240,8 +238,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
   dispatch_async(dispatch_get_main_queue(), ^{
+    bool wasSessionActive = sessionManager.isActive;
     [sessionManager markInactive];
-    [sessionManager ensureActive:true error:nil];
+
+    if (wasSessionActive) {
+      [sessionManager ensureActive:true error:nil];
+    }
+
     [audioEngine restartAudioEngine];
   });
 }

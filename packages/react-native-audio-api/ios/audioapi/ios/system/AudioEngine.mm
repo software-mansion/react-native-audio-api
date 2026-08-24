@@ -120,7 +120,6 @@ static AudioEngine *_sharedInstance = nil;
     self.inputRegistration = nil;
 
     self.sessionManager = [AudioSessionManager sharedInstance];
-    [self createAudioEngineIfNeeded];
   }
 
   _sharedInstance = self;
@@ -624,6 +623,14 @@ static AudioEngine *_sharedInstance = nil;
 - (void)restartAudioEngine
 {
   std::scoped_lock lock(_engineLock);
+
+  // The engine is created lazily on first node attach. Apps that only use
+  // session management and notifications never have one, and a system-driven
+  // restart (media services reset, configuration change) must not create it.
+  if (![self hasTrackedGraph] && self.audioEngine == nil) {
+    return;
+  }
+
   [self rebuildAudioEngineAndResumeIfNeeded];
 }
 
