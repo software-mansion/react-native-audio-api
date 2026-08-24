@@ -442,11 +442,10 @@ static AudioEngine *_sharedInstance = nil;
     [self stopEngine];
     [self rebuildAudioEngine];
     self.state = AudioEngineState::AudioEngineStatePaused;
+    [self notifyConfigurationChanges];
     return;
   }
 
-  // BEFORE any engine call: the format read inside rebuildAudioEngine needs an active session, and a
-  // refusal here must return with Interrupted still intact so a later trigger can retry.
   if (![self.sessionManager ensureActive:true error:&error]) {
     NSLog(@"Error while activating audio session after interruption: %@", [error debugDescription]);
     return;
@@ -459,6 +458,7 @@ static AudioEngine *_sharedInstance = nil;
     NSLog(
         @"Error while materializing the audio input node after interruption: missing live input format");
     self.state = AudioEngineState::AudioEngineStateInterrupted;
+    [self notifyConfigurationChanges];
     return;
   }
 
@@ -470,11 +470,13 @@ static AudioEngine *_sharedInstance = nil;
         @"Error while restarting the audio engine after interruption: %@",
         [error debugDescription]);
     self.state = AudioEngineState::AudioEngineStateInterrupted;
-    // not Idle: stopEngine already set that return;
+    [self notifyConfigurationChanges];
+    return;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
   self.sessionDeactivationInvalidatedGraph = false;
+  [self notifyConfigurationChanges];
 }
 
 - (void)notifyConfigurationChanges
