@@ -32,7 +32,26 @@ OfflineAudioContext::OfflineAudioContext(
   // graph-event channel, so a large graph would otherwise fill it and block
   // the producer forever. Let the producing thread drain it itself for now;
   // renderAudio() hands draining back to the render thread.
-  getGraph()->setProducerSelfDrain(true);
+  getGraph()->enableProducerSelfDrain();
+}
+
+OfflineAudioContext::~OfflineAudioContext() {
+  // Join the promise worker first: a queued resume() task could spawn a fresh
+  // render thread after the join below. Both must be gone before base-class
+  // members (graph, disposer, driverMutex_) are destroyed.
+  joinPendingPromiseWorker();
+  stopRendering_.store(true, std::memory_order_release);
+  if (renderThread_.joinable()) {
+    if (renderThread_.get_id() == std::this_thread::get_id()) {
+      // The render thread can drop the context's last reference itself (a
+      // drained event lambda holding the final shared_ptr). Self-join would
+      // throw; the thread is already past its render loop, so let it finish
+      // unobserved.
+      renderThread_.detach();
+    } else {
+      renderThread_.join();
+    }
+  }
 }
 
 void OfflineAudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
@@ -81,15 +100,22 @@ bool OfflineAudioContext::suspend(
 
 void OfflineAudioContext::renderAudio(
     const std::shared_ptr<ContextPromiseResolver<void>> &resumePromise) {
-  // Flush while we are still the sole consumer, then hand the channel to the
-  // render thread.
-  getGraph()->processEvents();
-  getGraph()->setProducerSelfDrain(false);
+  getGraph()->disableProducerSelfDrain();
 
-  std::thread([this, resumePromise = resumePromise]() mutable {
+  // first wait for the previous render thread to finish
+  // can be in the middle because of suspend and then resume call again
+  if (renderThread_.joinable()) {
+    renderThread_.join();
+  }
+
+  renderThread_ = std::thread([this, resumePromise = resumePromise]() mutable {
     ContextPromiseResolver<void>::resolve(resumePromise);
+    // The resolver's callbacks (transitively) own this context — both
+    // `startRendering` and the HostObject resume path capture it. Release the
+    // reference so the render thread never keeps its own context alive:
+    resumePromise.reset();
 
-    while (currentSampleFrame_ < length_) {
+    while (!stopRendering_.load(std::memory_order_acquire) && currentSampleFrame_ < length_) {
       Locker locker(driverMutex_);
       int framesToProcess =
           std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
@@ -111,16 +137,19 @@ void OfflineAudioContext::renderAudio(
         // The render thread is about to exit; with no consumer again, let the
         // producer self-drain any graph mutations made from the suspend
         // callback until resume() restarts rendering.
-        getGraph()->setProducerSelfDrain(true);
-        getGraph()->processEvents();
+        getGraph()->enableProducerSelfDrain();
         locker.unlock();
         ContextPromiseResolver<void>::resolve(promise);
         return;
       }
     }
 
+    if (stopRendering_.load(std::memory_order_acquire)) {
+      return;
+    }
     OfflineAudioContextResultPromise::resolve(resultPromise_, resultBuffer_);
-  }).detach();
+    resultPromise_.reset();
+  });
 }
 
 void OfflineAudioContext::startRendering(

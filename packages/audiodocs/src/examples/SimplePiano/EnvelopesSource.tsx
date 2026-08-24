@@ -26,9 +26,9 @@ interface PlayingNote {
 const Keys = ['A', 'B', 'C', 'D', 'E'] as const;
 
 const sourceList: PR<string> = {
-  A: '/react-native-audio-api/audio/sounds/C4.mp3',
-  C: '/react-native-audio-api/audio/sounds/Ds4.mp3',
-  E: '/react-native-audio-api/audio/sounds/Fs4.mp3',
+  A: '/react-native-audio-api/audio/sounds/A3.mp3',
+  C: '/react-native-audio-api/audio/sounds/C4.mp3',
+  E: '/react-native-audio-api/audio/sounds/E4.mp3',
 };
 
 const Button = ({ onPressIn, onPressOut, keyName }: ButtonProps) => (

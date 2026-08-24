@@ -14,7 +14,6 @@ import type {
   ChannelSplitterOptions,
   ConstantSourceOptions,
   ConvolverOptions,
-  ContextState,
   DelayOptions,
   FileInfo,
   GainOptions,
@@ -43,7 +42,6 @@ export interface IOscillatorOptions extends Omit<
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly listener: IAudioListener;
-  readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
   readonly decoder: IAudioDecoder;
@@ -269,6 +267,7 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onPositionChanged: string;
+  onBufferingStateChanged: string;
 }
 
 export interface IMediaElementAudioSourceNode extends IAudioNode {}

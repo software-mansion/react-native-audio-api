@@ -11,11 +11,14 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/AudioRecorderOptions.h>
 
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <memory>
+#include <utility>
+
 namespace audioapi {
 
 using namespace facebook;
@@ -111,14 +114,17 @@ class AudioAPIModuleInstaller {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioRecorder"),
-        0,
+        1,
         [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
+          auto options = count > 0 ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
+                                   : AudioRecorderOptions{};
+
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry, &runtime, jsCallInvoker);
+              audioEventHandlerRegistry, &runtime, jsCallInvoker, std::move(options));
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 

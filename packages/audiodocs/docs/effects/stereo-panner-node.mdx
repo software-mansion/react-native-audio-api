@@ -18,27 +18,27 @@ constructor(context: BaseAudioContext, options?: StereoPannerOptions)
 
 ### `StereoPannerOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `pan` <Optional /> | `number` | `0.0` | Initial value for [`pan`](/docs/effects/stereo-panner-node#properties). |
+| `pan` <Optional /> | `number` | `0.0` | Initial value for [`pan`](./stereo-panner-node.mdx#properties). |
 
-You can also create a `StereoPannerNode` via the [`BaseAudioContext.createStereoPanner()`](/docs/core/base-audio-context#createstereopanner) factory method, which uses default values.
+You can also create a `StereoPannerNode` via the [`BaseAudioContext.createStereoPanner()`](../core/base-audio-context.mdx#createstereopanner) factory method, which uses default values.
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `pan` | [`AudioParam`](/docs/core/audio-param) | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing how the audio signal is distributed between the left and right channels. |
+| `pan` | [`AudioParam`](../core/audio-param.mdx) | [`a-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing how the audio signal is distributed between the left and right channels. |
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 

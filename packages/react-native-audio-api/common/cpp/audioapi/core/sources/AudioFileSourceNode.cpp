@@ -34,7 +34,10 @@ AudioFileSourceNode::AudioFileSourceNode(
       positionChanged_(
           context->getAudioEventHandlerRegistry(),
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL),
-          true) {
+          true),
+      bufferingStateDispatcher_(
+          context->getAudioEventHandlerRegistry(),
+          static_cast<int>(context->getSampleRate() * ON_BUFFERING_STATE_DEBOUNCE_INTERVAL)) {
   decoderState_->playbackRate.store(options.playbackRate, std::memory_order_release);
   decoderState_->preservesPitch.store(options.preservesPitch, std::memory_order_release);
 
@@ -54,27 +57,6 @@ AudioFileSourceNode::AudioFileSourceNode(
   }
 }
 
-AudioFileSourceNode::~AudioFileSourceNode() {
-  stopDaemonThread();
-}
-
-void AudioFileSourceNode::stopDaemonThread() {
-  decoderState_->isDaemonRunning.store(false, std::memory_order_release);
-
-  // commandSender_ is only created in initDecoder(); skip if construction failed early
-  // (e.g. neither filePath nor data provided) or teardown already completed.
-  if (!seekDecoderThread_.joinable() && seekDecoderDaemon_ == nullptr) {
-    return;
-  }
-
-  // Send a dummy command to unblock the daemon thread if it's waiting.
-  // The command channel uses OVERWRITE_ON_FULL, so this never blocks.
-  commandSender_.send(SeekRequest{0});
-  if (seekDecoderThread_.joinable()) {
-    seekDecoderThread_.join();
-  }
-}
-
 void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
   const double delta = static_cast<double>(framesPlayed) / sampleRate_;
   const double position = currentTime_.fetch_add(delta) + delta;
@@ -83,6 +65,10 @@ void AudioFileSourceNode::sendOnPositionChangedEvent(int framesPlayed) {
 
 void AudioFileSourceNode::assignOnPositionChangedCallbackId(uint64_t callbackId) {
   positionChanged_.assignCallbackId(callbackId);
+}
+
+void AudioFileSourceNode::assignOnBufferingStateChangeCallbackId(uint64_t callbackId) {
+  bufferingStateDispatcher_.assignCallbackId(callbackId);
 }
 
 bool AudioFileSourceNode::initDecoder(
@@ -119,13 +105,13 @@ bool AudioFileSourceNode::initDecoder(
       .loop = options.loop};
 
   seekDecoderDaemon_ = std::make_unique<SeekDecoderDaemon>(
-      std::move(daemonOptions),
+      daemonOptions,
       decoderState_,
       std::move(commandReceiver),
       std::move(frameSender),
       frameReceiver_);
 
-  if (!decoderState_->isReady.load(std::memory_order_acquire)) {
+  if (!seekDecoderDaemon_->isOpen()) {
     return false;
   }
 
@@ -393,11 +379,6 @@ void AudioFileSourceNode::start(double when) {
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
   positionChanged_.requestFlush();
-
-  if (seekDecoderDaemon_) {
-    seekDecoderThread_ = std::thread(std::move(*seekDecoderDaemon_));
-    seekDecoderDaemon_.reset();
-  }
 }
 
 void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {
@@ -434,13 +415,22 @@ bool AudioFileSourceNode::isCurrentMediaElementSource(uint64_t bindingId) const 
 
 void AudioFileSourceNode::pause() {
   filePaused_ = true;
+  // A deliberate pause is not a stall — don't leave a stale "buffering" state
+  // observed by JS once processDecodedOutput() stops being called below.
+  bufferingStateDispatcher_.advance(/* hasData */ true, 0);
 }
 
 void AudioFileSourceNode::disable() {
-  stopDaemonThread();
+  // Null when construction failed before initDecoder() ran (e.g. no file path,
+  // URL or data given).
+  if (seekDecoderDaemon_ != nullptr) {
+    seekDecoderDaemon_->requestStop();
+  }
+
   filePaused_ = false;
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
+  bufferingStateDispatcher_.advance(/* hasData */ true, 0);
 
   AudioScheduledSourceNode::disable();
 }
@@ -721,9 +711,12 @@ void AudioFileSourceNode::processDecodedOutput(
   const bool hasFreshChunk = needsFreshDecoderChunk && readNextFrameChunk(incoming);
 
   if (!hasFreshChunk && pendingDecoderChunk_.size == 0) {
+    bufferingStateDispatcher_.advance(/* hasData */ false, framesToProcess);
     processingBuffer->zero();
     return;
   }
+
+  bufferingStateDispatcher_.advance(/* hasData */ true, framesToProcess);
 
   if (hasFreshChunk && incoming.state == StreamState::END_OF_STREAM) {
     currentTime_.store(duration_, std::memory_order_release);

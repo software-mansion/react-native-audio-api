@@ -9,7 +9,8 @@
     @"duration" : MPMediaItemPropertyPlaybackDuration, \
     @"elapsedTime" : MPNowPlayingInfoPropertyElapsedPlaybackTime, \
     @"speed" : MPNowPlayingInfoPropertyPlaybackRate, \
-    @"artwork" : MPMediaItemPropertyArtwork \
+    @"artwork" : MPMediaItemPropertyArtwork, \
+    @"isLiveStream" : MPNowPlayingInfoPropertyIsLiveStream \
   }
 
 // Must match PlaybackNotification.DEFAULT_SKIP_INTERVAL_SECONDS on Android.

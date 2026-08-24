@@ -6,7 +6,6 @@ import AudioBuffer from './AudioBuffer';
 import BaseAudioContext from './BaseAudioContext';
 
 export default class OfflineAudioContext extends BaseAudioContext {
-  private isSuspended: boolean;
   private isRendering: boolean;
   private duration: number;
 
@@ -41,7 +40,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
       throw new NotSupportedError('Invalid constructor arguments');
     }
 
-    this.isSuspended = false;
     this.isRendering = false;
   }
 
@@ -52,14 +50,13 @@ export default class OfflineAudioContext extends BaseAudioContext {
       );
     }
 
-    if (!this.isSuspended) {
+    if (!(this._state === 'suspended')) {
       throw new InvalidStateError(
         'Cannot resume an OfflineAudioContext that is not suspended'
       );
     }
 
-    this.isSuspended = false;
-
+    this._state = 'running';
     return (this.context as IOfflineAudioContext).resume();
   }
 
@@ -80,9 +77,15 @@ export default class OfflineAudioContext extends BaseAudioContext {
       );
     }
 
-    this.isSuspended = true;
+    if (this._state === 'closed') {
+      throw new InvalidStateError('the rendering is already finished');
+    }
 
-    return (this.context as IOfflineAudioContext).suspend(suspendTime);
+    const result = await (this.context as IOfflineAudioContext).suspend(
+      suspendTime
+    );
+    this._state = 'suspended';
+    return result;
   }
 
   async startRendering(): Promise<AudioBuffer> {
@@ -91,10 +94,11 @@ export default class OfflineAudioContext extends BaseAudioContext {
     }
 
     this.isRendering = true;
-
+    this._state = 'running';
     const audioBuffer = await (
       this.context as IOfflineAudioContext
     ).startRendering();
+    this._state = 'closed';
 
     return new AudioBuffer(audioBuffer);
   }

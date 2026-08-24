@@ -25,6 +25,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
 
     this.hasBeenStarted = true;
     (this.node as IAudioScheduledSourceNode).start(when);
+    this.context.markRunningOnSourceStart();
   }
 
   public stop(when: number = 0): void {

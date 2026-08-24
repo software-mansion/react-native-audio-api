@@ -116,11 +116,13 @@ For full API see [api.md](api.md#resulthpp--rust-style-resultte).
 
 ---
 
-### `RingBiDirectionalBuffer.hpp` — compile-time capacity ring deque
+### `BoundedPriorityQueue.hpp` — fixed-capacity sorted queue
 
-Non-thread-safe bounded ring buffer with push/pop from both ends. Capacity is a **compile-time** power-of-two template parameter. Used for `AudioParamEventQueue`.
+Non-thread-safe `std::multiset` backed by an in-object block pool. Fixed compile-time capacity, node recycling, zero heap allocation — safe to use on the audio thread. `push` returns `false` when full instead of growing. Used by `ParamQueueBase` (AudioParam automation) and `DeferredEventQueue`.
 
-For full API see [api.md](api.md#ringbidirectionalbufferhpp--compile-time-capacity-ring-deque).
+**Do not back this with `std::pmr`.** A `monotonic_buffer_resource` + `unsynchronized_pool_resource` needs a buffer whose size depends on the standard library's private bookkeeping, and libstdc++ needs far more of it than libc++ — a buffer sized against libc++ threw `std::bad_alloc` short of capacity on the Linux CI runner while passing locally on macOS. The block pool needs exactly `Capacity * SLOT_SIZE` bytes everywhere.
+
+For full API see [api.md](api.md#boundedpriorityqueuehpp--fixed-capacity-sorted-queue).
 
 ---
 

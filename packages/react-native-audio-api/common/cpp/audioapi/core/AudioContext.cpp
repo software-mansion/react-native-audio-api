@@ -18,12 +18,13 @@ AudioContext::AudioContext(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
-  // drain Channel A itself until start()/resume() hands draining to the
+  // drain the channels itself until start()/resume() hands draining to the
   // audio callback (same pattern as OfflineAudioContext before rendering).
-  getGraph()->setProducerSelfDrain(true);
+  getGraph()->enableProducerSelfDrain();
 }
 
 AudioContext::~AudioContext() {
+  joinPendingPromiseWorker();
   if (getState() != ContextState::CLOSED) {
     std::scoped_lock lock(driverMutex_);
     close(nullptr);
@@ -65,11 +66,7 @@ bool AudioContext::tryStartDriver() {
     return false;
   }
 
-  // Flush while we are still the sole consumer, then hand the channel to the
-  // audio callback. flushing first avoids blocking forever if the bounded
-  // channel was full when self-drain is turned off.
-  getGraph()->processEvents();
-  getGraph()->setProducerSelfDrain(false);
+  getGraph()->disableProducerSelfDrain();
 
   if (audioPlayer_->start()) {
     isInitialized_.store(true, std::memory_order_release);
@@ -81,7 +78,7 @@ bool AudioContext::tryStartDriver() {
     return true;
   }
 
-  getGraph()->setProducerSelfDrain(true);
+  getGraph()->enableProducerSelfDrain();
   return false;
 }
 
@@ -96,8 +93,7 @@ void AudioContext::close(const std::shared_ptr<ContextPromiseResolver<void>> &pr
 
   // No audio-thread consumer after stop; allow producer self-drain for any
   // remaining graph mutations (and flush events already queued).
-  getGraph()->setProducerSelfDrain(true);
-  getGraph()->processEvents();
+  getGraph()->enableProducerSelfDrain();
   processAudioEvents();
   audioPlayer_->cleanup();
 
@@ -117,19 +113,18 @@ bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &p
 
   bool result = false;
   if (isInitialized_.load(std::memory_order_acquire)) {
-    getGraph()->processEvents();
-    getGraph()->setProducerSelfDrain(false);
+    getGraph()->disableProducerSelfDrain();
     if (audioPlayer_->resume()) {
       result = true;
     } else {
-      getGraph()->setProducerSelfDrain(true);
+      getGraph()->enableProducerSelfDrain();
     }
   } else {
     result = tryStartDriver();
   }
 
   if (result) {
-    // Visible RUNNING is applied in the promise resolve task (CallInvoker).
+    // Visible RUNNING is applied inside the resolver
     ContextPromiseResolver<void>::resolve(promise);
   } else {
     ContextPromiseResolver<void>::reject(promise, "Failed to resume audio context.");
@@ -150,12 +145,11 @@ bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolver<void>> &
 
     // Audio callback is no longer the consumer; enable self-drain so graph
     // mutations while suspended cannot fill the bounded channel and block.
-    getGraph()->setProducerSelfDrain(true);
-    getGraph()->processEvents();
+    getGraph()->enableProducerSelfDrain();
     processAudioEvents();
   }
 
-  // Visible SUSPENDED is applied in the promise resolve task (CallInvoker).
+  // Visible SUSPENDED is applied inside the resolver
   ContextPromiseResolver<void>::resolve(promise);
   return true;
 }

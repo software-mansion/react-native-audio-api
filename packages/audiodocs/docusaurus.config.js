@@ -66,6 +66,18 @@ const config = {
           breadcrumbs: false,
           sidebarCollapsible: false,
           sidebarPath: require.resolve('./sidebars.js'),
+          lastVersion: 'latest',
+          versions: {
+            latest: {
+              label: 'Latest',
+              path: '',
+            },
+            current: {
+              label: 'Next',
+              path: 'next',
+              banner: 'unreleased',
+            },
+          },
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           editUrl:
@@ -110,6 +122,10 @@ const config = {
       },
       items: [
         {
+          type: 'docsVersionDropdown',
+          position: 'right',
+        },
+        {
           'href':
             'https://github.com/software-mansion/react-native-audio-api',
           'label': 'GitHub',
@@ -120,7 +136,8 @@ const config = {
     },
     footer: {
       links: [],
-      copyright: `All trademarks and copyrights belong to their respective owners.`,
+      copyright:
+        'All trademarks and copyrights belong to their respective owners. Read about our ',
     },
     prism: {
       additionalLanguages: ['bash', 'cmake'],
@@ -144,6 +161,7 @@ const config = {
   ],
 
   plugins: [
+    require('./plugins/swm-geo'),
     [
       '@docusaurus/plugin-google-tag-manager',
       {

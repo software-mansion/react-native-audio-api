@@ -27,7 +27,6 @@ class BaseAudioContextHostObject : public HostObject {
 
   JSI_PROPERTY_GETTER_DECL(destination);
   JSI_PROPERTY_GETTER_DECL(listener);
-  JSI_PROPERTY_GETTER_DECL(state);
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
 

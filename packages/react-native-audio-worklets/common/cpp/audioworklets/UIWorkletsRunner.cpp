@@ -67,7 +67,13 @@ void UIWorkletsRunner::call(std::function<void()> onComplete) const {
 
   job_->onComplete = std::move(onComplete);
 
+#ifdef ANDROID
+  facebook::jni::ThreadScope::WithClassLoader([job = job_, uiScheduler]() {
+    worklets::scheduleOnUI(uiScheduler, [job]() { runUIWorkletJob(job); });
+  });
+#else
   worklets::scheduleOnUI(uiScheduler, [job = job_]() { runUIWorkletJob(job); });
+#endif
 }
 
 void UIWorkletsRunner::runUIWorkletJob(const std::shared_ptr<UIWorkletJob> &job) {

@@ -40,13 +40,23 @@ export default class BaseAudioContext {
     this.sampleRate = context.sampleRate;
   }
 
+  protected _state: ContextState = 'suspended';
+
   public get currentTime(): number {
     return this.context.currentTime;
   }
 
   public get state(): ContextState {
-    return this.context.state;
+    return this._state;
   }
+
+  /**
+   * @internal Called by AudioScheduledSourceNode.start(). No-op here: only
+   * AudioContext overrides it, since only AudioContext's native driver can
+   * start implicitly from a source's start() call. OfflineAudioContext only
+   * starts rendering from an explicit startRendering() call.
+   */
+  public markRunningOnSourceStart(): void {}
 
   public async decodeAudioData(
     input: DecodeDataInput,
