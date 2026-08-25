@@ -1,6 +1,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
+#include <audioapi/encoding/EncoderCapabilities.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
@@ -68,22 +69,8 @@ NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &pr
 /// @returns NSString representing the file extension.
 NSString *getFileExtension(const std::shared_ptr<AudioFileProperties> &properties)
 {
-  switch (properties->format) {
-    case AudioFileProperties::Format::WAV:
-      return @"wav";
-
-    case AudioFileProperties::Format::CAF:
-      return @"caf";
-
-    case AudioFileProperties::Format::M4A:
-      return @"m4a";
-
-    case AudioFileProperties::Format::FLAC:
-      return @"flac";
-
-    default:
-      return @"wav";
-  }
+  EncoderOutputSpec spec = EncoderCapabilities::specForFormat(properties->format);
+  return [NSString stringWithUTF8String:spec.extension.c_str()];
 }
 
 /// @brief Retrieves the bit depth from AudioFileProperties.

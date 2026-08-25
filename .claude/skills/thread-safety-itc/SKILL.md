@@ -151,6 +151,8 @@ See the `utilities` skill for full API.
 
 **Pitfall — file writer / recorder shutdown:** `TaskOffloader::shutdown()` drains the SPSC queue before joining the worker. Call it (or destroy the offloader) only after `isFileOpen_` is cleared so the audio thread stops enqueueing. Otherwise rotated or closed M4A segments lose seconds of buffered audio. Types with a `.slot` member use `slot == size_t max` as the shutdown sentinel.
 
+**Pitfall — the task type cannot be a nested struct.** `TaskOffloader<T>` constrains `T` with `std::default_initializable`. A task struct carrying default member initializers (which the `.slot` sentinel requires) does *not* satisfy that constraint while its enclosing class is still incomplete, so `using Offloader = TaskOffloader<NestedTask, …>;` inside the class fails to compile with "constraints not satisfied". Making the struct `public` does not help — it is not an access problem. Declare the task type at **namespace scope** instead (`PendingFileWrite`, `PendingCallbackFrames`). Dropping the initializers to satisfy the constraint is worse: `T{}` would then produce `slot == 0`, a valid slot index, making the shutdown sentinel indistinguishable from real work.
+
 ---
 
 ## Driver synchronization (layered model)
@@ -207,6 +209,7 @@ back-to-back).
 - **Copying `shared_ptr` inside `processNode()`** — increments atomic refcount; capture before entering hot path.
 - **Locking `initialize()` or graph factory methods** — `initialize()` runs synchronously during HostObject construction on the JS thread; node factories and `createMediaElementSource()` are synchronous JS calls. Only lifecycle methods that touch the driver or offline render thread need `driverMutex_`.
 - **Locking only `AudioContext`** — iOS recorder, session, and interruption paths mutate the shared `AVAudioEngine` outside `AudioContext`; keep the `AudioEngine` mutex on those entry points. Offline render uses the same `driverMutex_` on `BaseAudioContext`.
+- **Duplicating recorder fan-out in platform code** — `AudioRecorder::onAudioFrames(interleavedFrames, numFrames)` (base class, `common/cpp/audioapi/core/inputs/`) is the single audio-thread fan-out to file writer, JS callback, and adapter node, using tryLock-and-drop per consumer. Platform recorders (e.g. `IOSAudioRecorder`) only normalize the platform buffer to interleaved float32 and call it — adding per-consumer writes in the platform receiver block double-writes every buffer. The interleave config (`inputChannelCount_`, scratch buffer) is read unlocked by the audio thread, so it may only be mutated while the input is disarmed (start/stop/input-format-change paths).
 - **Re-entering `driverMutex_` or the `AudioEngine` mutex on the same thread** — call `tryStartDriver()` directly from `resume()` instead of `start()`; use lock-free `isStreamRunning()` from `isDriverRunning()`. `AudioContext::start()` does not acquire `driverMutex_`; it asserts the lock is already held when the driver is not initialized (via `scheduleAudioEvent` synchronous path). When already initialized, `start()` is a lock-free no-op so `source.start()` on the audio thread does not take the mutex.
 
 ---

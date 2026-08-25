@@ -141,7 +141,6 @@ classDiagram
   AudioNode <|-- WorkletNode
   AudioNode <|-- AnalyserNode
   AudioNode <|-- AudioDestinationNode
-  AudioNode <|-- AudioRecorder
 
   AudioScheduledSourceNode <|-- AudioBufferBaseSourceNode
   AudioScheduledSourceNode <|-- OscillatorNode
@@ -151,6 +150,25 @@ classDiagram
   AudioBufferBaseSourceNode <|-- AudioBufferSourceNode
   AudioBufferBaseSourceNode <|-- AudioBufferQueueSourceNode
 ```
+
+### AudioRecorder (not an AudioNode)
+
+`core/inputs/AudioRecorder` is a standalone base class, not part of the `AudioNode` hierarchy — it
+feeds the graph through a `RecorderAdapterNode` instead of being processed by it.
+
+The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
+that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
+`setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachOutputs`/`finalizeOutputs`), the
+subclasses own only the platform input stream. The one thing the base needs from the platform is
+`resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
+it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values
+cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform.
+
+Pitfall: never redeclare a base member (`deinterleavingBuffer_`, `streamSampleRate_`,
+`recordingSegmentPaths_`) in a platform recorder. The shadowing copy compiles fine, but the base's
+audio-thread fan-out reads its own member and silently drops that output.
+
+---
 
 ### AudioScheduledSourceNode (internal only — not exposed to JS directly)
 

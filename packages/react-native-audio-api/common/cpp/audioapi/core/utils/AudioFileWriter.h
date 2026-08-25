@@ -3,17 +3,11 @@
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
-#include <audioapi/utils/SpscChannel.hpp>
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <tuple>
-
-#ifdef __APPLE__
-typedef const struct AudioBufferList *AudioDataType;
-#else
-typedef void *AudioDataType;
-#endif
 
 namespace audioapi {
 
@@ -32,10 +26,19 @@ class AudioFileWriter {
       const std::shared_ptr<AudioFileProperties> &fileProperties);
   virtual ~AudioFileWriter() = default;
 
+  /// JS thread. @p maxFramesPerBuffer bounds a single writeAudioData() call and sizes the pool.
+  virtual OpenFileResult openFile(
+      float streamSampleRate,
+      int32_t streamChannelCount,
+      int32_t maxFramesPerBuffer,
+      const std::string &fileNameOverride) = 0;
   virtual CloseFileResult closeFile() = 0;
   virtual std::string getFilePath() const = 0;
 
-  virtual void writeAudioData(AudioDataType data, int numFrames) = 0;
+  /// Audio thread. @p interleavedFrames holds numFrames * channelCount float32 samples in
+  /// channel-interleaved order and is only valid for the duration of the call. Never blocks,
+  /// allocates, or throws; drops the buffer when no pool slot is free.
+  virtual void writeAudioData(const float *interleavedFrames, int numFrames) = 0;
 
   virtual double getCurrentDuration() const = 0;
   virtual size_t getFileSizeBytes() const = 0;
@@ -57,19 +60,6 @@ class AudioFileWriter {
   EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
 
   std::shared_ptr<AudioFileProperties> fileProperties_;
-
-  static constexpr auto FILE_WRITER_SPSC_OVERFLOW_STRATEGY =
-      channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
-  static constexpr auto FILE_WRITER_SPSC_WAIT_STRATEGY = channels::spsc::WaitStrategy::ATOMIC_WAIT;
-  static constexpr size_t FILE_WRITER_POOL_SIZE = 32;
-  // SPSC rings hold at most (capacity - 1) elements.
-  static constexpr auto FILE_WRITER_CHANNEL_CAPACITY = FILE_WRITER_POOL_SIZE + 1;
-  // At most POOL_SIZE slots can be in flight at once, so sizing the channel one
-  // larger guarantees the ring is never full when a slot is available — which is
-  // why the producer can use the blocking send() without it ever actually waiting.
-  static_assert(
-      FILE_WRITER_POOL_SIZE <= FILE_WRITER_CHANNEL_CAPACITY - 1,
-      "Channel must hold every in-flight slot so send() never blocks/overwrites");
 };
 
 } // namespace audioapi

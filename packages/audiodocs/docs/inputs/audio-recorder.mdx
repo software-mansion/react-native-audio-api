@@ -698,17 +698,42 @@ interface AudioRecorderFileOptions {
 
 Describes desired file extension as well as codecs, containers (and muxers!) used to encode the file.
 
+All encoding is done with platform system APIs — iOS AVFoundation and Android MediaCodec/MediaMuxer. Because each platform exposes a different set of system encoders, format support is platform-specific.
+
 ```tsx
 enum FileFormat {
   Wav,
   Caf,
   M4A,
   Flac,
+  Aiff,
+  Alac,
+  OpusOgg,
+  OpusWebm,
+  VorbisWebm,
+  Ulaw,
+  Alaw,
 }
 ```
 
-:::caution Android + FFmpeg
-On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](../other/runtime-flags.mdx#where-ffmpeg-is-used).
+The table below lists which formats each platform can encode with its system APIs:
+
+| `FileFormat` | Container / codec | iOS | Android |
+| :--- | :--- | :---: | :---: |
+| `Wav` | WAV / PCM | ✅ | ✅ |
+| `M4A` | M4A / AAC-LC | ✅ | ✅ |
+| `Flac` | FLAC / FLAC | ✅ | ✅ |
+| `Caf` | CAF / PCM | ✅ | ❌ |
+| `Aiff` | AIFF / PCM | ✅ | ❌ |
+| `Alac` | M4A / Apple Lossless | ✅ | ❌ |
+| `Ulaw` | WAV / µ-law | ✅ | ❌ |
+| `Alaw` | WAV / a-law | ✅ | ❌ |
+| `OpusOgg` | OGG / Opus | ❌ | ✅ |
+| `OpusWebm` | WebM / Opus | ❌ | ✅ |
+| `VorbisWebm` | WebM / Vorbis | ❌ | ✅ |
+
+:::caution Platform support
+Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusOgg` on iOS) fails when file output is enabled, with a descriptive error. Some Android formats also depend on the device OS version (Opus/OGG muxing requires newer releases); if a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, or `Flac` for the widest cross-platform support.
 :::
 
 #### FileInfo

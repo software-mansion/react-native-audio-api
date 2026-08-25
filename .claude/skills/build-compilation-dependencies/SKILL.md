@@ -30,6 +30,7 @@ react-native-audio-api/
 │   │       └── CMakeLists.txt          # Actual Android C++ build target
 │   ├── common/cpp/audioapi/            # Shared C++ (used by all platforms)
 │   │   ├── decoding/                   # Decoder factory, backends, SeekDecoderDaemon, AudioDecoding, AudioFileConcatenator
+│   │   ├── encoding/                   # AudioEncoder interface, EncoderCapabilities, OS encoder/remux selector headers
 │   │   ├── libs/                       # Third-party wrappers (FFmpeg, miniaudio, pffft, …)
 │   │   └── external/                   # Prebuilt binaries per platform
 │   │       ├── android/                # .a static libs (Opus, Ogg, Vorbis, OpenSSL)
@@ -274,6 +275,7 @@ CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.ym
 - Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_FFMPEG_DISABLED=1`
 - Google Test auto-fetched via `FetchContent` if not installed locally
 - New test files in `test/src/**/*.cpp` are picked up automatically by glob — no CMakeLists edit needed
+- `jsi.cpp` is compiled into the static lib so library members that reference JSI symbols (e.g. `AudioFileProperties::CreateFromJSIValue`) link when a test first pulls them in; a static-lib member costs nothing unless demanded. If a new test triggers `Undefined symbols: facebook::jsi::...`, the referenced runtime source is missing from the lib — add it there rather than stubbing the symbol
 
 For `MockAudioEventHandlerRegistry`, `TestableXxx` pattern, and full CMakeLists analysis see [build-details.md](build-details.md#c-test-build--commoncpptestcmakeliststxt--detailed-analysis).
 
@@ -311,6 +313,8 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | `HAVE_X86_SSE2` | Set by CMake SIMD detection | Not used | Set by CMake SIMD detection |
 | `HAVE_ACCELERATE` | Not set | `GCC_PREPROCESSOR_DEFINITIONS` | Not set |
 | `RN_AUDIO_API_TEST` | Not set | Not set | Always set to 1 |
+
+**OS-API selector headers** (`decoding/OSDecoding.h`, `encoding/OSEncoding.h`, `encoding/OSRemux.h`, `encoding/OSFilePath.h`): common code reaches platform implementations through `#if defined(__ANDROID__)` / `#elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)` dispatch. The Apple branch must exclude **both** desktop defines: the gtest build (`RN_AUDIO_API_TEST`) and the WPT node addon (`RN_AUDIO_API_NODE`) run on macOS (where `__APPLE__` is defined) but do not compile or link the `ios/` ObjC++ sources. The node build cannot borrow `RN_AUDIO_API_TEST` instead — that flag also switches on gtest-only code (`gtest_prod.h` includes, test `ArrayBuffer` shims). When adding a new OS-selector header, copy the full three-clause guard; an incremental `wpt_tests/build` dir can mask a missing clause for a long time, so verify with a clean `yarn node:build`. Platform glue selected this way lives in `android/src/main/cpp/audioapi/android/` (e.g. `AndroidDecoding`, `AndroidEncoder`, `AndroidRemux`) and `ios/audioapi/ios/core/utils/` (e.g. `IOSDecoding`, `IOSEncoder`, `IOSRemux`) — both picked up automatically by the CMake glob / podspec glob, no build-file edits needed.
 
 ---
 

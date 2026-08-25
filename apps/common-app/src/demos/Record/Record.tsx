@@ -20,6 +20,16 @@ import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
 
+// concatAudioFiles supports WAV, M4A, and FLAC — the formats recordable on
+// both iOS and Android.
+const RECORDING_EXTENSION = FileFormat.M4A;
+const ROTATING_SIZE = 250_000;
+
+const RECORDING_EXTENSION_NAME_MAP = {
+  [FileFormat.Wav]: 'wav',
+  [FileFormat.M4A]: 'm4a',
+  [FileFormat.Flac]: 'flac',
+};
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
@@ -130,9 +140,14 @@ const Record: FC = () => {
       return;
     }
 
-    const outputPath = info.paths[0].replace(/[^/]+$/, 'recording.m4a');
+    const extension = RECORDING_EXTENSION_NAME_MAP[RECORDING_EXTENSION];
+    const outputPath = info.paths[0].replace(
+      /[^/]+$/,
+      `recording.${extension}`
+    );
 
     const finalPath = await concatAudioFiles(info.paths, outputPath);
+    // const finalPath = info.paths[0];
     const audioBuffer = await audioContext.decodeAudioData(finalPath);
     setRecordedBuffer(audioBuffer);
 
@@ -262,7 +277,10 @@ const Record: FC = () => {
   }, [onPauseRecording, onResumeRecording]);
 
   useEffect(() => {
-    Recorder.enableFileOutput({ rotateIntervalBytes: 1_000_000, format: FileFormat.M4A });
+    Recorder.enableFileOutput({
+      rotateIntervalBytes: ROTATING_SIZE,
+      format: RECORDING_EXTENSION,
+    });
 
     return () => {
       stopPlayback();

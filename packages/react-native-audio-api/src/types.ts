@@ -60,11 +60,21 @@ export enum FileDirectory {
   Cache = 1,
 }
 
+// Values must stay in sync with the C++ `AudioFileProperties::Format` enum.
+// Support is platform-dependent; unsupported formats fail when recording starts.
+// See the audio recorder docs for the per-platform system-encoder matrix.
 export enum FileFormat {
   Wav = 0,
   Caf = 1,
   M4A = 2,
   Flac = 3,
+  Aiff = 4,
+  Alac = 5,
+  OpusOgg = 6,
+  OpusWebm = 7,
+  VorbisWebm = 8,
+  Ulaw = 9,
+  Alaw = 10,
 }
 
 export enum IOSAudioQuality {
