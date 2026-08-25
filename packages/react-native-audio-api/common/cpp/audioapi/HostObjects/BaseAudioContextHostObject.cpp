@@ -48,7 +48,10 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, listener),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state));
+
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(BaseAudioContextHostObject, onstatechange));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
@@ -74,7 +77,19 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
 // "key function" for the audio classes - this allow for RTTI to work
 // properly across dynamic library boundaries (i.e. dynamic_cast that is used by
 // isHostObject method), android specific issue
-BaseAudioContextHostObject::~BaseAudioContextHostObject() = default;
+BaseAudioContextHostObject::~BaseAudioContextHostObject() {
+  // The C++ context can outlive this HostObject (lifecycle promises hold it);
+  // never let it fire statechange into a GC'd JSI function.
+  context_->assignOnStateChangeCallbackId(0);
+}
+
+JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
+  return jsi::String::createFromUtf8(runtime, contextStateToString(context_->getPublishedState()));
+}
+
+JSI_PROPERTY_SETTER_IMPL(BaseAudioContextHostObject, onstatechange) {
+  context_->assignOnStateChangeCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
+}
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
   return jsi::Object::createFromHostObject(runtime, destination_);
