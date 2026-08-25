@@ -3,10 +3,11 @@ const path = require('path');
 
 const monorepoRoot = path.resolve(__dirname, '../..');
 const appsRoot = path.resolve(monorepoRoot, 'apps');
-const libraryRoot = path.resolve(
-  monorepoRoot,
-  'packages/react-native-audio-api'
-);
+const packagesRoot = path.resolve(monorepoRoot, 'packages');
+const workspacePackages = [
+  'react-native-audio-worklets',
+  'react-native-audio-api',
+];
 
 const defaultConfig = getDefaultConfig(__dirname);
 /**
@@ -22,9 +23,9 @@ const config = {
     resolveRequest: (context, moduleName, platform) => {
       // Override the consumer resolution to point to the source code
       // so that there is no need for manual rebuild on every change in TS.
-      if (moduleName === 'react-native-audio-api') {
+      if (workspacePackages.includes(moduleName)) {
         return {
-          filePath: path.resolve(libraryRoot, 'src/index.ts'),
+          filePath: path.resolve(packagesRoot, moduleName, 'src/index.ts'),
           type: 'sourceFile',
         };
       }
