@@ -482,6 +482,12 @@ static AudioEngine *_sharedInstance = nil;
   return self.audioEngine != nil && [self.audioEngine isRunning];
 }
 
+- (bool)isInUse
+{
+  std::scoped_lock lock(_engineLock);
+  return [self hasTrackedGraph] || self.audioEngine != nil;
+}
+
 - (void)rebuildAudioEngineAndResumeIfNeeded
 {
   if (_isRebuildingAudioEngine) {

@@ -232,10 +232,15 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
 {
-  NSLog(
-      @"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
+
+  if (![audioEngine isInUse] && !sessionManager.isActive) {
+    return;
+  }
+
+  NSLog(
+      @"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
 
   dispatch_async(dispatch_get_main_queue(), ^{
     bool wasSessionActive = sessionManager.isActive;
@@ -253,6 +258,14 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 {
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
+
+  // This notification is registered with object:nil, so it also fires for
+  // AVAudioEngine instances owned by other libraries in the host app. Without
+  // an engine of our own there is nothing to restart, and marking the session
+  // inactive would corrupt bookkeeping for apps that only manage the session.
+  if (![audioEngine isInUse]) {
+    return;
+  }
 
   dispatch_async(dispatch_get_main_queue(), ^{
     [sessionManager markInactive];
