@@ -8,9 +8,15 @@ namespace audioapi {
 
 /// @brief A queue for managing audio parameter change events on the audio render thread.
 /// @note The invariant of the queue is that its internal buffer always contains non-overlapping events.
+///
+/// Event times are kept in two forms (see RenderParamEvent): push() snaps the
+/// inherited times onto the sample-frame grid of @c sampleRate while preserving
+/// the scheduled times in the raw fields, so effect boundaries land on
+/// round(T * sampleRate) frames and interpolation still runs on real times.
 class ParamRenderQueue : public ParamQueueBase<RenderParamEvent> {
  public:
-  explicit ParamRenderQueue(float defaultValue) : defaultValue_(defaultValue) {}
+  explicit ParamRenderQueue(float defaultValue, float sampleRate)
+      : defaultValue_(defaultValue), sampleRate_(sampleRate) {}
 
   /// @brief Compute the value at a specific time based on the events in the queue.
   /// @param time The time at which to compute the value.
@@ -22,12 +28,24 @@ class ParamRenderQueue : public ParamQueueBase<RenderParamEvent> {
   /// @return True if the event was successfully added, false if the queue is full.
   bool push(RenderParamEvent &&event) override;
 
+  /// @brief Cancel scheduled parameter changes at or after the given time
+  /// (compared on the snapped time grid).
+  void cancelScheduledValues(double cancelTime) override {
+    ParamQueueBase::cancelScheduledValues(snapToSampleFrameTime(cancelTime));
+  }
+
   /// @brief Cancel scheduled parameter changes and hold the current value at the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
   void cancelAndHoldAtTime(double cancelTime);
 
  private:
   float defaultValue_;
+  float sampleRate_;
+
+  /// @brief Snap a time to the exact time of its nearest sample frame
+  /// (<tt>round(time * sampleRate) / sampleRate</tt>), the grid the render
+  /// loop evaluates frames on.
+  [[nodiscard]] double snapToSampleFrameTime(double time) const;
 
   /// @brief Resolve new event's startValue and startTime based on the previous event in the queue,
   /// and adjust neighboring events to maintain the invariant of non-overlapping events in the queue.

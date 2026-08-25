@@ -278,6 +278,22 @@ quantum). Consequently, unit tests that re-process the same node must advance th
 `getValueAtTimeUnmodulated` / `ParamRenderQueue`). Clip only in `finalizeKRate` /
 `finalizeARate` after adding modulation — never on the intrinsic alone before modulation.
 
+**Automation timing model (hybrid snapped/raw times):** `ParamRenderQueue::push` stores each
+event's times twice — the inherited start/end are snapped to `round(T * sampleRate) / sampleRate`
+and drive ordering, popping, and effect boundaries (matching Blink and the WPT reference's
+`timeToSampleFrame`), while `rawStartTime`/`rawEndTime` keep the scheduled times and feed the
+`calculateValue` interpolation (a ramp between two times inside one frame must interpolate on
+the real times — WPT `audioparam-close.html`). A queued event supersedes the current one as soon
+as its snapped start is due, even mid-ramp. On the evaluation side, `processARateParam` derives
+each sample's time as `(quantumStartFrame + i) / sampleRate` — never accumulate
+`time += 1/sampleRate`, the ULP drift lands boundaries one frame late.
+
+**Param queue capacity:** both param event queues (`ParamRenderQueue` on `AudioParam`,
+`ParamControlQueue` on the host object) are bounded by `AUDIO_PARAM_MAX_QUEUED_EVENTS` and
+**silently drop** events past capacity (`BoundedPriorityQueue::push` returns false, nobody
+checks). Automation scheduled far ahead must fit entirely; the WPT audioparam suites queue
+100 events per file. Symptom of overflow: automation freezes at the last accepted event.
+
 ### JS → Audio Thread parameter updates
 
 `CrossThreadEventScheduler<T>` is a lock-free SPSC channel. When JS calls `param.setValueAtTime(...)`, it enqueues a lambda on the scheduler. The audio thread drains the queue at the start of each `processARateParam` / `processKRateParam` call.
