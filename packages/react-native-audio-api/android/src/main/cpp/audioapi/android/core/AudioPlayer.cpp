@@ -62,31 +62,19 @@ bool AudioPlayer::rebuildStream() {
 
 bool AudioPlayer::start() {
   std::scoped_lock lock(streamMutex_);
-
-  // Ensure a live stream exists. A prior Oboe death can leave isInitialized_ true
-  // with a closed/null stream, or a stream that rejects requestStart.
-  if (!isInitialized_.load(std::memory_order_acquire) || mStream_ == nullptr) {
-    if (isInitialized_.load(std::memory_order_acquire) || mStream_ != nullptr) {
-      cleanup();
-    }
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     if (!openAudioStream()) {
       return false;
     }
   }
 
-  if (mStream_ != nullptr && mStream_->requestStart() == oboe::Result::OK) {
-    isRunning_.store(true, std::memory_order_release);
-    return true;
+  if (mStream_ != nullptr) {
+    auto result = mStream_->requestStart() == oboe::Result::OK;
+    isRunning_.store(result, std::memory_order_release);
+    return result;
   }
 
-  if (!rebuildStream() || mStream_ == nullptr) {
-    isRunning_.store(false, std::memory_order_release);
-    return false;
-  }
-
-  const bool started = mStream_->requestStart() == oboe::Result::OK;
-  isRunning_.store(started, std::memory_order_release);
-  return started;
+  return false;
 }
 
 void AudioPlayer::stop() {
