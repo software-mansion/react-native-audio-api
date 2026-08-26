@@ -1,7 +1,7 @@
 #pragma once
 
+#include <audioapi/core/types/PannerTypes.h>
 #include <audioapi/core/utils/Constants.h>
-#include <audioapi/types/NodeOptions.h>
 
 #include <algorithm>
 #include <cmath>

@@ -91,7 +91,7 @@ class AudioListener {
   std::shared_ptr<AudioParam> upYParam_;
   std::shared_ptr<AudioParam> upZParam_;
 
-  std::optional<std::size_t> lastProcessedSampleFrame_;
+  std::optional<size_t> lastProcessedSampleFrame_;
   std::span<const float> positionXValues_;
   std::span<const float> positionYValues_;
   std::span<const float> positionZValues_;

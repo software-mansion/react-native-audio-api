@@ -13,6 +13,7 @@
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
+#include <audioapi/core/types/PannerTypes.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 
@@ -62,10 +63,6 @@ struct StereoPannerOptions : AudioNodeOptions {
     channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 };
-
-enum class PanningModelType : std::uint8_t { EqualPower, HRTF };
-
-enum class DistanceModelType : std::uint8_t { Inverse, Linear, Exponential };
 
 struct PannerOptions : public AudioNodeOptions {
   static constexpr double kDefaultRefDistance = 1.0;
