@@ -1,5 +1,6 @@
 #include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
+#include <audioapi/android/core/AudioInputSelection.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/AndroidRecorderCallback.h>
 
@@ -51,6 +52,30 @@ std::optional<oboe::InputPreset> inputPresetFromString(const std::string &name) 
   }
   return std::nullopt;
 }
+
+/// Runs an action on scope exit unless it is dismissed first, so that a
+/// multi-step operation can undo a claim it took up front without repeating
+/// the undo on every failure path.
+template <typename Action>
+class ScopeExit {
+ public:
+  explicit ScopeExit(Action action) : action_(std::move(action)) {}
+  ~ScopeExit() {
+    if (armed_) {
+      action_();
+    }
+  }
+
+  DELETE_COPY_AND_MOVE(ScopeExit);
+
+  void dismiss() {
+    armed_ = false;
+  }
+
+ private:
+  Action action_;
+  bool armed_ = true;
+};
 } // namespace
 
 AndroidAudioRecorder::AndroidAudioRecorder(
@@ -60,7 +85,8 @@ AndroidAudioRecorder::AndroidAudioRecorder(
       inputPreset_(std::move(options.androidInputPreset)),
       streamSampleRate_(0.0),
       streamChannelCount_(0),
-      streamMaxBufferSizeInFrames_(0) {}
+      streamMaxBufferSizeInFrames_(0),
+      streamDeviceId_(AudioInputSelection::kSystemDefaultDeviceId) {}
 
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
 /// callable from the JS thread or handled by audio thread (if js dropped recorder first).
@@ -87,12 +113,25 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// @brief Creates and opens the Oboe audio input stream for recording.
 /// calculates the "native" or hardware stream parameters for other interfaces
 /// to use.
-/// Callable from the JS thread only.
+/// Callable from the JS thread, and from the Oboe error thread through
+/// onErrorAfterClose().
+/// The stream is opened on the device chosen through AudioInputSelection; an
+/// already open stream bound to a different device is replaced, since Oboe
+/// binds the capture device while the stream opens.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
   std::scoped_lock streamLock(streamMutex_);
+
+  const int32_t preferredDeviceId = AudioInputSelection::getPreferredDeviceId();
+
   if (mStream_ != nullptr) {
-    return Result<NoneType, std::string>::Ok(None);
+    if (streamDeviceId_ == preferredDeviceId) {
+      return Result<NoneType, std::string>::Ok(None);
+    }
+
+    mStream_->requestStop();
+    mStream_->close();
+    mStream_.reset();
   }
 
   oboe::AudioStreamBuilder builder;
@@ -109,6 +148,10 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
     builder.setInputPreset(*preset);
   }
 
+  if (preferredDeviceId != AudioInputSelection::kSystemDefaultDeviceId) {
+    builder.setDeviceId(preferredDeviceId);
+  }
+
   auto result = builder.openStream(mStream_);
 
   if (result != oboe::Result::OK || mStream_ == nullptr) {
@@ -116,6 +159,27 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
         "Failed to open audio stream: " + std::string(oboe::convertToText(result)));
   }
 
+  // Oboe honours setDeviceId on the AAudio backend only; OpenSL ES drops the
+  // request and reports kUnspecified instead (see AudioStreamBuilder::setDeviceId).
+  // Recording from a device the caller did not ask for is worse than not
+  // recording at all, so the stream is dropped and the open reported as failed.
+  if (preferredDeviceId != AudioInputSelection::kSystemDefaultDeviceId &&
+      mStream_->getDeviceId() != preferredDeviceId) {
+    const int32_t openedDeviceId = mStream_->getDeviceId();
+
+    mStream_->close();
+    mStream_.reset();
+
+    std::string message = std::format(
+        "Input device {} was requested, but the capture stream opened on device {}. "
+        "Selecting an input device needs the AAudio backend; OpenSL ES ignores the request.",
+        preferredDeviceId,
+        openedDeviceId);
+
+    return Result<NoneType, std::string>::Err(std::move(message));
+  }
+
+  streamDeviceId_ = preferredDeviceId;
   streamSampleRate_ = static_cast<float>(mStream_->getSampleRate());
   streamChannelCount_ = mStream_->getChannelCount();
   streamMaxBufferSizeInFrames_ = mStream_->getBufferSizeInFrames();
@@ -137,6 +201,15 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
   if (!isIdle()) {
     return Result<NoneType, std::string>::Err("Recorder is already recording");
   }
+
+  // Claim the input selection before reading it, and keep the claim for the
+  // whole attempt. setInputDevice runs on the React Native module thread while
+  // this body runs on the promise thread pool, so without the claim a selection
+  // could be accepted between openAudioStream() reading the current one and the
+  // stream actually running, leaving the recorder on the previous device with
+  // nothing reporting it.
+  setRunningCapture(true);
+  ScopeExit releaseCapture([this] { setRunningCapture(false); });
 
   auto streamResult = openAudioStream();
 
@@ -187,8 +260,29 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
         "Failed to start stream: " + std::string(oboe::convertToText(result)));
   }
 
+  releaseCapture.dismiss();
   state_.store(RecorderState::Recording, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
+}
+
+/// @brief Adds or removes this recorder from AudioInputSelection's
+/// running-capture count.
+/// Takes streamMutex_, which is recursive, so it can be called from methods
+/// already holding it.
+void AndroidAudioRecorder::setRunningCapture(bool running) {
+  std::scoped_lock streamLock(streamMutex_);
+
+  if (countedAsRunningCapture_ == running) {
+    return;
+  }
+
+  countedAsRunningCapture_ = running;
+
+  if (running) {
+    AudioInputSelection::captureStarted();
+  } else {
+    AudioInputSelection::captureStopped();
+  }
 }
 
 /// @brief Stops the audio stream and finalizes any output (file writing, callback, adapter node).
@@ -220,6 +314,7 @@ AndroidAudioRecorder::stop() {
     }
 
     state_.store(RecorderState::Idle, std::memory_order_release);
+    setRunningCapture(false);
     lastCallbackFrameCount_.store(0, std::memory_order_release);
     mStream_->requestStop();
 
@@ -569,6 +664,7 @@ bool AndroidAudioRecorder::isIdle() const {
 void AndroidAudioRecorder::cleanup() {
   std::scoped_lock streamLock(streamMutex_);
   state_.store(RecorderState::Idle, std::memory_order_release);
+  setRunningCapture(false);
 
   if (mStream_ != nullptr) {
     mStream_->requestStop();
@@ -593,6 +689,14 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 
     cleanup();
 
+    // Re-take the claim before the replacement stream reads the selection, and
+    // hold it until that stream is running. cleanup() above dropped it, and
+    // opening a device takes long enough that a setInputDevice landing in an
+    // unclaimed window would be accepted while this stream binds the previous
+    // device, leaving the API affirming a device that is not being recorded.
+    setRunningCapture(true);
+    ScopeExit releaseCapture([this] { setRunningCapture(false); });
+
     auto streamResult = openAudioStream();
 
     if (!streamResult.is_ok()) {
@@ -611,6 +715,7 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     }
 
     mStream_->requestStart();
+    releaseCapture.dismiss();
     state_.store(RecorderState::Recording, std::memory_order_release);
   }
 }

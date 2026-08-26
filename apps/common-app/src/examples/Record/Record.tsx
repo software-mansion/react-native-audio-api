@@ -216,11 +216,19 @@ const Record: FC = () => {
   };
 
   const onSelect = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const input = availableInputs.find((d) => d.id === id);
 
-      if (input) {
-        onSelectInput(input);
+      if (!input) {
+        return;
+      }
+
+      try {
+        await onSelectInput(input);
+      } catch (error) {
+        // Android refuses a switch while a recorder is running, and either
+        // platform refuses a device that went away between listing and picking.
+        Alert.alert('Input Device Error', `${error}`);
       }
     },
     [availableInputs, onSelectInput]
