@@ -116,6 +116,8 @@ bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &p
     getGraph()->disableProducerSelfDrain();
     if (audioPlayer_->resume()) {
       result = true;
+    } else if (audioPlayer_->rebuildStream() && audioPlayer_->resume()) {
+      result = true;
     } else {
       getGraph()->enableProducerSelfDrain();
     }
