@@ -55,21 +55,38 @@ bool AudioPlayer::openAudioStream() {
   return true;
 }
 
+bool AudioPlayer::rebuildStream() {
+  cleanup();
+  return openAudioStream();
+}
+
 bool AudioPlayer::start() {
   std::scoped_lock lock(streamMutex_);
-  if (!isInitialized_.load(std::memory_order_acquire)) {
+
+  // Ensure a live stream exists. A prior Oboe death can leave isInitialized_ true
+  // with a closed/null stream, or a stream that rejects requestStart.
+  if (!isInitialized_.load(std::memory_order_acquire) || mStream_ == nullptr) {
+    if (isInitialized_.load(std::memory_order_acquire) || mStream_ != nullptr) {
+      cleanup();
+    }
     if (!openAudioStream()) {
       return false;
     }
   }
 
-  if (mStream_ != nullptr) {
-    auto result = mStream_->requestStart() == oboe::Result::OK;
-    isRunning_.store(result, std::memory_order_release);
-    return result;
+  if (mStream_ != nullptr && mStream_->requestStart() == oboe::Result::OK) {
+    isRunning_.store(true, std::memory_order_release);
+    return true;
   }
 
-  return false;
+  if (!rebuildStream() || mStream_ == nullptr) {
+    isRunning_.store(false, std::memory_order_release);
+    return false;
+  }
+
+  const bool started = mStream_->requestStart() == oboe::Result::OK;
+  isRunning_.store(started, std::memory_order_release);
+  return started;
 }
 
 void AudioPlayer::stop() {
@@ -88,20 +105,11 @@ bool AudioPlayer::resume() {
   }
 
   if (mStream_ != nullptr) {
-    if (mStream_->requestStart() == oboe::Result::OK) {
-      isRunning_.store(true, std::memory_order_release);
-      return true;
-    }
+    auto result = mStream_->requestStart() == oboe::Result::OK;
+    isRunning_.store(result, std::memory_order_release);
+    return result;
   }
 
-  if (rebuildStream()) {
-    if (mStream_ != nullptr && mStream_->requestStart() == oboe::Result::OK) {
-      isRunning_.store(true, std::memory_order_release);
-      return true;
-    }
-  }
-
-  isRunning_.store(false, std::memory_order_release);
   return false;
 }
 
@@ -167,9 +175,17 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
 }
 
 void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
-  // error != oboe::Result::ErrorDisconnected condition is deleted to handle more cases of errors
   if (driverMutex_ == nullptr) {
     return;
+  }
+
+  switch (error) {
+    case oboe::Result::ErrorDisconnected:
+    case oboe::Result::ErrorTimeout:
+    case oboe::Result::ErrorInternal:
+      break;
+    default:
+      return;
   }
 
   // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
@@ -190,13 +206,14 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   const bool wasRunning = isRunning_.load(std::memory_order_acquire);
 
   if (!rebuildStream()) {
+    isRunning_.store(false, std::memory_order_release);
     return;
   }
 
   // Restart the stream if it was expected to be running when the error occurred
-  if (wasRunning) {
-    auto result = mStream_->requestStart() == oboe::Result::OK;
-    isRunning_.store(result, std::memory_order_release);
+  if (wasRunning && mStream_ != nullptr) {
+    const bool started = mStream_->requestStart() == oboe::Result::OK;
+    isRunning_.store(started, std::memory_order_release);
   }
 }
 
@@ -242,10 +259,5 @@ double AudioPlayer::getOutputLatency() const {
   }
 
   return minBaseLatency;
-}
-
-bool AudioPlayer::rebuildStream() {
-  cleanup();
-  return openAudioStream();
 }
 } // namespace audioapi
