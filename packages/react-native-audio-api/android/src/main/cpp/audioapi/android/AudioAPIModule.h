@@ -26,6 +26,12 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
       jint eventOrdinal,
       jni::alias_ref<jni::JMap<jstring, jobject>> eventBody);
 
+  /// @brief Hands the capture device chosen through AudioManager.setInputDevice
+  /// to the recorders.
+  /// @returns false when a capture stream is already running, in which case the
+  /// selection is left unchanged. See AudioInputSelection.
+  jboolean setPreferredInputDeviceId(jint deviceId);
+
  private:
   friend HybridBase;
 

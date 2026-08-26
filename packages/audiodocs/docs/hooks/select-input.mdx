@@ -14,7 +14,9 @@ The `useAudioInput` hook provides an interface for:
 - switching between different input devices
 
 :::info Platform support
-Input device selection is currently only supported on iOS. On Android, `useAudioInput` is implemented as a no-op: the hook will not list or switch input devices, and any selection calls will effectively be ignored.
+Input device selection works on iOS and on Android. The two platforms differ in when a selection takes effect: iOS reroutes the running session immediately, while Android binds the device as a capture stream opens, so the selection applies to recorders started afterwards. Calling `onSelectInput` on Android while a recorder is running or paused throws, rather than deferring the switch without saying so. Android device selection also needs the AAudio backend; see [`setInputDevice`](../system/audio-manager.mdx#setinputdevice).
+
+On Android, `currentInput` is `null` until a device is selected through this hook, because the platform does not report which input it would pick on its own.
 :::
 
 ## Signature
