@@ -371,6 +371,23 @@ const audioRecorder = new AudioRecorder({
 });
 ```
 
+:::caution Android: the playback side matters too
+
+On Android the platform AEC engaged by `voiceCommunication` cancels against the
+**voice-communication output path**. Playback started from an `AudioContext`
+does not sit on that path — it defaults to `USAGE_MEDIA` — so on some devices
+the app's own output can still leak into the capture even with the input preset
+set correctly.
+
+If you are building barge-in style interaction and still hear the app
+transcribe itself, this is the likely cause. Progress is tracked in
+[#1254](https://github.com/software-mansion/react-native-audio-api/issues/1254).
+
+Testing note: verify through the **loudspeaker**, never headphones. Headphones
+remove the acoustic path entirely and hide the problem.
+
+:::
+
 ## Properties
 
 | Name | Type | Description |
