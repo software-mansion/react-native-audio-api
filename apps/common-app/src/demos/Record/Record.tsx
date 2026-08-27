@@ -78,7 +78,7 @@ const Record: FC = () => {
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
     });
 
     try {
