@@ -39,6 +39,7 @@ class AudioFileWriter {
 
   virtual double getCurrentDuration() const = 0;
   virtual size_t getFileSizeBytes() const = 0;
+  [[nodiscard]] bool isFileOpen() const;
 
   void setOnErrorCallback(uint64_t callbackId) {
     assignOnErrorCallbackId(callbackId);
@@ -50,8 +51,6 @@ class AudioFileWriter {
   void invokeOnErrorCallback(const std::string &message);
 
  protected:
-  bool isFileOpen();
-
   std::atomic<bool> isFileOpen_{false};
   std::atomic<size_t> framesWritten_{0};
   EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;

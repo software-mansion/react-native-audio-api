@@ -192,6 +192,9 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
   const bool shouldArmInput = state_.load(std::memory_order_acquire) == RecorderState::Recording;
   [nativeRecorder_ setInputArmed:false];
 
+  // Capture loss clears *Configured_ (so uses*() is false) but leaves user intent
+  // (*Enabled_) set. Re-prepare from wants* so a later HardwareChanged opens a new
+  // segment instead of resuming with nowhere to write.
   if (wantsFileOutput()) {
     auto fileResult = reprepareFileWriter(inputFormat, maxInputBufferLength);
     if (fileResult.is_err()) {
