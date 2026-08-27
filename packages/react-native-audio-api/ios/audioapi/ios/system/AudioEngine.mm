@@ -498,6 +498,12 @@ static AudioEngine *_sharedInstance = nil;
   return self.audioEngine != nil && [self.audioEngine isRunning];
 }
 
+- (bool)hasInputRegistration
+{
+  std::scoped_lock lock(_engineLock);
+  return self.inputRegistration != nil;
+}
+
 - (void)rebuildAudioEngineAndResumeIfNeeded
 {
   if (_isRebuildingAudioEngine) {

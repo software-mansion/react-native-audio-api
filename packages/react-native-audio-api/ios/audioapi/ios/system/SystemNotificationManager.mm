@@ -1,3 +1,5 @@
+#import <UIKit/UIKit.h>
+
 #import <audioapi/events/AudioEvent.h>
 #import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
@@ -88,6 +90,18 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                               selector:@selector(handleInterruption:)
                                   name:AVAudioSessionInterruptionNotification
                                 object:nil];
+  // willEnterForeground is the first legal moment to restart I/O after a
+  // backgrounded interruption. DidBecomeActive retries if that attempt still
+  // failed, and is the only of the two that fires when returning from
+  // inactive-in-foreground (Control Center, Siri overlay).
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleWillEnterForeground:)
+                                  name:UIApplicationWillEnterForegroundNotification
+                                object:nil];
+  [self.notificationCenter addObserver:self
+                              selector:@selector(handleDidBecomeActive:)
+                                  name:UIApplicationDidBecomeActiveNotification
+                                object:nil];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath
@@ -106,6 +120,33 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                                                           .value = [change[@"new"] floatValue]}];
     }
   }
+}
+
+- (void)handleWillEnterForeground:(NSNotification *)notification
+{
+  [self retryInterruptedRecordingIfNeeded];
+}
+
+- (void)handleDidBecomeActive:(NSNotification *)notification
+{
+  [self retryInterruptedRecordingIfNeeded];
+}
+
+- (void)retryInterruptedRecordingIfNeeded
+{
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if ([audioEngine getState] != AudioEngineStateInterrupted) {
+      return;
+    }
+
+    if (![audioEngine hasInputRegistration]) {
+      return;
+    }
+
+    [audioEngine onInterruptionEnd:true];
+  });
 }
 
 - (void)handleInterruption:(NSNotification *)notification

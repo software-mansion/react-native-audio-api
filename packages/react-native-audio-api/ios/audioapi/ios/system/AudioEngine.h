@@ -52,6 +52,7 @@ typedef NS_ENUM(NSInteger, AudioEngineInputNotification) {
 
 - (AudioEngineState)getState;
 - (bool)isEngineRunning;
+- (bool)hasInputRegistration;
 
 - (bool)startIfNecessary;
 - (void)pauseIfNecessary;
