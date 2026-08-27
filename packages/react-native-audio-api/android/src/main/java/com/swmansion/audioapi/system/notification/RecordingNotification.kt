@@ -16,7 +16,6 @@ import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.swmansion.audioapi.AudioAPIModule
-import com.swmansion.audioapi.R
 import com.swmansion.audioapi.system.notification.state.RecordingNotificationState
 import java.lang.ref.WeakReference
 
@@ -221,61 +220,35 @@ class RecordingNotification(
   }
 
   private fun parseMapFromRN(options: ReadableMap?) {
-    state.title = if (options?.hasKey("title") == true) options.getString("title") else state.title ?: "Recording Audio"
-    state.contentText =
-      if (options?.hasKey("contentText") == true) {
-        options.getString("contentText")
-      } else {
-        state.contentText ?: "Audio recording is in progress/paused"
-      }
-    state.smallIconResourceName =
-      if (options?.hasKey("smallIconResourceName") == true) {
-        options.getString("smallIconResourceName")
-      } else {
-        state.smallIconResourceName
-      }
-    state.largeIconResourceName =
-      if (options?.hasKey("largeIconResourceName") == true) {
-        options.getString("largeIconResourceName")
-      } else {
-        state.largeIconResourceName
-      }
-    state.backgroundColor = if (options?.hasKey("color") == true) options.getInt("color") else state.backgroundColor
-    state.showStopAction =
-      if (options?.hasKey("showStopAction") == true) {
-        options.getBoolean("showStopAction")
-      } else {
-        state.showStopAction
-      }
-    state.pauseActionTitle =
-      if (options?.hasKey("pauseActionTitle") == true) {
-        options.getString("pauseActionTitle")
-      } else {
-        state.pauseActionTitle
-      }
-    state.resumeActionTitle =
-      if (options?.hasKey("resumeActionTitle") == true) {
-        options.getString("resumeActionTitle")
-      } else {
-        state.resumeActionTitle
-      }
-    state.stopActionTitle =
-      if (options?.hasKey("stopActionTitle") == true) {
-        options.getString("stopActionTitle")
-      } else {
-        state.stopActionTitle
-      }
-    state.deepLinkUri = if (options?.hasKey("deepLinkUri") == true) options.getString("deepLinkUri") else state.deepLinkUri
-    state.usesChronometer =
-      if (options?.hasKey("usesChronometer") == true) {
-        options.getBoolean("usesChronometer")
-      } else {
-        state.usesChronometer
-      }
-    // Unlike the other options, `paused` resets when absent so the notification never
-    // sticks in the paused look.
-    state.paused = if (options?.hasKey("paused") == true) options.getBoolean("paused") else false
+    state.title = options.stringOr("title", state.title ?: "Recording Audio")
+    state.contentText = options.stringOr("contentText", state.contentText ?: "Audio recording is in progress/paused")
+    state.smallIconResourceName = options.stringOr("smallIconResourceName", state.smallIconResourceName)
+    state.largeIconResourceName = options.stringOr("largeIconResourceName", state.largeIconResourceName)
+    state.backgroundColor = options.intOr("color", state.backgroundColor)
+    state.showStopAction = options.boolOr("showStopAction", state.showStopAction)
+    state.pauseActionTitle = options.stringOr("pauseActionTitle", state.pauseActionTitle)
+    state.resumeActionTitle = options.stringOr("resumeActionTitle", state.resumeActionTitle)
+    state.stopActionTitle = options.stringOr("stopActionTitle", state.stopActionTitle)
+    state.deepLinkUri = options.stringOr("deepLinkUri", state.deepLinkUri)
+    state.usesChronometer = options.boolOr("usesChronometer", state.usesChronometer)
+    // Deliberately not sticky — see the [RecordingNotificationState] KDoc.
+    state.paused = options.boolOr("paused", false)
   }
+
+  private fun ReadableMap?.stringOr(
+    key: String,
+    fallback: String?,
+  ): String? = if (this?.hasKey(key) == true) getString(key) else fallback
+
+  private fun ReadableMap?.boolOr(
+    key: String,
+    fallback: Boolean,
+  ): Boolean = if (this?.hasKey(key) == true) getBoolean(key) else fallback
+
+  private fun ReadableMap?.intOr(
+    key: String,
+    fallback: Int?,
+  ): Int? = if (this?.hasKey(key) == true) getInt(key) else fallback
 
   private fun createNotificationChannel(context: ReactApplicationContext) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

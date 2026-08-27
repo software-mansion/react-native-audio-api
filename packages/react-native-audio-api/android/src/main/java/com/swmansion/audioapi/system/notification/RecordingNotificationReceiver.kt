@@ -56,15 +56,21 @@ class RecordingNotificationReceiver(
     val pendingResult = goAsync()
     controlExecutor.execute {
       try {
-        if (paused) {
-          NativeRecorderControl.pauseActiveRecording()
-          module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_PAUSE.ordinal, mapOf())
-        } else {
-          NativeRecorderControl.resumeActiveRecording()
-          module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_RESUME.ordinal, mapOf())
+        val toggled =
+          if (paused) {
+            NativeRecorderControl.pauseActiveRecording()
+          } else {
+            NativeRecorderControl.resumeActiveRecording()
+          }
+        // `false` means no recording was in a state this action applies to, so neither
+        // the notification look nor JS may flip.
+        if (toggled) {
+          MediaSessionManager.setRecordingNotificationPaused(paused)
+          dispatchEventToJs(
+            if (paused) AudioEvent.RECORDING_NOTIFICATION_PAUSE else AudioEvent.RECORDING_NOTIFICATION_RESUME,
+          )
         }
-        MediaSessionManager.setRecordingNotificationPaused(paused)
-      } catch (e: UnsatisfiedLinkError) {
+      } catch (e: LinkageError) {
         Log.e(TAG, "Native library unavailable, cannot toggle the recording: ${e.message}", e)
       } catch (e: Exception) {
         Log.e(TAG, "Error while toggling the recording from the notification: ${e.message}", e)
@@ -82,15 +88,28 @@ class RecordingNotificationReceiver(
     controlExecutor.execute {
       try {
         NativeRecorderControl.stopActiveRecording()
-        module.invokeHandlerWithEventNameAndEventBody(AudioEvent.RECORDING_NOTIFICATION_STOP.ordinal, mapOf())
+        // The notification and foreground service unwind before JS is notified: the
+        // recording is already over, so even a throwing JS dispatch must not leave a
+        // stuck "recording" notification with a running microphone-typed service.
         MediaSessionManager.hideRecordingNotification()
-      } catch (e: UnsatisfiedLinkError) {
+        dispatchEventToJs(AudioEvent.RECORDING_NOTIFICATION_STOP)
+      } catch (e: LinkageError) {
         Log.e(TAG, "Native library unavailable, cannot stop the recording: ${e.message}", e)
       } catch (e: Exception) {
         Log.e(TAG, "Error while stopping the recording from the notification: ${e.message}", e)
       } finally {
         pendingResult.finish()
       }
+    }
+  }
+
+  /** Syncing a live JS runtime is best-effort — in the task-removed scenario the JNI
+   * dispatch can throw, and that must not undo the native work that already completed. */
+  private fun dispatchEventToJs(event: AudioEvent) {
+    try {
+      module.invokeHandlerWithEventNameAndEventBody(event.ordinal, mapOf())
+    } catch (e: Exception) {
+      Log.e(TAG, "Recording notification action completed natively, but notifying JS failed: ${e.message}", e)
     }
   }
 }

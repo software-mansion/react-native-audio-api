@@ -93,13 +93,13 @@ Additionally to be able to record audio while application is in the background, 
   </TabItem>
 </Tabs>
 
-### Keeping the recording alive when the app is closed
+### Keeping the recording alive when the app is closed <Android /> {#keeping-the-recording-alive-when-the-app-is-closed}
 
 By default the foreground service stops when the user swipes the app away from the recents screen (`android:stopWithTask="true"`), which kills the app process and ends any in-progress recording. You can opt into letting the service — and therefore the process, the JS runtime, and the active recording — survive task removal:
 
 <Tabs queryString="platform">
   <TabItem value="expo" label="Expo" default>
-    Set the `androidFSStopWithTask` option of the [expo plugin](../other/audio-api-plugin#androidfsstopwithtask) to `false`:
+    Set the `androidFSStopWithTask` option of the [expo plugin](../other/audio-api-plugin.mdx#androidfsstopwithtask) to `false`:
 
     ```json
     {
@@ -135,7 +135,7 @@ For the recording to actually survive, all of the following must hold:
 Even with `stopWithTask="false"`, the system can still kill the process (memory pressure, OEM battery managers). Recording cannot self-restart from the background — the user has to reopen the app. To limit data loss in that case, tune the file-output options [`androidFlushIntervalMs`](#audiorecorderfileoptions) and [`rotateIntervalBytes`](#audiorecorderfileoptions).
 :::
 
-A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](../system/recording-notification-manager#native-action-handling) (`showStopAction: true`), which stops the recording natively even when no JS is reachable.
+A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](../system/recording-notification-manager.mdx#native-action-handling) (`showStopAction: true`), which stops the recording natively even when no JS is reachable.
 
 When the app is opened again, reconcile the UI with what happened while it was away:
 
@@ -521,7 +521,7 @@ const duration = audioRecorder.getCurrentDuration();
 
 ### `isRecordingOngoing`
 
-**Static.** Returns `true` while any recording session is ongoing (recording or paused), regardless of which `AudioRecorder` instance started it. Use it after an app relaunch to detect a recording that [outlived the app UI](#keeping-the-recording-alive-when-the-app-is-closed).
+**Static.** Returns `true` while a recording session is ongoing (recording or paused). Native source of truth that needs no reference to the recorder instance, so use it from a remounted screen — e.g. after reopening an app whose recording [outlived the app UI](#keeping-the-recording-alive-when-the-app-is-closed) — to seed the UI state. It reflects the most recently created `AudioRecorder`; constructing another instance mid-recording displaces the probed one.
 
 #### Returns `boolean`.
 

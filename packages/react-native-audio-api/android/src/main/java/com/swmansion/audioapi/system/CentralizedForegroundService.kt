@@ -61,7 +61,7 @@ class CentralizedForegroundService : Service() {
 
   private fun startForegroundWithNotification() {
     try {
-      createNotificationChannelIfNeeded()
+      createLowImportanceChannelIfNeeded(CHANNEL_ID, "Audio Service", "Background audio processing")
 
       // Get the first available notification
       val existingNotification = findExistingNotification()
@@ -83,7 +83,11 @@ class CentralizedForegroundService : Service() {
   }
 
   private fun startForegroundWithPlaceholderAndStop() {
-    createPlaceholderNotificationChannelIfNeeded()
+    createLowImportanceChannelIfNeeded(
+      PLACEHOLDER_CHANNEL_ID,
+      "Audio Service Placeholder",
+      "Short-lived notification shown while the audio service shuts down",
+    )
 
     val placeholderNotification =
       NotificationCompat
@@ -93,9 +97,15 @@ class CentralizedForegroundService : Service() {
         .setPriority(NotificationCompat.PRIORITY_LOW)
         .build()
 
-    startForegroundCompat(PLACEHOLDER_NOTIFICATION_ID, placeholderNotification)
-    stopForeground(STOP_FOREGROUND_REMOVE)
-    stopSelf()
+    try {
+      startForegroundCompat(PLACEHOLDER_NOTIFICATION_ID, placeholderNotification)
+    } finally {
+      // The service must exit even when startForeground throws (e.g. API 34+
+      // ForegroundServiceStartNotAllowedException) — otherwise the system kills the
+      // process with ForegroundServiceDidNotStartInTimeException.
+      stopForeground(STOP_FOREGROUND_REMOVE)
+      stopSelf()
+    }
   }
 
   private fun startForegroundCompat(
@@ -166,43 +176,31 @@ class CentralizedForegroundService : Service() {
     return null
   }
 
-  private fun createNotificationChannelIfNeeded() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-      if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
-        val channel =
-          NotificationChannel(
-            CHANNEL_ID,
-            "Audio Service",
-            NotificationManager.IMPORTANCE_LOW,
-          ).apply {
-            description = "Background audio processing"
-            setShowBadge(false)
-            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-          }
-        notificationManager.createNotificationChannel(channel)
-      }
+  private fun createLowImportanceChannelIfNeeded(
+    id: String,
+    name: String,
+    channelDescription: String,
+  ) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+      return
     }
-  }
 
-  private fun createPlaceholderNotificationChannelIfNeeded() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-      if (notificationManager.getNotificationChannel(PLACEHOLDER_CHANNEL_ID) == null) {
-        val channel =
-          NotificationChannel(
-            PLACEHOLDER_CHANNEL_ID,
-            "Audio Service Placeholder",
-            NotificationManager.IMPORTANCE_LOW,
-          ).apply {
-            description = "Short-lived notification shown while the audio service shuts down"
-            setShowBadge(false)
-          }
-        notificationManager.createNotificationChannel(channel)
-      }
+    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    if (notificationManager.getNotificationChannel(id) != null) {
+      return
     }
+
+    val channel =
+      NotificationChannel(
+        id,
+        name,
+        NotificationManager.IMPORTANCE_LOW,
+      ).apply {
+        description = channelDescription
+        setShowBadge(false)
+        lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+      }
+    notificationManager.createNotificationChannel(channel)
   }
 
   override fun onDestroy() {

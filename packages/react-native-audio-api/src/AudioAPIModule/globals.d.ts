@@ -20,9 +20,9 @@ declare global {
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
 
-  var isRecordingOngoing: () => boolean;
+  var isRecordingOngoing: (() => boolean) | undefined;
 
-  var takeLastRecordingResult: () => FileInfo | null;
+  var takeLastRecordingResult: (() => FileInfo | null) | undefined;
 
   var createAudioBuffer: (
     numberOfChannels: number,

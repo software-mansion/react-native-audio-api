@@ -21,7 +21,7 @@ interface Options {
    * the app process and any in-progress recording — running (Android calls
    * onTaskRemoved instead of stopping the service). Defaults to true.
    */
-  androidFSStopWithTask?: boolean;
+  androidFSStopWithTask: boolean;
   disableFFmpeg: boolean;
   disableStaticExternalLibs: boolean;
 }
@@ -86,8 +86,7 @@ const withForegroundService: ConfigPlugin<Options> = (
       $: {
         'android:name':
           'com.swmansion.audioapi.system.CentralizedForegroundService',
-        'android:stopWithTask':
-          androidFSStopWithTask === false ? 'false' : 'true',
+        'android:stopWithTask': String(androidFSStopWithTask),
         'android:foregroundServiceType': SFTypes,
       },
       intentFilter: [],

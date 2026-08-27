@@ -17,14 +17,18 @@ object NativeRecorderControl {
    *
    * @return true if a recording was stopped by this call.
    */
+  @JvmStatic
   external fun stopActiveRecording(): Boolean
 
   /** Pauses an actively recording session. @return true if this call paused it. */
+  @JvmStatic
   external fun pauseActiveRecording(): Boolean
 
   /** Resumes a paused session. @return true if this call resumed it. */
+  @JvmStatic
   external fun resumeActiveRecording(): Boolean
 
-  /** Non-blocking check whether a recording session (recording or paused) is active. */
-  external fun isRecordingActive(): Boolean
+  /** Non-blocking check whether a recording session (recording or paused) is ongoing. */
+  @JvmStatic
+  external fun isRecordingOngoing(): Boolean
 }

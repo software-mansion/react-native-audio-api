@@ -19,12 +19,15 @@ void ActiveRecorderHandle::setRecorder(const std::shared_ptr<AudioRecorder> &rec
 }
 
 void ActiveRecorderHandle::clearRecorder(const AudioRecorder *recorder) {
-  std::scoped_lock lock(mutex_);
-  auto current = recorder_.lock();
-  if (current != nullptr && current.get() != recorder) {
-    return;
+  std::shared_ptr<AudioRecorder> current;
+  {
+    std::scoped_lock lock(mutex_);
+    current = recorder_.lock();
+    if (current != nullptr && current.get() != recorder) {
+      return;
+    }
+    recorder_.reset();
   }
-  recorder_.reset();
 }
 
 bool ActiveRecorderHandle::isRecordingOngoing() {
@@ -72,8 +75,9 @@ bool ActiveRecorderHandle::stopActiveRecording() {
     return false;
   }
 
-  // stop() blocks on file finalization and the recorder's destructor may call
-  // clearRecorder() concurrently, so mutex_ must not be held around it.
+  // stop() blocks for as long as file finalization takes (possibly seconds), so
+  // mutex_ is released around it to keep isRecordingOngoing(), setRecorder() and
+  // clearRecorder() (e.g. from ~AudioRecorderHostObject) responsive meanwhile.
   auto result = recorder->stop();
   if (!result.is_ok()) {
     return false;
@@ -90,9 +94,7 @@ bool ActiveRecorderHandle::stopActiveRecording() {
 
 std::optional<RecordingStopResult> ActiveRecorderHandle::takeLastRecordingResult() {
   std::scoped_lock lock(mutex_);
-  auto result = std::move(lastResult_);
-  lastResult_.reset();
-  return result;
+  return std::exchange(lastResult_, std::nullopt);
 }
 
 } // namespace audioapi

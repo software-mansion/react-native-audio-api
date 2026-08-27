@@ -42,12 +42,14 @@ class AudioRecorderCallback {
   void clearOnErrorCallback() {
     assignOnErrorCallbackId(0);
   }
+  void invokeOnErrorCallback(const std::string &message);
+
+ private:
   // Defined inline so AudioRecorder.cpp doesn't drag this class's whole
   // translation unit (and its HostObject dependency) into the C++ test build.
   void assignOnErrorCallbackId(uint64_t callbackId) {
     errorEvent_.assignCallbackId(callbackId);
   }
-  void invokeOnErrorCallback(const std::string &message);
 
  protected:
   std::atomic<bool> isInitialized_{false};

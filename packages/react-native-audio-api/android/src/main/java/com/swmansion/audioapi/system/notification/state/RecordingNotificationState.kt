@@ -7,7 +7,7 @@ import com.swmansion.audioapi.system.notification.RecordingNotificationReceiver
  * new options override it. The only exception is `paused`, which resets to `false` when
  * absent so the notification never sticks in the paused look.
  */
-data class RecordingNotificationState(
+class RecordingNotificationState(
   var receiver: RecordingNotificationReceiver? = null,
   var initialized: Boolean = false,
   var title: String? = null,

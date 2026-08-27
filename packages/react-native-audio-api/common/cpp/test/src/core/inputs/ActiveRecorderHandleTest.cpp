@@ -175,18 +175,57 @@ TEST(ActiveRecorderHandleTest, ClearRecorderIgnoresForeignPointer) {
   EXPECT_FALSE(handle.isRecordingOngoing());
 }
 
+// Thread startup skew usually serializes a single two-thread run, so the race
+// tests below repeat with a fresh handle/recorder and release both threads at
+// once through an atomic start flag to actually hit concurrent interleavings.
+constexpr int RACE_TEST_ITERATIONS = 200;
+
 TEST(ActiveRecorderHandleTest, ConcurrentStopsCloseTheFileExactlyOnce) {
-  ActiveRecorderHandle handle;
-  auto recorder = std::make_shared<FakeAudioRecorder>();
-  handle.setRecorder(recorder);
-  recorder->start("");
+  for (int iteration = 0; iteration < RACE_TEST_ITERATIONS; ++iteration) {
+    ActiveRecorderHandle handle;
+    auto recorder = std::make_shared<FakeAudioRecorder>();
+    handle.setRecorder(recorder);
+    recorder->start("");
 
-  std::thread nativeStop([&handle] { handle.stopActiveRecording(); });
-  std::thread jsStop([&recorder] { recorder->stop(); });
-  nativeStop.join();
-  jsStop.join();
+    std::atomic<bool> startFlag{false};
+    std::thread nativeStop([&] {
+      while (!startFlag.load()) {}
+      handle.stopActiveRecording();
+    });
+    std::thread jsStop([&] {
+      while (!startFlag.load()) {}
+      recorder->stop();
+    });
+    startFlag.store(true);
+    nativeStop.join();
+    jsStop.join();
 
-  EXPECT_EQ(recorder->stopCount, 1);
+    EXPECT_EQ(recorder->stopCount, 1) << "iteration " << iteration;
+  }
+}
+
+TEST(ActiveRecorderHandleTest, ConcurrentClearAndStopNeverCloseTheFileTwice) {
+  for (int iteration = 0; iteration < RACE_TEST_ITERATIONS; ++iteration) {
+    ActiveRecorderHandle handle;
+    auto recorder = std::make_shared<FakeAudioRecorder>();
+    handle.setRecorder(recorder);
+    recorder->start("");
+
+    std::atomic<bool> startFlag{false};
+    std::thread hostObjectClear([&] {
+      while (!startFlag.load()) {}
+      handle.clearRecorder(recorder.get());
+    });
+    std::thread nativeStop([&] {
+      while (!startFlag.load()) {}
+      handle.stopActiveRecording();
+    });
+    startFlag.store(true);
+    hostObjectClear.join();
+    nativeStop.join();
+
+    EXPECT_LE(recorder->stopCount, 1) << "iteration " << iteration;
+  }
 }
 
 // NOLINTEND

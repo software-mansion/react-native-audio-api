@@ -18,11 +18,13 @@ struct RecordingStopResult {
 
 /// @brief Process-global handle to the live AudioRecorder, reachable without a JS runtime.
 ///
-/// The recorder is otherwise owned solely by its JS-side host object, so platform code
-/// (e.g. the Android recording-notification STOP action) has no way to reach it once the
-/// JS runtime is unreachable, and a fresh JS context has no way to learn that a recording
-/// outlived the app UI. This handle closes both gaps: it can stop the recording natively
-/// and it stashes the resulting file info until JS collects it.
+/// The recorder is owned solely by its JS-side host object, but Android's
+/// recording-notification actions arrive through static JNI with no React context to
+/// walk back to that object — a weak one-slot handle is the minimal bridge that lets
+/// them control the live recorder. On top of native notification control it stashes,
+/// consume-once, the file info of a recording finalized natively while no JS promise
+/// or listener was waiting, and lets a remounted UI seed its state from the native
+/// source of truth via isRecordingOngoing().
 ///
 /// Assumes at most one AudioRecorder is alive at a time; setting a new recorder replaces
 /// the previous one.

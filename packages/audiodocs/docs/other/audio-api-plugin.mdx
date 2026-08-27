@@ -18,7 +18,7 @@ interface Options {
   androidPermissions: string[];
   androidForegroundService: boolean;
   androidFSTypes: string[];
-  androidFSStopWithTask?: boolean;
+  androidFSStopWithTask: boolean;
 }
 ```
 
@@ -144,5 +144,5 @@ Controls the `android:stopWithTask` attribute of the Foreground Service injected
 Set it to `false` to emit `android:stopWithTask="false"` on the service entry — on task removal the service keeps running, which keeps the app process (and e.g. an in-progress recording) alive.
 
 :::info
-The Foreground Service only exists while a library notification is shown, so this option has an effect only if a notification (e.g. via `RecordingNotificationManager.show()`) is displayed before the user closes the app. See [keeping the recording alive when the app is closed](../inputs/audio-recorder#keeping-the-recording-alive-when-the-app-is-closed) for the full set of requirements.
+The Foreground Service only exists while a library notification is shown, so this option has an effect only if a notification (e.g. via `RecordingNotificationManager.show()`) is displayed before the user closes the app. See [keeping the recording alive when the app is closed](../inputs/audio-recorder.mdx#keeping-the-recording-alive-when-the-app-is-closed) for the full set of requirements.
 :::

@@ -4,8 +4,6 @@ import {
   AudioBufferSourceNode,
   AudioManager,
   AudioRecorder,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the commented-out concat flow above
-  concatAudioFiles,
   FileFormat,
   RecordingNotificationManager,
 } from 'react-native-audio-api';
@@ -65,7 +63,6 @@ const Record: FC = () => {
       smallIconResourceName: 'logo',
       color: 0xff6200,
       showStopAction: true,
-      stopIconResourceName: 'stop',
       deepLinkUri: 'audioapi-example://record',
       usesChronometer: true,
     });
@@ -136,11 +133,7 @@ const Record: FC = () => {
     async (paths: string[]) => {
       setState(RecordingState.Loading);
 
-      // const outputPath = paths[0].replace(/[^/]+$/, 'recording.wav');
-
-      // const finalPath = await concatAudioFiles(paths, outputPath);
-      const finalPath = paths[0];
-      const audioBuffer = await audioContext.decodeAudioData(finalPath);
+      const audioBuffer = await audioContext.decodeAudioData(paths[0]);
       setRecordedBuffer(audioBuffer);
 
       setState(RecordingState.ReadyToPlay);
@@ -267,13 +260,15 @@ const Record: FC = () => {
 
   useEffect(() => {
     (async () => {
-      const recordingPermissionStatus = await AudioManager.checkRecordingPermissions();
+      const recordingPermissionStatus =
+        await AudioManager.checkRecordingPermissions();
 
       if (recordingPermissionStatus === 'Granted') {
         setHasPermissions(true);
       }
 
-      const notificationPermissionStatus = await AudioManager.checkNotificationPermissions();
+      const notificationPermissionStatus =
+        await AudioManager.checkNotificationPermissions();
       if (notificationPermissionStatus !== 'Granted') {
         const result = await AudioManager.requestNotificationPermissions();
         if (result !== 'Granted') {
@@ -340,6 +335,10 @@ const Record: FC = () => {
       // The recording and its notification intentionally stay alive when leaving this
       // screen; they can be stopped from the notification or after coming back.
       stopPlayback();
+
+      if (!AudioRecorder.isRecordingOngoing()) {
+        AudioManager.setAudioSessionActivity(false);
+      }
     };
   }, [stopPlayback]);
 

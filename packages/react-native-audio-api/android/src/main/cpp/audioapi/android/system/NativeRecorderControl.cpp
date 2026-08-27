@@ -9,7 +9,7 @@ void NativeRecorderControl::registerNatives() {
       makeNativeMethod("stopActiveRecording", NativeRecorderControl::stopActiveRecording),
       makeNativeMethod("pauseActiveRecording", NativeRecorderControl::pauseActiveRecording),
       makeNativeMethod("resumeActiveRecording", NativeRecorderControl::resumeActiveRecording),
-      makeNativeMethod("isRecordingActive", NativeRecorderControl::isRecordingActive),
+      makeNativeMethod("isRecordingOngoing", NativeRecorderControl::isRecordingOngoing),
   });
 }
 
@@ -25,7 +25,7 @@ jboolean NativeRecorderControl::resumeActiveRecording(jni::alias_ref<jni::JClass
   return static_cast<jboolean>(ActiveRecorderHandle::global().resumeActiveRecording());
 }
 
-jboolean NativeRecorderControl::isRecordingActive(jni::alias_ref<jni::JClass> /*clazz*/) {
+jboolean NativeRecorderControl::isRecordingOngoing(jni::alias_ref<jni::JClass> /*clazz*/) {
   return static_cast<jboolean>(ActiveRecorderHandle::global().isRecordingOngoing());
 }
 

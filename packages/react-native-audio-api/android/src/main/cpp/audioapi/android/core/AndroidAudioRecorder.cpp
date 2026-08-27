@@ -595,6 +595,13 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 
     cleanup();
 
+    // An idle session has nothing to restore — this covers a disconnect delivered
+    // late, after stop() already finished — and reopening here would leave a fresh,
+    // never-started mic stream held while idle.
+    if (stateBeforeTeardown == RecorderState::Idle) {
+      return;
+    }
+
     auto streamResult = openAudioStream();
 
     if (!streamResult.is_ok()) {

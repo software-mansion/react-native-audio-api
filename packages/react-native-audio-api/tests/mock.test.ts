@@ -266,7 +266,7 @@ describe('React Native Audio API Mocks', () => {
       expect(MockAPI.AudioRecorder.isRecordingOngoing()).toBe(false);
     });
 
-    it('should expose the consume-once native stop result as null', () => {
+    it('should return null when no native stop occurred', () => {
       expect(MockAPI.AudioRecorder.takeLastRecordingResult()).toBeNull();
     });
 
