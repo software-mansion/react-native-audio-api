@@ -118,7 +118,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   [audioEngine stopIfNecessary];
   [audioEngine attachInputNodeWithReceiverBlock:self.receiverSinkBlock
                          voiceProcessingEnabled:self.voiceProcessingEnabled
-                     onInputConfigurationChange:self.onInputConfigurationChange];
+                            onInputNotification:self.onInputNotification];
 
   if (![audioEngine startIfNecessary]) {
     [audioEngine detachInputNode];
@@ -173,8 +173,8 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   assert(audioEngine != nil);
 
   if ([audioEngine startIfNecessary]) {
-    if (self.onInputConfigurationChange != nil) {
-      self.onInputConfigurationChange();
+    if (self.onInputNotification != nil) {
+      self.onInputNotification(AudioEngineInputNotificationHardwareChanged);
     } else {
       self.inputArmed = YES;
     }
@@ -188,7 +188,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   self.resolvedBufferSize = 0;
   self.receiverBlock = nil;
   self.receiverSinkBlock = nil;
-  self.onInputConfigurationChange = nil;
+  self.onInputNotification = nil;
 }
 
 @end

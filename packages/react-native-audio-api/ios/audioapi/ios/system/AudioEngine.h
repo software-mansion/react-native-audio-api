@@ -12,6 +12,11 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
   AudioEngineStateInterrupted
 };
 
+typedef NS_ENUM(NSInteger, AudioEngineInputNotification) {
+  AudioEngineInputNotificationHardwareChanged = 0,
+  AudioEngineInputNotificationCaptureLost
+};
+
 @interface AudioEngine : NSObject
 
 @property (nonatomic, assign) AudioEngineState state;
@@ -35,7 +40,8 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-              onInputConfigurationChange:(void (^)(void))onInputConfigurationChange;
+                     onInputNotification:
+                         (void (^)(AudioEngineInputNotification))onInputNotification;
 - (void)detachInputNode;
 - (AVAudioFormat *)getLiveInputFormat;
 

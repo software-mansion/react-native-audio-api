@@ -83,7 +83,8 @@ IOSAudioRecorder::IOSAudioRecorder(
   nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock
                                                 voiceProcessingEnabled:options.iosVoiceProcessing];
 
-  nativeRecorder_.onInputConfigurationChange = ^{ this->handleInputConfigurationChange(); };
+  nativeRecorder_.onInputNotification =
+      ^(AudioEngineInputNotification notification) { this->handleInputNotification(notification); };
 }
 
 void IOSAudioRecorder::runSideEffects(const AudioBufferList *inputBuffer, int numFrames)
@@ -112,7 +113,19 @@ void IOSAudioRecorder::runSideEffects(const AudioBufferList *inputBuffer, int nu
   }
 }
 
-void IOSAudioRecorder::handleInputConfigurationChange()
+void IOSAudioRecorder::handleInputNotification(AudioEngineInputNotification notification)
+{
+  switch (notification) {
+    case AudioEngineInputNotificationHardwareChanged:
+      handleHardwareChange();
+      return;
+    case AudioEngineInputNotificationCaptureLost:
+      handleCaptureLost();
+      return;
+  }
+}
+
+void IOSAudioRecorder::handleHardwareChange()
 {
   if (isIdle()) {
     return;
@@ -123,7 +136,12 @@ void IOSAudioRecorder::handleInputConfigurationChange()
     return;
   }
 
-  if (!formatChanged) {
+  const bool outputNeedsReprepare =
+      (wantsFileOutput() && !fileOutputConfigured_.load(std::memory_order_acquire)) ||
+      (wantsCallback() && !callbackOutputConfigured_.load(std::memory_order_acquire)) ||
+      (wantsConnection() && !connectedConfigured_.load(std::memory_order_acquire));
+
+  if (!formatChanged && !outputNeedsReprepare) {
     if (state_.load(std::memory_order_acquire) == RecorderState::Recording) {
       [nativeRecorder_ setInputArmed:true];
     }
@@ -131,6 +149,30 @@ void IOSAudioRecorder::handleInputConfigurationChange()
   }
 
   reprepareForLiveInput();
+}
+
+void IOSAudioRecorder::handleCaptureLost()
+{
+  if (isIdle()) {
+    return;
+  }
+
+  [nativeRecorder_ setInputArmed:false];
+
+  std::scoped_lock lock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+  const bool shouldFinalizeFile =
+      fileOutputConfigured_.exchange(false, std::memory_order_acq_rel) && fileWriter_ != nullptr;
+  callbackOutputConfigured_.store(false, std::memory_order_release);
+  connectedConfigured_.store(false, std::memory_order_release);
+
+  if (shouldFinalizeFile) {
+    auto closeResult = fileWriter_->closeFile();
+    if (closeResult.is_err()) {
+      NSLog(
+          @"Error while finalizing recording segment after capture was lost: %s",
+          closeResult.unwrap_err().c_str());
+    }
+  }
 }
 
 Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
@@ -150,7 +192,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
   const bool shouldArmInput = state_.load(std::memory_order_acquire) == RecorderState::Recording;
   [nativeRecorder_ setInputArmed:false];
 
-  if (usesFileOutput()) {
+  if (wantsFileOutput()) {
     auto fileResult = reprepareFileWriter(inputFormat, maxInputBufferLength);
     if (fileResult.is_err()) {
       if (shouldArmInput) {
@@ -160,7 +202,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
     }
   }
 
-  if (usesCallback()) {
+  if (wantsCallback()) {
     auto callbackResult = reprepareCallback(inputFormat, maxInputBufferLength);
     if (callbackResult.is_err()) {
       if (shouldArmInput) {
@@ -170,7 +212,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
     }
   }
 
-  if (isConnected() && adapterNodeHandle_ != nullptr) {
+  if (wantsConnection() && adapterNodeHandle_ != nullptr) {
     reprepareAdapter(inputFormat, maxInputBufferLength);
   }
 
@@ -262,7 +304,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
 {
   stop();
 
-  nativeRecorder_.onInputConfigurationChange = nil;
+  nativeRecorder_.onInputNotification = nil;
 
   {
     std::scoped_lock lock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
