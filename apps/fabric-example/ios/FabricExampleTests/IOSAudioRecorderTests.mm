@@ -267,7 +267,7 @@ public:
 
   _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<IAudioEventHandlerRegistry>());
   self.originalNativeRecorder = _recorder->replaceNativeRecorder(self.nativeRecorder);
-  self.nativeRecorder.onInputConfigurationChange = self.originalNativeRecorder.onInputConfigurationChange;
+  self.nativeRecorder.onInputNotification = self.originalNativeRecorder.onInputNotification;
 }
 
 - (void)tearDown {

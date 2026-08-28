@@ -90,10 +90,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                               selector:@selector(handleInterruption:)
                                   name:AVAudioSessionInterruptionNotification
                                 object:nil];
-  // willEnterForeground is the first legal moment to restart I/O after a
-  // backgrounded interruption. DidBecomeActive retries if that attempt still
-  // failed, and is the only of the two that fires when returning from
-  // inactive-in-foreground (Control Center, Siri overlay).
   [self.notificationCenter addObserver:self
                               selector:@selector(handleWillEnterForeground:)
                                   name:UIApplicationWillEnterForegroundNotification
@@ -136,17 +132,9 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 {
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
-  dispatch_async(dispatch_get_main_queue(), ^{
-    if ([audioEngine getState] != AudioEngineStateInterrupted) {
-      return;
-    }
-
-    if (![audioEngine hasInputRegistration]) {
-      return;
-    }
-
-    [audioEngine onInterruptionEnd:true];
-  });
+  if (self.interruptionEndedDelivered && [audioEngine getState] == AudioEngineStateInterrupted) {
+    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:true]; });
+  }
 }
 
 - (void)handleInterruption:(NSNotification *)notification
@@ -160,6 +148,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
+    self.interruptionEndedDelivered = false;
     dispatch_async(dispatch_get_main_queue(), ^{
       [audioEngine onInterruptionBegin];
       [sessionManager markInactive];
@@ -176,6 +165,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   bool shouldResume = interruptionOption == AVAudioSessionInterruptionOptionShouldResume;
 
+  self.interruptionEndedDelivered = true;
   if (self.audioInterruptionsObserved) {
     [self.audioAPIModule
         invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
@@ -194,6 +184,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [notification.userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] integerValue];
 
   if (secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeBegin) {
+    self.interruptionEndedDelivered = false;
     dispatch_async(dispatch_get_main_queue(), ^{
       [sessionManager markInactive];
       [audioEngine onInterruptionBegin];
@@ -209,6 +200,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   bool shouldResume = secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeEnd;
 
+  self.interruptionEndedDelivered = true;
   if (self.audioInterruptionsObserved) {
     [self.audioAPIModule
         invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
@@ -335,6 +327,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   self.wasOtherAudioPlaying = shouldSilence;
 
   if (shouldSilence) {
+    self.interruptionEndedDelivered = false;
     dispatch_async(dispatch_get_main_queue(), ^{
       [sessionManager markInactive];
       [audioEngine onInterruptionBegin];
@@ -348,6 +341,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     return;
   }
 
+  self.interruptionEndedDelivered = true;
   if (self.audioInterruptionsObserved) {
     [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
                                             payload:audioapi::InterruptionPayload{
