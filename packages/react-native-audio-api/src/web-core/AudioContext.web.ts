@@ -123,7 +123,7 @@ export default class AudioContext implements BaseAudioContext {
     length: number,
     sampleRate: number
   ): AudioBuffer {
-    if (numberOfChannels < 1 || numberOfChannels >= 32) {
+    if (numberOfChannels < 1 || numberOfChannels > 32) {
       throw new NotSupportedError(
         `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
       );

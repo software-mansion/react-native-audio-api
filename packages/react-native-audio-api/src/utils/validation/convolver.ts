@@ -15,6 +15,17 @@ export function validateConvolverBufferChannelCount(
   }
 }
 
+export function validateConvolverBufferSampleRate(
+  bufferSampleRate: number,
+  contextSampleRate: number
+): void {
+  if (bufferSampleRate !== contextSampleRate) {
+    throw new NotSupportedError(
+      `The sample rate of the impulse response for ConvolverNode buffer (${bufferSampleRate}) must match the sample rate of its context (${contextSampleRate}).`
+    );
+  }
+}
+
 export const ConvolverOptionsValidator: OptionsValidator<ConvolverOptions> = {
   validate(options?: ConvolverOptions): void {
     if (!options?.buffer) {
