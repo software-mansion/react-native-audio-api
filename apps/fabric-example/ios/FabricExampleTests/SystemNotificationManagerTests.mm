@@ -100,20 +100,42 @@
 @property(nonatomic, assign) NSInteger restartAudioEngineCallCount;
 @property(nonatomic, assign) BOOL lastShouldResume;
 @property(nonatomic, assign) BOOL fakeHasInputRegistration;
+@property(nonatomic, assign) BOOL interruptionBeginAccepted;
+@property(nonatomic, assign) AudioEngineInterruptionEndOutcome interruptionEndOutcome;
 
 @end
 
 @implementation SNMFakeAudioEngine
 
-- (void)onInterruptionBegin
+- (bool)onInterruptionBegin
 {
   self.interruptionBeginCallCount += 1;
+  if (self.interruptionBeginAccepted) {
+    self.state = AudioEngineStateInterrupted;
+  }
+  return self.interruptionBeginAccepted;
 }
 
-- (void)onInterruptionEnd:(bool)shouldResume
+- (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
 {
   self.interruptionEndCallCount += 1;
   self.lastShouldResume = shouldResume;
+
+  switch (self.interruptionEndOutcome) {
+    case AudioEngineInterruptionEndOutcomeRunning:
+      self.state = AudioEngineStateRunning;
+      break;
+    case AudioEngineInterruptionEndOutcomePaused:
+      self.state = AudioEngineStatePaused;
+      break;
+    case AudioEngineInterruptionEndOutcomeStillInterrupted:
+      self.state = AudioEngineStateInterrupted;
+      break;
+    case AudioEngineInterruptionEndOutcomeNoOp:
+      break;
+  }
+
+  return self.interruptionEndOutcome;
 }
 
 - (void)restartAudioEngine
@@ -279,6 +301,8 @@ static void ClearFakeSharedAudioSession(void)
   [super setUp];
 
   self.fakeAudioEngine = [[SNMFakeAudioEngine alloc] init];
+  self.fakeAudioEngine.interruptionBeginAccepted = YES;
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeRunning;
   self.fakeSessionManager = [[SNMFakeAudioSessionManager alloc] init];
   self.fakeSharedAudioSession = [[FakeSharedAVAudioSession alloc] init];
   SetFakeSharedAudioSession(self.fakeSharedAudioSession);
@@ -423,19 +447,64 @@ static void ClearFakeSharedAudioSession(void)
   XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @NO);
 }
 
-- (void)testHandleInterruptionEndedEmitsEventWhenObserved
+- (void)testHandleInterruptionBeganDoesNotEmitWhenBeginIsRejected
+{
+  [self.manager observeAudioInterruptions:YES];
+  self.fakeAudioEngine.interruptionBeginAccepted = NO;
+
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeBegan
+                                                                   option:0]];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
+  XCTAssertEqual(self.fakeAudioEngine.interruptionBeginCallCount, 1);
+  XCTAssertEqual(self.module.eventInvocationCount, 0);
+}
+
+- (void)testHandleInterruptionEndedRecoversAndEmitsEventWhenObserved
 {
   [self.manager observeAudioInterruptions:YES];
 
   [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
                                                                    option:AVAudioSessionInterruptionOptionShouldResume]];
+  [self flushMainQueue];
 
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertTrue(self.fakeAudioEngine.lastShouldResume);
   XCTAssertEqual(self.module.eventInvocationCount, 1);
   XCTAssertEqual(self.module.lastEventNameRaw,
                  static_cast<NSInteger>(audioapi::AudioEvent::INTERRUPTION));
   XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"ended");
   XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @YES);
-  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 0);
+}
+
+- (void)testHandleInterruptionEndedDoesNotEmitWhenResumeFails
+{
+  [self.manager observeAudioInterruptions:YES];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeStillInterrupted;
+
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
+                                                                   option:AVAudioSessionInterruptionOptionShouldResume]];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertEqual(self.module.eventInvocationCount, 0);
+}
+
+- (void)testHandleInterruptionEndedEmitsWhenPausedAfterPoliteNonResume
+{
+  [self.manager observeAudioInterruptions:YES];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomePaused;
+
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
+                                                                   option:0]];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertFalse(self.fakeAudioEngine.lastShouldResume);
+  XCTAssertEqual(self.module.eventInvocationCount, 1);
+  XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"ended");
+  XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @NO);
 }
 
 - (void)testHandleInterruptionEndedResumesEngineWhenNotObserved
@@ -473,6 +542,7 @@ static void ClearFakeSharedAudioSession(void)
 - (void)testForegroundRetryResumesAfterFailedInterruptionEnded
 {
   [self prepareInterruptedRecordingEngine];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeStillInterrupted;
   [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeBegan
                                                                    option:0]];
   [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
@@ -482,12 +552,61 @@ static void ClearFakeSharedAudioSession(void)
   NSInteger endCountAfterEnded = self.fakeAudioEngine.interruptionEndCallCount;
   XCTAssertTrue(self.manager.interruptionEndedDelivered);
   XCTAssertEqual(endCountAfterEnded, 1);
+  XCTAssertEqual(self.fakeAudioEngine.state, AudioEngineStateInterrupted);
 
   [self.manager handleWillEnterForeground:nil];
   [self flushMainQueue];
 
   XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, endCountAfterEnded + 1);
   XCTAssertTrue(self.fakeAudioEngine.lastShouldResume);
+}
+
+- (void)testForegroundRetryEmitsEndedWhenObservedResumeSucceedsAfterFailedEnd
+{
+  [self.manager observeAudioInterruptions:YES];
+  [self prepareInterruptedRecordingEngine];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeStillInterrupted;
+
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeBegan
+                                                                   option:0]];
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
+                                                                   option:AVAudioSessionInterruptionOptionShouldResume]];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertEqual(self.module.eventInvocationCount, 1);
+  XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"began");
+
+  [self.module resetCapturedEvent];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeRunning;
+
+  [self.manager handleWillEnterForeground:nil];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 2);
+  XCTAssertEqual(self.module.eventInvocationCount, 1);
+  XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"ended");
+}
+
+- (void)testForegroundRetryAfterSuccessfulResumeIsNoOp
+{
+  [self.manager observeAudioInterruptions:YES];
+  [self prepareInterruptedRecordingEngine];
+
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
+                                                                   option:AVAudioSessionInterruptionOptionShouldResume]];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertEqual(self.module.eventInvocationCount, 1);
+  XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"ended");
+
+  [self.module resetCapturedEvent];
+  [self.manager handleDidBecomeActive:nil];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertEqual(self.module.eventInvocationCount, 0);
 }
 
 - (void)testHandleSecondaryAudioBeginMarksInactiveAndEmitsEventWhenObserved
@@ -518,6 +637,22 @@ static void ClearFakeSharedAudioSession(void)
   XCTAssertEqual(self.module.eventInvocationCount, 0);
   XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
   XCTAssertTrue(self.fakeAudioEngine.lastShouldResume);
+}
+
+- (void)testHandleSecondaryAudioEndRecoversAndEmitsEventWhenObserved
+{
+  [self.manager observeAudioInterruptions:YES];
+
+  [self.manager
+      handleSecondaryAudio:[self secondaryAudioNotificationWithType:
+                                     AVAudioSessionSilenceSecondaryAudioHintTypeEnd]];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertTrue(self.fakeAudioEngine.lastShouldResume);
+  XCTAssertEqual(self.module.eventInvocationCount, 1);
+  XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"ended");
+  XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @YES);
 }
 
 - (void)testHandleRouteChangeMapsReasonsAndFallsBackToUnknown
@@ -608,21 +743,37 @@ static void ClearFakeSharedAudioSession(void)
   XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @NO);
 }
 
-- (void)testCheckSecondaryAudioHintResumeTransitionEmitsEventWhenObserved
+- (void)testCheckSecondaryAudioHintResumeTransitionRecoversAndEmitsEventWhenObserved
 {
   [self.manager observeAudioInterruptions:YES];
   self.fakeSharedAudioSession.secondaryAudioShouldBeSilencedHint = NO;
   self.manager.wasOtherAudioPlaying = YES;
 
   [self.manager checkSecondaryAudioHint];
+  [self flushMainQueue];
 
   XCTAssertFalse(self.manager.wasOtherAudioPlaying);
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertTrue(self.fakeAudioEngine.lastShouldResume);
   XCTAssertEqual(self.module.eventInvocationCount, 1);
   XCTAssertEqual(self.module.lastEventNameRaw,
                  static_cast<NSInteger>(audioapi::AudioEvent::INTERRUPTION));
   XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"ended");
   XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @YES);
-  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 0);
+}
+
+- (void)testCheckSecondaryAudioHintResumeTransitionDoesNotEmitWhenResumeFails
+{
+  [self.manager observeAudioInterruptions:YES];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeStillInterrupted;
+  self.fakeSharedAudioSession.secondaryAudioShouldBeSilencedHint = NO;
+  self.manager.wasOtherAudioPlaying = YES;
+
+  [self.manager checkSecondaryAudioHint];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertEqual(self.module.eventInvocationCount, 0);
 }
 
 - (void)testCheckSecondaryAudioHintResumeTransitionResumesEngineWhenNotObserved

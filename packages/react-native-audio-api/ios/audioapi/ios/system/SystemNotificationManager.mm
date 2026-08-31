@@ -128,12 +128,47 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   [self retryInterruptedRecordingIfNeeded];
 }
 
+- (void)emitInterruptionBeganIfAccepted:(bool)accepted
+{
+  if (!self.audioInterruptionsObserved || !accepted) {
+    return;
+  }
+
+  [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                                          payload:audioapi::InterruptionPayload{
+                                                      .type = "began", .shouldResume = false}];
+}
+
+- (void)emitInterruptionEndedIfTransitioned:(AudioEngineInterruptionEndOutcome)outcome
+                               shouldResume:(bool)shouldResume
+{
+  if (!self.audioInterruptionsObserved) {
+    return;
+  }
+
+  if (outcome == AudioEngineInterruptionEndOutcomeRunning ||
+      outcome == AudioEngineInterruptionEndOutcomePaused) {
+    [self.audioAPIModule
+        invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                           payload:audioapi::InterruptionPayload{
+                                       .type = "ended", .shouldResume = shouldResume}];
+  }
+}
+
+- (void)performInterruptionEndOnEngine:(AudioEngine *)audioEngine shouldResume:(bool)shouldResume
+{
+  dispatch_async(dispatch_get_main_queue(), ^{
+    AudioEngineInterruptionEndOutcome outcome = [audioEngine onInterruptionEnd:shouldResume];
+    [self emitInterruptionEndedIfTransitioned:outcome shouldResume:shouldResume];
+  });
+}
+
 - (void)retryInterruptedRecordingIfNeeded
 {
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
   if (self.interruptionEndedDelivered && [audioEngine getState] == AudioEngineStateInterrupted) {
-    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:true]; });
+    [self performInterruptionEndOnEngine:audioEngine shouldResume:true];
   }
 }
 
@@ -150,30 +185,17 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
     self.interruptionEndedDelivered = false;
     dispatch_async(dispatch_get_main_queue(), ^{
-      [audioEngine onInterruptionBegin];
+      bool accepted = [audioEngine onInterruptionBegin];
       [sessionManager markInactive];
+      [self emitInterruptionBeganIfAccepted:accepted];
     });
-
-    if (self.audioInterruptionsObserved) {
-      [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
-                                              payload:audioapi::InterruptionPayload{
-                                                          .type = "began", .shouldResume = false}];
-    }
-
     return;
   }
 
   bool shouldResume = interruptionOption == AVAudioSessionInterruptionOptionShouldResume;
 
   self.interruptionEndedDelivered = true;
-  if (self.audioInterruptionsObserved) {
-    [self.audioAPIModule
-        invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
-                           payload:audioapi::InterruptionPayload{
-                                       .type = "ended", .shouldResume = shouldResume}];
-  } else {
-    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
-  }
+  [self performInterruptionEndOnEngine:audioEngine shouldResume:shouldResume];
 }
 
 - (void)handleSecondaryAudio:(NSNotification *)notification
@@ -187,28 +209,16 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     self.interruptionEndedDelivered = false;
     dispatch_async(dispatch_get_main_queue(), ^{
       [sessionManager markInactive];
-      [audioEngine onInterruptionBegin];
+      bool accepted = [audioEngine onInterruptionBegin];
+      [self emitInterruptionBeganIfAccepted:accepted];
     });
-
-    if (self.audioInterruptionsObserved) {
-      [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
-                                              payload:audioapi::InterruptionPayload{
-                                                          .type = "began", .shouldResume = false}];
-    }
     return;
   }
 
   bool shouldResume = secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeEnd;
 
   self.interruptionEndedDelivered = true;
-  if (self.audioInterruptionsObserved) {
-    [self.audioAPIModule
-        invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
-                           payload:audioapi::InterruptionPayload{
-                                       .type = "ended", .shouldResume = shouldResume}];
-  } else {
-    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
-  }
+  [self performInterruptionEndOnEngine:audioEngine shouldResume:shouldResume];
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
@@ -330,25 +340,15 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     self.interruptionEndedDelivered = false;
     dispatch_async(dispatch_get_main_queue(), ^{
       [sessionManager markInactive];
-      [audioEngine onInterruptionBegin];
+      bool accepted = [audioEngine onInterruptionBegin];
+      [self emitInterruptionBeganIfAccepted:accepted];
     });
-    if (self.audioInterruptionsObserved) {
-      [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
-                                              payload:audioapi::InterruptionPayload{
-                                                          .type = "began", .shouldResume = false}];
-    }
 
     return;
   }
 
   self.interruptionEndedDelivered = true;
-  if (self.audioInterruptionsObserved) {
-    [self.audioAPIModule invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
-                                            payload:audioapi::InterruptionPayload{
-                                                        .type = "ended", .shouldResume = true}];
-  } else {
-    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:true]; });
-  }
+  [self performInterruptionEndOnEngine:audioEngine shouldResume:true];
 }
 
 @end

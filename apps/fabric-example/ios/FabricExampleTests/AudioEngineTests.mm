@@ -518,15 +518,15 @@
 }
 
 - (void)testOnInterruptionBeginOnlyTransitionsFromRunning {
-  [self.audioEngine onInterruptionBegin];
+  XCTAssertFalse([self.audioEngine onInterruptionBegin]);
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
 
   self.audioEngine.state = AudioEngineStatePaused;
-  [self.audioEngine onInterruptionBegin];
+  XCTAssertFalse([self.audioEngine onInterruptionBegin]);
   XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
 
   self.audioEngine.state = AudioEngineStateRunning;
-  [self.audioEngine onInterruptionBegin];
+  XCTAssertTrue([self.audioEngine onInterruptionBegin]);
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateInterrupted);
 }
 
@@ -596,7 +596,8 @@
 - (void)testOnInterruptionEndNoOpsUnlessInterrupted {
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
 
-  [self.audioEngine onInterruptionEnd:true];
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeNoOp);
 
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
   XCTAssertEqual(fakeEngine.resetCallCount, 0);
@@ -610,7 +611,8 @@
   oldEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateInterrupted;
 
-  [self.audioEngine onInterruptionEnd:false];
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:false],
+                 AudioEngineInterruptionEndOutcomePaused);
 
   XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
   XCTAssertEqual(oldEngine.stopCallCount, 1);
@@ -627,7 +629,8 @@
   oldEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateInterrupted;
 
-  [self.audioEngine onInterruptionEnd:true];
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeRunning);
 
   FakeAudioEngine *newEngine = self.audioEngine.currentFakeAudioEngine;
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
@@ -637,7 +640,7 @@
   XCTAssertEqual(self.audioEngine.createdFakeEngines.count, 2UL);
 }
 
-- (void)testOnInterruptionEndWithResumeFailureEndsIdle {
+- (void)testOnInterruptionEndWithResumeFailureStaysInterrupted {
   [self attachSourceNodeToAudioEngine];
 
   self.audioEngine.state = AudioEngineStateInterrupted;
@@ -646,9 +649,28 @@
   self.audioEngine.nextCreatedEngineStartError =
       [NSError errorWithDomain:@"AudioEngineTests" code:5 userInfo:nil];
 
-  [self.audioEngine onInterruptionEnd:true];
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeStillInterrupted);
 
-  XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateInterrupted);
+}
+
+- (void)testOnInterruptionEndWithFailedActivationStaysInterrupted {
+  [self attachSourceNodeToAudioEngine];
+
+  FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
+  oldEngine.fakeRunning = YES;
+  self.audioEngine.state = AudioEngineStateInterrupted;
+  self.sessionManager.ensureActiveResult = NO;
+  self.sessionManager.ensureActiveFailure =
+      [NSError errorWithDomain:@"AudioEngineTests" code:8 userInfo:nil];
+
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeStillInterrupted);
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateInterrupted);
+  XCTAssertEqual(oldEngine.stopCallCount, 0);
+  XCTAssertEqual(self.audioEngine.createdFakeEngines.count, 1UL);
 }
 
 - (void)testStartIfNecessaryReturnsFalseWhenGraphEmpty {

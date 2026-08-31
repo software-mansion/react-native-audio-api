@@ -17,6 +17,14 @@ typedef NS_ENUM(NSInteger, AudioEngineInputNotification) {
   AudioEngineInputNotificationCaptureLost
 };
 
+/// Result of `onInterruptionEnd:`. Distinguishes a no-op from a failed resume that stays Interrupted.
+typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
+  AudioEngineInterruptionEndOutcomeNoOp = 0,
+  AudioEngineInterruptionEndOutcomeRunning,
+  AudioEngineInterruptionEndOutcomePaused,
+  AudioEngineInterruptionEndOutcomeStillInterrupted
+};
+
 @interface AudioEngine : NSObject
 
 @property (nonatomic, assign) AudioEngineState state;
@@ -45,8 +53,9 @@ typedef NS_ENUM(NSInteger, AudioEngineInputNotification) {
 - (void)detachInputNode;
 - (AVAudioFormat *)getLiveInputFormat;
 
-- (void)onInterruptionBegin;
-- (void)onInterruptionEnd:(bool)shouldResume;
+/// @return true if the engine transitioned from Running to Interrupted.
+- (bool)onInterruptionBegin;
+- (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume;
 - (void)onSessionDeactivated;
 - (void)markSessionDeactivationInvalidatedGraph;
 

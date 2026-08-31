@@ -385,14 +385,15 @@ static AudioEngine *_sharedInstance = nil;
   return [self liveInputFormat];
 }
 
-- (void)onInterruptionBegin
+- (bool)onInterruptionBegin
 {
   std::scoped_lock lock(_engineLock);
   if (self.state != AudioEngineState::AudioEngineStateRunning) {
-    return;
+    return false;
   }
 
   self.state = AudioEngineState::AudioEngineStateInterrupted;
+  return true;
 }
 
 - (void)onSessionDeactivated
@@ -429,13 +430,13 @@ static AudioEngine *_sharedInstance = nil;
   self.sessionDeactivationInvalidatedGraph = YES;
 }
 
-- (void)onInterruptionEnd:(bool)shouldResume
+- (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
 {
   std::scoped_lock lock(_engineLock);
   NSError *error = nil;
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
-    return;
+    return AudioEngineInterruptionEndOutcomeNoOp;
   }
 
   if (!shouldResume && self.inputRegistration == nil) {
@@ -443,12 +444,12 @@ static AudioEngine *_sharedInstance = nil;
     [self rebuildAudioEngine];
     self.state = AudioEngineState::AudioEngineStatePaused;
     [self notifyInput:AudioEngineInputNotificationHardwareChanged];
-    return;
+    return AudioEngineInterruptionEndOutcomePaused;
   }
 
   if (![self.sessionManager ensureActive:true error:&error]) {
     NSLog(@"Error while activating audio session after interruption: %@", [error debugDescription]);
-    return;
+    return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
   [self stopEngine];
@@ -459,7 +460,7 @@ static AudioEngine *_sharedInstance = nil;
         @"Error while materializing the audio input node after interruption: missing live input format");
     self.state = AudioEngineState::AudioEngineStateInterrupted;
     [self notifyInput:AudioEngineInputNotificationCaptureLost];
-    return;
+    return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
   [self.audioEngine prepare];
@@ -471,12 +472,13 @@ static AudioEngine *_sharedInstance = nil;
         [error debugDescription]);
     self.state = AudioEngineState::AudioEngineStateInterrupted;
     [self notifyInput:AudioEngineInputNotificationCaptureLost];
-    return;
+    return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
   self.sessionDeactivationInvalidatedGraph = false;
   [self notifyInput:AudioEngineInputNotificationHardwareChanged];
+  return AudioEngineInterruptionEndOutcomeRunning;
 }
 
 - (void)notifyInput:(AudioEngineInputNotification)notification
