@@ -23,11 +23,13 @@ import { RecordingState } from './types';
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
+  const [isInterrupted, setIsInterrupted] = useState(false);
   const [recordedBuffer, setRecordedBuffer] = useState<AudioBuffer | null>(
     null
   );
   const currentPositionSV = useSharedValue(0);
   const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const stateRef = useRef(state);
 
   const stopPlayback = useCallback(() => {
     const source = playbackSourceRef.current;
@@ -97,6 +99,7 @@ const Record: FC = () => {
     setupNotification(false);
 
     if (result.status === 'success') {
+      setIsInterrupted(false);
       setState(RecordingState.Recording);
       return;
     }
@@ -109,6 +112,7 @@ const Record: FC = () => {
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
     updateNotification(true);
+    setIsInterrupted(false);
     setState(RecordingState.Paused);
   }, []);
 
@@ -121,6 +125,7 @@ const Record: FC = () => {
   const onStopRecording = useCallback(async () => {
     const info = await Recorder.stop();
     RecordingNotificationManager.hide();
+    setIsInterrupted(false);
     setState(RecordingState.Loading);
 
     if (info.status !== 'success') {
@@ -228,6 +233,10 @@ const Record: FC = () => {
   );
 
   useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
     (async () => {
       const permissionStatus = await AudioManager.checkRecordingPermissions();
 
@@ -235,6 +244,31 @@ const Record: FC = () => {
         setHasPermissions(true);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    AudioManager.observeAudioInterruptions(true);
+
+    const interruptionSubscription = AudioManager.addSystemEventListener(
+      'interruption',
+      (event) => {
+        if (event.type === 'began') {
+          if (stateRef.current === RecordingState.Recording) {
+            setIsInterrupted(true);
+          }
+          return;
+        }
+
+        if (event.type === 'ended') {
+          setIsInterrupted(false);
+        }
+      }
+    );
+
+    return () => {
+      interruptionSubscription.remove();
+      AudioManager.observeAudioInterruptions(false);
+    };
   }, []);
 
   useEffect(() => {
@@ -262,7 +296,10 @@ const Record: FC = () => {
   }, [onPauseRecording, onResumeRecording]);
 
   useEffect(() => {
-    Recorder.enableFileOutput({ rotateIntervalBytes: 1_000_000, format: FileFormat.M4A });
+    Recorder.enableFileOutput({
+      rotateIntervalBytes: 1_000_000,
+      format: FileFormat.M4A,
+    });
 
     return () => {
       stopPlayback();
@@ -289,7 +326,7 @@ const Record: FC = () => {
         <>
           <RecordingTime state={state} />
           <View style={styles.spacerS} />
-          <RecordingVisualization state={state} />
+          <RecordingVisualization state={state} isInterrupted={isInterrupted} />
         </>
       )}
       <View style={styles.spacerM} />

@@ -20,6 +20,7 @@ const formatTime = (seconds: number) => {
 
 interface TimeStreamProps {
   isRecording: boolean;
+  isFrozen?: boolean;
   durationMS: SharedValue<number>;
 }
 
@@ -33,41 +34,55 @@ function generateInitialTimestamps() {
   return timestamps;
 }
 
-const TimeStream: React.FC<TimeStreamProps> = ({ isRecording, durationMS }) => {
+const TimeStream: React.FC<TimeStreamProps> = ({
+  isRecording,
+  isFrozen = false,
+  durationMS,
+}) => {
   const [timestamps, setTimestamps] = useState<number[]>(
     generateInitialTimestamps()
   );
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const wasRecordingRef = useRef(false);
+  const isAnimating = isRecording && !isFrozen;
 
   useEffect(() => {
-    if (isRecording) {
-      setTimestamps(generateInitialTimestamps());
+    const startedRecording = isRecording && !wasRecordingRef.current;
+    wasRecordingRef.current = isRecording;
 
-      intervalRef.current = setInterval(() => {
-        const elapsedSeconds = durationMS.value / 1000;
-        const futureSecond = Math.ceil(elapsedSeconds + 1);
-
-        setTimestamps((prev) => {
-          if (prev.includes(futureSecond)) {
-            return prev;
-          }
-
-          const cleanList = prev.filter((t) => t > elapsedSeconds - 5);
-          return [...cleanList, futureSecond];
-        });
-      }, 500);
-    } else {
+    if (!isAnimating) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
+      return;
     }
+
+    if (startedRecording) {
+      setTimestamps(generateInitialTimestamps());
+    }
+
+    intervalRef.current = setInterval(() => {
+      const elapsedSeconds = durationMS.value / 1000;
+      const futureSecond = Math.ceil(elapsedSeconds + 1);
+
+      setTimestamps((prev) => {
+        if (prev.includes(futureSecond)) {
+          return prev;
+        }
+
+        const cleanList = prev.filter((t) => t > elapsedSeconds - 5);
+        return [...cleanList, futureSecond];
+      });
+    }, 500);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [isRecording, durationMS]);
+  }, [isAnimating, isRecording, durationMS]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -76,7 +91,8 @@ const TimeStream: React.FC<TimeStreamProps> = ({ isRecording, durationMS }) => {
           key={seconds}
           spawnSeconds={seconds}
           durationMS={durationMS}
-          isRecording={isRecording}
+          isAnimating={isAnimating}
+          isFrozen={isRecording && isFrozen}
         />
       ))}
     </View>
@@ -90,7 +106,8 @@ const textWidth = 60;
 interface TimestampProps {
   spawnSeconds: number;
   durationMS: SharedValue<number>;
-  isRecording: boolean;
+  isAnimating: boolean;
+  isFrozen: boolean;
 }
 
 const subSeconds = new Array(7).fill(0).map((_, i) => `sub-${i}`);
@@ -98,11 +115,17 @@ const subSeconds = new Array(7).fill(0).map((_, i) => `sub-${i}`);
 const Timestamp: React.FC<TimestampProps> = ({
   spawnSeconds,
   durationMS,
-  isRecording,
+  isAnimating,
+  isFrozen,
 }) => {
   const translateX = useSharedValue(2 * windowWidth);
 
   useEffect(() => {
+    if (isFrozen) {
+      cancelAnimation(translateX);
+      return;
+    }
+
     const originalPositionOfFirstTimestamp = windowWidth - textWidth / 2;
     const currentPositionOfFirstTimestamp =
       originalPositionOfFirstTimestamp -
@@ -119,7 +142,7 @@ const Timestamp: React.FC<TimestampProps> = ({
 
     translateX.value = startX;
 
-    if (!isRecording) {
+    if (!isAnimating) {
       cancelAnimation(translateX);
       return;
     }
@@ -128,7 +151,7 @@ const Timestamp: React.FC<TimestampProps> = ({
       duration: duration,
       easing: Easing.linear,
     });
-  }, [spawnSeconds, durationMS, translateX, isRecording]);
+  }, [spawnSeconds, durationMS, translateX, isAnimating, isFrozen]);
 
   const containerStyle = useAnimatedStyle(() => ({
     position: 'absolute',

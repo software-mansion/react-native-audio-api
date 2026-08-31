@@ -281,6 +281,10 @@ if (status !== 'Granted') return;
 
 ### Interruption handling
 
+Enable emission with `AudioManager.observeAudioInterruptions(true)`, then listen.
+
+**Playback:** pause on `began` (native does not resume players). The AudioFile example resumes on `ended` when it had been playing.
+
 ```tsx
 useEffect(() => {
   const sub = AudioManager.addSystemEventListener('interruption', (event) => {
@@ -289,6 +293,8 @@ useEffect(() => {
   return () => sub?.remove();
 }, []);
 ```
+
+**Recording:** native always resumes the engine. Do not `Recorder.pause()` on `began`. iOS has already stopped I/O; the engine is `Interrupted`, not `Paused`. Only `Interrupted` is retried on `ended` / foreground — `Recorder.pause()` would move the engine to `Paused` and disable that retry. JS only freezes UI that still looks live (the Record demo's scrolling waveform). Unfreeze only on `ended` (failed resume does not emit `ended`).
 
 ## Shared UI Components
 
