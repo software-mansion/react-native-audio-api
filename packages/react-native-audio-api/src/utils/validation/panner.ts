@@ -1,11 +1,20 @@
 import { InvalidStateError, NotSupportedError, RangeError } from '../../errors';
-import type { OptionsValidator, PannerOptions } from '../../types';
+import type {
+  AudioNodeOptions,
+  ChannelCountMode,
+  OptionsValidator,
+  PannerOptions,
+} from '../../types';
+import { validateAudioNodeOptions } from './audioNodeOptions';
 
 export const PannerOptionsValidator: OptionsValidator<PannerOptions> = {
   validate(options?: PannerOptions): void {
     if (!options) {
       return;
     }
+
+    validateAudioNodeOptions(options);
+    validatePannerChannelOptions(options);
 
     if (options.panningModel === 'HRTF') {
       throw new NotSupportedError(
@@ -33,3 +42,31 @@ export const PannerOptionsValidator: OptionsValidator<PannerOptions> = {
     }
   },
 };
+
+export function validatePannerChannelCount(channelCount: number): void {
+  if (!Number.isInteger(channelCount) || channelCount < 1 || channelCount > 2) {
+    throw new NotSupportedError(
+      `The channelCount value (${channelCount}) must be 1 or 2 for a PannerNode`
+    );
+  }
+}
+
+export function validatePannerChannelCountMode(
+  channelCountMode: ChannelCountMode
+): void {
+  if (channelCountMode === 'max') {
+    throw new NotSupportedError(
+      `The channelCountMode value ('max') is not supported for a PannerNode`
+    );
+  }
+}
+
+function validatePannerChannelOptions(options: AudioNodeOptions): void {
+  if (options.channelCount !== undefined) {
+    validatePannerChannelCount(options.channelCount);
+  }
+
+  if (options.channelCountMode !== undefined) {
+    validatePannerChannelCountMode(options.channelCountMode);
+  }
+}

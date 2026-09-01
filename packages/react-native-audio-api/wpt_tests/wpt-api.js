@@ -21,6 +21,7 @@ const WEB_AUDIO_CLASSES = [
   'AudioBufferSourceNode',
   'AudioContext',
   'AudioDestinationNode',
+  'AudioListener',
   'AudioNode',
   'AudioParam',
   'AudioScheduledSourceNode',

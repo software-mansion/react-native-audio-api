@@ -37,6 +37,9 @@ TEST(PannerSpatializationTest, ComputeAzimuth) {
       computeAzimuth({0.0f, 0.0f, 0.0f}, listenerPos, listenerFwd, listenerUp), 0.0f, TOLERANCE);
   EXPECT_NEAR(
       computeAzimuth({0.0f, 0.0f, 1.0f}, listenerPos, listenerFwd, listenerUp), -180.0f, TOLERANCE);
+  // Source directly above the listener has no horizontal projection → azimuth 0.
+  EXPECT_NEAR(
+      computeAzimuth({0.0f, 1.0f, 0.0f}, listenerPos, listenerFwd, listenerUp), 0.0f, TOLERANCE);
 }
 
 TEST(PannerSpatializationTest, ComputeDistance) {

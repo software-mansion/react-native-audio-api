@@ -16,7 +16,11 @@ export {
 
 export { OscillatorOptionsValidator } from './oscillator';
 
-export { PannerOptionsValidator } from './panner';
+export {
+  PannerOptionsValidator,
+  validatePannerChannelCount,
+  validatePannerChannelCountMode,
+} from './panner';
 
 export { PeriodicWaveOptionsValidator } from './periodicWave';
 

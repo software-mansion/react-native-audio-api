@@ -76,7 +76,11 @@ inline float computeAzimuth(
   const Vec3 up = cross(listenerRightNorm, listenerForwardNorm);
 
   const float upProjection = dot(sourceListener, up);
-  Vec3 projectedSource = normalize(subtract(sourceListener, scale(up, upProjection)));
+  Vec3 projectedSource = subtract(sourceListener, scale(up, upProjection));
+  if (magnitude(projectedSource) == 0.0f) {
+    return 0.0f;
+  }
+  projectedSource = normalize(projectedSource);
 
   float azimuth =
       DEG_180 * std::acos(std::clamp(dot(projectedSource, listenerRightNorm), -1.0f, 1.0f)) / PI;

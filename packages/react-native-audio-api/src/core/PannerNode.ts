@@ -1,7 +1,17 @@
 import { IPannerNode } from '../jsi-interfaces';
-import { DistanceModelType, PannerOptions, PanningModelType } from '../types';
+import {
+  ChannelCountMode,
+  DistanceModelType,
+  PannerOptions,
+  PanningModelType,
+} from '../types';
 import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
-import { PannerOptionsValidator } from '../utils/validation';
+import {
+  PannerOptionsValidator,
+  validatePannerChannelCount,
+  validatePannerChannelCountMode,
+} from '../utils/validation';
+import { assertFloat32Representable } from '../utils/float32';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
 import type BaseAudioContext from './BaseAudioContext';
@@ -37,6 +47,24 @@ export default class PannerNode extends AudioNode {
       );
     }
     (this.node as IPannerNode).panningModel = value;
+  }
+
+  public override get channelCount(): number {
+    return this.node.channelCount;
+  }
+
+  public override set channelCount(value: number) {
+    validatePannerChannelCount(value);
+    this.node.channelCount = value;
+  }
+
+  public override get channelCountMode(): ChannelCountMode {
+    return this.node.channelCountMode;
+  }
+
+  public override set channelCountMode(value: ChannelCountMode) {
+    validatePannerChannelCountMode(value);
+    this.node.channelCountMode = value;
   }
 
   public get distanceModel(): DistanceModelType {
@@ -108,12 +136,18 @@ export default class PannerNode extends AudioNode {
   }
 
   public setPosition(x: number, y: number, z: number): void {
+    assertFloat32Representable(x);
+    assertFloat32Representable(y);
+    assertFloat32Representable(z);
     this.positionX.value = x;
     this.positionY.value = y;
     this.positionZ.value = z;
   }
 
   public setOrientation(x: number, y: number, z: number): void {
+    assertFloat32Representable(x);
+    assertFloat32Representable(y);
+    assertFloat32Representable(z);
     this.orientationX.value = x;
     this.orientationY.value = y;
     this.orientationZ.value = z;
