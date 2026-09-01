@@ -8,7 +8,7 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # PannerNode
 
-The `PannerNode` interface positions an audio source in 3D space relative to the context's [`AudioListener`](/docs/core/audio-listener).
+The `PannerNode` interface positions an audio source in 3D space relative to the context's [`AudioListener`](../core/audio-listener.mdx).
 
 ## Constructor
 
@@ -18,7 +18,7 @@ constructor(context: BaseAudioContext, options?: PannerOptions)
 
 ### `PannerOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
@@ -32,7 +32,7 @@ Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionod
 | `coneInnerAngle` / `coneOuterAngle` <Optional /> | `number` | `360` | Directional cone angles (degrees). |
 | `coneOuterGain` <Optional /> | `number` | `0` | Gain outside the outer cone. |
 
-You can also create a `PannerNode` via [`BaseAudioContext.createPanner()`](/docs/core/base-audio-context#createpanner).
+You can also create a `PannerNode` via [`BaseAudioContext.createPanner()`](../core/base-audio-context.mdx#createpanner).
 
 ## Example
 
@@ -55,18 +55,18 @@ panner.connect(ctx.destination);
 osc.start();
 ```
 
-To move the listener instead of the source, set [`ctx.listener`](/docs/core/audio-listener) position params the same way.
+To move the listener instead of the source, set [`ctx.listener`](../core/audio-listener.mdx) position params the same way.
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `positionX`, `positionY`, `positionZ` | [`AudioParam`](/docs/core/audio-param) | Source position in 3D space. |
-| `orientationX`, `orientationY`, `orientationZ` | [`AudioParam`](/docs/core/audio-param) | Source orientation vector. |
+| `positionX`, `positionY`, `positionZ` | [`AudioParam`](../core/audio-param.mdx) | Source position in 3D space. |
+| `orientationX`, `orientationY`, `orientationZ` | [`AudioParam`](../core/audio-param.mdx) | Source orientation vector. |
 | `panningModel` | `PanningModelType` | `'equalpower'` (native). `'HRTF'` throws `NotSupportedError` on native. |
 | `distanceModel` | `DistanceModelType` | `'linear'`, `'inverse'`, or `'exponential'`. |
 | `refDistance`, `maxDistance`, `rolloffFactor` | `number` | Distance model parameters. |
@@ -74,7 +74,7 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 
@@ -85,6 +85,6 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ## Remarks
 
-- Output is always stereo (2 channels), like [`StereoPannerNode`](/docs/effects/stereo-panner-node).
-- Spatialization uses the context [`listener`](/docs/core/audio-listener) position and orientation.
+- Output is always stereo (2 channels), like [`StereoPannerNode`](./stereo-panner-node.mdx).
+- Spatialization uses the context [`listener`](../core/audio-listener.mdx) position and orientation.
 - On native, setting `panningModel` to `'HRTF'` throws `NotSupportedError`. Use `'equalpower'`.

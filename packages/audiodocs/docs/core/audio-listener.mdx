@@ -50,7 +50,15 @@ All properties are [`AudioParam`](./audio-param.mdx)s with `minValue`/`maxValue`
 | `upY` | [`AudioParam`](./audio-param.mdx) | `1` | y-component of the listener's up direction. | <ReadOnly /> |
 | `upZ` | [`AudioParam`](./audio-param.mdx) | `0` | z-component of the listener's up direction. | <ReadOnly /> |
 
+## Methods
+
+Prefer setting the `AudioParam` properties above. These helpers exist for Web Audio API compatibility.
+
+| Method | Description |
+| :---- | :-------- |
+| `setPosition(x, y, z)` | Sets `positionX/Y/Z.value` (deprecated in the spec). |
+| `setOrientation(forwardX, forwardY, forwardZ, upX, upY, upZ)` | Sets `forwardX/Y/Z.value` and `upX/Y/Z.value` (deprecated in the spec). Unlike [`PannerNode.setOrientation`](../effects/panner-node.mdx#methods), this takes six arguments (forward + up). |
+
 ## Remarks
 
-- The deprecated Web Audio API methods `setPosition(x, y, z)` and `setOrientation(x, y, z, xUp, yUp, zUp)` are intentionally **not implemented**. Set the corresponding `AudioParam` values directly instead.
-- Used by [`PannerNode`](/docs/effects/panner-node) for 3D spatialization relative to the listener.
+- Used by [`PannerNode`](../effects/panner-node.mdx) for 3D spatialization relative to the listener.
