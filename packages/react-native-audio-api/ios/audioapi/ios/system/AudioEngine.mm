@@ -26,7 +26,7 @@
 @end
 
 @interface AudioEngine () {
-  std::mutex _engineLock;
+  std::recursive_mutex _engineLock;
   BOOL _isRebuildingAudioEngine;
   /// Tracks whether voice processing is currently engaged on the system input
   /// node of the live engine instance. Reset whenever the engine is recreated.
@@ -170,11 +170,15 @@ static AudioEngine *_sharedInstance = nil;
 
 - (AVAudioFormat *)liveInputFormat
 {
-  if (self.audioEngine == nil) {
+  std::scoped_lock lock(_engineLock);
+
+  AVAudioEngine *engine = self.audioEngine;
+
+  if (engine == nil) {
     return nil;
   }
 
-  AVAudioInputNode *engineInputNode = self.audioEngine.inputNode;
+  AVAudioInputNode *engineInputNode = engine.inputNode;
 
   if (engineInputNode == nil) {
     return nil;

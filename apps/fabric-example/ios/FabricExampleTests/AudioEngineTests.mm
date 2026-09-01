@@ -936,6 +936,40 @@
   XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
 }
 
+- (void)
+    testConfigurationChangeCallbackCanReadLiveInputFormatWhileRestartHoldsLock {
+  __block BOOL callbackRan = NO;
+  __block AVAudioFormat *formatSeenDuringRebuild = nil;
+
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:^{
+              callbackRan = YES;
+              // Invoked from inside restartAudioEngine, so this reads the
+              // engine back on the thread that already holds the engine lock.
+              formatSeenDuringRebuild = [self.audioEngine getLiveInputFormat];
+            }];
+
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+
+  // Restart off the test thread so a non-reentrant lock shows up as a timeout
+  // rather than wedging the whole test run.
+  XCTestExpectation *restartFinished =
+      [self expectationWithDescription:@"restartAudioEngine returned"];
+
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    [self.audioEngine restartAudioEngine];
+    [restartFinished fulfill];
+  });
+
+  [self waitForExpectations:@[ restartFinished ] timeout:5.0];
+
+  XCTAssertTrue(callbackRan);
+  XCTAssertNotNil(formatSeenDuringRebuild);
+}
+
 - (void)testConcurrentStartIfNecessaryDoesNotCrash {
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.state = AudioEngineStateIdle;
@@ -1033,6 +1067,40 @@
   }
 
   dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+}
+
+// Guards the input-node use-after-free: one thread resolves the live input
+// format while another tears the engine down underneath it. The format read has
+// to hold the engine lock across the whole check-then-use, otherwise the format
+// query is sent to an input node the rebuild has already released.
+- (void)testConcurrentLiveInputFormatReadAndRestartDoesNotCrash {
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  for (NSInteger index = 0; index < 50; index += 1) {
+    dispatch_group_enter(group);
+    dispatch_async(queue, ^{
+      [self.audioEngine getLiveInputFormat];
+      dispatch_group_leave(group);
+    });
+
+    dispatch_group_enter(group);
+    dispatch_async(queue, ^{
+      [self.audioEngine restartAudioEngine];
+      dispatch_group_leave(group);
+    });
+  }
+
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
 }
 
 @end
