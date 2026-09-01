@@ -172,13 +172,11 @@ static AudioEngine *_sharedInstance = nil;
 {
   std::scoped_lock lock(_engineLock);
 
-  AVAudioEngine *engine = self.audioEngine;
-
-  if (engine == nil) {
+  if (self.audioEngine == nil) {
     return nil;
   }
 
-  AVAudioInputNode *engineInputNode = engine.inputNode;
+  AVAudioInputNode *engineInputNode = self.audioEngine.inputNode;
 
   if (engineInputNode == nil) {
     return nil;
