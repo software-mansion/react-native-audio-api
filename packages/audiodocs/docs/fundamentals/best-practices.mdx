@@ -22,7 +22,7 @@ user experience, and maintainability. Here are some key best practices to consid
   Running `AudioContext` is still playing silence even if there is no playing source node connected to the [`destination`](/docs/core/base-audio-context#properties).
   Additionally, on iOS devices, the state of the `AudioContext` is directly related with state of the lock screen. If a running `AudioContext` exists, it is impossible to set lock screen state to `state_paused`.
 
-- **Configure the audio session early**: Set [`AudioManager.setAudioSessionOptions()`](/docs/system/audio-manager) once at startup — for example `iosCategory: 'playback'` for media apps or `iosCategory: 'playAndRecord'` when recording and playback coexist.
+- **Configure the audio session early**: Set [`AudioManager.setAudioSessionOptions()`](/docs/system/audio-manager#setaudiosessionoptions) once at startup and follow the [session configuration guidelines](/docs/system/audio-manager#sessionoptionsconfigurationguidelines).
 
 ## [**AudioRecorder**](/docs/inputs/audio-recorder) Management
 

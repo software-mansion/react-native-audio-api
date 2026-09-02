@@ -44,21 +44,21 @@ function App() {
 
 ## Methods
 
-### `setAudioSessionOptions` <IOS />
-
-:::warning AVAudioSession Compatibility
-Not all `iosOptions` are compatible with every `iosCategory`. Passing an invalid combination to the native API (for example, explicitly setting `allowBluetoothA2DP` alongside the `playback` category) will cause the configuration to fail. This can result in a `SessionActivationError` and total audio silence.
-
-Always verify valid category and option combinations in [Apple's AVAudioSession Documentation](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc).
-:::
+### `setAudioSessionOptions` <IOS /> {#setaudiosessionoptions}
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors). |
 
+:::warning AVAudioSession Compatibility
+Not all `iosOptions` are compatible with every `iosCategory`. Passing an invalid combination to the native API (for example, explicitly setting `allowBluetoothA2DP` alongside the `playback` category) will cause the configuration to fail. This can result in a `SessionActivationError` and total audio silence.
+
+For details on compatible options and categories, refer to [`SessionOptions`](#sessionoptions).
+:::
+
 #### Returns `undefined`.
 
-### `setAudioSessionActivity` <IOS />
+### `setAudioSessionActivity` <IOS /> {#setaudiosessionactivity}
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -165,6 +165,30 @@ Checks currently used and available devices.
 
 ## Remarks
 
+### Resume recording after an interruption <IOS /> {#resumerecordingafteraninterruption}
+
+An interruption is the system taking the audio session away due to a phone call, an alarm, or another non-mixable audio session. It deactivates the session and stops the I/O unit. Audio playback and capture therefore stop.
+
+A resume that completes while the app is still backgrounded is possible only when all of the conditions below hold.
+
+#### App configuration
+
+- Ensure the session options (set via [`setAudioSessionOptions`](#setaudiosessionoptions)) allow recording and make the app resilient to interruptions from other apps. Refer to the [session configuration guidelines](#sessionoptionsconfigurationguidelines). The following settings are a useful starting point:
+  - `iosCategory` set to `record` or `playAndRecord`, so the session can record. These categories also allow background recording. An incompatible category leads to a [`cannotStartPlaying`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotstartplaying) error.
+  - `iosMode` set to `default`.
+  - `iosOptions` include `mixWithOthers`, so the system can mix this session with audio from active sessions in other apps. Trying to resume recording in the background with a non-mixable session leads to [`cannotInterruptOthers`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotinterruptothers).
+- The app must declare [background audio mode](/docs/other/audio-api-plugin#iosbackgroundmode).
+
+#### Execution
+
+To complete a background resume, audio I/O must have been started in the foreground, and it must still have been running when the app went to the background. The background audio mode lets that already-running I/O *continue*; it does not allow *starting* audio from the background. iOS treats an `interruption` event of type `ended` as the wake on which a background resume may be attempted. A later background timer is not such a wake. Another app must have released the audio route and the microphone. For recording, the recorder must not have been stopped with [`stop()`](/docs/inputs/audio-recorder#stop), because stopping ends the take.
+
+#### iOS policy
+
+iOS policy determines the overall outcome of restarts. Activating the session and starting I/O are independent steps. An active session does not grant permission to run I/O. Even when every condition above is met, iOS may still refuse the restart: it applies internal checks on why the app is awake. The library therefore does not promise a background restart after a call, Siri, or a similar interruption. Because of this, the library retries with a best-effort strategy when the app returns to the foreground after a failed resume.
+
+## Types
+
 ### `AudioFocusType`
 <details>
 <summary>Type definitions</summary>
@@ -181,6 +205,7 @@ type AudioFocusType =
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type IOSCategory =
   | 'ambient'
@@ -226,11 +251,21 @@ interface SessionOptions {
 ```
 </details>
 
+#### Configuration guidelines {#sessionoptionsconfigurationguidelines}
+
+Each string union maps directly to the corresponding Apple type:
+
+- `IOSCategory` maps to [`AVAudioSession.Category`](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct)
+- `IOSMode` maps to [`AVAudioSession.Mode`](https://developer.apple.com/documentation/avfaudio/avaudiosession/mode-swift.struct)
+- `IOSOption` maps to [`AVAudioSession.CategoryOptions`](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct)
+
+Not all `iosOptions` are compatible with every `iosCategory`. Passing an invalid combination to the native API will cause the configuration to fail. Always verify valid category and option combinations in [Apple's AVAudioSession Documentation](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc).
 
 ### `SystemEventName`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 interface EventEmptyType {}
 
@@ -295,15 +330,18 @@ interface AudioEventSubscription {
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 ```
+
 </details>
 
 ### `AudioDeviceInfo`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 export interface AudioDeviceInfo {
   id: string; // unique device identifier
@@ -311,12 +349,14 @@ export interface AudioDeviceInfo {
   category: string; // device category (e.g. "Built-In Microphone", "Bluetooth")
 }
 ```
+
 </details>
 
 ### `AudioDevicesInfo`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 export type AudioDeviceList = AudioDeviceInfo[];
 
@@ -327,4 +367,5 @@ export interface AudioDevicesInfo {
   currentOutputs: AudioDeviceList; // iOS
 }
 ```
+
 </details>
