@@ -1,13 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import {
-  cancelAnimation,
-  Easing,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
-import type { SharedValue } from 'react-native-reanimated';
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing } from 'react-native';
 
 export function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) {
@@ -40,34 +32,26 @@ export function useExpandableTrackHeight(
   trackBarHeightPressed: number,
   trackBarAnimMs: number
 ) {
-  const height = useSharedValue(trackBarHeight);
-  const animatedStyle = useAnimatedStyle(() => ({
-    height: height.value,
-    borderRadius: height.value / 2,
-  }));
+  const height = useRef(new Animated.Value(trackBarHeight)).current;
 
-  return useMemo(
-    () => ({
-      animatedStyle,
-      expand: () => {
-        height.value = withTiming(trackBarHeightPressed, {
-          duration: trackBarAnimMs,
-        });
+  return useMemo(() => {
+    const animateTo = (toValue: number) => {
+      Animated.timing(height, {
+        toValue,
+        duration: trackBarAnimMs,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    return {
+      animatedStyle: {
+        height,
+        borderRadius: Animated.divide(height, 2),
       },
-      collapse: () => {
-        height.value = withTiming(trackBarHeight, {
-          duration: trackBarAnimMs,
-        });
-      },
-    }),
-    [
-      animatedStyle,
-      height,
-      trackBarHeight,
-      trackBarHeightPressed,
-      trackBarAnimMs,
-    ]
-  );
+      expand: () => animateTo(trackBarHeightPressed),
+      collapse: () => animateTo(trackBarHeight),
+    };
+  }, [height, trackBarHeight, trackBarHeightPressed, trackBarAnimMs]);
 }
 
 /**
@@ -75,48 +59,49 @@ export function useExpandableTrackHeight(
  * of the progress track while playback is stalled. It says "still waiting", not
  * "this much is buffered" — there is no buffered-ahead figure behind it.
  *
- * `trackWidth` is a shared value because the track is measured on layout, after
- * the first render.
+ * `trackWidth` is measured on layout, so it is zero until after the first
+ * render and the sweep simply has nothing to travel until then.
  */
 export function useBufferingSweep(
   isBuffering: boolean,
-  trackWidth: SharedValue<number>,
+  trackWidth: number,
   sweepWidthRatio: number,
   sweepDurationMs: number
 ) {
-  const sweepProgress = useSharedValue(0);
+  const sweepProgress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!isBuffering) {
       return;
     }
 
-    sweepProgress.value = withRepeat(
-      withTiming(1, {
+    const sweep = Animated.loop(
+      Animated.timing(sweepProgress, {
+        toValue: 1,
         duration: sweepDurationMs,
-        easing: Easing.inOut(Easing.quad),
-      }),
-      -1,
-      false
+        easing: Easing.inOut((t) => Easing.quad(t)),
+        useNativeDriver: true,
+      })
     );
+    sweep.start();
 
     return () => {
-      cancelAnimation(sweepProgress);
-      sweepProgress.value = 0;
+      sweep.stop();
+      sweepProgress.setValue(0);
     };
   }, [isBuffering, sweepDurationMs, sweepProgress]);
 
-  return useAnimatedStyle(() => {
-    const sweepWidth = trackWidth.value * sweepWidthRatio;
-    // Travel the track plus the sweep's own width, starting one width off the
-    // left edge, so it slides fully in and fully out instead of popping.
-    const travelDistance = trackWidth.value + sweepWidth;
+  const sweepWidth = trackWidth * sweepWidthRatio;
 
-    return {
-      width: sweepWidth,
-      transform: [
-        { translateX: -sweepWidth + sweepProgress.value * travelDistance },
-      ],
-    };
-  });
+  return {
+    width: sweepWidth,
+    transform: [
+      {
+        translateX: sweepProgress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-sweepWidth, trackWidth],
+        }),
+      },
+    ],
+  };
 }
