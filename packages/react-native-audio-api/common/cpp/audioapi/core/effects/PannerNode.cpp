@@ -6,19 +6,16 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <cmath>
 #include <memory>
 
 namespace audioapi {
 
 namespace {
 
-using panner::Vec3;
-
 using panner::DEG_180;
-using panner::DEG_270;
-using panner::DEG_360;
-using panner::DEG_450;
 using panner::DEG_90;
+using panner::Vec3;
 
 } // namespace
 
@@ -238,58 +235,55 @@ void PannerNode::processNode(int framesToProcess) {
         .x = listenerForwardX[idx], .y = listenerForwardY[idx], .z = listenerForwardZ[idx]};
     const Vec3 listenerUp{.x = listenerUpX[idx], .y = listenerUpY[idx], .z = listenerUpZ[idx]};
 
-    float azimuth =
+    double azimuth =
         panner::computeAzimuth(sourcePosition, listenerPosition, listenerForward, listenerUp);
 
     azimuth = panner::clampAzimuth(azimuth);
     azimuth = panner::wrapAzimuth(azimuth);
 
-    float x;
+    double x = 0.0;
     if (monoInput) {
       x = (azimuth + DEG_90) / DEG_180;
+    } else if (azimuth <= 0.0) {
+      x = (azimuth + DEG_90) / DEG_90;
     } else {
-      if (azimuth <= 0.0f) {
-        x = (azimuth + DEG_90) / DEG_90;
-      } else {
-        x = azimuth / DEG_90;
-      }
+      x = azimuth / DEG_90;
     }
 
-    float gainL = std::cos(x * PI / 2.0f);
-    float gainR = std::sin(x * PI / 2.0f);
+    const double gainL = std::cos(x * panner::PI / 2.0);
+    const double gainR = std::sin(x * panner::PI / 2.0);
 
-    const float inputL = inputLeftSpan[idx];
-    const float inputR = inputRightSpan[idx];
+    const double inputL = inputLeftSpan[idx];
+    const double inputR = inputRightSpan[idx];
 
-    const float input = inputL;
+    double panLeft = 0.0;
+    double panRight = 0.0;
 
     if (monoInput) {
-      outputLeft[idx] = input * gainL;
-      outputRight[idx] = input * gainR;
+      panLeft = inputL * gainL;
+      panRight = inputL * gainR;
+    } else if (azimuth <= 0.0) {
+      panLeft = inputL + inputR * gainL;
+      panRight = inputR * gainR;
     } else {
-      if (azimuth <= 0.0f) {
-        outputLeft[idx] = inputL + inputR * gainL;
-        outputRight[idx] = inputR * gainR;
-      } else {
-        outputLeft[idx] = inputL * gainL;
-        outputRight[idx] = inputR + inputL * gainR;
-      }
+      panLeft = inputL * gainL;
+      panRight = inputR + inputL * gainR;
     }
 
-    const float distance = panner::computeDistance(sourcePosition, listenerPosition);
-    const float distanceGain = panner::computeDistanceGain(
+    const double distance = panner::computeDistance(sourcePosition, listenerPosition);
+    const double distanceGain = panner::computeDistanceGain(
         distanceModel_, distance, refDistance_, maxDistance_, rolloffFactor_);
-    const float coneGain = panner::computeConeGain(
+    const double coneGain = panner::computeConeGain(
         sourcePosition,
         listenerPosition,
         sourceOrientation,
         coneInnerAngle_,
         coneOuterAngle_,
         coneOuterGain_);
-    const float totalGain = coneGain * distanceGain;
+    const double totalGain = coneGain * distanceGain;
 
-    outputLeft[idx] = totalGain * outputLeft[idx];
-    outputRight[idx] = totalGain * outputRight[idx];
+    outputLeft[idx] = static_cast<float>(totalGain * panLeft);
+    outputRight[idx] = static_cast<float>(totalGain * panRight);
   }
 }
 
