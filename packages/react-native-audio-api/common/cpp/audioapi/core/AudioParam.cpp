@@ -4,6 +4,8 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.hpp>
+
+#include <cmath>
 #include <memory>
 
 namespace audioapi {
@@ -73,16 +75,19 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
     return outputBuffer_;
   }
 
-  float sampleRate = context->getSampleRate();
-  double timeCache = time;
-  double timeStep = 1.0 / sampleRate;
+  // Sample times are frame / sampleRate (same as JS frame/sr for setValueAtTime).
+  // Accumulating `time += 1/sr` drifts and can miss automation at mid-quantum frames.
+  const double sampleRate = static_cast<double>(context->getSampleRate());
+  const auto startFrame = static_cast<std::size_t>(std::llround(time * sampleRate));
 
   // Read modulation from input buffer (filled by BridgeNode if connected, otherwise zeros)
   auto inputData = inputBuffer_->getChannel(0)->span();
   auto outputData = outputBuffer_->getChannel(0)->span();
 
-  for (int i = 0; i < framesToProcess; i++, timeCache += timeStep) {
-    outputData[i] = inputData[i] + getValueAtTimeUnmodulated(timeCache);
+  for (int i = 0; i < framesToProcess; ++i) {
+    const double sampleTime =
+        static_cast<double>(startFrame + static_cast<std::size_t>(i)) / sampleRate;
+    outputData[i] = inputData[i] + getValueAtTimeUnmodulated(sampleTime);
   }
 
   inputBuffer_->zero();
