@@ -29,7 +29,14 @@
 {
   [audioEngine stopIfNecessary];
   [self attachSourceNodeIfNeeded:audioEngine];
-  return [audioEngine startIfNecessary];
+
+  if (![audioEngine startIfNecessary]) {
+    [self detachSourceNodeIfAttached:audioEngine];
+    [audioEngine stopIfPossible];
+    return false;
+  }
+
+  return true;
 }
 
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
