@@ -75,8 +75,6 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
     return outputBuffer_;
   }
 
-  // Sample times are frame / sampleRate (same as JS frame/sr for setValueAtTime).
-  // Accumulating `time += 1/sr` drifts and can miss automation at mid-quantum frames.
   const double sampleRate = static_cast<double>(context->getSampleRate());
   const auto startFrame = static_cast<std::size_t>(std::llround(time * sampleRate));
 
