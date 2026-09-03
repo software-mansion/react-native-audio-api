@@ -8,8 +8,6 @@
 
 namespace audioapi::panner {
 
-/// Spatialization math uses double to match Web Audio / WPT reference formulas
-/// (JS Number). Sample buffers stay float32; callers cast at the last step.
 constexpr double DEG_90 = 90.0;
 constexpr double DEG_180 = 180.0;
 constexpr double DEG_270 = 270.0;
