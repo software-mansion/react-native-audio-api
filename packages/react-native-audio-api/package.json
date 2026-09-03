@@ -190,7 +190,6 @@
     "react": "19.2.3",
     "react-native": "0.87.0",
     "react-native-builder-bob": "0.33.1",
-    "react-native-worklets": "0.12.1",
     "turbo": "^1.10.7",
     "typescript": "^6.0.3",
     "wpt-runner": "^7.0.0"

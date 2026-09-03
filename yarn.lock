@@ -11956,7 +11956,6 @@ __metadata:
     react: "npm:19.2.3"
     react-native: "npm:0.87.0"
     react-native-builder-bob: "npm:0.33.1"
-    react-native-worklets: "npm:0.12.1"
     semver: "npm:^7.7.3"
     turbo: "npm:^1.10.7"
     typescript: "npm:^6.0.3"
