@@ -578,6 +578,18 @@
   XCTAssertTrue(self.audioEngine.sessionDeactivationInvalidatedGraph);
 }
 
+- (void)testOnSessionDeactivatedTransitionsInterruptedToPaused {
+  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  fakeEngine.fakeRunning = NO;
+  self.audioEngine.state = AudioEngineStateInterrupted;
+
+  [self.audioEngine onSessionDeactivated];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  XCTAssertEqual(fakeEngine.pauseCallCount, 0);
+  XCTAssertTrue(self.audioEngine.sessionDeactivationInvalidatedGraph);
+}
+
 - (void)
     testOnSessionDeactivatedMarksStoppedGraphForRebuildWhenNodesAreAttached {
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
