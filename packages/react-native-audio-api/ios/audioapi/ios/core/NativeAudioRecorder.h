@@ -29,7 +29,8 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 
 - (void)pause;
 
-- (void)resume;
+/// @return YES if the engine started.
+- (BOOL)resume;
 
 - (void)cleanup;
 

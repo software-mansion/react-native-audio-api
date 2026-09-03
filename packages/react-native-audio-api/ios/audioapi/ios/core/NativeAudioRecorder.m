@@ -167,18 +167,12 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   [audioEngine pauseIfNecessary];
 }
 
-- (void)resume
+- (BOOL)resume
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  if ([audioEngine startIfNecessary]) {
-    if (self.onInputNotification != nil) {
-      self.onInputNotification(AudioEngineInputNotificationHardwareChanged);
-    } else {
-      self.inputArmed = YES;
-    }
-  }
+  return [audioEngine startIfNecessary];
 }
 
 - (void)cleanup

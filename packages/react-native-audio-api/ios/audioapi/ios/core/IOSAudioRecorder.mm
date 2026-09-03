@@ -698,8 +698,12 @@ void IOSAudioRecorder::resume()
     return;
   }
 
-  [nativeRecorder_ resume];
+  if (![nativeRecorder_ resume]) {
+    return;
+  }
+
   state_.store(RecorderState::Recording, std::memory_order_release);
+  handleHardwareChange();
 }
 
 /// @brief Checks if the recorder is currently recording.

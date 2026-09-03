@@ -432,11 +432,23 @@ static void ClearFakeRecorderSharedAudioSession(void)
       voiceProcessingEnabled:NO];
 
   [recorder pause];
-  [recorder resume];
+  XCTAssertTrue([recorder resume]);
 
   XCTAssertEqual(self.audioEngine.pauseIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
-  XCTAssertTrue(recorder.inputArmed);
+}
+
+- (void)testResumeReturnsFalseWhenEngineStartFails
+{
+  self.audioEngine.startIfNecessaryResult = NO;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  [recorder pause];
+  XCTAssertFalse([recorder resume]);
+
+  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
 }
 
 - (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath
