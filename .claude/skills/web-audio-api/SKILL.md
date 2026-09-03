@@ -115,7 +115,7 @@ Current status (from `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`)
 |---|---|
 | `AudioContext` | `close`, `suspend`, `resume`, `currentTime`, `destination`, `sampleRate`, `state` |
 | `BaseAudioContext` | `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all `create*` for available nodes |
-| `AudioListener` | All nine AudioParams; used by `PannerNode` for 3D spatialization; deprecated `setPosition` / `setOrientation` omitted |
+| `AudioListener` | All nine AudioParams; used by `PannerNode` for 3D spatialization; deprecated `setPosition` / `setOrientation` provided in JS (set AudioParam values) |
 | `PannerNode` | Equal-power spatialization, distance models, cone gain; `'HRTF'` throws `NotSupportedError` on native |
 
 ### Not yet implemented ❌
