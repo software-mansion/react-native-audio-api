@@ -30,7 +30,6 @@ const TRACK_BAR_HEIGHT_PRESSED = 18;
 const TRACK_BAR_ANIM_MS = 150;
 const BUFFERING_SWEEP_MS = 1100;
 const BUFFERING_SWEEP_WIDTH_RATIO = 0.35;
-// Opacity ramp faking a soft-edged gradient band
 const BUFFERING_SWEEP_SLICE_OPACITIES = [
   0.04, 0.18, 0.45, 0.6, 0.45, 0.18, 0.04,
 ];
@@ -64,9 +63,6 @@ const AudioControls: React.FC = () => {
     BUFFERING_SWEEP_MS
   );
 
-  // The pan responder is created once so that a re-render mid-drag cannot reset
-  // the gesture it is tracking. Everything it reads that changes between
-  // renders therefore has to go through this ref.
   const scrub = useRef({
     startX: 0,
     trackWidth: 0,
@@ -85,8 +81,6 @@ const AudioControls: React.FC = () => {
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        // Hold on to the gesture once it starts, so a surrounding scroll view
-        // cannot take the touch away in the middle of a scrub.
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: (event) => {
           const s = scrub.current;

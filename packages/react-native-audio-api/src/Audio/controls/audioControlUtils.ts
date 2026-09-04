@@ -54,14 +54,6 @@ export function useExpandableTrackHeight(
   }, [height, trackBarHeight, trackBarHeightPressed, trackBarAnimMs]);
 }
 
-/**
- * Indeterminate buffering sweep: a highlight that repeatedly travels the width
- * of the progress track while playback is stalled. It says "still waiting", not
- * "this much is buffered" — there is no buffered-ahead figure behind it.
- *
- * `trackWidth` is measured on layout, so it is zero until after the first
- * render and the sweep simply has nothing to travel until then.
- */
 export function useBufferingSweep(
   isBuffering: boolean,
   trackWidth: number,
