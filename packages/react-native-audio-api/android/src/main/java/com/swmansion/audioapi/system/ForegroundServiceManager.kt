@@ -56,6 +56,15 @@ object ForegroundServiceManager {
    */
   fun isServiceRunning(): Boolean = isServiceRunning
 
+  /**
+   * Called from [CentralizedForegroundService.onDestroy] so a later [subscribe] can start
+   * the service again after the system destroys it.
+   */
+  @Synchronized
+  internal fun onServiceDestroyed() {
+    isServiceRunning = false
+  }
+
   private fun startServiceIfNeeded() {
     if (!isServiceRunning && subscribers.isNotEmpty()) {
       startForegroundService()

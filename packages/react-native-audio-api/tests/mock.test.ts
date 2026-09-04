@@ -253,6 +253,23 @@ describe('React Native Audio API Mocks', () => {
       expect(recorder.isRecording()).toBe(false);
     });
 
+    it('should report an ongoing recording through the static probe', async () => {
+      expect(MockAPI.AudioRecorder.isRecordingOngoing()).toBe(false);
+
+      await recorder.start();
+      expect(MockAPI.AudioRecorder.isRecordingOngoing()).toBe(true);
+
+      recorder.pause();
+      expect(MockAPI.AudioRecorder.isRecordingOngoing()).toBe(true);
+
+      await recorder.stop();
+      expect(MockAPI.AudioRecorder.isRecordingOngoing()).toBe(false);
+    });
+
+    it('should return null when no native stop occurred', () => {
+      expect(MockAPI.AudioRecorder.takeLastRecordingResult()).toBeNull();
+    });
+
     it('should support RecorderAdapterNode connection', () => {
       const context = new MockAPI.AudioContext();
       const adapter = context.createRecorderAdapter();

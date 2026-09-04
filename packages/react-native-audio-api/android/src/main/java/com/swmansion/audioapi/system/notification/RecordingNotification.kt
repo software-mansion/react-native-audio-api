@@ -4,23 +4,18 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.ComponentCallbacks
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.res.Configuration
-import android.graphics.Color
 import android.graphics.drawable.Icon
+import android.net.Uri
 import android.os.Build
 import android.util.Log
-import android.widget.RemoteViews
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.swmansion.audioapi.AudioAPIModule
-import com.swmansion.audioapi.R
 import com.swmansion.audioapi.system.notification.state.RecordingNotificationState
 import java.lang.ref.WeakReference
 
@@ -29,196 +24,231 @@ class RecordingNotification(
   private val audioAPIModule: WeakReference<AudioAPIModule>,
   private val notificationId: Int,
   private val channelId: String,
-) : BaseNotification,
-  ComponentCallbacks {
+) : BaseNotification {
   companion object {
     private const val TAG = "RecordingNotification"
     const val ID = 200
+
+    private const val REQUEST_CODE_CONTENT = 2000
+    private const val REQUEST_CODE_PAUSE = 2001
+    private const val REQUEST_CODE_RESUME = 2002
+    private const val REQUEST_CODE_STOP = 2003
   }
 
-  private var state: RecordingNotificationState =
-    RecordingNotificationState(
-      darkTheme =
-        reactContext
-          .get()!!
-          .resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES,
-      initialized = false,
-    )
+  private val state = RecordingNotificationState()
 
   private fun initializeNotification() {
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
-    if (!state.initialized) {
-      context.registerComponentCallbacks(this)
-      createNotificationChannel(context)
-      state.receiver =
-        RecordingNotificationReceiver(audioAPIModule.get()!!)
-      val filter =
-        IntentFilter().apply {
-          addAction(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED)
-          addAction(RecordingNotificationReceiver.NOTIFICATION_RECORDING_RESUMED)
-        }
-      ContextCompat.registerReceiver(
-        context,
-        state.receiver,
-        filter,
-        ContextCompat.RECEIVER_NOT_EXPORTED,
-      )
-
-      state.pauseIntent =
-        Intent(RecordingNotificationReceiver.NOTIFICATION_RECORDING_STOPPED).apply {
-          `package` = context.packageName
-        }
-
-      state.resumeIntent =
-        Intent(RecordingNotificationReceiver.NOTIFICATION_RECORDING_RESUMED).apply {
-          `package` = context.packageName
-        }
-      state.darkTheme = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-      state.initialized = true
+    if (state.initialized) {
+      return
     }
+
+    createNotificationChannel(context)
+    state.receiver = RecordingNotificationReceiver(audioAPIModule.get()!!)
+    val filter =
+      IntentFilter().apply {
+        addAction(RecordingNotificationReceiver.ACTION_PAUSE)
+        addAction(RecordingNotificationReceiver.ACTION_RESUME)
+        addAction(RecordingNotificationReceiver.ACTION_STOP)
+      }
+    ContextCompat.registerReceiver(
+      context,
+      state.receiver,
+      filter,
+      ContextCompat.RECEIVER_NOT_EXPORTED,
+    )
+    state.initialized = true
   }
 
   override fun show(options: ReadableMap?): Notification {
     initializeNotification()
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
-    if (options != state.cachedRNOptions) {
-      state.cachedRNOptions = options
-      parseMapFromRN(options)
-    }
-    val builder = getBuilder()
+    parseMapFromRN(options)
+    return buildNotification(context)
+  }
 
-    if (state.smallIconResourceName != null) {
-      builder.setSmallIcon(context.resources.getIdentifier(state.smallIconResourceName, "drawable", context.packageName))
-    }
+  /**
+   * Rebuilds with an updated paused flag, leaving the sticky RN options untouched.
+   * Used by native-initiated pause/resume so the action button flips even when JS
+   * is unreachable.
+   */
+  fun rebuildWithPausedState(paused: Boolean): Notification {
+    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+    state.paused = paused
+    return buildNotification(context)
+  }
 
-    if (state.largeIconResourceName != null) {
-      val icon =
-        Icon.createWithResource(
-          context,
-          context.resources.getIdentifier(state.largeIconResourceName, "drawable", context.packageName),
+  private fun buildNotification(context: ReactApplicationContext): Notification {
+    // The notification is rebuilt from scratch on every show() so that every option —
+    // including the tap intent — reflects the latest values.
+    val builder =
+      NotificationCompat
+        .Builder(context, channelId)
+        .setOngoing(true)
+        .setOnlyAlertOnce(true)
+        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        .setContentTitle(state.title)
+        .setContentText(state.contentText)
+        .setSmallIcon(
+          resolveDrawable(context, state.smallIconResourceName) ?: android.R.drawable.ic_btn_speak_now,
         )
-      builder.setLargeIcon(icon)
+
+    resolveDrawable(context, state.largeIconResourceName)?.let {
+      builder.setLargeIcon(Icon.createWithResource(context, it))
     }
+    state.backgroundColor?.let { builder.setColor(it) }
 
-    if (state.backgroundColor != null) {
-      builder.setColor(state.backgroundColor!!)
-    }
-
-    val collapsedView = RemoteViews(context.packageName, R.layout.notification_collapsed)
-    val expandedView = RemoteViews(context.packageName, R.layout.notification_expanded)
-
-    val (pauseResumePendingIntent, iconId) = setupPauseResumeIntent(context)
-
-    setupRemoteView(listOf(collapsedView, expandedView), pauseResumePendingIntent, iconId)
-
-    builder
-      .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-      .setCustomContentView(collapsedView)
-      .setCustomBigContentView(expandedView)
-      .setContentTitle(state.title)
-      .setContentText(state.contentText)
-
-    if (state.backgroundColor != null) {
-      builder.setColor(state.backgroundColor!!)
-    }
+    setupContentIntent(context, builder)
+    setupActions(context, builder)
+    setupChronometer(builder)
 
     return builder.build()
   }
 
-  private fun setupPauseResumeIntent(context: Context): Pair<PendingIntent, Int> {
-    val pauseResumeIntent =
-      if (state.paused) {
-        state.resumeIntent
-      } else {
-        state.pauseIntent
-      }
+  private fun setupContentIntent(
+    context: Context,
+    builder: NotificationCompat.Builder,
+  ) {
+    val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
+    state.deepLinkUri?.let {
+      // React Native's Linking only surfaces intent data for ACTION_VIEW — with the
+      // launcher's ACTION_MAIN the URI would be silently ignored. The intent stays
+      // explicit (component set), so no intent filter is consulted.
+      launchIntent.action = Intent.ACTION_VIEW
+      launchIntent.removeCategory(Intent.CATEGORY_LAUNCHER)
+      launchIntent.data = Uri.parse(it)
+    }
+    builder.setContentIntent(
+      PendingIntent.getActivity(
+        context,
+        REQUEST_CODE_CONTENT,
+        launchIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+      ),
+    )
+  }
 
-    val pauseResumePendingIntent =
+  private fun setupActions(
+    context: Context,
+    builder: NotificationCompat.Builder,
+  ) {
+    if (state.paused) {
+      builder.addAction(
+        createAction(
+          context,
+          RecordingNotificationReceiver.ACTION_RESUME,
+          REQUEST_CODE_RESUME,
+          state.resumeActionTitle ?: "Resume",
+        ),
+      )
+    } else {
+      builder.addAction(
+        createAction(
+          context,
+          RecordingNotificationReceiver.ACTION_PAUSE,
+          REQUEST_CODE_PAUSE,
+          state.pauseActionTitle ?: "Pause",
+        ),
+      )
+    }
+
+    if (state.showStopAction) {
+      builder.addAction(
+        createAction(
+          context,
+          RecordingNotificationReceiver.ACTION_STOP,
+          REQUEST_CODE_STOP,
+          state.stopActionTitle ?: "Stop",
+        ),
+      )
+    }
+  }
+
+  private fun createAction(
+    context: Context,
+    action: String,
+    requestCode: Int,
+    title: String,
+  ): NotificationCompat.Action {
+    val intent = Intent(action).apply { `package` = context.packageName }
+    val pendingIntent =
       PendingIntent.getBroadcast(
         context,
-        0,
-        pauseResumeIntent!!,
+        requestCode,
+        intent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
-
-    val pauseId =
-      if (state.pauseIconResourceName != null) {
-        context.resources.getIdentifier(state.pauseIconResourceName, "drawable", context.packageName)
-      } else {
-        android.R.drawable.ic_media_pause
-      }
-    val resumeId =
-      if (state.resumeIconResourceName != null) {
-        context.resources.getIdentifier(state.resumeIconResourceName, "drawable", context.packageName)
-      } else {
-        android.R.drawable.ic_media_play
-      }
-
-    val iconId = if (state.paused) resumeId else pauseId
-    return pauseResumePendingIntent to iconId
+    return NotificationCompat.Action(null, title, pendingIntent)
   }
 
-  private fun setupRemoteView(
-    views: List<RemoteViews>,
-    pauseResumePendingIntent: PendingIntent,
-    iconId: Int,
-  ) {
-    val iconColor =
-      if (state.darkTheme) {
-        Color.WHITE // Dark Mode -> White Icon
-      } else {
-        Color.BLACK // Light Mode -> Black Icon
+  // The system chronometer always ticks against wall time, so the recording's paused
+  // spans are carved out by shifting the base (`startedAtMs`) forward on each resume.
+  private fun setupChronometer(builder: NotificationCompat.Builder) {
+    val now = System.currentTimeMillis()
+
+    if (state.usesChronometer && !state.paused) {
+      if (state.startedAtMs == null) {
+        state.startedAtMs = now
       }
-    for (view in views) {
-      view.setTextViewText(R.id.notification_title, state.title)
-      view.setTextViewText(R.id.notification_content, state.contentText)
-      view.setImageViewResource(R.id.notification_action_btn, iconId)
-      view.setInt(R.id.notification_action_btn, "setColorFilter", iconColor)
-      view.setOnClickPendingIntent(R.id.notification_action_btn, pauseResumePendingIntent)
+      state.pausedAtMs?.let { pausedAt ->
+        state.startedAtMs = state.startedAtMs!! + (now - pausedAt)
+        state.pausedAtMs = null
+      }
+      builder
+        .setWhen(state.startedAtMs!!)
+        .setShowWhen(true)
+        .setUsesChronometer(true)
+    } else {
+      if (state.usesChronometer && state.paused && state.pausedAtMs == null) {
+        state.pausedAtMs = now
+      }
+      builder
+        .setUsesChronometer(false)
+        .setShowWhen(false)
     }
   }
 
-// not used currently, left for future reference
-//  private fun loadBitmapFromUri(
-//    context: Context,
-//    uriString: String?,
-//  ): Bitmap? =
-//    try {
-//      val uri = android.net.Uri.parse(uriString)
-//      val inputStream: InputStream
-//      if (uri.scheme == "http" || uri.scheme == "https") {
-//        // web URL
-//        val connection = java.net.URL(uriString).openConnection()
-//        connection.doInput = true
-//        connection.connect()
-//        inputStream = connection.inputStream
-//      } else {
-//        // local files
-//        inputStream = context.contentResolver.openInputStream(uri)!!
-//      }
-//      android.graphics.BitmapFactory.decodeStream(inputStream)
-//    } catch (e: Exception) {
-//      Log.e(TAG, "Failed to load bitmap from URI: $uriString", e)
-//      null
-//    }
-
-  private fun getBuilder(): NotificationCompat.Builder {
-    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
-    if (state.builder == null) {
-      val openAppIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-      val pendingIntent = PendingIntent.getActivity(context, 0, openAppIntent, PendingIntent.FLAG_IMMUTABLE)
-
-      state.builder =
-        NotificationCompat
-          .Builder(context, channelId)
-          .setOngoing(true)
-          .setContentIntent(pendingIntent)
+  private fun resolveDrawable(
+    context: Context,
+    resourceName: String?,
+  ): Int? {
+    if (resourceName == null) {
+      return null
     }
-    if (state.smallIconResourceName == null) {
-      state.builder!!.setSmallIcon(android.R.drawable.ic_btn_speak_now)
-    }
-    return state.builder!!
+    val resourceId = context.resources.getIdentifier(resourceName, "drawable", context.packageName)
+    return if (resourceId != 0) resourceId else null
   }
+
+  private fun parseMapFromRN(options: ReadableMap?) {
+    state.title = options.stringOr("title", state.title ?: "Recording Audio")
+    state.contentText = options.stringOr("contentText", state.contentText ?: "Audio recording is in progress/paused")
+    state.smallIconResourceName = options.stringOr("smallIconResourceName", state.smallIconResourceName)
+    state.largeIconResourceName = options.stringOr("largeIconResourceName", state.largeIconResourceName)
+    state.backgroundColor = options.intOr("color", state.backgroundColor)
+    state.showStopAction = options.boolOr("showStopAction", state.showStopAction)
+    state.pauseActionTitle = options.stringOr("pauseActionTitle", state.pauseActionTitle)
+    state.resumeActionTitle = options.stringOr("resumeActionTitle", state.resumeActionTitle)
+    state.stopActionTitle = options.stringOr("stopActionTitle", state.stopActionTitle)
+    state.deepLinkUri = options.stringOr("deepLinkUri", state.deepLinkUri)
+    state.usesChronometer = options.boolOr("usesChronometer", state.usesChronometer)
+    // Deliberately not sticky — see the [RecordingNotificationState] KDoc.
+    state.paused = options.boolOr("paused", false)
+  }
+
+  private fun ReadableMap?.stringOr(
+    key: String,
+    fallback: String?,
+  ): String? = if (this?.hasKey(key) == true) getString(key) else fallback
+
+  private fun ReadableMap?.boolOr(
+    key: String,
+    fallback: Boolean,
+  ): Boolean = if (this?.hasKey(key) == true) getBoolean(key) else fallback
+
+  private fun ReadableMap?.intOr(
+    key: String,
+    fallback: Int?,
+  ): Int? = if (this?.hasKey(key) == true) getInt(key) else fallback
 
   private fun createNotificationChannel(context: ReactApplicationContext) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -238,84 +268,20 @@ class RecordingNotification(
     Log.d(TAG, "Notification channel created: $channelId")
   }
 
-  private fun parseMapFromRN(options: ReadableMap?) {
-    state.title = if (options?.hasKey("title") == true) options.getString("title") else state.title ?: "Recording Audio"
-    state.contentText =
-      if (options?.hasKey("contentText") == true) {
-        options.getString("contentText")
-      } else {
-        state.contentText ?: "Audio recording is in progress/paused"
-      }
-    state.smallIconResourceName =
-      if (options?.hasKey("smallIconResourceName") ==
-        true
-      ) {
-        options.getString("smallIconResourceName")
-      } else {
-        state.smallIconResourceName ?: null
-      }
-    state.largeIconResourceName =
-      if (options?.hasKey("largeIconResourceName") ==
-        true
-      ) {
-        options.getString("largeIconResourceName")
-      } else {
-        state.largeIconResourceName ?: null
-      }
-    state.pauseIconResourceName =
-      if (options?.hasKey("pauseIconResourceName") ==
-        true
-      ) {
-        options.getString("pauseIconResourceName")
-      } else {
-        state.pauseIconResourceName ?: null
-      }
-    state.resumeIconResourceName =
-      if (options?.hasKey("resumeIconResourceName") ==
-        true
-      ) {
-        options.getString("resumeIconResourceName")
-      } else {
-        state.resumeIconResourceName ?: null
-      }
-    state.backgroundColor = if (options?.hasKey("color") == true) options.getInt("color") else state.backgroundColor ?: null
-    state.paused = if (options?.hasKey("paused") == true) options.getBoolean("paused") else false
-  }
-
   override fun hide() {
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
     if (state.receiver != null) {
       context.unregisterReceiver(state.receiver)
-      context.unregisterComponentCallbacks(this)
       state.receiver = null
     }
     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     notificationManager.cancel(notificationId)
     state.initialized = false
-    state.builder = null
+    state.startedAtMs = null
+    state.pausedAtMs = null
   }
 
   override fun getNotificationId(): Int = notificationId
 
   override fun getChannelId(): String = channelId
-
-  @RequiresApi(Build.VERSION_CODES.O)
-  override fun onConfigurationChanged(newConfig: Configuration) {
-    val currentNightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-    if (currentNightMode != state.darkTheme) {
-      // Theme changed, rebuild notification
-      state.darkTheme = currentNightMode
-      val notification = show(state.cachedRNOptions)
-      val context = reactContext.get()
-      if (context != null) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(notificationId, notification)
-      }
-    }
-  }
-
-  @Deprecated("Deprecated in Java")
-  override fun onLowMemory() {
-    // left to listen for ui mode changes
-  }
 }

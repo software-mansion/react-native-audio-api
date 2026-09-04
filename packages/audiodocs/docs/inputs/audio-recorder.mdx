@@ -93,6 +93,63 @@ Additionally to be able to record audio while application is in the background, 
   </TabItem>
 </Tabs>
 
+### Keeping the recording alive when the app is closed <Android /> {#keeping-the-recording-alive-when-the-app-is-closed}
+
+By default the foreground service stops when the user swipes the app away from the recents screen (`android:stopWithTask="true"`), which kills the app process and ends any in-progress recording. You can opt into letting the service — and therefore the process, the JS runtime, and the active recording — survive task removal:
+
+<Tabs queryString="platform">
+  <TabItem value="expo" label="Expo" default>
+    Set the `androidFSStopWithTask` option of the [expo plugin](../other/audio-api-plugin.mdx#androidfsstopwithtask) to `false`:
+
+    ```json
+    {
+      "plugins": [
+        [
+          "react-native-audio-api",
+          {
+            "androidFSStopWithTask": false
+          }
+        ]
+      ]
+    }
+    ```
+
+  </TabItem>
+  <TabItem value="android" label="Android">
+    In a bare react-native application, set `android:stopWithTask="false"` on the service entry in your `AndroidManifest.xml`:
+
+    ```xml
+    <service android:stopWithTask="false" android:name="com.swmansion.audioapi.system.CentralizedForegroundService" android:foregroundServiceType="microphone" />
+    ```
+
+  </TabItem>
+</Tabs>
+
+For the recording to actually survive, all of the following must hold:
+
+- The foreground service only exists while a library notification is shown. Call [`RecordingNotificationManager.show()`](../system/recording-notification-manager.mdx#show) while the app is still in the foreground — before the user leaves the app — otherwise there is no service to keep alive.
+- `androidFSTypes` must include `"microphone"` (manifest `foregroundServiceType="microphone"`), and on Android 14+ (API 34) the app needs the `android.permission.FOREGROUND_SERVICE_MICROPHONE` permission.
+- Android's while-in-use rule applies: microphone access must begin while the app is in the foreground. Starting a recording from the background is not possible.
+
+:::caution
+Even with `stopWithTask="false"`, the system can still kill the process (memory pressure, OEM battery managers). Recording cannot self-restart from the background — the user has to reopen the app. To limit data loss in that case, tune the file-output options [`androidFlushIntervalMs`](#audiorecorderfileoptions) and [`rotateIntervalBytes`](#audiorecorderfileoptions).
+:::
+
+A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](../system/recording-notification-manager.mdx#native-action-handling) (`showStopAction: true`), which stops the recording natively even when no JS is reachable.
+
+When the app is opened again, reconcile the UI with what happened while it was away:
+
+```tsx
+if (AudioRecorder.isRecordingOngoing()) {
+  // the recording is still running — re-attach the UI to it
+} else {
+  const info = AudioRecorder.takeLastRecordingResult();
+  if (info) {
+    // the recording was stopped from the notification; info.paths holds the files
+  }
+}
+```
+
 ## Examples
 
 <Tabs group="usage">
@@ -462,11 +519,42 @@ Returns the current recording duration when file output is enabled.
 const duration = audioRecorder.getCurrentDuration();
 ```
 
+### `isRecordingOngoing`
+
+**Static.** Returns `true` while a recording session is ongoing (recording or paused). Native source of truth that needs no reference to the recorder instance, so use it from a remounted screen — e.g. after reopening an app whose recording [outlived the app UI](#keeping-the-recording-alive-when-the-app-is-closed) — to seed the UI state. It reflects the most recently created `AudioRecorder`; constructing another instance mid-recording displaces the probed one.
+
+#### Returns `boolean`.
+
+```tsx
+if (AudioRecorder.isRecordingOngoing()) {
+  // re-attach the UI to the still-running recording
+}
+```
+
+### `takeLastRecordingResult` <Android /> {#takelastrecordingresult}
+
+**Static.** Returns the [`FileInfo`](#fileinfo) of a recording that was stopped natively — through the [recording notification's stop action](../system/recording-notification-manager.mdx#native-action-handling) — or `null` if there is none. Consume-once: the result is cleared on read, so a second call returns `null`.
+
+Recordings stopped through [`stop`](#stop) resolve their promise with the file info instead and never appear here.
+
+#### Returns [`FileInfo`](#fileinfo) or `null`.
+
+```tsx
+const info = AudioRecorder.takeLastRecordingResult();
+if (info) {
+  // the recording was stopped from the notification; info.paths holds the files
+}
+```
+
 ### `enableFileOutput`
 
 Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file.
 
 For further information, see [`AudioRecorderFileOptions`](#audiorecorderfileoptions).
+
+:::caution
+Calling `enableFileOutput` while a recording is ongoing replaces the file writer: output continues into a new file and [`getCurrentDuration`](#getcurrentduration) resets. When re-mounting a screen that may be resyncing with a still-running recording, guard the call with [`isRecordingOngoing`](#isrecordingongoing).
+:::
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -690,7 +778,7 @@ interface AudioRecorderFileOptions {
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
 - `subDirectory` - If configured it will create the recording inside requested directory (default: `undefined`).
 - `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
-- <span id="androidflushintervalms"></span>`androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
+- `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
   - Higher values are more battery - and storage-efficient.
 

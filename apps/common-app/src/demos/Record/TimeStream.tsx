@@ -23,10 +23,12 @@ interface TimeStreamProps {
   durationMS: SharedValue<number>;
 }
 
-function generateInitialTimestamps() {
+// Seconds around `baseSecond` so the visible window is fully populated even when
+// the stream starts mid-recording (screen re-attached to a live recorder).
+function generateInitialTimestamps(baseSecond: number) {
   const timestamps: number[] = [];
 
-  for (let i = -5; i < 15; i++) {
+  for (let i = baseSecond - 5; i < baseSecond + 15; i++) {
     timestamps.push(i);
   }
 
@@ -34,14 +36,14 @@ function generateInitialTimestamps() {
 }
 
 const TimeStream: React.FC<TimeStreamProps> = ({ isRecording, durationMS }) => {
-  const [timestamps, setTimestamps] = useState<number[]>(
-    generateInitialTimestamps()
+  const [timestamps, setTimestamps] = useState<number[]>(() =>
+    generateInitialTimestamps(Math.floor(durationMS.value / 1000))
   );
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (isRecording) {
-      setTimestamps(generateInitialTimestamps());
+      setTimestamps(generateInitialTimestamps(Math.floor(durationMS.value / 1000)));
 
       intervalRef.current = setInterval(() => {
         const elapsedSeconds = durationMS.value / 1000;
