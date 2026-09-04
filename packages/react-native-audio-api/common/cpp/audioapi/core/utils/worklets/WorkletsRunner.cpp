@@ -15,7 +15,7 @@ WorkletsRunner::WorkletsRunner(
   }
 #if RN_AUDIO_API_ENABLE_WORKLETS
   unsafeRuntimePtr = &strongRuntime->getJSIRuntime();
-  strongRuntime->executeSync([this, shareableWorklet](jsi::Runtime &rt) -> jsi::Value {
+  strongRuntime->runSync([this, shareableWorklet](jsi::Runtime &rt) -> jsi::Value {
     /// Placement new to avoid dynamic memory allocation
     new (reinterpret_cast<jsi::Function *>(&unsafeWorklet))
         jsi::Function(shareableWorklet->toJSValue(*unsafeRuntimePtr)
@@ -62,7 +62,7 @@ std::optional<jsi::Value> WorkletsRunner::executeOnRuntimeGuarded(
     return std::nullopt;
   }
 #if RN_AUDIO_API_ENABLE_WORKLETS
-  return strongRuntime->executeSync(std::move(job));
+  return strongRuntime->runSync(std::move(job));
 #else
   return std::nullopt;
 #endif

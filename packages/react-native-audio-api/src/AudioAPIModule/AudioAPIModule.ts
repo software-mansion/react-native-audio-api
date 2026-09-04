@@ -12,7 +12,7 @@ class AudioAPIModule implements IAudioAPIModule {
   #canUseWorklets_ = false;
   #workletsVersion = 'unknown';
   #workletsAvailable_ = false;
-  private static readonly MIN_WORKLETS_VERSION = '0.6.0';
+  private static readonly MIN_WORKLETS_VERSION = '0.7.0';
 
   constructor() {
     // Important! Verify and import worklets first

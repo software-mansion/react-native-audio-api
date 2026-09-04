@@ -2,7 +2,7 @@
 
 const semverGte = require('semver/functions/gte');
 
-const MIN_WORKLETS_VERSION = '0.6.0';
+const MIN_WORKLETS_VERSION = '0.7.0';
 
 
 /**

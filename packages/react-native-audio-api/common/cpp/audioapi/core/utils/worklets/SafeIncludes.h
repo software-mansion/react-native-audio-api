@@ -47,13 +47,13 @@ class WorkletRuntime {
   [[nodiscard]] jsi::Runtime &getJSIRuntime() const {
     throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
   }
-  [[nodiscard]] jsi::Value executeSync(jsi::Runtime &rt, const jsi::Value &worklet) const {
+  [[nodiscard]] jsi::Value runSync(jsi::Runtime &rt, const jsi::Value &worklet) const {
     throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
   }
-  [[nodiscard]] jsi::Value executeSync(std::function<jsi::Value(jsi::Runtime &)> &&job) const {
+  [[nodiscard]] jsi::Value runSync(std::function<jsi::Value(jsi::Runtime &)> &&job) const {
       // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
       throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
-      executeSync(const std::function<jsi::Value(jsi::Runtime &)> &job) const {
+      runSync(const std::function<jsi::Value(jsi::Runtime &)> &job) const {
     throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
   }
 };
