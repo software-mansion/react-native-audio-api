@@ -55,9 +55,11 @@ class AudioDecoder {
   }
 
   private resolveStringSource(input: number | string): string | number {
-    return typeof input === 'number'
-      ? Image.resolveAssetSource(input).uri
-      : input;
+    if (typeof input !== 'number') {
+      return input;
+    }
+
+    return Image.resolveAssetSource(input)?.uri ?? '';
   }
 
   private assertSupportedStringSource(
