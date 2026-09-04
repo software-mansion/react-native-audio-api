@@ -25,7 +25,7 @@
 @end
 
 @interface AudioEngine () {
-  std::mutex _engineLock;
+  std::recursive_mutex _engineLock;
   BOOL _isRebuildingAudioEngine;
 }
 
@@ -165,6 +165,8 @@ static AudioEngine *_sharedInstance = nil;
 
 - (AVAudioFormat *)liveInputFormat
 {
+  std::scoped_lock lock(_engineLock);
+
   if (self.audioEngine == nil) {
     return nil;
   }

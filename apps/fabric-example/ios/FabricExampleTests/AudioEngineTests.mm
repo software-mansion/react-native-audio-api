@@ -253,8 +253,7 @@
 
 @implementation AudioEngineTests
 
-+ (BOOL)testInvocationsAreParallelizable
-{
++ (BOOL)testInvocationsAreParallelizable {
   return NO;
 }
 
@@ -945,6 +944,35 @@
   XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
 }
 
+- (void)
+    testConfigurationChangeCallbackCanReadLiveInputFormatWhileRestartHoldsLock {
+  __block BOOL callbackRan = NO;
+  __block AVAudioFormat *formatSeenDuringRebuild = nil;
+
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+             onInputConfigurationChange:^{
+              callbackRan = YES;
+              formatSeenDuringRebuild = [self.audioEngine getLiveInputFormat];
+            }];
+
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+
+  XCTestExpectation *restartFinished =
+      [self expectationWithDescription:@"restartAudioEngine returned"];
+
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    [self.audioEngine restartAudioEngine];
+    [restartFinished fulfill];
+  });
+
+  [self waitForExpectations:@[ restartFinished ] timeout:5.0];
+
+  XCTAssertTrue(callbackRan);
+  XCTAssertNotNil(formatSeenDuringRebuild);
+}
+
 - (void)testConcurrentStartIfNecessaryDoesNotCrash {
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.state = AudioEngineStateIdle;
@@ -961,7 +989,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
   XCTAssertTrue([self.audioEngine startIfNecessary]);
 }
 
@@ -987,7 +1016,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 }
 
 - (void)testConcurrentRecordAndPlayPathsDoNotCrash {
@@ -1014,7 +1044,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 }
 
 - (void)testConcurrentInterruptionAndStartDoesNotCrash {
@@ -1041,7 +1072,37 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+}
+
+- (void)testConcurrentLiveInputFormatReadAndRestartDoesNotCrash {
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+             onInputConfigurationChange:nil];
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  for (NSInteger index = 0; index < 50; index += 1) {
+    dispatch_group_enter(group);
+    dispatch_async(queue, ^{
+      [self.audioEngine getLiveInputFormat];
+      dispatch_group_leave(group);
+    });
+
+    dispatch_group_enter(group);
+    dispatch_async(queue, ^{
+      [self.audioEngine restartAudioEngine];
+      dispatch_group_leave(group);
+    });
+  }
+
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
 }
 
 @end
