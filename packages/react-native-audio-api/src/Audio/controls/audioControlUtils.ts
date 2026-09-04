@@ -54,13 +54,6 @@ export function useExpandableTrackHeight(
   }, [height, trackBarHeight, trackBarHeightPressed, trackBarAnimMs]);
 }
 
-/**
- * Indeterminate buffering sweep: a highlight that repeatedly travels the width
- * of the progress track while playback is stalled. It says "still waiting", not
- * "this much is buffered" — there is no buffered-ahead figure behind it.
- *
- * `trackWidth` is the measured track width, known only after the first layout.
- */
 export function useBufferingSweep(
   isBuffering: boolean,
   trackWidth: number,
@@ -74,36 +67,33 @@ export function useBufferingSweep(
       return;
     }
 
-    const loop = Animated.loop(
+    const sweep = Animated.loop(
       Animated.timing(sweepProgress, {
         toValue: 1,
         duration: sweepDurationMs,
-        easing: Easing.bezier(0.455, 0.03, 0.515, 0.955), // in-out quad
+        easing: Easing.inOut((t) => Easing.quad(t)),
         useNativeDriver: true,
       })
     );
-    loop.start();
+    sweep.start();
 
     return () => {
-      loop.stop();
+      sweep.stop();
       sweepProgress.setValue(0);
     };
   }, [isBuffering, sweepDurationMs, sweepProgress]);
 
-  return useMemo(() => {
-    const sweepWidth = trackWidth * sweepWidthRatio;
-    // Travel the track plus the sweep's own width, starting one width off the
-    // left edge, so it slides fully in and fully out instead of popping.
-    return {
-      width: sweepWidth,
-      transform: [
-        {
-          translateX: sweepProgress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [-sweepWidth, trackWidth],
-          }),
-        },
-      ],
-    };
-  }, [sweepProgress, trackWidth, sweepWidthRatio]);
+  const sweepWidth = trackWidth * sweepWidthRatio;
+
+  return {
+    width: sweepWidth,
+    transform: [
+      {
+        translateX: sweepProgress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-sweepWidth, trackWidth],
+        }),
+      },
+    ],
+  };
 }

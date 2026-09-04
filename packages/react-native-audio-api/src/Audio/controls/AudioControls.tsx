@@ -30,7 +30,6 @@ const TRACK_BAR_HEIGHT_PRESSED = 18;
 const TRACK_BAR_ANIM_MS = 150;
 const BUFFERING_SWEEP_MS = 1100;
 const BUFFERING_SWEEP_WIDTH_RATIO = 0.35;
-// Opacity ramp faking a soft-edged gradient band
 const BUFFERING_SWEEP_SLICE_OPACITIES = [
   0.04, 0.18, 0.45, 0.6, 0.45, 0.18, 0.04,
 ];
