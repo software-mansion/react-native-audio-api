@@ -253,8 +253,7 @@
 
 @implementation AudioEngineTests
 
-+ (BOOL)testInvocationsAreParallelizable
-{
++ (BOOL)testInvocationsAreParallelizable {
   return NO;
 }
 
@@ -421,8 +420,10 @@
 
 - (void)testDetachSourceNodeKeepsGraphNeedsRebuildWhenInputRemains {
   NSString *sourceNodeId = [self attachSourceNodeToAudioEngine];
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachSourceNodeWithId:sourceNodeId];
@@ -434,8 +435,10 @@
 
 - (void)testAttachInputNodeStoresAndConnectsInput {
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
 
   AVAudioSinkNode *inputNode = self.audioEngine.inputNode;
   XCTAssertNotNil(inputNode);
@@ -454,8 +457,10 @@
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   fakeEngine.fakeInputNode.outputFormat = nil;
 
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
 
   XCTAssertNil(self.audioEngine.inputNode);
   XCTAssertEqual(fakeEngine.attachNodeCallCount, 0);
@@ -482,8 +487,10 @@
 }
 
 - (void)testDetachInputNodeClearsGraphOnlyWhenNoSourcesRemain {
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachInputNode];
@@ -492,8 +499,10 @@
   XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
 
   [self attachSourceNodeToAudioEngine];
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachInputNode];
@@ -506,8 +515,10 @@
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   fakeEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
 
   [self.audioEngine onSessionDeactivated];
   [self.audioEngine detachInputNode];
@@ -729,8 +740,10 @@
 
 - (void)
     testStartIfNecessaryRebuildsAfterSessionDeactivationEvenWhenTeardownClearsGraph {
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
 
   FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
   oldEngine.fakeRunning = YES;
@@ -747,8 +760,10 @@
   AVAudioFormat *recoveredInputFormat =
       [self testInputFormatWithSampleRate:48000 channelCount:1];
   self.audioEngine.nextCreatedEngineInputFormat = recoveredInputFormat;
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   AVAudioSinkNode *recoveredInputNode = self.audioEngine.inputNode;
 
   XCTAssertTrue([self.audioEngine startIfNecessary]);
@@ -769,8 +784,10 @@
 }
 
 - (void)testStartIfNecessaryRebuildsInputNodeWithFreshInstance {
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
   AVAudioSinkNode *oldInputNode = self.audioEngine.inputNode;
   AVAudioFormat *replacementInputFormat =
@@ -946,16 +963,12 @@
                 voiceProcessingEnabled:NO
             onInputConfigurationChange:^{
               callbackRan = YES;
-              // Invoked from inside restartAudioEngine, so this reads the
-              // engine back on the thread that already holds the engine lock.
               formatSeenDuringRebuild = [self.audioEngine getLiveInputFormat];
             }];
 
   self.audioEngine.state = AudioEngineStateRunning;
   self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
 
-  // Restart off the test thread so a non-reentrant lock shows up as a timeout
-  // rather than wedging the whole test run.
   XCTestExpectation *restartFinished =
       [self expectationWithDescription:@"restartAudioEngine returned"];
 
@@ -986,7 +999,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
   XCTAssertTrue([self.audioEngine startIfNecessary]);
 }
 
@@ -1012,7 +1026,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 }
 
 - (void)testConcurrentRecordAndPlayPathsDoNotCrash {
@@ -1025,8 +1040,10 @@
   for (NSInteger index = 0; index < 10; index += 1) {
     dispatch_group_enter(group);
     dispatch_async(queue, ^{
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+      [self.audioEngine
+          attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                    voiceProcessingEnabled:NO
+                onInputConfigurationChange:nil];
       [self.audioEngine startIfNecessary];
       dispatch_group_leave(group);
     });
@@ -1039,7 +1056,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 }
 
 - (void)testConcurrentInterruptionAndStartDoesNotCrash {
@@ -1066,13 +1084,10 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 }
 
-// Guards the input-node use-after-free: one thread resolves the live input
-// format while another tears the engine down underneath it. The format read has
-// to hold the engine lock across the whole check-then-use, otherwise the format
-// query is sent to an input node the rebuild has already released.
 - (void)testConcurrentLiveInputFormatReadAndRestartDoesNotCrash {
   [self.audioEngine
       attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
