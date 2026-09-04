@@ -8,7 +8,8 @@ description: >
   differently in tests vs the app. Trigger phrases: "add source file", "CMakeLists", "podspec",
   "build.gradle", "prebuilt binaries", "FFmpeg disabled", "pod install", "new architecture",
   "compile error", "undefined symbol", "SIMD", "worklets build flag", "C++ tests", "conditional
-  compilation", "include path", "gradle build fails", "link error".
+  compilation", "include path", "gradle build fails", "link error", "yarn catalog", "catalog:", "add a dependency",
+  "bump a dependency", "yarn workspaces", "npmMinimalAgeGate", "shared dependency version".
 ---
 
 # Skill: Build, Compilation & Dependencies
@@ -53,6 +54,51 @@ react-native-audio-api/
         └── ios/
             └── Podfile                 # Consumer Podfile (new arch enabled)
 ```
+
+---
+
+## Yarn Workspaces & Dependency Catalog
+
+Dependency versions live in a single catalog in the root `.yarnrc.yml`, referenced from
+manifests as `"<dep>": "catalog:"`. Bump once there and every workspace follows.
+Needs Yarn >= 4.10 (repo is on 4.18).
+
+**What belongs in the catalog** — anything that must move in lockstep, which is broader
+than "used more than once":
+
+- used by two or more workspaces, **or**
+- version-locked to something already catalogued even if only one workspace uses it —
+  `react-test-renderer` must equal `react`; `@react-native-community/cli*` and
+  `@babel/runtime` move with `react-native` / `@babel/core`.
+
+A dependency used in exactly one workspace with no such coupling stays a literal range:
+it has no second copy to drift from, and catalogue membership is meant to *signal*
+"keep this in lockstep". There is no CI check enforcing this — review is the enforcement,
+which is why membership has to carry meaning.
+
+**Workflow when touching dependencies:**
+
+1. Changing the version of a catalogued dep → edit the catalog entry, not the manifest.
+2. Adding a dep → check the catalog first. Already there? Use `"catalog:"`. Not there but
+   lockstep-coupled or now used twice? Add the entry and switch both call sites over.
+
+Three kinds of dependency must **never** be given `catalog:`:
+
+| Never catalogue | Why |
+|---|---|
+| `peerDependencies` | Public API surface of the published packages, deliberately loose (`"*"`). Pinning narrows what consumers may install. |
+| Runtime `dependencies` of published packages (`semver`, `chalk`, `commander`, `fs-extra`) | The release pipeline packs with `npm pack` (`scripts/create-package.sh`, `npm-custom-node-generator-build.yml`) and npm does not understand `catalog:`. It publishes the literal string, producing an uninstallable package. Only `yarn pack` / `yarn npm publish` perform the swap. |
+| `workspace:*` ranges | Not version ranges — nothing to centralise. |
+
+Other constraints:
+
+- **`resolutions` does not accept `catalog:`** — install fails with `typescript@catalog: isn't supported by any available resolver`. Root `package.json` pins `typescript` literally; keep it in sync with the catalog entry. It is *not* redundant with the catalog: it forces `@commitlint/load`'s optional `typescript` peer (`^4.6.4 || ^5.2.2`) onto our version, and catalogs only rewrite workspace manifests, never transitive dependencies.
+- **`packages/audiodocs` is a separate Yarn 1 project** with its own lockfile and `node_modules`. It is not in root `workspaces`, so the catalog does not reach it.
+- **`yarn pack` is not a drop-in for `npm pack` here.** It drops `development/react/` (a nested `package.json` listed in `files[]`) and strips the executable bit from 29 prebuilt FFmpeg binaries. Do not switch the release pipeline to it without re-verifying the tarball contents.
+
+Supply-chain gate: `npmMinimalAgeGate: '1w'` refuses versions published in the last 7 days.
+Bypass one command with `yarn add --no-time-gate` / `yarn up --no-time-gate`, or exempt
+specific packages permanently via `npmPreapprovedPackages`.
 
 ---
 
