@@ -1,10 +1,9 @@
-Documentation:
-  CommentFormat: Doxygen
-
 CompileFlags:
   Add:
     - -std=c++20
     - -Wall
+    - -Icommon/cpp
+    - -I../react-native-audio-api/common/cpp
 
 Diagnostics:
   ClangTidy:

@@ -8,6 +8,7 @@ import DrumMachine from './DrumMachine';
 import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
+import PannerNode from './PannerNode';
 import Piano from './Piano';
 import PlaybackSpeed from './PlaybackSpeed';
 import Record from './Record/Record';
@@ -18,6 +19,7 @@ import ChannelMergerSplitter from './ChannelMergerSplitter';
 
 type NavigationParamList = {
   Oscillator: undefined;
+  PannerNode: undefined;
   Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
@@ -89,6 +91,12 @@ export const Examples: Example[] = [
     title: 'Oscillator',
     Icon: icons.Waves,
     screen: Oscillator,
+  },
+  {
+    key: 'PannerNode',
+    title: 'PannerNode',
+    Icon: icons.Move3d,
+    screen: PannerNode,
   },
   {
     key: 'AudioVisualizer',

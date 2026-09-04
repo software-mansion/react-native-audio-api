@@ -115,10 +115,11 @@ Current status (from `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`)
 |---|---|
 | `AudioContext` | `close`, `suspend`, `resume`, `currentTime`, `destination`, `sampleRate`, `state` |
 | `BaseAudioContext` | `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all `create*` for available nodes |
-| `AudioListener` | All nine AudioParams; deprecated `setPosition` / `setOrientation` omitted; no audible effect until `PannerNode` |
+| `AudioListener` | All nine AudioParams; used by `PannerNode` for 3D spatialization; deprecated `setPosition` / `setOrientation` provided in JS (set AudioParam values) |
+| `PannerNode` | Equal-power spatialization, distance models, cone gain; `'HRTF'` throws `NotSupportedError` on native |
 
 ### Not yet implemented ❌
-`AudioSinkInfo`, `AudioWorklet`, `AudioWorkletGlobalScope`, `AudioWorkletNode`, `AudioWorkletProcessor`, `DynamicsCompressorNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`, `PannerNode`
+`AudioSinkInfo`, `AudioWorklet`, `AudioWorkletGlobalScope`, `AudioWorkletNode`, `AudioWorkletProcessor`, `DynamicsCompressorNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`
 
 **Goal**: everything in the Web Audio API spec should eventually be in this library. If you implement a node from the ❌ list, update the coverage table in `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
 

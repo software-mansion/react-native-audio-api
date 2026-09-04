@@ -191,6 +191,50 @@ std::string channelInterpretationToString(ChannelInterpretation interpretation) 
   }
 }
 
+std::string panningModelToString(PanningModelType model) {
+  switch (model) {
+    case PanningModelType::EqualPower:
+      return "equalpower";
+    case PanningModelType::HRTF:
+      return "HRTF";
+    default:
+      throw std::invalid_argument("Unknown panning model");
+  }
+}
+
+PanningModelType panningModelFromString(const std::string &model) {
+  if (model == "equalpower")
+    return PanningModelType::EqualPower;
+  if (model == "HRTF")
+    return PanningModelType::HRTF;
+
+  throw std::invalid_argument("Invalid panning model: " + model);
+}
+
+std::string distanceModelToString(DistanceModelType model) {
+  switch (model) {
+    case DistanceModelType::Linear:
+      return "linear";
+    case DistanceModelType::Inverse:
+      return "inverse";
+    case DistanceModelType::Exponential:
+      return "exponential";
+    default:
+      throw std::invalid_argument("Unknown distance model");
+  }
+}
+
+DistanceModelType distanceModelFromString(const std::string &model) {
+  if (model == "linear")
+    return DistanceModelType::Linear;
+  if (model == "inverse")
+    return DistanceModelType::Inverse;
+  if (model == "exponential")
+    return DistanceModelType::Exponential;
+
+  throw std::invalid_argument("Invalid distance model: " + model);
+}
+
 ChannelInterpretation channelInterpretationFromString(const std::string &interpretation) {
   if (interpretation == "speakers") {
     return ChannelInterpretation::SPEAKERS;
