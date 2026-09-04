@@ -1,9 +1,5 @@
-import { useMemo } from 'react';
-import {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import { useMemo, useRef } from 'react';
+import { Animated } from 'react-native';
 
 export function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) {
@@ -36,32 +32,24 @@ export function useExpandableTrackHeight(
   trackBarHeightPressed: number,
   trackBarAnimMs: number
 ) {
-  const height = useSharedValue(trackBarHeight);
-  const animatedStyle = useAnimatedStyle(() => ({
-    height: height.value,
-    borderRadius: height.value / 2,
-  }));
+  const height = useRef(new Animated.Value(trackBarHeight)).current;
 
-  return useMemo(
-    () => ({
-      animatedStyle,
-      expand: () => {
-        height.value = withTiming(trackBarHeightPressed, {
-          duration: trackBarAnimMs,
-        });
+  return useMemo(() => {
+    const animateTo = (toValue: number) => {
+      Animated.timing(height, {
+        toValue,
+        duration: trackBarAnimMs,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    return {
+      animatedStyle: {
+        height,
+        borderRadius: Animated.divide(height, 2),
       },
-      collapse: () => {
-        height.value = withTiming(trackBarHeight, {
-          duration: trackBarAnimMs,
-        });
-      },
-    }),
-    [
-      animatedStyle,
-      height,
-      trackBarHeight,
-      trackBarHeightPressed,
-      trackBarAnimMs,
-    ]
-  );
+      expand: () => animateTo(trackBarHeightPressed),
+      collapse: () => animateTo(trackBarHeight),
+    };
+  }, [height, trackBarHeight, trackBarHeightPressed, trackBarAnimMs]);
 }
