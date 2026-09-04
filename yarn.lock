@@ -5489,10 +5489,10 @@ __metadata:
   dependencies:
     "@babel/core": "catalog:"
     "@babel/preset-env": "catalog:"
-    "@babel/runtime": "npm:^7.25.0"
-    "@react-native-community/cli": "npm:20.2.0"
-    "@react-native-community/cli-platform-android": "npm:20.2.0"
-    "@react-native-community/cli-platform-ios": "npm:20.2.0"
+    "@babel/runtime": "catalog:"
+    "@react-native-community/cli": "catalog:"
+    "@react-native-community/cli-platform-android": "catalog:"
+    "@react-native-community/cli-platform-ios": "catalog:"
     "@react-native/babel-preset": "catalog:"
     "@react-native/eslint-config": "catalog:"
     "@react-native/metro-config": "catalog:"
@@ -5521,7 +5521,7 @@ __metadata:
     react-native-screens: "npm:4.27.0"
     react-native-svg: "catalog:"
     react-native-worklets: "catalog:"
-    react-test-renderer: "npm:19.2.3"
+    react-test-renderer: "catalog:"
     typescript: "catalog:"
   peerDependencies:
     react: "*"

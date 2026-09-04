@@ -59,9 +59,28 @@ react-native-audio-api/
 
 ## Yarn Workspaces & Dependency Catalog
 
-Versions shared by more than one workspace live in a single catalog in the root
-`.yarnrc.yml`, referenced from manifests as `"<dep>": "catalog:"`. Bump once there and
-every workspace follows. Needs Yarn >= 4.10 (repo is on 4.18).
+Dependency versions live in a single catalog in the root `.yarnrc.yml`, referenced from
+manifests as `"<dep>": "catalog:"`. Bump once there and every workspace follows.
+Needs Yarn >= 4.10 (repo is on 4.18).
+
+**What belongs in the catalog** — anything that must move in lockstep, which is broader
+than "used more than once":
+
+- used by two or more workspaces, **or**
+- version-locked to something already catalogued even if only one workspace uses it —
+  `react-test-renderer` must equal `react`; `@react-native-community/cli*` and
+  `@babel/runtime` move with `react-native` / `@babel/core`.
+
+A dependency used in exactly one workspace with no such coupling stays a literal range:
+it has no second copy to drift from, and catalogue membership is meant to *signal*
+"keep this in lockstep". There is no CI check enforcing this — review is the enforcement,
+which is why membership has to carry meaning.
+
+**Workflow when touching dependencies:**
+
+1. Changing the version of a catalogued dep → edit the catalog entry, not the manifest.
+2. Adding a dep → check the catalog first. Already there? Use `"catalog:"`. Not there but
+   lockstep-coupled or now used twice? Add the entry and switch both call sites over.
 
 Three kinds of dependency must **never** be given `catalog:`:
 

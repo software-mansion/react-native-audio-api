@@ -26,10 +26,10 @@
   "devDependencies": {
     "@babel/core": "catalog:",
     "@babel/preset-env": "catalog:",
-    "@babel/runtime": "^7.25.0",
-    "@react-native-community/cli": "20.2.0",
-    "@react-native-community/cli-platform-android": "20.2.0",
-    "@react-native-community/cli-platform-ios": "20.2.0",
+    "@babel/runtime": "catalog:",
+    "@react-native-community/cli": "catalog:",
+    "@react-native-community/cli-platform-android": "catalog:",
+    "@react-native-community/cli-platform-ios": "catalog:",
     "@react-native/babel-preset": "catalog:",
     "@react-native/eslint-config": "catalog:",
     "@react-native/metro-config": "catalog:",
@@ -43,7 +43,7 @@
     "prettier": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
-    "react-test-renderer": "19.2.3",
+    "react-test-renderer": "catalog:",
     "typescript": "catalog:"
   }
 }
