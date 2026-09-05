@@ -112,6 +112,7 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
 
     this.hasBeenStarted = true;
     (this.node as IAudioBufferSourceNode).start(when, offset, duration);
+    this.context.markRunningOnSourceStart();
   }
 
   public get onLoopEnded(): ((event: EventEmptyType) => void) | undefined {
