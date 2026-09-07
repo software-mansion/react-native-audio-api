@@ -5,6 +5,7 @@
 
 namespace audioapi::test {
 
+// TODO: replace this testcase with more meaningful ones.
 TEST(CircularOverflowableAudioArrayTest, WriteThenReadRoundTrips) {
   constexpr size_t kCapacity = 8;
   constexpr size_t kFrames = 4;

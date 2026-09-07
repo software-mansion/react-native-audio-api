@@ -7,6 +7,7 @@
 
 namespace audioapi::test {
 
+// TODO: replace this testcase with more meaningful ones.
 TEST(RecorderAdapterNodeTest, TrivialConstructAndInit) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
   auto context = std::make_shared<OfflineAudioContext>(2, 128, 44100.0f, registry);

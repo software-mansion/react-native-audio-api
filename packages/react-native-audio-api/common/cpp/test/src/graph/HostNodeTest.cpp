@@ -7,6 +7,7 @@
 
 namespace audioapi::test {
 
+// TODO: replace this testcase with more meaningful ones.
 TEST(HostNodeTest, TrivialConstruct) {
   utils::DisposerImpl<audioapi::DISPOSER_PAYLOAD_SIZE> disposer{64};
   auto graph = std::make_shared<utils::graph::Graph>(64, &disposer);

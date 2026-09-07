@@ -5,6 +5,7 @@
 
 namespace audioapi::test {
 
+// TODO: replace this testcase with more meaningful ones.
 TEST(ThreadPoolTest, ScheduleRunsTaskAndWaitReturns) {
   std::atomic<int> counter{0};
   ThreadPool<thread_pool::kSmallTaskStorageBytes> pool(2, 8, 8);
