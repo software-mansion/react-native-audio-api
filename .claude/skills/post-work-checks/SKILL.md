@@ -53,7 +53,7 @@ yarn format                  # auto-fix all formatting
 yarn lint                    # lint all workspaces
 yarn typecheck               # TypeScript type checking
 yarn test                    # C++ + JS tests (library workspace)
-yarn check-audio-enum-sync   # only if AudioEvent enum touched
+yarn check-audio-enum-sync   # only if a C++/Kotlin mirrored enum touched
 ```
 
 ---
@@ -119,13 +119,21 @@ yarn test   # from monorepo root — runs test:js + test:cpp
 
 **When**: after any change to C++ files or TypeScript files in `src/`. Prefer this for a quick local test loop covering both TS and C++ logic; run `yarn validate:fast` before opening a PR.
 
-### AudioEvent enum sync check
+### Native enum sync check
 
 ```bash
 yarn check-audio-enum-sync
 ```
 
-**When**: only when you modify the `AudioEvent` enum or any file that maps event names across C++/Kotlin/TypeScript. Skip this step if you already ran `validate:fast` (it includes enum sync).
+Runs `packages/react-native-audio-api/scripts/check-enum-sync.sh`, which compares every
+enum mirrored between C++ and Kotlin — currently `AudioEvent` and `RecorderState`. These
+cross JNI as plain ints and Kotlin maps them back by ordinal, so entry *order* is part of
+the contract; the check compares ignoring case and underscores, since the two languages
+name entries differently by convention. Add a new pair to the `MIRRORED_ENUMS` table at
+the top of the script.
+
+**When**: only when you modify one of those enums or any file that maps event names across
+C++/Kotlin/TypeScript. Skip this step if you already ran `validate:fast` (it includes enum sync).
 
 ---
 

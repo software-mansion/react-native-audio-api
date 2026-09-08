@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/inputs/RecorderState.h>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -26,6 +27,10 @@ struct RecordingStopResult {
 /// or listener was waiting, and lets a remounted UI seed its state from the native
 /// source of truth via isRecordingOngoing().
 ///
+/// Every control method answers with the recorder state it leaves behind, so a caller
+/// that has no other view of the recorder — the notification after task removal — can
+/// render itself as a pure function of that state instead of tracking its own.
+///
 /// Assumes at most one AudioRecorder is alive at a time; setting a new recorder replaces
 /// the previous one.
 class ActiveRecorderHandle {
@@ -37,29 +42,36 @@ class ActiveRecorderHandle {
   /// @brief Detaches the recorder, but only if the slot still holds @p recorder.
   void clearRecorder(const AudioRecorder *recorder);
 
+  /// @brief The state of the recorder in the slot, or Idle when the slot is empty.
+  RecorderState currentState();
+
   /// @brief True while a recording session is active; a paused recording counts as
   /// ongoing because it still owns an open output file.
   bool isRecordingOngoing();
 
-  /// @return true if an actively recording session was paused by this call.
-  bool pauseActiveRecording();
+  /// @brief Pauses an actively recording session; a no-op in any other state.
+  RecorderState pauseActiveRecording();
 
-  /// @return true if a paused session was resumed by this call.
-  bool resumeActiveRecording();
+  /// @brief Resumes a paused session; a no-op in any other state.
+  RecorderState resumeActiveRecording();
 
   /// @brief Stops a non-idle recording and stashes its file info for
   /// takeLastRecordingResult(). Blocks until the output file is finalized —
-  /// never call on a UI thread.
-  /// @return true if this call stopped the recording. Losing a race with a
-  /// JS-initiated stop() returns false; the JS promise delivers that result.
-  bool stopActiveRecording();
+  /// never call on a UI thread. Losing a race with a JS-initiated stop() stashes
+  /// nothing; the JS promise delivers that result.
+  RecorderState stopActiveRecording();
 
   /// @brief Consume-once: returns the file info stashed by stopActiveRecording()
   /// and clears it, or std::nullopt when nothing is stashed.
   std::optional<RecordingStopResult> takeLastRecordingResult();
 
  private:
-  std::mutex mutex_;
+  ActiveRecorderHandle() = default;
+  friend struct ActiveRecorderHandleTestPeer;
+
+  static RecorderState stateOf(const std::shared_ptr<AudioRecorder> &recorder);
+
+  std::mutex destructorMutex_;
   std::weak_ptr<AudioRecorder> recorder_;
   std::optional<RecordingStopResult> lastResult_;
 };

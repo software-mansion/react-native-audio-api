@@ -15,10 +15,10 @@ class NativeRecorderControl : public jni::JavaClass<NativeRecorderControl> {
 
   static void registerNatives();
 
-  static jboolean stopActiveRecording(jni::alias_ref<jni::JClass>);
-  static jboolean pauseActiveRecording(jni::alias_ref<jni::JClass>);
-  static jboolean resumeActiveRecording(jni::alias_ref<jni::JClass>);
-  static jboolean isRecordingOngoing(jni::alias_ref<jni::JClass>);
+  static jint stopActiveRecording(jni::alias_ref<jni::JClass>);
+  static jint pauseActiveRecording(jni::alias_ref<jni::JClass>);
+  static jint resumeActiveRecording(jni::alias_ref<jni::JClass>);
+  static jint currentRecorderState(jni::alias_ref<jni::JClass>);
 };
 
 } // namespace audioapi

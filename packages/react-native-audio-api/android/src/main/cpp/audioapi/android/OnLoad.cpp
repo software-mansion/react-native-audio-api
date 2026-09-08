@@ -1,5 +1,5 @@
 #include <audioapi/android/AudioAPIModule.h>
-#include <audioapi/android/system/NativeRecorderControl.hpp>
+#include <audioapi/android/system/NativeRecorderControl.h>
 
 #include <fbjni/fbjni.h>
 

@@ -1,32 +1,41 @@
-#include <audioapi/android/system/NativeRecorderControl.hpp>
+#include <audioapi/android/system/NativeRecorderControl.h>
 
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
+#include <audioapi/core/inputs/RecorderState.h>
 
 namespace audioapi {
+
+namespace {
+
+jint toOrdinal(RecorderState state) {
+  return static_cast<jint>(state);
+}
+
+} // namespace
 
 void NativeRecorderControl::registerNatives() {
   javaClassStatic()->registerNatives({
       makeNativeMethod("stopActiveRecording", NativeRecorderControl::stopActiveRecording),
       makeNativeMethod("pauseActiveRecording", NativeRecorderControl::pauseActiveRecording),
       makeNativeMethod("resumeActiveRecording", NativeRecorderControl::resumeActiveRecording),
-      makeNativeMethod("isRecordingOngoing", NativeRecorderControl::isRecordingOngoing),
+      makeNativeMethod("currentRecorderState", NativeRecorderControl::currentRecorderState),
   });
 }
 
-jboolean NativeRecorderControl::stopActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return static_cast<jboolean>(ActiveRecorderHandle::global().stopActiveRecording());
+jint NativeRecorderControl::stopActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
+  return toOrdinal(ActiveRecorderHandle::global().stopActiveRecording());
 }
 
-jboolean NativeRecorderControl::pauseActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return static_cast<jboolean>(ActiveRecorderHandle::global().pauseActiveRecording());
+jint NativeRecorderControl::pauseActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
+  return toOrdinal(ActiveRecorderHandle::global().pauseActiveRecording());
 }
 
-jboolean NativeRecorderControl::resumeActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return static_cast<jboolean>(ActiveRecorderHandle::global().resumeActiveRecording());
+jint NativeRecorderControl::resumeActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
+  return toOrdinal(ActiveRecorderHandle::global().resumeActiveRecording());
 }
 
-jboolean NativeRecorderControl::isRecordingOngoing(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return static_cast<jboolean>(ActiveRecorderHandle::global().isRecordingOngoing());
+jint NativeRecorderControl::currentRecorderState(jni::alias_ref<jni::JClass> /*clazz*/) {
+  return toOrdinal(ActiveRecorderHandle::global().currentState());
 }
 
 } // namespace audioapi

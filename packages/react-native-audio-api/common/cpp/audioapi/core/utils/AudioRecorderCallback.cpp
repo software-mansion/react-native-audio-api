@@ -82,4 +82,8 @@ void AudioRecorderCallback::invokeOnErrorCallback(const std::string &message) {
   errorEvent_.dispatch(StringPayload{.name = "message", .reason = message});
 }
 
+void AudioRecorderCallback::assignOnErrorCallbackId(uint64_t callbackId) {
+  errorEvent_.assignCallbackId(callbackId);
+}
+
 } // namespace audioapi

@@ -14,87 +14,77 @@ ActiveRecorderHandle &ActiveRecorderHandle::global() {
 }
 
 void ActiveRecorderHandle::setRecorder(const std::shared_ptr<AudioRecorder> &recorder) {
-  std::scoped_lock lock(mutex_);
+  std::scoped_lock lock(destructorMutex_);
   recorder_ = recorder;
 }
 
 void ActiveRecorderHandle::clearRecorder(const AudioRecorder *recorder) {
   std::shared_ptr<AudioRecorder> current;
   {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock lock(destructorMutex_);
     current = recorder_.lock();
-    if (current != nullptr && current.get() != recorder) {
+    if (current && current.get() != recorder) {
       return;
     }
     recorder_.reset();
   }
 }
 
+RecorderState ActiveRecorderHandle::currentState() {
+  std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
+  std::scoped_lock lock(destructorMutex_);
+  return stateOf(recorder);
+}
+
 bool ActiveRecorderHandle::isRecordingOngoing() {
-  std::shared_ptr<AudioRecorder> recorder;
-  {
-    std::scoped_lock lock(mutex_);
-    recorder = recorder_.lock();
-  }
-  return recorder != nullptr && !recorder->isIdle();
+  return currentState() != RecorderState::Idle;
 }
 
-bool ActiveRecorderHandle::pauseActiveRecording() {
-  std::shared_ptr<AudioRecorder> recorder;
-  {
-    std::scoped_lock lock(mutex_);
-    recorder = recorder_.lock();
+RecorderState ActiveRecorderHandle::pauseActiveRecording() {
+  std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
+  std::scoped_lock lock(destructorMutex_);
+  if (recorder && recorder->isRecording()) {
+    recorder->pause();
   }
-  if (recorder == nullptr || !recorder->isRecording()) {
-    return false;
-  }
-  recorder->pause();
-  return true;
+  return stateOf(recorder);
 }
 
-bool ActiveRecorderHandle::resumeActiveRecording() {
-  std::shared_ptr<AudioRecorder> recorder;
-  {
-    std::scoped_lock lock(mutex_);
-    recorder = recorder_.lock();
+RecorderState ActiveRecorderHandle::resumeActiveRecording() {
+  std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
+  std::scoped_lock lock(destructorMutex_);
+  if (recorder && recorder->isPaused()) {
+    recorder->resume();
   }
-  if (recorder == nullptr || !recorder->isPaused()) {
-    return false;
-  }
-  recorder->resume();
-  return true;
+  return stateOf(recorder);
 }
 
-bool ActiveRecorderHandle::stopActiveRecording() {
-  std::shared_ptr<AudioRecorder> recorder;
-  {
-    std::scoped_lock lock(mutex_);
-    recorder = recorder_.lock();
-  }
-  if (recorder == nullptr || recorder->isIdle()) {
-    return false;
+RecorderState ActiveRecorderHandle::stopActiveRecording() {
+  std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
+  std::scoped_lock lock(destructorMutex_);
+  if (!recorder || recorder->isIdle()) {
+    return stateOf(recorder);
   }
 
-  // stop() blocks for as long as file finalization takes (possibly seconds), so
-  // mutex_ is released around it to keep isRecordingOngoing(), setRecorder() and
-  // clearRecorder() (e.g. from ~AudioRecorderHostObject) responsive meanwhile.
   auto result = recorder->stop();
   if (!result.is_ok()) {
-    return false;
+    return stateOf(recorder);
   }
 
   auto [paths, size, duration] = result.unwrap();
   if (!paths.empty()) {
-    std::scoped_lock lock(mutex_);
     lastResult_ =
         RecordingStopResult{.paths = std::move(paths), .size = size, .duration = duration};
   }
-  return true;
+  return stateOf(recorder);
 }
 
 std::optional<RecordingStopResult> ActiveRecorderHandle::takeLastRecordingResult() {
-  std::scoped_lock lock(mutex_);
+  std::scoped_lock lock(destructorMutex_);
   return std::exchange(lastResult_, std::nullopt);
+}
+
+RecorderState ActiveRecorderHandle::stateOf(const std::shared_ptr<AudioRecorder> &recorder) {
+  return recorder ? recorder->getState() : RecorderState::Idle;
 }
 
 } // namespace audioapi
