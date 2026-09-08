@@ -26,7 +26,7 @@
 @end
 
 @interface AudioEngine () {
-  std::mutex _engineLock;
+  std::recursive_mutex _engineLock;
   BOOL _isRebuildingAudioEngine;
   /// Tracks whether voice processing is currently engaged on the system input
   /// node of the live engine instance. Reset whenever the engine is recreated.
@@ -120,7 +120,6 @@ static AudioEngine *_sharedInstance = nil;
     self.inputRegistration = nil;
 
     self.sessionManager = [AudioSessionManager sharedInstance];
-    [self createAudioEngineIfNeeded];
   }
 
   _sharedInstance = self;
@@ -171,6 +170,8 @@ static AudioEngine *_sharedInstance = nil;
 
 - (AVAudioFormat *)liveInputFormat
 {
+  std::scoped_lock lock(_engineLock);
+
   if (self.audioEngine == nil) {
     return nil;
   }
@@ -483,6 +484,12 @@ static AudioEngine *_sharedInstance = nil;
   return self.audioEngine != nil && [self.audioEngine isRunning];
 }
 
+- (bool)isInUse
+{
+  std::scoped_lock lock(_engineLock);
+  return [self hasTrackedGraph] || self.audioEngine != nil;
+}
+
 - (void)rebuildAudioEngineAndResumeIfNeeded
 {
   if (_isRebuildingAudioEngine) {
@@ -624,6 +631,14 @@ static AudioEngine *_sharedInstance = nil;
 - (void)restartAudioEngine
 {
   std::scoped_lock lock(_engineLock);
+
+  // The engine is created lazily on first node attach. Apps that only use
+  // session management and notifications never have one, and a system-driven
+  // restart (media services reset, configuration change) must not create it.
+  if (![self hasTrackedGraph] && self.audioEngine == nil) {
+    return;
+  }
+
   [self rebuildAudioEngineAndResumeIfNeeded];
 }
 

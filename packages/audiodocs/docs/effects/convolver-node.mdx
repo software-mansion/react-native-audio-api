@@ -41,7 +41,7 @@ Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `buffer` | [`AudioBuffer`](../sources/audio-buffer.mdx) | Associated AudioBuffer. |
+| `buffer` | [`AudioBuffer`](../sources/audio-buffer.mdx) | Associated AudioBuffer. Setting it throws `NotSupportedError` unless the buffer has 1, 2 or 4 channels and the same sample rate as the context. |
 | `normalize` | `boolean` | Whether the impulse response from the buffer will be scaled by an equal-power normalization when the buffer attribute is set. |
 
 :::caution
