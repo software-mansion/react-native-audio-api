@@ -15,12 +15,6 @@ interface Options {
   androidPermissions: string[];
   androidForegroundService: boolean;
   androidFSTypes: string[];
-  /**
-   * Controls `android:stopWithTask` on the injected foreground service. When
-   * false, swiping the app away from recents keeps the service — and therefore
-   * the app process and any in-progress recording — running (Android calls
-   * onTaskRemoved instead of stopping the service). Defaults to true.
-   */
   androidFSStopWithTask: boolean;
   disableFFmpeg: boolean;
   disableStaticExternalLibs: boolean;

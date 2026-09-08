@@ -23,8 +23,6 @@ interface TimeStreamProps {
   durationMS: SharedValue<number>;
 }
 
-// Seconds around `baseSecond` so the visible window is fully populated even when
-// the stream starts mid-recording (screen re-attached to a live recorder).
 function generateInitialTimestamps(baseSecond: number) {
   const timestamps: number[] = [];
 

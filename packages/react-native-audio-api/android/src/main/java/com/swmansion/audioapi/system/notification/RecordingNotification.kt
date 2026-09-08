@@ -69,8 +69,6 @@ class RecordingNotification(
 
   /**
    * Rebuilds with an updated paused flag, leaving the sticky RN options untouched.
-   * Used by native-initiated pause/resume so the action button flips even when JS
-   * is unreachable.
    */
   fun rebuildWithPausedState(paused: Boolean): Notification {
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")

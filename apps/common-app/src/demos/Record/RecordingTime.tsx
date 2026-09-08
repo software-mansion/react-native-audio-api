@@ -37,8 +37,6 @@ const RecordingTime: React.FC<RecordingTimeProps> = ({ state }) => {
     const refreshDuration = () =>
       setDurationString(formatDuration(Recorder.getCurrentDuration()));
 
-    // Also refresh immediately so a paused or resynced screen shows the real
-    // duration before the first interval tick.
     refreshDuration();
     const interval = setInterval(refreshDuration, 100);
 

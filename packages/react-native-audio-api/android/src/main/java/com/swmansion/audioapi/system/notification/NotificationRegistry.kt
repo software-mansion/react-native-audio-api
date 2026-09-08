@@ -120,8 +120,6 @@ class NotificationRegistry(
 
   /**
    * Hide a notification by its Android notification ID.
-   * Used by native-initiated flows (e.g. the recording stop action) that don't know
-   * the JS-chosen key.
    *
    * @param id The Android notification ID, e.g. [RecordingNotification.ID]
    */
@@ -134,8 +132,7 @@ class NotificationRegistry(
 
   /**
    * Rebuild and re-post the recording notification with a new paused state.
-   * Used by native-initiated pause/resume so the action button flips even when JS
-   * is unreachable. No-op unless the recording notification is currently visible —
+   * No-op unless the recording notification is currently visible —
    * which also means the POST_NOTIFICATIONS permission was already granted.
    */
   @Synchronized

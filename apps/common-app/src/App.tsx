@@ -181,8 +181,6 @@ const MainTabsScreen: FC = () => {
   );
 };
 
-// Routes notification taps (e.g. the recording notification's `deepLinkUri`)
-// straight to the right screen instead of the app's entry screen.
 const linking = {
   prefixes: ['audioapi-example://'],
   config: {

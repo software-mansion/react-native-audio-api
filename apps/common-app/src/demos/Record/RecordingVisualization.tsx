@@ -100,11 +100,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
 
   const translateX = useSharedValue(0);
   const lastIndex = useSharedValue(-1);
-  // The worklet only accumulates duration from buffers it sees while this component
-  // is mounted; when the screen re-attaches to an already-running recording, start
-  // from the recorder's real elapsed time. Seeding here (not in an effect) matters:
-  // TimeStream's children position their ticks from this value during their own
-  // mount, which happens before any parent effect could run.
   const durationMS = useSharedValue(Recorder.getCurrentDuration() * 1000);
   const canvasHeightSV = useSharedValue(0);
   const numBarsSV = useSharedValue(0);
@@ -287,9 +282,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   useEffect(() => {
     if (state === RecordingState.Recording) {
       if (size.width === 0) {
-        // Canvas not measured yet (mounting straight into an ongoing recording).
-        // Starting the scroll animation now would pin translateX at 0 and draw the
-        // waveform off-screen; this effect re-runs once the size arrives.
         return;
       }
 

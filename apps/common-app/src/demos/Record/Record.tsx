@@ -21,9 +21,7 @@ import Status from './Status';
 import { RecordingState } from './types';
 
 const Record: FC = () => {
-  // A recording can outlive this screen (and, with `stopWithTask: false`, the whole
-  // app UI). Mounting directly in the right state lets every child initialize from
-  // the live recorder instead of transitioning out of a transient Idle render.
+  // Recover from "app disabled" state - recording can survive the app kill (android)
   const [state, setState] = useState<RecordingState>(() => {
     if (!AudioRecorder.isRecordingOngoing()) {
       return RecordingState.Idle;
@@ -157,8 +155,6 @@ const Record: FC = () => {
     await loadRecordedAudio(info.paths);
   }, [loadRecordedAudio]);
 
-  // The stop action already stopped the recorder natively and hid the notification;
-  // here we only pick up the resulting files and sync the UI.
   const onStopRecordingFromNotification = useCallback(async () => {
     const info = AudioRecorder.takeLastRecordingResult();
 
@@ -310,9 +306,7 @@ const Record: FC = () => {
     };
   }, [onPauseRecording, onResumeRecording, onStopRecordingFromNotification]);
 
-  // An ongoing recording is picked up by the state initializer above; here we only
-  // collect the files of a recording that was stopped natively (notification stop
-  // action) while this screen was unmounted.
+  // Collect the files of a recording that was stopped natively while this screen was unmounted.
   useEffect(() => {
     if (AudioRecorder.isRecordingOngoing()) {
       return;
@@ -325,15 +319,11 @@ const Record: FC = () => {
   }, [loadRecordedAudio]);
 
   useEffect(() => {
-    // Re-enabling file output during an ongoing recording replaces the file writer,
-    // which starts a new file and resets the duration — skip it when resyncing.
     if (!AudioRecorder.isRecordingOngoing()) {
       Recorder.enableFileOutput({ format: FileFormat.Wav });
     }
 
     return () => {
-      // The recording and its notification intentionally stay alive when leaving this
-      // screen; they can be stopped from the notification or after coming back.
       stopPlayback();
 
       if (!AudioRecorder.isRecordingOngoing()) {

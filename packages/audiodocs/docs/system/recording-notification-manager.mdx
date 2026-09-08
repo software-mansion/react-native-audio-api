@@ -123,11 +123,11 @@ Adds an event listener for notification actions.
 interface RecordingNotificationInfo {
   title?: string;
   contentText?: string;
-  paused?: boolean; // flag indicating whether to display the pause or the resume action
+  paused?: boolean;
   smallIconResourceName?: string;
   largeIconResourceName?: string;
   color?: number;
-  showStopAction?: boolean; // shows the native stop action, default: false
+  showStopAction?: boolean;
   pauseActionTitle?: string; // default: 'Pause'
   resumeActionTitle?: string; // default: 'Resume'
   stopActionTitle?: string; // default: 'Stop'
