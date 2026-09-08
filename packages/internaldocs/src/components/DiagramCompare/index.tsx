@@ -17,7 +17,7 @@ export default function DiagramCompare({ originals, children }: Props) {
           </figure>
         ))}
       </TabItem>
-      <TabItem value="unified" label="Unified">
+      <TabItem value="new" label="New">
         {children}
       </TabItem>
     </Tabs>
