@@ -552,10 +552,6 @@ Configures and enables file output with the given options and stream properties.
 
 For further information, see [`AudioRecorderFileOptions`](#audiorecorderfileoptions).
 
-:::caution
-Calling `enableFileOutput` while a recording is ongoing replaces the file writer: output continues into a new file and [`getCurrentDuration`](#getcurrentduration) resets. When re-mounting a screen that may be resyncing with a still-running recording, guard the call with [`isRecordingOngoing`](#isrecordingongoing).
-:::
-
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `options` <Optional /> | [`AudioRecorderFileOptions`](#audiorecorderfileoptions) | File output configuration. |

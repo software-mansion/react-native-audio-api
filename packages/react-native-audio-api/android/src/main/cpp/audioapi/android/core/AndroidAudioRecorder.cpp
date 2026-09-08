@@ -286,18 +286,14 @@ AndroidAudioRecorder::stop() {
 /// @returns On success, returns the file URI where the recording is being saved, otherwise returns an error message.
 Result<NoneType, std::string> AndroidAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
+  if (!isIdle()) {
+    return Result<NoneType, std::string>::Ok(None);
+  }
+
   std::scoped_lock fileWriterLock(fileWriterMutex_);
   fileProperties_ = properties;
   fileOutputEnabled_.store(true, std::memory_order_release);
   fileOutputConfigured_.store(false, std::memory_order_release);
-
-  if (!isIdle()) {
-    auto writerResult = setupFileWriter(properties);
-    if (!writerResult.is_ok()) {
-      fileOutputEnabled_.store(false, std::memory_order_release);
-      return writerResult;
-    }
-  }
 
   return Result<NoneType, std::string>::Ok(None);
 }
