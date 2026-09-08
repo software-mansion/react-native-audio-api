@@ -1,0 +1,25 @@
+---
+sidebar_position: 0
+slug: /
+---
+
+# Internals
+
+Local documentation of the React Native Audio API engine: how the infrastructure is shaped, what research concluded, and what we plan to change.
+
+This site is not published. Run it with `yarn start` from `packages/internaldocs`, or `yarn docs:internal` from the monorepo root. Public API docs stay in `packages/audiodocs`. Agent checklists stay in `.claude/skills/` and `AGENTS.md`.
+
+## Sidebar
+
+Folders are **topics**, the same way `audiodocs` is organized. A page that is still a plan, a WIP write-up, or a research outcome keeps that file in its topic and sets tags:
+
+```yaml
+---
+sidebar_custom_props:
+  tags: [plan, wip]    # plan, wip, research — any combination
+---
+```
+
+Each tag appears to the right of the page name. When the page becomes ordinary documentation, delete `tags`. Do not move the file.
+
+See [Graph overview](./graph/overview.mdx) for a template page with `Plan` and `WIP` tags and an Original / Unified diagram.
