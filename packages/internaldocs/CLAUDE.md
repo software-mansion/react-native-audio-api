@@ -57,4 +57,4 @@ flowchart LR
 </DiagramCompare>
 ````
 
-When the Unified figure is accepted, drop the Original tab and the SVG files.
+When the New figure is accepted, drop the Original tab and the SVG files.
