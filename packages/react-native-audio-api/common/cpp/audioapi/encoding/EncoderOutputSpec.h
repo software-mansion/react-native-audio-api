@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
+#include <string_view>
 
 namespace audioapi {
 
@@ -29,7 +29,7 @@ enum class AudioContainer : uint8_t {
 struct EncoderOutputSpec {
   AudioContainer container = AudioContainer::WAV;
   AudioCodec codec = AudioCodec::PCM;
-  std::string extension = "wav";
+  std::string_view extension = "wav";
 };
 
 inline const char *toString(AudioCodec codec) {

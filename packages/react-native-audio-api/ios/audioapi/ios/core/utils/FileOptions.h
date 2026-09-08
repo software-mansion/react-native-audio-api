@@ -14,20 +14,16 @@ class AudioFileProperties;
 
 namespace ios::fileoptions {
 
-AudioFormatID getFormat(const std::shared_ptr<AudioFileProperties> &properties);
 NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties);
 NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &properties);
 NSString *getFileExtension(const std::shared_ptr<AudioFileProperties> &properties);
 NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties);
-float getSampleRate(const std::shared_ptr<AudioFileProperties> &properties);
 
-NSDictionary *getFileSettings(const std::shared_ptr<AudioFileProperties> &properties);
 NSURL *getFileURL(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileNameOverride);
 NSSearchPathDirectory getDirectory(const std::shared_ptr<AudioFileProperties> &properties);
 
-NSString *getDateString();
 NSString *getTimestampString();
 
 } // namespace ios::fileoptions

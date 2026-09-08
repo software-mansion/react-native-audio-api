@@ -4,25 +4,85 @@
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/Result.hpp>
 
+#include <array>
 #include <string>
-#include <vector>
 
-namespace audioapi {
-
-/// Declared system-API encoding capability set for the current platform.
+/// Declared system-API encoding capabilities of the current platform.
 /// A device may still reject a format at `AudioEncoder::open()`.
-class EncoderCapabilities {
- public:
-  static std::vector<EncoderOutputSpec> probe();
+namespace audioapi::EncoderCapabilities {
 
-  static bool isSupported(AudioContainer container, AudioCodec codec);
-
-  /// Container/codec/extension mapping for a file format (ignores platform support).
-  static EncoderOutputSpec specForFormat(AudioFileProperties::Format format);
-
-  /// Maps a format to a supported output spec, or an error if unavailable here.
-  static Result<EncoderOutputSpec, std::string> resolveOutputSpec(
-      AudioFileProperties::Format format);
+#ifdef __APPLE__
+inline constexpr std::array kSupportedOutputSpecs = {
+    EncoderOutputSpec{
+        .container = AudioContainer::WAV,
+        .codec = AudioCodec::PCM,
+        .extension = "wav"},
+    EncoderOutputSpec{
+        .container = AudioContainer::CAF,
+        .codec = AudioCodec::PCM,
+        .extension = "caf"},
+    EncoderOutputSpec{
+        .container = AudioContainer::AIFF,
+        .codec = AudioCodec::PCM,
+        .extension = "aiff"},
+    EncoderOutputSpec{
+        .container = AudioContainer::M4A,
+        .codec = AudioCodec::AAC,
+        .extension = "m4a"},
+    EncoderOutputSpec{
+        .container = AudioContainer::M4A,
+        .codec = AudioCodec::ALAC,
+        .extension = "m4a"},
+    EncoderOutputSpec{
+        .container = AudioContainer::FLAC,
+        .codec = AudioCodec::FLAC,
+        .extension = "flac"},
+    EncoderOutputSpec{
+        .container = AudioContainer::WAV,
+        .codec = AudioCodec::ULAW,
+        .extension = "wav"},
+    EncoderOutputSpec{
+        .container = AudioContainer::WAV,
+        .codec = AudioCodec::ALAW,
+        .extension = "wav"},
 };
+#elif defined(__ANDROID__)
+inline constexpr std::array kSupportedOutputSpecs = {
+    EncoderOutputSpec{
+        .container = AudioContainer::WAV,
+        .codec = AudioCodec::PCM,
+        .extension = "wav"},
+    EncoderOutputSpec{
+        .container = AudioContainer::M4A,
+        .codec = AudioCodec::AAC,
+        .extension = "m4a"},
+    EncoderOutputSpec{
+        .container = AudioContainer::FLAC,
+        .codec = AudioCodec::FLAC,
+        .extension = "flac"},
+    EncoderOutputSpec{
+        .container = AudioContainer::OGG,
+        .codec = AudioCodec::OPUS,
+        .extension = "ogg"},
+    EncoderOutputSpec{
+        .container = AudioContainer::WEBM,
+        .codec = AudioCodec::OPUS,
+        .extension = "webm"},
+    EncoderOutputSpec{
+        .container = AudioContainer::WEBM,
+        .codec = AudioCodec::VORBIS,
+        .extension = "webm"},
+};
+#else
+inline constexpr std::array<EncoderOutputSpec, 0> kSupportedOutputSpecs = {};
+#endif
 
-} // namespace audioapi
+bool isSupported(AudioContainer container, AudioCodec codec);
+
+/// Container/codec/extension mapping for a file format (ignores platform support).
+EncoderOutputSpec specForFormat(AudioFileProperties::Format format);
+
+/// Maps a format to a supported output spec, or an error if unavailable here.
+Result<EncoderOutputSpec, std::string> resolveOutputSpec(AudioFileProperties::Format format);
+
+} // namespace audioapi::EncoderCapabilities

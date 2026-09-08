@@ -1,74 +1,85 @@
 #include <audioapi/encoding/EncoderCapabilities.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
 #include <string>
-#include <vector>
 
-namespace audioapi {
+namespace audioapi::EncoderCapabilities {
 
 using Format = AudioFileProperties::Format;
 
-EncoderOutputSpec EncoderCapabilities::specForFormat(Format format) {
-  switch (format) {
-    case Format::WAV:
-      return {.container = AudioContainer::WAV, .codec = AudioCodec::PCM, .extension = "wav"};
-    case Format::CAF:
-      return {.container = AudioContainer::CAF, .codec = AudioCodec::PCM, .extension = "caf"};
-    case Format::M4A:
-      return {.container = AudioContainer::M4A, .codec = AudioCodec::AAC, .extension = "m4a"};
-    case Format::FLAC:
-      return {.container = AudioContainer::FLAC, .codec = AudioCodec::FLAC, .extension = "flac"};
-    case Format::AIFF:
-      return {.container = AudioContainer::AIFF, .codec = AudioCodec::PCM, .extension = "aiff"};
-    case Format::ALAC:
-      return {.container = AudioContainer::M4A, .codec = AudioCodec::ALAC, .extension = "m4a"};
-    case Format::OPUS_OGG:
-      return {.container = AudioContainer::OGG, .codec = AudioCodec::OPUS, .extension = "ogg"};
-    case Format::OPUS_WEBM:
-      return {.container = AudioContainer::WEBM, .codec = AudioCodec::OPUS, .extension = "webm"};
-    case Format::VORBIS_WEBM:
-      return {.container = AudioContainer::WEBM, .codec = AudioCodec::VORBIS, .extension = "webm"};
-    case Format::ULAW:
-      return {.container = AudioContainer::WAV, .codec = AudioCodec::ULAW, .extension = "wav"};
-    case Format::ALAW:
-      return {.container = AudioContainer::WAV, .codec = AudioCodec::ALAW, .extension = "wav"};
-  }
-  return {.container = AudioContainer::WAV, .codec = AudioCodec::PCM, .extension = "wav"};
+namespace {
+
+constexpr size_t kFormatCount = static_cast<size_t>(Format::ALAW) + 1;
+
+constexpr std::array kSpecsByFormat = {
+    EncoderOutputSpec{
+        .container = AudioContainer::WAV,
+        .codec = AudioCodec::PCM,
+        .extension = "wav"}, // WAV
+    EncoderOutputSpec{
+        .container = AudioContainer::CAF,
+        .codec = AudioCodec::PCM,
+        .extension = "caf"}, // CAF
+    EncoderOutputSpec{
+        .container = AudioContainer::M4A,
+        .codec = AudioCodec::AAC,
+        .extension = "m4a"}, // M4A
+    EncoderOutputSpec{
+        .container = AudioContainer::FLAC,
+        .codec = AudioCodec::FLAC,
+        .extension = "flac"}, // FLAC
+    EncoderOutputSpec{
+        .container = AudioContainer::AIFF,
+        .codec = AudioCodec::PCM,
+        .extension = "aiff"}, // AIFF
+    EncoderOutputSpec{
+        .container = AudioContainer::M4A,
+        .codec = AudioCodec::ALAC,
+        .extension = "m4a"}, // ALAC
+    EncoderOutputSpec{
+        .container = AudioContainer::OGG,
+        .codec = AudioCodec::OPUS,
+        .extension = "ogg"}, // OPUS_OGG
+    EncoderOutputSpec{
+        .container = AudioContainer::WEBM,
+        .codec = AudioCodec::OPUS,
+        .extension = "webm"}, // OPUS_WEBM
+    EncoderOutputSpec{
+        .container = AudioContainer::WEBM,
+        .codec = AudioCodec::VORBIS,
+        .extension = "webm"}, // VORBIS_WEBM
+    EncoderOutputSpec{
+        .container = AudioContainer::WAV,
+        .codec = AudioCodec::ULAW,
+        .extension = "wav"}, // ULAW
+    EncoderOutputSpec{
+        .container = AudioContainer::WAV,
+        .codec = AudioCodec::ALAW,
+        .extension = "wav"}, // ALAW
+};
+
+static_assert(
+    std::tuple_size_v<decltype(kSpecsByFormat)> == kFormatCount,
+    "Every AudioFileProperties::Format needs an entry in kSpecsByFormat");
+
+} // namespace
+
+EncoderOutputSpec specForFormat(Format format) {
+  const auto index = static_cast<size_t>(format);
+  return index < kSpecsByFormat.size() ? kSpecsByFormat[index]
+                                       : kSpecsByFormat[static_cast<size_t>(Format::WAV)];
 }
 
-std::vector<EncoderOutputSpec> EncoderCapabilities::probe() {
-#ifdef __APPLE__
-  return {
-      {.container = AudioContainer::WAV, .codec = AudioCodec::PCM, .extension = "wav"},
-      {.container = AudioContainer::CAF, .codec = AudioCodec::PCM, .extension = "caf"},
-      {.container = AudioContainer::AIFF, .codec = AudioCodec::PCM, .extension = "aiff"},
-      {.container = AudioContainer::M4A, .codec = AudioCodec::AAC, .extension = "m4a"},
-      {.container = AudioContainer::M4A, .codec = AudioCodec::ALAC, .extension = "m4a"},
-      {.container = AudioContainer::FLAC, .codec = AudioCodec::FLAC, .extension = "flac"},
-      {.container = AudioContainer::WAV, .codec = AudioCodec::ULAW, .extension = "wav"},
-      {.container = AudioContainer::WAV, .codec = AudioCodec::ALAW, .extension = "wav"},
-  };
-#elif defined(__ANDROID__)
-  return {
-      {.container = AudioContainer::WAV, .codec = AudioCodec::PCM, .extension = "wav"},
-      {.container = AudioContainer::M4A, .codec = AudioCodec::AAC, .extension = "m4a"},
-      {.container = AudioContainer::FLAC, .codec = AudioCodec::FLAC, .extension = "flac"},
-      {.container = AudioContainer::OGG, .codec = AudioCodec::OPUS, .extension = "ogg"},
-      {.container = AudioContainer::WEBM, .codec = AudioCodec::OPUS, .extension = "webm"},
-      {.container = AudioContainer::WEBM, .codec = AudioCodec::VORBIS, .extension = "webm"},
-  };
-#else
-  return {};
-#endif
+bool isSupported(AudioContainer container, AudioCodec codec) {
+  return std::ranges::any_of(
+      kSupportedOutputSpecs, [container, codec](const EncoderOutputSpec &spec) {
+        return spec.container == container && spec.codec == codec;
+      });
 }
 
-bool EncoderCapabilities::isSupported(AudioContainer container, AudioCodec codec) {
-  return std::ranges::any_of(probe(), [container, codec](const EncoderOutputSpec &spec) {
-    return spec.container == container && spec.codec == codec;
-  });
-}
-
-Result<EncoderOutputSpec, std::string> EncoderCapabilities::resolveOutputSpec(Format format) {
+Result<EncoderOutputSpec, std::string> resolveOutputSpec(Format format) {
   EncoderOutputSpec spec = specForFormat(format);
   if (isSupported(spec.container, spec.codec)) {
     return Result<EncoderOutputSpec, std::string>::Ok(spec);
@@ -80,4 +91,4 @@ Result<EncoderOutputSpec, std::string> EncoderCapabilities::resolveOutputSpec(Fo
   return Result<EncoderOutputSpec, std::string>::Err(message);
 }
 
-} // namespace audioapi
+} // namespace audioapi::EncoderCapabilities

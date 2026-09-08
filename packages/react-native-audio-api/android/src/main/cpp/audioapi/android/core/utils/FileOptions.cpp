@@ -42,14 +42,13 @@ std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties)
     case AudioFileProperties::FileDirectory::Document:
       return NativeFileInfo::getFilesDir();
     case AudioFileProperties::FileDirectory::Cache:
-      return NativeFileInfo::getCacheDir();
     default:
       return NativeFileInfo::getCacheDir();
   }
 }
 
 std::string getFileExtension(const std::shared_ptr<AudioFileProperties> &properties) {
-  return EncoderCapabilities::specForFormat(properties->format).extension;
+  return std::string(EncoderCapabilities::specForFormat(properties->format).extension);
 }
 
 Result<std::string, std::string> getFilePath(

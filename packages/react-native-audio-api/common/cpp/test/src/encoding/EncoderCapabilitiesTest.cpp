@@ -6,6 +6,7 @@
 
 #include <cctype>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace audioapi;
@@ -48,7 +49,7 @@ TEST(EncoderCapabilitiesTest, SpecForFormatMapsKnownFormats) {
 
 TEST(EncoderCapabilitiesTest, ExtensionsAreLowercaseAndNonEmpty) {
   for (Format format : kAllFormats) {
-    const std::string ext = EncoderCapabilities::specForFormat(format).extension;
+    const auto ext = EncoderCapabilities::specForFormat(format).extension;
     ASSERT_FALSE(ext.empty());
     for (char c : ext) {
       EXPECT_FALSE(std::isupper(static_cast<unsigned char>(c))) << "extension: " << ext;
@@ -70,8 +71,8 @@ TEST(EncoderCapabilitiesTest, ResolveMatchesIsSupported) {
   }
 }
 
-TEST(EncoderCapabilitiesTest, ProbeEntriesAreSupported) {
-  for (const auto &spec : EncoderCapabilities::probe()) {
+TEST(EncoderCapabilitiesTest, SupportedOutputSpecEntriesAreSupported) {
+  for (const auto &spec : EncoderCapabilities::kSupportedOutputSpecs) {
     EXPECT_TRUE(EncoderCapabilities::isSupported(spec.container, spec.codec))
         << toString(spec.codec) << " in " << toString(spec.container);
   }

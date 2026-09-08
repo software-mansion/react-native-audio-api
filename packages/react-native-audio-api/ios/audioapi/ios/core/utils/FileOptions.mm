@@ -5,30 +5,9 @@
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
+#include <string>
+
 namespace audioapi::ios::fileoptions {
-
-/// @brief Maps AudioFileProperties to iOS AVFoundation AudioFormatID.
-/// @param properties Shared pointer to AudioFileProperties.
-/// @returns Corresponding AudioFormatID for AVFoundation.
-AudioFormatID getFormat(const std::shared_ptr<AudioFileProperties> &properties)
-{
-  switch (properties->format) {
-    case AudioFileProperties::Format::WAV:
-      return kAudioFormatLinearPCM;
-
-    case AudioFileProperties::Format::CAF:
-      return kAudioFormatLinearPCM;
-
-    case AudioFileProperties::Format::M4A:
-      return kAudioFormatMPEG4AAC;
-
-    case AudioFileProperties::Format::FLAC:
-      return kAudioFormatFLAC;
-
-    default:
-      return kAudioFormatLinearPCM;
-  }
-}
 
 /// @brief Maps AudioFileProperties to iOS AVFoundation audio quality settings.
 /// @param properties Shared pointer to AudioFileProperties.
@@ -70,7 +49,7 @@ NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &pr
 NSString *getFileExtension(const std::shared_ptr<AudioFileProperties> &properties)
 {
   EncoderOutputSpec spec = EncoderCapabilities::specForFormat(properties->format);
-  return [NSString stringWithUTF8String:spec.extension.c_str()];
+  return [NSString stringWithUTF8String:std::string(spec.extension).c_str()];
 }
 
 /// @brief Retrieves the bit depth from AudioFileProperties.
@@ -91,39 +70,6 @@ NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
     default:
       return 32;
   }
-}
-
-/// @brief Constructs AVFoundation file settings dictionary from AudioFileProperties.
-/// @param properties Shared pointer to AudioFileProperties.
-/// @returns NSDictionary containing AVFoundation audio file settings.
-NSDictionary *getFileSettings(const std::shared_ptr<AudioFileProperties> &properties)
-{
-  AudioFormatID format = getFormat(properties);
-  NSMutableDictionary *settings = [NSMutableDictionary dictionary];
-
-  settings[AVFormatIDKey] = @(format);
-  settings[AVSampleRateKey] = @(properties->sampleRate);
-  settings[AVNumberOfChannelsKey] = @(properties->channelCount);
-  settings[AVEncoderAudioQualityKey] = @(getQuality(properties));
-
-  if (format == kAudioFormatMPEG4AAC) {
-    settings[AVEncoderBitRateKey] = @(properties->bitRate);
-  }
-
-  if (format == kAudioFormatLinearPCM) {
-    NSInteger bitDepth = getBitDepth(properties);
-
-    settings[AVLinearPCMBitDepthKey] = @(bitDepth);
-    settings[AVLinearPCMIsFloatKey] = @(bitDepth == 32);
-    settings[AVLinearPCMIsBigEndianKey] = @(NO);
-    settings[AVLinearPCMIsNonInterleaved] = @(NO);
-  }
-
-  if (format == kAudioFormatFLAC) {
-    settings[@"FLACCompressionLevel"] = @(getFlacCompressionLevel(properties));
-  }
-
-  return settings;
 }
 
 NSURL *getFileURL(
