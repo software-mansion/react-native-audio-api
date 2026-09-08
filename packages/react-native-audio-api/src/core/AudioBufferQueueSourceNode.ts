@@ -60,6 +60,7 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     this.state = AudioBufferQueueSourceState.PLAYING;
 
     (this.node as IAudioBufferQueueSourceNode).start(when, offset);
+    this.context.markRunningOnSourceStart();
   }
 
   public override stop(when: number = 0): void {
