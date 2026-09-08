@@ -1,0 +1,68 @@
+.navbar .DocSearch,
+.navbar button.DocSearch-Button {
+  display: none !important;
+}
+
+.menu__list-item[class*='internaldocs-tag-'] > .menu__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.internaldocs-tag-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.internaldocs-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  background: var(--swm-navy-light-20);
+  color: var(--swm-navy-light-100);
+}
+
+.internaldocs-tag-badge--plan {
+  color: var(--swm-navy-light-100);
+  background: var(--swm-orange-light-40);
+}
+
+.internaldocs-tag-badge--wip {
+  color: var(--swm-off-white);
+  background: var(--swm-purple-light-100);
+}
+
+.internaldocs-tag-badge--research {
+  color: var(--swm-navy-light-100);
+  background: var(--swm-blue-light-40);
+}
+
+:root[data-theme='dark'] .internaldocs-tag-badge {
+  background: var(--swm-navy-dark-60);
+  color: var(--swm-off-white);
+}
+
+:root[data-theme='dark'] .internaldocs-tag-badge--plan {
+  color: var(--swm-off-white);
+  background: var(--swm-orange-dark-120);
+}
+
+:root[data-theme='dark'] .internaldocs-tag-badge--wip {
+  color: var(--swm-off-white);
+  background: var(--swm-purple-dark-120);
+}
+
+:root[data-theme='dark'] .internaldocs-tag-badge--research {
+  color: var(--swm-navy-light-100);
+  background: var(--swm-blue-dark-80);
+}
