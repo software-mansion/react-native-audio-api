@@ -67,7 +67,10 @@ list(REMOVE_ITEM RNAUDIOAPI_LIBS
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.c"
 )
 
-add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC})
+# jsi.cpp provides the jsi::Value/String symbols needed by library members that touch
+# JSI (e.g. AudioFileProperties::CreateFromJSIValue); as a static-lib member it is only
+# linked into a test binary when something actually demands those symbols.
+add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC} "${JSI_DIR}/jsi/jsi.cpp")
 add_library(rnaudioapi_libs STATIC ${RNAUDIOAPI_LIBS})
 
 target_include_directories(rnaudioapi PUBLIC

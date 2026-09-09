@@ -60,11 +60,21 @@ export enum FileDirectory {
   Cache = 1,
 }
 
+// Values must stay in sync with the C++ `AudioFileProperties::Format` enum.
+// Support is platform-dependent; unsupported formats fail when recording starts.
+// See the audio recorder docs for the per-platform system-encoder matrix.
 export enum FileFormat {
   Wav = 0,
   Caf = 1,
   M4A = 2,
   Flac = 3,
+  Aiff = 4,
+  Alac = 5,
+  OpusOgg = 6,
+  OpusWebm = 7,
+  VorbisWebm = 8,
+  Ulaw = 9,
+  Alaw = 10,
 }
 
 export enum IOSAudioQuality {
@@ -138,7 +148,21 @@ export interface AudioRecorderFileOptions {
 
   directory?: FileDirectory;
   subDirectory?: string;
-  fileNamePrefix?: string;
+
+  /**
+   * Names the output file outright — no timestamp is added, so supply whatever
+   * identity you need (a session id, your own timestamp). Left unset, the
+   * library generates `recording_<timestamp>` instead.
+   *
+   * Give a bare name: no extension (it follows from `format`), no path
+   * separators and no `..`. With `rotateIntervalBytes` set, `_001`, `_002`, …
+   * are appended, because one recording then spans several files.
+   *
+   * An existing file of the same name is overwritten, with a warning in the
+   * native log, so make the name unique per recording yourself.
+   */
+  fileName?: string;
+
   androidFlushIntervalMs?: number;
 }
 
@@ -295,10 +319,6 @@ export interface WaveShaperOptions extends AudioNodeOptions {
 
 export type DecodeDataInput = number | string | ArrayBuffer;
 export type AudioDurationInput = string | ArrayBuffer;
-
-export interface AudioRecorderStartOptions {
-  fileNameOverride?: string;
-}
 
 export enum AutomationEventType {
   LINEAR_RAMP,

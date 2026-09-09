@@ -10,5 +10,5 @@ Review this skill when `pre-push-update` reports changes in:
 | `packages/react-native-audio-api/package.json` scripts | Package-level command changes (including per-language lint/format) |
 | `lefthook.yml` | Pre-commit / commit-msg hook changes |
 | `scripts/validate.sh` | Tier behavior (`--fast` / `--graph` / `--android` / `--ios` / `--full`), skip rules |
-| `scripts/check-audio-enum-sync*` or `packages/react-native-audio-api/scripts/check-audio-events-sync.sh` | Enum sync check details |
+| `scripts/check-audio-enum-sync*` or `packages/react-native-audio-api/scripts/check-*-enum-sync.sh` / `check-enum-sync.sh` | Enum sync check details (AudioEvent + AudioFileProperties) |
 | `.github/workflows/ci.yml`, `tests.yml`, `graph-tests.yml` | What CI covers vs local validation tiers |

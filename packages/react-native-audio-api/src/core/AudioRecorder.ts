@@ -8,7 +8,6 @@ import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
-  AudioRecorderStartOptions,
   FileDirectory,
   FileFormat,
   FileInfo,
@@ -30,7 +29,7 @@ function withDefaultFileOptions(
   return {
     directory: FileDirectory.Cache,
     subDirectory: 'AudioAPI',
-    fileNamePrefix: 'recording',
+    fileName: '',
     channelCount: 2,
     format: FileFormat.M4A,
     preset: FilePreset.High,
@@ -45,7 +44,6 @@ export default class AudioRecorder {
   protected onErrorSubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
-  private isFileOutputEnabled: boolean = false;
   private adapterNode: IRecorderAdapterNode | null = null;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
@@ -74,10 +72,7 @@ export default class AudioRecorder {
   enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
     this.options_ = options || {};
     const parsedOptions = withDefaultFileOptions(this.options_);
-    const result = this.recorder.enableFileOutput(parsedOptions);
-    this.isFileOutputEnabled = true;
-
-    return result;
+    return this.recorder.enableFileOutput(parsedOptions);
   }
 
   public get options(): AudioRecorderFileOptions | null {
@@ -87,16 +82,11 @@ export default class AudioRecorder {
   disableFileOutput(): void {
     this.options_ = null;
     this.recorder.disableFileOutput();
-    this.isFileOutputEnabled = false;
   }
 
   /** Starts the audio recording process with configured output options */
-  start(options?: AudioRecorderStartOptions): Promise<Result<{}>> {
-    if (!this.isFileOutputEnabled) {
-      return this.recorder.start();
-    }
-
-    return this.recorder.start(options?.fileNameOverride);
+  start(): Promise<Result<{}>> {
+    return this.recorder.start();
   }
 
   /** Stops the audio recording process and releases internal resources */

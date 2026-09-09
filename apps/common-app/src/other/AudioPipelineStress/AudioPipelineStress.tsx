@@ -281,13 +281,11 @@ const AudioPipelineStress: FC = () => {
     }
   };
 
-  const performCleanRecording = async (
-    fileNameOverride: string
-  ): Promise<RecordingCapture> => {
+  const performCleanRecording = async (): Promise<RecordingCapture> => {
     await activateRecordingSession();
 
     resourcesRef.current.configureRecorderTap();
-    await resourcesRef.current.startRecording(fileNameOverride);
+    await resourcesRef.current.startRecording();
     await waitForRecordingCallbacks(1);
     await sleep(SHORT_RECORDING_MS);
 
@@ -327,7 +325,7 @@ const AudioPipelineStress: FC = () => {
   };
 
   const performCleanRecordPlaybackCycle = async (label: string) => {
-    const capture = await performCleanRecording(`${label}-${Date.now()}`);
+    const capture = await performCleanRecording();
     await performCleanPlayback(
       capture.decodedBuffer,
       Math.min(capture.decodedBuffer.duration, 1.4),
@@ -474,9 +472,7 @@ const AudioPipelineStress: FC = () => {
           'record-and-decode',
           'Record briefly, then decode output',
           async () => {
-            const capture = await performCleanRecording(
-              `record-warmup-${Date.now()}`
-            );
+            const capture = await performCleanRecording();
             addInfoStep(
               steps,
               'recorded-file',
@@ -499,9 +495,7 @@ const AudioPipelineStress: FC = () => {
               `cycle-${cycle}`,
               `Cycle ${cycle}: record, decode, and play recorded audio`,
               async () => {
-                const capture = await performCleanRecording(
-                  `record-to-playback-${cycle}-${Date.now()}`
-                );
+                const capture = await performCleanRecording();
 
                 const playbackStats = await performCleanPlayback(
                   capture.decodedBuffer,
@@ -551,9 +545,7 @@ const AudioPipelineStress: FC = () => {
                   `Cycle ${cycle} pre-record playback engine timing`,
                   formatPlaybackProgressStats(playbackStats)
                 );
-                await performCleanRecording(
-                  `playback-to-record-${cycle}-${Date.now()}`
-                );
+                await performCleanRecording();
               }
             );
           }
@@ -691,7 +683,7 @@ const AudioPipelineStress: FC = () => {
             'clean-recovery-cycle',
             'Run one clean record and decode cycle after recovery',
             async () => {
-              await performCleanRecording(`post-record-recovery-${Date.now()}`);
+              await performCleanRecording();
             }
           );
         }
@@ -716,9 +708,7 @@ const AudioPipelineStress: FC = () => {
               await AudioManager.setAudioSessionActivity(true);
 
               resourcesRef.current.configureRecorderTap();
-              const result = await resourcesRef.current.tryStartRecording(
-                `wrong-category-${Date.now()}`
-              );
+              const result = await resourcesRef.current.tryStartRecording();
 
               if (result.status === 'success') {
                 throw new Error(
@@ -743,9 +733,7 @@ const AudioPipelineStress: FC = () => {
             'clean-recovery-record',
             'Switch back to playAndRecord and confirm clean recording works',
             async () => {
-              await performCleanRecording(
-                `wrong-category-recovery-${Date.now()}`
-              );
+              await performCleanRecording();
             }
           );
         }

@@ -119,13 +119,13 @@ yarn test   # from monorepo root — runs test:js + test:cpp
 
 **When**: after any change to C++ files or TypeScript files in `src/`. Prefer this for a quick local test loop covering both TS and C++ logic; run `yarn validate:fast` before opening a PR.
 
-### AudioEvent enum sync check
+### Enum sync check
 
 ```bash
 yarn check-audio-enum-sync
 ```
 
-**When**: only when you modify the `AudioEvent` enum or any file that maps event names across C++/Kotlin/TypeScript. Skip this step if you already ran `validate:fast` (it includes enum sync).
+**When**: when you modify `AudioEvent`, `FileFormat` / `AudioFileProperties::Format`, or other JSI-crossing recorder enums (`FileDirectory`, `BitDepth`, `IOSAudioQuality`). Skip if you already ran `validate:fast` (it includes enum sync).
 
 ---
 

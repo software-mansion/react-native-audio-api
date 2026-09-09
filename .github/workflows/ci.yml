@@ -34,7 +34,7 @@ jobs:
   check-audio-enum-sync:
     uses: ./.github/workflows/ci-check.yml
     with:
-      name: Check AudioEvent enum sync
+      name: Check enum sync
       run: yarn check-audio-enum-sync
 
   build-audio-api:

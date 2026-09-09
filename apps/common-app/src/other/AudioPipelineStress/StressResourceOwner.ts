@@ -48,7 +48,7 @@ export default class StressResourceOwner {
     const fileOutputResult = recorder.enableFileOutput({
       channelCount: 1,
       directory: FileDirectory.Cache,
-      fileNamePrefix: 'audio-pipeline-stress',
+      fileName: 'audio-pipeline-stress',
       format: FileFormat.M4A,
       subDirectory: 'AudioPipelineStress',
     });
@@ -115,18 +115,18 @@ export default class StressResourceOwner {
     }
   }
 
-  async startRecording(fileNameOverride: string): Promise<void> {
+  async startRecording(): Promise<void> {
     const { recorder } = this.getReadyResources();
-    const result = await recorder.start({ fileNameOverride });
+    const result = await recorder.start();
 
     if (result.status === 'error') {
       throw new Error(`Failed to start recording: ${result.message}`);
     }
   }
 
-  tryStartRecording(fileNameOverride: string) {
+  tryStartRecording() {
     const { recorder } = this.getReadyResources();
-    return recorder.start({ fileNameOverride });
+    return recorder.start();
   }
 
   async stopRecordingAndDecode(): Promise<RecordingCapture> {
