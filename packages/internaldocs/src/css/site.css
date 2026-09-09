@@ -1,0 +1,8 @@
+@import 'sidebar-tags.css';
+
+/* t-rex-ui treats pathname === baseUrl as the marketing landing page.
+   This site serves docs at /, so undo landing-only footer chrome. */
+footer.footer[class*='footerLanding'] {
+  --ifm-footer-background-color: var(--ifm-navbar-background-color);
+  --ifm-footer-padding-horizontal: var(--ifm-spacing-horizontal);
+}
