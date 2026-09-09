@@ -1,7 +1,7 @@
 // @ts-check
 
-const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
-const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
+const lightCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-light.js');
+const darkCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-dark.js');
 
 // eslint-disable-next-line import/first
 import remarkMath from 'remark-math';
@@ -41,7 +41,10 @@ const config = {
         },
         blog: false,
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: [
+            require.resolve('docs-theme/css/custom.css'),
+            './src/css/site.css',
+          ],
         },
       },
     ],
@@ -54,6 +57,9 @@ const config = {
       const trexThemeDir = path.join(
         path.dirname(require.resolve('@swmansion/t-rex-ui/preset')),
         'theme'
+      );
+      const docsThemeDir = path.dirname(
+        require.resolve('docs-theme/package.json')
       );
 
       return {
@@ -70,7 +76,7 @@ const config = {
               rules: [
                 {
                   test: /\.(js|jsx)$/,
-                  include: [trexThemeDir],
+                  include: [trexThemeDir, docsThemeDir],
                   use: {
                     loader: 'babel-loader',
                     options: {
@@ -118,7 +124,8 @@ const config = {
     },
     footer: {
       links: [],
-      copyright: 'Local internal documentation. Not published.',
+      copyright:
+        'All trademarks and copyrights belong to their respective owners. Read about our ',
     },
     prism: {
       additionalLanguages: ['bash', 'cmake'],

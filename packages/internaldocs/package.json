@@ -24,6 +24,7 @@
     "babel-loader": "^9.2.1",
     "clsx": "^2.1.0",
     "copy-text-to-clipboard": "^3.2.2",
+    "docs-theme": "file:../docs-theme",
     "prism-react-renderer": "^2.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
