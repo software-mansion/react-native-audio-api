@@ -135,11 +135,6 @@ table thead tr {
   background-color: var(--ifm-navbar-link-hover-color);
 }
 
-[class*='navbarLanding'] .header-github:before,
-[class*='navbarLanding'] .header-github:hover:before {
-  background-color: var(--ifm-navbar-link-color);
-}
-
 [class*='codeBlockContent'] pre {
   border: 1px solid var(--swm-border);
 }
@@ -176,16 +171,6 @@ table thead tr {
 /* TODO: Remove after @swmansion-t-rex-ui 0.0.11 patch */
 button[class*='DocSearch-Button'] {
   margin: 0 !important;
-}
-
-/* versions dropdown on landing */
-
-[class*='plugin-pages'] [class*='dropdown--right'] > a:first-child {
-  color: var(--swm-off-white) !important;
-}
-
-[class*='plugin-pages'] [class*='dropdown__menu'] a:hover {
-  color: var(--swm-dropdown-versions-item-hover) !important;
 }
 
 /* examples sidebar */
