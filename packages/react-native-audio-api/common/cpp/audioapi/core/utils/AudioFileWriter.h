@@ -49,7 +49,7 @@ class AudioFileWriter {
   void clearOnErrorCallback() {
     assignOnErrorCallbackId(0);
   }
-  void assignOnErrorCallbackId(uint64_t callbackId);
+  virtual void assignOnErrorCallbackId(uint64_t callbackId);
   void invokeOnErrorCallback(const std::string &message);
 
  protected:

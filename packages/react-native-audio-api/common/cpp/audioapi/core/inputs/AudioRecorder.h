@@ -80,13 +80,17 @@ class AudioRecorder {
     int32_t maxFramesPerBuffer = 0;
   };
 
-  /// Outputs detached from a session, still holding data they have to flush. Closing them can
-  /// block, so it happens in finalizeOutputs() once the caller has released the mutexes.
-  struct DetachedOutputs {
+  /// Side effects detached from a session, still holding data they have to flush. Closing them
+  /// can block, so it happens in finalizeSideEffects() once the caller has released the mutexes.
+  struct DetachedSideEffects {
     std::shared_ptr<AudioFileWriter> fileWriter;
     std::shared_ptr<AudioRecorderCallback> dataCallback;
     std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
     std::vector<std::string> fileUris;
+    /// Totals of the files a single-file session already closed on a format change, which the
+    /// writer being closed knows nothing about.
+    double reopenedFilesSizeMB = 0.0;
+    double reopenedFilesDurationSec = 0.0;
   };
 
   /// Audio thread. Fans one normalized buffer out to the file writer, the JS callback and
@@ -95,8 +99,8 @@ class AudioRecorder {
   /// takes its mutex with tryLock and drops the buffer rather than block the audio thread.
   void onAudioFrames(const float *interleavedFrames, int numFrames);
 
-  /// Reads the format the platform input is running at. Called on the JS thread whenever an
-  /// output has to be (re)prepared; fails while the input is unavailable, which on iOS happens
+  /// Reads the format the platform input is running at. Called on the JS thread whenever a
+  /// side effect has to be (re)prepared; fails while the input is unavailable, which on iOS happens
   /// between a route change and the engine resolving the replacement format.
   [[nodiscard]] virtual Result<StreamFormat, std::string> resolveStreamFormat() const = 0;
 
@@ -118,14 +122,16 @@ class AudioRecorder {
   /// The caller must hold adapterNodeMutex_.
   void prepareAdapterNode(const StreamFormat &format);
 
-  /// Marks every output unconfigured and hands its resources over, so the audio thread stops
-  /// touching them before they are closed. The caller must hold callbackMutex_,
+  /// Marks every side effect unconfigured and hands its resources over, so the audio thread
+  /// stops touching them before they are closed. The caller must hold callbackMutex_,
   /// fileWriterMutex_ and adapterNodeMutex_.
-  DetachedOutputs detachOutputs();
+  DetachedSideEffects detachSideEffects();
 
-  /// Flushes and releases what detachOutputs() handed over. Must run with no recorder mutex
-  /// held: closing an encoder waits for its worker thread to drain.
-  static StopResult finalizeOutputs(DetachedOutputs &&outputs);
+  /// Flushes and releases what detachSideEffects() handed over, then collects the session's
+  /// file URIs — only then, because closing the writer joins the worker that may still be
+  /// opening a segment. Must run with no recorder mutex held: closing an encoder waits for
+  /// its worker thread to drain. Touches nothing but segmentPathsMutex_ and the list it guards.
+  StopResult finalizeSideEffects(DetachedSideEffects &&sideEffects);
 
   bool wantsCallback() const;
   bool wantsFileOutput() const;
@@ -143,6 +149,10 @@ class AudioRecorder {
   std::mutex callbackMutex_;
   mutable std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;
+  /// Guards recordingSegmentPaths_, which a rotating writer appends to from its worker thread.
+  /// Deliberately its own lock: the JS thread holds fileWriterMutex_ while closing a writer,
+  /// and closing one joins the very worker that would be waiting on it.
+  std::mutex segmentPathsMutex_;
   mutable std::mutex adapterNodeMutex_;
   mutable std::recursive_mutex streamMutex_;
 
@@ -154,8 +164,13 @@ class AudioRecorder {
   std::string sessionStem_;
   /// How many files the current session reopened after a stream-format change.
   size_t reopenedFileCount_ = 0;
+  /// Size and duration of the files a single-file session has already closed on a format
+  /// change. A rotating writer sums its own segments; a plain writer forgets a file the moment
+  /// it is closed, so the recorder carries these into the stop result. JS thread only.
+  double reopenedFilesSizeMB_ = 0.0;
+  double reopenedFilesDurationSec_ = 0.0;
   /// Every file written during the current session, in the order they were opened; a rotating
-  /// writer appends one per segment.
+  /// writer appends one per segment, from its worker thread. Guarded by segmentPathsMutex_.
   std::vector<std::string> recordingSegmentPaths_;
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;

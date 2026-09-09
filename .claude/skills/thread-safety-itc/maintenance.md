@@ -11,4 +11,5 @@ Review this skill when `pre-push-update` reports changes in:
 | `common/cpp/audioapi/utils/CrossThreadEventScheduler.hpp` | Scheduler API changes — update decision table |
 | `common/cpp/audioapi/core/AudioNode.*` | Audio thread contract changes |
 | `common/cpp/audioapi/core/utils/AudioGraphManager.*` | Graph mutation queue changes |
+| `common/cpp/audioapi/core/utils/EncodedAudioFileWriter.*`, `RotatingFileWriter.*` | The "reacting to audio without blocking on it" pattern: `switchToFile`/`setOnBufferEncodedCallback` contract, the listener-outside-the-lock rule, the never-join-while-holding rule, the `final`/`virtual` test seam |
 | Any new cross-thread primitive in `utils/` | Document in the decision table |

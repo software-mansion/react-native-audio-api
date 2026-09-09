@@ -64,8 +64,6 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
   Result<NoneType, std::string> reprepareCallback(const StreamFormat &format);
 
-  /// Channel count the recorder was configured with; the audio thread drops any buffer
-  /// whose layout stops matching it (e.g. after a route change).
   int32_t inputChannelCount_{0};
 
   /// Holds the mic's planar input repacked as interleaved float32 for every consumer.

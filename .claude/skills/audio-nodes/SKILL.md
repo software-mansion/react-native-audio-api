@@ -158,7 +158,7 @@ feeds the graph through a `RecorderAdapterNode` instead of being processed by it
 
 The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
 that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
-`setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachOutputs`/`finalizeOutputs`), the
+`setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
 subclasses own only the platform input stream. The one thing the base needs from the platform is
 `resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
 it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values

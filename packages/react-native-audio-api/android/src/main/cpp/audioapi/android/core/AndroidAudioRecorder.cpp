@@ -195,7 +195,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
 /// @returns On success, returns the file URI, size in MB and duration in seconds of the recorded file (if file output is enabled).
 /// NOTE: due to the file access nature on Android, the size might sometimes be zeroed (really long files).
 AudioRecorder::StopResult AndroidAudioRecorder::stop() {
-  DetachedOutputs outputs;
+  DetachedSideEffects sideEffects;
 
   {
     std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_, streamMutex_);
@@ -212,10 +212,10 @@ AudioRecorder::StopResult AndroidAudioRecorder::stop() {
     lastCallbackFrameCount_.store(0, std::memory_order_release);
     mStream_->requestStop();
 
-    outputs = detachOutputs();
+    sideEffects = detachSideEffects();
   }
 
-  return finalizeOutputs(std::move(outputs));
+  return finalizeSideEffects(std::move(sideEffects));
 }
 
 /// @brief Pauses the audio recording stream.
@@ -245,8 +245,8 @@ void AndroidAudioRecorder::resume() {
 
 /// @brief onAudioReady callback that is invoked by the Oboe stream when new audio data is available.
 /// This method runs on the audio thread.
-/// It routes the audio data to the enabled outputs: file writer, callback, and adapter node.
-/// For safety measures (check note about RN of enableFileOutput), each output is protected by a lock
+/// It routes the audio data to the enabled side effects: file writer, callback, and adapter node.
+/// For safety measures (check note about RN of enableFileOutput), each side effect is protected by a lock
 /// additionally to the enabled checks.
 /// @param oboeStream Pointer to the Oboe audio stream.
 /// @param audioData Pointer to the audio data buffer (interleaved float samples).

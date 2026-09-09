@@ -4,6 +4,7 @@
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/Result.hpp>
 
+#include <audioapi/utils/Macros.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,7 +35,7 @@ class AudioDecoderBackendGuard {
 
   [[nodiscard]] ma_uint32 channels() const;
 
-  [[nodiscard]] ma_format format() const {
+  static ma_format format() {
     return ma_format_f32;
   }
 
@@ -50,8 +51,7 @@ class AudioDecoderBackendGuard {
 class MiniAudioEncoderGuard {
  public:
   MiniAudioEncoderGuard() = default;
-  MiniAudioEncoderGuard(const MiniAudioEncoderGuard &) = delete;
-  MiniAudioEncoderGuard &operator=(const MiniAudioEncoderGuard &) = delete;
+  DELETE_COPY_AND_MOVE(MiniAudioEncoderGuard);
 
   // Closes the owned miniaudio encoder.
   ~MiniAudioEncoderGuard();

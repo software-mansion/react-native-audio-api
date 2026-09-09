@@ -8,8 +8,10 @@
 #include <audioapi/utils/TaskOffloader.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace audioapi {
@@ -17,10 +19,6 @@ namespace audioapi {
 class AudioFileProperties;
 class IAudioEventHandlerRegistry;
 
-/// Recorder file writer backed by the platform's system encoder. The audio thread copies
-/// each callback into a preallocated slot; a worker thread encodes it. Marked final because
-/// RotatingFileWriter drives any AudioFileWriter — a writer that could be specialised into a
-/// rotating one would let rotation nest inside itself.
 /// Slot index plus frame count — the only thing that crosses to the worker thread.
 /// The default slot doubles as TaskOffloader's shutdown sentinel. Deliberately at
 /// namespace scope: nested in the writer, the default member initializers would not
@@ -31,7 +29,15 @@ struct PendingFileWrite {
   int numFrames = 0;
 };
 
-class EncodedAudioFileWriter final : public AudioFileWriter {
+/// Recorder file writer backed by the platform's system encoder. The audio thread copies each
+/// callback into a preallocated slot; a worker thread encodes it. That worker is created once
+/// per session and outlives switchToFile(), so rotating a recording costs no thread at all.
+///
+/// RotatingFileWriter reaches switchToFile() through a dynamic_cast to this type, so a subclass
+/// answers that cast as well. Deriving is for test doubles that stand in for the platform
+/// encoder; do not specialise this into a rotating writer, which would nest rotation inside
+/// itself.
+class EncodedAudioFileWriter : public AudioFileWriter {
  public:
   EncodedAudioFileWriter(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -46,11 +52,27 @@ class EncodedAudioFileWriter final : public AudioFileWriter {
       const std::string &fileNameOverride) override;
   CloseFileResult closeFile() override;
 
+  /// Retires the current file and continues the session into @p fileNameOverride, reusing the
+  /// worker thread and buffer pool already in place. Returns the retired file's
+  /// {sizeMB, durationSeconds}. Runs on this writer's own worker thread, so it may block on the
+  /// encoder. Virtual so a test double can stand in for the platform encoder.
+  virtual CloseFileResult switchToFile(const std::string &fileNameOverride);
+
+  /// Registers a listener called on the worker thread after each buffer is encoded, giving
+  /// rotation somewhere to run that is neither the audio thread nor a thread of its own.
+  /// Must be set before openFile(); the worker reads it without synchronization.
+  void setOnBufferEncodedCallback(std::function<void()> callback);
+
   void writeAudioData(const float *interleavedFrames, int numFrames) override;
 
   [[nodiscard]] std::string getFilePath() const override;
   [[nodiscard]] double getCurrentDuration() const override;
   [[nodiscard]] size_t getFileSizeBytes() const override;
+
+ protected:
+  /// Announces that one buffer has been encoded, which is where rotation gets to run.
+  /// Called on the worker thread, and by test doubles standing in for it.
+  void notifyBufferEncoded();
 
  private:
   static constexpr auto FILE_WRITER_SPSC_OVERFLOW_STRATEGY =
@@ -72,6 +94,14 @@ class EncodedAudioFileWriter final : public AudioFileWriter {
       FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
       FILE_WRITER_SPSC_WAIT_STRATEGY>;
 
+  /// Resolves the path for @p fileNameOverride and opens an encoder on it.
+  /// The caller must hold fileMutex_.
+  OpenFileResult openEncoderForFile(const std::string &fileNameOverride);
+  /// Closes and releases the encoder and zeroes the frame count, returning what the encoder
+  /// reported for the file it finished. The one place "retiring an encoder" is defined; the
+  /// three callers differ only in what they do with the path afterwards.
+  /// The caller must hold fileMutex_.
+  CloseEncoderResult retireEncoder();
   bool initializePreallocatedInputPool();
   void cleanupPreallocatedInputPool();
   void createOffloader();
@@ -81,9 +111,14 @@ class EncodedAudioFileWriter final : public AudioFileWriter {
   float streamSampleRate_{0.0F};
   int32_t streamChannelCount_{0};
   int32_t maxFramesPerBuffer_{0};
-  std::string filePath_;
 
+  /// Guards the encoder and the path it writes to, which switchToFile() swaps on the worker
+  /// thread while the JS thread reads them. Never taken on the audio thread.
+  mutable std::mutex fileMutex_;
+  std::string filePath_;
   std::unique_ptr<AudioEncoder> encoder_;
+
+  std::function<void()> onBufferEncoded_;
   std::unique_ptr<float[]> inputBufferPool_;
   size_t samplesPerSlot_{0};
   std::unique_ptr<FreeList> freeSlots_;

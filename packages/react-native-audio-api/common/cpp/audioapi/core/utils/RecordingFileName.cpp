@@ -5,7 +5,6 @@
 #include <array>
 #include <chrono>
 #include <ctime>
-#include <format>
 #include <memory>
 #include <string>
 
@@ -14,6 +13,7 @@ namespace audioapi::recordingfilename {
 namespace {
 
 constexpr size_t kMaxFileNameLength = 128;
+constexpr size_t kSegmentIndexWidth = 3;
 constexpr std::string_view kGeneratedNamePrefix = "recording";
 
 bool containsPathSeparator(const std::string &name) {
@@ -38,11 +38,15 @@ std::string sessionStem(const std::shared_ptr<AudioFileProperties> &properties) 
     return properties->fileName;
   }
 
-  return std::format("{}_{}", kGeneratedNamePrefix, sessionTimestamp());
+  return std::string(kGeneratedNamePrefix) + "_" + sessionTimestamp();
 }
 
 std::string segmentStem(const std::string &sessionStem, size_t segmentIndex) {
-  return std::format("{}_{:03}", sessionStem, segmentIndex);
+  std::string index = std::to_string(segmentIndex);
+  if (index.size() < kSegmentIndexWidth) {
+    index.insert(0, kSegmentIndexWidth - index.size(), '0');
+  }
+  return sessionStem + "_" + index;
 }
 
 Result<NoneType, std::string> validate(const std::shared_ptr<AudioFileProperties> &properties) {
@@ -64,9 +68,8 @@ Result<NoneType, std::string> validate(const std::shared_ptr<AudioFileProperties
 
   if (fileName.size() > kMaxFileNameLength) {
     return ValidationResult::Err(
-        std::format(
-            "fileName is longer than the {} characters a file name can spare.",
-            kMaxFileNameLength));
+        "fileName is longer than the " + std::to_string(kMaxFileNameLength) +
+        " characters a file name can spare.");
   }
 
   return ValidationResult::Ok(None);

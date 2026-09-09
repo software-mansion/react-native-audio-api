@@ -663,7 +663,7 @@ interface AudioRecorderFileOptions {
 ```
 
 - `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
-- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles).
+- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, each segment carries a three-digit index (`_001`, `_002`, …) — see [File naming](#file-naming). You can join the rotated files after recording with [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles).
   - Use a large enough value for your format. Very small thresholds rotate often, which increases the chance of audible gaps or muffled joins after concatenation — especially for **M4A**, where each segment is a separate AAC encode.
   - Practical starting points: **≥ 1 MB** for WAV, **≥ 200 KB** for M4A (adjust upward if you still hear artifacts at segment boundaries).
   - This option controls segment file size, not RAM usage. For crash-resilience tuning on Android, use `androidFlushIntervalMs` instead.
@@ -698,6 +698,12 @@ separators and no `..`.
 The segment index is padded to three digits and keeps counting beyond that (`_999`,
 `_1000`, …). Names stay unique; only their lexicographic order breaks past 999 segments —
 `stop()` still returns `paths` in recording order.
+
+A recording without rotation can still span several files: on iOS, an audio route change
+mid-session (headphones connecting, say) alters the input format, and the encoder has to be
+reopened. The first file keeps its plain name and each reopened file takes the next index
+(`session-42.wav`, then `session-42_001.wav`). `stop()` returns every file, and its size and
+duration cover all of them.
 
 :::caution
 `fileName` puts you in charge of telling recordings apart. An existing file of the same name

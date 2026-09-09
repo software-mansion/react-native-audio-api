@@ -137,9 +137,12 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
         properties->rotateIntervalBytes,
         createFileWriter(properties),
         [this](const std::string &path) {
-          if (!path.empty()) {
-            recordingSegmentPaths_.push_back(path);
+          if (path.empty()) {
+            return;
           }
+          // Reached from the writer's worker thread on every rotation.
+          std::scoped_lock lock(segmentPathsMutex_);
+          recordingSegmentPaths_.push_back(path);
         });
   } else {
     fileWriter_ = createFileWriter(properties);
@@ -149,6 +152,8 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
 
   sessionStem_ = recordingfilename::sessionStem(properties);
   reopenedFileCount_ = 0;
+  reopenedFilesSizeMB_ = 0.0;
+  reopenedFilesDurationSec_ = 0.0;
 
   const auto format = formatResult.unwrap();
   auto fileResult = fileWriter_->openFile(
@@ -165,6 +170,7 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
 
   // A rotating writer reports every segment it opens through its callback, this one included.
   if (properties->rotateIntervalBytes == 0) {
+    std::scoped_lock lock(segmentPathsMutex_);
     recordingSegmentPaths_.push_back(filePath_);
   }
 
@@ -292,70 +298,71 @@ void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
   connectedConfigured_.store(true, std::memory_order_release);
 }
 
-AudioRecorder::DetachedOutputs AudioRecorder::detachOutputs() {
-  DetachedOutputs outputs;
-  const bool hadFileOutput = usesFileOutput();
+AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
+  DetachedSideEffects sideEffects;
 
-  if (hadFileOutput) {
+  if (usesFileOutput()) {
     fileOutputConfigured_.store(false, std::memory_order_release);
-    outputs.fileWriter = std::move(fileWriter_);
+    sideEffects.fileWriter = std::move(fileWriter_);
+    sideEffects.reopenedFilesSizeMB = reopenedFilesSizeMB_;
+    sideEffects.reopenedFilesDurationSec = reopenedFilesDurationSec_;
+    reopenedFilesSizeMB_ = 0.0;
+    reopenedFilesDurationSec_ = 0.0;
   }
 
   if (usesCallback()) {
     callbackOutputConfigured_.store(false, std::memory_order_release);
     // Kept registered rather than moved out, so a later start() can re-prepare it.
-    outputs.dataCallback = dataCallback_;
+    sideEffects.dataCallback = dataCallback_;
   }
 
   if (isConnected()) {
     connectedConfigured_.store(false, std::memory_order_release);
-    outputs.adapterNodeHandle = std::move(adapterNodeHandle_);
+    sideEffects.adapterNodeHandle = std::move(adapterNodeHandle_);
   }
 
-  for (const auto &segmentPath : recordingSegmentPaths_) {
-    if (!segmentPath.empty()) {
-      outputs.fileUris.push_back("file://" + segmentPath);
-    }
-  }
-
-  // A writer that reported no segment still wrote the file it was opened with.
-  if (hadFileOutput && outputs.fileUris.empty() && !filePath_.empty()) {
-    outputs.fileUris.push_back("file://" + filePath_);
-  }
-
-  recordingSegmentPaths_.clear();
   filePath_ = "";
 
-  return outputs;
+  return sideEffects;
 }
 
-AudioRecorder::StopResult AudioRecorder::finalizeOutputs(DetachedOutputs &&outputs) {
+AudioRecorder::StopResult AudioRecorder::finalizeSideEffects(DetachedSideEffects &&sideEffects) {
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
-  auto movedOutputs = std::move(outputs);
+  auto movedSideEffects = std::move(sideEffects);
 
-  if (movedOutputs.fileWriter != nullptr) {
-    auto fileResult = movedOutputs.fileWriter->closeFile();
+  if (movedSideEffects.fileWriter != nullptr) {
+    auto fileResult = movedSideEffects.fileWriter->closeFile();
 
     if (!fileResult.is_ok()) {
       return StopResult::Err("Failed to close file: " + fileResult.unwrap_err());
     }
 
-    outputFileSize = std::get<0>(fileResult.unwrap());
-    outputDuration = std::get<1>(fileResult.unwrap());
+    outputFileSize = std::get<0>(fileResult.unwrap()) + movedSideEffects.reopenedFilesSizeMB;
+    outputDuration = std::get<1>(fileResult.unwrap()) + movedSideEffects.reopenedFilesDurationSec;
+
+    // The writer is closed and its worker joined, so the list is complete: a rotation that
+    // was in flight when the session was detached has reported its file by now.
+    std::scoped_lock lock(segmentPathsMutex_);
+    for (const auto &segmentPath : recordingSegmentPaths_) {
+      if (!segmentPath.empty()) {
+        movedSideEffects.fileUris.push_back("file://" + segmentPath);
+      }
+    }
+    recordingSegmentPaths_.clear();
   }
 
-  if (movedOutputs.dataCallback != nullptr) {
-    movedOutputs.dataCallback->cleanup();
+  if (movedSideEffects.dataCallback != nullptr) {
+    movedSideEffects.dataCallback->cleanup();
   }
 
-  if (movedOutputs.adapterNodeHandle != nullptr) {
-    static_cast<RecorderAdapterNode *>(movedOutputs.adapterNodeHandle->audioNode.get())
+  if (movedSideEffects.adapterNodeHandle != nullptr) {
+    static_cast<RecorderAdapterNode *>(movedSideEffects.adapterNodeHandle->audioNode.get())
         ->adapterCleanup();
   }
 
   return StopResult::Ok(
-      std::make_tuple(std::move(movedOutputs.fileUris), outputFileSize, outputDuration));
+      std::make_tuple(std::move(movedSideEffects.fileUris), outputFileSize, outputDuration));
 }
 
 /// @brief Sets the error callback to be invoked when an error occurs during recording.
@@ -395,7 +402,6 @@ void AudioRecorder::clearOnErrorCallback() {
 /// @brief Gets the current duration of the recorded audio in seconds.
 /// @returns Duration in seconds.
 double AudioRecorder::getCurrentDuration() const {
-  std::scoped_lock lock(fileWriterMutex_);
   double duration = 0.0;
 
   if (usesFileOutput() && fileWriter_ != nullptr) {

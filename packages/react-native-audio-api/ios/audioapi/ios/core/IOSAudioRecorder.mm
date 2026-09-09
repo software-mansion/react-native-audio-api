@@ -11,12 +11,11 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
-#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/core/utils/RotatingFileWriter.h>
-#include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
+#include <audioapi/ios/core/utils/IOSInterleaving.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -26,53 +25,6 @@
 #include <audioapi/utils/Result.hpp>
 
 namespace audioapi {
-
-namespace {
-
-/// @brief Repacks a CoreAudio input buffer as interleaved float32, the format every
-/// consumer downstream expects. Returns nullptr — dropping the buffer — when the layout no
-/// longer matches what we were configured with, which happens if the input node is rebuilt
-/// on a route change while a recording is in flight.
-const float *interleaveAudioInput(
-    const AudioBufferList *input,
-    int numFrames,
-    int channelCount,
-    std::vector<float> &interleavedHolder_)
-{
-  if (input == nullptr || numFrames <= 0 || channelCount <= 0 || channelCount > MAX_CHANNEL_COUNT) {
-    return nullptr;
-  }
-
-  const auto frames = static_cast<size_t>(numFrames);
-  const size_t samples = frames * static_cast<size_t>(channelCount);
-
-  // Mono, or an already-interleaved format: hand CoreAudio's own buffer straight through.
-  if (input->mNumberBuffers == 1) {
-    if (input->mBuffers[0].mDataByteSize < samples * sizeof(float)) {
-      return nullptr;
-    }
-    return static_cast<const float *>(input->mBuffers[0].mData);
-  }
-
-  if (input->mNumberBuffers != static_cast<UInt32>(channelCount) ||
-      samples > interleavedHolder_.size()) {
-    return nullptr;
-  }
-
-  const float *channelPointers[MAX_CHANNEL_COUNT];
-  for (int channel = 0; channel < channelCount; ++channel) {
-    if (input->mBuffers[channel].mDataByteSize < frames * sizeof(float)) {
-      return nullptr;
-    }
-    channelPointers[channel] = static_cast<const float *>(input->mBuffers[channel].mData);
-  }
-
-  dsp::interleave(
-      channelPointers, static_cast<size_t>(channelCount), interleavedHolder_.data(), frames);
-  return interleavedHolder_.data();
-}
-
-} // namespace
 
 static bool hasUsableRecorderFormat(AVAudioFormat *format)
 {
@@ -113,8 +65,8 @@ IOSAudioRecorder::IOSAudioRecorder(
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
     // The mic hands us planar float32; everything downstream takes interleaved float32,
     // so normalize once here and let the shared fan-out do the rest.
-    const float *interleaved =
-        interleaveAudioInput(inputBuffer, numFrames, inputChannelCount_, interleavedHolder_);
+    const float *interleaved = ios_interleaving::interleaveAudioInput(
+        inputBuffer, numFrames, inputChannelCount_, interleavedHolder_);
     if (interleaved == nullptr) {
       return;
     }
@@ -232,7 +184,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   }
 
   // The encoders are bound to the stream format they were opened with, so a format
-  // change means finishing the current segment and opening a fresh one.
+  // change means finishing the current file and opening a fresh one.
   if (auto rotatingWriter = std::dynamic_pointer_cast<RotatingFileWriter>(fileWriter_)) {
     auto result = rotatingWriter->reprepareStreamFormat(
         format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
@@ -247,7 +199,12 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
     return Result<NoneType, std::string>::Ok(None);
   }
 
-  fileWriter_->closeFile();
+  // A plain writer forgets the file it just closed, so its totals are kept here for stop().
+  auto closeResult = fileWriter_->closeFile();
+  if (closeResult.is_ok()) {
+    reopenedFilesSizeMB_ += std::get<0>(closeResult.unwrap());
+    reopenedFilesDurationSec_ += std::get<1>(closeResult.unwrap());
+  }
 
   auto result = fileWriter_->openFile(
       format.sampleRate, format.channelCount, format.maxFramesPerBuffer, nextReopenedFileStem());
@@ -258,7 +215,10 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   }
 
   filePath_ = result.unwrap();
-  recordingSegmentPaths_.push_back(filePath_);
+  {
+    std::scoped_lock segmentPathsLock(segmentPathsMutex_);
+    recordingSegmentPaths_.push_back(filePath_);
+  }
   fileOutputConfigured_.store(true, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
 }
@@ -387,7 +347,10 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   bool fileWasOpened = false;
 
   if (wantsFileOutput()) {
-    recordingSegmentPaths_.clear();
+    {
+      std::scoped_lock segmentPathsLock(segmentPathsMutex_);
+      recordingSegmentPaths_.clear();
+    }
     auto writerResult = setupFileWriter(fileProperties_);
     if (!writerResult.is_ok()) {
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
@@ -438,7 +401,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
 /// @returns Result containing paths, size, and duration if stopped successfully, or an error message.
 AudioRecorder::StopResult IOSAudioRecorder::stop()
 {
-  DetachedOutputs outputs;
+  DetachedSideEffects sideEffects;
 
   {
     std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
@@ -456,10 +419,10 @@ AudioRecorder::StopResult IOSAudioRecorder::stop()
     streamSampleRate_.store(0.0F, std::memory_order_release);
     [nativeRecorder_ stop];
 
-    outputs = detachOutputs();
+    sideEffects = detachSideEffects();
   }
 
-  return finalizeOutputs(std::move(outputs));
+  return finalizeSideEffects(std::move(sideEffects));
 }
 
 void IOSAudioRecorder::pause()
