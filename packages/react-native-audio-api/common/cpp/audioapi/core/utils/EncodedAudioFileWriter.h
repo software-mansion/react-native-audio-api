@@ -19,8 +19,8 @@ class IAudioEventHandlerRegistry;
 
 /// Recorder file writer backed by the platform's system encoder. The audio thread copies
 /// each callback into a preallocated slot; a worker thread encodes it. Marked final because
-/// RotatingFileWriter takes any AudioFileWriter from its factory — a writer that could be
-/// specialised into a rotating one would let a factory nest rotation inside itself.
+/// RotatingFileWriter drives any AudioFileWriter — a writer that could be specialised into a
+/// rotating one would let rotation nest inside itself.
 /// Slot index plus frame count — the only thing that crosses to the worker thread.
 /// The default slot doubles as TaskOffloader's shutdown sentinel. Deliberately at
 /// namespace scope: nested in the writer, the default member initializers would not

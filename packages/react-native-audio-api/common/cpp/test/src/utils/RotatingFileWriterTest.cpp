@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 using namespace audioapi;
@@ -94,15 +95,14 @@ class RotatingFileWriterTest : public ::testing::Test {
         0,
         AudioFileProperties::IOSAudioQuality::High);
 
+    auto stubWriter = std::make_shared<StubFileWriter>(eventRegistry_, properties_);
+    stubWriter_ = stubWriter.get();
+
     rotatingWriter_ = std::make_shared<RotatingFileWriter>(
         eventRegistry_,
         properties_,
         properties_->rotateIntervalBytes,
-        [this](const std::shared_ptr<AudioFileProperties> &props) {
-          auto writer = std::make_shared<StubFileWriter>(eventRegistry_, props);
-          stubWriter_ = writer.get();
-          return writer;
-        },
+        std::move(stubWriter),
         [this](const std::string &path) { openedSegmentPaths_.push_back(path); });
   }
 

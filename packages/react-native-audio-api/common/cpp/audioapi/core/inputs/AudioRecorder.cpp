@@ -118,8 +118,6 @@ std::shared_ptr<AudioFileWriter> AudioRecorder::createFileWriter(
 }
 
 /// @brief Opens the output file the recorded frames are written to.
-/// A non-zero rotate interval wraps the writer in a RotatingFileWriter, which then builds one
-/// writer per segment through the same factory.
 /// This method should be called from the JS thread only, with fileWriterMutex_ held.
 /// @param properties Properties defining the audio file format and encoding options.
 /// @returns Success status or Error status with message.
@@ -137,9 +135,7 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
         audioEventHandlerRegistry_,
         properties,
         properties->rotateIntervalBytes,
-        [this](const std::shared_ptr<AudioFileProperties> &segmentProperties) {
-          return createFileWriter(segmentProperties);
-        },
+        createFileWriter(properties),
         [this](const std::string &path) {
           if (!path.empty()) {
             recordingSegmentPaths_.push_back(path);
@@ -151,12 +147,12 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
 
   fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
+  sessionStem_ = recordingfilename::sessionStem(properties);
+  reopenedFileCount_ = 0;
+
   const auto format = formatResult.unwrap();
   auto fileResult = fileWriter_->openFile(
-      format.sampleRate,
-      format.channelCount,
-      format.maxFramesPerBuffer,
-      recordingfilename::sessionStem(properties));
+      format.sampleRate, format.channelCount, format.maxFramesPerBuffer, sessionStem_);
 
   if (!fileResult.is_ok()) {
     fileOutputConfigured_.store(false, std::memory_order_release);
@@ -174,6 +170,10 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
 
   fileOutputConfigured_.store(true, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
+}
+
+std::string AudioRecorder::nextReopenedFileStem() {
+  return recordingfilename::segmentStem(sessionStem_, ++reopenedFileCount_);
 }
 
 /// @brief Sets the callback to be invoked when audio data is ready.

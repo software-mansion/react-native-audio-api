@@ -70,7 +70,7 @@ class IOSAudioRecorder : public AudioRecorder {
 
   /// Holds the mic's planar input repacked as interleaved float32 for every consumer.
   /// Sized on the JS thread under fileWriterMutex_; never resized from the audio thread.
-  std::vector<float> interleaveScratch_;
+  std::vector<float> interleavedHolder_;
 };
 
 } // namespace audioapi

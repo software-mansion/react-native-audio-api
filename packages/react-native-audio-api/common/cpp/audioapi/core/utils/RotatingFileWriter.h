@@ -10,20 +10,18 @@
 
 namespace audioapi {
 
-/// Splits a recording into size-capped segments. Owns no encoder of its own: every
-/// segment is a writer built by @p writerFactory, and this class only decides when to
-/// close one and open the next, accumulating size and duration across them.
+/// Splits a recording into size-capped segments. Owns no encoder of its own: it drives a
+/// single @p segmentWriter, closing and reopening it under a new name per segment, and only
+/// decides when to rotate, accumulating size and duration across segments.
 class RotatingFileWriter final : public AudioFileWriter {
  public:
-  using WriterFactory =
-      std::function<std::shared_ptr<AudioFileWriter>(const std::shared_ptr<AudioFileProperties> &)>;
   using OnSegmentFileOpenedCallback = std::function<void(const std::string &)>;
 
   RotatingFileWriter(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
       size_t rotateIntervalBytes,
-      WriterFactory writerFactory,
+      std::shared_ptr<AudioFileWriter> segmentWriter,
       OnSegmentFileOpenedCallback onSegmentFileOpened = {});
 
   OpenFileResult openFile(
@@ -51,15 +49,14 @@ class RotatingFileWriter final : public AudioFileWriter {
   static constexpr int FILE_SIZE_CHECK_WRITE_INTERVAL = 10;
 
   OpenFileResult rotateFiles();
-  OpenFileResult openInnerWriter();
+  OpenFileResult openNextSegment();
 
-  WriterFactory writerFactory_;
+  std::shared_ptr<AudioFileWriter> segmentWriter_;
   OnSegmentFileOpenedCallback onSegmentFileOpened_;
   size_t rotateIntervalBytes_;
   size_t writesSinceLastCheck_ = 0;
   std::string sessionStem_;
   size_t segmentIndex_ = 0;
-  std::shared_ptr<AudioFileWriter> currentWriter_;
 
   double cumulativeSizeMB_{0.0};
   double cumulativeDurationSec_{0.0};

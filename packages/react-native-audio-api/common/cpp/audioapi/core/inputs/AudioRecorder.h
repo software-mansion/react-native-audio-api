@@ -109,6 +109,11 @@ class AudioRecorder {
   Result<NoneType, std::string> setupFileWriter(
       const std::shared_ptr<AudioFileProperties> &properties);
 
+  /// Names a file reopened mid-session because the input's stream format changed. The first
+  /// file of a session carries the bare session stem, so numbering the reopened ones from 1
+  /// keeps them off the files already on disk. The caller must hold fileWriterMutex_.
+  std::string nextReopenedFileStem();
+
   /// Sizes the adapter node and the deinterleaving scratch for @p format.
   /// The caller must hold adapterNodeMutex_.
   void prepareAdapterNode(const StreamFormat &format);
@@ -144,6 +149,11 @@ class AudioRecorder {
   std::atomic<uint64_t> errorCallbackId_{0};
 
   std::string filePath_;
+  /// Stem every file of the current session is named from. Resolved once per session so that
+  /// a file reopened later cannot land on a timestamp of its own and collide.
+  std::string sessionStem_;
+  /// How many files the current session reopened after a stream-format change.
+  size_t reopenedFileCount_ = 0;
   /// Every file written during the current session, in the order they were opened; a rotating
   /// writer appends one per segment.
   std::vector<std::string> recordingSegmentPaths_;

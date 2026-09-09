@@ -13,10 +13,10 @@ RotatingFileWriter::RotatingFileWriter(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     size_t rotateIntervalBytes,
-    WriterFactory writerFactory,
+    std::shared_ptr<AudioFileWriter> segmentWriter,
     OnSegmentFileOpenedCallback onSegmentFileOpened)
     : AudioFileWriter(audioEventHandlerRegistry, fileProperties),
-      writerFactory_(std::move(writerFactory)),
+      segmentWriter_(std::move(segmentWriter)),
       onSegmentFileOpened_(std::move(onSegmentFileOpened)),
       rotateIntervalBytes_(rotateIntervalBytes) {}
 
@@ -31,19 +31,18 @@ OpenFileResult RotatingFileWriter::openFile(
   streamChannelCount_ = streamChannelCount;
   maxFramesPerBuffer_ = maxFramesPerBuffer;
 
-  if (currentWriter_ == nullptr) {
-    currentWriter_ = writerFactory_(fileProperties_);
-  }
-
-  return openInnerWriter();
+  auto result = openNextSegment();
+  isFileOpen_.store(result.is_ok(), std::memory_order_release);
+  return result;
 }
 
 CloseFileResult RotatingFileWriter::closeFile() {
-  if (currentWriter_ == nullptr) {
+  if (!isFileOpen()) {
     return CloseFileResult::Err("No file open");
   }
+  isFileOpen_.store(false, std::memory_order_release);
 
-  auto closeResult = currentWriter_->closeFile();
+  auto closeResult = segmentWriter_->closeFile();
   if (closeResult.is_err()) {
     return CloseFileResult::Err(closeResult.unwrap_err());
   }
@@ -57,42 +56,38 @@ CloseFileResult RotatingFileWriter::closeFile() {
 }
 
 void RotatingFileWriter::writeAudioData(const float *interleavedFrames, int numFrames) {
-  if (currentWriter_ == nullptr) {
+  if (!isFileOpen()) {
     return;
   }
 
-  currentWriter_->writeAudioData(interleavedFrames, numFrames);
+  segmentWriter_->writeAudioData(interleavedFrames, numFrames);
 
   writesSinceLastCheck_++;
   if (writesSinceLastCheck_ >= FILE_SIZE_CHECK_WRITE_INTERVAL) {
     writesSinceLastCheck_ = 0;
-    if (currentWriter_->getFileSizeBytes() > rotateIntervalBytes_) {
+    if (segmentWriter_->getFileSizeBytes() > rotateIntervalBytes_) {
       rotateFiles();
     }
   }
 }
 
 std::string RotatingFileWriter::getFilePath() const {
-  return currentWriter_ != nullptr ? currentWriter_->getFilePath() : "";
+  return segmentWriter_->getFilePath();
 }
 
 double RotatingFileWriter::getCurrentDuration() const {
-  double currentSegmentDuration = 0.0;
-  if (currentWriter_ != nullptr) {
-    currentSegmentDuration = currentWriter_->getCurrentDuration();
-  }
-  return cumulativeDurationSec_ + currentSegmentDuration;
+  return cumulativeDurationSec_ + segmentWriter_->getCurrentDuration();
 }
 
 size_t RotatingFileWriter::getFileSizeBytes() const {
-  return currentWriter_ != nullptr ? currentWriter_->getFileSizeBytes() : 0;
+  return segmentWriter_->getFileSizeBytes();
 }
 
 OpenFileResult RotatingFileWriter::reprepareStreamFormat(
     float streamSampleRate,
     int32_t streamChannelCount,
     int32_t maxFramesPerBuffer) {
-  if (currentWriter_ == nullptr) {
+  if (!isFileOpen()) {
     return OpenFileResult::Err("No file open");
   }
 
@@ -104,24 +99,24 @@ OpenFileResult RotatingFileWriter::reprepareStreamFormat(
 }
 
 OpenFileResult RotatingFileWriter::rotateFiles() {
-  auto rotatedClose = currentWriter_->closeFile();
+  auto rotatedClose = segmentWriter_->closeFile();
   if (rotatedClose.is_ok()) {
     const auto &segment = rotatedClose.unwrap();
     cumulativeSizeMB_ += std::get<0>(segment);
     cumulativeDurationSec_ += std::get<1>(segment);
   }
 
-  return openInnerWriter();
+  return openNextSegment();
 }
 
-OpenFileResult RotatingFileWriter::openInnerWriter() {
-  auto result = currentWriter_->openFile(
+OpenFileResult RotatingFileWriter::openNextSegment() {
+  auto result = segmentWriter_->openFile(
       streamSampleRate_,
       streamChannelCount_,
       maxFramesPerBuffer_,
       recordingfilename::segmentStem(sessionStem_, ++segmentIndex_));
   if (result.is_ok() && onSegmentFileOpened_) {
-    onSegmentFileOpened_(currentWriter_->getFilePath());
+    onSegmentFileOpened_(segmentWriter_->getFilePath());
   }
   return result;
 }

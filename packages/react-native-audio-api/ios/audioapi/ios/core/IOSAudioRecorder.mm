@@ -37,7 +37,7 @@ const float *interleaveAudioInput(
     const AudioBufferList *input,
     int numFrames,
     int channelCount,
-    std::vector<float> &scratch)
+    std::vector<float> &interleavedHolder_)
 {
   if (input == nullptr || numFrames <= 0 || channelCount <= 0 || channelCount > MAX_CHANNEL_COUNT) {
     return nullptr;
@@ -54,7 +54,8 @@ const float *interleaveAudioInput(
     return static_cast<const float *>(input->mBuffers[0].mData);
   }
 
-  if (input->mNumberBuffers != static_cast<UInt32>(channelCount) || samples > scratch.size()) {
+  if (input->mNumberBuffers != static_cast<UInt32>(channelCount) ||
+      samples > interleavedHolder_.size()) {
     return nullptr;
   }
 
@@ -66,8 +67,9 @@ const float *interleaveAudioInput(
     channelPointers[channel] = static_cast<const float *>(input->mBuffers[channel].mData);
   }
 
-  dsp::interleave(channelPointers, static_cast<size_t>(channelCount), scratch.data(), frames);
-  return scratch.data();
+  dsp::interleave(
+      channelPointers, static_cast<size_t>(channelCount), interleavedHolder_.data(), frames);
+  return interleavedHolder_.data();
 }
 
 } // namespace
@@ -112,7 +114,7 @@ IOSAudioRecorder::IOSAudioRecorder(
     // The mic hands us planar float32; everything downstream takes interleaved float32,
     // so normalize once here and let the shared fan-out do the rest.
     const float *interleaved =
-        interleaveAudioInput(inputBuffer, numFrames, inputChannelCount_, interleaveScratch_);
+        interleaveAudioInput(inputBuffer, numFrames, inputChannelCount_, interleavedHolder_);
     if (interleaved == nullptr) {
       return;
     }
@@ -183,7 +185,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
   // Must happen before any early return below, or a channel-count change would make
   // interleaveAudioInput() drop every buffer once the input is re-armed.
   inputChannelCount_ = format.channelCount;
-  interleaveScratch_.assign(
+  interleavedHolder_.assign(
       static_cast<size_t>(format.maxFramesPerBuffer) * static_cast<size_t>(inputChannelCount_),
       0.0F);
 
@@ -247,8 +249,8 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
 
   fileWriter_->closeFile();
 
-  auto result =
-      fileWriter_->openFile(format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
+  auto result = fileWriter_->openFile(
+      format.sampleRate, format.channelCount, format.maxFramesPerBuffer, nextReopenedFileStem());
   if (result.is_err()) {
     fileOutputConfigured_.store(false, std::memory_order_release);
     return Result<NoneType, std::string>::Err(
@@ -380,7 +382,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   // The audio thread reads these before taking any consumer mutex, so they may only be
   // touched while the input is disarmed — i.e. here and in stop().
   inputChannelCount_ = streamFormat.channelCount;
-  interleaveScratch_.assign(maxInputBufferLength * static_cast<size_t>(inputChannelCount_), 0.0F);
+  interleavedHolder_.assign(maxInputBufferLength * static_cast<size_t>(inputChannelCount_), 0.0F);
   lastCallbackFrameCount_.store(0, std::memory_order_release);
   bool fileWasOpened = false;
 
@@ -447,7 +449,7 @@ AudioRecorder::StopResult IOSAudioRecorder::stop()
 
     [nativeRecorder_ setInputArmed:false];
     // Safe only because the input is now disarmed: the audio thread reads these unlocked.
-    interleaveScratch_.clear();
+    interleavedHolder_.clear();
     inputChannelCount_ = 0;
     state_.store(RecorderState::Idle, std::memory_order_release);
     lastCallbackFrameCount_.store(0, std::memory_order_release);
