@@ -6646,6 +6646,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"docs-theme@file:../docs-theme::locator=internaldocs%40workspace%3A.":
+  version: 0.0.0
+  resolution: "docs-theme@file:../docs-theme#../docs-theme::hash=38a543&locator=internaldocs%40workspace%3A."
+  checksum: 10/4fa6c8e805c8209754ec9f72daedcf9ba7843d3525ac718c9af75129c3b733f2a2dfa0eec1895de65265a8582516545294bb289a4b5cd8486627cf8421d4cddc
+  languageName: node
+  linkType: hard
+
 "dom-converter@npm:^0.2.0":
   version: 0.2.0
   resolution: "dom-converter@npm:0.2.0"
@@ -8288,6 +8295,7 @@ __metadata:
     babel-loader: "npm:^9.2.1"
     clsx: "npm:^2.1.0"
     copy-text-to-clipboard: "npm:^3.2.2"
+    docs-theme: "file:../docs-theme"
     prism-react-renderer: "npm:^2.1.0"
     react: "npm:^19.1.1"
     react-dom: "npm:^19.1.1"
