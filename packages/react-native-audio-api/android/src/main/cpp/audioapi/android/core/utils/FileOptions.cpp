@@ -1,12 +1,9 @@
 #include <android/log.h>
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/system/NativeFileInfo.hpp>
-#include <audioapi/encoding/EncoderCapabilities.h>
 #include <audioapi/utils/AudioFileProperties.h>
-#include <chrono>
 #include <filesystem>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <string>
 
@@ -32,11 +29,6 @@ Result<NoneType, std::string> createDirectoryIfNotExists(const std::string &dire
   return Result<NoneType, std::string>::Ok(None);
 }
 
-std::string getTimestampString() {
-  auto tNow = std::chrono::system_clock::now();
-  return std::format("{:%Y%m%d_%H%M%S}", std::chrono::floor<std::chrono::seconds>(tNow));
-}
-
 std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->directory) {
     case AudioFileProperties::FileDirectory::Document:
@@ -47,17 +39,11 @@ std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties)
   }
 }
 
-std::string getFileExtension(const std::shared_ptr<AudioFileProperties> &properties) {
-  return std::string(EncoderCapabilities::specForFormat(properties->format).extension);
-}
-
 Result<std::string, std::string> getFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
-    const std::string &fileNameOverride) {
+    const std::string &fileName) {
   std::string directory = getDirectory(properties);
   std::string subDirectory = std::format("{}/{}", directory, properties->subDirectory);
-  std::string fileTimestamp = getTimestampString();
-  std::string extension = getFileExtension(properties);
 
   auto result = createDirectoryIfNotExists(subDirectory);
 
@@ -65,12 +51,7 @@ Result<std::string, std::string> getFilePath(
     return Result<std::string, std::string>::Err(result.unwrap_err());
   }
 
-  auto filePath = !fileNameOverride.empty() && properties->rotateIntervalBytes == 0
-      ? std::format("{}/{}.{}", subDirectory, fileNameOverride, extension)
-      : std::format(
-            "{}/{}_{}.{}", subDirectory, properties->fileNamePrefix, fileTimestamp, extension);
-
-  return Result<std::string, std::string>::Ok(filePath);
+  return Result<std::string, std::string>::Ok(std::format("{}/{}", subDirectory, fileName));
 }
 
 } // namespace audioapi::android::fileoptions

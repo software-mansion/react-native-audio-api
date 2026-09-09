@@ -21,17 +21,17 @@ class AudioFileProperties;
 
 using ResolveFilePathResult = Result<std::string, std::string>;
 
-/// Resolves the absolute output path for a recording and creates its directory.
+/// Places @p fileName in the recording directory the properties select, creating it.
 inline ResolveFilePathResult resolveOsFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
-    const std::string &fileNameOverride) {
+    const std::string &fileName) {
 #if defined(__ANDROID__)
-  return android::fileoptions::getFilePath(properties, fileNameOverride);
+  return android::fileoptions::getFilePath(properties, fileName);
 #elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)
-  return ios_filepath::resolveFilePath(properties, fileNameOverride);
+  return ios_filepath::resolveFilePath(properties, fileName);
 #else
   (void)properties;
-  (void)fileNameOverride;
+  (void)fileName;
   return ResolveFilePathResult::Err("File path resolution requires iOS or Android.");
 #endif
 }

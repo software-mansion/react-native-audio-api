@@ -100,9 +100,7 @@ const Record: FC = () => {
       return;
     }
 
-    const result = await Recorder.start({
-      fileNameOverride: `overridden_name_${Date.now()}`,
-    });
+    const result = await Recorder.start();
 
     setupNotification(false);
 
@@ -280,6 +278,7 @@ const Record: FC = () => {
     Recorder.enableFileOutput({
       rotateIntervalBytes: ROTATING_SIZE,
       format: RECORDING_EXTENSION,
+      fileName: 'my_recording'
     });
 
     return () => {

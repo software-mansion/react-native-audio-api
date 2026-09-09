@@ -1,7 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-#include <audioapi/encoding/EncoderCapabilities.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
@@ -43,15 +42,6 @@ NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &pr
   return properties->flacCompressionLevel;
 }
 
-/// @brief Retrieves the file extension based on AudioFileProperties format.
-/// @param properties Shared pointer to AudioFileProperties.
-/// @returns NSString representing the file extension.
-NSString *getFileExtension(const std::shared_ptr<AudioFileProperties> &properties)
-{
-  EncoderOutputSpec spec = EncoderCapabilities::specForFormat(properties->format);
-  return [NSString stringWithUTF8String:std::string(spec.extension).c_str()];
-}
-
 /// @brief Retrieves the bit depth from AudioFileProperties.
 /// @param properties Shared pointer to AudioFileProperties.
 /// @returns NSInteger representing the bit depth.
@@ -65,8 +55,6 @@ NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
       return 24;
 
     case AudioFileProperties::BitDepth::Bit32:
-      return 32;
-
     default:
       return 32;
   }
@@ -74,7 +62,7 @@ NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
 
 NSURL *getFileURL(
     const std::shared_ptr<AudioFileProperties> &properties,
-    const std::string &fileNameOverride)
+    const std::string &fileName)
 {
   NSError *error = nil;
 
@@ -95,17 +83,8 @@ NSURL *getFileURL(
     directoryURL = baseURL;
   }
 
-  NSString *fileNamePrefix = [NSString stringWithUTF8String:properties->fileNamePrefix.c_str()];
-  NSString *timestamp = getTimestampString();
-  NSString *fileExtension = getFileExtension(properties);
-
-  NSString *fileName = fileNameOverride.length() > 0 && properties->rotateIntervalBytes == 0
-      ? [NSString stringWithFormat:@"%@.%@",
-                                   [NSString stringWithUTF8String:fileNameOverride.c_str()],
-                                   fileExtension]
-      : [NSString stringWithFormat:@"%@_%@.%@", fileNamePrefix, timestamp, fileExtension];
-
-  return [directoryURL URLByAppendingPathComponent:fileName];
+  return
+      [directoryURL URLByAppendingPathComponent:[NSString stringWithUTF8String:fileName.c_str()]];
 }
 
 NSSearchPathDirectory getDirectory(const std::shared_ptr<AudioFileProperties> &properties)
@@ -115,20 +94,9 @@ NSSearchPathDirectory getDirectory(const std::shared_ptr<AudioFileProperties> &p
       return NSDocumentDirectory;
 
     case AudioFileProperties::FileDirectory::Cache:
-      return NSCachesDirectory;
-
     default:
       return NSCachesDirectory;
   }
-}
-
-NSString *getTimestampString()
-{
-  NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-  fmt.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-  fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"]; // or local if you prefer
-  fmt.dateFormat = @"yyyyMMdd_HHmmss";
-  return [fmt stringFromDate:[NSDate date]];
 }
 
 } // namespace audioapi::ios::fileoptions

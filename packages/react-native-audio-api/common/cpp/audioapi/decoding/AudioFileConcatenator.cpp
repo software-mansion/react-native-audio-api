@@ -412,7 +412,7 @@ std::shared_ptr<AudioFileProperties> makeFlacOutputProperties(
   return std::make_shared<AudioFileProperties>(
       AudioFileProperties::FileDirectory::Cache,
       /*subDirectory*/ std::string(),
-      /*fileNamePrefix*/ std::string(),
+      /*fileName*/ std::string(),
       static_cast<int>(channels),
       /*rotateIntervalBytes*/ 0,
       AudioFileProperties::Format::FLAC,

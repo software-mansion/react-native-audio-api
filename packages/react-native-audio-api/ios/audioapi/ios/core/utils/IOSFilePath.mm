@@ -14,10 +14,10 @@ namespace audioapi::ios_filepath {
 
 ResolveFilePathResult resolveFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
-    const std::string &fileNameOverride)
+    const std::string &fileName)
 {
   @autoreleasepool {
-    NSURL *fileURL = ios::fileoptions::getFileURL(properties, fileNameOverride);
+    NSURL *fileURL = ios::fileoptions::getFileURL(properties, fileName);
     if (fileURL == nil) {
       return ResolveFilePathResult::Err("Could not resolve an output path for the recording");
     }

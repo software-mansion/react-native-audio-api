@@ -57,6 +57,8 @@ class RotatingFileWriter final : public AudioFileWriter {
   OnSegmentFileOpenedCallback onSegmentFileOpened_;
   size_t rotateIntervalBytes_;
   size_t writesSinceLastCheck_ = 0;
+  std::string sessionStem_;
+  size_t segmentIndex_ = 0;
   std::shared_ptr<AudioFileWriter> currentWriter_;
 
   double cumulativeSizeMB_{0.0};

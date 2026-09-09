@@ -81,7 +81,7 @@ async function finalizeRotatedRecording() {
 
   audioRecorder.enableFileOutput({
     directory: FileDirectory.Cache,
-    fileNamePrefix: 'meeting',
+    fileName: 'meeting',
     format: FileFormat.M4A,
     rotateIntervalBytes: 8 * 1024 * 1024,
   });

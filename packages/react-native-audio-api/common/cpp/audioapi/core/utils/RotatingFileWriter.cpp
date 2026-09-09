@@ -1,5 +1,7 @@
 #include <audioapi/core/utils/RotatingFileWriter.h>
 
+#include <audioapi/core/utils/RecordingFileName.h>
+
 #include <memory>
 #include <string>
 #include <tuple>
@@ -23,13 +25,12 @@ OpenFileResult RotatingFileWriter::openFile(
     int32_t streamChannelCount,
     int32_t maxFramesPerBuffer,
     const std::string &fileNameOverride) {
+  sessionStem_ = fileNameOverride;
+  segmentIndex_ = 0;
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   maxFramesPerBuffer_ = maxFramesPerBuffer;
 
-  if (!fileNameOverride.empty()) {
-    fileProperties_->fileNamePrefix = fileNameOverride + fileProperties_->fileNamePrefix;
-  }
   if (currentWriter_ == nullptr) {
     currentWriter_ = writerFactory_(fileProperties_);
   }
@@ -114,8 +115,11 @@ OpenFileResult RotatingFileWriter::rotateFiles() {
 }
 
 OpenFileResult RotatingFileWriter::openInnerWriter() {
-  auto result =
-      currentWriter_->openFile(streamSampleRate_, streamChannelCount_, maxFramesPerBuffer_, "");
+  auto result = currentWriter_->openFile(
+      streamSampleRate_,
+      streamChannelCount_,
+      maxFramesPerBuffer_,
+      recordingfilename::segmentStem(sessionStem_, ++segmentIndex_));
   if (result.is_ok() && onSegmentFileOpened_) {
     onSegmentFileOpened_(currentWriter_->getFilePath());
   }

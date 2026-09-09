@@ -6,6 +6,12 @@
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+
+#include <format>
+
 #include <sys/stat.h>
 #include <cstdio>
 #include <cstring>
@@ -58,11 +64,25 @@ OpenFileResult EncodedAudioFileWriter::openFile(
   }
   const auto &outputSpec = specResult.unwrap();
 
-  auto filePathResult = resolveOsFilePath(fileProperties_, fileNameOverride);
+  auto filePathResult = resolveOsFilePath(
+      fileProperties_, std::format("{}.{}", fileNameOverride, outputSpec.extension));
   if (filePathResult.is_err()) {
     return OpenFileResult::Err(filePathResult.unwrap_err());
   }
   filePath_ = filePathResult.unwrap();
+
+  struct stat existing{};
+  if (::stat(filePath_.c_str(), &existing) == 0) {
+#ifdef ANDROID
+    __android_log_print(
+        ANDROID_LOG_WARN,
+        "RN_AUDIOAPI",
+        "recording overwrites an existing file: %s",
+        filePath_.c_str());
+#else
+    printf("[RN_AUDIOAPI WARN] recording overwrites an existing file: %s\n", filePath_.c_str());
+#endif
+  }
 
   const StreamFormat inputFormat{
       .sampleRate = streamSampleRate,

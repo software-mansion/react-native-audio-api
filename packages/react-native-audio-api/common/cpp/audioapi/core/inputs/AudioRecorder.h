@@ -38,7 +38,7 @@ class AudioRecorder {
   DELETE_COPY_AND_MOVE(AudioRecorder);
   virtual ~AudioRecorder() = default;
 
-  virtual Result<NoneType, std::string> start(const std::string &fileNameOverride) = 0;
+  virtual Result<NoneType, std::string> start() = 0;
   virtual StopResult stop() = 0;
 
   Result<NoneType, std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties);
@@ -107,8 +107,7 @@ class AudioRecorder {
   /// Opens the output file for the live input format and publishes the writer to the audio
   /// thread. The caller must hold fileWriterMutex_.
   Result<NoneType, std::string> setupFileWriter(
-      const std::shared_ptr<AudioFileProperties> &properties,
-      const std::string &fileNameOverride = "");
+      const std::shared_ptr<AudioFileProperties> &properties);
 
   /// Sizes the adapter node and the deinterleaving scratch for @p format.
   /// The caller must hold adapterNodeMutex_.

@@ -248,7 +248,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   fileWriter_->closeFile();
 
   auto result =
-      fileWriter_->openFile(format.sampleRate, format.channelCount, format.maxFramesPerBuffer, "");
+      fileWriter_->openFile(format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
   if (result.is_err()) {
     fileOutputConfigured_.store(false, std::memory_order_release);
     return Result<NoneType, std::string>::Err(
@@ -305,7 +305,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
 /// @brief Starts the audio recording process and prepares necessary resources.
 /// This method should be called from the JS thread only.
 /// @returns Result containing the file path if recording started successfully, or an error message.
-Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNameOverride)
+Result<NoneType, std::string> IOSAudioRecorder::start()
 {
   if (!isIdle()) {
     return Result<NoneType, std::string>::Err("Recorder is already recording");
@@ -386,7 +386,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start(const std::string &fileNam
 
   if (wantsFileOutput()) {
     recordingSegmentPaths_.clear();
-    auto writerResult = setupFileWriter(fileProperties_, fileNameOverride);
+    auto writerResult = setupFileWriter(fileProperties_);
     if (!writerResult.is_ok()) {
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
       return Result<NoneType, std::string>::Err(writerResult.unwrap_err());

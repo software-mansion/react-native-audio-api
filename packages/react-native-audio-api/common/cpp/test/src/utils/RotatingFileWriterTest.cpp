@@ -27,12 +27,13 @@ class StubFileWriter final : public AudioFileWriter {
       float streamSampleRate,
       int32_t streamChannelCount,
       int32_t maxFramesPerBuffer,
-      const std::string & /*fileNameOverride*/) override {
+      const std::string &fileNameOverride) override {
     if (open_) {
       return OpenFileResult::Err("file already open");
     }
     open_ = true;
     ++openCount;
+    openedStems.push_back(fileNameOverride);
     lastSampleRate = streamSampleRate;
     lastChannelCount = streamChannelCount;
     lastMaxFramesPerBuffer = maxFramesPerBuffer;
@@ -61,6 +62,7 @@ class StubFileWriter final : public AudioFileWriter {
   }
 
   int openCount = 0;
+  std::vector<std::string> openedStems;
   float lastSampleRate = 0.0F;
   int32_t lastChannelCount = 0;
   int32_t lastMaxFramesPerBuffer = 0;
@@ -112,7 +114,7 @@ class RotatingFileWriterTest : public ::testing::Test {
 };
 
 TEST_F(RotatingFileWriterTest, ReprepareStreamFormatOpensSegmentWithNewFormat) {
-  auto openResult = rotatingWriter_->openFile(48000.0F, 2, 128, "");
+  auto openResult = rotatingWriter_->openFile(48000.0F, 2, 128, "session");
   ASSERT_TRUE(openResult.is_ok());
   EXPECT_EQ(openResult.unwrap(), "segment1");
 
@@ -130,8 +132,17 @@ TEST_F(RotatingFileWriterTest, ReprepareStreamFormatOpensSegmentWithNewFormat) {
   EXPECT_EQ(openedSegmentPaths_, expectedPaths);
 }
 
+TEST_F(RotatingFileWriterTest, SegmentsAreNumberedFromTheSessionStem) {
+  ASSERT_TRUE(rotatingWriter_->openFile(48000.0F, 2, 128, "session").is_ok());
+  ASSERT_TRUE(rotatingWriter_->reprepareStreamFormat(44100.0F, 1, 256).is_ok());
+
+  ASSERT_NE(stubWriter_, nullptr);
+  const std::vector<std::string> expectedStems{"session_001", "session_002"};
+  EXPECT_EQ(stubWriter_->openedStems, expectedStems);
+}
+
 TEST_F(RotatingFileWriterTest, ReprepareStreamFormatPreservesCumulativeTotals) {
-  ASSERT_TRUE(rotatingWriter_->openFile(48000.0F, 2, 128, "").is_ok());
+  ASSERT_TRUE(rotatingWriter_->openFile(48000.0F, 2, 128, "session").is_ok());
   ASSERT_TRUE(rotatingWriter_->reprepareStreamFormat(44100.0F, 1, 256).is_ok());
 
   auto closeResult = rotatingWriter_->closeFile();

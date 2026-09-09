@@ -39,7 +39,7 @@ class IOSAudioRecorder : public AudioRecorder {
 
   DELETE_COPY_AND_MOVE(IOSAudioRecorder);
 
-  Result<NoneType, std::string> start(const std::string &fileNameOverride = "") override;
+  Result<NoneType, std::string> start() override;
   StopResult stop() override;
 
   void pause() override;

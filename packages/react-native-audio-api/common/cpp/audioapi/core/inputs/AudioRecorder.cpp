@@ -1,9 +1,11 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
+
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/EncodedAudioFileWriter.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/core/utils/RecordingFileName.h>
 #include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
@@ -120,11 +122,9 @@ std::shared_ptr<AudioFileWriter> AudioRecorder::createFileWriter(
 /// writer per segment through the same factory.
 /// This method should be called from the JS thread only, with fileWriterMutex_ held.
 /// @param properties Properties defining the audio file format and encoding options.
-/// @param fileNameOverride Name to write under instead of a generated one, if not empty.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AudioRecorder::setupFileWriter(
-    const std::shared_ptr<AudioFileProperties> &properties,
-    const std::string &fileNameOverride) {
+    const std::shared_ptr<AudioFileProperties> &properties) {
   auto formatResult = resolveStreamFormat();
 
   if (!formatResult.is_ok()) {
@@ -153,7 +153,10 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
 
   const auto format = formatResult.unwrap();
   auto fileResult = fileWriter_->openFile(
-      format.sampleRate, format.channelCount, format.maxFramesPerBuffer, fileNameOverride);
+      format.sampleRate,
+      format.channelCount,
+      format.maxFramesPerBuffer,
+      recordingfilename::sessionStem(properties));
 
   if (!fileResult.is_ok()) {
     fileOutputConfigured_.store(false, std::memory_order_release);

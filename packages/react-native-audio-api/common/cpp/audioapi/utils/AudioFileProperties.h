@@ -52,7 +52,7 @@ class AudioFileProperties {
   AudioFileProperties(
       FileDirectory directory,
       std::string subDirectory,
-      std::string fileNamePrefix,
+      std::string fileName,
       int channelCount,
       size_t rotateIntervalBytes,
       Format format,
@@ -69,7 +69,7 @@ class AudioFileProperties {
 
   FileDirectory directory;
   std::string subDirectory;
-  std::string fileNamePrefix;
+  std::string fileName;
   int channelCount;
   size_t rotateIntervalBytes;
   Format format;

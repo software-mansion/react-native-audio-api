@@ -11,7 +11,7 @@ namespace audioapi {
 AudioFileProperties::AudioFileProperties(
     FileDirectory directory,
     std::string subDirectory,
-    std::string fileNamePrefix,
+    std::string fileName,
     int channelCount,
     size_t rotateIntervalBytes,
     Format format,
@@ -23,7 +23,7 @@ AudioFileProperties::AudioFileProperties(
     IOSAudioQuality iosAudioQuality)
     : directory(directory),
       subDirectory(std::move(subDirectory)),
-      fileNamePrefix(std::move(fileNamePrefix)),
+      fileName(std::move(fileName)),
       channelCount(channelCount),
       rotateIntervalBytes(rotateIntervalBytes),
       format(format),
@@ -45,8 +45,7 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
   std::string subDirectory =
       options.getProperty(runtime, "subDirectory").asString(runtime).utf8(runtime);
 
-  std::string fileNamePrefix =
-      options.getProperty(runtime, "fileNamePrefix").asString(runtime).utf8(runtime);
+  std::string fileName = options.getProperty(runtime, "fileName").asString(runtime).utf8(runtime);
 
   int channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
 
@@ -77,7 +76,7 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
   return std::make_shared<AudioFileProperties>(
       directory,
       subDirectory,
-      fileNamePrefix,
+      fileName,
       channelCount,
       rotateIntervalBytes,
       format,

@@ -384,16 +384,10 @@ const audioRecorder = new AudioRecorder({
 
 Starts the stream from the system audio input device.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `options` <Optional /> | [`AudioRecorderStartOptions`](#audiorecorderstartoptions) | Optional recording start configuration. |
-
 ###### Returns `Promise<Result<{}>>`.
 
 ```tsx
-const result = await audioRecorder.start({
-  fileNameOverride: `my_audio_${mySessionId}`,
-});
+const result = await audioRecorder.start();
 
 console.log(result.status);
 ```
@@ -607,18 +601,6 @@ type AndroidInputPreset =
 
 Names of Oboe's [`InputPreset`](https://github.com/google/oboe/blob/0da326e4ef878eac0c032e11ea84ca0a6811aafd/include/oboe/Definitions.h#L470) values, which select the preprocessing chain the capture stream is opened with.
 
-#### `AudioRecorderStartOptions`
-
-```tsx
-interface AudioRecorderStartOptions {
-  fileNameOverride?: string;
-}
-```
-
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `fileNameOverride` <Optional /> | `string` | Custom file name used when recording to file. |
-
 #### AudioRecorderCallbackOptions
 
 ```tsx
@@ -675,7 +657,7 @@ interface AudioRecorderFileOptions {
 
   directory?: FileDirectory;
   subDirectory?: string;
-  fileNamePrefix?: string;
+  fileName?: string;
   androidFlushIntervalMs?: number;
 }
 ```
@@ -689,10 +671,40 @@ interface AudioRecorderFileOptions {
 - `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
 - `subDirectory` - If configured it will create the recording inside requested directory (default: `undefined`).
-- `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
+- `fileName` - Names the output file outright. Left unset, the library generates `recording_<timestamp>`. See [File naming](#file-naming) below.
 - <span id="androidflushintervalms"></span>`androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
   - Higher values are more battery - and storage-efficient.
+
+#### File naming
+
+`fileName` names the output file outright. Left unset, the library generates a name that is
+unique by construction. Rotation appends a segment index either way, because one recording
+then spans several files.
+
+| `fileName` | `rotateIntervalBytes` | Resulting file(s) |
+| :--- | :--- | :--- |
+| — | `0` | `recording_20260909_101500.wav` |
+| `session-42` | `0` | `session-42.wav` |
+| — | `> 0` | `recording_20260909_101500_001.wav`, `_002`, … |
+| `session-42` | `> 0` | `session-42_001.wav`, `session-42_002.wav`, … |
+
+The generated timestamp is taken once per recording, in local time, so every segment of one
+rotated recording shares it and only the index differs.
+
+`fileName` has to be a bare name: no extension (it follows from `format`), no path
+separators and no `..`.
+
+The segment index is padded to three digits and keeps counting beyond that (`_999`,
+`_1000`, …). Names stay unique; only their lexicographic order breaks past 999 segments —
+`stop()` still returns `paths` in recording order.
+
+:::caution
+`fileName` puts you in charge of telling recordings apart. An existing file of the same name
+is **overwritten**, with a warning in the native log, and two recordings started under the
+same `fileName` overwrite each other — with rotation, segment by segment, since numbering
+restarts at `_001` every time. Make the name unique per recording yourself.
+:::
 
 #### FileFormat
 

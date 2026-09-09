@@ -18,7 +18,7 @@ using ResolveFilePathResult = Result<std::string, std::string>;
 /// from common code because it names Objective-C types unconditionally.
 [[nodiscard]] ResolveFilePathResult resolveFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
-    const std::string &fileNameOverride);
+    const std::string &fileName);
 
 } // namespace ios_filepath
 
