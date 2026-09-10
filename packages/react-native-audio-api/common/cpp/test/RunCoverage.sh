@@ -76,7 +76,7 @@ coverage_report="$("$LLVM_COV" report \
   --instr-profile="$PROFDATA_FILE" \
   --ignore-filename-regex="$IGNORE_FILENAME_REGEX")"
 
-echo "$coverage_report"
+echo "$coverage_report" | tee "$BUILD_DIR/llvm-cov-report.txt"
 
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   {
