@@ -43,6 +43,13 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, numberOfChannels) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
+  // The returned Float32Array is a live, JS-writable view straight into
+  // audioBuffer_'s storage, and the caller can hold onto it indefinitely.
+  // Any cached copy handed to a source node from here on can no longer be
+  // trusted to stay in sync, so stop caching for the rest of this buffer's
+  // lifetime.
+  immutableCopyCache_.markLiveViewEscaped();
+
   auto channel = static_cast<int>(args[0].getNumber());
   auto audioArrayBuffer = audioBuffer_->getSharedChannel(channel);
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
@@ -76,6 +83,9 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyFromChannel) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyToChannel) {
+  // Mutates audioBuffer_ in place, so any previously cached copy is now stale.
+  immutableCopyCache_.invalidate();
+
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto *source = reinterpret_cast<float *>(arrayBuffer.data(runtime));

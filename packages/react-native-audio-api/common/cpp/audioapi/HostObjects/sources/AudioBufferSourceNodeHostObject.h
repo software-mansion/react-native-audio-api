@@ -51,7 +51,9 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   double loopStart_;
   double loopEnd_;
 
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+  void setBuffer(
+      const std::shared_ptr<AudioBuffer> &buffer,
+      const std::shared_ptr<AudioBufferHostObject> &bufferHostObject = nullptr);
 };
 
 } // namespace audioapi

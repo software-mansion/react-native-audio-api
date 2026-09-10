@@ -147,13 +147,15 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
     thisValue.asObject(runtime).setExternalMemoryPressure(
         runtime, getMemoryPressure() + bufferHostObject->getSizeInBytes());
 
-    setBuffer(bufferHostObject->audioBuffer_);
+    setBuffer(bufferHostObject->audioBuffer_, bufferHostObject);
   }
 
   return jsi::Value::undefined();
 }
 
-void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
+void AudioBufferSourceNodeHostObject::setBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    const std::shared_ptr<AudioBufferHostObject> &bufferHostObject) {
   // TODO: add optimized memory management for buffer changes, e.g.
   //  when the same buffer is reused across threads and
   // buffer modification is not allowed on JS thread
@@ -180,6 +182,12 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
           totalSize, buffer->getNumberOfChannels(), buffer->getSampleRate());
       copiedBuffer->copy(*buffer, 0, 0, buffer->getSize());
       copiedBuffer->zero(buffer->getSize(), extraTailFrames);
+    } else if (bufferHostObject != nullptr) {
+      // Reuse a cached copy across repeated `.buffer = x` reassignments of the same
+      // JS-visible buffer (e.g. seeking, which recreates the source node but keeps
+      // reusing the already-decoded buffer) instead of deep-copying every time.
+      // See https://github.com/software-mansion/react-native-audio-api/issues/1263.
+      copiedBuffer = bufferHostObject->getOrCreateImmutableCopy();
     } else {
       copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
     }
