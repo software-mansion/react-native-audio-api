@@ -25,6 +25,24 @@
         "default": "./lib/commonjs/index.js"
       }
     },
+    "./mock": {
+      "react-native": {
+        "types": "./lib/typescript/module/mock/index.d.ts",
+        "default": "./lib/module/mock/index.js"
+      },
+      "module": {
+        "types": "./lib/typescript/module/mock/index.d.ts",
+        "default": "./lib/module/mock/index.js"
+      },
+      "module-sync": {
+        "types": "./lib/typescript/module/mock/index.d.ts",
+        "default": "./lib/module/mock/index.js"
+      },
+      "default": {
+        "types": "./lib/typescript/commonjs/mock/index.d.ts",
+        "default": "./lib/commonjs/mock/index.js"
+      }
+    },
     "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
   },

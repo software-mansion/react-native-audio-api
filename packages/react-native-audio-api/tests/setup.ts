@@ -1,5 +1,5 @@
 // __tests__/setup.ts
-import type { IAudioEventEmitter } from '../src/interfaces';
+import type { IAudioEventEmitter } from '../src/jsi-interfaces';
 
 // Mock global objects that might be needed
 globalThis.createAudioContext = jest.fn();
