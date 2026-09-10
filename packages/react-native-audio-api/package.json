@@ -97,7 +97,7 @@
     "test:cpp:full": "bash common/cpp/test/run-tests.sh full",
     "test:cpp:coverage": "bash common/cpp/test/run-coverage.sh",
     "test:full": "yarn test:js && yarn test:cpp:full",
-    "test:graph:docker": "bash common/cpp/test/run-tests-graph-docker.sh",
+    "test:cpp:docker": "bash common/cpp/test/run-tests-docker.sh",
     "build:android": "cd ../../apps/fabric-example/android && ./gradlew :react-native-audio-api:assembleDebug",
     "build:ios": "cd ../../apps/fabric-example/ios && pod install && xcodebuild build -workspace FabricExample.xcworkspace -scheme FabricExample -destination 'generic/platform=iOS Simulator' -quiet",
     "typecheck": "tsc --noEmit",

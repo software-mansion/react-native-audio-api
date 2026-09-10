@@ -36,4 +36,4 @@ Filters: [`filters.sh`](filters.sh). Override: `GTEST_FILTER=...`.
 
 ### Docker (Linux leak / ASan)
 
-`yarn test:graph:docker` runs `run-tests.sh` in Docker (default `extended graph`). Extra args are forwarded. Use this from macOS when you need Linux ASan leak detection.
+`yarn test:cpp:docker` runs `run-tests.sh` in Docker (default `extended`). Extra args are forwarded. Use this from macOS when you need Linux ASan leak detection.

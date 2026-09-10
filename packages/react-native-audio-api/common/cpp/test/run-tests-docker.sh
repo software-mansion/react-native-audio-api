@@ -2,17 +2,18 @@
 
 print_help() {
   cat <<'EOF'
-Usage: run-tests-graph-docker.sh [run-tests.sh args…]
+Usage: run-tests-docker.sh [run-tests.sh args…]
 
 Thin Docker wrapper around run-tests.sh (Linux leak/ASan parity from macOS).
 Forwards all arguments into the container. If none are given, runs:
-  extended graph
+  extended
 
 Examples:
-  run-tests-graph-docker.sh
-  run-tests-graph-docker.sh extended graph --tsan
-  run-tests-graph-docker.sh --help   # this help (container not started)
-  GTEST_FILTER='GraphTest.*' run-tests-graph-docker.sh extended graph
+  run-tests-docker.sh
+  run-tests-docker.sh extended --tsan
+  run-tests-docker.sh extended graph --tsan
+  run-tests-docker.sh --help   # this help (container not started)
+  GTEST_FILTER='GraphTest.*' run-tests-docker.sh extended graph
 
 See run-tests.sh --help and TESTING.md.
 EOF
@@ -23,8 +24,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../.." && pwd)"
 
-IMAGE_NAME=asan-graph-test
-CONTAINER_NAME=asan-graph-test-container
+IMAGE_NAME=cpp-tests
+CONTAINER_NAME=cpp-tests-container
 
 if [[ $# -eq 1 && ( "$1" == "--help" || "$1" == "-h" ) ]]; then
   print_help
@@ -32,7 +33,7 @@ if [[ $# -eq 1 && ( "$1" == "--help" || "$1" == "-h" ) ]]; then
 fi
 
 if [[ $# -eq 0 ]]; then
-  set -- extended graph
+  set -- extended
 fi
 
 docker build -t "$IMAGE_NAME" "${SCRIPT_DIR}"
