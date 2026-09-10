@@ -63,7 +63,10 @@ class RecordingNotification(
   override fun show(options: ReadableMap?): Notification {
     initializeNotification()
     val context = reactContext.get() ?: throw IllegalStateException("React context is null")
-    parseMapFromRN(options)
+    if (options !== state.cachedRNOptions) {
+      state.cachedRNOptions = options
+      parseMapFromRN(options)
+    }
     return buildNotification(context)
   }
 
@@ -229,8 +232,7 @@ class RecordingNotification(
     state.stopActionTitle = options.stringOr("stopActionTitle", state.stopActionTitle)
     state.deepLinkUri = options.stringOr("deepLinkUri", state.deepLinkUri)
     state.usesChronometer = options.boolOr("usesChronometer", state.usesChronometer)
-    // Deliberately not sticky — see the [RecordingNotificationState] KDoc.
-    state.paused = options.boolOr("paused", false)
+    state.paused = options.boolOr("paused", state.paused)
   }
 
   private fun ReadableMap?.stringOr(
@@ -267,16 +269,21 @@ class RecordingNotification(
   }
 
   override fun hide() {
-    val context = reactContext.get() ?: throw IllegalStateException("React context is null")
-    if (state.receiver != null) {
-      context.unregisterReceiver(state.receiver)
-      state.receiver = null
+    try {
+      val context = reactContext.get() ?: throw IllegalStateException("React context is null")
+      state.receiver?.let {
+        context.unregisterReceiver(it)
+        state.receiver = null
+      }
+      val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      notificationManager.cancel(notificationId)
+    } finally {
+      state.initialized = false
+      state.startedAtMs = null
+      state.pausedAtMs = null
+      state.paused = false
+      state.cachedRNOptions = null
     }
-    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    notificationManager.cancel(notificationId)
-    state.initialized = false
-    state.startedAtMs = null
-    state.pausedAtMs = null
   }
 
   override fun getNotificationId(): Int = notificationId

@@ -4,6 +4,7 @@ import {
   AudioBufferSourceNode,
   AudioManager,
   AudioRecorder,
+  concatAudioFiles,
   FileFormat,
   RecordingNotificationManager,
 } from 'react-native-audio-api';
@@ -131,7 +132,15 @@ const Record: FC = () => {
     async (paths: string[]) => {
       setState(RecordingState.Loading);
 
-      const audioBuffer = await audioContext.decodeAudioData(paths[0]);
+      const finalPath =
+        paths.length > 1
+          ? await concatAudioFiles(
+              paths,
+              paths[0].replace(/[^/]+$/, 'recording.wav')
+            )
+          : paths[0];
+
+      const audioBuffer = await audioContext.decodeAudioData(finalPath);
       setRecordedBuffer(audioBuffer);
 
       setState(RecordingState.ReadyToPlay);

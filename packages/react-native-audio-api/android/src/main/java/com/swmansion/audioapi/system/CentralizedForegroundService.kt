@@ -34,6 +34,11 @@ class CentralizedForegroundService : Service() {
 
   override fun onBind(intent: Intent?): IBinder? = null
 
+  override fun onCreate() {
+    super.onCreate()
+    ForegroundServiceManager.onServiceCreated()
+  }
+
   override fun onStartCommand(
     intent: Intent?,
     flags: Int,
@@ -45,8 +50,11 @@ class CentralizedForegroundService : Service() {
       }
 
       ACTION_STOP -> {
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        if (stopSelfResult(startId)) {
+          stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+          Log.d(TAG, "Stop superseded by a newer start request, service stays in the foreground")
+        }
       }
     }
     return START_NOT_STICKY
@@ -102,7 +110,9 @@ class CentralizedForegroundService : Service() {
     } finally {
       // The service must exit even when startForeground throws (e.g. API 34+
       // ForegroundServiceStartNotAllowedException) — otherwise the system kills the
-      // process with ForegroundServiceDidNotStartInTimeException.
+      // process with ForegroundServiceDidNotStartInTimeException. Unlike ACTION_STOP this
+      // exit is unconditional, because there is nothing to keep in the foreground; a start
+      // racing it is picked up again by ForegroundServiceManager.onServiceDestroyed.
       stopForeground(STOP_FOREGROUND_REMOVE)
       stopSelf()
     }
