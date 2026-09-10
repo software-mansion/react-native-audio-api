@@ -235,7 +235,6 @@ CI intentionally skips native Android/iOS builds (expensive). Use the tiered loc
 yarn validate:fast      # CI parity (format, lint, typecheck, enum sync, build, C++ + JS tests)
 yarn validate:cpp       # C++ smoke
 yarn validate:cpp-extended  # C++ extended (all categories)
-yarn validate:graph     # legacy alias: extended category graph only
 yarn validate:android   # yarn workspace … build:android
 yarn validate:ios       # yarn workspace … build:ios (macOS only)
 yarn validate:full      # --fast + C++ extended + --android + --ios
@@ -251,7 +250,7 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 | C++ smoke (`run-tests.sh`) | Yes | `--fast` |
 | C++ coverage (`run-coverage.sh`, smoke, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
 | Jest | Yes | `--fast` |
-| Extended C++ by category (e.g. graph) | Path change or manual dispatch in `tests.yml` | `--cpp-extended` / `--graph` |
+| Extended C++ by category (e.g. graph) | Path change or manual dispatch in `tests.yml` | `--cpp-extended` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
 | Android JNI C++ + Kotlin | **No** | `--android` |
 | iOS ObjC++ | **No** | `--ios` |
@@ -294,7 +293,7 @@ yarn workspace react-native-audio-api test:cpp:smoke|extended|full
 yarn workspace react-native-audio-api test:cpp:extended -- graph
 ```
 
-`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. `yarn test:graph` is a legacy alias for `extended graph`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
+`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
 
 ### Coverage (Clang / llvm-cov)
 

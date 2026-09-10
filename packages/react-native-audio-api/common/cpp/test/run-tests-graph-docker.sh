@@ -43,6 +43,5 @@ docker run --rm -it \
   -w /workspace/packages/react-native-audio-api/common/cpp/test \
   -e ASAN_OPTIONS=detect_leaks=1:verbosity=2 \
   ${GTEST_FILTER:+-e GTEST_FILTER="$GTEST_FILTER"} \
-  ${GRAPH_FILTER:+-e GRAPH_FILTER="$GRAPH_FILTER"} \
   "$IMAGE_NAME" \
   bash run-tests.sh "$@"

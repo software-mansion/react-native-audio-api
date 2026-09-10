@@ -34,6 +34,6 @@ Filters: [`filters.sh`](filters.sh). Override: `GTEST_FILTER=...`.
 
 **Add a category:** (1) filter in `filters.sh`, (2) append name to `CPP_TEST_EXTENDED_CATEGORIES`, (3) in `tests.yml` add a `workflow_dispatch` boolean and one `cpp-extended-*` job that calls `cpp-extended-job.yml` with `categories`, `force`, and that category’s `path_filters`.
 
-### Legacy aliases
+### Docker (Linux leak / ASan)
 
-`yarn test:graph` → `extended graph`. Docker: `yarn test:graph:docker` forwards args to `run-tests.sh` (default `extended graph`). `yarn validate:graph` → extended category `graph` only.
+`yarn test:graph:docker` runs `run-tests.sh` in Docker (default `extended graph`). Extra args are forwarded. Use this from macOS when you need Linux ASan leak detection.

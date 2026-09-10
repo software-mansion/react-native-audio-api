@@ -25,7 +25,6 @@ CI always runs the **fast** tier (format, lint, typecheck, enum sync, TS build, 
 yarn validate:fast          # CI parity — always run before opening a PR
 yarn validate:cpp           # C++ smoke
 yarn validate:cpp-extended  # C++ extended (all categories)
-yarn validate:graph         # legacy alias: extended category graph only
 yarn validate:android       # Android native build (requires ANDROID_HOME)
 yarn validate:ios           # iOS native build (macOS only)
 yarn validate:full          # --fast + C++ extended + --android + --ios
@@ -44,7 +43,7 @@ Equivalent: `./scripts/validate.sh --fast` (etc.)
 | `ios/audioapi/` | `--fast` + `--ios` |
 | `CMakeLists.txt`, `build.gradle`, `podspec` | `--full` |
 
-Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `yarn validate:graph` or `yarn validate:cpp-extended` (extended category `graph`).
+Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `yarn validate:cpp-extended` or `yarn workspace react-native-audio-api test:cpp:extended -- graph`.
 
 ---
 
@@ -75,7 +74,7 @@ Hooks run when lefthook is installed (`lefthook install`).
 
 **If a hook fails, the commit is aborted.** Fix the issue and re-commit — do NOT use `--no-verify`.
 
-There is no pre-push hook — `yarn validate:fast` (and native/C++ extended tiers) are run manually before opening a PR. Native builds (`validate:android`, `validate:ios`, `validate:full`) and extended C++ (`validate:cpp-extended` / legacy `validate:graph`) are never run by lefthook.
+There is no pre-push hook — `yarn validate:fast` (and native/C++ extended tiers) are run manually before opening a PR. Native builds (`validate:android`, `validate:ios`, `validate:full`) and extended C++ (`validate:cpp-extended`) are never run by lefthook.
 
 ---
 
@@ -102,7 +101,6 @@ The Gradle project resolves through the `node_modules/react-native-audio-api` wo
 ### Extended graph (when graph / audio-thread code changes)
 
 ```bash
-yarn validate:graph              # legacy alias: extended category graph
 yarn validate:cpp-extended       # all extended categories
 # or: yarn workspace react-native-audio-api test:cpp:extended -- graph
 ```
@@ -168,7 +166,7 @@ Later steps may surface issues caused by earlier ones — run in this order:
 2. `yarn lint` — catch remaining code issues
 3. `yarn typecheck` — catch TypeScript errors
 4. `yarn validate:fast` — full CI-parity gate (or `yarn test` / `test:cpp` for a quick local loop; always run `--fast` before opening a PR)
-5. `yarn validate:cpp-extended` / `yarn validate:graph` — when graph / audio-thread code changed
+5. `yarn validate:cpp-extended` — when graph / audio-thread code changed
 6. `yarn validate:android` / `yarn validate:ios` / `yarn validate:full` — when native code or build files changed (see decision table above)
 
 ---

@@ -16,10 +16,6 @@ Tiers:
   --full           --fast + C++ extended (all categories) + --android + --ios
                    (C++ full = smoke from --fast + extended; skips unavailable platforms)
 
-Legacy aliases:
-  --graph          Same as C++ extended category graph only
-                   (prefer --cpp-extended, or yarn test:cpp:extended -- graph)
-
 Examples:
   yarn validate:fast
   yarn validate:cpp
@@ -42,7 +38,6 @@ RUN_FAST=false
 RUN_CPP=false
 RUN_CPP_EXTENDED=false
 RUN_CPP_FULL=false
-RUN_GRAPH=false
 RUN_ANDROID=false
 RUN_IOS=false
 RUN_FULL=false
@@ -161,13 +156,6 @@ run_cpp_full() {
   (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:full)
 }
 
-# Legacy alias: extended category graph only.
-run_graph() {
-  log_step "C++ extended category graph (--graph, legacy alias)"
-  run_prebuild_core
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:extended -- graph)
-}
-
 run_android() {
   local allow_skip="${1:-false}"
 
@@ -244,10 +232,6 @@ while [[ $# -gt 0 ]]; do
     --cpp-full)
       RUN_CPP_FULL=true
       ;;
-    --graph)
-      # Legacy alias for extended category graph only.
-      RUN_GRAPH=true
-      ;;
     --android)
       RUN_ANDROID=true
       ;;
@@ -270,7 +254,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if [[ "$RUN_FAST" == false && "$RUN_CPP" == false && "$RUN_CPP_EXTENDED" == false && "$RUN_CPP_FULL" == false && "$RUN_GRAPH" == false && "$RUN_ANDROID" == false && "$RUN_IOS" == false && "$RUN_FULL" == false ]]; then
+if [[ "$RUN_FAST" == false && "$RUN_CPP" == false && "$RUN_CPP_EXTENDED" == false && "$RUN_CPP_FULL" == false && "$RUN_ANDROID" == false && "$RUN_IOS" == false && "$RUN_FULL" == false ]]; then
   print_help >&2
   exit 1
 fi
@@ -293,9 +277,6 @@ if [[ "$RUN_CPP_EXTENDED" == true ]]; then
 fi
 if [[ "$RUN_CPP_FULL" == true ]]; then
   run_cpp_full
-fi
-if [[ "$RUN_GRAPH" == true ]]; then
-  run_graph
 fi
 if [[ "$RUN_ANDROID" == true && "$RUN_FULL" == false ]]; then
   run_android false

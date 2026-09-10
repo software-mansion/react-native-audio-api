@@ -25,7 +25,6 @@
     "validate:cpp": "bash scripts/validate.sh --cpp",
     "validate:cpp-extended": "bash scripts/validate.sh --cpp-extended",
     "validate:cpp-full": "bash scripts/validate.sh --cpp-full",
-    "validate:graph": "bash scripts/validate.sh --graph",
     "validate:android": "bash scripts/validate.sh --android",
     "validate:ios": "bash scripts/validate.sh --ios",
     "validate:full": "bash scripts/validate.sh --full",
