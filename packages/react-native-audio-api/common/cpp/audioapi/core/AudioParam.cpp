@@ -16,7 +16,7 @@ AudioParam::AudioParam(
     : GeneralizedAudioParam(minValue, maxValue, context),
       value_(defaultValue),
       defaultValue_(defaultValue),
-      eventRenderQueue_(defaultValue),
+      eventRenderQueue_(defaultValue, context->getSampleRate()),
       inputBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {}
 
@@ -74,15 +74,19 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   }
 
   float sampleRate = context->getSampleRate();
-  double timeCache = time;
-  double timeStep = 1.0 / sampleRate;
+  // Evaluate each sample at the exact frame time `frame / sampleRate` instead
+  // of accumulating `time += 1/sampleRate`: accumulation drifts by a few ULPs
+  // per quantum, which is enough to observe a snapped event boundary one
+  // frame late.
+  auto quantumStartFrame = static_cast<int>(dsp::timeToSampleFrame(time, sampleRate));
 
   // Read modulation from input buffer (filled by BridgeNode if connected, otherwise zeros)
   auto inputData = inputBuffer_->getChannel(0)->span();
   auto outputData = outputBuffer_->getChannel(0)->span();
 
-  for (int i = 0; i < framesToProcess; i++, timeCache += timeStep) {
-    outputData[i] = inputData[i] + getValueAtTimeUnmodulated(timeCache);
+  for (int i = 0; i < framesToProcess; i++) {
+    double frameTime = dsp::sampleFrameToTime(quantumStartFrame + i, sampleRate);
+    outputData[i] = inputData[i] + getValueAtTimeUnmodulated(frameTime);
   }
 
   inputBuffer_->zero();
