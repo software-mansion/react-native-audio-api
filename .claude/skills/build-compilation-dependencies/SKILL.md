@@ -42,7 +42,7 @@ react-native-audio-api/
 │   │       └── include_ffmpeg/         # Headers for FFmpeg
 │   ├── common/cpp/test/
 │   │   ├── CMakeLists.txt              # Standalone test build (no Android/iOS)
-│   │   ├── RunTests.sh / filters.sh    # smoke|extended|full (+ categories)
+│   │   ├── run-tests.sh / filters.sh    # smoke|extended|full (+ categories)
 │   │   └── src/                        # Google Test files
 │   ├── RNAudioAPI.podspec              # CocoaPods spec for iOS
 │   └── scripts/
@@ -248,8 +248,8 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 | Layer | CI (`ci.yml` + `tests.yml`) | Local tiers |
 |---|---|---|
 | TS build (`bob build`) | Yes | `--fast` |
-| C++ smoke (`RunTests.sh`) | Yes | `--fast` |
-| C++ coverage (`RunCoverage.sh`, smoke, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
+| C++ smoke (`run-tests.sh`) | Yes | `--fast` |
+| C++ coverage (`run-coverage.sh`, smoke, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
 | Jest | Yes | `--fast` |
 | Extended C++ by category (e.g. graph) | Path change or manual dispatch in `tests.yml` | `--cpp-extended` / `--graph` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
@@ -294,7 +294,7 @@ yarn workspace react-native-audio-api test:cpp:smoke|extended|full
 yarn workspace react-native-audio-api test:cpp:extended -- graph
 ```
 
-`RunTests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. `yarn test:graph` is a legacy alias for `extended graph`.
+`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. `yarn test:graph` is a legacy alias for `extended graph`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
 
 ### Coverage (Clang / llvm-cov)
 
@@ -303,7 +303,7 @@ yarn workspace react-native-audio-api test:cpp:coverage
 # open packages/react-native-audio-api/common/cpp/test/coverage-html/index.html
 ```
 
-`RunCoverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the **smoke** filter from `filters.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
+`run-coverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the **smoke** filter from `filters.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
 
 CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM apt packages, separate from the GCC `cpp-tests` job). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. Manual `workflow_dispatch` on `tests.yml` accepts booleans `run_cpp_tests` / `run_cpp_coverage` / `run_js_tests` (default true); non-draft PRs always run all three, including when a draft is marked ready for review (`ready_for_review` is listed explicitly because it is not a default `pull_request` type).
 

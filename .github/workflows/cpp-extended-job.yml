@@ -75,4 +75,4 @@ jobs:
 
       - name: ${{ inputs.name }}
         if: steps.decide.outputs.run == 'true'
-        run: bash RunTests.sh extended ${{ inputs.categories }}
+        run: bash run-tests.sh extended ${{ inputs.categories }}

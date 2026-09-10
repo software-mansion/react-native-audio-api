@@ -17,7 +17,7 @@ yarn test:cpp:coverage                 # smoke + llvm-cov HTML
 yarn test:cpp:smoke --ubasan           # Address + UndefinedBehavior sanitizers
 yarn test:cpp:extended -- graph --tsan
 yarn test:cpp:extended -- graph --no-ubasan
-bash common/cpp/test/RunTests.sh --help
+bash common/cpp/test/run-tests.sh --help
 ```
 
 `--ubasan` = AddressSanitizer + UndefinedBehaviorSanitizer. Incompatible with `--tsan` (ASan and TSan cannot run together).
@@ -36,4 +36,4 @@ Filters: [`filters.sh`](filters.sh). Override: `GTEST_FILTER=...`.
 
 ### Legacy aliases
 
-`yarn test:graph` → `extended graph`. Docker: `yarn test:graph:docker` forwards args to `RunTests.sh` (default `extended graph`). `yarn validate:graph` → extended category `graph` only.
+`yarn test:graph` → `extended graph`. Docker: `yarn test:graph:docker` forwards args to `run-tests.sh` (default `extended graph`). `yarn validate:graph` → extended category `graph` only.

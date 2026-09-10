@@ -2,19 +2,19 @@
 
 print_help() {
   cat <<'EOF'
-Usage: RunTestsGraphDocker.sh [RunTests.sh args…]
+Usage: run-tests-graph-docker.sh [run-tests.sh args…]
 
-Thin Docker wrapper around RunTests.sh (Linux leak/ASan parity from macOS).
+Thin Docker wrapper around run-tests.sh (Linux leak/ASan parity from macOS).
 Forwards all arguments into the container. If none are given, runs:
   extended graph
 
 Examples:
-  RunTestsGraphDocker.sh
-  RunTestsGraphDocker.sh extended graph --tsan
-  RunTestsGraphDocker.sh --help   # this help (container not started)
-  GTEST_FILTER='GraphTest.*' RunTestsGraphDocker.sh extended graph
+  run-tests-graph-docker.sh
+  run-tests-graph-docker.sh extended graph --tsan
+  run-tests-graph-docker.sh --help   # this help (container not started)
+  GTEST_FILTER='GraphTest.*' run-tests-graph-docker.sh extended graph
 
-See RunTests.sh --help and TESTING.md.
+See run-tests.sh --help and TESTING.md.
 EOF
 }
 
@@ -45,4 +45,4 @@ docker run --rm -it \
   ${GTEST_FILTER:+-e GTEST_FILTER="$GTEST_FILTER"} \
   ${GRAPH_FILTER:+-e GRAPH_FILTER="$GRAPH_FILTER"} \
   "$IMAGE_NAME" \
-  bash RunTests.sh "$@"
+  bash run-tests.sh "$@"

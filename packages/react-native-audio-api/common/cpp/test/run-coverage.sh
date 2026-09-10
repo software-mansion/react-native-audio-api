@@ -2,7 +2,7 @@
 
 print_help() {
   cat <<'EOF'
-Usage: RunCoverage.sh
+Usage: run-coverage.sh
 
 Build the C++ gtest suite with Clang LLVM source-based coverage and emit an
 llvm-cov HTML report under coverage-html/. Always uses the smoke filter
