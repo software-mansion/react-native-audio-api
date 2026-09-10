@@ -6,3 +6,70 @@ footer.footer[class*='footerLanding'] {
   --ifm-footer-background-color: var(--ifm-navbar-background-color);
   --ifm-footer-padding-horizontal: var(--ifm-spacing-horizontal);
 }
+
+:root {
+  --internaldocs-diff-gutter: 1.25em;
+}
+
+.code-block-diff-add-line,
+.code-block-diff-remove-line {
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+  position: relative;
+}
+
+/* docs-theme sets `span:last-of-type { margin-right: 1em }` for long-line
+   scroll padding. That selector also matches the last token-line, which
+   shrinks a trailing add/remove highlight. */
+[class*='codeBlockLines'] span.code-block-diff-add-line:last-of-type,
+[class*='codeBlockLines'] span.code-block-diff-remove-line:last-of-type {
+  margin-right: calc(-1 * var(--ifm-pre-padding));
+}
+
+.code-block-diff-add-line {
+  background-color: var(--swm-green-light-40);
+}
+
+.code-block-diff-remove-line {
+  background-color: var(--swm-red-light-40);
+}
+
+[data-theme='dark'] .code-block-diff-add-line {
+  background-color: var(--swm-green-dark-140);
+}
+
+[data-theme='dark'] .code-block-diff-remove-line {
+  background-color: var(--swm-red-dark-140);
+}
+
+.code-block-diff-add-line::before,
+.code-block-diff-remove-line::before {
+  position: absolute;
+  left: 0.4em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.code-block-diff-add-line::before {
+  color: var(--swm-green-light-100);
+  content: '+';
+}
+
+.code-block-diff-remove-line::before {
+  color: var(--swm-red-light-100);
+  content: '-';
+}
+
+[data-theme='dark'] .code-block-diff-add-line::before {
+  color: var(--swm-green-dark-80);
+}
+
+[data-theme='dark'] .code-block-diff-remove-line::before {
+  color: var(--swm-red-dark-80);
+}
+
+pre code:has(.code-block-diff-add-line),
+pre code:has(.code-block-diff-remove-line) {
+  padding-left: calc(var(--ifm-pre-padding) + var(--internaldocs-diff-gutter));
+}

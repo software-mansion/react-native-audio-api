@@ -128,9 +128,26 @@ const config = {
         'All trademarks and copyrights belong to their respective owners. Read about our ',
     },
     prism: {
-      additionalLanguages: ['bash', 'cmake'],
+      additionalLanguages: ['bash', 'cmake', 'cpp'],
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
+      magicComments: [
+        {
+          className: 'theme-code-block-highlighted-line',
+          line: 'highlight-next-line',
+          block: { start: 'highlight-start', end: 'highlight-end' },
+        },
+        {
+          className: 'code-block-diff-add-line',
+          line: 'diff-add',
+          block: { start: 'diff-add-start', end: 'diff-add-end' },
+        },
+        {
+          className: 'code-block-diff-remove-line',
+          line: 'diff-remove',
+          block: { start: 'diff-remove-start', end: 'diff-remove-end' },
+        },
+      ],
     },
     // t-rex-ui still mounts Algolia hooks; values are unused (local site, no search).
     algolia: {
