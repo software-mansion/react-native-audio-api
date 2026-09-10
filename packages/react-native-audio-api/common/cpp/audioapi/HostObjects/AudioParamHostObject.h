@@ -16,8 +16,10 @@ using namespace facebook;
 class AudioParam;
 
 /// Rough native footprint of an AudioParamHostObject:
-/// two DSPAudioBuffer(RQ) (k-rate + a-rate scratch) + control queue + atomics.
-inline constexpr size_t kAudioParamBytes = 2 * RENDER_QUANTUM_SIZE * sizeof(float) + 512;
+/// two DSPAudioBuffer(RQ) (k-rate + a-rate scratch) + the preallocated control
+/// and render event queues (~160 B combined per slot) + atomics.
+inline constexpr size_t kAudioParamBytes =
+    2 * RENDER_QUANTUM_SIZE * sizeof(float) + AUDIO_PARAM_MAX_QUEUED_EVENTS * 160 + 512;
 
 /// @brief Host object for AudioParam that owns its BridgeNode.
 ///
