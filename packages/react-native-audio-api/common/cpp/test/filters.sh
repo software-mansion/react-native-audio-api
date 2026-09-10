@@ -1,6 +1,6 @@
 #!/bin/bash
 # Gtest filters for C++ test modes (smoke / extended-by-category / full).
-# Sourced by RunTests.sh and RunCoverage.sh.
+# Sourced by run-tests.sh and run-coverage.sh.
 #
 # Invariant: smoke and extended are disjoint. Extended lists only slow suites.
 # Override any computed filter with GTEST_FILTER=...

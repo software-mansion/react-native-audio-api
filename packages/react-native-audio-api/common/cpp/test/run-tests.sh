@@ -2,7 +2,7 @@
 
 print_help() {
   cat <<'EOF'
-Usage: RunTests.sh [smoke|extended|full] [category…] [options]
+Usage: run-tests.sh [smoke|extended|full] [category…] [options]
 
 Modes (default: smoke):
   smoke       Fast suites — PR default and coverage. Disjoint from extended.
@@ -25,12 +25,12 @@ Other:
   GTEST_FILTER  If set, overrides the mode/category gtest filter.
 
 Examples:
-  RunTests.sh
-  RunTests.sh smoke --ubasan
-  RunTests.sh extended graph
-  RunTests.sh extended graph --no-ubasan
-  RunTests.sh extended graph --tsan
-  RunTests.sh full
+  run-tests.sh
+  run-tests.sh smoke --ubasan
+  run-tests.sh extended graph
+  run-tests.sh extended graph --no-ubasan
+  run-tests.sh extended graph --tsan
+  run-tests.sh full
 
 See TESTING.md.
 EOF

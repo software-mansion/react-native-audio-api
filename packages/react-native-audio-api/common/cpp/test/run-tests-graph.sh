@@ -2,10 +2,10 @@
 
 print_help() {
   cat <<'EOF'
-Usage: RunTestsGraph.sh [options]
+Usage: run-tests-graph.sh [options]
 
 Legacy alias for:
-  RunTests.sh extended graph [options]
+  run-tests.sh extended graph [options]
 
 Prefer: yarn test:cpp:extended -- graph
 
@@ -26,4 +26,4 @@ if [[ -n "${GRAPH_FILTER:-}" && -z "${GTEST_FILTER:-}" ]]; then
   export GTEST_FILTER="$GRAPH_FILTER"
 fi
 
-exec bash "${SCRIPT_DIR}/RunTests.sh" extended graph "$@"
+exec bash "${SCRIPT_DIR}/run-tests.sh" extended graph "$@"

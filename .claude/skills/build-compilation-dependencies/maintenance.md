@@ -12,8 +12,8 @@ Review this skill when `pre-push-update` reports changes in:
 | `RNAudioAPI.podspec` | Subspecs table, `miniaudio_impl` workaround, `-force_load` list, xcframeworks list, `rnaa_utils.rb` dynamic paths |
 | `apps/fabric-example/ios/Podfile` | New Architecture enablement, minimum iOS version helper |
 | `common/cpp/test/CMakeLists.txt` | Excluded sources list, compile definitions, GoogleTest fetch URL, include paths, `ENABLE_COVERAGE` |
-| `common/cpp/test/RunCoverage.sh` | Coverage build dir, Clang CC/CXX defaults, llvm-profdata/llvm-cov report+HTML, `GITHUB_STEP_SUMMARY`, ignore regexes, smoke filter via `filters.sh` |
-| `common/cpp/test/filters.sh` / `RunTests.sh` | Mode/category filters (smoke/extended/full) and sanitizer flags |
+| `common/cpp/test/run-coverage.sh` | Coverage build dir, Clang CC/CXX defaults, llvm-profdata/llvm-cov report+HTML, `GITHUB_STEP_SUMMARY`, ignore regexes, smoke filter via `filters.sh` |
+| `common/cpp/test/filters.sh` / `run-tests.sh` | Mode/category filters (smoke/extended/full) and sanitizer flags |
 | `.github/workflows/cpp-coverage-job.yml` | Reusable coverage job (Clang/LLVM install, artifact `cpp-coverage-html`) |
 | `.github/workflows/js-job.yml` | Reusable JS integration tests job (draft-PR skip) |
 | `.github/workflows/ci.yml`, `tests.yml`, `wpt-tests.yml` | PR entry workflows that skip drafts; `ready_for_review` is listed (not a default type). Reusable jobs inherit it. |
