@@ -1,0 +1,12 @@
+[class*='navbarLanding'] .header-github:before,
+[class*='navbarLanding'] .header-github:hover:before {
+  background-color: var(--ifm-navbar-link-color);
+}
+
+[class*='plugin-pages'] [class*='dropdown--right'] > a:first-child {
+  color: var(--swm-off-white) !important;
+}
+
+[class*='plugin-pages'] [class*='dropdown__menu'] a:hover {
+  color: var(--swm-dropdown-versions-item-hover) !important;
+}
