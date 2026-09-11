@@ -56,7 +56,7 @@ Inherits [`onstatechange`](./base-audio-context.mdx#onstatechange) from [`BaseAu
 
 ### `oncomplete`
 
-Sets (or removes, when `null` is assigned) a callback fired when rendering has finished. It is dispatched after the `closed` [`statechange`](./base-audio-context.mdx#onstatechange), so the two events always arrive in spec order. The callback receives an event object:
+Sets (or removes, when `null` is assigned) a callback fired when rendering has finished, in the same task that resolves the [`startRendering`](./offline-audio-context.mdx#startrendering) promise. [`state`](./base-audio-context.mdx#properties) already reads `closed` inside the callback; the `closed` [`statechange`](./base-audio-context.mdx#onstatechange) itself arrives in a later task. The callback receives an event object:
 
 | Field | Type | Description |
 | :---: | :---: | :---- |

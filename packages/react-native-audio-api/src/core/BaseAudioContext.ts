@@ -1,6 +1,5 @@
 import { InvalidStateError, NotSupportedError } from '../errors';
 import { AudioEventEmitter } from '../events';
-import { OnStateChangeEventType } from '../events/types';
 import { IBaseAudioContext } from '../jsi-interfaces';
 import {
   ContextState,
@@ -27,11 +26,6 @@ import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import WaveShaperNode from './WaveShaperNode';
 
-export interface ContextStateChangeEvent {
-  type: 'statechange';
-  target: BaseAudioContext;
-}
-
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly listener: AudioListener;
@@ -44,14 +38,13 @@ export default class BaseAudioContext {
     this.listener = new AudioListener(this, context.listener);
     this.sampleRate = context.sampleRate;
 
-    // The native context owns statechange: it dispatches once per acknowledged
-    // transition, after settling the operation's promise, so the event always
-    // lands in a later task than the promise continuations. This subscription
-    // lives as long as the context; native transitions that no JS call
-    // requested (e.g. a future interrupted state) flow through the same path.
+    // Native dispatches statechange once per acknowledged transition, queued
+    // behind the task that resolves the operation's promise and publishes
+    // `state`. Never write `state` from here: a rapid resume()+suspend() pair
+    // acknowledges both before either event lands.
     this.stateChangeSubscription = this.audioEventEmitter.addAudioEventListener(
       'stateChange',
-      (event: OnStateChangeEventType) => this.onNativeStateChange(event)
+      () => this.onstatechangeCallback?.()
     );
     this.context.onstatechange = this.stateChangeSubscription.subscriptionId;
   }
@@ -73,41 +66,14 @@ export default class BaseAudioContext {
     AudioEventEmitter['addAudioEventListener']
   >;
 
-  private onstatechangeCallback:
-    | ((event: ContextStateChangeEvent) => void)
-    | null = null;
+  private onstatechangeCallback: (() => void) | null = null;
 
-  /**
-   * Web Audio API `statechange` event handler. Dispatched by the native context
-   * from a queued task after the `state` attribute changes — after the
-   * operation's promise resolution and all of its microtasks, matching the
-   * spec's media-element-task order.
-   */
-  public get onstatechange():
-    | ((event: ContextStateChangeEvent) => void)
-    | null {
+  public get onstatechange(): (() => void) | null {
     return this.onstatechangeCallback;
   }
 
-  public set onstatechange(
-    callback: ((event: ContextStateChangeEvent) => void) | null
-  ) {
+  public set onstatechange(callback: (() => void) | null) {
     this.onstatechangeCallback = callback;
-  }
-
-  /**
-   * Terminal handler for the native statechange dispatch. Deliberately does NOT
-   * write `state`: the attribute is published in the resolution task of the
-   * operation that caused the transition (spec order), and a rapid
-   * resume()+suspend() pair acknowledges both before either event lands — a
-   * write here would roll the attribute back to the stale event's value. When a
-   * native-originated state with no acknowledging promise arrives (the planned
-   * `interrupted`), its attribute update must be added here explicitly.
-   * Subclasses extend this to order dependent events (offline `complete`) after
-   * `statechange`.
-   */
-  protected onNativeStateChange(_event: OnStateChangeEventType): void {
-    this.onstatechangeCallback?.({ type: 'statechange', target: this });
   }
 
   /**

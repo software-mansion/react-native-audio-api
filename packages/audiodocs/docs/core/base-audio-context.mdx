@@ -237,18 +237,13 @@ The event is dispatched by the native audio engine once a transition is **acknow
 
 It also fires for transitions no method call requested, e.g. when the context starts running implicitly because a source node's `start()` engaged the audio driver.
 
-The callback receives an event object:
-
-| Field | Type | Description |
-| :---: | :---: | :---- |
-| `type` | `string` | Always `'statechange'`. |
-| `target` | [`BaseAudioContext`](./base-audio-context.mdx) | The context whose state changed. |
+The callback receives no arguments; read the new value from the context's [`state`](./base-audio-context.mdx#properties) property, which is already updated when the callback runs.
 
 ```tsx
 const audioContext = new AudioContext();
 
-audioContext.onstatechange = (event) => {
-  console.log(`state is now ${event.target.state}`);
+audioContext.onstatechange = () => {
+  console.log(`state is now ${audioContext.state}`);
 };
 
 await audioContext.resume(); // logs "state is now running" shortly after
