@@ -1,4 +1,5 @@
 import { IAudioListener } from '../jsi-interfaces';
+import { assertFloat32Representable } from '../utils/float32';
 import AudioParam from './AudioParam';
 import type BaseAudioContext from './BaseAudioContext';
 
@@ -32,5 +33,38 @@ export default class AudioListener {
     this.upX = new AudioParam(listener.upX, context);
     this.upY = new AudioParam(listener.upY, context);
     this.upZ = new AudioParam(listener.upZ, context);
+  }
+
+  /** @deprecated Use the `positionX/Y/Z` AudioParams instead. */
+  public setPosition(x: number, y: number, z: number): void {
+    assertFloat32Representable(x);
+    assertFloat32Representable(y);
+    assertFloat32Representable(z);
+    this.positionX.value = x;
+    this.positionY.value = y;
+    this.positionZ.value = z;
+  }
+
+  /** @deprecated Use the `forwardX/Y/Z` and `upX/Y/Z` AudioParams instead. */
+  public setOrientation(
+    forwardX: number,
+    forwardY: number,
+    forwardZ: number,
+    upX: number,
+    upY: number,
+    upZ: number
+  ): void {
+    assertFloat32Representable(forwardX);
+    assertFloat32Representable(forwardY);
+    assertFloat32Representable(forwardZ);
+    assertFloat32Representable(upX);
+    assertFloat32Representable(upY);
+    assertFloat32Representable(upZ);
+    this.forwardX.value = forwardX;
+    this.forwardY.value = forwardY;
+    this.forwardZ.value = forwardZ;
+    this.upX.value = upX;
+    this.upY.value = upY;
+    this.upZ.value = upZ;
   }
 }

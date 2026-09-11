@@ -27,6 +27,7 @@ const WEB_AUDIO_CLASSES = [
   'AudioBufferSourceNode',
   'AudioContext',
   'AudioDestinationNode',
+  'AudioListener',
   'AudioNode',
   'AudioParam',
   'AudioScheduledSourceNode',
@@ -41,6 +42,7 @@ const WEB_AUDIO_CLASSES = [
   'IIRFilterNode',
   'OfflineAudioContext',
   'OscillatorNode',
+  'PannerNode',
   'PeriodicWave',
   'StereoPannerNode',
   'WaveShaperNode',
@@ -59,6 +61,7 @@ export const WRAPPED_NODE_CONSTRUCTORS = new Set([
   'GainNode',
   'IIRFilterNode',
   'OscillatorNode',
+  'PannerNode',
   'StereoPannerNode',
   'WaveShaperNode',
 ]);

@@ -21,6 +21,7 @@ const AUDIO_NODE_CONSTRUCTORS = [
   { name: 'GainNode' },
   { name: 'IIRFilterNode', optionsRequired: true },
   { name: 'OscillatorNode' },
+  { name: 'PannerNode' },
   { name: 'StereoPannerNode' },
   { name: 'WaveShaperNode' },
 ];

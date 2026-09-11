@@ -18,6 +18,7 @@ This page tracks how closely React Native Audio API follows the [Web Audio API](
 | AudioBuffer | ✅ |
 | AudioBufferSourceNode | ✅ |
 | AudioDestinationNode | ✅ |
+| AudioListener | ✅ | Used by PannerNode for 3D spatialization, in the equal-power model. |
 | AudioNode | ✅ |
 | AudioParam | ✅ |
 | AudioScheduledSourceNode | ✅ |
@@ -37,7 +38,7 @@ This page tracks how closely React Native Audio API follows the [Web Audio API](
 | WaveShaperNode | ✅ |
 | AudioContext | 🚧 | Available props and methods: `baseLatency`, `outputLatency`, `close`, `suspend`, `resume` |
 | BaseAudioContext | 🚧 | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes |
-| AudioListener | 🚧 | No effect until PannerNode. |
+| PannerNode | 🚧 | Equal-power spatialization, distance models, and cone gain are implemented. `'HRTF'` throws `NotSupportedError` on native (supported on web via the browser). |
 | AudioSinkInfo | ❌ |
 | AudioWorklet | ❌ |
 | AudioWorkletGlobalScope | ❌ |
@@ -46,7 +47,6 @@ This page tracks how closely React Native Audio API follows the [Web Audio API](
 | DynamicsCompressorNode | ❌ |
 | MediaStreamAudioDestinationNode | ❌ |
 | MediaStreamAudioSourceNode | ❌ |
-| PannerNode | ❌ |
 
 ### Description
 

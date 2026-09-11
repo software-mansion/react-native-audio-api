@@ -1,0 +1,90 @@
+---
+sidebar_position: 7
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import { Optional, ReadOnly } from '@site/src/components/Badges';
+
+# PannerNode
+
+The `PannerNode` interface positions an audio source in 3D space relative to the context's [`AudioListener`](../core/audio-listener.mdx).
+
+## Constructor
+
+```tsx
+constructor(context: BaseAudioContext, options?: PannerOptions)
+```
+
+### `PannerOptions`
+
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `panningModel` <Optional /> | `'equalpower' \| 'HRTF'` | `'equalpower'` | Spatialization algorithm. Native supports `'equalpower'` only; `'HRTF'` throws `NotSupportedError`. |
+| `distanceModel` <Optional /> | `'linear' \| 'inverse' \| 'exponential'` | `'inverse'` | Distance attenuation model. |
+| `positionX` … `positionZ` <Optional /> | `number` | `(0, 0, 0)` | Initial source position. |
+| `orientationX` … `orientationZ` <Optional /> | `number` | `(1, 0, 0)` | Initial source orientation. |
+| `refDistance` <Optional /> | `number` | `1` | Reference distance for attenuation. |
+| `maxDistance` <Optional /> | `number` | `10000` | Maximum distance for the linear model. |
+| `rolloffFactor` <Optional /> | `number` | `1` | Rolloff for distance models. |
+| `coneInnerAngle` / `coneOuterAngle` <Optional /> | `number` | `360` | Directional cone angles (degrees). |
+| `coneOuterGain` <Optional /> | `number` | `0` | Gain outside the outer cone. |
+
+You can also create a `PannerNode` via [`BaseAudioContext.createPanner()`](../core/base-audio-context.mdx#createpanner).
+
+## Example
+
+Position a tone to the listener's left. Use headphones to hear the pan clearly. The default listener faces `-Z`.
+
+```tsx
+import { AudioContext } from 'react-native-audio-api';
+
+const ctx = new AudioContext();
+const osc = ctx.createOscillator();
+const panner = ctx.createPanner();
+
+panner.panningModel = 'equalpower';
+panner.positionX.value = -3;
+panner.positionY.value = 0;
+panner.positionZ.value = -1;
+
+osc.connect(panner);
+panner.connect(ctx.destination);
+osc.start();
+```
+
+To move the listener instead of the source, set [`ctx.listener`](../core/audio-listener.mdx) position params the same way.
+
+## Properties
+
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="clamped-max" channelInterpretation="speakers" />
+
+| Name | Type | Description |
+| :----: | :----: | :-------- |
+| `positionX`, `positionY`, `positionZ` | [`AudioParam`](../core/audio-param.mdx) | Source position in 3D space. |
+| `orientationX`, `orientationY`, `orientationZ` | [`AudioParam`](../core/audio-param.mdx) | Source orientation vector. |
+| `panningModel` | `PanningModelType` | `'equalpower'` (native). `'HRTF'` throws `NotSupportedError` on native. |
+| `distanceModel` | `DistanceModelType` | `'linear'`, `'inverse'`, or `'exponential'`. |
+| `refDistance`, `maxDistance`, `rolloffFactor` | `number` | Distance model parameters. |
+| `coneInnerAngle`, `coneOuterAngle`, `coneOuterGain` | `number` | Directional cone. |
+
+## Methods
+
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
+
+<AudioNodeMethodsTable />
+
+| Method | Description |
+| :---- | :-------- |
+| `setPosition(x, y, z)` | Sets `positionX/Y/Z.value` (deprecated in the spec; provided for compatibility). |
+| `setOrientation(x, y, z)` | Sets `orientationX/Y/Z.value`. |
+
+## Remarks
+
+- Output is always stereo (2 channels), like [`StereoPannerNode`](./stereo-panner-node.mdx).
+- Spatialization uses the context [`listener`](../core/audio-listener.mdx) position and orientation.
+- On native, setting `panningModel` to `'HRTF'` throws `NotSupportedError`. Use `'equalpower'`.
