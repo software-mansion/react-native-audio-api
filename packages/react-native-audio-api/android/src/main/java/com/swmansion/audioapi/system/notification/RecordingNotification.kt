@@ -279,10 +279,21 @@ class RecordingNotification(
       notificationManager.cancel(notificationId)
     } finally {
       state.initialized = false
+      state.cachedRNOptions = null
+      state.title = null
+      state.contentText = null
+      state.smallIconResourceName = null
+      state.largeIconResourceName = null
+      state.backgroundColor = null
+      state.showStopAction = false
+      state.pauseActionTitle = null
+      state.resumeActionTitle = null
+      state.stopActionTitle = null
+      state.deepLinkUri = null
+      state.usesChronometer = false
       state.startedAtMs = null
       state.pausedAtMs = null
       state.paused = false
-      state.cachedRNOptions = null
     }
   }
 
