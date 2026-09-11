@@ -27,7 +27,9 @@
     "validate:ios": "bash scripts/validate.sh --ios",
     "validate:full": "bash scripts/validate.sh --full",
     "setup:clangd": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh",
-    "setup:clangd:clean": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh --clean"
+    "setup:clangd:clean": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh --clean",
+    "docs:internal": "bash -c 'cd packages/internaldocs && yarn start'",
+    "docs:internal:build": "bash -c 'cd packages/internaldocs && yarn build'"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "catalog:",

@@ -1,0 +1,44 @@
+---
+sidebar_position: 0
+slug: /
+---
+
+# Internals
+
+Local documentation of the React Native Audio API internals: how the architecture is shaped, what research concluded, and what we plan to change.
+
+This site is not published. Run it with `yarn start` from `packages/internaldocs`, or `yarn docs:internal` from the monorepo root.
+
+## Approach to documentation
+
+The architecture is complex and hard to understand without help from experienced maintainers. Internals documentation should prioritize **human understandability**. Agent-specific instructions already live in skills, `AGENTS.md` files, and similar places. Agents may be used to write docs when someone has checked that the result is useful for a human.
+
+It is not necessary to document simple, self-explanatory modules. Focus on especially complex algorithms, systems, and subsystems. The goal is to provide a bird's-eye view of the codebase.
+
+## Research
+
+Before implementing a complex feature, one often does non-trivial research into a specification, operating-system behavior, or an algorithm. Keeping those outcomes is also useful later, during maintenance.
+
+## Plans
+
+For example, refactoring a broad system might require listing the requirements explicitly, making several decisions, and drawing diagrams before implementation. These days, writing the plan can be most of the work. Once a thorough plan is ready, an agent might implement it with little effort. Afterwards, the plan can be turned into internal documentation quickly.
+
+## Unifying internal documentation
+
+There are already many documents, pages, diagrams, and whiteboards that cover parts of the architecture. They are not unified, which makes communication and collaboration harder. It is also hard to track progress on long-running tasks.
+
+### Diagrams and compatibility
+
+When feasible, diagram style and format should be unified so that they are easy to edit, support rich figures, and work well with Git.
+
+Documentation written in React can render a wide range of formats after they are exported properly. Right now we have multiple independent diagrams and notes about the internals. The formats in use include:
+
+- Markdown documents
+- Whimsical diagrams
+- Excalidraw whiteboards
+
+Those Whimsical diagrams and Excalidraw whiteboards are not straightforward to show on an HTML site. At the same time, it is preferable to show them as they were originally drawn. Both apps can export the canvas as an `.svg` file. A canvas may consist of several smaller, self-contained parts. Those parts are often about as wide as a typical HTML content column, so the original image can be split into compact figures.
+
+In the long term, depending on `.svg` figures is a poor fit: they do not work well with Git and are hard to edit, because they are only a mechanical conversion from a higher-level format. New diagrams should be written in Mermaid, TikZ, or a similar markup language.
+
+During the transition, while original diagrams are being converted to new formats, keep both in a tabbed view. Use the tab titles `Original` and `New`.

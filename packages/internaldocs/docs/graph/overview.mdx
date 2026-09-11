@@ -1,0 +1,27 @@
+---
+sidebar_position: 1
+sidebar_custom_props:
+  tags:
+    - wip
+---
+
+import DiagramCompare from '@site/src/components/DiagramCompare';
+
+# Overview
+
+Template page for graph internals.
+
+The two graph layers share one `NodeHandle`:
+
+<DiagramCompare originals={['/diagrams/graph/original-1.svg']}>
+
+```mermaid
+flowchart LR
+  HG["HostGraph"]
+  NH["NodeHandle"]
+  AG["AudioGraph"]
+
+  HG --> NH --> AG
+```
+
+</DiagramCompare>
