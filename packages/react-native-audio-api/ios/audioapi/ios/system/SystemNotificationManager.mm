@@ -1,12 +1,22 @@
 #import <audioapi/events/AudioEvent.h>
 #import <audioapi/ios/AudioAPIModule.h>
+#import <audioapi/ios/system/AudioAPIDiagnostics.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
 
+#include <atomic>
+
 @implementation SystemNotificationManager
 
 static NSString *NotificationManagerContext = @"SystemNotificationManagerContext";
+
+/// Restart requests handed to the main queue against restart requests that have
+/// actually run. The gap between them is the queue depth, which is the one thing
+/// a per-event log line cannot show: a burst of notifications each scheduling a
+/// restart looks identical to a single restart until the two counts diverge.
+static std::atomic<uint64_t> restartsScheduled{0};
+static std::atomic<uint64_t> restartsDrained{0};
 
 - (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
 {
@@ -180,6 +190,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)handleRouteChange:(NSNotification *)notification
 {
+  AUDIOAPI_TRACE_SCOPE(@"routeChange");
+
   NSInteger routeChangeReason =
       [notification.userInfo[AVAudioSessionRouteChangeReasonKey] integerValue];
   NSString *reasonStr;
@@ -219,13 +231,33 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                          payload:audioapi::StringPayload{
                                      .name = "reason", .reason = [reasonStr UTF8String]}];
 
+  AVAudioSession *session = [AVAudioSession sharedInstance];
+
+  AUDIOAPI_LOG(
+      AudioAPIDiagnosticsCategoryNotifications,
+      @"routeChange reason=%@, route is {%@}, session is {%@}",
+      reasonStr,
+      AudioAPIDescribeRoute(session.currentRoute),
+      AudioAPIDescribeSession(session));
+
   switch (routeChangeReason) {
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
     case AVAudioSessionRouteChangeReasonRouteConfigurationChange:
+      // Note the reason a ConfigurationChange is not taken at face value: our
+      // own reconfiguration reports itself here, so this is the door a restart
+      // walks back through after it has already run.
+      AUDIOAPI_LOG(
+          AudioAPIDiagnosticsCategoryNotifications,
+          @"routeChange reason=%@ is treated as a configuration change, restarting the engine",
+          reasonStr);
       [self handleEngineConfigurationChange:nil];
       break;
     default:
+      AUDIOAPI_LOG(
+          AudioAPIDiagnosticsCategoryNotifications,
+          @"routeChange reason=%@ needs no engine restart",
+          reasonStr);
       break;
   }
 }
@@ -239,10 +271,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     return;
   }
 
-  NSLog(
-      @"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
+  AUDIOAPI_LOG_FAILURE(
+      AudioAPIDiagnosticsCategoryNotifications,
+      @"media services were reset, tearing down and rebuilding everything");
 
   dispatch_async(dispatch_get_main_queue(), ^{
+    AUDIOAPI_TRACE_SCOPE(@"mediaServicesReset");
+
     bool wasSessionActive = sessionManager.isActive;
     [sessionManager markInactive];
 
@@ -256,6 +291,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
+  AUDIOAPI_TRACE_SCOPE(@"engineNotification");
+
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
@@ -264,10 +301,37 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   // an engine of our own there is nothing to restart, and marking the session
   // inactive would corrupt bookkeeping for apps that only manage the session.
   if (![audioEngine isInUse]) {
+    AUDIOAPI_LOG(
+        AudioAPIDiagnosticsCategoryNotifications,
+        @"configuration change ignored, no engine of ours is in use");
     return;
   }
 
+  uint64_t scheduled = restartsScheduled.fetch_add(1, std::memory_order_relaxed) + 1;
+  uint64_t drained = restartsDrained.load(std::memory_order_relaxed);
+
+  AUDIOAPI_LOG(
+      AudioAPIDiagnosticsCategoryNotifications,
+      @"scheduling a restart on the main queue, %llu scheduled and %llu run so far (%llu in "
+      @"flight)",
+      scheduled,
+      drained,
+      scheduled - drained);
+
   dispatch_async(dispatch_get_main_queue(), ^{
+    AUDIOAPI_TRACE_SCOPE(@"restartDispatch");
+
+    uint64_t run = restartsDrained.fetch_add(1, std::memory_order_relaxed) + 1;
+    uint64_t outstanding = restartsScheduled.load(std::memory_order_relaxed) - run;
+
+    // Reported before the work, not after: a restart that never returns because
+    // it re-entered the notification that scheduled it leaves no trailing line.
+    AUDIOAPI_LOG(
+        AudioAPIDiagnosticsCategoryNotifications,
+        @"running scheduled restart %llu, %llu still queued behind it",
+        run,
+        outstanding);
+
     [sessionManager markInactive];
     [audioEngine restartAudioEngine];
   });
