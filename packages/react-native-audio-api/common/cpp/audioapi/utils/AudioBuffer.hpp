@@ -146,8 +146,10 @@ class AlignedAudioBuffer {
   /// on a channel, which is how a source node can play a JS-visible buffer without a deep
   /// copy while the JS side keeps copy-on-write semantics.
   [[nodiscard]] std::shared_ptr<AlignedAudioBuffer> shareChannels() const {
-    auto shared = std::make_shared<AlignedAudioBuffer>(size_, numberOfChannels_, sampleRate_);
-    // share underlying data instead of copying it
+    auto shared = std::make_shared<AlignedAudioBuffer>();
+    shared->numberOfChannels_ = numberOfChannels_;
+    shared->sampleRate_ = sampleRate_;
+    shared->size_ = size_;
     shared->channels_ = channels_;
     return shared;
   }
