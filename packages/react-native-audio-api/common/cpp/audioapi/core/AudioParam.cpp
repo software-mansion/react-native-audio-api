@@ -74,10 +74,6 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   }
 
   float sampleRate = context->getSampleRate();
-  // Evaluate each sample at the exact frame time `frame / sampleRate` instead
-  // of accumulating `time += 1/sampleRate`: accumulation drifts by a few ULPs
-  // per quantum, which is enough to observe a snapped event boundary one
-  // frame late.
   auto quantumStartFrame = static_cast<int>(dsp::timeToSampleFrame(time, sampleRate));
 
   // Read modulation from input buffer (filled by BridgeNode if connected, otherwise zeros)
