@@ -27,9 +27,9 @@ namespace r8b {
 
 #if __cplusplus >= 201103L
 
-using std::atan;
-using std::cos;
-using std::sin;
+using std ::atan;
+using std ::cos;
+using std ::sin;
 
 #endif // __cplusplus >= 201103L
 

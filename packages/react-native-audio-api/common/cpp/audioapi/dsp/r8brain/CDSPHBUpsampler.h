@@ -928,20 +928,20 @@ class CDSPHBUpsampler : public CDSPProcessor {
       const bool aDoConsumeLatency = true)
       : DoConsumeLatency(aDoConsumeLatency) {
     static const CConvolveFn FltConvFn[14] = {
-        &CDSPHBUpsampler::convolve1,
-        &CDSPHBUpsampler::convolve2,
-        &CDSPHBUpsampler::convolve3,
-        &CDSPHBUpsampler::convolve4,
-        &CDSPHBUpsampler::convolve5,
-        &CDSPHBUpsampler::convolve6,
-        &CDSPHBUpsampler::convolve7,
-        &CDSPHBUpsampler::convolve8,
-        &CDSPHBUpsampler::convolve9,
-        &CDSPHBUpsampler::convolve10,
-        &CDSPHBUpsampler::convolve11,
-        &CDSPHBUpsampler::convolve12,
-        &CDSPHBUpsampler::convolve13,
-        &CDSPHBUpsampler::convolve14};
+        &CDSPHBUpsampler ::convolve1,
+        &CDSPHBUpsampler ::convolve2,
+        &CDSPHBUpsampler ::convolve3,
+        &CDSPHBUpsampler ::convolve4,
+        &CDSPHBUpsampler ::convolve5,
+        &CDSPHBUpsampler ::convolve6,
+        &CDSPHBUpsampler ::convolve7,
+        &CDSPHBUpsampler ::convolve8,
+        &CDSPHBUpsampler ::convolve9,
+        &CDSPHBUpsampler ::convolve10,
+        &CDSPHBUpsampler ::convolve11,
+        &CDSPHBUpsampler ::convolve12,
+        &CDSPHBUpsampler ::convolve13,
+        &CDSPHBUpsampler ::convolve14};
 
     const double *fltp0;
     int fltt;

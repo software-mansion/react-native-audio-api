@@ -49,29 +49,29 @@ class CDSPHBDownsampler : public CDSPProcessor {
       const bool IsThird,
       const double PrevLatency) {
     static const CConvolveFn FltConvFn[14] = {
-        &CDSPHBDownsampler::convolve1,
-        &CDSPHBDownsampler::convolve2,
-        &CDSPHBDownsampler::convolve3,
-        &CDSPHBDownsampler::convolve4,
-        &CDSPHBDownsampler::convolve5,
-        &CDSPHBDownsampler::convolve6,
-        &CDSPHBDownsampler::convolve7,
-        &CDSPHBDownsampler::convolve8,
-        &CDSPHBDownsampler::convolve9,
-        &CDSPHBDownsampler::convolve10,
-        &CDSPHBDownsampler::convolve11,
-        &CDSPHBDownsampler::convolve12,
-        &CDSPHBDownsampler::convolve13,
-        &CDSPHBDownsampler::convolve14};
+        &CDSPHBDownsampler ::convolve1,
+        &CDSPHBDownsampler ::convolve2,
+        &CDSPHBDownsampler ::convolve3,
+        &CDSPHBDownsampler ::convolve4,
+        &CDSPHBDownsampler ::convolve5,
+        &CDSPHBDownsampler ::convolve6,
+        &CDSPHBDownsampler ::convolve7,
+        &CDSPHBDownsampler ::convolve8,
+        &CDSPHBDownsampler ::convolve9,
+        &CDSPHBDownsampler ::convolve10,
+        &CDSPHBDownsampler ::convolve11,
+        &CDSPHBDownsampler ::convolve12,
+        &CDSPHBDownsampler ::convolve13,
+        &CDSPHBDownsampler ::convolve14};
 
     const double *fltp0;
     int fltt;
     double att;
 
     if (IsThird) {
-      CDSPHBUpsampler::getHBFilterThird(ReqAtten, SteepIndex, fltp0, fltt, att);
+      CDSPHBUpsampler ::getHBFilterThird(ReqAtten, SteepIndex, fltp0, fltt, att);
     } else {
-      CDSPHBUpsampler::getHBFilter(ReqAtten, SteepIndex, fltp0, fltt, att);
+      CDSPHBUpsampler ::getHBFilter(ReqAtten, SteepIndex, fltp0, fltt, att);
     }
 
     // Copy obtained filter to address-aligned buffer.

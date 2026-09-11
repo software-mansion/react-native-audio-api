@@ -53,7 +53,7 @@
 	 * not derived from any class.
 	 */
 
-#define R8B_BASECLASS ::r8b::CStdClassAllocator
+#define R8B_BASECLASS ::r8b ::CStdClassAllocator
 #endif // !defined( R8B_BASECLASS )
 
 #if !defined(R8B_MEMALLOCCLASS)
@@ -62,7 +62,7 @@
 	 * allocation functions, see the r8b::CStdMemAllocator class for details.
 	 */
 
-#define R8B_MEMALLOCCLASS ::r8b::CStdMemAllocator
+#define R8B_MEMALLOCCLASS ::r8b ::CStdMemAllocator
 #endif // !defined( R8B_MEMALLOCCLASS )
 
 #if !defined(R8B_DSPBASECLASS)

@@ -117,7 +117,7 @@ class CDSPRealFFT : public R8B_BASECLASS {
 
 #else // R8B_PFFFT_DOUBLE
 
-    ooura_fft::rdft(Len, 1, p, wi, wd);
+    ooura_fft ::rdft(Len, 1, p, wi, wd);
 
 #endif // R8B_IPP
   }
@@ -144,7 +144,7 @@ class CDSPRealFFT : public R8B_BASECLASS {
 
 #else // R8B_PFFFT_DOUBLE
 
-    ooura_fft::rdft(Len, -1, p, wi, wd);
+    ooura_fft ::rdft(Len, -1, p, wi, wd);
 
 #endif // R8B_IPP
 

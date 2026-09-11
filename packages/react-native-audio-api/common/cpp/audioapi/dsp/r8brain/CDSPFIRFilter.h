@@ -388,14 +388,14 @@ class CDSPFIRFilter : public R8B_BASECLASS {
     sinc.Len2 = 0.25 * hl / ReqNormFreq;
     sinc.Freq1 = 0.0;
     sinc.Freq2 = R8B_PI * (1.0 - fo1) * ReqNormFreq;
-    sinc.initBand(CDSPSincFilterGen::wftKaiser, WinParams, true);
+    sinc.initBand(CDSPSincFilterGen ::wftKaiser, WinParams, true);
 
     KernelLen = sinc.KernelLen;
     BlockLenBits = getBitOccupancy(KernelLen - 1) + R8B_EXTFFT;
     const int BlockLen = 1 << BlockLenBits;
 
     KernelBlock.alloc(BlockLen * 2);
-    sinc.generateBand(&KernelBlock[0], &CDSPSincFilterGen::calcWindowKaiser);
+    sinc.generateBand(&KernelBlock[0], &CDSPSincFilterGen ::calcWindowKaiser);
 
     if (ReqPhase == fprLinearPhase) {
       IsZeroPhase = true;
@@ -528,10 +528,10 @@ class CDSPFIRFilterCache : public R8B_BASECLASS {
       const double ReqGain,
       const double *const AttenCorrs = R8B_NULL) {
     R8BASSERT(ReqNormFreq > 0.0 && ReqNormFreq <= 1.0);
-    R8BASSERT(ReqTransBand >= CDSPFIRFilter::getLPMinTransBand());
-    R8BASSERT(ReqTransBand <= CDSPFIRFilter::getLPMaxTransBand());
-    R8BASSERT(ReqAtten >= CDSPFIRFilter::getLPMinAtten());
-    R8BASSERT(ReqAtten <= CDSPFIRFilter::getLPMaxAtten());
+    R8BASSERT(ReqTransBand >= CDSPFIRFilter ::getLPMinTransBand());
+    R8BASSERT(ReqTransBand <= CDSPFIRFilter ::getLPMaxTransBand());
+    R8BASSERT(ReqAtten >= CDSPFIRFilter ::getLPMinAtten());
+    R8BASSERT(ReqAtten <= CDSPFIRFilter ::getLPMaxAtten());
     R8BASSERT(ReqGain > 0.0);
 
     R8B_EXITDTOR static CPtrKeeper<CDSPFIRFilter> Objects; // The chain
@@ -634,8 +634,8 @@ class CDSPFIRFilterCache : public R8B_BASECLASS {
 // CDSPFIRFilter PUBLIC
 // ---------------------------------------------------------------------------
 
-inline void CDSPFIRFilter::unref() {
-  R8BSYNC(CDSPFIRFilterCache::getStateSync());
+inline void CDSPFIRFilter ::unref() {
+  R8BSYNC(CDSPFIRFilterCache ::getStateSync());
 
   RefCount--;
 }

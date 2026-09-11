@@ -160,7 +160,7 @@ class CDSPResampler : public CDSPProcessor {
 
       if (SrcSampleRate * num == DstSampleRate * den) {
         addProcessor(new CDSPBlockConvolver(
-            CDSPFIRFilterCache::getLPFilter(
+            CDSPFIRFilterCache ::getLPFilter(
                 1.0 / (num > den ? num : den), ReqTransBand, ReqAtten, ReqPhase, num),
             num,
             den,
@@ -194,7 +194,7 @@ class CDSPResampler : public CDSPProcessor {
 
       if (WasFound) {
         addProcessor(new CDSPBlockConvolver(
-            CDSPFIRFilterCache::getLPFilter(1.0 / i, ReqTransBand, ReqAtten, ReqPhase, i),
+            CDSPFIRFilterCache ::getLPFilter(1.0 / i, ReqTransBand, ReqAtten, ReqPhase, i),
             i,
             1,
             LatencyFrac));
@@ -217,7 +217,7 @@ class CDSPResampler : public CDSPProcessor {
           (DstSampleRate > SrcSampleRate ? 0.5 : 0.5 * DstSampleRate / SrcSampleRate);
 
       addProcessor(new CDSPBlockConvolver(
-          CDSPFIRFilterCache::getLPFilter(NormFreq, ReqTransBand, ReqAtten, ReqPhase, 2.0),
+          CDSPFIRFilterCache ::getLPFilter(NormFreq, ReqTransBand, ReqAtten, ReqPhase, 2.0),
           2,
           1,
           LatencyFrac));
@@ -291,12 +291,12 @@ class CDSPResampler : public CDSPProcessor {
             tbw; // Divide TransBand by a constant that assures a
                  // linear response in the pass-band.
 
-        if (tb > CDSPFIRFilter::getLPMaxTransBand()) {
-          tb = CDSPFIRFilter::getLPMaxTransBand();
+        if (tb > CDSPFIRFilter ::getLPMaxTransBand()) {
+          tb = CDSPFIRFilter ::getLPMaxTransBand();
         }
 
         addProcessor(new CDSPBlockConvolver(
-            CDSPFIRFilterCache::getLPFilter(1.0 / num, tb, ReqAtten, ReqPhase, num),
+            CDSPFIRFilterCache ::getLPFilter(1.0 / num, tb, ReqAtten, ReqPhase, num),
             num,
             1,
             LatencyFrac));
@@ -358,7 +358,7 @@ class CDSPResampler : public CDSPProcessor {
     }
 
     addProcessor(new CDSPBlockConvolver(
-        CDSPFIRFilterCache::getLPFilter(NormFreq, ReqTransBand, ReqAtten, ReqPhase, FinGain),
+        CDSPFIRFilterCache ::getLPFilter(NormFreq, ReqTransBand, ReqAtten, ReqPhase, FinGain),
         1,
         downf,
         LatencyFrac));

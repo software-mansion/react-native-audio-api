@@ -67,8 +67,8 @@ class CDSPSincFilterGen {
     ///< parameter. The "Power" parameter is optional.
   };
 
-  typedef double (CDSPSincFilterGen::*CWindowFunc)(); ///< Window
-                                                      ///< calculation function pointer type.
+  typedef double (CDSPSincFilterGen ::*CWindowFunc)(); ///< Window
+                                                       ///< calculation function pointer type.
 
   /**
 	 * @brief Initializes *this* structure for generation of a window
@@ -255,7 +255,7 @@ class CDSPSincFilterGen {
 	 * @param wfunc Window calculation function to use.
 	 */
 
-  void generateWindow(double *op, CWindowFunc wfunc = &CDSPSincFilterGen::calcWindowBlackman) {
+  void generateWindow(double *op, CWindowFunc wfunc = &CDSPSincFilterGen ::calcWindowBlackman) {
     op += fl2;
     double *op2 = op;
 
@@ -296,7 +296,7 @@ class CDSPSincFilterGen {
 	 * @param wfunc Window calculation function to use.
 	 */
 
-  void generateBand(double *op, CWindowFunc wfunc = &CDSPSincFilterGen::calcWindowBlackman) {
+  void generateBand(double *op, CWindowFunc wfunc = &CDSPSincFilterGen ::calcWindowBlackman) {
     CSineGen f2(Freq2, 0.0, 1.0 / R8B_PI);
     f2.generate();
 
@@ -369,7 +369,7 @@ class CDSPSincFilterGen {
 	 * @param wfunc Window calculation function to use.
 	 */
 
-  void generateHilbert(double *op, CWindowFunc wfunc = &CDSPSincFilterGen::calcWindowBlackman) {
+  void generateHilbert(double *op, CWindowFunc wfunc = &CDSPSincFilterGen ::calcWindowBlackman) {
     static const double fvalues[2] = {0.0, 2.0 / R8B_PI};
     op += fl2;
     double *op2 = op;
@@ -411,7 +411,7 @@ class CDSPSincFilterGen {
 
   void generateFrac(
       double *op,
-      CWindowFunc wfunc = &CDSPSincFilterGen::calcWindowBlackman,
+      CWindowFunc wfunc = &CDSPSincFilterGen ::calcWindowBlackman,
       const int opinc = 1) {
     R8BASSERT(opinc != 0);
 
