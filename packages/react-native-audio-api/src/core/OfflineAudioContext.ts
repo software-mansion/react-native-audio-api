@@ -1,6 +1,5 @@
 import { InvalidStateError, NotSupportedError } from '../errors';
 import { assertSupportedSampleRate } from '../utils/validation';
-import { OnStateChangeEventType } from '../events/types';
 import { IOfflineAudioContext } from '../jsi-interfaces';
 import { OfflineAudioContextOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
@@ -15,8 +14,6 @@ export interface OfflineAudioCompletionEvent {
 export default class OfflineAudioContext extends BaseAudioContext {
   private isRendering: boolean;
   private duration: number;
-  /** Set when startRendering() resolves; consumed by the `closed` statechange. */
-  private pendingRenderedBuffer: AudioBuffer | null;
 
   /**
    * Web Audio API `complete` event handler, dispatched when startRendering()
@@ -58,7 +55,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
 
     this.isRendering = false;
     this.oncomplete = null;
-    this.pendingRenderedBuffer = null;
   }
 
   async resume(): Promise<undefined> {
@@ -121,27 +117,15 @@ export default class OfflineAudioContext extends BaseAudioContext {
     this.setControlState('closed');
 
     const renderedBuffer = new AudioBuffer(audioBuffer);
-    // `complete` is fired by onNativeStateChange when the native `closed`
-    // statechange lands — a strictly later task than this continuation — so
-    // `statechange` always precedes `complete`, per the spec's ordering.
-    this.pendingRenderedBuffer = renderedBuffer;
-
-    return renderedBuffer;
-  }
-
-  protected override onNativeStateChange(event: OnStateChangeEventType): void {
-    super.onNativeStateChange(event);
-
-    if (event.state !== 'closed' || this.pendingRenderedBuffer === null) {
-      return;
-    }
-
-    const renderedBuffer = this.pendingRenderedBuffer;
-    this.pendingRenderedBuffer = null;
+    // `state` is already 'closed' here: native publishes it in the task that
+    // resolves this promise. The `closed` statechange lands in a later task,
+    // so `complete` precedes it — a deliberate deviation from spec order.
     this.oncomplete?.({
       type: 'complete',
       target: this,
       renderedBuffer,
     });
+
+    return renderedBuffer;
   }
 }
