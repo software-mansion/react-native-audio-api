@@ -1,4 +1,5 @@
 import { InvalidStateError, NotSupportedError } from '../errors';
+import { AudioEventEmitter } from '../events';
 import { IBaseAudioContext } from '../jsi-interfaces';
 import {
   ContextState,
@@ -36,16 +37,45 @@ export default class BaseAudioContext {
     this.destination = new AudioDestinationNode(this, context.destination);
     this.listener = new AudioListener(this, context.listener);
     this.sampleRate = context.sampleRate;
+
+    this.stateChangeSubscription = this.audioEventEmitter.addAudioEventListener(
+      'stateChange',
+      () => this.onstatechangeCallback?.()
+    );
+    this.context.onstatechange = this.stateChangeSubscription.subscriptionId;
   }
 
+  /**
+   * Written synchronously the moment an operation is accepted, so the NEXT call
+   * validates against what has already been requested (e.g. close() right after
+   * resume() must see 'running').
+   */
   protected _state: ContextState = 'suspended';
+
+  protected readonly audioEventEmitter = new AudioEventEmitter(
+    globalThis.AudioEventEmitter
+  );
+
+  private stateChangeSubscription: ReturnType<
+    AudioEventEmitter['addAudioEventListener']
+  >;
+
+  public onstatechangeCallback: (() => void) | null = null;
+
+  /**
+   * Record that a state transition has been requested ([[control thread
+   * state]]).
+   */
+  protected setControlState(nextState: ContextState): void {
+    this._state = nextState;
+  }
 
   public get currentTime(): number {
     return this.context.currentTime;
   }
 
   public get state(): ContextState {
-    return this._state;
+    return this.context.state as ContextState;
   }
 
   /**
