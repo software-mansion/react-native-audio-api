@@ -96,7 +96,7 @@ object ForegroundServiceManager {
   }
 
   private fun startServiceIfNeeded() {
-    if (!startIntentSent && subscribers.isNotEmpty()) {
+    if (subscribers.isNotEmpty()) {
       startForegroundService()
     }
   }

@@ -32,7 +32,6 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, options);
 #endif
-  ActiveRecorderHandle::global().setRecorder(audioRecorder_);
 
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
 
@@ -67,6 +66,9 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   return promiseVendor_->createAsyncPromise(
       [audioRecorder, fileNameOverride = std::move(fileNameOverride)]() -> PromiseResolver {
         auto result = audioRecorder->start(fileNameOverride);
+        if (result.is_ok()) {
+          ActiveRecorderHandle::global().setRecorder(audioRecorder);
+        }
 
         return [result = std::move(result)](
                    jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
@@ -93,8 +95,12 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
     auto result = audioRecorder->stop();
 
-    return [result =
-                std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+    if (result.is_ok()) {
+      ActiveRecorderHandle::global().clearRecorder(audioRecorder.get());
+    }
+
+    return [result = std::move(result)](
+               jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
       auto jsResult = jsi::Object(runtime);
 
       jsResult.setProperty(

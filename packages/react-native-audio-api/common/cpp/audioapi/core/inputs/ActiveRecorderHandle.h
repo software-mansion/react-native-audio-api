@@ -31,8 +31,8 @@ struct RecordingStopResult {
 /// that has no other view of the recorder — the notification after task removal — can
 /// render itself as a pure function of that state instead of tracking its own.
 ///
-/// Assumes at most one AudioRecorder is alive at a time; setting a new recorder replaces
-/// the previous one.
+/// Several AudioRecorder instances can be alive at once (e.g. one per screen), but only
+/// one may occupy this slot
 class ActiveRecorderHandle {
  public:
   static ActiveRecorderHandle &global();
