@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -24,7 +25,43 @@ AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> 
 }
 
 AudioBufferHostObject::AudioBufferHostObject(AudioBufferHostObject &&other) noexcept
-    : HostObject(std::move(other)), audioBuffer_(std::move(other.audioBuffer_)) {}
+    : HostObject(std::move(other)),
+      audioBuffer_(std::move(other.audioBuffer_)),
+      immutableCopyCache_(std::move(other.immutableCopyCache_)),
+      returnedChannelDataArrays_(std::move(other.returnedChannelDataArrays_)) {}
+
+void AudioBufferHostObject::detachReturnedChannelData(jsi::Runtime &runtime) {
+  if (returnedChannelDataArrays_.empty()) {
+    return;
+  }
+
+  auto defineProperty = runtime.global()
+                            .getPropertyAsObject(runtime, "Object")
+                            .getPropertyAsFunction(runtime, "defineProperty");
+  auto zeroDescriptor = jsi::Object(runtime);
+  zeroDescriptor.setProperty(runtime, "value", 0);
+
+  std::vector<bool> channelDetached(audioBuffer_->getNumberOfChannels(), false);
+
+  for (const auto &returned : returnedChannelDataArrays_) {
+    auto array = returned.array.lock(runtime);
+    if (array.isObject()) {
+      for (const auto *sizeProperty : {"length", "byteLength", "byteOffset"}) {
+        defineProperty.call(runtime, array, sizeProperty, zeroDescriptor);
+      }
+    }
+
+    if (!channelDetached[returned.channel]) {
+      audioBuffer_->detachSharedChannel(returned.channel);
+      channelDetached[returned.channel] = true;
+    }
+  }
+
+  returnedChannelDataArrays_.clear();
+  // A view could have been written through right up until now, i.e. after the cached
+  // copy was taken.
+  immutableCopyCache_.invalidate();
+}
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, sampleRate) {
   return {audioBuffer_->getSampleRate()};
@@ -44,13 +81,11 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, numberOfChannels) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   // The returned Float32Array is a live, JS-writable view straight into
-  // audioBuffer_'s storage, and the caller can hold onto it indefinitely.
-  // Any cached copy handed to a source node from here on can no longer be
-  // trusted to stay in sync, so stop caching for the rest of this buffer's
-  // lifetime.
-  immutableCopyCache_.markLiveViewEscaped();
+  // audioBuffer_'s storage, so a copy cached before now can no longer be trusted.
+  // Caching resumes once the view is neutralised by detachReturnedChannelData().
+  immutableCopyCache_.invalidate();
 
-  auto channel = static_cast<int>(args[0].getNumber());
+  auto channel = static_cast<size_t>(args[0].getNumber());
   auto audioArrayBuffer = audioBuffer_->getSharedChannel(channel);
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
@@ -58,6 +93,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
 
   float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
+  returnedChannelDataArrays_.push_back(
+      {.channel = channel, .array = jsi::WeakObject(runtime, float32Array)});
 
   return float32Array;
 }

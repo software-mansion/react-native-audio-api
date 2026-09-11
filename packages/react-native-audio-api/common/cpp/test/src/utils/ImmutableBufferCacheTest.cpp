@@ -1,5 +1,5 @@
 #include <audioapi/utils/AudioBuffer.hpp>
-#include <audioapi/utils/ImmutableBufferCache.hpp>
+#include <audioapi/utils/ImmutableBufferCache.h>
 #include <gtest/gtest.h>
 #include <memory>
 
@@ -59,23 +59,6 @@ TEST(ImmutableBufferCacheTest, InvalidateForcesAFreshCopyOnce) {
                               "previously cached copy is stale and must not be reused.";
   EXPECT_EQ(second, third) << "After producing one fresh copy, subsequent calls should resume "
                               "caching normally rather than copying every time.";
-}
-
-TEST(ImmutableBufferCacheTest, MarkLiveViewEscapedDisablesCachingPermanently) {
-  ImmutableBufferCache cache;
-  auto source = makeBuffer();
-
-  auto first = cache.getOrCreate(source);
-  cache.markLiveViewEscaped();
-  auto second = cache.getOrCreate(source);
-  auto third = cache.getOrCreate(source);
-
-  EXPECT_NE(first, second) << "A live, JS-writable view escaped, so the pre-existing cache entry "
-                              "must be dropped since we can no longer prove it stayed in sync.";
-  EXPECT_NE(second, third)
-      << "Once a live view has ever escaped, every future call must fall back to a fresh, "
-         "uncached copy indefinitely. A write through that view could happen at any later "
-         "time, not just at the moment it was retrieved.";
 }
 
 // NOLINTEND

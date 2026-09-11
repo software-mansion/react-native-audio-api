@@ -55,10 +55,33 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
     const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
+  if (!swapBuffers(buffer, audioBuffer)) {
+    return;
+  }
+
+  if (buffer_ == nullptr) {
+    loopEnd_ = 0;
+    channelCount_ = AudioBufferSourceOptions::kDefaultChannelCount;
+    return;
+  }
+
+  channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
+  loopEnd_ = buffer_->getDuration();
+}
+
+void AudioBufferSourceNode::replaceBufferContent(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
+  swapBuffers(buffer, audioBuffer);
+}
+
+bool AudioBufferSourceNode::swapBuffers(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
 
   if (context == nullptr) {
-    return;
+    return false;
   }
 
   if (buffer_ != nullptr) {
@@ -69,21 +92,10 @@ void AudioBufferSourceNode::setBuffer(
     context->getDisposer()->dispose(std::move(audioBuffer_));
   }
 
-  if (buffer == nullptr) {
-    loopEnd_ = 0;
-    channelCount_ = AudioBufferSourceOptions::kDefaultChannelCount;
-
-    buffer_ = nullptr;
-    processor_->setBuffer(nullptr);
-    audioBuffer_ = audioBuffer;
-    return;
-  }
-
   buffer_ = buffer;
   audioBuffer_ = audioBuffer;
-  channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
-  loopEnd_ = buffer_->getDuration();
   processor_->setBuffer(buffer_);
+  return true;
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {

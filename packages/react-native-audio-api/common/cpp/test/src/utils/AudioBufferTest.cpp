@@ -634,4 +634,25 @@ TEST_F(AudioBufferTest, DeinterleaveZeroFramesIsNoop) {
   expectChannel(buf, 0, 42.0f);
 }
 
+TEST_F(AudioBufferTest, DetachSharedChannelCutsOffEscapedHandleAndKeepsSamples) {
+  AudioBuffer buf(BUF_SIZE, 2, SR);
+  fillChannel(buf, 0, 0.5f);
+  fillChannel(buf, 1, 0.25f);
+  auto escapedHandle = buf.getSharedChannel(0);
+  auto untouchedHandle = buf.getSharedChannel(1);
+
+  buf.detachSharedChannel(0);
+
+  EXPECT_NE(buf.getSharedChannel(0), escapedHandle) << "Detached channel must get fresh storage.";
+  EXPECT_EQ(buf.getSharedChannel(1), untouchedHandle)
+      << "Other channels keep their storage; only the escaped one is replaced.";
+  expectChannel(buf, 0, 0.5f);
+
+  (*escapedHandle)[3] = 1.0f;
+
+  expectChannel(buf, 0, 0.5f);
+  EXPECT_FLOAT_EQ((*escapedHandle)[3], 1.0f)
+      << "The old handle stays alive and writable, it just no longer reaches the buffer.";
+}
+
 // NOLINTEND

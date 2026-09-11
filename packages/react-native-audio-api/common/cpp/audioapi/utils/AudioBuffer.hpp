@@ -141,6 +141,14 @@ class AlignedAudioBuffer {
     return channels_[index];
   }
 
+  /// @brief Gives channel @p index fresh storage holding a copy of its current samples.
+  /// Every handle previously obtained through getSharedChannel() keeps the old storage
+  /// alive but no longer aliases this buffer, so writes through it can't reach us anymore.
+  /// This is how a JS `getChannelData` view gets cut off once playback acquires the buffer.
+  void detachSharedChannel(size_t index) {
+    channels_[index] = std::make_shared<AlignedAudioArrayBuffer<Alignment>>(*channels_[index]);
+  }
+
   AlignedAudioArray<Alignment> &operator[](size_t index) {
     return *channels_[index];
   }
