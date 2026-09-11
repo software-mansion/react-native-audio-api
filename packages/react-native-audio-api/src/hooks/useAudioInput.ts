@@ -18,9 +18,14 @@ const meaningfulReasons: RouteChangeReason[] = [
 
 /**
  * A hook that provides basic information and selection capabilities for audio
- * input devices on the system. (iOS only currently). The hook will
- * automatically listen for configuration changes and updates its state. If you
- * need more granular control, consider using the AudioManager API directly.
+ * input devices on the system. The hook will automatically listen for
+ * configuration changes and updates its state. If you need more granular
+ * control, consider using the AudioManager API directly.
+ *
+ * On Android the selection is bound while a capture stream opens, so
+ * `onSelectInput` throws while a recorder is running or paused, and
+ * `currentInput` stays null until a device is picked. See
+ * `AudioManager.setInputDevice`.
  *
  * @returns An object containing audio input information and selection
  *   capabilities

@@ -167,7 +167,24 @@ Checks if notification permissions were previously granted.
 
 Checks currently used and available devices.
 
+On Android, `currentInputs` reports the device selected through [`setInputDevice`](#setinputdevice) and is empty until one is selected, since the platform does not report which input it would pick on its own. `currentOutputs` is always empty on Android.
+
 #### Returns `Promise<AudioDevicesInfo>`, which is resolved after receiving the answer from the system.
+
+### `setInputDevice`
+
+Selects the device that audio is captured from, using an `id` taken from `getDevicesInfo().availableInputs`.
+
+| Name | Type | Description |
+| :----: | :----: | :---- |
+| `deviceId` | `string` | Identifier of the input device to capture from. |
+
+The two platforms differ in when the selection takes effect:
+
+- **iOS** sets the session's preferred input, which reroutes a running session right away.
+- **Android** binds the device while an Oboe capture stream opens, so the selection applies to recorders started afterwards. Calling it while a recorder is running or paused rejects instead of deferring the switch silently: stop the recorder, select the device, then start it again. A paused recorder still holds its stream and resumes onto the same device, which is why it is refused too. Android also needs the AAudio backend, which is what Oboe picks on Android 8.1 and newer; a recorder that can only open through OpenSL ES fails to start with an explanatory message rather than recording from the wrong device. If the selected device disappears mid-recording, the recorder reports an error through `onError` instead of falling back to the built-in microphone.
+
+#### Returns `Promise<void>`, which is resolved once the device is selected and rejected when the device cannot be found, when the system fails to switch to it, or, on Android, when a recorder is running or paused.
 
 ## Remarks
 
@@ -329,7 +346,7 @@ export type AudioDeviceList = AudioDeviceInfo[];
 export interface AudioDevicesInfo {
   availableInputs: AudioDeviceList;
   availableOutputs: AudioDeviceList;
-  currentInputs: AudioDeviceList; // iOS
+  currentInputs: AudioDeviceList; // iOS, and Android once a device is selected
   currentOutputs: AudioDeviceList; // iOS
 }
 ```

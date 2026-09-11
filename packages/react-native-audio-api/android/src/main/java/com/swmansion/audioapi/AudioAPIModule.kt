@@ -31,6 +31,7 @@ class AudioAPIModule(
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
     private const val TAG = "AudioAPIModule"
+    private const val INPUT_DEVICE_ERROR = "E_INPUT_DEVICE"
   }
 
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
@@ -50,6 +51,15 @@ class AudioAPIModule(
     eventOrdinal: Int,
     eventBody: Map<String, Any>,
   )
+
+  /**
+   * Hands the selected capture device to the native recorders.
+   *
+   * Returns false when a capture stream is already running, in which case the
+   * selection is left untouched: Oboe binds the capture device while the stream
+   * opens, so a running stream cannot be moved onto another one.
+   */
+  private external fun setPreferredInputDeviceId(deviceId: Int): Boolean
 
   init {
     try {
@@ -172,12 +182,38 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 
+  /**
+   * Selects the capture device every recorder opens its input stream on.
+   *
+   * Unlike iOS, which reroutes a live session, the selection is bound while an
+   * Oboe input stream opens. Changing it therefore only affects streams opened
+   * afterwards, and is rejected outright while a recorder holds a stream so that
+   * a caller never mistakes a deferred switch for an applied one. A paused
+   * recorder still holds its stream and resumes onto the same device, so it
+   * counts as holding one.
+   */
+  @RequiresApi(Build.VERSION_CODES.M)
   override fun setInputDevice(
     deviceId: String?,
     promise: Promise?,
   ) {
-    // TODO: noop for now, but it should be moved to upcoming
-    // audio engine implementation for android (duplex stream)
+    val device = deviceId?.let { MediaSessionManager.findInputDevice(it) }
+
+    if (device == null) {
+      promise?.reject(INPUT_DEVICE_ERROR, "Input device with id $deviceId not found", null)
+      return
+    }
+
+    if (!setPreferredInputDeviceId(device.id)) {
+      promise?.reject(
+        INPUT_DEVICE_ERROR,
+        "Cannot change the input device while a recorder is running or paused. Stop the recorder, select the device, then start it again.",
+        null,
+      )
+      return
+    }
+
+    MediaSessionManager.setPreferredInputDevice(device)
     promise?.resolve(null)
   }
 

@@ -125,6 +125,14 @@ class AudioManager implements IAudioManager {
    *
    * Resolves when the input device was set successfully and rejects when the
    * device cannot be found or the system fails to switch to it.
+   *
+   * On iOS the running session is rerouted right away. On Android the device is
+   * bound while a capture stream opens, so the selection applies to recorders
+   * started afterwards, and calling this while a recorder is running or paused
+   * rejects rather than deferring the switch silently. Android also needs the
+   * AAudio backend: a recorder that can only open through OpenSL ES fails to
+   * start with an explanatory message instead of recording from the wrong
+   * device.
    */
   async setInputDevice(deviceId: string): Promise<void> {
     await NativeAudioAPIModule.setInputDevice(deviceId);

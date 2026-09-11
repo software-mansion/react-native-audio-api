@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.PermissionAwareActivity
 import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
@@ -210,37 +211,70 @@ object MediaSessionManager {
     notificationManager.createNotificationChannel(mChannel)
   }
 
+  /**
+   * Capture device selected through `AudioManager.setInputDevice`, kept so that
+   * [getDevicesInfo] can report it back. It mirrors the selection held by the
+   * native capture layer, and `AudioAPIModule.setInputDevice` is the only writer
+   * of either.
+   *
+   * Null means no explicit selection was made and the platform picks the device.
+   * Android offers no way to learn which one that is before a stream opens, so
+   * `currentInputs` stays empty in that case.
+   *
+   * Written from the React Native module thread and read by whichever thread
+   * calls `getDevicesInfo`, hence volatile.
+   */
+  @Volatile
+  private var preferredInputDeviceId: Int? = null
+
+  @RequiresApi(Build.VERSION_CODES.M)
+  fun findInputDevice(deviceId: String): AudioDeviceInfo? =
+    this.audioManager
+      .getDevices(AudioManager.GET_DEVICES_INPUTS)
+      .firstOrNull { it.id.toString() == deviceId }
+
+  fun setPreferredInputDevice(device: AudioDeviceInfo) {
+    this.preferredInputDeviceId = device.id
+  }
+
   @RequiresApi(Build.VERSION_CODES.O)
   fun getDevicesInfo(): ReadableMap {
     val availableInputs = Arguments.createArray()
+    val currentInputs = Arguments.createArray()
     val availableOutputs = Arguments.createArray()
 
-    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
-      val deviceInfo = Arguments.createMap()
-      deviceInfo.putString("id", inputDevice.getId().toString())
-      deviceInfo.putString("name", inputDevice.productName.toString())
-      deviceInfo.putString("category", parseDeviceCategory(inputDevice))
+    val selectedInputDeviceId = this.preferredInputDeviceId
 
-      availableInputs.pushMap(deviceInfo)
+    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
+      availableInputs.pushMap(describeDevice(inputDevice))
+
+      if (inputDevice.id == selectedInputDeviceId) {
+        currentInputs.pushMap(describeDevice(inputDevice))
+      }
     }
 
     for (outputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
-      val deviceInfo = Arguments.createMap()
-      deviceInfo.putString("id", outputDevice.getId().toString())
-      deviceInfo.putString("name", outputDevice.productName.toString())
-      deviceInfo.putString("category", parseDeviceCategory(outputDevice))
-
-      availableOutputs.pushMap(deviceInfo)
+      availableOutputs.pushMap(describeDevice(outputDevice))
     }
 
     val devicesInfo = Arguments.createMap()
 
-    devicesInfo.putArray("currentInputs", Arguments.createArray())
+    devicesInfo.putArray("currentInputs", currentInputs)
     devicesInfo.putArray("currentOutputs", Arguments.createArray())
     devicesInfo.putArray("availableInputs", availableInputs)
     devicesInfo.putArray("availableOutputs", availableOutputs)
 
     return devicesInfo
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private fun describeDevice(device: AudioDeviceInfo): WritableMap {
+    val deviceInfo = Arguments.createMap()
+    deviceInfo.putString("id", device.id.toString())
+    deviceInfo.putString("name", device.productName.toString())
+    deviceInfo.putString("category", parseDeviceCategory(device))
+
+    return deviceInfo
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
@@ -253,6 +287,9 @@ object MediaSessionManager {
       AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired Headphones"
       AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth A2DP"
       AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
+      AudioDeviceInfo.TYPE_USB_DEVICE -> "USB Device"
+      AudioDeviceInfo.TYPE_USB_HEADSET -> "USB Headset"
+      AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB Accessory"
       else -> "Other (${device.type})"
     }
 

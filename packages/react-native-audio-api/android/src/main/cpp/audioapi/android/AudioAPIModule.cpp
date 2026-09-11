@@ -1,5 +1,6 @@
 #include <audioapi/android/AudioAPIModule.h>
 #include <audioapi/android/JniEventPayloadParser.h>
+#include <audioapi/android/core/AudioInputSelection.h>
 #include <audioapi/android/system/NativeFileInfo.hpp>
 #include <memory>
 
@@ -32,6 +33,7 @@ void AudioAPIModule::registerNatives() {
       makeNativeMethod(
           "invokeHandlerWithEventNameAndEventBody",
           AudioAPIModule::invokeHandlerWithEventNameAndEventBody),
+      makeNativeMethod("setPreferredInputDeviceId", AudioAPIModule::setPreferredInputDeviceId),
   });
 }
 
@@ -53,6 +55,11 @@ void AudioAPIModule::invokeHandlerWithEventNameAndEventBody(
   auto event = static_cast<AudioEvent>(eventOrdinal);
   audioEventHandlerRegistry_->dispatchEvent(
       event, kBroadcastListenerId, buildPayloadFromJniMap(event, eventBody));
+}
+
+jboolean AudioAPIModule::setPreferredInputDeviceId(jint deviceId) {
+  return static_cast<jboolean>(
+      AudioInputSelection::setPreferredDeviceId(static_cast<int32_t>(deviceId)));
 }
 
 } // namespace audioapi
