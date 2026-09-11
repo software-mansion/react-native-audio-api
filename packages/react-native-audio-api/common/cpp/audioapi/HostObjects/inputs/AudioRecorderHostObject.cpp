@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiPromise.h>
@@ -54,6 +55,10 @@ AudioRecorderHostObject::AudioRecorderHostObject(
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, inputLatency));
 }
 
+AudioRecorderHostObject::~AudioRecorderHostObject() {
+  ActiveRecorderHandle::global().clearRecorder(audioRecorder_.get());
+}
+
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   auto fileNameOverride = jsiutils::argToString(runtime, args, count, 0, "");
   auto audioRecorder = audioRecorder_;
@@ -61,6 +66,9 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   return promiseVendor_->createAsyncPromise(
       [audioRecorder, fileNameOverride = std::move(fileNameOverride)]() -> PromiseResolver {
         auto result = audioRecorder->start(fileNameOverride);
+        if (result.is_ok()) {
+          ActiveRecorderHandle::global().setRecorder(audioRecorder);
+        }
 
         return [result = std::move(result)](
                    jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
@@ -87,8 +95,12 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
     auto result = audioRecorder->stop();
 
-    return [result =
-                std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+    if (result.is_ok()) {
+      ActiveRecorderHandle::global().clearRecorder(audioRecorder.get());
+    }
+
+    return [result = std::move(result)](
+               jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
       auto jsResult = jsi::Object(runtime);
 
       jsResult.setProperty(

@@ -506,26 +506,14 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
 Result<NoneType, std::string> IOSAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties)
 {
+  if (!isIdle()) {
+    return Result<NoneType, std::string>::Ok(None);
+  }
+
   std::scoped_lock lock(fileWriterMutex_, errorCallbackMutex_);
   fileProperties_ = properties;
   fileOutputEnabled_.store(true, std::memory_order_release);
   fileOutputConfigured_.store(false, std::memory_order_release);
-
-  if (!isIdle()) {
-    AVAudioFormat *resolvedInputFormat = [nativeRecorder_ getResolvedInputFormat];
-    int resolvedBufferSize = [nativeRecorder_ getResolvedBufferSize];
-
-    if (!hasUsableRecorderFormat(resolvedInputFormat) || resolvedBufferSize <= 0) {
-      return Result<NoneType, std::string>::Err(
-          "Failed to open file for writing: recorder input format is unavailable");
-    }
-
-    auto writerResult = setupFileWriter(properties);
-    if (writerResult.is_err()) {
-      fileOutputEnabled_.store(false, std::memory_order_release);
-      return Result<NoneType, std::string>::Err(writerResult.unwrap_err());
-    }
-  }
 
   return Result<NoneType, std::string>::Ok(None);
 }

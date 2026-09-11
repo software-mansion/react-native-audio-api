@@ -67,7 +67,7 @@ list(REMOVE_ITEM RNAUDIOAPI_LIBS
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.c"
 )
 
-add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC})
+add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC} "${JSI_DIR}/jsi/jsi.cpp")
 add_library(rnaudioapi_libs STATIC ${RNAUDIOAPI_LIBS})
 
 target_include_directories(rnaudioapi PUBLIC

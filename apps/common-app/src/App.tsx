@@ -181,10 +181,19 @@ const MainTabsScreen: FC = () => {
   );
 };
 
+const linking = {
+  prefixes: ['audioapi-example://'],
+  config: {
+    screens: {
+      RecordDemo: 'record',
+    },
+  },
+};
+
 const App: FC = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <Stack.Navigator
           screenOptions={{
             headerShown: true,

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Result.hpp>
@@ -18,7 +19,6 @@ class IAudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
-  enum class RecorderState : uint8_t { Idle = 0, Recording, Paused };
   explicit AudioRecorder(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
       : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
@@ -60,6 +60,10 @@ class AudioRecorder {
   virtual bool isRecording() const = 0;
   virtual bool isPaused() const = 0;
   virtual bool isIdle() const = 0;
+
+  /// @brief The state the platform predicates above agree on, which can differ from the
+  /// last requested transition while the audio engine is not running.
+  RecorderState getState() const;
 
   [[nodiscard]] virtual double getInputLatency() const = 0;
 

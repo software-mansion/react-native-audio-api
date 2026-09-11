@@ -56,6 +56,14 @@ export default class AudioRecorder {
     this.recorder = globalThis.createAudioRecorder(options ?? {});
   }
 
+  static isRecordingOngoing(): boolean {
+    return globalThis.isRecordingOngoing?.() ?? false;
+  }
+
+  static takeLastRecordingResult(): FileInfo | null {
+    return globalThis.takeLastRecordingResult?.() ?? null;
+  }
+
   /**
    * Enables writing recorded audio to a file using the provided options.
    *

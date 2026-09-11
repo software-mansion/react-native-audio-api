@@ -286,18 +286,14 @@ AndroidAudioRecorder::stop() {
 /// @returns On success, returns the file URI where the recording is being saved, otherwise returns an error message.
 Result<NoneType, std::string> AndroidAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
+  if (!isIdle()) {
+    return Result<NoneType, std::string>::Ok(None);
+  }
+
   std::scoped_lock fileWriterLock(fileWriterMutex_);
   fileProperties_ = properties;
   fileOutputEnabled_.store(true, std::memory_order_release);
   fileOutputConfigured_.store(false, std::memory_order_release);
-
-  if (!isIdle()) {
-    auto writerResult = setupFileWriter(properties);
-    if (!writerResult.is_ok()) {
-      fileOutputEnabled_.store(false, std::memory_order_release);
-      return writerResult;
-    }
-  }
 
   return Result<NoneType, std::string>::Ok(None);
 }
@@ -591,7 +587,16 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       return;
     }
 
+    const auto stateBeforeTeardown = state_.load(std::memory_order_acquire);
+
     cleanup();
+
+    // An idle session has nothing to restore — this covers a disconnect delivered
+    // late, after stop() already finished — and reopening here would leave a fresh,
+    // never-started mic stream held while idle.
+    if (stateBeforeTeardown == RecorderState::Idle) {
+      return;
+    }
 
     auto streamResult = openAudioStream();
 
@@ -610,8 +615,13 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       return;
     }
 
-    mStream_->requestStart();
-    state_.store(RecorderState::Recording, std::memory_order_release);
+    // Restore the interrupted session's state instead of unconditionally recording —
+    // a paused session must stay paused, or the reopened stream would silently turn
+    // the microphone back on against an explicit user action.
+    if (stateBeforeTeardown == RecorderState::Recording) {
+      mStream_->requestStart();
+    }
+    state_.store(stateBeforeTeardown, std::memory_order_release);
   }
 }
 

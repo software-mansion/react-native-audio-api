@@ -8,6 +8,7 @@
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -38,6 +39,8 @@ class AudioAPIModuleInstaller {
     auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioFileUtils = getCreateAudioFileUtilsFunction(jsiRuntime, jsCallInvoker);
+    auto isRecordingOngoing = getIsRecordingOngoingFunction(jsiRuntime);
+    auto takeLastRecordingResult = getTakeLastRecordingResultFunction(jsiRuntime);
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
@@ -46,6 +49,9 @@ class AudioAPIModuleInstaller {
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioBuffer", createAudioBuffer);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioDecoder", createAudioDecoder);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioFileUtils", createAudioFileUtils);
+    jsiRuntime->global().setProperty(*jsiRuntime, "isRecordingOngoing", isRecordingOngoing);
+    jsiRuntime->global().setProperty(
+        *jsiRuntime, "takeLastRecordingResult", takeLastRecordingResult);
 
     auto audioEventHandlerRegistryHostObject =
         std::make_shared<AudioEventHandlerRegistryHostObject>(audioEventHandlerRegistry);
@@ -129,6 +135,43 @@ class AudioAPIModuleInstaller {
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 
           return jsiObject;
+        });
+  }
+
+  static jsi::Function getIsRecordingOngoingFunction(jsi::Runtime *jsiRuntime) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "isRecordingOngoing"),
+        0,
+        [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
+            -> jsi::Value {
+          return jsi::Value(ActiveRecorderHandle::global().isRecordingOngoing());
+        });
+  }
+
+  static jsi::Function getTakeLastRecordingResultFunction(jsi::Runtime *jsiRuntime) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "takeLastRecordingResult"),
+        0,
+        [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
+            -> jsi::Value {
+          auto result = ActiveRecorderHandle::global().takeLastRecordingResult();
+          if (!result.has_value()) {
+            return jsi::Value::null();
+          }
+
+          auto jsResult = jsi::Object(runtime);
+          auto pathsArray = jsi::Array(runtime, result->paths.size());
+          for (size_t i = 0; i < result->paths.size(); ++i) {
+            pathsArray.setValueAtIndex(
+                runtime, i, jsi::String::createFromUtf8(runtime, result->paths[i]));
+          }
+          jsResult.setProperty(runtime, "paths", pathsArray);
+          jsResult.setProperty(runtime, "size", result->size);
+          jsResult.setProperty(runtime, "duration", result->duration);
+
+          return jsi::Value(std::move(jsResult));
         });
   }
 
