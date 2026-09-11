@@ -55,9 +55,10 @@ class RenderParamEvent : public ParamEvent {
     return startValue_;
   }
 
-  [[nodiscard]] const std::function<float(double, double, float, float, double)> &
-  getCalculateValue() const noexcept {
-    return calculateValue_;
+  /// @brief Evaluate the event's interpolation formula at @p time on the exact
+  /// scheduled start/end times.
+  [[nodiscard]] float calculateValueAtTime(double time) const {
+    return calculateValue_(getStartTime(), getEndTime(), startValue_, endValue_, time);
   }
 
   void setStartValue(float startValue) noexcept {

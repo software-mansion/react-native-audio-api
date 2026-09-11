@@ -49,5 +49,11 @@ constexpr std::size_t hardware_destructive_interference_size = 64;
 #endif
 
 // audio param
-inline constexpr size_t AUDIO_PARAM_MAX_QUEUED_EVENTS = 64;
+/// Slots preallocated per param queue (both the render queue on AudioParam and
+/// the control queue on AudioParamHostObject). Events past capacity are
+/// SILENTLY DROPPED — automation scheduled far ahead (e.g. a per-beat value
+/// sequence for a whole track, or the 100-event WPT audioparam suites) must
+/// fit here in full, so keep a generous margin. Cost: each slot reserves
+/// ~100 B in AudioParam and ~60 B in its host object.
+inline constexpr size_t AUDIO_PARAM_MAX_QUEUED_EVENTS = 256;
 } // namespace audioapi
