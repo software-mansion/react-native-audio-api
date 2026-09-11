@@ -38,10 +38,6 @@ export default class BaseAudioContext {
     this.listener = new AudioListener(this, context.listener);
     this.sampleRate = context.sampleRate;
 
-    // Native dispatches statechange once per acknowledged transition, queued
-    // behind the task that resolves the operation's promise and publishes
-    // `state`. Never write `state` from here: a rapid resume()+suspend() pair
-    // acknowledges both before either event lands.
     this.stateChangeSubscription = this.audioEventEmitter.addAudioEventListener(
       'stateChange',
       () => this.onstatechangeCallback?.()
@@ -50,11 +46,9 @@ export default class BaseAudioContext {
   }
 
   /**
-   * The spec's [[control thread state]]: written synchronously the moment an
-   * operation is accepted, so the NEXT call validates against what has already
-   * been requested (e.g. close() right after resume() must see 'running').
-   * Never exposed — the `state` attribute reports acknowledged reality
-   * instead.
+   * Written synchronously the moment an operation is accepted, so the NEXT call
+   * validates against what has already been requested (e.g. close() right after
+   * resume() must see 'running').
    */
   protected _state: ContextState = 'suspended';
 
