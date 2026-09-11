@@ -117,9 +117,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
     this.setControlState('closed');
 
     const renderedBuffer = new AudioBuffer(audioBuffer);
-    // `state` is already 'closed' here: native publishes it in the task that
-    // resolves this promise. The `closed` statechange lands in a later task,
-    // so `complete` precedes it — a deliberate deviation from spec order.
     this.oncomplete?.({
       type: 'complete',
       target: this,

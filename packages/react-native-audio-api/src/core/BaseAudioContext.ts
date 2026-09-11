@@ -60,15 +60,7 @@ export default class BaseAudioContext {
     AudioEventEmitter['addAudioEventListener']
   >;
 
-  private onstatechangeCallback: (() => void) | null = null;
-
-  public get onstatechange(): (() => void) | null {
-    return this.onstatechangeCallback;
-  }
-
-  public set onstatechange(callback: (() => void) | null) {
-    this.onstatechangeCallback = callback;
-  }
+  public onstatechangeCallback: (() => void) | null = null;
 
   /**
    * Record that a state transition has been requested ([[control thread
