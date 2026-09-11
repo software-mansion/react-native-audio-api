@@ -53,6 +53,8 @@ user experience, and maintainability. Here are some key best practices to consid
 
 - **Scheduled source nodes are single-use**: [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx), [`OscillatorNode`](../sources/oscillator-node.mdx), and other [`AudioScheduledSourceNode`](../sources/audio-scheduled-source-node.mdx) subclasses can be [`start()`](../sources/audio-scheduled-source-node.mdx#start)ed only once. Create a new node to replay a sound, but reuse the same [`AudioBuffer`](../sources/audio-buffer.mdx) — nodes are inexpensive to create.
 
+- **Seeking**: since a started `AudioBufferSourceNode` can't be repositioned, seeking means stopping/disconnecting it and creating a fresh node with the same `AudioBuffer` at a new `start()` offset. Reassigning the same buffer this way is cheap. The underlying PCM data is copied once per `AudioBuffer`, not once per node, so recreating the source node on every seek doesn't re-copy it.
+
 - **Use [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx) for chunked playback**: When audio arrives in segments (streaming TTS, progressive download), enqueue buffers into a queue source node rather than recreating the entire graph per chunk.
 
 ## [**AudioParam**](../core/audio-param.mdx) changes
@@ -87,4 +89,5 @@ Prefer logging plain values instead:
 ```tsx
 console.log({ channelCount: node.channelCount, numberOfInputs: node.numberOfInputs });
 ```
+
 :::

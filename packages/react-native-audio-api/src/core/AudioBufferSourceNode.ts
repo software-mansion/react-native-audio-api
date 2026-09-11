@@ -53,6 +53,12 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
     (this.node as IAudioBufferSourceNode).setBuffer(buffer.buffer);
     this._buffer = buffer;
     this.bufferHasBeenSet = true;
+
+    if (this.hasBeenStarted) {
+      // Assigning a buffer to an already-started source acquires its content right
+      // away, so native has just cut off the views this buffer handed out.
+      buffer.invalidateChannelDataCache();
+    }
   }
 
   public get loopSkip(): boolean {
@@ -112,6 +118,9 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
 
     this.hasBeenStarted = true;
     (this.node as IAudioBufferSourceNode).start(when, offset, duration);
+    // Native cut off every view handed out by getChannelData() while acquiring the
+    // buffer's content, so the wrapper must stop returning those dead views.
+    this._buffer?.invalidateChannelDataCache();
     this.context.markRunningOnSourceStart();
   }
 

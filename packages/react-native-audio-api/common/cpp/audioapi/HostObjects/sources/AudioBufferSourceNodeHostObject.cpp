@@ -126,6 +126,9 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onLoopEnded) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
+  hasBeenStarted_ = true;
+  acquireBufferContent(runtime);
+
   auto handle = node_->handle;
   auto event = [handle,
                 node = audioBufferSourceNode_,
@@ -139,6 +142,30 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
   return jsi::Value::undefined();
 }
 
+void AudioBufferSourceNodeHostObject::acquireBufferContent(jsi::Runtime &runtime) {
+  if (bufferHostObject_ == nullptr) {
+    return;
+  }
+
+  bufferHostObject_->detachReturnedChannelData(runtime);
+
+  if (bufferHostObject_->getContentVersion() == sharedContentVersion_) {
+    // Nothing replaced the storage the node already reads, so it holds the content
+    // exactly as acquired.
+    return;
+  }
+
+  // Some channel storage could be swapped since the node received its samples, either by
+  // the detach above or by an earlier copy-on-write. Re-hand it the current content,
+  // touching only the samples so loopEnd and friends survive.
+  auto buffers = prepareNodeBuffers(bufferHostObject_->audioBuffer_, bufferHostObject_);
+  auto event =
+      [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
+        node->replaceBufferContent(buffers.nodeBuffer, buffers.audioBuffer);
+      };
+  audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
+}
+
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
   if (args[0].isNull()) {
     setBuffer(nullptr);
@@ -147,56 +174,77 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
     thisValue.asObject(runtime).setExternalMemoryPressure(
         runtime, getMemoryPressure() + bufferHostObject->getSizeInBytes());
 
-    setBuffer(bufferHostObject->audioBuffer_);
+    setBuffer(bufferHostObject->audioBuffer_, bufferHostObject);
+  }
+
+  // Per Web Audio, assigning a buffer to an already-started source acquires its
+  // content right away, because start() had nothing to acquire back then.
+  if (hasBeenStarted_) {
+    acquireBufferContent(runtime);
   }
 
   return jsi::Value::undefined();
 }
 
-void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
-  // TODO: add optimized memory management for buffer changes, e.g.
-  //  when the same buffer is reused across threads and
-  // buffer modification is not allowed on JS thread
-  auto handle = node_->handle;
-
-  std::shared_ptr<AudioBuffer> copiedBuffer;
-  std::shared_ptr<DSPAudioBuffer> audioBuffer;
-  const size_t newChannelCount = buffer == nullptr ? AudioBufferSourceOptions::kDefaultChannelCount
-                                                   : buffer->getNumberOfChannels();
+AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::prepareNodeBuffers(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    const std::shared_ptr<AudioBufferHostObject> &bufferHostObject) {
+  NodeBuffers buffers;
 
   if (buffer == nullptr) {
-    copiedBuffer = nullptr;
-    audioBuffer = std::make_shared<DSPAudioBuffer>(
+    buffers.nodeBuffer = nullptr;
+    buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
         AudioBufferSourceOptions::kDefaultChannelCount,
         audioBufferSourceNode_->getContextSampleRate());
-  } else {
-    if (pitchCorrection_) {
-      initStretch(static_cast<int>(buffer->getNumberOfChannels()), buffer->getSampleRate());
-      auto extraTailFrames =
-          static_cast<size_t>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
-      size_t totalSize = buffer->getSize() + extraTailFrames;
-      copiedBuffer = std::make_shared<AudioBuffer>(
-          totalSize, buffer->getNumberOfChannels(), buffer->getSampleRate());
-      copiedBuffer->copy(*buffer, 0, 0, buffer->getSize());
-      copiedBuffer->zero(buffer->getSize(), extraTailFrames);
-    } else {
-      copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
-    }
-
-    audioBuffer = std::make_shared<DSPAudioBuffer>(
-        RENDER_QUANTUM_SIZE,
-        copiedBuffer->getNumberOfChannels(),
-        audioBufferSourceNode_->getContextSampleRate());
+    return buffers;
   }
+
+  if (pitchCorrection_) {
+    // The stretcher needs tail padding past the end of the samples, so this path keeps
+    // its own padded copy.
+    initStretch(static_cast<int>(buffer->getNumberOfChannels()), buffer->getSampleRate());
+    auto extraTailFrames =
+        static_cast<size_t>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
+    size_t totalSize = buffer->getSize() + extraTailFrames;
+    buffers.nodeBuffer = std::make_shared<AudioBuffer>(
+        totalSize, buffer->getNumberOfChannels(), buffer->getSampleRate());
+    buffers.nodeBuffer->copy(*buffer, 0, 0, buffer->getSize());
+    buffers.nodeBuffer->zero(buffer->getSize(), extraTailFrames);
+  } else if (bufferHostObject != nullptr) {
+    // stamp the buffer so from now on each call to getChannelData() returns a fresh view
+    // and the node can share the storage without risk of JS writing into it.
+    buffers.nodeBuffer = bufferHostObject->shareForPlayback();
+  } else {
+    buffers.nodeBuffer = std::make_shared<AudioBuffer>(*buffer);
+  }
+
+  if (bufferHostObject != nullptr) {
+    sharedContentVersion_ = bufferHostObject->getContentVersion();
+  }
+
+  buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
+      RENDER_QUANTUM_SIZE,
+      buffers.nodeBuffer->getNumberOfChannels(),
+      audioBufferSourceNode_->getContextSampleRate());
+  return buffers;
+}
+
+void AudioBufferSourceNodeHostObject::setBuffer(
+    const std::shared_ptr<AudioBuffer> &buffer,
+    const std::shared_ptr<AudioBufferHostObject> &bufferHostObject) {
+  bufferHostObject_ = bufferHostObject;
+  auto buffers = prepareNodeBuffers(buffer, bufferHostObject);
 
   // Update channelCount on the host thread before renegotiation so MAX /
   // CLAMPED_MAX downstream nodes see the new width immediately.
+  const size_t newChannelCount = buffer == nullptr ? AudioBufferSourceOptions::kDefaultChannelCount
+                                                   : buffer->getNumberOfChannels();
   updateChannelCount(newChannelCount);
 
   auto event =
-      [handle, node = audioBufferSourceNode_, copiedBuffer, audioBuffer](BaseAudioContext &) {
-        node->setBuffer(copiedBuffer, audioBuffer);
+      [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
+        node->setBuffer(buffers.nodeBuffer, buffers.audioBuffer);
       };
   audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
 }
