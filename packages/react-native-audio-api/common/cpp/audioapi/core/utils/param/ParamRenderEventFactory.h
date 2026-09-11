@@ -12,14 +12,6 @@ namespace audioapi {
 
 /// @brief A factory for creating RenderParamEvents and resolving their values
 /// based on the current state of the queue.
-///
-/// The calculateValue functions are pure interpolation formulas evaluated on an
-/// event's scheduled times; whether an event is in effect at a given frame is
-/// decided by ParamRenderQueue::computeValueAtTime against those times snapped
-/// to the sample-frame grid. Because a frame's exact time can fall fractionally
-/// outside [startTime, endTime) while the frame still belongs to the event, each
-/// formula must extrapolate gracefully (clamp, or accept a sub-ULP overshoot)
-/// instead of branching on the scheduled boundary.
 class ParamRenderEventFactory {
  public:
   static RenderParamEvent createSetValueEvent(float value, double startTime) {
@@ -106,8 +98,6 @@ class ParamRenderEventFactory {
             return endValue;
           }
 
-          // Position in the array based on time progress, clamped so a frame
-          // snapped fractionally outside the raw interval stays in range.
           double position = std::clamp(
               static_cast<double>(length - 1) / (endTime - startTime) * (time - startTime),
               0.0,

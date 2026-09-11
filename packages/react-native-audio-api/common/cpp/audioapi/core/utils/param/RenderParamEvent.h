@@ -11,12 +11,6 @@ namespace audioapi {
 /// @brief A RenderParamEvent extends ParamEvent with additional properties and a value calculation
 /// function that can compute the parameter value at any time during the event's active period
 /// based on its type and the current state of the queue.
-///
-/// startTime/endTime always hold the times exactly as scheduled. The spec defines
-/// the interpolation formulas on those real times (a ramp between two times inside
-/// one sample frame must still interpolate on them), so calculateValueAtTime uses
-/// them unmodified. Whether an event is in effect at a given frame is decided by
-/// ParamRenderQueue, which snaps these times onto the sample-frame grid on demand.
 class RenderParamEvent : public ParamEvent {
  public:
   RenderParamEvent() = default;
