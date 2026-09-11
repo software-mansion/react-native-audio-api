@@ -141,10 +141,20 @@ class AlignedAudioBuffer {
     return channels_[index];
   }
 
+  /// @brief Creates a buffer that shares this buffer's channel storage instead of copying
+  /// it. Both buffers read the same samples until one of them calls detachSharedChannel()
+  /// on a channel, which is how a source node can play a JS-visible buffer without a deep
+  /// copy while the JS side keeps copy-on-write semantics.
+  [[nodiscard]] std::shared_ptr<AlignedAudioBuffer> shareChannels() const {
+    auto shared = std::make_shared<AlignedAudioBuffer>(size_, numberOfChannels_, sampleRate_);
+    // share underlying data instead of copying it
+    shared->channels_ = channels_;
+    return shared;
+  }
+
   /// @brief Gives channel @p index fresh storage holding a copy of its current samples.
   /// Every handle previously obtained through getSharedChannel() keeps the old storage
   /// alive but no longer aliases this buffer, so writes through it can't reach us anymore.
-  /// This is how a JS `getChannelData` view gets cut off once playback acquires the buffer.
   void detachSharedChannel(size_t index) {
     channels_[index] = std::make_shared<AlignedAudioArrayBuffer<Alignment>>(*channels_[index]);
   }
@@ -353,13 +363,18 @@ class AlignedAudioBuffer {
       {2, {ChannelLeft, ChannelRight}},
       {4, {ChannelLeft, ChannelRight, ChannelSurroundLeft, ChannelSurroundRight}},
       {5, {ChannelLeft, ChannelRight, ChannelCenter, ChannelSurroundLeft, ChannelSurroundRight}},
-      {6,
-       {ChannelLeft,
-        ChannelRight,
-        ChannelCenter,
-        ChannelLFE,
-        ChannelSurroundLeft,
-        ChannelSurroundRight}}};
+      {
+          6,
+          {
+              ChannelLeft,
+              ChannelRight,
+              ChannelCenter,
+              ChannelLFE,
+              ChannelSurroundLeft,
+              ChannelSurroundRight,
+          },
+      },
+  };
 
   template <size_t OtherAlignment>
   void discreteSum(

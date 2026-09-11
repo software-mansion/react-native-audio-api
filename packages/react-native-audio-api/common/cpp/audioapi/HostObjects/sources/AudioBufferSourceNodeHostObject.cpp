@@ -143,17 +143,25 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
 }
 
 void AudioBufferSourceNodeHostObject::acquireBufferContent(jsi::Runtime &runtime) {
-  if (bufferHostObject_ == nullptr || !bufferHostObject_->hasReturnedChannelData()) {
+  if (bufferHostObject_ == nullptr) {
     return;
   }
 
   bufferHostObject_->detachReturnedChannelData(runtime);
-  // The copy handed to the node in setBuffer() predates any writes made through those
-  // views since, so hand it the post-write content that has now been fenced off.
+
+  if (bufferHostObject_->getContentVersion() == sharedContentVersion_) {
+    // Nothing replaced the storage the node already reads, so it holds the content
+    // exactly as acquired.
+    return;
+  }
+
+  // Some channel storage could be swapped since the node received its samples, either by
+  // the detach above or by an earlier copy-on-write. Re-hand it the current content,
+  // touching only the samples so loopEnd and friends survive.
   auto buffers = prepareNodeBuffers(bufferHostObject_->audioBuffer_, bufferHostObject_);
   auto event =
       [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
-        node->replaceBufferContent(buffers.copiedBuffer, buffers.audioBuffer);
+        node->replaceBufferContent(buffers.nodeBuffer, buffers.audioBuffer);
       };
   audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
 }
@@ -181,13 +189,10 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
 AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::prepareNodeBuffers(
     const std::shared_ptr<AudioBuffer> &buffer,
     const std::shared_ptr<AudioBufferHostObject> &bufferHostObject) {
-  // TODO: add optimized memory management for buffer changes, e.g.
-  //  when the same buffer is reused across threads and
-  // buffer modification is not allowed on JS thread
   NodeBuffers buffers;
 
   if (buffer == nullptr) {
-    buffers.copiedBuffer = nullptr;
+    buffers.nodeBuffer = nullptr;
     buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
         AudioBufferSourceOptions::kDefaultChannelCount,
@@ -196,27 +201,31 @@ AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::pr
   }
 
   if (pitchCorrection_) {
+    // The stretcher needs tail padding past the end of the samples, so this path keeps
+    // its own padded copy.
     initStretch(static_cast<int>(buffer->getNumberOfChannels()), buffer->getSampleRate());
     auto extraTailFrames =
         static_cast<size_t>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
     size_t totalSize = buffer->getSize() + extraTailFrames;
-    buffers.copiedBuffer = std::make_shared<AudioBuffer>(
+    buffers.nodeBuffer = std::make_shared<AudioBuffer>(
         totalSize, buffer->getNumberOfChannels(), buffer->getSampleRate());
-    buffers.copiedBuffer->copy(*buffer, 0, 0, buffer->getSize());
-    buffers.copiedBuffer->zero(buffer->getSize(), extraTailFrames);
+    buffers.nodeBuffer->copy(*buffer, 0, 0, buffer->getSize());
+    buffers.nodeBuffer->zero(buffer->getSize(), extraTailFrames);
   } else if (bufferHostObject != nullptr) {
-    // Reuse a cached copy across repeated `.buffer = x` reassignments of the same
-    // JS-visible buffer (e.g. seeking, which recreates the source node but keeps
-    // reusing the already-decoded buffer) instead of deep-copying every time.
-    // See https://github.com/software-mansion/react-native-audio-api/issues/1263.
-    buffers.copiedBuffer = bufferHostObject->getOrCreateImmutableCopy();
+    // stamp the buffer so from now on each call to getChannelData() returns a fresh view
+    // and the node can share the storage without risk of JS writing into it.
+    buffers.nodeBuffer = bufferHostObject->shareForPlayback();
   } else {
-    buffers.copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
+    buffers.nodeBuffer = std::make_shared<AudioBuffer>(*buffer);
+  }
+
+  if (bufferHostObject != nullptr) {
+    sharedContentVersion_ = bufferHostObject->getContentVersion();
   }
 
   buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
       RENDER_QUANTUM_SIZE,
-      buffers.copiedBuffer->getNumberOfChannels(),
+      buffers.nodeBuffer->getNumberOfChannels(),
       audioBufferSourceNode_->getContextSampleRate());
   return buffers;
 }
@@ -235,7 +244,7 @@ void AudioBufferSourceNodeHostObject::setBuffer(
 
   auto event =
       [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
-        node->setBuffer(buffers.copiedBuffer, buffers.audioBuffer);
+        node->setBuffer(buffers.nodeBuffer, buffers.audioBuffer);
       };
   audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
 }

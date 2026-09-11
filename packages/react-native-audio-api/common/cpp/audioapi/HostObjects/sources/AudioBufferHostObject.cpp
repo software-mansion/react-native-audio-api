@@ -27,8 +27,29 @@ AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> 
 AudioBufferHostObject::AudioBufferHostObject(AudioBufferHostObject &&other) noexcept
     : HostObject(std::move(other)),
       audioBuffer_(std::move(other.audioBuffer_)),
-      immutableCopyCache_(std::move(other.immutableCopyCache_)),
+      channelSharedWithNode_(std::move(other.channelSharedWithNode_)),
+      contentVersion_(other.contentVersion_),
       returnedChannelDataArrays_(std::move(other.returnedChannelDataArrays_)) {}
+
+std::shared_ptr<AudioBuffer> AudioBufferHostObject::shareForPlayback() {
+  channelSharedWithNode_.assign(audioBuffer_->getNumberOfChannels(), true);
+  return audioBuffer_->shareChannels();
+}
+
+void AudioBufferHostObject::makeChannelWritable(size_t channel) {
+  if (channel < channelSharedWithNode_.size() && channelSharedWithNode_[channel]) {
+    replaceChannelStorage(channel);
+  }
+}
+
+void AudioBufferHostObject::replaceChannelStorage(size_t channel) {
+  // mark the channel as no longer shared with a node, so that future writes to it don't trigger another copy-on-write
+  if (channel < channelSharedWithNode_.size()) {
+    audioBuffer_->detachSharedChannel(channel);
+    channelSharedWithNode_[channel] = false;
+    ++contentVersion_;
+  }
+}
 
 void AudioBufferHostObject::detachReturnedChannelData(jsi::Runtime &runtime) {
   if (returnedChannelDataArrays_.empty()) {
@@ -52,15 +73,12 @@ void AudioBufferHostObject::detachReturnedChannelData(jsi::Runtime &runtime) {
     }
 
     if (!channelDetached[returned.channel]) {
-      audioBuffer_->detachSharedChannel(returned.channel);
+      replaceChannelStorage(returned.channel);
       channelDetached[returned.channel] = true;
     }
   }
 
   returnedChannelDataArrays_.clear();
-  // A view could have been written through right up until now, i.e. after the cached
-  // copy was taken.
-  immutableCopyCache_.invalidate();
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, sampleRate) {
@@ -80,12 +98,11 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, numberOfChannels) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
-  // The returned Float32Array is a live, JS-writable view straight into
-  // audioBuffer_'s storage, so a copy cached before now can no longer be trusted.
-  // Caching resumes once the view is neutralised by detachReturnedChannelData().
-  immutableCopyCache_.invalidate();
-
   auto channel = static_cast<size_t>(args[0].getNumber());
+  // The returned Float32Array is a live, JS-writable view straight into audioBuffer_'s
+  // storage, so that storage must not be one a node is playing.
+  makeChannelWritable(channel);
+
   auto audioArrayBuffer = audioBuffer_->getSharedChannel(channel);
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
@@ -120,14 +137,13 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyFromChannel) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyToChannel) {
-  // Mutates audioBuffer_ in place, so any previously cached copy is now stale.
-  immutableCopyCache_.invalidate();
-
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
   auto *source = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto sourceLength = arrayBuffer.size(runtime) / sizeof(float);
   auto channelNumber = static_cast<int>(args[1].getNumber());
+  // Mutates audioBuffer_ in place, so that channel must not be one a node is playing.
+  makeChannelWritable(static_cast<size_t>(channelNumber));
   auto rawStart = args[2].getNumber();
   auto channelSize = audioBuffer_->getSize();
 

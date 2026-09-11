@@ -2,10 +2,10 @@
 
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/utils/AudioBuffer.hpp>
-#include <audioapi/utils/ImmutableBufferCache.h>
 
 #include <jsi/jsi.h>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -13,6 +13,10 @@
 namespace audioapi {
 using namespace facebook;
 
+/// @brief JS-facing AudioBuffer. Source nodes play its channel storage directly instead of
+/// deep-copying it (see `shareForPlayback`), so the one rule this class enforces is that the
+/// JS thread never writes into storage a node may be reading: every write path first gives
+/// the touched channel fresh storage (copy-on-write) and leaves the old one to the nodes.
 class AudioBufferHostObject : public HostObject {
  public:
   std::shared_ptr<AudioBuffer> audioBuffer_;
@@ -25,7 +29,8 @@ class AudioBufferHostObject : public HostObject {
     if (this != &other) {
       HostObject::operator=(std::move(other));
       audioBuffer_ = std::move(other.audioBuffer_);
-      immutableCopyCache_ = std::move(other.immutableCopyCache_);
+      channelSharedWithNode_ = std::move(other.channelSharedWithNode_);
+      contentVersion_ = other.contentVersion_;
       returnedChannelDataArrays_ = std::move(other.returnedChannelDataArrays_);
     }
     return *this;
@@ -34,22 +39,17 @@ class AudioBufferHostObject : public HostObject {
   ~AudioBufferHostObject() override = default;
 
   [[nodiscard]] size_t getSizeInBytes() const {
-    // *2 because every time buffer is passed we create a copy of it.
-    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float) * 2;
+    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float);
   }
 
-  /// @brief Returns a defensive copy of `audioBuffer_` suitable for handing to an
-  /// `AudioBufferSourceNode`, reusing a cached copy across repeated `.buffer = x`
-  /// reassignments of this same JS-visible buffer (e.g. seeking, which recreates the
-  /// source node but keeps reusing the already-decoded buffer). Without this, every
-  /// reassignment allocated a brand-new full-size copy, which is where
-  /// https://github.com/software-mansion/react-native-audio-api/issues/1263 came from.
-  /// @note The cache is dropped whenever `audioBuffer_` may have diverged from it:
-  /// `copyToChannel` mutates in place, `getChannelData` hands out a live JS-writable
-  /// view, and `detachReturnedChannelData` is the last moment such a view could have
-  /// been written through.
-  [[nodiscard]] std::shared_ptr<AudioBuffer> getOrCreateImmutableCopy() {
-    return immutableCopyCache_.getOrCreate(audioBuffer_);
+  /// @brief from this call both the js and native side can read the same channel storage.
+  /// The JS side is copy-on-write, so it will get a fresh copy if it writes into it while a node is reading it.
+  [[nodiscard]] std::shared_ptr<AudioBuffer> shareForPlayback();
+
+  /// @brief Bumped every time a channel's storage is replaced. A source node compares it
+  /// with the version it shared at to decide whether "acquire the content" must re-share.
+  [[nodiscard]] uint64_t getContentVersion() const {
+    return contentVersion_;
   }
 
   /// @brief Web Audio's "acquire the content" step for the views handed out by
@@ -77,10 +77,24 @@ class AudioBufferHostObject : public HostObject {
  private:
   struct ReturnedChannelDataArray {
     size_t channel;
+    /// Weak on purpose: a view JS already dropped must not be kept alive (nor keep its
+    /// external-memory-pressure hint alive) until the next start(). The channel is still
+    /// recorded so its storage gets swapped, since wrappers over the same ArrayBuffer may
+    /// outlive this particular Float32Array object.
     jsi::WeakObject array;
   };
 
-  utils::ImmutableBufferCache immutableCopyCache_;
+  /// Copy-on-write: call before exposing or mutating a channel from JS. If a node may be
+  /// reading that channel's storage, the buffer gets a private copy of it first.
+  void makeChannelWritable(size_t channel);
+
+  /// Replaces the channel's storage with a copy and records that nothing shares it yet.
+  void replaceChannelStorage(size_t channel);
+
+  /// One flag per channel: true while a node handed out by `shareForPlayback` may still
+  /// be reading that channel's current storage.
+  std::vector<bool> channelSharedWithNode_;
+  uint64_t contentVersion_ = 0;
   /// Float32Array views handed out by `getChannelData` since the last
   /// `detachReturnedChannelData`, kept so they can be neutralised then.
   std::vector<ReturnedChannelDataArray> returnedChannelDataArrays_;
