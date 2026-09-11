@@ -103,8 +103,8 @@ class CDSPFracDelayFilterBank : public R8B_BASECLASS {
 
     for (i = -pc2 + 1; i <= FilterFracs + pc2; i++) {
       sinc.FracDelay = (double)(FilterFracs - i) / FilterFracs;
-      sinc.initFrac(CDSPSincFilterGen ::wftKaiser, Params, true);
-      sinc.generateFrac(p, &CDSPSincFilterGen ::calcWindowKaiser, ElementSize);
+      sinc.initFrac(CDSPSincFilterGen::wftKaiser, Params, true);
+      sinc.generateFrac(p, &CDSPSincFilterGen::calcWindowKaiser, ElementSize);
 
       normalizeFIRFilter(p, FilterLen, 1.0, ElementSize);
       p += FilterSize;
@@ -439,7 +439,7 @@ class CDSPFracDelayFilterBankCache : public R8B_BASECLASS {
     R8B_EXITDTOR static int ObjCount = 0; // The number of objects
                                           // currently present in the Objects cache.
 
-    CDSPFracDelayFilterBank ::roundReqAtten(ReqAtten, IsThird);
+    CDSPFracDelayFilterBank::roundReqAtten(ReqAtten, IsThird);
 
     R8BSYNC(getStateSync());
 
@@ -556,8 +556,8 @@ class CDSPFracDelayFilterBankCache : public R8B_BASECLASS {
 // CDSPFracDelayFilterBank PUBLIC
 // ---------------------------------------------------------------------------
 
-inline void CDSPFracDelayFilterBank ::unref() {
-  R8BSYNC(CDSPFracDelayFilterBankCache ::getStateSync());
+inline void CDSPFracDelayFilterBank::unref() {
+  R8BSYNC(CDSPFracDelayFilterBankCache::getStateSync());
 
   RefCount--;
 }
@@ -705,10 +705,10 @@ class CDSPFracInterpolator : public CDSPProcessor {
       LatencyFrac = (spos - InitFracPosW) / InStep;
 
       FilterBank =
-          &CDSPFracDelayFilterBankCache ::getFilterBank(OutStep, 1, 2, ReqAtten, IsThird, false);
+          &CDSPFracDelayFilterBankCache::getFilterBank(OutStep, 1, 2, ReqAtten, IsThird, false);
     } else {
       LatencyFrac = 0.0;
-      FilterBank = &CDSPFracDelayFilterBankCache ::getFilterBank(-1, 3, 8, ReqAtten, IsThird, true);
+      FilterBank = &CDSPFracDelayFilterBankCache::getFilterBank(-1, 3, 8, ReqAtten, IsThird, true);
     }
 
 #endif // R8B_FLTTEST
@@ -722,21 +722,21 @@ class CDSPFracInterpolator : public CDSPProcessor {
     R8BASSERT((1 << BufLenBits) >= FilterLen * 3);
 
     static const CConvolveFn FltConvFn0[13] = {
-        &CDSPFracInterpolator ::convolve0<6>,
-        &CDSPFracInterpolator ::convolve0<8>,
-        &CDSPFracInterpolator ::convolve0<10>,
-        &CDSPFracInterpolator ::convolve0<12>,
-        &CDSPFracInterpolator ::convolve0<14>,
-        &CDSPFracInterpolator ::convolve0<16>,
-        &CDSPFracInterpolator ::convolve0<18>,
-        &CDSPFracInterpolator ::convolve0<20>,
-        &CDSPFracInterpolator ::convolve0<22>,
-        &CDSPFracInterpolator ::convolve0<24>,
-        &CDSPFracInterpolator ::convolve0<26>,
-        &CDSPFracInterpolator ::convolve0<28>,
-        &CDSPFracInterpolator ::convolve0<30>};
+        &CDSPFracInterpolator::convolve0<6>,
+        &CDSPFracInterpolator::convolve0<8>,
+        &CDSPFracInterpolator::convolve0<10>,
+        &CDSPFracInterpolator::convolve0<12>,
+        &CDSPFracInterpolator::convolve0<14>,
+        &CDSPFracInterpolator::convolve0<16>,
+        &CDSPFracInterpolator::convolve0<18>,
+        &CDSPFracInterpolator::convolve0<20>,
+        &CDSPFracInterpolator::convolve0<22>,
+        &CDSPFracInterpolator::convolve0<24>,
+        &CDSPFracInterpolator::convolve0<26>,
+        &CDSPFracInterpolator::convolve0<28>,
+        &CDSPFracInterpolator::convolve0<30>};
 
-    convfn = (IsWhole ? FltConvFn0[fl2 - 3] : &CDSPFracInterpolator ::convolve2);
+    convfn = (IsWhole ? FltConvFn0[fl2 - 3] : &CDSPFracInterpolator::convolve2);
 
     R8BCONSOLE(
         "CDSPFracInterpolator: src=%.2f dst=%.2f taps=%i "
@@ -920,8 +920,8 @@ class CDSPFracInterpolator : public CDSPProcessor {
                                        ///< whole-number stepping filter bank or static bank.
   bool IsWhole;                        ///< `true` if whole-number stepping is in use.
 
-  typedef double *(CDSPFracInterpolator ::*CConvolveFn)(double *op); ///<
-                                                                     ///< Convolution function type.
+  typedef double *(CDSPFracInterpolator::*CConvolveFn)(double *op); ///<
+                                                                    ///< Convolution function type.
   CConvolveFn convfn; ///< Convolution function in use.
 
   /**

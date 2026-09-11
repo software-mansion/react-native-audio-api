@@ -158,19 +158,19 @@ namespace r8b {
 
 #if __cplusplus >= 201103L
 
-using std ::atan2;
-using std ::ceil;
-using std ::cos;
-using std ::exp;
-using std ::fabs;
-using std ::floor;
-using std ::log;
-using std ::memcpy;
-using std ::memset;
-using std ::sin;
-using std ::size_t;
-using std ::sqrt;
-using std ::uintptr_t;
+using std::atan2;
+using std::ceil;
+using std::cos;
+using std::exp;
+using std::fabs;
+using std::floor;
+using std::log;
+using std::memcpy;
+using std::memset;
+using std::sin;
+using std::size_t;
+using std::sqrt;
+using std::uintptr_t;
 
 #endif // __cplusplus >= 201103L
 
@@ -461,8 +461,8 @@ class CPtrKeeper {
 
 #if __cplusplus >= 201103L
 
-typedef std ::mutex CSyncObject;                   ///< Mutex class.
-typedef std ::lock_guard<std ::mutex> CSyncKeeper; ///< Mutex keeper class.
+typedef std::mutex CSyncObject;                  ///< Mutex class.
+typedef std::lock_guard<std::mutex> CSyncKeeper; ///< Mutex keeper class.
 
 #else // __cplusplus >= 201103L
 
