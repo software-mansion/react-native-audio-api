@@ -1,6 +1,7 @@
 :root {
   --swm-logo-height: 45px;
   --swm-expandable-transition: transform 200ms ease;
+  --swm-code-diff-gutter: 1.25em;
 }
 
 .navbar {
@@ -145,9 +146,65 @@ table thead tr {
   background-color: var(--swm-off-background);
 }
 
-/* Add small padding, when some of the lines are too long in a code block */
-[class*='codeBlockLines'] span:last-of-type {
+/* Add small padding, when some of the lines are too long in a code block.
+   Diff lines are excluded: they already extend into the pre padding. */
+[class*='codeBlockLines'] span:last-of-type:not(.code-block-diff-add-line):not(.code-block-diff-remove-line) {
   margin-right: 1em;
+}
+
+.code-block-diff-add-line,
+.code-block-diff-remove-line {
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+  position: relative;
+}
+
+.code-block-diff-add-line {
+  background-color: var(--swm-green-light-40);
+}
+
+.code-block-diff-remove-line {
+  background-color: var(--swm-red-light-40);
+}
+
+[data-theme='dark'] .code-block-diff-add-line {
+  background-color: var(--swm-green-dark-140);
+}
+
+[data-theme='dark'] .code-block-diff-remove-line {
+  background-color: var(--swm-red-dark-140);
+}
+
+.code-block-diff-add-line::before,
+.code-block-diff-remove-line::before {
+  position: absolute;
+  left: 0.4em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.code-block-diff-add-line::before {
+  color: var(--swm-green-light-100);
+  content: '+';
+}
+
+.code-block-diff-remove-line::before {
+  color: var(--swm-red-light-100);
+  content: '-';
+}
+
+[data-theme='dark'] .code-block-diff-add-line::before {
+  color: var(--swm-green-dark-80);
+}
+
+[data-theme='dark'] .code-block-diff-remove-line::before {
+  color: var(--swm-red-dark-80);
+}
+
+pre code:has(.code-block-diff-add-line),
+pre code:has(.code-block-diff-remove-line) {
+  padding-left: calc(var(--ifm-pre-padding) + var(--swm-code-diff-gutter));
 }
 
 .theme-doc-version-badge {
