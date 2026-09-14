@@ -43,6 +43,10 @@ export interface IBaseAudioContext {
   readonly currentTime: number;
   readonly decoder: IAudioDecoder;
 
+  readonly state: string;
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
+  onstatechange: string;
+
   createRecorderAdapter(): IRecorderAdapterNode;
   createOscillator(oscillatorOptions: IOscillatorOptions): IOscillatorNode;
   createConstantSource(
