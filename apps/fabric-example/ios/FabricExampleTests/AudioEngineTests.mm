@@ -253,8 +253,7 @@
 
 @implementation AudioEngineTests
 
-+ (BOOL)testInvocationsAreParallelizable
-{
++ (BOOL)testInvocationsAreParallelizable {
   return NO;
 }
 
@@ -421,8 +420,10 @@
 
 - (void)testDetachSourceNodeKeepsGraphNeedsRebuildWhenInputRemains {
   NSString *sourceNodeId = [self attachSourceNodeToAudioEngine];
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachSourceNodeWithId:sourceNodeId];
@@ -434,8 +435,10 @@
 
 - (void)testAttachInputNodeStoresAndConnectsInput {
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
 
   AVAudioSinkNode *inputNode = self.audioEngine.inputNode;
   XCTAssertNotNil(inputNode);
@@ -454,8 +457,10 @@
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   fakeEngine.fakeInputNode.outputFormat = nil;
 
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
 
   XCTAssertNil(self.audioEngine.inputNode);
   XCTAssertEqual(fakeEngine.attachNodeCallCount, 0);
@@ -482,8 +487,10 @@
 }
 
 - (void)testDetachInputNodeClearsGraphOnlyWhenNoSourcesRemain {
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachInputNode];
@@ -492,8 +499,10 @@
   XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
 
   [self attachSourceNodeToAudioEngine];
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   self.audioEngine.graphNeedsRebuild = YES;
 
   [self.audioEngine detachInputNode];
@@ -506,8 +515,10 @@
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   fakeEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
 
   [self.audioEngine onSessionDeactivated];
   [self.audioEngine detachInputNode];
@@ -729,8 +740,10 @@
 
 - (void)
     testStartIfNecessaryRebuildsAfterSessionDeactivationEvenWhenTeardownClearsGraph {
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
 
   FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
   oldEngine.fakeRunning = YES;
@@ -747,8 +760,10 @@
   AVAudioFormat *recoveredInputFormat =
       [self testInputFormatWithSampleRate:48000 channelCount:1];
   self.audioEngine.nextCreatedEngineInputFormat = recoveredInputFormat;
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   AVAudioSinkNode *recoveredInputNode = self.audioEngine.inputNode;
 
   XCTAssertTrue([self.audioEngine startIfNecessary]);
@@ -769,8 +784,10 @@
 }
 
 - (void)testStartIfNecessaryRebuildsInputNodeWithFreshInstance {
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
   FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
   AVAudioSinkNode *oldInputNode = self.audioEngine.inputNode;
   AVAudioFormat *replacementInputFormat =
@@ -936,6 +953,36 @@
   XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
 }
 
+- (void)
+    testConfigurationChangeCallbackCanReadLiveInputFormatWhileRestartHoldsLock {
+  __block BOOL callbackRan = NO;
+  __block AVAudioFormat *formatSeenDuringRebuild = nil;
+
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:^{
+              callbackRan = YES;
+              formatSeenDuringRebuild = [self.audioEngine getLiveInputFormat];
+            }];
+
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+
+  XCTestExpectation *restartFinished =
+      [self expectationWithDescription:@"restartAudioEngine returned"];
+
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    [self.audioEngine restartAudioEngine];
+    [restartFinished fulfill];
+  });
+
+  [self waitForExpectations:@[ restartFinished ] timeout:5.0];
+
+  XCTAssertTrue(callbackRan);
+  XCTAssertNotNil(formatSeenDuringRebuild);
+}
+
 - (void)testConcurrentStartIfNecessaryDoesNotCrash {
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.state = AudioEngineStateIdle;
@@ -952,7 +999,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
   XCTAssertTrue([self.audioEngine startIfNecessary]);
 }
 
@@ -978,7 +1026,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 }
 
 - (void)testConcurrentRecordAndPlayPathsDoNotCrash {
@@ -991,8 +1040,10 @@
   for (NSInteger index = 0; index < 10; index += 1) {
     dispatch_group_enter(group);
     dispatch_async(queue, ^{
-  [self.audioEngine attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
-                              voiceProcessingEnabled:NO onInputConfigurationChange:nil];
+      [self.audioEngine
+          attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                    voiceProcessingEnabled:NO
+                onInputConfigurationChange:nil];
       [self.audioEngine startIfNecessary];
       dispatch_group_leave(group);
     });
@@ -1005,7 +1056,8 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 }
 
 - (void)testConcurrentInterruptionAndStartDoesNotCrash {
@@ -1032,7 +1084,38 @@
     });
   }
 
-  dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+}
+
+- (void)testConcurrentLiveInputFormatReadAndRestartDoesNotCrash {
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  for (NSInteger index = 0; index < 50; index += 1) {
+    dispatch_group_enter(group);
+    dispatch_async(queue, ^{
+      [self.audioEngine getLiveInputFormat];
+      dispatch_group_leave(group);
+    });
+
+    dispatch_group_enter(group);
+    dispatch_async(queue, ^{
+      [self.audioEngine restartAudioEngine];
+      dispatch_group_leave(group);
+    });
+  }
+
+  dispatch_group_wait(group,
+                      dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
 }
 
 @end
