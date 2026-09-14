@@ -2,6 +2,7 @@
 
 const lightCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-dark.js');
+const prismMagicComments = require('docs-theme/theme/CodeBlock/magicComments.js');
 
 // eslint-disable-next-line import/first
 import remarkMath from 'remark-math';
@@ -128,9 +129,10 @@ const config = {
         'All trademarks and copyrights belong to their respective owners. Read about our ',
     },
     prism: {
-      additionalLanguages: ['bash', 'cmake'],
+      additionalLanguages: ['bash', 'cmake', 'cpp'],
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
+      magicComments: prismMagicComments,
     },
     // t-rex-ui still mounts Algolia hooks; values are unused (local site, no search).
     algolia: {
