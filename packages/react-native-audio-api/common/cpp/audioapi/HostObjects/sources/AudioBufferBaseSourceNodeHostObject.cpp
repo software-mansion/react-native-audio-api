@@ -31,7 +31,7 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
 
   addSetters(
-      JSI_EXPORT_PROPERTY_SETTER(AudioBufferBaseSourceNodeHostObject, onPositionChanged),
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferBaseSourceNodeHostObject, onpositionchanged),
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
 
   addFunctions(
@@ -55,7 +55,7 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChangedI
   return {onPositionChangedInterval_};
 }
 
-JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onPositionChanged) {
+JSI_PROPERTY_SETTER_IMPL(AudioBufferBaseSourceNodeHostObject, onpositionchanged) {
   bufferBaseSourceNode_->assignOnPositionChangedCallbackId(
       std::stoull(value.getString(runtime).utf8(runtime)));
 }

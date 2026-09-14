@@ -51,7 +51,7 @@ export const queueSourceBasicTest = async (
 
   let endedFired = 0;
   let lastEvent: BufferEndedEvent | null = null;
-  source.onBufferEnded = (event: BufferEndedEvent) => {
+  source.onbufferended = (event: BufferEndedEvent) => {
     endedFired += 1;
     lastEvent = event;
   };
@@ -68,7 +68,7 @@ export const queueSourceBasicTest = async (
     ? String((lastEvent as BufferEndedEvent).isLastBufferInQueue)
     : 'n/a';
   setInfo(
-    `Basic: done. onBufferEnded fired ${endedFired} time(s), last isLast=${lastIsLast}.`
+    `Basic: done. onbufferended fired ${endedFired} time(s), last isLast=${lastIsLast}.`
   );
 };
 
@@ -85,7 +85,7 @@ export const queueSourceMultipleBuffersTest = async (
   const source = ctx.createBufferQueueSource();
 
   const endedEvents: BufferEndedEvent[] = [];
-  source.onBufferEnded = (event: BufferEndedEvent) => {
+  source.onbufferended = (event: BufferEndedEvent) => {
     endedEvents.push(event);
   };
 
@@ -103,7 +103,7 @@ export const queueSourceMultipleBuffersTest = async (
     ? endedEvents[endedEvents.length - 1].isLastBufferInQueue
     : false;
   setInfo(
-    `Multiple: done. onBufferEnded fired ${endedEvents.length} time(s); last isLastBufferInQueue=${lastFlag}.`
+    `Multiple: done. onbufferended fired ${endedEvents.length} time(s); last isLastBufferInQueue=${lastFlag}.`
   );
 };
 
@@ -114,7 +114,7 @@ export const queueSourceEnqueueWhilePlayingTest = async (
 ) => {
   const source = ctx.createBufferQueueSource();
   let endedCount = 0;
-  source.onBufferEnded = () => {
+  source.onbufferended = () => {
     endedCount += 1;
   };
 
@@ -136,7 +136,7 @@ export const queueSourceEnqueueWhilePlayingTest = async (
   await sleep(300);
 
   setInfo(
-    `Enqueue-while-playing: done. onBufferEnded fired ${endedCount} time(s).`
+    `Enqueue-while-playing: done. onbufferended fired ${endedCount} time(s).`
   );
 };
 
@@ -147,7 +147,7 @@ export const queueSourceDequeueTest = async (
 ) => {
   const source = ctx.createBufferQueueSource();
   const playedIds: string[] = [];
-  source.onBufferEnded = (event: BufferEndedEvent) => {
+  source.onbufferended = (event: BufferEndedEvent) => {
     playedIds.push(event.bufferId);
   };
 
@@ -170,7 +170,7 @@ export const queueSourceDequeueTest = async (
   await sleep(300);
 
   setInfo(
-    `Dequeue: done. onBufferEnded ids: [${playedIds.join(', ')}] (should not contain ${id2}).`
+    `Dequeue: done. onbufferended ids: [${playedIds.join(', ')}] (should not contain ${id2}).`
   );
 };
 
@@ -181,7 +181,7 @@ export const queueSourceClearBuffersTest = async (
 ) => {
   const source = ctx.createBufferQueueSource();
   let endedCount = 0;
-  source.onBufferEnded = () => {
+  source.onbufferended = () => {
     endedCount += 1;
   };
 
@@ -205,7 +205,7 @@ export const queueSourceClearBuffersTest = async (
   source.stop();
   await sleep(300);
 
-  setInfo(`Clear: done. onBufferEnded fired ${endedCount} time(s).`);
+  setInfo(`Clear: done. onbufferended fired ${endedCount} time(s).`);
 };
 
 export const queueSourcePauseResumeTest = async (
@@ -314,7 +314,7 @@ export const queueSourceLastFlagTest = async (
 ) => {
   const source = ctx.createBufferQueueSource();
   const events: BufferEndedEvent[] = [];
-  source.onBufferEnded = (event: BufferEndedEvent) => {
+  source.onbufferended = (event: BufferEndedEvent) => {
     events.push(event);
   };
 
@@ -344,7 +344,7 @@ export const queueSourceLongPlaybackTest = async (
   const sliceLen = 4;
   const source = ctx.createBufferQueueSource();
   let endedCount = 0;
-  source.onBufferEnded = () => {
+  source.onbufferended = () => {
     endedCount += 1;
   };
   source.connect(ctx.destination);
@@ -372,11 +372,11 @@ export const queueSourceLongPlaybackTest = async (
     await sleep(sliceLen * 1000);
     enqueueNext();
     setInfo(
-      `Long playback: ${Math.round((Date.now() - start) / 1000)}s elapsed, onBufferEnded count=${endedCount}.`
+      `Long playback: ${Math.round((Date.now() - start) / 1000)}s elapsed, onbufferended count=${endedCount}.`
     );
   }
 
   source.stop();
   await sleep(500);
-  setInfo(`Long playback: done. onBufferEnded fired ${endedCount} time(s).`);
+  setInfo(`Long playback: done. onbufferended fired ${endedCount} time(s).`);
 };

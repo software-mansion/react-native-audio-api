@@ -3,7 +3,7 @@ import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioTagHandle } from '../Audio/types';
 import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
-import { AudioContextOptions } from '../types';
+import { AudioContextOptions, ContextState } from '../types';
 import BaseAudioContext from './BaseAudioContext';
 import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
 
@@ -49,8 +49,9 @@ export default class AudioContext extends BaseAudioContext {
       throw new InvalidStateError('Cannot close a closed audio context.');
     }
 
-    this._state = 'closed';
-    return (this.context as IAudioContext).close();
+    return this.transitionTo('closed', () =>
+      (this.context as IAudioContext).close()
+    );
   }
 
   async resume(): Promise<undefined> {
@@ -58,8 +59,9 @@ export default class AudioContext extends BaseAudioContext {
       throw new InvalidStateError('Cannot resume a closed audio context.');
     }
 
-    this._state = 'running';
-    return (this.context as IAudioContext).resume();
+    return this.transitionTo('running', () =>
+      (this.context as IAudioContext).resume()
+    );
   }
 
   async suspend(): Promise<undefined> {
@@ -67,19 +69,39 @@ export default class AudioContext extends BaseAudioContext {
       throw new InvalidStateError('Cannot suspend a closed audio context.');
     }
 
-    this._state = 'suspended';
-    return (this.context as IAudioContext).suspend();
+    return this.transitionTo('suspended', () =>
+      (this.context as IAudioContext).suspend()
+    );
   }
 
   /**
    * @internal Called by AudioScheduledSourceNode.start(). The native driver
    * can start implicitly from the first scheduled source, with no promise to
-   * carry the transition, so this publishes the state that follows.
+   * carry the transition, so this records the control-thread state and issues
+   * the resume whose resolution publishes it.
    */
   public override markRunningOnSourceStart(): void {
     if (this._state === 'suspended') {
-      this._state = 'running';
-      (this.context as IAudioContext).resume();
+      this.transitionTo('running', () =>
+        (this.context as IAudioContext).resume()
+      ).catch(() => {
+        // Nothing awaits this transition (start() carries no promise for it);
+        // transitionTo() already restored the control-thread state.
+      });
+    }
+  }
+
+  private async transitionTo(
+    nextState: ContextState,
+    nativeTransition: () => Promise<undefined>
+  ): Promise<undefined> {
+    this.setControlState(nextState);
+
+    try {
+      return await nativeTransition();
+    } catch (error) {
+      this.setControlState(this.state);
+      throw error;
     }
   }
 
