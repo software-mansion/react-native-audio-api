@@ -61,7 +61,6 @@ bool AudioPlayer::rebuildStream() {
 }
 
 bool AudioPlayer::start() {
-  __android_log_print(ANDROID_LOG_ERROR, "AudioPlayer", "=== TEST LOGOWANIA - C++ DZIALA ===");
   std::scoped_lock lock(streamMutex_);
   if (!isInitialized_.load(std::memory_order_acquire)) {
     if (!openAudioStream()) {
@@ -72,7 +71,6 @@ bool AudioPlayer::start() {
   if (mStream_ != nullptr) {
     auto result = mStream_->requestStart() == oboe::Result::OK;
     isRunning_.store(result, std::memory_order_release);
-    //    rebuiltNeeded_ = !result;
     return result;
   }
 
@@ -97,7 +95,6 @@ bool AudioPlayer::resume() {
   if (mStream_ != nullptr) {
     auto result = mStream_->requestStart() == oboe::Result::OK;
     isRunning_.store(result, std::memory_order_release);
-    //    rebuiltNeeded_ = !result;
     return result;
   }
 
@@ -169,8 +166,6 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (driverMutex_ == nullptr) {
     return;
   }
-  __android_log_print(ANDROID_LOG_ERROR, "AudioPlayer", "onErrorAfterClose");
-  __android_log_print(ANDROID_LOG_ERROR, "AudioPlayer", "error: %s", oboe::convertToText(error));
 
   switch (error) {
     case oboe::Result::ErrorDisconnected:
@@ -195,9 +190,6 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (stream != mStream_.get()) {
     return;
   }
-
-  context->onStreamFail();
-  return;
 
   // Check if the stream was expected to be running when the error occurred
   const bool wasRunning = isRunning_.load(std::memory_order_acquire);
