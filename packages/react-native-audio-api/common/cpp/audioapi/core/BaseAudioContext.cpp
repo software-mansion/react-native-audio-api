@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/decoding/AudioDecoding.h>
@@ -74,7 +75,8 @@ void BaseAudioContext::dispatchStateChange(ContextState state) {
     return;
   }
 
-  stateChangeEvent_.dispatch(StringPayload{.name = "state", .reason = contextStateToString(state)});
+  stateChangeEvent_.dispatch(
+      StringPayload{.name = "state", .reason = js_enum_parser::contextStateToString(state)});
 }
 
 void BaseAudioContext::setState(ContextState state) {

@@ -23,4 +23,5 @@ std::string channelCountModeToString(ChannelCountMode mode);
 ChannelCountMode channelCountModeFromString(const std::string &mode);
 std::string channelInterpretationToString(ChannelInterpretation interpretation);
 ChannelInterpretation channelInterpretationFromString(const std::string &interpretation);
+std::string contextStateToString(ContextState state);
 } // namespace audioapi::js_enum_parser

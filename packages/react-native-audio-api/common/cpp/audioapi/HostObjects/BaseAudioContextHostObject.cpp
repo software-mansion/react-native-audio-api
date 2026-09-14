@@ -83,7 +83,8 @@ BaseAudioContextHostObject::~BaseAudioContextHostObject() {
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
-  return jsi::String::createFromUtf8(runtime, contextStateToString(context_->getPublishedState()));
+  return jsi::String::createFromUtf8(
+      runtime, js_enum_parser::contextStateToString(context_->getPublishedState()));
 }
 
 JSI_PROPERTY_SETTER_IMPL(BaseAudioContextHostObject, onstatechange) {
