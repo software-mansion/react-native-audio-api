@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 /**
- * Event-handler attributes (`onEnded`, `onloopended`, `onpositionchanged`, ...) must not
+ * Event-handler attributes (`onended`, `onloopended`, `onpositionchanged`, ...) must not
  * accumulate listener registrations in the native AudioEventHandlerRegistry.
  *
  * The registry is process-global and stores each handler as a `std::shared_ptr<jsi::Function>`,
@@ -59,7 +59,7 @@ function createNativeNode(extra: Record<string, unknown> = {}) {
     channelCount: 2,
     channelCountMode: 'max',
     channelInterpretation: 'speakers',
-    onEnded: '0',
+    onended: '0',
     ...extra,
   } as any;
 }
@@ -85,7 +85,7 @@ beforeEach(() => {
   globalThis.AudioEventEmitter = emitter as any;
 });
 
-describe('AudioScheduledSourceNode.onEnded', () => {
+describe('AudioScheduledSourceNode.onended', () => {
   let nativeNode: ReturnType<typeof createNativeNode>;
   let node: AudioScheduledSourceNode;
 
@@ -95,66 +95,66 @@ describe('AudioScheduledSourceNode.onEnded', () => {
   });
 
   it('registers a single listener and hands its id to the native node', () => {
-    node.onEnded = () => {};
+    node.onended = () => {};
 
     expect(emitter.addAudioEventListener).toHaveBeenCalledTimes(1);
     expect(emitter.addAudioEventListener).toHaveBeenCalledWith(
       'ended',
       expect.any(Function)
     );
-    expect(nativeNode.onEnded).toBe('sub-1');
+    expect(nativeNode.onended).toBe('sub-1');
   });
 
   it('exposes the assigned callback through the getter', () => {
     const callback = () => {};
-    node.onEnded = callback;
+    node.onended = callback;
 
-    expect(node.onEnded).toBe(callback);
+    expect(node.onended).toBe(callback);
   });
 
   it('removes the previous registration when the handler is reassigned', () => {
-    node.onEnded = () => {};
-    node.onEnded = () => {};
+    node.onended = () => {};
+    node.onended = () => {};
 
     expect(emitter.removeAudioEventListener).toHaveBeenCalledWith(
       'ended',
       'sub-1'
     );
-    expect(nativeNode.onEnded).toBe('sub-2');
+    expect(nativeNode.onended).toBe('sub-2');
     expect(emitter.outstanding()).toEqual(['sub-2']);
   });
 
   it('removes the registration when the handler is set to null', () => {
-    node.onEnded = () => {};
-    node.onEnded = null;
+    node.onended = () => {};
+    node.onended = null;
 
     expect(emitter.removeAudioEventListener).toHaveBeenCalledWith(
       'ended',
       'sub-1'
     );
-    expect(nativeNode.onEnded).toBe('0');
-    expect(node.onEnded).toBeUndefined();
+    expect(nativeNode.onended).toBe('0');
+    expect(node.onended).toBeUndefined();
     expect(emitter.outstanding()).toEqual([]);
   });
 
   it('does not attempt a removal when no handler was ever assigned', () => {
-    node.onEnded = null;
+    node.onended = null;
 
     expect(emitter.removeAudioEventListener).not.toHaveBeenCalled();
-    expect(nativeNode.onEnded).toBe('0');
+    expect(nativeNode.onended).toBe('0');
   });
 
   it('leaves nothing registered after repeated assignment and clearing', () => {
     for (let i = 0; i < 5; i++) {
-      node.onEnded = () => {};
+      node.onended = () => {};
     }
-    node.onEnded = null;
+    node.onended = null;
 
     expect(emitter.outstanding()).toEqual([]);
   });
 });
 
-describe('AudioBufferBaseSourceNode.onPositionChanged', () => {
+describe('AudioBufferBaseSourceNode.onpositionchanged', () => {
   let nativeNode: ReturnType<typeof createNativeNode>;
   let node: AudioBufferBaseSourceNode;
 
@@ -162,15 +162,15 @@ describe('AudioBufferBaseSourceNode.onPositionChanged', () => {
     nativeNode = createNativeNode({
       detune: createNativeParam(0),
       playbackRate: createNativeParam(1),
-      onPositionChanged: '0',
+      onpositionchanged: '0',
       onPositionChangedInterval: 0,
     });
     node = new AudioBufferBaseSourceNode(createContext(), nativeNode);
   });
 
   it('removes the previous registration when reassigned', () => {
-    node.onPositionChanged = () => {};
-    node.onPositionChanged = () => {};
+    node.onpositionchanged = () => {};
+    node.onpositionchanged = () => {};
 
     expect(emitter.removeAudioEventListener).toHaveBeenCalledWith(
       'positionChanged',
@@ -180,15 +180,15 @@ describe('AudioBufferBaseSourceNode.onPositionChanged', () => {
   });
 
   it('removes the registration when set to null', () => {
-    node.onPositionChanged = () => {};
-    node.onPositionChanged = null;
+    node.onpositionchanged = () => {};
+    node.onpositionchanged = null;
 
-    expect(nativeNode.onPositionChanged).toBe('0');
+    expect(nativeNode.onpositionchanged).toBe('0');
     expect(emitter.outstanding()).toEqual([]);
   });
 });
 
-describe('AudioBufferQueueSourceNode.onBufferEnded', () => {
+describe('AudioBufferQueueSourceNode.onbufferended', () => {
   let nativeNode: ReturnType<typeof createNativeNode>;
   let node: AudioBufferQueueSourceNode;
 
@@ -196,7 +196,7 @@ describe('AudioBufferQueueSourceNode.onBufferEnded', () => {
     nativeNode = createNativeNode({
       detune: createNativeParam(0),
       playbackRate: createNativeParam(1),
-      onBufferEnded: '0',
+      onbufferended: '0',
     });
     const context = createContext();
     context.context = { createBufferQueueSource: () => nativeNode };
@@ -204,35 +204,35 @@ describe('AudioBufferQueueSourceNode.onBufferEnded', () => {
   });
 
   it('removes the previous registration when reassigned', () => {
-    node.onBufferEnded = () => {};
-    node.onBufferEnded = () => {};
+    node.onbufferended = () => {};
+    node.onbufferended = () => {};
 
     expect(emitter.outstanding()).toEqual(['sub-2']);
   });
 
   it('removes the registration when set to null', () => {
-    node.onBufferEnded = () => {};
-    node.onBufferEnded = null;
+    node.onbufferended = () => {};
+    node.onbufferended = null;
 
-    expect(nativeNode.onBufferEnded).toBe('0');
+    expect(nativeNode.onbufferended).toBe('0');
     expect(emitter.outstanding()).toEqual([]);
   });
 });
 
 describe('handlers on one node are independent of each other', () => {
-  it('clearing onEnded leaves an unrelated onPositionChanged registration alone', () => {
+  it('clearing onended leaves an unrelated onpositionchanged registration alone', () => {
     const nativeNode = createNativeNode({
       detune: createNativeParam(0),
       playbackRate: createNativeParam(1),
-      onPositionChanged: '0',
+      onpositionchanged: '0',
     });
     const node = new AudioBufferBaseSourceNode(createContext(), nativeNode);
 
-    node.onEnded = () => {}; // sub-1
-    node.onPositionChanged = () => {}; // sub-2
-    node.onEnded = null;
+    node.onended = () => {}; // sub-1
+    node.onpositionchanged = () => {}; // sub-2
+    node.onended = null;
 
     expect(emitter.outstanding()).toEqual(['sub-2']);
-    expect(nativeNode.onPositionChanged).toBe('sub-2');
+    expect(nativeNode.onpositionchanged).toBe('sub-2');
   });
 });
