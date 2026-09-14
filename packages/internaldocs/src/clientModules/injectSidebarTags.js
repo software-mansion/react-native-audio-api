@@ -1,6 +1,30 @@
 import { TAG_LABEL } from '../sidebarTags';
 
 const TAG_CLASS_PREFIX = 'internaldocs-tag-';
+const LABEL_CLASS = 'internaldocs-sidebar-label';
+
+function wrapLinkLabel(link, list) {
+  const strayNodes = [...link.childNodes].filter(
+    (node) =>
+      node !== list &&
+      !(node instanceof Element && node.classList.contains(LABEL_CLASS))
+  );
+  let label = link.querySelector(`:scope > .${LABEL_CLASS}`);
+  if (!label) {
+    label = document.createElement('span');
+    label.className = LABEL_CLASS;
+    link.insertBefore(label, list);
+  }
+  strayNodes.forEach((node) => label.appendChild(node));
+}
+
+function unwrapLinkLabel(link) {
+  const label = link.querySelector(`:scope > .${LABEL_CLASS}`);
+  if (!label) {
+    return;
+  }
+  label.replaceWith(...label.childNodes);
+}
 
 function injectSidebarTags() {
   document.querySelectorAll('.menu__list-item').forEach((item) => {
@@ -15,6 +39,7 @@ function injectSidebarTags() {
     let list = link.querySelector(':scope > .internaldocs-tag-list');
     if (tags.length === 0) {
       list?.remove();
+      unwrapLinkLabel(link);
       return;
     }
 
@@ -23,6 +48,8 @@ function injectSidebarTags() {
       list.className = 'internaldocs-tag-list';
       link.appendChild(list);
     }
+
+    wrapLinkLabel(link, list);
 
     const signature = tags.join(' ');
     if (list.dataset.tags === signature) {
@@ -41,18 +68,28 @@ function injectSidebarTags() {
   });
 }
 
+let injectFrame = 0;
+
 function scheduleInject() {
-  requestAnimationFrame(injectSidebarTags);
+  if (injectFrame !== 0) {
+    return;
+  }
+  injectFrame = requestAnimationFrame(() => {
+    injectFrame = 0;
+    injectSidebarTags();
+  });
 }
 
 function watchSidebar() {
   scheduleInject();
-  const menu = document.querySelector('.theme-doc-sidebar-menu, .menu__list');
-  if (!menu || menu.dataset.internaldocsTagWatch === 'true') {
+  const root = document.documentElement;
+  if (root.dataset.internaldocsTagWatch === 'true') {
     return;
   }
-  menu.dataset.internaldocsTagWatch = 'true';
-  new MutationObserver(scheduleInject).observe(menu, {
+  root.dataset.internaldocsTagWatch = 'true';
+  // Desktop and mobile sidebars are separate trees. The mobile menu is created
+  // when the drawer opens, after the desktop menu (and any observer on it) is gone.
+  new MutationObserver(scheduleInject).observe(root, {
     childList: true,
     subtree: true,
     attributes: true,
