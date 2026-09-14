@@ -21,7 +21,7 @@ AudioBufferQueueSourceNodeHostObject::AudioBufferQueueSourceNodeHostObject(
       bufferQueueSourceNode_(typedAudioNode<AudioBufferQueueSourceNode>(node_)) {
   functions_->erase("start");
 
-  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onBufferEnded));
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioBufferQueueSourceNodeHostObject, onbufferended));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioBufferQueueSourceNodeHostObject, start),
@@ -36,7 +36,7 @@ AudioBufferQueueSourceNodeHostObject::~AudioBufferQueueSourceNodeHostObject() {
   bufferQueueSourceNode_->assignOnBufferEndedCallbackId(0);
 }
 
-JSI_PROPERTY_SETTER_IMPL(AudioBufferQueueSourceNodeHostObject, onBufferEnded) {
+JSI_PROPERTY_SETTER_IMPL(AudioBufferQueueSourceNodeHostObject, onbufferended) {
   bufferQueueSourceNode_->assignOnBufferEndedCallbackId(
       std::stoull(value.getString(runtime).utf8(runtime)));
 }

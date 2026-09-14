@@ -32,12 +32,12 @@ export default class AudioBufferSourceNode {
     this.node.stop(when);
   }
 
-  get onEnded(): ((event: Event) => void) | null {
-    return this.node.onEnded;
+  get onended(): ((event: Event) => void) | null {
+    return this.node.onended;
   }
 
-  set onEnded(callback: ((event: Event) => void) | null) {
-    this.node.onEnded = callback;
+  set onended(callback: ((event: Event) => void) | null) {
+    this.node.onended = callback;
   }
 
   get detune(): AudioParam {
@@ -88,11 +88,11 @@ export default class AudioBufferSourceNode {
     this.node.loopSkip = value;
   }
 
-  get onLoopEnded(): ((event: object) => void) | undefined {
-    return this.node.onLoopEnded;
+  get onloopended(): ((event: object) => void) | undefined {
+    return this.node.onloopended;
   }
 
-  set onLoopEnded(callback: ((event: object) => void) | null) {
-    this.node.onLoopEnded = callback;
+  set onloopended(callback: ((event: object) => void) | null) {
+    this.node.onloopended = callback;
   }
 }
