@@ -127,7 +127,6 @@ bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &p
     }
   } else {
     result = tryStartDriver();
-    __android_log_print(ANDROID_LOG_ERROR, "AudioContext", "tryStartDriver");
   }
 
   if (result) {
