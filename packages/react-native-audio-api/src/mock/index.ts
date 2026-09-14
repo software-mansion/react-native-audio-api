@@ -1,4 +1,4 @@
-import {
+import type {
   AudioContextOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
@@ -7,8 +7,6 @@ import {
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
-  FileDirectory,
-  FileFormat,
   FileInfo,
   FilePresetType,
   OfflineAudioContextOptions,
@@ -31,6 +29,7 @@ import {
   StereoPannerOptions,
   WaveShaperOptions,
 } from '../types';
+import { FileDirectory, FileFormat } from '../types';
 import { toFloat32Array } from '../utils';
 
 /* eslint-disable no-useless-constructor */
