@@ -13,10 +13,6 @@ double ParamRenderQueue::snapToSampleFrameTime(double time) const {
 }
 
 std::optional<float> ParamRenderQueue::computeValueAtTime(double time) {
-  // A queued event whose snapped effect time has arrived supersedes the
-  // current one even when the current event's own interval has not elapsed
-  // (e.g. a setValueAtTime whose frame lands fractionally before a ramp's
-  // scheduled end time).
   while (
       !eventQueue_.isEmpty() &&
       (!currentEvent_ || snapToSampleFrameTime(eventQueue_.peekFront().getStartTime()) <= time)) {

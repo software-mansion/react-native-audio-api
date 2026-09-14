@@ -55,8 +55,6 @@ class RenderParamEvent : public ParamEvent {
     return startValue_;
   }
 
-  /// @brief Evaluate the event's interpolation formula at @p time on the exact
-  /// scheduled start/end times.
   [[nodiscard]] float calculateValueAtTime(double time) const {
     return calculateValue_(getStartTime(), getEndTime(), startValue_, endValue_, time);
   }

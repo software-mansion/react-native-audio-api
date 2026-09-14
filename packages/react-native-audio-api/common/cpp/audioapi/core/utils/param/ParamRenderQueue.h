@@ -9,9 +9,8 @@ namespace audioapi {
 /// @brief A queue for managing audio parameter change events on the audio render thread.
 /// @note The invariant of the queue is that its internal buffer always contains non-overlapping events.
 ///
-/// @note Events store their times exactly as scheduled and interpolate on them (see
-/// RenderParamEvent). Effect boundaries, however, live on the sample-frame grid:
-/// an event scheduled at T takes effect at frame round(T * sampleRate)
+/// @note Events store their times exactly as scheduled and interpolate on them.
+/// Effect boundaries, however, live on the sample-frame grid
 class ParamRenderQueue : public ParamQueueBase<RenderParamEvent> {
  public:
   explicit ParamRenderQueue(float defaultValue, float sampleRate)
