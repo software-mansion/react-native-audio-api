@@ -32,7 +32,7 @@ Filters: [`filters.sh`](filters.sh). Override: `GTEST_FILTER=...`.
 
 **`GraphNodeGrowthTest` is smoke**, not `graph`: it is short (~100–200 ms) and needs unsanitized `AudioThreadGuard` (asserts `GTEST_SKIP` under ASan/TSan).
 
-**Add a category:** (1) filter in `filters.sh`, (2) append name to `CPP_TEST_EXTENDED_CATEGORIES`, (3) in `tests.yml` add a `workflow_dispatch` boolean and one `cpp-extended-*` job that calls `cpp-extended-job.yml` with `categories`, `force`, and that category’s `path_filters`.
+**Add a category:** (1) gtest filter and CI path globs in `filters.sh`, (2) append the name to `CPP_TEST_EXTENDED_CATEGORIES`, (3) in `tests.yml` add a `workflow_dispatch` boolean and one `cpp-extended-*` job that calls `cpp-job.yml` with `run: yarn test:cpp:extended -- <category>`, `categories: <category>`, and `force`.
 
 ### Docker (Linux leak / ASan)
 
