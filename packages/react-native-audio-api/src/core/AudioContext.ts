@@ -8,6 +8,8 @@ import BaseAudioContext from './BaseAudioContext';
 import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
 
 export default class AudioContext extends BaseAudioContext {
+  private onerrorCallback: (() => void) | null = null;
+
   constructor(options?: AudioContextOptions) {
     if (options?.sampleRate != null) {
       assertSupportedSampleRate(options.sampleRate);
@@ -26,6 +28,20 @@ export default class AudioContext extends BaseAudioContext {
 
   public get outputLatency(): number {
     return (this.context as IAudioContext).outputLatency;
+  }
+
+  /**
+   * Web Audio `onerror` — fired when the output device/stream fails natively.
+   *
+   * @see https://webaudio.github.io/web-audio-api/#dom-audiocontext-onerror
+   */
+  public get onerror(): (() => void) | null {
+    return this.onerrorCallback;
+  }
+
+  public set onerror(callback: (() => void) | null) {
+    this.onerrorCallback = callback;
+    (this.context as IAudioContext).onerror = callback;
   }
 
   async close(): Promise<undefined> {

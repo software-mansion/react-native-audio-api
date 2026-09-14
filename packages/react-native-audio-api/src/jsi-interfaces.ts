@@ -91,6 +91,8 @@ export interface IAudioContext extends IBaseAudioContext {
   close(): Promise<undefined>;
   resume(): Promise<undefined>;
   suspend(): Promise<undefined>;
+  /** Web Audio `onerror` — JS function stored on the native HostObject. */
+  onerror: (() => void) | null;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {

@@ -825,6 +825,8 @@ class AudioContextMock extends BaseAudioContextMock {
     return Promise.resolve();
   }
 
+  onerror: (() => void) | null = null;
+
   createMediaElementSource(
     mediaElement: HTMLMediaElement | AudioNodeMock
   ): MediaElementAudioSourceNodeMock {

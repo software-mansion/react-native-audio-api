@@ -193,4 +193,20 @@ export default class AudioContext implements BaseAudioContext {
   async suspend(): Promise<void> {
     await this.context.suspend();
   }
+
+  private _onerrorCallback:
+    | ((this: globalThis.AudioContext, ev: Event) => unknown)
+    | null = null;
+
+  public get onerror():
+    | ((this: globalThis.AudioContext, ev: Event) => unknown)
+    | null {
+    return this._onerrorCallback;
+  }
+
+  public set onerror(
+    callback: ((this: globalThis.AudioContext, ev: Event) => unknown) | null
+  ) {
+    this._onerrorCallback = callback;
+  }
 }

@@ -7,6 +7,7 @@
 #include <audioapi/utils/Macros.h>
 
 #include <atomic>
+#include <functional>
 #include <memory>
 
 namespace audioapi {
@@ -37,6 +38,12 @@ class AudioContext : public BaseAudioContext {
   /// @returns The output latency in seconds.
   [[nodiscard]] double getOutputLatency() const;
 
+  /// @brief Called when the audio stream failed to rebuild.
+  /// @note This method is called when the audio stream fails.
+  void onStreamFail();
+
+  void setOnError(std::function<void()> callback);
+
  private:
   std::shared_ptr<CommonPlayer> audioPlayer_;
   std::atomic<bool> isInitialized_{false};
@@ -51,6 +58,8 @@ class AudioContext : public BaseAudioContext {
 
   /// Blocks until no audio I/O callback is in flight. Caller must hold `driverMutex_`.
   void waitForRenderQuiescence() const;
+
+  std::function<void()> onerror;
 };
 
 } // namespace audioapi
