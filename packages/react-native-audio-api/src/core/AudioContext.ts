@@ -8,11 +8,6 @@ import BaseAudioContext from './BaseAudioContext';
 import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
 
 export default class AudioContext extends BaseAudioContext {
-  // Bumped by every transition attempt. On rejection, the control-thread
-  // state is rolled back to native's published state only if no later
-  // transition has started since
-  private _transitionSeq = 0;
-
   constructor(options?: AudioContextOptions) {
     if (options?.sampleRate != null) {
       assertSupportedSampleRate(options.sampleRate);
@@ -80,23 +75,16 @@ export default class AudioContext extends BaseAudioContext {
     }
   }
 
-  /**
-   * Records the control-thread state before the native call, then rolls it back
-   * if native rejects — but only when no later transition has started since.
-   */
   private async transitionTo(
     nextState: ContextState,
     nativeTransition: () => Promise<undefined>
   ): Promise<undefined> {
-    const mySeq = ++this._transitionSeq;
     this.setControlState(nextState);
 
     try {
       return await nativeTransition();
     } catch (error) {
-      if (this._transitionSeq === mySeq) {
-        this.setControlState(this.state);
-      }
+      this.setControlState(this.state);
       throw error;
     }
   }
