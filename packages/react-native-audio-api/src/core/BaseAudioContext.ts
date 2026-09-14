@@ -40,7 +40,7 @@ export default class BaseAudioContext {
 
     this.stateChangeSubscription = this.audioEventEmitter.addAudioEventListener(
       'stateChange',
-      () => this.onstatechangeCallback?.()
+      () => this.onstatechange?.()
     );
     this.context.onstatechange = this.stateChangeSubscription.subscriptionId;
   }
@@ -60,7 +60,7 @@ export default class BaseAudioContext {
     AudioEventEmitter['addAudioEventListener']
   >;
 
-  public onstatechangeCallback: (() => void) | null = null;
+  public onstatechange: (() => void) | null = null;
 
   protected setControlState(nextState: ContextState): void {
     this._state = nextState;
