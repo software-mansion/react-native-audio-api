@@ -29,7 +29,7 @@ class RotatingFileWriter final : public AudioFileWriter {
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
       size_t rotateIntervalBytes,
-      std::shared_ptr<AudioFileWriter> segmentWriter,
+      std::shared_ptr<EncodedAudioFileWriter> segmentWriter,
       OnSegmentFileOpenedCallback onSegmentFileOpened = {});
 
   OpenFileResult openFile(
@@ -87,12 +87,7 @@ class RotatingFileWriter final : public AudioFileWriter {
   int32_t streamChannelCount_{0};
   int32_t maxFramesPerBuffer_{0};
 
-  /// The segment writer again, as the type that can hand off to the next file. Non-owning:
-  /// segmentWriter_ below owns it. Null when the writer cannot rotate.
-  EncodedAudioFileWriter *rotatable_ = nullptr;
-  /// Declared last so it is destroyed first. Its destructor joins the worker thread, and that
-  /// worker calls back into this object — so every member it touches must still be alive.
-  std::shared_ptr<AudioFileWriter> segmentWriter_;
+  std::shared_ptr<EncodedAudioFileWriter> segmentWriter_;
 };
 
 } // namespace audioapi

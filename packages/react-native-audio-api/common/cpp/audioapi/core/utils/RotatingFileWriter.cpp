@@ -15,20 +15,13 @@ RotatingFileWriter::RotatingFileWriter(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     size_t rotateIntervalBytes,
-    std::shared_ptr<AudioFileWriter> segmentWriter,
+    std::shared_ptr<EncodedAudioFileWriter> segmentWriter,
     OnSegmentFileOpenedCallback onSegmentFileOpened)
     : AudioFileWriter(audioEventHandlerRegistry, fileProperties),
       onSegmentFileOpened_(std::move(onSegmentFileOpened)),
       rotateIntervalBytes_(rotateIntervalBytes),
       segmentWriter_(std::move(segmentWriter)) {
-  // A deliberate downcast rather than an interface: the base stays what the recorder
-  // consumes, and a single-file writer would otherwise carry rotation stubs it never uses.
-  // Only a writer that can hand off to the next file can be rotated; anything else simply
-  // records to the single file it was opened with.
-  rotatable_ = dynamic_cast<EncodedAudioFileWriter *>(segmentWriter_.get());
-  if (rotatable_ != nullptr) {
-    rotatable_->setOnBufferEncodedCallback([this] { onSegmentWriterBufferEncoded(); });
-  }
+  segmentWriter_->setOnBufferEncodedCallback([this] { onSegmentWriterBufferEncoded(); });
 }
 
 OpenFileResult RotatingFileWriter::openFile(
@@ -99,7 +92,7 @@ void RotatingFileWriter::onSegmentWriterBufferEncoded() {
     return;
   }
 
-  auto rotated = rotatable_->switchToFile(nextSegmentStem());
+  auto rotated = segmentWriter_->switchToFile(nextSegmentStem());
   if (rotated.is_err()) {
     isFileOpen_.store(false, std::memory_order_release);
     invokeOnErrorCallback("Failed to start the next recording segment: " + rotated.unwrap_err());

@@ -17,6 +17,7 @@
 namespace audioapi {
 
 class AudioFileWriter;
+class EncodedAudioFileWriter;
 class AudioFileProperties;
 class AudioRecorderCallback;
 class IAudioEventHandlerRegistry;
@@ -105,7 +106,7 @@ class AudioRecorder {
   [[nodiscard]] virtual Result<StreamFormat, std::string> resolveStreamFormat() const = 0;
 
   /// Builds the writer for a single output file. Rotation wraps these rather than being one.
-  std::shared_ptr<AudioFileWriter> createFileWriter(
+  std::shared_ptr<EncodedAudioFileWriter> createFileWriter(
       const std::shared_ptr<AudioFileProperties> &properties);
 
   /// Opens the output file for the live input format and publishes the writer to the audio

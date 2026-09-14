@@ -112,7 +112,7 @@ void AudioRecorder::disableFileOutput() {
   }
 }
 
-std::shared_ptr<AudioFileWriter> AudioRecorder::createFileWriter(
+std::shared_ptr<EncodedAudioFileWriter> AudioRecorder::createFileWriter(
     const std::shared_ptr<AudioFileProperties> &properties) {
   return std::make_shared<EncodedAudioFileWriter>(audioEventHandlerRegistry_, properties);
 }

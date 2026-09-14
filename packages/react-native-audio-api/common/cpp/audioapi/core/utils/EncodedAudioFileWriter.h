@@ -33,10 +33,8 @@ struct PendingFileWrite {
 /// callback into a preallocated slot; a worker thread encodes it. That worker is created once
 /// per session and outlives switchToFile(), so rotating a recording costs no thread at all.
 ///
-/// RotatingFileWriter reaches switchToFile() through a dynamic_cast to this type, so a subclass
-/// answers that cast as well. Deriving is for test doubles that stand in for the platform
-/// encoder; do not specialise this into a rotating writer, which would nest rotation inside
-/// itself.
+/// Deriving is for test doubles that stand in for the platform encoder;
+/// do not specialise this into a rotating writer, which would nest rotation inside itself.
 class EncodedAudioFileWriter : public AudioFileWriter {
  public:
   EncodedAudioFileWriter(
