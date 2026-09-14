@@ -99,8 +99,9 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
       ActiveRecorderHandle::global().clearRecorder(audioRecorder.get());
     }
 
-    return [result = std::move(result)](
-               jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+    using returnValue = std::variant<jsi::Value, std::string>;
+
+    return [result = std::move(result)](jsi::Runtime &runtime) -> returnValue {
       auto jsResult = jsi::Object(runtime);
 
       jsResult.setProperty(

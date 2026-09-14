@@ -5,7 +5,8 @@
     "removeComments": false,
     "moduleSuffixes": ["", ".native", ".web"],
     "paths": {
-      "react-native-audio-api": ["./src"]
+      "react-native-audio-api": ["./src"],
+      "react-native-audio-api/*": ["./src/*"]
     }
   },
   "include": ["src"]
