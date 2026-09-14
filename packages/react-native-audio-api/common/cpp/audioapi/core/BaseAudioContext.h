@@ -54,14 +54,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     return publishedState_.load(std::memory_order_acquire);
   }
 
-  /// Publishes an acknowledged transition to the JS-visible state. JS thread
-  /// only, and for promise-driven transitions only from the operation's own
-  /// resolution continuation (the TS `publishedState` setter): CallInvokers
-  /// may batch queued resolve tasks ahead of the first microtask checkpoint,
-  /// so any earlier write point lets a rapid resume()+suspend() pair publish
-  /// both states before either continuation reads. Native-originated
-  /// transitions with no acknowledging promise (planned `interrupted`) write
-  /// here from a CallInvoker task instead.
+  /// Publishes an acknowledged transition to the JS-visible state.
   void setPublishedState(ContextState state) {
     publishedState_.store(state, std::memory_order_release);
   }

@@ -74,9 +74,6 @@ void BaseAudioContext::dispatchStateChange(ContextState state) {
     return;
   }
 
-  // FIFO with the promise resolution the caller just enqueued, so the event
-  // fires between this transition's continuations and the next transition's —
-  // the handler observes each state, not just the final one.
   stateChangeEvent_.dispatch(StringPayload{.name = "state", .reason = contextStateToString(state)});
 }
 

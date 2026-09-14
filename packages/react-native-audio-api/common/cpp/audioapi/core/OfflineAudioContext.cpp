@@ -163,7 +163,7 @@ void OfflineAudioContext::startRendering(
   renderingStarted_ = true;
   resultPromise_ = promise;
   auto runningStatePromise = std::make_shared<ContextPromiseResolver<void>>(
-      [self = shared_from_this()]() {
+      [self = shared_from_this()] {
         self->setState(ContextState::RUNNING);
         // startRendering has no acknowledging promise for this transition;
         // the render thread actually starting is the acknowledgment.

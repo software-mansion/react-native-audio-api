@@ -62,10 +62,6 @@ export default class BaseAudioContext {
 
   public onstatechangeCallback: (() => void) | null = null;
 
-  /**
-   * Record that a state transition has been requested ([[control thread
-   * state]]).
-   */
   protected setControlState(nextState: ContextState): void {
     this._state = nextState;
   }

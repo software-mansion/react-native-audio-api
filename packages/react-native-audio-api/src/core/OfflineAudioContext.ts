@@ -15,11 +15,6 @@ export default class OfflineAudioContext extends BaseAudioContext {
   private isRendering: boolean;
   private duration: number;
 
-  /**
-   * Web Audio API `complete` event handler, dispatched when startRendering()
-   * finishes. Kept alongside the promise because plenty of code (and the WPT
-   * suite) never awaits the promise and relies on this event alone.
-   */
   public oncomplete: ((event: OfflineAudioCompletionEvent) => void) | null;
 
   constructor(options: OfflineAudioContextOptions);
