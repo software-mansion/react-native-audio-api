@@ -62,6 +62,7 @@ bool AudioPlayer::rebuildStream() {
 
 bool AudioPlayer::start() {
   std::scoped_lock lock(streamMutex_);
+
   if (!isInitialized_.load(std::memory_order_acquire)) {
     if (!openAudioStream()) {
       return false;
@@ -162,6 +163,18 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
   return DataCallbackResult::Continue;
 }
 
+namespace {
+struct ReentrancyGuard {
+  bool &flag;
+  explicit ReentrancyGuard(bool &f) : flag(f) {
+    flag = true;
+  }
+  ~ReentrancyGuard() {
+    flag = false;
+  }
+};
+} // namespace
+
 void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
   if (driverMutex_ == nullptr) {
     return;
@@ -176,6 +189,13 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
     default:
       return;
   }
+
+  // Reentrancy guard - prevent recursive calls to onErrorAfterClose.
+  static thread_local bool isInsideOnError = false;
+  if (isInsideOnError) {
+    return;
+  }
+  ReentrancyGuard guard(isInsideOnError);
 
   // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
   std::scoped_lock lock(*driverMutex_, streamMutex_);
@@ -194,6 +214,7 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   // Check if the stream was expected to be running when the error occurred
   const bool wasRunning = isRunning_.load(std::memory_order_acquire);
 
+  // Best effort rebuild - only once, then fire AudioContext::onStreamFail.
   if (!rebuildStream()) {
     isRunning_.store(false, std::memory_order_release);
     context->onStreamFail();
@@ -204,6 +225,9 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (wasRunning && mStream_ != nullptr) {
     const bool started = mStream_->requestStart() == oboe::Result::OK;
     isRunning_.store(started, std::memory_order_release);
+    if (!started) {
+      context->onStreamFail();
+    }
   }
 }
 
