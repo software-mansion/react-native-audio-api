@@ -11,7 +11,7 @@ import { OnBufferEndEventType } from '../events/types';
 import { AudioEventSubscription } from '../events';
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
-  private onBufferEndedCallback?: (event: OnBufferEndEventType) => void;
+  private onbufferendedCallback?: (event: OnBufferEndEventType) => void;
   private onBufferEndedSubscription: AudioEventSubscription | null = null;
   private state: AudioBufferQueueSourceState = AudioBufferQueueSourceState.IDLE;
 
@@ -76,29 +76,29 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
     (this.node as IAudioBufferQueueSourceNode).stop(when);
   }
 
-  public get onBufferEnded():
+  public get onbufferended():
     | ((event: OnBufferEndEventType) => void)
     | undefined {
-    return this.onBufferEndedCallback;
+    return this.onbufferendedCallback;
   }
 
-  public set onBufferEnded(
+  public set onbufferended(
     callback: ((event: OnBufferEndEventType) => void) | null
   ) {
     this.onBufferEndedSubscription?.remove();
     this.onBufferEndedSubscription = null;
 
     if (!callback) {
-      (this.node as IAudioBufferQueueSourceNode).onBufferEnded = '0';
-      this.onBufferEndedCallback = undefined;
+      (this.node as IAudioBufferQueueSourceNode).onbufferended = '0';
+      this.onbufferendedCallback = undefined;
       return;
     }
 
-    this.onBufferEndedCallback = callback;
+    this.onbufferendedCallback = callback;
     this.onBufferEndedSubscription =
       this.audioEventEmitter.addAudioEventListener('bufferEnded', callback);
 
-    (this.node as IAudioBufferQueueSourceNode).onBufferEnded =
+    (this.node as IAudioBufferQueueSourceNode).onbufferended =
       this.onBufferEndedSubscription.subscriptionId;
   }
 

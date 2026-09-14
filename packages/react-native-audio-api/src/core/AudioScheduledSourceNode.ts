@@ -10,7 +10,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
     globalThis.AudioEventEmitter
   );
 
-  private onEndedCallback?: (event: EventEmptyType) => void;
+  private onendedCallback?: (event: EventEmptyType) => void;
   private endedListeners = new Set<(event: EventEmptyType) => void>();
   private endedSubscription: AudioEventSubscription | null = null;
 
@@ -46,30 +46,18 @@ export default class AudioScheduledSourceNode extends AudioNode {
     (this.node as IAudioScheduledSourceNode).stop(when);
   }
 
-  /**
-   * Web Audio API spec spelling of the ended-event handler. Delegates to
-   * `onEnded` so both spellings drive the same native subscription.
-   */
   public get onended(): ((event: EventEmptyType) => void) | undefined {
-    return this.onEnded;
+    return this.onendedCallback;
   }
 
   public set onended(callback: ((event: EventEmptyType) => void) | null) {
-    this.onEnded = callback;
-  }
-
-  public get onEnded(): ((event: EventEmptyType) => void) | undefined {
-    return this.onEndedCallback;
-  }
-
-  public set onEnded(callback: ((event: EventEmptyType) => void) | null) {
-    this.onEndedCallback = callback ?? undefined;
+    this.onendedCallback = callback ?? undefined;
     this.syncEndedSubscription();
   }
 
   /**
    * EventTarget-style registration for the `ended` event, sharing one native
-   * subscription with the `onEnded`/`onended` handler. Other event types are
+   * subscription with the `onended`/`onended` handler. Other event types are
    * ignored: the node dispatches nothing else.
    */
   public addEventListener(
@@ -105,8 +93,8 @@ export default class AudioScheduledSourceNode extends AudioNode {
     this.endedSubscription?.remove();
     this.endedSubscription = null;
 
-    if (!this.onEndedCallback && this.endedListeners.size === 0) {
-      (this.node as IAudioScheduledSourceNode).onEnded = '0';
+    if (!this.onendedCallback && this.endedListeners.size === 0) {
+      (this.node as IAudioScheduledSourceNode).onended = '0';
       return;
     }
 
@@ -114,13 +102,13 @@ export default class AudioScheduledSourceNode extends AudioNode {
       'ended',
       (event: EventEmptyType) => this.dispatchEnded(event)
     );
-    (this.node as IAudioScheduledSourceNode).onEnded =
+    (this.node as IAudioScheduledSourceNode).onended =
       this.endedSubscription.subscriptionId;
   }
 
   private dispatchEnded(event: EventEmptyType): void {
     const endedEvent = { ...event, type: 'ended', target: this };
-    this.onEndedCallback?.(endedEvent);
+    this.onendedCallback?.(endedEvent);
     this.endedListeners.forEach((listener) => listener(endedEvent));
   }
 }

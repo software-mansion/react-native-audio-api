@@ -31,7 +31,7 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
         options.onEnded();
       }
     );
-    (this.node as IAudioFileSourceNode).onEnded =
+    (this.node as IAudioFileSourceNode).onended =
       this.attachedEndedSubscription.subscriptionId;
 
     return {
@@ -104,7 +104,7 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
         onTime(event.value);
       }
     );
-    (this.node as IAudioFileSourceNode).onPositionChanged =
+    (this.node as IAudioFileSourceNode).onpositionchanged =
       this.positionSubscription.subscriptionId;
   }
 
@@ -113,7 +113,7 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     this.positionSubscription = null;
 
     if (this.node) {
-      (this.node as IAudioFileSourceNode).onPositionChanged = '0';
+      (this.node as IAudioFileSourceNode).onpositionchanged = '0';
     }
   }
 
@@ -130,7 +130,7 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
         onBufferingChange(event.value);
       }
     );
-    (this.node as IAudioFileSourceNode).onBufferingStateChanged =
+    (this.node as IAudioFileSourceNode).onbufferingstatechanged =
       this.bufferingSubscription.subscriptionId;
   }
 
@@ -139,7 +139,7 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     this.bufferingSubscription = null;
 
     if (this.node) {
-      (this.node as IAudioFileSourceNode).onBufferingStateChanged = '0';
+      (this.node as IAudioFileSourceNode).onbufferingstatechanged = '0';
     }
   }
 
@@ -150,7 +150,7 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     this.attachedEndedSubscription = null;
 
     if (this.node) {
-      (this.node as IAudioFileSourceNode).onEnded = '0';
+      (this.node as IAudioFileSourceNode).onended = '0';
       this.node.disconnect(undefined);
     }
   }
