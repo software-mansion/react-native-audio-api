@@ -57,7 +57,7 @@ class AudioPlayer {
       .connect(this.volumeNode)
       .connect(this.audioContext.destination);
     this.sourceNode.onPositionChangedInterval = 1000;
-    this.sourceNode.onPositionChanged = (event) => {
+    this.sourceNode.onpositionchanged = (event) => {
       PlaybackNotificationManager.show({
         elapsedTime: this.currentElapsedTime,
       });
@@ -123,8 +123,8 @@ class AudioPlayer {
 
   reset = async () => {
     if (this.sourceNode) {
-      this.sourceNode.onEnded = null;
-      this.sourceNode.onPositionChanged = null;
+      this.sourceNode.onended = null;
+      this.sourceNode.onpositionchanged = null;
       this.sourceNode.stop(this.audioContext.currentTime);
     }
     this.audioBuffer = null;

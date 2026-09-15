@@ -39,7 +39,7 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd),
-      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onLoopEnded));
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onloopended));
 
   // start method is overridden in this class
   functions_->erase("start");
@@ -120,7 +120,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopEnd) {
   loopEnd_ = loopEnd;
 }
 
-JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onLoopEnded) {
+JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onloopended) {
   audioBufferSourceNode_->assignOnLoopEndedCallbackId(
       std::stoull(value.getString(runtime).utf8(runtime)));
 }

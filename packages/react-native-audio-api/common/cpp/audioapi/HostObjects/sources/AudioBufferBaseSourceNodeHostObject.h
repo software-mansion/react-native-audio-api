@@ -24,7 +24,7 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   JSI_PROPERTY_GETTER_DECL(playbackRate);
   JSI_PROPERTY_GETTER_DECL(onPositionChangedInterval);
 
-  JSI_PROPERTY_SETTER_DECL(onPositionChanged);
+  JSI_PROPERTY_SETTER_DECL(onpositionchanged);
   JSI_PROPERTY_SETTER_DECL(onPositionChangedInterval);
 
   JSI_HOST_FUNCTION_DECL(getInputLatency);

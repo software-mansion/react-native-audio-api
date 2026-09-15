@@ -23,7 +23,7 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
   ~AudioBufferQueueSourceNodeHostObject() override;
   DELETE_COPY_AND_MOVE(AudioBufferQueueSourceNodeHostObject);
 
-  JSI_PROPERTY_SETTER_DECL(onBufferEnded);
+  JSI_PROPERTY_SETTER_DECL(onbufferended);
 
   JSI_HOST_FUNCTION_DECL(start) override;
   JSI_HOST_FUNCTION_DECL(pause);

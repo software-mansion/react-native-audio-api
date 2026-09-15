@@ -103,7 +103,7 @@ source.start(startTime - latency);
 
 ### `enqueueBuffer`
 
-Adds another buffer to queue. Returns `bufferId` that can be used to identify the buffer in [`onBufferEnded`](audio-buffer-queue-source-node#onbufferended) event.
+Adds another buffer to queue. Returns `bufferId` that can be used to identify the buffer in [`onbufferended`](audio-buffer-queue-source-node#onbufferended) event.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -113,7 +113,7 @@ Adds another buffer to queue. Returns `bufferId` that can be used to identify th
 
 ### `dequeueBuffer`
 
-Removes a buffer from the queue. Note that [`onBufferEnded`](audio-buffer-queue-source-node#onbufferended) event will not be fired for the removed buffers.
+Removes a buffer from the queue. Note that [`onbufferended`](audio-buffer-queue-source-node#onbufferended) event will not be fired for the removed buffers.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -123,7 +123,7 @@ Removes a buffer from the queue. Note that [`onBufferEnded`](audio-buffer-queue-
 
 ### `clearBuffers`
 
-Removes all buffers from the queue. Note that [`onBufferEnded`](audio-buffer-queue-source-node#onbufferended) event will not be fired for buffers that were removed.
+Removes all buffers from the queue. Note that [`onbufferended`](audio-buffer-queue-source-node#onbufferended) event will not be fired for buffers that were removed.
 
 #### Returns `undefined`.
 
@@ -179,7 +179,7 @@ Resumes audio playback with a specified delay. If no time is given, it resumes i
 
 It inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).
 
-### `onPositionChanged` <MobileOnly />
+### `onpositionchanged` <MobileOnly />
 
 Allows to set (or remove) a callback that will be fired after processing certain part of an audio.
 Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
@@ -187,7 +187,7 @@ You can remove the callback by passing `null`.
 
 ### `onPositionChangedInterval` <MobileOnly />
 
-Allows to set frequency for `onPositionChanged` event. Value that can be set is around `1000/x` Hz.
+Allows to set frequency for `onpositionchanged` event. Value that can be set is around `1000/x` Hz.
 
 ```ts
 import { AudioContext, AudioBufferQueueSourceNode } from 'react-native-audio-api';
@@ -197,7 +197,7 @@ function App() {
     const sourceNode = ctx.createBufferQueueSource();
     let offset = 0;
 
-    sourceNode.onPositionChanged = (event) => { //setting callback
+    sourceNode.onpositionchanged = (event) => { //setting callback
         this.offset = event.value;
     };
 
@@ -207,14 +207,14 @@ function App() {
 }
 ```
 
-### `onBufferEnded`
+### `onbufferended`
 
 Sets (or removes) a callback that will be fired when a specific buffer has ended with payload of type [`OnBufferEndEventType`](audio-buffer-queue-source-node#onbufferendeventtype)
 
 You can remove the callback by passing `null`.
 
 ```ts
-audioBufferQueueSourceNode.onBufferEnded = (event) => { //setting callback
+audioBufferQueueSourceNode.onbufferended = (event) => { //setting callback
   console.log(`buffer with id {event.bufferId} ended`);
 
   if (event.isLastBufferInQueue) {

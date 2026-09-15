@@ -41,7 +41,7 @@ const Record: FC = () => {
   const stopPlayback = useCallback(() => {
     const source = playbackSourceRef.current;
     if (source) {
-      source.onEnded = null;
+      source.onended = null;
       source.disconnect();
       playbackSourceRef.current = null;
     }
@@ -193,11 +193,11 @@ const Record: FC = () => {
     source.connect(audioContext.destination);
 
     // Keep the source alive until playback ends. Without a ref, release builds can
-    // GC the HostObject before onEnded fires; its destructor clears the native
+    // GC the HostObject before onended fires; its destructor clears the native
     // callback id and the UI never leaves the Playing state.
     playbackSourceRef.current = source;
 
-    source.onEnded = () => {
+    source.onended = () => {
       stopPlayback();
       setState(RecordingState.Idle);
     };

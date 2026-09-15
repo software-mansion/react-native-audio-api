@@ -4,7 +4,7 @@ import { RangeError, InvalidStateError } from '../errors';
 
 export default class AudioScheduledSourceNode extends AudioNode {
   protected hasBeenStarted: boolean = false;
-  private onEndedCallback?: (event: EventEmptyType) => void;
+  private onendedCallback?: (event: EventEmptyType) => void;
 
   public start(when: number = 0): void {
     if (when < 0) {
@@ -37,12 +37,12 @@ export default class AudioScheduledSourceNode extends AudioNode {
     (this.node as globalThis.AudioScheduledSourceNode).stop(when);
   }
 
-  public get onEnded(): ((event: EventEmptyType) => void) | undefined {
-    return this.onEndedCallback;
+  public get onended(): ((event: EventEmptyType) => void) | undefined {
+    return this.onendedCallback;
   }
 
-  public set onEnded(callback: (event: EventEmptyType) => void | null) {
+  public set onended(callback: (event: EventEmptyType) => void | null) {
     (this.node as globalThis.AudioScheduledSourceNode).onended = callback;
-    this.onEndedCallback = callback;
+    this.onendedCallback = callback;
   }
 }
