@@ -68,8 +68,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   std::atomic<float> streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;
-  /// Selection mStream_ was opened for, compared against the current selection
-  /// to decide whether the open stream must be reopened. Guarded by streamMutex_.
+  /// The device mStream_ was opened for, guarded by streamMutex_.
   int32_t streamDeviceId_;
 
   std::shared_ptr<oboe::AudioStream> mStream_;
@@ -84,11 +83,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   /// (`true`) or removes it (`false`). Idempotent.
   ///
   /// The claim must be taken before openAudioStream() reads the selection and
-  /// held until the stream is running. setInputDevice runs on the React Native
-  /// module thread, concurrently with start() on the promise thread pool and
-  /// with stream recovery on the Oboe error thread. A selection accepted in that
-  /// window would be reported as applied while the stream records from the
-  /// previous device.
+  /// held until the stream is running.
   ///
   /// Takes streamMutex_, which is recursive, so callers may already hold it.
   void setRunningCapture(bool running);

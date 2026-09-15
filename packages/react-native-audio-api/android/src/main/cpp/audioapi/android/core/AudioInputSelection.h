@@ -8,13 +8,9 @@ namespace audioapi::AudioInputSelection {
 /// @brief Process-wide choice of the capture device every AndroidAudioRecorder
 /// opens its input stream on, set by the Kotlin AudioAPIModule.setInputDevice.
 ///
-/// The selection arrives through the TurboModule, which has no reference to the
-/// individual recorders, so it is kept here rather than on a recorder.
-///
-/// A stream reads the selection once, while it opens, and stays bound to that
-/// device until it is reopened. The running-capture count lets a selection made
-/// while a stream is running be refused instead of silently deferred to the
-/// next start().
+/// Kept process-wide because the public API is AudioManager.setInputDevice,
+/// which selects the input for the whole app to match iOS's session-wide
+/// preferred input; a recorder reads it when its stream opens.
 
 /// @brief Leaves the capture device to the platform, which is Oboe's default.
 constexpr int32_t kSystemDefaultDeviceId = oboe::kUnspecified;
