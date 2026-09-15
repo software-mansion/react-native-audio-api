@@ -6,7 +6,7 @@
 
 .navbar {
   min-width: 360px;
-  z-index: 100;
+  z-index: var(--ifm-z-index-fixed);
   background-color: var(--ifm-navbar-background-color);
 }
 
@@ -19,11 +19,8 @@
   height: 45px !important;
 }
 
-.footer {
-  z-index: 100;
-}
-
 footer.footer {
+  z-index: 0;
   --ifm-footer-padding-vertical: 32px;
 }
 

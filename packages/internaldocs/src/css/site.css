@@ -1,7 +1,22 @@
 @import 'sidebar-tags.css';
 
 /* t-rex-ui treats pathname === baseUrl as the marketing landing page.
-   This site serves docs at /, so undo landing-only footer chrome. */
+   This site serves docs at /, so keep a sticky docs navbar and undo
+   landing-only footer chrome. */
+nav.navbar {
+  z-index: var(--ifm-z-index-fixed);
+}
+
+nav.navbar[class*='navbarLanding'] {
+  position: sticky;
+  top: 0;
+  background-color: var(--ifm-navbar-background-color);
+}
+
+footer.footer {
+  z-index: 0;
+}
+
 footer.footer[class*='footerLanding'] {
   --ifm-footer-background-color: var(--ifm-navbar-background-color);
   --ifm-footer-padding-horizontal: var(--ifm-spacing-horizontal);
