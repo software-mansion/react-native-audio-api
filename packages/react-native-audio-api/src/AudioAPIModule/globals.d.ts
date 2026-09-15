@@ -22,7 +22,7 @@ declare global {
 
   var isRecordingOngoing: (() => boolean) | undefined;
 
-  var takeLastRecordingResult: (() => FileInfo | null) | undefined;
+  var consumeLastRecordingResult: (() => FileInfo | null) | undefined;
 
   var createAudioBuffer: (
     numberOfChannels: number,

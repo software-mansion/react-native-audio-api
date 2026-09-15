@@ -872,7 +872,7 @@ class AudioRecorderMock {
     return recorder != null && (recorder._isRecording || recorder._isPaused);
   }
 
-  static takeLastRecordingResult(): FileInfo | null {
+  static consumeLastRecordingResult(): FileInfo | null {
     return null;
   }
 

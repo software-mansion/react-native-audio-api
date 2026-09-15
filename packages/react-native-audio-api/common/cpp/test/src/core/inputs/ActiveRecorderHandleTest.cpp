@@ -92,7 +92,7 @@ TEST(ActiveRecorderHandleTest, EmptySlotReportsNoRecordingAndStopsNothing) {
   EXPECT_EQ(handle.currentState(), RecorderState::Idle);
   EXPECT_FALSE(handle.isRecordingOngoing());
   EXPECT_EQ(handle.stopActiveRecording(), RecorderState::Idle);
-  EXPECT_FALSE(handle.takeLastRecordingResult().has_value());
+  EXPECT_FALSE(handle.consumeLastRecordingResult().has_value());
 }
 
 TEST(ActiveRecorderHandleTest, IdleRecorderIsNotOngoing) {
@@ -149,13 +149,13 @@ TEST(ActiveRecorderHandleTest, StopStashesResultForSingleConsumption) {
   EXPECT_EQ(handle.stopActiveRecording(), RecorderState::Idle);
   EXPECT_FALSE(handle.isRecordingOngoing());
 
-  auto result = handle.takeLastRecordingResult();
+  auto result = handle.consumeLastRecordingResult();
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(result->paths, recorder->stopPaths);
   EXPECT_DOUBLE_EQ(result->size, 1.5);
   EXPECT_DOUBLE_EQ(result->duration, 10.0);
 
-  EXPECT_FALSE(handle.takeLastRecordingResult().has_value());
+  EXPECT_FALSE(handle.consumeLastRecordingResult().has_value());
 }
 
 TEST(ActiveRecorderHandleTest, StopWithoutFileOutputStashesNothing) {
@@ -167,7 +167,7 @@ TEST(ActiveRecorderHandleTest, StopWithoutFileOutputStashesNothing) {
   recorder->start("");
 
   EXPECT_EQ(handle.stopActiveRecording(), RecorderState::Idle);
-  EXPECT_FALSE(handle.takeLastRecordingResult().has_value());
+  EXPECT_FALSE(handle.consumeLastRecordingResult().has_value());
 }
 
 TEST(ActiveRecorderHandleTest, ExpiredRecorderReportsNoRecording) {

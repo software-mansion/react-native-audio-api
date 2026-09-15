@@ -97,11 +97,11 @@ Docusaurus collects link targets from heading ids. A hand-rolled `<span id="foo"
 but is not collected, so `](#foo)` fails the build. To link to something smaller than a section,
 link to the heading that contains it.
 
-A badge in a heading also leaks into its slug — `### \`takeLastRecordingResult\` <Android />`
-becomes `#takelastrecordingresult-`, with a trailing hyphen. Pin the anchor explicitly instead:
+A badge in a heading also leaks into its slug — `### \`consumeLastRecordingResult\` <Android />`
+becomes `#consumelastrecordingresult-`, with a trailing hyphen. Pin the anchor explicitly instead:
 
 ```mdx
-### `takeLastRecordingResult` <Android /> {#takelastrecordingresult}
+### `consumeLastRecordingResult` <Android /> {#consumelastrecordingresult}
 ```
 
 ## Sidebar / Navigation

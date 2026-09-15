@@ -16,7 +16,7 @@ object NativeRecorderControl {
   /**
    * Stops the active recording and finalizes its output file. Blocking — never call on
    * the main thread. The file info is stashed natively for
-   * `AudioRecorder.takeLastRecordingResult()` on the JS side.
+   * `AudioRecorder.consumeLastRecordingResult()` on the JS side.
    */
   fun stop(): RecorderState = RecorderState.fromOrdinal(stopActiveRecording())
 

@@ -60,8 +60,8 @@ export default class AudioRecorder {
     return globalThis.isRecordingOngoing?.() ?? false;
   }
 
-  static takeLastRecordingResult(): FileInfo | null {
-    return globalThis.takeLastRecordingResult?.() ?? null;
+  static consumeLastRecordingResult(): FileInfo | null {
+    return globalThis.consumeLastRecordingResult?.() ?? null;
   }
 
   /**

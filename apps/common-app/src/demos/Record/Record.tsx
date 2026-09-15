@@ -165,7 +165,7 @@ const Record: FC = () => {
   }, [loadRecordedAudio]);
 
   const onStopRecordingFromNotification = useCallback(async () => {
-    const info = AudioRecorder.takeLastRecordingResult();
+    const info = AudioRecorder.consumeLastRecordingResult();
 
     if (!info || info.paths.length === 0) {
       setRecordedBuffer(null);
@@ -321,7 +321,7 @@ const Record: FC = () => {
       return;
     }
 
-    const info = AudioRecorder.takeLastRecordingResult();
+    const info = AudioRecorder.consumeLastRecordingResult();
     if (info && info.paths.length > 0) {
       loadRecordedAudio(info.paths);
     }

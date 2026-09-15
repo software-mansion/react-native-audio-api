@@ -40,7 +40,7 @@ class AudioAPIModuleInstaller {
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioFileUtils = getCreateAudioFileUtilsFunction(jsiRuntime, jsCallInvoker);
     auto isRecordingOngoing = getIsRecordingOngoingFunction(jsiRuntime);
-    auto takeLastRecordingResult = getTakeLastRecordingResultFunction(jsiRuntime);
+    auto consumeLastRecordingResult = getConsumeLastRecordingResultFunction(jsiRuntime);
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
@@ -51,7 +51,7 @@ class AudioAPIModuleInstaller {
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioFileUtils", createAudioFileUtils);
     jsiRuntime->global().setProperty(*jsiRuntime, "isRecordingOngoing", isRecordingOngoing);
     jsiRuntime->global().setProperty(
-        *jsiRuntime, "takeLastRecordingResult", takeLastRecordingResult);
+        *jsiRuntime, "consumeLastRecordingResult", consumeLastRecordingResult);
 
     auto audioEventHandlerRegistryHostObject =
         std::make_shared<AudioEventHandlerRegistryHostObject>(audioEventHandlerRegistry);
@@ -149,14 +149,14 @@ class AudioAPIModuleInstaller {
         });
   }
 
-  static jsi::Function getTakeLastRecordingResultFunction(jsi::Runtime *jsiRuntime) {
+  static jsi::Function getConsumeLastRecordingResultFunction(jsi::Runtime *jsiRuntime) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
-        jsi::PropNameID::forAscii(*jsiRuntime, "takeLastRecordingResult"),
+        jsi::PropNameID::forAscii(*jsiRuntime, "consumeLastRecordingResult"),
         0,
         [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
             -> jsi::Value {
-          auto result = ActiveRecorderHandle::global().takeLastRecordingResult();
+          auto result = ActiveRecorderHandle::global().consumeLastRecordingResult();
           if (!result.has_value()) {
             return jsi::Value::null();
           }

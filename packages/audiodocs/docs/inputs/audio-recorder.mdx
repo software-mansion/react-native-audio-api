@@ -143,7 +143,7 @@ When the app is opened again, reconcile the UI with what happened while it was a
 if (AudioRecorder.isRecordingOngoing()) {
   // the recording is still running — re-attach the UI to it
 } else {
-  const info = AudioRecorder.takeLastRecordingResult();
+  const info = AudioRecorder.consumeLastRecordingResult();
   if (info) {
     // the recording was stopped from the notification; info.paths holds the files
   }
@@ -531,7 +531,7 @@ if (AudioRecorder.isRecordingOngoing()) {
 }
 ```
 
-### `takeLastRecordingResult` <Android /> {#takelastrecordingresult}
+### `consumeLastRecordingResult` <Android /> {#consumelastrecordingresult}
 
 **Static.** Returns the [`FileInfo`](#fileinfo) of a recording that was stopped natively — through the [recording notification's stop action](../system/recording-notification-manager.mdx#native-action-handling) — or `null` if there is none. Consume-once: the result is cleared on read, so a second call returns `null`.
 
@@ -540,7 +540,7 @@ Recordings stopped through [`stop`](#stop) resolve their promise with the file i
 #### Returns [`FileInfo`](#fileinfo) or `null`.
 
 ```tsx
-const info = AudioRecorder.takeLastRecordingResult();
+const info = AudioRecorder.consumeLastRecordingResult();
 if (info) {
   // the recording was stopped from the notification; info.paths holds the files
 }

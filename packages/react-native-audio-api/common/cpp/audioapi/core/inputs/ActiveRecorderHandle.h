@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/inputs/RecorderState.h>
+#include <audioapi/utils/Macros.h>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -36,6 +37,8 @@ struct RecordingStopResult {
 class ActiveRecorderHandle {
  public:
   static ActiveRecorderHandle &global();
+  DELETE_COPY_AND_MOVE(ActiveRecorderHandle);
+  ~ActiveRecorderHandle() = default;
 
   void setRecorder(const std::shared_ptr<AudioRecorder> &recorder);
 
@@ -43,11 +46,11 @@ class ActiveRecorderHandle {
   void clearRecorder(const AudioRecorder *recorder);
 
   /// @brief The state of the recorder in the slot, or Idle when the slot is empty.
-  RecorderState currentState();
+  [[nodiscard]] RecorderState currentState() const;
 
   /// @brief True while a recording session is active; a paused recording counts as
   /// ongoing because it still owns an open output file.
-  bool isRecordingOngoing();
+  [[nodiscard]] bool isRecordingOngoing() const;
 
   /// @brief Pauses an actively recording session; a no-op in any other state.
   RecorderState pauseActiveRecording();
@@ -56,14 +59,14 @@ class ActiveRecorderHandle {
   RecorderState resumeActiveRecording();
 
   /// @brief Stops a non-idle recording and stashes its file info for
-  /// takeLastRecordingResult(). Blocks until the output file is finalized —
+  /// consumeLastRecordingResult(). Blocks until the output file is finalized —
   /// never call on a UI thread. Losing a race with a JS-initiated stop() stashes
   /// nothing; the JS promise delivers that result.
   RecorderState stopActiveRecording();
 
   /// @brief Consume-once: returns the file info stashed by stopActiveRecording()
   /// and clears it, or std::nullopt when nothing is stashed.
-  std::optional<RecordingStopResult> takeLastRecordingResult();
+  std::optional<RecordingStopResult> consumeLastRecordingResult();
 
  private:
   ActiveRecorderHandle() = default;
@@ -71,7 +74,7 @@ class ActiveRecorderHandle {
 
   static RecorderState stateOf(const std::shared_ptr<AudioRecorder> &recorder);
 
-  std::mutex destructorMutex_;
+  mutable std::mutex destructorMutex_;
   std::weak_ptr<AudioRecorder> recorder_;
   std::optional<RecordingStopResult> lastResult_;
 };
