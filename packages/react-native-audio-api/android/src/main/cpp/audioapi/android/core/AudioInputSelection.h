@@ -3,21 +3,18 @@
 #include <oboe/Oboe.h>
 #include <cstdint>
 
-namespace audioapi {
+namespace audioapi::AudioInputSelection {
 
 /// @brief Process-wide choice of the capture device every AndroidAudioRecorder
-/// opens its input stream on, set from Kotlin by AudioManager.setInputDevice.
+/// opens its input stream on, set by the Kotlin AudioAPIModule.setInputDevice.
 ///
-/// Android routes capture per process rather than per stream, and the selection
-/// arrives through the AudioAPIModule TurboModule, which knows nothing about the
-/// individual recorders. It therefore cannot live on a recorder and is kept here
-/// instead. Nothing in the shared common/cpp layer depends on it.
+/// The selection arrives through the TurboModule, which has no reference to the
+/// individual recorders, so it is kept here rather than on a recorder.
 ///
 /// A stream reads the selection once, while it opens, and stays bound to that
-/// device until it is reopened. The running-capture count exists so that a
-/// selection made while a stream is running can be refused instead of being
-/// silently deferred to the next start().
-namespace AudioInputSelection {
+/// device until it is reopened. The running-capture count lets a selection made
+/// while a stream is running be refused instead of silently deferred to the
+/// next start().
 
 /// @brief Leaves the capture device to the platform, which is Oboe's default.
 constexpr int32_t kSystemDefaultDeviceId = oboe::kUnspecified;
@@ -32,10 +29,9 @@ bool setPreferredDeviceId(int32_t deviceId);
 int32_t getPreferredDeviceId();
 
 /// @brief Reports that a recorder holds the selection: it is about to read it,
-/// or is already feeding audio from it. Must be paired with captureStopped(),
-/// including on teardown, and calls must balance.
+/// or is already feeding audio from it. Every call must be balanced by
+/// captureStopped(), including on teardown.
 void captureStarted();
 void captureStopped();
 
-} // namespace AudioInputSelection
-} // namespace audioapi
+} // namespace audioapi::AudioInputSelection

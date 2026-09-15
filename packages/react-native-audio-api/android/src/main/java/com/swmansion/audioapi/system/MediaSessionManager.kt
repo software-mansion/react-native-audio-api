@@ -212,17 +212,14 @@ object MediaSessionManager {
   }
 
   /**
-   * Capture device selected through `AudioManager.setInputDevice`, kept so that
-   * [getDevicesInfo] can report it back. It mirrors the selection held by the
-   * native capture layer, and `AudioAPIModule.setInputDevice` is the only writer
-   * of either.
+   * Capture device selected through `AudioAPIModule.setInputDevice`, reported
+   * back by [getDevicesInfo]. Mirrors the selection held natively by
+   * `AudioInputSelection`.
    *
-   * Null means no explicit selection was made and the platform picks the device.
-   * Android offers no way to learn which one that is before a stream opens, so
-   * `currentInputs` stays empty in that case.
+   * Null means the platform picks the device. Android does not say which one
+   * before a stream opens, so `currentInputs` stays empty.
    *
-   * Written from the React Native module thread and read by whichever thread
-   * calls `getDevicesInfo`, hence volatile.
+   * Written on the React Native module thread, read by any `getDevicesInfo` caller.
    */
   @Volatile
   private var preferredInputDeviceId: Int? = null

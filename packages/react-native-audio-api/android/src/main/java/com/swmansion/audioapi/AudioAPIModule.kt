@@ -52,13 +52,6 @@ class AudioAPIModule(
     eventBody: Map<String, Any>,
   )
 
-  /**
-   * Hands the selected capture device to the native recorders.
-   *
-   * Returns false when a capture stream is already running, in which case the
-   * selection is left untouched: Oboe binds the capture device while the stream
-   * opens, so a running stream cannot be moved onto another one.
-   */
   private external fun setPreferredInputDeviceId(deviceId: Int): Boolean
 
   init {
@@ -103,7 +96,6 @@ class AudioAPIModule(
 
   override fun invalidate() {
     reactContext.get()?.removeLifecycleEventListener(this)
-    // Cleanup foreground service manager
     ForegroundServiceManager.cleanup()
   }
 
@@ -125,7 +117,7 @@ class AudioAPIModule(
     allowHaptics: Boolean,
     notifyOthersOnDeactivation: Boolean,
   ) {
-    // noting to do here
+    // nothing to do here
   }
 
   override fun disableSessionManagement() {
@@ -182,16 +174,6 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 
-  /**
-   * Selects the capture device every recorder opens its input stream on.
-   *
-   * Unlike iOS, which reroutes a live session, the selection is bound while an
-   * Oboe input stream opens. Changing it therefore only affects streams opened
-   * afterwards, and is rejected outright while a recorder holds a stream so that
-   * a caller never mistakes a deferred switch for an applied one. A paused
-   * recorder still holds its stream and resumes onto the same device, so it
-   * counts as holding one.
-   */
   @RequiresApi(Build.VERSION_CODES.M)
   override fun setInputDevice(
     deviceId: String?,

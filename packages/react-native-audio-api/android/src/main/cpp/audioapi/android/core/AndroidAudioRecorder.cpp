@@ -53,9 +53,9 @@ std::optional<oboe::InputPreset> inputPresetFromString(const std::string &name) 
   return std::nullopt;
 }
 
-/// Runs an action on scope exit unless it is dismissed first, so that a
-/// multi-step operation can undo a claim it took up front without repeating
-/// the undo on every failure path.
+/// Runs an action when the scope ends unless dismiss() is called first. Lets a
+/// multi-step operation roll back an early step on every failure path without
+/// repeating the rollback before each return.
 template <typename Action>
 class ScopeExit {
  public:
@@ -113,11 +113,10 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// @brief Creates and opens the Oboe audio input stream for recording.
 /// calculates the "native" or hardware stream parameters for other interfaces
 /// to use.
-/// Callable from the JS thread, and from the Oboe error thread through
-/// onErrorAfterClose().
-/// The stream is opened on the device chosen through AudioInputSelection; an
-/// already open stream bound to a different device is replaced, since Oboe
-/// binds the capture device while the stream opens.
+/// Called from start() on the promise thread pool and from onErrorAfterClose()
+/// on the Oboe error thread.
+/// An already open stream bound to a device other than the current
+/// AudioInputSelection is closed and reopened.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
   std::scoped_lock streamLock(streamMutex_);
@@ -202,12 +201,6 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
     return Result<NoneType, std::string>::Err("Recorder is already recording");
   }
 
-  // Claim the input selection before reading it, and keep the claim for the
-  // whole attempt. setInputDevice runs on the React Native module thread while
-  // this body runs on the promise thread pool, so without the claim a selection
-  // could be accepted between openAudioStream() reading the current one and the
-  // stream actually running, leaving the recorder on the previous device with
-  // nothing reporting it.
   setRunningCapture(true);
   ScopeExit releaseCapture([this] { setRunningCapture(false); });
 
@@ -265,10 +258,6 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
   return Result<NoneType, std::string>::Ok(None);
 }
 
-/// @brief Adds or removes this recorder from AudioInputSelection's
-/// running-capture count.
-/// Takes streamMutex_, which is recursive, so it can be called from methods
-/// already holding it.
 void AndroidAudioRecorder::setRunningCapture(bool running) {
   std::scoped_lock streamLock(streamMutex_);
 
@@ -689,11 +678,8 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 
     cleanup();
 
-    // Re-take the claim before the replacement stream reads the selection, and
-    // hold it until that stream is running. cleanup() above dropped it, and
-    // opening a device takes long enough that a setInputDevice landing in an
-    // unclaimed window would be accepted while this stream binds the previous
-    // device, leaving the API affirming a device that is not being recorded.
+    // cleanup() released the claim; take it again before the replacement stream
+    // reads the selection.
     setRunningCapture(true);
     ScopeExit releaseCapture([this] { setRunningCapture(false); });
 
