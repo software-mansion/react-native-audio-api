@@ -10,6 +10,11 @@ import java.lang.ref.WeakReference
 /**
  * Centralized manager for foreground service lifecycle.
  * Handles starting/stopping foreground service based on active subscribers.
+ *
+ * Subscribe and unsubscribe run on the caller's thread (the JS thread, or the recording
+ * notification receiver's executor), while the service's own callbacks run on the main
+ * thread. The manager therefore tracks what it asked for ([startIntentSent]) separately
+ * from what the service reports ([isServiceRunning]), and never infers one from the other.
  */
 object ForegroundServiceManager {
   private const val TAG = "ForegroundServiceManager"
@@ -17,6 +22,11 @@ object ForegroundServiceManager {
   private lateinit var reactContext: WeakReference<ReactApplicationContext>
   private val subscribers = mutableSetOf<BaseNotification>()
   private var isServiceRunning = false
+  private var startIntentSent = false
+
+  /** Set while a restart triggered by [onServiceDestroyed] is in flight, so a service that
+   * never comes up cannot be restarted in a loop. */
+  private var restartAfterDestroyPending = false
 
   fun initialize(reactContext: WeakReference<ReactApplicationContext>) {
     this.reactContext = reactContext
@@ -49,21 +59,50 @@ object ForegroundServiceManager {
   /**
    * Get count of active subscribers
    */
+  @Synchronized
   fun getSubscriberCount(): Int = subscribers.size
 
   /**
    * Check if service is currently running
    */
+  @Synchronized
   fun isServiceRunning(): Boolean = isServiceRunning
 
+  /**
+   * Called from [CentralizedForegroundService.onCreate].
+   */
+  @Synchronized
+  internal fun onServiceCreated() {
+    isServiceRunning = true
+    restartAfterDestroyPending = false
+  }
+
+  @Synchronized
+  internal fun onServiceDestroyed() {
+    isServiceRunning = false
+
+    val stillWanted = startIntentSent && subscribers.isNotEmpty() && !restartAfterDestroyPending
+    // The instance is gone, so the previous request is spent either way: anything that
+    // needs the service from here on has to ask for it again.
+    startIntentSent = false
+
+    if (!stillWanted) {
+      return
+    }
+
+    Log.w(TAG, "Service destroyed while ${subscribers.size} subscriber(s) still need it, restarting")
+    restartAfterDestroyPending = true
+    startForegroundService()
+  }
+
   private fun startServiceIfNeeded() {
-    if (!isServiceRunning && subscribers.isNotEmpty()) {
+    if (subscribers.isNotEmpty()) {
       startForegroundService()
     }
   }
 
   private fun stopServiceIfNotNeeded() {
-    if (isServiceRunning && subscribers.isEmpty()) {
+    if ((startIntentSent || isServiceRunning) && subscribers.isEmpty()) {
       stopForegroundService()
     }
   }
@@ -81,14 +120,16 @@ object ForegroundServiceManager {
         context.startService(intent)
       }
 
-      isServiceRunning = true
-      Log.d(TAG, "Centralized foreground service started")
+      startIntentSent = true
+      Log.d(TAG, "Centralized foreground service requested to start")
     } catch (e: Exception) {
       Log.e(TAG, "Error starting foreground service: ${e.message}", e)
     }
   }
 
   private fun stopForegroundService() {
+    startIntentSent = false
+
     val context = reactContext.get() ?: return
 
     try {
@@ -96,8 +137,7 @@ object ForegroundServiceManager {
       intent.action = CentralizedForegroundService.ACTION_STOP
 
       context.startService(intent)
-      isServiceRunning = false
-      Log.d(TAG, "Centralized foreground service stopped")
+      Log.d(TAG, "Centralized foreground service requested to stop")
     } catch (e: Exception) {
       Log.e(TAG, "Error stopping foreground service: ${e.message}", e)
     }
@@ -106,12 +146,9 @@ object ForegroundServiceManager {
   /**
    * Cleanup all subscribers and stop service
    */
+  @Synchronized
   fun cleanup() {
-    synchronized(this) {
-      subscribers.clear()
-      if (isServiceRunning) {
-        stopForegroundService()
-      }
-    }
+    subscribers.clear()
+    stopServiceIfNotNeeded()
   }
 }
