@@ -26,6 +26,9 @@ class AudioAPIModule : public jni::HybridClass<AudioAPIModule> {
       jint eventOrdinal,
       jni::alias_ref<jni::JMap<jstring, jobject>> eventBody);
 
+  /// @see AudioInputSelection::setPreferredDeviceId
+  jboolean setPreferredInputDeviceId(jint deviceId);
+
  private:
   friend HybridBase;
 
