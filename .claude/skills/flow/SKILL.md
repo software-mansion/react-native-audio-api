@@ -216,6 +216,8 @@ If the feature has a visible or audible component, add a demo in `apps/fabric-ex
 Path: `packages/audiodocs/`
 
 Every **public API** that ships must have a documentation page. The docs package uses MDX. See `packages/audiodocs/CLAUDE.md` for the full page template.
+
+Engine internals, research, and plans go in `packages/internaldocs/` (local only). See `packages/internaldocs/CLAUDE.md`. Do not put those write-ups in `audiodocs` or in skills.
 Cover:
 
 - Constructor / factory call
