@@ -4,7 +4,7 @@
 
 namespace audioapi {
 
-enum class PanningModelType : std::uint8_t { EqualPower, HRTF };
+enum class PanningModelType : std::uint8_t { EqualPower };
 
 enum class DistanceModelType : std::uint8_t { Inverse, Linear, Exponential };
 

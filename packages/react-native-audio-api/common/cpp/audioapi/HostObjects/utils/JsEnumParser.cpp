@@ -197,8 +197,6 @@ std::string panningModelToString(PanningModelType model) {
   switch (model) {
     case PanningModelType::EqualPower:
       return "equalpower";
-    case PanningModelType::HRTF:
-      return "HRTF";
     default:
       throw std::invalid_argument("Unknown panning model");
   }
@@ -207,8 +205,6 @@ std::string panningModelToString(PanningModelType model) {
 PanningModelType panningModelFromString(const std::string &model) {
   if (model == "equalpower")
     return PanningModelType::EqualPower;
-  if (model == "HRTF")
-    return PanningModelType::HRTF;
 
   throw std::invalid_argument("Invalid panning model: " + model);
 }

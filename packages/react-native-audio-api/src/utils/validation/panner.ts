@@ -16,12 +16,6 @@ export const PannerOptionsValidator: OptionsValidator<PannerOptions> = {
     validateAudioNodeOptions(options);
     validatePannerChannelOptions(options);
 
-    if (options.panningModel === 'HRTF') {
-      throw new NotSupportedError(
-        "panningModel 'HRTF' is not supported yet; use 'equalpower'"
-      );
-    }
-
     if (options.refDistance !== undefined && options.refDistance < 0) {
       throw new RangeError('refDistance cannot be set to a negative value');
     }

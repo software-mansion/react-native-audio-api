@@ -17,7 +17,7 @@ using panner::DEG_180;
 using panner::DEG_90;
 using panner::Vec3;
 
-std::shared_ptr<AudioParam> makePannerParam(
+std::shared_ptr<AudioParam> createPannerParam(
     float defaultValue,
     const std::shared_ptr<BaseAudioContext> &context) {
   return std::make_shared<AudioParam>(
@@ -32,12 +32,12 @@ PannerNode::PannerNode(
     const PannerOptions &options)
     : AudioNode(context, options),
       listener_(listener),
-      positionXParam_(makePannerParam(options.positionX, context)),
-      positionYParam_(makePannerParam(options.positionY, context)),
-      positionZParam_(makePannerParam(options.positionZ, context)),
-      orientationXParam_(makePannerParam(options.orientationX, context)),
-      orientationYParam_(makePannerParam(options.orientationY, context)),
-      orientationZParam_(makePannerParam(options.orientationZ, context)),
+      positionXParam_(createPannerParam(options.positionX, context)),
+      positionYParam_(createPannerParam(options.positionY, context)),
+      positionZParam_(createPannerParam(options.positionZ, context)),
+      orientationXParam_(createPannerParam(options.orientationX, context)),
+      orientationYParam_(createPannerParam(options.orientationY, context)),
+      orientationZParam_(createPannerParam(options.orientationZ, context)),
       panningModel_(options.panningModel),
       distanceModel_(options.distanceModel),
       refDistance_(options.refDistance),
@@ -95,7 +95,7 @@ void PannerNode::processNode(int framesToProcess) {
   auto inputRightSpan =
       monoInput ? inputLeftSpan : audioBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
 
-  // HRTF is not implemented yet — equal-power panning is used for all models.
+  // Equal-power is the only supported panning model.
   (void)panningModel_;
 
   for (int i = 0; i < framesToProcess; ++i) {

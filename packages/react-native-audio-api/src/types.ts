@@ -174,7 +174,7 @@ export interface StereoPannerOptions extends AudioNodeOptions {
   pan?: number;
 }
 
-export type PanningModelType = 'equalpower' | 'HRTF';
+export type PanningModelType = 'equalpower';
 
 export type DistanceModelType = 'linear' | 'inverse' | 'exponential';
 

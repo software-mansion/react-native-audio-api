@@ -5,7 +5,7 @@ import {
   PannerOptions,
   PanningModelType,
 } from '../types';
-import { InvalidStateError, NotSupportedError, RangeError } from '../errors';
+import { InvalidStateError, RangeError } from '../errors';
 import {
   PannerOptionsValidator,
   validatePannerChannelCount,
@@ -41,11 +41,6 @@ export default class PannerNode extends AudioNode {
   }
 
   public set panningModel(value: PanningModelType) {
-    if (value === 'HRTF') {
-      throw new NotSupportedError(
-        "panningModel 'HRTF' is not supported yet; use 'equalpower'"
-      );
-    }
     (this.node as IPannerNode).panningModel = value;
   }
 
