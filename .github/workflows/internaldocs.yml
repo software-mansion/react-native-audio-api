@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'packages/internaldocs/**'
+      - 'packages/docs-theme/**'
 
 jobs:
   build-internaldocs:

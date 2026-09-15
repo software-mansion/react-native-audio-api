@@ -3,24 +3,29 @@
   display: none !important;
 }
 
+.menu__list-item[class*='internaldocs-tag-'] {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
 .menu__list-item[class*='internaldocs-tag-'] > .menu__link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  display: block;
+  overflow: visible;
+  white-space: normal;
 }
 
 .internaldocs-tag-list {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  display: inline;
+  margin-inline-start: 8px;
 }
 
 .internaldocs-tag-badge {
   display: inline-flex;
   align-items: center;
-  flex-shrink: 0;
+  vertical-align: middle;
+  white-space: nowrap;
+  margin-inline-end: 4px;
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 10px;
