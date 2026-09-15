@@ -69,6 +69,9 @@ class AudioPlayer : public CommonPlayer,
   std::weak_ptr<AudioContext> context_;
 
   bool openAudioStream();
+  bool rebuildStream();
+
+  std::atomic<bool> isFailed_{false};
 };
 
 } // namespace audioapi

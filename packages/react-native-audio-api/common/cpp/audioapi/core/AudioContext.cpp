@@ -8,9 +8,15 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+
 #include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 
 namespace audioapi {
 AudioContext::AudioContext(
@@ -186,6 +192,24 @@ double AudioContext::getOutputLatency() const {
   }
 
   return audioPlayer_->getOutputLatency();
+}
+
+void AudioContext::setOnError(std::function<void()> callback) {
+  onerror = std::move(callback);
+}
+
+void AudioContext::onStreamFail() {
+  assertDriverMutexHeld();
+
+  if (audioPlayer_ != nullptr) {
+    audioPlayer_->cleanup();
+  }
+
+  isInitialized_.store(false, std::memory_order_release);
+
+  if (onerror) {
+    onerror();
+  }
 }
 
 } // namespace audioapi

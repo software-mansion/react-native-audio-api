@@ -20,6 +20,7 @@ AudioContextHostObject::AudioContextHostObject(
           callInvoker) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, outputLatency));
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, baseLatency));
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioContextHostObject, onerror));
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
@@ -76,6 +77,21 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
   auto object = jsi::Object::createFromHostObject(runtime, mediaElementHostObject);
   object.setExternalMemoryPressure(runtime, mediaElementHostObject->getMemoryPressure());
   return object;
+}
+
+JSI_PROPERTY_SETTER_IMPL(AudioContextHostObject, onerror) {
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+
+  if (!value.isObject() || !value.getObject(runtime).isFunction(runtime)) {
+    audioContext->setOnError(nullptr);
+    return;
+  }
+
+  auto jsFunc = std::make_shared<jsi::Function>(value.getObject(runtime).getFunction(runtime));
+
+  audioContext->setOnError([jsFunc, invoker = callInvoker_, rt = &runtime]() {
+    invoker->invokeAsync([jsFunc, rt]() { jsFunc->call(*rt); });
+  });
 }
 
 } // namespace audioapi
