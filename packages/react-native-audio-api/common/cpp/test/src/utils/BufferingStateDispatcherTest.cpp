@@ -17,9 +17,12 @@ constexpr int kThresholdFrames = 6615; // 150ms @ 44100Hz, matching production u
 
 TEST(BufferingStateDispatcherTest, NoCallbackMeansNoDispatchRegardlessOfStarvation) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  BufferingStateDispatcher dispatcher(registry, kThresholdFrames);
+  BufferingStateDispatcher dispatcher(
+      registry, registry->createAudioEventProducer(), kThresholdFrames);
 
-  EXPECT_CALL(*registry, dispatchEventFromAudioThread(testing::_, testing::_, testing::_)).Times(0);
+  EXPECT_CALL(
+      *registry, dispatchEventFromAudioThread(testing::_, testing::_, testing::_, testing::_))
+      .Times(0);
 
   // Well past the debounce threshold, but no listener is registered.
   dispatcher.advance(/* hasData */ false, kThresholdFrames * 2);
@@ -29,12 +32,14 @@ TEST(BufferingStateDispatcherTest, NoCallbackMeansNoDispatchRegardlessOfStarvati
 
 TEST(BufferingStateDispatcherTest, StarvationBelowThresholdDoesNotDispatch) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  BufferingStateDispatcher dispatcher(registry, kThresholdFrames);
+  BufferingStateDispatcher dispatcher(
+      registry, registry->createAudioEventProducer(), kThresholdFrames);
   dispatcher.assignCallbackId(kCallbackId);
 
   EXPECT_CALL(
       *registry,
-      dispatchEventFromAudioThread(AudioEvent::BUFFERING_STATE_CHANGE, kCallbackId, testing::_))
+      dispatchEventFromAudioThread(
+          testing::_, AudioEvent::BUFFERING_STATE_CHANGE, kCallbackId, testing::_))
       .Times(0);
 
   dispatcher.advance(/* hasData */ false, kThresholdFrames - 1);
@@ -44,19 +49,23 @@ TEST(BufferingStateDispatcherTest, StarvationBelowThresholdDoesNotDispatch) {
 
 TEST(BufferingStateDispatcherTest, StarvationCrossingThresholdDispatchesTrueExactlyOnce) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  BufferingStateDispatcher dispatcher(registry, kThresholdFrames);
+  BufferingStateDispatcher dispatcher(
+      registry, registry->createAudioEventProducer(), kThresholdFrames);
   dispatcher.assignCallbackId(kCallbackId);
 
   EXPECT_CALL(
       *registry,
-      dispatchEventFromAudioThread(AudioEvent::BUFFERING_STATE_CHANGE, kCallbackId, testing::_))
+      dispatchEventFromAudioThread(
+          testing::_, AudioEvent::BUFFERING_STATE_CHANGE, kCallbackId, testing::_))
       .Times(1)
-      .WillOnce(testing::Invoke([](AudioEvent, uint64_t, AudioEventPayload payload) {
-        auto *boolPayload = std::get_if<BoolValuePayload>(&payload);
-        EXPECT_NE(boolPayload, nullptr);
-        EXPECT_TRUE(boolPayload->value);
-        return true;
-      }));
+      .WillOnce(
+          testing::Invoke(
+              [](AudioEventProducer &, AudioEvent, uint64_t, AudioEventPayload payload) {
+                auto *boolPayload = std::get_if<BoolValuePayload>(&payload);
+                EXPECT_NE(boolPayload, nullptr);
+                EXPECT_TRUE(boolPayload->value);
+                return true;
+              }));
 
   // Accumulates across calls, like consecutive starved render quanta would.
   dispatcher.advance(false, kThresholdFrames / 2);
@@ -68,19 +77,23 @@ TEST(BufferingStateDispatcherTest, StarvationCrossingThresholdDispatchesTrueExac
 
 TEST(BufferingStateDispatcherTest, RecoveryDispatchesFalseImmediatelyWithNoDebounce) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  BufferingStateDispatcher dispatcher(registry, kThresholdFrames);
+  BufferingStateDispatcher dispatcher(
+      registry, registry->createAudioEventProducer(), kThresholdFrames);
   dispatcher.assignCallbackId(kCallbackId);
 
   EXPECT_CALL(
       *registry,
-      dispatchEventFromAudioThread(AudioEvent::BUFFERING_STATE_CHANGE, kCallbackId, testing::_))
+      dispatchEventFromAudioThread(
+          testing::_, AudioEvent::BUFFERING_STATE_CHANGE, kCallbackId, testing::_))
       .WillOnce(testing::Return(true))
-      .WillOnce(testing::Invoke([](AudioEvent, uint64_t, AudioEventPayload payload) {
-        auto *boolPayload = std::get_if<BoolValuePayload>(&payload);
-        EXPECT_NE(boolPayload, nullptr);
-        EXPECT_FALSE(boolPayload->value);
-        return true;
-      }));
+      .WillOnce(
+          testing::Invoke(
+              [](AudioEventProducer &, AudioEvent, uint64_t, AudioEventPayload payload) {
+                auto *boolPayload = std::get_if<BoolValuePayload>(&payload);
+                EXPECT_NE(boolPayload, nullptr);
+                EXPECT_FALSE(boolPayload->value);
+                return true;
+              }));
 
   dispatcher.advance(false, kThresholdFrames * 2);
   ASSERT_TRUE(dispatcher.isBuffering());
@@ -93,10 +106,13 @@ TEST(BufferingStateDispatcherTest, RecoveryDispatchesFalseImmediatelyWithNoDebou
 
 TEST(BufferingStateDispatcherTest, HasDataWhileNotBufferingNeverDispatches) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  BufferingStateDispatcher dispatcher(registry, kThresholdFrames);
+  BufferingStateDispatcher dispatcher(
+      registry, registry->createAudioEventProducer(), kThresholdFrames);
   dispatcher.assignCallbackId(kCallbackId);
 
-  EXPECT_CALL(*registry, dispatchEventFromAudioThread(testing::_, testing::_, testing::_)).Times(0);
+  EXPECT_CALL(
+      *registry, dispatchEventFromAudioThread(testing::_, testing::_, testing::_, testing::_))
+      .Times(0);
 
   for (int i = 0; i < 10; ++i) {
     dispatcher.advance(true, 128);
@@ -107,10 +123,13 @@ TEST(BufferingStateDispatcherTest, HasDataWhileNotBufferingNeverDispatches) {
 
 TEST(BufferingStateDispatcherTest, IntermittentDataResetsStarvationCounter) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  BufferingStateDispatcher dispatcher(registry, kThresholdFrames);
+  BufferingStateDispatcher dispatcher(
+      registry, registry->createAudioEventProducer(), kThresholdFrames);
   dispatcher.assignCallbackId(kCallbackId);
 
-  EXPECT_CALL(*registry, dispatchEventFromAudioThread(testing::_, testing::_, testing::_)).Times(0);
+  EXPECT_CALL(
+      *registry, dispatchEventFromAudioThread(testing::_, testing::_, testing::_, testing::_))
+      .Times(0);
 
   // Never accumulates enough consecutive starvation to cross the threshold,
   // because a data quantum resets the counter each time — mirrors ordinary
@@ -125,7 +144,8 @@ TEST(BufferingStateDispatcherTest, IntermittentDataResetsStarvationCounter) {
 
 TEST(BufferingStateDispatcherTest, AssignCallbackIdUnregistersPreviousCallback) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  BufferingStateDispatcher dispatcher(registry, kThresholdFrames);
+  BufferingStateDispatcher dispatcher(
+      registry, registry->createAudioEventProducer(), kThresholdFrames);
 
   testing::InSequence sequence;
   EXPECT_CALL(*registry, unregisterHandler(AudioEvent::BUFFERING_STATE_CHANGE, kCallbackId))
