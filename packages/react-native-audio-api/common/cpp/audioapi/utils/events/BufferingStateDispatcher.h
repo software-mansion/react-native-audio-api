@@ -16,6 +16,7 @@ class BufferingStateDispatcher {
  public:
   BufferingStateDispatcher(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      std::shared_ptr<AudioEventProducer> audioEventProducer,
       int startThresholdFrames);
 
   void assignCallbackId(uint64_t callbackId) noexcept;
