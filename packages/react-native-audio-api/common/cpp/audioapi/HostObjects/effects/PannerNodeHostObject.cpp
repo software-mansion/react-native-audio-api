@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/AudioListenerHostObject.h>
 #include <audioapi/HostObjects/AudioParamHostObject.h>
 #include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/effects/PannerNodeHostObject.h>
@@ -13,11 +14,11 @@ namespace audioapi {
 
 PannerNodeHostObject::PannerNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
-    AudioListener *listener,
+    const std::shared_ptr<AudioListenerHostObject> &listener,
     const PannerOptions &options)
     : AudioNodeHostObject(
           context->getGraph(),
-          std::make_unique<PannerNode>(context, listener, options),
+          std::make_unique<PannerNode>(context, listener->audioListener(), options),
           options),
       pannerNode_(typedAudioNode<PannerNode>(node_)),
       panningModel_(options.panningModel),

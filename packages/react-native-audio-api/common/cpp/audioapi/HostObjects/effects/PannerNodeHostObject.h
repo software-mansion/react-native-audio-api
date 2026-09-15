@@ -7,9 +7,8 @@
 #include <memory>
 
 namespace audioapi {
-using namespace facebook;
 
-class AudioListener;
+class AudioListenerHostObject;
 struct PannerOptions;
 class BaseAudioContext;
 class PannerNode;
@@ -18,7 +17,7 @@ class PannerNodeHostObject : public AudioNodeHostObject {
  public:
   explicit PannerNodeHostObject(
       const std::shared_ptr<BaseAudioContext> &context,
-      AudioListener *listener,
+      const std::shared_ptr<AudioListenerHostObject> &listener,
       const PannerOptions &options);
 
   JSI_PROPERTY_GETTER_DECL(positionX);

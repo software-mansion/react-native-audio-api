@@ -29,11 +29,11 @@ inline double magnitude(const Vec3 &v) {
   return std::sqrt(dot(v, v));
 }
 
-inline Vec3 subtract(const Vec3 &a, const Vec3 &b) {
+inline Vec3 operator-(const Vec3 &a, const Vec3 &b) {
   return {.x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z};
 }
 
-inline Vec3 scale(const Vec3 &v, double s) {
+inline Vec3 operator*(const Vec3 &v, double s) {
   return {.x = v.x * s, .y = v.y * s, .z = v.z * s};
 }
 
@@ -42,7 +42,7 @@ inline Vec3 normalize(const Vec3 &v) {
   if (mag == 0.0) {
     return {};
   }
-  return scale(v, 1.0 / mag);
+  return v * (1.0 / mag);
 }
 
 inline Vec3 cross(const Vec3 &a, const Vec3 &b) {
@@ -61,7 +61,7 @@ inline double computeAzimuth(
     const Vec3 &listenerForward,
     const Vec3 &listenerUp) {
 
-  Vec3 sourceListener = subtract(sourcePosition, listenerPosition);
+  Vec3 sourceListener = sourcePosition - listenerPosition;
   sourceListener = normalize(sourceListener);
   if (magnitude(sourceListener) == 0.0) {
     return 0.0;
@@ -77,7 +77,7 @@ inline double computeAzimuth(
   const Vec3 up = cross(listenerRightNorm, listenerForwardNorm);
 
   const double upProjection = dot(sourceListener, up);
-  Vec3 projectedSource = subtract(sourceListener, scale(up, upProjection));
+  Vec3 projectedSource = sourceListener - (up * upProjection);
   if (magnitude(projectedSource) == 0.0) {
     return 0.0;
   }
@@ -117,7 +117,7 @@ inline double wrapAzimuth(double azimuth) {
 }
 
 inline double computeDistance(const Vec3 &sourcePosition, const Vec3 &listenerPosition) {
-  return magnitude(subtract(sourcePosition, listenerPosition));
+  return magnitude(sourcePosition - listenerPosition);
 }
 
 inline double computeDistanceGain(
@@ -174,7 +174,7 @@ inline double computeConeGain(
     return 1.0;
   }
 
-  const Vec3 sourceToListener = normalize(subtract(listenerPosition, sourcePosition));
+  const Vec3 sourceToListener = normalize(listenerPosition - sourcePosition);
   const Vec3 normalizedOrientation = normalize(sourceOrientation);
 
   const double angle =

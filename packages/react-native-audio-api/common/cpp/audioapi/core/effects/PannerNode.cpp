@@ -17,6 +17,13 @@ using panner::DEG_180;
 using panner::DEG_90;
 using panner::Vec3;
 
+std::shared_ptr<AudioParam> makePannerParam(
+    float defaultValue,
+    const std::shared_ptr<BaseAudioContext> &context) {
+  return std::make_shared<AudioParam>(
+      defaultValue, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+}
+
 } // namespace
 
 PannerNode::PannerNode(
@@ -25,42 +32,12 @@ PannerNode::PannerNode(
     const PannerOptions &options)
     : AudioNode(context, options),
       listener_(listener),
-      positionXParam_(
-          std::make_shared<AudioParam>(
-              options.positionX,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      positionYParam_(
-          std::make_shared<AudioParam>(
-              options.positionY,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      positionZParam_(
-          std::make_shared<AudioParam>(
-              options.positionZ,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      orientationXParam_(
-          std::make_shared<AudioParam>(
-              options.orientationX,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      orientationYParam_(
-          std::make_shared<AudioParam>(
-              options.orientationY,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
-      orientationZParam_(
-          std::make_shared<AudioParam>(
-              options.orientationZ,
-              MOST_NEGATIVE_SINGLE_FLOAT,
-              MOST_POSITIVE_SINGLE_FLOAT,
-              context)),
+      positionXParam_(makePannerParam(options.positionX, context)),
+      positionYParam_(makePannerParam(options.positionY, context)),
+      positionZParam_(makePannerParam(options.positionZ, context)),
+      orientationXParam_(makePannerParam(options.orientationX, context)),
+      orientationYParam_(makePannerParam(options.orientationY, context)),
+      orientationZParam_(makePannerParam(options.orientationZ, context)),
       panningModel_(options.panningModel),
       distanceModel_(options.distanceModel),
       refDistance_(options.refDistance),
@@ -74,110 +51,6 @@ PannerNode::PannerNode(
               RENDER_QUANTUM_SIZE,
               channelCount_,
               context->getSampleRate())) {}
-
-std::shared_ptr<AudioParam> PannerNode::getPositionXParam() const {
-  return positionXParam_;
-}
-
-std::shared_ptr<AudioParam> PannerNode::getPositionYParam() const {
-  return positionYParam_;
-}
-
-std::shared_ptr<AudioParam> PannerNode::getPositionZParam() const {
-  return positionZParam_;
-}
-
-std::shared_ptr<AudioParam> PannerNode::getOrientationXParam() const {
-  return orientationXParam_;
-}
-
-std::shared_ptr<AudioParam> PannerNode::getOrientationYParam() const {
-  return orientationYParam_;
-}
-
-std::shared_ptr<AudioParam> PannerNode::getOrientationZParam() const {
-  return orientationZParam_;
-}
-
-void PannerNode::setPanningModel(PanningModelType model) {
-  panningModel_ = model;
-}
-
-PanningModelType PannerNode::getPanningModel() const {
-  return panningModel_;
-}
-
-void PannerNode::setDistanceModel(DistanceModelType model) {
-  distanceModel_ = model;
-}
-
-DistanceModelType PannerNode::getDistanceModel() const {
-  return distanceModel_;
-}
-
-void PannerNode::setRefDistance(double distance) {
-  refDistance_ = distance;
-}
-
-double PannerNode::getRefDistance() const {
-  return refDistance_;
-}
-
-void PannerNode::setMaxDistance(double distance) {
-  maxDistance_ = distance;
-}
-
-double PannerNode::getMaxDistance() const {
-  return maxDistance_;
-}
-
-void PannerNode::setRolloffFactor(double factor) {
-  rolloffFactor_ = factor;
-}
-
-double PannerNode::getRolloffFactor() const {
-  return rolloffFactor_;
-}
-
-void PannerNode::setConeInnerAngle(double angle) {
-  coneInnerAngle_ = angle;
-}
-
-double PannerNode::getConeInnerAngle() const {
-  return coneInnerAngle_;
-}
-
-void PannerNode::setConeOuterAngle(double angle) {
-  coneOuterAngle_ = angle;
-}
-
-double PannerNode::getConeOuterAngle() const {
-  return coneOuterAngle_;
-}
-
-void PannerNode::setConeOuterGain(double gain) {
-  coneOuterGain_ = gain;
-}
-
-double PannerNode::getConeOuterGain() const {
-  return coneOuterGain_;
-}
-
-std::shared_ptr<DSPAudioBuffer> PannerNode::getOutputBuffer() const {
-  return outputBuffer_;
-}
-
-std::shared_ptr<DSPAudioBuffer> PannerNode::getNegotiatedBuffer() const {
-  return getInputBuffer();
-}
-
-void PannerNode::setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) {
-  audioBuffer_ = buffer;
-}
-
-size_t PannerNode::getUpstreamChannelCount(size_t /*negotiatedChannelCount*/) const {
-  return outputBuffer_->getNumberOfChannels();
-}
 
 void PannerNode::processNode(int framesToProcess) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();

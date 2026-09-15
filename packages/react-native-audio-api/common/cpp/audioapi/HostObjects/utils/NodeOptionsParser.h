@@ -107,6 +107,18 @@ inline StereoPannerOptions parseStereoPannerOptions(
   return options;
 }
 
+template <typename T>
+void setOption(
+    const jsi::Object &optionsObject,
+    const char *name,
+    T &value,
+    jsi::Runtime &runtime) {
+  auto optionsValue = optionsObject.getProperty(runtime, name);
+  if (optionsValue.isNumber()) {
+    value = optionsValue.getNumber();
+  }
+}
+
 inline PannerOptions parsePannerOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   PannerOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
@@ -130,57 +142,20 @@ inline PannerOptions parsePannerOptions(jsi::Runtime &runtime, const jsi::Object
     } catch (const std::invalid_argument &) {}
   }
 
-  auto positionXValue = optionsObject.getProperty(runtime, "positionX");
-  if (positionXValue.isNumber()) {
-    options.positionX = static_cast<float>(positionXValue.getNumber());
-  }
-  auto positionYValue = optionsObject.getProperty(runtime, "positionY");
-  if (positionYValue.isNumber()) {
-    options.positionY = static_cast<float>(positionYValue.getNumber());
-  }
-  auto positionZValue = optionsObject.getProperty(runtime, "positionZ");
-  if (positionZValue.isNumber()) {
-    options.positionZ = static_cast<float>(positionZValue.getNumber());
-  }
+  setOption(optionsObject, "positionX", options.positionX, runtime);
+  setOption(optionsObject, "positionY", options.positionY, runtime);
+  setOption(optionsObject, "positionZ", options.positionZ, runtime);
 
-  auto orientationXValue = optionsObject.getProperty(runtime, "orientationX");
-  if (orientationXValue.isNumber()) {
-    options.orientationX = static_cast<float>(orientationXValue.getNumber());
-  }
-  auto orientationYValue = optionsObject.getProperty(runtime, "orientationY");
-  if (orientationYValue.isNumber()) {
-    options.orientationY = static_cast<float>(orientationYValue.getNumber());
-  }
-  auto orientationZValue = optionsObject.getProperty(runtime, "orientationZ");
-  if (orientationZValue.isNumber()) {
-    options.orientationZ = static_cast<float>(orientationZValue.getNumber());
-  }
+  setOption(optionsObject, "orientationX", options.orientationX, runtime);
+  setOption(optionsObject, "orientationY", options.orientationY, runtime);
+  setOption(optionsObject, "orientationZ", options.orientationZ, runtime);
 
-  auto refDistanceValue = optionsObject.getProperty(runtime, "refDistance");
-  if (refDistanceValue.isNumber()) {
-    options.refDistance = refDistanceValue.getNumber();
-  }
-  auto maxDistanceValue = optionsObject.getProperty(runtime, "maxDistance");
-  if (maxDistanceValue.isNumber()) {
-    options.maxDistance = maxDistanceValue.getNumber();
-  }
-  auto rolloffFactorValue = optionsObject.getProperty(runtime, "rolloffFactor");
-  if (rolloffFactorValue.isNumber()) {
-    options.rolloffFactor = rolloffFactorValue.getNumber();
-  }
-  auto coneInnerAngleValue = optionsObject.getProperty(runtime, "coneInnerAngle");
-  if (coneInnerAngleValue.isNumber()) {
-    options.coneInnerAngle = coneInnerAngleValue.getNumber();
-  }
-  auto coneOuterAngleValue = optionsObject.getProperty(runtime, "coneOuterAngle");
-  if (coneOuterAngleValue.isNumber()) {
-    options.coneOuterAngle = coneOuterAngleValue.getNumber();
-  }
-  auto coneOuterGainValue = optionsObject.getProperty(runtime, "coneOuterGain");
-  if (coneOuterGainValue.isNumber()) {
-    options.coneOuterGain = coneOuterGainValue.getNumber();
-  }
-
+  setOption(optionsObject, "refDistance", options.refDistance, runtime);
+  setOption(optionsObject, "maxDistance", options.maxDistance, runtime);
+  setOption(optionsObject, "rolloffFactor", options.rolloffFactor, runtime);
+  setOption(optionsObject, "coneInnerAngle", options.coneInnerAngle, runtime);
+  setOption(optionsObject, "coneOuterAngle", options.coneOuterAngle, runtime);
+  setOption(optionsObject, "coneOuterGain", options.coneOuterGain, runtime);
   return options;
 }
 

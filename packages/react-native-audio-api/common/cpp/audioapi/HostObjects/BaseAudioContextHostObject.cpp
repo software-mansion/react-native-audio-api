@@ -185,7 +185,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPanner) {
   const auto options = args[0].asObject(runtime);
   const auto pannerOptions = audioapi::option_parser::parsePannerOptions(runtime, options);
   auto pannerHostObject =
-      std::make_shared<PannerNodeHostObject>(context_, listener_->audioListener(), pannerOptions);
+      std::make_shared<PannerNodeHostObject>(context_, listener_, pannerOptions);
   auto object = jsi::Object::createFromHostObject(runtime, pannerHostObject);
   object.setExternalMemoryPressure(runtime, pannerHostObject->getMemoryPressure());
   return object;

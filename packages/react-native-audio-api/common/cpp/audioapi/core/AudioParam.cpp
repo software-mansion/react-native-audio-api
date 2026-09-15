@@ -75,7 +75,7 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
     return outputBuffer_;
   }
 
-  const double sampleRate = static_cast<double>(context->getSampleRate());
+  const auto sampleRate = static_cast<double>(context->getSampleRate());
   const auto startFrame = static_cast<std::size_t>(std::llround(time * sampleRate));
 
   // Read modulation from input buffer (filled by BridgeNode if connected, otherwise zeros)
@@ -83,7 +83,7 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   auto outputData = outputBuffer_->getChannel(0)->span();
 
   for (int i = 0; i < framesToProcess; ++i) {
-    const double sampleTime =
+    const auto sampleTime =
         static_cast<double>(startFrame + static_cast<std::size_t>(i)) / sampleRate;
     outputData[i] = inputData[i] + getValueAtTimeUnmodulated(sampleTime);
   }
