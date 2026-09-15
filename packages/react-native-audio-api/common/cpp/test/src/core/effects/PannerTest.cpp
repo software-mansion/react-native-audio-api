@@ -226,23 +226,24 @@ TEST_P(PannerStereoParametrizedTest, PanModulatesInputStereoCorrectly) {
   constexpr float TOLERANCE = 1e-5f;
 
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    const auto step = i + 1;
     if (azimuth <= 0) {
       EXPECT_NEAR(
           (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
-          ((i + 1) + (i + 1) * params.expectedGainL) * totalGain,
+          (step + step * params.expectedGainL) * totalGain,
           TOLERANCE);
       EXPECT_NEAR(
           (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
-          ((i + 1) * params.expectedGainR) * totalGain,
+          (step * params.expectedGainR) * totalGain,
           TOLERANCE);
     } else {
       EXPECT_NEAR(
           (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
-          ((i + 1) * params.expectedGainL) * totalGain,
+          (step * params.expectedGainL) * totalGain,
           TOLERANCE);
       EXPECT_NEAR(
           (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
-          ((i + 1) + (i + 1) * params.expectedGainR) * totalGain,
+          (step + step * params.expectedGainR) * totalGain,
           TOLERANCE);
     }
   }
