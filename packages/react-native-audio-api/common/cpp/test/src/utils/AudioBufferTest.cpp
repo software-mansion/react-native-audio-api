@@ -634,4 +634,49 @@ TEST_F(AudioBufferTest, DeinterleaveZeroFramesIsNoop) {
   expectChannel(buf, 0, 42.0f);
 }
 
+TEST_F(AudioBufferTest, DetachSharedChannelCutsOffEscapedHandleAndKeepsSamples) {
+  AudioBuffer buf(BUF_SIZE, 2, SR);
+  fillChannel(buf, 0, 0.5f);
+  fillChannel(buf, 1, 0.25f);
+  auto escapedHandle = buf.getSharedChannel(0);
+  auto untouchedHandle = buf.getSharedChannel(1);
+
+  buf.detachSharedChannel(0);
+
+  EXPECT_NE(buf.getSharedChannel(0), escapedHandle) << "Detached channel must get fresh storage.";
+  EXPECT_EQ(buf.getSharedChannel(1), untouchedHandle)
+      << "Other channels keep their storage; only the escaped one is replaced.";
+  expectChannel(buf, 0, 0.5f);
+
+  (*escapedHandle)[3] = 1.0f;
+
+  expectChannel(buf, 0, 0.5f);
+  EXPECT_FLOAT_EQ((*escapedHandle)[3], 1.0f)
+      << "The old handle stays alive and writable, it just no longer reaches the buffer.";
+}
+
+// A source node plays a JS-visible buffer through shareChannels(). The JS side then relies
+// on detachSharedChannel() as copy-on-write: its writes must never reach the node's view.
+TEST_F(AudioBufferTest, ShareChannelsAliasesStorageUntilOneSideDetaches) {
+  AudioBuffer owner(BUF_SIZE, 2, SR);
+  fillChannel(owner, 0, 0.5f);
+  fillChannel(owner, 1, 0.25f);
+
+  auto shared = owner.shareChannels();
+
+  ASSERT_EQ(shared->getNumberOfChannels(), 2u);
+  ASSERT_EQ(shared->getSize(), BUF_SIZE);
+  ASSERT_FLOAT_EQ(shared->getSampleRate(), SR);
+  EXPECT_EQ(shared->getSharedChannel(0), owner.getSharedChannel(0))
+      << "shareChannels() must alias, not copy.";
+
+  owner.detachSharedChannel(0);
+  fillChannel(owner, 0, 1.0f);
+
+  expectChannel(*shared, 0, 0.5f);
+  expectChannel(owner, 0, 1.0f);
+  EXPECT_EQ(shared->getSharedChannel(1), owner.getSharedChannel(1))
+      << "Detaching one channel must not touch the others.";
+}
+
 // NOLINTEND
