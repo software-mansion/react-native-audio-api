@@ -3,7 +3,11 @@ import { ConvolverOptions } from '../types';
 import type BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 import AudioBuffer from './AudioBuffer';
-import { ConvolverOptionsValidator } from '../utils/validation';
+import {
+  ConvolverOptionsValidator,
+  validateConvolverBufferChannelCount,
+  validateConvolverBufferSampleRate,
+} from '../utils/validation';
 
 export default class ConvolverNode extends AudioNode {
   private _buffer: AudioBuffer | null = null;
@@ -31,6 +35,15 @@ export default class ConvolverNode extends AudioNode {
       this._buffer = null;
       return;
     }
+
+    // Spec setter steps: the engine has no guard of its own, so an impulse
+    // response the convolution matrix is undefined for must be rejected here.
+    validateConvolverBufferChannelCount(buffer.numberOfChannels);
+    validateConvolverBufferSampleRate(
+      buffer.sampleRate,
+      this.context.sampleRate
+    );
+
     (this.node as IConvolverNode).setBuffer(buffer.buffer);
     this._buffer = buffer;
   }

@@ -197,11 +197,11 @@ describe('React Native Audio API Mocks', () => {
         expect(() => queueSource.clearBuffers()).not.toThrow();
       });
 
-      it('should support onBufferEnded callback', () => {
+      it('should support onbufferended callback', () => {
         const queueSource = context.createBufferQueueSource();
         const callback = jest.fn();
-        queueSource.onBufferEnded = callback;
-        expect(queueSource.onBufferEnded).toBe(callback);
+        queueSource.onbufferended = callback;
+        expect(queueSource.onbufferended).toBe(callback);
       });
     });
 

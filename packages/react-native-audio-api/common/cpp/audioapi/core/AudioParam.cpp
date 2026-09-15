@@ -18,7 +18,7 @@ AudioParam::AudioParam(
     : GeneralizedAudioParam(minValue, maxValue, context),
       value_(defaultValue),
       defaultValue_(defaultValue),
-      eventRenderQueue_(defaultValue),
+      eventRenderQueue_(defaultValue, context->getSampleRate()),
       inputBuffer_(
           std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {}
 
@@ -75,17 +75,16 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
     return outputBuffer_;
   }
 
-  const auto sampleRate = static_cast<double>(context->getSampleRate());
-  const auto startFrame = static_cast<std::size_t>(std::llround(time * sampleRate));
+  float sampleRate = context->getSampleRate();
+  auto quantumStartFrame = static_cast<int>(dsp::timeToSampleFrame(time, sampleRate));
 
   // Read modulation from input buffer (filled by BridgeNode if connected, otherwise zeros)
   auto inputData = inputBuffer_->getChannel(0)->span();
   auto outputData = outputBuffer_->getChannel(0)->span();
 
-  for (int i = 0; i < framesToProcess; ++i) {
-    const auto sampleTime =
-        static_cast<double>(startFrame + static_cast<std::size_t>(i)) / sampleRate;
-    outputData[i] = inputData[i] + getValueAtTimeUnmodulated(sampleTime);
+  for (int i = 0; i < framesToProcess; i++) {
+    double frameTime = dsp::sampleFrameToTime(quantumStartFrame + i, sampleRate);
+    outputData[i] = inputData[i] + getValueAtTimeUnmodulated(frameTime);
   }
 
   inputBuffer_->zero();

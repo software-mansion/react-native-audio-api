@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/decoding/AudioDecoding.h>
@@ -18,6 +19,7 @@ BaseAudioContext::BaseAudioContext(
     : state_(ContextState::SUSPENDED),
       sampleRate_(sampleRate),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      stateChangeEvent_(audioEventHandlerRegistry),
       pendingPromisesOffloader_(
           std::make_unique<task_offloader::TaskOffloader<
               ContextPromiseTask,
@@ -62,6 +64,19 @@ std::size_t BaseAudioContext::getCurrentSampleFrame() const {
 
 double BaseAudioContext::getCurrentTime() const {
   return static_cast<double>(getCurrentSampleFrame()) / getSampleRate();
+}
+
+void BaseAudioContext::assignOnStateChangeCallbackId(uint64_t callbackId) {
+  stateChangeEvent_.assignCallbackId(callbackId);
+}
+
+void BaseAudioContext::dispatchStateChange(ContextState state) {
+  if (lastDispatchedState_.exchange(state, std::memory_order_acq_rel) == state) {
+    return;
+  }
+
+  stateChangeEvent_.dispatch(
+      StringPayload{.name = "state", .reason = js_enum_parser::contextStateToString(state)});
 }
 
 void BaseAudioContext::setState(ContextState state) {

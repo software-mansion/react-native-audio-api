@@ -12,6 +12,7 @@
 #include <string>
 
 namespace audioapi::js_enum_parser {
+
 std::string overSampleTypeToString(OverSampleType type);
 OverSampleType overSampleTypeFromString(const std::string &type);
 std::string oscillatorTypeToString(OscillatorType type);
@@ -19,7 +20,6 @@ OscillatorType oscillatorTypeFromString(const std::string &type);
 std::string filterTypeToString(BiquadFilterType type);
 BiquadFilterType filterTypeFromString(const std::string &type);
 AudioEvent audioEventFromString(const std::string &event);
-std::string contextStateToString(ContextState state);
 std::string channelCountModeToString(ChannelCountMode mode);
 ChannelCountMode channelCountModeFromString(const std::string &mode);
 std::string channelInterpretationToString(ChannelInterpretation interpretation);
@@ -28,4 +28,5 @@ PanningModelType panningModelFromString(const std::string &model);
 std::string distanceModelToString(DistanceModelType model);
 DistanceModelType distanceModelFromString(const std::string &model);
 ChannelInterpretation channelInterpretationFromString(const std::string &interpretation);
+std::string contextStateToString(ContextState state);
 } // namespace audioapi::js_enum_parser

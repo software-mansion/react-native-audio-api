@@ -66,7 +66,7 @@ If you invoke this method multiple times on the same node before the designated 
 
 ## Events
 
-### `onEnded`
+### `onended`
 
 Sets (or removes) a callback that will be fired when source node has stopped playing,
 either because it's reached a predetermined stop time, the full duration of the audio has been performed, or because the entire buffer has been played.
@@ -74,7 +74,7 @@ You can remove the callback either by passing `null` or calling `remove` on the 
 
 
 ```ts
-const subscription = audioBufferSourceNode.onEnded = () => { // setting the callback
+const subscription = audioBufferSourceNode.onended = () => { // setting the callback
   console.log("audio ended");
 };
 

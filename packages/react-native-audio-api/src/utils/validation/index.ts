@@ -12,6 +12,7 @@ export {
 export {
   ConvolverOptionsValidator,
   validateConvolverBufferChannelCount,
+  validateConvolverBufferSampleRate,
 } from './convolver';
 
 export { OscillatorOptionsValidator } from './oscillator';
