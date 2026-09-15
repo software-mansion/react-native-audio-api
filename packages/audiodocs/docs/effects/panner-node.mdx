@@ -22,7 +22,7 @@ Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audiono
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `panningModel` <Optional /> | `'equalpower' \| 'HRTF'` | `'equalpower'` | Spatialization algorithm. Native supports `'equalpower'` only. |
+| `panningModel` <Optional /> | `'equalpower'` | `'equalpower'` | Spatialization algorithm (equal-power only). |
 | `distanceModel` <Optional /> | `'linear' \| 'inverse' \| 'exponential'` | `'inverse'` | Distance attenuation model. |
 | `positionX` … `positionZ` <Optional /> | `number` | `(0, 0, 0)` | Initial source position. |
 | `orientationX` … `orientationZ` <Optional /> | `number` | `(1, 0, 0)` | Initial source orientation. |
@@ -67,7 +67,7 @@ Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 | :----: | :----: | :-------- |
 | `positionX`, `positionY`, `positionZ` | [`AudioParam`](../core/audio-param.mdx) | Source position in 3D space. |
 | `orientationX`, `orientationY`, `orientationZ` | [`AudioParam`](../core/audio-param.mdx) | Source orientation vector. |
-| `panningModel` | `PanningModelType` | Native supports `'equalpower'` only. |
+| `panningModel` | `PanningModelType` | `'equalpower'` only. |
 | `distanceModel` | `DistanceModelType` | `'linear'`, `'inverse'`, or `'exponential'`. |
 | `refDistance`, `maxDistance`, `rolloffFactor` | `number` | Distance model parameters. |
 | `coneInnerAngle`, `coneOuterAngle`, `coneOuterGain` | `number` | Directional cone. |
@@ -87,4 +87,4 @@ Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 - Output is always stereo (2 channels), like [`StereoPannerNode`](./stereo-panner-node.mdx).
 - Spatialization uses the context [`listener`](../core/audio-listener.mdx) position and orientation.
-- On native, setting `panningModel` to `'HRTF'` throws `NotSupportedError`. Use `'equalpower'`.
+- `panningModel` supports `'equalpower'` only (`'HRTF'` is not part of the API yet).
