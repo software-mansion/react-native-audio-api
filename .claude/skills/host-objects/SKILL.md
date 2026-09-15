@@ -72,6 +72,7 @@ HostObjects/
 │   ├── DelayNodeHostObject.h/.cpp
 │   ├── IIRFilterNodeHostObject.h/.cpp
 │   ├── StereoPannerNodeHostObject.h/.cpp
+│   ├── PannerNodeHostObject.h/.cpp
 │   ├── WaveShaperNodeHostObject.h/.cpp
 │   ├── ConvolverNodeHostObject.h/.cpp
 │   ├── ChannelMergerNodeHostObject.h/.cpp   # Composite: routes inputs to slot hosts

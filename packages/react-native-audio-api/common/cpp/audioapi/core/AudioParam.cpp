@@ -4,6 +4,8 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.hpp>
+
+#include <cmath>
 #include <memory>
 
 namespace audioapi {

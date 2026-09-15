@@ -12,6 +12,7 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -103,6 +104,54 @@ inline StereoPannerOptions parseStereoPannerOptions(
     options.pan = static_cast<float>(panValue.getNumber());
   }
 
+  return options;
+}
+
+template <typename T>
+void setOption(
+    const jsi::Object &optionsObject,
+    const char *name,
+    T &value,
+    jsi::Runtime &runtime) {
+  auto optionsValue = optionsObject.getProperty(runtime, name);
+  if (optionsValue.isNumber()) {
+    value = optionsValue.getNumber();
+  }
+}
+
+inline PannerOptions parsePannerOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+  PannerOptions options(parseAudioNodeOptions(runtime, optionsObject));
+
+  auto panningModelValue = optionsObject.getProperty(runtime, "panningModel");
+  if (panningModelValue.isString()) {
+    try {
+      options.panningModel =
+          js_enum_parser::panningModelFromString(panningModelValue.asString(runtime).utf8(runtime));
+    } catch (const std::invalid_argument &) {}
+  }
+
+  auto distanceModelValue = optionsObject.getProperty(runtime, "distanceModel");
+  if (distanceModelValue.isString()) {
+    try {
+      options.distanceModel = js_enum_parser::distanceModelFromString(
+          distanceModelValue.asString(runtime).utf8(runtime));
+    } catch (const std::invalid_argument &) {}
+  }
+
+  setOption(optionsObject, "positionX", options.positionX, runtime);
+  setOption(optionsObject, "positionY", options.positionY, runtime);
+  setOption(optionsObject, "positionZ", options.positionZ, runtime);
+
+  setOption(optionsObject, "orientationX", options.orientationX, runtime);
+  setOption(optionsObject, "orientationY", options.orientationY, runtime);
+  setOption(optionsObject, "orientationZ", options.orientationZ, runtime);
+
+  setOption(optionsObject, "refDistance", options.refDistance, runtime);
+  setOption(optionsObject, "maxDistance", options.maxDistance, runtime);
+  setOption(optionsObject, "rolloffFactor", options.rolloffFactor, runtime);
+  setOption(optionsObject, "coneInnerAngle", options.coneInnerAngle, runtime);
+  setOption(optionsObject, "coneOuterAngle", options.coneOuterAngle, runtime);
+  setOption(optionsObject, "coneOuterGain", options.coneOuterGain, runtime);
   return options;
 }
 
