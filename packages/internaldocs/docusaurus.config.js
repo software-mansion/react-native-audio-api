@@ -72,6 +72,12 @@ const config = {
               new webpack.ProvidePlugin({
                 React: 'react',
               }),
+              // t-rex-ui treats pathname === baseUrl as a marketing landing page
+              // and hides the sidebar toggle. This site serves docs at /.
+              new webpack.NormalModuleReplacementPlugin(
+                /[/\\]hooks[/\\]usePageType\.js$/,
+                path.resolve(__dirname, 'src/hooks/usePageType.js')
+              ),
             ],
             module: {
               rules: [
