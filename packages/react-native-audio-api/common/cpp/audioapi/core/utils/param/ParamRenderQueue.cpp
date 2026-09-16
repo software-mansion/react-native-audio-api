@@ -109,13 +109,10 @@ void ParamRenderQueue::cancelScheduledValues(double cancelTime) {
 
   // An event may already have been promoted out of the queue; the erase above cannot see it
   if (currentEvent_ && currentEvent_->getAutomationTime() >= cancelTime) {
-    restoreValueFromBeforeCurrentEvent();
+    // restore value from before currentEvent_ and discard it
+    currentEvent_ = ParamRenderEventFactory::createSetValueEvent(
+        currentEvent_->getStartValue(), currentEvent_->getStartTime());
   }
-}
-
-void ParamRenderQueue::restoreValueFromBeforeCurrentEvent() {
-  currentEvent_ = ParamRenderEventFactory::createSetValueEvent(
-      currentEvent_->getStartValue(), currentEvent_->getStartTime());
 }
 
 void ParamRenderQueue::truncateCurrentEventAt(double holdTime) {
@@ -125,14 +122,15 @@ void ParamRenderQueue::truncateCurrentEventAt(double holdTime) {
 }
 
 void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
-  // An in-flight ramp lives in currentEvent_, not in the queue
+  // E2: first event with automationTime strictly after cancelTime
   if (currentEvent_ && currentEvent_->isRampType() && cancelTime < currentEvent_->getEndTime()) {
     truncateCurrentEventAt(cancelTime);
+    // Step 5: remove everything strictly after cancelTime
     eventQueue_.erase(eventQueue_.upperBound(cancelTime), eventQueue_.end());
     return;
   }
 
-  // E2: first event with automationTime strictly after cancelTime
+  // E2: second lookup
   auto e2It = eventQueue_.upperBound(cancelTime);
 
   if (e2It != eventQueue_.end() && e2It->isRampType()) {

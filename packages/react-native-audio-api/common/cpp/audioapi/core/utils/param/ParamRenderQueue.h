@@ -43,10 +43,6 @@ class ParamRenderQueue : public ParamQueueBase<RenderParamEvent> {
   /// @brief Snap a time to the exact time of its nearest sample frame
   [[nodiscard]] double snapToSampleFrameTime(double time) const;
 
-  /// @brief Replace @c currentEvent_ with a hold at the value it started from, so subsequent
-  /// events are promoted immediately instead of waiting for the cancelled event's end time.
-  void restoreValueFromBeforeCurrentEvent();
-
   /// @brief Truncate @c currentEvent_ at @p holdTime, freezing it at its value there.
   void truncateCurrentEventAt(double holdTime);
 
