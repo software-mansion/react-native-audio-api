@@ -80,14 +80,16 @@ Inherits [`onstatechange`](./base-audio-context.mdx#onstatechange) from [`BaseAu
 Sets (or removes, when `null` is assigned) a callback fired when the live output stream fails natively and cannot keep rendering — for example after the audio device disconnects or the OS audio service dies while the context is running.
 
 
-Typical recovery is to call [`resume`](./audio-context.mdx#resume) from the handler (or recreate the context).
+Typical recovery is to call [`resume`](./audio-context.mdx#resume) from the handler (or recreate the context). A short delay before `resume` gives the OS audio server time to recover from some errors, e.g. hardware errors, and prevents rapid retry loops.
 
 ```tsx
 const audioContext = new AudioContext();
 
 audioContext.onerror = () => {
   console.error('Audio output failed');
-  void audioContext.resume();
+  setTimeout(() => {
+    void audioContext.resume();
+  }, 2000);
 };
 ```
 
