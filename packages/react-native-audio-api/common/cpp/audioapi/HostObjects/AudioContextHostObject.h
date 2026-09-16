@@ -18,6 +18,7 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker);
+  ~AudioContextHostObject() override;
 
   JSI_HOST_FUNCTION_DECL(close);
   JSI_HOST_FUNCTION_DECL(resume);

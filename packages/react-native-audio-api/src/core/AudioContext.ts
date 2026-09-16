@@ -1,6 +1,7 @@
 import { InvalidStateError } from '../errors';
 import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioTagHandle } from '../Audio/types';
+import { AudioEventEmitter } from '../events';
 import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
 import { AudioContextOptions, ContextState } from '../types';
@@ -8,7 +9,11 @@ import BaseAudioContext from './BaseAudioContext';
 import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
 
 export default class AudioContext extends BaseAudioContext {
-  private onerrorCallback: (() => void) | null = null;
+  public onerror: (() => void) | null = null;
+
+  private readonly errorSubscription: ReturnType<
+    AudioEventEmitter['addAudioEventListener']
+  >;
 
   constructor(options?: AudioContextOptions) {
     if (options?.sampleRate != null) {
@@ -20,6 +25,13 @@ export default class AudioContext extends BaseAudioContext {
         options?.sampleRate || AudioManager.getDevicePreferredSampleRate()
       )
     );
+
+    this.errorSubscription = this.audioEventEmitter.addAudioEventListener(
+      'contextError',
+      () => this.onerror?.()
+    );
+    (this.context as IAudioContext).onerror =
+      this.errorSubscription.subscriptionId;
   }
 
   public get baseLatency(): number {
@@ -28,20 +40,6 @@ export default class AudioContext extends BaseAudioContext {
 
   public get outputLatency(): number {
     return (this.context as IAudioContext).outputLatency;
-  }
-
-  /**
-   * Web Audio `onerror` — fired when the output device/stream fails natively.
-   *
-   * @see https://webaudio.github.io/web-audio-api/#dom-audiocontext-onerror
-   */
-  public get onerror(): (() => void) | null {
-    return this.onerrorCallback;
-  }
-
-  public set onerror(callback: (() => void) | null) {
-    this.onerrorCallback = callback;
-    (this.context as IAudioContext).onerror = callback;
   }
 
   async close(): Promise<undefined> {

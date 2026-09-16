@@ -152,6 +152,8 @@ AudioEvent audioEventFromString(const std::string &event) {
     return AudioEvent::BUFFERING_STATE_CHANGE;
   if (event == "stateChange")
     return AudioEvent::STATE_CHANGE;
+  if (event == "contextError")
+    return AudioEvent::CONTEXT_ERROR;
 
   throw std::invalid_argument("Unknown audio event: " + event);
 }

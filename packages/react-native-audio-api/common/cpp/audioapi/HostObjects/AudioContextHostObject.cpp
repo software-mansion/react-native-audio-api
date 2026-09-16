@@ -28,6 +28,10 @@ AudioContextHostObject::AudioContextHostObject(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, createMediaElementSource));
 }
 
+AudioContextHostObject::~AudioContextHostObject() {
+  std::static_pointer_cast<AudioContext>(context_)->assignOnErrorCallbackId(0);
+}
+
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
   return promiseVendor_->createPromise([this](Promise &&promise) {
     auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
@@ -81,17 +85,7 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
 
 JSI_PROPERTY_SETTER_IMPL(AudioContextHostObject, onerror) {
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
-
-  if (!value.isObject() || !value.getObject(runtime).isFunction(runtime)) {
-    audioContext->setOnError(nullptr);
-    return;
-  }
-
-  auto jsFunc = std::make_shared<jsi::Function>(value.getObject(runtime).getFunction(runtime));
-
-  audioContext->setOnError([jsFunc, invoker = callInvoker_, rt = &runtime]() {
-    invoker->invokeAsync([jsFunc, rt]() { jsFunc->call(*rt); });
-  });
+  audioContext->assignOnErrorCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 } // namespace audioapi

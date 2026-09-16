@@ -70,8 +70,6 @@ class AudioPlayer : public CommonPlayer,
 
   bool openAudioStream();
   bool rebuildStream();
-
-  std::atomic<bool> isFailed_{false};
 };
 
 } // namespace audioapi

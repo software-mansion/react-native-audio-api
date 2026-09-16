@@ -2,12 +2,13 @@
 
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/CommonPlayer.h>
+#include <audioapi/events/AudioEvent.h>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
 #include <atomic>
-#include <functional>
 #include <memory>
 
 namespace audioapi {
@@ -42,7 +43,7 @@ class AudioContext : public BaseAudioContext {
   /// @note This method is called when the audio stream fails.
   void onStreamFail();
 
-  void setOnError(std::function<void()> callback);
+  void assignOnErrorCallbackId(uint64_t callbackId);
 
  private:
   std::shared_ptr<CommonPlayer> audioPlayer_;
@@ -51,6 +52,8 @@ class AudioContext : public BaseAudioContext {
   /// control thread waits on suspend/close.
   std::atomic<uint32_t> currentRenders_{0};
 
+  EventCaller<AudioEvent::CONTEXT_ERROR> onErrorEvent_;
+
   bool isDriverRunning() const override;
 
   /// Caller must hold `driverMutex_`.
@@ -58,8 +61,6 @@ class AudioContext : public BaseAudioContext {
 
   /// Blocks until no audio I/O callback is in flight. Caller must hold `driverMutex_`.
   void waitForRenderQuiescence() const;
-
-  std::function<void()> onerror;
 };
 
 } // namespace audioapi

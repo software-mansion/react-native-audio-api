@@ -9,20 +9,16 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 
-#ifdef ANDROID
-#include <android/log.h>
-#endif
-
 #include <memory>
-#include <string>
 #include <thread>
-#include <utility>
 
 namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+      isInitialized_(false),
+      onErrorEvent_(audioEventHandlerRegistry) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
   // drain the channels itself until start()/resume() hands draining to the
   // audio callback (same pattern as OfflineAudioContext before rendering).
@@ -194,8 +190,8 @@ double AudioContext::getOutputLatency() const {
   return audioPlayer_->getOutputLatency();
 }
 
-void AudioContext::setOnError(std::function<void()> callback) {
-  onerror = std::move(callback);
+void AudioContext::assignOnErrorCallbackId(uint64_t callbackId) {
+  onErrorEvent_.assignCallbackId(callbackId);
 }
 
 void AudioContext::onStreamFail() {
@@ -207,9 +203,7 @@ void AudioContext::onStreamFail() {
 
   isInitialized_.store(false, std::memory_order_release);
 
-  if (onerror) {
-    onerror();
-  }
+  onErrorEvent_.dispatchEmpty();
 }
 
 } // namespace audioapi
