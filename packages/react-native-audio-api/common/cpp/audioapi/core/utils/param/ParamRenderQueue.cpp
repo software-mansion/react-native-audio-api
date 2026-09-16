@@ -122,7 +122,7 @@ void ParamRenderQueue::truncateCurrentEventAt(double holdTime) {
 }
 
 void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
-  // E2: first event with automationTime strictly after cancelTime
+  // E2: handle the case with currentEvent_ first, since it is no longer in queue
   if (currentEvent_ && currentEvent_->isRampType() && cancelTime < currentEvent_->getEndTime()) {
     truncateCurrentEventAt(cancelTime);
     // Step 5: remove everything strictly after cancelTime
@@ -130,7 +130,7 @@ void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
     return;
   }
 
-  // E2: second lookup
+  // E2: find the first event with automationTime > cancelTime
   auto e2It = eventQueue_.upperBound(cancelTime);
 
   if (e2It != eventQueue_.end() && e2It->isRampType()) {
