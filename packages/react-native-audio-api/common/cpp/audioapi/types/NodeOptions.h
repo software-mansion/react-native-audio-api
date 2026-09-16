@@ -121,7 +121,7 @@ struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
   bool pitchCorrection = false;
   float detune = 0.0f;
   float playbackRate = 1.0f;
-  int onPositionChangedInterval = 100;
+  int onpositionchangedInterval = 100;
 };
 
 struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {

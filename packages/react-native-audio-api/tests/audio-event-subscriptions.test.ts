@@ -163,7 +163,7 @@ describe('AudioBufferBaseSourceNode.onpositionchanged', () => {
       detune: createNativeParam(0),
       playbackRate: createNativeParam(1),
       onpositionchanged: '0',
-      onPositionChangedInterval: 0,
+      onpositionchangedInterval: 0,
     });
     node = new AudioBufferBaseSourceNode(createContext(), nativeNode);
   });
