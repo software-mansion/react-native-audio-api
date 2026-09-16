@@ -61,8 +61,6 @@ class AudioRecorder {
   virtual bool isPaused() const = 0;
   virtual bool isIdle() const = 0;
 
-  /// @brief The state the platform predicates above agree on, which can differ from the
-  /// last requested transition while the audio engine is not running.
   RecorderState getState() const;
 
   [[nodiscard]] virtual double getInputLatency() const = 0;

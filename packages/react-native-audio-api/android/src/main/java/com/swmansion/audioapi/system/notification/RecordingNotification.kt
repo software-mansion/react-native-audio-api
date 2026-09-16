@@ -33,6 +33,7 @@ class RecordingNotification(
     private const val REQUEST_CODE_PAUSE = 2001
     private const val REQUEST_CODE_RESUME = 2002
     private const val REQUEST_CODE_STOP = 2003
+    private const val REQUEST_CODE_DISMISSED = 2004
   }
 
   private val state = RecordingNotificationState()
@@ -50,6 +51,7 @@ class RecordingNotification(
         addAction(RecordingNotificationReceiver.ACTION_PAUSE)
         addAction(RecordingNotificationReceiver.ACTION_RESUME)
         addAction(RecordingNotificationReceiver.ACTION_STOP)
+        addAction(RecordingNotificationReceiver.ACTION_DISMISSED)
       }
     ContextCompat.registerReceiver(
       context,
@@ -85,7 +87,7 @@ class RecordingNotification(
     val builder =
       NotificationCompat
         .Builder(context, channelId)
-        .setOngoing(true)
+        .setOngoing(!state.dismissible)
         .setOnlyAlertOnce(true)
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         .setContentTitle(state.title)
@@ -101,6 +103,7 @@ class RecordingNotification(
 
     setupContentIntent(context, builder)
     setupActions(context, builder)
+    setupDeleteIntent(context, builder)
     setupChronometer(builder)
 
     return builder.build()
@@ -165,22 +168,34 @@ class RecordingNotification(
     }
   }
 
+  private fun setupDeleteIntent(
+    context: Context,
+    builder: NotificationCompat.Builder,
+  ) {
+    val dismissed =
+      Intent(RecordingNotificationReceiver.ACTION_DISMISSED)
+        .putExtra(RecordingNotificationReceiver.EXTRA_DISMISS_STOPS_RECORDING, state.dismissible)
+    builder.setDeleteIntent(createBroadcast(context, dismissed, REQUEST_CODE_DISMISSED))
+  }
+
   private fun createAction(
     context: Context,
     action: String,
     requestCode: Int,
     title: String,
-  ): NotificationCompat.Action {
-    val intent = Intent(action).apply { `package` = context.packageName }
-    val pendingIntent =
-      PendingIntent.getBroadcast(
-        context,
-        requestCode,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-      )
-    return NotificationCompat.Action(null, title, pendingIntent)
-  }
+  ): NotificationCompat.Action = NotificationCompat.Action(null, title, createBroadcast(context, Intent(action), requestCode))
+
+  private fun createBroadcast(
+    context: Context,
+    intent: Intent,
+    requestCode: Int,
+  ): PendingIntent =
+    PendingIntent.getBroadcast(
+      context,
+      requestCode,
+      intent.apply { `package` = context.packageName },
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 
   // The system chronometer always ticks against wall time, so the recording's paused
   // spans are carved out by shifting the base (`startedAtMs`) forward on each resume.
@@ -227,6 +242,7 @@ class RecordingNotification(
     state.largeIconResourceName = options.stringOr("largeIconResourceName", state.largeIconResourceName)
     state.backgroundColor = options.intOr("color", state.backgroundColor)
     state.showStopAction = options.boolOr("showStopAction", state.showStopAction)
+    state.dismissible = options.boolOr("dismissible", state.dismissible)
     state.pauseActionTitle = options.stringOr("pauseActionTitle", state.pauseActionTitle)
     state.resumeActionTitle = options.stringOr("resumeActionTitle", state.resumeActionTitle)
     state.stopActionTitle = options.stringOr("stopActionTitle", state.stopActionTitle)
@@ -286,6 +302,7 @@ class RecordingNotification(
       state.largeIconResourceName = null
       state.backgroundColor = null
       state.showStopAction = false
+      state.dismissible = false
       state.pauseActionTitle = null
       state.resumeActionTitle = null
       state.stopActionTitle = null

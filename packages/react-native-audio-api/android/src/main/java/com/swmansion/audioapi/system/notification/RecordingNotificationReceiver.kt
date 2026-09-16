@@ -18,6 +18,10 @@ class RecordingNotificationReceiver(
     const val ACTION_PAUSE = "com.swmansion.audioapi.RECORDING_NOTIFICATION_PAUSE"
     const val ACTION_RESUME = "com.swmansion.audioapi.RECORDING_NOTIFICATION_RESUME"
     const val ACTION_STOP = "com.swmansion.audioapi.RECORDING_NOTIFICATION_STOP"
+    const val ACTION_DISMISSED = "com.swmansion.audioapi.RECORDING_NOTIFICATION_DISMISSED"
+
+    /** Boolean extra of [ACTION_DISMISSED]: whether the swipe ends the recording or the notification comes back. */
+    const val EXTRA_DISMISS_STOPS_RECORDING = "com.swmansion.audioapi.DISMISS_STOPS_RECORDING"
 
     private const val TAG = "RecordingNotificationReceiver"
 
@@ -28,7 +32,10 @@ class RecordingNotificationReceiver(
     context: Context?,
     intent: Intent?,
   ) {
-    when (intent?.action) {
+    if (intent == null) {
+      return
+    }
+    when (intent.action) {
       ACTION_PAUSE ->
         applyToRecorder(
           action = NativeRecorderControl::pause,
@@ -43,12 +50,48 @@ class RecordingNotificationReceiver(
           event = AudioEvent.RECORDING_NOTIFICATION_RESUME,
         )
 
-      ACTION_STOP ->
-        applyToRecorder(
-          action = NativeRecorderControl::stop,
-          intendedState = RecorderState.IDLE,
-          event = AudioEvent.RECORDING_NOTIFICATION_STOP,
-        )
+      ACTION_STOP -> stopRecording()
+
+      ACTION_DISMISSED ->
+        if (intent.getBooleanExtra(EXTRA_DISMISS_STOPS_RECORDING, false)) {
+          stopRecording()
+        } else {
+          restoreWhileRecording()
+        }
+    }
+  }
+
+  private fun stopRecording() =
+    applyToRecorder(
+      action = NativeRecorderControl::stop,
+      intendedState = RecorderState.IDLE,
+      event = AudioEvent.RECORDING_NOTIFICATION_STOP,
+    )
+
+  /**
+   * Handles a swipe of a pinned notification. Since Android 14 the system lets the user
+   * swipe away an ongoing notification even when it belongs to a foreground service, and
+   * `setOngoing(true)` no longer prevents that. The notification is the only control
+   * surface once the app is in the background, so while a recording is live it is
+   * re-posted straight away; a swipe of a notification that outlived its recording is
+   * left alone.
+   */
+  private fun restoreWhileRecording() {
+    val pendingResult = goAsync()
+    controlExecutor.execute {
+      try {
+        when (NativeRecorderControl.currentState()) {
+          RecorderState.RECORDING -> MediaSessionManager.setRecordingNotificationPaused(false)
+          RecorderState.PAUSED -> MediaSessionManager.setRecordingNotificationPaused(true)
+          RecorderState.IDLE -> Log.d(TAG, "Recording notification dismissed with no active recording, not restoring")
+        }
+      } catch (e: LinkageError) {
+        Log.e(TAG, "Native library unavailable, cannot restore the recording notification: ${e.message}", e)
+      } catch (e: Exception) {
+        Log.e(TAG, "Error while restoring the dismissed recording notification: ${e.message}", e)
+      } finally {
+        pendingResult.finish()
+      }
     }
   }
 

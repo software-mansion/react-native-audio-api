@@ -22,6 +22,7 @@ class RecordingNotificationState(
   var largeIconResourceName: String? = null,
   var backgroundColor: Int? = null,
   var showStopAction: Boolean = false,
+  var dismissible: Boolean = false,
   var pauseActionTitle: String? = null,
   var resumeActionTitle: String? = null,
   var stopActionTitle: String? = null,

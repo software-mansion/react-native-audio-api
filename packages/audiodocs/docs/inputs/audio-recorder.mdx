@@ -135,7 +135,7 @@ For the recording to actually survive, all of the following must hold:
 Even with `stopWithTask="false"`, the system can still kill the process (memory pressure, OEM battery managers). Recording cannot self-restart from the background — the user has to reopen the app. To limit data loss in that case, tune the file-output options [`androidFlushIntervalMs`](#audiorecorderfileoptions) and [`rotateIntervalBytes`](#audiorecorderfileoptions).
 :::
 
-A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](../system/recording-notification-manager.mdx#native-action-handling) (`showStopAction: true`), which stops the recording natively even when no JS is reachable.
+A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](../system/recording-notification-manager.mdx#native-action-handling) (`showStopAction: true`) or let them [swipe the notification away](../system/recording-notification-manager.mdx#swiping-the-notification-away) (`dismissible: true`). Both stop the recording natively even when no JS is reachable.
 
 When the app is opened again, reconcile the UI with what happened while it was away:
 
@@ -531,9 +531,9 @@ if (AudioRecorder.isRecordingOngoing()) {
 }
 ```
 
-### `consumeLastRecordingResult` <Android /> {#consumelastrecordingresult}
+### `consumeLastRecordingResult` {#consumelastrecordingresult}
 
-**Static.** Returns the [`FileInfo`](#fileinfo) of a recording that was stopped natively — through the [recording notification's stop action](../system/recording-notification-manager.mdx#native-action-handling) — or `null` if there is none. Consume-once: the result is cleared on read, so a second call returns `null`.
+**Static.** Returns the [`FileInfo`](#fileinfo) of a recording that was stopped natively — on Android through the [recording notification](../system/recording-notification-manager.mdx#native-action-handling), on iOS by [deactivating the audio session](../system/audio-manager.mdx#setaudiosessionactivity) mid-recording — or `null` if there is none. Consume-once: the result is cleared on read, so a second call returns `null`.
 
 Recordings stopped through [`stop`](#stop) resolve their promise with the file info instead and never appear here.
 

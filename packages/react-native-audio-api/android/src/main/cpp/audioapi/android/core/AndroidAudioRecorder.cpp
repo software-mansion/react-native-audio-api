@@ -591,9 +591,6 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 
     cleanup();
 
-    // An idle session has nothing to restore — this covers a disconnect delivered
-    // late, after stop() already finished — and reopening here would leave a fresh,
-    // never-started mic stream held while idle.
     if (stateBeforeTeardown == RecorderState::Idle) {
       return;
     }
@@ -615,9 +612,6 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       return;
     }
 
-    // Restore the interrupted session's state instead of unconditionally recording —
-    // a paused session must stay paused, or the reopened stream would silently turn
-    // the microphone back on against an explicit user action.
     if (stateBeforeTeardown == RecorderState::Recording) {
       mStream_->requestStart();
     }

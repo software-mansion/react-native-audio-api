@@ -85,6 +85,15 @@ export interface RecordingNotificationInfo {
    * Default: false.
    */
   showStopAction?: boolean;
+  /**
+   * Lets the user swipe the notification away. A swipe then acts like the stop
+   * action: the recording is stopped natively, `recordingNotificationStop`
+   * fires and the foreground service ends. When false, the notification stays
+   * pinned while a recording is in progress or paused; on Android 14 and newer,
+   * where the system lets users dismiss pinned notifications, it is re-posted
+   * right after a swipe. Default: false.
+   */
+  dismissible?: boolean;
   /** Label of the pause action. Default: 'Pause'. */
   pauseActionTitle?: string;
   /** Label of the resume action. Default: 'Resume'. */

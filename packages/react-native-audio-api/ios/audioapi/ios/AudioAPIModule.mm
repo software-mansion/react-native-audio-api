@@ -124,10 +124,10 @@ RCT_EXPORT_METHOD(
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    // do not disable session if the recording is ongoing, as it will break the recording
-    if (!enabled && ActiveRecorderHandle::global().isRecordingOngoing()) {
-      resolve(nil);
-      return;
+    // Deactivating the session underneath a live recording would corrupt its output, so
+    // the recording is finalized first
+    if (!enabled) {
+      ActiveRecorderHandle::global().stopActiveRecording();
     }
 
     NSError *error = nil;

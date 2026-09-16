@@ -109,9 +109,6 @@ class NotificationRegistry(
     } catch (e: Exception) {
       Log.e(TAG, "Error hiding notification $key: ${e.message}", e)
     } finally {
-      // Even when hide() throws (e.g. the React context was already released), the
-      // registry must record the notification as inactive and let the foreground
-      // service unwind — otherwise it runs forever.
       activeNotifications[key] = false
       ForegroundServiceManager.unsubscribe(notification)
       Log.d(TAG, "Hiding notification: $key (unsubscribed from foreground service)")
