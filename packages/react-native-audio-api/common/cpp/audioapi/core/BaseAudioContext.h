@@ -6,6 +6,9 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Disposer.hpp>
 #include <audioapi/core/utils/graph/Graph.h>
+#include <audioapi/events/AudioEvent.h>
+#include <audioapi/events/DeferredEventQueue.hpp>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
@@ -15,6 +18,7 @@
 #include <cassert>
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -44,6 +48,23 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   void setState(ContextState state);
 
+  /// The value behind the JS `state` attribute. Read from the JSI getter on
+  /// the JS thread.
+  [[nodiscard]] ContextState getPublishedState() const {
+    return publishedState_.load(std::memory_order_acquire);
+  }
+
+  /// Publishes an acknowledged transition to the JS-visible state.
+  void setPublishedState(ContextState state) {
+    publishedState_.store(state, std::memory_order_release);
+  }
+
+  /// JS thread. Wires the `statechange` listener registered by the TS context.
+  void assignOnStateChangeCallbackId(uint64_t callbackId);
+
+  /// Fires `statechange` for an acknowledged transition to @p state.
+  void dispatchStateChange(ContextState state);
+
   [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
@@ -67,6 +88,15 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     // finalization that clears the callback id).
     audioEventScheduler_.processAllEvents(*this);
     gcAudioEventScheduler_.processAllEvents(*this);
+    deferredEvents_.dispatchDue(getCurrentTime());
+  }
+
+  /// @brief Queue for events whose emitter cannot fire them itself, dispatched
+  /// as `currentTime` reaches their due time. Owned here because the render
+  /// loop is the only thing that advances the clock.
+  /// @note Render-serialized only, like the queue itself.
+  [[nodiscard]] DeferredEventQueue &getDeferredEvents() {
+    return deferredEvents_;
   }
 
   template <typename F>
@@ -123,6 +153,16 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   mutable std::mutex driverMutex_;
   std::atomic<ContextState> state_;
 
+  /// @brief Joins the pending-promises worker after draining any queued
+  /// lifecycle tasks. Idempotent.
+  ///
+  /// Derived-class destructors MUST call this as their first teardown step:
+  /// the drained task bodies lock `driverMutex_` and touch the player, graph,
+  /// and disposer, all of which start being destroyed once the destructor bodies return.
+  void joinPendingPromiseWorker() {
+    pendingPromisesOffloader_->shutdown();
+  }
+
   /// Debug-only: `driverMutex_` must already be held by the calling thread.
   void assertDriverMutexHeld() const {
 #ifndef NDEBUG
@@ -136,6 +176,12 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  private:
   std::atomic<float> sampleRate_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+
+  EventCaller<AudioEvent::STATE_CHANGE> stateChangeEvent_;
+  /// Ledger backing dispatchStateChange()'s dedupe; contexts start suspended.
+  std::atomic<ContextState> lastDispatchedState_{ContextState::SUSPENDED};
+  /// Backs the JS `state` attribute; written only via setPublishedState().
+  std::atomic<ContextState> publishedState_{ContextState::SUSPENDED};
 
   std::shared_ptr<PeriodicWave> cachedSineWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
@@ -163,6 +209,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
   std::shared_ptr<utils::graph::Graph> graph_;
+
+  DeferredEventQueue deferredEvents_;
 
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 };

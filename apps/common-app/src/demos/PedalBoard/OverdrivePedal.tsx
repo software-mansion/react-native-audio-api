@@ -1,7 +1,7 @@
 // filepath: /Users/michal/react-native-audio-api/apps/common-app/src/demos/PedalBoard/OverdrivePedal.tsx
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { VerticalSlider } from '../../components';
 import { makeDistortionCurve } from './curves';
 import { GainNode, BiquadFilterNode, WaveShaperNode, AudioNode, AudioContext } from 'react-native-audio-api';
@@ -31,6 +31,8 @@ export default function OverdrivePedal({
   const toneRef = useRef<BiquadFilterNode | null>(null);
   const levelRef = useRef<GainNode | null>(null);
   const shaperRef = useRef<WaveShaperNode | null>(null);
+  // Whether inputNode is currently routed through the effect chain (vs bypassed)
+  const isChainConnectedRef = useRef(false);
 
   useEffect(() => {
     initialize(context);
@@ -45,7 +47,7 @@ export default function OverdrivePedal({
     } else {
       discardEffect(inputNode, outputNode);
     }
-  }, [isActive, inputNode, outputNode]);
+  }, [isActive]);
 
   useEffect(() => {
     updateAudioParams(drive, tone, level);
@@ -90,17 +92,25 @@ export default function OverdrivePedal({
       .connect(levelRef.current!)
       .connect(outputNode);
     inputNode.disconnect(outputNode);
+    isChainConnectedRef.current = true;
   };
 
   const discardEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
-    inputNode.disconnect(driveRef.current!);
+    if (isChainConnectedRef.current) {
+      inputNode.disconnect(driveRef.current!);
+      isChainConnectedRef.current = false;
+    }
     inputNode.connect(outputNode);
   };
 
   const togglePower = () => {
-
     setIsActive((prev) => !prev);
   };
+
+  const powerGesture = useTapGesture({
+    runOnJS: true,
+    onDeactivate: togglePower,
+  });
 
   return (
     <View style={styles.pedalBody}>
@@ -137,11 +147,7 @@ export default function OverdrivePedal({
               },
             ]}
           />
-          <GestureDetector
-            gesture={Gesture.Tap()
-              .runOnJS(true)
-              .onEnd(togglePower)}
-          >
+          <GestureDetector gesture={powerGesture}>
             <View style={[styles.stompSwitch]}>
               <View style={styles.stompInner} />
             </View>

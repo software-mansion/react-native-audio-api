@@ -12,9 +12,9 @@ Noise is one of the most basic and common tools in digital audio processing, in 
 
 The most used type of noise. White is a random signal having equal intensity at different frequencies, giving it a constant [power spectral density. (Wikipedia)](https://en.wikipedia.org/wiki/Spectral_density#Power_spectral_density).
 
-To produce white noise, we simply create an [`AudioBuffer`](/docs/sources/audio-buffer) containing random samples in range of `[-1; 1]` (in which the Web Audio API operates),
-which can be used by [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) for playback, further filtering or modification.
-We write samples directly into the buffer using [`getChannelData`](/docs/sources/audio-buffer#getchanneldata), which returns a modifiable `Float32Array` view of a given channel's PCM data.
+To produce white noise, we simply create an [`AudioBuffer`](../sources/audio-buffer.mdx) containing random samples in range of `[-1; 1]` (in which the Web Audio API operates),
+which can be used by [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx) for playback, further filtering or modification.
+We write samples directly into the buffer using [`getChannelData`](../sources/audio-buffer.mdx#getchanneldata), which returns a modifiable `Float32Array` view of a given channel's PCM data.
 
 ```tsx
 import { AudioContext } from 'react-native-audio-api';
@@ -34,7 +34,7 @@ const createWhiteNoise = () => {
 };
 ```
 
-Usually we want the noise to be able to be played constantly. To achieve this we are generating 2 seconds of the noise sound, which we will later play with an [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) by assigning the generated data to its [`buffer`](/docs/sources/audio-buffer-source-node#buffer) property and enabling continuous playback with [`loop`](/docs/sources/audio-buffer-source-node#loop). See the [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node) documentation for other playback options. In audio processing `sampleRate` means number of samples that will be played during one second, thus we simply multiply this value by `2` to achieve desired length of the buffer.
+Usually we want the noise to be able to be played constantly. To achieve this we are generating 2 seconds of the noise sound, which we will later play with an [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx) by assigning the generated data to its [`buffer`](../sources/audio-buffer-source-node.mdx#buffer) property and enabling continuous playback with [`loop`](../sources/audio-buffer-source-node.mdx#loop). See the [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx) documentation for other playback options. In audio processing `sampleRate` means number of samples that will be played during one second, thus we simply multiply this value by `2` to achieve desired length of the buffer.
 
 import WhiteNoise from '@site/src/examples/NoiseGeneration/WhiteNoiseComponent';
 import WhiteNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/WhiteNoiseSource';
@@ -121,4 +121,4 @@ import BrownianNoiseSrc from '!!raw-loader!@site/src/examples/NoiseGeneration/Br
 
 ## What's next?
 
-In [the next section](/docs/guides/audio-visualization), we will explore how to capture audio data, visualize this data effectively, and utilize it to create basic animations.
+In [the next section](./audio-visualization.mdx), we will explore how to capture audio data, visualize this data effectively, and utilize it to create basic animations.

@@ -92,7 +92,7 @@ export default class AudioBuffer implements AudioBufferLike {
     options: AudioBufferOptions
   ): IAudioBuffer {
     const { numberOfChannels = 1, length, sampleRate } = options;
-    if (numberOfChannels < 1 || numberOfChannels >= 32) {
+    if (numberOfChannels < 1 || numberOfChannels > 32) {
       throw new NotSupportedError(
         `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
       );

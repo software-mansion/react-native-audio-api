@@ -11,10 +11,10 @@ import VinylPlayer from '@site/src/examples/VinylPlayer';
 # BiquadFilterNode
 
 
-The `BiquadFilterNode` interface represents a low-order filter. It is an [`AudioNode`](/docs/core/audio-node) used for tone controls, graphic equalizers, and other audio effects.
+The `BiquadFilterNode` interface represents a low-order filter. It is an [`AudioNode`](../core/audio-node.mdx) used for tone controls, graphic equalizers, and other audio effects.
 Multiple `BiquadFilterNode` instances can be combined to create more complex filtering chains.
 
-This interactive example shows effects you can achieve using `BiquadFilterNode`: a `lowpass` filter whose [`frequency`](/docs/effects/biquad-filter-node#properties) follows the player cover, muffling the audio while it is closed and opening the sound as you raise it.
+This interactive example shows effects you can achieve using `BiquadFilterNode`: a `lowpass` filter whose [`frequency`](./biquad-filter-node.mdx#properties) follows the player cover, muffling the audio while it is closed and opening the sound as you raise it.
 
 <VinylPlayer />
 
@@ -26,23 +26,23 @@ constructor(context: BaseAudioContext, options?: BiquadFilterOptions)
 
 ### `BiquadFilterOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | Description |
 | :---: | :---: | :----: | :---: |
-| `Q` <Optional /> | `number` | `1` | Initial value for [`Q`](/docs/effects/biquad-filter-node#properties). |
-| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](/docs/effects/biquad-filter-node#properties). |
-| `frequency` <Optional /> | `number` | `350` | Initial value for [`frequency`](/docs/effects/biquad-filter-node#properties). |
-| `gain` <Optional /> | `number` | `0` | Initial value for [`gain`](/docs/effects/biquad-filter-node#properties). |
-| `type` <Optional /> | [`BiquadFilterType`](#biquadfiltertype-enumeration-description) | `lowpass` | Initial value for [`type`](/docs/effects/biquad-filter-node#properties). |
+| `Q` <Optional /> | `number` | `1` | Initial value for [`Q`](./biquad-filter-node.mdx#properties). |
+| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](./biquad-filter-node.mdx#properties). |
+| `frequency` <Optional /> | `number` | `350` | Initial value for [`frequency`](./biquad-filter-node.mdx#properties). |
+| `gain` <Optional /> | `number` | `0` | Initial value for [`gain`](./biquad-filter-node.mdx#properties). |
+| `type` <Optional /> | [`BiquadFilterType`](#biquadfiltertype-enumeration-description) | `lowpass` | Initial value for [`type`](./biquad-filter-node.mdx#properties). |
 
 :::info
-You can also create a `BiquadFilterNode` via [`BaseAudioContext.createBiquadFilter()`](/docs/core/base-audio-context#createbiquadfilter), which uses default values.
+You can also create a `BiquadFilterNode` via [`BaseAudioContext.createBiquadFilter()`](../core/base-audio-context.mdx#createbiquadfilter), which uses default values.
 :::
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
@@ -50,10 +50,10 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 | Name | Type | Rate | Description |
 | :--: | :--: | :--: | :-- |
-| `Q` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter's Q factor (quality factor). |
-| `detune` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents. |
-| `frequency` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | The filter's cutoff or center frequency in hertz (Hz). |
-| `gain` | [`AudioParam`](/docs/core/audio-param) | [`k-rate`](/docs/core/audio-param#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB). |
+| `Q` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) | The filter's Q factor (quality factor). |
+| `detune` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) | Amount by which the frequency is detuned in cents. |
+| `frequency` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) | The filter's cutoff or center frequency in hertz (Hz). |
+| `gain` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) | Gain applied by specific filter types, in decibels (dB). |
 | `type` | [`BiquadFilterType`](#biquadfiltertype-enumeration-description) | | Defines the kind of filtering algorithm the node applies (e.g. `lowpass`, `highpass`). |
 
 </div>
@@ -88,7 +88,7 @@ Note: The `detune` parameter behaves the same way for all filter types, so it is
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 

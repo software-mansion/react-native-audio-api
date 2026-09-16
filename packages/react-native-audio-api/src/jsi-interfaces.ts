@@ -14,7 +14,6 @@ import type {
   ChannelSplitterOptions,
   ConstantSourceOptions,
   ConvolverOptions,
-  ContextState,
   DelayOptions,
   FileInfo,
   GainOptions,
@@ -40,10 +39,13 @@ export interface IOscillatorOptions extends Omit<
 export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly listener: IAudioListener;
-  readonly state: ContextState;
   readonly sampleRate: number;
   readonly currentTime: number;
   readonly decoder: IAudioDecoder;
+
+  readonly state: string;
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
+  onstatechange: string;
 
   createRecorderAdapter(): IRecorderAdapterNode;
   createOscillator(oscillatorOptions: IOscillatorOptions): IOscillatorNode;
@@ -179,7 +181,7 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
   stop: (when: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onEnded: string;
+  onended: string;
 }
 
 export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
@@ -190,8 +192,8 @@ export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
   getOutputLatency: () => number;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onPositionChanged: string;
-  // set how often the onPositionChanged event is called
+  onpositionchanged: string;
+  // set how often the onpositionchanged event is called
   onPositionChangedInterval: number;
 }
 
@@ -218,7 +220,7 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   setBuffer: (audioBuffer: IAudioBuffer | null) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onLoopEnded: string;
+  onloopended: string;
 }
 
 export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode {
@@ -232,7 +234,7 @@ export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode 
   resume: (when?: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onBufferEnded: string;
+  onbufferended: string;
 }
 
 export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
@@ -247,7 +249,8 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   seekToTime: (seconds: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onPositionChanged: string;
+  onpositionchanged: string;
+  onbufferingstatechanged: string;
 }
 
 export interface IMediaElementAudioSourceNode extends IAudioNode {}

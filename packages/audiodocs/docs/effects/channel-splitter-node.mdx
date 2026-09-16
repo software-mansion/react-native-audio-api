@@ -8,9 +8,9 @@ import { Optional } from '@site/src/components/Badges';
 
 # ChannelSplitterNode
 
-The `ChannelSplitterNode` interface separates the individual channels of an audio signal into a set of mono outputs. It is an [`AudioNode`](/docs/core/audio-node) with a single input and a variable number of single-channel outputs.
+The `ChannelSplitterNode` interface separates the individual channels of an audio signal into a set of mono outputs. It is an [`AudioNode`](../core/audio-node.mdx) with a single input and a variable number of single-channel outputs.
 
-Channel `i` of the input signal is exposed on output `i`. This is the counterpart of [`ChannelMergerNode`](/docs/effects/channel-merger-node).
+Channel `i` of the input signal is exposed on output `i`. This is the counterpart of [`ChannelMergerNode`](./channel-merger-node.mdx).
 
 ## Constructor
 
@@ -20,13 +20,13 @@ constructor(context: BaseAudioContext, options?: ChannelSplitterOptions)
 
 ### `ChannelSplitterOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions).
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
 | `numberOfOutputs` <Optional /> | `number` | `6` | Number of outputs to split into. Must be in the range `1` – `32`. |
 
-You can also create a `ChannelSplitterNode` via the [`BaseAudioContext.createChannelSplitter(numberOfOutputs?: number)`](/docs/core/base-audio-context#createchannelsplitter) factory method, which uses default values when called without arguments.
+You can also create a `ChannelSplitterNode` via the [`BaseAudioContext.createChannelSplitter(numberOfOutputs?: number)`](../core/base-audio-context.mdx#createchannelsplitter) factory method, which uses default values when called without arguments.
 
 ## Example
 
@@ -47,7 +47,7 @@ splitter.connect(rightGain, 1);
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={6} channelCount={6} channelCountMode="explicit" channelInterpretation="discrete" />
 
@@ -55,7 +55,7 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 
@@ -70,5 +70,5 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 #### Channel configuration
 - `channelCount` equals `numberOfOutputs`, `channelCountMode` is fixed at `explicit`, and `channelInterpretation` is fixed at `discrete`. Attempts to change them throw an error.
-- Use the `output` argument of [`connect`](/docs/core/audio-node#methods) to target a specific channel, e.g. `splitter.connect(node, 1)` routes channel `1` downstream.
+- Use the `output` argument of [`connect`](../core/audio-node.mdx#methods) to target a specific channel, e.g. `splitter.connect(node, 1)` routes channel `1` downstream.
 - An output whose corresponding input channel does not exist emits a single channel of silence.

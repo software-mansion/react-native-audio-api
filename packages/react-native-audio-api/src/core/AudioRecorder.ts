@@ -7,6 +7,7 @@ import { IAudioRecorder, IRecorderAdapterNode } from '../jsi-interfaces';
 import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
+  AudioRecorderOptions,
   AudioRecorderStartOptions,
   FileDirectory,
   FileFormat,
@@ -21,9 +22,9 @@ import AudioBuffer from './AudioBuffer';
 import type AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
 
-// Enforces default options, making sure that all properties are defined
-// for the contract with native code.
-function withDefaultOptions(
+// Enforces default file output options, making sure that all properties are
+// defined for the contract with native code.
+function withDefaultFileOptions(
   inOptions: AudioRecorderFileOptions
 ): Required<AudioRecorderFileOptions> {
   return {
@@ -51,8 +52,8 @@ export default class AudioRecorder {
     globalThis.AudioEventEmitter
   );
 
-  constructor() {
-    this.recorder = globalThis.createAudioRecorder();
+  constructor(options?: AudioRecorderOptions) {
+    this.recorder = globalThis.createAudioRecorder(options ?? {});
   }
 
   /**
@@ -72,7 +73,7 @@ export default class AudioRecorder {
    */
   enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
     this.options_ = options || {};
-    const parsedOptions = withDefaultOptions(this.options_);
+    const parsedOptions = withDefaultFileOptions(this.options_);
     const result = this.recorder.enableFileOutput(parsedOptions);
     this.isFileOutputEnabled = true;
 

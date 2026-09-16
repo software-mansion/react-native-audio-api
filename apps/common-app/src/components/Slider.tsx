@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   withSpring,
@@ -80,8 +80,8 @@ const Slider: React.FC<SliderProps> = (props) => {
     setDisplayValue(formatSliderValue(value, step));
   }, [value, min, max, step, sliderWidth, offset, sValue]);
 
-  const pan = Gesture.Pan()
-    .onChange((event) => {
+  const pan = usePanGesture({
+    onUpdate: (event) => {
       offset.value = Math.max(
         0,
         Math.min(sliderWidth.value - handleSize, offset.value + event.changeX),
@@ -89,12 +89,13 @@ const Slider: React.FC<SliderProps> = (props) => {
 
       sValue.value = offsetToValue(offset.value, sliderWidth.value, min, max);
       runOnJS(syncDisplayValue)(sValue.value);
-    })
-    .onEnd(() => {
+    },
+    onDeactivate: () => {
       const rounded = roundToStep(sValue.value, step);
       runOnJS(onValueChange)(rounded);
       runOnJS(syncDisplayValue)(rounded);
-    });
+    },
+  });
 
   const onSliderLayout = (event: LayoutChangeEvent) => {
     sliderWidth.value = event.nativeEvent.layout.width;

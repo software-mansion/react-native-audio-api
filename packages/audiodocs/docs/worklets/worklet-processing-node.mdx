@@ -9,14 +9,14 @@ import { ReadOnly } from '@site/src/components/Badges';
 # WorkletProcessingNode
 
 :::warning
-Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](./introduction.mdx) for installation.
 :::
 
-`WorkletProcessingNode` is an effect node that processes audio synchronously on the **audio worklet runtime** each render quantum. Unlike [`WorkletNode`](/docs/worklets/worklet-node), which only provides read-only snapshots on the UI runtime, this node receives input audio and writes processed output back into the graph.
+`WorkletProcessingNode` is an effect node that processes audio synchronously on the **audio worklet runtime** each render quantum. Unlike [`WorkletNode`](./worklet-node.mdx), which only provides read-only snapshots on the UI runtime, this node receives input audio and writes processed output back into the graph.
 
 Use it for custom effects, filters, dynamics processors, and other in-graph DSP written in JavaScript.
 
-For runtime differences and performance tips, see [How to use audio worklets mindfully](/docs/worklets/introduction#how-to-use-audio-worklets-mindfully).
+For runtime differences and performance tips, see [How to use audio worklets mindfully](./introduction.mdx#how-to-use-audio-worklets-mindfully).
 
 ## Constructor
 
@@ -31,7 +31,7 @@ const node = new WorkletProcessingNode(context, callback);
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
+| `context` | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node. |
 | `callback` | `WorkletProcessingNodeCallback` | Worklet invoked on the audio runtime each render quantum. Must include the `'worklet'` directive. |
 
 ### `WorkletProcessingNodeCallback`
@@ -136,7 +136,7 @@ const processor = (
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
@@ -144,7 +144,7 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 
@@ -156,6 +156,6 @@ Callbacks run synchronously on the audio path each render quantum. Keep worklet 
 
 ## See also
 
-- [`WorkletSourceNode`](/docs/worklets/worklet-source-node) — generate audio with a worklet
-- [`WorkletNode`](/docs/worklets/worklet-node) — read-only snapshots on the UI runtime for visualizers
-- [Worklets introduction](/docs/worklets/introduction)
+- [`WorkletSourceNode`](./worklet-source-node.mdx) — generate audio with a worklet
+- [`WorkletNode`](./worklet-node.mdx) — read-only snapshots on the UI runtime for visualizers
+- [Worklets introduction](./introduction.mdx)

@@ -40,6 +40,7 @@
     "babel-preset-expo": "^9.2.2",
     "clsx": "^2.1.0",
     "copy-text-to-clipboard": "^3.2.2",
+    "docs-theme": "file:../docs-theme",
     "hast-util-is-element": "1.1.0",
     "prism-react-renderer": "^2.1.0",
     "raf": "^3.4.1",

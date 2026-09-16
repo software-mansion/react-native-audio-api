@@ -278,6 +278,35 @@ quantum). Consequently, unit tests that re-process the same node must advance th
 `getValueAtTimeUnmodulated` / `ParamRenderQueue`). Clip only in `finalizeKRate` /
 `finalizeARate` after adding modulation — never on the intrinsic alone before modulation.
 
+**Automation timing model (scheduled times, snapped on demand):** a `RenderParamEvent` stores
+only its scheduled `startTime`/`endTime`, and `calculateValueAtTime` interpolates on them unmodified
+(the spec defines the formulas on real times; a ramp between two times inside one frame must still
+interpolate on those times — WPT `audioparam-close.html`). Effect boundaries live on the frame grid
+instead: `ParamRenderQueue::computeValueAtTime` calls `snapToSampleFrameTime`
+(`std::round(t * sampleRate) / sampleRate`) on the scheduled times whenever it decides which event
+is in effect, matching Blink and the WPT reference's `timeToSampleFrame`. Nothing stores the
+snapped values, so resolving neighbours (`resolveEventValues`, `cancelAndHoldAtTime`) only ever
+touches the scheduled times. A queued event supersedes the current one as soon as its snapped
+start is due, even mid-ramp; ramps stay active until their scheduled end, other finite events end
+on their snapped end. On the evaluation side, `processARateParam` derives each sample's time as
+`(quantumStartFrame + i) / sampleRate` — never accumulate `time += 1/sampleRate`, the ULP drift
+lands boundaries one frame late.
+
+**Never snap an automation time through an integer type.** `snapToSampleFrameTime` rounds in
+`double` instead of reusing `dsp::timeToSampleFrame`, which returns a frame index as `size_t`.
+Automation times are unvalidated user input: nothing in `AudioParam` or its host object rejects
+negative or absurd values, and WPT schedules ramps at `1e300` (`audioparam-large-endtime.html`).
+A `double → size_t → int` round trip on that is undefined behaviour, and in practice produced a
+small *negative* time that sorted the event ahead of everything legitimately scheduled. The same
+unguarded cast is still reachable from `AudioScheduledSourceNode`'s `startTime_`/`stopTime_`
+conversions.
+
+**Param queue capacity:** both param event queues (`ParamRenderQueue` on `AudioParam`,
+`ParamControlQueue` on the host object) are bounded by `AUDIO_PARAM_MAX_QUEUED_EVENTS` and
+**silently drop** events past capacity (`BoundedPriorityQueue::push` returns false, nobody
+checks). Automation scheduled far ahead must fit entirely; the WPT audioparam suites queue
+100 events per file. Symptom of overflow: automation freezes at the last accepted event.
+
 ### JS → Audio Thread parameter updates
 
 `CrossThreadEventScheduler<T>` is a lock-free SPSC channel. When JS calls `param.setValueAtTime(...)`, it enqueues a lambda on the scheduler. The audio thread drains the queue at the start of each `processARateParam` / `processKRateParam` call.

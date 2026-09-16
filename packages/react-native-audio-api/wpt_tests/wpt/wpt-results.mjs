@@ -1,13 +1,15 @@
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 
 import {
   getSkippedByPolicy,
-  getTestClass,
   normalizeTestPath,
   testsPath,
   walkHtmlFiles,
 } from './wpt-shared.mjs';
+
+const require = createRequire(import.meta.url);
 
 const DOCS_MARKERS = {
   start: '{/* wpt-summary:start */}',
@@ -88,7 +90,8 @@ const CATEGORY_LABELS = {
   'the-gainnode-interface': 'GainNode',
   'the-iirfilternode-interface': 'IIRFilterNode',
   'the-mediaelementaudiosourcenode-interface': 'MediaElementAudioSourceNode',
-  'the-mediastreamaudiodestinationnode-interface': 'MediaStreamAudioDestinationNode',
+  'the-mediastreamaudiodestinationnode-interface':
+    'MediaStreamAudioDestinationNode',
   'the-mediastreamaudiosourcenode-interface': 'MediaStreamAudioSourceNode',
   'the-offlineaudiocontext-interface': 'OfflineAudioContext',
   'the-oscillatornode-interface': 'OscillatorNode',
@@ -99,7 +102,7 @@ const CATEGORY_LABELS = {
   'the-waveshapernode-interface': 'WaveShaperNode',
   'media-playback-while-not-visible-permission-policy':
     'Media playback visibility policy',
-  root: 'Other',
+  'root': 'Other',
 };
 
 export function getCategoryKey(testPath) {
@@ -139,18 +142,22 @@ function createEmptyCategoryStats() {
     files: 0,
     filesPassed: 0,
     filesFailed: 0,
+    filesCrashed: 0,
     runnableFiles: 0,
     skippedFiles: 0,
     skipReason: null,
   };
 }
 
-export function discoverAudioApiCategories({ profileAllowlist, includeCrashtests }) {
+export function discoverAudioApiCategories({
+  profileAllowlist,
+  includeCrashtests,
+}) {
   const categories = new Map();
 
   for (const file of walkHtmlFiles(testsPath)) {
     const fullName = normalizeTestPath(file);
-    if (!profileAllowlist.some(prefix => fullName.includes(prefix))) {
+    if (!profileAllowlist.some((prefix) => fullName.includes(prefix))) {
       continue;
     }
 
@@ -176,12 +183,15 @@ export function discoverAudioApiCategories({ profileAllowlist, includeCrashtests
     .map(([key, meta]) => ({ key, ...meta }));
 }
 
+// Bounds for the per-file failure lists stored in the JSON report, so a
+// catastrophic run cannot balloon the CI artifact.
+const MAX_FAILURES_PER_FILE = 100;
+const MAX_FAILURE_MESSAGE_LENGTH = 200;
+
 export class WptResultsCollector {
   #categories = new Map();
-  #currentSuite = null;
-  #currentCategory = null;
-  #currentSuitePass = 0;
-  #currentSuiteFail = 0;
+  #files = [];
+  #currentFile = null;
 
   #ensureCategory(categoryKey) {
     if (!this.#categories.has(categoryKey)) {
@@ -191,55 +201,116 @@ export class WptResultsCollector {
   }
 
   startSuite(name) {
-    if (this.#currentSuite != null) {
-      this.#finishSuite();
-    }
+    this.#finishFile('ok');
 
-    this.#currentSuite = normalizeTestPath(name);
-    this.#currentCategory = getCategoryKey(this.#currentSuite);
-    this.#currentSuitePass = 0;
-    this.#currentSuiteFail = 0;
+    const suitePath = normalizeTestPath(name);
+    this.#currentFile = {
+      path: suitePath,
+      category: getCategoryKey(suitePath),
+      pass: 0,
+      fail: 0,
+      failures: [],
+      startedAt: Date.now(),
+    };
 
-    const category = this.#ensureCategory(this.#currentCategory);
+    const category = this.#ensureCategory(this.#currentFile.category);
     category.files += 1;
   }
 
   pass() {
-    this.#currentSuitePass += 1;
-    if (this.#currentCategory != null) {
-      this.#ensureCategory(this.#currentCategory).pass += 1;
+    if (this.#currentFile == null) {
+      return;
     }
+    this.#currentFile.pass += 1;
+    this.#ensureCategory(this.#currentFile.category).pass += 1;
   }
 
-  fail() {
-    this.#currentSuiteFail += 1;
-    if (this.#currentCategory != null) {
-      this.#ensureCategory(this.#currentCategory).fail += 1;
+  fail(message) {
+    if (this.#currentFile == null) {
+      return;
     }
+    this.#currentFile.fail += 1;
+    if (
+      typeof message === 'string' &&
+      this.#currentFile.failures.length < MAX_FAILURES_PER_FILE
+    ) {
+      this.#currentFile.failures.push(
+        message.slice(0, MAX_FAILURE_MESSAGE_LENGTH)
+      );
+    }
+    this.#ensureCategory(this.#currentFile.category).fail += 1;
   }
 
-  #finishSuite() {
-    if (this.#currentCategory == null) {
+  /**
+   * Record that the file currently running (or the named file, if none is
+   * in flight) died without finishing — the worker process crashed or the
+   * inactivity watchdog killed it. Counted as a failed file in its category.
+   *
+   * @param {string} path
+   * @param {'crashed' | 'timeout'} status
+   */
+  markFileCrashed(path, status) {
+    const suitePath = normalizeTestPath(path);
+    if (this.#currentFile?.path === suitePath) {
+      this.#finishFile(status);
       return;
     }
 
-    const category = this.#ensureCategory(this.#currentCategory);
-    if (this.#currentSuiteFail === 0 && this.#currentSuitePass > 0) {
+    const category = this.#ensureCategory(getCategoryKey(suitePath));
+    category.files += 1;
+    category.filesFailed += 1;
+    category.filesCrashed += 1;
+    this.#files.push({
+      path: suitePath,
+      pass: 0,
+      fail: 0,
+      failures: [],
+      status,
+      durationMs: null,
+    });
+  }
+
+  #finishFile(status) {
+    if (this.#currentFile == null) {
+      return;
+    }
+
+    const file = this.#currentFile;
+    this.#currentFile = null;
+
+    const category = this.#ensureCategory(file.category);
+    if (status !== 'ok') {
+      category.filesFailed += 1;
+      category.filesCrashed += 1;
+    } else if (file.fail === 0 && file.pass > 0) {
       category.filesPassed += 1;
-    } else if (this.#currentSuiteFail > 0) {
+    } else if (file.fail > 0) {
       category.filesFailed += 1;
     }
+
+    this.#files.push({
+      path: file.path,
+      pass: file.pass,
+      fail: file.fail,
+      failures: file.failures,
+      status,
+      durationMs: Date.now() - file.startedAt,
+    });
   }
 
   finalize() {
-    this.#finishSuite();
-    this.#currentSuite = null;
-    this.#currentCategory = null;
+    this.#finishFile('ok');
   }
 
   getCategoryStats() {
     this.finalize();
     return this.#categories;
+  }
+
+  /** Per-file outcomes in run order, for the exact non-regression compare. */
+  getFileResults() {
+    this.finalize();
+    return this.#files;
   }
 }
 
@@ -276,30 +347,33 @@ export function buildReport({
   });
   const runStats = collector.getCategoryStats();
 
-  const categories = discovered.map(({ key, skipReason, runnableFiles, skippedFiles }) => {
-    const run = runStats.get(key) ?? createEmptyCategoryStats();
-    const pass = run.pass;
-    const fail = run.fail;
-    const total = pass + fail;
-    const skipped = runnableFiles === 0 && skippedFiles > 0;
+  const categories = discovered.map(
+    ({ key, skipReason, runnableFiles, skippedFiles }) => {
+      const run = runStats.get(key) ?? createEmptyCategoryStats();
+      const pass = run.pass;
+      const fail = run.fail;
+      const total = pass + fail;
+      const skipped = runnableFiles === 0 && skippedFiles > 0;
 
-    return {
-      key,
-      label: getCategoryLabel(key),
-      abbrev: getCategoryAbbrev(key),
-      pass,
-      fail,
-      total,
-      passRate: total > 0 ? Number(((pass / total) * 100).toFixed(1)) : null,
-      files: run.files,
-      filesPassed: run.filesPassed,
-      filesFailed: run.filesFailed,
-      runnableFiles,
-      skippedFiles,
-      skipped,
-      skipReason: skipped ? skipReason : null,
-    };
-  });
+      return {
+        key,
+        label: getCategoryLabel(key),
+        abbrev: getCategoryAbbrev(key),
+        pass,
+        fail,
+        total,
+        passRate: total > 0 ? Number(((pass / total) * 100).toFixed(1)) : null,
+        files: run.files,
+        filesPassed: run.filesPassed,
+        filesFailed: run.filesFailed,
+        filesCrashed: run.filesCrashed,
+        runnableFiles,
+        skippedFiles,
+        skipped,
+        skipReason: skipped ? skipReason : null,
+      };
+    }
+  );
 
   const summary = categories.reduce(
     (acc, category) => {
@@ -312,6 +386,7 @@ export function buildReport({
       acc.files += category.files;
       acc.filesPassed += category.filesPassed;
       acc.filesFailed += category.filesFailed;
+      acc.filesCrashed += category.filesCrashed;
       acc.runnableFiles += category.runnableFiles;
       return acc;
     },
@@ -321,6 +396,7 @@ export function buildReport({
       files: 0,
       filesPassed: 0,
       filesFailed: 0,
+      filesCrashed: 0,
       runnableFiles: 0,
       skippedCategories: 0,
     }
@@ -332,31 +408,49 @@ export function buildReport({
       ? Number(((summary.pass / summary.total) * 100).toFixed(1))
       : null;
 
+  // Resolved lazily so that reading an existing JSON report (wpt-markdown.mjs)
+  // never triggers the RN_AUDIO_API_APP_ROOT package lookup.
+  const packageRoot = require('../package-root.js');
+  const libraryVersion = JSON.parse(
+    fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')
+  ).version;
+
   return {
     generatedAt: new Date().toISOString(),
     engine: 'react-native-audio-api (Node WPT harness)',
-    reference: 'https://wpt.fyi/results/webaudio/the-audio-api?label=experimental&label=master&aligned',
+    libraryVersion,
+    reference:
+      'https://wpt.fyi/results/webaudio/the-audio-api?label=experimental&label=master&aligned',
     profile,
     filterRegexp,
     includeCrashtests,
     durationMs,
     summary,
     categories,
+    files: collector.getFileResults(),
   };
 }
 
 export function formatMarkdownReport(report) {
   const generated = new Date(report.generatedAt).toISOString().slice(0, 10);
-  const runnableCategories = report.categories.filter(category => !category.skipped);
   const alignedCategories = report.categories;
 
-  const headerCells = alignedCategories.map(category => category.abbrev);
-  const valueCells = alignedCategories.map(category =>
-    formatCell(category.pass, category.total, category.skipped, category.skipReason)
+  const headerCells = alignedCategories.map((category) => category.abbrev);
+  const valueCells = alignedCategories.map((category) =>
+    formatCell(
+      category.pass,
+      category.total,
+      category.skipped,
+      category.skipReason
+    )
   );
 
   const alignedHeader = ['', ...headerCells, '**Total**'].join(' | ');
-  const alignedSeparator = ['---', ...headerCells.map(() => ':---:'), ':---:'].join(' | ');
+  const alignedSeparator = [
+    '---',
+    ...headerCells.map(() => ':---:'),
+    ':---:',
+  ].join(' | ');
   const alignedValues = [
     'react-native-audio-api',
     ...valueCells,
@@ -364,7 +458,7 @@ export function formatMarkdownReport(report) {
   ].join(' | ');
 
   const detailRows = report.categories
-    .map(category => {
+    .map((category) => {
       if (category.skipped) {
         return `| ${category.label} | — | — | — | skipped |`;
       }
@@ -376,8 +470,8 @@ export function formatMarkdownReport(report) {
     .join('\n');
 
   const skippedNotes = report.categories
-    .filter(category => category.skipped && category.skipReason)
-    .map(category => `- **${category.label}**: ${category.skipReason}`)
+    .filter((category) => category.skipped && category.skipReason)
+    .map((category) => `- **${category.label}**: ${category.skipReason}`)
     .join('\n');
 
   return [
@@ -399,7 +493,7 @@ export function formatMarkdownReport(report) {
     '',
     `Runnable HTML tests in profile: ${report.summary.runnableFiles}. Skipped categories: ${report.summary.skippedCategories}.`,
   ]
-    .filter(section => section != null)
+    .filter((section) => section != null)
     .join('\n');
 }
 
@@ -416,7 +510,9 @@ function colorForRate(pass, total) {
 
 function coverageRow({ label, pass, total, note = '', bold = false }) {
   const name = bold ? `<strong>${label}</strong>` : label;
-  const rate = bold ? `<strong>${formatRate(pass, total)}</strong>` : formatRate(pass, total);
+  const rate = bold
+    ? `<strong>${formatRate(pass, total)}</strong>`
+    : formatRate(pass, total);
   const style = `{{ backgroundColor: '${colorForRate(pass, total)}', color: '#1c1e21' }}`;
   return (
     `    <tr style=${style}>` +
@@ -438,8 +534,11 @@ export function formatCoverageMarkdown(report) {
   const generated = new Date(report.generatedAt).toISOString().slice(0, 10);
 
   const rows = report.categories
-    .filter(category => AVAILABLE_INTERFACES[category.key] != null && category.total > 0)
-    .map(category => ({
+    .filter(
+      (category) =>
+        AVAILABLE_INTERFACES[category.key] != null && category.total > 0
+    )
+    .map((category) => ({
       label: AVAILABLE_INTERFACES[category.key],
       pass: category.pass,
       total: category.total,
@@ -456,19 +555,125 @@ export function formatCoverageMarkdown(report) {
     { pass: 0, total: 0 }
   );
 
-  const bodyRows = rows.map(row => coverageRow(row)).join('\n');
+  const bodyRows = rows.map((row) => coverageRow(row)).join('\n');
   const totalRow = coverageRow({ ...totals, label: 'Total', bold: true });
 
   return [
-    `_Last updated: ${generated}. Numbers come from the local WPT smoke run and are a snapshot, not a live badge._`,
+    `_Last updated: ${generated}._`,
     '',
     '<table>',
     '  <thead>',
     '    <tr>',
-      '      <th>Interface</th>',
+    '      <th>Interface</th>',
     "      <th style={{ textAlign: 'right' }}>Passing</th>",
     "      <th style={{ textAlign: 'right' }}>Total</th>",
     "      <th style={{ textAlign: 'right' }}>Pass rate</th>",
+    '      <th>Differences</th>',
+    '    </tr>',
+    '  </thead>',
+    '  <tbody>',
+    bodyRows,
+    totalRow,
+    '  </tbody>',
+    '</table>',
+  ].join('\n');
+}
+
+function comparisonCell(stats, bold = false) {
+  if (stats == null || stats.total === 0) {
+    return "<td style={{ textAlign: 'right' }}>—</td>";
+  }
+  const text = `${stats.pass}/${stats.total} (${formatRate(stats.pass, stats.total)})`;
+  const content = bold ? `<strong>${text}</strong>` : text;
+  const style = `{{ backgroundColor: '${colorForRate(stats.pass, stats.total)}', color: '#1c1e21', textAlign: 'right' }}`;
+  return `<td style=${style}>${content}</td>`;
+}
+
+function comparisonRow({ label, baseline, current, note = '', bold = false }) {
+  const name = bold ? `<strong>${label}</strong>` : label;
+  return (
+    `    <tr><td>${name}</td>` +
+    comparisonCell(baseline, bold) +
+    comparisonCell(current, bold) +
+    `<td>${note}</td></tr>`
+  );
+}
+
+function availableInterfaceStats(report) {
+  return new Map(
+    report.categories
+      .filter(
+        (category) =>
+          AVAILABLE_INTERFACES[category.key] != null && category.total > 0
+      )
+      .map((category) => [
+        category.key,
+        { pass: category.pass, total: category.total },
+      ])
+  );
+}
+
+function sumStats(statsByKey) {
+  let pass = 0;
+  let total = 0;
+  for (const stats of statsByKey.values()) {
+    pass += stats.pass;
+    total += stats.total;
+  }
+  return { pass, total };
+}
+
+/**
+ * Side-by-side docs summary: the latest stable release (baseline report,
+ * produced with RN_AUDIO_API_APP_ROOT pointing at an app that installs the
+ * published npm package) next to the current main checkout. An interface
+ * missing from one run renders as "—" in that column.
+ */
+export function formatCoverageComparisonMarkdown(
+  currentReport,
+  baselineReport
+) {
+  const generated = new Date(currentReport.generatedAt)
+    .toISOString()
+    .slice(0, 10);
+  const baselineLabel = baselineReport.libraryVersion
+    ? `v${baselineReport.libraryVersion} (latest)`
+    : 'latest release';
+
+  const baselineStats = availableInterfaceStats(baselineReport);
+  const currentStats = availableInterfaceStats(currentReport);
+  const keys = [
+    ...new Set([...baselineStats.keys(), ...currentStats.keys()]),
+  ].sort((a, b) =>
+    AVAILABLE_INTERFACES[a].localeCompare(AVAILABLE_INTERFACES[b])
+  );
+
+  const bodyRows = keys
+    .map((key) =>
+      comparisonRow({
+        label: AVAILABLE_INTERFACES[key],
+        baseline: baselineStats.get(key),
+        current: currentStats.get(key),
+        note: COVERAGE_NOTES[key] ?? '',
+      })
+    )
+    .join('\n');
+  const totalRow = comparisonRow({
+    label: 'Total',
+    baseline: sumStats(baselineStats),
+    current: sumStats(currentStats),
+    bold: true,
+  });
+
+  return [
+    `_Last updated: ${generated}._`,
+    '',
+    '<table>',
+    '  <thead>',
+    '    <tr>',
+    '      <th>Interface</th>',
+    `      <th style={{ textAlign: 'right' }}>${baselineLabel}</th>`,
+    "      <th style={{ textAlign: 'right' }}>main</th>",
     '      <th>Differences</th>',
     '    </tr>',
     '  </thead>',
@@ -504,7 +709,10 @@ export function updateDocsSection(docsPath, markdown) {
   const contents = fs.readFileSync(docsPath, 'utf8');
   const block = `${DOCS_MARKERS.start}\n\n${markdown}\n\n${DOCS_MARKERS.end}`;
 
-  if (contents.includes(DOCS_MARKERS.start) && contents.includes(DOCS_MARKERS.end)) {
+  if (
+    contents.includes(DOCS_MARKERS.start) &&
+    contents.includes(DOCS_MARKERS.end)
+  ) {
     const pattern = new RegExp(
       `${escapeRegExp(DOCS_MARKERS.start)}[\\s\\S]*?${escapeRegExp(DOCS_MARKERS.end)}`,
       'm'
@@ -525,19 +733,19 @@ function escapeRegExp(value) {
 
 export function wrapReporter(reporter, collector) {
   return {
-    startSuite: name => {
+    startSuite: (name) => {
       collector.startSuite(name);
       reporter.startSuite?.(name);
     },
-    pass: message => {
+    pass: (message) => {
       collector.pass();
       reporter.pass?.(message);
     },
-    fail: message => {
-      collector.fail();
+    fail: (message) => {
+      collector.fail(message);
       reporter.fail?.(message);
     },
-    reportStack: stack => {
+    reportStack: (stack) => {
       reporter.reportStack?.(stack);
     },
   };

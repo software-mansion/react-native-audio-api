@@ -26,8 +26,10 @@ class BaseAudioContextHostObject : public HostObject {
   ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(destination);
-  JSI_PROPERTY_GETTER_DECL(listener);
   JSI_PROPERTY_GETTER_DECL(state);
+  JSI_PROPERTY_SETTER_DECL(onstatechange);
+
+  JSI_PROPERTY_GETTER_DECL(listener);
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
 

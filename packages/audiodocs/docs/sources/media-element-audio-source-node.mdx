@@ -8,9 +8,9 @@ import { ReadOnly } from '@site/src/components/Badges';
 
 # MediaElementAudioSourceNode
 
-The `MediaElementAudioSourceNode` is an [`AudioNode`](/docs/core/audio-node) that routes media playback into the audio graph.
+The `MediaElementAudioSourceNode` is an [`AudioNode`](../core/audio-node.mdx) that routes media playback into the audio graph.
 On the web it mirrors [`AudioContext.createMediaElementSource()`](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaElementSource) and accepts an `HTMLMediaElement`.
-On the native it wraps a file-backed source created by the [`<Audio>`](/docs/sources/audio-tag) tag.
+On the native it wraps a file-backed source created by the [`<Audio>`](./audio-tag.mdx) tag.
 
 ## Constructor
 
@@ -22,10 +22,10 @@ constructor(context: BaseAudioContext, options: MediaElementAudioSourceOptions)
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](/docs/sources/audio-tag#ref-handle-audiotaghandle-methods) (native) | — | Media element whose audio is routed into the graph. On native, wait for [`onLoad`](/docs/sources/audio-tag#props-audioprops) before constructing this node. |
+| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](./audio-tag.mdx#ref-handle-audiotaghandle-methods) (native) | — | Media element whose audio is routed into the graph. On native, wait for [`onLoad`](./audio-tag.mdx#props-audioprops) before constructing this node. |
 
-Or by using [`AudioContext`](/docs/core/audio-context) factory method:
-[`AudioContext.createMediaElementSource()`](/docs/core/audio-context#createmediaelementsource)
+Or by using [`AudioContext`](../core/audio-context.mdx) factory method:
+[`AudioContext.createMediaElementSource()`](../core/audio-context.mdx#createmediaelementsource)
 
 #### Errors
 
@@ -90,17 +90,17 @@ function NativeExample() {
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated media element" channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Default value | Description |
 | :----: | :----: | :----: | :------- |
-| `mediaElement` <ReadOnly /> | `HTMLMediaElement` \| [`AudioTagHandle`](/docs/sources/audio-tag#ref-handle-audiotaghandle-methods) | — | The media element routed into the audio graph. |
+| `mediaElement` <ReadOnly /> | `HTMLMediaElement` \| [`AudioTagHandle`](./audio-tag.mdx#ref-handle-audiotaghandle-methods) | — | The media element routed into the audio graph. |
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 
@@ -111,4 +111,4 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 #### Native routing
 
 - On native, the underlying file source is disconnected from the destination when this node is created so audio is not processed twice.
-- Use the same [`AudioTagHandle`](/docs/sources/audio-tag#ref-handle-audiotaghandle-methods) for transport controls (`play`, `pause`, `seekToTime`, `volume`).
+- Use the same [`AudioTagHandle`](./audio-tag.mdx#ref-handle-audiotaghandle-methods) for transport controls (`play`, `pause`, `seekToTime`, `volume`).

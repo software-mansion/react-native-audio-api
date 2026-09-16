@@ -36,7 +36,7 @@ Install the `react-native-audio-api` package from npm:
 
 ### Step 2: Add Audio API expo plugin (optional)
 
-Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`. Read more about the plugin [here](/docs/other/audio-api-plugin)!
+Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`. Read more about the plugin [here](../other/audio-api-plugin.mdx)!
 
 <details>
 <summary>app.json</summary>
@@ -95,10 +95,10 @@ export default {
 
 #### Special permissions
 
-If you plan to use [`AudioRecorder`](/docs/inputs/audio-recorder) entry `iosMicrophonePermission` and `android.permission.RECORD_AUDIO` in `androidPermissions` section is **MANDATORY**.
+If you plan to use [`AudioRecorder`](../inputs/audio-recorder.mdx) entry `iosMicrophonePermission` and `android.permission.RECORD_AUDIO` in `androidPermissions` section is **MANDATORY**.
 
 :::info
-If your app is not managed by expo, see [non-expo-permissions page](/docs/other/non-expo-permissions) how to handle permissions.
+If your app is not managed by expo, see [non-expo-permissions page](../other/non-expo-permissions.mdx) how to handle permissions.
 :::
 
 ### Step 3: Install system-wide bash (only Windows OS)
@@ -110,7 +110,7 @@ bash -c 'echo Hello World!'
 
 <Heading as="h3" id="additional-dependencies">Step 4: Additional dependencies (optional)</Heading>
 
-If you plan to use any of [`WorkletNode`](/docs/worklets/worklet-node), [`WorkletSourceNode`](/docs/worklets/worklet-source-node), or [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node), install [`react-native-audio-worklets`](https://github.com/software-mansion/react-native-audio-api/tree/main/packages/react-native-audio-worklets) and [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) `>= 0.10.0`. Follow the [react-native-worklets setup guide](https://docs.swmansion.com/react-native-worklets/docs/fundamentals/getting-started) for Babel and native configuration, then see the [Worklets](/docs/worklets/introduction) section for usage.
+If you plan to use any of [`WorkletNode`](../worklets/worklet-node.mdx), [`WorkletSourceNode`](../worklets/worklet-source-node.mdx), or [`WorkletProcessingNode`](../worklets/worklet-processing-node.mdx), install [`react-native-audio-worklets`](https://github.com/software-mansion/react-native-audio-api/tree/main/packages/react-native-audio-worklets) and [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) `>= 0.10.0`. Follow the [react-native-worklets setup guide](https://docs.swmansion.com/react-native-worklets/docs/fundamentals/getting-started) for Babel and native configuration, then see the [Worklets](../worklets/introduction.mdx) section for usage.
 
 :::info
 If you are not planning to use worklet nodes, `react-native-worklets` and `react-native-audio-worklets` are **optional** — the main library builds successfully without them.
@@ -179,4 +179,4 @@ No further steps are necessary.
 
 ## What's next?
 
-In [the next section](/docs/guides/making-a-piano-keyboard), we will learn how the audio graph works and build a simple piano keyboard.
+In [the next section](../guides/making-a-piano-keyboard.mdx), we will learn how the audio graph works and build a simple piano keyboard.

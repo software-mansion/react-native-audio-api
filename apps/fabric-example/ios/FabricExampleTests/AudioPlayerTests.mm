@@ -36,9 +36,13 @@ class IOSAudioPlayer : public CommonPlayer {
 
   [[nodiscard]] bool isRunning() const override;
 
+  [[nodiscard]] double getBaseLatency() const override;
+  [[nodiscard]] double getOutputLatency() const override;
+
  protected:
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
+  float sampleRate_;
   std::function<void(DSPAudioBuffer *, int)> renderAudio_;
   std::atomic<uint32_t> &currentRenders_;
   int channelCount_;

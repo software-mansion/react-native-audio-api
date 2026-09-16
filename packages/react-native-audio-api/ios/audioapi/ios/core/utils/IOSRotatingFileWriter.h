@@ -30,6 +30,9 @@ class IOSRotatingFileWriter : public IOSFileWriter, public RotatingFileWriter {
       AVAudioFormat *streamFormat,
       size_t streamMaxBufferSizeInFrames,
       const std::string &fileNameOverride) override;
+  OpenFileResult reprepareStreamFormat(
+      AVAudioFormat *streamFormat,
+      size_t streamMaxBufferSizeInFrames);
   CloseFileResult closeFile() override;
   [[nodiscard]] double getCurrentDuration() const override;
 

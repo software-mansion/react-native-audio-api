@@ -1,54 +1,36 @@
 #pragma once
 
 #include <audioapi/utils/Macros.h>
+
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <functional>
+#include <new>
 #include <set>
 #include <utility>
 
-// --- std::pmr availability gate ---------------------------------------------
-// std::pmr's runtime symbols ship in Apple's system libc++ only from
-// iOS 17.0 / macOS 14.0 / tvOS 17.0 / watchOS 10.0 onward
-// (_LIBCPP_AVAILABILITY_HAS_PMR maps to _LIBCPP_INTRODUCED_IN_LLVM_16).
-// libc++ currently leaves the pmr availability *markup* empty
-// (see llvm/llvm-project#40340), so using std::pmr below those versions
-// compiles without any diagnostic but fails at dyld load time:
-//   Symbol not found: std::__1::pmr::memory_resource::~memory_resource()
-// On those targets we fall back to a std::multiset backed by an in-object,
-// non-pmr pool allocator that preserves the original design intent: a fixed
-// buffer, node recycling, and no heap allocation (audio-thread / real-time
-// safe). Define AUDIOAPI_HAS_PMR before including this header to override.
-#if !defined(AUDIOAPI_HAS_PMR)
-#if defined(_LIBCPP_VERSION) && defined(_LIBCPP_AVAILABILITY_HAS_PMR) && \
-    !_LIBCPP_AVAILABILITY_HAS_PMR
-#define AUDIOAPI_HAS_PMR 0
-#else
-#define AUDIOAPI_HAS_PMR 1
-#endif
-#endif
-
-#if AUDIOAPI_HAS_PMR
-#include <memory_resource>
-#else
-#include <new>
-#endif
-
 namespace audioapi {
 
-#if !AUDIOAPI_HAS_PMR
-namespace no_pmr {
+namespace detail {
 
 /// @brief Fixed-capacity, in-object block pool with an intrusive free list.
 /// Hands out fixed-size slots and recycles freed ones; never touches the heap.
-/// Throws std::bad_alloc on exhaustion, matching the std::pmr path's
-/// null_memory_resource upstream behaviour.
-template <std::size_t Capacity, std::size_t BlockSize, std::size_t Align>
+/// @note Exhaustion throws std::bad_alloc, but neither throw is reachable
+/// through BoundedPriorityQueue: the slot size is checked against the real node
+/// type at compile time, and `push` refuses once `Capacity` slots are taken.
+template <size_t Capacity, size_t BlockSize, size_t Align>
+  requires(Capacity > 0) && (BlockSize >= sizeof(void *))
 class FixedBlockPool {
  public:
-  void *allocate(std::size_t bytes) {
+  // Round the requested block size up to the pool alignment. A slot is always
+  // >= sizeof(void*), so the free list is stored intrusively in freed slots.
+  static constexpr size_t SLOT_SIZE = ((BlockSize + Align - 1) / Align) * Align;
+  static constexpr size_t SLOT_ALIGN = Align;
+
+  void *allocate(size_t bytes) {
     // The multiset allocates tree nodes one at a time, all the same size.
-    if (bytes > kSlotSize) [[unlikely]] {
+    if (bytes > SLOT_SIZE) [[unlikely]] {
       throw std::bad_alloc();
     }
     if (freeList_ != nullptr) {
@@ -59,7 +41,7 @@ class FixedBlockPool {
     if (used_ >= Capacity) [[unlikely]] {
       throw std::bad_alloc();
     }
-    return &storage_[used_++ * kSlotSize];
+    return &storage_[used_++ * SLOT_SIZE];
   }
 
   void deallocate(void *block) noexcept {
@@ -68,21 +50,20 @@ class FixedBlockPool {
   }
 
  private:
-  // Round the requested block size up to the pool alignment. A slot is always
-  // >= sizeof(void*), so the free list is stored intrusively in freed slots.
-  static constexpr std::size_t kSlotSize = ((BlockSize + Align - 1) / Align) * Align;
-
   static void *&nextOf(void *block) noexcept {
     return *static_cast<void **>(block);
   }
 
-  alignas(Align) std::array<std::byte, Capacity * kSlotSize> storage_{};
+  alignas(Align) std::array<std::byte, Capacity * SLOT_SIZE> storage_{};
   void *freeList_ = nullptr;
-  std::size_t used_ = 0;
+  size_t used_ = 0;
 };
 
 /// @brief Stateful allocator that draws node storage from a FixedBlockPool.
 /// Satisfies the C++ Allocator requirements used by std::multiset.
+/// @note std::multiset rebinds this to its own node type, so `allocate` is the
+/// one place where the exact node layout of the standard library in use is
+/// visible — which is where the pool's slot size is verified.
 template <typename T, typename Pool>
 class PoolAllocator {
  public:
@@ -99,11 +80,18 @@ class PoolAllocator {
   PoolAllocator(const PoolAllocator<U, Pool> &other) noexcept // NOLINT(runtime/explicit)
       : pool_(other.pool()) {}
 
-  T *allocate(std::size_t n) {
+  T *allocate(size_t n) {
+    static_assert(
+        sizeof(T) <= Pool::SLOT_SIZE,
+        "BoundedPriorityQueue: this standard library's tree node is larger than the pool slot "
+        "-- raise kNodeOverhead");
+    static_assert(
+        alignof(T) <= Pool::SLOT_ALIGN,
+        "BoundedPriorityQueue: this standard library's tree node is over-aligned for the pool");
     return static_cast<T *>(pool_->allocate(n * sizeof(T)));
   }
 
-  void deallocate(T *p, std::size_t /*n*/) noexcept {
+  void deallocate(T *p, size_t /*n*/) noexcept {
     pool_->deallocate(p);
   }
 
@@ -124,54 +112,43 @@ class PoolAllocator {
   Pool *pool_;
 };
 
-} // namespace no_pmr
-#endif // !AUDIOAPI_HAS_PMR
+} // namespace detail
 
-/// @brief A bounded priority queue with fixed capacity backed by a static pool allocator.
+/// @brief A bounded priority queue with fixed capacity backed by an in-object block pool.
 /// Elements are kept in ascending sorted order (smallest element at front).
 /// All operations avoid heap allocation. Uses std::multiset under the hood
 /// to maintain sorted order and provide efficient insertion and removal.
 /// @tparam T The type of elements stored. Must be move-constructible.
-/// @tparam Capacity The maximum number of elements.
-/// @tparam Compare Comparator type. Defaults to std::less<T> (smallest element at front).
+/// @tparam Capacity The maximum number of elements. Must be positive.
+/// @tparam Compare Comparator type, a strict weak ordering over T. Defaults to
+/// std::less<T> (smallest element at front). Heterogeneous key lookups
+/// (lowerBound / upperBound) additionally need a transparent comparator that
+/// accepts the key type.
 /// @note Stable: for equal keys, insertion order is preserved by std::multiset.
 /// @note This implementation is NOT thread-safe.
 template <typename T, size_t Capacity, typename Compare = std::less<T>>
+  requires(Capacity > 0) && std::move_constructible<T>
 class BoundedPriorityQueue {
  private:
-#if AUDIOAPI_HAS_PMR
-  using SetType = std::pmr::multiset<T, Compare>;
-
-  static constexpr size_t kNodeOverhead = 96;
-  static constexpr size_t kNodeSize = sizeof(T) + kNodeOverhead;
-  // Extra headroom for pool resource bookkeeping structures.
-  static constexpr size_t kBufferSize = Capacity * kNodeSize + 256;
-
-  // Members must be declared in this order: buffer_ → mono_ → pool_ → set_.
-  alignas(std::max_align_t) std::array<std::byte, kBufferSize> buffer_;
-  std::pmr::monotonic_buffer_resource mono_{
-      buffer_.data(),
-      sizeof(buffer_),
-      std::pmr::null_memory_resource()};
-  std::pmr::unsynchronized_pool_resource pool_{
-      std::pmr::pool_options{.max_blocks_per_chunk = 1, .largest_required_pool_block = 0},
-      &mono_};
-  SetType set_{Compare{}, &pool_};
-#else
-  static constexpr size_t kNodeOverhead = 96;
-  // Upper bound on a std::multiset red-black-tree node holding a T (value plus
-  // tree links/color). Generous headroom, matching the std::pmr path above.
+  // A red-black tree node is the value plus three links and a colour, so four
+  // pointers bound the container's own per-node fields. If some standard library
+  // ever exceeds that, the static_assert in PoolAllocator::allocate fires -- the
+  // rebound allocator sees the real node type -- so this is checked, not assumed.
+  static constexpr size_t kNodeOverhead = 4 * sizeof(void *);
   static constexpr size_t kBlockSize = sizeof(T) + kNodeOverhead;
+  // A node holds T and pointers and nothing else, so its alignment is the
+  // stricter of the two; PoolAllocator::allocate asserts that against the
+  // real node type.
+  static constexpr size_t kBlockAlign = alignof(T) > alignof(void *) ? alignof(T) : alignof(void *);
 
-  using PoolType = no_pmr::FixedBlockPool<Capacity, kBlockSize, alignof(std::max_align_t)>;
-  using AllocType = no_pmr::PoolAllocator<T, PoolType>;
+  using PoolType = detail::FixedBlockPool<Capacity, kBlockSize, kBlockAlign>;
+  using AllocType = detail::PoolAllocator<T, PoolType>;
   using SetType = std::multiset<T, Compare, AllocType>;
 
   // Members must be declared in this order: pool_ → set_.
   // set_ allocates its nodes from pool_, so pool_ must outlive it.
   PoolType pool_;
   SetType set_{Compare{}, AllocType{&pool_}};
-#endif
 
  public:
   explicit BoundedPriorityQueue() = default;
@@ -245,6 +222,8 @@ class BoundedPriorityQueue {
   /// @brief Find the first element with key >= the given key.
   /// @return An iterator to the first element with key >= the given key, or end() if no such element exists.
   template <typename Key>
+    requires std::predicate<const Compare &, const T &, const Key &> &&
+      std::predicate<const Compare &, const Key &, const T &>
   [[nodiscard]] SetType::iterator lowerBound(const Key &key) noexcept {
     return set_.lower_bound(key);
   }
@@ -253,6 +232,8 @@ class BoundedPriorityQueue {
   /// @note For events with duplicate keys, upperBound returns the position after the last duplicate.
   /// @return An iterator to the first element with key > the given key, or end() if no such element exists.
   template <typename Key>
+    requires std::predicate<const Compare &, const T &, const Key &> &&
+      std::predicate<const Compare &, const Key &, const T &>
   [[nodiscard]] SetType::iterator upperBound(const Key &key) noexcept {
     return set_.upper_bound(key);
   }

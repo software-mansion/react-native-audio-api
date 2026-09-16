@@ -214,6 +214,11 @@ static AudioSessionManager *_sharedInstance = nil;
   return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
+- (NSNumber *)getSystemVolume
+{
+  return [NSNumber numberWithFloat:[self.audioSession outputVolume]];
+}
+
 - (NSString *)inputDiagnosticsSnapshot
 {
   AVAudioSessionRouteDescription *route = [self.audioSession currentRoute];

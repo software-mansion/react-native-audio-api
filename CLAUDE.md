@@ -13,7 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 packages/react-native-audio-api/   # Main library
 apps/common-app/                   # Example RN app
 apps/fabric-example/               # New Architecture example app
-packages/audiodocs/                # Documentation
+packages/audiodocs/                # Public API documentation
+packages/internaldocs/             # Local engine-internal docs (not published)
 packages/custom-node-generator/    # Code generation tooling
 ```
 

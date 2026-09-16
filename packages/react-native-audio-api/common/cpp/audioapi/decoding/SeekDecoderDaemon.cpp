@@ -19,7 +19,6 @@ SeekDecoderDaemon::SeekDecoderDaemon(
       frameReceiverForDrain_(std::move(frameReceiver)) {
   auto decoderResult = decoding::createDecoder(options.source);
   if (decoderResult.is_err()) {
-    sharedState_->isDaemonRunning.store(false, std::memory_order_release);
     return;
   }
 
@@ -31,7 +30,23 @@ SeekDecoderDaemon::SeekDecoderDaemon(
   sharedState_->duration.store(decoder_->getDurationInSeconds(), std::memory_order_release);
   sharedState_->loop.store(options.loop, std::memory_order_release);
   sharedState_->isHlsStreaming.store(decoder_->isHlsStreaming(), std::memory_order_release);
-  sharedState_->isReady.store(true, std::memory_order_release);
+
+  daemonThread_ = std::thread(&SeekDecoderDaemon::threadFunction, this);
+}
+
+SeekDecoderDaemon::~SeekDecoderDaemon() {
+  requestStop();
+  if (daemonThread_.joinable()) {
+    daemonThread_.join();
+  }
+}
+
+bool SeekDecoderDaemon::isOpen() const {
+  return decoder_ != nullptr;
+}
+
+void SeekDecoderDaemon::requestStop() {
+  daemonRunning_.store(false, std::memory_order_release);
 }
 
 std::optional<SeekRequest> SeekDecoderDaemon::processSeekCommands() {
@@ -126,12 +141,11 @@ bool SeekDecoderDaemon::decodeNextChunk(
   return true;
 }
 
-void SeekDecoderDaemon::operator()() {
+void SeekDecoderDaemon::threadFunction() {
   DecoderData localData;
   bool hasPendingChunk = false;
 
-  while (sharedState_->isDaemonRunning.load(std::memory_order_acquire)) {
-
+  while (daemonRunning_.load(std::memory_order_acquire)) {
     auto seekResult = processSeekCommands();
     if (seekResult.has_value()) {
       hasPendingChunk = false;

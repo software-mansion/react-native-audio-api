@@ -71,9 +71,9 @@ import {
 
 ## WorkletAudioContext
 
-Worklet nodes accept any [`BaseAudioContext`](/docs/core/base-audio-context), but [`WorkletAudioContext`](/docs/worklets/worklet-audio-context) is the dedicated context for worklet graphs that do not need speaker output. It renders on a background thread and discards audio at `destination`, which keeps visualization or analysis graphs separate from your main [`AudioContext`](/docs/core/audio-context) playback session.
+Worklet nodes accept any [`BaseAudioContext`](../core/base-audio-context.mdx), but [`WorkletAudioContext`](./worklet-audio-context.mdx) is the dedicated context for worklet graphs that do not need speaker output. It renders on a background thread and discards audio at `destination`, which keeps visualization or analysis graphs separate from your main [`AudioContext`](../core/audio-context.mdx) playback session.
 
-See the [`WorkletAudioContext`](/docs/worklets/worklet-audio-context) page for constructor options, lifecycle (`resume` / `suspend` / `close`), and usage patterns.
+See the [`WorkletAudioContext`](./worklet-audio-context.mdx) page for constructor options, lifecycle (`resume` / `suspend` / `close`), and usage patterns.
 
 :::tip
 If you only use core audio nodes and never import `react-native-audio-worklets`, you do **not** need `react-native-worklets` installed — the main library builds without it.
@@ -87,7 +87,7 @@ Simply put, a worklet is a piece of JavaScript that can run on a runtime other t
 
 ## UI runtime
 
-[`WorkletNode`](/docs/worklets/worklet-node) dispatches your callback on the **UI worklet runtime** provided by `react-native-worklets`. That lets you update Reanimated shared values and animated styles directly from audio-driven logic.
+[`WorkletNode`](./worklet-node.mdx) dispatches your callback on the **UI worklet runtime** provided by `react-native-worklets`. That lets you update Reanimated shared values and animated styles directly from audio-driven logic.
 
 **Use it when you want to:**
 
@@ -99,7 +99,7 @@ Audio still flows through the node unchanged — the worklet receives a **read-o
 
 ## Audio runtime
 
-[`WorkletSourceNode`](/docs/worklets/worklet-source-node) and [`WorkletProcessingNode`](/docs/worklets/worklet-processing-node) invoke your callback synchronously on a **dedicated audio worklet runtime** each render quantum (128 frames).
+[`WorkletSourceNode`](./worklet-source-node.mdx) and [`WorkletProcessingNode`](./worklet-processing-node.mdx) invoke your callback synchronously on a **dedicated audio worklet runtime** each render quantum (128 frames).
 
 **Use them when you want to:**
 

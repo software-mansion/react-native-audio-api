@@ -9,6 +9,7 @@
 #include <atomic>
 #include <memory>
 #include <optional>
+#include <thread>
 
 using namespace audioapi::channels::spsc;
 
@@ -20,8 +21,6 @@ struct SeekDecoderDaemonOptions {
 
 struct AudioFileDecoderState {
   // Lifecycle and Sync
-  std::atomic<bool> isDaemonRunning{true};
-  std::atomic<bool> isReady{false}; // True once the decoder opens the file/URL
   std::atomic<int> pendingOffloadedSeeks{0};
 
   // Metadata
@@ -83,7 +82,7 @@ namespace audioapi {
 /// audio decoder. It listens for seek commands from the JS thread, performs seeks on the
 /// decoder, decodes audio frames, and sends decoded planar audio data back to the audio
 /// thread via a lock-free SPSC channel.
-class SeekDecoderDaemon {
+class SeekDecoderDaemon final {
  public:
   SeekDecoderDaemon(
       const SeekDecoderDaemonOptions &options,
@@ -92,12 +91,24 @@ class SeekDecoderDaemon {
       FrameSender frameSender,
       std::shared_ptr<FrameReceiver> frameReceiver);
 
+  ~SeekDecoderDaemon();
+  DELETE_COPY_AND_MOVE(SeekDecoderDaemon);
+
+  /// @brief Whether the source was opened successfully. When false the daemon
+  /// thread was never started and no frames will ever be produced.
+  [[nodiscard]] bool isOpen() const;
+
+  /// @brief Asks the decoding loop to finish its current iteration and exit.
+  /// Returns immediately without joining, so it is safe on the audio thread.
+  /// Idempotent; the destructor repeats it before joining.
+  void requestStop();
+
+ private:
   /// @brief Main loop of the daemon thread. Listens for seek commands,
   /// decodes audio frames, and sends decoded data back to the audio thread
   /// via the frameSender SPSC channel.
-  void operator()();
+  void threadFunction();
 
- private:
   std::unique_ptr<decoding::AudioDecoderBackend> decoder_;
 
   /// @brief Shared state with the AudioFileSourceNode, used for communicating decoder status, metadata, and playback position.
@@ -107,8 +118,14 @@ class SeekDecoderDaemon {
   /// @brief Sending end for decoded audio frames back to the audio thread
   FrameSender frameSender_;
   /// @brief Pointer to the audio thread's receiver — used only during seek to drain stale frames.
-  /// Safe because the daemon thread is joined before AudioFileSourceNode is destroyed.
+  /// Shared ownership mirrors the node, which holds the same receiver for its render path.
   std::shared_ptr<FrameReceiver> frameReceiverForDrain_;
+
+  /// @brief The daemon thread that runs the decoding loop.
+  std::thread daemonThread_;
+
+  /// @brief Cleared by the destructor to end the decoding loop before joining.
+  std::atomic<bool> daemonRunning_{true};
 
   /// @brief Drains the command queue and performs all pending seeks.
   /// @return Latest seek request if any were processed; @c std::nullopt if no seek commands were pending.

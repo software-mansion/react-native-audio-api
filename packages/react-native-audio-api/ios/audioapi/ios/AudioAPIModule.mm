@@ -92,6 +92,11 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
   return [self.audioSessionManager getDevicePreferredSampleRate];
 }
 
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getSystemVolume)
+{
+  return [self.audioSessionManager getSystemVolume];
+}
+
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(isFfmpegEnabled)
 {
 #if RN_AUDIO_API_FFMPEG_DISABLED

@@ -1,14 +1,13 @@
-import {
+import type {
   AudioContextOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
+  AudioRecorderOptions,
   AudioRecorderStartOptions,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
-  FileDirectory,
-  FileFormat,
   FileInfo,
   FilePresetType,
   OfflineAudioContextOptions,
@@ -31,6 +30,7 @@ import {
   StereoPannerOptions,
   WaveShaperOptions,
 } from '../types';
+import { FileDirectory, FileFormat } from '../types';
 import { toFloat32Array } from '../utils';
 
 /* eslint-disable no-useless-constructor */
@@ -595,7 +595,7 @@ class RecorderAdapterNodeMock extends AudioNodeMock {
 }
 
 class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
-  private _onBufferEnded: ((event: { bufferId: string }) => void) | null = null;
+  private _onbufferended: ((event: { bufferId: string }) => void) | null = null;
   private eventEmitter = new MockAudioEventEmitter();
 
   constructor(
@@ -613,12 +613,12 @@ class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
   clearBuffers(): void {}
   pause(): void {}
 
-  get onBufferEnded(): ((event: { bufferId: string }) => void) | null {
-    return this._onBufferEnded;
+  get onbufferended(): ((event: { bufferId: string }) => void) | null {
+    return this._onbufferended;
   }
 
-  set onBufferEnded(callback: ((event: { bufferId: string }) => void) | null) {
-    this._onBufferEnded = callback;
+  set onbufferended(callback: ((event: { bufferId: string }) => void) | null) {
+    this._onbufferended = callback;
   }
 }
 
@@ -860,7 +860,8 @@ class AudioRecorderMock {
   private onAudioReadySubscription: MockEventSubscription | null = null;
   private onErrorSubscription: MockEventSubscription | null = null;
 
-  constructor() {}
+  // Options only configure the native capture chain, so the mock ignores them.
+  constructor(_options?: AudioRecorderOptions) {}
 
   enableFileOutput(
     options?: AudioRecorderFileOptions

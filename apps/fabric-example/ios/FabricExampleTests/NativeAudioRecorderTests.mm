@@ -90,6 +90,7 @@
 @property(nonatomic, assign) NSInteger rebuildAfterDeactivationCallCount;
 @property(nonatomic, strong) AVAudioSinkNode *lastAttachedInputNode;
 @property(nonatomic, copy) AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
+@property (nonatomic, assign) BOOL lastAttachedVoiceProcessingEnabled;
 
 @end
 
@@ -113,11 +114,15 @@
 }
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
+                  voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
+             onInputConfigurationChange:(void (^)(void))onInputConfigurationChange
 {
   self.attachInputNodeCallCount += 1;
   self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
   self.lastAttachedInputNode = self.inputNode;
   self.lastAttachedReceiverBlock = receiverBlock;
+  self.lastAttachedVoiceProcessingEnabled = voiceProcessingEnabled;
+  (void)onInputConfigurationChange;
 }
 
 - (bool)startIfNecessary
@@ -290,12 +295,12 @@ static void ClearFakeRecorderSharedAudioSession(void)
 {
   __block const AudioBufferList *receivedBuffer = nullptr;
   __block int receivedFrames = 0;
-  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc] initWithReceiverBlock:^(
-      const AudioBufferList *inputBuffer,
-      int numFrames) {
-    receivedBuffer = inputBuffer;
-    receivedFrames = numFrames;
-  }];
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {
+         receivedBuffer = inputBuffer;
+         receivedFrames = numFrames;
+       }
+      voiceProcessingEnabled:NO];
 
   XCTAssertNotNil(recorder.receiverBlock);
   XCTAssertNotNil(recorder.receiverSinkBlock);
@@ -321,10 +326,9 @@ static void ClearFakeRecorderSharedAudioSession(void)
   AVAudioFormat *expectedFormat = [self validFormat];
   self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = expectedFormat;
 
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
 
   XCTAssertTrue([recorder start:nil]);
   XCTAssertEqualObjects([recorder getResolvedInputFormat], expectedFormat);
@@ -333,10 +337,9 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
 - (void)testGetBufferSizeUsesMinimumDurationAndRoundsUpToPowerOfTwo
 {
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
 
   int bufferSize = [recorder getBufferSize];
   XCTAssertEqual(bufferSize, 16384);
@@ -347,10 +350,9 @@ static void ClearFakeRecorderSharedAudioSession(void)
 {
   AVAudioFormat *expectedFormat = [self validFormat];
   self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = expectedFormat;
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
 
   XCTAssertTrue([recorder start:nil]);
 
@@ -359,15 +361,28 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
   XCTAssertNotNil(self.audioEngine.lastAttachedInputNode);
   XCTAssertNotNil(self.audioEngine.lastAttachedReceiverBlock);
+  XCTAssertFalse(self.audioEngine.lastAttachedVoiceProcessingEnabled);
+}
+
+- (void)testStartForwardsVoiceProcessingPreferenceToAudioEngine
+{
+  self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = [self validFormat];
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:YES];
+
+  XCTAssertTrue([recorder start:nil]);
+
+  XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 1);
+  XCTAssertTrue(self.audioEngine.lastAttachedVoiceProcessingEnabled);
 }
 
 - (void)testStartReturnsErrorWhenAudioEngineFailsToStart
 {
   FakeRecorderAudioEngine *originalAudioEngine = self.audioEngine;
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
   self.audioEngine.startIfNecessaryResult = NO;
 
   NSError *error = nil;
@@ -383,10 +398,9 @@ static void ClearFakeRecorderSharedAudioSession(void)
 {
   auto assertStopBehaviorForState = ^(AudioEngineState state) {
     self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = [self validFormat];
-    NativeAudioRecorder *recorder =
-        [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                             int numFrames){
-        }];
+    NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+         initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+        voiceProcessingEnabled:NO];
 
     XCTAssertTrue([recorder start:nil]);
     XCTAssertNotNil([recorder getResolvedInputFormat]);
@@ -412,10 +426,9 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
 - (void)testPauseAndResumeDelegateToAudioEngine
 {
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
 
   [recorder pause];
   [recorder resume];
@@ -432,10 +445,9 @@ static void ClearFakeRecorderSharedAudioSession(void)
                                                                                    channels:1];
   self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = initialFormat;
 
-  NativeAudioRecorder *recorder =
-      [[NativeAudioRecorder alloc] initWithReceiverBlock:^(const AudioBufferList *inputBuffer,
-                                                           int numFrames){
-      }];
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
 
   XCTAssertTrue([recorder start:nil]);
   XCTAssertEqualObjects([recorder getResolvedInputFormat], initialFormat);

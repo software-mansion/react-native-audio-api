@@ -8,23 +8,23 @@ import { Optional, Experimental } from '@site/src/components/Badges';
 
 # AudioScheduledSourceNode
 
-The `AudioScheduledSourceNode` interface is an [`AudioNode`](/docs/core/audio-node) which serves as a parent interface for several types of audio source nodes.
+The `AudioScheduledSourceNode` interface is an [`AudioNode`](../core/audio-node.mdx) which serves as a parent interface for several types of audio source nodes.
 It provides ability to start and stop audio playback.
 
 Child classes:
- - [`AudioBufferSourceNode`](/docs/sources/audio-buffer-source-node)
- - [`AudioBufferQueueSourceNode`](/docs/sources/audio-buffer-queue-source-node)
- - [`OscillatorNode`](/docs/sources/oscillator-node)
+ - [`AudioBufferSourceNode`](./audio-buffer-source-node.mdx)
+ - [`AudioBufferQueueSourceNode`](./audio-buffer-queue-source-node.mdx)
+ - [`OscillatorNode`](./oscillator-node.mdx)
 
 ## Properties
 
 `AudioScheduledSourceNode` does not define any additional properties.
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
 ## Methods
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 
@@ -66,7 +66,7 @@ If you invoke this method multiple times on the same node before the designated 
 
 ## Events
 
-### `onEnded`
+### `onended`
 
 Sets (or removes) a callback that will be fired when source node has stopped playing,
 either because it's reached a predetermined stop time, the full duration of the audio has been performed, or because the entire buffer has been played.
@@ -74,7 +74,7 @@ You can remove the callback either by passing `null` or calling `remove` on the 
 
 
 ```ts
-const subscription = audioBufferSourceNode.onEnded = () => { // setting the callback
+const subscription = audioBufferSourceNode.onended = () => { // setting the callback
   console.log("audio ended");
 };
 

@@ -40,6 +40,7 @@
 - (void)disableSessionManagement;
 
 - (NSNumber *)getDevicePreferredSampleRate;
+- (NSNumber *)getSystemVolume;
 - (NSString *)inputDiagnosticsSnapshot;
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve

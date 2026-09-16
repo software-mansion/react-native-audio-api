@@ -8,7 +8,7 @@
 
 const path = require('node:path');
 
-const packageRoot = path.resolve(__dirname, '..');
+const packageRoot = require('./package-root');
 
 function loadDefault(relativePath) {
   const mod = require(path.join(packageRoot, relativePath));
@@ -46,6 +46,12 @@ for (const name of WEB_AUDIO_CLASSES) {
   try {
     api[name] = loadDefault(`lib/commonjs/core/${name}`);
   } catch (error) {
+    if (process.env.RN_AUDIO_API_APP_ROOT) {
+      console.warn(
+        `[wpt] ${name} is not available in ${packageRoot} — tests using it will fail.`
+      );
+      continue;
+    }
     throw new Error(
       `Failed to load ${name} for WPT (${error.message}). Run yarn build first.`,
       { cause: error }
@@ -54,12 +60,17 @@ for (const name of WEB_AUDIO_CLASSES) {
 }
 
 const errors = require(path.join(packageRoot, 'lib/commonjs/errors'));
-Object.assign(api, {
-  AudioApiError: errors.AudioApiError,
-  IndexSizeError: errors.IndexSizeError,
-  InvalidAccessError: errors.InvalidAccessError,
-  InvalidStateError: errors.InvalidStateError,
-  NotSupportedError: errors.NotSupportedError,
-});
+const ERROR_CLASSES = [
+  'AudioApiError',
+  'IndexSizeError',
+  'InvalidAccessError',
+  'InvalidStateError',
+  'NotSupportedError',
+];
+for (const name of ERROR_CLASSES) {
+  if (errors[name] != null) {
+    api[name] = errors[name];
+  }
+}
 
 module.exports = api;

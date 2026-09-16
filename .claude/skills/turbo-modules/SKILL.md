@@ -127,6 +127,11 @@ Each `get*Function()` private method creates a `jsi::Function` via `jsi::Functio
 
 **Adding a new top-level global**: add a `static jsi::Function getCreateXxxFunction(...)` private method and a `setProperty("createXxx", ...)` call in `injectJSIBindings`. This is only needed for objects that JS creates directly (not objects created as properties of another HostObject).
 
+**Construction-time options** (e.g. `new AudioRecorder({ androidInputPreset, iosVoiceProcessing })`) travel as positional args of these factory functions — there is no options object and no TurboModule method involved. Three rules:
+- Parse defensively — `if (count > N && args[N].isBool())` — and keep the no-arg behavior as the default, so an older JS bundle against a newer binary still works.
+- Update `src/AudioAPIModule/globals.d.ts` in the same change; it is the only type contract for these globals.
+- Platform-specific options are passed to *both* platforms and consumed by the `#ifdef ANDROID` branch in the HostObject constructor; the other platform ignores its counterpart. Name them with the platform prefix (`androidInputPreset`, `iosVoiceProcessing`) so the asymmetry is visible from JS.
+
 ---
 
 ## iOS Native Module (`AudioAPIModule.mm`)
@@ -146,6 +151,8 @@ Uses ObjC++ with `RCT_EXPORT_MODULE` and `RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD
    ```
 4. Create `AudioEventHandlerRegistry` (owns JS callbacks, needs runtime + callInvoker)
 5. Call `AudioAPIModuleInstaller::injectJSIBindings(...)`
+
+**Lazy `AVAudioEngine` invariant**: allocating the `AudioEngine` ObjC object at install does NOT create the underlying `AVAudioEngine`. It is created on demand by `createAudioEngineIfNeeded` (first node attach, engine start, rebuild), so apps that only use session management and notifications never allocate it. Every reader of `self.audioEngine` inside `AudioEngine.mm` must either nil-guard or call `createAudioEngineIfNeeded` first, and system-driven restart paths (`restartAudioEngine`) must not resurrect an engine when there is no tracked graph.
 
 **New Architecture support** (`getTurboModule`):
 ```objc

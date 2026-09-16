@@ -46,6 +46,27 @@ OpenFileResult IOSRotatingFileWriter::openFile(
   return openInnerWriter();
 }
 
+OpenFileResult IOSRotatingFileWriter::reprepareStreamFormat(
+    AVAudioFormat *streamFormat,
+    size_t streamMaxBufferSizeInFrames)
+{
+  streamFormat_ = streamFormat;
+  streamMaxBufferSizeInFrames_ = streamMaxBufferSizeInFrames;
+
+  if (currentWriter_ == nullptr) {
+    currentWriter_ = writerFactory_(fileProperties_);
+    return openInnerWriter();
+  }
+
+  rotateFiles();
+
+  if (currentWriter_ == nullptr) {
+    return OpenFileResult::Err("Failed to reopen file for writing after input format change");
+  }
+
+  return OpenFileResult::Ok(currentWriter_->getFilePath());
+}
+
 void IOSRotatingFileWriter::writeAudioData(AudioDataType data, int numFrames)
 {
   if (currentWriter_ == nullptr) {

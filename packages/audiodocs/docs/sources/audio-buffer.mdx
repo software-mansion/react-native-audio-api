@@ -12,7 +12,7 @@ specific sample rate which is the quantity of frames that will play in one secon
 
 ![](/img/audioBuffer.png)
 
-It can be created from audio file using [`decodeAudioData`](/docs/utils/decoding#decodeaudiodata) or from raw data using the [constructor](#constructor).
+It can be created from audio file using [`decodeAudioData`](../utils/decoding.mdx#decodeaudiodata) or from raw data using the [constructor](#constructor).
 Once you have data in `AudioBuffer`, audio can be played by passing it to [`AudioBufferSourceNode`](audio-buffer-source-node).
 
 ## Constructor
@@ -25,16 +25,16 @@ constructor(options: AudioBufferOptions)
 
 | Parameter | Type | Default | Description |
 | :---: | :---: | :----: | :---- |
-| `length` | `number` | - | [`Length`](/docs/sources/audio-buffer#properties) of the buffer |
-| `numberOfChannels` <Optional /> | `number` | `1` | Number of [`channels`](/docs/sources/audio-buffer#properties) in buffer |
-| `sampleRate` | `number` | - | [`Sample rate`](/docs/sources/audio-buffer#properties) of the buffer in Hz |
+| `length` | `number` | - | [`Length`](./audio-buffer.mdx#properties) of the buffer |
+| `numberOfChannels` <Optional /> | `number` | `1` | Number of [`channels`](./audio-buffer.mdx#properties) in buffer |
+| `sampleRate` | `number` | - | [`Sample rate`](./audio-buffer.mdx#properties) of the buffer in Hz |
 
 Or by using `BaseAudioContext` factory method:
-[`BaseAudioContext.createBuffer(numChannels, length, sampleRate)`](/docs/core/base-audio-context#createbuffer) that creates buffer with default values.
+[`BaseAudioContext.createBuffer(numChannels, length, sampleRate)`](../core/base-audio-context.mdx#createbuffer) that creates buffer with default values.
 
 ## Decoding
 
-See example implementations in [`BaseAudioContext`](/docs/core/base-audio-context#decodeaudiodata) on how to decode data in various ways.
+See example implementations in [`BaseAudioContext`](../core/base-audio-context.mdx#decodeaudiodata) on how to decode data in various ways.
 
 ## Properties
 

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { VerticalSlider } from '../../components';
 import { ConvolverNode, AudioNode, AudioContext, AudioBuffer, GainNode } from 'react-native-audio-api';
 import { makeReverbCurve } from './curves';
@@ -20,6 +20,8 @@ export default function ReverbPedal({
   const [level, setLevel] = useState(0.5);
 
   const convolverNodeRef = useRef<ConvolverNode | null>(null);
+  // Whether inputNode is currently routed through the convolver (vs bypassed)
+  const isChainConnectedRef = useRef(false);
 
   useEffect(() => {
     if (inputNode == null || outputNode == null) {
@@ -30,7 +32,7 @@ export default function ReverbPedal({
     } else {
       discardEffect(inputNode, outputNode);
     }
-  }, [isActive, inputNode, outputNode]);
+  }, [isActive]);
 
   useEffect(() => {
     if (isActive && inputNode && outputNode) {
@@ -67,7 +69,10 @@ export default function ReverbPedal({
     convolver.buffer = buffer;
     convolverNodeRef.current = convolver;
     inputNode.connect(convolver).connect(outputNode);
-    inputNode.disconnect(outputNode);
+    if (!isChainConnectedRef.current) {
+      inputNode.disconnect(outputNode);
+      isChainConnectedRef.current = true;
+    }
     (outputNode as GainNode).gain.value = 2;
   };
 
@@ -79,11 +84,17 @@ export default function ReverbPedal({
       convolverNodeRef.current.disconnect();
     }
     convolverNodeRef.current = null;
+    isChainConnectedRef.current = false;
   };
 
   const togglePower = () => {
     setIsActive((prev) => !prev);
   };
+
+  const powerGesture = useTapGesture({
+    runOnJS: true,
+    onDeactivate: togglePower,
+  });
 
   return (
     <View style={styles.pedalBody}>
@@ -113,11 +124,7 @@ export default function ReverbPedal({
               },
             ]}
           />
-          <GestureDetector
-            gesture={Gesture.Tap()
-              .runOnJS(true)
-              .onEnd(togglePower)}
-          >
+          <GestureDetector gesture={powerGesture}>
             <View style={[styles.stompSwitch]}>
               <View style={styles.stompInner} />
             </View>

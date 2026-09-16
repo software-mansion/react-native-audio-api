@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { VerticalSlider } from '../../components';
 import { GainNode, BiquadFilterNode, AudioNode, AudioContext, OscillatorNode } from 'react-native-audio-api';
 
@@ -42,6 +42,9 @@ export default function AutoWahPedal({
   const lfoOscillatorRef = useRef<OscillatorNode | null>(null);
   const lfoGainRef = useRef<GainNode | null>(null);
 
+  // Whether inputNode is currently routed through the effect chain (vs bypassed)
+  const isChainConnectedRef = useRef(false);
+
   useEffect(() => {
     initialize(context);
     return () => {
@@ -60,7 +63,7 @@ export default function AutoWahPedal({
     } else {
       discardEffect(inputNode, outputNode);
     }
-  }, [isActive, inputNode, outputNode]);
+  }, [isActive]);
 
   useEffect(() => {
     updateAudioParams(rate, resonance, depth);
@@ -125,15 +128,16 @@ export default function AutoWahPedal({
     (outputNode as GainNode).gain.value = 7; // Boost output level to compensate for wah attenuation
 
     inputNode.disconnect(outputNode);
+    isChainConnectedRef.current = true;
   };
 
   const discardEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
-    if (inputGainRef.current) {
-      inputNode.disconnect(inputGainRef.current);
-    }
-
-    if (filterRef.current) {
-      inputGainRef.current?.disconnect(filterRef.current);
+    if (isChainConnectedRef.current) {
+      inputNode.disconnect(inputGainRef.current!);
+      inputGainRef.current!.disconnect(filterRef.current!);
+      filterRef.current!.disconnect(outputGainRef.current!);
+      outputGainRef.current!.disconnect(outputNode);
+      isChainConnectedRef.current = false;
     }
 
     inputNode.connect(outputNode);
@@ -143,6 +147,11 @@ export default function AutoWahPedal({
   const togglePower = () => {
     setIsActive((prev) => !prev);
   };
+
+  const powerGesture = useTapGesture({
+    runOnJS: true,
+    onDeactivate: togglePower,
+  });
 
   return (
     <View style={styles.pedalBody}>
@@ -185,11 +194,7 @@ export default function AutoWahPedal({
               },
             ]}
           />
-          <GestureDetector
-            gesture={Gesture.Tap()
-              .runOnJS(true)
-              .onEnd(togglePower)}
-          >
+          <GestureDetector gesture={powerGesture}>
             <View style={[styles.stompSwitch]}>
               <View style={styles.stompInner} />
             </View>

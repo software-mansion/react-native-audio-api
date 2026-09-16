@@ -80,6 +80,7 @@ export interface IAudioManager {
   observeAudioInterruptions(enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
   observeAudioInterruptions(param: AudioFocusType | boolean | null): void;
+  getSystemVolume(): number;
   addSystemEventListener<Name extends SystemEventName>(
     name: Name,
     callback: SystemEventCallback<Name>

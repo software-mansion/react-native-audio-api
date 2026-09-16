@@ -8,6 +8,7 @@
 #include <audioapi/jsi/JsiUtils.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/AudioRecorderOptions.h>
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #else
@@ -22,11 +23,13 @@ namespace audioapi {
 AudioRecorderHostObject::AudioRecorderHostObject(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker) {
+    const std::shared_ptr<react::CallInvoker> &callInvoker,
+    AudioRecorderOptions options) {
 #ifdef ANDROID
-  audioRecorder_ = std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry);
+  audioRecorder_ =
+      std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry, std::move(options));
 #else
-  audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry);
+  audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, options);
 #endif
 
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
