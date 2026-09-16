@@ -75,3 +75,22 @@ Resumes a previously suspended audio context.
 
 Inherits [`onstatechange`](./base-audio-context.mdx#onstatechange) from [`BaseAudioContext`](./base-audio-context.mdx#events); `close`, `suspend` and `resume` each fire it once their returned promise has resolved.
 
+### `onerror`
+
+Sets (or removes, when `null` is assigned) a callback fired when the live output stream fails natively and cannot keep rendering — for example after the audio device disconnects or the OS audio service dies while the context is running.
+
+This matches the Web Audio [`AudioContext.onerror`](https://webaudio.github.io/web-audio-api/#dom-audiocontext-onerror) handler. The callback receives no arguments.
+
+On **Android**, the event is dispatched from the native driver after an Oboe stream error when recovery fails (the context’s driver is cleared so a later [`resume`](./audio-context.mdx#resume) can reopen it). You can assign `onerror` on every platform, but **iOS** does not yet call it from the audio engine, and **web** does not yet forward the browser’s `AudioContext.onerror`.
+
+Typical recovery is to call [`resume`](./audio-context.mdx#resume) from the handler (or recreate the context).
+
+```tsx
+const audioContext = new AudioContext();
+
+audioContext.onerror = () => {
+  console.error('Audio output failed');
+  void audioContext.resume();
+};
+```
+
