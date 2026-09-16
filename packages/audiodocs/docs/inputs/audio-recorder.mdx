@@ -550,6 +550,8 @@ if (info) {
 
 Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file.
 
+Must be called while the recorder is idle: the file is created by the next [`start`](#start). During an active (recording or paused) session the call returns an error result and the session keeps the output it started with.
+
 For further information, see [`AudioRecorderFileOptions`](#audiorecorderfileoptions).
 
 | Parameter | Type | Description |

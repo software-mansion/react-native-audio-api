@@ -278,19 +278,22 @@ AndroidAudioRecorder::stop() {
 }
 
 /// @brief Enables file output for the recorder with the specified properties.
-/// If the recorder is already active, it will prepare and open the file for writing immediately.
-/// Due to the nature of RN this might be called multiple times during recording session (especially during development),
-/// thus the requirement of handling the "already active" case.
+/// The file itself is created by the next start(). An active (recording or paused) session keeps
+/// the output it started with, so calling this during a session fails and changes nothing.
+/// Due to the nature of RN this might be called multiple times between sessions (especially during
+/// development), thus the properties are simply replaced.
 /// This method should be called from the JS thread only.
 /// @param properties Properties defining the audio file format and encoding options.
-/// @returns On success, returns the file URI where the recording is being saved, otherwise returns an error message.
+/// @returns Ok when the properties were stored, otherwise an error message.
 Result<NoneType, std::string> AndroidAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
+  std::scoped_lock lock(fileWriterMutex_, streamMutex_);
+
   if (!isIdle()) {
-    return Result<NoneType, std::string>::Ok(None);
+    return Result<NoneType, std::string>::Err(
+        "File output cannot be changed while a recording session is active");
   }
 
-  std::scoped_lock fileWriterLock(fileWriterMutex_);
   fileProperties_ = properties;
   fileOutputEnabled_.store(true, std::memory_order_release);
   fileOutputConfigured_.store(false, std::memory_order_release);

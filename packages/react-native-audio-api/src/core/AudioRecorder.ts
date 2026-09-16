@@ -80,10 +80,15 @@ export default class AudioRecorder {
    * recording memory use.
    */
   enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
-    this.options_ = options || {};
-    const parsedOptions = withDefaultFileOptions(this.options_);
-    const result = this.recorder.enableFileOutput(parsedOptions);
-    this.isFileOutputEnabled = true;
+    const requestedOptions = options || {};
+    const result = this.recorder.enableFileOutput(
+      withDefaultFileOptions(requestedOptions)
+    );
+
+    if (result.status === 'success') {
+      this.options_ = requestedOptions;
+      this.isFileOutputEnabled = true;
+    }
 
     return result;
   }
