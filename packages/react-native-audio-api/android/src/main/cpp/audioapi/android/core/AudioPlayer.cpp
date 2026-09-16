@@ -179,7 +179,6 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (driverMutex_ == nullptr) {
     return;
   }
-  error = oboe::Result::ErrorNoService;
 
   switch (error) {
     case oboe::Result::ErrorDisconnected:
