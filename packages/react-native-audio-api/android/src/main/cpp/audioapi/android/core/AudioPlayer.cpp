@@ -179,6 +179,7 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (driverMutex_ == nullptr) {
     return;
   }
+  error = oboe::Result::ErrorNoService;
 
   switch (error) {
     case oboe::Result::ErrorDisconnected:
@@ -214,20 +215,25 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   // Check if the stream was expected to be running when the error occurred
   const bool wasRunning = isRunning_.load(std::memory_order_acquire);
 
-  // Best effort rebuild - only once, then fire AudioContext::onStreamFail.
-  if (!rebuildStream()) {
+  if (error == oboe::Result::ErrorDisconnected) {
+    // Best effort rebuild - only once, then fire AudioContext::onStreamFail.
+    if (!rebuildStream()) {
+      isRunning_.store(false, std::memory_order_release);
+      context->onStreamFail();
+      return;
+    }
+
+    // Restart the stream if it was expected to be running when the error occurred
+    if (wasRunning && mStream_ != nullptr) {
+      const bool started = mStream_->requestStart() == oboe::Result::OK;
+      isRunning_.store(started, std::memory_order_release);
+      if (!started) {
+        context->onStreamFail();
+      }
+    }
+  } else {
     isRunning_.store(false, std::memory_order_release);
     context->onStreamFail();
-    return;
-  }
-
-  // Restart the stream if it was expected to be running when the error occurred
-  if (wasRunning && mStream_ != nullptr) {
-    const bool started = mStream_->requestStart() == oboe::Result::OK;
-    isRunning_.store(started, std::memory_order_release);
-    if (!started) {
-      context->onStreamFail();
-    }
   }
 }
 
