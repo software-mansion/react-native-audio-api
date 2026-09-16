@@ -23,15 +23,15 @@ void NativeRecorderControl::registerNatives() {
 }
 
 jint NativeRecorderControl::stopActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return toOrdinal(ActiveRecorderHandle::global().stopActiveRecording());
+  return toOrdinal(ActiveRecorderHandle::global().stopAndReturnState());
 }
 
 jint NativeRecorderControl::pauseActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return toOrdinal(ActiveRecorderHandle::global().pauseActiveRecording());
+  return toOrdinal(ActiveRecorderHandle::global().pause());
 }
 
 jint NativeRecorderControl::resumeActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return toOrdinal(ActiveRecorderHandle::global().resumeActiveRecording());
+  return toOrdinal(ActiveRecorderHandle::global().resume());
 }
 
 jint NativeRecorderControl::currentRecorderState(jni::alias_ref<jni::JClass> /*clazz*/) {

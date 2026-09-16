@@ -34,6 +34,9 @@ class FakeAudioRecorder : public AudioRecorder {
   std::atomic<int> stopCount{0};
 
   Result<NoneType, std::string> start(const std::string &) override {
+    if (state_ != RecorderState::Idle) {
+      return Err(std::string("Recorder is already recording"));
+    }
     state_ = RecorderState::Recording;
     return Ok(None);
   }
@@ -91,7 +94,8 @@ TEST(ActiveRecorderHandleTest, EmptySlotReportsNoRecordingAndStopsNothing) {
 
   EXPECT_EQ(handle.currentState(), RecorderState::Idle);
   EXPECT_FALSE(handle.isRecordingOngoing());
-  EXPECT_EQ(handle.stopActiveRecording(), RecorderState::Idle);
+  EXPECT_TRUE(handle.stopAndReturnInfo().is_err());
+  EXPECT_EQ(handle.stopAndReturnState(), RecorderState::Idle);
   EXPECT_FALSE(handle.consumeLastRecordingResult().has_value());
 }
 
@@ -99,19 +103,20 @@ TEST(ActiveRecorderHandleTest, IdleRecorderIsNotOngoing) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  handle.setRecorder(recorder);
+  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  ASSERT_TRUE(handle.stopAndReturnInfo().is_ok());
 
   EXPECT_FALSE(handle.isRecordingOngoing());
-  EXPECT_EQ(handle.stopActiveRecording(), RecorderState::Idle);
+  EXPECT_TRUE(handle.stopAndReturnInfo().is_err());
+  EXPECT_EQ(handle.stopAndReturnState(), RecorderState::Idle);
 }
 
 TEST(ActiveRecorderHandleTest, RecordingAndPausedCountAsOngoing) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  handle.setRecorder(recorder);
+  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
 
-  recorder->start("");
   EXPECT_EQ(handle.currentState(), RecorderState::Recording);
   EXPECT_TRUE(handle.isRecordingOngoing());
 
@@ -124,18 +129,17 @@ TEST(ActiveRecorderHandleTest, PauseAndResumeActOnlyInMatchingStates) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  handle.setRecorder(recorder);
 
-  EXPECT_EQ(handle.pauseActiveRecording(), RecorderState::Idle);
-  EXPECT_EQ(handle.resumeActiveRecording(), RecorderState::Idle);
+  EXPECT_EQ(handle.pause(), RecorderState::Idle);
+  EXPECT_EQ(handle.resume(), RecorderState::Idle);
 
-  recorder->start("");
-  EXPECT_EQ(handle.resumeActiveRecording(), RecorderState::Recording);
-  EXPECT_EQ(handle.pauseActiveRecording(), RecorderState::Paused);
+  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  EXPECT_EQ(handle.resume(), RecorderState::Recording);
+  EXPECT_EQ(handle.pause(), RecorderState::Paused);
   EXPECT_TRUE(recorder->isPaused());
 
-  EXPECT_EQ(handle.pauseActiveRecording(), RecorderState::Paused);
-  EXPECT_EQ(handle.resumeActiveRecording(), RecorderState::Recording);
+  EXPECT_EQ(handle.pause(), RecorderState::Paused);
+  EXPECT_EQ(handle.resume(), RecorderState::Recording);
   EXPECT_TRUE(recorder->isRecording());
 }
 
@@ -143,10 +147,9 @@ TEST(ActiveRecorderHandleTest, StopStashesResultForSingleConsumption) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  handle.setRecorder(recorder);
-  recorder->start("");
+  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
 
-  EXPECT_EQ(handle.stopActiveRecording(), RecorderState::Idle);
+  ASSERT_TRUE(handle.stopAndReturnInfo().is_ok());
   EXPECT_FALSE(handle.isRecordingOngoing());
 
   auto result = handle.consumeLastRecordingResult();
@@ -158,15 +161,30 @@ TEST(ActiveRecorderHandleTest, StopStashesResultForSingleConsumption) {
   EXPECT_FALSE(handle.consumeLastRecordingResult().has_value());
 }
 
+TEST(ActiveRecorderHandleTest, StopLeavesResultForConsumeLastRecordingResult) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto recorder = std::make_shared<FakeAudioRecorder>();
+  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+
+  auto stopResult = handle.stopAndReturnInfo();
+  ASSERT_TRUE(stopResult.is_ok());
+  EXPECT_EQ(stopResult.unwrap().paths, recorder->stopPaths);
+  EXPECT_FALSE(handle.isRecordingOngoing());
+
+  auto consumed = handle.consumeLastRecordingResult();
+  ASSERT_TRUE(consumed.has_value());
+  EXPECT_EQ(consumed->paths, recorder->stopPaths);
+}
+
 TEST(ActiveRecorderHandleTest, StopWithoutFileOutputStashesNothing) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
   recorder->stopPaths.clear();
-  handle.setRecorder(recorder);
-  recorder->start("");
+  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
 
-  EXPECT_EQ(handle.stopActiveRecording(), RecorderState::Idle);
+  ASSERT_TRUE(handle.stopAndReturnInfo().is_ok());
   EXPECT_FALSE(handle.consumeLastRecordingResult().has_value());
 }
 
@@ -175,14 +193,13 @@ TEST(ActiveRecorderHandleTest, ExpiredRecorderReportsNoRecording) {
   ActiveRecorderHandle &handle = *handleOwner;
   {
     auto recorder = std::make_shared<FakeAudioRecorder>();
-    handle.setRecorder(recorder);
-    recorder->start("");
+    ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
   }
 
   EXPECT_FALSE(handle.isRecordingOngoing());
-  EXPECT_EQ(handle.pauseActiveRecording(), RecorderState::Idle);
-  EXPECT_EQ(handle.resumeActiveRecording(), RecorderState::Idle);
-  EXPECT_EQ(handle.stopActiveRecording(), RecorderState::Idle);
+  EXPECT_EQ(handle.pause(), RecorderState::Idle);
+  EXPECT_EQ(handle.resume(), RecorderState::Idle);
+  EXPECT_EQ(handle.stopAndReturnState(), RecorderState::Idle);
 }
 
 TEST(ActiveRecorderHandleTest, ClearRecorderIgnoresForeignPointer) {
@@ -190,16 +207,88 @@ TEST(ActiveRecorderHandleTest, ClearRecorderIgnoresForeignPointer) {
   ActiveRecorderHandle &handle = *handleOwner;
   auto current = std::make_shared<FakeAudioRecorder>();
   auto other = std::make_shared<FakeAudioRecorder>();
-  handle.setRecorder(current);
-  current->start("");
+  ASSERT_TRUE(handle.tryStart(current, "").is_ok());
 
   // The host object of a replaced recorder is collected long after its successor
   // registered; its late destructor must leave the live recorder in the slot.
-  handle.clearRecorder(other.get());
+  handle.clearRecorder(other);
   EXPECT_EQ(handle.currentState(), RecorderState::Recording);
 
-  handle.clearRecorder(current.get());
+  handle.clearRecorder(current);
   EXPECT_EQ(handle.currentState(), RecorderState::Idle);
+}
+
+TEST(ActiveRecorderHandleTest, ClearRecorderWithoutExpectedClearsAnyone) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto current = std::make_shared<FakeAudioRecorder>();
+  ASSERT_TRUE(handle.tryStart(current, "").is_ok());
+
+  handle.clearRecorder();
+  EXPECT_EQ(handle.currentState(), RecorderState::Idle);
+  EXPECT_TRUE(current->isRecording());
+}
+
+TEST(ActiveRecorderHandleTest, StopAndReturnInfoWithExpectedIgnoresForeignRecorder) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto current = std::make_shared<FakeAudioRecorder>();
+  auto other = std::make_shared<FakeAudioRecorder>();
+  ASSERT_TRUE(handle.tryStart(current, "").is_ok());
+
+  auto result = handle.stopAndReturnInfo(other);
+  ASSERT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "Recorder is not in recording state.");
+  EXPECT_EQ(handle.currentState(), RecorderState::Recording);
+  EXPECT_EQ(current->stopCount, 0);
+
+  ASSERT_TRUE(handle.stopAndReturnInfo(current).is_ok());
+  EXPECT_EQ(handle.currentState(), RecorderState::Idle);
+  EXPECT_EQ(current->stopCount, 1);
+}
+
+TEST(ActiveRecorderHandleTest, TryStartFailsWhenAnotherSessionIsInProgress) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto current = std::make_shared<FakeAudioRecorder>();
+  auto other = std::make_shared<FakeAudioRecorder>();
+  ASSERT_TRUE(handle.tryStart(current, "").is_ok());
+
+  auto otherResult = handle.tryStart(other, "");
+  ASSERT_TRUE(otherResult.is_err());
+  EXPECT_EQ(otherResult.unwrap_err(), "Another recording is already in progress");
+  EXPECT_EQ(handle.currentState(), RecorderState::Recording);
+
+  current->pause();
+  auto pausedOtherResult = handle.tryStart(other, "");
+  ASSERT_TRUE(pausedOtherResult.is_err());
+  EXPECT_EQ(handle.currentState(), RecorderState::Paused);
+
+  handle.clearRecorder(current);
+  ASSERT_TRUE(handle.tryStart(other, "").is_ok());
+}
+
+TEST(ActiveRecorderHandleTest, TryStartOnSameRecorderReachesStart) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto recorder = std::make_shared<FakeAudioRecorder>();
+  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+
+  auto second = handle.tryStart(recorder, "");
+  ASSERT_TRUE(second.is_err());
+  EXPECT_EQ(second.unwrap_err(), "Recorder is already recording");
+}
+
+TEST(ActiveRecorderHandleTest, TryStartSucceedsWhenPreviousRecorderExpired) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto successor = std::make_shared<FakeAudioRecorder>();
+  {
+    auto expired = std::make_shared<FakeAudioRecorder>();
+    ASSERT_TRUE(handle.tryStart(expired, "").is_ok());
+  }
+
+  ASSERT_TRUE(handle.tryStart(successor, "").is_ok());
 }
 
 // Thread startup skew usually serializes a single two-thread run, so the race
@@ -212,17 +301,16 @@ TEST(ActiveRecorderHandleTest, ConcurrentStopsCloseTheFileExactlyOnce) {
     auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
     ActiveRecorderHandle &handle = *handleOwner;
     auto recorder = std::make_shared<FakeAudioRecorder>();
-    handle.setRecorder(recorder);
-    recorder->start("");
+    ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
 
     std::atomic<bool> startFlag{false};
     std::thread nativeStop([&] {
       while (!startFlag.load()) {}
-      handle.stopActiveRecording();
+      handle.stopAndReturnState();
     });
     std::thread jsStop([&] {
       while (!startFlag.load()) {}
-      recorder->stop();
+      handle.stopAndReturnInfo();
     });
     startFlag.store(true);
     nativeStop.join();
@@ -237,23 +325,51 @@ TEST(ActiveRecorderHandleTest, ConcurrentClearAndStopNeverCloseTheFileTwice) {
     auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
     ActiveRecorderHandle &handle = *handleOwner;
     auto recorder = std::make_shared<FakeAudioRecorder>();
-    handle.setRecorder(recorder);
-    recorder->start("");
+    ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
 
     std::atomic<bool> startFlag{false};
     std::thread hostObjectClear([&] {
       while (!startFlag.load()) {}
-      handle.clearRecorder(recorder.get());
+      handle.clearRecorder(recorder);
     });
     std::thread nativeStop([&] {
       while (!startFlag.load()) {}
-      handle.stopActiveRecording();
+      handle.stopAndReturnState();
     });
     startFlag.store(true);
     hostObjectClear.join();
     nativeStop.join();
 
     EXPECT_LE(recorder->stopCount, 1) << "iteration " << iteration;
+  }
+}
+
+TEST(ActiveRecorderHandleTest, ConcurrentTryStartAdmitsOnlyOneRecorder) {
+  for (int iteration = 0; iteration < RACE_TEST_ITERATIONS; ++iteration) {
+    auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+    ActiveRecorderHandle &handle = *handleOwner;
+    auto first = std::make_shared<FakeAudioRecorder>();
+    auto second = std::make_shared<FakeAudioRecorder>();
+
+    std::atomic<bool> startFlag{false};
+    std::atomic<int> successes{0};
+    std::thread tryFirst([&] {
+      while (!startFlag.load()) {}
+      if (handle.tryStart(first, "").is_ok()) {
+        successes.fetch_add(1);
+      }
+    });
+    std::thread trySecond([&] {
+      while (!startFlag.load()) {}
+      if (handle.tryStart(second, "").is_ok()) {
+        successes.fetch_add(1);
+      }
+    });
+    startFlag.store(true);
+    tryFirst.join();
+    trySecond.join();
+
+    EXPECT_EQ(successes.load(), 1) << "iteration " << iteration;
   }
 }
 

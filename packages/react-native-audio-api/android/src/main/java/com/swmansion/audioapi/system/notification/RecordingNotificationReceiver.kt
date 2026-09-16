@@ -36,28 +36,33 @@ class RecordingNotificationReceiver(
       return
     }
     when (intent.action) {
-      ACTION_PAUSE ->
+      ACTION_PAUSE -> {
         applyToRecorder(
           action = NativeRecorderControl::pause,
           intendedState = RecorderState.PAUSED,
           event = AudioEvent.RECORDING_NOTIFICATION_PAUSE,
         )
+      }
 
-      ACTION_RESUME ->
+      ACTION_RESUME -> {
         applyToRecorder(
           action = NativeRecorderControl::resume,
           intendedState = RecorderState.RECORDING,
           event = AudioEvent.RECORDING_NOTIFICATION_RESUME,
         )
+      }
 
-      ACTION_STOP -> stopRecording()
+      ACTION_STOP -> {
+        stopRecording()
+      }
 
-      ACTION_DISMISSED ->
+      ACTION_DISMISSED -> {
         if (intent.getBooleanExtra(EXTRA_DISMISS_STOPS_RECORDING, false)) {
           stopRecording()
         } else {
           restoreWhileRecording()
         }
+      }
     }
   }
 

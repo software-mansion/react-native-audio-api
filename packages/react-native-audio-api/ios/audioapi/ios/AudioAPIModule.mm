@@ -127,7 +127,7 @@ RCT_EXPORT_METHOD(
     // Deactivating the session underneath a live recording would corrupt its output, so
     // the recording is finalized first
     if (!enabled) {
-      ActiveRecorderHandle::global().stopActiveRecording();
+      ActiveRecorderHandle::global().stopAndReturnInfo();
     }
 
     NSError *error = nil;

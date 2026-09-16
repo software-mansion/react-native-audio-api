@@ -521,7 +521,7 @@ const duration = audioRecorder.getCurrentDuration();
 
 ### `isRecordingOngoing`
 
-**Static.** Returns `true` while a recording session is ongoing (recording or paused). Native source of truth that needs no reference to the recorder instance, so use it from a remounted screen — e.g. after reopening an app whose recording [outlived the app UI](#keeping-the-recording-alive-when-the-app-is-closed) — to seed the UI state. It reflects the most recently created `AudioRecorder`; constructing another instance mid-recording displaces the probed one.
+**Static.** Returns `true` while a recording session is ongoing (recording or paused). Native source of truth that needs no reference to the recorder instance, so use it from a remounted screen — e.g. after reopening an app whose recording [outlived the app UI](#keeping-the-recording-alive-when-the-app-is-closed) — to seed the UI state. It reflects the recorder that acquired the active session on a successful [`start`](#start); a second `start()` does not displace it.
 
 #### Returns `boolean`.
 
@@ -533,9 +533,9 @@ if (AudioRecorder.isRecordingOngoing()) {
 
 ### `consumeLastRecordingResult` {#consumelastrecordingresult}
 
-**Static.** Returns the [`FileInfo`](#fileinfo) of a recording that was stopped natively — on Android through the [recording notification](../system/recording-notification-manager.mdx#native-action-handling), on iOS by [deactivating the audio session](../system/audio-manager.mdx#setaudiosessionactivity) mid-recording — or `null` if there is none. Consume-once: the result is cleared on read, so a second call returns `null`.
+**Static.** Returns the [`FileInfo`](#fileinfo) stashed by the last successful stop that produced output files, or `null` if there is none. That includes JS [`stop`](#stop), the Android [recording notification](../system/recording-notification-manager.mdx#native-action-handling), and [deactivating the iOS audio session](../system/audio-manager.mdx#setaudiosessionactivity) mid-recording. Consume-once: the stash is cleared on read, so a second call returns `null`.
 
-Recordings stopped through [`stop`](#stop) resolve their promise with the file info instead and never appear here.
+If the recording was already finalized natively, calling [`stop`](#stop) on an `AudioRecorder` instance does not return those files — it reports that the recorder is not recording. Read the stashed [`FileInfo`](#fileinfo) from this method instead.
 
 #### Returns [`FileInfo`](#fileinfo) or `null`.
 

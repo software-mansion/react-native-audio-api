@@ -2,6 +2,7 @@
 
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/utils/Macros.h>
+#include <audioapi/utils/Result.hpp>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -12,38 +13,38 @@ namespace audioapi {
 
 class AudioRecorder;
 
-struct RecordingStopResult {
+struct FileInfo {
   std::vector<std::string> paths;
   double size;
   double duration;
 };
 
-/// @brief Process-global handle to the live AudioRecorder, reachable without a JS runtime.
+/// @brief The process-wide view of the recording session that is currently active.
 ///
-/// The recorder is owned solely by its JS-side host object, but Android's
-/// recording-notification actions arrive through static JNI with no React context to
-/// walk back to that object — a weak one-slot handle is the minimal bridge that lets
-/// them control the live recorder. On top of native notification control it stashes,
-/// consume-once, the file info of a recording finalized natively while no JS promise
-/// or listener was waiting, and lets a remounted UI seed its state from the native
-/// source of truth via isRecordingOngoing().
-///
-/// Every control method answers with the recorder state it leaves behind, so a caller
-/// that has no other view of the recorder — the notification after task removal — can
-/// render itself as a pure function of that state instead of tracking its own.
-///
-/// Several AudioRecorder instances can be alive at once (e.g. one per screen), but only
-/// one may occupy this slot
+/// The JavaScript host object owns the AudioRecorder. Native code still needs
+/// to reach that recorder when JavaScript is not in the picture.
+/// This handle publishes a non-owning reference to the recorder
+/// so those actions can reach it. It does not extend the recorder's lifetime:
+/// if nothing else still owns it, there is no session to control. Only one
+/// recording session is published at a time.
 class ActiveRecorderHandle {
  public:
   static ActiveRecorderHandle &global();
   DELETE_COPY_AND_MOVE(ActiveRecorderHandle);
   ~ActiveRecorderHandle() = default;
 
-  void setRecorder(const std::shared_ptr<AudioRecorder> &recorder);
+  /// @brief Starts @p recorder and stores it in the slot unless another non-idle
+  /// recorder already occupies it. The slot is assigned only if start succeeds.
+  Result<NoneType, std::string> tryStart(
+      const std::shared_ptr<AudioRecorder> &recorder,
+      const std::string &fileNameOverride);
 
-  /// @brief Detaches the recorder, but only if the slot still holds @p recorder.
-  void clearRecorder(const AudioRecorder *recorder);
+  /// @brief Drops the slot without stopping the recorder.
+  void clearRecorder();
+
+  /// @brief Drops the slot only if it still holds @p expected.
+  /// A foreign occupant is left in place.
+  void clearRecorder(const std::shared_ptr<AudioRecorder> &expected);
 
   /// @brief The state of the recorder in the slot, or Idle when the slot is empty.
   [[nodiscard]] RecorderState currentState() const;
@@ -53,20 +54,28 @@ class ActiveRecorderHandle {
   [[nodiscard]] bool isRecordingOngoing() const;
 
   /// @brief Pauses an actively recording session; a no-op in any other state.
-  RecorderState pauseActiveRecording();
+  RecorderState pause();
 
   /// @brief Resumes a paused session; a no-op in any other state.
-  RecorderState resumeActiveRecording();
+  RecorderState resume();
 
-  /// @brief Stops a non-idle recording and stashes its file info for
-  /// consumeLastRecordingResult(). Blocks until the output file is finalized —
-  /// never call on a UI thread. Losing a race with a JS-initiated stop() stashes
-  /// nothing; the JS promise delivers that result.
-  RecorderState stopActiveRecording();
+  /// @brief Stops the occupant and returns AudioRecorder::stop()'s Result,
+  /// including the original error. On success with non-empty paths, stashes a
+  /// copy for consumeLastRecordingResult() and clears the slot. Blocks until
+  /// the output file is finalized. Because of this, don't call on a UI thread.
+  Result<FileInfo, std::string> stopAndReturnInfo();
 
-  /// @brief Consume-once: returns the file info stashed by stopActiveRecording()
+  /// @brief stopAndReturnInfo() if the slot still holds @p expected; otherwise
+  /// returns an error and does not stop the occupant.
+  Result<FileInfo, std::string> stopAndReturnInfo(const std::shared_ptr<AudioRecorder> &expected);
+
+  /// @brief Stops the occupant (same as stopAndReturnInfo) and returns the
+  /// resulting slot state. The stop Result is discarded; file info is still stashed.
+  RecorderState stopAndReturnState();
+
+  /// @brief Consume-once: returns the file info stashed by stopAndReturnInfo()
   /// and clears it, or std::nullopt when nothing is stashed.
-  std::optional<RecordingStopResult> consumeLastRecordingResult();
+  std::optional<FileInfo> consumeLastRecordingResult();
 
  private:
   ActiveRecorderHandle() = default;
@@ -74,9 +83,9 @@ class ActiveRecorderHandle {
 
   static RecorderState stateOf(const std::shared_ptr<AudioRecorder> &recorder);
 
-  mutable std::mutex destructorMutex_;
+  mutable std::recursive_mutex mutex_;
   std::weak_ptr<AudioRecorder> recorder_;
-  std::optional<RecordingStopResult> lastResult_;
+  std::optional<FileInfo> lastResult_;
 };
 
 } // namespace audioapi

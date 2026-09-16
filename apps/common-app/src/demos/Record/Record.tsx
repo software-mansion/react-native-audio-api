@@ -103,6 +103,8 @@ const Record: FC = () => {
     const result = await Recorder.start({
       fileNameOverride: `overridden_name_${Date.now()}`,
     });
+    const Recorder2 = new AudioRecorder();
+    Recorder2.start();
 
     setupNotification(false);
 
