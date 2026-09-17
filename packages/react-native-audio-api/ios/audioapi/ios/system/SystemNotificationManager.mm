@@ -222,11 +222,9 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   switch (routeChangeReason) {
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
-    case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
-    handleEngineConfigurationChange:
-      nil;
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange:
+      [self handleEngineConfigurationChange:nil];
       break;
-    }
     default:
       break;
   }
