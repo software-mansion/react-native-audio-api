@@ -68,12 +68,25 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   std::atomic<float> streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;
+  /// The device mStream_ was opened for, guarded by streamMutex_.
+  int32_t streamDeviceId_;
 
   std::shared_ptr<oboe::AudioStream> mStream_;
   std::vector<std::string> recordingSegmentPaths_;
   /// Updated on the audio thread from each input callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
+  /// Whether this recorder is counted among AudioInputSelection's running
+  /// captures. Guarded by streamMutex_.
+  bool countedAsRunningCapture_{false};
   Result<NoneType, std::string> openAudioStream();
+  /// @brief Counts this recorder among AudioInputSelection's running captures
+  /// (`true`) or removes it (`false`). Idempotent.
+  ///
+  /// The claim must be taken before openAudioStream() reads the selection and
+  /// held until the stream is running.
+  ///
+  /// Takes streamMutex_, which is recursive, so callers may already hold it.
+  void setRunningCapture(bool running);
   std::shared_ptr<AudioFileWriter> createFileWriter(
       const std::shared_ptr<AudioFileProperties> &props);
   Result<NoneType, std::string> setupFileWriter(
