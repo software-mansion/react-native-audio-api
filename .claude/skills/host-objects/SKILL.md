@@ -95,6 +95,7 @@ HostObjects/
 └── utils/
     ├── JsEnumParser.h/.cpp      # Enum ↔ string conversions
     ├── NodeOptionsParser.h      # Parses JS option objects into C++ structs
+    │                            # Use setNumericOption (NumericOption concept) for scalar numbers
     ├── AudioDecoderHostObject.h/.cpp
     └── AudioFileUtilsHostObject.h/.cpp
 ```

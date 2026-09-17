@@ -27,20 +27,21 @@ class PannerNodeHostObject : public AudioNodeHostObject {
   JSI_PROPERTY_GETTER_DECL(orientationY);
   JSI_PROPERTY_GETTER_DECL(orientationZ);
   JSI_PROPERTY_GETTER_DECL(panningModel);
-  JSI_PROPERTY_SETTER_DECL(panningModel);
   JSI_PROPERTY_GETTER_DECL(distanceModel);
-  JSI_PROPERTY_SETTER_DECL(distanceModel);
   JSI_PROPERTY_GETTER_DECL(refDistance);
-  JSI_PROPERTY_SETTER_DECL(refDistance);
   JSI_PROPERTY_GETTER_DECL(maxDistance);
-  JSI_PROPERTY_SETTER_DECL(maxDistance);
   JSI_PROPERTY_GETTER_DECL(rolloffFactor);
-  JSI_PROPERTY_SETTER_DECL(rolloffFactor);
   JSI_PROPERTY_GETTER_DECL(coneInnerAngle);
-  JSI_PROPERTY_SETTER_DECL(coneInnerAngle);
   JSI_PROPERTY_GETTER_DECL(coneOuterAngle);
-  JSI_PROPERTY_SETTER_DECL(coneOuterAngle);
   JSI_PROPERTY_GETTER_DECL(coneOuterGain);
+
+  JSI_PROPERTY_SETTER_DECL(panningModel);
+  JSI_PROPERTY_SETTER_DECL(distanceModel);
+  JSI_PROPERTY_SETTER_DECL(refDistance);
+  JSI_PROPERTY_SETTER_DECL(maxDistance);
+  JSI_PROPERTY_SETTER_DECL(rolloffFactor);
+  JSI_PROPERTY_SETTER_DECL(coneInnerAngle);
+  JSI_PROPERTY_SETTER_DECL(coneOuterAngle);
   JSI_PROPERTY_SETTER_DECL(coneOuterGain);
 
   [[nodiscard]] size_t getMemoryPressure() const override {

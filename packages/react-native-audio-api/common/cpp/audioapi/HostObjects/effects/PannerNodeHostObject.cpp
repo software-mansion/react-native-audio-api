@@ -97,6 +97,35 @@ JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, panningModel) {
   return jsi::String::createFromUtf8(runtime, js_enum_parser::panningModelToString(panningModel_));
 }
 
+JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, distanceModel) {
+  return jsi::String::createFromUtf8(
+      runtime, js_enum_parser::distanceModelToString(distanceModel_));
+}
+
+JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, refDistance) {
+  return refDistance_;
+}
+
+JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, maxDistance) {
+  return maxDistance_;
+}
+
+JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, rolloffFactor) {
+  return rolloffFactor_;
+}
+
+JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, coneInnerAngle) {
+  return coneInnerAngle_;
+}
+
+JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, coneOuterAngle) {
+  return coneOuterAngle_;
+}
+
+JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, coneOuterGain) {
+  return coneOuterGain_;
+}
+
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, panningModel) {
   PanningModelType parsedModel;
   try {
@@ -111,11 +140,6 @@ JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, panningModel) {
   pannerNode_->scheduleAudioEvent(std::move(event));
 }
 
-JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, distanceModel) {
-  return jsi::String::createFromUtf8(
-      runtime, js_enum_parser::distanceModelToString(distanceModel_));
-}
-
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, distanceModel) {
   DistanceModelType parsedModel;
   try {
@@ -128,10 +152,6 @@ JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, distanceModel) {
     node->setDistanceModel(parsedModel);
   };
   pannerNode_->scheduleAudioEvent(std::move(event));
-}
-
-JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, refDistance) {
-  return refDistance_;
 }
 
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, refDistance) {
@@ -149,10 +169,6 @@ JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, refDistance) {
   pannerNode_->scheduleAudioEvent(std::move(event));
 }
 
-JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, maxDistance) {
-  return maxDistance_;
-}
-
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, maxDistance) {
   if (!value.isNumber()) {
     return;
@@ -166,10 +182,6 @@ JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, maxDistance) {
     node->setMaxDistance(distance);
   };
   pannerNode_->scheduleAudioEvent(std::move(event));
-}
-
-JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, rolloffFactor) {
-  return rolloffFactor_;
 }
 
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, rolloffFactor) {
@@ -187,10 +199,6 @@ JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, rolloffFactor) {
   pannerNode_->scheduleAudioEvent(std::move(event));
 }
 
-JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, coneInnerAngle) {
-  return coneInnerAngle_;
-}
-
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, coneInnerAngle) {
   if (!value.isNumber()) {
     return;
@@ -203,10 +211,6 @@ JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, coneInnerAngle) {
   pannerNode_->scheduleAudioEvent(std::move(event));
 }
 
-JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, coneOuterAngle) {
-  return coneOuterAngle_;
-}
-
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, coneOuterAngle) {
   if (!value.isNumber()) {
     return;
@@ -217,10 +221,6 @@ JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, coneOuterAngle) {
     node->setConeOuterAngle(angle);
   };
   pannerNode_->scheduleAudioEvent(std::move(event));
-}
-
-JSI_PROPERTY_GETTER_IMPL(PannerNodeHostObject, coneOuterGain) {
-  return coneOuterGain_;
 }
 
 JSI_PROPERTY_SETTER_IMPL(PannerNodeHostObject, coneOuterGain) {
