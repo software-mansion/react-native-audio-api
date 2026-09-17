@@ -166,13 +166,26 @@ NSURL *getFileURL(
   NSString *timestamp = getTimestampString();
   NSString *fileExtension = getFileExtension(properties);
 
-  NSString *fileName = fileNameOverride.length() > 0 && properties->rotateIntervalBytes == 0
-      ? [NSString stringWithFormat:@"%@.%@",
+  if (fileNameOverride.length() > 0 && properties->rotateIntervalBytes == 0) {
+    NSString *fileName =
+        [NSString stringWithFormat:@"%@.%@",
                                    [NSString stringWithUTF8String:fileNameOverride.c_str()],
-                                   fileExtension]
-      : [NSString stringWithFormat:@"%@_%@.%@", fileNamePrefix, timestamp, fileExtension];
+                                   fileExtension];
+    return [directoryURL URLByAppendingPathComponent:fileName];
+  }
 
-  return [directoryURL URLByAppendingPathComponent:fileName];
+  NSString *fileName =
+      [NSString stringWithFormat:@"%@_%@.%@", fileNamePrefix, timestamp, fileExtension];
+  NSURL *fileURL = [directoryURL URLByAppendingPathComponent:fileName];
+
+  for (NSUInteger suffix = 1; [[NSFileManager defaultManager] fileExistsAtPath:fileURL.path];
+       ++suffix) {
+    fileName = [NSString
+        stringWithFormat:@"%@_%@_%lu.%@", fileNamePrefix, timestamp, (unsigned long)suffix, fileExtension];
+    fileURL = [directoryURL URLByAppendingPathComponent:fileName];
+  }
+
+  return fileURL;
 }
 
 NSSearchPathDirectory getDirectory(const std::shared_ptr<AudioFileProperties> &properties)

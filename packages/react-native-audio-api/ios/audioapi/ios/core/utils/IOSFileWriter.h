@@ -67,6 +67,11 @@ class IOSFileWriter : public AudioFileWriter {
  private:
   using FreeList = slots::SlotFreeList<FILE_WRITER_POOL_SIZE>;
 
+  Result<NoneType, std::string> prepareConversionPipeline(
+      AVAudioFormat *bufferFormat,
+      size_t maxInputBufferLength);
+  void releaseConversionPipeline();
+
   std::vector<ios::OwnedAudioBufferListPtr> inputBufferPool_;
   size_t inputBufferBytesPerBuffer_{0};
   std::unique_ptr<FreeList> freeSlots_;

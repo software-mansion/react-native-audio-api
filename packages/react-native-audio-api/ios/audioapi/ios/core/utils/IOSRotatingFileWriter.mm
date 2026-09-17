@@ -58,13 +58,8 @@ OpenFileResult IOSRotatingFileWriter::reprepareStreamFormat(
     return openInnerWriter();
   }
 
-  rotateFiles();
-
-  if (currentWriter_ == nullptr) {
-    return OpenFileResult::Err("Failed to reopen file for writing after input format change");
-  }
-
-  return OpenFileResult::Ok(currentWriter_->getFilePath());
+  auto inner = std::static_pointer_cast<IOSFileWriter>(currentWriter_);
+  return inner->reopenForInputFormatChange(streamFormat_, streamMaxBufferSizeInFrames_);
 }
 
 void IOSRotatingFileWriter::writeAudioData(AudioDataType data, int numFrames)

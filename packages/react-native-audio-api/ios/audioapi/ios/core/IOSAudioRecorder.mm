@@ -207,7 +207,6 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(
   }
 
   filePath_ = result.unwrap();
-  recordingSegmentPaths_.push_back(filePath_);
   fileOutputConfigured_.store(true, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
 }
