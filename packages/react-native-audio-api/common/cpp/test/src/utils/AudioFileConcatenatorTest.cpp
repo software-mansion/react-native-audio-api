@@ -164,23 +164,14 @@ TEST(AudioFileConcatenatorTest, RejectsNonFileOutputProtocol) {
       "concatAudioFiles output path must be a local file path or file:// URL.");
 }
 
-TEST(AudioFileConcatenatorTest, ReturnsDisabledErrorForM4AWhenFFmpegIsUnavailable) {
+TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForM4AOnDesktop) {
   auto result = concatAudioFiles({"/tmp/input.m4a"}, "/tmp/output.m4a");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot concatenate M4A/MP4 audio files.");
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles remux requires iOS or Android.");
 }
 
-TEST(AudioFileConcatenatorTest, RejectsFLACOutputAsUnsupported) {
-  auto result = concatAudioFiles({"/tmp/input.flac"}, "/tmp/output.flac");
-
-  EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(
-      result.unwrap_err(),
-      "concatAudioFiles supports WAV output with miniaudio and M4A/MP4 output with FFmpeg.");
-}
-
-TEST(AudioFileConcatenatorTest, ConcatenatesWavFilesWithMiniaudioWhenFFmpegIsUnavailable) {
+TEST(AudioFileConcatenatorTest, ConcatenatesWavFilesWithMiniaudio) {
   const std::string inputA = testFilePath("audio-concat-a.wav");
   const std::string inputB = testFilePath("audio-concat-b.wav");
   const std::string output = testFilePath("audio-concat-output.wav");
@@ -225,13 +216,34 @@ TEST(AudioFileConcatenatorTest, RejectsWavOutputThatWouldExceedRiffLimit) {
   removeFile(output);
 }
 
-TEST(AudioFileConcatenatorTest, RejectsUnsupportedOutputFormatWhenFFmpegIsUnavailable) {
+TEST(AudioFileConcatenatorTest, RejectsUnsupportedOutputFormat) {
   auto result = concatAudioFiles({"/tmp/input.ogg"}, "/tmp/output.ogg");
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A/MP4, and FLAC output.");
+}
+
+TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForFLACOnDesktop) {
+  auto result = concatAudioFiles({"/tmp/input.flac"}, "/tmp/output.flac");
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles FLAC output requires iOS or Android.");
+}
+
+TEST(AudioFileConcatenatorTest, RejectsFLACOutputWithNonFlacInputs) {
+  auto result = concatAudioFiles({"/tmp/input.wav"}, "/tmp/output.flac");
 
   EXPECT_TRUE(result.is_err());
   EXPECT_EQ(
       result.unwrap_err(),
-      "concatAudioFiles supports WAV output with miniaudio and M4A/MP4 output with FFmpeg.");
+      "concatAudioFiles FLAC output requires all input files to use the FLAC extension.");
+}
+
+TEST(AudioFileConcatenatorTest, RejectsMismatchedRemuxExtensions) {
+  auto result = concatAudioFiles({"/tmp/input.m4a"}, "/tmp/output.caf");
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A/MP4, and FLAC output.");
 }
 
 // NOLINTEND
