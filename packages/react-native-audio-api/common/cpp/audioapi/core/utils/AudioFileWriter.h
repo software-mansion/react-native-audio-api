@@ -30,9 +30,9 @@ struct PendingFileWrite {
   int numFrames = 0;
 };
 
-/// The two steps only the platform can perform, so that a test can supply its own: the desktop
-/// build has neither a recording directory to resolve into nor a system encoder to create.
 struct PlatformFileBackend {
+  std::function<Result<EncoderOutputSpec, std::string>(AudioFileProperties::Format)>
+      resolveOutputSpec;
   std::function<Result<std::string, std::string>(
       const std::shared_ptr<AudioFileProperties> &,
       const std::string &fileName)>
@@ -41,7 +41,7 @@ struct PlatformFileBackend {
       createEncoder;
 };
 
-/// The iOS and Android implementations of the two steps above.
+/// The iOS and Android implementations of the steps above.
 PlatformFileBackend createOsFileBackend();
 
 class AudioFileWriter final {

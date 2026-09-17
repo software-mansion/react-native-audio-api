@@ -32,6 +32,10 @@ struct FakeEncoderLog {
   std::vector<std::string> openedPaths;
   StreamFormat lastOpenedFormat{};
   size_t lastOpenedMaxFramesPerBuffer = 0;
+  EncoderOutputSpec outputSpec{
+      .container = AudioContainer::WAV,
+      .codec = AudioCodec::PCM,
+      .extension = "wav"};
 };
 
 class FakeEncoder final : public AudioEncoder {
@@ -82,6 +86,11 @@ class FakeEncoder final : public AudioEncoder {
 /// the bare file names, so a test can assert on them directly.
 PlatformFileBackend makeFakeBackend(FakeEncoderLog &log) {
   return PlatformFileBackend{
+      .resolveOutputSpec =
+          [&log](AudioFileProperties::Format /*format*/) {
+            std::scoped_lock lock(log.mutex);
+            return Result<EncoderOutputSpec, std::string>::Ok(log.outputSpec);
+          },
       .resolvePath =
           [&log](
               const std::shared_ptr<AudioFileProperties> & /*properties*/,
@@ -177,6 +186,19 @@ TEST_F(AudioFileWriterTest, OpensTheSessionUnderItsPlainName) {
 
   const std::vector<std::string> expectedPaths{"session.wav"};
   EXPECT_EQ(openedPaths(), expectedPaths);
+}
+
+// The platform capability table is empty unless the host is iOS or Android, so a writer that
+// consulted it could not open any file on a Linux CI runner while passing on a macOS desktop.
+// Opus in WebM is absent from every platform's table, so this pins the writer to its backend.
+TEST_F(AudioFileWriterTest, NamesTheFileFromTheBackendSpecNotThePlatformTable) {
+  createWriter(/*rotates=*/false);
+  log_.outputSpec = {
+      .container = AudioContainer::WEBM, .codec = AudioCodec::OPUS, .extension = "webm"};
+
+  auto openResult = open();
+  ASSERT_TRUE(openResult.is_ok());
+  EXPECT_EQ(openResult.unwrap(), "session.webm");
 }
 
 TEST_F(AudioFileWriterTest, OpenFailsWhileAFileIsOpen) {

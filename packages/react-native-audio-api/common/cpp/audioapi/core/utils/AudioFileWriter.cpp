@@ -26,6 +26,7 @@ namespace audioapi {
 
 PlatformFileBackend createOsFileBackend() {
   return PlatformFileBackend{
+      .resolveOutputSpec = &EncoderCapabilities::resolveOutputSpec,
       .resolvePath = &resolveOsFilePath,
       .createEncoder = &createOsEncoder,
   };
@@ -164,11 +165,11 @@ std::string AudioFileWriter::fileStem(size_t fileNumber) const {
 
 OpenFileResult AudioFileWriter::openEncoderForNextFile() {
   // Calling an empty std::function throws, which on the worker thread would terminate.
-  if (!backend_.resolvePath || !backend_.createEncoder) {
+  if (!backend_.resolveOutputSpec || !backend_.resolvePath || !backend_.createEncoder) {
     return OpenFileResult::Err("File writer was constructed without a platform backend");
   }
 
-  auto specResult = EncoderCapabilities::resolveOutputSpec(fileProperties_->format);
+  auto specResult = backend_.resolveOutputSpec(fileProperties_->format);
   if (specResult.is_err()) {
     return OpenFileResult::Err(specResult.unwrap_err());
   }
