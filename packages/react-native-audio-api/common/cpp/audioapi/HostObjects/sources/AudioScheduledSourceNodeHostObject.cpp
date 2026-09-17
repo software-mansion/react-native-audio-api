@@ -14,7 +14,7 @@ AudioScheduledSourceNodeHostObject::AudioScheduledSourceNodeHostObject(
     const AudioScheduledSourceNodeOptions &options)
     : AudioNodeHostObject(graph, std::move(node), options),
       scheduledSourceNode_(typedAudioNode<AudioScheduledSourceNode>(node_)) {
-  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onEnded));
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onended));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioScheduledSourceNodeHostObject, start),
@@ -28,7 +28,7 @@ AudioScheduledSourceNodeHostObject::~AudioScheduledSourceNodeHostObject() {
   scheduledSourceNode_->assignOnEndedCallbackId(0);
 }
 
-JSI_PROPERTY_SETTER_IMPL(AudioScheduledSourceNodeHostObject, onEnded) {
+JSI_PROPERTY_SETTER_IMPL(AudioScheduledSourceNodeHostObject, onended) {
   scheduledSourceNode_->assignOnEndedCallbackId(
       std::stoull(value.getString(runtime).utf8(runtime)));
 }

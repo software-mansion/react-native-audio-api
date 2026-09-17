@@ -1,0 +1,976 @@
+---
+sidebar_position: 4
+toc_min_heading_level: 2
+toc_max_heading_level: 5
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
+import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
+
+# AudioRecorder
+
+AudioRecorder is a primary interface for capturing audio. It supports three main modes of operations:
+
+- **File recording:** Writing audio data directly to the filesystem.
+- **Data callback:** Emitting raw audio buffers, that can be used in either further processing or streamed.
+- **Graph processing:** Connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing
+
+## Configuration
+
+To access microphone you need to make sure your app has required permission configuration - check [getting started permission section](/docs/fundamentals/getting-started#special-permissions) for more information.
+
+Additionally to be able to record audio while application is in the background, you need to enable background mode on iOS and configure foreground service on android.
+
+<Tabs queryString="platform">
+  <TabItem value="expo" label="Expo" default>
+    In an Expo application you can do so through `react-native-audio-api` expo plugin, e.g.
+
+    ```json
+    {
+      "plugins": [
+        [
+          "react-native-audio-api",
+          {
+            "iosBackgroundMode": true,
+            "iosMicrophonePermission": "[YOUR_APP_NAME] requires access to the microphone to record audio.",
+            "androidPermissions" : [
+              "android.permission.RECORD_AUDIO",
+              "android.permission.FOREGROUND_SERVICE",
+              "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+            ],
+            "androidForegroundService": true,
+            "androidFSTypes": ["microphone"]
+          }
+        ]
+      ]
+    }
+    ```
+
+    For more configuration options, check out the [Expo plugin section](/docs/other/audio-api-plugin).
+
+  </TabItem>
+  <TabItem value="iOS" label="iOS">
+    For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode
+
+    ![background mode configuration example](/docs/recorder/signing-and-capabilities.png)
+
+    Microphone permission can be created or modified through the `Info.plist` file
+
+    ![Info plist example](/docs/recorder/info-plist.png)
+
+    Alternatively you can modify the `Info.plist` file directly in your editor of choice by adding those lines:
+
+    ```xml
+    <key>NSMicrophoneUsageDescription</key>
+    <string>$(PRODUCT_NAME) wants to access your microphone in order to use voice memo recording</string>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>audio</string>
+    </array>
+    ```
+
+  </TabItem>
+  <TabItem value="android" label="Android">
+    To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file
+
+    ```xml
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+      <!-- Foreground service and microphone permissions for background usage -->
+      <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+      <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+
+      <!-- General permission for microphone access -->
+      <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+      <!-- Paste this inside <application> tag -->
+        <service android:stopWithTask="true" android:name="com.swmansion.audioapi.system.CentralizedForegroundService" android:foregroundServiceType="microphone" />
+    </manifest>
+
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Usage
+
+<Tabs group="usage">
+  <TabItem value="record-to-file" label="Record to File">
+
+```tsx
+import React, { useState } from 'react';
+import { View, Pressable, Text } from 'react-native';
+import { AudioRecorder, AudioManager } from 'react-native-audio-api';
+
+AudioManager.setAudioSessionOptions({
+  iosCategory: 'record',
+  iosMode: 'default',
+  iosOptions: [],
+});
+
+const audioRecorder = new AudioRecorder();
+
+// Enables recording to file with default configuration
+audioRecorder.enableFileOutput();
+
+const MyRecorder: React.FC = () => {
+  const [isRecording, setIsRecording] = useState(false);
+
+  const onStart = async () => {
+    if (isRecording) {
+      return;
+    }
+
+    // Make sure the permissions are granted
+    const permissions = await AudioManager.requestRecordingPermissions();
+
+    if (permissions !== 'Granted') {
+      console.warn('Permissions are not granted');
+      return;
+    }
+
+    // Activate audio session
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.warn('Could not activate the audio session', error);
+      return;
+    }
+
+    const result = await audioRecorder.start();
+    if (result.status === 'error') {
+      console.warn(result.message);
+      return;
+    }
+
+    console.log('Recording started');
+    setIsRecording(true);
+  };
+
+  const onStop = async () => {
+    if (!isRecording) {
+      return;
+    }
+
+    const result = await audioRecorder.stop();
+    console.log(result);
+    setIsRecording(false);
+    await AudioManager.setAudioSessionActivity(false);
+  };
+
+  return (
+    <View>
+      <Pressable onPress={isRecording ? onStop : onStart}>
+        <Text>{isRecording ? 'Stop' : 'Record'}</Text>
+      </Pressable>
+    </View>
+  );
+};
+
+export default MyRecorder;
+```
+
+  </TabItem>
+  <TabItem value="data-callback" label="Data callback">
+
+```tsx
+import React, { useState, useEffect } from 'react';
+import { View, Pressable, Text } from 'react-native';
+import { AudioRecorder, AudioManager } from 'react-native-audio-api';
+
+AudioManager.setAudioSessionOptions({
+  iosCategory: 'record',
+  iosMode: 'default',
+  iosOptions: [],
+});
+
+const audioRecorder = new AudioRecorder();
+const sampleRate = 16000;
+
+const MyRecorder: React.FC = () => {
+  const [isRecording, setIsRecording] = useState(false);
+
+  useEffect(() => {
+    audioRecorder.onAudioReady(
+      {
+        sampleRate,
+        bufferLength: sampleRate * 0.1, // 0.1s of audio each batch
+        channelCount: 1,
+      },
+      ({ buffer, numFrames, when }) => {
+        // do something with the data, i.e. stream it
+      }
+    );
+
+    return () => {
+      audioRecorder.clearOnAudioReady();
+    };
+  }, []);
+
+  const onStart = async () => {
+    if (isRecording) {
+      return;
+    }
+
+    // Make sure the permissions are granted
+    const permissions = await AudioManager.requestRecordingPermissions();
+
+    if (permissions !== 'Granted') {
+      console.warn('Permissions are not granted');
+      return;
+    }
+
+    // Activate audio session
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.warn('Could not activate the audio session', error);
+      return;
+    }
+
+    const result = await audioRecorder.start();
+
+    if (result.status === 'error') {
+      console.warn(result.message);
+      return;
+    }
+
+    setIsRecording(true);
+  };
+
+  const onStop = async () => {
+    if (!isRecording) {
+      return;
+    }
+
+    await audioRecorder.stop();
+    setIsRecording(false);
+    await AudioManager.setAudioSessionActivity(false);
+  };
+
+  return (
+    <View>
+      <Pressable onPress={isRecording ? onStop : onStart}>
+        <Text>{isRecording ? 'Stop' : 'Record'}</Text>
+      </Pressable>
+    </View>
+  );
+};
+
+export default MyRecorder;
+```
+
+  </TabItem>
+  <TabItem value="graph-processing" label="Graph processing">
+
+```tsx
+import React, { useState } from 'react';
+import { View, Pressable, Text } from 'react-native';
+import { AudioRecorder, AudioContext, AudioManager } from 'react-native-audio-api';
+
+AudioManager.setAudioSessionOptions({
+  iosCategory: 'playAndRecord',
+  iosMode: 'default',
+  iosOptions: [],
+});
+
+const audioRecorder = new AudioRecorder();
+const audioContext = new AudioContext();
+
+const MyRecorder: React.FC = () => {
+  const [isRecording, setIsRecording] = useState(false);
+
+  const onStart = async () => {
+    if (isRecording) {
+      return;
+    }
+
+    // Make sure the permissions are granted
+    const permissions = await AudioManager.requestRecordingPermissions();
+
+    if (permissions !== 'Granted') {
+      console.warn('Permissions are not granted');
+      return;
+    }
+
+    // Activate audio session
+    try {
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      console.warn('Could not activate the audio session', error);
+      return;
+    }
+
+    const adapter = audioContext.createRecorderAdapter();
+    adapter.connect(audioContext.destination);
+    audioRecorder.connect(adapter);
+
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+
+    const result = await audioRecorder.start();
+
+    if (result.status === 'error') {
+      console.warn(result.message);
+      return;
+    }
+
+    setIsRecording(true);
+  };
+
+  const onStop = async () => {
+    if (!isRecording) {
+      return;
+    }
+
+    await audioRecorder.stop();
+    audioContext.suspend();
+    setIsRecording(false);
+    await AudioManager.setAudioSessionActivity(false);
+  };
+
+  return (
+    <View>
+      <Pressable onPress={isRecording ? onStop : onStart}>
+        <Text>{isRecording ? 'Stop' : 'Record'}</Text>
+      </Pressable>
+    </View>
+  );
+};
+
+export default MyRecorder;
+```
+
+  </TabItem>
+</Tabs>
+
+## API
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><div class="text-content">
+        ##### Constructor
+      </div></td>
+      <td>
+        <div class="text-content">
+        Creates new instance of AudioRecorder. It is preferred to create only a single instance of the AudioRecorder class for the best performance, memory and battery consumption reasons. While the idle recorder has minimal impact on anything mentioned, switching between separate recorder instances might have a noticeable impact on the device.
+        </div>
+        ```tsx
+        import { AudioRecorder } from 'react-native-audio-api';
+
+        const audioRecorder = new AudioRecorder();
+        ```
+      </td>
+    </tr>
+    <tr>
+      <td><div class="text-content">
+        ##### start
+        <br />
+        (asynchronous)
+      </div></td>
+      <td>
+        <div class="text-content">
+          Starts the stream from system audio input device. Returns a `Promise` that resolves when recording has started.
+          You can pass optional object with `fileNameOverride` string, to provide your own fileName generation.
+        </div>
+        ```tsx
+        const result = await audioRecorder.start({
+          fileNameOverride: `my_audio_${mySessionId}`
+        });
+
+        console.log(result.status);
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### stop
+        <br />
+        (asynchronous)
+      </div></td>
+      <td>
+        <div class="text-content">
+        Stops the input stream and cleans up each input access method. Returns a `Promise` that resolves when recording has stopped.
+
+        For details on the returned file information check: [FileInfo](#fileinfo)
+        </div>
+        ```tsx
+        const result = await audioRecorder.stop();
+
+        if (result.status === 'success') {
+          const { paths, duration, size } = result;
+        } else if (result.status === 'error') {
+          console.error(result.message);
+        }
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### pause
+      </div></td>
+      <td>
+        <div class="text-content">
+          Pauses the recording. This is useful when recording to file is active, but you don't want to finalize the file.
+        </div>
+        ```tsx
+          audioRecorder.pause();
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### resume
+      </div></td>
+      <td>
+        <div class="text-content">
+          Resumes the recording if it was previously paused, otherwise does nothing.
+        </div>
+        ```tsx
+          audioRecorder.resume();
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### isRecording
+      </div></td>
+      <td>
+        <div class="text-content">
+          Returns `true` if the recorder is in active/recording state
+        </div>
+        ```tsx
+          const isRecording = audioRecorder.isRecording();
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### isPaused
+      </div></td>
+      <td>
+        <div class="text-content">
+          Returns `true` if the recorder is in paused state.
+        </div>
+        ```tsx
+          const isPaused = audioRecorder.isPaused();
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### onError
+      </div></td>
+      <td>
+        <div class="text-content">
+          Sets an error callback for any possible internal error that might happen during file writing, callback invocation or adapter access.
+
+          For details check: [OnRecorderErrorEventType](#onrecordererroreventtype)
+        </div>
+        ```tsx
+          audioRecorder.onError((error: OnRecorderErrorEventType) => {
+            console.log(error);
+          });
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### clearOnError
+      </div></td>
+      <td>
+        <div class="text-content">
+          Removes the error callback.
+        </div>
+        ```tsx
+          audioRecorder.clearOnError();
+        ```
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+### Recording to file
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+<!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### enableFileOutput
+      </div></td>
+      <td>
+        <div class="text-content">
+          Configures and enables the file output with defined options and stream properties. Options property allows for configuration of the output file structure and quality. By default the recorder writes to cache directory using high-quality `M4A` file.
+
+          For further information check: [AudioRecorderFileOptions](#audiorecorderfileoptions)
+        </div>
+        ```tsx
+          audioRecorder.enableFileOutput();
+        ```
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### disableFileOutput
+      </div></td>
+      <td>
+        <div class="text-content">
+          Disables the file output and finalizes the currently recorded file if the recorder is active.
+        </div>
+        ```tsx
+          audioRecorder.disableFileOutput();
+        ```
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### getCurrentDuration
+      </div></td>
+      <td>
+        <div class="text-content">
+          Returns current recording duration if recording to file is enabled.
+        </div>
+        ```tsx
+          const duration = audioRecorder.getCurrentDuration();
+        ```
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+### Data callback
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+<!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### onAudioReady
+      </div></td>
+      <td>
+        <div class="text-content">
+          The callback is periodically invoked with audio buffers that match the preferred configuration provided in `options`. These parameters (sample rate, buffer length, and channel count) guide how audio data is chunked and delivered, though the exact values may vary depending on device capabilities.
+          <br />
+
+          For further information check:
+            - [AudioRecorderCallbackOptions](#audiorecordercallbackoptions)
+            - [OnAudioReadyEventType](#onaudioreadyeventtype)
+        </div>
+        ```tsx
+          const sampleRate = 16000;
+
+          audioRecorder.onAudioReady(
+            {
+              sampleRate,
+              bufferLength: 0.1 * sampleRate, // 0.1s of data
+              channelCount: 1,
+            },
+            ({ buffer, numFrames, when }) => {
+              // do something with the data
+            });
+        ```
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### clearOnAudioReady
+      </div></td>
+      <td>
+        <div class="text-content">
+          Disables and flushes the remaining audio data through `onAudioReady` callback as explained above.
+        </div>
+        ```tsx
+          audioRecorder.clearOnAudioReady();
+        ```
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+#### Graph processing
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+<!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### connect
+      </div></td>
+      <td>
+        <div class="text-content">
+          Connects AudioRecorder with [RecorderAdapterNode](/docs/sources/recorder-adapter-node) instance that can be used for further audio processing.
+        </div>
+        ```tsx
+          const adapter = audioContext.createRecorderAdapter();
+          audioRecorder.connect(adapter);
+        ```
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### disconnect
+      </div></td>
+      <td>
+        <div class="text-content">
+          Disconnects AudioRecorder from the audio graph.
+        </div>
+        ```tsx
+          audioRecorder.disconnect();
+        ```
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+## Types
+
+#### AudioRecorderCallbackOptions
+
+```tsx
+interface AudioRecorderCallbackOptions {
+  sampleRate: number;
+  bufferLength: number;
+  channelCount: number;
+}
+```
+
+- `sampleRate` - The desired sample rate (in Hz) for audio buffers delivered to the
+  recording callback. Common values include 44100 or 48000 Hz. The actual
+  sample rate may differ depending on hardware and system capabilities.
+
+- `bufferLength` - The preferred size of each audio buffer, expressed as the number of samples per channel. Smaller buffers reduce latency but increase CPU load, while larger buffers improve efficiency at the cost of higher latency.
+
+- `channelCount` - The desired number of audio channels per buffer. Typically 1 for mono or 2 for stereo recordings.
+
+#### OnRecorderErrorEventType
+
+```tsx
+interface OnRecorderErrorEventType {
+  message: string;
+}
+```
+
+#### OnAudioReadyEventType
+
+Represents the data payload received by the audio recorder callback each time a new audio buffer becomes available during recording.
+
+```tsx
+interface OnAudioReadyEventType {
+  buffer: AudioBuffer;
+  numFrames: number;
+  when: number;
+}
+```
+
+- `buffer` - The audio buffer containing the recorded PCM data. This buffer includes one or more channels of floating-point samples in the range of -1.0 to 1.0.
+- `numFrames` - The number of audio frames contained in this buffer. A frame represents a single sample across all channels.
+- `when` - The timestamp (in seconds) indicating when this buffer was captured, relative to the start of the recording session.
+
+### File handling
+
+#### AudioRecorderFileOptions
+
+```tsx
+interface AudioRecorderFileOptions {
+  channelCount?: number;
+  rotateIntervalBytes?: number;
+
+  format?: FileFormat;
+  preset?: FilePresetType;
+
+  directory?: FileDirectory;
+  subDirectory?: string;
+  fileNamePrefix?: string;
+  androidFlushIntervalMs?: number;
+}
+```
+
+- `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
+- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to 0 (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles).
+- `format` - The desired extension and file format of the recorder file. Check: [FileFormat](#fileformat) below.
+- `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
+- `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
+- `subDirectory` - If configured it will create the recording inside requested directory (default: `undefined`).
+- `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
+- `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
+  - Lower values are good for crash-resilience and are more memory friendly.
+  - Higher values are more battery- and storage-efficient.
+
+#### FileFormat
+
+Describes desired file extension as well as codecs, containers (and muxers!) used to encode the file.
+
+```tsx
+enum FileFormat {
+  Wav,
+  Caf,
+  M4A,
+  Flac,
+}
+```
+
+:::caution Android + FFmpeg
+On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used).
+:::
+
+#### FileInfo
+
+```tsx
+interface FileInfo {
+  paths: string[];
+  size: number;
+  duration: number;
+}
+```
+
+- `paths` - Paths to the recorded audio files. When file rotation is disabled it has only one entry, otherwise list of paths to recorder files is returned.
+- `size` - The file size (in MB).
+- `duration` - The recording duration (in seconds).
+
+#### FilePresetType
+
+Describes audio format that is used during writing to file as well as encoded final file properties. You can use one of predefined presets, or fully customize the result file, but be aware that the properties aren't limited to only valid configurations, you may find property pairs that will result in error result during recording start (or when enabling the file output during active input session)!
+
+##### Built-in file presets
+
+For convenience we have provided set of most basic file configurations that should cover most of the cases (or at least we hope they will, please raise an issue if you find something lacking or misconfigured!).
+
+###### Usage
+
+```tsx
+import { AudioRecorder, FileFormat, FilePreset } from 'react-native-audio-api';
+
+const audioRecorder = new AudioRecorder();
+
+audioRecorder.enableFileOutput({
+  format: FileFormat.M4A,
+  preset: FilePreset.High,
+});
+```
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Preset</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+<!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### Lossless
+      </div></td>
+      <td>
+        <div class="text-content">
+          Writes audio data directly to file without encoding, preserving the maximum audio quality supported by the device. This results in large file sizes, particularly for longer recordings. Available only when using WAV or CAF file formats.
+        </div>
+        ```tsx
+        audioRecorder.enableFileOutput({
+          format: FileFormat.CAF,
+          preset: FilePreset.Lossless,
+        });
+        ```
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### High Quality
+      </div></td>
+      <td>
+        <div class="text-content">
+          Uses high-fidelity audio parameters with efficient encoding to deliver near-lossless perceptual quality while producing smaller files than fully uncompressed recordings. Suitable for music and high-quality voice capture.
+        </div>
+        ```tsx
+        audioRecorder.enableFileOutput({
+          format: FileFormat.Flac,
+          preset: FilePreset.High,
+        });
+        ```
+      </td>
+    </tr>
+    <tr>
+      <td><div class="text-content">
+        ##### Medium Quality
+      </div></td>
+      <td>
+        <div class="text-content">
+          Uses balanced audio parameters that provide good perceptual quality while keeping file sizes moderate. Intended for everyday recording scenarios such as voice notes, podcasts, and general in-app audio, where efficiency and compatibility outweigh maximum fidelity.
+        </div>
+        ```tsx
+        audioRecorder.enableFileOutput({
+          format: FileFormat.M4A,
+          preset: FilePreset.Medium,
+        });
+        ```
+      </td>
+    </tr>
+    <tr>
+      <td><div class="text-content">
+        ##### Low Quality
+      </div></td>
+      <td>
+        <div class="text-content">
+          Uses reduced audio parameters to minimize file size and processing overhead. Designed for cases where speech intelligibility is sufficient and audio fidelity is not critical, such as quick voice notes, background recording, or diagnostic capture.
+        </div>
+        ```tsx
+        audioRecorder.enableFileOutput({
+          format: FileFormat.M4A,
+          preset: FilePreset.Low,
+        });
+        ```
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+#### Preset customization
+
+In addition to the predefined presets, you may supply a custom FilePresetType to fine-tune how audio data is written and encoded. This allows you to optimize for specific use cases such as speech-only recording, reduced storage footprint, or faster encoding.
+
+```tsx
+export interface FilePresetType {
+  bitRate: number;
+  sampleRate: number;
+  bitDepth: BitDepth;
+  iosQuality: IOSAudioQuality;
+  flacCompressionLevel: FlacCompressionLevel;
+}
+```
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Property</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+<!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### bitRate
+      </div></td>
+      <td>
+        <div class="text-content">
+          Defines the target bitrate for lossy encoders (for example AAC or M4A). Higher values generally improve perceptual quality at the cost of larger file sizes. This value may be ignored when using lossless formats.
+        </div>
+        <div class="table-vertical-top-table">
+        | Use case | Bitrate (bps) | Notes |
+        | :- | - | :- |
+        | Very low quality / telemetry |	32000 |	Bare minimum for speech intelligibility |
+        | Low quality voice notes |	48000 |	Optimized for small files and fast encoding |
+        | Standard speech / podcasts |	64000 – 96000 |	Good balance of clarity and size |
+        | Medium quality general audio |	128000 |	Common default for consumer audio |
+        | High quality music / voice |	160000 – 192000 |	Near-transparent for most listeners |
+        | Very high quality |	256000 – 320000 |	Large files, minimal perceptual loss |
+        </div>
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### sampleRate
+      </div></td>
+      <td>
+        <div class="text-content">
+            Specifies the sampling frequency used during recording. Higher sample rates capture a wider frequency range but increase processing and storage requirements.
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td><div class="text-content">
+        ##### bitDepth
+      </div></td>
+      <td>
+        <div class="text-content">
+          Controls the PCM bit depth of the recorded audio. Higher bit depths increase dynamic range and precision, primarily affecting uncompressed or lossless output formats.
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td><div class="text-content">
+        ##### iosQuality
+      </div></td>
+      <td>
+        <div class="text-content">
+          Maps the preset to the closest matching quality level provided by iOS native audio APIs, ensuring consistent behavior across Apple devices.
+        </div>
+        ```tsx
+        enum IOSAudioQuality {
+          Min,
+          Low,
+          Medium,
+          High,
+          Max,
+        }
+        ```
+      </td>
+    </tr>
+    <tr>
+      <td><div class="text-content">
+        ##### flacCompressionLevel
+      </div></td>
+      <td>
+        <div class="text-content">
+          Determines the compression level used when encoding FLAC files. Higher levels reduce file size at the cost of increased CPU usage, without affecting audio quality.
+        </div>
+        ```tsx
+        enum FlacCompressionLevel {
+          L0,
+          L1,
+          L2,
+          L3,
+          L4,
+          L5,
+          L6,
+          L7,
+          L8,
+        }
+        ```
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+## Remarks & known issues

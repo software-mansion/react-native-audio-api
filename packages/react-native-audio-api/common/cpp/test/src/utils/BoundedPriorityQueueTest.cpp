@@ -1,10 +1,3 @@
-// Exercises the non-pmr fallback path of BoundedPriorityQueue (the std::multiset
-// + FixedBlockPool implementation used on runtimes whose libc++ has no std::pmr,
-// e.g. iOS < 17). AUDIOAPI_HAS_PMR is forced to 0 so this path is covered even on
-// hosts whose libc++ does have pmr; the default (std::pmr) path is exercised by
-// the rest of the suite, which compiles the library with the auto-detected gate.
-#define AUDIOAPI_HAS_PMR 0
-
 #include <audioapi/utils/BoundedPriorityQueue.hpp>
 #include <gtest/gtest.h>
 
@@ -82,7 +75,7 @@ TEST(BoundedPriorityQueueTest, RecyclesNodesUnderChurn) {
   // recycled the fixed pool would exhaust and allocate() would throw.
   BoundedPriorityQueue<Event, 8, ByTime> q;
   for (int i = 0; i < 6; ++i) {
-    q.push(Event{static_cast<int64_t>(i), i});
+    q.push(Event{.time = static_cast<int64_t>(i), .id = i});
   }
   int64_t key = 1000;
   for (int round = 0; round < 100000; ++round) {
@@ -95,7 +88,7 @@ TEST(BoundedPriorityQueueTest, RecyclesNodesUnderChurn) {
 TEST(BoundedPriorityQueueTest, BoundsExtractMutateAndReinsert) {
   BoundedPriorityQueue<Event, 8, ByTime> q;
   for (int i = 0; i < 5; ++i) {
-    q.push(Event{static_cast<int64_t>(i * 10), i}); // 0,10,20,30,40
+    q.push(Event{.time = static_cast<int64_t>(i * 10), .id = i}); // 0,10,20,30,40
   }
 
   auto it = q.upperBound(static_cast<int64_t>(15)); // first key > 15 -> 20
@@ -117,4 +110,56 @@ TEST(BoundedPriorityQueueTest, BoundsExtractMutateAndReinsert) {
   q.erase(q.lowerBound(static_cast<int64_t>(30)), q.end());
   EXPECT_EQ(q.size(), 3u);
   EXPECT_EQ(q.peekBack().time, 25);
+}
+
+// The queue's storage is sized from sizeof(T) plus a bound on the container's
+// own per-node fields, so reaching capacity must never depend on the standard
+// library's allocator internals -- an earlier std::pmr-backed implementation ran
+// out of buffer on libstdc++ several elements short of capacity while passing on
+// libc++.
+template <typename T>
+class BoundedPriorityQueueCapacityTest : public ::testing::Test {};
+
+struct Tiny {
+  int8_t key;
+};
+struct Medium {
+  double key;
+  uint64_t id;
+};
+struct Wide {
+  int64_t key;
+  char payload[200];
+};
+struct OverAligned {
+  alignas(64) double key;
+};
+
+struct ByKey {
+  template <typename T>
+  bool operator()(const T &a, const T &b) const {
+    return a.key < b.key;
+  }
+};
+
+using ElementTypes = ::testing::Types<Tiny, Medium, Wide, OverAligned>;
+TYPED_TEST_SUITE(BoundedPriorityQueueCapacityTest, ElementTypes);
+
+TYPED_TEST(BoundedPriorityQueueCapacityTest, AcceptsExactlyCapacityElements) {
+  constexpr size_t capacity = 64;
+  BoundedPriorityQueue<TypeParam, capacity, ByKey> q;
+
+  for (size_t i = 0; i < capacity; ++i) {
+    TypeParam element{};
+    element.key = static_cast<decltype(element.key)>(i);
+    ASSERT_TRUE(q.push(element)) << "rejected element " << i << " of " << capacity;
+  }
+
+  EXPECT_TRUE(q.isFull());
+  EXPECT_EQ(q.size(), capacity);
+
+  TypeParam extra{};
+  extra.key = 0;
+  EXPECT_FALSE(q.push(extra));
+  EXPECT_EQ(q.size(), capacity);
 }

@@ -9,12 +9,12 @@ import { ReadOnly } from '@site/src/components/Badges';
 # WorkletNode
 
 :::warning
-Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](./introduction.mdx) for installation.
 :::
 
 `WorkletNode` is a pass-through analysis node. It accumulates incoming audio frames until `bufferLength` is reached, then invokes your worklet on the **UI runtime** with a read-only snapshot. Audio output is unchanged — modifications inside the callback do not affect the signal.
 
-For background on runtimes and performance tips, see [How to use audio worklets mindfully](/docs/worklets/introduction#how-to-use-audio-worklets-mindfully).
+For background on runtimes and performance tips, see [How to use audio worklets mindfully](./introduction.mdx#how-to-use-audio-worklets-mindfully).
 
 ## Constructor
 
@@ -46,7 +46,7 @@ frequencyDomainNode.smoothingTimeConstant = 0.5;
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `context` | [`BaseAudioContext`](/docs/core/base-audio-context) | The audio context that owns this node. |
+| `context` | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node. |
 | `callback` | `WorkletNodeCallback` | Worklet invoked on the UI runtime when a snapshot is ready. Must include the `'worklet'` directive. |
 | `options` | `number \| WorkletNodeOptions` | Optional. Pass `bufferLength` directly, `{ domain?, bufferLength? }`, or omit for defaults (`time-domain`, `bufferLength: 1024`). |
 
@@ -148,7 +148,7 @@ function Visualizer() {
 
 ## Properties
 
-Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
@@ -159,7 +159,7 @@ Inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 ## Methods
 
-Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 

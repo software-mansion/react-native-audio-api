@@ -4,11 +4,13 @@ import { EventTypeWithValue } from '../events/types';
 import { IAudioBufferBaseSourceNode } from '../jsi-interfaces';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 import { AudioNodeOptions } from '../types';
+import { AudioEventSubscription } from '../events';
 
 export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode {
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
-  private onPositionChangedCallback?: (event: EventTypeWithValue) => void;
+  private onpositionchangedCallback?: (event: EventTypeWithValue) => void;
+  private onPositionChangedSubscription: AudioEventSubscription | null = null;
 
   constructor(
     context: BaseAudioContext,
@@ -21,37 +23,38 @@ export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode 
     this.playbackRate = new AudioParam(node.playbackRate, context, this);
   }
 
-  public get onPositionChanged():
+  public get onpositionchanged():
     | ((event: EventTypeWithValue) => void)
     | undefined {
-    return this.onPositionChangedCallback;
+    return this.onpositionchangedCallback;
   }
 
-  public set onPositionChanged(
+  public set onpositionchanged(
     callback: ((event: EventTypeWithValue) => void) | null
   ) {
+    this.onPositionChangedSubscription?.remove();
+    this.onPositionChangedSubscription = null;
+
     if (!callback) {
-      (this.node as IAudioBufferBaseSourceNode).onPositionChanged = '0';
-      this.onPositionChangedCallback = undefined;
+      (this.node as IAudioBufferBaseSourceNode).onpositionchanged = '0';
+      this.onpositionchangedCallback = undefined;
       return;
     }
 
-    this.onPositionChangedCallback = callback;
-    const sub = this.audioEventEmitter.addAudioEventListener(
-      'positionChanged',
-      callback
-    );
+    this.onpositionchangedCallback = callback;
+    this.onPositionChangedSubscription =
+      this.audioEventEmitter.addAudioEventListener('positionChanged', callback);
 
-    (this.node as IAudioBufferBaseSourceNode).onPositionChanged =
-      sub.subscriptionId;
+    (this.node as IAudioBufferBaseSourceNode).onpositionchanged =
+      this.onPositionChangedSubscription.subscriptionId;
   }
 
-  public get onPositionChangedInterval(): number {
-    return (this.node as IAudioBufferBaseSourceNode).onPositionChangedInterval;
+  public get onpositionchangedInterval(): number {
+    return (this.node as IAudioBufferBaseSourceNode).onpositionchangedInterval;
   }
 
-  public set onPositionChangedInterval(value: number) {
-    (this.node as IAudioBufferBaseSourceNode).onPositionChangedInterval = value;
+  public set onpositionchangedInterval(value: number) {
+    (this.node as IAudioBufferBaseSourceNode).onpositionchangedInterval = value;
   }
 
   public getLatency(): number {

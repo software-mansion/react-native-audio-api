@@ -103,6 +103,7 @@ Graph::Res Graph::removeNode(HNode *node) {
     // could possibly reference this node lives at index < barrier.
     auto barrier = eventSender_.sendCursor();
     gcEventSender_.send(OrphanEnvelope{.barrier = barrier, .action = std::move(event)});
+    drainProducedEventsIfSelfDraining();
     return NoneType{};
   });
 }

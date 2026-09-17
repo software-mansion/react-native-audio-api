@@ -28,5 +28,7 @@ enum class AudioEvent : uint8_t {
   POSITION_CHANGED,
   BUFFER_ENDED,
   RECORDER_ERROR,
+  BUFFERING_STATE_CHANGE,
+  STATE_CHANGE,
 };
 } // namespace audioapi

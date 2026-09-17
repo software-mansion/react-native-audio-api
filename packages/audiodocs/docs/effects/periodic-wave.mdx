@@ -6,7 +6,7 @@ import { Optional } from '@site/src/components/Badges';
 
 # PeriodicWave
 
-The `PeriodicWave` interface defines a periodic waveform that can be used to shape the output of an [OscillatorNode](/docs/sources/oscillator-node.mdx).
+The `PeriodicWave` interface defines a periodic waveform that can be used to shape the output of an [OscillatorNode](../sources/oscillator-node.mdx).
 
 ## Constructor
 
@@ -18,11 +18,11 @@ constructor(context: BaseAudioContext, options?: PeriodicWaveOptions)
 
 | Parameter | Type | Default | Description |
 | :---: | :---: | :----: | :---- |
-| `real` <Optional /> | `Float32Array` | - | [Cosine terms](/docs/core/base-audio-context#createperiodicwave). |
-| `imag` <Optional /> | `Float32Array` | - | [Sine terms](/docs/core/base-audio-context#createperiodicwave). |
+| `real` <Optional /> | `Float32Array` | - | [Cosine terms](../core/base-audio-context.mdx#createperiodicwave). |
+| `imag` <Optional /> | `Float32Array` | - | [Sine terms](../core/base-audio-context.mdx#createperiodicwave). |
 | `disableNormalization` <Optional /> | `boolean` | `false` | When `true`, disables normalization of the periodic wave. |
 
-You can also create a `PeriodicWave` via the [`BaseAudioContext.createPeriodicWave(real, imag, constraints?: PeriodicWaveConstraints)`](/docs/core/base-audio-context#createperiodicwave) factory method.
+You can also create a `PeriodicWave` via the [`BaseAudioContext.createPeriodicWave(real, imag, constraints?: PeriodicWaveConstraints)`](../core/base-audio-context.mdx#createperiodicwave) factory method.
 
 ## Properties
 

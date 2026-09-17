@@ -1,8 +1,8 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
-const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
+const lightCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-light.js');
+const darkCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-dark.js');
 
 import { topbarBannerReservationScript } from '@swmansion/t-rex-ui/topbar-banner'; // eslint-disable-line import/first, import/no-unresolved
 // @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
@@ -66,6 +66,18 @@ const config = {
           breadcrumbs: false,
           sidebarCollapsible: false,
           sidebarPath: require.resolve('./sidebars.js'),
+          lastVersion: 'latest',
+          versions: {
+            latest: {
+              label: 'Latest',
+              path: '',
+            },
+            current: {
+              label: 'Next',
+              path: 'next',
+              banner: 'unreleased',
+            },
+          },
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           editUrl:
@@ -73,7 +85,10 @@ const config = {
         },
         blog: false,
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: [
+            require.resolve('docs-theme/css/custom.css'),
+            './src/css/site.css',
+          ],
         },
       },
     ],
@@ -110,6 +125,10 @@ const config = {
       },
       items: [
         {
+          type: 'docsVersionDropdown',
+          position: 'right',
+        },
+        {
           'href':
             'https://github.com/software-mansion/react-native-audio-api',
           'label': 'GitHub',
@@ -120,7 +139,8 @@ const config = {
     },
     footer: {
       links: [],
-      copyright: `All trademarks and copyrights belong to their respective owners.`,
+      copyright:
+        'All trademarks and copyrights belong to their respective owners. Read about our ',
     },
     prism: {
       additionalLanguages: ['bash', 'cmake'],
@@ -144,6 +164,7 @@ const config = {
   ],
 
   plugins: [
+    require('./plugins/swm-geo'),
     [
       '@docusaurus/plugin-google-tag-manager',
       {
@@ -159,6 +180,10 @@ const config = {
         // @ts-ignore
         configureWebpack(_config, isServer, _utils) {
           const processMock = !isServer ? { process: { env: {} } } : {};
+          const path = require('path');
+          const docsThemeDir = path.dirname(
+            require.resolve('docs-theme/package.json')
+          );
 
           const raf = require('raf');
           raf.polyfill();
@@ -186,6 +211,18 @@ const config = {
                 {
                   test: /\.tsx?$/,
                   use: 'babel-loader',
+                },
+                {
+                  test: /\.(js|jsx)$/,
+                  include: [docsThemeDir],
+                  use: {
+                    loader: 'babel-loader',
+                    options: {
+                      presets: [
+                        ['@babel/preset-react', { runtime: 'automatic' }],
+                      ],
+                    },
+                  },
                 },
                 {
                   test: /\.(js|jsx)$/,

@@ -1,4 +1,4 @@
-import { AudioEventEmitter } from '../events';
+import { AudioEventEmitter, AudioEventSubscription } from '../events';
 import type { EventEmptyType } from '../events/types';
 import type {
   IAudioFileSourceNode,
@@ -18,16 +18,21 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     globalThis.AudioEventEmitter
   );
 
+  private attachedEndedSubscription: AudioEventSubscription | null = null;
+  private positionSubscription: AudioEventSubscription | null = null;
+  private bufferingSubscription: AudioEventSubscription | null = null;
+
   attach(options: AttachFileSourceOptions): { duration: number } {
     this.resetNodeAndSubscriptions();
 
-    const sub = this.emitter.addAudioEventListener(
+    this.attachedEndedSubscription = this.emitter.addAudioEventListener(
       'ended',
       (_event: EventEmptyType) => {
         options.onEnded();
       }
     );
-    (this.node as IAudioFileSourceNode).onEnded = sub.subscriptionId;
+    (this.node as IAudioFileSourceNode).onended =
+      this.attachedEndedSubscription.subscriptionId;
 
     return {
       duration: (this.node as IAudioFileSourceNode).duration,
@@ -42,7 +47,9 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     if (!(this.node as IAudioFileSourceNode).routedThroughMediaElement) {
       this.connect(this.context.destination);
     }
+    // copied from audioscheduledsourcenode, so it can bypass requirement of being started only once
     (this.node as IAudioScheduledSourceNode).start(this.context.currentTime);
+    this.context.markRunningOnSourceStart();
   }
 
   pause(): void {
@@ -91,25 +98,59 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
       return;
     }
     this.stopPositionTracking();
-    const sub = this.emitter.addAudioEventListener(
+    this.positionSubscription = this.emitter.addAudioEventListener(
       'positionChanged',
       (event) => {
         onTime(event.value);
       }
     );
-    (this.node as IAudioFileSourceNode).onPositionChanged = sub.subscriptionId;
+    (this.node as IAudioFileSourceNode).onpositionchanged =
+      this.positionSubscription.subscriptionId;
   }
 
   stopPositionTracking(): void {
+    this.positionSubscription?.remove();
+    this.positionSubscription = null;
+
     if (this.node) {
-      (this.node as IAudioFileSourceNode).onPositionChanged = '0';
+      (this.node as IAudioFileSourceNode).onpositionchanged = '0';
+    }
+  }
+
+  startBufferingTracking(
+    onBufferingChange: (buffering: boolean) => void
+  ): void {
+    if (!this.node) {
+      return;
+    }
+    this.stopBufferingTracking();
+    this.bufferingSubscription = this.emitter.addAudioEventListener(
+      'bufferingStateChanged',
+      (event) => {
+        onBufferingChange(event.value);
+      }
+    );
+    (this.node as IAudioFileSourceNode).onbufferingstatechanged =
+      this.bufferingSubscription.subscriptionId;
+  }
+
+  stopBufferingTracking(): void {
+    this.bufferingSubscription?.remove();
+    this.bufferingSubscription = null;
+
+    if (this.node) {
+      (this.node as IAudioFileSourceNode).onbufferingstatechanged = '0';
     }
   }
 
   private resetNodeAndSubscriptions(): void {
+    this.stopPositionTracking();
+    this.stopBufferingTracking();
+    this.attachedEndedSubscription?.remove();
+    this.attachedEndedSubscription = null;
+
     if (this.node) {
-      (this.node as IAudioFileSourceNode).onPositionChanged = '0';
-      (this.node as IAudioFileSourceNode).onEnded = '0';
+      (this.node as IAudioFileSourceNode).onended = '0';
       this.node.disconnect(undefined);
     }
   }

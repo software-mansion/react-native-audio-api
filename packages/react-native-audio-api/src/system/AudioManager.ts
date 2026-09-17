@@ -81,6 +81,18 @@ class AudioManager implements IAudioManager {
     NativeAudioAPIModule.observeVolumeChanges(enabled);
   }
 
+  /**
+   * Synchronously reads the current system output volume as a 0..1 value, on
+   * the same scale the `volumeChange` event reports
+   *
+   * On iOS, a cold read before any volume-change event can report a stale or
+   * zero value on some OS versions; treat the event stream as the truth once it
+   * speaks.
+   */
+  getSystemVolume(): number {
+    return NativeAudioAPIModule.getSystemVolume();
+  }
+
   addSystemEventListener<Name extends SystemEventName>(
     name: Name,
     callback: SystemEventCallback<Name>

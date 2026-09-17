@@ -37,6 +37,8 @@ const Audio = React.memo(
       onPlay,
       onPause,
       onVolumeChange,
+      onWaiting,
+      onPlaying,
     } = useStableAudioProps(props);
 
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -45,8 +47,20 @@ const Audio = React.memo(
     const [ready, setReady] = useState(false);
     const [playbackState, setPlaybackState] =
       useState<AudioTagPlaybackState>('idle');
+    const [isBuffering, setIsBuffering] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
+
+    // See the native Audio.tsx's identical comment: kept derived rather than
+    // folded into playbackState so a stall starting/ending doesn't have to
+    // tear down whatever effect is watching playbackState.
+    const publicPlaybackState = useMemo<AudioTagPlaybackState>(
+      () =>
+        playbackState === 'playing' && isBuffering
+          ? 'buffering'
+          : playbackState,
+      [playbackState, isBuffering]
+    );
     const lastElementVolumeRef = useRef(muted ? 0 : volume);
 
     const effectiveMutedState = useMemo(() => {
@@ -205,7 +219,7 @@ const Audio = React.memo(
         volume: reportedVolumeState,
         setMuted,
         muted: effectiveMutedState,
-        playbackState,
+        playbackState: publicPlaybackState,
         currentTime,
         duration,
         autoPlay,
@@ -225,7 +239,7 @@ const Audio = React.memo(
         reportedVolumeState,
         setMuted,
         effectiveMutedState,
-        playbackState,
+        publicPlaybackState,
         currentTime,
         duration,
         autoPlay,
@@ -264,16 +278,26 @@ const Audio = React.memo(
               setPlaybackState((state) =>
                 state === 'playing' ? 'paused' : state
               );
+              setIsBuffering(false);
               onPause();
             }}
             onEnded={() => {
               setPlaybackState('idle');
               setCurrentTime(duration);
+              setIsBuffering(false);
               onEndedCallback();
             }}
             onError={() => {
               setReady(false);
               onError(new Error('Failed to load audio element source'));
+            }}
+            onWaiting={() => {
+              setIsBuffering(true);
+              onWaiting();
+            }}
+            onPlaying={() => {
+              setIsBuffering(false);
+              onPlaying();
             }}
           />
           {children}

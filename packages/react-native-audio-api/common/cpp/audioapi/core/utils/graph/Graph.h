@@ -12,6 +12,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 namespace audioapi::utils::graph {
@@ -156,11 +157,12 @@ class Graph {
 
   void collectDisposedNodes();
 
-  /// @brief Controls whether the producing (main/JS) thread drains Channel A
-  /// itself right after enqueuing an event.
+  /// @brief Enters self-drain mode: producing (JS / GC finalizer) threads
+  /// drain both event channels themselves right after enqueuing, then flushes
+  /// any backlog already in the channels.
   ///
-  /// The event channel is a bounded SPSC queue with a `WAIT_ON_FULL` +
-  /// `ATOMIC_WAIT` sender: once full, `send()` blocks until a consumer
+  /// The event channels are bounded SPSC queues with `WAIT_ON_FULL` +
+  /// `ATOMIC_WAIT` senders: once full, `send()` blocks until a consumer
   /// advances the receive cursor.
   ///
   /// Enable self-drain only while there is **no** audio/render consumer:
@@ -168,19 +170,26 @@ class Graph {
   ///     scheduled suspend until `resume()` restarts the render thread.
   ///   - Realtime `AudioContext`: while SUSPENDED / stopped (construction,
   ///     after `suspend()` / `close()` quiescence). With no callback draining
-  ///     the channel, a large graph would otherwise fill it and block.
+  ///     the channels, a large graph would otherwise fill them and block.
   ///
-  /// It MUST be disabled again *before* the audio/render thread starts so that
-  /// thread becomes the single consumer (the producer must not race it on the
-  /// receiver). Call `processEvents()` once immediately before disabling so the
-  /// bounded channel is empty (otherwise a full queue could block forever with
-  /// no consumer). If start/resume fails, re-enable.
+  /// While enabled, drains from the JS thread and the GC finalizer thread are
+  /// serialized by `selfDrainMutex_`, so exactly one thread consumes at a time.
+  void enableProducerSelfDrain() {
+    std::scoped_lock lock(selfDrainMutex_);
+    producerSelfDrain_.store(true, std::memory_order_release);
+    processEvents();
+  }
+
+  /// @brief Leaves self-drain mode so the audio/render thread can become the
+  /// single consumer. Flushes both channels first (while still serialized with
+  /// any in-flight self-drain), so the consumer starts on empty channels.
   ///
-  /// @note Toggle only from the thread that owns graph construction, and only
-  /// while no other thread is consuming the channel. After enabling, call
-  /// `processEvents()` once to flush any backlog already in the channel.
-  void setProducerSelfDrain(bool enabled) {
-    producerSelfDrain_.store(enabled, std::memory_order_release);
+  /// Call *before* starting the audio/render thread; once it runs, producers
+  /// must not touch the receivers. If start/resume fails, re-enable.
+  void disableProducerSelfDrain() {
+    std::scoped_lock lock(selfDrainMutex_);
+    processEvents();
+    producerSelfDrain_.store(false, std::memory_order_release);
   }
 
  private:
@@ -214,17 +223,31 @@ class Graph {
   std::uint32_t poolCapacity_; ///< Pool capacity we have ensured
   std::uint32_t nodeCapacity_; ///< Node vector capacity we have ensured
 
-  /// @brief When set, the producer thread drains Channel A right after each
-  /// enqueue (see setProducerSelfDrain). Default off — realtime contexts rely
-  /// on the audio thread as the consumer.
+  /// @brief When set, producer threads drain the channels right after each
+  /// enqueue (see enableProducerSelfDrain). Default off — realtime contexts
+  /// rely on the audio thread as the consumer.
   std::atomic<bool> producerSelfDrain_{false};
+
+  /// @brief Serializes self-drain consumption between producer threads (JS
+  /// thread mutations vs GC-finalizer `removeNode`) and the mode toggles.
+  std::mutex selfDrainMutex_;
 
   /// @brief Drains any pending produced events on the calling (producer)
   /// thread when self-drain is enabled. No-op otherwise.
+  ///
+  /// The flag is re-checked under `selfDrainMutex_`: a concurrent
+  /// `disableProducerSelfDrain()` may have handed consumption to the
+  /// audio/render thread between the fast-path check and the lock, and
+  /// consuming past that point would race the new consumer.
   void drainProducedEventsIfSelfDraining() {
-    if (producerSelfDrain_.load(std::memory_order_acquire)) {
-      processEvents();
+    if (!producerSelfDrain_.load(std::memory_order_acquire)) {
+      return;
     }
+    std::scoped_lock lock(selfDrainMutex_);
+    if (!producerSelfDrain_.load(std::memory_order_acquire)) {
+      return;
+    }
+    processEvents();
   }
 
   /// @brief Pre-grows the InputPool when the edge count approaches capacity.

@@ -40,7 +40,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | Name | Type | Default | Description |
 | :---: | :---: | :----: | :---- |
 | `source` | `AudioSource` | — | Asset id (`require(...)`), string URI/path, or `{ uri?, headers? }` for HTTP(S). |
-| `context` | `BaseAudioContext` | — | Optional. Native: implicit [`AudioContext`](/docs/core/audio-context) when omitted. Web: unused for HTML element playback. |
+| `context` | `BaseAudioContext` | — | Optional. Native: implicit [`AudioContext`](../core/audio-context.mdx) when omitted. Web: unused for HTML element playback. |
 | `autoPlay` | `boolean` | `false` | Start playback after load. |
 | `controls` | `boolean` | `false` | When `true`, renders default `AudioControls` above `children`. |
 | `loop` | `boolean` | `false` | Loop playback. |
@@ -58,6 +58,8 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `onPlay` | `() => void` | no-op | After `play()`. |
 | `onPause` | `() => void` | no-op | After `pause()`. |
 | `onVolumeChange` | `(volume: number) => void` | no-op | When effective volume changes. |
+| `onWaiting` | `() => void` | no-op | Playback stalled waiting on decoded data (network/decoder). Mirrors the HTML `waiting` event — not fired for a deliberate pause or seek. |
+| `onPlaying` | `() => void` | no-op | Playback resumed after a stall reported by `onWaiting`. Mirrors the HTML `playing` event — not fired for the initial `play()`, see `onPlay`. |
 
 ### `AudioSource`
 
@@ -73,7 +75,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 
 #### `metadata` (native)
 
-For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](/docs/utils/decoding#getaudioduration). This requires an FFmpeg-enabled build — check with [`isFfmpegEnabled`](/docs/other/runtime-flags#isffmpegenabled).
+For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](../utils/decoding.mdx#getaudioduration). This requires an FFmpeg-enabled build — check with [`isFfmpegEnabled`](../other/runtime-flags.mdx#isffmpegenabled).
 
 When FFmpeg is disabled, `preload="metadata"` is treated as `none`: the source is not fetched and duration stays unknown until playback starts.
 
@@ -135,6 +137,21 @@ type AudioComponentContextType = {
 
 Useful for creating your custom UI component. Must be used under `<Audio>`. Throws an `Error` if used outside the provider.
 
+### `playbackState`
+
+`'idle' | 'playing' | 'paused' | 'buffering'`.
+
+`'buffering'` is a stall **during** playback, not a resting state: the user's play intent is still in effect, and playback resumes on its own once data arrives. A play/pause control must therefore treat it like `'playing'` — comparing against `'playing'` alone flips the button back to a play affordance mid-track. Use the exported `isPlaybackActive` helper instead of a direct comparison:
+
+```tsx
+import { isPlaybackActive } from 'react-native-audio-api';
+
+const { playbackState, play, pause } = useAudioTagContext();
+const isPlaying = isPlaybackActive(playbackState); // true while buffering too
+```
+
+The built-in `AudioControls` additionally runs an indeterminate sweep across the progress track while `playbackState === 'buffering'`.
+
 ```tsx
 import React from 'react';
 import { Button } from 'react-native';
@@ -168,4 +185,4 @@ const MyAudioTagWrapper : React.FC = () => {
 
 ## Remarks
 
-- **FFmpeg:** Remote URL streaming (HTTP byte ranges) and HLS require an FFmpeg build. Without FFmpeg, remote progressive sources are downloaded fully and decoded with OS APIs / miniaudio where supported. See [Runtime flags](/docs/other/runtime-flags#where-ffmpeg-is-used).
+- **FFmpeg:** Remote URL streaming (HTTP byte ranges) and HLS require an FFmpeg build. Without FFmpeg, remote progressive sources are downloaded fully and decoded with OS APIs / miniaudio where supported. See [Runtime flags](../other/runtime-flags.mdx#where-ffmpeg-is-used).

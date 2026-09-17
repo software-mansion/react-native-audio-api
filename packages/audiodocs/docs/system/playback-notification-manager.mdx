@@ -145,7 +145,7 @@ Adds an event listener for notification actions.
 | `eventName` | [`PlaybackNotificationEventName`](playback-notification-manager#playbacknotificationeventname) | The event to listen for |
 | `callback`  | [`NotificationCallback`](playback-notification-manager#notificationcallback) | Callback function |
 
-#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
+#### Returns [`AudioEventSubscription`](./audio-manager.mdx#audioeventsubscription).
 
 ## Remarks
 
@@ -171,6 +171,9 @@ interface PlaybackNotificationInfo {
   state?: 'playing' | 'paused';
 
   skipInterval?: number;
+
+  // IOS only: shows the system "Live" indicator on the lock screen and CarPlay Now Playing UI
+  isLiveStream?: boolean;
 }
 ```
 </details>
@@ -182,6 +185,12 @@ interface PlaybackNotificationInfo {
 - Clamped to `1–120` seconds in JavaScript before being passed to native.
 - Pass `skipInterval` in the same `show()` call (or earlier) before enabling skip controls, so the interval is applied when controls are first set up.
 - On Android, skip action icons show `15` when `skipInterval` is `15` (default); otherwise generic skip icons without a number are used.
+
+#### `isLiveStream`
+
+- Marks the current item as a live stream (e.g. live radio) rather than a track with a known duration.
+- iOS only: maps to `MPNowPlayingInfoPropertyIsLiveStream`, which drives the "Live" label shown on the lock screen and CarPlay Now Playing UI.
+- No effect on Android — there is no equivalent system-level indicator to map it to.
 
 ### `PlaybackControlName`
 

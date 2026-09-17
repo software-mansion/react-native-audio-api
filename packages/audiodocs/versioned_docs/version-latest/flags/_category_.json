@@ -1,0 +1,8 @@
+{
+  "label": "Flags",
+  "position": 12,
+  "link": {
+    "type": "generated-index",
+    "description": "Runtime helpers for detecting which native capabilities are available in the current build."
+  }
+}

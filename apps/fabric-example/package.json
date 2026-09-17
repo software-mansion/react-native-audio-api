@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "common-app": "workspace:*",
-    "lucide-react-native": "^0.555.0",
-    "react": "19.2.3",
-    "react-native": "0.87.0",
-    "react-native-svg": "15.15.4"
+    "lucide-react-native": "catalog:",
+    "react": "catalog:",
+    "react-native": "catalog:",
+    "react-native-svg": "catalog:"
   },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "prettier": "catalog:"
   },
   "engines": {
     "node": ">=22.11.0"

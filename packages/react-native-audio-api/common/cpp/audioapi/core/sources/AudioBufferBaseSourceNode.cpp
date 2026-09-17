@@ -39,7 +39,7 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
       positionChanged_(
           context->getAudioEventHandlerRegistry(),
           static_cast<int>(context->getSampleRate())) {
-  setOnPositionChangedInterval(options.onPositionChangedInterval);
+  setOnPositionChangedInterval(options.onpositionchangedInterval);
 }
 
 void AudioBufferBaseSourceNode::initStretch(

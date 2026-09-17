@@ -8,25 +8,25 @@ import { Optional } from '@site/src/components/Badges';
 # WorkletAudioContext
 
 :::warning
-Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](/docs/worklets/introduction) for installation.
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.0.0**. See the [Worklets introduction](./introduction.mdx) for installation.
 :::
 
-`WorkletAudioContext` inherits from [`BaseAudioContext`](/docs/core/base-audio-context). It runs an audio-processing graph on a dedicated background thread **without routing audio to the device speakers**.
+`WorkletAudioContext` inherits from [`BaseAudioContext`](../core/base-audio-context.mdx). It runs an audio-processing graph on a dedicated background thread **without routing audio to the device speakers**.
 
-Use it when you need a self-contained graph for worklet-based analysis or processing — for example, driving a Reanimated visualizer from a [`WorkletNode`](/docs/worklets/worklet-node) while playback happens in a separate [`AudioContext`](/docs/core/audio-context).
+Use it when you need a self-contained graph for worklet-based analysis or processing — for example, driving a Reanimated visualizer from a [`WorkletNode`](./worklet-node.mdx) while playback happens in a separate [`AudioContext`](../core/audio-context.mdx).
 
 ## When to use it
 
 | Context | Output | Render driver | Typical use |
 | :--- | :--- | :--- | :--- |
-| [`AudioContext`](/docs/core/audio-context) | Device speakers / headphones | System audio callback | Playback, recording, effects |
-| [`WorkletAudioContext`](/docs/worklets/worklet-audio-context) | Internal sink (discarded) | Software timer on a worker thread | Worklet visualization, isolated processing |
-| [`OfflineAudioContext`](/docs/core/offline-audio-context) | [`AudioBuffer`](/docs/sources/audio-buffer) | Renders as fast as possible | Offline bounce / export |
+| [`AudioContext`](../core/audio-context.mdx) | Device speakers / headphones | System audio callback | Playback, recording, effects |
+| [`WorkletAudioContext`](./worklet-audio-context.mdx) | Internal sink (discarded) | Software timer on a worker thread | Worklet visualization, isolated processing |
+| [`OfflineAudioContext`](../core/offline-audio-context.mdx) | [`AudioBuffer`](../sources/audio-buffer.mdx) | Renders as fast as possible | Offline bounce / export |
 
-Unlike [`OfflineAudioContext`](/docs/core/offline-audio-context), `WorkletAudioContext` advances in **real time** at the context sample rate. Unlike [`AudioContext`](/docs/core/audio-context), it does not compete for the hardware audio session.
+Unlike [`OfflineAudioContext`](../core/offline-audio-context.mdx), `WorkletAudioContext` advances in **real time** at the context sample rate. Unlike [`AudioContext`](../core/audio-context.mdx), it does not compete for the hardware audio session.
 
 :::tip
-You can attach worklet nodes to any [`BaseAudioContext`](/docs/core/base-audio-context). `WorkletAudioContext` is the recommended choice when the graph exists only to feed worklet callbacks and does not need speaker output.
+You can attach worklet nodes to any [`BaseAudioContext`](../core/base-audio-context.mdx). `WorkletAudioContext` is the recommended choice when the graph exists only to feed worklet callbacks and does not need speaker output.
 :::
 
 ## Constructor
@@ -46,7 +46,7 @@ constructor(options?: WorkletAudioContextOptions)
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `sampleRate` <Optional /> | `number` | [`AudioManager.getDevicePreferredSampleRate()`](/docs/system/audio-manager#getdevicepreferredsamplerate) | Sample rate for all nodes in this context. |
+| `sampleRate` <Optional /> | `number` | [`AudioManager.getDevicePreferredSampleRate()`](../system/audio-manager.mdx#getdevicepreferredsamplerate) | Sample rate for all nodes in this context. |
 
 #### Errors
 
@@ -56,7 +56,7 @@ constructor(options?: WorkletAudioContextOptions)
 
 ## Example
 
-A common pattern is a dedicated visualization graph: route input into a [`WorkletNode`](/docs/worklets/worklet-node), connect the node to `destination` so the graph stays active, and call `resume()` to start rendering.
+A common pattern is a dedicated visualization graph: route input into a [`WorkletNode`](./worklet-node.mdx), connect the node to `destination` so the graph stays active, and call `resume()` to start rendering.
 
 ```tsx
 import { useEffect, useRef } from 'react';
@@ -104,13 +104,13 @@ function Meter() {
 ## Properties
 
 `WorkletAudioContext` does not define any additional properties.
-Inherits all properties from [`BaseAudioContext`](/docs/core/base-audio-context#properties).
+Inherits all properties from [`BaseAudioContext`](../core/base-audio-context.mdx#properties).
 
 ## Methods
 
-Inherits all node-factory methods from [`BaseAudioContext`](/docs/core/base-audio-context#methods) (`createGain`, `createOscillator`, `createAnalyser`, and so on).
+Inherits all node-factory methods from [`BaseAudioContext`](../core/base-audio-context.mdx#methods) (`createGain`, `createOscillator`, `createAnalyser`, and so on).
 
-It does **not** provide [`AudioContext.createMediaElementSource`](/docs/core/audio-context#createmediaelementsource).
+It does **not** provide [`AudioContext.createMediaElementSource`](../core/audio-context.mdx#createmediaelementsource).
 
 ### `close`
 

@@ -85,7 +85,7 @@ export const audioBufferFormatsTest = async (audioContextRef: React.RefObject<Au
     bufferSource.start();
     await new Promise(resolve => setTimeout(resolve, 4000));
     if (i === buffers.length - 1) {
-      bufferSource.onEnded = () => {
+      bufferSource.onended = () => {
         setTestingInfo('Audio buffer test completed.');
       };
     }
@@ -122,7 +122,7 @@ export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<A
             bufferSource.start();
             await new Promise(resolve => setTimeout(resolve, 4000));
             if (channels === lastChannelCount) {
-              bufferSource.onEnded = () => {
+              bufferSource.onended = () => {
                 setTestingInfo('Audio buffer channels test completed.');
               };
             }

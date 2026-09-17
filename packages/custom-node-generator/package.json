@@ -3,9 +3,7 @@
   "version": "0.0.7",
   "description": "A cli generator for custom node used by react-native-audio-api",
   "main": "lib/generator.js",
-  "bin": {
-    "rn-audioapi-custom-node-generator": "./bin/cli.js"
-  },
+  "bin": "./bin/cli.js",
   "author": "michal.dydek@swmansion.com",
   "license": "MIT",
   "dependencies": {
