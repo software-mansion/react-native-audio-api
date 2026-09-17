@@ -1,7 +1,6 @@
 #include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 
-#include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/Constants.h>
@@ -56,22 +55,22 @@ AndroidAudioRecorder::AndroidAudioRecorder(
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
 /// callable from the JS thread or handled by audio thread (if js dropped recorder first).
 AndroidAudioRecorder::~AndroidAudioRecorder() {
-  // there is no need to lock here, as there could be two threads that can destruct js gc and audio thread one (or one created by it)
-  // if we are on js:
-  // audio thread dropped recorder so onAudioReady callback would not be called anymore
-  //
-  // if we are on audio thread:
-  // js dropped recorder and oboe states that "callback object cannot be deleted before the stream is deleted"
-  if (fileWriter_ != nullptr) {
-    fileWriter_->closeFile();
-  }
-  if (dataCallback_ != nullptr) {
-    dataCallback_->cleanup();
-  }
-  if (adapterNodeHandle_ != nullptr) {
-    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
-  }
+  stop();
 
+  // stop() leaves an idle recorder alone, but a start() that failed after configuring some of
+  // its side effects leaves those behind on one.
+  DetachedSideEffects leftovers;
+  {
+    std::scoped_lock lock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+    leftovers = detachSideEffects();
+    callbackOutputEnabled_.store(false, std::memory_order_release);
+    fileOutputEnabled_.store(false, std::memory_order_release);
+    isConnected_.store(false, std::memory_order_release);
+    dataCallback_ = nullptr;
+  }
+  finalizeSideEffects(std::move(leftovers));
+
+  // Closing the stream waits for the callback in flight, so nothing is destroyed under it.
   cleanup();
 }
 

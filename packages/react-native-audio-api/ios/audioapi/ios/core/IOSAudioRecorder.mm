@@ -12,7 +12,6 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/core/utils/RotatingFileWriter.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/ios/core/utils/IOSInterleaving.h>
@@ -51,20 +50,14 @@ static void cleanupStartedRecorder(
   }
 }
 
-/// @brief Constructs an IOSAudioRecorder instance.
-/// This constructor initializes the receiver block and native side recorder wrapper (AVAudioSinkNode).
-/// All other necessary fields (like buffers) are initialized in start() method.
-/// This "method" should be called from the JS thread only.
-/// @param audioEventHandlerRegistry Shared pointer to the IAudioEventHandlerRegistry for event handling.
-/// @param options Creation-time capture chain configuration; only the iOS fields are read.
+/// JS thread only. Only the iOS fields of @p options are read. Buffers are sized in start().
 IOSAudioRecorder::IOSAudioRecorder(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const AudioRecorderOptions &options)
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
-    // The mic hands us planar float32; everything downstream takes interleaved float32,
-    // so normalize once here and let the shared fan-out do the rest.
+    // The mic delivers planar float32; every consumer takes interleaved.
     const float *interleaved = ios_interleaving::interleaveAudioInput(
         inputBuffer, numFrames, inputChannelCount_, interleavedHolder_);
     if (interleaved == nullptr) {
@@ -183,31 +176,9 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
     return Result<NoneType, std::string>::Err("File writer is unavailable");
   }
 
-  // The encoders are bound to the stream format they were opened with, so a format
-  // change means finishing the current file and opening a fresh one.
-  if (auto rotatingWriter = std::dynamic_pointer_cast<RotatingFileWriter>(fileWriter_)) {
-    auto result = rotatingWriter->reprepareStreamFormat(
-        format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
-    if (result.is_err()) {
-      fileOutputConfigured_.store(false, std::memory_order_release);
-      return Result<NoneType, std::string>::Err(
-          "Failed to reopen file for writing: " + result.unwrap_err());
-    }
-
-    filePath_ = result.unwrap();
-    fileOutputConfigured_.store(true, std::memory_order_release);
-    return Result<NoneType, std::string>::Ok(None);
-  }
-
-  // A plain writer forgets the file it just closed, so its totals are kept here for stop().
-  auto closeResult = fileWriter_->closeFile();
-  if (closeResult.is_ok()) {
-    reopenedFilesSizeMB_ += std::get<0>(closeResult.unwrap());
-    reopenedFilesDurationSec_ += std::get<1>(closeResult.unwrap());
-  }
-
-  auto result = fileWriter_->openFile(
-      format.sampleRate, format.channelCount, format.maxFramesPerBuffer, nextReopenedFileStem());
+  // The encoder is bound to the format it was opened with, so the session continues in a new file.
+  auto result = fileWriter_->reprepareStreamFormat(
+      format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
   if (result.is_err()) {
     fileOutputConfigured_.store(false, std::memory_order_release);
     return Result<NoneType, std::string>::Err(
@@ -215,10 +186,6 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   }
 
   filePath_ = result.unwrap();
-  {
-    std::scoped_lock segmentPathsLock(segmentPathsMutex_);
-    recordingSegmentPaths_.push_back(filePath_);
-  }
   fileOutputConfigured_.store(true, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
 }
@@ -264,9 +231,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
   [nativeRecorder_ cleanup];
 }
 
-/// @brief Starts the audio recording process and prepares necessary resources.
-/// This method should be called from the JS thread only.
-/// @returns Result containing the file path if recording started successfully, or an error message.
+/// JS thread only.
 Result<NoneType, std::string> IOSAudioRecorder::start()
 {
   if (!isIdle()) {
@@ -395,10 +360,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   return Result<NoneType, std::string>::Ok(None);
 }
 
-/// @brief Stops the audio recording process and releases resources.
-/// It finalizes any data receiver and closes the stream.
-/// This method should be called from the JS thread only.
-/// @returns Result containing paths, size, and duration if stopped successfully, or an error message.
+/// JS thread only.
 AudioRecorder::StopResult IOSAudioRecorder::stop()
 {
   DetachedSideEffects sideEffects;
@@ -445,11 +407,8 @@ void IOSAudioRecorder::resume()
   state_.store(RecorderState::Recording, std::memory_order_release);
 }
 
-/// @brief Checks if the recorder is currently recording.
-/// Besides recorder internal state, it also check if the audio engine is running.
-/// this helps with restarts after interruptions or other audio session changes.
-/// This method can be called from any thread.
-/// @returns True if recording, false otherwise.
+/// Any thread. Also requires the audio engine to be running, so a recorder whose session was
+/// interrupted reads as not recording.
 bool IOSAudioRecorder::isRecording() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
@@ -457,11 +416,7 @@ bool IOSAudioRecorder::isRecording() const
       [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
-/// @brief Checks if the recorder is currently paused.
-/// Besides recorder internal state, it also check if the audio engine is running.
-/// this helps with restarts after interruptions or other audio session changes.
-/// This method can be called from any thread.
-/// @returns True if paused, false otherwise.
+/// Any thread. A stopped audio engine reads as paused, so an interrupted session looks paused.
 bool IOSAudioRecorder::isPaused() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
@@ -475,9 +430,7 @@ bool IOSAudioRecorder::isPaused() const
       [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
 }
 
-/// @brief Checks if the recorder is currently idle (not recording or paused).
-/// This method can be called from any thread.
-/// @returns True if idle, false otherwise.
+/// Any thread.
 bool IOSAudioRecorder::isIdle() const
 {
   return state_.load(std::memory_order_acquire) == RecorderState::Idle;
