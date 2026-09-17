@@ -95,6 +95,7 @@ export interface IAudioContext extends IBaseAudioContext {
   close(): Promise<undefined>;
   resume(): Promise<undefined>;
   suspend(): Promise<undefined>;
+  onerror: string;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {

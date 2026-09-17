@@ -30,5 +30,6 @@ enum class AudioEvent : uint8_t {
   RECORDER_ERROR,
   BUFFERING_STATE_CHANGE,
   STATE_CHANGE,
+  CONTEXT_ERROR,
 };
 } // namespace audioapi

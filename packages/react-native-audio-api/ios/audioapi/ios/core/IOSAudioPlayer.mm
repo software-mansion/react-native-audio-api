@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include <audioapi/core/AudioContext.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
@@ -11,13 +12,36 @@
 #include <audioapi/ios/system/AudioSessionManager.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
+#include <mutex>
+
 namespace audioapi {
+
+namespace {
+
+void reportStreamFailToContext(std::mutex *driverMutex, const std::weak_ptr<AudioContext> &context)
+{
+  if (driverMutex == nullptr) {
+    return;
+  }
+
+  std::scoped_lock lock(*driverMutex);
+  if (auto ctx = context.lock()) {
+    if (ctx->isClosed()) {
+      return;
+    }
+    ctx->onStreamFail();
+  }
+}
+
+} // namespace
 
 IOSAudioPlayer::IOSAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
-    std::atomic<uint32_t> &currentRenders)
+    std::atomic<uint32_t> &currentRenders,
+    std::weak_ptr<AudioContext> context,
+    std::mutex *driverMutex)
     : audioBuffer_(nullptr),
       audioPlayer_(nullptr),
       renderAudio_(renderAudio),
@@ -25,7 +49,9 @@ IOSAudioPlayer::IOSAudioPlayer(
       currentRenders_(currentRenders),
       channelCount_(channelCount),
       isRunning_(false),
-      pendingSaved_(RENDER_QUANTUM_SIZE, channelCount_, sampleRate)
+      pendingSaved_(RENDER_QUANTUM_SIZE, channelCount_, sampleRate),
+      context_(std::move(context)),
+      driverMutex_(driverMutex)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     deliverOutputBuffers(outputData, numFrames);
@@ -35,6 +61,10 @@ IOSAudioPlayer::IOSAudioPlayer(
                                                      sampleRate:sampleRate
                                                    channelCount:channelCount_];
   audioBuffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
+
+  std::mutex *driverMutexForCallback = driverMutex_;
+  std::weak_ptr<AudioContext> weakContext = context_;
+  audioPlayer_.onStreamFail = ^{ reportStreamFailToContext(driverMutexForCallback, weakContext); };
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
