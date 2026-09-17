@@ -7,7 +7,6 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/core/inputs/AudioRecorder.h>
 #import <audioapi/core/sources/RecorderAdapterNode.h>
-#import <audioapi/core/utils/graph/NodeHandle.h>
 #import <audioapi/utils/AudioFileProperties.h>
 
 #include <memory>
@@ -25,20 +24,20 @@ namespace audioapi {
 
 struct RecorderAdapterTestFixture {
   std::shared_ptr<OfflineAudioContext> context;
-  std::shared_ptr<utils::graph::NodeHandle> handle;
+  std::shared_ptr<RecorderAdapterNode> handle;
 
   RecorderAdapterNode *adapter() const
   {
-    return static_cast<RecorderAdapterNode *>(handle->audioNode.get());
+    return handle.get();
   }
 };
 
 static RecorderAdapterTestFixture makeRecorderAdapterFixture()
 {
   RecorderAdapterTestFixture fixture;
-  fixture.context = std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr);
-  auto adapterNode = std::make_unique<RecorderAdapterNode>(fixture.context);
-  fixture.handle = std::make_shared<utils::graph::NodeHandle>(0, std::move(adapterNode));
+  fixture.context =
+      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr, RuntimeRegistry{});
+  fixture.handle = std::make_shared<RecorderAdapterNode>(fixture.context);
   return fixture;
 }
 
@@ -474,7 +473,7 @@ class TestableIOSAudioRecorder : public IOSAudioRecorder {
 
 - (void)testConnectWhileIdleTracksIntentWithoutLiveConnection
 {
-  auto adapter = std::make_shared<utils::graph::NodeHandle>(0, nullptr);
+  std::shared_ptr<RecorderAdapterNode> adapter;
 
   _recorder->connect(adapter);
 

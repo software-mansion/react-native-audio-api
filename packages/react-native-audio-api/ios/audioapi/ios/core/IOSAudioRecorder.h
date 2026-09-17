@@ -59,6 +59,7 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<std::string, std::string> setupFileWriter(
       const std::shared_ptr<AudioFileProperties> &properties,
       const std::string &fileNameOverride = "");
+  void rollbackFailedStart();
   Result<NoneType, std::string> reprepareForLiveInput();
   void handleInputConfigurationChange();
   Result<NoneType, std::string> reprepareFileWriter(

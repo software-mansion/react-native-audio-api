@@ -76,7 +76,9 @@ void RecorderAdapterNode::waitForProcessQuiescence() const {
   }
 }
 
-void RecorderAdapterNode::processNode(int framesToProcess) {
+std::shared_ptr<DSPAudioBuffer> RecorderAdapterNode::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+    int framesToProcess) {
   const CurrentRenderScope processScope(currentProcesses_);
 
   if (!isInitialized_.load(std::memory_order_acquire)) {

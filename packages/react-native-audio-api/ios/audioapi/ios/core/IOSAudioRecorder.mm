@@ -68,10 +68,6 @@ IOSAudioRecorder::IOSAudioRecorder(
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
-    if (numFrames > 0) {
-      lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
-    }
-
     runSideEffects(inputBuffer, numFrames);
   };
 
@@ -97,10 +93,9 @@ void IOSAudioRecorder::runSideEffects(const AudioBufferList *inputBuffer, int nu
 
   if (isConnected()) {
     if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
-      auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get());
-      for (size_t channel = 0; channel < adapterNode->getChannelCount(); ++channel) {
+      for (size_t channel = 0; channel < adapterNode_->getChannelCount(); ++channel) {
         auto *data = static_cast<float *>(inputBuffer->mBuffers[channel].mData);
-        adapterNode->buff_[channel]->write(data, numFrames);
+        adapterNode_->buff_[channel]->write(data, numFrames);
       }
     }
   }
@@ -164,11 +159,9 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
     }
   }
 
-  if (isConnected() && adapterNodeHandle_ != nullptr) {
+  if (isConnected() && adapterNode_ != nullptr) {
     reprepareAdapter(inputFormat, maxInputBufferLength);
   }
-
-  streamSampleRate_ = static_cast<float>(recorderFormatSampleRate(inputFormat));
 
   if (shouldArmInput) {
     [nativeRecorder_ setInputArmed:true];
@@ -240,15 +233,14 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareCallback(
 void IOSAudioRecorder::reprepareAdapter(AVAudioFormat *inputFormat, int maxInputBufferLength)
 {
   std::scoped_lock lock(adapterNodeMutex_);
-  if (adapterNodeHandle_ == nullptr) {
+  if (adapterNode_ == nullptr) {
     return;
   }
 
-  static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
-      ->init(
-          static_cast<size_t>(maxInputBufferLength),
-          recorderFormatChannelCount(inputFormat),
-          recorderFormatSampleRate(inputFormat));
+  adapterNode_->init(
+      static_cast<size_t>(maxInputBufferLength),
+      recorderFormatChannelCount(inputFormat),
+      recorderFormatSampleRate(inputFormat));
   connectedConfigured_.store(true, std::memory_order_release);
 }
 
