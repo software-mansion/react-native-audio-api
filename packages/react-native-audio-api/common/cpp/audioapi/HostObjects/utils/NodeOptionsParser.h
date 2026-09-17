@@ -2,6 +2,7 @@
 
 #include <audioapi/jsi/RuntimeObserver.h>
 #include <jsi/jsi.h>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -12,12 +13,28 @@
 
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 
 namespace audioapi::option_parser {
+
+template <typename T>
+concept NumericOption = (std::integral<T> && !std::same_as<T, bool>) || std::floating_point<T>;
+
+template <NumericOption T>
+void setNumericOption(
+    const jsi::Object &optionsObject,
+    const char *name,
+    T &value,
+    jsi::Runtime &runtime) {
+  auto optionsValue = optionsObject.getProperty(runtime, name);
+  if (optionsValue.isNumber()) {
+    value = static_cast<T>(optionsValue.getNumber());
+  }
+}
 
 inline std::map<std::string, std::string> parseHttpHeaders(
     jsi::Runtime &runtime,
@@ -52,10 +69,7 @@ inline AudioNodeOptions parseAudioNodeOptions(
     const jsi::Object &optionsObject) {
   AudioNodeOptions options;
 
-  auto channelCountValue = optionsObject.getProperty(runtime, "channelCount");
-  if (channelCountValue.isNumber()) {
-    options.channelCount = static_cast<int>(channelCountValue.getNumber());
-  }
+  setNumericOption(optionsObject, "channelCount", options.channelCount, runtime);
 
   auto channelCountModeValue = optionsObject.getProperty(runtime, "channelCountMode");
   if (channelCountModeValue.isString()) {
@@ -85,10 +99,7 @@ inline AudioNodeOptions parseAudioNodeOptions(
 inline GainOptions parseGainOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   GainOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
-  auto gainValue = optionsObject.getProperty(runtime, "gain");
-  if (gainValue.isNumber()) {
-    options.gain = static_cast<float>(gainValue.getNumber());
-  }
+  setNumericOption(optionsObject, "gain", options.gain, runtime);
 
   return options;
 }
@@ -98,11 +109,44 @@ inline StereoPannerOptions parseStereoPannerOptions(
     const jsi::Object &optionsObject) {
   StereoPannerOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
-  auto panValue = optionsObject.getProperty(runtime, "pan");
-  if (panValue.isNumber()) {
-    options.pan = static_cast<float>(panValue.getNumber());
+  setNumericOption(optionsObject, "pan", options.pan, runtime);
+
+  return options;
+}
+
+inline PannerOptions parsePannerOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+  PannerOptions options(parseAudioNodeOptions(runtime, optionsObject));
+
+  auto panningModelValue = optionsObject.getProperty(runtime, "panningModel");
+  if (panningModelValue.isString()) {
+    try {
+      options.panningModel =
+          js_enum_parser::panningModelFromString(panningModelValue.asString(runtime).utf8(runtime));
+    } catch (const std::invalid_argument &) {}
   }
 
+  auto distanceModelValue = optionsObject.getProperty(runtime, "distanceModel");
+  if (distanceModelValue.isString()) {
+    try {
+      options.distanceModel = js_enum_parser::distanceModelFromString(
+          distanceModelValue.asString(runtime).utf8(runtime));
+    } catch (const std::invalid_argument &) {}
+  }
+
+  setNumericOption(optionsObject, "positionX", options.positionX, runtime);
+  setNumericOption(optionsObject, "positionY", options.positionY, runtime);
+  setNumericOption(optionsObject, "positionZ", options.positionZ, runtime);
+
+  setNumericOption(optionsObject, "orientationX", options.orientationX, runtime);
+  setNumericOption(optionsObject, "orientationY", options.orientationY, runtime);
+  setNumericOption(optionsObject, "orientationZ", options.orientationZ, runtime);
+
+  setNumericOption(optionsObject, "refDistance", options.refDistance, runtime);
+  setNumericOption(optionsObject, "maxDistance", options.maxDistance, runtime);
+  setNumericOption(optionsObject, "rolloffFactor", options.rolloffFactor, runtime);
+  setNumericOption(optionsObject, "coneInnerAngle", options.coneInnerAngle, runtime);
+  setNumericOption(optionsObject, "coneOuterAngle", options.coneOuterAngle, runtime);
+  setNumericOption(optionsObject, "coneOuterGain", options.coneOuterGain, runtime);
   return options;
 }
 
@@ -132,10 +176,7 @@ inline ConstantSourceOptions parseConstantSourceOptions(
     const jsi::Object &optionsObject) {
   ConstantSourceOptions options;
 
-  auto offsetValue = optionsObject.getProperty(runtime, "offset");
-  if (offsetValue.isNumber()) {
-    options.offset = static_cast<float>(offsetValue.getNumber());
-  }
+  setNumericOption(optionsObject, "offset", options.offset, runtime);
 
   return options;
 }
@@ -145,25 +186,10 @@ inline AnalyserOptions parseAnalyserOptions(
     const jsi::Object &optionsObject) {
   AnalyserOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
-  auto fftSizeValue = optionsObject.getProperty(runtime, "fftSize");
-  if (fftSizeValue.isNumber()) {
-    options.fftSize = static_cast<int>(fftSizeValue.getNumber());
-  }
-
-  auto minDecibelsValue = optionsObject.getProperty(runtime, "minDecibels");
-  if (minDecibelsValue.isNumber()) {
-    options.minDecibels = static_cast<float>(minDecibelsValue.getNumber());
-  }
-
-  auto maxDecibelsValue = optionsObject.getProperty(runtime, "maxDecibels");
-  if (maxDecibelsValue.isNumber()) {
-    options.maxDecibels = static_cast<float>(maxDecibelsValue.getNumber());
-  }
-
-  auto smoothingTimeConstantValue = optionsObject.getProperty(runtime, "smoothingTimeConstant");
-  if (smoothingTimeConstantValue.isNumber()) {
-    options.smoothingTimeConstant = static_cast<float>(smoothingTimeConstantValue.getNumber());
-  }
+  setNumericOption(optionsObject, "fftSize", options.fftSize, runtime);
+  setNumericOption(optionsObject, "minDecibels", options.minDecibels, runtime);
+  setNumericOption(optionsObject, "maxDecibels", options.maxDecibels, runtime);
+  setNumericOption(optionsObject, "smoothingTimeConstant", options.smoothingTimeConstant, runtime);
 
   return options;
 }
@@ -195,25 +221,10 @@ inline BiquadFilterOptions parseBiquadFilterOptions(
     }
   }
 
-  auto frequencyValue = optionsObject.getProperty(runtime, "frequency");
-  if (frequencyValue.isNumber()) {
-    options.frequency = static_cast<float>(frequencyValue.getNumber());
-  }
-
-  auto detuneValue = optionsObject.getProperty(runtime, "detune");
-  if (detuneValue.isNumber()) {
-    options.detune = static_cast<float>(detuneValue.getNumber());
-  }
-
-  auto QValue = optionsObject.getProperty(runtime, "Q");
-  if (QValue.isNumber()) {
-    options.Q = static_cast<float>(QValue.getNumber());
-  }
-
-  auto gainValue = optionsObject.getProperty(runtime, "gain");
-  if (gainValue.isNumber()) {
-    options.gain = static_cast<float>(gainValue.getNumber());
-  }
+  setNumericOption(optionsObject, "frequency", options.frequency, runtime);
+  setNumericOption(optionsObject, "detune", options.detune, runtime);
+  setNumericOption(optionsObject, "Q", options.Q, runtime);
+  setNumericOption(optionsObject, "gain", options.gain, runtime);
 
   return options;
 }
@@ -239,15 +250,8 @@ inline OscillatorOptions parseOscillatorOptions(
     }
   }
 
-  auto frequencyValue = optionsObject.getProperty(runtime, "frequency");
-  if (frequencyValue.isNumber()) {
-    options.frequency = static_cast<float>(frequencyValue.getNumber());
-  }
-
-  auto detuneValue = optionsObject.getProperty(runtime, "detune");
-  if (detuneValue.isNumber()) {
-    options.detune = static_cast<float>(detuneValue.getNumber());
-  }
+  setNumericOption(optionsObject, "frequency", options.frequency, runtime);
+  setNumericOption(optionsObject, "detune", options.detune, runtime);
 
   auto periodicWaveValue = optionsObject.getProperty(runtime, "periodicWave");
   if (periodicWaveValue.isObject()) {
@@ -264,15 +268,8 @@ inline BaseAudioBufferSourceOptions parseBaseAudioBufferSourceOptions(
     const jsi::Object &optionsObject) {
   BaseAudioBufferSourceOptions options;
 
-  auto detuneValue = optionsObject.getProperty(runtime, "detune");
-  if (detuneValue.isNumber()) {
-    options.detune = static_cast<float>(detuneValue.getNumber());
-  }
-
-  auto playbackRateValue = optionsObject.getProperty(runtime, "playbackRate");
-  if (playbackRateValue.isNumber()) {
-    options.playbackRate = static_cast<float>(playbackRateValue.getNumber());
-  }
+  setNumericOption(optionsObject, "detune", options.detune, runtime);
+  setNumericOption(optionsObject, "playbackRate", options.playbackRate, runtime);
 
   auto pitchCorrectionValue = optionsObject.getProperty(runtime, "pitchCorrection");
   if (pitchCorrectionValue.isBool()) {
@@ -301,15 +298,8 @@ inline AudioBufferSourceOptions parseAudioBufferSourceOptions(
     options.loop = loopValue.getBool();
   }
 
-  auto loopStartValue = optionsObject.getProperty(runtime, "loopStart");
-  if (loopStartValue.isNumber()) {
-    options.loopStart = static_cast<float>(loopStartValue.getNumber());
-  }
-
-  auto loopEndValue = optionsObject.getProperty(runtime, "loopEnd");
-  if (loopEndValue.isNumber()) {
-    options.loopEnd = static_cast<float>(loopEndValue.getNumber());
-  }
+  setNumericOption(optionsObject, "loopStart", options.loopStart, runtime);
+  setNumericOption(optionsObject, "loopEnd", options.loopEnd, runtime);
 
   return options;
 }
@@ -328,15 +318,8 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
     options.loop = loopValue.getBool();
   }
 
-  auto volumeValue = optionsObject.getProperty(runtime, "volume");
-  if (volumeValue.isNumber()) {
-    options.volume = static_cast<float>(volumeValue.getNumber());
-  }
-
-  auto playbackRateValue = optionsObject.getProperty(runtime, "playbackRate");
-  if (playbackRateValue.isNumber()) {
-    options.playbackRate = static_cast<float>(playbackRateValue.getNumber());
-  }
+  setNumericOption(optionsObject, "volume", options.volume, runtime);
+  setNumericOption(optionsObject, "playbackRate", options.playbackRate, runtime);
 
   auto preservesPitchValue = optionsObject.getProperty(runtime, "preservesPitch");
   if (preservesPitchValue.isBool()) {
@@ -399,15 +382,8 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
 inline DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   DelayOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
-  auto maxDelayTimeValue = optionsObject.getProperty(runtime, "maxDelayTime");
-  if (maxDelayTimeValue.isNumber()) {
-    options.maxDelayTime = static_cast<float>(maxDelayTimeValue.getNumber());
-  }
-
-  auto delayTimeValue = optionsObject.getProperty(runtime, "delayTime");
-  if (delayTimeValue.isNumber()) {
-    options.delayTime = static_cast<float>(delayTimeValue.getNumber());
-  }
+  setNumericOption(optionsObject, "maxDelayTime", options.maxDelayTime, runtime);
+  setNumericOption(optionsObject, "delayTime", options.delayTime, runtime);
 
   return options;
 }
@@ -419,10 +395,7 @@ inline ChannelMergerOptions parseChannelMergerOptions(
   // channelInterpretation remains configurable.
   ChannelMergerOptions options;
 
-  auto numberOfInputsValue = optionsObject.getProperty(runtime, "numberOfInputs");
-  if (numberOfInputsValue.isNumber()) {
-    options.numberOfInputs = static_cast<int>(numberOfInputsValue.getNumber());
-  }
+  setNumericOption(optionsObject, "numberOfInputs", options.numberOfInputs, runtime);
 
   auto channelInterpretationValue = optionsObject.getProperty(runtime, "channelInterpretation");
   if (!channelInterpretationValue.isString()) {
@@ -445,11 +418,8 @@ inline ChannelSplitterOptions parseChannelSplitterOptions(
   // channelCount tracks numberOfOutputs.
   ChannelSplitterOptions options;
 
-  auto numberOfOutputsValue = optionsObject.getProperty(runtime, "numberOfOutputs");
-  if (numberOfOutputsValue.isNumber()) {
-    options.numberOfOutputs = static_cast<int>(numberOfOutputsValue.getNumber());
-    options.channelCount = options.numberOfOutputs;
-  }
+  setNumericOption(optionsObject, "numberOfOutputs", options.numberOfOutputs, runtime);
+  options.channelCount = options.numberOfOutputs;
 
   return options;
 }
