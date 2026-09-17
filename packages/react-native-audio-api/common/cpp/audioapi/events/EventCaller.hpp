@@ -20,6 +20,15 @@ class EventCaller {
   explicit EventCaller(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
       : eventHandlerRegistry_(audioEventHandlerRegistry) {}
 
+  /// @param audioEventProducer The owning context's dispatch lane. Required to dispatch from
+  /// the audio thread; without it `dispatchFromAudioThread` reports failure instead of
+  /// enqueueing through a lane that belongs to another thread.
+  EventCaller(
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      std::shared_ptr<AudioEventProducer> audioEventProducer)
+      : eventHandlerRegistry_(audioEventHandlerRegistry),
+        audioEventProducer_(std::move(audioEventProducer)) {}
+
   ~EventCaller() {
     unregisterCallback();
   }
@@ -91,16 +100,18 @@ class EventCaller {
     requires EventPayloadFor<Event, Payload>
   bool dispatchFromAudioThread(Payload &&payload) const noexcept {
     const auto callbackId = getCallbackId();
-    if (eventHandlerRegistry_ == nullptr || callbackId == 0) {
+    if (eventHandlerRegistry_ == nullptr || audioEventProducer_ == nullptr || callbackId == 0) {
       return false;
     }
 
     return eventHandlerRegistry_->dispatchEventFromAudioThread(
-        Event, callbackId, AudioEventPayload{std::forward<Payload>(payload)});
+        *audioEventProducer_, Event, callbackId, AudioEventPayload{std::forward<Payload>(payload)});
   }
 
  private:
   std::shared_ptr<IAudioEventHandlerRegistry> eventHandlerRegistry_;
+  /// Null for events only ever dispatched NOT on the audio thread
+  std::shared_ptr<AudioEventProducer> audioEventProducer_;
   std::atomic<uint64_t> callbackId_{0};
 };
 

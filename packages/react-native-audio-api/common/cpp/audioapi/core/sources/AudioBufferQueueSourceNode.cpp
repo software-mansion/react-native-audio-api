@@ -19,7 +19,9 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options),
-      onBufferEndedEvent_(context->getAudioEventHandlerRegistry()) {
+      onBufferEndedEvent_(
+          context->getAudioEventHandlerRegistry(),
+          context->getAudioEventProducer()) {
   if (options.pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
