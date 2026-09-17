@@ -94,7 +94,6 @@ void IOSAudioRecorder::runSideEffects(const AudioBufferList *inputBuffer, int nu
 
   if (isConnected()) {
     if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
-      // The input format can change before the configuration change callback re-prepares the adapter.
       const size_t channelCount = std::min(
           adapterNode_->getChannelCount(), static_cast<size_t>(inputBuffer->mNumberBuffers));
       for (size_t channel = 0; channel < channelCount; ++channel) {
