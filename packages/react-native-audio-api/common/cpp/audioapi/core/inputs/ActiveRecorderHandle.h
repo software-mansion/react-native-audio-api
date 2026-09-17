@@ -22,11 +22,9 @@ struct FileInfo {
 /// @brief The process-wide view of the recording session that is currently active.
 ///
 /// The JavaScript host object owns the AudioRecorder. Native code still needs
-/// to reach that recorder when JavaScript is not in the picture.
-/// This handle publishes a non-owning reference to the recorder
-/// so those actions can reach it. It does not extend the recorder's lifetime:
-/// if nothing else still owns it, there is no session to control. Only one
-/// recording session is published at a time.
+/// to reach that recorder when js is dead. This handle publishes a non-owning
+/// reference to the recorder so those actions can reach it.
+/// Only one recording session is published at a time.
 class ActiveRecorderHandle {
  public:
   static ActiveRecorderHandle &global();
@@ -38,13 +36,6 @@ class ActiveRecorderHandle {
   Result<NoneType, std::string> tryStart(
       const std::shared_ptr<AudioRecorder> &recorder,
       const std::string &fileNameOverride);
-
-  /// @brief Drops the slot without stopping the recorder.
-  void clearRecorder();
-
-  /// @brief Drops the slot only if it still holds @p expected.
-  /// A foreign occupant is left in place.
-  void clearRecorder(const std::shared_ptr<AudioRecorder> &expected);
 
   /// @brief The state of the recorder in the slot, or Idle when the slot is empty.
   [[nodiscard]] RecorderState currentState() const;
@@ -82,6 +73,9 @@ class ActiveRecorderHandle {
   friend struct ActiveRecorderHandleTestPeer;
 
   static RecorderState stateOf(const std::shared_ptr<AudioRecorder> &recorder);
+
+  /// @brief Drops the slot without stopping the recorder.
+  void clearRecorder();
 
   mutable std::recursive_mutex mutex_;
   std::weak_ptr<AudioRecorder> recorder_;

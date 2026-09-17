@@ -40,15 +40,6 @@ void ActiveRecorderHandle::clearRecorder() {
   recorder_.reset();
 }
 
-void ActiveRecorderHandle::clearRecorder(const std::shared_ptr<AudioRecorder> &expected) {
-  std::scoped_lock lock(mutex_);
-  std::shared_ptr<AudioRecorder> current = recorder_.lock();
-  if (current && current != expected) {
-    return;
-  }
-  recorder_.reset();
-}
-
 RecorderState ActiveRecorderHandle::currentState() const {
   std::scoped_lock lock(mutex_);
   const std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
@@ -102,6 +93,7 @@ Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo(
     const std::shared_ptr<AudioRecorder> &expected) {
   std::scoped_lock lock(mutex_);
   if (recorder_.lock() != expected) {
+    // if we do not store provided recorder, it meands that it cannot be started, so it is in idle state
     return Result<FileInfo, std::string>::Err("Recorder is not in recording state.");
   }
   return stopAndReturnInfo();

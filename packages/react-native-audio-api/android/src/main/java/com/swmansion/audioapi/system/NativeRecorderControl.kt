@@ -1,12 +1,9 @@
 package com.swmansion.audioapi.system
 
 /**
- * Direct access to the active C++ recorder, independent of the React context and the JS
- * runtime. This is what allows the recording-notification stop action to end a recording
+ * Direct access to the active C++ recorder, independent of the JS runtime.
+ * This is what allows the recording-notification stop action to end a recording
  * after the app task has been removed.
- *
- * Every control call answers with the [RecorderState] the recorder is left in, so callers
- * that have no other view of it can render themselves from that state alone.
  */
 object NativeRecorderControl {
   init {
@@ -14,8 +11,7 @@ object NativeRecorderControl {
   }
 
   /**
-   * Stops the active recording and finalizes its output file. Blocking — never call on
-   * the main thread. The file info is stashed natively for
+   * The file info is stashed natively for
    * `AudioRecorder.consumeLastRecordingResult()` on the JS side.
    */
   fun stop(): RecorderState = RecorderState.fromOrdinal(stopActiveRecording())

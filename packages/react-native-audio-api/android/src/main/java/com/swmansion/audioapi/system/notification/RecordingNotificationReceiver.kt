@@ -76,10 +76,8 @@ class RecordingNotificationReceiver(
   /**
    * Handles a swipe of a pinned notification. Since Android 14 the system lets the user
    * swipe away an ongoing notification even when it belongs to a foreground service, and
-   * `setOngoing(true)` no longer prevents that. The notification is the only control
-   * surface once the app is in the background, so while a recording is live it is
-   * re-posted straight away; a swipe of a notification that outlived its recording is
-   * left alone.
+   * `setOngoing(true)` no longer prevents that. It can be set to rearming, even though
+   * the user cancels it, it shows again
    */
   private fun restoreWhileRecording() {
     val pendingResult = goAsync()
@@ -105,8 +103,7 @@ class RecordingNotificationReceiver(
    * the app task was removed, when no JS listener is reachable.
    *
    * Runs on an executor because [onReceive] is called on the main thread and the native
-   * calls take the recorder's locks (stop even blocks on file finalization); [goAsync]
-   * keeps the process alive meanwhile.
+   * calls take the recorder's locks
    */
   private fun applyToRecorder(
     action: () -> RecorderState,

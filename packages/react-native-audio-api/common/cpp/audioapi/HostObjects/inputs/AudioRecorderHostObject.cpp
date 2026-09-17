@@ -57,7 +57,7 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 AudioRecorderHostObject::~AudioRecorderHostObject() {
-  ActiveRecorderHandle::global().clearRecorder(audioRecorder_);
+  ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder_);
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {

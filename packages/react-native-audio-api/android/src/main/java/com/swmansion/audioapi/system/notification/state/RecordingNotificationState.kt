@@ -5,10 +5,7 @@ import com.swmansion.audioapi.system.notification.RecordingNotificationReceiver
 
 /**
  * Options are sticky: a `show()` call keeps every value the previous call set unless the
- * new options override it. That includes `paused`, which the notification's own pause and
- * resume actions write from the recorder's state — a partial `show()` omitting it must not
- * contradict them. Everything belonging to a single recording session, `paused` included,
- * is cleared when the notification is hidden.
+ * new options override it.
  */
 class RecordingNotificationState(
   var receiver: RecordingNotificationReceiver? = null,

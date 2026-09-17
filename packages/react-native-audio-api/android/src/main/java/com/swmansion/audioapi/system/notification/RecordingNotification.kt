@@ -82,8 +82,6 @@ class RecordingNotification(
   }
 
   private fun buildNotification(context: ReactApplicationContext): Notification {
-    // The notification is rebuilt from scratch on every show() so that every option —
-    // including the tap intent — reflects the latest values.
     val builder =
       NotificationCompat
         .Builder(context, channelId)
@@ -115,9 +113,6 @@ class RecordingNotification(
   ) {
     val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     state.deepLinkUri?.let {
-      // React Native's Linking only surfaces intent data for ACTION_VIEW — with the
-      // launcher's ACTION_MAIN the URI would be silently ignored. The intent stays
-      // explicit (component set), so no intent filter is consulted.
       launchIntent.action = Intent.ACTION_VIEW
       launchIntent.removeCategory(Intent.CATEGORY_LAUNCHER)
       launchIntent.data = Uri.parse(it)

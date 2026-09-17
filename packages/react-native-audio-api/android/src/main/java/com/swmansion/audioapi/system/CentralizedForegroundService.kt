@@ -61,8 +61,8 @@ class CentralizedForegroundService : Service() {
   }
 
   override fun onTaskRemoved(rootIntent: Intent?) {
-    // Fires only when the app opted into android:stopWithTask="false" — the service (and any
-    // in-progress recording or playback) intentionally outlives the removed task.
+    // Fires only when the app opted into android:stopWithTask="false" — the service
+    // intentionally outlives the removed task.
     Log.i(TAG, "App task removed, foreground service keeps running")
     super.onTaskRemoved(rootIntent)
   }
@@ -127,8 +127,6 @@ class CentralizedForegroundService : Service() {
       return
     }
 
-    // Passing a type the app did not declare in its manifest throws, so only the intersection
-    // of desired and declared types may be used.
     val serviceTypes = activeNotificationServiceTypes() and manifestDeclaredServiceTypes()
     when {
       serviceTypes != 0 -> {

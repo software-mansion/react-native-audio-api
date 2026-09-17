@@ -280,8 +280,6 @@ AndroidAudioRecorder::stop() {
 /// @brief Enables file output for the recorder with the specified properties.
 /// The file itself is created by the next start(). An active (recording or paused) session keeps
 /// the output it started with, so calling this during a session fails and changes nothing.
-/// Due to the nature of RN this might be called multiple times between sessions (especially during
-/// development), thus the properties are simply replaced.
 /// This method should be called from the JS thread only.
 /// @param properties Properties defining the audio file format and encoding options.
 /// @returns Ok when the properties were stored, otherwise an error message.

@@ -202,33 +202,6 @@ TEST(ActiveRecorderHandleTest, ExpiredRecorderReportsNoRecording) {
   EXPECT_EQ(handle.stopAndReturnState(), RecorderState::Idle);
 }
 
-TEST(ActiveRecorderHandleTest, ClearRecorderIgnoresForeignPointer) {
-  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
-  ActiveRecorderHandle &handle = *handleOwner;
-  auto current = std::make_shared<FakeAudioRecorder>();
-  auto other = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(current, "").is_ok());
-
-  // The host object of a replaced recorder is collected long after its successor
-  // registered; its late destructor must leave the live recorder in the slot.
-  handle.clearRecorder(other);
-  EXPECT_EQ(handle.currentState(), RecorderState::Recording);
-
-  handle.clearRecorder(current);
-  EXPECT_EQ(handle.currentState(), RecorderState::Idle);
-}
-
-TEST(ActiveRecorderHandleTest, ClearRecorderWithoutExpectedClearsAnyone) {
-  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
-  ActiveRecorderHandle &handle = *handleOwner;
-  auto current = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(current, "").is_ok());
-
-  handle.clearRecorder();
-  EXPECT_EQ(handle.currentState(), RecorderState::Idle);
-  EXPECT_TRUE(current->isRecording());
-}
-
 TEST(ActiveRecorderHandleTest, StopAndReturnInfoWithExpectedIgnoresForeignRecorder) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
@@ -264,7 +237,7 @@ TEST(ActiveRecorderHandleTest, TryStartFailsWhenAnotherSessionIsInProgress) {
   ASSERT_TRUE(pausedOtherResult.is_err());
   EXPECT_EQ(handle.currentState(), RecorderState::Paused);
 
-  handle.clearRecorder(current);
+  ASSERT_TRUE(handle.stopAndReturnInfo(current).is_ok());
   ASSERT_TRUE(handle.tryStart(other, "").is_ok());
 }
 
@@ -320,7 +293,7 @@ TEST(ActiveRecorderHandleTest, ConcurrentStopsCloseTheFileExactlyOnce) {
   }
 }
 
-TEST(ActiveRecorderHandleTest, ConcurrentClearAndStopNeverCloseTheFileTwice) {
+TEST(ActiveRecorderHandleTest, ConcurrentTargetedAndUntargetedStopsCloseTheFileOnce) {
   for (int iteration = 0; iteration < RACE_TEST_ITERATIONS; ++iteration) {
     auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
     ActiveRecorderHandle &handle = *handleOwner;
@@ -328,19 +301,20 @@ TEST(ActiveRecorderHandleTest, ConcurrentClearAndStopNeverCloseTheFileTwice) {
     ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
 
     std::atomic<bool> startFlag{false};
-    std::thread hostObjectClear([&] {
+    std::thread hostObjectStop([&] {
       while (!startFlag.load()) {}
-      handle.clearRecorder(recorder);
+      handle.stopAndReturnInfo(recorder);
     });
     std::thread nativeStop([&] {
       while (!startFlag.load()) {}
       handle.stopAndReturnState();
     });
     startFlag.store(true);
-    hostObjectClear.join();
+    hostObjectStop.join();
     nativeStop.join();
 
-    EXPECT_LE(recorder->stopCount, 1) << "iteration " << iteration;
+    EXPECT_EQ(recorder->stopCount, 1) << "iteration " << iteration;
+    EXPECT_EQ(handle.currentState(), RecorderState::Idle) << "iteration " << iteration;
   }
 }
 

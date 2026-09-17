@@ -272,9 +272,8 @@ object MediaSessionManager {
   }
 
   /**
-   * Hides the recording notification without knowing its JS-chosen key. Used by the
-   * notification stop action, which also unwinds the foreground service through the
-   * registry's unsubscribe path.
+   * Used by the  notification stop action, which also
+   * unwinds the foreground service through the registry's unsubscribe path.
    */
   fun hideRecordingNotification() {
     if (!::notificationRegistry.isInitialized) {
@@ -284,8 +283,7 @@ object MediaSessionManager {
   }
 
   /**
-   * Flips the recording notification between its pause and resume looks. Used by
-   * native-initiated pause/resume, which can't go through [showNotification] — there
+   * Used by native-initiated pause/resume, which can't go through [showNotification] — there
    * is no JS to supply options.
    */
   fun setRecordingNotificationPaused(paused: Boolean) {

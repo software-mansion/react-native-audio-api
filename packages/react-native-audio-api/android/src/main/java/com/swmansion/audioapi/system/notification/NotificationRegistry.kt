@@ -14,11 +14,6 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Central notification registry that manages multiple notification instances.
  * Automatically handles foreground service lifecycle based on active notifications.
- *
- * Public methods are called from the JS thread and, for native-initiated notification
- * actions, from [RecordingNotificationReceiver]'s executor — hence `@Synchronized`. The
- * registry monitor also serializes all mutation of the notification instances' state
- * (`show`/`hide`/`rebuildWithPausedState` only run inside it).
  */
 class NotificationRegistry(
   private val reactContext: WeakReference<ReactApplicationContext>,
@@ -85,11 +80,6 @@ class NotificationRegistry(
     }
   }
 
-  /**
-   * Hide a notification.
-   *
-   * @param key The unique identifier of the notification
-   */
   @Synchronized
   fun hideNotification(key: String) {
     val notification = notifications[key]
@@ -115,11 +105,6 @@ class NotificationRegistry(
     }
   }
 
-  /**
-   * Hide a notification by its Android notification ID.
-   *
-   * @param id The Android notification ID, e.g. [RecordingNotification.ID]
-   */
   @Synchronized
   fun hideNotification(id: Int) {
     notifications.entries
@@ -129,8 +114,6 @@ class NotificationRegistry(
 
   /**
    * Rebuild and re-post the recording notification with a new paused state.
-   * No-op unless the recording notification is currently visible —
-   * which also means the POST_NOTIFICATIONS permission was already granted.
    */
   @Synchronized
   @SuppressLint("MissingPermission")
