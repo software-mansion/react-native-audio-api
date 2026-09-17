@@ -57,7 +57,6 @@ class RecorderAdapterNode : public AudioNode {
   AudioBuffer overflowBuffer_;
   size_t overflowSize_ = 0;
 
-  std::atomic<bool> isInitialized_{false};
   /// Incremented around each processNode() call; adapterCleanup waits for quiescence.
   std::atomic<uint32_t> currentProcesses_{0};
 };
