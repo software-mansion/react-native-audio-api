@@ -22,7 +22,7 @@ export const audioBufferSourceBasicTest = async (
   source.buffer = buffer;
 
   let endedFired = false;
-  source.onEnded = () => {
+  source.onended = () => {
     endedFired = true;
   };
 
@@ -33,7 +33,7 @@ export const audioBufferSourceBasicTest = async (
   source.stop();
   await sleep(300);
 
-  setInfo(`Basic: done. onEnded fired: ${endedFired}`);
+  setInfo(`Basic: done. onended fired: ${endedFired}`);
 };
 
 export const audioBufferSourceNaturalEndTest = async (
@@ -46,7 +46,7 @@ export const audioBufferSourceNaturalEndTest = async (
   source.buffer = buffer;
 
   let endedFired = false;
-  source.onEnded = () => {
+  source.onended = () => {
     endedFired = true;
   };
 
@@ -54,10 +54,10 @@ export const audioBufferSourceNaturalEndTest = async (
   const duration = 3;
   source.connect(ctx.destination);
   source.start(ctx.currentTime, offset, duration);
-  setInfo(`Natural end: playing ${duration}s region, waiting for onEnded...`);
+  setInfo(`Natural end: playing ${duration}s region, waiting for onended...`);
   await sleep(duration * 1000 + 1000);
 
-  setInfo(`Natural end: done. onEnded fired: ${endedFired}`);
+  setInfo(`Natural end: done. onended fired: ${endedFired}`);
 };
 
 export const audioBufferSourceOffsetDurationTest = async (
@@ -118,7 +118,7 @@ export const audioBufferSourceLoopTest = async (
   source.loopEnd = loopEnd;
 
   let loopCount = 0;
-  source.onLoopEnded = () => {
+  source.onloopended = () => {
     loopCount += 1;
   };
 
@@ -128,7 +128,7 @@ export const audioBufferSourceLoopTest = async (
   source.stop();
   await sleep(300);
 
-  setInfo(`Loop: done. onLoopEnded fired ${loopCount} time(s).`);
+  setInfo(`Loop: done. onloopended fired ${loopCount} time(s).`);
 };
 
 export const audioBufferSourceLoopSkipTest = async (

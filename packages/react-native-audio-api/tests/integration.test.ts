@@ -199,7 +199,7 @@ describe('Mock Integration Tests', () => {
 
       // Set up buffer ended callback
       const bufferEndedCallback = jest.fn();
-      queueSource.onBufferEnded = bufferEndedCallback;
+      queueSource.onbufferended = bufferEndedCallback;
 
       // Dequeue specific buffer
       queueSource.dequeueBuffer(id2);

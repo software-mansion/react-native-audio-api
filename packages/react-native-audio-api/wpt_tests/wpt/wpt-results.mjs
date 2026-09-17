@@ -142,6 +142,7 @@ function createEmptyCategoryStats() {
     files: 0,
     filesPassed: 0,
     filesFailed: 0,
+    filesCrashed: 0,
     runnableFiles: 0,
     skippedFiles: 0,
     skipReason: null,
@@ -182,12 +183,15 @@ export function discoverAudioApiCategories({
     .map(([key, meta]) => ({ key, ...meta }));
 }
 
+// Bounds for the per-file failure lists stored in the JSON report, so a
+// catastrophic run cannot balloon the CI artifact.
+const MAX_FAILURES_PER_FILE = 100;
+const MAX_FAILURE_MESSAGE_LENGTH = 200;
+
 export class WptResultsCollector {
   #categories = new Map();
-  #currentSuite = null;
-  #currentCategory = null;
-  #currentSuitePass = 0;
-  #currentSuiteFail = 0;
+  #files = [];
+  #currentFile = null;
 
   #ensureCategory(categoryKey) {
     if (!this.#categories.has(categoryKey)) {
@@ -197,55 +201,116 @@ export class WptResultsCollector {
   }
 
   startSuite(name) {
-    if (this.#currentSuite != null) {
-      this.#finishSuite();
-    }
+    this.#finishFile('ok');
 
-    this.#currentSuite = normalizeTestPath(name);
-    this.#currentCategory = getCategoryKey(this.#currentSuite);
-    this.#currentSuitePass = 0;
-    this.#currentSuiteFail = 0;
+    const suitePath = normalizeTestPath(name);
+    this.#currentFile = {
+      path: suitePath,
+      category: getCategoryKey(suitePath),
+      pass: 0,
+      fail: 0,
+      failures: [],
+      startedAt: Date.now(),
+    };
 
-    const category = this.#ensureCategory(this.#currentCategory);
+    const category = this.#ensureCategory(this.#currentFile.category);
     category.files += 1;
   }
 
   pass() {
-    this.#currentSuitePass += 1;
-    if (this.#currentCategory != null) {
-      this.#ensureCategory(this.#currentCategory).pass += 1;
+    if (this.#currentFile == null) {
+      return;
     }
+    this.#currentFile.pass += 1;
+    this.#ensureCategory(this.#currentFile.category).pass += 1;
   }
 
-  fail() {
-    this.#currentSuiteFail += 1;
-    if (this.#currentCategory != null) {
-      this.#ensureCategory(this.#currentCategory).fail += 1;
+  fail(message) {
+    if (this.#currentFile == null) {
+      return;
     }
+    this.#currentFile.fail += 1;
+    if (
+      typeof message === 'string' &&
+      this.#currentFile.failures.length < MAX_FAILURES_PER_FILE
+    ) {
+      this.#currentFile.failures.push(
+        message.slice(0, MAX_FAILURE_MESSAGE_LENGTH)
+      );
+    }
+    this.#ensureCategory(this.#currentFile.category).fail += 1;
   }
 
-  #finishSuite() {
-    if (this.#currentCategory == null) {
+  /**
+   * Record that the file currently running (or the named file, if none is
+   * in flight) died without finishing — the worker process crashed or the
+   * inactivity watchdog killed it. Counted as a failed file in its category.
+   *
+   * @param {string} path
+   * @param {'crashed' | 'timeout'} status
+   */
+  markFileCrashed(path, status) {
+    const suitePath = normalizeTestPath(path);
+    if (this.#currentFile?.path === suitePath) {
+      this.#finishFile(status);
       return;
     }
 
-    const category = this.#ensureCategory(this.#currentCategory);
-    if (this.#currentSuiteFail === 0 && this.#currentSuitePass > 0) {
+    const category = this.#ensureCategory(getCategoryKey(suitePath));
+    category.files += 1;
+    category.filesFailed += 1;
+    category.filesCrashed += 1;
+    this.#files.push({
+      path: suitePath,
+      pass: 0,
+      fail: 0,
+      failures: [],
+      status,
+      durationMs: null,
+    });
+  }
+
+  #finishFile(status) {
+    if (this.#currentFile == null) {
+      return;
+    }
+
+    const file = this.#currentFile;
+    this.#currentFile = null;
+
+    const category = this.#ensureCategory(file.category);
+    if (status !== 'ok') {
+      category.filesFailed += 1;
+      category.filesCrashed += 1;
+    } else if (file.fail === 0 && file.pass > 0) {
       category.filesPassed += 1;
-    } else if (this.#currentSuiteFail > 0) {
+    } else if (file.fail > 0) {
       category.filesFailed += 1;
     }
+
+    this.#files.push({
+      path: file.path,
+      pass: file.pass,
+      fail: file.fail,
+      failures: file.failures,
+      status,
+      durationMs: Date.now() - file.startedAt,
+    });
   }
 
   finalize() {
-    this.#finishSuite();
-    this.#currentSuite = null;
-    this.#currentCategory = null;
+    this.#finishFile('ok');
   }
 
   getCategoryStats() {
     this.finalize();
     return this.#categories;
+  }
+
+  /** Per-file outcomes in run order, for the exact non-regression compare. */
+  getFileResults() {
+    this.finalize();
+    return this.#files;
   }
 }
 
@@ -301,6 +366,7 @@ export function buildReport({
         files: run.files,
         filesPassed: run.filesPassed,
         filesFailed: run.filesFailed,
+        filesCrashed: run.filesCrashed,
         runnableFiles,
         skippedFiles,
         skipped,
@@ -320,6 +386,7 @@ export function buildReport({
       acc.files += category.files;
       acc.filesPassed += category.filesPassed;
       acc.filesFailed += category.filesFailed;
+      acc.filesCrashed += category.filesCrashed;
       acc.runnableFiles += category.runnableFiles;
       return acc;
     },
@@ -329,6 +396,7 @@ export function buildReport({
       files: 0,
       filesPassed: 0,
       filesFailed: 0,
+      filesCrashed: 0,
       runnableFiles: 0,
       skippedCategories: 0,
     }
@@ -359,6 +427,7 @@ export function buildReport({
     durationMs,
     summary,
     categories,
+    files: collector.getFileResults(),
   };
 }
 
@@ -673,7 +742,7 @@ export function wrapReporter(reporter, collector) {
       reporter.pass?.(message);
     },
     fail: (message) => {
-      collector.fail();
+      collector.fail(message);
       reporter.fail?.(message);
     },
     reportStack: (stack) => {

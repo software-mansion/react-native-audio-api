@@ -43,6 +43,10 @@ file(GLOB_RECURSE RNAUDIOAPI_SRC
 # exclude HostObjects from tests
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
 
+list(APPEND RNAUDIOAPI_SRC
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/HostObjects/utils/JsEnumParser.cpp"
+)
+
 # AudioThreadGuard provides global operator new/delete overrides. Compile it into
 # each test executable (not the shared static lib) so sanitizer builds can disable
 # the overrides via __SANITIZE_ADDRESS__ / __SANITIZE_THREAD__ on that TU.

@@ -8,6 +8,9 @@ This directory contains the Node.js bootstrap for running Web Audio WPT against
 - Native Node addon (`wpt_tests/src`) using JSI HostObjects via `node-api-jsi`.
 - JSI-backed runtime installation (`jsi_install.cpp`).
 - Smoke WPT harness (`wpt_tests/wpt/wpt-harness.mjs`) with allowlist + skip policy.
+  Test files run in short-lived worker processes (`wpt-worker.mjs`, 25 files per
+  worker by default): a native crash or hang costs one file instead of the run,
+  and the parent process never loads the native module, so its exit is instant.
 - Vendored Web Audio API tests under `wpt_tests/webaudio/` (~3 MB, full `webaudio` subtree).
 - Manual conformance reporting (`wpt-results.mjs`) that produces a [wpt.fyi](https://wpt.fyi/results/webaudio/the-audio-api?label=experimental&label=master&aligned)-style markdown table.
 
@@ -68,7 +71,11 @@ run always produces identical, complete numbers.
 CI helpers:
 
 - `yarn wpt:ci-report`: build + smoke run with `--allow-failures` (always writes JSON)
-- `yarn wpt:compare --baseline <base.json> --candidate <head.json>`: non-regression gate
+- `yarn wpt:compare --baseline <base.json> --candidate <head.json>`: non-regression gate.
+  When both reports carry per-file data (`files` array, including failing subtest
+  names), the gate is exact: it also fails on new failing subtests hidden behind
+  unchanged pass counts, and on files that crashed, hung, or disappeared. Older
+  reports without `files` fall back to the category-count comparison.
 
 Useful flags:
 
@@ -76,6 +83,10 @@ Useful flags:
 - `--profile full`: entire vendored `webaudio/` tree
 - `--report-json <path>` / `--write-markdown <path>`: custom output locations
 - `--allow-failures`: exit 0 after a completed run even when assertions fail
+- `--batch-size <n>`: files per worker process (default 25); `0` disables
+  isolation and runs everything in one process
+- `--inactivity-timeout <seconds>`: kill a worker that emits no events for this
+  long, record the stuck file as `timeout`, and resume after it (default 120)
 - `--update-docs`: rewrite the summary block in the audiodocs coverage page
 - `yarn wpt:markdown`: regenerate markdown from an existing JSON report
 
@@ -89,7 +100,12 @@ The published conformance summary lives in the docs, not here:
 - **Device-related instability in CI**
   - Node test backend is sink-less; keep tests within the smoke profile.
 - **Runner appears hung**
-  - Kill stale processes: `pkill -f wpt-harness.mjs`
+  - The inactivity watchdog kills a silent worker after `--inactivity-timeout`
+    and resumes past the stuck file, so a hang costs one file, not the run.
+  - A worker whose native teardown hangs after finishing its batch is killed
+    after a grace period — the log line "native teardown hung; killed" is
+    informational, not a test failure.
+  - Kill stale processes: `pkill -f wpt-harness.mjs; pkill -f wpt-worker.mjs`
   - Some tests are excluded in `wpt/skip-list.json` (crashtests, AudioWorklet, known engine hangs).
 - **Subset runs**
   - `yarn wpt --filter gain` or `node ./wpt_tests/wpt/wpt-harness.mjs --filter the-analysernode-interface`

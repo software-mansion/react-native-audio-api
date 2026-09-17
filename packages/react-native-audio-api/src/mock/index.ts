@@ -594,7 +594,7 @@ class RecorderAdapterNodeMock extends AudioNodeMock {
 }
 
 class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
-  private _onBufferEnded: ((event: { bufferId: string }) => void) | null = null;
+  private _onbufferended: ((event: { bufferId: string }) => void) | null = null;
   private eventEmitter = new MockAudioEventEmitter();
 
   constructor(
@@ -612,12 +612,12 @@ class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
   clearBuffers(): void {}
   pause(): void {}
 
-  get onBufferEnded(): ((event: { bufferId: string }) => void) | null {
-    return this._onBufferEnded;
+  get onbufferended(): ((event: { bufferId: string }) => void) | null {
+    return this._onbufferended;
   }
 
-  set onBufferEnded(callback: ((event: { bufferId: string }) => void) | null) {
-    this._onBufferEnded = callback;
+  set onbufferended(callback: ((event: { bufferId: string }) => void) | null) {
+    this._onbufferended = callback;
   }
 }
 
