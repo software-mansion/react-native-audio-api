@@ -45,8 +45,6 @@ class IOSAudioPlayer : public CommonPlayer {
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
 
-  void notifyStreamFailed() override;
-
  private:
   void clearPendingSaved();
   /// @note Audio Thread only

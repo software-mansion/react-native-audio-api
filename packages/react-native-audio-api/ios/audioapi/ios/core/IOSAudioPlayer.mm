@@ -227,9 +227,4 @@ double IOSAudioPlayer::getOutputLatency() const
   return [sessionManager outputLatencySeconds] + [sessionManager ioBufferDurationSeconds];
 }
 
-void IOSAudioPlayer::notifyStreamFailed()
-{
-  reportStreamFailToContext(driverMutex_, context_);
-}
-
 } // namespace audioapi
