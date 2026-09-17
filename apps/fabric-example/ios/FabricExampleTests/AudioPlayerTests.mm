@@ -44,8 +44,6 @@ class IOSAudioPlayer : public CommonPlayer {
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
 
-  void notifyStreamFailed() override;
-
  protected:
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
