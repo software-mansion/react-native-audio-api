@@ -20,6 +20,8 @@ class CommonPlayer {
   [[nodiscard]] virtual double getOutputLatency() const = 0;
 
   [[nodiscard]] virtual bool isRunning() const = 0;
+
+  virtual void notifyStreamFailed() {}
 };
 
 } // namespace audioapi

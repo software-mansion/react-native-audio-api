@@ -14,6 +14,9 @@ typedef struct objc_object AudioBufferList;
 #include <atomic>
 #include <cstddef>
 #include <functional>
+#include <memory>
+#include <mutex>
+
 namespace audioapi {
 
 class AudioContext;
@@ -24,7 +27,9 @@ class IOSAudioPlayer : public CommonPlayer {
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount,
-      std::atomic<uint32_t> &currentRenders);
+      std::atomic<uint32_t> &currentRenders,
+      std::weak_ptr<AudioContext> context,
+      std::mutex *driverMutex);
   ~IOSAudioPlayer() override;
 
   DELETE_COPY_AND_MOVE(IOSAudioPlayer);
@@ -39,6 +44,8 @@ class IOSAudioPlayer : public CommonPlayer {
 
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
+
+  void notifyStreamFailed() override;
 
  private:
   void clearPendingSaved();
@@ -60,6 +67,8 @@ class IOSAudioPlayer : public CommonPlayer {
   /// Frames valid at the front of each `pendingSaved_[ch]` (0 … RENDER_QUANTUM_SIZE).
   int pendingSavedCount_{0};
   DSPAudioBuffer pendingSaved_;
+  std::weak_ptr<AudioContext> context_;
+  std::mutex *driverMutex_;
 };
 
 } // namespace audioapi

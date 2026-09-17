@@ -53,7 +53,9 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),
-      currentRenders_);
+      currentRenders_,
+      std::static_pointer_cast<AudioContext>(shared_from_this()),
+      &driverMutex_);
 #endif
 }
 

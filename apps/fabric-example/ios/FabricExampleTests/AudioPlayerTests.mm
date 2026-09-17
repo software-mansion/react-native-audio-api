@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -19,13 +20,17 @@ using namespace audioapi;
 
 namespace audioapi {
 
+class AudioContext;
+
 class IOSAudioPlayer : public CommonPlayer {
  public:
   IOSAudioPlayer(
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount,
-      std::atomic<uint32_t> &currentRenders);
+      std::atomic<uint32_t> &currentRenders,
+      std::weak_ptr<AudioContext> context,
+      std::mutex *driverMutex);
   ~IOSAudioPlayer() override;
 
   bool start() override;
@@ -39,6 +44,8 @@ class IOSAudioPlayer : public CommonPlayer {
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
 
+  void notifyStreamFailed() override;
+
  protected:
   std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
@@ -50,6 +57,8 @@ class IOSAudioPlayer : public CommonPlayer {
   std::atomic<bool> flushOverflowNextPull_;
   int pendingSavedCount_;
   DSPAudioBuffer pendingSaved_;
+  std::weak_ptr<AudioContext> context_;
+  std::mutex *driverMutex_;
 };
 
 } // namespace audioapi
@@ -159,6 +168,7 @@ class IOSAudioPlayer : public CommonPlayer {
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
                                    sampleRate:(float)sampleRate
                                  channelCount:(AVAudioChannelCount)channelCount
+                     onOutputRecoveryFailed:(OnOutputRecoveryFailedBlock)onOutputRecoveryFailed
 {
   self.attachSourceNodeCallCount += 1;
   self.lastAttachedRenderBlock = renderBlock;
@@ -235,7 +245,13 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
       float sampleRate,
       int channelCount)
       : currentRendersStorage_(0),
-        IOSAudioPlayer(renderAudio, sampleRate, channelCount, currentRendersStorage_) {}
+        IOSAudioPlayer(
+            renderAudio,
+            sampleRate,
+            channelCount,
+            currentRendersStorage_,
+            std::weak_ptr<AudioContext>{},
+            nullptr) {}
 
   NativeAudioPlayer *replaceAudioPlayer(NativeAudioPlayer *audioPlayer) {
     NativeAudioPlayer *previous = audioPlayer_;
