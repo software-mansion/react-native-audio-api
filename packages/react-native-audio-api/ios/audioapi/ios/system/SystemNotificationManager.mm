@@ -311,6 +311,16 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   }
 
   dispatch_async(dispatch_get_main_queue(), ^{
+    // A configuration change is an I/O-unit stop, not a resume trigger. Restarting
+    // while Interrupted races with onInterruptionEnd and the foreground retry: it
+    // marks the session inactive and rebuilds a graph that cannot start. Leave
+    // recovery on those paths; remember the format may have changed so they still
+    // rebuild.
+    if ([audioEngine getState] == AudioEngineStateInterrupted) {
+      [audioEngine markGraphNeedsRebuild];
+      return;
+    }
+
     [sessionManager markInactive];
     [audioEngine restartAudioEngine];
   });

@@ -431,6 +431,12 @@ static AudioEngine *_sharedInstance = nil;
   self.sessionDeactivationInvalidatedGraph = YES;
 }
 
+- (void)markGraphNeedsRebuild
+{
+  std::scoped_lock lock(_engineLock);
+  self.graphNeedsRebuild = true;
+}
+
 - (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
 {
   std::scoped_lock lock(_engineLock);

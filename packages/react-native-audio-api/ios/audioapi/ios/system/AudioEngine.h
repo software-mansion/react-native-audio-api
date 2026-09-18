@@ -58,6 +58,9 @@ typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
 - (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume;
 - (void)onSessionDeactivated;
 - (void)markSessionDeactivationInvalidatedGraph;
+/// Records that hardware format may have changed while the engine must not rebuild
+/// yet (`Interrupted`). The next start or interruption-end resume rebuilds the graph.
+- (void)markGraphNeedsRebuild;
 
 - (AudioEngineState)getState;
 - (bool)isEngineRunning;
