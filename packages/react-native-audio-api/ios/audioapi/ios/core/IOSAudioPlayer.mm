@@ -17,7 +17,8 @@ IOSAudioPlayer::IOSAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
-    std::atomic<uint32_t> &currentRenders)
+    std::atomic<uint32_t> &currentRenders,
+    std::optional<AudioContextLatencyHint> latencyHint)
     : audioBuffer_(nullptr),
       audioPlayer_(nullptr),
       renderAudio_(renderAudio),
@@ -31,9 +32,11 @@ IOSAudioPlayer::IOSAudioPlayer(
     deliverOutputBuffers(outputData, numFrames);
   };
 
-  audioPlayer_ = [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
-                                                     sampleRate:sampleRate
-                                                   channelCount:channelCount_];
+  audioPlayer_ =
+      [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
+                                          sampleRate:sampleRate
+                                        channelCount:channelCount_
+                             preferredIOBufferFrames:preferredIOBufferFramesFor(latencyHint)];
   audioBuffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
 }
 

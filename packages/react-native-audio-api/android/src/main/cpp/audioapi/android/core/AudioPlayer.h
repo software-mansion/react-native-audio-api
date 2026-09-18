@@ -8,8 +8,10 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 
 #include <audioapi/core/CommonPlayer.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
@@ -29,7 +31,8 @@ class AudioPlayer : public CommonPlayer,
       int channelCount,
       std::mutex *driverMutex,
       const std::shared_ptr<AudioContext> &context,
-      std::atomic<uint32_t> &currentRenders);
+      std::atomic<uint32_t> &currentRenders,
+      std::optional<AudioContextLatencyHint> latencyHint = std::nullopt);
 
   ~AudioPlayer() override {
     cleanup();
@@ -67,6 +70,7 @@ class AudioPlayer : public CommonPlayer,
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   std::mutex *driverMutex_;
   std::weak_ptr<AudioContext> context_;
+  std::optional<AudioContextLatencyHint> latencyHint_;
 
   bool openAudioStream();
 };

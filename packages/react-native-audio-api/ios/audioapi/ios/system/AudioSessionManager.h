@@ -39,6 +39,11 @@
 /// Switches the manager into external owner mode and stops all session mutations.
 - (void)disableSessionManagement;
 
+/// One IO buffer duration serves the whole process, so live requests are reconciled by taking
+/// the shortest; releasing the last asks for the duration the session ran at beforehand.
+- (void)requestIOBufferFrames:(int)frames forClient:(NSString *)clientId;
+- (void)releaseIOBufferFramesForClient:(NSString *)clientId;
+
 - (NSNumber *)getDevicePreferredSampleRate;
 - (NSNumber *)getSystemVolume;
 - (NSString *)inputDiagnosticsSnapshot;
