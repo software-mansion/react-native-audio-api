@@ -182,10 +182,10 @@ It inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-sourc
 ### `onpositionchanged` <MobileOnly />
 
 Allows to set (or remove) a callback that will be fired after processing certain part of an audio.
-Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
+Frequency is defined by `onpositionchangedInterval`. By setting this callback you can achieve pause functionality.
 You can remove the callback by passing `null`.
 
-### `onPositionChangedInterval` <MobileOnly />
+### `onpositionchangedInterval` <MobileOnly />
 
 Allows to set frequency for `onpositionchanged` event. Value that can be set is around `1000/x` Hz.
 
@@ -201,7 +201,7 @@ function App() {
         this.offset = event.value;
     };
 
-    sourceNode.onPositionChangedInterval = 100; //setting frequency to ~10Hz
+    sourceNode.onpositionchangedInterval = 100; //setting frequency to ~10Hz
 
     sourceNode.start();
 }

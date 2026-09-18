@@ -49,12 +49,12 @@ export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode 
       this.onPositionChangedSubscription.subscriptionId;
   }
 
-  public get onPositionChangedInterval(): number {
-    return (this.node as IAudioBufferBaseSourceNode).onPositionChangedInterval;
+  public get onpositionchangedInterval(): number {
+    return (this.node as IAudioBufferBaseSourceNode).onpositionchangedInterval;
   }
 
-  public set onPositionChangedInterval(value: number) {
-    (this.node as IAudioBufferBaseSourceNode).onPositionChangedInterval = value;
+  public set onpositionchangedInterval(value: number) {
+    (this.node as IAudioBufferBaseSourceNode).onpositionchangedInterval = value;
   }
 
   public getLatency(): number {

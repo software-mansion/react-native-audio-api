@@ -25,7 +25,7 @@ export default class StressPlaybackController {
     this.ended = false;
     this.source = source;
     source.buffer = buffer;
-    source.onPositionChangedInterval = 50;
+    source.onpositionchangedInterval = 50;
     source.onpositionchanged = (event) => {
       this.lastPositionSeconds = event.value;
     };

@@ -194,7 +194,7 @@ export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onpositionchanged: string;
   // set how often the onpositionchanged event is called
-  onPositionChangedInterval: number;
+  onpositionchangedInterval: number;
 }
 
 export interface IOscillatorNode extends IAudioScheduledSourceNode {

@@ -104,8 +104,33 @@ float ParamRenderQueue::getValueOfPreviousEventAt(const RenderParamEvent &event,
   return event.getEndValue();
 }
 
+void ParamRenderQueue::cancelScheduledValues(double cancelTime) {
+  ParamQueueBase::cancelScheduledValues(cancelTime);
+
+  // An event may already have been promoted out of the queue; the erase above cannot see it
+  if (currentEvent_ && currentEvent_->getAutomationTime() >= cancelTime) {
+    // restore value from before currentEvent_ and discard it
+    currentEvent_ = ParamRenderEventFactory::createSetValueEvent(
+        currentEvent_->getStartValue(), currentEvent_->getStartTime());
+  }
+}
+
+void ParamRenderQueue::truncateCurrentEventAt(double holdTime) {
+  float holdValue = currentEvent_->calculateValueAtTime(holdTime);
+  currentEvent_->setEndTime(holdTime);
+  currentEvent_->setEndValue(holdValue);
+}
+
 void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
-  // E2: first event with automationTime strictly after cancelTime
+  // E2: handle the case with currentEvent_ first, since it is no longer in queue
+  if (currentEvent_ && currentEvent_->isRampType() && cancelTime < currentEvent_->getEndTime()) {
+    truncateCurrentEventAt(cancelTime);
+    // Step 5: remove everything strictly after cancelTime
+    eventQueue_.erase(eventQueue_.upperBound(cancelTime), eventQueue_.end());
+    return;
+  }
+
+  // E2: find the first event with automationTime > cancelTime
   auto e2It = eventQueue_.upperBound(cancelTime);
 
   if (e2It != eventQueue_.end() && e2It->isRampType()) {
@@ -155,9 +180,7 @@ void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
 
     if (currentEvent_->getType() == ParamEventType::SET_VALUE_CURVE &&
         cancelTime <= currentEvent_->getEndTime()) {
-      float holdValue = currentEvent_->calculateValueAtTime(cancelTime);
-      currentEvent_->setEndTime(cancelTime);
-      currentEvent_->setEndValue(holdValue);
+      truncateCurrentEventAt(cancelTime);
       // fall through to step 5
     }
   }

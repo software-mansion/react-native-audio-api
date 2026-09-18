@@ -26,6 +26,12 @@ class ParamRenderQueue : public ParamQueueBase<RenderParamEvent> {
   /// @return True if the event was successfully added, false if the queue is full.
   bool push(RenderParamEvent &&event) override;
 
+  /// @brief Cancel scheduled parameter changes at or after the given time.
+  /// Also cancels the already-promoted @c currentEvent_ when its automation time is at or after
+  /// @p cancelTime (an in-flight ramp), restoring the value from before that automation as the spec requires.
+  /// @param cancelTime The time at which to cancel scheduled changes.
+  void cancelScheduledValues(double cancelTime) override;
+
   /// @brief Cancel scheduled parameter changes and hold the current value at the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
   void cancelAndHoldAtTime(double cancelTime);
@@ -36,6 +42,9 @@ class ParamRenderQueue : public ParamQueueBase<RenderParamEvent> {
 
   /// @brief Snap a time to the exact time of its nearest sample frame
   [[nodiscard]] double snapToSampleFrameTime(double time) const;
+
+  /// @brief Truncate @c currentEvent_ at @p holdTime, freezing it at its value there.
+  void truncateCurrentEventAt(double holdTime);
 
   /// @brief Resolve new event's startValue and startTime based on the previous event in the queue,
   /// and adjust neighboring events to maintain the invariant of non-overlapping events in the queue.

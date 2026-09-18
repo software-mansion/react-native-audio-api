@@ -69,7 +69,7 @@ user experience, and maintainability. Here are some key best practices to consid
 
 ## Performance
 
-- **Throttle position callbacks**: Set [`onPositionChangedInterval`](../sources/audio-buffer-queue-source-node.mdx#properties) on queue source nodes to limit how often progress events fire. Avoid driving UI updates on every audio buffer.
+- **Throttle position callbacks**: Set [`onpositionchangedInterval`](../sources/audio-buffer-queue-source-node.mdx#properties) on queue source nodes to limit how often progress events fire. Avoid driving UI updates on every audio buffer.
 
 - **Avoid per-frame allocations in visualizations**: When passing analyser or recorder data into Reanimated shared values, mutate the existing `Float32Array` in place rather than allocating a new one each frame. See the [audio visualization guide](../guides/audio-visualization.mdx) for patterns.
 

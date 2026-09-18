@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,11 +62,39 @@ writeReportFiles({
   markdownPath: options.writeMarkdown,
 });
 
+const NIGHTLY_DIST_TAG = 'audio-api-nightly';
+
+/**
+ * Label for the current-checkout column: the most recent published nightly,
+ * which is what readers can actually install. Falls back to the report's own
+ * version when npm is unreachable.
+ */
+function resolveCurrentColumnLabel(report) {
+  try {
+    const distTags = JSON.parse(
+      execFileSync(
+        'npm',
+        ['view', 'react-native-audio-api', 'dist-tags', '--json'],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+      )
+    );
+    if (distTags[NIGHTLY_DIST_TAG]) {
+      return `v${distTags[NIGHTLY_DIST_TAG]}`;
+    }
+  } catch {
+    console.warn(
+      `[wpt] Could not read the ${NIGHTLY_DIST_TAG} dist-tag from npm; labelling the current column from the report.`
+    );
+  }
+  return report.libraryVersion ? `v${report.libraryVersion}` : 'main';
+}
+
 if (options.updateDocs) {
   const summary = options.baselineJson
     ? formatCoverageComparisonMarkdown(
         report,
-        JSON.parse(fs.readFileSync(options.baselineJson, 'utf8'))
+        JSON.parse(fs.readFileSync(options.baselineJson, 'utf8')),
+        resolveCurrentColumnLabel(report)
       )
     : formatCoverageMarkdown(report);
   updateDocsSection(defaultDocsPath, summary);
