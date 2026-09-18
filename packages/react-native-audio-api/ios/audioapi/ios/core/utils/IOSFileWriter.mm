@@ -83,6 +83,24 @@ OpenFileResult IOSFileWriter::openFile(
           [[error debugDescription] UTF8String]);
     }
 
+    auto pipelineResult = prepareConversionPipeline(bufferFormat, maxInputBufferLength);
+
+    if (pipelineResult.is_err()) {
+      rollbackFailedOpen();
+      return OpenFileResult::Err(pipelineResult.unwrap_err());
+    }
+
+    isFileOpen_.store(true, std::memory_order_release);
+    return OpenFileResult::Ok([[fileURL_ path] UTF8String]);
+  }
+}
+
+/// @brief Builds the converter, conversion buffers and offloader for the given input format.
+Result<NoneType, std::string> IOSFileWriter::prepareConversionPipeline(
+    AVAudioFormat *bufferFormat,
+    size_t maxInputBufferLength)
+{
+  @autoreleasepool {
     converter_ = [[AVAudioConverter alloc] initFromFormat:bufferFormat
                                                  toFormat:[audioFile_ processingFormat]];
     converter_.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
@@ -103,8 +121,7 @@ OpenFileResult IOSFileWriter::openFile(
 
     if (converterInputBuffer_ == nil || converterOutputBuffer_ == nil || audioFile_ == nil ||
         converter_ == nil) {
-      rollbackFailedOpen();
-      return OpenFileResult::Err("Error creating converter buffers");
+      return Result<NoneType, std::string>::Err("Error creating converter buffers");
     }
 
     auto offloaderLambda = [this](WriterData data) {
@@ -126,8 +143,7 @@ OpenFileResult IOSFileWriter::openFile(
     for (size_t i = 0; i < FILE_WRITER_POOL_SIZE; ++i) {
       OwnedAudioBufferListPtr buffer(allocateOwnedAudioBufferList(bufferCount, bytesPerBuffer));
       if (buffer == nullptr) {
-        rollbackFailedOpen();
-        return OpenFileResult::Err("Failed to preallocate iOS file writer buffers");
+        return Result<NoneType, std::string>::Err("Failed to preallocate iOS file writer buffers");
       }
       inputBufferPool_.push_back(std::move(buffer));
     }
@@ -135,9 +151,21 @@ OpenFileResult IOSFileWriter::openFile(
     freeSlots_ = std::make_unique<FreeList>();
     freeSlots_->seed();
 
-    isFileOpen_.store(true, std::memory_order_release);
-    return OpenFileResult::Ok([[fileURL_ path] UTF8String]);
+    return Result<NoneType, std::string>::Ok(None);
   }
+}
+
+/// @brief Tears down the converter, conversion buffers and offloader, draining pending writes.
+void IOSFileWriter::releaseConversionPipeline()
+{
+  offloader_.reset();
+  freeSlots_.reset();
+  inputBufferPool_.clear();
+  inputBufferBytesPerBuffer_ = 0;
+
+  converter_ = nil;
+  converterInputBuffer_ = nil;
+  converterOutputBuffer_ = nil;
 }
 
 OpenFileResult IOSFileWriter::reopenForInputFormatChange(
@@ -145,29 +173,31 @@ OpenFileResult IOSFileWriter::reopenForInputFormatChange(
     size_t maxInputBufferLength)
 {
   @autoreleasepool {
-    if (isFileOpen()) {
-      auto closeResult = closeFile();
-      if (closeResult.is_err()) {
-        return OpenFileResult::Err(
-            "Failed to finalize recording segment: " + closeResult.unwrap_err());
-      }
+    if (!isFileOpen() || audioFile_ == nil) {
+      return openFile(bufferFormat, maxInputBufferLength, "");
     }
 
-    return openFile(bufferFormat, maxInputBufferLength, "");
+    // The file settings come from the recorder's file properties, not from the input, so the file
+    // stays open across a configuration change and the recording is not split. Only the conversion
+    // pipeline, which is built for the input format, is rebuilt.
+    releaseConversionPipeline();
+    bufferFormat_ = bufferFormat;
+
+    auto pipelineResult = prepareConversionPipeline(bufferFormat, maxInputBufferLength);
+
+    if (pipelineResult.is_err()) {
+      return OpenFileResult::Err(pipelineResult.unwrap_err());
+    }
+
+    return OpenFileResult::Ok([[fileURL_ path] UTF8String]);
   }
 }
 
 void IOSFileWriter::rollbackFailedOpen()
 {
-  offloader_.reset();
-  freeSlots_.reset();
-  inputBufferPool_.clear();
-  inputBufferBytesPerBuffer_ = 0;
+  releaseConversionPipeline();
 
   audioFile_ = nil;
-  converter_ = nil;
-  converterInputBuffer_ = nil;
-  converterOutputBuffer_ = nil;
   bufferFormat_ = nil;
 
   if (fileURL_ != nil) {
