@@ -1,5 +1,6 @@
 package com.swmansion.audioapi.system.notification
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.util.Log
 import androidx.annotation.RequiresPermission
@@ -8,6 +9,15 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.swmansion.audioapi.system.ForegroundServiceManager
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
+
+/**
+ * Re-posts a notification whose content changed after [BaseNotification.show] returned, such as
+ * artwork that finished loading asynchronously.
+ */
+fun interface NotificationRedisplay {
+  fun redisplay(notification: Notification)
+}
 
 /**
  * Central notification registry that manages multiple notification instances.
@@ -20,14 +30,14 @@ class NotificationRegistry(
   companion object {
     private const val TAG = "NotificationRegistry"
 
-    // Store last built notifications for foreground service access
-    private val builtNotifications = mutableMapOf<Int, Notification>()
+    // Written from the NativeModules queue thread, read by the foreground service on the main thread.
+    private val builtNotifications = ConcurrentHashMap<Int, Notification>()
 
     fun getBuiltNotification(notificationId: Int): Notification? = builtNotifications[notificationId]
   }
 
-  private val notifications = mutableMapOf<String, BaseNotification>()
-  private val activeNotifications = mutableMapOf<String, Boolean>()
+  private val notifications = HashMap<String, BaseNotification>()
+  private val activeNotifications = HashMap<String, Boolean>()
 
   /**
    * Show or update a notification.
@@ -123,7 +133,8 @@ class NotificationRegistry(
             audioAPIModule,
             PlaybackNotification.ID,
             "audio_playback",
-          )
+            ArtworkLoader(reactContext),
+          ) { redisplayIfActive(key, it) }
         }
 
         "recording" -> {
@@ -181,6 +192,16 @@ class NotificationRegistry(
     ForegroundServiceManager.cleanup()
 
     Log.d(TAG, "Cleaned up all notifications")
+  }
+
+  @SuppressLint("MissingPermission")
+  private fun redisplayIfActive(
+    key: String,
+    notification: Notification,
+  ) {
+    if (!isNotificationActive(key)) return
+    val notificationId = notifications[key]?.getNotificationId() ?: return
+    displayNotification(notificationId, notification)
   }
 
   @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
