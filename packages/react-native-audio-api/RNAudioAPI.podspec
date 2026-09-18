@@ -56,7 +56,7 @@ Pod::Spec.new do |s|
     end
   end
 
-  s.ios.frameworks = 'Accelerate', 'AVFoundation', 'AudioToolbox', 'MediaPlayer'
+  s.ios.frameworks = 'Accelerate', 'AVFoundation', 'AudioToolbox', 'CoreGraphics', 'ImageIO', 'MediaPlayer', 'UIKit'
 
   s.prepare_command = <<-CMD
     chmod +x scripts/download-prebuilt-binaries.sh

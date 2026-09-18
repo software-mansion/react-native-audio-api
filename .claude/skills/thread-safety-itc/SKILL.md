@@ -221,8 +221,29 @@ suspend.then→suspended, event→suspended`.
 
 ---
 
+## Android Notification Subsystem: JS-Queue Confinement
+
+Kotlin rather than C++, but the same discipline. `AudioAPIModule.showNotification` →
+`MediaSessionManager` → `NotificationRegistry.showNotification` → `BaseNotification.show()`/`hide()`
+runs entirely on the **JS thread**; nothing on that path hops threads. `MediaSessionCompat` adopts
+the looper of whichever thread constructed it, so a session created in `initializeIfNeeded()` is
+JS-thread-affine too.
+
+Anything arriving asynchronously (artwork loads) must therefore be delivered back with
+`reactContext.runOnJSQueueThread { ... }`, **not** `runOnUiQueueThread`. `runOnJSQueueThread` always
+posts and never runs inline, so a callback cannot re-enter an update already in progress — which in
+turn makes plain field assignment safe and removes any need for a lock.
+
+Async results also need a **generation counter** (`PlaybackNotification.artworkGeneration`), bumped
+on every new request and in `hide()`. Cancelling cannot recall a result that has already been posted
+to the queue, so the callback compares the generation it captured and drops a stale one. Without it,
+a superseded load overwrites newer artwork or repaints a dismissed notification.
+
+---
+
 ## Common Mistakes
 
+- **Hopping to the UI thread from a notification callback** — `MediaSessionCompat` is bound to the JS queue thread that built it; use `runOnJSQueueThread`. Two `setMetadata` writers on different threads each read-modify-write the session's metadata and clobber each other. Keep one writer that builds from the notification's own fields.
 - **Reading `node_->field_` in a getter** when that field is written by the audio thread → use shadow state or atomics.
 - **Calling `node_->method()` directly from a setter** → always schedule via `scheduleAudioEvent`.
 - **Not clearing callback IDs in the HostObject destructor** → node keeps firing into a GC'd JSI function; call `assignOnXCallbackId(0)` from each event HostObject layer on teardown
