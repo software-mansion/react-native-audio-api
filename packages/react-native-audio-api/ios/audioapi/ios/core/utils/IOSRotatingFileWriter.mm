@@ -58,13 +58,15 @@ OpenFileResult IOSRotatingFileWriter::reprepareStreamFormat(
     return openInnerWriter();
   }
 
-  rotateFiles();
-
-  if (currentWriter_ == nullptr) {
-    return OpenFileResult::Err("Failed to reopen file for writing after input format change");
+  if (currentWriter_->isFileOpen()) {
+    rotateFiles();
+    if (currentWriter_ == nullptr) {
+      return OpenFileResult::Err("Failed to reopen file for writing after input format change");
+    }
+    return OpenFileResult::Ok(currentWriter_->getFilePath());
   }
 
-  return OpenFileResult::Ok(currentWriter_->getFilePath());
+  return openInnerWriter();
 }
 
 void IOSRotatingFileWriter::writeAudioData(AudioDataType data, int numFrames)

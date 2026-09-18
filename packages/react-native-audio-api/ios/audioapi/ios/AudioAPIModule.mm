@@ -124,6 +124,8 @@ RCT_EXPORT_METHOD(
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     NSError *error = nil;
+    const BOOL managedSessionWasActive =
+        self.audioSessionManager.shouldManageSession && self.audioSessionManager.isActive;
     auto success = [self.audioSessionManager setActive:enabled error:&error];
 
     if (!success) {
@@ -145,7 +147,7 @@ RCT_EXPORT_METHOD(
       return;
     }
 
-    if (!enabled) {
+    if (!enabled && managedSessionWasActive) {
       if ([NSThread isMainThread]) {
         [self handleSessionDeactivation];
       } else {

@@ -32,6 +32,9 @@ CloseFileResult RotatingFileWriter::closeFile() {
 }
 
 void RotatingFileWriter::rotateFiles() {
+  if (currentWriter_ == nullptr || !currentWriter_->isFileOpen()) {
+    return;
+  }
   auto rotatedClose = currentWriter_->closeFile();
   if (rotatedClose.is_ok()) {
     const auto &t = rotatedClose.unwrap();

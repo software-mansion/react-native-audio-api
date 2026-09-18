@@ -8,10 +8,7 @@ import {
 } from '@shopify/react-native-skia';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
-import {
-  WorkletAudioContext,
-  WorkletNode,
-} from 'react-native-audio-worklets';
+import { WorkletAudioContext, WorkletNode } from 'react-native-audio-worklets';
 import {
   cancelAnimation,
   Easing,
@@ -46,6 +43,7 @@ function getInitialHistory() {
 
 interface RecordingVisualizationProps {
   state: RecordingState;
+  isInterrupted: boolean;
 }
 
 interface DrawDefaultWaveformParams {
@@ -68,8 +66,14 @@ interface DrawHistoryWaveformParams {
 
 function drawDefaultWaveform(params: DrawDefaultWaveformParams) {
   'worklet';
-  const { normalized, canvasHeight, barHeights, translateX, lastIndex, numBars } =
-    params;
+  const {
+    normalized,
+    canvasHeight,
+    barHeights,
+    translateX,
+    lastIndex,
+    numBars,
+  } = params;
 
   if (canvasHeight <= 0 || numBars <= 0) {
     return barHeights;
@@ -143,8 +147,68 @@ function drawHistoryWaveform(params: DrawHistoryWaveformParams) {
   return history;
 }
 
+function loopingWaveformScroll(target: number, durationMs: number) {
+  'worklet';
+  return withRepeat(
+    withTiming(target, {
+      duration: durationMs,
+      easing: Easing.linear,
+    }),
+    -1,
+    false
+  );
+}
+
+function resumeWaveformScroll(
+  translateX: SharedValue<number>,
+  canvasWidth: number
+) {
+  if (canvasWidth <= 0) {
+    return;
+  }
+
+  const animationTarget = -canvasWidth;
+  const cycleDurationMs = 1000 * (canvasWidth / constants.pixelsPerSecond);
+
+  // Restarting withRepeat from a mid-cycle offset would jump back to that
+  // offset at the end of each loop. Finish the current cycle first.
+  if (translateX.value >= 0) {
+    translateX.value = loopingWaveformScroll(animationTarget, cycleDurationMs);
+    return;
+  }
+
+  const remainingDistance = translateX.value - animationTarget;
+  const remainingDurationMs =
+    cycleDurationMs * (remainingDistance / canvasWidth);
+
+  if (remainingDurationMs <= 0) {
+    translateX.value = 0;
+    translateX.value = loopingWaveformScroll(animationTarget, cycleDurationMs);
+    return;
+  }
+
+  translateX.value = withTiming(
+    animationTarget,
+    {
+      duration: remainingDurationMs,
+      easing: Easing.linear,
+    },
+    (finished) => {
+      if (!finished) {
+        return;
+      }
+      translateX.value = 0;
+      translateX.value = loopingWaveformScroll(
+        animationTarget,
+        cycleDurationMs
+      );
+    }
+  );
+}
+
 const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   state,
+  isInterrupted,
 }) => {
   const canvasRef = useCanvasRef();
   const lifetimeCanvasRef = useCanvasRef();
@@ -166,6 +230,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   const canvasHeightSV = useSharedValue(0);
   const lifetimeCanvasHeightSV = useSharedValue(0);
   const numBarsSV = useSharedValue(0);
+  const isInterruptedSV = useSharedValue(false);
 
   const stateRef = useRef(state);
   const workletContextRef = useRef<WorkletAudioContext | null>(null);
@@ -273,7 +338,17 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
     numBarsSV.value = numBars;
     canvasHeightSV.value = size.height;
     lifetimeCanvasHeightSV.value = lifetimeSize.height;
-  }, [numBars, size.height, lifetimeSize.height, numBarsSV, canvasHeightSV, lifetimeCanvasHeightSV]);
+    isInterruptedSV.value = isInterrupted;
+  }, [
+    numBars,
+    size.height,
+    lifetimeSize.height,
+    isInterrupted,
+    numBarsSV,
+    canvasHeightSV,
+    lifetimeCanvasHeightSV,
+    isInterruptedSV,
+  ]);
 
   useEffect(() => {
     if (numBars <= 0) {
@@ -302,12 +377,11 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
         const lifetimeCanvasHeight = lifetimeCanvasHeightSV.value;
         const activeNumBars = numBarsSV.value;
 
-        if (canvasHeight <= 0 || activeNumBars <= 0) {
+        if (isInterruptedSV.value || canvasHeight <= 0 || activeNumBars <= 0) {
           return;
         }
 
-        durationMS.value +=
-          (audioData.length / constants.sampleRate) * 1000;
+        durationMS.value += (audioData.length / constants.sampleRate) * 1000;
 
         let maxValue = 0;
         for (let i = 0; i < audioData.length; i++) {
@@ -317,8 +391,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
           }
         }
 
-        const db =
-          maxValue > 0 ? 20 * Math.log10(maxValue) : constants.minDb;
+        const db = maxValue > 0 ? 20 * Math.log10(maxValue) : constants.minDb;
         let normalized =
           (db - constants.minDb) / (constants.maxDb - constants.minDb);
         normalized = Math.max(0, Math.min(1, normalized));
@@ -418,18 +491,10 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   }, [state]);
 
   useEffect(() => {
-    if (state === RecordingState.Recording) {
-      const animationTarget = -size.width;
-      const animationDuration = 1000 * (size.width / constants.pixelsPerSecond);
-
-      translateX.value = withRepeat(
-        withTiming(animationTarget, {
-          duration: animationDuration,
-          easing: Easing.linear,
-        }),
-        -1, // Infinite loop
-        false // No reverse
-      );
+    if (state === RecordingState.Recording && isInterrupted) {
+      cancelAnimation(translateX);
+    } else if (state === RecordingState.Recording) {
+      resumeWaveformScroll(translateX, size.width);
     } else if (state === RecordingState.Paused) {
       cancelAnimation(translateX);
 
@@ -459,6 +524,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
     }
   }, [
     state,
+    isInterrupted,
     size,
     translateX,
     barHeights,
@@ -495,6 +561,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
       <View style={styles.timeStreamContainer}>
         <TimeStream
           isRecording={state === RecordingState.Recording}
+          isFrozen={isInterrupted}
           durationMS={durationMS}
         />
       </View>
