@@ -15,14 +15,14 @@ namespace audioapi {
 
 namespace {
 
-PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
-  switch (latencyHint) {
+PerformanceMode performanceModeFor(std::optional<AudioContextLatencyHint> latencyHint) {
+  switch (latencyHint.value_or(AudioContextLatencyHint::INTERACTIVE)) {
+    case AudioContextLatencyHint::INTERACTIVE:
+      return PerformanceMode::LowLatency;
     case AudioContextLatencyHint::BALANCED:
       return PerformanceMode::None;
     case AudioContextLatencyHint::PLAYBACK:
       return PerformanceMode::PowerSaving;
-    case AudioContextLatencyHint::INTERACTIVE:
-      return PerformanceMode::LowLatency;
   }
   return PerformanceMode::LowLatency;
 }
@@ -36,7 +36,7 @@ AudioPlayer::AudioPlayer(
     std::mutex *driverMutex,
     const std::shared_ptr<AudioContext> &context,
     std::atomic<uint32_t> &currentRenders,
-    AudioContextLatencyHint latencyHint)
+    std::optional<AudioContextLatencyHint> latencyHint)
     : renderAudio_(renderAudio),
       currentRenders_(currentRenders),
       sampleRate_(sampleRate),

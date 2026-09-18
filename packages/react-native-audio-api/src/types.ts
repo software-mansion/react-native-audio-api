@@ -53,10 +53,9 @@ export type AudioContextLatencyCategory =
 export interface AudioContextOptions {
   sampleRate?: number;
   /**
-   * What the context should optimize its output stream for. Defaults to
-   * `interactive` (the lowest latency the platform offers). `balanced` and
-   * `playback` trade output latency for a deeper buffer, which on Android moves
-   * multi-source playback off the underrun-prone low-latency path. Numeric
+   * What the context should optimize its output stream for. Omitting it is not
+   * the same as `'interactive'`: each platform keeps the stream it opened
+   * before this option existed. See the platform table in the docs. Numeric
    * hints are not supported yet.
    */
   latencyHint?: AudioContextLatencyCategory;

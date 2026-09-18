@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/analysis/AnalyserNode.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/core/types/BiquadFilterType.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
@@ -8,6 +9,7 @@
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/events/AudioEvent.h>
+#include <optional>
 #include <string>
 
 namespace audioapi::js_enum_parser {
@@ -24,4 +26,6 @@ ChannelCountMode channelCountModeFromString(const std::string &mode);
 std::string channelInterpretationToString(ChannelInterpretation interpretation);
 ChannelInterpretation channelInterpretationFromString(const std::string &interpretation);
 std::string contextStateToString(ContextState state);
+/// Empty for an unrecognised string, where a browser would throw a TypeError.
+std::optional<AudioContextLatencyHint> latencyHintFromString(const std::string &hint);
 } // namespace audioapi::js_enum_parser

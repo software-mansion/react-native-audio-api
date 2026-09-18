@@ -16,7 +16,7 @@ namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    AudioContextLatencyHint latencyHint)
+    std::optional<AudioContextLatencyHint> latencyHint)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
       latencyHint_(latencyHint),
       isInitialized_(false) {
@@ -55,7 +55,8 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),
-      currentRenders_);
+      currentRenders_,
+      latencyHint_);
 #endif
 }
 

@@ -6,6 +6,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
@@ -17,6 +18,8 @@
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <memory>
+#include <optional>
+#include <string>
 #include <utility>
 
 namespace audioapi {
@@ -71,16 +74,10 @@ class AudioAPIModuleInstaller {
             size_t count) -> jsi::Value {
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
-          // Unknown strings fall back to INTERACTIVE, matching how browsers
-          // treat an unrecognised latencyHint.
-          auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
+          std::optional<AudioContextLatencyHint> latencyHint;
           if (count > 1 && args[1].isString()) {
-            auto hint = args[1].getString(runtime).utf8(runtime);
-            if (hint == "balanced") {
-              latencyHint = AudioContextLatencyHint::BALANCED;
-            } else if (hint == "playback") {
-              latencyHint = AudioContextLatencyHint::PLAYBACK;
-            }
+            latencyHint =
+                js_enum_parser::latencyHintFromString(args[1].getString(runtime).utf8(runtime));
           }
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(

@@ -9,6 +9,7 @@
 
 #include <atomic>
 #include <memory>
+#include <optional>
 
 namespace audioapi {
 
@@ -17,7 +18,7 @@ class AudioContext : public BaseAudioContext {
   explicit AudioContext(
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      AudioContextLatencyHint latencyHint = AudioContextLatencyHint::INTERACTIVE);
+      std::optional<AudioContextLatencyHint> latencyHint = std::nullopt);
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
 
@@ -41,7 +42,7 @@ class AudioContext : public BaseAudioContext {
 
  private:
   std::shared_ptr<CommonPlayer> audioPlayer_;
-  AudioContextLatencyHint latencyHint_;
+  std::optional<AudioContextLatencyHint> latencyHint_;
   std::atomic<bool> isInitialized_{false};
   /// Audio I/O callback thread increments around each platform render callback;
   /// control thread waits on suspend/close.

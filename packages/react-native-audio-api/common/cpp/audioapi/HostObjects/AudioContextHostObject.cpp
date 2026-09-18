@@ -14,7 +14,7 @@ AudioContextHostObject::AudioContextHostObject(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker,
-    AudioContextLatencyHint latencyHint)
+    std::optional<AudioContextLatencyHint> latencyHint)
     : BaseAudioContextHostObject(
           std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry, latencyHint),
           runtime,
