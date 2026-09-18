@@ -22,6 +22,10 @@ class IOSEncoder : public AudioEncoder {
       size_t maxBufferSizeInFrames,
       const std::string &filePath) override;
 
+  /// Switches an open encoder to a new input format without touching the output file: only
+  /// the converter, which is built for the input, is rebuilt.
+  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat, size_t maxBufferSizeInFrames);
+
   EncodeResult encode(const void *data, int numFrames) override;
 
   CloseEncoderResult close() override;
@@ -29,6 +33,12 @@ class IOSEncoder : public AudioEncoder {
   [[nodiscard]] size_t getFileSizeBytes() const override;
 
  private:
+  /// Builds the input format, converter and conversion buffers for an already open file.
+  Result<NoneType, std::string> prepareConversionPipeline(
+      const StreamFormat &inputFormat,
+      size_t maxBufferSizeInFrames);
+  void releaseConversionPipeline();
+
   std::unique_ptr<IOSEncoderState> impl_;
 };
 

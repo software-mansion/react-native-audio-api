@@ -34,4 +34,20 @@ inline std::unique_ptr<AudioEncoder> createOsEncoder(
 #endif
 }
 
+/// Points an open encoder at a new input format while it keeps writing the same file.
+inline OpenEncoderResult reprepareOsEncoderInput(
+    AudioEncoder &encoder,
+    const StreamFormat &inputFormat,
+    size_t maxBufferSizeInFrames) {
+#if defined(__APPLE__) && RN_AUDIO_API_HAS_OS_ENCODER
+  return static_cast<os_encoder::Encoder &>(encoder).reprepareInput(
+      inputFormat, maxBufferSizeInFrames);
+#else
+  (void)encoder;
+  (void)inputFormat;
+  (void)maxBufferSizeInFrames;
+  return OpenEncoderResult::Err("Changing the input format of an open file is iOS only");
+#endif
+}
+
 } // namespace audioapi

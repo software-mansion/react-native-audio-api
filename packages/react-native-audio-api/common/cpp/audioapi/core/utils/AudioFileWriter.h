@@ -39,6 +39,9 @@ struct PlatformFileBackend {
       resolvePath;
   std::function<std::unique_ptr<AudioEncoder>(const std::shared_ptr<AudioFileProperties> &)>
       createEncoder;
+  /// Points an open encoder at a new input format while the file stays the same.
+  std::function<OpenEncoderResult(AudioEncoder &, const StreamFormat &, size_t maxFramesPerBuffer)>
+      reprepareEncoderInput;
 };
 
 /// The iOS and Android implementations of the steps above.
@@ -64,8 +67,7 @@ class AudioFileWriter final {
   /// JS thread. Returns {sizeMB, durationSeconds} summed over every file of the session.
   CloseFileResult closeFile();
 
-  /// JS thread. Finishes the current file and continues the session in a new one opened for
-  /// the new format. Returns that file's path.
+  /// ios only because android handles input format changes automatically. Returns the file path on success.
   OpenFileResult reprepareStreamFormat(
       float streamSampleRate,
       int32_t streamChannelCount,
@@ -111,11 +113,16 @@ class AudioFileWriter final {
   /// JS thread. Joins the worker, then folds the file into the session totals.
   CloseEncoderResult finishCurrentFile();
 
-  /// @p fileNumber is 1-based. A rotated session numbers every file; one that is not keeps the
-  /// plain stem for its first file and numbers the files reopened after a format change from 1.
+  /// @p fileNumber is 1-based. A rotated session numbers every file; one that is not has a
+  /// single file under the plain stem.
   [[nodiscard]] std::string fileStem(size_t fileNumber) const;
+  [[nodiscard]] Result<std::string, std::string> resolveNextFilePath(
+      const std::string &stem,
+      const std::string &extension) const;
   /// The caller must hold fileMutex_.
   OpenFileResult openEncoderForNextFile();
+  /// The caller must hold fileMutex_.
+  OpenFileResult reprepareEncoderInput();
   /// The caller must hold fileMutex_.
   CloseEncoderResult retireEncoder();
   /// The caller must hold fileMutex_.
@@ -155,6 +162,9 @@ class AudioFileWriter final {
   int writesSinceLastSizeCheck_{0};
   double finishedFilesSizeMB_{0.0};
   double finishedFilesDurationSec_{0.0};
+  /// What the current file held before its last input-format change; framesWritten_ counts
+  /// in the current stream rate only. The encoder reports the whole file on close.
+  double currentFileEarlierFormatsDurationSec_{0.0};
 
   std::unique_ptr<float[]> inputBufferPool_;
   size_t samplesPerSlot_{0};

@@ -6,6 +6,8 @@
 
 #include <atomic>
 #include <cstddef>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -23,15 +25,25 @@ namespace {
 struct FakeEncoderLog {
   std::atomic<size_t> fileSizeBytes{0};
   std::atomic<int> encodedBuffers{0};
+  std::atomic<int> closedFiles{0};
   std::atomic<bool> failNextOpen{false};
+  std::atomic<bool> failNextReprepare{false};
+  /// Creates the first resolved path on disk before returning it, so the writer finds it
+  /// taken whatever name it generated.
+  std::atomic<bool> occupyFirstResolvedPath{false};
   double fileSizeMB = 1.0;
   double fileDurationSec = 2.0;
 
   std::mutex mutex;
+  /// Resolved paths are this prefix plus the bare file name; empty by default so a test can
+  /// assert on the names directly.
+  std::string pathPrefix;
   std::vector<std::string> openedFileNames;
   std::vector<std::string> openedPaths;
   StreamFormat lastOpenedFormat{};
   size_t lastOpenedMaxFramesPerBuffer = 0;
+  StreamFormat lastRepreparedFormat{};
+  size_t lastRepreparedMaxFramesPerBuffer = 0;
   EncoderOutputSpec outputSpec{
       .container = AudioContainer::WAV,
       .codec = AudioCodec::PCM,
@@ -63,6 +75,24 @@ class FakeEncoder final : public AudioEncoder {
     return OpenEncoderResult::Ok(filePath);
   }
 
+  /// Mirrors IOSEncoder::reprepareInput, reached through the backend hook.
+  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat, size_t maxBufferSizeInFrames) {
+    if (!isOpen()) {
+      return OpenEncoderResult::Err("encoder is not open");
+    }
+    if (log_.failNextReprepare.exchange(false)) {
+      return OpenEncoderResult::Err("encoder refused the new input format");
+    }
+    inputFormat_ = inputFormat;
+    maxBufferSizeInFrames_ = maxBufferSizeInFrames;
+    {
+      std::scoped_lock lock(log_.mutex);
+      log_.lastRepreparedFormat = inputFormat;
+      log_.lastRepreparedMaxFramesPerBuffer = maxBufferSizeInFrames;
+    }
+    return OpenEncoderResult::Ok(filePath_);
+  }
+
   EncodeResult encode(const void * /*data*/, int numFrames) override {
     addEncodedFrames(static_cast<size_t>(numFrames));
     log_.encodedBuffers.fetch_add(1, std::memory_order_acq_rel);
@@ -71,6 +101,7 @@ class FakeEncoder final : public AudioEncoder {
 
   CloseEncoderResult close() override {
     markClosed();
+    log_.closedFiles.fetch_add(1, std::memory_order_acq_rel);
     return CloseEncoderResult::Ok({log_.fileSizeMB, log_.fileDurationSec});
   }
 
@@ -97,12 +128,21 @@ PlatformFileBackend makeFakeBackend(FakeEncoderLog &log) {
               const std::string &fileName) {
             std::scoped_lock lock(log.mutex);
             log.openedFileNames.push_back(fileName);
-            return Result<std::string, std::string>::Ok(fileName);
+            const std::string path = log.pathPrefix + fileName;
+            if (log.occupyFirstResolvedPath.exchange(false)) {
+              std::ofstream(path).put('\0');
+            }
+            return Result<std::string, std::string>::Ok(path);
           },
       .createEncoder = [&log](const std::shared_ptr<AudioFileProperties> &properties)
           -> std::unique_ptr<AudioEncoder> {
         return std::make_unique<FakeEncoder>(properties, log);
       },
+      .reprepareEncoderInput =
+          [](AudioEncoder &encoder, const StreamFormat &inputFormat, size_t maxFramesPerBuffer) {
+            return static_cast<FakeEncoder &>(encoder).reprepareInput(
+                inputFormat, maxFramesPerBuffer);
+          },
   };
 }
 
@@ -122,11 +162,30 @@ class AudioFileWriterTest : public ::testing::Test {
     frames_.assign(static_cast<size_t>(kFramesPerBuffer * kChannelCount), 0.0F);
   }
 
-  void createWriter(bool rotates) {
+  void TearDown() override {
+    writer_.reset();
+    if (!scratchDir_.empty()) {
+      std::filesystem::remove_all(scratchDir_);
+    }
+  }
+
+  /// Points the fake backend at a directory of its own, for tests that need files on disk.
+  void resolvePathsIntoScratchDir() {
+    const auto *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
+    scratchDir_ = std::filesystem::temp_directory_path() /
+        (std::string("AudioFileWriterTest.") + testInfo->name());
+    std::filesystem::remove_all(scratchDir_);
+    std::filesystem::create_directories(scratchDir_);
+
+    std::scoped_lock lock(log_.mutex);
+    log_.pathPrefix = scratchDir_.string() + "/";
+  }
+
+  void createWriter(bool rotates, const std::string &fileName = "session") {
     properties_ = std::make_shared<AudioFileProperties>(
         AudioFileProperties::FileDirectory::Cache,
         "",
-        "session",
+        fileName,
         kChannelCount,
         rotates ? kRotateIntervalBytes : size_t{0},
         AudioFileProperties::Format::WAV,
@@ -174,6 +233,7 @@ class AudioFileWriterTest : public ::testing::Test {
   FakeEncoderLog log_;
   std::unique_ptr<AudioFileWriter> writer_;
   std::vector<float> frames_;
+  std::filesystem::path scratchDir_;
 };
 
 TEST_F(AudioFileWriterTest, OpensTheSessionUnderItsPlainName) {
@@ -224,46 +284,61 @@ TEST_F(AudioFileWriterTest, QueuedBuffersAreEncodedBeforeTheFileCloses) {
   EXPECT_EQ(log_.encodedBuffers.load(), 5);
 }
 
-TEST_F(AudioFileWriterTest, DurationCountsEveryFileOfTheSession) {
-  createWriter(/*rotates=*/false);
-  ASSERT_TRUE(open().is_ok());
-  ASSERT_TRUE(writer_->reprepareStreamFormat(48000.0F, 1, 256).is_ok());
-
-  writeBuffers(3);
-  // Nothing can be asserted about the current file until the worker has caught up, so only
-  // the finished file's share is checked here.
-  EXPECT_GE(writer_->getCurrentDuration(), log_.fileDurationSec);
-  ASSERT_TRUE(writer_->closeFile().is_ok());
-}
-
-TEST_F(AudioFileWriterTest, ReprepareStreamFormatOpensTheNextFileWithTheNewFormat) {
+TEST_F(AudioFileWriterTest, ReprepareStreamFormatKeepsTheFileAndRetargetsTheEncoder) {
   createWriter(/*rotates=*/false);
   ASSERT_TRUE(open().is_ok());
 
   auto reprepareResult = writer_->reprepareStreamFormat(44100.0F, 1, 256);
   ASSERT_TRUE(reprepareResult.is_ok());
-  EXPECT_EQ(reprepareResult.unwrap(), "session_001.wav");
+  EXPECT_EQ(reprepareResult.unwrap(), "session.wav");
+  EXPECT_EQ(writer_->getFilePath(), "session.wav");
 
-  const std::vector<std::string> expectedPaths{"session.wav", "session_001.wav"};
+  const std::vector<std::string> expectedPaths{"session.wav"};
   EXPECT_EQ(openedPaths(), expectedPaths);
+  EXPECT_EQ(openedFileNames(), expectedPaths);
+  EXPECT_EQ(log_.closedFiles.load(), 0);
 
   std::scoped_lock lock(log_.mutex);
-  EXPECT_FLOAT_EQ(log_.lastOpenedFormat.sampleRate, 44100.0F);
-  EXPECT_EQ(log_.lastOpenedFormat.channelCount, 1);
-  EXPECT_EQ(log_.lastOpenedMaxFramesPerBuffer, 256U);
+  EXPECT_FLOAT_EQ(log_.lastRepreparedFormat.sampleRate, 44100.0F);
+  EXPECT_EQ(log_.lastRepreparedFormat.channelCount, 1);
+  EXPECT_EQ(log_.lastRepreparedMaxFramesPerBuffer, 256U);
 }
 
-TEST_F(AudioFileWriterTest, ReopenedFilesAreNumberedFromOneAfterThePlainFirstFile) {
+TEST_F(AudioFileWriterTest, RepeatedFormatChangesStayInTheOneFile) {
   createWriter(/*rotates=*/false);
   ASSERT_TRUE(open().is_ok());
   ASSERT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_ok());
   ASSERT_TRUE(writer_->reprepareStreamFormat(48000.0F, 2, 128).is_ok());
 
-  const std::vector<std::string> expectedNames{"session.wav", "session_001.wav", "session_002.wav"};
+  const std::vector<std::string> expectedNames{"session.wav"};
   EXPECT_EQ(openedFileNames(), expectedNames);
 }
 
-TEST_F(AudioFileWriterTest, RotatedSessionNumbersEveryFile) {
+TEST_F(AudioFileWriterTest, BuffersQueuedBeforeAFormatChangeAreEncodedInTheOldFormat) {
+  createWriter(/*rotates=*/false);
+  ASSERT_TRUE(open().is_ok());
+
+  writeBuffers(5);
+  ASSERT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_ok());
+
+  // The reprepare joins the worker, so every earlier buffer has been encoded by now.
+  EXPECT_EQ(log_.encodedBuffers.load(), 5);
+  ASSERT_TRUE(writer_->closeFile().is_ok());
+}
+
+TEST_F(AudioFileWriterTest, DurationCarriesAcrossAFormatChange) {
+  createWriter(/*rotates=*/false);
+  ASSERT_TRUE(open().is_ok());
+
+  writeBuffers(3);
+  ASSERT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_ok());
+
+  const double secondsBeforeTheChange = 3.0 * kFramesPerBuffer / 48000.0;
+  EXPECT_DOUBLE_EQ(writer_->getCurrentDuration(), secondsBeforeTheChange);
+  ASSERT_TRUE(writer_->closeFile().is_ok());
+}
+
+TEST_F(AudioFileWriterTest, RotatedSessionKeepsItsSegmentAcrossAFormatChange) {
   createWriter(/*rotates=*/true);
 
   auto openResult = open();
@@ -272,11 +347,11 @@ TEST_F(AudioFileWriterTest, RotatedSessionNumbersEveryFile) {
 
   ASSERT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_ok());
 
-  const std::vector<std::string> expectedNames{"session_001.wav", "session_002.wav"};
+  const std::vector<std::string> expectedNames{"session_001.wav"};
   EXPECT_EQ(openedFileNames(), expectedNames);
 }
 
-TEST_F(AudioFileWriterTest, ReprepareStreamFormatPreservesTheSessionTotals) {
+TEST_F(AudioFileWriterTest, ReprepareStreamFormatLeavesOneFileInTheTotals) {
   createWriter(/*rotates=*/false);
   ASSERT_TRUE(open().is_ok());
   ASSERT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_ok());
@@ -284,15 +359,107 @@ TEST_F(AudioFileWriterTest, ReprepareStreamFormatPreservesTheSessionTotals) {
   auto closeResult = writer_->closeFile();
   ASSERT_TRUE(closeResult.is_ok());
 
-  // The file finished by the reprepare plus the final one: the totals must cover both.
   const auto &totals = closeResult.unwrap();
-  EXPECT_DOUBLE_EQ(std::get<0>(totals), 2.0 * log_.fileSizeMB);
-  EXPECT_DOUBLE_EQ(std::get<1>(totals), 2.0 * log_.fileDurationSec);
+  EXPECT_DOUBLE_EQ(std::get<0>(totals), log_.fileSizeMB);
+  EXPECT_DOUBLE_EQ(std::get<1>(totals), log_.fileDurationSec);
 }
 
 TEST_F(AudioFileWriterTest, ReprepareStreamFormatWithoutOpenFails) {
   createWriter(/*rotates=*/false);
   EXPECT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_err());
+}
+
+TEST_F(AudioFileWriterTest, ReprepareStreamFormatRejectsAnInvalidFormat) {
+  createWriter(/*rotates=*/false);
+  ASSERT_TRUE(open().is_ok());
+
+  EXPECT_TRUE(writer_->reprepareStreamFormat(0.0F, 1, 256).is_err());
+  EXPECT_EQ(writer_->getFilePath(), "session.wav");
+  ASSERT_TRUE(writer_->closeFile().is_ok());
+}
+
+TEST_F(AudioFileWriterTest, AFailedFormatChangeFinishesTheFile) {
+  createWriter(/*rotates=*/false);
+  ASSERT_TRUE(open().is_ok());
+  log_.failNextReprepare.store(true);
+
+  EXPECT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_err());
+
+  EXPECT_EQ(log_.closedFiles.load(), 1);
+  EXPECT_TRUE(writer_->closeFile().is_err());
+}
+
+TEST_F(AudioFileWriterTest, AFormatChangeFailsWithoutAPlatformHookForIt) {
+  createWriter(/*rotates=*/false);
+  auto backend = makeFakeBackend(log_);
+  backend.reprepareEncoderInput = nullptr;
+  writer_ = std::make_unique<AudioFileWriter>(eventRegistry_, properties_, nullptr, backend);
+  ASSERT_TRUE(open().is_ok());
+
+  EXPECT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_err());
+  EXPECT_EQ(log_.closedFiles.load(), 1);
+}
+
+TEST_F(AudioFileWriterTest, GeneratedNameStepsAsideForAnExistingFile) {
+  resolvePathsIntoScratchDir();
+  createWriter(/*rotates=*/false, /*fileName=*/"");
+  log_.occupyFirstResolvedPath.store(true);
+
+  auto openResult = open();
+  ASSERT_TRUE(openResult.is_ok());
+
+  const auto names = openedFileNames();
+  ASSERT_EQ(names.size(), 2U);
+  const std::string stem = names[0].substr(0, names[0].size() - std::string(".wav").size());
+  EXPECT_EQ(names[1], stem + "_1.wav");
+  EXPECT_EQ(openResult.unwrap(), log_.pathPrefix + names[1]);
+}
+
+TEST_F(AudioFileWriterTest, EveryTakenSuffixIsSkipped) {
+  resolvePathsIntoScratchDir();
+  createWriter(/*rotates=*/false, /*fileName=*/"");
+  log_.occupyFirstResolvedPath.store(true);
+  ASSERT_TRUE(open().is_ok());
+  ASSERT_TRUE(writer_->closeFile().is_ok());
+
+  // The first session took `<stem>_1`; occupy that too, so the next one has to go past it.
+  const auto firstSessionNames = openedFileNames();
+  ASSERT_EQ(firstSessionNames.size(), 2U);
+  std::ofstream(log_.pathPrefix + firstSessionNames[1]).put('\0');
+  const std::string stem =
+      firstSessionNames[0].substr(0, firstSessionNames[0].size() - std::string(".wav").size());
+
+  // Only deterministic while the clock stays within the same second; otherwise the new
+  // session gets a fresh stem and nothing collides, which is fine too.
+  ASSERT_TRUE(open().is_ok());
+  const std::string lastName = openedFileNames().back();
+  EXPECT_TRUE(lastName == stem + "_2.wav" || lastName.find(stem) == std::string::npos) << lastName;
+}
+
+TEST_F(AudioFileWriterTest, RotatedUserNamedSegmentsOverwriteExistingFiles) {
+  resolvePathsIntoScratchDir();
+  createWriter(/*rotates=*/true);
+  std::ofstream(log_.pathPrefix + "session_001.wav").put('\0');
+
+  auto openResult = open();
+  ASSERT_TRUE(openResult.is_ok());
+
+  const std::vector<std::string> expectedNames{"session_001.wav"};
+  EXPECT_EQ(openedFileNames(), expectedNames);
+  EXPECT_EQ(openResult.unwrap(), log_.pathPrefix + "session_001.wav");
+}
+
+TEST_F(AudioFileWriterTest, UserNamedSingleFileOverwritesAnExistingFile) {
+  resolvePathsIntoScratchDir();
+  createWriter(/*rotates=*/false);
+  std::ofstream(log_.pathPrefix + "session.wav").put('\0');
+
+  auto openResult = open();
+  ASSERT_TRUE(openResult.is_ok());
+
+  const std::vector<std::string> expectedNames{"session.wav"};
+  EXPECT_EQ(openedFileNames(), expectedNames);
+  EXPECT_EQ(openResult.unwrap(), log_.pathPrefix + "session.wav");
 }
 
 TEST_F(AudioFileWriterTest, SessionTotalsStartOverWithEachOpen) {

@@ -156,6 +156,10 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
 
   if (isConnected()) {
     std::scoped_lock adapterLock(adapterNodeMutex_);
+    // init() is a no-op on an initialized adapter, so the old format has to be torn down first.
+    if (adapterNodeHandle_ != nullptr) {
+      static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
+    }
     prepareAdapterNode(format);
   }
 
@@ -176,13 +180,13 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
     return Result<NoneType, std::string>::Err("File writer is unavailable");
   }
 
-  // The encoder is bound to the format it was opened with, so the session continues in a new file.
+  // The file stays the same; only the encoder's input side follows the new format.
   auto result = fileWriter_->reprepareStreamFormat(
       format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
   if (result.is_err()) {
     fileOutputConfigured_.store(false, std::memory_order_release);
     return Result<NoneType, std::string>::Err(
-        "Failed to reopen file for writing: " + result.unwrap_err());
+        "Failed to continue the recording in the new input format: " + result.unwrap_err());
   }
 
   filePath_ = result.unwrap();
@@ -365,22 +369,20 @@ AudioRecorder::StopResult IOSAudioRecorder::stop()
 {
   DetachedSideEffects sideEffects;
 
+  if (isIdle()) {
+    return StopResult::Err("Recorder is not in recording state.");
+  }
+
+  state_.store(RecorderState::Idle, std::memory_order_release);
+  [nativeRecorder_ setInputArmed:false];
+  interleavedHolder_.clear();
+  inputChannelCount_ = 0;
+  lastCallbackFrameCount_.store(0, std::memory_order_release);
+  streamSampleRate_.store(0.0F, std::memory_order_release);
+  [nativeRecorder_ stop];
+
   {
     std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
-
-    if (isIdle()) {
-      return StopResult::Err("Recorder is not in recording state.");
-    }
-
-    [nativeRecorder_ setInputArmed:false];
-    // Safe only because the input is now disarmed: the audio thread reads these unlocked.
-    interleavedHolder_.clear();
-    inputChannelCount_ = 0;
-    state_.store(RecorderState::Idle, std::memory_order_release);
-    lastCallbackFrameCount_.store(0, std::memory_order_release);
-    streamSampleRate_.store(0.0F, std::memory_order_release);
-    [nativeRecorder_ stop];
-
     sideEffects = detachSideEffects();
   }
 
@@ -403,8 +405,11 @@ void IOSAudioRecorder::resume()
     return;
   }
 
-  [nativeRecorder_ resume];
   state_.store(RecorderState::Recording, std::memory_order_release);
+
+  if (![nativeRecorder_ resume]) {
+    state_.store(RecorderState::Paused, std::memory_order_release);
+  }
 }
 
 /// Any thread. Also requires the audio engine to be running, so a recorder whose session was

@@ -112,30 +112,20 @@ OpenEncoderResult IOSEncoder::open(
           "Invalid file properties: sampleRate and channelCount must be greater than 0");
     }
 
-    inputFormat_ = inputFormat;
     outputSpec_ = outputSpec;
-    maxBufferSizeInFrames_ = maxBufferSizeInFrames;
     filePath_ = filePath;
     resetFramesEncoded();
 
-    impl_->inputChannelCount = inputFormat.channelCount;
     impl_->fileURL = [NSURL fileURLWithPath:[NSString stringWithUTF8String:filePath.c_str()]];
 
-    impl_->inputFormat =
-        [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                         sampleRate:inputFormat.sampleRate
-                                           channels:(AVAudioChannelCount)inputFormat.channelCount
-                                        interleaved:NO];
-    if (impl_->inputFormat == nil) {
-      return OpenEncoderResult::Err("Failed to build input AVAudioFormat");
-    }
-
+    // The file is written in the planar float32 layout the mic delivers; the converter maps
+    // whatever the current input is onto the file's processing format.
     NSError *error = nil;
     NSDictionary *settings = buildFileSettings(fileProperties_, outputSpec);
     impl_->audioFile = [[AVAudioFile alloc] initForWriting:impl_->fileURL
                                                   settings:settings
                                               commonFormat:AVAudioPCMFormatFloat32
-                                               interleaved:impl_->inputFormat.interleaved
+                                               interleaved:NO
                                                      error:&error];
     if (error != nil || impl_->audioFile == nil) {
       return OpenEncoderResult::Err(
@@ -143,12 +133,70 @@ OpenEncoderResult IOSEncoder::open(
           (error != nil ? [[error debugDescription] UTF8String] : "unknown"));
     }
 
+    auto pipelineResult = prepareConversionPipeline(inputFormat, maxBufferSizeInFrames);
+    if (pipelineResult.is_err()) {
+      releaseConversionPipeline();
+      impl_->audioFile = nil;
+      return OpenEncoderResult::Err(pipelineResult.unwrap_err());
+    }
+
+    markOpen();
+    return OpenEncoderResult::Ok(filePath_);
+  }
+}
+
+OpenEncoderResult IOSEncoder::reprepareInput(
+    const StreamFormat &inputFormat,
+    size_t maxBufferSizeInFrames)
+{
+  @autoreleasepool {
+    if (!isOpen() || impl_->audioFile == nil) {
+      return OpenEncoderResult::Err("Encoder is not open");
+    }
+    if (inputFormat.sampleRate <= 0 || inputFormat.channelCount <= 0) {
+      return OpenEncoderResult::Err(
+          "Invalid input format: sampleRate and channelCount must be greater than 0");
+    }
+
+    // The file's settings come from the file properties, so it stays open and the recording
+    // is not split; only the converter, which is built for the input, is rebuilt.
+    releaseConversionPipeline();
+
+    auto pipelineResult = prepareConversionPipeline(inputFormat, maxBufferSizeInFrames);
+    if (pipelineResult.is_err()) {
+      releaseConversionPipeline();
+      return OpenEncoderResult::Err(pipelineResult.unwrap_err());
+    }
+
+    return OpenEncoderResult::Ok(filePath_);
+  }
+}
+
+Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(
+    const StreamFormat &inputFormat,
+    size_t maxBufferSizeInFrames)
+{
+  using PipelineResult = Result<NoneType, std::string>;
+
+  @autoreleasepool {
+    inputFormat_ = inputFormat;
+    maxBufferSizeInFrames_ = maxBufferSizeInFrames;
+    impl_->inputChannelCount = inputFormat.channelCount;
+
+    impl_->inputFormat =
+        [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                         sampleRate:inputFormat.sampleRate
+                                           channels:(AVAudioChannelCount)inputFormat.channelCount
+                                        interleaved:NO];
+    if (impl_->inputFormat == nil) {
+      return PipelineResult::Err("Failed to build input AVAudioFormat");
+    }
+
     impl_->converter =
         [[AVAudioConverter alloc] initFromFormat:impl_->inputFormat
                                         toFormat:[impl_->audioFile processingFormat]];
     if (impl_->converter == nil) {
-      impl_->audioFile = nil;
-      return OpenEncoderResult::Err("Failed to create AVAudioConverter");
+      return PipelineResult::Err("Failed to create AVAudioConverter");
     }
     impl_->converter.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
     impl_->converter.sampleRateConverterQuality = AVAudioQualityMax;
@@ -166,14 +214,20 @@ OpenEncoderResult IOSEncoder::open(
                                       frameCapacity:(AVAudioFrameCount)outputCapacity];
 
     if (impl_->converterInputBuffer == nil || impl_->converterOutputBuffer == nil) {
-      impl_->audioFile = nil;
-      impl_->converter = nil;
-      return OpenEncoderResult::Err("Failed to allocate converter buffers");
+      return PipelineResult::Err("Failed to allocate converter buffers");
     }
 
-    markOpen();
-    return OpenEncoderResult::Ok(filePath_);
+    return PipelineResult::Ok(None);
   }
+}
+
+void IOSEncoder::releaseConversionPipeline()
+{
+  impl_->converter = nil;
+  impl_->converterInputBuffer = nil;
+  impl_->converterOutputBuffer = nil;
+  impl_->inputFormat = nil;
+  impl_->inputChannelCount = 0;
 }
 
 EncodeResult IOSEncoder::encode(const void *data, int numFrames)

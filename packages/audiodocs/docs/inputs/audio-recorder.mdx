@@ -678,9 +678,9 @@ interface AudioRecorderFileOptions {
 
 #### File naming
 
-`fileName` names the output file outright. Left unset, the library generates a name that is
-unique by construction. Rotation appends a segment index either way, because one recording
-then spans several files.
+`fileName` names the output file outright. Left unset, the library generates a name from the
+start time, and keeps it clear of existing files. Rotation appends a segment index either way,
+because one recording then spans several files.
 
 | `fileName` | `rotateIntervalBytes` | Resulting file(s) |
 | :--- | :--- | :--- |
@@ -699,11 +699,13 @@ The segment index is padded to three digits and keeps counting beyond that (`_99
 `_1000`, …). Names stay unique; only their lexicographic order breaks past 999 segments —
 `stop()` still returns `paths` in recording order.
 
-A recording without rotation can still span several files: on iOS, an audio route change
-mid-session (headphones connecting, say) alters the input format, and the encoder has to be
-reopened. The first file keeps its plain name and each reopened file takes the next index
-(`session-42.wav`, then `session-42_001.wav`). `stop()` returns every file, and its size and
-duration cover all of them.
+An audio route change mid-session (headphones connecting, say) alters the input format on
+iOS, but the recording carries on in the same file: only the conversion from the input to
+the file's format is rebuilt. A recording without rotation is always a single file.
+
+A generated name never overwrites: when two recordings start within the same second and
+would share a timestamp, the later one gets a counter appended
+(`recording_20260909_101500_1.wav`, `_2`, …).
 
 :::caution
 `fileName` puts you in charge of telling recordings apart. An existing file of the same name

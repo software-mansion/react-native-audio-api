@@ -29,6 +29,7 @@ PlatformFileBackend createOsFileBackend() {
       .resolveOutputSpec = &EncoderCapabilities::resolveOutputSpec,
       .resolvePath = &resolveOsFilePath,
       .createEncoder = &createOsEncoder,
+      .reprepareEncoderInput = &reprepareOsEncoderInput,
   };
 }
 
@@ -92,11 +93,40 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(
   if (!isFileOpen()) {
     return OpenFileResult::Err("file is not open");
   }
+  if (streamSampleRate <= 0 || streamChannelCount <= 0 || maxFramesPerBuffer <= 0) {
+    return OpenFileResult::Err(
+        "Invalid input format: sampleRate, channelCount and buffer size must be greater than 0");
+  }
 
-  // A file that failed to close is left out of the totals; the session still moves on.
-  finishCurrentFile();
+  cleanupPreallocatedInputPool();
+  isFileOpen_.store(false, std::memory_order_release);
 
-  return startNextFile(streamSampleRate, streamChannelCount, maxFramesPerBuffer);
+  OpenFileResult reprepareResult = OpenFileResult::Err("");
+  {
+    std::scoped_lock lock(fileMutex_);
+    if (streamSampleRate_ > 0) {
+      currentFileEarlierFormatsDurationSec_ +=
+          static_cast<double>(framesWritten_.load(std::memory_order_acquire)) / streamSampleRate_;
+    }
+    framesWritten_.store(0, std::memory_order_release);
+    streamSampleRate_ = streamSampleRate;
+    streamChannelCount_ = streamChannelCount;
+    maxFramesPerBuffer_ = maxFramesPerBuffer;
+    reprepareResult = reprepareEncoderInput();
+  }
+  if (reprepareResult.is_err()) {
+    // Nothing more can be encoded in the new format, so the file is finished as far as it got.
+    finishCurrentFile();
+    return reprepareResult;
+  }
+
+  if (!initializePreallocatedInputPool()) {
+    finishCurrentFile();
+    return OpenFileResult::Err("Failed to preallocate file writer buffers");
+  }
+
+  isFileOpen_.store(true, std::memory_order_release);
+  return reprepareResult;
 }
 
 OpenFileResult AudioFileWriter::startNextFile(
@@ -157,10 +187,48 @@ std::string AudioFileWriter::fileStem(size_t fileNumber) const {
   if (rotatesFiles()) {
     return recordingfilename::segmentStem(sessionStem_, fileNumber);
   }
-  if (fileNumber == 1) {
-    return sessionStem_;
+  return sessionStem_;
+}
+
+static bool fileExists(const std::string &path) {
+  struct stat existing{};
+  return ::stat(path.c_str(), &existing) == 0;
+}
+
+static void warnAboutOverwrite(const std::string &path) {
+#ifdef ANDROID
+  __android_log_print(
+      ANDROID_LOG_WARN, "RN_AUDIOAPI", "recording overwrites an existing file: %s", path.c_str());
+#else
+  printf("[RN_AUDIOAPI WARN] recording overwrites an existing file: %s\n", path.c_str());
+#endif
+}
+
+Result<std::string, std::string> AudioFileWriter::resolveNextFilePath(
+    const std::string &stem,
+    const std::string &extension) const {
+  auto pathResult = backend_.resolvePath(fileProperties_, stem + "." + extension);
+  if (pathResult.is_err()) {
+    return pathResult;
   }
-  return recordingfilename::segmentStem(sessionStem_, fileNumber - 1);
+
+  const bool userNamed = !fileProperties_->fileName.empty();
+  if (userNamed) {
+    if (fileExists(pathResult.unwrap())) {
+      warnAboutOverwrite(pathResult.unwrap());
+    }
+    return pathResult;
+  }
+
+  for (size_t suffix = 1; fileExists(pathResult.unwrap()); ++suffix) {
+    std::string suffixedName = stem;
+    suffixedName += "_" + std::to_string(suffix) + "." + extension;
+    pathResult = backend_.resolvePath(fileProperties_, suffixedName);
+    if (pathResult.is_err()) {
+      return pathResult;
+    }
+  }
+  return pathResult;
 }
 
 OpenFileResult AudioFileWriter::openEncoderForNextFile() {
@@ -175,26 +243,12 @@ OpenFileResult AudioFileWriter::openEncoderForNextFile() {
   }
   const auto &outputSpec = specResult.unwrap();
 
-  const std::string fileName =
-      fileStem(openedFileCount_ + 1) + "." + std::string(outputSpec.extension);
-  auto filePathResult = backend_.resolvePath(fileProperties_, fileName);
+  auto filePathResult =
+      resolveNextFilePath(fileStem(openedFileCount_ + 1), std::string(outputSpec.extension));
   if (filePathResult.is_err()) {
     return OpenFileResult::Err(filePathResult.unwrap_err());
   }
   const std::string &filePath = filePathResult.unwrap();
-
-  struct stat existing{};
-  if (::stat(filePath.c_str(), &existing) == 0) {
-#ifdef ANDROID
-    __android_log_print(
-        ANDROID_LOG_WARN,
-        "RN_AUDIOAPI",
-        "recording overwrites an existing file: %s",
-        filePath.c_str());
-#else
-    printf("[RN_AUDIOAPI WARN] recording overwrites an existing file: %s\n", filePath.c_str());
-#endif
-  }
 
   const StreamFormat inputFormat{
       .sampleRate = streamSampleRate_,
@@ -215,8 +269,31 @@ OpenFileResult AudioFileWriter::openEncoderForNextFile() {
   filePath_ = filePath;
   ++openedFileCount_;
   writesSinceLastSizeCheck_ = 0;
+  currentFileEarlierFormatsDurationSec_ = 0.0;
   framesWritten_.store(0, std::memory_order_release);
 
+  return OpenFileResult::Ok(filePath_);
+}
+
+OpenFileResult AudioFileWriter::reprepareEncoderInput() {
+  if (encoder_ == nullptr) {
+    return OpenFileResult::Err("file is not open: " + filePath_);
+  }
+
+  if (!backend_.reprepareEncoderInput) {
+    return OpenFileResult::Err("The platform cannot change the input format of an open file");
+  }
+
+  const StreamFormat inputFormat{
+      .sampleRate = streamSampleRate_,
+      .channelCount = streamChannelCount_,
+  };
+  auto result = backend_.reprepareEncoderInput(
+      *encoder_, inputFormat, static_cast<size_t>(maxFramesPerBuffer_));
+  if (result.is_err()) {
+    return OpenFileResult::Err(
+        "Failed to switch the recording to the new input format: " + result.unwrap_err());
+  }
   return OpenFileResult::Ok(filePath_);
 }
 
@@ -227,6 +304,7 @@ CloseEncoderResult AudioFileWriter::retireEncoder() {
 
   auto closeResult = encoder_->close();
   encoder_.reset();
+  currentFileEarlierFormatsDurationSec_ = 0.0;
   framesWritten_.store(0, std::memory_order_release);
   return closeResult;
 }
@@ -413,11 +491,12 @@ double AudioFileWriter::getCurrentDuration() const {
   std::scoped_lock lock(fileMutex_);
   const double sampleRate = streamSampleRate_ > 0 ? streamSampleRate_ : fileProperties_->sampleRate;
   if (sampleRate <= 0) {
-    return finishedFilesDurationSec_;
+    return finishedFilesDurationSec_ + currentFileEarlierFormatsDurationSec_;
   }
-  const double currentFileDurationSec =
+  const double currentFormatDurationSec =
       static_cast<double>(framesWritten_.load(std::memory_order_acquire)) / sampleRate;
-  return finishedFilesDurationSec_ + currentFileDurationSec;
+  return finishedFilesDurationSec_ + currentFileEarlierFormatsDurationSec_ +
+      currentFormatDurationSec;
 }
 
 size_t AudioFileWriter::getFileSizeBytes() const {
