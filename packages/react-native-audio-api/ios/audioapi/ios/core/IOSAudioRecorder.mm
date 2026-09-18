@@ -2,6 +2,7 @@
 #import <AudioEngine.h>
 #import <AudioSessionManager.h>
 #import <Foundation/Foundation.h>
+#include <algorithm>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -93,7 +94,9 @@ void IOSAudioRecorder::runSideEffects(const AudioBufferList *inputBuffer, int nu
 
   if (isConnected()) {
     if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
-      for (size_t channel = 0; channel < adapterNode_->getChannelCount(); ++channel) {
+      const size_t channelCount = std::min(
+          adapterNode_->getChannelCount(), static_cast<size_t>(inputBuffer->mNumberBuffers));
+      for (size_t channel = 0; channel < channelCount; ++channel) {
         auto *data = static_cast<float *>(inputBuffer->mBuffers[channel].mData);
         adapterNode_->buff_[channel]->write(data, numFrames);
       }
@@ -237,6 +240,8 @@ void IOSAudioRecorder::reprepareAdapter(AVAudioFormat *inputFormat, int maxInput
     return;
   }
 
+  // init() is a no-op on an initialized adapter, so the old format has to be torn down first.
+  adapterNode_->adapterCleanup();
   adapterNode_->init(
       static_cast<size_t>(maxInputBufferLength),
       recorderFormatChannelCount(inputFormat),
@@ -407,16 +412,16 @@ AudioRecorder::StopResult IOSAudioRecorder::stop()
   std::shared_ptr<RecorderAdapterNode> adapterNode;
   std::vector<std::string> outputPaths;
 
+  if (isIdle()) {
+    return StopResult::Err("Recorder is not in recording state.");
+  }
+
+  state_.store(RecorderState::Idle, std::memory_order_release);
+  [nativeRecorder_ setInputArmed:false];
+  [nativeRecorder_ stop];
+
   {
     std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
-
-    if (isIdle()) {
-      return StopResult::Err("Recorder is not in recording state.");
-    }
-
-    [nativeRecorder_ setInputArmed:false];
-    state_.store(RecorderState::Idle, std::memory_order_release);
-    [nativeRecorder_ stop];
 
     if (usesFileOutput()) {
       fileOutputConfigured_.store(false, std::memory_order_release);
@@ -565,8 +570,11 @@ void IOSAudioRecorder::resume()
     return;
   }
 
-  [nativeRecorder_ resume];
   state_.store(RecorderState::Recording, std::memory_order_release);
+
+  if (![nativeRecorder_ resume]) {
+    state_.store(RecorderState::Paused, std::memory_order_release);
+  }
 }
 
 /// @brief Checks if the recorder is currently recording.

@@ -191,9 +191,10 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture()
   self.pauseCallCount += 1;
 }
 
-- (void)resume
+- (BOOL)resume
 {
   self.resumeCallCount += 1;
+  return YES;
 }
 
 - (void)cleanup
