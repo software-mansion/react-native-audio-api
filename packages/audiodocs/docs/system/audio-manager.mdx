@@ -122,6 +122,14 @@ Reads the current system output volume as a 0..1 fraction of its maximum.
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable observing volume changes. |
 
+:::info
+On iOS, volume changes are reported only while the audio session is active.
+
+Volume observation does not work on the iOS Simulator. Test it on a physical device.
+:::
+
+In React components, the [`useSystemVolume`](../hooks/system-volume.mdx) hook enables the observation and subscribes to the event for you.
+
 #### Returns `undefined`.
 
 ### `addSystemEventListener`
