@@ -7,6 +7,7 @@ import type {
   IAudioBuffer,
   IOfflineAudioContext,
 } from '../jsi-interfaces';
+import type { FileInfo } from '../types';
 
 /* eslint-disable no-var */
 declare global {
@@ -24,6 +25,10 @@ declare global {
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: () => IAudioRecorder;
+
+  var isRecordingOngoing: (() => boolean) | undefined;
+
+  var consumeLastRecordingResult: (() => FileInfo | null) | undefined;
 
   var createAudioBuffer: (
     numberOfChannels: number,

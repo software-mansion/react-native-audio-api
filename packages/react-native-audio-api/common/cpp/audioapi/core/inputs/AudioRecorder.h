@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -29,7 +30,6 @@ class AudioRecorder {
  public:
   using StopResult = Result<std::tuple<std::vector<std::string>, double, double>, std::string>;
 
-  enum class RecorderState : uint8_t { Idle = 0, Recording, Paused };
   explicit AudioRecorder(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
       : audioEventHandlerRegistry_(audioEventHandlerRegistry),
@@ -85,6 +85,8 @@ class AudioRecorder {
   /// @brief Whether the recorder is idle (not recording or paused). Shared by
   /// both platforms.
   bool isIdle() const;
+
+  RecorderState getState() const;
 
  protected:
   bool wantsCallback() const;

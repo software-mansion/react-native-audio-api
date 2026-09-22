@@ -20,6 +20,7 @@
 #import <audioapi/ios/system/SystemNotificationManager.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 
+#import <audioapi/core/inputs/ActiveRecorderHandle.h>
 #import <audioapi/events/AudioEventHandlerRegistry.h>
 
 using namespace audioapi;
@@ -145,17 +146,23 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(resolveAndroidReleaseAsset : (NSString *)
 }
 
 RCT_EXPORT_METHOD(
-    readAndroidReleaseAssetBytesAsBase64 : (NSString *)assetPath resolve : (RCTPromiseResolveBlock)
-        resolve reject : (RCTPromiseRejectBlock)reject)
+    readAndroidReleaseAssetBytesAsBase64 : (NSString *)assetPath resolve : (
+        RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)reject)
 {
   reject(@"E_PLATFORM", @"readAndroidReleaseAssetBytesAsBase64 is only available on Android", nil);
 }
 
 RCT_EXPORT_METHOD(
-    setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)
-        resolve reject : (RCTPromiseRejectBlock)reject)
+    setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve reject : (
+        RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    // Deactivating the session underneath a live recording would corrupt its output, so
+    // the recording is finalized first
+    if (!enabled) {
+      ActiveRecorderHandle::global().stopAndReturnInfo();
+    }
+
     NSError *error = nil;
     auto success = [self.audioSessionManager setActive:enabled error:&error];
 
@@ -191,9 +198,9 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-        options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
-            notifyOthersOnDeactivation)
+    setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (
+        NSArray *)options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
+        notifyOthersOnDeactivation)
 {
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
@@ -222,8 +229,8 @@ RCT_EXPORT_METHOD(observeVolumeChanges : (BOOL)enabled)
 }
 
 RCT_EXPORT_METHOD(
-    requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)
-        resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    requestRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (
+        nonnull RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     [self.audioSessionManager requestRecordingPermissions:resolve reject:reject];
@@ -231,8 +238,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)
-        resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    checkRecordingPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (
+        nonnull RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     [self.audioSessionManager checkRecordingPermissions:resolve reject:reject];
@@ -240,8 +247,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    requestNotificationPermissions : (nonnull RCTPromiseResolveBlock)
-        resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    requestNotificationPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (
+        nonnull RCTPromiseRejectBlock)reject)
 {
   // iOS doesn't require explicit notification permissions for media controls
   // MPNowPlayingInfoCenter and MPRemoteCommandCenter work without permissions
@@ -250,8 +257,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    checkNotificationPermissions : (nonnull RCTPromiseResolveBlock)
-        resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    checkNotificationPermissions : (nonnull RCTPromiseResolveBlock)resolve reject : (
+        nonnull RCTPromiseRejectBlock)reject)
 {
   // iOS doesn't require explicit notification permissions for media controls
   // Return 'Granted' to match the spec interface
@@ -259,8 +266,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    getDevicesInfo : (nonnull RCTPromiseResolveBlock)
-        resolve reject : (nonnull RCTPromiseRejectBlock)reject)
+    getDevicesInfo : (nonnull RCTPromiseResolveBlock)resolve reject : (
+        nonnull RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     [self.audioSessionManager getDevicesInfo:resolve reject:reject];
@@ -268,8 +275,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    setInputDevice : (NSString *)deviceId resolve : (RCTPromiseResolveBlock)
-        resolve reject : (RCTPromiseRejectBlock)reject)
+    setInputDevice : (NSString *)deviceId resolve : (RCTPromiseResolveBlock)resolve reject : (
+        RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     [self.audioSessionManager setInputDevice:deviceId resolve:resolve reject:reject];
@@ -300,8 +307,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    hideNotification : (NSString *)key resolve : (RCTPromiseResolveBlock)
-        resolve reject : (RCTPromiseRejectBlock)reject)
+    hideNotification : (NSString *)key resolve : (RCTPromiseResolveBlock)resolve reject : (
+        RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     BOOL success = [self.notificationRegistry hideNotificationWithKey:key];
@@ -315,8 +322,8 @@ RCT_EXPORT_METHOD(
 }
 
 RCT_EXPORT_METHOD(
-    isNotificationActive : (NSString *)key resolve : (RCTPromiseResolveBlock)
-        resolve reject : (RCTPromiseRejectBlock)reject)
+    isNotificationActive : (NSString *)key resolve : (RCTPromiseResolveBlock)resolve reject : (
+        RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     BOOL isActive = [self.notificationRegistry isNotificationActiveWithKey:key];

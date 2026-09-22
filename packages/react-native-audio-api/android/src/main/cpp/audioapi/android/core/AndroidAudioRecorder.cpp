@@ -224,26 +224,25 @@ AudioRecorder::StopResult AndroidAudioRecorder::stop() {
 }
 
 /// @brief Enables file output for the recorder with the specified properties.
-/// If the recorder is already active, it will prepare and open the file for writing immediately.
-/// Due to the nature of RN this might be called multiple times during recording session (especially during development),
-/// thus the requirement of handling the "already active" case.
+/// The file itself is created by the next start(). An active (recording or paused) session keeps
+/// the output it started with, so calling this during a session fails and changes nothing.
 /// This method should be called from the JS thread only.
 /// @param properties Properties defining the audio file format and encoding options.
-/// @returns On success, returns the file URI where the recording is being saved, otherwise returns an error message.
+/// @returns Ok when the properties were stored, otherwise an error message.
 Result<NoneType, std::string> AndroidAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
-  std::scoped_lock fileWriterLock(fileWriterMutex_);
+  // start() holds fileWriterMutex_ for its whole idle check and setup, so the
+  // idle test below cannot interleave with a session that is just starting.
+  std::scoped_lock lock(fileWriterMutex_);
+
+  if (!isIdle()) {
+    return Result<NoneType, std::string>::Err(
+        "File output cannot be changed while a recording session is active");
+  }
+
   fileProperties_ = properties;
   fileOutputEnabled_.store(true, std::memory_order_release);
   fileOutputConfigured_.store(false, std::memory_order_release);
-
-  if (!isIdle()) {
-    auto writerResult = setupFileWriter(properties);
-    if (!writerResult.is_ok()) {
-      fileOutputEnabled_.store(false, std::memory_order_release);
-      return writerResult;
-    }
-  }
 
   return Result<NoneType, std::string>::Ok(None);
 }
@@ -489,11 +488,11 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     return;
   }
 
-  // Only restart if the recorder is still supposed to be running. Restarting
+  // Only reclaim the stream if the recorder still owns a session. Reopening
   // unconditionally resurrected stopped recorders, so any audio route change
   // (e.g. a Bluetooth headset connecting or disconnecting) turned the mic
   // back on after stop().
-  if (isIdle() || isPaused()) {
+  if (isIdle()) {
     return;
   }
 
@@ -508,7 +507,15 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     return;
   }
 
+  // A paused session keeps its state across the reclaim: the fresh stream is
+  // left stopped until resume(), instead of forcing the recorder back to recording.
+  const auto stateBeforeTeardown = state_.load(std::memory_order_acquire);
+
   cleanup();
+
+  if (stateBeforeTeardown == RecorderState::Idle) {
+    return;
+  }
 
   auto streamResult = openAudioStream();
 
@@ -518,8 +525,10 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     return;
   }
 
-  mStream_->requestStart();
-  state_.store(RecorderState::Recording, std::memory_order_release);
+  if (stateBeforeTeardown == RecorderState::Recording) {
+    mStream_->requestStart();
+  }
+  state_.store(stateBeforeTeardown, std::memory_order_release);
 }
 
 } // namespace audioapi
