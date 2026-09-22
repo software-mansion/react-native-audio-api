@@ -93,7 +93,7 @@ std::shared_ptr<AudioBuffer> GainNode::processNode(
 
 ---
 
-## Processable State (reverse-topo pull)
+## Processable State (seed-driven dependency pull)
 
 Which nodes run each render quantum is decided by `AudioGraph::settleProcessableState()`, run inside `Graph::process()` after toposort/compaction and before the forward `iter()` pass. It is an **audio-thread-only** concern — never derived from HostGraph adjacency (that mutates on the JS thread under `nodesMutex_`).
 
@@ -103,7 +103,7 @@ Which nodes run each render quantum is decided by `AudioGraph::settleProcessable
 - `NOT_PROCESSABLE` — idle / disconnected / default.
 
 Settle algorithm (allocation-free):
-1. **Reverse pull**: walk the topo-sorted node array sinks → sources; for every `ALWAYS_`/`CONDITIONAL_PROCESSABLE` node, mark its inputs (and processable-links) `CONDITIONAL_PROCESSABLE`. Iterates to a fixpoint for processable-links.
+1. **Dependency pull**: depth-first from every `ALWAYS_`/`CONDITIONAL_PROCESSABLE` seed, mark each dependency (audio inputs and processable-links alike) `CONDITIONAL_PROCESSABLE` and continue from it. Uses `target_index` as an embedded stack and the state as the visited marker, so it is a single O(V+E) pass independent of array order.
 2. **End-of-quantum demotion**: after `processInputs()`, each node that was `CONDITIONAL_PROCESSABLE` flips back to `NOT_PROCESSABLE` in `GraphObject::process()`. That replaces a global reset at the start of settle — nodes that ran last quantum are already idle when the next pull begins.
 
 Key invariants:
@@ -352,7 +352,7 @@ These are mutable after construction. `AudioNode` (core) exposes virtual `setCha
 ### Idle-node stale-buffer zeroing (settleProcessableState)
 `AudioGraph::iter()` filters to `isProcessable()` nodes, so a node that has gone idle (e.g. a finished source) is skipped and its output buffer is NOT refreshed — it keeps the samples from an earlier quantum. Downstream consumers still read that buffer via `getOutput()` when collecting inputs, which would re-sum ghost echoes every quantum (this broke the `audionode-channel-rules` ~170-node WPT test).
 
-Fix: after the reverse-topo pull in `AudioGraph::settleProcessableState()`, zero the output buffer of every node that is still `!isProcessable()`. Active CONDITIONAL nodes have already been pulled, so they are left intact; tail-bearing nodes remain `isProcessable()` while draining and are also left intact.
+Fix: after the dependency pull in `AudioGraph::settleProcessableState()`, zero the output buffer of every node that is still `!isProcessable()`. Active CONDITIONAL nodes have already been pulled, so they are left intact; tail-bearing nodes remain `isProcessable()` while draining and are also left intact.
 
 Do **not** gate `GraphObject::process()` on `isProcessable()` of inputs: CONDITIONAL nodes demote themselves to `NOT_PROCESSABLE` at the end of their own `process()` call, before downstream consumers run in the same topological pass — an `isProcessable()` gate would drop every live conditional input every quantum.
 

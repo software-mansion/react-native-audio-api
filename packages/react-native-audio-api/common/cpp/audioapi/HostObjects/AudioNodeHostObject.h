@@ -43,8 +43,8 @@ class AudioNodeHostObject : public HostObject,
   JSI_HOST_FUNCTION_DECL(connect);
   JSI_HOST_FUNCTION_DECL(disconnect);
 
-  [[nodiscard]] virtual size_t getMemoryPressure() const {
-    return 300'000; // magic number so node can be destroyed quite fast
+  [[nodiscard]] virtual constexpr size_t getMemoryPressure() const {
+    return RENDER_QUANTUM_SIZE * 2 * sizeof(float); // rough estimate of processing buffer size
   }
 
  protected:

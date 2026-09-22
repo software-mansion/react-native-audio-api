@@ -262,9 +262,6 @@ HostGraph::HostGraph() = default;
 HostGraph::~HostGraph() {
   std::scoped_lock lock(nodesMutex_);
   for (Node *n : nodes) {
-    n->linkedNodes.clear();
-  }
-  for (Node *n : nodes) {
     delete n;
   }
   nodes.clear();
@@ -285,9 +282,6 @@ HostGraph::HostGraph(HostGraph &&other) noexcept
 auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
   if (this != &other) {
     std::scoped_lock lock(nodesMutex_, other.nodesMutex_);
-    for (Node *n : nodes) {
-      n->linkedNodes.clear();
-    }
     for (Node *n : nodes) {
       delete n;
     }

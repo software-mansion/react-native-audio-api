@@ -101,7 +101,8 @@ class Graph {
   void processEvents();
 
   /// @brief Runs toposort + compaction on the audio graph, then settles every
-  /// node's processable state for the coming quantum (reverse-topo pull).
+  /// node's processable state for the coming quantum (dependency pull from
+  /// the always-processable roots).
   /// Allocation-free.
   /// @note Should be called only from the audio thread.
   void process();

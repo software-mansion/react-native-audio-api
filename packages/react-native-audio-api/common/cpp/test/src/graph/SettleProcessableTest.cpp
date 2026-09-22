@@ -66,7 +66,7 @@ class SettleProcessableTest : public ::testing::Test {
   }
 
   void settleOnly() {
-    audioGraph.process();
+    audioGraph.sortAndCompact();
     audioGraph.settleProcessableState();
   }
 

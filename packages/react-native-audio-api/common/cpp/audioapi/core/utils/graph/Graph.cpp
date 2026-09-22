@@ -71,7 +71,7 @@ void Graph::processEvents() {
 }
 
 void Graph::process() {
-  audioGraph.process();
+  audioGraph.sortAndCompact();
   audioGraph.settleProcessableState();
 }
 
