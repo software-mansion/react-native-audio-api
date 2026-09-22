@@ -86,7 +86,7 @@ class RecordingNotificationReceiver(
         when (NativeRecorderControl.currentState()) {
           RecorderState.RECORDING -> MediaSessionManager.setRecordingNotificationPaused(false)
           RecorderState.PAUSED -> MediaSessionManager.setRecordingNotificationPaused(true)
-          RecorderState.IDLE -> Log.d(TAG, "Recording notification dismissed with no active recording, not restoring")
+          RecorderState.IDLE -> Unit
         }
       } catch (e: LinkageError) {
         Log.e(TAG, "Native library unavailable, cannot restore the recording notification: ${e.message}", e)

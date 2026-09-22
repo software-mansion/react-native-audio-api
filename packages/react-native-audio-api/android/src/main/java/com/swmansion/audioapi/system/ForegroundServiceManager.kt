@@ -121,7 +121,6 @@ object ForegroundServiceManager {
       }
 
       startIntentSent = true
-      Log.d(TAG, "Centralized foreground service requested to start")
     } catch (e: Exception) {
       Log.e(TAG, "Error starting foreground service: ${e.message}", e)
     }
@@ -137,7 +136,6 @@ object ForegroundServiceManager {
       intent.action = CentralizedForegroundService.ACTION_STOP
 
       context.startService(intent)
-      Log.d(TAG, "Centralized foreground service requested to stop")
     } catch (e: Exception) {
       Log.e(TAG, "Error stopping foreground service: ${e.message}", e)
     }

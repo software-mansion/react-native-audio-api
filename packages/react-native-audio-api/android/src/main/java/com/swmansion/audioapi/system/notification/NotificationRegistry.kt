@@ -101,7 +101,6 @@ class NotificationRegistry(
     } finally {
       activeNotifications[key] = false
       ForegroundServiceManager.unsubscribe(notification)
-      Log.d(TAG, "Hiding notification: $key (unsubscribed from foreground service)")
     }
   }
 
