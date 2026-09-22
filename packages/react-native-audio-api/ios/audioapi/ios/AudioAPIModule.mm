@@ -10,6 +10,7 @@
 #import <audioapi/ios/system/SystemNotificationManager.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 
+#import <audioapi/core/inputs/ActiveRecorderHandle.h>
 #import <audioapi/events/AudioEventHandlerRegistry.h>
 
 using namespace audioapi;
@@ -123,6 +124,12 @@ RCT_EXPORT_METHOD(
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    // Deactivating the session underneath a live recording would corrupt its output, so
+    // the recording is finalized first
+    if (!enabled) {
+      ActiveRecorderHandle::global().stopAndReturnInfo();
+    }
+
     NSError *error = nil;
     const BOOL managedSessionWasActive =
         self.audioSessionManager.shouldManageSession && self.audioSessionManager.isActive;

@@ -226,7 +226,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
 
   const translateX = useSharedValue(0);
   const lastIndex = useSharedValue(-1);
-  const durationMS = useSharedValue(0);
+  const durationMS = useSharedValue(Recorder.getCurrentDuration() * 1000);
   const canvasHeightSV = useSharedValue(0);
   const lifetimeCanvasHeightSV = useSharedValue(0);
   const numBarsSV = useSharedValue(0);

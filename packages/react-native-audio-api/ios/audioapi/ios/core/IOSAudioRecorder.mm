@@ -544,33 +544,24 @@ Result<std::tuple<std::vector<std::string>, double, double>, std::string> IOSAud
 }
 
 /// @brief Enables file output for the recorder with specified properties.
-/// If the recorder is already active, it will open the file for writing immediately.
+/// The file itself is created by the next start(). An active (recording or paused) session keeps
+/// the output it started with, so calling this during a session fails and changes nothing.
 /// This method should be called from the JS thread only.
 /// @param properties Shared pointer to AudioFileProperties defining the output file format.
-/// @returns Result containing the output file path if enabled successfully, or an error message.
+/// @returns Ok when the properties were stored, otherwise an error message.
 Result<NoneType, std::string> IOSAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties)
 {
   std::scoped_lock lock(fileWriterMutex_, errorCallbackMutex_);
+
+  if (!isIdle()) {
+    return Result<NoneType, std::string>::Err(
+        "File output cannot be changed while a recording session is active");
+  }
+
   fileProperties_ = properties;
   fileOutputEnabled_.store(true, std::memory_order_release);
   fileOutputConfigured_.store(false, std::memory_order_release);
-
-  if (!isIdle()) {
-    AVAudioFormat *resolvedInputFormat = [nativeRecorder_ getResolvedInputFormat];
-    int resolvedBufferSize = [nativeRecorder_ getResolvedBufferSize];
-
-    if (!hasUsableRecorderFormat(resolvedInputFormat) || resolvedBufferSize <= 0) {
-      return Result<NoneType, std::string>::Err(
-          "Failed to open file for writing: recorder input format is unavailable");
-    }
-
-    auto writerResult = setupFileWriter(properties);
-    if (writerResult.is_err()) {
-      fileOutputEnabled_.store(false, std::memory_order_release);
-      return Result<NoneType, std::string>::Err(writerResult.unwrap_err());
-    }
-  }
 
   return Result<NoneType, std::string>::Ok(None);
 }
