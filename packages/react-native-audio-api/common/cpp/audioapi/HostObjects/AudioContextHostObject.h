@@ -1,10 +1,13 @@
 #pragma once
 
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <jsi/jsi.h>
+
 #include <memory>
+#include <optional>
 
 namespace audioapi {
 using namespace facebook;
@@ -17,7 +20,8 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker);
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      std::optional<AudioContextLatencyHint> latencyHint = std::nullopt);
 
   JSI_HOST_FUNCTION_DECL(close);
   JSI_HOST_FUNCTION_DECL(resume);

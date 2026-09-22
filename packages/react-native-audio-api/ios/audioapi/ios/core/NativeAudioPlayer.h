@@ -15,7 +15,8 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                          sampleRate:(float)sampleRate
-                       channelCount:(int)channelCount;
+                       channelCount:(int)channelCount
+            preferredIOBufferFrames:(int)preferredIOBufferFrames;
 
 - (bool)start;
 
