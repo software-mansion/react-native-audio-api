@@ -58,25 +58,21 @@ void AudioRecorder::onAudioFrames(const float *interleavedFrames, int numFrames)
   }
 }
 
-/// JS thread only. May be called mid-recording (RN re-runs effects during development), in
-/// which case the file is opened immediately.
+/// JS thread only. The file itself is created by the next start(). An active (recording or
+/// paused) session keeps the output it started with, so calling this during a session fails and
+/// changes nothing.
 Result<NoneType, std::string> AudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
   std::scoped_lock fileWriterLock(fileWriterMutex_, errorCallbackMutex_);
+
+  if (!isIdle()) {
+    return Result<NoneType, std::string>::Err(
+        "File output cannot be changed while a recording session is active");
+  }
+
   fileProperties_ = std::move(properties);
   fileOutputEnabled_.store(true, std::memory_order_release);
   fileOutputConfigured_.store(false, std::memory_order_release);
-
-  if (isIdle()) {
-    return Result<NoneType, std::string>::Ok(None);
-  }
-
-  auto writerResult = setupFileWriter(fileProperties_);
-
-  if (!writerResult.is_ok()) {
-    fileOutputEnabled_.store(false, std::memory_order_release);
-    return writerResult;
-  }
 
   return Result<NoneType, std::string>::Ok(None);
 }
@@ -328,6 +324,14 @@ double AudioRecorder::getCurrentDuration() const {
   }
 
   return duration;
+}
+
+RecorderState AudioRecorder::getState() const {
+  if (isIdle()) {
+    return RecorderState::Idle;
+  }
+
+  return isPaused() ? RecorderState::Paused : RecorderState::Recording;
 }
 
 bool AudioRecorder::usesCallback() const {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -25,8 +26,6 @@ class IAudioEventHandlerRegistry;
 /// stream; the file writer, the JS callback and the adapter node are managed here.
 class AudioRecorder {
  public:
-  enum class RecorderState : uint8_t { Idle = 0, Recording, Paused };
-
   /// Every file the session produced, its total size in MB and its total duration in seconds.
   using StopResult = Result<std::tuple<std::vector<std::string>, double, double>, std::string>;
 
@@ -67,6 +66,8 @@ class AudioRecorder {
   virtual bool isRecording() const = 0;
   virtual bool isPaused() const = 0;
   virtual bool isIdle() const = 0;
+
+  RecorderState getState() const;
 
   [[nodiscard]] virtual double getInputLatency() const = 0;
 

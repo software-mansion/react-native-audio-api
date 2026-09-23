@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/utils/RecordingFileName.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
@@ -10,6 +11,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
+#include <audioapi/utils/Result.hpp>
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #else
@@ -55,11 +57,15 @@ AudioRecorderHostObject::AudioRecorderHostObject(
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, inputLatency));
 }
 
+AudioRecorderHostObject::~AudioRecorderHostObject() {
+  ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder_);
+}
+
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   auto audioRecorder = audioRecorder_;
 
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
-    auto result = audioRecorder->start();
+    auto result = ActiveRecorderHandle::global().tryStart(audioRecorder);
 
     return [result =
                 std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
@@ -84,10 +90,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
   auto audioRecorder = audioRecorder_;
 
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
-    auto result = audioRecorder->stop();
+    auto result = ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
 
-    return [result =
-                std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+    using returnValue = std::variant<jsi::Value, std::string>;
+
+    return [result = std::move(result)](jsi::Runtime &runtime) -> returnValue {
       auto jsResult = jsi::Object(runtime);
 
       jsResult.setProperty(
@@ -96,15 +103,15 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
           jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
       if (result.is_ok()) {
-        auto info = result.unwrap();
-        const auto &paths = std::get<0>(info);
-        auto pathsArray = jsi::Array(runtime, paths.size());
-        for (size_t i = 0; i < paths.size(); ++i) {
-          pathsArray.setValueAtIndex(runtime, i, jsi::String::createFromUtf8(runtime, paths[i]));
+        const auto &info = result.unwrap();
+        auto pathsArray = jsi::Array(runtime, info.paths.size());
+        for (size_t i = 0; i < info.paths.size(); ++i) {
+          pathsArray.setValueAtIndex(
+              runtime, i, jsi::String::createFromUtf8(runtime, info.paths[i]));
         }
         jsResult.setProperty(runtime, "paths", pathsArray);
-        jsResult.setProperty(runtime, "size", std::get<1>(info));
-        jsResult.setProperty(runtime, "duration", std::get<2>(info));
+        jsResult.setProperty(runtime, "size", info.size);
+        jsResult.setProperty(runtime, "duration", info.duration);
       } else {
         jsResult.setProperty(
             runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));

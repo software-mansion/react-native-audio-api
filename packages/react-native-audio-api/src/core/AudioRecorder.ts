@@ -54,6 +54,14 @@ export default class AudioRecorder {
     this.recorder = globalThis.createAudioRecorder(options ?? {});
   }
 
+  static isRecordingOngoing(): boolean {
+    return globalThis.isRecordingOngoing?.() ?? false;
+  }
+
+  static consumeLastRecordingResult(): FileInfo | null {
+    return globalThis.consumeLastRecordingResult?.() ?? null;
+  }
+
   /**
    * Enables writing recorded audio to a file using the provided options.
    *
@@ -70,9 +78,16 @@ export default class AudioRecorder {
    * recording memory use.
    */
   enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
-    this.options_ = options || {};
-    const parsedOptions = withDefaultFileOptions(this.options_);
-    return this.recorder.enableFileOutput(parsedOptions);
+    const requestedOptions = options || {};
+    const result = this.recorder.enableFileOutput(
+      withDefaultFileOptions(requestedOptions)
+    );
+
+    if (result.status === 'success') {
+      this.options_ = requestedOptions;
+    }
+
+    return result;
   }
 
   public get options(): AudioRecorderFileOptions | null {

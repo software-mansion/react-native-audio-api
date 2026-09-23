@@ -5,6 +5,7 @@
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularArray.hpp>
+#include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SlotFreeList.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
@@ -41,10 +42,7 @@ class AudioRecorderCallback {
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId);
-  AudioRecorderCallback(const AudioRecorderCallback &) = delete;
-  AudioRecorderCallback(AudioRecorderCallback &&) = delete;
-  AudioRecorderCallback &operator=(const AudioRecorderCallback &) = delete;
-  AudioRecorderCallback &operator=(AudioRecorderCallback &&) = delete;
+  DELETE_COPY_AND_MOVE(AudioRecorderCallback);
   ~AudioRecorderCallback();
 
   /// JS thread. Builds the converter and the audio-thread → worker pool.
@@ -65,10 +63,11 @@ class AudioRecorderCallback {
   void clearOnErrorCallback() {
     assignOnErrorCallbackId(0);
   }
-  void assignOnErrorCallbackId(uint64_t callbackId);
   void invokeOnErrorCallback(const std::string &message);
 
  private:
+  void assignOnErrorCallbackId(uint64_t callbackId);
+
   static constexpr auto RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY =
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
   static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =

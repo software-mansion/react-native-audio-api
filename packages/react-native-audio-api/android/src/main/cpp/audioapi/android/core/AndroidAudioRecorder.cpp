@@ -319,7 +319,13 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       return;
     }
 
+    const auto stateBeforeTeardown = state_.load(std::memory_order_acquire);
+
     cleanup();
+
+    if (stateBeforeTeardown == RecorderState::Idle) {
+      return;
+    }
 
     auto streamResult = openAudioStream();
 
@@ -338,8 +344,10 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
       return;
     }
 
-    mStream_->requestStart();
-    state_.store(RecorderState::Recording, std::memory_order_release);
+    if (stateBeforeTeardown == RecorderState::Recording) {
+      mStream_->requestStart();
+    }
+    state_.store(stateBeforeTeardown, std::memory_order_release);
   }
 }
 
