@@ -947,11 +947,14 @@ enum FileFormat {
   Caf,
   M4A,
   Flac,
+  Adts,
 }
 ```
 
+`Adts` writes raw AAC-LC in ADTS framing (`.aac` extension). Every frame carries its own sync word and length header, so a recording interrupted by a crash or force-kill stays decodable up to the last complete frame, like FLAC but at lossy-AAC file sizes. Bitrate and quality follow the same AAC properties as `M4A`.
+
 :::caution Android + FFmpeg
-On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](../other/runtime-flags.mdx#where-ffmpeg-is-used).
+On Android, encoded file output for `M4A`, `FLAC`, `CAF`, and `ADTS` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](../other/runtime-flags.mdx#where-ffmpeg-is-used).
 :::
 
 #### FileInfo

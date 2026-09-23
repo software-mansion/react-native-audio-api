@@ -65,6 +65,7 @@ export enum FileFormat {
   Caf = 1,
   M4A = 2,
   Flac = 3,
+  Adts = 4,
 }
 
 export enum IOSAudioQuality {

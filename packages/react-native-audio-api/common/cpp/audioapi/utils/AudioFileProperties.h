@@ -25,6 +25,7 @@ class AudioFileProperties {
     CAF = 1,
     M4A = 2,
     FLAC = 3,
+    ADTS = 4,
   };
 
   enum class IOSAudioQuality {
