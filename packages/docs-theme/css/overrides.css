@@ -235,6 +235,7 @@ button[class*='DocSearch-Button'] {
 
 .table-vertical-top {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   border-spacing: 0;
   box-sizing: border-box;
@@ -267,15 +268,15 @@ button[class*='DocSearch-Button'] {
   margin: -1px;
 }
 
-.table-vertical-top tbody tr td:first-child {
-  min-width: 200px;
+.table-vertical-top tr td:first-child {
+  width: 28%;
   text-wrap: wrap;
   word-break: normal;
   overflow-wrap: break-word;
 }
 
-.table-vertical-top tbody tr td:last-child {
-  width: 100%;
+.table-vertical-top td:first-child h5 {
+  font-size: 15px;
 }
 
 .table-vertical-top tbody tr:nth-child(2n) code {
