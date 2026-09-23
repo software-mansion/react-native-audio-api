@@ -7,6 +7,7 @@ import { AudioBufferSourceNodeBackend } from '../types.web';
 
 export default class AudioBufferSourceNodeStandard implements AudioBufferSourceNodeBackend {
   private node: globalThis.AudioBufferSourceNode;
+  private disposed = false;
   private hasBeenStarted: boolean = false;
   private _loopSkip: boolean = false;
   private _onloopended: ((event: object) => void) | undefined = undefined;
@@ -26,7 +27,23 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
     this.playbackRate = new AudioParam(this.node.playbackRate, context);
   }
 
+  private assertNotDisposed(): void {
+    if (this.disposed)
+      throw new InvalidStateError('AudioBufferSourceNode is disposed');
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.node.onended = null;
+    this._onloopended = undefined;
+    if (this.hasBeenStarted) this.node.stop();
+    this.node.disconnect();
+    this.node.buffer = null;
+  }
+
   public start(when: number = 0, offset?: number, duration?: number): void {
+    this.assertNotDisposed();
     if (when && when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
@@ -69,6 +86,7 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
   }
 
   public connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+    this.assertNotDisposed();
     if (destination instanceof AudioParam) {
       this.node.connect(destination.param);
     } else {
@@ -100,6 +118,7 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
   }
 
   public set buffer(buffer: AudioBuffer | null) {
+    this.assertNotDisposed();
     if (!buffer) {
       this.node.buffer = null;
       return;
@@ -145,6 +164,7 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
   }
 
   public set onended(callback: ((event: Event) => void) | null) {
+    this.assertNotDisposed();
     this.node.onended = callback as
       | ((this: AudioScheduledSourceNode, ev: Event) => unknown)
       | null;
@@ -156,6 +176,7 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
 
   // The browser Web Audio API has no per-loop event; callback is stored but never fired.
   public set onloopended(callback: ((event: object) => void) | null) {
+    this.assertNotDisposed();
     this._onloopended = callback ?? undefined;
   }
 }

@@ -138,6 +138,12 @@ These are exported from `api.ts` but **not** from `api.web.ts` (or have a stub/c
 | `decodeAudioData` (standalone) | Standalone decode utility (not on context) |
 | `decodePCMInBase64` | Decode raw PCM from base64 |
 
+`AudioBufferSourceNode.dispose()` is also a library extension. It is terminal,
+unlike scheduled `stop()` or reversible `disconnect()`. The web pitch-correction
+backend must cancel initialization, pending port requests, and its processor;
+native uses existing stop/disconnect/buffer/listener cleanup. Do not imply that
+returning from `dispose()` guarantees immediate native deallocation.
+
 When implementing these on the RN side, a web stub or polyfill in `src/web-core/custom/` should be considered if the feature can be reasonably approximated in a browser.
 
 ---
