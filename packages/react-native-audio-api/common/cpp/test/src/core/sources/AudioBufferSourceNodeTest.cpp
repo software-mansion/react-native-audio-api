@@ -190,7 +190,7 @@ TEST_F(AudioBufferSourceNodeTest, StartedWithNullBufferEndsOnFirstRenderInsteadO
       .Times(testing::AnyNumber());
   EXPECT_CALL(
       *eventRegistry,
-      dispatchEventFromAudioThread(AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
       .WillOnce(testing::Return(true));
 
   node->start(START_BEYOND_RENDERED_RANGE, /*offset=*/0.0);
@@ -213,7 +213,7 @@ TEST_F(AudioBufferSourceNodeTest, BufferAssignedAfterStartButBeforeFirstRenderIs
       .Times(testing::AnyNumber());
   EXPECT_CALL(
       *eventRegistry,
-      dispatchEventFromAudioThread(AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
       .Times(0);
 
   node->start(/*when=*/0.0, /*offset=*/0.0);
@@ -235,7 +235,7 @@ TEST_F(AudioBufferSourceNodeTest, BufferAssignedAfterNullBufferSourceEndedIsIgno
       .Times(testing::AnyNumber());
   EXPECT_CALL(
       *eventRegistry,
-      dispatchEventFromAudioThread(AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
       .WillOnce(testing::Return(true));
 
   node->start(/*when=*/0.0, /*offset=*/0.0);
