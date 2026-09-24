@@ -61,18 +61,6 @@ void AudioBufferSourceNode::setBuffer(
     return;
   }
 
-  if (isFinished()) {
-    // A finished source never plays again, so the assignment has no effect.
-    // The caller's copies still arrive here; free them off the audio thread.
-    if (buffer != nullptr) {
-      context->getDisposer()->dispose(std::shared_ptr<AudioBuffer>(buffer));
-    }
-    if (audioBuffer != nullptr) {
-      context->getDisposer()->dispose(std::shared_ptr<DSPAudioBuffer>(audioBuffer));
-    }
-    return;
-  }
-
   if (buffer_ != nullptr) {
     context->getDisposer()->dispose(std::move(buffer_));
   }
