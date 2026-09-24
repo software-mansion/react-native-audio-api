@@ -2,6 +2,7 @@
 
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/AudioEventPayload.h>
+#include <audioapi/events/AudioEventProducer.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <gmock/gmock.h>
 #include <memory>
@@ -24,6 +25,19 @@ class MockAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
   MOCK_METHOD(
       bool,
       dispatchEventFromAudioThread,
-      (AudioEvent eventName, uint64_t listenerId, AudioEventPayload &&payload),
+      (AudioEventProducer & producer,
+       AudioEvent eventName,
+       uint64_t listenerId,
+       AudioEventPayload &&payload),
       (noexcept, override));
+
+  /// Real producers, not mocked: the expectations above never touch the token, but callers
+  /// refuse to dispatch from the audio thread without one.
+  std::shared_ptr<AudioEventProducer> createAudioEventProducer() override {
+    return std::make_shared<AudioEventProducer>(producerQueue_);
+  }
+
+ private:
+  /// Only ever a binding target for the producers handed out above; nothing is enqueued.
+  moodycamel::ConcurrentQueue<int> producerQueue_;
 };

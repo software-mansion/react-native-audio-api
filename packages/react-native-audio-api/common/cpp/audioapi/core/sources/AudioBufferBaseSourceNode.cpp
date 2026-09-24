@@ -38,6 +38,7 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
               detuneParam_)),
       positionChanged_(
           context->getAudioEventHandlerRegistry(),
+          context->getAudioEventProducer(),
           static_cast<int>(context->getSampleRate())) {
   setOnPositionChangedInterval(options.onpositionchangedInterval);
 }

@@ -24,7 +24,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd),
-      onLoopEndedEvent_(context->getAudioEventHandlerRegistry()) {
+      onLoopEndedEvent_(context->getAudioEventHandlerRegistry(), context->getAudioEventProducer()) {
   auto onLoopEnded = [this]() {
     sendOnLoopEndedEvent();
   };
