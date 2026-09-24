@@ -155,6 +155,7 @@ const Record: FC = () => {
 
   const onStopRecording = useCallback(async () => {
     const info = await Recorder.stop();
+    AudioRecorder.consumeLastRecordingResult();
     RecordingNotificationManager.hide();
     setIsInterrupted(false);
     setState(RecordingState.Loading);

@@ -305,15 +305,15 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  // This notification is registered with object:nil, so it also fires for
-  // AVAudioEngine instances owned by other libraries in the host app. Without
-  // an engine of our own there is nothing to restart, and marking the session
-  // inactive would corrupt bookkeeping for apps that only manage the session.
-  if (![audioEngine isInUse]) {
-    return;
-  }
-
   dispatch_async(dispatch_get_main_queue(), ^{
+    // This notification is registered with object:nil, so it also fires for
+    // AVAudioEngine instances owned by other libraries in the host app. Without
+    // an engine of our own there is nothing to restart, and marking the session
+    // inactive would corrupt bookkeeping for apps that only manage the session.
+    if (![audioEngine isInUse]) {
+      return;
+    }
+
     // A configuration change is an I/O-unit stop, not a resume trigger. Restarting
     // while Interrupted races with onInterruptionEnd and the foreground retry: it
     // marks the session inactive and rebuilds a graph that cannot start. Leave
@@ -323,7 +323,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [audioEngine markGraphNeedsRebuild];
       return;
     }
-
     [sessionManager markInactive];
     [audioEngine restartAudioEngine];
   });
