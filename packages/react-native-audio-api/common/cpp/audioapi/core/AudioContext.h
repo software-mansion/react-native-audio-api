@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/AudioContextOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/CommonPlayer.h>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
@@ -15,6 +16,7 @@ class AudioContext : public BaseAudioContext {
  public:
   explicit AudioContext(
       float sampleRate,
+      AndroidOutputProfile androidOutputProfile,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
@@ -39,6 +41,7 @@ class AudioContext : public BaseAudioContext {
 
  private:
   std::shared_ptr<CommonPlayer> audioPlayer_;
+  AndroidOutputProfile androidOutputProfile_;
   std::atomic<bool> isInitialized_{false};
   /// Audio I/O callback thread increments around each platform render callback;
   /// control thread waits on suspend/close.

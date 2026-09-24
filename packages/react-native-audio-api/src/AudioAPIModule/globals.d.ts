@@ -7,11 +7,18 @@ import type {
   IAudioBuffer,
   IOfflineAudioContext,
 } from '../jsi-interfaces';
-import type { AudioRecorderOptions, FileInfo } from '../types';
+import type {
+  AndroidOutputProfile,
+  AudioRecorderOptions,
+  FileInfo,
+} from '../types';
 
 /* eslint-disable no-var */
 declare global {
-  var createAudioContext: (sampleRate: number) => IAudioContext;
+  var createAudioContext: (
+    sampleRate: number,
+    androidOutputProfile?: AndroidOutputProfile
+  ) => IAudioContext;
   var createOfflineAudioContext: (
     numberOfChannels: number,
     length: number,

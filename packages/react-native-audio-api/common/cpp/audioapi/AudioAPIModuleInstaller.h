@@ -76,9 +76,15 @@ class AudioAPIModuleInstaller {
             const jsi::Value *args,
             size_t count) -> jsi::Value {
           auto sampleRate = static_cast<float>(args[0].getNumber());
+          auto androidOutputProfile = AndroidOutputProfile::Media;
+
+          if (count > 1 && args[1].isString() &&
+              args[1].getString(runtime).utf8(runtime) == "voiceCommunication") {
+            androidOutputProfile = AndroidOutputProfile::VoiceCommunication;
+          }
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              sampleRate, audioEventHandlerRegistry, &runtime, jsCallInvoker);
+              sampleRate, androidOutputProfile, audioEventHandlerRegistry, &runtime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });
