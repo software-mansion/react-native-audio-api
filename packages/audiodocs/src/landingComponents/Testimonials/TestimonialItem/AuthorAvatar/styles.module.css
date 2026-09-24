@@ -1,0 +1,33 @@
+.authorAvatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+  width: 4rem;
+  height: 4rem;
+  background-color: black;
+}
+
+.authorAvatar > img {
+  border-radius: 50%;
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  object-position: top center;
+  opacity: 1;
+  transition: 0.2s ease-in-out;
+}
+
+.authorInitials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--swm-red-light-100);
+  color: var(--swm-off-white);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+[data-theme='dark'] .authorInitials {
+  background-color: var(--swm-red-dark-100);
+}
