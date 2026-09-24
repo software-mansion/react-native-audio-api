@@ -27,7 +27,6 @@
 
 @interface AudioEngine () {
   std::recursive_mutex _engineLock;
-  BOOL _isRebuildingAudioEngine;
   /// Tracks whether voice processing is currently engaged on the system input
   /// node of the live engine instance. Reset whenever the engine is recreated.
   BOOL _voiceProcessingApplied;
@@ -48,6 +47,9 @@
 
 - (AVAudioFormat *)liveInputFormat;
 - (void)resetInputNode;
+- (BOOL)graphRequiresRebuild;
+- (void)rebuildGraphForCurrentHardware;
+- (void)parkAfterFailedStart;
 - (void)rebuildAudioEngineAndResumeIfNeeded;
 - (void)notifyInput:(AudioEngineInputNotification)notification;
 
@@ -515,29 +517,61 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)rebuildAudioEngineAndResumeIfNeeded
 {
-  if (_isRebuildingAudioEngine) {
-    return;
+  const BOOL shouldResume = self.state == AudioEngineState::AudioEngineStateRunning;
+
+  [self rebuildGraphForCurrentHardware];
+
+  BOOL didStartEngine = NO;
+  if (shouldResume) {
+    didStartEngine = [self startEngine];
+
+    if (!didStartEngine) {
+      [self parkAfterFailedStart];
+    }
   }
 
-  _isRebuildingAudioEngine = YES;
+  if (didStartEngine) {
+    [self notifyInput:AudioEngineInputNotificationHardwareChanged];
+  }
+}
 
+/// @brief Reports whether the graph must be torn down and rebuilt before it can run.
+/// @discussion An interruption, a session deactivation and a node registered while the
+/// engine was gone all leave connections that no longer match the hardware. Starting such
+/// a graph would either fail or capture nothing.
+- (BOOL)graphRequiresRebuild
+{
+  return self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
+      self.sessionDeactivationInvalidatedGraph;
+}
+
+/// @brief Rebuilds the graph against the current hardware, leaving the engine stopped.
+/// @discussion Separate from starting so that no path can start an engine and rebuild it in
+/// the same call: the two used to be mutually recursive, and termination depended on
+/// `rebuildAudioEngine` clearing `graphNeedsRebuild` between the two frames.
+- (void)rebuildGraphForCurrentHardware
+{
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
 
   [self rebuildAudioEngine];
   self.sessionDeactivationInvalidatedGraph = false;
+}
 
-  BOOL didStartEngine = NO;
-  if (self.state == AudioEngineState::AudioEngineStateRunning) {
-    didStartEngine = [self startEngine];
+/// @brief Records that the engine is not running after a start that was expected to succeed.
+/// @discussion Leaving `Running` behind makes `startIfNecessary` early-out on a dead engine
+/// and makes `getState` report a recorder that is capturing nothing. `Interrupted` is kept
+/// as-is: the interruption, not the failed start, is still the reason the engine is down,
+/// and the interruption-end path is what recovers it.
+- (void)parkAfterFailedStart
+{
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
+    return;
   }
 
-  if (didStartEngine) {
-    [self notifyInput:AudioEngineInputNotificationHardwareChanged];
-  }
-
-  _isRebuildingAudioEngine = NO;
+  self.state = [self hasTrackedGraph] ? AudioEngineState::AudioEngineStatePaused
+                                      : AudioEngineState::AudioEngineStateIdle;
 }
 
 - (void)rebuildAudioEngine
@@ -565,12 +599,10 @@ static AudioEngine *_sharedInstance = nil;
     return false;
   }
 
-  if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
-      self.sessionDeactivationInvalidatedGraph) {
-    [self rebuildAudioEngineAndResumeIfNeeded];
-  } else {
-    [self materializeTrackedNodesIfNeeded];
-  }
+  // Materializing attaches nodes registered while the engine was stopped; it never
+  // rebuilds. A graph that needs rebuilding is the caller's business, so that starting
+  // cannot silently tear the engine down - see `graphRequiresRebuild`.
+  [self materializeTrackedNodesIfNeeded];
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
     NSLog(@"Error while materializing the audio input node: missing live input format");
@@ -612,10 +644,19 @@ static AudioEngine *_sharedInstance = nil;
     return true;
   }
 
-  if ([self hasTrackedGraph]) {
-    return [self startEngine];
+  if (![self hasTrackedGraph]) {
+    return false;
   }
 
+  if ([self graphRequiresRebuild]) {
+    [self rebuildGraphForCurrentHardware];
+  }
+
+  if ([self startEngine]) {
+    return true;
+  }
+
+  [self parkAfterFailedStart];
   return false;
 }
 
