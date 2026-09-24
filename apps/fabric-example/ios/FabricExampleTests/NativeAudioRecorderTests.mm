@@ -115,14 +115,15 @@
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-             onInputConfigurationChange:(void (^)(void))onInputConfigurationChange
+                     onInputNotification:
+                         (void (^)(AudioEngineInputNotification))onInputNotification
 {
   self.attachInputNodeCallCount += 1;
   self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
   self.lastAttachedInputNode = self.inputNode;
   self.lastAttachedReceiverBlock = receiverBlock;
   self.lastAttachedVoiceProcessingEnabled = voiceProcessingEnabled;
-  (void)onInputConfigurationChange;
+  (void)onInputNotification;
 }
 
 - (bool)startIfNecessary
@@ -431,11 +432,23 @@ static void ClearFakeRecorderSharedAudioSession(void)
       voiceProcessingEnabled:NO];
 
   [recorder pause];
-  [recorder resume];
+  XCTAssertTrue([recorder resume]);
 
   XCTAssertEqual(self.audioEngine.pauseIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
-  XCTAssertTrue(recorder.inputArmed);
+}
+
+- (void)testResumeReturnsFalseWhenEngineStartFails
+{
+  self.audioEngine.startIfNecessaryResult = NO;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  [recorder pause];
+  XCTAssertFalse([recorder resume]);
+
+  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
 }
 
 - (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath

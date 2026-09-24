@@ -187,7 +187,8 @@ CloseFileResult IOSFileWriter::closeFile()
 {
   @autoreleasepool {
     NSError *error;
-    std::string filePath = [[fileURL_ path] UTF8String];
+    const char *pathCString = [[fileURL_ path] UTF8String];
+    std::string filePath = pathCString != nullptr ? pathCString : "";
 
     if (!isFileOpen() || audioFile_ == nil) {
       return CloseFileResult::Err("file is not open: " + filePath);

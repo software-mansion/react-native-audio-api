@@ -18,7 +18,7 @@
 
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverBlock;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
-@property (nonatomic, copy) void (^onInputConfigurationChange)(void);
+@property (nonatomic, copy) void (^onInputNotification)(AudioEngineInputNotification);
 
 @end
 
@@ -49,7 +49,7 @@
 - (AVAudioFormat *)liveInputFormat;
 - (void)resetInputNode;
 - (void)rebuildAudioEngineAndResumeIfNeeded;
-- (void)notifyConfigurationChanges;
+- (void)notifyInput:(AudioEngineInputNotification)notification;
 
 @end
 
@@ -339,7 +339,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-              onInputConfigurationChange:(void (^)(void))onInputConfigurationChange
+                     onInputNotification:(void (^)(AudioEngineInputNotification))onInputNotification
 {
   std::scoped_lock lock(_engineLock);
   [self createAudioEngineIfNeeded];
@@ -351,7 +351,7 @@ static AudioEngine *_sharedInstance = nil;
   AudioEngineInputRegistration *registration = [[AudioEngineInputRegistration alloc] init];
   registration.receiverBlock = receiverBlock;
   registration.voiceProcessingEnabled = voiceProcessingEnabled;
-  registration.onInputConfigurationChange = onInputConfigurationChange;
+  registration.onInputNotification = onInputNotification;
   self.inputRegistration = registration;
 
   [self materializeInputNodeIfNeeded];
@@ -386,14 +386,15 @@ static AudioEngine *_sharedInstance = nil;
   return [self liveInputFormat];
 }
 
-- (void)onInterruptionBegin
+- (bool)onInterruptionBegin
 {
   std::scoped_lock lock(_engineLock);
   if (self.state != AudioEngineState::AudioEngineStateRunning) {
-    return;
+    return false;
   }
 
   self.state = AudioEngineState::AudioEngineStateInterrupted;
+  return true;
 }
 
 - (void)onSessionDeactivated
@@ -430,22 +431,43 @@ static AudioEngine *_sharedInstance = nil;
   self.sessionDeactivationInvalidatedGraph = YES;
 }
 
-- (void)onInterruptionEnd:(bool)shouldResume
+- (void)markGraphNeedsRebuild
+{
+  std::scoped_lock lock(_engineLock);
+  self.graphNeedsRebuild = true;
+}
+
+- (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
 {
   std::scoped_lock lock(_engineLock);
   NSError *error = nil;
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
-    return;
+    return AudioEngineInterruptionEndOutcomeNoOp;
+  }
+
+  if (!shouldResume && self.inputRegistration == nil) {
+    [self stopEngine];
+    [self rebuildAudioEngine];
+    self.state = AudioEngineState::AudioEngineStatePaused;
+    [self notifyInput:AudioEngineInputNotificationHardwareChanged];
+    return AudioEngineInterruptionEndOutcomePaused;
+  }
+
+  if (![self.sessionManager ensureActive:true error:&error]) {
+    NSLog(@"Error while activating audio session after interruption: %@", [error debugDescription]);
+    return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
   [self stopEngine];
   [self rebuildAudioEngine];
 
-  if (!shouldResume) {
-    self.state = AudioEngineState::AudioEngineStatePaused;
-    [self notifyConfigurationChanges];
-    return;
+  if (self.inputRegistration != nil && self.inputNode == nil) {
+    NSLog(
+        @"Error while materializing the audio input node after interruption: missing live input format");
+    self.state = AudioEngineState::AudioEngineStateInterrupted;
+    [self notifyInput:AudioEngineInputNotificationCaptureLost];
+    return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
   [self.audioEngine prepare];
@@ -455,20 +477,21 @@ static AudioEngine *_sharedInstance = nil;
     NSLog(
         @"Error while restarting the audio engine after interruption: %@",
         [error debugDescription]);
-    self.state = AudioEngineState::AudioEngineStateIdle;
-    [self notifyConfigurationChanges];
-    return;
+    self.state = AudioEngineState::AudioEngineStateInterrupted;
+    [self notifyInput:AudioEngineInputNotificationCaptureLost];
+    return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
   self.sessionDeactivationInvalidatedGraph = false;
-  [self notifyConfigurationChanges];
+  [self notifyInput:AudioEngineInputNotificationHardwareChanged];
+  return AudioEngineInterruptionEndOutcomeRunning;
 }
 
-- (void)notifyConfigurationChanges
+- (void)notifyInput:(AudioEngineInputNotification)notification
 {
-  if (self.inputRegistration != nil && self.inputRegistration.onInputConfigurationChange != nil) {
-    self.inputRegistration.onInputConfigurationChange();
+  if (self.inputRegistration != nil && self.inputRegistration.onInputNotification != nil) {
+    self.inputRegistration.onInputNotification(notification);
   }
 }
 
@@ -505,11 +528,14 @@ static AudioEngine *_sharedInstance = nil;
   [self rebuildAudioEngine];
   self.sessionDeactivationInvalidatedGraph = false;
 
+  BOOL didStartEngine = NO;
   if (self.state == AudioEngineState::AudioEngineStateRunning) {
-    [self startEngine];
+    didStartEngine = [self startEngine];
   }
 
-  [self notifyConfigurationChanges];
+  if (didStartEngine) {
+    [self notifyInput:AudioEngineInputNotificationHardwareChanged];
+  }
 
   _isRebuildingAudioEngine = NO;
 }
