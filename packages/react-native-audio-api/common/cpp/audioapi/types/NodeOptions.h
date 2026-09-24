@@ -44,6 +44,15 @@ struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
   explicit AudioScheduledSourceNodeOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     numberOfInputs = 0;
   }
+
+  /// Spec: OscillatorNode and ConstantSourceNode emit a single channel; their
+  /// `channelCount` attribute only describes input mixing, which they have
+  /// none of. The host object keeps the attribute, the core node renders mono.
+  [[nodiscard]] AudioScheduledSourceNodeOptions withMonoOutput() const {
+    AudioScheduledSourceNodeOptions mono = *this;
+    mono.channelCount = 1;
+    return mono;
+  }
 };
 
 struct GainOptions : AudioNodeOptions {
@@ -68,10 +77,14 @@ struct ConvolverOptions : AudioNodeOptions {
 
   ConvolverOptions() {
     requiresTailProcessing = true;
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 
   explicit ConvolverOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     requiresTailProcessing = true;
+    if (channelCountMode == ChannelCountMode::MAX) {
+      channelCountMode = ChannelCountMode::CLAMPED_MAX;
+    }
   }
 };
 

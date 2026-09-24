@@ -24,6 +24,17 @@ class OscillatorTest : public ::testing::Test {
   }
 };
 
+TEST_F(OscillatorTest, OscillatorRendersMonoRegardlessOfChannelCountAttribute) {
+  // Spec: the oscillator output is a single channel; `channelCount` only
+  // describes input mixing, which a source does not have.
+  auto osc = std::make_shared<OscillatorNode>(context, OscillatorOptions());
+  EXPECT_EQ(osc->getOutputBuffer()->getNumberOfChannels(), 1u);
+  EXPECT_EQ(osc->getChannelCount(), 1u);
+
+  osc->setChannelCount(2);
+  EXPECT_EQ(osc->getChannelCount(), 1u);
+}
+
 TEST_F(OscillatorTest, OscillatorCanBeCreated) {
   auto osc = std::make_shared<OscillatorNode>(context, OscillatorOptions());
   ASSERT_NE(osc, nullptr);

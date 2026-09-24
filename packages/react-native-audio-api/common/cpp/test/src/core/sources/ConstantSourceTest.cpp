@@ -41,6 +41,17 @@ class TestableConstantSourceNode : public ConstantSourceNode {
   }
 };
 
+TEST_F(ConstantSourceTest, ConstantSourceRendersMonoRegardlessOfChannelCountAttribute) {
+  // Spec: the constant source output is a single channel; `channelCount`
+  // only describes input mixing, which a source does not have.
+  auto constantSource = std::make_shared<ConstantSourceNode>(context, ConstantSourceOptions());
+  EXPECT_EQ(constantSource->getOutputBuffer()->getNumberOfChannels(), 1u);
+  EXPECT_EQ(constantSource->getChannelCount(), 1u);
+
+  constantSource->setChannelCount(2);
+  EXPECT_EQ(constantSource->getChannelCount(), 1u);
+}
+
 TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
   auto constantSource = std::make_shared<ConstantSourceNode>(context, ConstantSourceOptions());
   ASSERT_NE(constantSource, nullptr);
