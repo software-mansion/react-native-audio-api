@@ -180,7 +180,8 @@ void IOSFileWriter::rollbackFailedOpen()
 }
 
 /// @brief Closes the currently open audio file and finalizes writing.
-/// This method retrieves the final file duration and size before closing.
+/// The returned duration is the count of frames written rather than the AVURLAsset estimate,
+/// which has no container duration to read for raw AAC (ADTS) and runs long for VBR.
 /// This method should be called from the JS thread only.
 /// @returns A CloseFileResult indicating success with file duration and size or an error message.
 CloseFileResult IOSFileWriter::closeFile()
@@ -203,8 +204,8 @@ CloseFileResult IOSFileWriter::closeFile()
     // AVAudioFile automatically finalizes the file when deallocated
     audioFile_ = nil;
 
-    double fileDuration = CMTimeGetSeconds([[AVURLAsset URLAssetWithURL:fileURL_
-                                                                options:nil] duration]);
+    // offloader_.reset() above drained every queued buffer, so the frame count is final.
+    double fileDuration = getCurrentDuration();
     double fileSizeBytesMb = static_cast<double>([[[NSFileManager defaultManager]
                                  attributesOfItemAtPath:fileURL_.path
                                                   error:&error] fileSize]) /
