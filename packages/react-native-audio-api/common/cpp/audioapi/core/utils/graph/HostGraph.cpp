@@ -184,7 +184,8 @@ void collectChannelNegotiations(HostGraph::Node *dest, size_t term, NegotiationB
     const size_t desired = negotiateChannelCount(dest, term);
     dest->channelLayout.setResolved(term, destAudio->getUpstreamChannelCount(desired));
 
-    if (auto negotiatedBuffer = buildNegotiatedBufferIfNeeded(dest, desired)) {
+    const size_t bufferChannels = destAudio->negotiateBufferChannelCount(desired);
+    if (auto negotiatedBuffer = buildNegotiatedBufferIfNeeded(dest, bufferChannels)) {
       out.push_back({.node = dest, .buffer = std::move(negotiatedBuffer)});
     }
   } else {

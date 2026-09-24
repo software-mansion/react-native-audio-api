@@ -2,8 +2,10 @@
 #include <audioapi/core/effects/delay/DelayLine.h>
 #include <audioapi/core/effects/delay/DelayRingBufferOp.h>
 #include <audioapi/core/effects/delay/DelayWriter.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 
@@ -27,9 +29,15 @@ void DelayWriter::processNode(int framesToProcess) {
   auto delayBuffer = delayLine_->getBuffer();
   auto delayTime = delayLine_->getDelayTimeParam()->processKRateParam(context->getCurrentTime());
   const size_t readForWrite = delayLine_->readSnapshotForWrite();
+  float delayFrames = delayTime * context->getSampleRate();
+  if (delayLine_->readerRanThisQuantum()) {
+    // Inside a feedback cycle the reader can be processed first, so frames written
+    // less than a quantum ahead of its snapshot would land behind its head and
+    // be lost. The spec clamps a delay inside a cycle to one render quantum.
+    delayFrames = std::max(delayFrames, static_cast<float>(RENDER_QUANTUM_SIZE));
+  }
   auto writeIndex =
-      static_cast<size_t>(static_cast<float>(readForWrite) + delayTime * context->getSampleRate()) %
-      delayBuffer->getSize();
+      static_cast<size_t>(static_cast<float>(readForWrite) + delayFrames) % delayBuffer->getSize();
 
   delay_ring::bufferOperation(
       delayBuffer, audioBuffer_, framesToProcess, writeIndex, delay_ring::BufferAction::WRITE);

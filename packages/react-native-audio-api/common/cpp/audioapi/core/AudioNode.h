@@ -129,6 +129,15 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     return negotiatedChannelCount;
   }
 
+  /// @brief Channel count of the buffer negotiation allocates for this node,
+  /// given the negotiated input width. The default returns the input width,
+  /// which is right for a node that processes in place. A node whose output
+  /// is wider than its input overrides it to get the buffer at output width
+  /// and then mixes at the input width itself in `mixInputs`.
+  [[nodiscard]] virtual size_t negotiateBufferChannelCount(size_t negotiatedChannelCount) {
+    return negotiatedChannelCount;
+  }
+
   /// @note JS Thread only
   [[nodiscard]] bool requiresTailProcessing() const;
 
@@ -252,13 +261,22 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
       updateTailStateForQuantum(inputs, numFrames);
     }
 
+    mixInputs(inputs);
+
+    processNode(numFrames);
+  }
+
+  /// @brief Mixes the upstream outputs into the input buffer: zeroes it, then
+  /// sums every input using this node's channelInterpretation, so the mix
+  /// happens at the buffer's channel count. A node whose buffer is wider than
+  /// its negotiated input width overrides this to mix at that width first.
+  /// @note Audio Thread only
+  virtual void mixInputs(const std::vector<const DSPAudioBuffer *> &inputs) {
     getInputBuffer()->zero();
 
     for (const DSPAudioBuffer *input : inputs) {
       getInputBuffer()->sum(*input, channelInterpretation_);
     }
-
-    processNode(numFrames);
   }
 
   /// @brief Returns the tail length in audio frames for the current node
