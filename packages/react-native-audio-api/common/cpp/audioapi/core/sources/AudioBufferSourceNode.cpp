@@ -61,6 +61,10 @@ void AudioBufferSourceNode::setBuffer(
     return;
   }
 
+  if (isFinished()) {
+    return;
+  }
+
   if (buffer_ != nullptr) {
     context->getDisposer()->dispose(std::move(buffer_));
   }

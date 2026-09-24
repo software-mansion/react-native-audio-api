@@ -59,6 +59,8 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   bool isEmpty() const final;
 
+  bool endsWhenStartedEmpty() const final;
+
   void runBufferProcessor(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,

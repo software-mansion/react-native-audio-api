@@ -65,7 +65,15 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
       AudioEventPayload &&payload) noexcept override;
 
  private:
+#ifdef RN_AUDIO_API_NODE
+  // The WPT harness runs dozens of test files, each with its own contexts, in
+  // one process. Queue blocks claimed by a producer are never recycled, so at
+  // the app-sized capacity the supply runs out mid-run and every later
+  // audio-thread event is dropped; the extra headroom keeps a run honest.
+  static constexpr size_t kDispatchCapacity = 8192;
+#else
   static constexpr size_t kDispatchCapacity = 256;
+#endif
 
   struct DispatchEvent {
     AudioEvent event{};

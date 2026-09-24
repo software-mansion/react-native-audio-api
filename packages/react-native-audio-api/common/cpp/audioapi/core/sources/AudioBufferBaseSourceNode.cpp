@@ -69,6 +69,10 @@ void AudioBufferBaseSourceNode::assignOnPositionChangedCallbackId(uint64_t callb
 void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
   if (isEmpty()) {
     audioBuffer_->zero();
+    if (isScheduled() && endsWhenStartedEmpty()) {
+      playbackState_ = PlaybackState::FINISHED;
+      disable();
+    }
     return;
   }
 
