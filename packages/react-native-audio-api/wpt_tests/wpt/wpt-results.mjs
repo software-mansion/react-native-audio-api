@@ -589,13 +589,13 @@ function comparisonCell(stats, bold = false) {
   return `<td style=${style}>${content}</td>`;
 }
 
-function comparisonRow({ label, baseline, current, note = '', bold = false }) {
+function comparisonRow({ label, baseline, current, bold = false }) {
   const name = bold ? `<strong>${label}</strong>` : label;
   return (
     `    <tr><td>${name}</td>` +
     comparisonCell(baseline, bold) +
     comparisonCell(current, bold) +
-    `<td>${note}</td></tr>`
+    '</tr>'
   );
 }
 
@@ -626,12 +626,14 @@ function sumStats(statsByKey) {
 /**
  * Side-by-side docs summary: the latest stable release (baseline report,
  * produced with RN_AUDIO_API_APP_ROOT pointing at an app that installs the
- * published npm package) next to the current main checkout. An interface
+ * published npm package) next to the current checkout, whose column is
+ * headed by `currentLabel` (the most recent nightly build). An interface
  * missing from one run renders as "—" in that column.
  */
 export function formatCoverageComparisonMarkdown(
   currentReport,
-  baselineReport
+  baselineReport,
+  currentLabel = 'main'
 ) {
   const generated = new Date(currentReport.generatedAt)
     .toISOString()
@@ -654,7 +656,6 @@ export function formatCoverageComparisonMarkdown(
         label: AVAILABLE_INTERFACES[key],
         baseline: baselineStats.get(key),
         current: currentStats.get(key),
-        note: COVERAGE_NOTES[key] ?? '',
       })
     )
     .join('\n');
@@ -673,8 +674,7 @@ export function formatCoverageComparisonMarkdown(
     '    <tr>',
     '      <th>Interface</th>',
     `      <th style={{ textAlign: 'right' }}>${baselineLabel}</th>`,
-    "      <th style={{ textAlign: 'right' }}>main</th>",
-    '      <th>Differences</th>',
+    `      <th style={{ textAlign: 'right' }}>${currentLabel}</th>`,
     '    </tr>',
     '  </thead>',
     '  <tbody>',

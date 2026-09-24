@@ -132,6 +132,7 @@ Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is de
 | Non-primitive, can be written by audio thread | Triple buffer (see `AnalyserNode` for reference) |
 | CPU-heavy work, must not block JS or audio | `TaskOffloader` on a dedicated worker thread |
 | Context lifecycle (`resume`/`suspend`/`close`) | `scheduleContextPromise` → `pendingPromisesOffloader_` |
+| Platform code must reach the live recorder without going through JS | Process-global handle (`ActiveRecorderHandle` — recursive mutex + `weak_ptr`; `tryStart` / `stopAndReturnInfo` / `stopAndReturnState` / `pause` / `resume` take the handle mutex before `AudioRecorder`). Android: static-JNI `NativeRecorderControl` (no HybridData). iOS: `AudioAPIModule.setAudioSessionActivity(false)` calls `stopAndReturnInfo()` before deactivating the session. HostObject `start` / `stop` go through the handle; HostObject `pause` / `resume` still call `AudioRecorder` directly. Android blocking calls run on a Kotlin executor (`goAsync()` in receivers), never a detached `std::thread` |
 
 ---
 

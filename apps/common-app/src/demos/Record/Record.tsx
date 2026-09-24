@@ -3,6 +3,7 @@ import {
   AudioBuffer,
   AudioBufferSourceNode,
   AudioManager,
+  AudioRecorder,
   concatAudioFiles,
   FileFormat,
   RecordingNotificationManager,
@@ -21,7 +22,15 @@ import Status from './Status';
 import { RecordingState } from './types';
 
 const Record: FC = () => {
-  const [state, setState] = useState<RecordingState>(RecordingState.Idle);
+  // Recover from "app disabled" state - recording can survive the app kill (android)
+  const [state, setState] = useState<RecordingState>(() => {
+    if (!AudioRecorder.isRecordingOngoing()) {
+      return RecordingState.Idle;
+    }
+    return Recorder.isPaused()
+      ? RecordingState.Paused
+      : RecordingState.Recording;
+  });
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
   const [recordedBuffer, setRecordedBuffer] = useState<AudioBuffer | null>(
     null
@@ -51,9 +60,10 @@ const Record: FC = () => {
       contentText: paused ? 'Paused recording' : 'Recording...',
       paused,
       smallIconResourceName: 'logo',
-      pauseIconResourceName: 'pause',
-      resumeIconResourceName: 'resume',
       color: 0xff6200,
+      showStopAction: true,
+      deepLinkUri: 'audioapi-example://record',
+      usesChronometer: true,
     });
   };
 
@@ -118,8 +128,30 @@ const Record: FC = () => {
     setState(RecordingState.Recording);
   }, []);
 
+  const loadRecordedAudio = useCallback(
+    async (paths: string[]) => {
+      setState(RecordingState.Loading);
+
+      const finalPath =
+        paths.length > 1
+          ? await concatAudioFiles(
+              paths,
+              paths[0].replace(/[^/]+$/, 'recording.wav')
+            )
+          : paths[0];
+
+      const audioBuffer = await audioContext.decodeAudioData(finalPath);
+      setRecordedBuffer(audioBuffer);
+
+      setState(RecordingState.ReadyToPlay);
+      currentPositionSV.value = 0;
+    },
+    [currentPositionSV]
+  );
+
   const onStopRecording = useCallback(async () => {
     const info = await Recorder.stop();
+    AudioRecorder.consumeLastRecordingResult();
     RecordingNotificationManager.hide();
     setState(RecordingState.Loading);
 
@@ -130,15 +162,20 @@ const Record: FC = () => {
       return;
     }
 
-    const outputPath = info.paths[0].replace(/[^/]+$/, 'recording.m4a');
+    await loadRecordedAudio(info.paths);
+  }, [loadRecordedAudio]);
 
-    const finalPath = await concatAudioFiles(info.paths, outputPath);
-    const audioBuffer = await audioContext.decodeAudioData(finalPath);
-    setRecordedBuffer(audioBuffer);
+  const onStopRecordingFromNotification = useCallback(async () => {
+    const info = AudioRecorder.consumeLastRecordingResult();
 
-    setState(RecordingState.ReadyToPlay);
-    currentPositionSV.value = 0;
-  }, []);
+    if (!info || info.paths.length === 0) {
+      setRecordedBuffer(null);
+      setState(RecordingState.Idle);
+      return;
+    }
+
+    await loadRecordedAudio(info.paths);
+  }, [loadRecordedAudio]);
 
   const onPlayRecording = useCallback(() => {
     if (state !== RecordingState.ReadyToPlay) {
@@ -229,10 +266,20 @@ const Record: FC = () => {
 
   useEffect(() => {
     (async () => {
-      const permissionStatus = await AudioManager.checkRecordingPermissions();
+      const recordingPermissionStatus =
+        await AudioManager.checkRecordingPermissions();
 
-      if (permissionStatus === 'Granted') {
+      if (recordingPermissionStatus === 'Granted') {
         setHasPermissions(true);
+      }
+
+      const notificationPermissionStatus =
+        await AudioManager.checkNotificationPermissions();
+      if (notificationPermissionStatus !== 'Granted') {
+        const result = await AudioManager.requestNotificationPermissions();
+        if (result !== 'Granted') {
+          console.warn('Notification permissions are not granted');
+        }
       }
     })();
   }, []);
@@ -254,22 +301,44 @@ const Record: FC = () => {
       }
     );
 
+    const stopListener = RecordingNotificationManager.addEventListener(
+      'recordingNotificationStop',
+      () => {
+        console.log('Notification stop action received');
+        onStopRecordingFromNotification();
+      }
+    );
+
     return () => {
       pauseListener.remove();
       resumeListener.remove();
-      RecordingNotificationManager.hide();
+      stopListener.remove();
     };
-  }, [onPauseRecording, onResumeRecording]);
+  }, [onPauseRecording, onResumeRecording, onStopRecordingFromNotification]);
+
+  // Collect the files of a recording that was stopped natively while this screen was unmounted.
+  useEffect(() => {
+    if (AudioRecorder.isRecordingOngoing()) {
+      return;
+    }
+
+    const info = AudioRecorder.consumeLastRecordingResult();
+    if (info && info.paths.length > 0) {
+      loadRecordedAudio(info.paths);
+    }
+  }, [loadRecordedAudio]);
 
   useEffect(() => {
-    Recorder.enableFileOutput({ rotateIntervalBytes: 1_000_000, format: FileFormat.M4A });
+    if (!AudioRecorder.isRecordingOngoing()) {
+      Recorder.enableFileOutput({ format: FileFormat.Wav });
+    }
 
     return () => {
       stopPlayback();
-      Recorder.disableFileOutput();
-      Recorder.stop();
-      AudioManager.setAudioSessionActivity(false);
-      RecordingNotificationManager.hide();
+
+      if (!AudioRecorder.isRecordingOngoing()) {
+        AudioManager.setAudioSessionActivity(false);
+      }
     };
   }, [stopPlayback]);
 
