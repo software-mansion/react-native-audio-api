@@ -1,6 +1,7 @@
 import { extendTheme } from '@mui/material/styles';
 
-import Aeonik from '../../static/fonts/Aeonik-Regular.otf';
+// Fonts live in each site's static/fonts/; @site resolves to the consuming Docusaurus app.
+import Aeonik from '@site/static/fonts/Aeonik-Regular.otf';
 
 // General MUI theme
 const extTheme = extendTheme({

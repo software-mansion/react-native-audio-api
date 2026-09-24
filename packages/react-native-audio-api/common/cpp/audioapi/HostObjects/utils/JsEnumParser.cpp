@@ -150,6 +150,10 @@ AudioEvent audioEventFromString(const std::string &event) {
     return AudioEvent::RECORDER_ERROR;
   if (event == "bufferingStateChanged")
     return AudioEvent::BUFFERING_STATE_CHANGE;
+  if (event == "recordingNotificationStop")
+    return AudioEvent::RECORDING_NOTIFICATION_STOP;
+  if (event == "stateChange")
+    return AudioEvent::STATE_CHANGE;
 
   throw std::invalid_argument("Unknown audio event: " + event);
 }
@@ -199,6 +203,19 @@ ChannelInterpretation channelInterpretationFromString(const std::string &interpr
     return ChannelInterpretation::DISCRETE;
   }
   throw std::invalid_argument("Unknown channel interpretation");
+}
+
+std::string contextStateToString(ContextState state) {
+  switch (state) {
+    case ContextState::SUSPENDED:
+      return "suspended";
+    case ContextState::RUNNING:
+      return "running";
+    case ContextState::CLOSED:
+      return "closed";
+    default:
+      throw std::invalid_argument("Unknown context state");
+  }
 }
 } // namespace audioapi::js_enum_parser
 

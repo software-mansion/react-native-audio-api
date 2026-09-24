@@ -13,7 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 packages/react-native-audio-api/   # Main library
 apps/common-app/                   # Example RN app
 apps/fabric-example/               # New Architecture example app
-packages/audiodocs/                # Documentation
+packages/audiodocs/                # Public API documentation
+packages/internaldocs/             # Local engine-internal docs (not published)
 packages/custom-node-generator/    # Code generation tooling
 ```
 
@@ -31,6 +32,8 @@ packages/custom-node-generator/    # Code generation tooling
 - **New Architecture Ready**: Supports both old Bridge and new TurboModules/Fabric
 - **Optional FFmpeg**: Audio decoding via FFmpeg can be conditionally compiled out
 - **Audio Worklets**: JavaScript runs on the audio thread via React Native Worklets
+- **Notification-Driven Foreground Service (Android)**: `NotificationRegistry.showNotification` → `ForegroundServiceManager.subscribe` → `CentralizedForegroundService`; service lifetime follows notification visibility, never recorder/player state. The library manifest is empty — consuming apps declare the `<service>` (Expo plugin `withAudioAPI.ts` or manually), where `android:stopWithTask` (plugin option `androidFSStopWithTask`) decides whether the service and an in-progress recording survive task removal. The recording notification's swipe policy (`dismissible` option) is fixed when the notification is built and travels as an extra of its delete intent, so `RecordingNotificationReceiver` stays stateless: a pinned notification is re-posted after a swipe (Android 14+ lets users swipe `setOngoing(true)` notifications; 13 honours the flag; 12 and older pin every foreground-service notification), a dismissible one stops the recording through the same path as the stop action
+- **JS-Independent Recorder Control**: `ActiveRecorderHandle` (common C++, one-slot `weak_ptr` published by `tryStart`, released by a successful stop) is the process-global occupant. Android notification actions reach it through static-JNI `NativeRecorderControl` (no HybridData/React context — the reverse of `NativeFileInfo`). iOS `setAudioSessionActivity(false)` stops a live recording through the same handle before deactivating the session. Session methods take the handle mutex before `AudioRecorder`. `pause` / `resume` / `stopAndReturnState` / `currentState` return `RecorderState` (`core/inputs/RecorderState.h`, Kotlin ordinal mirror) so `RecordingNotificationReceiver` can render from that value. `stopAndReturnInfo` returns the recorder's file-info `Result` (JS `stop`). Successful stops with paths stash consume-once for `AudioRecorder.consumeLastRecordingResult()`; `AudioRecorder.isRecordingOngoing()` probes a session that outlived the UI
 - **Testable C++ dependencies**: consumers take interface types (`std::shared_ptr<I…>`); construct concrete implementations only at platform bootstrap. Example: audio event registry (use `IAudioEventHandlerRegistry` more often than `AudioEventHandlerRegistry`).
 
 ### Native Module Entry Points

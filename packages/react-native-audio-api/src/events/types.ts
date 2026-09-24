@@ -81,6 +81,7 @@ interface AudioAPIEvents {
   recorderError: OnRecorderErrorEventType;
   /** `value` is true while an `<Audio>` source is stalled on decoded data. */
   bufferingStateChanged: EventTypeWithBool;
+  stateChange: EventEmptyType;
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;

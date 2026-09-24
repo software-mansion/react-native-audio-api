@@ -1,11 +1,12 @@
 :root {
   --swm-logo-height: 45px;
   --swm-expandable-transition: transform 200ms ease;
+  --swm-code-diff-gutter: 1.25em;
 }
 
 .navbar {
   min-width: 360px;
-  z-index: 100;
+  z-index: var(--ifm-z-index-fixed);
   background-color: var(--ifm-navbar-background-color);
 }
 
@@ -18,11 +19,8 @@
   height: 45px !important;
 }
 
-.footer {
-  z-index: 100;
-}
-
 footer.footer {
+  z-index: 0;
   --ifm-footer-padding-vertical: 32px;
 }
 
@@ -135,11 +133,6 @@ table thead tr {
   background-color: var(--ifm-navbar-link-hover-color);
 }
 
-[class*='navbarLanding'] .header-github:before,
-[class*='navbarLanding'] .header-github:hover:before {
-  background-color: var(--ifm-navbar-link-color);
-}
-
 [class*='codeBlockContent'] pre {
   border: 1px solid var(--swm-border);
 }
@@ -150,9 +143,65 @@ table thead tr {
   background-color: var(--swm-off-background);
 }
 
-/* Add small padding, when some of the lines are too long in a code block */
-[class*='codeBlockLines'] span:last-of-type {
+/* Add small padding, when some of the lines are too long in a code block.
+   Diff lines are excluded: they already extend into the pre padding. */
+[class*='codeBlockLines'] span:last-of-type:not(.code-block-diff-add-line):not(.code-block-diff-remove-line) {
   margin-right: 1em;
+}
+
+.code-block-diff-add-line,
+.code-block-diff-remove-line {
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+  position: relative;
+}
+
+.code-block-diff-add-line {
+  background-color: var(--swm-green-light-40);
+}
+
+.code-block-diff-remove-line {
+  background-color: var(--swm-red-light-40);
+}
+
+[data-theme='dark'] .code-block-diff-add-line {
+  background-color: var(--swm-green-dark-140);
+}
+
+[data-theme='dark'] .code-block-diff-remove-line {
+  background-color: var(--swm-red-dark-140);
+}
+
+.code-block-diff-add-line::before,
+.code-block-diff-remove-line::before {
+  position: absolute;
+  left: 0.4em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.code-block-diff-add-line::before {
+  color: var(--swm-green-light-100);
+  content: '+';
+}
+
+.code-block-diff-remove-line::before {
+  color: var(--swm-red-light-100);
+  content: '-';
+}
+
+[data-theme='dark'] .code-block-diff-add-line::before {
+  color: var(--swm-green-dark-80);
+}
+
+[data-theme='dark'] .code-block-diff-remove-line::before {
+  color: var(--swm-red-dark-80);
+}
+
+pre code:has(.code-block-diff-add-line),
+pre code:has(.code-block-diff-remove-line) {
+  padding-left: calc(var(--ifm-pre-padding) + var(--swm-code-diff-gutter));
 }
 
 .theme-doc-version-badge {
@@ -178,16 +227,6 @@ button[class*='DocSearch-Button'] {
   margin: 0 !important;
 }
 
-/* versions dropdown on landing */
-
-[class*='plugin-pages'] [class*='dropdown--right'] > a:first-child {
-  color: var(--swm-off-white) !important;
-}
-
-[class*='plugin-pages'] [class*='dropdown__menu'] a:hover {
-  color: var(--swm-dropdown-versions-item-hover) !important;
-}
-
 /* examples sidebar */
 
 [class*='plugin-blog'] [class*='sidebar']:not([class*='navbar-sidebar']) {
@@ -196,6 +235,7 @@ button[class*='DocSearch-Button'] {
 
 .table-vertical-top {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   border-spacing: 0;
   box-sizing: border-box;
@@ -228,15 +268,15 @@ button[class*='DocSearch-Button'] {
   margin: -1px;
 }
 
-.table-vertical-top tbody tr td:first-child {
-  min-width: 200px;
+.table-vertical-top tr td:first-child {
+  width: 28%;
   text-wrap: wrap;
   word-break: normal;
   overflow-wrap: break-word;
 }
 
-.table-vertical-top tbody tr td:last-child {
-  width: 100%;
+.table-vertical-top td:first-child h5 {
+  font-size: 15px;
 }
 
 .table-vertical-top tbody tr:nth-child(2n) code {

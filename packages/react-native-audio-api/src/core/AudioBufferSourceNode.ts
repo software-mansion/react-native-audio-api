@@ -5,9 +5,11 @@ import { InvalidStateError, RangeError } from '../errors';
 import { EventEmptyType } from '../events/types';
 import { AudioBufferSourceOptions } from '../types';
 import type BaseAudioContext from './BaseAudioContext';
+import { AudioEventSubscription } from '../events';
 
 export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
-  private onLoopEndedCallback?: (event: EventEmptyType) => void;
+  private onloopendedCallback?: (event: EventEmptyType) => void;
+  private onLoopEndedSubscription: AudioEventSubscription | null = null;
 
   private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
@@ -115,23 +117,27 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
     this.context.markRunningOnSourceStart();
   }
 
-  public get onLoopEnded(): ((event: EventEmptyType) => void) | undefined {
-    return this.onLoopEndedCallback;
+  public get onloopended(): ((event: EventEmptyType) => void) | undefined {
+    return this.onloopendedCallback;
   }
 
-  public set onLoopEnded(callback: ((event: EventEmptyType) => void) | null) {
+  public set onloopended(callback: ((event: EventEmptyType) => void) | null) {
+    this.onLoopEndedSubscription?.remove();
+    this.onLoopEndedSubscription = null;
+
     if (!callback) {
-      (this.node as IAudioBufferSourceNode).onLoopEnded = '0';
-      this.onLoopEndedCallback = undefined;
+      (this.node as IAudioBufferSourceNode).onloopended = '0';
+      this.onloopendedCallback = undefined;
       return;
     }
 
-    this.onLoopEndedCallback = callback;
-    const sub = this.audioEventEmitter.addAudioEventListener(
+    this.onloopendedCallback = callback;
+    this.onLoopEndedSubscription = this.audioEventEmitter.addAudioEventListener(
       'loopEnded',
       callback
     );
 
-    (this.node as IAudioBufferSourceNode).onLoopEnded = sub.subscriptionId;
+    (this.node as IAudioBufferSourceNode).onloopended =
+      this.onLoopEndedSubscription.subscriptionId;
   }
 }

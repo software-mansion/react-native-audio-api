@@ -23,6 +23,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)cleanup
 {
+  [self observeVolumeChanges:NO];
   self.notificationCenter = nil;
 }
 
@@ -64,7 +65,9 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                                          options:NSKeyValueObservingOptionNew
                                          context:(void *)&NotificationManagerContext];
   } else {
-    [[AVAudioSession sharedInstance] removeObserver:self forKeyPath:@"outputVolume" context:nil];
+    [[AVAudioSession sharedInstance] removeObserver:self
+                                         forKeyPath:@"outputVolume"
+                                            context:(void *)&NotificationManagerContext];
   }
 
   self.volumeChangesObserved = enabled;

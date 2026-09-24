@@ -132,6 +132,7 @@ Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is de
 | Non-primitive, can be written by audio thread | Triple buffer (see `AnalyserNode` for reference) |
 | CPU-heavy work, must not block JS or audio | `TaskOffloader` on a dedicated worker thread |
 | Context lifecycle (`resume`/`suspend`/`close`) | `scheduleContextPromise` → `pendingPromisesOffloader_` |
+| Platform code must reach the live recorder without going through JS | Process-global handle (`ActiveRecorderHandle` — recursive mutex + `weak_ptr`; `tryStart` / `stopAndReturnInfo` / `stopAndReturnState` / `pause` / `resume` take the handle mutex before `AudioRecorder`). Android: static-JNI `NativeRecorderControl` (no HybridData). iOS: `AudioAPIModule.setAudioSessionActivity(false)` calls `stopAndReturnInfo()` before deactivating the session. HostObject `start` / `stop` go through the handle; HostObject `pause` / `resume` still call `AudioRecorder` directly. Android blocking calls run on a Kotlin executor (`goAsync()` in receivers), never a detached `std::thread` |
 
 ---
 
@@ -194,6 +195,30 @@ bodies must not re-lock `driverMutex_` or `waitForRenderQuiescence()` while `cur
 together in the `ContextPromise` resolve task (CallInvoker), after driver work — so `.state`
 still reads the prior value until settlement (needed when `resume()` then `suspend()` are issued
 back-to-back).
+
+**Context `statechange` event:** `BaseAudioContext::dispatchStateChange(state)` fires
+`AudioEvent::STATE_CHANGE` (payload `{state: "..."}`), deduped against the last dispatched state so
+the two paths that both reach RUNNING (implicit `tryStartDriver` from a source start, then the
+`resume()` promise) emit once. Call it *after* the `jsiPromise->resolve(...)` enqueue in the
+`ContextPromiseResolver` factory lambdas — the registry worker can only enqueue its own
+`invokeAsync` later, so the event's JS task always lands behind the resolve task and its
+microtasks (spec's promise-then-statechange order). Carry the state by value: `getState()` may
+still report SUSPENDED until the driver settles. On the TS side the event handler is
+notification-only — it must NOT write the `state` attribute; a rapid `resume()+suspend()` settles
+both operations before either event arrives, and a handler write would roll the attribute back to
+the stale event's value. The attribute is fully native: `BaseAudioContext::publishedState_` is read
+by the JSI `state` getter and written by `setPublishedState()` **inside each promise's own
+resolution lambda** (the callback passed to `jsiPromise->resolve`, which runs on the JS thread in
+that promise's resolve task) — never from the worker/render thread directly, where a later
+operation's write can land before an earlier operation's continuations read. The statechange event
+must use `EventCaller::dispatchOnJSQueue` (registry `dispatchEventOnJSQueue`, straight
+`invokeAsync`), NOT the worker-queue `dispatch`: FIFO placement right behind its own resolve task
+makes the handler observe each intermediate state instead of only the final one. Do not dispatch
+statechange from mid-lifecycle bodies (`tryStartDriver`) — that enqueues the event before the
+resolve task, so the handler reads the pre-transition state; the resolver's dispatch covers the
+implicit-start path because TS always issues `resume()` for it. Verified with WPT
+`suspend-after-construct` (5/0) and a probe asserting `resume.then→running, event→running,
+suspend.then→suspended, event→suspended`.
 
 ---
 
