@@ -93,6 +93,7 @@ class AudioAPIModule(
 
   override fun invalidate() {
     reactContext.get()?.removeLifecycleEventListener(this)
+    MediaSessionManager.cleanup()
     // Cleanup foreground service manager
     ForegroundServiceManager.cleanup()
   }
@@ -105,7 +106,13 @@ class AudioAPIModule(
     enabled: Boolean,
     promise: Promise?,
   ) {
-    promise?.resolve(null)
+    MediaSessionManager.setAudioSessionActivity(enabled) { error ->
+      if (error == null) {
+        promise?.resolve(null)
+      } else {
+        promise?.reject("E_COMMUNICATION_SESSION", error)
+      }
+    }
   }
 
   override fun setAudioSessionOptions(
@@ -114,8 +121,10 @@ class AudioAPIModule(
     options: ReadableArray?,
     allowHaptics: Boolean,
     notifyOthersOnDeactivation: Boolean,
+    androidMode: String?,
+    androidCommunicationDevice: String?,
   ) {
-    // noting to do here
+    MediaSessionManager.setAudioSessionOptions(androidMode, androidCommunicationDevice)
   }
 
   override fun disableSessionManagement() {
@@ -126,17 +135,14 @@ class AudioAPIModule(
     focusType: String?,
     enabled: Boolean,
   ) {
-    if (!enabled) {
-      MediaSessionManager.abandonAudioFocus()
-      return
-    }
-    when (focusType) {
-      "gain" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN)
-      "gainTransient" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-      "gainTransientMayDuck" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-      "gainTransientExclusive" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
-      else -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN)
-    }
+    val focus =
+      when (focusType) {
+        "gainTransient" -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+        "gainTransientMayDuck" -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+        "gainTransientExclusive" -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
+        else -> AudioManager.AUDIOFOCUS_GAIN
+      }
+    MediaSessionManager.observeAudioInterruptions(focus, enabled)
   }
 
   override fun activelyReclaimSession(enabled: Boolean) {
@@ -179,6 +185,36 @@ class AudioAPIModule(
     // TODO: noop for now, but it should be moved to upcoming
     // audio engine implementation for android (duplex stream)
     promise?.resolve(null)
+  }
+
+  override fun setCommunicationDevice(
+    device: String?,
+    promise: Promise?,
+  ) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      promise?.reject("E_UNSUPPORTED", "Communication-device routing requires Android 12 (API 31) or later")
+      return
+    }
+    if (device == null) {
+      promise?.reject("E_INVALID_COMMUNICATION_DEVICE", "A communication device is required")
+      return
+    }
+
+    MediaSessionManager.setCommunicationDevice(device) { error ->
+      if (error == null) {
+        promise?.resolve(null)
+      } else {
+        promise?.reject("E_COMMUNICATION_DEVICE", error)
+      }
+    }
+  }
+
+  override fun getCommunicationDevice(promise: Promise?) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      promise?.reject("E_UNSUPPORTED", "Communication-device routing requires Android 12 (API 31) or later")
+      return
+    }
+    MediaSessionManager.getCommunicationDevice { device -> promise?.resolve(device) }
   }
 
   // Notification system methods

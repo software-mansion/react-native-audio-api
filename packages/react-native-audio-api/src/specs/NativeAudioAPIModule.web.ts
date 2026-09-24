@@ -1,5 +1,6 @@
 import { TurboModule } from 'react-native';
 import {
+  AudioDeviceInfo,
   AudioDevicesInfo,
   AudioFocusType,
   PermissionStatus,
@@ -24,7 +25,9 @@ interface Spec extends TurboModule {
     mode: string,
     options: Array<string>,
     allowHaptics: boolean,
-    notifyOthersOnDeactivation: boolean
+    notifyOthersOnDeactivation: boolean,
+    androidMode: string,
+    androidCommunicationDevice: string
   ): void;
   disableSessionManagement(): void;
 
@@ -42,6 +45,8 @@ interface Spec extends TurboModule {
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
   setInputDevice(deviceId: string): Promise<void>;
+  setCommunicationDevice(device: string): Promise<void>;
+  getCommunicationDevice(): Promise<AudioDeviceInfo | null>;
 
   // New notification system
   showNotification(
@@ -84,6 +89,10 @@ const NativeAudioAPIModule: Spec = {
     currentOutputs: [],
   }),
   setInputDevice: mockAsync(undefined),
+  setCommunicationDevice: () =>
+    Promise.reject(new Error('setCommunicationDevice is not supported on web')),
+  getCommunicationDevice: () =>
+    Promise.reject(new Error('getCommunicationDevice is not supported on web')),
   showNotification: mockAsync({ success: true }),
   hideNotification: mockAsync({ success: true }),
   isNotificationActive: mockAsync(false),

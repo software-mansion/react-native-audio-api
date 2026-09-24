@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { Optional, ReadOnly, IOS, Experimental } from '@site/src/components/Badges';
+import { Optional, ReadOnly, IOS, Android, Experimental } from '@site/src/components/Badges';
 
 # AudioManager
 
@@ -44,7 +44,7 @@ function App() {
 
 ## Methods
 
-### `setAudioSessionOptions` <IOS />
+### `setAudioSessionOptions` <IOS /> <Android />
 
 :::warning AVAudioSession Compatibility
 Not all `iosOptions` are compatible with every `iosCategory`. Passing an invalid combination to the native API (for example, explicitly setting `allowBluetoothA2DP` alongside the `playback` category) will cause the configuration to fail. This can result in a `SessionActivationError` and total audio silence.
@@ -58,7 +58,9 @@ Always verify valid category and option combinations in [Apple's AVAudioSession 
 
 #### Returns `undefined`.
 
-### `setAudioSessionActivity` <IOS /> {#setaudiosessionactivity}
+On Android 12 (API 31) or later, set `androidMode: 'inCommunication'` before activating the session to request Android's communication audio mode. The optional `androidCommunicationDevice` requests `'speaker'`, `'earpiece'`, or `'systemDefault'` as the initial route. Existing Android behavior is unchanged when `androidMode` is omitted.
+
+### `setAudioSessionActivity` <IOS /> <Android /> {#setaudiosessionactivity}
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -67,6 +69,24 @@ Always verify valid category and option combinations in [Apple's AVAudioSession 
 #### Returns `Promise<void>`, which resolves when the audio session activity was set successfully. On failure, the promise rejects with a `SessionActivationError` that carries the native error details (`nativeErrorInfo`) when available.
 
 Deactivating the session while a recording is in progress or paused stops that recording first, since an inactive session would corrupt its output. The finalized files are then available through [`AudioRecorder.consumeLastRecordingResult()`](../inputs/audio-recorder.mdx#consumelastrecordingresult). Prefer calling [`AudioRecorder.stop()`](../inputs/audio-recorder.mdx#stop) yourself before deactivating, so the file info arrives through its promise.
+
+With Android `inCommunication` mode, activation requests transient focus using voice-communication/speech attributes, enters `MODE_IN_COMMUNICATION`, and applies the configured initial communication-device preference. Deactivation clears the request, abandons that focus, and restores the prior mode. Activation rejects below API 31 or if Android denies focus or the requested route. After a permanent focus loss, deactivate the session before starting a new one; the library does not reacquire focus automatically.
+
+### `setCommunicationDevice` <Android />
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `device` | [`CommunicationDevice`](./audio-manager.mdx#communicationdevice) | Requests an Android communication route while an active `inCommunication` session owns the audio mode. |
+
+#### Returns `Promise<void>`.
+
+Available on Android 12 (API 31) or later. The promise rejects if no communication session is active, the requested built-in device is unavailable, or Android rejects the request. Resolution means Android accepted the request; use `getCommunicationDevice()` and `routeChange` to observe the selected route. A runtime request applies only to the active session; the next activation uses `androidCommunicationDevice` from `setAudioSessionOptions()` again.
+
+### `getCommunicationDevice` <Android />
+
+#### Returns `Promise<AudioDeviceInfo | null>`.
+
+Returns the device Android currently selected for communication, including an accessory chosen by the system. It does not return the requested preference.
 
 ### `disableSessionManagement` <IOS />
 
@@ -238,10 +258,24 @@ interface SessionOptions {
   iosAllowHaptics?: boolean;
   // Has no effect when using PlaybackNotificationManager as it takes over the "Now playing" controls
   iosNotifyOthersOnDeactivation?: boolean;
+  androidMode?: 'inCommunication';
+  androidCommunicationDevice?: CommunicationDevice;
 }
 ```
 </details>
 
+### `CommunicationDevice`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type CommunicationDevice = 'speaker' | 'earpiece' | 'systemDefault';
+```
+</details>
+
+:::info
+`androidInputPreset: 'voiceCommunication'` on `AudioRecorder` requests the Android capture path. `androidOutputProfile: 'voiceCommunication'` on `AudioContext` classifies Oboe playback as voice communication. `androidMode: 'inCommunication'` owns Android focus, mode, and communication-device routing. These APIs request platform voice-processing facilities; acoustic echo cancellation, noise suppression, and automatic gain control remain device- and route-dependent.
+:::
 
 ### `SystemEventName`
 

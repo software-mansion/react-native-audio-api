@@ -167,7 +167,8 @@ RCT_EXPORT_METHOD(
 RCT_EXPORT_METHOD(
     setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
         options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
-            notifyOthersOnDeactivation)
+            notifyOthersOnDeactivation androidMode : (NSString *)
+                androidMode androidCommunicationDevice : (NSString *)androidCommunicationDevice)
 {
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
@@ -248,6 +249,19 @@ RCT_EXPORT_METHOD(
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     [self.audioSessionManager setInputDevice:deviceId resolve:resolve reject:reject];
   });
+}
+
+RCT_EXPORT_METHOD(
+    setCommunicationDevice : (NSString *)device resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  reject(@"E_PLATFORM", @"Communication-device selection is only available on Android", nil);
+}
+
+RCT_EXPORT_METHOD(
+    getCommunicationDevice : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  reject(@"E_PLATFORM", @"Communication-device selection is only available on Android", nil);
 }
 
 RCT_EXPORT_METHOD(disableSessionManagement)
