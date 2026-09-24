@@ -69,7 +69,7 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
       AudioEventPayload &&payload) noexcept override;
 
  private:
-  static constexpr size_t kDispatchCapacity = 8192;
+  static constexpr size_t kDispatchCapacity = 256;
 
   struct DispatchEvent {
     AudioEvent event{};
