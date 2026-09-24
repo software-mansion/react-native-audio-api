@@ -169,6 +169,11 @@ bool AudioBufferQueueSourceNode::isEmpty() const {
   return buffers_.empty();
 }
 
+bool AudioBufferQueueSourceNode::endsWhenStartedEmpty() const {
+  // An empty queue is a source waiting for its next buffer, not a finished one.
+  return false;
+}
+
 void AudioBufferQueueSourceNode::runBufferProcessor(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     size_t startOffset,
