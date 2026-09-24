@@ -9,6 +9,8 @@ const constants = {
   barGap: 2,
   minDb: -40,
   maxDb: 0,
+  historyBarWidth: 2,
+  historyBarGap: 2,
   get barStep() {
     return this.barWidth + this.barGap;
   },
