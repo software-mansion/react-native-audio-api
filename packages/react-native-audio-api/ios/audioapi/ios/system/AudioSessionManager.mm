@@ -1,4 +1,5 @@
 #import <AVFAudio/AVFAudio.h>
+#import <audioapi/ios/system/AudioAPIDiagnostics.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
@@ -51,6 +52,8 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)cleanup
 {
+  AUDIOAPI_LOG(AudioAPIDiagnosticsCategorySession, @"cleanup, releasing the session object");
+
   self.audioSession = nil;
 }
 
@@ -65,9 +68,42 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (bool)configureAudioSession:(NSError **)outError
 {
-  if (!self.shouldManageSession || [self areDesiredOptionsSet]) {
+  AUDIOAPI_TRACE_SCOPE(@"configureSession");
+
+  if (!self.shouldManageSession) {
+    AUDIOAPI_LOG(
+        AudioAPIDiagnosticsCategorySession, @"session is externally owned, leaving it alone");
     return true;
   }
+
+  // A manager that has been cleaned up keeps answering, and every call below is
+  // then a message to nil that reports success. This is the signature to look
+  // for - not a setCategory failing with a nil error.
+  if (self.audioSession == nil) {
+    AUDIOAPI_LOG_FAILURE(
+        AudioAPIDiagnosticsCategorySession,
+        @"configureAudioSession has no session object: this manager was cleaned up but is still "
+        @"reachable, so the configuration below is silently discarded");
+  }
+
+  // The only thing standing between a reconfiguration and the configuration
+  // change it provokes, so both outcomes are worth a line: it tells a restart
+  // storm that is being braked here apart from one waved straight through.
+  if ([self areDesiredOptionsSet]) {
+    AUDIOAPI_LOG(
+        AudioAPIDiagnosticsCategorySession,
+        @"session already matches the desired configuration, skipping setCategory: {%@}",
+        AudioAPIDescribeSession(self.audioSession));
+    return true;
+  }
+
+  AUDIOAPI_LOG(
+      AudioAPIDiagnosticsCategorySession,
+      @"setCategory wants category=%@, mode=%@, options=%lu; session is {%@}",
+      self.desiredCategory,
+      self.desiredMode,
+      (unsigned long)self.desiredOptions,
+      AudioAPIDescribeSession(self.audioSession));
 
   NSError *categoryError = nil;
   [self.audioSession setCategory:self.desiredCategory
@@ -76,17 +112,32 @@ static AudioSessionManager *_sharedInstance = nil;
                            error:&categoryError];
 
   if (categoryError != nil) {
-    NSLog(@"Error while configuring audio session: %@", [categoryError debugDescription]);
+    AUDIOAPI_LOG_FAILURE(
+        AudioAPIDiagnosticsCategorySession,
+        @"setCategory refused: %@; session left at {%@}",
+        AudioAPIDescribeError(categoryError),
+        AudioAPIDescribeSession(self.audioSession));
     if (outError != nil) {
       *outError = categoryError;
     }
     return false;
   }
-  NSLog(
-      @"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
-      self.audioSession.category,
-      self.audioSession.mode,
-      (unsigned long)self.audioSession.categoryOptions);
+
+  AUDIOAPI_LOG(
+      AudioAPIDiagnosticsCategorySession,
+      @"setCategory applied, session is now {%@}",
+      AudioAPIDescribeSession(self.audioSession));
+
+  // A refused setCategory can still apply part of what was asked for, and then
+  // this never converges: every later call retries the same rejected change and
+  // emits another configuration change doing so.
+  if (AudioAPIDiagnosticsEnabled() && ![self areDesiredOptionsSet]) {
+    AUDIOAPI_LOG_FAILURE(
+        AudioAPIDiagnosticsCategorySession,
+        @"setCategory reported success but the session did not converge on the desired "
+        @"configuration; actual={%@}",
+        AudioAPIDescribeSession(self.audioSession));
+  }
 
   if (@available(iOS 13.0, *)) {
     if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording !=
@@ -176,22 +227,47 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (bool)activateSessionIfNeeded:(bool)force error:(NSError **)error
 {
+  AUDIOAPI_TRACE_SCOPE(@"setActive");
+
   if (!self.shouldManageSession) {
     return true;
   }
 
   if (self.isActive && !force) {
+    AUDIOAPI_LOG(
+        AudioAPIDiagnosticsCategorySession, @"session already active and not forced, no-op");
     return true;
   }
+
+  AUDIOAPI_LOG(
+      AudioAPIDiagnosticsCategorySession,
+      @"activating session, force=%@, cachedActive=%@",
+      force ? @"true" : @"false",
+      self.isActive ? @"true" : @"false");
 
   if (![self configureAudioSession:error]) {
     return false;
   }
 
-  bool success = [self.audioSession setActive:true withOptions:0 error:error];
+  NSError *activationError = nil;
+  bool success = [self.audioSession setActive:true withOptions:0 error:&activationError];
+
+  if (error != nil && activationError != nil) {
+    *error = activationError;
+  }
 
   if (success) {
     self.isActive = true;
+    AUDIOAPI_LOG(
+        AudioAPIDiagnosticsCategorySession,
+        @"session activated, route is {%@}",
+        AudioAPIDescribeRoute(self.audioSession.currentRoute));
+  } else {
+    AUDIOAPI_LOG_FAILURE(
+        AudioAPIDiagnosticsCategorySession,
+        @"setActive refused: %@; session is {%@}",
+        AudioAPIDescribeError(activationError),
+        AudioAPIDescribeSession(self.audioSession));
   }
 
   return success;
@@ -199,6 +275,14 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)markInactive
 {
+  // Dropping the flag is what forces the next operation to re-assert activation,
+  // and re-asserting is what emits a configuration change. Whether this ran is
+  // the difference between a restart that settles and one that feeds itself.
+  AUDIOAPI_LOG(
+      AudioAPIDiagnosticsCategorySession,
+      @"marking session inactive, was %@",
+      self.isActive ? @"active" : @"inactive");
+
   // AVAudioSession does not expose a reliable active-state query, so drop our cached flag and
   // force the next audio operation to re-assert activation.
   self.isActive = false;
