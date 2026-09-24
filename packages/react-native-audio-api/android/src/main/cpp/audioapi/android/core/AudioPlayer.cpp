@@ -19,14 +19,16 @@ AudioPlayer::AudioPlayer(
     int channelCount,
     std::mutex *driverMutex,
     const std::shared_ptr<AudioContext> &context,
-    std::atomic<uint32_t> &currentRenders)
+    std::atomic<uint32_t> &currentRenders,
+    AndroidOutputProfile outputProfile)
     : renderAudio_(renderAudio),
       currentRenders_(currentRenders),
       sampleRate_(sampleRate),
       channelCount_(channelCount),
       isRunning_(false),
       driverMutex_(driverMutex),
-      context_(context) {}
+      context_(context),
+      outputProfile_(outputProfile) {}
 
 bool AudioPlayer::openAudioStream() {
   std::scoped_lock lock(streamMutex_);
@@ -42,6 +44,10 @@ bool AudioPlayer::openAudioStream() {
       ->setDataCallback(shared_from_this())
       ->setErrorCallback(shared_from_this())
       ->setSampleRate(static_cast<int>(sampleRate_));
+
+  if (outputProfile_ == AndroidOutputProfile::VoiceCommunication) {
+    builder.setUsage(Usage::VoiceCommunication)->setContentType(ContentType::Speech);
+  }
 
   auto result = builder.openStream(mStream_);
   if (result != oboe::Result::OK || mStream_ == nullptr) {
