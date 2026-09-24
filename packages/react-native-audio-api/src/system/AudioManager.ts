@@ -5,6 +5,8 @@ import { parseNativeError } from './errors';
 import {
   AudioDevicesInfo,
   AudioFocusType,
+  AudioDeviceInfo,
+  CommunicationDevice,
   IAudioManager,
   PermissionStatus,
   SessionOptions,
@@ -43,7 +45,9 @@ class AudioManager implements IAudioManager {
       options.iosMode ?? '',
       options.iosOptions ?? [],
       options.iosAllowHaptics ?? false,
-      options.iosNotifyOthersOnDeactivation ?? true
+      options.iosNotifyOthersOnDeactivation ?? true,
+      options.androidMode ?? '',
+      options.androidCommunicationDevice ?? ''
     );
   }
 
@@ -128,6 +132,22 @@ class AudioManager implements IAudioManager {
    */
   async setInputDevice(deviceId: string): Promise<void> {
     await NativeAudioAPIModule.setInputDevice(deviceId);
+  }
+
+  /**
+   * Requests an Android communication device while an `inCommunication` session
+   * is active. `systemDefault` clears the explicit request.
+   */
+  async setCommunicationDevice(device: CommunicationDevice): Promise<void> {
+    await NativeAudioAPIModule.setCommunicationDevice(device);
+  }
+
+  /**
+   * Returns Android's currently selected communication device, including a
+   * route selected by the system after an accessory change.
+   */
+  async getCommunicationDevice(): Promise<AudioDeviceInfo | null> {
+    return NativeAudioAPIModule.getCommunicationDevice();
   }
 }
 

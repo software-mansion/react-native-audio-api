@@ -204,7 +204,6 @@ describe('React Native Audio API Mocks', () => {
         expect(queueSource.onbufferended).toBe(callback);
       });
     });
-
   });
 
   describe('AudioRecorder', () => {
@@ -361,6 +360,15 @@ describe('React Native Audio API Mocks', () => {
         expect(() =>
           MockAPI.AudioManager.removeSystemEventListener(listener)
         ).not.toThrow();
+      });
+
+      it('should provide communication-device methods', async () => {
+        await expect(
+          MockAPI.AudioManager.setCommunicationDevice('speaker')
+        ).resolves.toBeUndefined();
+        await expect(
+          MockAPI.AudioManager.getCommunicationDevice()
+        ).resolves.toBeNull();
       });
     });
 
