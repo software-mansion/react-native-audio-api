@@ -47,7 +47,10 @@ export type OscillatorType =
 
 export interface AudioContextOptions {
   sampleRate?: number;
+  androidOutputProfile?: AndroidOutputProfile;
 }
+
+export type AndroidOutputProfile = 'media' | 'voiceCommunication';
 
 export interface OfflineAudioContextOptions {
   numberOfChannels: number;
