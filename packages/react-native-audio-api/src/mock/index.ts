@@ -1082,6 +1082,14 @@ class AudioManagerMock {
 
   static observeVolumeChanges(_observe: boolean): void {}
 
+  static setCommunicationDevice(_device: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  static getCommunicationDevice(): Promise<null> {
+    return Promise.resolve(null);
+  }
+
   static addSystemEventListener(
     _event: string,
     _callback: (event: { value: number }) => void
