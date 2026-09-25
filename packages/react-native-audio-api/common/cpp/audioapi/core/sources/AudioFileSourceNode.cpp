@@ -33,10 +33,12 @@ AudioFileSourceNode::AudioFileSourceNode(
       targetPlaybackRate_(options.playbackRate),
       positionChanged_(
           context->getAudioEventHandlerRegistry(),
+          context->getAudioEventProducer(),
           static_cast<int>(context->getSampleRate() * ON_POSITION_CHANGED_INTERVAL),
           true),
       bufferingStateDispatcher_(
           context->getAudioEventHandlerRegistry(),
+          context->getAudioEventProducer(),
           static_cast<int>(context->getSampleRate() * ON_BUFFERING_STATE_DEBOUNCE_INTERVAL)) {
   decoderState_->playbackRate.store(options.playbackRate, std::memory_order_release);
   decoderState_->preservesPitch.store(options.preservesPitch, std::memory_order_release);

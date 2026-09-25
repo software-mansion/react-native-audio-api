@@ -373,6 +373,39 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | iOS compile error `unknown type 'id'` | C++ file included ObjC-only header | Compile that file as ObjC++ (separate subspec with `-x objective-c++`) |
 | `RCT_NEW_ARCH_ENABLED` undefined on Android | Old RN gradle plugin | Ensure `newArchEnabled=true` in app's `gradle.properties` |
 | iOS: `'to_chars' is unavailable: introduced in iOS 16.3` from `formatter_floating_point.h`, instantiated by `std::format<...>` | `std::format` in code compiled for iOS. libc++ availability-gates the whole `<format>` library to iOS 16.3; the podspec minimum is `ios_min_version = '14.0'`. The desktop C++ test build and Android NDK have no such gate, so `yarn test:cpp` passes and only the iOS build fails. | Use `std::string` concatenation / `std::to_string` in `common/cpp` and `ios/`. Zero-pad by hand (`insert(0, n, '0')`). Android-only files (`android/src/main/cpp`) may keep `std::format`. |
+| clangd only: `'React/RCTBridgeModule.h' file not found` in `.mm` files | `compile_commands.json` has no framework search path | See *clangd compile database* below — regenerate with `yarn setup:clangd` |
+
+## clangd compile database
+
+`packages/react-native-audio-api/common/cpp/clangd/` generates the repo-root
+`compile_commands.json` that clangd reads (`yarn setup:clangd`, or
+`yarn setup:clangd:clean` after a native dependency bump). It is editor tooling
+only — it never participates in a real build. See its `SETUP.md`.
+
+The iOS half reuses whatever `pod install` resolved for `apps/fabric-example`,
+reading **both** `HEADER_SEARCH_PATHS` and `FRAMEWORK_SEARCH_PATHS` out of
+`Pods/Target Support Files/Pods-FabricExample/Pods-FabricExample.debug.xcconfig`.
+
+Framework search paths matter because React-Core ships prebuilt as
+`React.xcframework` since RN 0.87: `#import <React/RCTBridgeModule.h>` resolves
+via `-F`, not `-I`, so an `-I`-only database fails every `.mm` that imports
+React. Xcode's own `-F` points at `PODS_XCFRAMEWORKS_BUILD_DIR`, which only
+exists after Xcode has unpacked the slices — the CMakeLists globs the
+`ios-*simulator*` slices inside the `.xcframework` bundles instead, so a bare
+`pod install` suffices.
+
+To check the database rather than guessing at clangd, replay an entry directly:
+
+```bash
+python3 -c "
+import json,shlex,subprocess
+e=[x for x in json.load(open('compile_commands.json')) if x['file'].endswith('ios/AudioAPIModule.mm')][0]
+toks=[t for t in shlex.split(e['command']) if t!='-c']
+subprocess.run(toks[:toks.index('-o')]+toks[toks.index('-o')+2:]+['-fsyntax-only'], cwd=e['directory'])
+"
+```
+
+If that reproduces the error, the database is wrong — not the editor's LSP setup.
 
 ---
 

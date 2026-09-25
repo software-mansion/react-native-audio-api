@@ -51,6 +51,12 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   virtual bool isEmpty() const = 0;
 
+  /// @brief Whether a started source that is rendered while `isEmpty()` ends
+  /// immediately instead of staying scheduled until content arrives.
+  virtual bool endsWhenStartedEmpty() const {
+    return true;
+  }
+
   virtual void runBufferProcessor(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,

@@ -350,8 +350,7 @@ CloseEncoderResult IOSEncoder::close()
     impl_->inputFormat = nil;
     impl_->inputBufferListStorage.clear();
 
-    double durationSeconds = CMTimeGetSeconds([[AVURLAsset URLAssetWithURL:fileURL
-                                                                   options:nil] duration]);
+    const double durationSeconds = getEncodedDurationSeconds();
 
     NSError *error = nil;
     double fileSizeMB = static_cast<double>([[[NSFileManager defaultManager]

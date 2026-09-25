@@ -21,7 +21,7 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(
       startTime_(-1.0),
       stopTime_(-1.0),
       playbackState_(PlaybackState::UNSCHEDULED),
-      onEndedEvent_(context->getAudioEventHandlerRegistry()) {}
+      onEndedEvent_(context->getAudioEventHandlerRegistry(), context->getAudioEventProducer()) {}
 
 void AudioScheduledSourceNode::start(double when) {
   playbackState_ = PlaybackState::SCHEDULED;

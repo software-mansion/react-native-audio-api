@@ -7,7 +7,7 @@ const testimonials: Testimonial[] = [
     body: 'Perch has been using react-native-audio-api for streaming generated audio in our app and it’s been fantastic. The audio quality is crisp and features like variable playback speed work seamlessly without any hiccups. We’ve replaced all other audio libraries we were using with it.',
     image: {
       alt: 'Matt McGuiness',
-      src: 'https://perch-app-prod.s3.us-east-1.amazonaws.com/media/matt-mcguiness.png',
+      src: '/react-native-audio-api/img/matt-mcguiness.jpg',
     },
   },
   {
