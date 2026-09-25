@@ -1,7 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-#include <audioapi/dsp/VectorMath.h>
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/IOSEncoder.h>
@@ -9,9 +8,12 @@
 #include <audioapi/utils/UnitConversion.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <string>
 #include <vector>
+
+#include <audioapi/core/utils/Constants.h>
 
 namespace audioapi::ios_encoder {
 
@@ -20,9 +22,17 @@ struct IOSEncoderState {
   AVAudioFile *audioFile = nil;
   AVAudioFormat *inputFormat = nil;
   AVAudioConverter *converter = nil;
-  AVAudioPCMBuffer *converterInputBuffer = nil;
   AVAudioPCMBuffer *converterOutputBuffer = nil;
   int inputChannelCount = 0;
+  size_t maxInputFrames = 0;
+  /// Backing store for an AudioBufferList with one buffer per input channel. encode() points
+  /// it at the caller's planar frames and wraps it in a no-copy AVAudioPCMBuffer.
+  std::vector<uint8_t> inputBufferListStorage;
+
+  AudioBufferList *inputBufferList()
+  {
+    return reinterpret_cast<AudioBufferList *>(inputBufferListStorage.data());
+  }
 };
 
 static AudioFormatID audioFormatIdForCodec(AudioCodec codec)
@@ -86,7 +96,6 @@ IOSEncoder::~IOSEncoder()
   @autoreleasepool {
     impl_->audioFile = nil;
     impl_->converter = nil;
-    impl_->converterInputBuffer = nil;
     impl_->converterOutputBuffer = nil;
     impl_->inputFormat = nil;
     impl_->fileURL = nil;
@@ -118,8 +127,8 @@ OpenEncoderResult IOSEncoder::open(
 
     impl_->fileURL = [NSURL fileURLWithPath:[NSString stringWithUTF8String:filePath.c_str()]];
 
-    // The file is written in the planar float32 layout the mic delivers; the converter maps
-    // whatever the current input is onto the file's processing format.
+    // encode() receives planar float32, so the processing format is planar too: the frames are
+    // handed over without a copy
     NSError *error = nil;
     NSDictionary *settings = buildFileSettings(fileProperties_, outputSpec);
     impl_->audioFile = [[AVAudioFile alloc] initForWriting:impl_->fileURL
@@ -179,9 +188,17 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(
   using PipelineResult = Result<NoneType, std::string>;
 
   @autoreleasepool {
+    if (inputFormat.channelCount > MAX_CHANNEL_COUNT) {
+      return PipelineResult::Err("Channel count exceeds MAX_CHANNEL_COUNT");
+    }
     inputFormat_ = inputFormat;
     maxBufferSizeInFrames_ = maxBufferSizeInFrames;
     impl_->inputChannelCount = inputFormat.channelCount;
+    impl_->maxInputFrames = maxBufferSizeInFrames;
+    impl_->inputBufferListStorage.assign(
+        offsetof(AudioBufferList, mBuffers) +
+            static_cast<size_t>(inputFormat.channelCount) * sizeof(::AudioBuffer),
+        0);
 
     impl_->inputFormat =
         [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
@@ -206,14 +223,11 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(
         static_cast<float>(maxBufferSizeInFrames),
         fileProperties_->sampleRate / inputFormat.sampleRate * maxBufferSizeInFrames);
 
-    impl_->converterInputBuffer =
-        [[AVAudioPCMBuffer alloc] initWithPCMFormat:impl_->inputFormat
-                                      frameCapacity:(AVAudioFrameCount)maxBufferSizeInFrames];
     impl_->converterOutputBuffer =
         [[AVAudioPCMBuffer alloc] initWithPCMFormat:[impl_->audioFile processingFormat]
                                       frameCapacity:(AVAudioFrameCount)outputCapacity];
 
-    if (impl_->converterInputBuffer == nil || impl_->converterOutputBuffer == nil) {
+    if (impl_->converterOutputBuffer == nil) {
       return PipelineResult::Err("Failed to allocate converter buffers");
     }
 
@@ -224,36 +238,46 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(
 void IOSEncoder::releaseConversionPipeline()
 {
   impl_->converter = nil;
-  impl_->converterInputBuffer = nil;
   impl_->converterOutputBuffer = nil;
   impl_->inputFormat = nil;
   impl_->inputChannelCount = 0;
+  impl_->maxInputFrames = 0;
+  impl_->inputBufferListStorage.clear();
 }
 
-EncodeResult IOSEncoder::encode(const void *data, int numFrames)
+EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
 {
   if (!isOpen() || impl_->audioFile == nil) {
     return EncodeResult::Err("Encoder is not open");
   }
-  const auto *interleavedFrames = static_cast<const float *>(data);
-  if (interleavedFrames == nullptr || numFrames <= 0) {
+  if (channels == nullptr || numFrames <= 0) {
     return EncodeResult::Err("Invalid encode input");
   }
-  if (static_cast<AVAudioFrameCount>(numFrames) > impl_->converterInputBuffer.frameCapacity) {
+  if (static_cast<size_t>(numFrames) > impl_->maxInputFrames) {
     return EncodeResult::Err("Encode input exceeds the buffer size declared at open()");
   }
 
   @autoreleasepool {
     NSError *error = nil;
 
-    // The internal format is planar (pinned at open), so floatChannelData is one
-    // pointer per channel. Mono degenerates to a single memcpy inside dsp::deinterleave.
-    dsp::deinterleave(
-        interleavedFrames,
-        impl_->converterInputBuffer.floatChannelData,
-        static_cast<size_t>(impl_->inputChannelCount),
-        static_cast<size_t>(numFrames));
-    impl_->converterInputBuffer.frameLength = numFrames;
+    // Wrap the caller's planar frames in place: the buffer list points at them for the duration
+    // of this call and AVAudioPCMBuffer reads through it without copying.
+    AudioBufferList *bufferList = impl_->inputBufferList();
+    bufferList->mNumberBuffers = static_cast<UInt32>(impl_->inputChannelCount);
+    for (int channel = 0; channel < impl_->inputChannelCount; ++channel) {
+      bufferList->mBuffers[channel].mNumberChannels = 1;
+      bufferList->mBuffers[channel].mDataByteSize =
+          static_cast<UInt32>(static_cast<size_t>(numFrames) * sizeof(float));
+      // AudioBufferList carries void*; nothing below writes through it.
+      bufferList->mBuffers[channel].mData =
+          const_cast<float *>(channels[channel]); // NOLINT(cppcoreguidelines-pro-type-const-cast)
+    }
+    AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:impl_->inputFormat
+                                                               bufferListNoCopy:bufferList
+                                                                    deallocator:nil];
+    if (inputBuffer == nil) {
+      return EncodeResult::Err("Failed to wrap encode input");
+    }
 
     AVAudioFormat *fileFormat = [impl_->audioFile processingFormat];
     const bool formatsMatch = impl_->inputFormat.sampleRate == fileFormat.sampleRate &&
@@ -261,7 +285,7 @@ EncodeResult IOSEncoder::encode(const void *data, int numFrames)
         impl_->inputFormat.isInterleaved == fileFormat.isInterleaved;
 
     if (formatsMatch) {
-      [impl_->audioFile writeFromBuffer:impl_->converterInputBuffer error:&error];
+      [impl_->audioFile writeFromBuffer:inputBuffer error:&error];
       if (error != nil) {
         return EncodeResult::Err(
             std::string("Error writing audio data to file: ") +
@@ -281,7 +305,7 @@ EncodeResult IOSEncoder::encode(const void *data, int numFrames)
       }
       handedOff = YES;
       *outStatus = AVAudioConverterInputStatus_HaveData;
-      return impl_->converterInputBuffer;
+      return inputBuffer;
     };
 
     [impl_->converter convertToBuffer:impl_->converterOutputBuffer
@@ -322,9 +346,9 @@ CloseEncoderResult IOSEncoder::close()
     // AVAudioFile finalizes the file on deallocation.
     impl_->audioFile = nil;
     impl_->converter = nil;
-    impl_->converterInputBuffer = nil;
     impl_->converterOutputBuffer = nil;
     impl_->inputFormat = nil;
+    impl_->inputBufferListStorage.clear();
 
     double durationSeconds = CMTimeGetSeconds([[AVURLAsset URLAssetWithURL:fileURL
                                                                    options:nil] duration]);

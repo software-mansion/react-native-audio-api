@@ -4,8 +4,6 @@
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
-#include <string>
-
 namespace audioapi::ios::fileoptions {
 
 /// @brief Maps AudioFileProperties to iOS AVFoundation audio quality settings.
@@ -57,45 +55,6 @@ NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
     case AudioFileProperties::BitDepth::Bit32:
     default:
       return 32;
-  }
-}
-
-NSURL *getFileURL(
-    const std::shared_ptr<AudioFileProperties> &properties,
-    const std::string &fileName)
-{
-  NSError *error = nil;
-
-  NSSearchPathDirectory directory = getDirectory(properties);
-  NSString *subDirectory = [NSString stringWithUTF8String:properties->subDirectory.c_str()];
-
-  NSURL *baseURL = [[[NSFileManager defaultManager] URLsForDirectory:directory
-                                                           inDomains:NSUserDomainMask] firstObject];
-  NSURL *directoryURL = [baseURL URLByAppendingPathComponent:subDirectory isDirectory:YES];
-
-  [[NSFileManager defaultManager] createDirectoryAtURL:directoryURL
-                           withIntermediateDirectories:YES
-                                            attributes:nil
-                                                 error:&error];
-
-  if (error != nil) {
-    NSLog(@"Error creating directory for audio recordings: %@", [error debugDescription]);
-    directoryURL = baseURL;
-  }
-
-  return
-      [directoryURL URLByAppendingPathComponent:[NSString stringWithUTF8String:fileName.c_str()]];
-}
-
-NSSearchPathDirectory getDirectory(const std::shared_ptr<AudioFileProperties> &properties)
-{
-  switch (properties->directory) {
-    case AudioFileProperties::FileDirectory::Document:
-      return NSDocumentDirectory;
-
-    case AudioFileProperties::FileDirectory::Cache:
-    default:
-      return NSCachesDirectory;
   }
 }
 

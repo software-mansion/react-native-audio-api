@@ -4,12 +4,14 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/Constants.h>
+
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
+#include <algorithm>
 
 #include <memory>
 #include <optional>
@@ -109,6 +111,16 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
   streamSampleRate_.store(static_cast<float>(mStream_->getSampleRate()), std::memory_order_release);
   streamChannelCount_ = mStream_->getChannelCount();
   streamMaxBufferSizeInFrames_ = mStream_->getBufferSizeInFrames();
+
+  if (streamChannelCount_ > MAX_CHANNEL_COUNT) {
+    mStream_->close();
+    mStream_ = nullptr;
+    return Result<NoneType, std::string>::Err("Input channel count exceeds MAX_CHANNEL_COUNT");
+  }
+  planarInput_ = AudioBuffer(
+      static_cast<size_t>(std::max(streamMaxBufferSizeInFrames_, 1)),
+      streamChannelCount_,
+      streamSampleRate_.load(std::memory_order_acquire));
 
   return Result<NoneType, std::string>::Ok(None);
 }
@@ -259,8 +271,17 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
     return oboe::DataCallbackResult::Continue;
   }
 
-  // Oboe already delivers interleaved float32 — the format every consumer expects.
-  onAudioFrames(static_cast<const float *>(audioData), numFrames);
+  const auto frames = static_cast<size_t>(numFrames);
+  if (audioData == nullptr || numFrames <= 0 || frames > planarInput_.getSize()) {
+    return oboe::DataCallbackResult::Continue;
+  }
+
+  planarInput_.deinterleaveFrom(static_cast<const float *>(audioData), frames);
+  const float *channels[MAX_CHANNEL_COUNT];
+  for (int channel = 0; channel < streamChannelCount_; ++channel) {
+    channels[channel] = planarInput_.getChannel(channel)->begin();
+  }
+  onAudioFrames(channels, numFrames);
 
   return oboe::DataCallbackResult::Continue;
 }

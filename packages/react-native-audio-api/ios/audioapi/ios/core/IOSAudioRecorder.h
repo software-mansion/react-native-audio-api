@@ -65,10 +65,6 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<NoneType, std::string> reprepareCallback(const StreamFormat &format);
 
   int32_t inputChannelCount_{0};
-
-  /// Holds the mic's planar input repacked as interleaved float32 for every consumer.
-  /// Sized on the JS thread under fileWriterMutex_; never resized from the audio thread.
-  std::vector<float> interleavedHolder_;
 };
 
 } // namespace audioapi

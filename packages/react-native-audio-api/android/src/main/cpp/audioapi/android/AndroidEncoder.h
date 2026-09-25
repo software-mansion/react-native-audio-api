@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace audioapi::android_encoder {
 
@@ -23,26 +22,26 @@ class AndroidEncoder : public AudioEncoder {
       size_t maxBufferSizeInFrames,
       const std::string &filePath) override;
 
-  EncodeResult encode(const void *data, int numFrames) override;
+  EncodeResult encode(const float *const *channels, int numFrames) override;
 
   CloseEncoderResult close() override;
 
   [[nodiscard]] size_t getFileSizeBytes() const override;
 
  private:
-  int convertToOutput(const float *input, int numFrames);
+  /// Input that differs from the backend's effective format: channel mapping and resampling
+  /// stay planar, and the backend interleaves while it quantizes.
+  std::string encodeConverted(const float *const *channels, int numFrames);
 
   std::unique_ptr<IEncoderBackend> backend_;
-  std::vector<float> channelBuffer_;
-  std::vector<float> convertedBuffer_;
 
   double inputSampleRate_{0.0};
   double outputSampleRate_{0.0};
   int inputChannelCount_{0};
   int outputChannelCount_{0};
 
-  struct ResamplerState;
-  std::unique_ptr<ResamplerState> resampler_;
+  struct ConversionState;
+  std::unique_ptr<ConversionState> conversion_; // null when no conversion is needed
 };
 
 } // namespace audioapi::android_encoder

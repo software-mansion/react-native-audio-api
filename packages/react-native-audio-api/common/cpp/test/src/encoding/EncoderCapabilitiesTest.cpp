@@ -71,10 +71,10 @@ TEST(EncoderCapabilitiesTest, ResolveMatchesIsSupported) {
   }
 }
 
-TEST(EncoderCapabilitiesTest, SupportedOutputSpecEntriesAreSupported) {
-  for (const auto &spec : EncoderCapabilities::kSupportedOutputSpecs) {
-    EXPECT_TRUE(EncoderCapabilities::isSupported(spec.container, spec.codec))
-        << toString(spec.codec) << " in " << toString(spec.container);
+TEST(EncoderCapabilitiesTest, SupportedFormatsResolve) {
+  for (Format format : EncoderCapabilities::kSupportedFormats) {
+    EXPECT_TRUE(EncoderCapabilities::resolveOutputSpec(format).is_ok())
+        << "format index: " << static_cast<int>(format);
   }
 }
 

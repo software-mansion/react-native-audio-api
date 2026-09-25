@@ -26,7 +26,7 @@ class IOSEncoder : public AudioEncoder {
   /// the converter, which is built for the input, is rebuilt.
   OpenEncoderResult reprepareInput(const StreamFormat &inputFormat, size_t maxBufferSizeInFrames);
 
-  EncodeResult encode(const void *data, int numFrames) override;
+  EncodeResult encode(const float *const *channels, int numFrames) override;
 
   CloseEncoderResult close() override;
 

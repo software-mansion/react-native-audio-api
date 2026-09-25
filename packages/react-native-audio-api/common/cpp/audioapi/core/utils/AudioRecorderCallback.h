@@ -1,19 +1,19 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/AudioBufferPool.hpp>
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
-#include <audioapi/utils/SlotFreeList.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -23,12 +23,14 @@ namespace audioapi {
 
 class IAudioEventHandlerRegistry;
 
-/// Slot index plus frame count — the only thing that crosses to the worker thread.
-/// At namespace scope for the same reason as PendingFileWrite: nested in the class,
-/// its default member initializers would not satisfy TaskOffloader's constraint.
+/// A filled pool buffer plus frame count — the only thing that crosses to the worker thread.
+/// The default-constructed value (no buffer) is the offloader's shutdown message, which is
+/// what operator== exists for.
 struct PendingCallbackFrames {
-  size_t slot = std::numeric_limits<size_t>::max();
+  AudioBufferLease buffer;
   int numFrames = 0;
+
+  bool operator==(const PendingCallbackFrames &) const = default;
 };
 
 /// Delivers recorded audio to a JS `onAudioReady` callback, resampling and remixing from
@@ -50,9 +52,9 @@ class AudioRecorderCallback {
   prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
   void cleanup();
 
-  /// Audio thread. @p interleavedFrames holds numFrames * streamChannelCount float32
-  /// samples in channel-interleaved order, valid only for the duration of the call.
-  void receiveAudioData(const float *interleavedFrames, int numFrames);
+  /// Audio thread. @p channels holds one pointer per stream channel, each to numFrames float32
+  /// samples, valid only for the duration of the call.
+  void receiveAudioData(const float *const *channels, int numFrames);
 
   void emitAudioData(bool flush = false);
   void invokeCallback(const std::shared_ptr<AudioBuffer> &buffer, int numFrames);
@@ -82,7 +84,6 @@ class AudioRecorderCallback {
       RECORDER_CALLBACK_POOL_SIZE <= RECORDER_CALLBACK_CHANNEL_CAPACITY - 1,
       "Channel must hold every in-flight slot so send() never blocks/overwrites");
 
-  using FreeList = slots::SlotFreeList<RECORDER_CALLBACK_POOL_SIZE>;
   using Offloader = task_offloader::TaskOffloader<
       PendingCallbackFrames,
       RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
@@ -93,8 +94,10 @@ class AudioRecorderCallback {
   static constexpr int RESAMPLER_MAX_INPUT_FRAMES = 2048;
 
   void runCallbackTask(PendingCallbackFrames pending);
-  void deinterleaveAndPushAudioData(const float *interleavedFrames, int numFrames);
+  /// Remixes and/or resamples @p slotFrames chunk by chunk into the circular buffer.
+  void convertAndPushChunks(const AudioBuffer &slotFrames, int numFrames);
   void pushChannels(const AudioBuffer &planarFrames, int numFrames);
+  void pushChannels(const float *const *planarFrames, int numFrames);
   void releaseProcessingResources();
 
   std::atomic<bool> isInitialized_{false};
@@ -116,20 +119,16 @@ class AudioRecorderCallback {
   static constexpr size_t DEFAULT_RING_BUFFER_SIZE = 8192;
   std::vector<std::shared_ptr<CircularAudioArray>> circularBuffer_;
 
-  /// Planar staging for the pass-through path (stream format == callback format).
-  std::shared_ptr<AudioBuffer> deinterleavingBuffer_;
-
   /// Conversion chain, built only for the parts that are actually needed: r8brain
   /// resamples but does not remix, so a channel-count change goes through
   /// AudioBuffer::copy first. Null when the stream already matches the callback format.
   std::unique_ptr<r8b::MultiChannelResampler> resampler_;
-  std::unique_ptr<AudioBuffer> inputChunk_;   // one chunk, stream channel count
   std::unique_ptr<AudioBuffer> remixedChunk_; // one chunk, callback channel count
   std::unique_ptr<AudioBuffer> resamplerOutput_;
 
-  std::unique_ptr<float[]> inputBufferPool_;
-  size_t samplesPerSlot_{0};
-  std::unique_ptr<FreeList> freeSlots_;
+  /// Planar buffers of maxInputBufferLength_ x streamChannelCount_ that carry audio-thread
+  /// callbacks to the worker.
+  AudioBufferPool<RECORDER_CALLBACK_POOL_SIZE> inputBufferPool_;
 
   // delay initialization of offloader until prepare is called
   std::unique_ptr<Offloader> offloader_;

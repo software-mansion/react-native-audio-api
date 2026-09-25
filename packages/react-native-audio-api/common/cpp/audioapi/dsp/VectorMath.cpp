@@ -113,14 +113,15 @@ void multiplyByScalarThenAddToOutput(
   vDSP_vsma(inputVector, 1, &scalar, outputVector, 1, outputVector, 1, numberOfElementsToProcess);
 }
 
+// Interleaved LR pairs have the layout of interleaved complex numbers, so vDSP's
+// split-complex conversions are its native planar <-> interleaved path for stereo.
 void deinterleaveStereo(
     const float *__restrict inputInterleaved,
     float *__restrict outputLeft,
     float *__restrict outputRight,
     size_t numberOfFrames) {
-  float zero = 0.0f;
-  vDSP_vsadd(inputInterleaved, 2, &zero, outputLeft, 1, numberOfFrames);
-  vDSP_vsadd(inputInterleaved + 1, 2, &zero, outputRight, 1, numberOfFrames);
+  DSPSplitComplex planar{outputLeft, outputRight};
+  vDSP_ctoz(reinterpret_cast<const DSPComplex *>(inputInterleaved), 2, &planar, 1, numberOfFrames);
 }
 
 void interleaveStereo(
@@ -128,9 +129,11 @@ void interleaveStereo(
     const float *__restrict inputRight,
     float *__restrict outputInterleaved,
     size_t numberOfFrames) {
-  float zero = 0.0f;
-  vDSP_vsadd(inputLeft, 1, &zero, outputInterleaved, 2, numberOfFrames);
-  vDSP_vsadd(inputRight, 1, &zero, outputInterleaved + 1, 2, numberOfFrames);
+  // DSPSplitComplex has no const variant; vDSP_ztoc only reads through it.
+  DSPSplitComplex planar{
+      const_cast<float *>(inputLeft),   // NOLINT(cppcoreguidelines-pro-type-const-cast)
+      const_cast<float *>(inputRight)}; // NOLINT(cppcoreguidelines-pro-type-const-cast)
+  vDSP_ztoc(&planar, 1, reinterpret_cast<DSPComplex *>(outputInterleaved), 2, numberOfFrames);
 }
 
 #else
@@ -863,11 +866,13 @@ float sumOfSquares(const float *inputVector, size_t numberOfElementsToProcess) {
 
 #endif
 
+#ifndef HAVE_ACCELERATE
 namespace {
 // Transposing frame-by-frame thrashes the cache once the channel count grows, so the
 // generic paths below walk the data in blocks that stay resident. Mirrors AudioBuffer.
 constexpr size_t kInterleaveBlockSize = 128;
 } // namespace
+#endif
 
 void interleave(
     const float *const *inputChannels,
@@ -888,6 +893,20 @@ void interleave(
     return;
   }
 
+#ifdef HAVE_ACCELERATE
+  // vDSP has no plain strided copy; adding zero with a destination stride is the idiom.
+  const float zero = 0.0f;
+  const auto channelStride = static_cast<vDSP_Stride>(numberOfChannels);
+  for (size_t channel = 0; channel < numberOfChannels; ++channel) {
+    vDSP_vsadd(
+        inputChannels[channel],
+        1,
+        &zero,
+        outputInterleaved + channel,
+        channelStride,
+        numberOfFrames);
+  }
+#else
   for (size_t blockStart = 0; blockStart < numberOfFrames; blockStart += kInterleaveBlockSize) {
     size_t blockEnd = std::min(blockStart + kInterleaveBlockSize, numberOfFrames);
     for (size_t frame = blockStart; frame < blockEnd; ++frame) {
@@ -897,6 +916,7 @@ void interleave(
       }
     }
   }
+#endif
 }
 
 void deinterleave(
@@ -918,6 +938,19 @@ void deinterleave(
     return;
   }
 
+#ifdef HAVE_ACCELERATE
+  const float zero = 0.0f;
+  const auto channelStride = static_cast<vDSP_Stride>(numberOfChannels);
+  for (size_t channel = 0; channel < numberOfChannels; ++channel) {
+    vDSP_vsadd(
+        inputInterleaved + channel,
+        channelStride,
+        &zero,
+        outputChannels[channel],
+        1,
+        numberOfFrames);
+  }
+#else
   for (size_t blockStart = 0; blockStart < numberOfFrames; blockStart += kInterleaveBlockSize) {
     size_t blockEnd = std::min(blockStart + kInterleaveBlockSize, numberOfFrames);
     for (size_t frame = blockStart; frame < blockEnd; ++frame) {
@@ -927,6 +960,7 @@ void deinterleave(
       }
     }
   }
+#endif
 }
 
 } // namespace audioapi::dsp

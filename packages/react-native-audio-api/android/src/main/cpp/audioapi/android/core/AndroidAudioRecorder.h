@@ -7,11 +7,9 @@
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
-#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace audioapi {
 
@@ -57,6 +55,10 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   std::string inputPreset_;
   int32_t streamChannelCount_{0};
   int32_t streamMaxBufferSizeInFrames_{0};
+
+  /// Oboe delivers interleaved float32 and every consumer takes planar, so each callback is
+  /// repacked here once. Sized under streamMutex_ before the stream starts.
+  AudioBuffer planarInput_;
 
   std::shared_ptr<oboe::AudioStream> mStream_;
 };

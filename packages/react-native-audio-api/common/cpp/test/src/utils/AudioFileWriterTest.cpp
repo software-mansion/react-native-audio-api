@@ -93,7 +93,7 @@ class FakeEncoder final : public AudioEncoder {
     return OpenEncoderResult::Ok(filePath_);
   }
 
-  EncodeResult encode(const void * /*data*/, int numFrames) override {
+  EncodeResult encode(const float *const * /*channels*/, int numFrames) override {
     addEncodedFrames(static_cast<size_t>(numFrames));
     log_.encodedBuffers.fetch_add(1, std::memory_order_acq_rel);
     return EncodeResult::Ok(static_cast<size_t>(numFrames));
@@ -213,8 +213,9 @@ class AudioFileWriterTest : public ::testing::Test {
   /// Within the pool size, no buffer is dropped whatever the worker's pace.
   void writeBuffers(int count) {
     ASSERT_LE(count, kWriterPoolSize);
+    const float *channels[kChannelCount] = {frames_.data(), frames_.data() + kFramesPerBuffer};
     for (int buffer = 0; buffer < count; ++buffer) {
-      writer_->writeAudioData(frames_.data(), kFramesPerBuffer);
+      writer_->writeAudioData(channels, kFramesPerBuffer);
     }
   }
 

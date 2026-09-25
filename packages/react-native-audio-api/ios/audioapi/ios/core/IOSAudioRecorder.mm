@@ -11,10 +11,10 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
-#include <audioapi/ios/core/utils/IOSInterleaving.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -37,6 +37,29 @@ static std::string describeRecorderFormat(AVAudioFormat *format)
       ", interleaved=" + (format.interleaved ? "true" : "false") + "}";
 }
 
+/// Returns false — dropping the buffer — when the layout no longer
+/// matches what we were configured with, which happens if the input node is rebuilt on a route
+/// change while a recording is in flight.
+static bool collectPlanarInputChannels(
+    const AudioBufferList *input,
+    int numFrames,
+    int channelCount,
+    const float **channels)
+{
+  if (input == nullptr || numFrames <= 0 || channelCount <= 0 || channelCount > MAX_CHANNEL_COUNT ||
+      input->mNumberBuffers != static_cast<UInt32>(channelCount)) {
+    return false;
+  }
+  const size_t frameBytes = static_cast<size_t>(numFrames) * sizeof(float);
+  for (int channel = 0; channel < channelCount; ++channel) {
+    if (input->mBuffers[channel].mDataByteSize < frameBytes) {
+      return false;
+    }
+    channels[channel] = static_cast<const float *>(input->mBuffers[channel].mData);
+  }
+  return true;
+}
+
 static void cleanupStartedRecorder(
     NativeAudioRecorder *nativeRecorder,
     const std::shared_ptr<AudioFileWriter> &fileWriter,
@@ -57,14 +80,12 @@ IOSAudioRecorder::IOSAudioRecorder(
     : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
-    // The mic delivers planar float32; every consumer takes interleaved.
-    const float *interleaved = ios_interleaving::interleaveAudioInput(
-        inputBuffer, numFrames, inputChannelCount_, interleavedHolder_);
-    if (interleaved == nullptr) {
+    const float *channels[MAX_CHANNEL_COUNT];
+    if (!collectPlanarInputChannels(inputBuffer, numFrames, inputChannelCount_, channels)) {
       return;
     }
 
-    onAudioFrames(interleaved, numFrames);
+    onAudioFrames(channels, numFrames);
   };
 
   nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock
@@ -126,13 +147,10 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
   const bool shouldArmInput = state_.load(std::memory_order_acquire) == RecorderState::Recording;
   [nativeRecorder_ setInputArmed:false];
 
-  // Safe only because the input is now disarmed: the audio thread reads these unlocked.
+  // Safe only because the input is now disarmed: the audio thread reads this unlocked.
   // Must happen before any early return below, or a channel-count change would make
-  // interleaveAudioInput() drop every buffer once the input is re-armed.
+  // collectPlanarInputChannels() drop every buffer once the input is re-armed.
   inputChannelCount_ = format.channelCount;
-  interleavedHolder_.assign(
-      static_cast<size_t>(format.maxFramesPerBuffer) * static_cast<size_t>(inputChannelCount_),
-      0.0F);
 
   if (usesFileOutput()) {
     auto fileResult = reprepareFileWriter(format);
@@ -311,7 +329,6 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   // The audio thread reads these before taking any consumer mutex, so they may only be
   // touched while the input is disarmed — i.e. here and in stop().
   inputChannelCount_ = streamFormat.channelCount;
-  interleavedHolder_.assign(maxInputBufferLength * static_cast<size_t>(inputChannelCount_), 0.0F);
   lastCallbackFrameCount_.store(0, std::memory_order_release);
   bool fileWasOpened = false;
 
@@ -375,7 +392,6 @@ AudioRecorder::StopResult IOSAudioRecorder::stop()
 
   state_.store(RecorderState::Idle, std::memory_order_release);
   [nativeRecorder_ setInputArmed:false];
-  interleavedHolder_.clear();
   inputChannelCount_ = 0;
   lastCallbackFrameCount_.store(0, std::memory_order_release);
   streamSampleRate_.store(0.0F, std::memory_order_release);

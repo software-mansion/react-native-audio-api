@@ -1,17 +1,17 @@
 #pragma once
 
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/encoding/AudioEncoder.h>
 #include <audioapi/events/EventCaller.hpp>
+#include <audioapi/utils/AudioBufferPool.hpp>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
-#include <audioapi/utils/SlotFreeList.hpp>
 #include <audioapi/utils/SpscChannel.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -25,9 +25,13 @@ class IAudioEventHandlerRegistry;
 using OpenFileResult = Result<std::string, std::string>;
 using CloseFileResult = Result<std::tuple<double, double>, std::string>;
 
+/// A filled pool buffer on its way to the worker. The default-constructed value (no buffer)
+/// is the offloader's shutdown message, which is what operator== exists for.
 struct PendingFileWrite {
-  size_t slot = std::numeric_limits<size_t>::max();
+  AudioBufferLease buffer;
   int numFrames = 0;
+
+  bool operator==(const PendingFileWrite &) const = default;
 };
 
 struct PlatformFileBackend {
@@ -73,9 +77,9 @@ class AudioFileWriter final {
       int32_t streamChannelCount,
       int32_t maxFramesPerBuffer);
 
-  /// Audio thread. @p interleavedFrames holds numFrames * channelCount interleaved float32
+  /// Audio thread. @p channels holds one pointer per stream channel, each to numFrames float32
   /// samples, valid only for the call. Never blocks; drops the buffer when no pool slot is free.
-  void writeAudioData(const float *interleavedFrames, int numFrames);
+  void writeAudioData(const float *const *channels, int numFrames);
 
   [[nodiscard]] std::string getFilePath() const;
   /// Across every file of the session.
@@ -98,7 +102,6 @@ class AudioFileWriter final {
   /// Checking the file size costs a stat(), so only do it every Nth encoded buffer.
   static constexpr int FILE_SIZE_CHECK_WRITE_INTERVAL = 10;
 
-  using FreeList = slots::SlotFreeList<FILE_WRITER_POOL_SIZE>;
   using Offloader = task_offloader::TaskOffloader<
       PendingFileWrite,
       FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
@@ -166,9 +169,9 @@ class AudioFileWriter final {
   /// in the current stream rate only. The encoder reports the whole file on close.
   double currentFileEarlierFormatsDurationSec_{0.0};
 
-  std::unique_ptr<float[]> inputBufferPool_;
-  size_t samplesPerSlot_{0};
-  std::unique_ptr<FreeList> freeSlots_;
+  /// Planar buffers of maxFramesPerBuffer_ x streamChannelCount_ that carry audio-thread
+  /// callbacks to the worker.
+  AudioBufferPool<FILE_WRITER_POOL_SIZE> inputBufferPool_;
   std::unique_ptr<Offloader> offloader_;
 };
 

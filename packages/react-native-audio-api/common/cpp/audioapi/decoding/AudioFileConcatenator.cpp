@@ -1,12 +1,15 @@
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/decoding/AudioFileConcatenator.h>
 #include <audioapi/decoding/DecoderFactory.h>
 #include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/encoding/OSEncoding.h>
 #include <audioapi/encoding/OSRemux.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <charconv>
 #include <cstddef>
@@ -460,7 +463,18 @@ AudioFileConcatResult concatAudioFilesWithOsFlacEncoder(
     return Err("Failed to open FLAC output '" + outputPath + "': " + openResult.unwrap_err());
   }
 
+  if (channels > static_cast<ma_uint32>(MAX_CHANNEL_COUNT)) {
+    return Err("concatAudioFiles FLAC output: channel count exceeds MAX_CHANNEL_COUNT.");
+  }
+
+  // miniaudio decodes interleaved; the encoder takes planar, so repack once per chunk.
   std::vector<float> buffer(miniaudioChunkFrames * channels);
+  AudioBuffer planar(
+      miniaudioChunkFrames, static_cast<int>(channels), static_cast<float>(sampleRate));
+  std::array<const float *, MAX_CHANNEL_COUNT> planarChannels{};
+  for (ma_uint32 channel = 0; channel < channels; ++channel) {
+    planarChannels[channel] = planar.getChannel(channel)->begin();
+  }
   for (auto &input : inputs) {
     while (true) {
       const size_t framesRead = input.readPcmFrames(buffer.data(), miniaudioChunkFrames);
@@ -468,7 +482,8 @@ AudioFileConcatResult concatAudioFilesWithOsFlacEncoder(
         break;
       }
 
-      auto encodeResult = encoder->encode(buffer.data(), static_cast<int>(framesRead));
+      planar.deinterleaveFrom(buffer.data(), framesRead);
+      auto encodeResult = encoder->encode(planarChannels.data(), static_cast<int>(framesRead));
       if (encodeResult.is_err()) {
         encoder->close();
         return Err(

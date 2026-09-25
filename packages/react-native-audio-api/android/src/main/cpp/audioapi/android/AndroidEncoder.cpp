@@ -1,5 +1,6 @@
 #include <audioapi/android/AndroidEncoder.h>
 
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
@@ -13,6 +14,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -74,8 +76,9 @@ class IEncoderBackend {
       int &effectiveSampleRate,
       int &effectiveChannelCount) = 0;
 
-  // Encodes interleaved float32 frames already in the backend's effective format.
-  virtual std::string encodeFloat(const float *interleaved, int numFrames) = 0;
+  // Encodes frames already in the backend's effective format, one float32 pointer per
+  // channel. Backends interleave while they quantize, so no separate interleave pass exists.
+  virtual std::string encodePlanar(const float *const *planar, int numFrames) = 0;
 
   virtual std::string close() = 0;
 
@@ -129,39 +132,9 @@ class WavBackend : public IEncoderBackend {
     return "";
   }
 
-  std::string encodeFloat(const float *interleaved, int numFrames) override {
-    if (file_ == nullptr) {
-      return "WavBackend: file not open";
-    }
-    const size_t sampleCount = static_cast<size_t>(numFrames) * channelCount_;
-    scratch_.resize(sampleCount * bytesPerSample_);
-    uint8_t *out = scratch_.data();
-
-    for (size_t i = 0; i < sampleCount; ++i) {
-      if (isFloat_) {
-        float v = interleaved[i];
-        std::memcpy(out, &v, sizeof(float));
-        out += 4;
-      } else if (bytesPerSample_ == 2) {
-        int16_t v = floatToS16(interleaved[i]);
-        std::memcpy(out, &v, sizeof(int16_t));
-        out += 2;
-      } else { // 24-bit
-        float clamped = std::max(-1.0f, std::min(1.0f, interleaved[i]));
-        int32_t v = static_cast<int32_t>(clamped * 8388607.0f);
-        out[0] = static_cast<uint8_t>(v & 0xFF);
-        out[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
-        out[2] = static_cast<uint8_t>((v >> 16) & 0xFF);
-        out += 3;
-      }
-    }
-
-    size_t written = std::fwrite(scratch_.data(), 1, scratch_.size(), file_);
-    if (written != scratch_.size()) {
-      return "WavBackend: short write";
-    }
-    dataBytes_ += scratch_.size();
-    return "";
+  std::string encodePlanar(const float *const *planar, int numFrames) override {
+    return writeSamples(
+        numFrames, [planar](size_t frame, size_t channel) { return planar[channel][frame]; });
   }
 
   std::string close() override {
@@ -179,6 +152,51 @@ class WavBackend : public IEncoderBackend {
   }
 
  private:
+  // Walks frames in file order and converts each sample straight into the scratch bytes, so
+  // interleaving costs nothing extra whichever layout @p sampleAt reads from.
+  template <typename SampleAt>
+  std::string writeSamples(int numFrames, SampleAt sampleAt) {
+    if (file_ == nullptr) {
+      return "WavBackend: file not open";
+    }
+    const auto frames = static_cast<size_t>(numFrames);
+    const auto channels = static_cast<size_t>(channelCount_);
+    scratch_.resize(frames * channels * bytesPerSample_);
+    uint8_t *out = scratch_.data();
+
+    for (size_t frame = 0; frame < frames; ++frame) {
+      for (size_t channel = 0; channel < channels; ++channel) {
+        out = writeSample(out, sampleAt(frame, channel));
+      }
+    }
+
+    size_t written = std::fwrite(scratch_.data(), 1, scratch_.size(), file_);
+    if (written != scratch_.size()) {
+      return "WavBackend: short write";
+    }
+    dataBytes_ += scratch_.size();
+    return "";
+  }
+
+  [[nodiscard]] uint8_t *writeSample(uint8_t *out, float sample) const {
+    if (isFloat_) {
+      std::memcpy(out, &sample, sizeof(float));
+      return out + 4;
+    }
+    if (bytesPerSample_ == 2) {
+      int16_t v = floatToS16(sample);
+      std::memcpy(out, &v, sizeof(int16_t));
+      return out + 2;
+    }
+    // 24-bit little-endian PCM
+    float clamped = std::max(-1.0f, std::min(1.0f, sample));
+    auto v = static_cast<int32_t>(clamped * 8388607.0f);
+    out[0] = static_cast<uint8_t>(v & 0xFF);
+    out[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
+    out[2] = static_cast<uint8_t>((v >> 16) & 0xFF);
+    return out + 3;
+  }
+
   void writeHeader() {
     const uint16_t audioFormatTag = isFloat_ ? 3 : 1; // 3 = IEEE float, 1 = PCM
     const uint16_t bitsPerSample = static_cast<uint16_t>(bytesPerSample_ * 8);
@@ -232,23 +250,9 @@ class WavBackend : public IEncoderBackend {
 
 class MediaCodecBackend : public IEncoderBackend {
  public:
-  std::string encodeFloat(const float *interleaved, int numFrames) override {
-    if (codec_ == nullptr) {
-      return "MediaCodecBackend: codec not started";
-    }
-    const size_t sampleCount = static_cast<size_t>(numFrames) * channelCount_;
-    const size_t byteOffset = pcmLeftover_.size();
-    pcmLeftover_.resize(byteOffset + sampleCount * sizeof(int16_t));
-    auto *dst = reinterpret_cast<int16_t *>(pcmLeftover_.data() + byteOffset);
-    for (size_t i = 0; i < sampleCount; ++i) {
-      dst[i] = floatToS16(interleaved[i]);
-    }
-
-    std::string err = feedInput(false);
-    if (!err.empty()) {
-      return err;
-    }
-    return drainOutput(false);
+  std::string encodePlanar(const float *const *planar, int numFrames) override {
+    return queueAndPump(
+        numFrames, [planar](size_t frame, size_t channel) { return planar[channel][frame]; });
   }
 
   std::string close() override {
@@ -328,6 +332,31 @@ class MediaCodecBackend : public IEncoderBackend {
   }
 
  private:
+  // Quantizes to interleaved 16-bit PCM in frame order, so a planar source is interleaved in
+  // the same pass, then pumps the codec.
+  template <typename SampleAt>
+  std::string queueAndPump(int numFrames, SampleAt sampleAt) {
+    if (codec_ == nullptr) {
+      return "MediaCodecBackend: codec not started";
+    }
+    const auto frames = static_cast<size_t>(numFrames);
+    const auto channels = static_cast<size_t>(channelCount_);
+    const size_t byteOffset = pcmLeftover_.size();
+    pcmLeftover_.resize(byteOffset + frames * channels * sizeof(int16_t));
+    auto *dst = reinterpret_cast<int16_t *>(pcmLeftover_.data() + byteOffset);
+    for (size_t frame = 0; frame < frames; ++frame) {
+      for (size_t channel = 0; channel < channels; ++channel) {
+        *dst++ = floatToS16(sampleAt(frame, channel));
+      }
+    }
+
+    std::string err = feedInput(false);
+    if (!err.empty()) {
+      return err;
+    }
+    return drainOutput(false);
+  }
+
   std::string feedInput(bool endOfStream) {
     auto *codec = codec_.get();
     size_t cursor = 0;
@@ -651,26 +680,41 @@ class FlacBackend : public MediaCodecBackend {
 };
 
 // ---------------------------------------------------------------------------
-// Resampler state (rate conversion only; channel mapping done separately).
+// Conversion state — planar scratch for channel mapping and rate conversion, built at
+// open() only when the input differs from the backend's effective format.
 // ---------------------------------------------------------------------------
 
-struct AndroidEncoder::ResamplerState {
-  ResamplerState(int srcRate, int dstRate, int channels)
-      : resampler(srcRate, dstRate, channels, kResampleMaxInFrames),
-        inBuffer(static_cast<size_t>(kResampleMaxInFrames), channels, static_cast<float>(srcRate)),
-        outBuffer(
-            static_cast<size_t>(std::max(1, resamplerMaxOut(srcRate, dstRate))),
-            channels,
-            static_cast<float>(dstRate)) {}
-
-  static int resamplerMaxOut(int srcRate, int dstRate) {
-    r8b::MultiChannelResampler probe(srcRate, dstRate, 1, kResampleMaxInFrames);
-    return probe.getMaxOutLen();
+struct AndroidEncoder::ConversionState {
+  ConversionState(
+      int srcRate,
+      int dstRate,
+      int inputChannels,
+      int outputChannels,
+      size_t maxInputFrames)
+      : maxInputFrames(maxInputFrames) {
+    if (inputChannels != outputChannels) {
+      inputPlanar =
+          std::make_unique<AudioBuffer>(maxInputFrames, inputChannels, static_cast<float>(srcRate));
+      mappedPlanar = std::make_unique<AudioBuffer>(
+          maxInputFrames, outputChannels, static_cast<float>(srcRate));
+    }
+    if (srcRate != dstRate) {
+      resampler = std::make_unique<r8b::MultiChannelResampler>(
+          srcRate, dstRate, outputChannels, kResampleMaxInFrames);
+      resampledPlanar = std::make_unique<AudioBuffer>(
+          static_cast<size_t>(std::max(1, resampler->getMaxOutLen())),
+          outputChannels,
+          static_cast<float>(dstRate));
+    }
   }
 
-  r8b::MultiChannelResampler resampler;
-  AudioBuffer inBuffer;
-  AudioBuffer outBuffer;
+  size_t maxInputFrames;
+  // Channel mapping only: the input is staged in inputPlanar and remixed into mappedPlanar.
+  std::unique_ptr<AudioBuffer> inputPlanar;
+  std::unique_ptr<AudioBuffer> mappedPlanar;
+  // Rate conversion only.
+  std::unique_ptr<r8b::MultiChannelResampler> resampler;
+  std::unique_ptr<AudioBuffer> resampledPlanar;
 };
 
 // ---------------------------------------------------------------------------
@@ -741,75 +785,94 @@ OpenEncoderResult AndroidEncoder::open(
   outputSampleRate_ = effectiveSampleRate;
   outputChannelCount_ = effectiveChannelCount;
 
-  if (static_cast<int>(inputSampleRate_) != effectiveSampleRate) {
-    resampler_ = std::make_unique<ResamplerState>(
-        static_cast<int>(inputSampleRate_), effectiveSampleRate, outputChannelCount_);
+  const bool needsConversion = inputChannelCount_ != outputChannelCount_ ||
+      static_cast<int>(inputSampleRate_) != outputSampleRate_;
+  if (needsConversion) {
+    if (inputChannelCount_ > MAX_CHANNEL_COUNT || outputChannelCount_ > MAX_CHANNEL_COUNT) {
+      backend_->close();
+      backend_.reset();
+      return OpenEncoderResult::Err("Channel count exceeds MAX_CHANNEL_COUNT");
+    }
+    conversion_ = std::make_unique<ConversionState>(
+        static_cast<int>(inputSampleRate_),
+        outputSampleRate_,
+        inputChannelCount_,
+        outputChannelCount_,
+        std::max<size_t>(maxBufferSizeInFrames, 1));
   }
 
   markOpen();
   return OpenEncoderResult::Ok(filePath_);
 }
 
-int AndroidEncoder::convertToOutput(const float *input, int numFrames) {
-  // Step 1: channel conversion (input layout → output layout).
-  const float *channelMapped = input;
-  if (inputChannelCount_ != outputChannelCount_) {
-    AudioBuffer inBuf(
-        static_cast<size_t>(numFrames), inputChannelCount_, static_cast<float>(inputSampleRate_));
-    inBuf.deinterleaveFrom(input, static_cast<size_t>(numFrames));
-    AudioBuffer outBuf(
-        static_cast<size_t>(numFrames), outputChannelCount_, static_cast<float>(inputSampleRate_));
-    outBuf.copy(inBuf);
-    channelBuffer_.resize(static_cast<size_t>(numFrames) * outputChannelCount_);
-    outBuf.interleaveTo(channelBuffer_.data(), static_cast<size_t>(numFrames));
-    channelMapped = channelBuffer_.data();
+std::string AndroidEncoder::encodeConverted(const float *const *channels, int numFrames) {
+  ConversionState &state = *conversion_;
+  const auto frames = static_cast<size_t>(numFrames);
+  if (frames > state.maxInputFrames) {
+    return "Encode input exceeds the buffer size declared at open()";
   }
 
-  // Step 2: sample-rate conversion.
-  if (resampler_ == nullptr) {
-    convertedBuffer_.assign(
-        channelMapped, channelMapped + static_cast<size_t>(numFrames) * outputChannelCount_);
-    return numFrames;
+  std::array<const float *, MAX_CHANNEL_COUNT> planar{};
+  if (state.mappedPlanar != nullptr) {
+    for (int channel = 0; channel < inputChannelCount_; ++channel) {
+      std::memcpy(
+          state.inputPlanar->getChannel(channel)->begin(),
+          channels[channel],
+          frames * sizeof(float));
+    }
+    state.mappedPlanar->copy(*state.inputPlanar, 0, 0, frames);
+    for (int channel = 0; channel < outputChannelCount_; ++channel) {
+      planar[channel] = state.mappedPlanar->getChannel(channel)->begin();
+    }
+  } else {
+    for (int channel = 0; channel < outputChannelCount_; ++channel) {
+      planar[channel] = channels[channel];
+    }
   }
 
-  convertedBuffer_.clear();
-  int totalOut = 0;
+  if (state.resampler == nullptr) {
+    return backend_->encodePlanar(planar.data(), numFrames);
+  }
+
+  std::array<float *, MAX_CHANNEL_COUNT> resampled{};
+  for (int channel = 0; channel < outputChannelCount_; ++channel) {
+    resampled[channel] = state.resampledPlanar->getChannel(channel)->begin();
+  }
+
   int consumed = 0;
   while (consumed < numFrames) {
     const int chunk = std::min(numFrames - consumed, kResampleMaxInFrames);
-    resampler_->inBuffer.deinterleaveFrom(
-        channelMapped + static_cast<size_t>(consumed) * outputChannelCount_,
-        static_cast<size_t>(chunk));
-    const int produced =
-        resampler_->resampler.process(resampler_->inBuffer, chunk, resampler_->outBuffer);
+    std::array<const float *, MAX_CHANNEL_COUNT> chunkChannels{};
+    for (int channel = 0; channel < outputChannelCount_; ++channel) {
+      chunkChannels[channel] = planar[channel] + consumed;
+    }
+    const int produced = state.resampler->process(chunkChannels.data(), chunk, resampled.data());
     consumed += chunk;
     if (produced <= 0) {
       continue;
     }
-    const size_t base = convertedBuffer_.size();
-    convertedBuffer_.resize(base + static_cast<size_t>(produced) * outputChannelCount_);
-    resampler_->outBuffer.interleaveTo(
-        convertedBuffer_.data() + base, static_cast<size_t>(produced));
-    totalOut += produced;
+    std::string err = backend_->encodePlanar(resampled.data(), produced);
+    if (!err.empty()) {
+      return err;
+    }
   }
-  return totalOut;
+  return "";
 }
 
-EncodeResult AndroidEncoder::encode(const void *data, int numFrames) {
+EncodeResult AndroidEncoder::encode(const float *const *channels, int numFrames) {
   if (!isOpen() || backend_ == nullptr) {
     return EncodeResult::Err("Encoder is not open");
   }
-  if (data == nullptr || numFrames <= 0) {
+  if (channels == nullptr || numFrames <= 0) {
     return EncodeResult::Err("Invalid encode input");
   }
 
-  const auto *input = static_cast<const float *>(data);
-  const int outFrames = convertToOutput(input, numFrames);
-  if (outFrames > 0) {
-    std::string err = backend_->encodeFloat(convertedBuffer_.data(), outFrames);
-    if (!err.empty()) {
-      return EncodeResult::Err(err);
-    }
+  // Frames already in the backend's format go straight through; the backend interleaves
+  // while it quantizes, so no layout pass happens here (see encodeConverted).
+  std::string err = conversion_ != nullptr ? encodeConverted(channels, numFrames)
+                                           : backend_->encodePlanar(channels, numFrames);
+  if (!err.empty()) {
+    return EncodeResult::Err(err);
   }
 
   addEncodedFrames(static_cast<size_t>(numFrames));
@@ -828,7 +891,7 @@ CloseEncoderResult AndroidEncoder::close() {
       ? static_cast<double>(framesEncoded_.load(std::memory_order_acquire)) / inputSampleRate_
       : 0.0;
   backend_.reset();
-  resampler_.reset();
+  conversion_.reset();
   resetFramesEncoded();
 
   if (!err.empty()) {

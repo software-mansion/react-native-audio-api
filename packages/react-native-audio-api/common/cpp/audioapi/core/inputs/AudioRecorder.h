@@ -21,6 +21,7 @@ class AudioFileWriter;
 class AudioFileProperties;
 class AudioRecorderCallback;
 class IAudioEventHandlerRegistry;
+class RecorderAdapterNode;
 
 /// Platform-independent half of a microphone recorder: subclasses own the platform input
 /// stream; the file writer, the JS callback and the adapter node are managed here.
@@ -44,7 +45,10 @@ class AudioRecorder {
   virtual void pause() = 0;
   virtual void resume() = 0;
 
-  void connect(const std::shared_ptr<utils::graph::NodeHandle> &node);
+  /// @p adapterNode is the payload of @p node; the handle keeps it alive while connected.
+  void connect(
+      const std::shared_ptr<utils::graph::NodeHandle> &node,
+      RecorderAdapterNode *adapterNode);
   void disconnect();
 
   Result<NoneType, std::string> setOnAudioReadyCallback(
@@ -83,13 +87,14 @@ class AudioRecorder {
     std::shared_ptr<AudioFileWriter> fileWriter;
     std::shared_ptr<AudioRecorderCallback> dataCallback;
     std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
+    RecorderAdapterNode *adapterNode = nullptr;
     std::vector<std::string> fileUris;
   };
 
-  /// Audio thread. @p interleavedFrames holds numFrames * channelCount interleaved float32
+  /// Audio thread. @p channels holds one pointer per stream channel, each to numFrames float32
   /// samples, valid only for the call. Every consumer tryLocks its mutex and drops the buffer
   /// rather than block.
-  void onAudioFrames(const float *interleavedFrames, int numFrames);
+  void onAudioFrames(const float *const *channels, int numFrames);
 
   /// JS thread. Fails while the input is unavailable, which on iOS happens between a route
   /// change and the engine settling on the replacement format.
@@ -139,12 +144,16 @@ class AudioRecorder {
   std::vector<std::string> recordingSegmentPaths_;
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;
+  /// Payload of adapterNodeHandle_. Valid exactly as long as that handle is held, so the two
+  /// are set and cleared together under adapterNodeMutex_.
+  RecorderAdapterNode *adapterNode_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
-  /// Allocated on the JS thread when a node connects; the audio thread copies the shared_ptr
-  /// so it cannot be freed mid-use.
-  std::shared_ptr<AudioBuffer> deinterleavingBuffer_ = nullptr;
+  /// Stream layout the adapter node was prepared for. Set on the JS thread under
+  /// adapterNodeMutex_; the audio thread reads them under the same tryLock.
+  int adapterStreamChannelCount_{0};
+  size_t adapterMaxFramesPerBuffer_{0};
   /// Updated on the audio thread from each input callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   /// Sample rate of the live input stream, published for readers off the JS thread.

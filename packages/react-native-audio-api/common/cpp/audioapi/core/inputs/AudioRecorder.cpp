@@ -12,12 +12,10 @@
 #include <string>
 #include <utility>
 
-// NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
-
 namespace audioapi {
 
-void AudioRecorder::onAudioFrames(const float *interleavedFrames, int numFrames) {
-  if (interleavedFrames == nullptr || numFrames <= 0) {
+void AudioRecorder::onAudioFrames(const float *const *channels, int numFrames) {
+  if (channels == nullptr || numFrames <= 0) {
     return;
   }
 
@@ -26,34 +24,31 @@ void AudioRecorder::onAudioFrames(const float *interleavedFrames, int numFrames)
   if (usesFileOutput()) {
     auto fileWriterLock = Locker::tryLock(fileWriterMutex_);
     if (fileWriterLock && fileWriter_) {
-      fileWriter_->writeAudioData(interleavedFrames, numFrames);
+      fileWriter_->writeAudioData(channels, numFrames);
     }
   }
 
   if (usesCallback()) {
     auto callbackLock = Locker::tryLock(callbackMutex_);
     if (callbackLock && dataCallback_) {
-      dataCallback_->receiveAudioData(interleavedFrames, numFrames);
+      dataCallback_->receiveAudioData(channels, numFrames);
     }
   }
 
   if (isConnected()) {
     auto adapterLock = Locker::tryLock(adapterNodeMutex_);
-    if (!adapterLock || !adapterNodeHandle_ || !deinterleavingBuffer_) {
+    if (!adapterLock || adapterNode_ == nullptr || adapterStreamChannelCount_ <= 0) {
       return;
     }
-    // A callback larger than the stream's maximum burst would overrun the buffer.
-    if (static_cast<size_t>(numFrames) > deinterleavingBuffer_->getSize()) {
+    // A callback larger than the stream's maximum burst would overrun the ring buffers.
+    if (numFrames > adapterMaxFramesPerBuffer_) {
       return;
     }
-
-    auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get());
-    deinterleavingBuffer_->deinterleaveFrom(interleavedFrames, numFrames);
 
     const size_t channelCount =
-        std::min(adapterNode->getChannelCount(), deinterleavingBuffer_->getNumberOfChannels());
+        std::min(adapterNode_->getChannelCount(), static_cast<size_t>(adapterStreamChannelCount_));
     for (size_t channel = 0; channel < channelCount; ++channel) {
-      adapterNode->buff_[channel]->write(*deinterleavingBuffer_->getChannel(channel), numFrames);
+      adapterNode_->buff_[channel]->write(channels[channel], static_cast<size_t>(numFrames));
     }
   }
 }
@@ -174,9 +169,12 @@ void AudioRecorder::clearOnAudioReadyCallback() {
 }
 
 /// JS thread only. Prepares the node immediately when called mid-recording.
-void AudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &node) {
+void AudioRecorder::connect(
+    const std::shared_ptr<utils::graph::NodeHandle> &node,
+    RecorderAdapterNode *adapterNode) {
   std::scoped_lock adapterLock(adapterNodeMutex_);
   adapterNodeHandle_ = node;
+  adapterNode_ = adapterNode;
   isConnected_.store(true, std::memory_order_release);
   connectedConfigured_.store(false, std::memory_order_release);
 
@@ -196,6 +194,7 @@ void AudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &nod
 /// JS thread only.
 void AudioRecorder::disconnect() {
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
+  RecorderAdapterNode *adapterNode = nullptr;
   bool hadConnection = false;
 
   {
@@ -203,25 +202,26 @@ void AudioRecorder::disconnect() {
     hadConnection = isConnected();
     connectedConfigured_.store(false, std::memory_order_release);
     isConnected_.store(false, std::memory_order_release);
-    deinterleavingBuffer_ = nullptr;
+    adapterStreamChannelCount_ = 0;
+    adapterMaxFramesPerBuffer_ = 0;
     adapterNodeHandle = std::move(adapterNodeHandle_);
+    adapterNode = std::exchange(adapterNode_, nullptr);
   }
 
-  if (hadConnection && adapterNodeHandle != nullptr) {
-    static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get())->adapterCleanup();
+  if (hadConnection && adapterNode != nullptr) {
+    adapterNode->adapterCleanup();
   }
 }
 
 void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
-  if (adapterNodeHandle_ == nullptr) {
+  if (adapterNode_ == nullptr) {
     return;
   }
 
   const auto maxFramesPerBuffer = static_cast<size_t>(format.maxFramesPerBuffer);
-  deinterleavingBuffer_ =
-      std::make_shared<AudioBuffer>(maxFramesPerBuffer, format.channelCount, format.sampleRate);
-  static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
-      ->init(maxFramesPerBuffer, format.channelCount, format.sampleRate);
+  adapterStreamChannelCount_ = format.channelCount;
+  adapterMaxFramesPerBuffer_ = maxFramesPerBuffer;
+  adapterNode_->init(maxFramesPerBuffer, format.channelCount, format.sampleRate);
   connectedConfigured_.store(true, std::memory_order_release);
 }
 
@@ -242,6 +242,7 @@ AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
   if (isConnected()) {
     connectedConfigured_.store(false, std::memory_order_release);
     sideEffects.adapterNodeHandle = std::move(adapterNodeHandle_);
+    sideEffects.adapterNode = std::exchange(adapterNode_, nullptr);
   }
 
   filePath_ = "";
@@ -277,9 +278,8 @@ AudioRecorder::StopResult AudioRecorder::finalizeSideEffects(DetachedSideEffects
     movedSideEffects.dataCallback->cleanup();
   }
 
-  if (movedSideEffects.adapterNodeHandle != nullptr) {
-    static_cast<RecorderAdapterNode *>(movedSideEffects.adapterNodeHandle->audioNode.get())
-        ->adapterCleanup();
+  if (movedSideEffects.adapterNode != nullptr) {
+    movedSideEffects.adapterNode->adapterCleanup();
   }
 
   return StopResult::Ok(
@@ -359,4 +359,3 @@ bool AudioRecorder::wantsConnection() const {
 }
 
 } // namespace audioapi
-// NOLINTEND(cppcoreguidelines-pro-type-static-cast-downcast)

@@ -22,17 +22,17 @@ class AudioFileProperties {
   // Each value maps to a concrete container+codec via EncoderCapabilities.
   // Availability is platform-dependent (see EncoderCapabilities::isSupported).
   enum class Format : std::uint8_t {
-    WAV = 0,
-    CAF = 1,
-    M4A = 2,
-    FLAC = 3,
-    AIFF = 4,
-    ALAC = 5,
-    OPUS_OGG = 6,
-    OPUS_WEBM = 7,
-    VORBIS_WEBM = 8,
-    ULAW = 9,
-    ALAW = 10,
+    WAV,
+    CAF,
+    M4A,
+    FLAC,
+    AIFF,
+    ALAC,
+    OPUS_OGG,
+    OPUS_WEBM,
+    VORBIS_WEBM,
+    ULAW,
+    ALAW,
   };
 
   enum class IOSAudioQuality : std::uint8_t {

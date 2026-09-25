@@ -13,11 +13,11 @@
 #endif
 
 #include <sys/stat.h>
+#include <array>
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <mutex>
-#include <new>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -383,7 +383,7 @@ void AudioFileWriter::announceFileOpened(const std::string &path) {
 
 void AudioFileWriter::createOffloader() {
   auto offloaderLambda = [this](PendingFileWrite pending) {
-    runWriterTask(pending);
+    runWriterTask(std::move(pending));
   };
   offloader_ = std::make_unique<Offloader>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
 }
@@ -391,21 +391,15 @@ void AudioFileWriter::createOffloader() {
 bool AudioFileWriter::initializePreallocatedInputPool() {
   cleanupPreallocatedInputPool();
 
-  if (maxFramesPerBuffer_ <= 0 || streamChannelCount_ <= 0) {
+  if (maxFramesPerBuffer_ <= 0 || streamChannelCount_ <= 0 ||
+      streamChannelCount_ > MAX_CHANNEL_COUNT) {
     return false;
   }
 
-  samplesPerSlot_ =
-      static_cast<size_t>(maxFramesPerBuffer_) * static_cast<size_t>(streamChannelCount_);
-  // nothrow new keeps the graceful failure path (return false) instead of throwing.
-  inputBufferPool_.reset(new (std::nothrow) float[samplesPerSlot_ * FILE_WRITER_POOL_SIZE]);
-  if (inputBufferPool_ == nullptr) {
-    samplesPerSlot_ = 0;
+  if (!inputBufferPool_.allocate(
+          static_cast<size_t>(maxFramesPerBuffer_), streamChannelCount_, streamSampleRate_)) {
     return false;
   }
-
-  freeSlots_ = std::make_unique<FreeList>();
-  freeSlots_->seed();
 
   // Last, so the worker never sees a half-built pool.
   createOffloader();
@@ -413,46 +407,43 @@ bool AudioFileWriter::initializePreallocatedInputPool() {
 }
 
 void AudioFileWriter::cleanupPreallocatedInputPool() {
-  // Stop the worker before freeing the pool/free list it accesses.
+  // Stop the worker before freeing the pool it reads from.
   offloader_.reset();
-  freeSlots_.reset();
-  inputBufferPool_.reset();
-  samplesPerSlot_ = 0;
+  inputBufferPool_.clear();
 }
 
-void AudioFileWriter::writeAudioData(const float *interleavedFrames, int numFrames) {
-  if (!isFileOpen() || interleavedFrames == nullptr || offloader_ == nullptr ||
-      freeSlots_ == nullptr || inputBufferPool_ == nullptr || samplesPerSlot_ == 0) {
+void AudioFileWriter::writeAudioData(const float *const *channels, int numFrames) {
+  if (!isFileOpen() || channels == nullptr || numFrames <= 0 || offloader_ == nullptr) {
     return;
   }
 
-  auto slot = freeSlots_->tryAcquire();
-  if (!slot.has_value()) {
+  AudioBufferLease slot = inputBufferPool_.tryAcquire();
+  if (slot == nullptr) {
     return;
   }
 
-  const size_t samples = static_cast<size_t>(numFrames) * static_cast<size_t>(streamChannelCount_);
-  if (samples > samplesPerSlot_) {
-    freeSlots_->release(slot.value());
+  const auto frames = static_cast<size_t>(numFrames);
+  if (frames > slot->getSize()) {
     return;
   }
 
-  // runWriterTask releases the slot.
-  std::memcpy(
-      inputBufferPool_.get() + slot.value() * samplesPerSlot_,
-      interleavedFrames,
-      samples * sizeof(float));
-  // Never blocks: the channel has room for every slot the pool can hand out.
-  offloader_->getSender()->send(PendingFileWrite{.slot = slot.value(), .numFrames = numFrames});
+  for (int channel = 0; channel < streamChannelCount_; ++channel) {
+    std::memcpy(slot->getChannel(channel)->begin(), channels[channel], frames * sizeof(float));
+  }
+  // Never blocks: the channel has room for every buffer the pool can hand out.
+  offloader_->getSender()->send(
+      PendingFileWrite{.buffer = std::move(slot), .numFrames = numFrames});
 }
 
 void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
-  auto [slot, numFrames] = pending;
-  if (slot == FreeList::kSentinel) {
+  if (pending.buffer == nullptr) {
     return;
   }
-  if (slot >= FILE_WRITER_POOL_SIZE || freeSlots_ == nullptr || inputBufferPool_ == nullptr) {
-    return;
+  const int numFrames = pending.numFrames;
+
+  std::array<const float *, MAX_CHANNEL_COUNT> channels{};
+  for (int channel = 0; channel < streamChannelCount_; ++channel) {
+    channels[channel] = pending.buffer->getChannel(channel)->begin();
   }
 
   std::string encodeError;
@@ -460,7 +451,7 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
   {
     std::scoped_lock lock(fileMutex_);
     if (isFileOpen() && encoder_ != nullptr) {
-      auto result = encoder_->encode(inputBufferPool_.get() + slot * samplesPerSlot_, numFrames);
+      auto result = encoder_->encode(channels.data(), numFrames);
       if (result.is_ok()) {
         framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
         encoded = true;
@@ -471,7 +462,9 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
     }
   }
 
-  freeSlots_->release(slot);
+  // The error callback and a rotation below can take a while; returning the buffer first
+  // keeps the audio thread from running out of pool slots meanwhile.
+  pending.buffer.reset();
 
   if (!encodeError.empty()) {
     invokeOnErrorCallback(encodeError);
