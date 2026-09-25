@@ -188,8 +188,9 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
   self.pauseCallCount += 1;
 }
 
-- (void)resume {
+- (BOOL)resume {
   self.resumeCallCount += 1;
+  return YES;
 }
 
 - (void)cleanup {
@@ -316,7 +317,7 @@ public:
 - (void)testStartReturnsErrorWhenRecorderIsNotIdle {
   _recorder->setRecorderState(RecorderState::Paused);
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertEqualObjects(NSStringFromStdString(result.unwrap_err()),
@@ -326,7 +327,7 @@ public:
 - (void)testStartReturnsErrorWhenRecordingPermissionIsDenied {
   self.sessionManager.recordingPermissions = @"Denied";
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertEqualObjects(NSStringFromStdString(result.unwrap_err()),
@@ -340,7 +341,7 @@ public:
                           code:7
                       userInfo:@{NSLocalizedDescriptionKey : @"boom"}];
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   NSString *message = NSStringFromStdString(result.unwrap_err());
@@ -355,7 +356,7 @@ public:
                               reason:@"attempt-wrong-category-record"
                             userInfo:nil];
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
@@ -374,7 +375,7 @@ public:
   self.sessionManager.diagnosticInputChannels = 0;
   self.sessionManager.routeReady = NO;
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
@@ -393,7 +394,7 @@ public:
   self.audioEngine.state = AudioEngineStateRunning;
   self.nativeRecorder.mockResolvedInputFormat = [self validMultichannelFormat];
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_ok());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
@@ -411,7 +412,7 @@ public:
   auto callbackResult = _recorder->setOnAudioReadyCallback(48000, 256, 1, 99);
   XCTAssertTrue(callbackResult.is_ok());
 
-  auto startResult = _recorder->start("");
+  auto startResult = _recorder->start();
 
   XCTAssertTrue(startResult.is_ok());
   XCTAssertTrue(_recorder->usesCallback());
@@ -452,7 +453,7 @@ public:
 - (void)testStartDoesNotAttemptToManageSessionWhenOwnershipIsExternal {
   self.sessionManager.shouldManageSession = NO;
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_ok());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
@@ -488,7 +489,7 @@ public:
 
 - (void)testStopSucceedsAfterStartAndResetsState {
   self.audioEngine.state = AudioEngineStateRunning;
-  auto startResult = _recorder->start("");
+  auto startResult = _recorder->start();
   XCTAssertTrue(startResult.is_ok());
 
   auto stopResult = _recorder->stop();
@@ -511,7 +512,7 @@ public:
   XCTAssertTrue(_recorder->setOnAudioReadyCallback(48000, 256, 1, 99).is_ok());
   _recorder->connect(adapterFixture.handle);
 
-  auto startResult = _recorder->start("");
+  auto startResult = _recorder->start();
   XCTAssertTrue(startResult.is_ok());
   XCTAssertTrue(_recorder->fileOutputConfigured());
   XCTAssertTrue(_recorder->callbackOutputConfigured());
@@ -536,10 +537,10 @@ public:
   self.nativeRecorder.mockResolvedInputFormat = [self validMultichannelFormat];
 
   XCTAssertTrue(_recorder->setOnAudioReadyCallback(48000, 256, 1, 99).is_ok());
-  XCTAssertTrue(_recorder->start("").is_ok());
+  XCTAssertTrue(_recorder->start().is_ok());
   XCTAssertTrue(_recorder->stop().is_ok());
 
-  auto restartResult = _recorder->start("");
+  auto restartResult = _recorder->start();
 
   XCTAssertTrue(restartResult.is_ok());
   XCTAssertTrue(_recorder->callbackOutputEnabledIntent());
@@ -548,14 +549,16 @@ public:
 
 - (void)testFileOutputSmokeTest {
   self.audioEngine.state = AudioEngineStateRunning;
-  auto enableResult = _recorder->enableFileOutput([self validFileProperties]);
-  XCTAssertTrue(enableResult.is_ok());
 
   NSString *uuid = [[NSUUID UUID] UUIDString];
   std::string fileName =
       [[NSString stringWithFormat:@"ios-recorder-smoke-%@", uuid] UTF8String];
+  auto properties = [self validFileProperties];
+  properties->fileName = fileName;
+  auto enableResult = _recorder->enableFileOutput(properties);
+  XCTAssertTrue(enableResult.is_ok());
 
-  auto startResult = _recorder->start(fileName);
+  auto startResult = _recorder->start();
   XCTAssertTrue(startResult.is_ok());
 
   NSString *path = NSStringFromStdString(_recorder->currentFilePath());
@@ -579,11 +582,11 @@ public:
   auto callbackResult = _recorder->setOnAudioReadyCallback(0, 256, 2, 99);
   XCTAssertTrue(callbackResult.is_ok());
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertTrue([NSStringFromStdString(result.unwrap_err())
-      containsString:@"Failed to prepare callback: Invalid callback format"]);
+      containsString:@"Failed to prepare callback: Invalid callback"]);
 }
 
 - (void)testConnectWhileActiveInitializesAdapterAndDisconnectClearsIt {

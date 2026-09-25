@@ -33,9 +33,7 @@ class ActiveRecorderHandle {
 
   /// @brief Starts @p recorder and stores it in the slot unless another non-idle
   /// recorder already occupies it. The slot is assigned only if start succeeds.
-  Result<NoneType, std::string> tryStart(
-      const std::shared_ptr<AudioRecorder> &recorder,
-      const std::string &fileNameOverride);
+  Result<NoneType, std::string> tryStart(const std::shared_ptr<AudioRecorder> &recorder);
 
   /// @brief The state of the recorder in the slot, or Idle when the slot is empty.
   [[nodiscard]] RecorderState currentState() const;

@@ -9,9 +9,12 @@
 #include <media/NdkMediaExtractor.h>
 #include <media/NdkMediaFormat.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -476,8 +479,33 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::LocalFileSource &so
     return Err("AndroidDecoder::open: AMediaExtractor_new failed");
   }
 
-  if (AMediaExtractor_setDataSource(state->extractor.get(), source.path.c_str()) != AMEDIA_OK) {
-    return Err("AndroidDecoder::open setDataSource failed");
+  // AMediaExtractor_setDataSource treats a plain path as a URI and routes it
+  // through the media HTTP service, which is unavailable to app processes on
+  // some devices ("NdkMediaExtractor: can't create http service", status
+  // -10002). Local files must use the fd overload.
+  constexpr const char *fileUrlPrefix = "file://";
+  const std::string path = source.path.starts_with(fileUrlPrefix)
+      ? source.path.substr(std::strlen(fileUrlPrefix))
+      : source.path;
+  const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
+  if (fd < 0) {
+    return Err(
+        "AndroidDecoder::open: failed to open '" + source.path + "': " + std::strerror(errno));
+  }
+
+  struct stat fileInfo{};
+  if (::fstat(fd, &fileInfo) != 0) {
+    ::close(fd);
+    return Err(
+        "AndroidDecoder::open: failed to stat '" + source.path + "': " + std::strerror(errno));
+  }
+
+  const media_status_t status = AMediaExtractor_setDataSourceFd(
+      state->extractor.get(), fd, 0, static_cast<off64_t>(fileInfo.st_size));
+  // The extractor duplicates the fd; ours can be closed immediately.
+  ::close(fd);
+  if (status != AMEDIA_OK) {
+    return Err("AndroidDecoder::open setDataSourceFd failed");
   }
 
   return finishOpeningDecoder(std::move(state), source.sampleRate);

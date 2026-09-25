@@ -221,9 +221,15 @@ For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
 ---
 
+### `AudioBufferPool.hpp` — preallocated planar buffers by pointer
+
+`AudioBufferPool<N>` owns N `AudioBuffer`s and hands them out as `AudioBufferLease`s, a `unique_ptr` whose deleter returns the buffer to the pool through a lock-free `SlotFreeList` (any thread, never blocks, no allocation). Use it wherever the audio thread fills a buffer for a worker (`AudioFileWriter`, `AudioRecorderCallback`): the lease travels through the `TaskOffloader` message by move, dropping it anywhere returns the buffer, and a null lease is the shutdown message, so the message struct needs a defaulted `operator==`. Not `shared_ptr`: its control block would allocate on the audio thread.
+
+---
+
 ### `VectorMath.h` — SIMD-optimized vector math
 
-SIMD-accelerated array operations (ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops.
+SIMD-accelerated array operations (Apple Accelerate/vDSP when `HAVE_ACCELERATE` is set by the podspec, otherwise ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops. `interleave`/`deinterleave` handle any channel count (planar pointers <-> channel-interleaved); on Accelerate stereo goes through `vDSP_ctoz`/`vDSP_ztoc` and N channels through one strided `vDSP_vsadd` per channel, so platform code should call these rather than hand-roll a repack. The recorder pipeline is planar end to end (`AudioRecorder::onAudioFrames`, `AudioFileWriter`, `AudioRecorderCallback`, `AudioEncoder::encode` all take one pointer per channel); the only repacks are Oboe's interleaved input on Android and the encoder backends' fused interleave-while-quantize.
 
 ---
 

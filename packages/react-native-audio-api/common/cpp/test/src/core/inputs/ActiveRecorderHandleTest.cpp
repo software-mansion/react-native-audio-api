@@ -33,7 +33,7 @@ class FakeAudioRecorder : public AudioRecorder {
   std::vector<std::string> stopPaths{"file:///tmp/recording.m4a"};
   std::atomic<int> stopCount{0};
 
-  Result<NoneType, std::string> start(const std::string &) override {
+  Result<NoneType, std::string> start() override {
     if (state_ != RecorderState::Idle) {
       return Err(std::string("Recorder is already recording"));
     }
@@ -43,7 +43,7 @@ class FakeAudioRecorder : public AudioRecorder {
 
   // Mirrors AndroidAudioRecorder::stop(): under its locks exactly one caller
   // transitions out of a non-idle state and closes the file; the loser errs.
-  Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override {
+  StopResult stop() override {
     if (state_.exchange(RecorderState::Idle) == RecorderState::Idle) {
       return Err(std::string("Recorder is not in recording state."));
     }
@@ -51,25 +51,12 @@ class FakeAudioRecorder : public AudioRecorder {
     return Ok(std::make_tuple(stopPaths, 1.5, 10.0));
   }
 
-  Result<NoneType, std::string> enableFileOutput(std::shared_ptr<AudioFileProperties>) override {
-    return Ok(None);
-  }
-  void disableFileOutput() override {}
-
   void pause() override {
     state_ = RecorderState::Paused;
   }
   void resume() override {
     state_ = RecorderState::Recording;
   }
-
-  void connect(const std::shared_ptr<utils::graph::NodeHandle> &) override {}
-  void disconnect() override {}
-
-  Result<NoneType, std::string> setOnAudioReadyCallback(float, size_t, int, uint64_t) override {
-    return Ok(None);
-  }
-  void clearOnAudioReadyCallback() override {}
 
   bool isRecording() const override {
     return state_ == RecorderState::Recording;
@@ -83,6 +70,11 @@ class FakeAudioRecorder : public AudioRecorder {
 
   [[nodiscard]] double getInputLatency() const override {
     return 0.0;
+  }
+
+ protected:
+  [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override {
+    return Ok(StreamFormat{});
   }
 };
 
@@ -103,7 +95,7 @@ TEST(ActiveRecorderHandleTest, IdleRecorderIsNotOngoing) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
   ASSERT_TRUE(handle.stopAndReturnInfo().is_ok());
 
   EXPECT_FALSE(handle.isRecordingOngoing());
@@ -115,7 +107,7 @@ TEST(ActiveRecorderHandleTest, RecordingAndPausedCountAsOngoing) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
 
   EXPECT_EQ(handle.currentState(), RecorderState::Recording);
   EXPECT_TRUE(handle.isRecordingOngoing());
@@ -133,7 +125,7 @@ TEST(ActiveRecorderHandleTest, PauseAndResumeActOnlyInMatchingStates) {
   EXPECT_EQ(handle.pause(), RecorderState::Idle);
   EXPECT_EQ(handle.resume(), RecorderState::Idle);
 
-  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
   EXPECT_EQ(handle.resume(), RecorderState::Recording);
   EXPECT_EQ(handle.pause(), RecorderState::Paused);
   EXPECT_TRUE(recorder->isPaused());
@@ -147,7 +139,7 @@ TEST(ActiveRecorderHandleTest, StopStashesResultForSingleConsumption) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
 
   ASSERT_TRUE(handle.stopAndReturnInfo().is_ok());
   EXPECT_FALSE(handle.isRecordingOngoing());
@@ -165,7 +157,7 @@ TEST(ActiveRecorderHandleTest, StopLeavesResultForConsumeLastRecordingResult) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
 
   auto stopResult = handle.stopAndReturnInfo();
   ASSERT_TRUE(stopResult.is_ok());
@@ -182,7 +174,7 @@ TEST(ActiveRecorderHandleTest, StopWithoutFileOutputStashesNothing) {
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
   recorder->stopPaths.clear();
-  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
 
   ASSERT_TRUE(handle.stopAndReturnInfo().is_ok());
   EXPECT_FALSE(handle.consumeLastRecordingResult().has_value());
@@ -193,7 +185,7 @@ TEST(ActiveRecorderHandleTest, ExpiredRecorderReportsNoRecording) {
   ActiveRecorderHandle &handle = *handleOwner;
   {
     auto recorder = std::make_shared<FakeAudioRecorder>();
-    ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+    ASSERT_TRUE(handle.tryStart(recorder).is_ok());
   }
 
   EXPECT_FALSE(handle.isRecordingOngoing());
@@ -207,7 +199,7 @@ TEST(ActiveRecorderHandleTest, StopAndReturnInfoWithExpectedIgnoresForeignRecord
   ActiveRecorderHandle &handle = *handleOwner;
   auto current = std::make_shared<FakeAudioRecorder>();
   auto other = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(current, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(current).is_ok());
 
   auto result = handle.stopAndReturnInfo(other);
   ASSERT_TRUE(result.is_err());
@@ -225,29 +217,29 @@ TEST(ActiveRecorderHandleTest, TryStartFailsWhenAnotherSessionIsInProgress) {
   ActiveRecorderHandle &handle = *handleOwner;
   auto current = std::make_shared<FakeAudioRecorder>();
   auto other = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(current, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(current).is_ok());
 
-  auto otherResult = handle.tryStart(other, "");
+  auto otherResult = handle.tryStart(other);
   ASSERT_TRUE(otherResult.is_err());
   EXPECT_EQ(otherResult.unwrap_err(), "Another recording is already in progress");
   EXPECT_EQ(handle.currentState(), RecorderState::Recording);
 
   current->pause();
-  auto pausedOtherResult = handle.tryStart(other, "");
+  auto pausedOtherResult = handle.tryStart(other);
   ASSERT_TRUE(pausedOtherResult.is_err());
   EXPECT_EQ(handle.currentState(), RecorderState::Paused);
 
   ASSERT_TRUE(handle.stopAndReturnInfo(current).is_ok());
-  ASSERT_TRUE(handle.tryStart(other, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(other).is_ok());
 }
 
 TEST(ActiveRecorderHandleTest, TryStartOnSameRecorderReachesStart) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;
   auto recorder = std::make_shared<FakeAudioRecorder>();
-  ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
 
-  auto second = handle.tryStart(recorder, "");
+  auto second = handle.tryStart(recorder);
   ASSERT_TRUE(second.is_err());
   EXPECT_EQ(second.unwrap_err(), "Recorder is already recording");
 }
@@ -258,10 +250,10 @@ TEST(ActiveRecorderHandleTest, TryStartSucceedsWhenPreviousRecorderExpired) {
   auto successor = std::make_shared<FakeAudioRecorder>();
   {
     auto expired = std::make_shared<FakeAudioRecorder>();
-    ASSERT_TRUE(handle.tryStart(expired, "").is_ok());
+    ASSERT_TRUE(handle.tryStart(expired).is_ok());
   }
 
-  ASSERT_TRUE(handle.tryStart(successor, "").is_ok());
+  ASSERT_TRUE(handle.tryStart(successor).is_ok());
 }
 
 // Thread startup skew usually serializes a single two-thread run, so the race
@@ -274,7 +266,7 @@ TEST(ActiveRecorderHandleTest, ConcurrentStopsCloseTheFileExactlyOnce) {
     auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
     ActiveRecorderHandle &handle = *handleOwner;
     auto recorder = std::make_shared<FakeAudioRecorder>();
-    ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+    ASSERT_TRUE(handle.tryStart(recorder).is_ok());
 
     std::atomic<bool> startFlag{false};
     std::thread nativeStop([&] {
@@ -298,7 +290,7 @@ TEST(ActiveRecorderHandleTest, ConcurrentTargetedAndUntargetedStopsCloseTheFileO
     auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
     ActiveRecorderHandle &handle = *handleOwner;
     auto recorder = std::make_shared<FakeAudioRecorder>();
-    ASSERT_TRUE(handle.tryStart(recorder, "").is_ok());
+    ASSERT_TRUE(handle.tryStart(recorder).is_ok());
 
     std::atomic<bool> startFlag{false};
     std::thread hostObjectStop([&] {
@@ -329,13 +321,13 @@ TEST(ActiveRecorderHandleTest, ConcurrentTryStartAdmitsOnlyOneRecorder) {
     std::atomic<int> successes{0};
     std::thread tryFirst([&] {
       while (!startFlag.load()) {}
-      if (handle.tryStart(first, "").is_ok()) {
+      if (handle.tryStart(first).is_ok()) {
         successes.fetch_add(1);
       }
     });
     std::thread trySecond([&] {
       while (!startFlag.load()) {}
-      if (handle.tryStart(second, "").is_ok()) {
+      if (handle.tryStart(second).is_ok()) {
         successes.fetch_add(1);
       }
     });

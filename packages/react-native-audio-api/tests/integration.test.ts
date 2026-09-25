@@ -119,9 +119,7 @@ describe('Mock Integration Tests', () => {
       recorder.connect(recorderAdapter);
 
       // Start recording
-      const startResult = await recorder.start({
-        fileNameOverride: 'test-recording.m4a',
-      });
+      const startResult = await recorder.start();
       expect(startResult.status).toBe('success');
       expect(recorder.isRecording()).toBe(true);
 

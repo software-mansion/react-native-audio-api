@@ -4,13 +4,14 @@
 #include <jsi/jsi.h>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace audioapi {
 
 AudioFileProperties::AudioFileProperties(
     FileDirectory directory,
-    const std::string &subDirectory,
-    const std::string &fileNamePrefix,
+    std::string subDirectory,
+    std::string fileName,
     int channelCount,
     size_t rotateIntervalBytes,
     Format format,
@@ -21,8 +22,8 @@ AudioFileProperties::AudioFileProperties(
     int androidFlushIntervalMs,
     IOSAudioQuality iosAudioQuality)
     : directory(directory),
-      subDirectory(subDirectory),
-      fileNamePrefix(fileNamePrefix),
+      subDirectory(std::move(subDirectory)),
+      fileName(std::move(fileName)),
       channelCount(channelCount),
       rotateIntervalBytes(rotateIntervalBytes),
       format(format),
@@ -44,8 +45,7 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
   std::string subDirectory =
       options.getProperty(runtime, "subDirectory").asString(runtime).utf8(runtime);
 
-  std::string fileNamePrefix =
-      options.getProperty(runtime, "fileNamePrefix").asString(runtime).utf8(runtime);
+  std::string fileName = options.getProperty(runtime, "fileName").asString(runtime).utf8(runtime);
 
   int channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
 
@@ -76,7 +76,7 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
   return std::make_shared<AudioFileProperties>(
       directory,
       subDirectory,
-      fileNamePrefix,
+      fileName,
       channelCount,
       rotateIntervalBytes,
       format,

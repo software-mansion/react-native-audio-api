@@ -99,4 +99,7 @@ for mirrored_enum in "${MIRRORED_ENUMS[@]}"; do
   fi
 done
 
+# AudioFileProperties enums cross JSI as integers into TypeScript; that check has its own script.
+bash "$SCRIPT_DIR/check-audio-file-properties-enum-sync.sh" || FAILED=1
+
 exit $FAILED

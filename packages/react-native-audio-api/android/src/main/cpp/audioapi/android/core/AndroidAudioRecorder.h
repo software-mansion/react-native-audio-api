@@ -7,17 +7,14 @@
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 #include <oboe/Oboe.h>
-#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace audioapi {
 
 class AudioFileProperties;
 class AndroidRecorderCallback;
-class AndroidFileWriterBackend;
 class IAudioEventHandlerRegistry;
 
 class AndroidAudioRecorder : public oboe::AudioStreamCallback,
@@ -32,12 +29,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
 
   DELETE_COPY_AND_MOVE(AndroidAudioRecorder);
 
-  Result<NoneType, std::string> start(const std::string &fileNameOverride) override;
-  Result<std::tuple<std::vector<std::string>, double, double>, std::string> stop() override;
-
-  Result<NoneType, std::string> enableFileOutput(
-      std::shared_ptr<AudioFileProperties> properties) override;
-  void disableFileOutput() override;
+  Result<NoneType, std::string> start() override;
+  StopResult stop() override;
 
   void pause() override;
   void resume() override;
@@ -45,40 +38,29 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   bool isPaused() const override;
   bool isIdle() const override;
 
-  Result<NoneType, std::string> setOnAudioReadyCallback(
-      float sampleRate,
-      size_t bufferLength,
-      int channelCount,
-      uint64_t callbackId) override;
-  void clearOnAudioReadyCallback() override;
-
-  void connect(const std::shared_ptr<utils::graph::NodeHandle> &node) override;
-  void disconnect() override;
-
   [[nodiscard]] double getInputLatency() const override;
 
   oboe::DataCallbackResult
   onAudioReady(oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) override;
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
+ protected:
+  /// Oboe resolves the format once the stream is open, so the cached values stay valid for
+  /// the whole session; a disconnect closes the stream and refreshes them on reopen.
+  [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override;
+
  private:
-  std::shared_ptr<AudioBuffer> deinterleavingBuffer_;
+  Result<NoneType, std::string> openAudioStream();
 
   std::string inputPreset_;
-  std::atomic<float> streamSampleRate_;
-  int32_t streamChannelCount_;
-  int32_t streamMaxBufferSizeInFrames_;
+  int32_t streamChannelCount_{0};
+  int32_t streamMaxBufferSizeInFrames_{0};
+
+  /// Oboe delivers interleaved float32 and every consumer takes planar, so each callback is
+  /// repacked here once. Sized under streamMutex_ before the stream starts.
+  AudioBuffer planarInput_;
 
   std::shared_ptr<oboe::AudioStream> mStream_;
-  std::vector<std::string> recordingSegmentPaths_;
-  /// Updated on the audio thread from each input callback `numFrames`.
-  std::atomic<int32_t> lastCallbackFrameCount_{0};
-  Result<NoneType, std::string> openAudioStream();
-  std::shared_ptr<AudioFileWriter> createFileWriter(
-      const std::shared_ptr<AudioFileProperties> &props);
-  Result<NoneType, std::string> setupFileWriter(
-      const std::shared_ptr<AudioFileProperties> &properties,
-      const std::string &fileNameOverride = "");
 };
 
 } // namespace audioapi
