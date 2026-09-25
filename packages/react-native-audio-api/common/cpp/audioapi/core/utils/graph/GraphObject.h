@@ -116,7 +116,7 @@ class GraphObject {
   PROCESSABLE_STATE processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
 
   /// @brief When set, AudioGraph::settleProcessableState() will never promote
-  /// this node back to CONDITIONAL_PROCESSABLE during the reverse-topo pull.
+  /// this node back to CONDITIONAL_PROCESSABLE during the dependency pull.
   ///
   /// Used to make `disable()` sticky: a source that finished playback while
   /// still connected to a processable downstream must stay idle for good,

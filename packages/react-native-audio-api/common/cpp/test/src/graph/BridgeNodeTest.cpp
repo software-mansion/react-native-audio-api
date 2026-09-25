@@ -120,7 +120,7 @@ TEST_F(BridgeGraphTest, BridgeCreatesThreeNodePath) {
   EXPECT_EQ(audioGraph.size(), 3u);
 
   // Topo sort should place them: source, bridge, owner
-  audioGraph.process();
+  audioGraph.sortAndCompact();
 
   // Verify source comes before bridge comes before owner
   auto srcIdx = source->handle->index;
@@ -197,7 +197,7 @@ TEST_F(BridgeIterTest, IterSkipsNonProcessableNodes) {
 
   ASSERT_TRUE(addEdge(processable1, nonProcessable));
   ASSERT_TRUE(addEdge(nonProcessable, processable2));
-  audioGraph.process();
+  audioGraph.sortAndCompact();
   audioGraph.settleProcessableState();
 
   // iter() should only yield 2 nodes (skip the non-processable one)
@@ -219,7 +219,7 @@ TEST_F(BridgeIterTest, AllProcessableNodesInTopoOrder) {
   ASSERT_TRUE(addEdge(a, bridge));
   ASSERT_TRUE(addEdge(bridge, b));
   ASSERT_TRUE(addEdge(b, c));
-  audioGraph.process();
+  audioGraph.sortAndCompact();
   audioGraph.settleProcessableState();
 
   // Should yield A, bridge, B, C in topo order (bridge is now processable)
@@ -241,7 +241,7 @@ TEST_F(BridgeIterTest, InputsViewMayReferenceBridgeIndices) {
 
   ASSERT_TRUE(addEdge(source, bridge));
   ASSERT_TRUE(addEdge(bridge, owner));
-  audioGraph.process();
+  audioGraph.sortAndCompact();
   audioGraph.settleProcessableState();
 
   size_t processableCount = 0;
@@ -265,7 +265,7 @@ TEST_F(BridgeGraphTest, OrphanedBridgeWithNoInputsRemoved) {
 
   // Mark orphaned
   removeNode(bridge);
-  audioGraph.process();
+  audioGraph.sortAndCompact();
 
   EXPECT_EQ(audioGraph.size(), 0u);
 }
@@ -277,12 +277,12 @@ TEST_F(BridgeGraphTest, SourceRemovalCascadesBridgeRemoval) {
 
   ASSERT_TRUE(addEdge(source, bridge));
   ASSERT_TRUE(addEdge(bridge, owner));
-  audioGraph.process();
+  audioGraph.sortAndCompact();
   EXPECT_EQ(audioGraph.size(), 3u);
 
   // Remove source — bridge loses its only input
   removeNode(source);
-  audioGraph.process();
+  audioGraph.sortAndCompact();
 
   // Source compacted (orphaned, no inputs, destructible)
   // Bridge compacted (orphaned via edge removal cascade — its input was removed)
@@ -304,14 +304,14 @@ TEST_F(BridgeGraphTest, BridgeOrphanedAndNoInputsGetsCompacted) {
 
   ASSERT_TRUE(addEdge(source, bridge));
   ASSERT_TRUE(addEdge(bridge, owner));
-  audioGraph.process();
+  audioGraph.sortAndCompact();
   EXPECT_EQ(audioGraph.size(), 3u);
 
   // Orphan source and bridge
   removeNode(source);
   removeEdge(bridge, owner);
   removeNode(bridge);
-  audioGraph.process();
+  audioGraph.sortAndCompact();
 
   // Both source and bridge should be compacted
   EXPECT_EQ(audioGraph.size(), 1u); // only owner remains
