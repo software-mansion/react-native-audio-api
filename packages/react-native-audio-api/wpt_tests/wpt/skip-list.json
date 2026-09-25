@@ -66,5 +66,13 @@
   {
     "pattern": "the-audiocontext-interface/audiocontext-state-change-after-close",
     "reason": "waits for the autoplay suspended->running statechange; this library starts the native driver lazily (first source start() or resume()), never from the constructor, so the transition never happens and every subtest hangs to the 10s harness timeout"
+  },
+  {
+    "pattern": "the-pannernode-interface/automation-changes.html",
+    "reason": "calls the deprecated AudioListener.setPosition()/setOrientation() helpers, which this library intentionally does not implement (use the positionX/Y/Z, forwardX/Y/Z and upX/Y/Z AudioParams instead)"
+  },
+  {
+    "pattern": "the-pannernode-interface/panner-equalpower.html",
+    "reason": "calls the deprecated AudioListener.setPosition()/setOrientation() helpers, which this library intentionally does not implement (use the positionX/Y/Z, forwardX/Y/Z and upX/Y/Z AudioParams instead)"
   }
 ]
