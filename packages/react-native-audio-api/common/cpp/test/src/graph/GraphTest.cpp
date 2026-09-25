@@ -514,6 +514,26 @@ TEST_F(GraphTest, RenegotiateNode_ExplicitCountChange_UpdatesBuffer) {
       << "After changing channelCount to 6 and renegotiating, the buffer must be 6 channels";
 }
 
+TEST_F(GraphTest, RenegotiateNode_SourceOutputChannelNumberChange_CascadesDownstream) {
+  // Mirrors AudioBufferSourceNode.setBuffer: the host object publishes the new
+  // output width, then renegotiates, before the audio thread swaps the buffer.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/1);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(dest), 1u) << "MAX mode follows the mono source";
+
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(2);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "After the source publishes a stereo output and renegotiates, the MAX-mode "
+         "downstream buffer must widen to 2 channels";
+}
+
 TEST_F(GraphTest, RenegotiateNode_CascadesDownstream) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});

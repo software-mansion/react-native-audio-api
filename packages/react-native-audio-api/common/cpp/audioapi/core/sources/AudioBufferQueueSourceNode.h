@@ -47,10 +47,10 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   void assignOnBufferEndedCallbackId(uint64_t callbackId);
 
-  /// @brief Resizes the output to `outputChannelNumber` channels. Set once,
-  /// when the first buffer is enqueued.
+  /// @brief Replaces the output buffer with one of `outputChannelNumber`
+  /// channels. Happens once, when the first buffer is enqueued.
   /// @note Audio Thread only
-  void setOutputChannelNumber(int outputChannelNumber);
+  void resizeOutputBuffer(int outputChannelNumber);
 
  protected:
   double getCurrentPosition() const override;

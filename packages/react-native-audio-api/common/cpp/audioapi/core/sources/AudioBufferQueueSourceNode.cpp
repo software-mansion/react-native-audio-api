@@ -145,9 +145,9 @@ void AudioBufferQueueSourceNode::assignOnBufferEndedCallbackId(uint64_t callback
   onBufferEndedEvent_.assignCallbackId(callbackId);
 }
 
-void AudioBufferQueueSourceNode::setOutputChannelNumber(int outputChannelNumber) {
+void AudioBufferQueueSourceNode::resizeOutputBuffer(int outputChannelNumber) {
   if (outputChannelNumber_ != outputChannelNumber) {
-    outputChannelNumber_ = outputChannelNumber;
+    setOutputChannelNumber(static_cast<size_t>(outputChannelNumber));
     audioBuffer_ = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE, outputChannelNumber, getContextSampleRate());
   }

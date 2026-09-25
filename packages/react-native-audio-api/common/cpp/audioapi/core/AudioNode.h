@@ -38,6 +38,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// @brief Returns how many channels this node emits on its output.
   [[nodiscard]] size_t getOutputChannelNumber() const;
 
+  void setOutputChannelNumber(size_t outputChannelNumber) {
+    outputChannelNumber_.store(static_cast<int>(outputChannelNumber), std::memory_order_release);
+  }
+
   /// @brief Returns this node's `channelCountMode` attribute.
   /// @note Read only on the host thread (channel-count negotiation) — never on
   /// the audio thread — so mutating it from the JS thread via
