@@ -46,6 +46,8 @@ Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 :::info Channel constraints
 The input is mixed down to mono or stereo before convolution. `channelCount` cannot be set above `2` and `channelCountMode` cannot be set to `'max'`; either attempt, in the constructor options or via the setter, throws `NotSupportedError`.
+
+The output is mono only when a mono input meets a mono impulse response. Every other supported combination (a stereo input, or a 2- or 4-channel impulse response) produces stereo. A 4-channel buffer performs "true stereo" convolution: channels 0 and 1 are driven by the left input and channels 2 and 3 by the right input, with even channels summed into the left output and odd channels into the right. Without a buffer the node outputs a single channel of silence.
 :::
 
 :::caution

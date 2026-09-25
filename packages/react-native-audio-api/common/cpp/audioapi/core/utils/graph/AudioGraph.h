@@ -32,8 +32,9 @@ class AudioGraph {
     /// Head of the processable-link linked list in pool_. These are NOT audio
     /// edges: they mark other nodes whose processable state must follow this
     /// node's (e.g. DelayReader -> DelayWriter, which communicate through a
-    /// ring buffer rather than a graph edge). Links do not participate in the
-    /// topological sort, only in settleProcessableState().
+    /// ring buffer rather than a graph edge). The toposort orders a link
+    /// target before its holder whenever that does not close a cycle, and
+    /// settleProcessableState() follows links when pulling.
     std::uint32_t link_head = InputPool::kNull;
 
     std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
@@ -169,9 +170,9 @@ class AudioGraph {
   /// nodes (AudioDestinationNode, AnalyserNode, ...) are ALWAYS_PROCESSABLE
   /// and act as pull roots.
   ///
-  /// Because links are not part of the topological order, a marked link
-  /// target may sit *after* the node that pulled it; the pull therefore
-  /// iterates to a fixpoint. State only ever transitions NOT -> CONDITIONAL,
+  /// Inside a feedback cycle the toposort drops the link constraint, so a
+  /// marked link target may sit *after* the node that pulled it; the pull
+  /// therefore iterates to a fixpoint. State only ever transitions NOT -> CONDITIONAL,
   /// so the loop is monotonic and terminates. Link-free graphs settle in a
   /// single pass.
   ///
@@ -190,7 +191,9 @@ class AudioGraph {
   InputPool pool_;               // pool backing all input linked lists
   bool topo_order_dirty = false; // set by markDirty(), cleared by process()
 
-  /// @brief In-place Kahn's toposort (sources first, sinks last).
+  /// @brief In-place Kahn's toposort (sources first, sinks last). Processable
+  /// links count as ordering constraints (target before holder) unless they
+  /// would close a cycle, in which case edges alone order that cycle's nodes.
   ///
   /// Uses `after_compaction_ind` as an embedded FIFO linked-list for the
   /// BFS queue, and cycle-sort for the final permutation.

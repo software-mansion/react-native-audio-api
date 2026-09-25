@@ -160,10 +160,11 @@ void AudioGraph::settleProcessableState() {
     return false;
   };
 
-  // Inputs always sit at a lower index than their consumer, but link nodes
-  // can target a higher index. If we switch nodes in higher hierarchy first,
-  // we may miss some nodes in lower hierarchy that are now processable.
-  // We need to iterate again to ensure we process all nodes in the graph.
+  // Inputs always sit at a lower index than their consumer, and so do link
+  // targets except inside a feedback cycle, where the toposort had to drop
+  // the link constraint and the target may sit at a higher index. If we
+  // switch nodes in higher hierarchy first, we may miss some nodes in lower
+  // hierarchy that are now processable, so iterate to a fixpoint.
   bool changed = true;
   while (changed) {
     changed = false;
@@ -192,10 +193,17 @@ void AudioGraph::kahn_toposort() {
     return;
   }
 
-  // Phase 1: compute out-degree
+  // Phase 1: out-degree = audio consumers + processable-link holders. A link
+  // holder (DelayReader) must run after its target (DelayWriter) so that a
+  // sample written this quantum can be read this quantum; otherwise every
+  // delay shorter than one render quantum would lose the samples the writer
+  // stores behind the reader's already-advanced head.
   for (const auto &nd : nodes) {
     for (std::uint32_t inp : pool_.view(nd.input_head)) {
       nodes[inp].topo_out_degree++;
+    }
+    for (std::uint32_t lnk : pool_.view(nd.link_head)) {
+      nodes[lnk].topo_out_degree++;
     }
   }
 
@@ -212,23 +220,49 @@ void AudioGraph::kahn_toposort() {
     }
   };
 
+  std::uint32_t write = n;
+  auto placeQueued = [&](bool followLinks) {
+    while (qh != -1) {
+      auto idx = static_cast<std::uint32_t>(qh);
+      qh = nodes[idx].after_compaction_ind;
+      nodes[idx].after_compaction_ind = static_cast<std::int32_t>(--write);
+
+      for (std::uint32_t inp : pool_.view(nodes[idx].input_head)) {
+        if (--nodes[inp].topo_out_degree == 0) {
+          enq(inp);
+        }
+      }
+      if (!followLinks) {
+        continue;
+      }
+      for (std::uint32_t lnk : pool_.view(nodes[idx].link_head)) {
+        if (--nodes[lnk].topo_out_degree == 0) {
+          enq(lnk);
+        }
+      }
+    }
+  };
+
   for (std::uint32_t i = 0; i < n; i++) {
     if (nodes[i].topo_out_degree == 0) {
       enq(i);
     }
   }
+  placeQueued(/*followLinks=*/true);
 
-  std::uint32_t write = n;
-  while (qh != -1) {
-    auto idx = static_cast<std::uint32_t>(qh);
-    qh = nodes[idx].after_compaction_ind;
-    nodes[idx].after_compaction_ind = static_cast<std::int32_t>(--write);
-
-    for (std::uint32_t inp : pool_.view(nodes[idx].input_head)) {
-      if (--nodes[inp].topo_out_degree == 0) {
-        enq(inp);
+  // means that we have a cycle, so we need to do a second pass without links
+  if (write > 0) {
+    for (std::uint32_t i = 0; i < n; i++) {
+      if (nodes[i].after_compaction_ind != -1) {
+        continue;
+      }
+      for (std::uint32_t lnk : pool_.view(nodes[i].link_head)) {
+        if (--nodes[lnk].topo_out_degree == 0) {
+          enq(lnk);
+        }
       }
     }
+    placeQueued(/*followLinks=*/false);
   }
 
   // Phase 3: remap input (and link) indices to new positions (before nodes move)
