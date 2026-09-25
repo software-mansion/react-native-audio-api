@@ -47,10 +47,10 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
 
   void assignOnBufferEndedCallbackId(uint64_t callbackId);
 
-  /// @brief Set the channel count of the node. Channel count is set only once when the first buffer is enqueued.
-  /// @param channelCount The channel count to set.
+  /// @brief Resizes the output to `outputChannelNumber` channels. Set once,
+  /// when the first buffer is enqueued.
   /// @note Audio Thread only
-  void setChannelCount(int channelCount);
+  void setOutputChannelNumber(int outputChannelNumber);
 
  protected:
   double getCurrentPosition() const override;

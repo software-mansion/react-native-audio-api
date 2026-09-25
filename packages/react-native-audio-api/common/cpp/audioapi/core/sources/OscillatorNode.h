@@ -34,10 +34,6 @@ class OscillatorNode : public AudioScheduledSourceNode {
   /// @note Audio Thread only
   void setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave);
 
-  /// @brief The output stays mono whatever the `channelCount` attribute says;
-  /// the attribute is tracked by the host object only.
-  void setChannelCount(size_t /*channelCount*/) override {}
-
  protected:
   void processNode(int framesToProcess) override;
 

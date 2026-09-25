@@ -116,7 +116,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
                 swapBuffer,
                 channelCount = channelCount_](BaseAudioContext &) {
     if (swapBuffer) {
-      node->setChannelCount(static_cast<int>(channelCount));
+      node->setOutputChannelNumber(static_cast<int>(channelCount));
     }
     node->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
   };

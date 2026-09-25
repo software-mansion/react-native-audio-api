@@ -161,14 +161,15 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
 
   std::shared_ptr<AudioBuffer> copiedBuffer;
   std::shared_ptr<DSPAudioBuffer> audioBuffer;
-  const size_t newChannelCount = buffer == nullptr ? AudioBufferSourceOptions::kDefaultChannelCount
-                                                   : buffer->getNumberOfChannels();
+  const size_t newChannelCount = buffer == nullptr
+      ? AudioBufferSourceOptions::kDefaultOutputChannelNumber
+      : buffer->getNumberOfChannels();
 
   if (buffer == nullptr) {
     copiedBuffer = nullptr;
     audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
-        AudioBufferSourceOptions::kDefaultChannelCount,
+        AudioBufferSourceOptions::kDefaultOutputChannelNumber,
         audioBufferSourceNode_->getContextSampleRate());
   } else {
     if (pitchCorrection_) {

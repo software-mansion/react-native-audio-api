@@ -13,7 +13,7 @@ namespace audioapi {
 OscillatorNode::OscillatorNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const OscillatorOptions &options)
-    : AudioScheduledSourceNode(context, options.withMonoOutput()), type_(options.type) {
+    : AudioScheduledSourceNode(context, options), type_(options.type) {
   frequencyParam_ = std::make_shared<AudioParam>(
       options.frequency, -getNyquistFrequency(), getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(

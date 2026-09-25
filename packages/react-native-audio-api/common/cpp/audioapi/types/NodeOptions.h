@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -18,6 +19,10 @@
 namespace audioapi {
 struct AudioNodeOptions {
   int channelCount = 2;
+  /// Number of channels the node emits. Unset means "same as `channelCount`",
+  /// which is the right default for every node whose output follows its
+  /// negotiated input layout.
+  std::optional<int> outputChannelNumber;
   ChannelCountMode channelCountMode = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation = ChannelInterpretation::SPEAKERS;
   int numberOfInputs = 1;
@@ -44,14 +49,20 @@ struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
   explicit AudioScheduledSourceNodeOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     numberOfInputs = 0;
   }
+};
 
-  /// Spec: OscillatorNode and ConstantSourceNode emit a single channel; their
-  /// `channelCount` attribute only describes input mixing, which they have
-  /// none of. The host object keeps the attribute, the core node renders mono.
-  [[nodiscard]] AudioScheduledSourceNodeOptions withMonoOutput() const {
-    AudioScheduledSourceNodeOptions mono = *this;
-    mono.channelCount = 1;
-    return mono;
+/// Sources whose output is always a single channel (spec: OscillatorNode,
+/// ConstantSourceNode).
+struct MonoSourceNodeOptions : AudioScheduledSourceNodeOptions {
+  static constexpr int kOutputChannelNumber = 1;
+
+  MonoSourceNodeOptions() {
+    outputChannelNumber = kOutputChannelNumber;
+  }
+
+  explicit MonoSourceNodeOptions(AudioNodeOptions options)
+      : AudioScheduledSourceNodeOptions(options) {
+    outputChannelNumber = kOutputChannelNumber;
   }
 };
 
@@ -88,8 +99,10 @@ struct ConvolverOptions : AudioNodeOptions {
   }
 };
 
-struct ConstantSourceOptions : AudioScheduledSourceNodeOptions {
+struct ConstantSourceOptions : MonoSourceNodeOptions {
   float offset = 1.0f;
+
+  using MonoSourceNodeOptions::MonoSourceNodeOptions;
 };
 
 struct AnalyserOptions : AudioNodeOptions {
@@ -120,14 +133,14 @@ struct BiquadFilterOptions : AudioNodeOptions {
   }
 };
 
-struct OscillatorOptions : AudioScheduledSourceNodeOptions {
+struct OscillatorOptions : MonoSourceNodeOptions {
   static constexpr float kDefaultFrequency = 440.0f;
   std::shared_ptr<PeriodicWave> periodicWave = nullptr;
   float frequency = kDefaultFrequency;
   float detune = 0.0f;
   OscillatorType type = OscillatorType::SINE;
 
-  using AudioScheduledSourceNodeOptions::AudioScheduledSourceNodeOptions;
+  using MonoSourceNodeOptions::MonoSourceNodeOptions;
 };
 
 struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
@@ -138,8 +151,8 @@ struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
 };
 
 struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
-  /// Spec default when no buffer is set (mono).
-  static constexpr size_t kDefaultChannelCount = 1;
+  /// Spec: with no buffer assigned the node emits one channel of silence.
+  static constexpr size_t kDefaultOutputChannelNumber = 1;
 
   std::shared_ptr<AudioBuffer> buffer = nullptr;
   float loopStart = 0.0f;
@@ -149,7 +162,7 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
 
   explicit AudioBufferSourceOptions(BaseAudioBufferSourceOptions options)
       : BaseAudioBufferSourceOptions(options) {
-    channelCount = kDefaultChannelCount;
+    outputChannelNumber = kDefaultOutputChannelNumber;
   }
 };
 
@@ -166,10 +179,10 @@ struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
 };
 
 struct MediaElementAudioSourceOptions : AudioNodeOptions {
-  explicit MediaElementAudioSourceOptions(int mediaChannelCount = 2) {
+  explicit MediaElementAudioSourceOptions(int mediaOutputChannelNumber = 2) {
     numberOfInputs = 0;
     numberOfOutputs = 1;
-    channelCount = mediaChannelCount;
+    outputChannelNumber = mediaOutputChannelNumber;
   }
 };
 
