@@ -18,11 +18,12 @@ AudioNode::AudioNode(
       numberOfInputs_(options.numberOfInputs),
       numberOfOutputs_(options.numberOfOutputs),
       channelCount_(options.channelCount),
+      outputChannelNumber_(options.outputChannelNumber.value_or(options.channelCount)),
       channelCountMode_(options.channelCountMode),
       channelInterpretation_(options.channelInterpretation),
       requiresTailProcessing_(options.requiresTailProcessing) {
   audioBuffer_ = std::make_shared<DSPAudioBuffer>(
-      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+      RENDER_QUANTUM_SIZE, outputChannelNumber_.load(), context->getSampleRate());
 }
 
 bool AudioNode::canBeDestructed() const {
@@ -44,7 +45,11 @@ bool AudioNode::isProcessable() const {
 }
 
 size_t AudioNode::getChannelCount() const {
-  return channelCount_.load(std::memory_order_acquire);
+  return static_cast<size_t>(channelCount_);
+}
+
+size_t AudioNode::getOutputChannelNumber() const {
+  return static_cast<size_t>(outputChannelNumber_.load(std::memory_order_acquire));
 }
 
 bool AudioNode::requiresTailProcessing() const {

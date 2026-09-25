@@ -2,11 +2,13 @@ import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
 import type BaseAudioContext from './BaseAudioContext';
 import { DelayOptions } from '../types';
+import { DelayOptionsValidator } from '../utils/validation';
 
 export default class DelayNode extends AudioNode {
   readonly delayTime: AudioParam;
 
   constructor(context: BaseAudioContext, options?: DelayOptions) {
+    DelayOptionsValidator.validate(options);
     const delay = context.context.createDelay(options || {});
     super(context, delay, options);
     this.delayTime = new AudioParam(delay.delayTime, context, this);

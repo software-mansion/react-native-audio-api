@@ -49,18 +49,17 @@ inline audioapi::AudioNode *audioNodeOf(const HostGraph::Node *node) {
 /// @brief Returns how many channels `audio` presents on upstream connections
 /// (toward AudioDestinationNode).
 ///
-/// Reads the atomic `channelCount_` attribute rather than the output buffer:
-/// the buffer's `shared_ptr` is swapped on the audio thread (setBuffer /
+/// Reads the atomic output channel number rather than the output buffer: the
+/// buffer's `shared_ptr` is swapped on the audio thread (setBuffer /
 /// applyChannelNegotiations), so reading it here on the JS thread would race.
-/// For source nodes `channelCount_` already tracks the buffer's width, and this
-/// helper is only the fallback for inputs not yet resolved in the current
+/// This helper is only the fallback for inputs not yet resolved in the current
 /// negotiation pass (traversals resolve every input first via
 /// `resolveChannelCountForNode`).
-size_t outputChannelCountOf(const audioapi::AudioNode *audio) {
+size_t outputChannelNumberOf(const audioapi::AudioNode *audio) {
   if (audio == nullptr) {
     return 0;
   }
-  return audio->getChannelCount();
+  return audio->getOutputChannelNumber();
 }
 
 /// @brief Computes the channel count that `dest`'s negotiated buffer must carry
@@ -98,7 +97,7 @@ size_t negotiateChannelCount(const HostGraph::Node *dest, size_t term) {
     if (input->channelLayout.isResolvedFor(term)) {
       c = input->channelLayout.upstreamChannelCount;
     } else {
-      c = outputChannelCountOf(inAudio);
+      c = outputChannelNumberOf(inAudio);
     }
     maxInputChannels = std::max(c, maxInputChannels);
   }

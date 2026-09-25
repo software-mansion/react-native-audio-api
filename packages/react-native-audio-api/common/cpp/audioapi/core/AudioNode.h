@@ -29,11 +29,18 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   ~AudioNode() override = default;
   DELETE_COPY_AND_MOVE(AudioNode);
 
-  /// @brief Returns this node's `channelCount` attribute.
-  /// @note Safe to call from any thread: `channelCount_` is atomic because
-  /// source subclasses update it on the audio thread while the JS thread reads
-  /// it during channel-count negotiation.
+  /// @brief Returns this node's `channelCount` attribute: the width inputs are
+  /// mixed to.
+  /// @note Read only on the host thread (channel-count negotiation), so
+  /// `setChannelCount` from the JS thread is race-free with audio processing.
   [[nodiscard]] size_t getChannelCount() const;
+
+  /// @brief Returns how many channels this node emits on its output.
+  [[nodiscard]] size_t getOutputChannelNumber() const;
+
+  void setOutputChannelNumber(size_t outputChannelNumber) {
+    outputChannelNumber_.store(static_cast<int>(outputChannelNumber), std::memory_order_release);
+  }
 
   /// @brief Returns this node's `channelCountMode` attribute.
   /// @note Read only on the host thread (channel-count negotiation) — never on
@@ -124,9 +131,10 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   /// @brief Channel count this node presents on upstream connections (toward
   /// AudioDestinationNode) after negotiation. Default: the negotiated channel
-  /// count. StereoPanner always outputs stereo.
+  /// count, except for sources (no inputs, nothing to negotiate), which
+  /// present `getOutputChannelNumber`. StereoPanner always outputs stereo.
   [[nodiscard]] virtual size_t getUpstreamChannelCount(size_t negotiatedChannelCount) const {
-    return negotiatedChannelCount;
+    return numberOfInputs_ == 0 ? getOutputChannelNumber() : negotiatedChannelCount;
   }
 
   /// @note JS Thread only
@@ -206,14 +214,16 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   const int numberOfInputs_ = 1;
   const int numberOfOutputs_ = 1;
-  /// @brief Number of channels this node presents.
+  /// @brief The `channelCount` attribute (input mixing width). Host thread only.
+  int channelCount_ = 2;
+  /// @brief Number of channels this node emits; the width of `audioBuffer_`
   ///
   /// Atomic because it is read on the JS thread during channel-count
-  /// negotiation (`HostGraph`/`getChannelCount`) while source subclasses
-  /// (AudioBufferSource, Streamer, AudioFileSource, RecorderAdapter,
+  /// negotiation (`HostGraph`/`getOutputChannelNumber`) while source
+  /// subclasses (AudioBufferSource, AudioFileSource, RecorderAdapter,
   /// AudioBufferQueueSource) write it on the audio thread once they learn the
-  /// decoded/buffer channel count. Plain reads/writes here would race.
-  std::atomic<int> channelCount_ = 2;
+  /// decoded/buffer channel count.
+  std::atomic<int> outputChannelNumber_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;

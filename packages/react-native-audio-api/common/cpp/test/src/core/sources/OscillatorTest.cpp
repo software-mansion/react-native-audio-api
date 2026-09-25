@@ -24,6 +24,21 @@ class OscillatorTest : public ::testing::Test {
   }
 };
 
+TEST_F(OscillatorTest, OscillatorRendersMonoRegardlessOfChannelCountAttribute) {
+  // Spec: the oscillator output is a single channel while `channelCount`
+  // keeps its default of 2 and stays settable; it only describes input mixing.
+  auto osc = std::make_shared<OscillatorNode>(context, OscillatorOptions());
+  EXPECT_EQ(osc->getOutputBuffer()->getNumberOfChannels(), 1u);
+  EXPECT_EQ(osc->getOutputChannelNumber(), 1u);
+  EXPECT_EQ(osc->getChannelCount(), 2u);
+  EXPECT_EQ(osc->getUpstreamChannelCount(2), 1u);
+
+  osc->setChannelCount(4);
+  EXPECT_EQ(osc->getChannelCount(), 4u);
+  EXPECT_EQ(osc->getOutputChannelNumber(), 1u);
+  EXPECT_EQ(osc->getUpstreamChannelCount(4), 1u);
+}
+
 TEST_F(OscillatorTest, OscillatorCanBeCreated) {
   auto osc = std::make_shared<OscillatorNode>(context, OscillatorOptions());
   ASSERT_NE(osc, nullptr);

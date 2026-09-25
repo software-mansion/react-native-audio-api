@@ -85,7 +85,6 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
     // 2B-point real-to-complex FFT.
     _fftBuffer->zero(_blockSize, _blockSize);
     _fft->doFFT(*_fftBuffer, segment);
-    segment.at(0).imag(0.0f); // ensure DC component is real
     _segmentsIR.push_back(segment);
   }
 
@@ -108,11 +107,17 @@ void pairwise_complex_multiply_fast(
     Convolver::aligned_vec_complex &pre) {
   size_t n = ir.size();
 
+  // Bin 0 holds two packed real coefficients (pffft layout): DC in the real
+  // part and Nyquist in the imaginary part. They multiply independently as
+  // reals, not as one complex number.
+  pre[0].real(pre[0].real() + ir[0].real() * audio[0].real());
+  pre[0].imag(pre[0].imag() + ir[0].imag() * audio[0].imag());
+
 /// @note Using ARM NEON intrinsics for SIMD optimization
 /// This implementation is on average 2x faster than the scalar version on ARM
 /// architectures With 16-byte alignment it can be even faster up to 2.5x
 #ifdef __ARM_NEON
-  size_t j = 0;
+  size_t j = 1;
 
   // Main vector loop: process 4 complex samples (8 floats) per iteration using
   // vld2q/vst2q deinterleave
@@ -156,7 +161,7 @@ void pairwise_complex_multiply_fast(
 
 #else
   // Fallback scalar implementation
-  for (size_t i = 0; i < n; ++i) {
+  for (size_t i = 1; i < n; ++i) {
     pre[i] += ir[i] * audio[i];
   }
 #endif
@@ -176,7 +181,6 @@ void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output) {
   // result is stored in the first FDL slot.
   // _current marks first FDL slot, which is the current input block.
   _fft->doFFT(*_inputBuffer, _segments[_current]);
-  _segments[_current][0].imag(0.0f); // ensure DC component is real
 
   // The P sub filter spectra are pairwisely multiplied with the input spectra
   // in the FDL. The results are accumulated in the frequency-domain.
