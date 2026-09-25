@@ -24,6 +24,9 @@ AudioFormatID getFormat(const std::shared_ptr<AudioFileProperties> &properties)
     case AudioFileProperties::Format::FLAC:
       return kAudioFormatFLAC;
 
+    case AudioFileProperties::Format::ADTS:
+      return kAudioFormatMPEG4AAC;
+
     default:
       return kAudioFormatLinearPCM;
   }
@@ -80,6 +83,9 @@ NSString *getFileExtension(const std::shared_ptr<AudioFileProperties> &propertie
 
     case AudioFileProperties::Format::FLAC:
       return @"flac";
+
+    case AudioFileProperties::Format::ADTS:
+      return @"aac";
 
     default:
       return @"wav";
