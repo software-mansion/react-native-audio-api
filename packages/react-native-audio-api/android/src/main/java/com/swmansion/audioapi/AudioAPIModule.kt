@@ -31,6 +31,7 @@ class AudioAPIModule(
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
     private const val TAG = "AudioAPIModule"
+    private const val INPUT_DEVICE_ERROR = "E_INPUT_DEVICE"
   }
 
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
@@ -50,6 +51,8 @@ class AudioAPIModule(
     eventOrdinal: Int,
     eventBody: Map<String, Any>,
   )
+
+  private external fun setPreferredInputDeviceId(deviceId: Int): Boolean
 
   init {
     try {
@@ -93,7 +96,6 @@ class AudioAPIModule(
 
   override fun invalidate() {
     reactContext.get()?.removeLifecycleEventListener(this)
-    // Cleanup foreground service manager
     ForegroundServiceManager.cleanup()
   }
 
@@ -115,7 +117,7 @@ class AudioAPIModule(
     allowHaptics: Boolean,
     notifyOthersOnDeactivation: Boolean,
   ) {
-    // noting to do here
+    // nothing to do here
   }
 
   override fun disableSessionManagement() {
@@ -172,12 +174,28 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 
+  @RequiresApi(Build.VERSION_CODES.M)
   override fun setInputDevice(
     deviceId: String?,
     promise: Promise?,
   ) {
-    // TODO: noop for now, but it should be moved to upcoming
-    // audio engine implementation for android (duplex stream)
+    val device = deviceId?.let { MediaSessionManager.findInputDevice(it) }
+
+    if (device == null) {
+      promise?.reject(INPUT_DEVICE_ERROR, "Input device with id $deviceId not found", null)
+      return
+    }
+
+    if (!setPreferredInputDeviceId(device.id)) {
+      promise?.reject(
+        INPUT_DEVICE_ERROR,
+        "Cannot change the input device while a recorder is running or paused. Stop the recorder, select the device, then start it again.",
+        null,
+      )
+      return
+    }
+
+    MediaSessionManager.setPreferredInputDevice(device)
     promise?.resolve(null)
   }
 

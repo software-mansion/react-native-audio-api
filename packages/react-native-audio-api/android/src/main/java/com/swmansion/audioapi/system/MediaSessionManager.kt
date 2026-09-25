@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.PermissionAwareActivity
 import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
@@ -211,37 +212,67 @@ object MediaSessionManager {
     notificationManager.createNotificationChannel(mChannel)
   }
 
+  /**
+   * Capture device selected through `AudioAPIModule.setInputDevice`, reported
+   * back by [getDevicesInfo]. Mirrors the selection held natively by
+   * `AudioInputSelection`.
+   *
+   * Null means the platform picks the device. Android does not say which one
+   * before a stream opens, so `currentInputs` stays empty.
+   *
+   * Written on the React Native module thread, read by any `getDevicesInfo` caller.
+   */
+  @Volatile
+  private var preferredInputDeviceId: Int? = null
+
+  @RequiresApi(Build.VERSION_CODES.M)
+  fun findInputDevice(deviceId: String): AudioDeviceInfo? =
+    this.audioManager
+      .getDevices(AudioManager.GET_DEVICES_INPUTS)
+      .firstOrNull { it.id.toString() == deviceId }
+
+  fun setPreferredInputDevice(device: AudioDeviceInfo) {
+    this.preferredInputDeviceId = device.id
+  }
+
   @RequiresApi(Build.VERSION_CODES.O)
   fun getDevicesInfo(): ReadableMap {
     val availableInputs = Arguments.createArray()
+    val currentInputs = Arguments.createArray()
     val availableOutputs = Arguments.createArray()
 
-    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
-      val deviceInfo = Arguments.createMap()
-      deviceInfo.putString("id", inputDevice.getId().toString())
-      deviceInfo.putString("name", inputDevice.productName.toString())
-      deviceInfo.putString("category", parseDeviceCategory(inputDevice))
+    val selectedInputDeviceId = this.preferredInputDeviceId
 
-      availableInputs.pushMap(deviceInfo)
+    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
+      availableInputs.pushMap(describeDevice(inputDevice))
+
+      if (inputDevice.id == selectedInputDeviceId) {
+        currentInputs.pushMap(describeDevice(inputDevice))
+      }
     }
 
     for (outputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
-      val deviceInfo = Arguments.createMap()
-      deviceInfo.putString("id", outputDevice.getId().toString())
-      deviceInfo.putString("name", outputDevice.productName.toString())
-      deviceInfo.putString("category", parseDeviceCategory(outputDevice))
-
-      availableOutputs.pushMap(deviceInfo)
+      availableOutputs.pushMap(describeDevice(outputDevice))
     }
 
     val devicesInfo = Arguments.createMap()
 
-    devicesInfo.putArray("currentInputs", Arguments.createArray())
+    devicesInfo.putArray("currentInputs", currentInputs)
     devicesInfo.putArray("currentOutputs", Arguments.createArray())
     devicesInfo.putArray("availableInputs", availableInputs)
     devicesInfo.putArray("availableOutputs", availableOutputs)
 
     return devicesInfo
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private fun describeDevice(device: AudioDeviceInfo): WritableMap {
+    val deviceInfo = Arguments.createMap()
+    deviceInfo.putString("id", device.id.toString())
+    deviceInfo.putString("name", device.productName.toString())
+    deviceInfo.putString("category", parseDeviceCategory(device))
+
+    return deviceInfo
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
@@ -254,6 +285,9 @@ object MediaSessionManager {
       AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired Headphones"
       AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth A2DP"
       AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
+      AudioDeviceInfo.TYPE_USB_DEVICE -> "USB Device"
+      AudioDeviceInfo.TYPE_USB_HEADSET -> "USB Headset"
+      AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB Accessory"
       else -> "Other (${device.type})"
     }
 
