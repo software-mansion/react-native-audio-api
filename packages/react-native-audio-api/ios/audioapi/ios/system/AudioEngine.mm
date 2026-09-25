@@ -43,12 +43,14 @@
 - (AVAudioFormat *)currentInputConnectionFormat;
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId;
 - (BOOL)materializeInputNodeIfNeeded;
-- (void)applyVoiceProcessing;
-- (void)materializeTrackedNodesIfNeeded;
+- (BOOL)prepareInputForMaterialization;
+- (BOOL)applyVoiceProcessing;
+- (BOOL)materializeTrackedNodesIfNeeded;
 
 - (AVAudioFormat *)liveInputFormat;
 - (void)resetInputNode;
-- (void)rebuildAudioEngineAndResumeIfNeeded;
+- (BOOL)rebuildAudioEngine;
+- (BOOL)rebuildAudioEngineAndResumeIfNeeded;
 - (void)notifyConfigurationChanges;
 
 @end
@@ -216,15 +218,6 @@ static AudioEngine *_sharedInstance = nil;
     return YES;
   }
 
-  [self applyVoiceProcessing];
-  NSError *sessionError = nil;
-  if (![self.sessionManager ensureActive:true error:&sessionError]) {
-    NSLog(
-        @"Error while activating audio session before input materialization: %@",
-        [sessionError debugDescription]);
-    return NO;
-  }
-
   AVAudioFormat *inputFormat = [self currentInputConnectionFormat];
 
   if (inputFormat == nil) {
@@ -243,7 +236,28 @@ static AudioEngine *_sharedInstance = nil;
 // their own speaker output looped back into the microphone. Toggling it is only
 // allowed while the engine is stopped, and it changes the hardware input format,
 // so this has to run before the input connection format is read.
-- (void)applyVoiceProcessing
+- (BOOL)prepareInputForMaterialization
+{
+  if (self.inputRegistration == nil) {
+    return YES;
+  }
+
+  NSError *sessionError = nil;
+  if (![self.sessionManager ensureActive:true error:&sessionError]) {
+    NSLog(
+        @"Error while activating audio session before input materialization: %@",
+        [sessionError debugDescription]);
+    return NO;
+  }
+
+  if ([self.audioEngine isRunning]) {
+    [self.audioEngine stop];
+  }
+
+  return [self applyVoiceProcessing];
+}
+
+- (BOOL)applyVoiceProcessing
 {
   BOOL wantsVoiceProcessing = self.inputRegistration.voiceProcessingEnabled;
 
@@ -251,22 +265,23 @@ static AudioEngine *_sharedInstance = nil;
   // graphs there is nothing to undo - and reading `inputNode` would needlessly
   // pull the microphone into the engine.
   if (!wantsVoiceProcessing && !_voiceProcessingApplied) {
-    return;
+    return YES;
   }
 
   if (self.audioEngine == nil) {
-    return;
+    return NO;
   }
 
   AVAudioInputNode *systemInputNode = self.audioEngine.inputNode;
 
   if (systemInputNode.isVoiceProcessingEnabled == wantsVoiceProcessing) {
     _voiceProcessingApplied = wantsVoiceProcessing;
-    return;
+    return YES;
   }
 
   if ([self.audioEngine isRunning]) {
-    [self.audioEngine stop];
+    NSLog(@"[AudioEngine] Voice processing must be configured before the engine starts");
+    return NO;
   }
 
   NSError *error = nil;
@@ -276,15 +291,18 @@ static AudioEngine *_sharedInstance = nil;
         @"[AudioEngine] Error while setting voice processing to %@: %@",
         wantsVoiceProcessing ? @"true" : @"false",
         [error debugDescription]);
-    return;
+    return NO;
   }
 
   _voiceProcessingApplied = wantsVoiceProcessing;
+  return YES;
 }
 
-- (void)materializeTrackedNodesIfNeeded
+- (BOOL)materializeTrackedNodesIfNeeded
 {
-  [self applyVoiceProcessing];
+  if (![self prepareInputForMaterialization]) {
+    return NO;
+  }
 
   NSArray<NSString *> *sourceNodeIds =
       [[self.sourceRegistrations allKeys] sortedArrayUsingSelector:@selector(compare:)];
@@ -292,7 +310,7 @@ static AudioEngine *_sharedInstance = nil;
     [self materializeSourceNodeWithId:sourceNodeId];
   }
 
-  [self materializeInputNodeIfNeeded];
+  return [self materializeInputNodeIfNeeded];
 }
 
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
@@ -354,7 +372,13 @@ static AudioEngine *_sharedInstance = nil;
   registration.onInputConfigurationChange = onInputConfigurationChange;
   self.inputRegistration = registration;
 
-  [self materializeInputNodeIfNeeded];
+  // Voice processing changes the live I/O format, so defer its input-node
+  // connection until startEngine has activated the configured session.
+  if (!voiceProcessingEnabled) {
+    if (![self prepareInputForMaterialization] || ![self materializeInputNodeIfNeeded]) {
+      NSLog(@"[AudioEngine] Could not materialize input node after attaching recorder");
+    }
+  }
 }
 
 - (void)resetInputNode
@@ -440,7 +464,11 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   [self stopEngine];
-  [self rebuildAudioEngine];
+  if (![self rebuildAudioEngine]) {
+    self.state = AudioEngineState::AudioEngineStateIdle;
+    [self notifyConfigurationChanges];
+    return;
+  }
 
   if (!shouldResume) {
     self.state = AudioEngineState::AudioEngineStatePaused;
@@ -490,10 +518,10 @@ static AudioEngine *_sharedInstance = nil;
   return [self hasTrackedGraph] || self.audioEngine != nil;
 }
 
-- (void)rebuildAudioEngineAndResumeIfNeeded
+- (BOOL)rebuildAudioEngineAndResumeIfNeeded
 {
   if (_isRebuildingAudioEngine) {
-    return;
+    return YES;
   }
 
   _isRebuildingAudioEngine = YES;
@@ -502,7 +530,10 @@ static AudioEngine *_sharedInstance = nil;
     [self.audioEngine stop];
   }
 
-  [self rebuildAudioEngine];
+  if (![self rebuildAudioEngine]) {
+    _isRebuildingAudioEngine = NO;
+    return NO;
+  }
   self.sessionDeactivationInvalidatedGraph = false;
 
   if (self.state == AudioEngineState::AudioEngineStateRunning) {
@@ -512,15 +543,19 @@ static AudioEngine *_sharedInstance = nil;
   [self notifyConfigurationChanges];
 
   _isRebuildingAudioEngine = NO;
+  return YES;
 }
 
-- (void)rebuildAudioEngine
+- (BOOL)rebuildAudioEngine
 {
   [self destroyAudioEnginePreservingSessionDeactivationState:YES];
   [self createAudioEngineIfNeeded];
 
-  [self materializeTrackedNodesIfNeeded];
+  if (![self materializeTrackedNodesIfNeeded]) {
+    return NO;
+  }
   self.graphNeedsRebuild = false;
+  return YES;
 }
 
 - (bool)startEngine
@@ -541,9 +576,13 @@ static AudioEngine *_sharedInstance = nil;
 
   if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.graphNeedsRebuild ||
       self.sessionDeactivationInvalidatedGraph) {
-    [self rebuildAudioEngineAndResumeIfNeeded];
+    if (![self rebuildAudioEngineAndResumeIfNeeded]) {
+      return false;
+    }
   } else {
-    [self materializeTrackedNodesIfNeeded];
+    if (![self materializeTrackedNodesIfNeeded]) {
+      return false;
+    }
   }
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
@@ -582,8 +621,12 @@ static AudioEngine *_sharedInstance = nil;
   std::scoped_lock lock(_engineLock);
   if (self.state == AudioEngineState::AudioEngineStateRunning && self.audioEngine != nil &&
       [self.audioEngine isRunning]) {
-    [self materializeTrackedNodesIfNeeded];
-    return true;
+    if (self.inputRegistration == nil || self.inputNode != nil) {
+      return true;
+    }
+
+    [self.audioEngine stop];
+    self.state = AudioEngineState::AudioEngineStateIdle;
   }
 
   if ([self hasTrackedGraph]) {
@@ -639,7 +682,10 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  [self rebuildAudioEngineAndResumeIfNeeded];
+  if (![self rebuildAudioEngineAndResumeIfNeeded]) {
+    self.state = AudioEngineState::AudioEngineStatePaused;
+    [self notifyConfigurationChanges];
+  }
 }
 
 - (void)logAudioEngineState
