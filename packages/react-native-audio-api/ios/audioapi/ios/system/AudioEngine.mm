@@ -8,6 +8,7 @@
 @property (nonatomic, copy) AVAudioSourceNodeRenderBlock renderBlock;
 @property (nonatomic, assign) float sampleRate;
 @property (nonatomic, assign) AVAudioChannelCount channelCount;
+@property (nonatomic, copy) OnOutputRecoveryFailedBlock onOutputRecoveryFailed;
 
 @end
 
@@ -145,6 +146,26 @@ static AudioEngine *_sharedInstance = nil;
   if (_sharedInstance == self) {
     _sharedInstance = nil;
   }
+}
+
+- (void)notifyOutputRecoveryFailed
+{
+  NSMutableArray *blocks = [NSMutableArray array];
+  for (AudioEngineSourceRegistration *reg in self.sourceRegistrations.allValues) {
+    if (reg.onOutputRecoveryFailed != nil) {
+      [blocks addObject:[reg.onOutputRecoveryFailed copy]];
+    }
+  }
+  if (blocks.count == 0) {
+    return;
+  }
+
+  // Invoke after the engine lock is released so player cleanup can detach nodes.
+  dispatch_async(dispatch_get_main_queue(), ^{
+    for (OnOutputRecoveryFailedBlock onOutputRecoveryFailed in blocks) {
+      onOutputRecoveryFailed();
+    }
+  });
 }
 
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId
@@ -298,6 +319,7 @@ static AudioEngine *_sharedInstance = nil;
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
                                    sampleRate:(float)sampleRate
                                  channelCount:(AVAudioChannelCount)channelCount
+                       onOutputRecoveryFailed:(OnOutputRecoveryFailedBlock)onOutputRecoveryFailed
 {
   std::scoped_lock lock(_engineLock);
   [self createAudioEngineIfNeeded];
@@ -307,6 +329,7 @@ static AudioEngine *_sharedInstance = nil;
   registration.renderBlock = renderBlock;
   registration.sampleRate = sampleRate;
   registration.channelCount = channelCount;
+  registration.onOutputRecoveryFailed = onOutputRecoveryFailed;
 
   self.sourceRegistrations[sourceNodeId] = registration;
   [self materializeSourceNodeWithId:sourceNodeId];
@@ -456,6 +479,9 @@ static AudioEngine *_sharedInstance = nil;
         @"Error while restarting the audio engine after interruption: %@",
         [error debugDescription]);
     self.state = AudioEngineState::AudioEngineStateIdle;
+
+    [self notifyOutputRecoveryFailed];
+
     [self notifyConfigurationChanges];
     return;
   }
@@ -506,7 +532,10 @@ static AudioEngine *_sharedInstance = nil;
   self.sessionDeactivationInvalidatedGraph = false;
 
   if (self.state == AudioEngineState::AudioEngineStateRunning) {
-    [self startEngine];
+    if (![self startEngine]) {
+      self.state = AudioEngineState::AudioEngineStateIdle;
+      [self notifyOutputRecoveryFailed];
+    }
   }
 
   [self notifyConfigurationChanges];

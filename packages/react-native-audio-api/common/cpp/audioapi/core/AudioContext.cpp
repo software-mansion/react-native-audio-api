@@ -8,15 +8,17 @@
 
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+
 #include <memory>
-#include <string>
 #include <thread>
 
 namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+      isInitialized_(false),
+      onErrorEvent_(audioEventHandlerRegistry) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
   // drain the channels itself until start()/resume() hands draining to the
   // audio callback (same pattern as OfflineAudioContext before rendering).
@@ -51,7 +53,9 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),
-      currentRenders_);
+      currentRenders_,
+      std::static_pointer_cast<AudioContext>(shared_from_this()),
+      &driverMutex_);
 #endif
 }
 
@@ -186,6 +190,22 @@ double AudioContext::getOutputLatency() const {
   }
 
   return audioPlayer_->getOutputLatency();
+}
+
+void AudioContext::assignOnErrorCallbackId(uint64_t callbackId) {
+  onErrorEvent_.assignCallbackId(callbackId);
+}
+
+void AudioContext::onStreamFail() {
+  assertDriverMutexHeld();
+
+  if (audioPlayer_ != nullptr) {
+    audioPlayer_->cleanup();
+  }
+
+  isInitialized_.store(false, std::memory_order_release);
+
+  onErrorEvent_.dispatchEmpty();
 }
 
 } // namespace audioapi

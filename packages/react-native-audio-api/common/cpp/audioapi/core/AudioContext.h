@@ -2,6 +2,8 @@
 
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/CommonPlayer.h>
+#include <audioapi/events/AudioEvent.h>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -37,12 +39,20 @@ class AudioContext : public BaseAudioContext {
   /// @returns The output latency in seconds.
   [[nodiscard]] double getOutputLatency() const;
 
+  /// @brief Called when the audio stream failed to rebuild.
+  /// @note This method is called when the audio stream fails.
+  void onStreamFail();
+
+  void assignOnErrorCallbackId(uint64_t callbackId);
+
  private:
   std::shared_ptr<CommonPlayer> audioPlayer_;
   std::atomic<bool> isInitialized_{false};
   /// Audio I/O callback thread increments around each platform render callback;
   /// control thread waits on suspend/close.
   std::atomic<uint32_t> currentRenders_{0};
+
+  EventCaller<AudioEvent::CONTEXT_ERROR> onErrorEvent_;
 
   bool isDriverRunning() const override;
 

@@ -329,7 +329,8 @@
   return [self.audioEngine
       attachSourceNodeWithRenderBlock:[self testSourceRenderBlock]
                            sampleRate:44100
-                         channelCount:2];
+                         channelCount:2
+             onOutputRecoveryFailed:nil];
 }
 
 - (void)testCleanupDestroysInternalEngineAndResetsStateAndDeactivatesSession {
@@ -370,7 +371,8 @@
   NSString *sourceNodeId = [self.audioEngine
       attachSourceNodeWithRenderBlock:[self testSourceRenderBlock]
                            sampleRate:44100
-                         channelCount:2];
+                         channelCount:2
+             onOutputRecoveryFailed:nil];
   AVAudioSourceNode *sourceNode = self.audioEngine.sourceNodes[sourceNodeId];
   AVAudioFormat *format = self.audioEngine.sourceFormats[sourceNodeId];
 
