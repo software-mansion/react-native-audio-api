@@ -534,6 +534,7 @@ class ConstantSourceNodeMock extends AudioScheduledSourceNodeMock {
 }
 
 class AudioBufferSourceNodeMock extends AudioScheduledSourceNodeMock {
+  private disposed = false;
   private _buffer: AudioBufferMock | null = null;
   private _loop: boolean = false;
   private _loopStart: number = 0;
@@ -549,11 +550,51 @@ class AudioBufferSourceNodeMock extends AudioScheduledSourceNodeMock {
     this.playbackRate.value = 1;
   }
 
+  private assertNotDisposed(): void {
+    if (this.disposed)
+      throw new InvalidStateErrorMock('AudioBufferSourceNode is disposed');
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.onended = null;
+    this._buffer = null;
+    this.disconnect();
+    this.disposed = true;
+  }
+
+  override start(
+    _when: number = 0,
+    _offset?: number,
+    _duration?: number
+  ): void {
+    this.assertNotDisposed();
+  }
+
+  override connect(
+    destination: AudioNodeMock | AudioParamMock,
+    output = 0,
+    input = 0
+  ): AudioNodeMock | void {
+    this.assertNotDisposed();
+    return super.connect(destination, output, input);
+  }
+
+  override get onended(): ((event: Event) => void) | null {
+    return super.onended;
+  }
+
+  override set onended(callback: ((event: Event) => void) | null) {
+    this.assertNotDisposed();
+    super.onended = callback;
+  }
+
   get buffer(): AudioBufferMock | null {
     return this._buffer;
   }
 
   set buffer(value: AudioBufferMock | null) {
+    this.assertNotDisposed();
     this._buffer = value;
   }
 
