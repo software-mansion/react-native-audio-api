@@ -636,18 +636,6 @@ class PannerNodeMock extends AudioNodeMock {
   set coneOuterGain(value: number) {
     this._coneOuterGain = value;
   }
-
-  setPosition(x: number, y: number, z: number): void {
-    this.positionX.value = x;
-    this.positionY.value = y;
-    this.positionZ.value = z;
-  }
-
-  setOrientation(x: number, y: number, z: number): void {
-    this.orientationX.value = x;
-    this.orientationY.value = y;
-    this.orientationZ.value = z;
-  }
 }
 
 class OscillatorNodeMock extends AudioScheduledSourceNodeMock {

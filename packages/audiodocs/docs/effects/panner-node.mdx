@@ -78,13 +78,10 @@ Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 <AudioNodeMethodsTable />
 
-| Method | Description |
-| :---- | :-------- |
-| `setPosition(x, y, z)` | Sets `positionX/Y/Z.value` (deprecated in the spec; provided for compatibility). |
-| `setOrientation(x, y, z)` | Sets `orientationX/Y/Z.value`. |
+`PannerNode` does not define any additional methods.
 
 ## Remarks
 
 - Output is always stereo (2 channels), like [`StereoPannerNode`](./stereo-panner-node.mdx).
-- Spatialization uses the context [`listener`](../core/audio-listener.mdx) position and orientation.
-- `panningModel` supports `'equalpower'` only (`'HRTF'` is not part of the API yet).
+- Spatialization uses the context's [`listener`](../core/audio-listener.mdx) position and orientation.
+- `panningModel` supports `'equalpower'` only.

@@ -130,6 +130,10 @@ export default class PannerNode extends AudioNode {
     (this.node as IPannerNode).coneOuterGain = value;
   }
 
+  /**
+   * @internal Exists only so upstream Web Platform Tests can utilize those
+   * Deprecated in spec.
+   */
   public setPosition(x: number, y: number, z: number): void {
     assertFloat32Representable(x);
     assertFloat32Representable(y);
@@ -139,6 +143,10 @@ export default class PannerNode extends AudioNode {
     this.positionZ.value = z;
   }
 
+  /**
+   * @internal Exists only so upstream Web Platform Tests can utilize those
+   * Deprecated in spec.
+   */
   public setOrientation(x: number, y: number, z: number): void {
     assertFloat32Representable(x);
     assertFloat32Representable(y);

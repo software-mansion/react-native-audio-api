@@ -87,12 +87,4 @@ export default class PannerNode extends AudioNode {
   set coneOuterGain(value: number) {
     (this.node as globalThis.PannerNode).coneOuterGain = value;
   }
-
-  setPosition(x: number, y: number, z: number): void {
-    (this.node as globalThis.PannerNode).setPosition(x, y, z);
-  }
-
-  setOrientation(x: number, y: number, z: number): void {
-    (this.node as globalThis.PannerNode).setOrientation(x, y, z);
-  }
 }
