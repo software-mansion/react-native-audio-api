@@ -3,6 +3,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "removeComments": false,
+    "stripInternal": true,
     "moduleSuffixes": ["", ".native", ".web"],
     "paths": {
       "react-native-audio-api": ["./src"],
