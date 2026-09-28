@@ -13,21 +13,6 @@
 
 namespace audioapi {
 
-AudioPlayer::AudioPlayer(
-    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-    float sampleRate,
-    int channelCount,
-    std::mutex *driverMutex,
-    const std::shared_ptr<AudioContext> &context,
-    std::atomic<uint32_t> &currentRenders)
-    : renderAudio_(renderAudio),
-      currentRenders_(currentRenders),
-      sampleRate_(sampleRate),
-      channelCount_(channelCount),
-      isRunning_(false),
-      driverMutex_(driverMutex),
-      context_(context) {}
-
 bool AudioPlayer::openAudioStream() {
   std::scoped_lock lock(streamMutex_);
   AudioStreamBuilder builder;
@@ -50,7 +35,6 @@ bool AudioPlayer::openAudioStream() {
     return false;
   }
 
-  buffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
   isInitialized_.store(true, std::memory_order_release);
   return true;
 }
@@ -145,18 +129,14 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
     auto framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
     if (isRunning_.load(std::memory_order_acquire)) {
-      renderAudio_(buffer_.get(), framesToProcess);
-      // Peak-normalize the rendered quantum before it reaches the hardware.
-      // This limiting lives in the player (not the destination node) so
-      // offline renders stay spec-accurate.
-      buffer_->normalize();
+      renderNormalizedQuantum(framesToProcess);
     } else {
-      buffer_->zero();
+      renderBuffer_->zero();
     }
 
     float *destination = buffer + (processedFrames * channelCount_);
 
-    buffer_->interleaveTo(destination, framesToProcess);
+    renderBuffer_->interleaveTo(destination, framesToProcess);
     processedFrames += framesToProcess;
   }
 

@@ -13,6 +13,15 @@
 #include <thread>
 
 namespace audioapi {
+
+#ifdef RN_AUDIO_API_NODE
+using PlatformAudioPlayer = NodeAudioPlayer;
+#elif defined(ANDROID)
+using PlatformAudioPlayer = AudioPlayer;
+#else
+using PlatformAudioPlayer = IOSAudioPlayer;
+#endif
+
 AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
@@ -35,28 +44,13 @@ AudioContext::~AudioContext() {
 
 void AudioContext::initialize(const AudioDestinationNode *destination) {
   BaseAudioContext::initialize(destination);
-#ifdef RN_AUDIO_API_NODE
-  audioPlayer_ = std::make_shared<NodeAudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount());
-#elif defined(ANDROID)
-  audioPlayer_ = std::make_shared<AudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount(),
-      &driverMutex_,
-      std::static_pointer_cast<AudioContext>(shared_from_this()),
-      currentRenders_);
-#else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
+  audioPlayer_ = std::make_shared<PlatformAudioPlayer>(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),
       currentRenders_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
       &driverMutex_);
-#endif
 }
 
 bool AudioContext::tryStartDriver() {

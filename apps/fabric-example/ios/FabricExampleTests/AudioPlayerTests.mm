@@ -20,8 +20,6 @@ using namespace audioapi;
 
 namespace audioapi {
 
-class AudioContext;
-
 class IOSAudioPlayer : public CommonPlayer {
  public:
   IOSAudioPlayer(
@@ -45,18 +43,10 @@ class IOSAudioPlayer : public CommonPlayer {
   [[nodiscard]] double getOutputLatency() const override;
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
-  float sampleRate_;
-  std::function<void(DSPAudioBuffer *, int)> renderAudio_;
-  std::atomic<uint32_t> &currentRenders_;
-  int channelCount_;
-  std::atomic<bool> isRunning_;
   std::atomic<bool> flushOverflowNextPull_;
   int pendingSavedCount_;
   DSPAudioBuffer pendingSaved_;
-  std::weak_ptr<AudioContext> context_;
-  std::mutex *driverMutex_;
 };
 
 } // namespace audioapi
@@ -262,7 +252,7 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
   }
 
   std::shared_ptr<DSPAudioBuffer> getAudioBuffer() const {
-    return audioBuffer_;
+    return renderBuffer_;
   }
 
   void setRunning(bool isRunning) {
