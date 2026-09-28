@@ -15,6 +15,7 @@ interface Options {
   androidPermissions: string[];
   androidForegroundService: boolean;
   androidFSTypes: string[];
+  androidFSStopWithTask: boolean;
   disableFFmpeg: boolean;
   disableStaticExternalLibs: boolean;
 }
@@ -28,6 +29,7 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
     ],
     androidForegroundService: true,
     androidFSTypes: ['mediaPlayback'],
+    androidFSStopWithTask: true,
     disableFFmpeg: false,
     disableStaticExternalLibs: false,
     ...options,
@@ -65,7 +67,7 @@ const withAndroidPermissions: ConfigPlugin<Options> = (
 
 const withForegroundService: ConfigPlugin<Options> = (
   config,
-  { androidFSTypes }: Options
+  { androidFSTypes, androidFSStopWithTask }: Options
 ) => {
   return withAndroidManifest(config, (mod) => {
     const manifest = mod.modResults;
@@ -78,7 +80,7 @@ const withForegroundService: ConfigPlugin<Options> = (
       $: {
         'android:name':
           'com.swmansion.audioapi.system.CentralizedForegroundService',
-        'android:stopWithTask': 'true',
+        'android:stopWithTask': String(androidFSStopWithTask),
         'android:foregroundServiceType': SFTypes,
       },
       intentFilter: [],

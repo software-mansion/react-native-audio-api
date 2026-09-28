@@ -23,6 +23,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)cleanup
 {
+  [self observeVolumeChanges:NO];
   self.notificationCenter = nil;
 }
 
@@ -64,7 +65,9 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                                          options:NSKeyValueObservingOptionNew
                                          context:(void *)&NotificationManagerContext];
   } else {
-    [[AVAudioSession sharedInstance] removeObserver:self forKeyPath:@"outputVolume" context:nil];
+    [[AVAudioSession sharedInstance] removeObserver:self
+                                         forKeyPath:@"outputVolume"
+                                            context:(void *)&NotificationManagerContext];
   }
 
   self.volumeChangesObserved = enabled;
@@ -259,15 +262,15 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  // This notification is registered with object:nil, so it also fires for
-  // AVAudioEngine instances owned by other libraries in the host app. Without
-  // an engine of our own there is nothing to restart, and marking the session
-  // inactive would corrupt bookkeeping for apps that only manage the session.
-  if (![audioEngine isInUse]) {
-    return;
-  }
-
   dispatch_async(dispatch_get_main_queue(), ^{
+    // This notification is registered with object:nil, so it also fires for
+    // AVAudioEngine instances owned by other libraries in the host app. Without
+    // an engine of our own there is nothing to restart, and marking the session
+    // inactive would corrupt bookkeeping for apps that only manage the session.
+    if (![audioEngine isInUse]) {
+      return;
+    }
+
     [sessionManager markInactive];
     [audioEngine restartAudioEngine];
   });
