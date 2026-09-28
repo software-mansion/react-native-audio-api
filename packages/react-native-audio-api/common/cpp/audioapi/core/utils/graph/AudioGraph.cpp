@@ -1,6 +1,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/graph/AudioGraph.h>
 #include <algorithm>
+#include <iterator>
 #include <utility>
 
 namespace audioapi::utils::graph {
@@ -51,15 +52,17 @@ void AudioGraph::markDeletions() {
     return nodes[idx].will_be_deleted;
   };
 
-  // Decide first. A node goes when it is orphaned, every input is going too,
-  // and it agrees.
+  // ── Pass 1: mark deletions (cascading, left-to-right in topo order) ────
+  // A node goes when it is orphaned, every input is going too, and it agrees.
   for (auto &node : nodes) {
     node.will_be_deleted = node.orphaned &&
         std::ranges::all_of(pool_.view(node.input_head), flagged) &&
         node.handle->audioNode->canBeDestructed();
   }
 
-  // Then scrub. Every flag is final now.
+  // ── Pass 2: remove inputs from surviving nodes ─
+  // can't be merged with 1, because links can sit at higher index and we
+  // need to mark everything first before we start removing from the pools.
   for (auto &node : nodes) {
     if (node.will_be_deleted) {
       continue;
@@ -73,8 +76,8 @@ void AudioGraph::remapListsToTargetIndex() {
   // longer names the node it was written for.
   for (auto &node : nodes) {
     forEachDependencyList(node, [this](std::uint32_t head) {
-      for (auto &dep : pool_.mutableView(head)) {
-        dep = static_cast<std::uint32_t>(nodes[dep].target_index);
+      for (auto &inputIndex : pool_.mutableView(head)) {
+        inputIndex = static_cast<std::uint32_t>(nodes[inputIndex].target_index);
       }
     });
   }
@@ -86,8 +89,7 @@ void AudioGraph::sortAndCompact() {
     kahn_toposort();
   }
 
-  // Only orphaned nodes can be deleted, so with none present the passes below
-  // would walk every input list and change nothing.
+  // Only orphaned nodes can be deleted, so with none present skip the rest of the function.
   if (std::ranges::none_of(nodes, [](const Node &node) { return node.orphaned; })) {
     return;
   }
@@ -158,12 +160,13 @@ void AudioGraph::settleProcessableState() {
   // excludeFromProcessablePull_ stays NOT_PROCESSABLE and is never pushed, so
   // nothing propagates through it.
   while (top != -1) {
+    // pop
     const auto idx = static_cast<std::uint32_t>(top);
     top = nodes[idx].target_index;
     nodes[idx].target_index = -1;
 
     forEachDependencyList(nodes[idx], [&](std::uint32_t head) {
-      for (auto dep : pool_.view(head)) {
+      for (const auto dep : pool_.view(head)) {
         auto &obj = *nodes[dep].handle->audioNode;
         if (obj.processableState_ == PS::NOT_PROCESSABLE && !obj.excludeFromProcessablePull_) {
           obj.processableState_ = PS::CONDITIONAL_PROCESSABLE;
@@ -184,7 +187,7 @@ void AudioGraph::kahn_toposort() {
 
   // Phase 1: compute out-degree
   for (const auto &nd : nodes) {
-    for (auto inp : pool_.view(nd.input_head)) {
+    for (const auto inp : pool_.view(nd.input_head)) {
       nodes[inp].topo_out_degree++;
     }
   }
@@ -204,11 +207,12 @@ void AudioGraph::kahn_toposort() {
 
   std::uint32_t write = n;
   while (top != -1) {
+    // pop
     const auto idx = static_cast<std::uint32_t>(top);
     top = nodes[idx].target_index;
     nodes[idx].target_index = static_cast<std::int32_t>(--write); // final: position after the sort
 
-    for (auto inp : pool_.view(nodes[idx].input_head)) {
+    for (const auto inp : pool_.view(nodes[idx].input_head)) {
       if (--nodes[inp].topo_out_degree == 0) {
         push(inp);
       }
@@ -239,10 +243,7 @@ AudioGraph::NodeBuffer AudioGraph::adoptNodeBuffer(NodeBuffer preAllocated) {
   // Move live nodes into the pre-allocated (empty, large-capacity) buffer.
   // No reallocation: preAllocated.data.capacity() >= nodes.size() guaranteed
   // by the main thread before sending this event.
-  preAllocated.data.insert(
-      preAllocated.data.end(),
-      std::make_move_iterator(nodes.begin()),
-      std::make_move_iterator(nodes.end()));
+  std::ranges::move(nodes, std::back_inserter(preAllocated.data));
   std::swap(nodes, preAllocated.data);
   // preAllocated.data now holds the old (small) buffer with moved-from nodes.
   // Caller disposes it off the audio thread.

@@ -4,9 +4,7 @@ sidebar_position: 4
 
 # Graph implementation
 
-[Processing model](./processing-model.mdx) explains why the graph exists twice and what each copy is for. This page is about how the
-two copies are built. It names the classes, because the point is to make the code readable. Everything lives in
-[`core/utils/graph/`](https://github.com/software-mansion/react-native-audio-api/tree/1966b4ac91efb990f1bc626fdb8899b034b770f4/packages/react-native-audio-api/common/cpp/audioapi/core/utils/graph).
+Everything lives in [`core/utils/graph/`](https://github.com/software-mansion/react-native-audio-api/tree/1966b4ac91efb990f1bc626fdb8899b034b770f4/packages/react-native-audio-api/common/cpp/audioapi/core/utils/graph).
 
 | Class | Thread | Role |
 |---|---|---|
@@ -26,7 +24,7 @@ struct NodeHandle {
 };
 ```
 
-A handle is created on the JS thread with `std::make_shared` and stored in both `HostGraph::Node` and `AudioGraph::Node`, so its reference
+A handle is created on the JS thread and stored in both `HostGraph::Node` and `AudioGraph::Node`, so its reference
 count is 2 for as long as the node is alive in both graphs. `AudioGraph` sorts and compacts its array freely and rewrites `index` after every
 move, which is how an event built on the JS thread (`graph[handle->index]`) finds the right node when it runs on the audio thread. `index`
 is never read on the JS thread.
@@ -148,7 +146,7 @@ struct Node {
   std::uint32_t link_head  = kNull;   // head of this node's processable-link list
   std::uint32_t topo_out_degree : 31; // scratch, toposort
   unsigned      will_be_deleted : 1;  // scratch, compaction
-  std::int32_t  target_index : 31;     // scratch, where the node moves to; ready-stack link during the sort
+  std::int32_t  target_index : 31;    // scratch, where the node moves to; ready-stack link during the sort
   unsigned      orphaned : 1;         // set by the removeNode event
 };
 ```
@@ -354,7 +352,7 @@ Every list an `AudioGraph::Node` owns, inputs and links, is a singly linked list
 struct Slot {
   union {
     struct { std::uint32_t val; std::uint32_t next; }; // in a list
-    std::uint32_t next_free;                            // on the free list
+    std::uint32_t next_free;                           // on the free list
   };
 };
 ```
