@@ -4,22 +4,28 @@ sidebar_position: 3
 
 # Processing model
 
+The audio thread has to deliver every render callback within a few milliseconds, so it must never wait on anything whose duration it
+cannot bound: no memory allocation or deallocation, no locks, no file or network I/O, no sleeping. Any of these can block and cause an
+underrun. Where these limits come from is explained in [Audio thread priority](../fundamentals/rendering-audio.mdx#2-audio-thread-priority).
+This page describes how the engine keeps the render path [alloc-free](#alloc-free), [lock-free](#lock-free) and
+[dealloc-free](#dealloc-free).
+
 ## Threads
 Mainly there are three threads involved in the whole pipeline:
-- JS thread (creates objects and sets up pipeline elements)
-- Audio thread (renders audio and copies data to provided memory)
+- JS thread (creates objects and sets up audio graph connections)
+- Audio thread (renders audio)
 - JS garbage collector thread (deallocates unused object)
 
 ## Alloc-free
 
-This is the easiest one to achieve, almost all of the objects are created by the JavaScript thread, which means that we can prepare almost
+This is the easiest one to achieve, all of the objects are created on the JavaScript thread, which means that we can prepare almost
 everything that we would need upfront and reuse them on the audio thread.
 
 The general rule is: **the JS thread allocates, the audio thread only swaps pointers.**`AudioBufferSourceNode.setBuffer`
 is the typical example: the HostObject copies the buffer, allocates the matching AudioBuffer and initializes the stretcher on the JS thread,
 and the audio event that reaches the render loop only assigns the ready-made pointers.
 
-The places below are the ones where that rule was not enough and we had to do something less obvious.
+The points below explain in more details situations, where that rule was not enough and we had to do something less obvious.
 
 ### Events that carry their own storage
 
@@ -29,7 +35,7 @@ the function closure is stored inline in `N` bytes, and a memory is asigned at c
 
 ### A graph that grows without allocating
 
-The graph has to accept new nodes and edges in the middle of rendering, which with a `std::vector` means an occasional reallocation.
+The graph has to accept new nodes and edges in the middle of rendering, using a `std::vector` for this storage would mean an occasional reallocation when the amount of edges would exceed some number.
 Two things prevent it:
 
 - **Edges live in a shared pool**, not in a per-node `std::vector`. The pool is one flat array in which every node's inputs form a linked list,
@@ -37,9 +43,6 @@ Two things prevent it:
 - **Growth is pre-paid by the JS thread.** The JS thread knows how many nodes and edges the graph holds, so it notices that the storage is running
   out before the audio thread does. It then allocates a bigger one and sends it to the audio thread ahead of the mutation that needs the space.
   Messages arrive in order, so the space is always there in time. The audio thread then moves its data into the new storage.
-
-Channel-count negotiation works the same way: the new layout and the buffers for it are computed and allocated on the javascript thread, and the
-audio thread applies them.
 
 ### Fixed-capacity queues
 
@@ -53,7 +56,7 @@ does not do it. It only describes the work in a small message and leaves it for 
 take as long as it needs. The message queue between the two is allocated once, when the worker is created, so posting a message costs the audio
 thread a copy into memory that already exists and nothing more.
 
-This is not a general mechanism that every node goes through. It exists only in the few places where such work is unavoidable, and each of them
+It exists only in the few places where such work is unavoidable, and each of them
 owns its own worker: the recorder uses one to move captured audio off the audio thread before it is written to a file or delivered to a JS callback.
 
 ## Lock-free
@@ -63,7 +66,7 @@ free to suspend it while it holds the lock. The audio thread then waits for a th
 called priority inversion, and the only reliable way to avoid it is to have no lock to wait on.
 
 We get there with one rule: **the state used for rendering belongs to the audio thread, and nobody else touches it.** When JS sets a property
-or calls a method on a node, the JS thread does not write the new value into the node. It wraps the change in a small message and puts it on a queue.
+or calls a method on a node, the JS thread does not write the new value into the node. It wraps the change in a small message and puts it on a [special queue](#the-queue).
 The audio thread takes it from there and applies the change itself. Since only one thread ever reads or writes that state, there is nothing to protect.
 
 ### Shadow state
@@ -127,7 +130,7 @@ sequenceDiagram
 A few properties follow from this:
 
 - **Nodes never change in the middle of a quantum.** Every change lands between two quanta, which is why rendering code does not have to be
-  defensive about its own fields. This is also where the ~2.9 ms timing resolution of non-scheduled changes comes from.
+  defensive about its own fields.
 - **Order is preserved.** The queue is first-in, first-out, so the audio thread sees changes in the order JS made them. `source.buffer = buffer`
   followed by `source.start()` works because the buffer is always applied first. This only holds if *every* change to a node goes through
   the queue. A setter that wrote directly to the node "because it is safe in this case" would overtake the messages sent before it.
@@ -150,7 +153,8 @@ changes JS made to it.
 ### The other direction
 
 The audio thread also has things to report. Values that JS polls, like `currentTime`, are plain atomics that the audio thread writes and the
-JS thread reads. Events such as `ended` go through a lock-free queue in the opposite direction and are delivered to JS callbacks by the JS thread.
+JS thread reads. But events, things that require some more work than incrementing a variable go through a lock-free queue in the opposite direction and
+are delivered from audio thread to the JS thread.
 The audio thread only posts them and never waits for them to be delivered.
 
 ## Dealloc-free
@@ -170,8 +174,7 @@ queue is the same kind as the one in the [lock-free section](#the-queue), with t
 worker takes the message, runs the destructor, and that is where the memory is freed.
 
 The message is small (24 bytes) and stores the object inline, so what usually travels is a smart pointer or a container header, not the data.
-The audio thread has to be the sole owner at that moment: sending a `shared_ptr` that is also held on the JS side would only move a reference
-count decrement, and the destructor would still run wherever the last reference goes away. If the queue is ever full, the object is destroyed
+If the queue is ever full, the object is destroyed
 on the calling thread instead. That is a violation, but a silent leak would be worse.
 
 Every place where the audio thread replaces or drops an object goes through this path: a source node swapping buffers or finishing, a convolver
@@ -181,9 +184,8 @@ replacing its impulse response, the graph adopting a bigger storage and letting 
 
 A node is the largest thing the audio thread ever stops needing, and it is not disposed through the worker. Its lifetime is split in two:
 
-- On the **audio thread**, a node whose JS object was released is marked as orphaned. The next time the graph is compacted, and once the node
-  has nothing left to render, it is dropped from the audio graph. Dropping it only releases one reference to a shared handle, which is a single
-  atomic decrement.
+- On the **audio thread**, a node whose JS object was released is marked as orphaned. The next time the graph is rendered, and once the node
+  has nothing left to render, it is dropped from the audio graph. Dropping it only releases one reference to a shared handle.
 - On the **JS side**, whenever another node is released, the host side of the graph looks for handles that only it still holds. Those are the
   nodes the audio thread has let go, and this is where they are deleted.
 
@@ -195,6 +197,32 @@ still playing: the C++ node stays alive until the audio thread is done with it.
 The JS engine collects HostObjects on a thread of its own, at a time of its choosing. A HostObject destructor must therefore never touch the audio
 thread's state directly. It sends a message on the [GC queue](#more-than-one-sender), and the audio thread does the cleanup at the start
 of a quantum, like any other change. The message has to be safe to skip: if the context is already closed there is no audio thread to run it.
+
+## All the threads together
+
+Solid arrows are queues, dotted arrows are atomics and driver control.
+
+```mermaid
+flowchart LR
+  JS["JS thread"]
+  GC["GC thread<br/>(JS engine)"]
+  AT["Audio thread<br/>(realtime priority)"]
+  DW["Disposer worker"]
+  EW["Event dispatch worker"]
+  PW["Driver worker<br/>(resume, suspend, close)"]
+  RW["Recorder workers<br/>(JS callback, file writer)"]
+
+  JS -- "property changes,<br/>graph mutations" --> AT
+  GC -- "forget callbacks" --> AT
+  JS -- "context promises" --> PW
+  PW -. "start / stop driver" .-> AT
+  AT -- "objects to destroy" --> DW
+  AT -- "node events (ended, …)" --> EW
+  EW -- "invokeAsync" --> JS
+  AT -. "currentTime, playhead" .-> JS
+  AT -- "captured audio" --> RW
+  RW -- "audio chunks" --> JS
+```
 
 ## Double graph
 
@@ -229,12 +257,3 @@ Removing a node shows why the two copies need to be slightly out of step. When J
 **ghost** and keeps its edges. The node is still alive in the audio graph, possibly still producing sound, and any connection JS makes in the
 meantime must be validated against the graph as the audio thread will see it, ghosts included. Otherwise a cycle could pass the host check and
 reach the audio thread. The ghost is removed only when the audio graph has let go of the node.
-
-### Why not one graph with a lock
-
-The other way to let JS look at the audio thread's graph would be a mutex. It would be held during connect, which is a cycle check over the whole
-graph, and during render, which is the whole quantum. Either one blocking the other is exactly the priority inversion from the
-[lock-free section](#lock-free). Two copies cost some memory and one message per mutation, and buy a graph that JS can query at once and the
-audio thread can walk without ever waiting.
-
-How the two copies are built, sorted, compacted and grown is described in [Graph implementation](./graph-implementation.mdx).
