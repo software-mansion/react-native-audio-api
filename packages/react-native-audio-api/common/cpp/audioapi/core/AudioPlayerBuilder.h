@@ -4,6 +4,7 @@
 #include <audioapi/core/types/AudioContextOptions.h>
 
 #include <concepts>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <utility>
