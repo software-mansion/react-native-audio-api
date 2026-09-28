@@ -10,6 +10,7 @@
 
 #include <audioapi/utils/ThreadPool.hpp>
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -45,6 +46,8 @@ JSI_PROPERTY_SETTER_IMPL(ConvolverNodeHostObject, normalize) {
 
 JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   if (!args[0].isObject()) {
+    clearBuffer();
+    thisValue.asObject(runtime).setExternalMemoryPressure(runtime, getMemoryPressure());
     return jsi::Value::undefined();
   }
 
@@ -57,8 +60,20 @@ JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   return jsi::Value::undefined();
 }
 
+void ConvolverNodeHostObject::clearBuffer() {
+  irBytes_ = 0;
+
+  convolverNode_->scheduleAudioEvent(
+      [node = convolverNode_](BaseAudioContext & /*context*/) { node->clearBuffer(); });
+
+  // The output collapses to one channel of silence; downstream widths follow.
+  convolverNode_->setImpulseResponseForNegotiation(nullptr, 0);
+  renegotiate();
+}
+
 void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
   if (buffer == nullptr) {
+    clearBuffer();
     return;
   }
 
@@ -72,23 +87,19 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
   }
 
   auto threadPool = std::make_shared<ConvolverThreadPool>(4);
+  const size_t irChannels = copiedBuffer->getNumberOfChannels();
   std::vector<std::unique_ptr<Convolver>> convolvers;
-  for (size_t i = 0; i < copiedBuffer->getNumberOfChannels(); ++i) {
-    AudioArray channelData(*copiedBuffer->getChannel(i));
-    convolvers.push_back(std::make_unique<Convolver>());
-    convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
-  }
-  if (copiedBuffer->getNumberOfChannels() == 1) {
-    // add one more convolver, because right now input is always stereo
-    AudioArray channelData(*copiedBuffer->getChannel(0));
-    convolvers.push_back(std::make_unique<Convolver>());
-    convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
+  convolvers.reserve(irChannels);
+  for (size_t channel = 0; channel < irChannels; ++channel) {
+    convolvers.push_back(ConvolverNode::makeConvolver(*copiedBuffer, channel));
   }
 
+  constexpr size_t kMaxOutputChannels = 2;
   auto internalBuffer = std::make_shared<DSPAudioBuffer>(
-      RENDER_QUANTUM_SIZE * 2, convolverNode_->getChannelCount(), copiedBuffer->getSampleRate());
+      RENDER_QUANTUM_SIZE * 2, kMaxOutputChannels, copiedBuffer->getSampleRate());
+  // Room for the second convolver a mono response may gain later
   auto intermediateBuffer = std::make_shared<DSPAudioBuffer>(
-      RENDER_QUANTUM_SIZE, convolvers.size(), copiedBuffer->getSampleRate());
+      RENDER_QUANTUM_SIZE, std::max(irChannels, kMaxOutputChannels), copiedBuffer->getSampleRate());
 
   struct SetupData {
     std::shared_ptr<AudioBuffer> buffer;
@@ -118,5 +129,10 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
     context.getDisposer()->dispose(std::move(setupData));
   };
   convolverNode_->scheduleAudioEvent(std::move(event));
+
+  // Negotiation on this thread must see the new IR before the graph recomputes
+  // what this node presents downstream.
+  convolverNode_->setImpulseResponseForNegotiation(copiedBuffer, convolvers.size());
+  renegotiate();
 }
 } // namespace audioapi

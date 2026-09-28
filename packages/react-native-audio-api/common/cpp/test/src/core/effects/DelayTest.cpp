@@ -79,6 +79,12 @@ class TestableDelayNode : public DelayNode {
     testableDelayReader_.processNode(framesToProcess);
   }
 
+  /// Order the graph produces inside a feedback cycle.
+  void processNodeReaderFirst(int framesToProcess) {
+    testableDelayReader_.processNode(framesToProcess);
+    testableDelayWriter_.processNode(framesToProcess);
+  }
+
  private:
   TestableDelayWriter testableDelayWriter_;
   TestableDelayReader testableDelayReader_;
@@ -135,6 +141,70 @@ TEST_F(DelayTest, DelayAppliesTimeShiftCorrectly) {
           static_cast<float>(
               i + 1 - FRAMES_TO_PROCESS / 2.0)); // Last 64 samples should be 1st part of buffer
     }
+  }
+}
+
+TEST_F(DelayTest, DelayEqualToMaxDelayDoesNotWrapIntoCurrentQuantum) {
+  // A delay of exactly `maxDelayTime` writes one quantum starting at the far
+  // end of the ring. Without a quantum of headroom the write wraps onto the
+  // frames the reader consumes this quantum and the signal leaks through
+  // with almost no delay.
+  static constexpr int FRAMES_TO_PROCESS = 128;
+  const float MAX_DELAY_TIME = FRAMES_TO_PROCESS / context->getSampleRate();
+  auto options = DelayOptions();
+  options.maxDelayTime = MAX_DELAY_TIME;
+  auto delayNode = TestableDelayNode(context, options);
+  delayNode.setDelayTimeParam(MAX_DELAY_TIME);
+
+  auto ones = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < ones->getSize(); ++i) {
+    (*ones->getChannel(0))[i] = 1.0f;
+  }
+
+  delayNode.setInputBuffer(ones);
+  delayNode.processNode(FRAMES_TO_PROCESS);
+  auto firstQuantum = delayNode.getOutputBuffer();
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*firstQuantum->getChannel(0))[i], 0.0f);
+  }
+
+  // The writer zeroes its buffer after storing it, so the second quantum
+  // writes silence and the reader drains the delayed ones.
+  delayNode.getOutputBuffer()->zero();
+  delayNode.processNode(FRAMES_TO_PROCESS);
+  auto secondQuantum = delayNode.getOutputBuffer();
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*secondQuantum->getChannel(0))[i], 1.0f);
+  }
+}
+
+TEST_F(DelayTest, SubQuantumDelayIsClampedToOneQuantumWhenReaderRunsFirst) {
+  // Inside a feedback cycle the reader runs before the writer. A 64-frame
+  // delay would then store frames behind the read head and lose them; the
+  // spec clamps such a delay to one render quantum instead.
+  static constexpr int FRAMES_TO_PROCESS = 128;
+  const float DELAY_TIME = (FRAMES_TO_PROCESS / context->getSampleRate()) * 0.5;
+  auto options = DelayOptions();
+  options.maxDelayTime = 1.0f;
+  auto delayNode = TestableDelayNode(context, options);
+  delayNode.setDelayTimeParam(DELAY_TIME);
+
+  auto impulse = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  (*impulse->getChannel(0))[0] = 1.0f;
+  delayNode.setInputBuffer(impulse);
+
+  delayNode.processNodeReaderFirst(FRAMES_TO_PROCESS);
+  auto firstQuantum = delayNode.getOutputBuffer();
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*firstQuantum->getChannel(0))[i], 0.0f);
+  }
+
+  delayNode.getOutputBuffer()->zero();
+  delayNode.processNodeReaderFirst(FRAMES_TO_PROCESS);
+  auto secondQuantum = delayNode.getOutputBuffer();
+  EXPECT_FLOAT_EQ((*secondQuantum->getChannel(0))[0], 1.0f);
+  for (size_t i = 1; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*secondQuantum->getChannel(0))[i], 0.0f);
   }
 }
 

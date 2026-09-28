@@ -29,6 +29,7 @@ void DelayReader::processNode(int framesToProcess) {
 
   delay_ring::bufferOperation(
       delayBuffer, audioBuffer_, framesToProcess, readIdx, delay_ring::BufferAction::READ);
+  delayLine_->markReaderRan();
 }
 
 } // namespace audioapi

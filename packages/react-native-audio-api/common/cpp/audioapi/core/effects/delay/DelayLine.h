@@ -34,7 +34,24 @@ class DelayLine {
     if (currentSampleFrame != quantumSampleFrame_) {
       writeIndex_ = readIndex_;
       quantumSampleFrame_ = currentSampleFrame;
+      readerRanThisQuantum_ = false;
     }
+  }
+
+  /// @brief Called by DelayReader once it has consumed this quantum's frames.
+  /// @note Audio Thread only.
+  void markReaderRan() {
+    readerRanThisQuantum_ = true;
+  }
+
+  /// @brief True when the reader has already run in the current quantum, i.e.
+  /// the writer is being processed after it. Outside a feedback cycle the
+  /// graph orders the writer first, so this only happens inside a cycle,
+  /// where the spec clamps the delay to at least one render quantum anyway
+  /// for this exact purpose
+  /// @note Audio Thread only.
+  [[nodiscard]] bool readerRanThisQuantum() const {
+    return readerRanThisQuantum_;
   }
 
   /// Read head used by DelayWriter for `(snapshot + delaySamples) % N` (not `readIndex_` after
@@ -58,6 +75,7 @@ class DelayLine {
   size_t readIndex_{0};
   size_t writeIndex_{0};
   size_t quantumSampleFrame_{std::numeric_limits<size_t>::max()};
+  bool readerRanThisQuantum_{false};
 };
 
 } // namespace audioapi

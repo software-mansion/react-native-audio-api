@@ -459,6 +459,45 @@ TEST_F(AudioGraphTest, TopoSort_ComplexDAG) {
   EXPECT_LT(posOf(4), posOf(5));
 }
 
+TEST_F(AudioGraphTest, TopoSort_LinkTargetOrderedBeforeHolder) {
+  // A DelayNode in a straight chain: 0 = source, 1 = writer (audio sink),
+  // 2 = reader (no audio inputs), 3 = destination. The reader links the
+  // writer, so the writer must run before the reader within a quantum.
+  auto h = addNodes(4);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
+  graph.pool().push(graph[h[2]->index].link_head, h[1]->index);
+
+  graph.markDirty();
+  graph.process();
+
+  EXPECT_LT(posOf(0), posOf(1));
+  EXPECT_LT(posOf(1), posOf(2));
+  EXPECT_LT(posOf(2), posOf(3));
+}
+
+TEST_F(AudioGraphTest, TopoSort_LinkCycleFallsBackToEdgeOrder) {
+  // Feedback delay: 0 = reader, 1 = gain, 2 = writer, 3 = destination.
+  // Edges reader -> gain -> writer plus the reader -> writer link form a
+  // cycle, so the link constraint is dropped and edges alone order them.
+  auto h = addNodes(4);
+  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
+  graph.pool().push(graph[h[3]->index].input_head, h[0]->index);
+  graph.pool().push(graph[h[0]->index].link_head, h[2]->index);
+
+  graph.markDirty();
+  graph.process();
+
+  ASSERT_EQ(graph.size(), 4u);
+  EXPECT_LT(posOf(0), posOf(1));
+  EXPECT_LT(posOf(1), posOf(2));
+  EXPECT_LT(posOf(0), posOf(3));
+  for (size_t id = 0; id < 4; ++id) {
+    EXPECT_NE(posOf(id), -1);
+  }
+}
+
 // =====================================================================
 // Successive process calls — interleaved add & compact
 // =====================================================================
