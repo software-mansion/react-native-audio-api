@@ -23,8 +23,6 @@ constructor(options?: AudioContextOptions)
 | `sampleRate` <Optional /> | `number` | - | The preferred sample rate for the context. |
 | `androidOutputProfile` <Optional /> | `'media'` \| `'voiceCommunication'` | `'media'` | Android output classification. Use `'voiceCommunication'` for interactive voice calls. |
 
-On Android, `voiceCommunication` configures the output stream with voice-communication usage and speech content type. It does not guarantee echo cancellation, noise suppression, or automatic gain control; those remain device- and route-dependent.
-
 #### Errors
 
 | Error type | Description |

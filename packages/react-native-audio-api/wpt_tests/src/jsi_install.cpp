@@ -20,6 +20,7 @@
 
 namespace {
 
+using audioapi::AndroidOutputProfile;
 using audioapi::AudioBuffer;
 using audioapi::AudioBufferHostObject;
 using audioapi::AudioContextHostObject;
@@ -203,6 +204,7 @@ void installAudioContextBinding(
         const auto sampleRate = static_cast<float>(args[0].getNumber());
         auto hostObject = std::make_shared<AudioContextHostObject>(
             sampleRate,
+            AndroidOutputProfile::Media,
             eventRegistry,
             &rt,
             callInvoker);

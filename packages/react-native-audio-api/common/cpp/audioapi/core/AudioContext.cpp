@@ -1,12 +1,16 @@
 #ifdef RN_AUDIO_API_NODE
 #include "NodeAudioPlayer.h"
+using PlatformAudioPlayer = audioapi::NodeAudioPlayer;
 #elif defined(ANDROID)
 #include <audioapi/android/core/AudioPlayer.h>
+using PlatformAudioPlayer = audioapi::AudioPlayer;
 #else
 #include <audioapi/ios/core/IOSAudioPlayer.h>
+using PlatformAudioPlayer = audioapi::IOSAudioPlayer;
 #endif
 
 #include <audioapi/core/AudioContext.h>
+#include <audioapi/core/AudioPlayerBuilder.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <memory>
 #include <string>
@@ -18,7 +22,12 @@ AudioContext::AudioContext(
     AndroidOutputProfile androidOutputProfile,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
-      androidOutputProfile_(androidOutputProfile),
+      audioPlayerBuilder_(
+          AudioPlayerBuilder(currentRenders_)
+              .setRenderAudio([this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); })
+              .setSampleRate(getSampleRate())
+              .setDriverMutex(&driverMutex_)
+              .setAndroidOutputProfile(androidOutputProfile)),
       isInitialized_(false) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
   // drain the channels itself until start()/resume() hands draining to the
@@ -36,27 +45,10 @@ AudioContext::~AudioContext() {
 
 void AudioContext::initialize(const AudioDestinationNode *destination) {
   BaseAudioContext::initialize(destination);
-#ifdef RN_AUDIO_API_NODE
-  audioPlayer_ = std::make_shared<NodeAudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount());
-#elif defined(ANDROID)
-  audioPlayer_ = std::make_shared<AudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount(),
-      &driverMutex_,
-      std::static_pointer_cast<AudioContext>(shared_from_this()),
-      currentRenders_,
-      androidOutputProfile_);
-#else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount(),
-      currentRenders_);
-#endif
+  audioPlayer_ =
+      audioPlayerBuilder_.setChannelCount(static_cast<int>(destination_->getChannelCount()))
+          .setContext(std::static_pointer_cast<AudioContext>(shared_from_this()))
+          .build<PlatformAudioPlayer>();
 }
 
 bool AudioContext::tryStartDriver() {

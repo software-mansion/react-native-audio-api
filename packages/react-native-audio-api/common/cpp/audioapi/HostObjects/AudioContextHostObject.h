@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
-#include <audioapi/core/AudioContextOptions.h>
+#include <audioapi/core/types/AudioContextOptions.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <jsi/jsi.h>
