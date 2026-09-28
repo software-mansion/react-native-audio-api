@@ -20,7 +20,8 @@ class MediaElementAudioSourceNodeHostObject : public AudioNodeHostObject {
             std::make_unique<MediaElementAudioSourceNode>(
                 context,
                 fileSource,
-                MediaElementAudioSourceOptions(static_cast<int>(fileSource->getChannelCount())))) {}
+                MediaElementAudioSourceOptions(
+                    static_cast<int>(fileSource->getOutputChannelNumber())))) {}
 };
 
 } // namespace audioapi

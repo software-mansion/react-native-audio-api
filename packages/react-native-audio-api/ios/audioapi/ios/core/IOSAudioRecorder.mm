@@ -104,7 +104,7 @@ void IOSAudioRecorder::runSideEffects(const AudioBufferList *inputBuffer, int nu
   if (isConnected()) {
     if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
       auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get());
-      for (size_t channel = 0; channel < adapterNode->getChannelCount(); ++channel) {
+      for (size_t channel = 0; channel < adapterNode->getOutputChannelNumber(); ++channel) {
         auto *data = static_cast<float *>(inputBuffer->mBuffers[channel].mData);
         adapterNode->buff_[channel]->write(data, numFrames);
       }

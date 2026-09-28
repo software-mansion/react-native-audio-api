@@ -75,7 +75,7 @@ void AudioBufferSourceNode::setBuffer(
 
   if (buffer == nullptr) {
     loopEnd_ = 0;
-    channelCount_ = AudioBufferSourceOptions::kDefaultChannelCount;
+    outputChannelNumber_ = AudioBufferSourceOptions::kDefaultOutputChannelNumber;
 
     buffer_ = nullptr;
     processor_->setBuffer(nullptr);
@@ -85,7 +85,7 @@ void AudioBufferSourceNode::setBuffer(
 
   buffer_ = buffer;
   audioBuffer_ = audioBuffer;
-  channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
+  outputChannelNumber_ = static_cast<int>(buffer_->getNumberOfChannels());
   loopEnd_ = buffer_->getDuration();
   processor_->setBuffer(buffer_);
 }
