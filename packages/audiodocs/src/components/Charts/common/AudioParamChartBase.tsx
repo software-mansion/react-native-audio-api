@@ -27,7 +27,7 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
     className={styles.chart}
     responsive
     data={data}
-    margin={{ left: 50, bottom: 20, top: 10 }}>
+    margin={{ left: 50, right: 56, bottom: 20, top: 30 }}>
     <defs>
       <marker
         id="arrow-x"
@@ -53,14 +53,15 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
     <CartesianGrid strokeDasharray="3 3" className={styles.leadingLine} stroke='currentColor'/>
     <XAxis
       dataKey="time"
-      domain={[0, 0.9]}      
+      domain={[0, 0.9]}
       ticks={[]}
       tick={false}
       tickLine={true}
       type="number"
       label={{
         value: 'Time',
-        position: 'insideBottomRight',
+        position: 'right',
+        offset: 5,
         className: styles.label,
       }}
       strokeWidth={2}
@@ -74,8 +75,9 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
       domain={[0, 1]}
       label={{
         value: 'Value',
-        position: 'insideTopRight',
-        offset: 10,
+        position: 'top',
+        offset: 12,
+        dx: 30,
         className: styles.label,
       }}
       strokeWidth={2}
