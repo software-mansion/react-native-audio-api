@@ -314,7 +314,7 @@ public:
 }
 
 - (void)testStartReturnsErrorWhenRecorderIsNotIdle {
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Paused);
+  _recorder->setRecorderState(RecorderState::Paused);
 
   auto result = _recorder->start("");
 
@@ -465,7 +465,7 @@ public:
   XCTAssertEqual(self.nativeRecorder.pauseCallCount, 0);
   XCTAssertEqual(self.nativeRecorder.resumeCallCount, 0);
 
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Recording);
+  _recorder->setRecorderState(RecorderState::Recording);
   self.audioEngine.state = AudioEngineStateRunning;
   _recorder->pause();
 
@@ -593,7 +593,7 @@ public:
   XCTAssertFalse(_recorder->isConnected());
   XCTAssertEqual(adapter->buff_.size(), 0U);
 
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Recording);
+  _recorder->setRecorderState(RecorderState::Recording);
   _recorder->connect(adapterFixture.handle);
 
   XCTAssertTrue(_recorder->isConnected());

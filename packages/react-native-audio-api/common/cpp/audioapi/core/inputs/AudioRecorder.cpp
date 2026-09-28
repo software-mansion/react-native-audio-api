@@ -51,6 +51,14 @@ double AudioRecorder::getCurrentDuration() const {
   return duration;
 }
 
+RecorderState AudioRecorder::getState() const {
+  if (isIdle()) {
+    return RecorderState::Idle;
+  }
+
+  return isPaused() ? RecorderState::Paused : RecorderState::Recording;
+}
+
 bool AudioRecorder::usesCallback() const {
   return wantsCallback() && callbackOutputConfigured_.load(std::memory_order_acquire);
 }

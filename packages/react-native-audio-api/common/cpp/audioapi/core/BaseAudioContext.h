@@ -99,6 +99,13 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     return deferredEvents_;
   }
 
+  /// @brief This context's dispatch lane, for nodes that emit events from the render thread.
+  /// Every node of a context shares it because they all render on that one thread; a node of
+  /// another context must never use it.
+  [[nodiscard]] std::shared_ptr<AudioEventProducer> getAudioEventProducer() const {
+    return audioEventProducer_;
+  }
+
   template <typename F>
   bool scheduleAudioEvent(F &&event) noexcept { // NOLINT(cppcoreguidelines-missing-std-forward)
     std::scoped_lock lock(driverMutex_);
@@ -176,6 +183,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  private:
   std::atomic<float> sampleRate_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  /// context's own lane into the registry's dispatch queue, shared with every node it owns.
+  std::shared_ptr<AudioEventProducer> audioEventProducer_;
 
   EventCaller<AudioEvent::STATE_CHANGE> stateChangeEvent_;
   /// Ledger backing dispatchStateChange()'s dedupe; contexts start suspended.

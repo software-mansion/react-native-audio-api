@@ -1,13 +1,15 @@
 #include <audioapi/utils/events/BufferingStateDispatcher.h>
 
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
 BufferingStateDispatcher::BufferingStateDispatcher(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    std::shared_ptr<AudioEventProducer> audioEventProducer,
     int startThresholdFrames)
-    : bufferingStateChangeEvent_(audioEventHandlerRegistry),
+    : bufferingStateChangeEvent_(audioEventHandlerRegistry, std::move(audioEventProducer)),
       startThresholdFrames_(startThresholdFrames) {}
 
 void BufferingStateDispatcher::assignCallbackId(uint64_t callbackId) noexcept {

@@ -19,6 +19,7 @@ BaseAudioContext::BaseAudioContext(
     : state_(ContextState::SUSPENDED),
       sampleRate_(sampleRate),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      audioEventProducer_(audioEventHandlerRegistry->createAudioEventProducer()),
       stateChangeEvent_(audioEventHandlerRegistry),
       pendingPromisesOffloader_(
           std::make_unique<task_offloader::TaskOffloader<
@@ -38,7 +39,7 @@ BaseAudioContext::BaseAudioContext(
       disposer_(
           std::make_unique<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>>(AUDIO_SCHEDULER_CAPACITY)),
       graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())),
-      deferredEvents_(audioEventHandlerRegistry) {}
+      deferredEvents_(audioEventHandlerRegistry, audioEventProducer_) {}
 
 void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
   destination_ = destination;
