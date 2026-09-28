@@ -47,9 +47,11 @@ export default class AudioContext extends BaseAudioContext {
       throw new InvalidStateError('Cannot close a closed audio context.');
     }
 
-    return this.transitionTo('closed', () =>
+    await this.transitionTo('closed', () =>
       (this.context as IAudioContext).close()
     );
+    this.errorSubscription.remove();
+    return undefined;
   }
 
   async resume(): Promise<undefined> {

@@ -28,6 +28,8 @@ export default class AudioContext implements BaseAudioContext {
   readonly listener: AudioListener;
   readonly sampleRate: number;
 
+  public onerror: (() => void) | null = null;
+
   constructor(options?: AudioContextOptions) {
     if (options?.sampleRate != null) {
       assertSupportedSampleRate(options.sampleRate);
@@ -38,6 +40,8 @@ export default class AudioContext implements BaseAudioContext {
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);
     this.listener = new AudioListener(this, this.context.listener);
+
+    this.context.addEventListener('error', () => this.onerror?.());
   }
 
   public get currentTime(): number {
@@ -192,21 +196,5 @@ export default class AudioContext implements BaseAudioContext {
 
   async suspend(): Promise<void> {
     await this.context.suspend();
-  }
-
-  private _onerrorCallback:
-    | ((this: globalThis.AudioContext, ev: Event) => unknown)
-    | null = null;
-
-  public get onerror():
-    | ((this: globalThis.AudioContext, ev: Event) => unknown)
-    | null {
-    return this._onerrorCallback;
-  }
-
-  public set onerror(
-    callback: ((this: globalThis.AudioContext, ev: Event) => unknown) | null
-  ) {
-    this._onerrorCallback = callback;
   }
 }

@@ -4,10 +4,12 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <jni.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <mutex>
 
@@ -47,10 +49,8 @@ bool AudioPlayer::rebuildStream() {
 bool AudioPlayer::start() {
   std::scoped_lock lock(streamMutex_);
 
-  if (!isInitialized_.load(std::memory_order_acquire)) {
-    if (!openAudioStream()) {
-      return false;
-    }
+  if ((!isInitialized_.load(std::memory_order_acquire)) && (!openAudioStream())) {
+    return false;
   }
 
   if (mStream_ != nullptr) {
@@ -75,6 +75,11 @@ bool AudioPlayer::resume() {
   std::scoped_lock lock(streamMutex_);
   if (isRunning()) {
     return true;
+  }
+
+  // The stream may have been dropped by onErrorAfterClose while suspended.
+  if ((!isInitialized_.load(std::memory_order_acquire)) && (!openAudioStream())) {
+    return false;
   }
 
   if (mStream_ != nullptr) {
@@ -134,7 +139,7 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
       renderBuffer_->zero();
     }
 
-    float *destination = buffer + (processedFrames * channelCount_);
+    float *destination = buffer + (static_cast<ptrdiff_t>(processedFrames * channelCount_));
 
     renderBuffer_->interleaveTo(destination, framesToProcess);
     processedFrames += framesToProcess;
@@ -145,13 +150,16 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
 
 namespace {
 struct ReentrancyGuard {
-  bool &flag;
-  explicit ReentrancyGuard(bool &f) : flag(f) {
-    flag = true;
+  DELETE_COPY_AND_MOVE(ReentrancyGuard);
+  explicit ReentrancyGuard(bool *f) : flag(f) {
+    *flag = true;
   }
   ~ReentrancyGuard() {
-    flag = false;
+    *flag = false;
   }
+
+ private:
+  bool *flag;
 };
 } // namespace
 
@@ -175,13 +183,17 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (isInsideOnError) {
     return;
   }
-  ReentrancyGuard guard(isInsideOnError);
+  ReentrancyGuard guard(&isInsideOnError);
+
+  auto context = context_.lock();
+  if (context == nullptr) {
+    return;
+  }
 
   // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
   std::scoped_lock lock(*driverMutex_, streamMutex_);
 
-  auto context = context_.lock();
-  if (context == nullptr || context->isClosed()) {
+  if (context->isClosed()) {
     return;
   }
 
@@ -194,26 +206,27 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   // Check if the stream was expected to be running when the error occurred
   const bool wasRunning = isRunning_.load(std::memory_order_acquire);
 
-  if (error == oboe::Result::ErrorDisconnected) {
-    // Best effort rebuild - only once, then fire AudioContext::onStreamFail.
-    if (!rebuildStream()) {
-      isRunning_.store(false, std::memory_order_release);
-      context->onStreamFail();
+  // Best effort rebuild; a suspended context keeps the rebuilt stream paused until resume().
+  if (error == oboe::Result::ErrorDisconnected && rebuildStream()) {
+    if (!wasRunning) {
       return;
     }
-
-    // Restart the stream if it was expected to be running when the error occurred
-    if (wasRunning && mStream_ != nullptr) {
-      const bool started = mStream_->requestStart() == oboe::Result::OK;
-      isRunning_.store(started, std::memory_order_release);
-      if (!started) {
-        context->onStreamFail();
-      }
+    if (mStream_->requestStart() == oboe::Result::OK) {
+      isRunning_.store(true, std::memory_order_release);
+      return;
     }
-  } else {
-    isRunning_.store(false, std::memory_order_release);
-    context->onStreamFail();
   }
+
+  isRunning_.store(false, std::memory_order_release);
+
+  if (!wasRunning) {
+    // Nothing was playing, so there is no failure to report: drop the dead stream
+    // and let resume() open a new one.
+    cleanup();
+    return;
+  }
+
+  context->onStreamFail();
 }
 
 double AudioPlayer::getBaseLatency() const {

@@ -18,19 +18,21 @@ namespace audioapi {
 
 namespace {
 
-void reportStreamFailToContext(std::mutex *driverMutex, const std::weak_ptr<AudioContext> &context)
+void reportStreamFailToContext(
+    std::mutex *driverMutex,
+    const std::weak_ptr<AudioContext> &context,
+    const std::function<bool()> &isStillFailed)
 {
-  if (driverMutex == nullptr) {
+  auto ctx = context.lock();
+  if (driverMutex == nullptr || ctx == nullptr) {
     return;
   }
 
   std::scoped_lock lock(*driverMutex);
-  if (auto ctx = context.lock()) {
-    if (ctx->isClosed()) {
-      return;
-    }
-    ctx->onStreamFail();
+  if (ctx->isClosed() || !isStillFailed()) {
+    return;
   }
+  ctx->onStreamFail();
 }
 
 } // namespace
@@ -62,7 +64,13 @@ IOSAudioPlayer::IOSAudioPlayer(
 
   std::mutex *driverMutexForCallback = driverMutex_;
   std::weak_ptr<AudioContext> weakContext = context_;
-  audioPlayer_.onStreamFail = ^{ reportStreamFailToContext(driverMutexForCallback, weakContext); };
+  IOSAudioPlayer *player = this;
+  audioPlayer_.onStreamFail = ^{
+    // Called only once the context, which owns this player, is locked alive.
+    reportStreamFailToContext(driverMutexForCallback, weakContext, [player] {
+      return player->isRunning_.load(std::memory_order_acquire) && !player->isRunning();
+    });
+  };
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()

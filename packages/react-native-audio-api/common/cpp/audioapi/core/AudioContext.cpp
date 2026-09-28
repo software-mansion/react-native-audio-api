@@ -90,6 +90,8 @@ void AudioContext::close(const std::shared_ptr<ContextPromiseResolver<void>> &pr
   // No audio-thread consumer after stop; allow producer self-drain for any
   // remaining graph mutations (and flush events already queued).
   getGraph()->enableProducerSelfDrain();
+
+  // safe to call because the promise worker holds the driver mutex while calling close()
   processAudioEvents();
   audioPlayer_->cleanup();
 
@@ -193,9 +195,14 @@ void AudioContext::assignOnErrorCallbackId(uint64_t callbackId) {
 void AudioContext::onStreamFail() {
   assertDriverMutexHeld();
 
-  if (audioPlayer_ != nullptr) {
-    audioPlayer_->cleanup();
-  }
+  audioPlayer_->stop();
+  waitForRenderQuiescence();
+
+  // The failed driver was the only consumer of the graph channels.
+  getGraph()->enableProducerSelfDrain();
+
+  // safe to call because the driver mutex is held
+  processAudioEvents();
 
   isInitialized_.store(false, std::memory_order_release);
 

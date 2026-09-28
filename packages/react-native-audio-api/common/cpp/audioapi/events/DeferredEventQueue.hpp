@@ -23,8 +23,9 @@ namespace audioapi {
 /// never a reference to the emitter; a dispatch whose handler has since been
 /// unregistered is dropped by the registry on the JS thread.
 ///
-/// @note Render-serialized only (audio thread, or the synchronous
-/// `scheduleAudioEvent` path) — no lock, so no other thread may touch it.
+/// @note Render-serialized only — no lock of its own. Touched by the audio thread,
+/// or by any thread that holds `driverMutex_` while the driver is stopped and
+/// quiescent (the synchronous `scheduleAudioEvent` path, `AudioContext::close()`).
 class DeferredEventQueue {
  public:
   explicit DeferredEventQueue(std::shared_ptr<IAudioEventHandlerRegistry> registry)
