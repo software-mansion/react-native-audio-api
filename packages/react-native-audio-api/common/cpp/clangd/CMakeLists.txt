@@ -146,18 +146,58 @@ if(APPLE)
   set(PODS_ROOT "${FABRIC_EXAMPLE_IOS_DIR}/Pods")
   set(PODS_XCCONFIG "${FABRIC_EXAMPLE_IOS_DIR}/Pods/Target Support Files/Pods-FabricExample/Pods-FabricExample.debug.xcconfig")
 
+  # Xcode writes each search path setting as one long line of quoted,
+  # space-separated entries referencing its own build variables; expand the two
+  # PODS_ROOT spellings CocoaPods emits and hand back a plain CMake list.
+  function(read_pods_xcconfig_paths OUT_VAR SETTING)
+    file(STRINGS "${PODS_XCCONFIG}" SETTING_LINE REGEX "^${SETTING}")
+    string(REGEX REPLACE "^${SETTING} *= *" "" SETTING_LINE "${SETTING_LINE}")
+    string(REPLACE "\"" "" SETTING_LINE "${SETTING_LINE}")
+    string(REPLACE "$(inherited)" "" SETTING_LINE "${SETTING_LINE}")
+    string(REPLACE "\${PODS_ROOT}" "${PODS_ROOT}" SETTING_LINE "${SETTING_LINE}")
+    string(REPLACE "$(PODS_ROOT)" "${PODS_ROOT}" SETTING_LINE "${SETTING_LINE}")
+    separate_arguments(SETTING_PATHS UNIX_COMMAND "${SETTING_LINE}")
+    set(${OUT_VAR} "${SETTING_PATHS}" PARENT_SCOPE)
+  endfunction()
+
   set(IOS_POD_INCLUDE_DIRS "")
+  set(IOS_POD_FRAMEWORK_DIRS "")
   if(EXISTS "${PODS_XCCONFIG}")
-    file(STRINGS "${PODS_XCCONFIG}" HEADER_SEARCH_LINE REGEX "^HEADER_SEARCH_PATHS")
-    string(REGEX REPLACE "^HEADER_SEARCH_PATHS *= *" "" HEADER_SEARCH_LINE "${HEADER_SEARCH_LINE}")
-    string(REPLACE "\"" "" HEADER_SEARCH_LINE "${HEADER_SEARCH_LINE}")
-    string(REPLACE "$(inherited)" "" HEADER_SEARCH_LINE "${HEADER_SEARCH_LINE}")
-    string(REPLACE "\${PODS_ROOT}" "${PODS_ROOT}" HEADER_SEARCH_LINE "${HEADER_SEARCH_LINE}")
-    string(REPLACE "$(PODS_ROOT)" "${PODS_ROOT}" HEADER_SEARCH_LINE "${HEADER_SEARCH_LINE}")
-    separate_arguments(IOS_POD_INCLUDE_DIRS UNIX_COMMAND "${HEADER_SEARCH_LINE}")
+    read_pods_xcconfig_paths(IOS_POD_INCLUDE_DIRS HEADER_SEARCH_PATHS)
+    read_pods_xcconfig_paths(IOS_POD_FRAMEWORK_DIRS FRAMEWORK_SEARCH_PATHS)
   else()
     message(WARNING "clangd/CMakeLists.txt: ${PODS_XCCONFIG} not found — run `pod install` in apps/fabric-example/ios to resolve React/Pod headers for iOS files.")
   endif()
+
+  # React-Core ships prebuilt as React.xcframework since RN 0.87, so
+  # `#import <React/RCTBridgeModule.h>` resolves through a framework search
+  # path (-F) rather than -I — without one, every .mm importing React fails
+  # with "'React/RCTBridgeModule.h' file not found". Xcode's own -F points at
+  # PODS_XCFRAMEWORKS_BUILD_DIR, which exists only after Xcode has unpacked the
+  # slices, so target the slices inside the .xcframework bundles directly and
+  # keep a bare `pod install` sufficient.
+  execute_process(
+    COMMAND find "${PODS_ROOT}" -maxdepth 8 -type d -name "ios-*simulator*" -path "*.xcframework/*"
+    OUTPUT_VARIABLE IOS_XCFRAMEWORK_SLICES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  string(REPLACE "\n" ";" IOS_XCFRAMEWORK_SLICES "${IOS_XCFRAMEWORK_SLICES}")
+  list(APPEND IOS_POD_FRAMEWORK_DIRS ${IOS_XCFRAMEWORK_SLICES})
+
+  # Entries naming build-time-only Xcode variables (PODS_XCFRAMEWORKS_BUILD_DIR,
+  # PODS_CONFIGURATION_BUILD_DIR) survive the expansion above unresolved; drop
+  # anything that isn't a real directory so the compile commands stay clean.
+  set(IOS_FRAMEWORK_FLAGS "")
+  foreach(framework_dir IN LISTS IOS_POD_FRAMEWORK_DIRS)
+    if(IS_DIRECTORY "${framework_dir}")
+      list(APPEND IOS_FRAMEWORK_FLAGS "-F${framework_dir}")
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES IOS_FRAMEWORK_FLAGS)
+
+  target_compile_options(rnaudioapi_cursor_ios PRIVATE ${IOS_FRAMEWORK_FLAGS})
+  target_compile_options(rnaudioapi_cursor_ios_objc PRIVATE ${IOS_FRAMEWORK_FLAGS})
 
   set(IOS_EXTRA_INCLUDES
     "${COMMON_CPP_DIR}"
@@ -187,6 +227,7 @@ if(APPLE)
     RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
   )
   target_include_directories(rnaudioapi_cursor_ios_headers PRIVATE ${IOS_EXTRA_INCLUDES})
+  target_compile_options(rnaudioapi_cursor_ios_headers PRIVATE ${IOS_FRAMEWORK_FLAGS})
   if(IOS_SDK_PATH)
     target_compile_options(rnaudioapi_cursor_ios_headers PRIVATE -isysroot "${IOS_SDK_PATH}")
   endif()

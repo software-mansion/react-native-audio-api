@@ -11,10 +11,7 @@ namespace audioapi {
 AudioEventHandlerRegistry::AudioEventHandlerRegistry(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker)
-    : callInvoker_(callInvoker),
-      runtime_(runtime),
-      dispatchQueue_(kDispatchCapacity),
-      audioProducerToken_(dispatchQueue_) {
+    : callInvoker_(callInvoker), runtime_(runtime), dispatchQueue_(kDispatchCapacity) {
   // Dispatch worker: wait for an item, dequeue it, then hop to the JS thread.
   workerThread_ = std::thread([this]() {
     while (true) {
@@ -86,7 +83,12 @@ bool AudioEventHandlerRegistry::dispatchEvent(
   return true;
 }
 
+std::shared_ptr<AudioEventProducer> AudioEventHandlerRegistry::createAudioEventProducer() {
+  return std::make_shared<AudioEventProducer>(dispatchQueue_);
+}
+
 bool AudioEventHandlerRegistry::dispatchEventFromAudioThread(
+    AudioEventProducer &producer,
     AudioEvent eventName,
     uint64_t listenerId,
     AudioEventPayload &&payload) noexcept {
@@ -94,7 +96,7 @@ bool AudioEventHandlerRegistry::dispatchEventFromAudioThread(
     return false;
   }
   if (!dispatchQueue_.try_enqueue(
-          audioProducerToken_,
+          producer.token(),
           DispatchEvent{
               .event = eventName, .listenerId = listenerId, .payload = std::move(payload)})) {
     return false;
