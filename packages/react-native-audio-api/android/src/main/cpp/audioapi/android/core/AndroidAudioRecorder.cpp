@@ -158,24 +158,17 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
         "Failed to open audio stream: " + std::string(oboe::convertToText(result)));
   }
 
-  // Oboe honours setDeviceId on the AAudio backend only; OpenSL ES drops the
-  // request and reports kUnspecified instead (see AudioStreamBuilder::setDeviceId).
-  // Recording from a device the caller did not ask for is worse than not
-  // recording at all, so the stream is dropped and the open reported as failed.
+  // The selection is a preference, as on iOS: when the platform routes elsewhere
+  // (the device is gone, or OpenSL ES, which ignores setDeviceId and reports
+  // kUnspecified), recording continues on the routed device instead of failing.
   if (preferredDeviceId != AudioInputSelection::kSystemDefaultDeviceId &&
       mStream_->getDeviceId() != preferredDeviceId) {
-    const int32_t openedDeviceId = mStream_->getDeviceId();
-
-    mStream_->close();
-    mStream_.reset();
-
-    std::string message = std::format(
-        "Input device {} was requested, but the capture stream opened on device {}. "
-        "Selecting an input device needs the AAudio backend; OpenSL ES ignores the request.",
+    __android_log_print(
+        ANDROID_LOG_WARN,
+        "AndroidAudioRecorder",
+        "Input device %d was requested, but the capture stream opened on device %d",
         preferredDeviceId,
-        openedDeviceId);
-
-    return Result<NoneType, std::string>::Err(std::move(message));
+        mStream_->getDeviceId());
   }
 
   streamDeviceId_ = preferredDeviceId;

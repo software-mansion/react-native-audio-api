@@ -9,6 +9,9 @@ import android.content.pm.PackageManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
@@ -31,11 +34,13 @@ import java.lang.ref.WeakReference
 object MediaSessionManager {
   private lateinit var audioAPIModule: WeakReference<AudioAPIModule>
   private lateinit var reactContext: WeakReference<ReactApplicationContext>
+  private const val TAG = "MediaSessionManager"
   const val CHANNEL_ID = "react-native-audio-api"
 
   private lateinit var audioManager: AudioManager
   private lateinit var audioFocusListener: AudioFocusListener
   private lateinit var volumeChangeListener: VolumeChangeListener
+  private lateinit var deviceChangeListener: DeviceChangeListener
   private lateinit var playbackNotificationReceiver: PlaybackNotificationReceiver
 
   // New notification system
@@ -80,6 +85,8 @@ object MediaSessionManager {
     this.audioFocusListener =
       AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule)
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
+    this.deviceChangeListener = DeviceChangeListener(this.audioAPIModule)
+    this.audioManager.registerAudioDeviceCallback(deviceChangeListener, Handler(Looper.getMainLooper()))
 
     // Initialize new notification system
     this.notificationRegistry = NotificationRegistry(this.reactContext, this.audioAPIModule)
@@ -96,6 +103,12 @@ object MediaSessionManager {
   fun getDevicePreferredSampleRate(): Double {
     val sampleRate = this.audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
     return sampleRate.toDouble()
+  }
+
+  fun cleanup() {
+    if (::deviceChangeListener.isInitialized) {
+      audioManager.unregisterAudioDeviceCallback(deviceChangeListener)
+    }
   }
 
   fun requestAudioFocus(focus: Int) {
@@ -226,13 +239,80 @@ object MediaSessionManager {
   private var preferredInputDeviceId: Int? = null
 
   @RequiresApi(Build.VERSION_CODES.M)
-  fun findInputDevice(deviceId: String): AudioDeviceInfo? =
+  fun findInputDevice(deviceId: String): AudioDeviceInfo? = recordableInputs().firstOrNull { it.id.toString() == deviceId }
+
+  @RequiresApi(Build.VERSION_CODES.M)
+  private fun recordableInputs(): List<AudioDeviceInfo> =
     this.audioManager
       .getDevices(AudioManager.GET_DEVICES_INPUTS)
-      .firstOrNull { it.id.toString() == deviceId }
+      .filter { it.type !in systemOnlyInputTypes }
 
+  private val systemOnlyInputTypes =
+    setOf(
+      AudioDeviceInfo.TYPE_TELEPHONY,
+      AudioDeviceInfo.TYPE_REMOTE_SUBMIX,
+      AudioDeviceInfo.TYPE_FM_TUNER,
+      AudioDeviceInfo.TYPE_TV_TUNER,
+    )
+
+  /** Whether this manager started the Bluetooth SCO link, so it only tears down its own. */
+  private var startedBluetoothSco = false
+
+  @RequiresApi(Build.VERSION_CODES.M)
   fun setPreferredInputDevice(device: AudioDeviceInfo) {
     this.preferredInputDeviceId = device.id
+
+    if (device.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+      startBluetoothSco(device)
+    } else {
+      stopBluetoothSco()
+    }
+  }
+
+  /**
+   * A Bluetooth headset mic carries audio only over the SCO link, and the platform
+   * brings that link up for the communication device, never for a capture stream's
+   * preferred device. Without it the stream opens on the headset and receives no frames.
+   * Output to the same headset moves from A2DP to SCO while the link is up.
+   */
+  @RequiresApi(Build.VERSION_CODES.M)
+  private fun startBluetoothSco(input: AudioDeviceInfo) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      val scoOutputs =
+        audioManager.availableCommunicationDevices.filter {
+          it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+        }
+      val headset = scoOutputs.firstOrNull { it.address == input.address } ?: scoOutputs.firstOrNull()
+
+      if (headset == null || !audioManager.setCommunicationDevice(headset)) {
+        Log.w(TAG, "Cannot route communication to the Bluetooth headset, its mic stays silent")
+        return
+      }
+    } else {
+      @Suppress("DEPRECATION")
+      audioManager.startBluetoothSco()
+      @Suppress("DEPRECATION")
+      audioManager.isBluetoothScoOn = true
+    }
+
+    startedBluetoothSco = true
+  }
+
+  private fun stopBluetoothSco() {
+    if (!startedBluetoothSco) {
+      return
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      audioManager.clearCommunicationDevice()
+    } else {
+      @Suppress("DEPRECATION")
+      audioManager.isBluetoothScoOn = false
+      @Suppress("DEPRECATION")
+      audioManager.stopBluetoothSco()
+    }
+
+    startedBluetoothSco = false
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
@@ -243,7 +323,7 @@ object MediaSessionManager {
 
     val selectedInputDeviceId = this.preferredInputDeviceId
 
-    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
+    for (inputDevice in recordableInputs()) {
       availableInputs.pushMap(describeDevice(inputDevice))
 
       if (inputDevice.id == selectedInputDeviceId) {
@@ -269,10 +349,21 @@ object MediaSessionManager {
   private fun describeDevice(device: AudioDeviceInfo): WritableMap {
     val deviceInfo = Arguments.createMap()
     deviceInfo.putString("id", device.id.toString())
-    deviceInfo.putString("name", device.productName.toString())
+    deviceInfo.putString("name", deviceName(device))
     deviceInfo.putString("category", parseDeviceCategory(device))
 
     return deviceInfo
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private fun deviceName(device: AudioDeviceInfo): String {
+    val productName = device.productName.toString()
+
+    if (device.type != AudioDeviceInfo.TYPE_BUILTIN_MIC || device.address.isEmpty()) {
+      return productName
+    }
+
+    return "$productName (${device.address})"
   }
 
   @RequiresApi(Build.VERSION_CODES.O)

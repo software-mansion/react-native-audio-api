@@ -97,6 +97,7 @@ class AudioAPIModule(
   override fun invalidate() {
     reactContext.get()?.removeLifecycleEventListener(this)
     ForegroundServiceManager.cleanup()
+    MediaSessionManager.cleanup()
   }
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
