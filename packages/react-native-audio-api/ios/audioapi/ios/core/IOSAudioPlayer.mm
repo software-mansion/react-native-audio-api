@@ -13,16 +13,34 @@
 
 namespace audioapi {
 
+namespace {
+
+/// In frames of the session's own rate, which may differ from the context's.
+int preferredIOBufferFramesFor(AudioContextLatencyHint latencyHint)
+{
+  switch (latencyHint) {
+    case AudioContextLatencyHint::INTERACTIVE:
+      return RENDER_QUANTUM_SIZE;
+    case AudioContextLatencyHint::BALANCED:
+      return 8 * RENDER_QUANTUM_SIZE;
+    case AudioContextLatencyHint::PLAYBACK:
+      return 32 * RENDER_QUANTUM_SIZE;
+  }
+  return RENDER_QUANTUM_SIZE;
+}
+
+} // namespace
+
 IOSAudioPlayer::IOSAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
     std::atomic<uint32_t> &currentRenders,
-    std::optional<AudioContextLatencyHint> latencyHint)
+    AudioContextLatencyHint latencyHint)
     : audioBuffer_(nullptr),
       audioPlayer_(nullptr),
-      renderAudio_(renderAudio),
       sampleRate_(sampleRate),
+      renderAudio_(renderAudio),
       currentRenders_(currentRenders),
       channelCount_(channelCount),
       isRunning_(false),

@@ -49,15 +49,13 @@ std::string filterTypeToString(BiquadFilterType type) {
   }
 }
 
-std::optional<AudioContextLatencyHint> latencyHintFromString(const std::string &hint) {
-  if (hint == "interactive")
-    return AudioContextLatencyHint::INTERACTIVE;
+AudioContextLatencyHint latencyHintFromString(const std::string &hint) {
   if (hint == "balanced")
     return AudioContextLatencyHint::BALANCED;
   if (hint == "playback")
     return AudioContextLatencyHint::PLAYBACK;
 
-  return std::nullopt;
+  return AudioContextLatencyHint::INTERACTIVE;
 }
 
 OverSampleType overSampleTypeFromString(const std::string &type) {

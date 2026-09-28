@@ -2,11 +2,11 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+#include <audioapi/core/utils/Constants.h>
+
 @interface AudioSessionManager ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *ioBufferFramesRequests;
-/// What the session ran at before the first request, to ask for after the last release.
-@property (nonatomic, assign) double baselineIOBufferDuration;
 
 - (id)microphoneUsageDescriptionValue;
 - (bool)usesAudioApplicationRecordPermissionAPI;
@@ -25,19 +25,7 @@ static const AVAudioSessionCategoryOptions
     RNAudioSessionCategoryOptionBluetoothHighQualityRecordingMask = 1 << 19;
 static const AVAudioSessionCategoryOptions RNAudioSessionCategoryOptionFarFieldInputMask = 1 << 18;
 
-static const uint32_t kMaxIOBufferFrames = 1u << 16;
-
-static uint32_t nearestPowerOfTwoFrames(double frames)
-{
-  uint32_t above = 1;
-  while (above < frames && above < kMaxIOBufferFrames) {
-    above <<= 1;
-  }
-
-  uint32_t below = above > 1 ? above >> 1 : 1;
-
-  return (frames - below <= above - frames) ? below : above;
-}
+static const int kDefaultIOBufferFrames = audioapi::RENDER_QUANTUM_SIZE;
 
 @implementation AudioSessionManager
 
@@ -58,7 +46,6 @@ static AudioSessionManager *_sharedInstance = nil;
     self.notifyOthersOnDeactivation = true;
 
     self.ioBufferFramesRequests = [[NSMutableDictionary alloc] init];
-    self.baselineIOBufferDuration = 0.0;
   }
 
   _sharedInstance = self;
@@ -72,13 +59,13 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)cleanup
 {
+  // The preference outlives this manager.
   @synchronized(self) {
-    [self.ioBufferFramesRequests removeAllObjects];
+    if (self.ioBufferFramesRequests.count > 0) {
+      [self.ioBufferFramesRequests removeAllObjects];
+      [self applyPreferredIOBufferDuration];
+    }
   }
-
-  // The preference outlives this manager, and the next one installed would read a shortened
-  // value as its own baseline.
-  [self applyPreferredIOBufferDuration];
 
   self.audioSession = nil;
 }
@@ -92,68 +79,28 @@ static AudioSessionManager *_sharedInstance = nil;
       self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
 }
 
+/// Caller holds the lock on self.
 - (void)applyPreferredIOBufferDuration
 {
   if (!self.shouldManageSession) {
     return;
   }
 
-  double requested = 0.0;
-  double granted = 0.0;
+  NSNumber *shortestRequest = [self.ioBufferFramesRequests.allValues valueForKeyPath:@"@min.self"];
+  int frames = shortestRequest != nil ? shortestRequest.intValue : kDefaultIOBufferFrames;
+  double duration = frames / self.audioSession.sampleRate;
 
-  @synchronized(self) {
-    int frames = 0;
-    for (NSNumber *clientFrames in self.ioBufferFramesRequests.objectEnumerator) {
-      int clientRequest = [clientFrames intValue];
-      if (frames == 0 || clientRequest < frames) {
-        frames = clientRequest;
-      }
-    }
-
-    if (frames == 0 && self.baselineIOBufferDuration <= 0.0) {
-      return;
-    }
-
-    double sampleRate = self.audioSession.sampleRate;
-    if (sampleRate <= 0.0) {
-      return;
-    }
-
-    // A preference can only be overwritten, never unset.
-    if (self.baselineIOBufferDuration <= 0.0) {
-      self.baselineIOBufferDuration = self.audioSession.IOBufferDuration;
-    }
-
-    // The session grants a power-of-two frame count, so the baseline cannot be asked for exactly.
-    requested = frames > 0
-        ? frames / sampleRate
-        : nearestPowerOfTwoFrames(self.baselineIOBufferDuration * sampleRate) / sampleRate;
-
-    NSError *error = nil;
-    if (![self.audioSession setPreferredIOBufferDuration:requested error:&error]) {
-      // A refused duration still leaves playback running at whatever the session grants.
-      NSLog(
-          @"[AudioSessionManager] Error while requesting IO buffer duration %f s: %@",
-          requested,
-          [error debugDescription]);
-      return;
-    }
-
-    granted = self.audioSession.IOBufferDuration;
+  NSError *error = nil;
+  if (![self.audioSession setPreferredIOBufferDuration:duration error:&error]) {
+    NSLog(
+        @"[AudioSessionManager] Error while requesting IO buffer duration %f s: %@",
+        duration,
+        [error debugDescription]);
   }
-
-  NSLog(
-      @"[AudioSessionManager] Requested IO buffer duration: %f s, session reports %f s",
-      requested,
-      granted);
 }
 
 - (void)requestIOBufferFrames:(int)frames forClient:(NSString *)clientId
 {
-  if (clientId == nil || frames <= 0) {
-    return;
-  }
-
   @synchronized(self) {
     self.ioBufferFramesRequests[clientId] = @(frames);
     [self applyPreferredIOBufferDuration];
@@ -163,7 +110,7 @@ static AudioSessionManager *_sharedInstance = nil;
 - (void)releaseIOBufferFramesForClient:(NSString *)clientId
 {
   @synchronized(self) {
-    if (clientId == nil || self.ioBufferFramesRequests[clientId] == nil) {
+    if (self.ioBufferFramesRequests[clientId] == nil) {
       return;
     }
 
@@ -172,8 +119,12 @@ static AudioSessionManager *_sharedInstance = nil;
   }
 }
 
-- (bool)configureCategory:(NSError **)outError
+- (bool)configureAudioSession:(NSError **)outError
 {
+  if (!self.shouldManageSession || [self areDesiredOptionsSet]) {
+    return true;
+  }
+
   NSError *categoryError = nil;
   [self.audioSession setCategory:self.desiredCategory
                             mode:self.desiredMode
@@ -211,22 +162,6 @@ static AudioSessionManager *_sharedInstance = nil;
       }
     }
   }
-
-  return true;
-}
-
-- (bool)configureAudioSession:(NSError **)outError
-{
-  if (!self.shouldManageSession) {
-    return true;
-  }
-
-  if (![self areDesiredOptionsSet] && ![self configureCategory:outError]) {
-    return false;
-  }
-
-  // After the category, which decides the duration the session defaults to.
-  [self applyPreferredIOBufferDuration];
 
   return true;
 }

@@ -17,7 +17,6 @@
 
 #include <memory>
 #include <mutex>
-#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -206,7 +205,7 @@ void installAudioContextBinding(
 
         const auto sampleRate = static_cast<float>(args[0].getNumber());
 
-        std::optional<AudioContextLatencyHint> latencyHint;
+        auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
         if (count > 1 && args[1].isString()) {
           latencyHint = audioapi::js_enum_parser::latencyHintFromString(
               args[1].getString(rt).utf8(rt));

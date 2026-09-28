@@ -19,8 +19,6 @@
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <memory>
-#include <optional>
-#include <string>
 #include <utility>
 
 namespace audioapi {
@@ -80,7 +78,7 @@ class AudioAPIModuleInstaller {
             size_t count) -> jsi::Value {
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
-          std::optional<AudioContextLatencyHint> latencyHint;
+          auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
           if (count > 1 && args[1].isString()) {
             latencyHint =
                 js_enum_parser::latencyHintFromString(args[1].getString(runtime).utf8(runtime));

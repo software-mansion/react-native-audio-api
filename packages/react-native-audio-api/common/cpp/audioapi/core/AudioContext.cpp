@@ -16,7 +16,7 @@ namespace audioapi {
 AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    std::optional<AudioContextLatencyHint> latencyHint)
+    AudioContextLatencyHint latencyHint)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
       latencyHint_(latencyHint),
       isInitialized_(false) {

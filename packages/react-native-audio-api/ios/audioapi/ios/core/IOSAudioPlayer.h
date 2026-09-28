@@ -15,7 +15,6 @@ typedef struct objc_object AudioBufferList;
 #include <atomic>
 #include <cstddef>
 #include <functional>
-#include <optional>
 namespace audioapi {
 
 class AudioContext;
@@ -27,7 +26,7 @@ class IOSAudioPlayer : public CommonPlayer {
       float sampleRate,
       int channelCount,
       std::atomic<uint32_t> &currentRenders,
-      std::optional<AudioContextLatencyHint> latencyHint = std::nullopt);
+      AudioContextLatencyHint latencyHint);
   ~IOSAudioPlayer() override;
 
   DELETE_COPY_AND_MOVE(IOSAudioPlayer);
