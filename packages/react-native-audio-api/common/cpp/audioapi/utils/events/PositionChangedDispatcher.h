@@ -14,6 +14,7 @@ class PositionChangedDispatcher {
  public:
   PositionChangedDispatcher(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      std::shared_ptr<AudioEventProducer> audioEventProducer,
       int intervalInFrames,
       bool shouldFlush = false);
 

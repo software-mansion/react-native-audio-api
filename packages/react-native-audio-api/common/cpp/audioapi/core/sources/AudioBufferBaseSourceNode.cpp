@@ -38,6 +38,7 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
               detuneParam_)),
       positionChanged_(
           context->getAudioEventHandlerRegistry(),
+          context->getAudioEventProducer(),
           static_cast<int>(context->getSampleRate())) {
   setOnPositionChangedInterval(options.onpositionchangedInterval);
 }
@@ -69,6 +70,10 @@ void AudioBufferBaseSourceNode::assignOnPositionChangedCallbackId(uint64_t callb
 void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
   if (isEmpty()) {
     audioBuffer_->zero();
+    if (isScheduled() && endsWhenStartedEmpty()) {
+      playbackState_ = PlaybackState::FINISHED;
+      disable();
+    }
     return;
   }
 

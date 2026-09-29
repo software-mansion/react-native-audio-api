@@ -169,7 +169,11 @@ enum class PlaybackState {
 
 Subclasses call `updatePlaybackInfo(currentTime, framesToProcess)` at the top of `processNode()` to transition the state machine and handle sample-accurate start/stop.
 
-When the node finishes, fire the `ENDED` event to JS via `audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::ENDED, {})`.
+When the node finishes, `AudioScheduledSourceNode::disable()` fires `ENDED` through its `EventCaller` (`dispatchEmptyFromAudioThread`); a node that will never render (stop-before-start) defers it with `EventCaller::deferEmpty` instead — see `thread-safety-itc`.
+
+Pitfalls:
+- `start(double)` in this base class is a separate overload from `AudioBufferSourceNode::start(when, offset, duration)`. Calling `node->start(when)` on an ABSN skips the derived logic; the HostObject always passes three arguments, and so must tests.
+- `AudioBufferBaseSourceNode::processNode` is `final` and returns early on `isEmpty()`. Whether a started-but-empty source ends there (`ended` fires) is `endsWhenStartedEmpty()`: the base default is true (spec: a null buffer forces `stop = currentTime`); `AudioBufferQueueSourceNode` overrides it to false because an empty queue is waiting for the next enqueue. The check runs per quantum on the audio thread on purpose, because the buffer setter legitimately acquires content assigned after `start()` but before the first render.
 
 ---
 

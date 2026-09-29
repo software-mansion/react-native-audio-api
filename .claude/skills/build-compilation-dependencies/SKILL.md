@@ -312,6 +312,7 @@ CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.ym
 - Completely standalone — no Gradle, no Xcode, no prebuilt Android libraries needed
 - Sources resolved from `node_modules` (symlinked to `packages/` in yarn workspaces)
 - HostObjects, worklets nodes, AudioContext, and FfmpegDecoder are excluded from the test build
+- HostObject **headers** still compile under `RN_AUDIO_API_TEST`; only their `.cpp` bodies are missing. When a test first links core code that constructs one (e.g. `AudioRecorderCallback` → `AudioBufferHostObject`), the linker fails on the constructor. Fix it with a stub translation unit under `test/src/` that defines just the constructors (see `test/src/AudioBufferHostObjectStub.cpp`), never with an `#if RN_AUDIO_API_TEST` test double inside the production header. The static lib also compiles `jsi/jsi.cpp` so `jsi::HostObject`'s virtuals resolve
 - Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_FFMPEG_DISABLED=1`
 - Google Test auto-fetched via `FetchContent` if not installed locally
 - New test files in `test/src/**/*.cpp` are picked up automatically by glob — no CMakeLists edit needed
@@ -367,6 +368,39 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | New `.cpp` not compiled in tests | Glob picks it up automatically — may need cmake reconfigure | Delete `test/build/` and re-run |
 | iOS compile error `unknown type 'id'` | C++ file included ObjC-only header | Compile that file as ObjC++ (separate subspec with `-x objective-c++`) |
 | `RCT_NEW_ARCH_ENABLED` undefined on Android | Old RN gradle plugin | Ensure `newArchEnabled=true` in app's `gradle.properties` |
+| clangd only: `'React/RCTBridgeModule.h' file not found` in `.mm` files | `compile_commands.json` has no framework search path | See *clangd compile database* below — regenerate with `yarn setup:clangd` |
+
+## clangd compile database
+
+`packages/react-native-audio-api/common/cpp/clangd/` generates the repo-root
+`compile_commands.json` that clangd reads (`yarn setup:clangd`, or
+`yarn setup:clangd:clean` after a native dependency bump). It is editor tooling
+only — it never participates in a real build. See its `SETUP.md`.
+
+The iOS half reuses whatever `pod install` resolved for `apps/fabric-example`,
+reading **both** `HEADER_SEARCH_PATHS` and `FRAMEWORK_SEARCH_PATHS` out of
+`Pods/Target Support Files/Pods-FabricExample/Pods-FabricExample.debug.xcconfig`.
+
+Framework search paths matter because React-Core ships prebuilt as
+`React.xcframework` since RN 0.87: `#import <React/RCTBridgeModule.h>` resolves
+via `-F`, not `-I`, so an `-I`-only database fails every `.mm` that imports
+React. Xcode's own `-F` points at `PODS_XCFRAMEWORKS_BUILD_DIR`, which only
+exists after Xcode has unpacked the slices — the CMakeLists globs the
+`ios-*simulator*` slices inside the `.xcframework` bundles instead, so a bare
+`pod install` suffices.
+
+To check the database rather than guessing at clangd, replay an entry directly:
+
+```bash
+python3 -c "
+import json,shlex,subprocess
+e=[x for x in json.load(open('compile_commands.json')) if x['file'].endswith('ios/AudioAPIModule.mm')][0]
+toks=[t for t in shlex.split(e['command']) if t!='-c']
+subprocess.run(toks[:toks.index('-o')]+toks[toks.index('-o')+2:]+['-fsyntax-only'], cwd=e['directory'])
+"
+```
+
+If that reproduces the error, the database is wrong — not the editor's LSP setup.
 
 ---
 
