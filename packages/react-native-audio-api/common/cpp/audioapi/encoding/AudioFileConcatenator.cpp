@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -60,28 +61,23 @@ AudioFileConcatResult validatePaths(
   return Ok(outputPath);
 }
 
-bool isWavOutputPath(const std::string &path) {
-  return path::hasExtension(path, {"wav"});
+using FileFormat = AudioFileProperties::FileFormat;
+
+/// The formats concat can write. The output path's extension picks one, and every input must
+/// carry the same extension.
+constexpr std::array CONCAT_OUTPUT_FORMATS = {FileFormat::WAV, FileFormat::M4A, FileFormat::FLAC};
+
+std::string extensionOf(FileFormat format) {
+  return std::string(encoder_capabilities::specForFormat(format).extension);
 }
 
-bool isOsRemuxOutputPath(const std::string &path) {
-  return path::hasExtension(path, {"m4a", "mp4"});
-}
-
-bool isFlacOutputPath(const std::string &path) {
-  return path::hasExtension(path, {"flac"});
-}
-
-bool extensionsCompatibleForRemux(const std::string &inputPath, const std::string &outputPath) {
-  const std::string inExt = path::lowercaseExtension(inputPath);
-  const std::string outExt = path::lowercaseExtension(outputPath);
-  if (inExt == outExt) {
-    return true;
+std::optional<FileFormat> outputFormatForPath(const std::string &path) {
+  for (const auto format : CONCAT_OUTPUT_FORMATS) {
+    if (path::hasExtension(path, {extensionOf(format)})) {
+      return format;
+    }
   }
-  // M4A and MP4 share the MPEG-4 audio container family.
-  const bool inMpeg4 = inExt == "m4a" || inExt == "mp4";
-  const bool outMpeg4 = outExt == "m4a" || outExt == "mp4";
-  return inMpeg4 && outMpeg4;
+  return std::nullopt;
 }
 
 } // namespace
@@ -225,9 +221,8 @@ AudioFileConcatResult concatAudioFilesWithOsRemux(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
   for (const auto &inputPath : inputPaths) {
-    if (!extensionsCompatibleForRemux(inputPath, outputPath)) {
-      return Err(
-          "concatAudioFiles remux requires all input files to use the same container family as the output.");
+    if (!path::hasExtension(inputPath, {extensionOf(FileFormat::M4A)})) {
+      return Err("concatAudioFiles M4A output requires all input files to use the M4A extension.");
     }
   }
 
@@ -395,30 +390,19 @@ AudioFileConcatResult concatAudioFiles(
     return pathValidationResult;
   }
 
-  if (isWavOutputPath(normalizedOutputPath)) {
-    return concatAudioFilesWithEncoder(
-               normalizedInputPaths,
-               normalizedOutputPath,
-               AudioFileProperties::FileFormat::WAV,
-               createEncoder)
-        .map([&outputPath](const std::string &) { return outputPath; });
+  // M4A remuxes the inputs' AAC packets through OS APIs. WAV and FLAC have no remux path on
+  // either platform, so their inputs are decoded and re-encoded through the system encoder:
+  // WAV as float32 PCM, FLAC losslessly.
+  const auto outputFormat = outputFormatForPath(normalizedOutputPath);
+  if (!outputFormat.has_value()) {
+    return Err("concatAudioFiles supports WAV, M4A, and FLAC output.");
   }
 
-  if (isOsRemuxOutputPath(normalizedOutputPath)) {
-    return concatAudioFilesWithOsRemux(normalizedInputPaths, normalizedOutputPath)
-        .map([&outputPath](const std::string &) { return outputPath; });
-  }
-
-  if (isFlacOutputPath(normalizedOutputPath)) {
-    return concatAudioFilesWithEncoder(
-               normalizedInputPaths,
-               normalizedOutputPath,
-               AudioFileProperties::FileFormat::FLAC,
-               createEncoder)
-        .map([&outputPath](const std::string &) { return outputPath; });
-  }
-
-  return Err("concatAudioFiles supports WAV, M4A/MP4, and FLAC output.");
+  auto result = *outputFormat == FileFormat::M4A
+      ? concatAudioFilesWithOsRemux(normalizedInputPaths, normalizedOutputPath)
+      : concatAudioFilesWithEncoder(
+            normalizedInputPaths, normalizedOutputPath, *outputFormat, createEncoder);
+  return std::move(result).map([&outputPath](const std::string &) { return outputPath; });
 }
 
 } // namespace audioapi

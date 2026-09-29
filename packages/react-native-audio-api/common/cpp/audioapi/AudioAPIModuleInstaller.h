@@ -126,11 +126,17 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto options = count > 0 ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
-                                   : AudioRecorderOptions{};
+          auto optionsResult = AudioRecorderOptions::CreateFromJSIValue(
+              runtime, count > 0 ? args[0] : jsi::Value::undefined());
+          if (optionsResult.is_err()) {
+            throw jsi::JSError(runtime, optionsResult.unwrap_err());
+          }
 
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry, &runtime, jsCallInvoker, std::move(options));
+              audioEventHandlerRegistry,
+              &runtime,
+              jsCallInvoker,
+              std::move(optionsResult).unwrap());
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 

@@ -21,27 +21,25 @@
 namespace audioapi {
 
 namespace {
-/// Maps the JS-facing preset name to Oboe's InputPreset. An unknown or empty
-/// name yields no preset call, preserving Oboe's own default
-/// (InputPreset::VoiceRecognition) exactly as before this option existed.
-std::optional<oboe::InputPreset> inputPresetFromString(const std::string &name) {
-  if (name == "generic") {
-    return oboe::InputPreset::Generic;
-  }
-  if (name == "camcorder") {
-    return oboe::InputPreset::Camcorder;
-  }
-  if (name == "voiceRecognition") {
-    return oboe::InputPreset::VoiceRecognition;
-  }
-  if (name == "voiceCommunication") {
-    return oboe::InputPreset::VoiceCommunication;
-  }
-  if (name == "unprocessed") {
-    return oboe::InputPreset::Unprocessed;
-  }
-  if (name == "voicePerformance") {
-    return oboe::InputPreset::VoicePerformance;
+/// Oboe's preset for each option. PlatformDefault sets none, which keeps Oboe's own default.
+std::optional<oboe::InputPreset> toOboeInputPreset(
+    AudioRecorderOptions::AndroidInputPreset preset) {
+  using AndroidInputPreset = AudioRecorderOptions::AndroidInputPreset;
+  switch (preset) {
+    case AndroidInputPreset::PlatformDefault:
+      return std::nullopt;
+    case AndroidInputPreset::Generic:
+      return oboe::InputPreset::Generic;
+    case AndroidInputPreset::Camcorder:
+      return oboe::InputPreset::Camcorder;
+    case AndroidInputPreset::VoiceRecognition:
+      return oboe::InputPreset::VoiceRecognition;
+    case AndroidInputPreset::VoiceCommunication:
+      return oboe::InputPreset::VoiceCommunication;
+    case AndroidInputPreset::Unprocessed:
+      return oboe::InputPreset::Unprocessed;
+    case AndroidInputPreset::VoicePerformance:
+      return oboe::InputPreset::VoicePerformance;
   }
   return std::nullopt;
 }
@@ -50,8 +48,7 @@ std::optional<oboe::InputPreset> inputPresetFromString(const std::string &name) 
 AndroidAudioRecorder::AndroidAudioRecorder(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     AudioRecorderOptions options)
-    : AudioRecorder(audioEventHandlerRegistry),
-      inputPreset_(std::move(options.androidInputPreset)) {}
+    : AudioRecorder(audioEventHandlerRegistry), inputPreset_(options.androidInputPreset) {}
 
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
 /// callable from the JS thread or handled by audio thread (if js dropped recorder first).
@@ -96,7 +93,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
       ->setDataCallback(shared_from_this())
       ->setErrorCallback(shared_from_this());
 
-  if (auto preset = inputPresetFromString(inputPreset_)) {
+  if (auto preset = toOboeInputPreset(inputPreset_)) {
     builder.setInputPreset(*preset);
   }
 

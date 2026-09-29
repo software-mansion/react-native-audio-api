@@ -262,7 +262,7 @@ TEST(AudioFileConcatenatorTest, RejectsUnsupportedOutputFormat) {
   auto result = concatAudioFiles({"/tmp/input.ogg"}, "/tmp/output.ogg");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A/MP4, and FLAC output.");
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A, and FLAC output.");
 }
 
 TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForFLACOnDesktop) {
@@ -285,7 +285,7 @@ TEST(AudioFileConcatenatorTest, RejectsMismatchedRemuxExtensions) {
   auto result = concatAudioFiles({"/tmp/input.m4a"}, "/tmp/output.caf");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A/MP4, and FLAC output.");
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A, and FLAC output.");
 }
 
 // NOLINTEND

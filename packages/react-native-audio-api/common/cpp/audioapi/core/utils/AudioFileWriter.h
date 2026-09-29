@@ -150,7 +150,7 @@ class AudioFileWriter final {
   void rollbackFailedOpen();
 
   /// Worker thread, once per encoded buffer. Swaps the encoder underneath the running worker.
-  void rotateOnceFileOutgrowsCap();
+  void rotateIfFileOutgrowsCap();
   void invokeOnErrorCallback(const std::string &message);
 
   bool initializePreallocatedInputPool();

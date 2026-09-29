@@ -369,7 +369,7 @@ AndroidRemuxResult concatAudioFiles(
   if (!isAacLcTrack(referenceInfo)) {
     return Err(
         "Input file '" + inputPaths.front() +
-        "' is not AAC-LC-in-M4A/MP4; only AAC-LC concat is supported.");
+        "' is not AAC-LC in M4A; only AAC-LC concat is supported.");
   }
 
   for (size_t i = 1; i < inputPaths.size(); ++i) {
@@ -384,7 +384,7 @@ AndroidRemuxResult concatAudioFiles(
     if (!isAacLcTrack(info)) {
       return Err(
           "Input file '" + inputPaths[i] +
-          "' is not AAC-LC-in-M4A/MP4; only AAC-LC concat is supported.");
+          "' is not AAC-LC in M4A; only AAC-LC concat is supported.");
     }
 
     auto validation = validateCompatible(info, referenceInfo, inputPaths[i]);

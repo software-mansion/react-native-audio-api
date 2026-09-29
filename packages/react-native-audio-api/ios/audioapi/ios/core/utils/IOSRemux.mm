@@ -3,7 +3,6 @@
 #import <Foundation/Foundation.h>
 
 #include <audioapi/ios/core/utils/IOSRemux.h>
-#include <audioapi/utils/Path.h>
 
 #include <string>
 
@@ -26,14 +25,6 @@ struct AudioFormatFingerprint {
 [[nodiscard]] bool isAacFormatId(AudioFormatID formatId)
 {
   return formatId == kAudioFormatMPEG4AAC;
-}
-
-[[nodiscard]] AVFileType fileTypeForExtension(const std::string &extension)
-{
-  if (extension == "mp4") {
-    return AVFileTypeMPEG4;
-  }
-  return AVFileTypeAppleM4A;
 }
 
 [[nodiscard]] IOSRemuxResult
@@ -119,7 +110,7 @@ IOSRemuxResult concatAudioFiles(
 
       if (!isAacFormatId(fingerprint.formatId)) {
         return Err(
-            "Input file '" + path + "' is not AAC-LC-in-M4A/MP4; only AAC-LC concat is supported.");
+            "Input file '" + path + "' is not AAC-LC in M4A; only AAC-LC concat is supported.");
       }
 
       if (!hasReference) {
@@ -165,7 +156,7 @@ IOSRemuxResult concatAudioFiles(
     }
 
     exporter.outputURL = outputURL;
-    exporter.outputFileType = fileTypeForExtension(path::lowercaseExtension(outputPath));
+    exporter.outputFileType = AVFileTypeAppleM4A;
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     __block AVAssetExportSessionStatus exportStatus = AVAssetExportSessionStatusUnknown;

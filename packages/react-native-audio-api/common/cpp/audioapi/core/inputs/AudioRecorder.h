@@ -117,7 +117,7 @@ class AudioRecorder {
 
   /// Must run with no recorder mutex held: closing the writer joins its worker thread. The
   /// file URIs are collected only after that join, once a rotation in flight has reported its file.
-  Result<FileInfo, std::string> finalizeSideEffects(DetachedSideEffects &&sideEffects);
+  Result<FileInfo, std::string> finalizeSideEffects(DetachedSideEffects sideEffects);
 
   bool wantsCallback() const;
   bool wantsFileOutput() const;

@@ -227,14 +227,12 @@ AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
   return sideEffects;
 }
 
-Result<FileInfo, std::string> AudioRecorder::finalizeSideEffects(
-    DetachedSideEffects &&sideEffects) {
+Result<FileInfo, std::string> AudioRecorder::finalizeSideEffects(DetachedSideEffects sideEffects) {
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
-  auto movedSideEffects = std::move(sideEffects);
 
-  if (movedSideEffects.fileWriter != nullptr) {
-    auto fileResult = movedSideEffects.fileWriter->closeFile();
+  if (sideEffects.fileWriter != nullptr) {
+    auto fileResult = sideEffects.fileWriter->closeFile();
 
     if (!fileResult.is_ok()) {
       return Err("Failed to close file: " + fileResult.unwrap_err());
@@ -244,21 +242,21 @@ Result<FileInfo, std::string> AudioRecorder::finalizeSideEffects(
     outputFileSize = session.sizeMB;
     outputDuration = session.durationSec;
     for (const auto &filePath : session.filePaths) {
-      movedSideEffects.fileUris.push_back("file://" + filePath);
+      sideEffects.fileUris.push_back("file://" + filePath);
     }
   }
 
-  if (movedSideEffects.dataCallback != nullptr) {
-    movedSideEffects.dataCallback->cleanup();
+  if (sideEffects.dataCallback != nullptr) {
+    sideEffects.dataCallback->cleanup();
   }
 
-  if (movedSideEffects.adapterNode != nullptr) {
-    movedSideEffects.adapterNode->adapterCleanup();
+  if (sideEffects.adapterNode != nullptr) {
+    sideEffects.adapterNode->adapterCleanup();
   }
 
   return Ok(
       FileInfo{
-          .paths = std::move(movedSideEffects.fileUris),
+          .paths = std::move(sideEffects.fileUris),
           .size = outputFileSize,
           .duration = outputDuration,
       });

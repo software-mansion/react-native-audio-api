@@ -296,7 +296,7 @@ void AudioFileWriter::rollbackFailedOpen() {
   isFileOpen_.store(false, std::memory_order_release);
 }
 
-void AudioFileWriter::rotateOnceFileOutgrowsCap() {
+void AudioFileWriter::rotateIfFileOutgrowsCap() {
   if (!rotatesFiles()) {
     return;
   }
@@ -430,7 +430,7 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
     return;
   }
   if (encoded) {
-    rotateOnceFileOutgrowsCap();
+    rotateIfFileOutgrowsCap();
   }
 }
 

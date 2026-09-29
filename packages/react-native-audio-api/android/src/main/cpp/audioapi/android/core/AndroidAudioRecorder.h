@@ -55,7 +55,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
 
   mutable std::recursive_mutex streamMutex_;
 
-  std::string inputPreset_;
+  AudioRecorderOptions::AndroidInputPreset inputPreset_;
   int32_t streamChannelCount_{0};
   int32_t streamMaxBufferSizeInFrames_{0};
 
