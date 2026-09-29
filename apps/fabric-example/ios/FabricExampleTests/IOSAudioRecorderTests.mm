@@ -291,10 +291,23 @@ public:
 
 - (std::shared_ptr<AudioFileProperties>)validFileProperties {
   return std::make_shared<AudioFileProperties>(
-      AudioFileProperties::FileDirectory::Cache, "fabric-example-tests",
-      "ios-recorder-test", 2, 0, AudioFileProperties::Format::WAV, 44100,
-      128000, AudioFileProperties::BitDepth::Bit16, 0, 0,
-      AudioFileProperties::IOSAudioQuality::High);
+      AudioFileProperties::PathConfig{
+          .directory = AudioFileProperties::FileDirectory::Cache,
+          .subDirectory = "fabric-example-tests",
+          .fileName = "ios-recorder-test",
+      },
+      AudioFileProperties::StreamConfig{.sampleRate = 44100, .channelCount = 2},
+      AudioFileProperties::EncodingConfig{
+          .format = AudioFileProperties::Format::WAV,
+          .bitRate = 128000,
+          .bitDepth = AudioFileProperties::BitDepth::Bit16,
+          .flacCompressionLevel = 0,
+          .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+      },
+      AudioFileProperties::WriterConfig{
+          .rotateIntervalBytes = 0,
+          .androidFlushIntervalMs = 0,
+      });
 }
 
 - (id)invalidFormat {
@@ -554,7 +567,7 @@ public:
   std::string fileName =
       [[NSString stringWithFormat:@"ios-recorder-smoke-%@", uuid] UTF8String];
   auto properties = [self validFileProperties];
-  properties->fileName = fileName;
+  properties->path.fileName = fileName;
   auto enableResult = _recorder->enableFileOutput(properties);
   XCTAssertTrue(enableResult.is_ok());
 

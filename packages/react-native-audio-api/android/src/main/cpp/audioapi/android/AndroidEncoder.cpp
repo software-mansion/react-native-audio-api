@@ -105,7 +105,7 @@ class WavBackend : public IEncoderBackend {
     effectiveSampleRate = sampleRate_;
     effectiveChannelCount = channelCount_;
 
-    switch (properties->bitDepth) {
+    switch (properties->encoding.bitDepth) {
       case AudioFileProperties::BitDepth::Bit16:
         bytesPerSample_ = 2;
         isFloat_ = false;
@@ -478,7 +478,7 @@ class MuxedBackend : public MediaCodecBackend {
     int channels = desiredChannelCount;
     const char *mime = "audio/mp4a-latm";
     bool isAac = false;
-    int bitRate = static_cast<int>(properties->bitRate);
+    int bitRate = static_cast<int>(properties->encoding.bitRate);
 
     switch (outputSpec.codec) {
       case AudioCodec::AAC:
@@ -767,11 +767,11 @@ OpenEncoderResult AndroidEncoder::open(
           std::string(toString(outputSpec.codec)) + " is not encodable on Android");
   }
 
-  int effectiveSampleRate = static_cast<int>(fileProperties_->sampleRate);
-  int effectiveChannelCount = fileProperties_->channelCount;
+  int effectiveSampleRate = static_cast<int>(fileProperties_->stream.sampleRate);
+  int effectiveChannelCount = fileProperties_->stream.channelCount;
   std::string err = backend_->open(
-      static_cast<int>(fileProperties_->sampleRate),
-      fileProperties_->channelCount,
+      static_cast<int>(fileProperties_->stream.sampleRate),
+      fileProperties_->stream.channelCount,
       filePath,
       fileProperties_,
       outputSpec,

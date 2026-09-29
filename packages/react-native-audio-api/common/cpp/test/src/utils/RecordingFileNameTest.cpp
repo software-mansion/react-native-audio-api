@@ -14,18 +14,23 @@ std::shared_ptr<AudioFileProperties> makeProperties(
     const std::string &fileName,
     size_t rotateIntervalBytes = 0) {
   return std::make_shared<AudioFileProperties>(
-      AudioFileProperties::FileDirectory::Cache,
-      "AudioAPI",
-      fileName,
-      2,
-      rotateIntervalBytes,
-      AudioFileProperties::Format::WAV,
-      48000.0F,
-      size_t{128000},
-      AudioFileProperties::BitDepth::Bit16,
-      5,
-      0,
-      AudioFileProperties::IOSAudioQuality::High);
+      AudioFileProperties::PathConfig{
+          .directory = AudioFileProperties::FileDirectory::Cache,
+          .subDirectory = "AudioAPI",
+          .fileName = fileName,
+      },
+      AudioFileProperties::StreamConfig{.sampleRate = 48000.0F, .channelCount = 2},
+      AudioFileProperties::EncodingConfig{
+          .format = AudioFileProperties::Format::WAV,
+          .bitRate = 128000,
+          .bitDepth = AudioFileProperties::BitDepth::Bit16,
+          .flacCompressionLevel = 5,
+          .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+      },
+      AudioFileProperties::WriterConfig{
+          .rotateIntervalBytes = rotateIntervalBytes,
+          .androidFlushIntervalMs = 0,
+      });
 }
 
 } // namespace

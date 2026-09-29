@@ -413,18 +413,26 @@ std::shared_ptr<AudioFileProperties> makeFlacOutputProperties(
   // Directory, prefix, and rotation are recorder concerns; the concat encoder
   // receives an explicit output path, so they stay at neutral values.
   return std::make_shared<AudioFileProperties>(
-      AudioFileProperties::FileDirectory::Cache,
-      /*subDirectory*/ std::string(),
-      /*fileName*/ std::string(),
-      static_cast<int>(channels),
-      /*rotateIntervalBytes*/ 0,
-      AudioFileProperties::Format::FLAC,
-      static_cast<float>(sampleRate),
-      /*bitRate*/ 0,
-      AudioFileProperties::BitDepth::Bit16,
-      defaultFlacCompressionLevel,
-      /*androidFlushIntervalMs*/ 0,
-      AudioFileProperties::IOSAudioQuality::Max);
+      AudioFileProperties::PathConfig{
+          .directory = AudioFileProperties::FileDirectory::Cache,
+          .subDirectory = std::string(),
+          .fileName = std::string(),
+      },
+      AudioFileProperties::StreamConfig{
+          .sampleRate = static_cast<float>(sampleRate),
+          .channelCount = static_cast<int>(channels),
+      },
+      AudioFileProperties::EncodingConfig{
+          .format = AudioFileProperties::Format::FLAC,
+          .bitRate = 0,
+          .bitDepth = AudioFileProperties::BitDepth::Bit16,
+          .flacCompressionLevel = defaultFlacCompressionLevel,
+          .iosAudioQuality = AudioFileProperties::IOSAudioQuality::Max,
+      },
+      AudioFileProperties::WriterConfig{
+          .rotateIntervalBytes = 0,
+          .androidFlushIntervalMs = 0,
+      });
 }
 #endif
 

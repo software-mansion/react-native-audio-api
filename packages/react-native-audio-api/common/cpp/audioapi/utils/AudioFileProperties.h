@@ -49,36 +49,44 @@ class AudioFileProperties {
     Bit32 = 2,
   };
 
+  struct PathConfig {
+    FileDirectory directory;
+    std::string subDirectory;
+    std::string fileName;
+  };
+
+  struct StreamConfig {
+    float sampleRate;
+    int channelCount;
+  };
+
+  struct EncodingConfig {
+    Format format;
+    size_t bitRate;
+    BitDepth bitDepth;
+    int flacCompressionLevel;
+    IOSAudioQuality iosAudioQuality;
+  };
+
+  struct WriterConfig {
+    size_t rotateIntervalBytes;
+    int androidFlushIntervalMs;
+  };
+
   AudioFileProperties(
-      FileDirectory directory,
-      std::string subDirectory,
-      std::string fileName,
-      int channelCount,
-      size_t rotateIntervalBytes,
-      Format format,
-      float sampleRate,
-      size_t bitRate,
-      BitDepth bitDepth,
-      int flacCompressionLevel,
-      int androidFlushIntervalMs,
-      IOSAudioQuality iosAudioQuality);
+      PathConfig path,
+      StreamConfig stream,
+      EncodingConfig encoding,
+      WriterConfig writer);
 
   static std::shared_ptr<AudioFileProperties> CreateFromJSIValue(
       facebook::jsi::Runtime &runtime,
       const facebook::jsi::Value &value);
 
-  FileDirectory directory;
-  std::string subDirectory;
-  std::string fileName;
-  int channelCount;
-  size_t rotateIntervalBytes;
-  Format format;
-  float sampleRate;
-  size_t bitRate;
-  BitDepth bitDepth;
-  int flacCompressionLevel;
-  int androidFlushIntervalMs;
-  IOSAudioQuality iosAudioQuality;
+  PathConfig path;
+  StreamConfig stream;
+  EncodingConfig encoding;
+  WriterConfig writer;
 };
 
 } // namespace audioapi

@@ -30,20 +30,17 @@ Result<NoneType, std::string> createDirectoryIfNotExists(const std::string &dire
 }
 
 std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties) {
-  switch (properties->directory) {
-    case AudioFileProperties::FileDirectory::Document:
-      return NativeFileInfo::getFilesDir();
-    case AudioFileProperties::FileDirectory::Cache:
-    default:
-      return NativeFileInfo::getCacheDir();
+  if (!properties || properties->path.directory == AudioFileProperties::FileDirectory::Cache) {
+    return NativeFileInfo::getCacheDir();
   }
+  return NativeFileInfo::getFilesDir();
 }
 
 Result<std::string, std::string> getFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileName) {
   std::string directory = getDirectory(properties);
-  std::string subDirectory = std::format("{}/{}", directory, properties->subDirectory);
+  std::string subDirectory = std::format("{}/{}", directory, properties->path.subDirectory);
 
   auto result = createDirectoryIfNotExists(subDirectory);
 

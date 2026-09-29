@@ -34,8 +34,8 @@ std::string sessionTimestamp() {
 }
 
 std::string sessionStem(const std::shared_ptr<AudioFileProperties> &properties) {
-  if (!properties->fileName.empty()) {
-    return properties->fileName;
+  if (!properties->path.fileName.empty()) {
+    return properties->path.fileName;
   }
 
   return std::string(kGeneratedNamePrefix) + "_" + sessionTimestamp();
@@ -52,7 +52,7 @@ std::string segmentStem(const std::string &sessionStem, size_t segmentIndex) {
 Result<NoneType, std::string> validate(const std::shared_ptr<AudioFileProperties> &properties) {
   using ValidationResult = Result<NoneType, std::string>;
 
-  const std::string &fileName = properties->fileName;
+  const std::string &fileName = properties->path.fileName;
   if (fileName.empty()) {
     return ValidationResult::Ok(None);
   }

@@ -183,18 +183,23 @@ class AudioFileWriterTest : public ::testing::Test {
 
   void createWriter(bool rotates, const std::string &fileName = "session") {
     properties_ = std::make_shared<AudioFileProperties>(
-        AudioFileProperties::FileDirectory::Cache,
-        "",
-        fileName,
-        kChannelCount,
-        rotates ? kRotateIntervalBytes : size_t{0},
-        AudioFileProperties::Format::WAV,
-        48000.0F,
-        size_t{128000},
-        AudioFileProperties::BitDepth::Bit16,
-        5,
-        0,
-        AudioFileProperties::IOSAudioQuality::High);
+        AudioFileProperties::PathConfig{
+            .directory = AudioFileProperties::FileDirectory::Cache,
+            .subDirectory = "",
+            .fileName = fileName,
+        },
+        AudioFileProperties::StreamConfig{.sampleRate = 48000.0F, .channelCount = kChannelCount},
+        AudioFileProperties::EncodingConfig{
+            .format = AudioFileProperties::Format::WAV,
+            .bitRate = 128000,
+            .bitDepth = AudioFileProperties::BitDepth::Bit16,
+            .flacCompressionLevel = 5,
+            .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+        },
+        AudioFileProperties::WriterConfig{
+            .rotateIntervalBytes = rotates ? kRotateIntervalBytes : size_t{0},
+            .androidFlushIntervalMs = 0,
+        });
 
     writer_ = std::make_unique<AudioFileWriter>(
         eventRegistry_,

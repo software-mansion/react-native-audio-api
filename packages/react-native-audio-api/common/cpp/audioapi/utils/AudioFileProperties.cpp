@@ -9,30 +9,11 @@
 namespace audioapi {
 
 AudioFileProperties::AudioFileProperties(
-    FileDirectory directory,
-    std::string subDirectory,
-    std::string fileName,
-    int channelCount,
-    size_t rotateIntervalBytes,
-    Format format,
-    float sampleRate,
-    size_t bitRate,
-    BitDepth bitDepth,
-    int flacCompressionLevel,
-    int androidFlushIntervalMs,
-    IOSAudioQuality iosAudioQuality)
-    : directory(directory),
-      subDirectory(std::move(subDirectory)),
-      fileName(std::move(fileName)),
-      channelCount(channelCount),
-      rotateIntervalBytes(rotateIntervalBytes),
-      format(format),
-      sampleRate(sampleRate),
-      bitRate(bitRate),
-      bitDepth(bitDepth),
-      flacCompressionLevel(flacCompressionLevel),
-      androidFlushIntervalMs(androidFlushIntervalMs),
-      iosAudioQuality(iosAudioQuality) {}
+    PathConfig path,
+    StreamConfig stream,
+    EncodingConfig encoding,
+    WriterConfig writer)
+    : path(std::move(path)), stream(stream), encoding(encoding), writer(writer) {}
 
 std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
     facebook::jsi::Runtime &runtime,
@@ -74,18 +55,26 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
       static_cast<IOSAudioQuality>(presetOptions.getProperty(runtime, "iosQuality").getNumber());
 
   return std::make_shared<AudioFileProperties>(
-      directory,
-      subDirectory,
-      fileName,
-      channelCount,
-      rotateIntervalBytes,
-      format,
-      sampleRate,
-      bitRate,
-      bitDepth,
-      flacCompressionLevel,
-      androidFlushIntervalMs,
-      iosAudioQuality);
+      PathConfig{
+          .directory = directory,
+          .subDirectory = std::move(subDirectory),
+          .fileName = std::move(fileName),
+      },
+      StreamConfig{
+          .sampleRate = sampleRate,
+          .channelCount = channelCount,
+      },
+      EncodingConfig{
+          .format = format,
+          .bitRate = bitRate,
+          .bitDepth = bitDepth,
+          .flacCompressionLevel = flacCompressionLevel,
+          .iosAudioQuality = iosAudioQuality,
+      },
+      WriterConfig{
+          .rotateIntervalBytes = rotateIntervalBytes,
+          .androidFlushIntervalMs = androidFlushIntervalMs,
+      });
 }
 
 } // namespace audioapi

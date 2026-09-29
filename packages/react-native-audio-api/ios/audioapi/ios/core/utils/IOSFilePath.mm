@@ -12,7 +12,7 @@ namespace {
 
 NSSearchPathDirectory getDirectory(const std::shared_ptr<AudioFileProperties> &properties)
 {
-  switch (properties->directory) {
+  switch (properties->path.directory) {
     case AudioFileProperties::FileDirectory::Document:
       return NSDocumentDirectory;
 
@@ -29,7 +29,7 @@ NSURL *getFileURL(
   NSError *error = nil;
 
   NSSearchPathDirectory directory = getDirectory(properties);
-  NSString *subDirectory = [NSString stringWithUTF8String:properties->subDirectory.c_str()];
+  NSString *subDirectory = [NSString stringWithUTF8String:properties->path.subDirectory.c_str()];
 
   NSURL *baseURL = [[[NSFileManager defaultManager] URLsForDirectory:directory
                                                            inDomains:NSUserDomainMask] firstObject];

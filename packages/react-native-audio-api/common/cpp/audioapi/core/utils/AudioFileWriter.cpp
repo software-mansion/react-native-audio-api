@@ -133,7 +133,7 @@ OpenFileResult AudioFileWriter::startNextFile(
     float streamSampleRate,
     int32_t streamChannelCount,
     int32_t maxFramesPerBuffer) {
-  if (fileProperties_->sampleRate <= 0 || fileProperties_->channelCount <= 0) {
+  if (fileProperties_->stream.sampleRate <= 0 || fileProperties_->stream.channelCount <= 0) {
     return OpenFileResult::Err(
         "Invalid file properties: sampleRate and channelCount must be greater than 0");
   }
@@ -212,7 +212,7 @@ Result<std::string, std::string> AudioFileWriter::resolveNextFilePath(
     return pathResult;
   }
 
-  const bool userNamed = !fileProperties_->fileName.empty();
+  const bool userNamed = !fileProperties_->path.fileName.empty();
   if (userNamed) {
     if (fileExists(pathResult.unwrap())) {
       warnAboutOverwrite(pathResult.unwrap());
@@ -237,7 +237,7 @@ OpenFileResult AudioFileWriter::openEncoderForNextFile() {
     return OpenFileResult::Err("File writer was constructed without a platform backend");
   }
 
-  auto specResult = backend_.resolveOutputSpec(fileProperties_->format);
+  auto specResult = backend_.resolveOutputSpec(fileProperties_->encoding.format);
   if (specResult.is_err()) {
     return OpenFileResult::Err(specResult.unwrap_err());
   }
@@ -344,7 +344,7 @@ void AudioFileWriter::rotateOnceFileOutgrowsCap() {
     }
     writesSinceLastSizeCheck_ = 0;
 
-    if (encoder_->getFileSizeBytes() <= fileProperties_->rotateIntervalBytes) {
+    if (encoder_->getFileSizeBytes() <= fileProperties_->writer.rotateIntervalBytes) {
       return;
     }
 
@@ -482,7 +482,8 @@ std::string AudioFileWriter::getFilePath() const {
 
 double AudioFileWriter::getCurrentDuration() const {
   std::scoped_lock lock(fileMutex_);
-  const double sampleRate = streamSampleRate_ > 0 ? streamSampleRate_ : fileProperties_->sampleRate;
+  const double sampleRate =
+      streamSampleRate_ > 0 ? streamSampleRate_ : fileProperties_->stream.sampleRate;
   if (sampleRate <= 0) {
     return finishedFilesDurationSec_ + currentFileEarlierFormatsDurationSec_;
   }
@@ -521,7 +522,7 @@ bool AudioFileWriter::isFileOpen() const {
 }
 
 bool AudioFileWriter::rotatesFiles() const {
-  return fileProperties_->rotateIntervalBytes > 0;
+  return fileProperties_->writer.rotateIntervalBytes > 0;
 }
 
 } // namespace audioapi

@@ -11,7 +11,7 @@ namespace audioapi::ios::fileoptions {
 /// @returns Corresponding NSInteger value for AVAudioQuality.
 NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties)
 {
-  switch (properties->iosAudioQuality) {
+  switch (properties->encoding.iosAudioQuality) {
     case AudioFileProperties::IOSAudioQuality::Min:
       return AVAudioQualityMin;
 
@@ -37,7 +37,7 @@ NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties)
 /// @returns NSInteger representing the FLAC compression level.
 NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &properties)
 {
-  return properties->flacCompressionLevel;
+  return properties->encoding.flacCompressionLevel;
 }
 
 /// @brief Retrieves the bit depth from AudioFileProperties.
@@ -45,7 +45,7 @@ NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &pr
 /// @returns NSInteger representing the bit depth.
 NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
 {
-  switch (properties->bitDepth) {
+  switch (properties->encoding.bitDepth) {
     case AudioFileProperties::BitDepth::Bit16:
       return 16;
 

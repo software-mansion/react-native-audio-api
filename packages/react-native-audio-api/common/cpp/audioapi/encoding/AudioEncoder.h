@@ -58,7 +58,7 @@ class AudioEncoder {
 
   [[nodiscard]] double getEncodedDurationSeconds() const {
     const double sampleRate =
-        fileProperties_ ? static_cast<double>(fileProperties_->sampleRate) : 0.0;
+        fileProperties_ ? static_cast<double>(fileProperties_->stream.sampleRate) : 0.0;
     if (sampleRate <= 0.0) {
       return 0.0;
     }
