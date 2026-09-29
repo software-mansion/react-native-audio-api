@@ -1,4 +1,6 @@
+#include <audioapi/core/AudioListener.h>
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/effects/PannerNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/utils/graph/Graph.h>
@@ -121,6 +123,14 @@ inline HostGraph::Node *addStereoPannerNode(Graph &graph, int channelCount = 2) 
   audioapi::StereoPannerOptions options;
   options.channelCount = channelCount;
   auto audioNode = std::make_unique<audioapi::StereoPannerNode>(getGraphTestContext(), options);
+  return graph.addNode(std::move(audioNode));
+}
+
+inline HostGraph::Node *addPannerNode(Graph &graph) {
+  audioapi::PannerOptions options;
+  auto listener = std::make_shared<audioapi::AudioListener>(getGraphTestContext());
+  auto audioNode =
+      std::make_unique<audioapi::PannerNode>(getGraphTestContext(), listener.get(), options);
   return graph.addNode(std::move(audioNode));
 }
 
@@ -521,6 +531,33 @@ TEST_F(GraphTest, ComputedNumberOfChannels_StereoPanner_MonoChannelCountKeepsSte
 
   EXPECT_EQ(inputChannelsOf(panner), 1u) << "CLAMPED_MAX(1) mixes the stereo input to mono";
   EXPECT_EQ(channelsOf(panner), 2u) << "StereoPannerNode always outputs stereo";
+  EXPECT_EQ(channelsOf(dest), 2u);
+}
+
+TEST_F(GraphTest, ComputedNumberOfChannels_Panner_MonoInputKeepsStereoOutput) {
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *panner = addPannerNode(*graph);
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, panner).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(inputChannelsOf(panner), 1u);
+  EXPECT_EQ(channelsOf(panner), 2u);
+}
+
+TEST_F(GraphTest, ComputedNumberOfChannels_Panner_DownstreamSeesStereoOutput) {
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *panner = addPannerNode(*graph);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, panner).is_ok());
+  ASSERT_TRUE(graph->addEdge(panner, dest).is_ok());
+  graph->processEvents();
+
   EXPECT_EQ(channelsOf(dest), 2u);
 }
 

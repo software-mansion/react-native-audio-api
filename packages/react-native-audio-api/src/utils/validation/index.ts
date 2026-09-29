@@ -21,6 +21,12 @@ export { DelayOptionsValidator, validateDelayMaxDelayTime } from './delay';
 
 export { OscillatorOptionsValidator } from './oscillator';
 
+export {
+  PannerOptionsValidator,
+  validatePannerChannelCount,
+  validatePannerChannelCountMode,
+} from './panner';
+
 export { PeriodicWaveOptionsValidator } from './periodicWave';
 
 export { validateWaveShaperCurve } from './waveShaper';
