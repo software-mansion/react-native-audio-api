@@ -283,7 +283,7 @@ if (status !== 'Granted') return;
 
 Enable emission with `AudioManager.observeAudioInterruptions(true)`, then listen.
 
-**Playback:** pause on `began` (native does not resume players). The AudioFile example resumes on `ended` when it had been playing.
+**Playback:** native pause on `began`, but does not resume any audio contexts. The AudioFile example resumes on `ended` when it had been playing.
 
 ```tsx
 useEffect(() => {
