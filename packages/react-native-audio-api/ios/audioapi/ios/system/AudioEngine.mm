@@ -39,6 +39,8 @@
 
 - (void)createAudioEngineIfNeeded;
 - (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState;
+- (BOOL)hasInput;
+- (BOOL)hasSources;
 - (BOOL)hasTrackedGraph;
 - (AVAudioFormat *)currentInputConnectionFormat;
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId;
@@ -71,9 +73,19 @@ static AudioEngine *_sharedInstance = nil;
   [self destroyAudioEnginePreservingSessionDeactivationState:NO];
 }
 
+- (BOOL)hasInput
+{
+  return self.inputRegistration != nil;
+}
+
+- (BOOL)hasSources
+{
+  return [self.sourceRegistrations count] > 0;
+}
+
 - (BOOL)hasTrackedGraph
 {
-  return [self.sourceRegistrations count] > 0 || self.inputRegistration != nil;
+  return [self hasInput] || [self hasSources];
 }
 
 - (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState
@@ -446,7 +458,39 @@ static AudioEngine *_sharedInstance = nil;
     return AudioEngineInterruptionEndOutcomeNoOp;
   }
 
-  if (!shouldResume && self.inputRegistration == nil) {
+  const BOOL hasInput = [self hasInput];
+  const BOOL hasSources = [self hasSources];
+  BOOL resumeEngine = NO;
+
+  // According to <https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume>:
+  // * `shouldResume` only refers to resuming the playback.
+  // * We choose to resume recording unconditionally (but see below).
+  // Below decision tree reflects this policy.
+  // On the long term it would be useful to make this policy configurable.
+
+  if (hasInput) {
+    if (hasSources) {
+      if (shouldResume) {
+        // Resume recording and playback.
+        resumeEngine = YES;
+      } else {
+        // TODO: Ideally, we would
+        // only resume recording and not playback,
+        // but it would be complex to implement and
+        // the usecase is not common, therefore
+        // not resuming the engine is safer.
+        resumeEngine = NO;
+      }
+    } else {
+      // There is only recording to resume.
+      resumeEngine = YES;
+    }
+  } else {
+    // There is only playback to resume.
+    resumeEngine = hasSources && shouldResume;
+  }
+
+  if (!resumeEngine) {
     [self stopEngine];
     [self rebuildAudioEngine];
     self.state = AudioEngineState::AudioEngineStatePaused;
@@ -642,10 +686,8 @@ static AudioEngine *_sharedInstance = nil;
 - (void)stopIfPossible
 {
   std::scoped_lock lock(_engineLock);
-  BOOL hasInput = self.inputRegistration != nil;
-  BOOL hasSources = [self.sourceRegistrations count] > 0;
 
-  if (hasInput || hasSources) {
+  if ([self hasInput] || [self hasSources]) {
     return;
   }
 
