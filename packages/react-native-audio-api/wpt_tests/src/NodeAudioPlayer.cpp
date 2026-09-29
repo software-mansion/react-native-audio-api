@@ -1,6 +1,5 @@
 #include "NodeAudioPlayer.h"
 
-#include <audioapi/core/AudioPlayerBuilder.h>
 #include <audioapi/core/utils/Constants.h>
 
 #include <algorithm>
@@ -8,7 +7,14 @@
 
 namespace audioapi {
 
-NodeAudioPlayer::NodeAudioPlayer(const AudioPlayerBuilder &builder) : CommonPlayer(builder) {}
+NodeAudioPlayer::NodeAudioPlayer(
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+    float sampleRate,
+    int channelCount)
+    : renderAudio_(renderAudio),
+      buffer_(std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount, sampleRate)),
+      sampleRate_(sampleRate),
+      channelCount_(channelCount) {}
 
 NodeAudioPlayer::~NodeAudioPlayer() {
   // Always join here — do not gate on isInitialized_. After cleanup()/stop()

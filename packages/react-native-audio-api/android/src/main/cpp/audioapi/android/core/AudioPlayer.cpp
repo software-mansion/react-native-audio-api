@@ -1,7 +1,6 @@
 #include <android/log.h>
 #include <audioapi/android/core/AudioPlayer.h>
 #include <audioapi/core/AudioContext.h>
-#include <audioapi/core/AudioPlayerBuilder.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/utils/AudioArray.hpp>
@@ -14,11 +13,22 @@
 
 namespace audioapi {
 
-AudioPlayer::AudioPlayer(const AudioPlayerBuilder &builder)
-    : CommonPlayer(builder),
-      driverMutex_(builder.getDriverMutex()),
-      context_(builder.getContext()),
-      outputProfile_(builder.getAndroidOutputProfile()) {}
+AudioPlayer::AudioPlayer(
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+    float sampleRate,
+    int channelCount,
+    std::mutex *driverMutex,
+    const std::shared_ptr<AudioContext> &context,
+    std::atomic<uint32_t> &currentRenders,
+    AndroidOutputProfile outputProfile)
+    : renderAudio_(renderAudio),
+      currentRenders_(currentRenders),
+      sampleRate_(sampleRate),
+      channelCount_(channelCount),
+      isRunning_(false),
+      driverMutex_(driverMutex),
+      context_(context),
+      outputProfile_(outputProfile) {}
 
 bool AudioPlayer::openAudioStream() {
   std::scoped_lock lock(streamMutex_);
@@ -46,6 +56,7 @@ bool AudioPlayer::openAudioStream() {
     return false;
   }
 
+  buffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
   isInitialized_.store(true, std::memory_order_release);
   return true;
 }

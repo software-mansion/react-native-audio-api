@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 
@@ -17,14 +18,20 @@ namespace audioapi {
 using namespace oboe;
 
 class AudioContext;
-class AudioPlayerBuilder;
 
 class AudioPlayer : public CommonPlayer,
                     public AudioStreamDataCallback,
                     public AudioStreamErrorCallback,
                     public std::enable_shared_from_this<AudioPlayer> {
  public:
-  explicit AudioPlayer(const AudioPlayerBuilder &builder);
+  AudioPlayer(
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+      float sampleRate,
+      int channelCount,
+      std::mutex *driverMutex,
+      const std::shared_ptr<AudioContext> &context,
+      std::atomic<uint32_t> &currentRenders,
+      AndroidOutputProfile outputProfile);
 
   ~AudioPlayer() override {
     cleanup();
@@ -49,9 +56,15 @@ class AudioPlayer : public CommonPlayer,
   void onErrorAfterClose(AudioStream *audioStream, Result error) override;
 
  private:
+  std::function<void(DSPAudioBuffer *, int)> renderAudio_;
+  std::atomic<uint32_t> &currentRenders_;
   std::shared_ptr<AudioStream> mStream_;
   mutable std::recursive_mutex streamMutex_;
+  std::shared_ptr<DSPAudioBuffer> buffer_;
   std::atomic<bool> isInitialized_{false};
+  float sampleRate_;
+  int channelCount_;
+  std::atomic<bool> isRunning_;
   /// Updated on the audio thread from each Oboe callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   std::mutex *driverMutex_;

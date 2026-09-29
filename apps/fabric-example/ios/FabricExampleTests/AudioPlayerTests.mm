@@ -1,7 +1,6 @@
 #import <AudioToolbox/AudioServices.h>
 #import <XCTest/XCTest.h>
 
-#import <audioapi/core/AudioPlayerBuilder.h>
 #import <audioapi/core/CommonPlayer.h>
 #import <audioapi/core/utils/Constants.h>
 #import <audioapi/ios/core/NativeAudioPlayer.h>
@@ -22,7 +21,11 @@ namespace audioapi {
 
 class IOSAudioPlayer : public CommonPlayer {
  public:
-  explicit IOSAudioPlayer(const AudioPlayerBuilder &builder);
+  IOSAudioPlayer(
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+      float sampleRate,
+      int channelCount,
+      std::atomic<uint32_t> &currentRenders);
   ~IOSAudioPlayer() override;
 
   bool start() override;
@@ -37,7 +40,13 @@ class IOSAudioPlayer : public CommonPlayer {
   [[nodiscard]] double getOutputLatency() const override;
 
  protected:
+  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
+  float sampleRate_;
+  std::function<void(DSPAudioBuffer *, int)> renderAudio_;
+  std::atomic<uint32_t> &currentRenders_;
+  int channelCount_;
+  std::atomic<bool> isRunning_;
   std::atomic<bool> flushOverflowNextPull_;
   int pendingSavedCount_;
   DSPAudioBuffer pendingSaved_;
@@ -225,11 +234,8 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount)
-      : IOSAudioPlayer(AudioPlayerBuilder(currentRendersStorage_)
-                           .setRenderAudio(renderAudio)
-                           .setSampleRate(sampleRate)
-                           .setChannelCount(channelCount)),
-        currentRendersStorage_(0) {}
+      : currentRendersStorage_(0),
+        IOSAudioPlayer(renderAudio, sampleRate, channelCount, currentRendersStorage_) {}
 
   NativeAudioPlayer *replaceAudioPlayer(NativeAudioPlayer *audioPlayer) {
     NativeAudioPlayer *previous = audioPlayer_;
@@ -242,7 +248,7 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
   }
 
   std::shared_ptr<DSPAudioBuffer> getAudioBuffer() const {
-    return buffer_;
+    return audioBuffer_;
   }
 
   void setRunning(bool isRunning) {
