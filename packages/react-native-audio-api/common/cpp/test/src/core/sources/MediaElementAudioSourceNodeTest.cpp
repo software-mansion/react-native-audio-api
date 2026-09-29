@@ -128,7 +128,8 @@ TEST_F(MediaElementAudioSourceNodeTest, DisconnectingLastOutputReleasesMediaBind
   auto media = std::make_shared<MediaElementAudioSourceNode>(
       context,
       fileSource.get(),
-      MediaElementAudioSourceOptions(static_cast<int>(fileSource->getOutputChannelNumber())));
+      MediaElementAudioSourceOptions(
+          static_cast<int>(fileSource->getOutputChannelNumber().value())));
 
   ASSERT_TRUE(fileSource->isRoutedThroughMediaElement());
 
@@ -144,11 +145,13 @@ TEST_F(MediaElementAudioSourceNodeTest, StaleMediaNodeOutputsSilence) {
   auto mediaA = std::make_shared<TestableMediaElementAudioSourceNode>(
       context,
       fileSource.get(),
-      MediaElementAudioSourceOptions(static_cast<int>(fileSource->getOutputChannelNumber())));
+      MediaElementAudioSourceOptions(
+          static_cast<int>(fileSource->getOutputChannelNumber().value())));
   auto mediaB = std::make_shared<TestableMediaElementAudioSourceNode>(
       context,
       fileSource.get(),
-      MediaElementAudioSourceOptions(static_cast<int>(fileSource->getOutputChannelNumber())));
+      MediaElementAudioSourceOptions(
+          static_cast<int>(fileSource->getOutputChannelNumber().value())));
 
   ASSERT_TRUE(fileSource->isCurrentMediaElementSource(mediaB->getBindingId()));
 

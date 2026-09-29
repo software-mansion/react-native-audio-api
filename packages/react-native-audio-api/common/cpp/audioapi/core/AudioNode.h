@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -31,19 +32,16 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   /// @brief Returns this node's `channelCount` attribute: the width inputs are
   /// mixed to.
-  /// @note Read only on the host thread (channel-count negotiation), so
+  /// @note Read only on the host thread (channel negotiation), so
   /// `setChannelCount` from the JS thread is race-free with audio processing.
   [[nodiscard]] size_t getChannelCount() const;
-
-  /// @brief Returns how many channels this node emits on its output.
-  [[nodiscard]] size_t getOutputChannelNumber() const;
 
   void setOutputChannelNumber(size_t outputChannelNumber) {
     outputChannelNumber_.store(static_cast<int>(outputChannelNumber), std::memory_order_release);
   }
 
   /// @brief Returns this node's `channelCountMode` attribute.
-  /// @note Read only on the host thread (channel-count negotiation) — never on
+  /// @note Read only on the host thread (channel negotiation) — never on
   /// the audio thread — so mutating it from the JS thread via
   /// `setChannelCountMode` is race-free with audio processing.
   [[nodiscard]] ChannelCountMode getChannelCountMode() const {
@@ -54,7 +52,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     return channelInterpretation_;
   }
 
-  /// @brief Sets `channelCount`. Drives channel-count negotiation, which reads
+  /// @brief Sets `channelCount`. Drives channel negotiation, which reads
   /// this value on the host thread. Callers must trigger a renegotiation so
   /// the change propagates to buffer layouts.
   /// @note Host (JS) thread only. Overridable for node-specific constraints.
@@ -129,12 +127,12 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     setOutputBuffer(buffer);
   }
 
-  /// @brief Channel count this node presents on upstream connections (toward
-  /// AudioDestinationNode) after negotiation. Default: the negotiated channel
-  /// count, except for sources (no inputs, nothing to negotiate), which
-  /// present `getOutputChannelNumber`. StereoPanner always outputs stereo.
-  [[nodiscard]] virtual size_t getUpstreamChannelCount(size_t negotiatedChannelCount) const {
-    return numberOfInputs_ == 0 ? getOutputChannelNumber() : negotiatedChannelCount;
+  /// @brief Number of channels this node emits toward AudioDestinationNode
+  /// when that does not follow its `computedNumberOfChannels`. Default:
+  /// nullopt, the output is as wide as the inputs are mixed to. Sources
+  /// present `outputChannelNumber_`; StereoPanner always outputs stereo.
+  [[nodiscard]] virtual std::optional<size_t> getOutputChannelNumber() const {
+    return std::nullopt;
   }
 
   /// @note JS Thread only
@@ -218,11 +216,11 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   int channelCount_ = 2;
   /// @brief Number of channels this node emits; the width of `audioBuffer_`
   ///
-  /// Atomic because it is read on the JS thread during channel-count
-  /// negotiation (`HostGraph`/`getOutputChannelNumber`) while source
-  /// subclasses (AudioBufferSource, AudioFileSource, RecorderAdapter,
-  /// AudioBufferQueueSource) write it on the audio thread once they learn the
-  /// decoded/buffer channel count.
+  /// Atomic because it is read on the JS thread during channel negotiation
+  /// (`getOutputChannelNumber` overrides) while AudioBufferQueueSource and
+  /// RecorderAdapter write it from other threads once they learn their
+  /// channel count. Every other writer is the host thread, which must
+  /// renegotiate after a change.
   std::atomic<int> outputChannelNumber_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;

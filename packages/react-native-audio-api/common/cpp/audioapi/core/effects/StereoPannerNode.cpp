@@ -18,7 +18,7 @@ StereoPannerNode::StereoPannerNode(
       outputBuffer_(
           std::make_shared<DSPAudioBuffer>(
               RENDER_QUANTUM_SIZE,
-              channelCount_,
+              kOutputChannelNumber,
               context->getSampleRate())) {}
 
 std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
@@ -37,8 +37,8 @@ void StereoPannerNode::setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer>
   audioBuffer_ = buffer;
 }
 
-size_t StereoPannerNode::getUpstreamChannelCount(size_t /*negotiatedChannelCount*/) const {
-  return outputBuffer_->getNumberOfChannels();
+std::optional<size_t> StereoPannerNode::getOutputChannelNumber() const {
+  return kOutputChannelNumber;
 }
 
 void StereoPannerNode::processNode(int framesToProcess) {

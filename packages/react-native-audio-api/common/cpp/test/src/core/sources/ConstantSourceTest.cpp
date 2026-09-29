@@ -48,12 +48,10 @@ TEST_F(ConstantSourceTest, ConstantSourceRendersMonoRegardlessOfChannelCountAttr
   EXPECT_EQ(constantSource->getOutputBuffer()->getNumberOfChannels(), 1u);
   EXPECT_EQ(constantSource->getOutputChannelNumber(), 1u);
   EXPECT_EQ(constantSource->getChannelCount(), 2u);
-  EXPECT_EQ(constantSource->getUpstreamChannelCount(2), 1u);
 
   constantSource->setChannelCount(4);
   EXPECT_EQ(constantSource->getChannelCount(), 4u);
   EXPECT_EQ(constantSource->getOutputChannelNumber(), 1u);
-  EXPECT_EQ(constantSource->getUpstreamChannelCount(4), 1u);
 }
 
 TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {

@@ -21,7 +21,7 @@ class MediaElementAudioSourceNodeHostObject : public AudioNodeHostObject {
                 context,
                 fileSource,
                 MediaElementAudioSourceOptions(
-                    static_cast<int>(fileSource->getOutputChannelNumber())))) {}
+                    static_cast<int>(fileSource->getOutputChannelNumber().value())))) {}
 };
 
 } // namespace audioapi

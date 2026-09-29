@@ -21,6 +21,10 @@ RecorderAdapterNode::RecorderAdapterNode(const std::shared_ptr<BaseAudioContext>
   isInitialized_.store(false, std::memory_order_release);
 }
 
+std::optional<size_t> RecorderAdapterNode::getOutputChannelNumber() const {
+  return outputChannelNumber_.load(std::memory_order_acquire);
+}
+
 void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sampleRate) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (isInitialized_.load(std::memory_order_acquire) || context == nullptr) {

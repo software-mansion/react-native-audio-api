@@ -48,10 +48,6 @@ size_t AudioNode::getChannelCount() const {
   return static_cast<size_t>(channelCount_);
 }
 
-size_t AudioNode::getOutputChannelNumber() const {
-  return static_cast<size_t>(outputChannelNumber_.load(std::memory_order_acquire));
-}
-
 bool AudioNode::requiresTailProcessing() const {
   return requiresTailProcessing_;
 }

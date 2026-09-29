@@ -31,12 +31,10 @@ TEST_F(OscillatorTest, OscillatorRendersMonoRegardlessOfChannelCountAttribute) {
   EXPECT_EQ(osc->getOutputBuffer()->getNumberOfChannels(), 1u);
   EXPECT_EQ(osc->getOutputChannelNumber(), 1u);
   EXPECT_EQ(osc->getChannelCount(), 2u);
-  EXPECT_EQ(osc->getUpstreamChannelCount(2), 1u);
 
   osc->setChannelCount(4);
   EXPECT_EQ(osc->getChannelCount(), 4u);
   EXPECT_EQ(osc->getOutputChannelNumber(), 1u);
-  EXPECT_EQ(osc->getUpstreamChannelCount(4), 1u);
 }
 
 TEST_F(OscillatorTest, OscillatorCanBeCreated) {

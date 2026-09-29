@@ -82,16 +82,15 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   // buffer modification is not allowed on JS thread
 
   auto swapBuffer = false; // whether to swap internal node buffer with the new buffer
-  if (!channelCountSet_) {
-    channelCount_ = static_cast<int>(audioBufferHostObject->audioBuffer_->getNumberOfChannels());
-    channelCountSet_ = true;
+  if (outputChannelNumber_ == 0) {
+    outputChannelNumber_ = audioBufferHostObject->audioBuffer_->getNumberOfChannels();
     swapBuffer = true;
   }
 
-  // first buffer defines channel count, rest of them is mixed to channel count of the first buffer
+  // first buffer defines the output channel number, the rest are mixed to it
   auto copiedBuffer = std::make_shared<AudioBuffer>(
       audioBufferHostObject->audioBuffer_->getSize(),
-      channelCount_,
+      outputChannelNumber_,
       audioBufferHostObject->audioBuffer_->getSampleRate());
 
   copiedBuffer->sum(*audioBufferHostObject->audioBuffer_);
@@ -114,9 +113,9 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
                 bufferId = bufferId_,
                 tailBuffer,
                 swapBuffer,
-                channelCount = channelCount_](BaseAudioContext &) {
+                outputChannelNumber = outputChannelNumber_](BaseAudioContext &) {
     if (swapBuffer) {
-      node->resizeOutputBuffer(static_cast<int>(channelCount));
+      node->resizeOutputBuffer(static_cast<int>(outputChannelNumber));
     }
     node->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
   };
