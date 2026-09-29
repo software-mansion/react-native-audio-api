@@ -299,7 +299,7 @@ const AudioPipelineStress: FC = () => {
       );
     }
 
-    await AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setSystemActivity(false);
     return capture;
   };
 
@@ -322,7 +322,7 @@ const AudioPipelineStress: FC = () => {
     );
     await sleep(SHORT_PLAYBACK_MS);
     playback.stop();
-    await AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setSystemActivity(false);
     return playbackStats;
   };
 
@@ -462,7 +462,7 @@ const AudioPipelineStress: FC = () => {
           'deactivate-playback',
           'Deactivate playback session',
           async () => {
-            await AudioManager.setAudioSessionActivity(false);
+            await AudioManager.setSystemActivity(false);
           }
         );
       });
@@ -593,7 +593,7 @@ const AudioPipelineStress: FC = () => {
             'deactivate-mid-playback',
             'Deactivate session without pausing playback first',
             async () => {
-              await AudioManager.setAudioSessionActivity(false);
+              await AudioManager.setSystemActivity(false);
               await waitForPlaybackToStall();
             }
           );
@@ -646,7 +646,7 @@ const AudioPipelineStress: FC = () => {
             'deactivate-mid-recording',
             'Deactivate session without stopping recording first',
             async () => {
-              await AudioManager.setAudioSessionActivity(false);
+              await AudioManager.setSystemActivity(false);
               await waitForRecordingToStall();
               const recorder = resourcesRef.current.recorder;
 
@@ -707,13 +707,13 @@ const AudioPipelineStress: FC = () => {
             'attempt-wrong-category-record',
             'Attempt recording while the session is configured for playback',
             async () => {
-              AudioManager.setAudioSessionOptions({
+              AudioManager.setSystemOptions({
                 iosCategory: 'playback',
                 iosMode: 'default',
                 iosOptions: [],
               });
 
-              await AudioManager.setAudioSessionActivity(true);
+              await AudioManager.setSystemActivity(true);
 
               resourcesRef.current.configureRecorderTap();
               const result = await resourcesRef.current.tryStartRecording(
@@ -734,7 +734,7 @@ const AudioPipelineStress: FC = () => {
               );
 
               resourcesRef.current.recorder?.clearOnAudioReady();
-              await AudioManager.setAudioSessionActivity(false);
+              await AudioManager.setSystemActivity(false);
             }
           );
           await runStep(

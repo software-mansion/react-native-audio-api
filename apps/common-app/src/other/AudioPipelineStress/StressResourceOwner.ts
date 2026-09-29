@@ -198,7 +198,7 @@ export default class StressResourceOwner {
     } catch {}
 
     try {
-      await AudioManager.setAudioSessionActivity(false);
+      await AudioManager.setSystemActivity(false);
     } catch {}
 
     this.context = null;

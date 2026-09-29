@@ -16,8 +16,8 @@ const mockSync =
 class AudioManager implements IAudioManager {
   getDevicePreferredSampleRate = mockSync(44100);
   getSystemVolume = mockSync(1);
-  setAudioSessionActivity = mockAsync(undefined);
-  setAudioSessionOptions = mockSync({});
+  setSystemActivity = mockAsync(undefined);
+  setSystemOptions = mockSync({});
   disableSessionManagement = mockSync({});
   observeAudioInterruptions = mockSync(true);
   activelyReclaimSession = mockSync({});

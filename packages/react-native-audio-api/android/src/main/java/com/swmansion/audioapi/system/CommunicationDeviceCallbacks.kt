@@ -9,19 +9,7 @@ import androidx.annotation.RequiresApi
 import java.util.concurrent.Executor
 
 @RequiresApi(Build.VERSION_CODES.S)
-fun registerCommunicationDeviceCallbacks(
-  audioManager: AudioManager,
-  mainHandler: Handler,
-  onRouteChange: (String) -> Unit,
-): Any = CommunicationDeviceCallbacks.register(audioManager, mainHandler, onRouteChange)
-
-@RequiresApi(Build.VERSION_CODES.S)
-fun unregisterCommunicationDeviceCallbacks(callbacks: Any) {
-  CommunicationDeviceCallbacks.unregister(callbacks)
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-private object CommunicationDeviceCallbacks {
+object CommunicationDeviceCallbacks {
   fun register(
     audioManager: AudioManager,
     mainHandler: Handler,

@@ -102,11 +102,11 @@ class AudioAPIModule(
 
   override fun isFfmpegEnabled(): Boolean = !BuildConfig.RN_AUDIO_API_FFMPEG_DISABLED
 
-  override fun setAudioSessionActivity(
+  override fun setSystemActivity(
     enabled: Boolean,
     promise: Promise?,
   ) {
-    MediaSessionManager.setAudioSessionActivity(enabled) { error ->
+    MediaSessionManager.setSystemActivity(enabled) { error ->
       if (error == null) {
         promise?.resolve(null)
       } else {
@@ -115,7 +115,7 @@ class AudioAPIModule(
     }
   }
 
-  override fun setAudioSessionOptions(
+  override fun setSystemOptions(
     category: String?,
     mode: String?,
     options: ReadableArray?,
@@ -124,7 +124,7 @@ class AudioAPIModule(
     androidMode: String?,
     androidCommunicationDevice: String?,
   ) {
-    MediaSessionManager.setAudioSessionOptions(androidMode, androidCommunicationDevice)
+    MediaSessionManager.setSystemOptions(androidMode, androidCommunicationDevice)
   }
 
   override fun disableSessionManagement() {

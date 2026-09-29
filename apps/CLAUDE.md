@@ -33,7 +33,7 @@ apps/
 Bottom Tabs
 ├── Tests       → 2-column grid of Examples (simple feature demos)
 ├── Demo Apps   → Single-column list of Demos (full mini-apps)
-└── Other       → Placeholder
+└── Other       → Internal tooling / repro screens, registered in `other/index.ts` (`otherScreens`); add the key to `NavigationParamList` in `examples/index.ts`
 ```
 
 Each item navigates into a Stack screen. No manual stack registration needed — `examples/index.ts` and `demos/index.ts` drive it automatically.
@@ -264,12 +264,12 @@ function MyPedal({ context, inputNode, outputNode }: PedalProps) {
 ```tsx
 import { AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
+AudioManager.setSystemOptions({
   iosCategory: 'playback',       // or 'playAndRecord' for mic input
   iosMode: 'default',
   iosOptions: [],
 });
-await AudioManager.setAudioSessionActivity(true);
+await AudioManager.setSystemActivity(true);
 ```
 
 ### Recording permission

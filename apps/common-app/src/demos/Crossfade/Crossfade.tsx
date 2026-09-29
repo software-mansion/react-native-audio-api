@@ -160,12 +160,12 @@ const Crossfade: FC = () => {
       return;
     }
 
-    AudioManager.setAudioSessionOptions({
+    AudioManager.setSystemOptions({
       iosCategory: 'playback',
       iosMode: 'default',
       iosOptions: [],
     });
-    await AudioManager.setAudioSessionActivity(true);
+    await AudioManager.setSystemActivity(true);
 
     if (audioContext.current.state === 'suspended') {
       await audioContext.current.resume();
@@ -226,7 +226,7 @@ const Crossfade: FC = () => {
     gainNode2.current = null;
 
     await audioContext.current.suspend();
-    await AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setSystemActivity(false);
     setIsPlaying(false);
   }, [isPlaying]);
 

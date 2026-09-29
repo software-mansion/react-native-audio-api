@@ -17,7 +17,7 @@ import { useEffect } from 'react';
 
 function App() {
     // set AVAudioSession example options (iOS)
-    AudioManager.setAudioSessionOptions({
+    AudioManager.setSystemOptions({
       iosCategory: 'playback',
       iosMode: 'default',
       iosOptions: ['allowBluetoothHFP', 'allowAirPlay'],
@@ -44,7 +44,7 @@ function App() {
 
 ## Methods
 
-### `setAudioSessionOptions` <IOS /> <Android />
+### `setSystemOptions` <IOS /> <Android />
 
 :::warning AVAudioSession Compatibility
 Not all `iosOptions` are compatible with every `iosCategory`. Passing an invalid combination to the native API (for example, explicitly setting `allowBluetoothA2DP` alongside the `playback` category) will cause the configuration to fail. This can result in a `SessionActivationError` and total audio silence.
@@ -54,13 +54,13 @@ Always verify valid category and option combinations in [Apple's AVAudioSession 
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| options | [`SessionOptions`](./audio-manager.mdx#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors). |
+| options | [`SystemOptions`](./audio-manager.mdx#systemoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors). |
 
 #### Returns `undefined`.
 
 On Android 12 (API 31) or later, set `androidMode: 'inCommunication'` before activating the session to request Android's communication audio mode. The optional `androidCommunicationDevice` requests `'speaker'`, `'earpiece'`, or `'systemDefault'` as the initial route. Existing Android behavior is unchanged when `androidMode` is omitted.
 
-### `setAudioSessionActivity` <IOS /> <Android /> {#setaudiosessionactivity}
+### `setSystemActivity` <IOS /> <Android /> {#setsystemactivity}
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -76,11 +76,11 @@ With Android `inCommunication` mode, activation requests transient focus using v
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `device` | [`CommunicationDevice`](./audio-manager.mdx#communicationdevice) | Requests an Android communication route while an active `inCommunication` session owns the audio mode. |
+| `device` | [`CommunicationDevice`](./audio-manager.mdx#communicationdevice) | Requests the Android route for voice-communication audio. |
 
 #### Returns `Promise<void>`.
 
-Available on Android 12 (API 31) or later. The promise rejects if no communication session is active, the requested built-in device is unavailable, or Android rejects the request. Resolution means Android accepted the request; use `getCommunicationDevice()` and `routeChange` to observe the selected route. A runtime request applies only to the active session; the next activation uses `androidCommunicationDevice` from `setAudioSessionOptions()` again.
+Available on Android 12 (API 31) or later. Works with or without an `inCommunication` session, and only affects streams with the `voiceCommunication` output profile; without a session Android sends them to the earpiece by default, so request `'speaker'` for a loudspeaker route. The promise rejects if the requested built-in device is unavailable or Android rejects the request. Resolution means Android accepted the request; use `getCommunicationDevice()` to observe the selected route (`routeChange` events fire only during a session). Android keeps the request until `'systemDefault'`, `setSystemActivity(false)`, or the app process ends; the next activation applies `androidCommunicationDevice` from `setSystemOptions()` again.
 
 ### `getCommunicationDevice` <Android />
 
@@ -95,7 +95,7 @@ Returns the device Android currently selected for communication, including an ac
 Disables all internal default [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession) configurations and management done by the `react-native-audio-api` package. After calling this method, user is responsible for managing audio session entirely on their own.
 Typical use-case for this method is when user wants to fully control audio session outside of `react-native-audio-api` package,
 commonly when using another audio library along `react-native-audio-api`. The method has to be called before `AudioContext` is created, for example in app initialization code.
-Any later call to `setAudioSessionOptions` or `setAudioSessionActivity` will re-enable internal audio session management.
+Any later call to `setSystemOptions` or `setSystemActivity` will re-enable internal audio session management.
 
 ### `getDevicePreferredSampleRate`
 
@@ -213,7 +213,7 @@ type AudioFocusType =
 ```
 </details>
 
-### `SessionOptions`
+### `SystemOptions`
 
 <details>
 <summary>Type definitions</summary>
@@ -251,7 +251,7 @@ type IOSOption =
   | 'mixWithOthers'
   | 'overrideMutedMicrophoneInterruption';
 
-interface SessionOptions {
+interface SystemOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;

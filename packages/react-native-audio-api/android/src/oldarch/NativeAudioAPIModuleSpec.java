@@ -49,11 +49,11 @@ public abstract class NativeAudioAPIModuleSpec extends ReactContextBaseJavaModul
 
   @ReactMethod
   @DoNotStrip
-  public abstract void setAudioSessionActivity(boolean enabled, Promise promise);
+  public abstract void setSystemActivity(boolean enabled, Promise promise);
 
   @ReactMethod
   @DoNotStrip
-  public abstract void setAudioSessionOptions(String category, String mode, ReadableArray options, boolean allowHaptics, boolean notifyOthersOnDeactivation, String androidMode, String androidCommunicationDevice);
+  public abstract void setSystemOptions(String category, String mode, ReadableArray options, boolean allowHaptics, boolean notifyOthersOnDeactivation, String androidMode, String androidCommunicationDevice);
 
   @ReactMethod
   @DoNotStrip

@@ -43,14 +43,14 @@ const Record: FC = () => {
       return;
     }
 
-    AudioManager.setAudioSessionOptions({
+    AudioManager.setSystemOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'voiceChat',
       iosOptions: ['allowBluetoothHFP'],
     });
 
     try {
-      await AudioManager.setAudioSessionActivity(true);
+      await AudioManager.setSystemActivity(true);
     } catch (error) {
       console.error('Failed to activate audio session:', error);
       Alert.alert(
@@ -94,7 +94,7 @@ const Record: FC = () => {
 
     audioRecorder.disconnect();
     setStatus(Status.Idle);
-    await AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setSystemActivity(false);
   };
 
   const startRecordForReplay = async () => {
@@ -108,14 +108,14 @@ const Record: FC = () => {
       return;
     }
 
-    AudioManager.setAudioSessionOptions({
+    AudioManager.setSystemOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'default',
       iosOptions: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
     });
 
     try {
-      await AudioManager.setAudioSessionActivity(true);
+      await AudioManager.setSystemActivity(true);
     } catch (error) {
       console.error('Failed to activate audio session:', error);
       Alert.alert(
@@ -164,20 +164,20 @@ const Record: FC = () => {
     setTimeout(async () => {
       audioRecorder.stop();
       audioRecorder.clearOnAudioReady();
-      await AudioManager.setAudioSessionActivity(false);
+      await AudioManager.setSystemActivity(false);
       setStatus(Status.Idle);
     }, 5000);
   };
 
   const onStartReplay = async () => {
-    AudioManager.setAudioSessionOptions({
+    AudioManager.setSystemOptions({
       iosCategory: 'playback',
       iosMode: 'default',
       iosOptions: [],
     });
 
     try {
-      await AudioManager.setAudioSessionActivity(true);
+      await AudioManager.setSystemActivity(true);
     } catch (error) {
       console.error('Failed to activate audio session:', error);
       Alert.alert(
@@ -208,7 +208,7 @@ const Record: FC = () => {
     setTimeout(
       async () => {
         await audioContext.suspend();
-        await AudioManager.setAudioSessionActivity(false);
+        await AudioManager.setSystemActivity(false);
         setStatus(Status.Idle);
       },
       (nextStartAt - tNow) * 1000

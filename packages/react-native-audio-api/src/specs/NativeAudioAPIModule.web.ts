@@ -19,8 +19,8 @@ interface Spec extends TurboModule {
   isFfmpegEnabled(): boolean;
 
   // AVAudioSession management
-  setAudioSessionActivity(enabled: boolean): Promise<void>;
-  setAudioSessionOptions(
+  setSystemActivity(enabled: boolean): Promise<void>;
+  setSystemOptions(
     category: string,
     mode: string,
     options: Array<string>,
@@ -72,8 +72,8 @@ const NativeAudioAPIModule: Spec = {
   install: mockSync(true),
   getDevicePreferredSampleRate: mockSync(0),
   isFfmpegEnabled: mockSync(true),
-  setAudioSessionActivity: mockAsync(undefined),
-  setAudioSessionOptions: mockSync({}),
+  setSystemActivity: mockAsync(undefined),
+  setSystemOptions: mockSync({}),
   disableSessionManagement: mockSync({}),
   observeAudioInterruptions: mockSync({}),
   activelyReclaimSession: mockSync({}),

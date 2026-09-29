@@ -22,8 +22,8 @@ interface Spec extends TurboModule {
   isFfmpegEnabled(): boolean;
 
   // AVAudioSession management
-  setAudioSessionActivity(enabled: boolean): Promise<void>;
-  setAudioSessionOptions(
+  setSystemActivity(enabled: boolean): Promise<void>;
+  setSystemOptions(
     category: string,
     mode: string,
     options: Array<string>,

@@ -44,7 +44,7 @@ export type AndroidAudioMode = 'inCommunication';
 
 export type CommunicationDevice = 'speaker' | 'earpiece' | 'systemDefault';
 
-export interface SessionOptions {
+export interface SystemOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
@@ -88,8 +88,8 @@ export interface AudioDevicesInfo {
 
 export interface IAudioManager {
   getDevicePreferredSampleRate(): number;
-  setAudioSessionActivity(enabled: boolean): Promise<void>;
-  setAudioSessionOptions(options: SessionOptions): void;
+  setSystemActivity(enabled: boolean): Promise<void>;
+  setSystemOptions(options: SystemOptions): void;
   disableSessionManagement(): void;
   observeAudioInterruptions(enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
