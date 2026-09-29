@@ -207,7 +207,6 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
         "Failed to continue the recording in the new input format: " + result.unwrap_err());
   }
 
-  filePath_ = result.unwrap();
   fileOutputConfigured_.store(true, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
 }
@@ -333,10 +332,6 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   bool fileWasOpened = false;
 
   if (wantsFileOutput()) {
-    {
-      std::scoped_lock segmentPathsLock(segmentPathsMutex_);
-      recordingSegmentPaths_.clear();
-    }
     auto writerResult = setupFileWriter(fileProperties_);
     if (!writerResult.is_ok()) {
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
@@ -350,7 +345,6 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, fileWasOpened);
       fileOutputConfigured_.store(false, std::memory_order_release);
       fileWriter_ = nullptr;
-      filePath_ = "";
       return Result<NoneType, std::string>::Err(
           "Failed to prepare callback: callback is unavailable");
     }
@@ -364,7 +358,6 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
       callbackOutputConfigured_.store(false, std::memory_order_release);
       fileOutputConfigured_.store(false, std::memory_order_release);
       fileWriter_ = nullptr;
-      filePath_ = "";
       return Result<NoneType, std::string>::Err(
           "Failed to prepare callback: " + callbackResult.unwrap_err());
     }

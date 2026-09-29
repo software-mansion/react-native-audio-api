@@ -5,9 +5,7 @@
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/AudioFileProperties.h>
-#include <audioapi/utils/CircularOverflowableAudioArray.h>
 
-#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -37,18 +35,8 @@ void AudioRecorder::onAudioFrames(const float *const *channels, int numFrames) {
 
   if (isConnected()) {
     auto adapterLock = Locker::tryLock(adapterNodeMutex_);
-    if (!adapterLock || adapterNode_ == nullptr || adapterStreamChannelCount_ <= 0) {
-      return;
-    }
-    // A callback larger than the stream's maximum burst would overrun the ring buffers.
-    if (numFrames > adapterMaxFramesPerBuffer_) {
-      return;
-    }
-
-    const size_t channelCount =
-        std::min(adapterNode_->getChannelCount(), static_cast<size_t>(adapterStreamChannelCount_));
-    for (size_t channel = 0; channel < channelCount; ++channel) {
-      adapterNode_->buff_[channel]->write(channels[channel], static_cast<size_t>(numFrames));
+    if (adapterLock && adapterNode_ != nullptr) {
+      adapterNode_->writeFrames(channels, static_cast<size_t>(numFrames));
     }
   }
 }
@@ -97,11 +85,7 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
         "Failed to open file for writing: " + formatResult.unwrap_err());
   }
 
-  fileWriter_ = std::make_shared<AudioFileWriter>(
-      audioEventHandlerRegistry_, properties, [this](const std::string &path) {
-        std::scoped_lock lock(segmentPathsMutex_);
-        recordingSegmentPaths_.push_back(path);
-      });
+  fileWriter_ = std::make_shared<AudioFileWriter>(audioEventHandlerRegistry_, properties);
   fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
   const auto format = formatResult.unwrap();
@@ -115,7 +99,6 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
         "Failed to open file for writing: " + fileResult.unwrap_err());
   }
 
-  filePath_ = fileResult.unwrap();
   fileOutputConfigured_.store(true, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
 }
@@ -202,8 +185,6 @@ void AudioRecorder::disconnect() {
     hadConnection = isConnected();
     connectedConfigured_.store(false, std::memory_order_release);
     isConnected_.store(false, std::memory_order_release);
-    adapterStreamChannelCount_ = 0;
-    adapterMaxFramesPerBuffer_ = 0;
     adapterNodeHandle = std::move(adapterNodeHandle_);
     adapterNode = std::exchange(adapterNode_, nullptr);
   }
@@ -218,10 +199,8 @@ void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
     return;
   }
 
-  const auto maxFramesPerBuffer = static_cast<size_t>(format.maxFramesPerBuffer);
-  adapterStreamChannelCount_ = format.channelCount;
-  adapterMaxFramesPerBuffer_ = maxFramesPerBuffer;
-  adapterNode_->init(maxFramesPerBuffer, format.channelCount, format.sampleRate);
+  adapterNode_->init(
+      static_cast<size_t>(format.maxFramesPerBuffer), format.channelCount, format.sampleRate);
   connectedConfigured_.store(true, std::memory_order_release);
 }
 
@@ -245,8 +224,6 @@ AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
     sideEffects.adapterNode = std::exchange(adapterNode_, nullptr);
   }
 
-  filePath_ = "";
-
   return sideEffects;
 }
 
@@ -262,16 +239,12 @@ AudioRecorder::StopResult AudioRecorder::finalizeSideEffects(DetachedSideEffects
       return StopResult::Err("Failed to close file: " + fileResult.unwrap_err());
     }
 
-    outputFileSize = std::get<0>(fileResult.unwrap());
-    outputDuration = std::get<1>(fileResult.unwrap());
-
-    std::scoped_lock lock(segmentPathsMutex_);
-    for (const auto &segmentPath : recordingSegmentPaths_) {
-      if (!segmentPath.empty()) {
-        movedSideEffects.fileUris.push_back("file://" + segmentPath);
-      }
+    const auto &session = fileResult.unwrap();
+    outputFileSize = session.sizeMB;
+    outputDuration = session.durationSec;
+    for (const auto &filePath : session.filePaths) {
+      movedSideEffects.fileUris.push_back("file://" + filePath);
     }
-    recordingSegmentPaths_.clear();
   }
 
   if (movedSideEffects.dataCallback != nullptr) {

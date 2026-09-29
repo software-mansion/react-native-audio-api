@@ -9,6 +9,7 @@
 #include <oboe/Oboe.h>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace audioapi {
@@ -51,6 +52,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
 
  private:
   Result<NoneType, std::string> openAudioStream();
+
+  mutable std::recursive_mutex streamMutex_;
 
   std::string inputPreset_;
   int32_t streamChannelCount_{0};

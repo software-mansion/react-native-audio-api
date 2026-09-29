@@ -70,6 +70,12 @@ void RecorderAdapterNode::adapterCleanup() {
   overflowSize_ = 0;
 }
 
+void RecorderAdapterNode::writeFrames(const float *const *channels, size_t numFrames) {
+  for (size_t channel = 0; channel < buff_.size(); ++channel) {
+    buff_[channel]->write(channels[channel], numFrames);
+  }
+}
+
 void RecorderAdapterNode::waitForProcessQuiescence() const {
   while (currentProcesses_.load(std::memory_order_acquire) != 0) {
     std::this_thread::yield();

@@ -7,6 +7,7 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/core/inputs/AudioRecorder.h>
 #import <audioapi/core/sources/RecorderAdapterNode.h>
+#import <audioapi/core/utils/AudioFileWriter.h>
 #import <audioapi/core/utils/graph/NodeHandle.h>
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
@@ -218,7 +219,10 @@ public:
     state_.store(state, std::memory_order_release);
   }
 
-  std::string currentFilePath() const { return filePath_; }
+  std::string currentFilePath() const {
+    std::scoped_lock lock(fileWriterMutex_);
+    return fileWriter_ != nullptr ? fileWriter_->getFilePath() : "";
+  }
 
   bool fileOutputEnabledIntent() const {
     return fileOutputEnabled_.load(std::memory_order_acquire);

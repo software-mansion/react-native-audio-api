@@ -16,6 +16,7 @@
 #include <mutex>
 #include <string>
 #include <tuple>
+#include <vector>
 
 namespace audioapi {
 
@@ -23,7 +24,15 @@ class AudioFileProperties;
 class IAudioEventHandlerRegistry;
 
 using OpenFileResult = Result<std::string, std::string>;
-using CloseFileResult = Result<std::tuple<double, double>, std::string>;
+
+struct ClosedSession {
+  /// Every file the session produced, in open order.
+  std::vector<std::string> filePaths;
+  double sizeMB = 0.0;
+  double durationSec = 0.0;
+};
+
+using CloseFileResult = Result<ClosedSession, std::string>;
 
 /// A filled pool buffer on its way to the worker. The default-constructed value (no buffer)
 /// is the offloader's shutdown message, which is what operator== exists for.
@@ -53,12 +62,9 @@ PlatformFileBackend createOsFileBackend();
 
 class AudioFileWriter final {
  public:
-  using OnFileOpenedCallback = std::function<void(const std::string &)>;
-
   AudioFileWriter(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
-      OnFileOpenedCallback onFileOpened = {},
       PlatformFileBackend backend = createOsFileBackend());
   ~AudioFileWriter();
   DELETE_COPY_AND_MOVE(AudioFileWriter);
@@ -68,7 +74,7 @@ class AudioFileWriter final {
   OpenFileResult
   openFile(float streamSampleRate, int32_t streamChannelCount, int32_t maxFramesPerBuffer);
 
-  /// JS thread. Returns {sizeMB, durationSeconds} summed over every file of the session.
+  /// JS thread. Sizes and durations are summed over every file of the session.
   CloseFileResult closeFile();
 
   /// ios only because android handles input format changes automatically. Returns the file path on success.
@@ -82,6 +88,8 @@ class AudioFileWriter final {
   void writeAudioData(const float *const *channels, int numFrames);
 
   [[nodiscard]] std::string getFilePath() const;
+  /// Every file the current session has opened so far, in open order.
+  [[nodiscard]] std::vector<std::string> getSessionFilePaths() const;
   /// Across every file of the session.
   [[nodiscard]] double getCurrentDuration() const;
   [[nodiscard]] size_t getFileSizeBytes() const;
@@ -134,7 +142,6 @@ class AudioFileWriter final {
 
   /// Worker thread, once per encoded buffer. Swaps the encoder underneath the running worker.
   void rotateOnceFileOutgrowsCap();
-  void announceFileOpened(const std::string &path);
   void invokeOnErrorCallback(const std::string &message);
 
   bool initializePreallocatedInputPool();
@@ -143,7 +150,6 @@ class AudioFileWriter final {
   void runWriterTask(PendingFileWrite pending);
 
   std::shared_ptr<AudioFileProperties> fileProperties_;
-  OnFileOpenedCallback onFileOpened_;
   /// Declared before offloader_, so the worker thread that calls into it is joined first.
   PlatformFileBackend backend_;
   EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
@@ -161,6 +167,7 @@ class AudioFileWriter final {
   std::string filePath_;
   std::unique_ptr<AudioEncoder> encoder_;
   std::string sessionStem_;
+  std::vector<std::string> sessionFilePaths_;
   size_t openedFileCount_{0};
   int writesSinceLastSizeCheck_{0};
   double finishedFilesSizeMB_{0.0};

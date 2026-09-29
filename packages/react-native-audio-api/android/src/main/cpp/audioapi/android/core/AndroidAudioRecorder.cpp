@@ -155,7 +155,6 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
   const auto streamFormat = formatResult.unwrap();
 
   if (wantsFileOutput()) {
-    recordingSegmentPaths_.clear();
     auto writerResult = setupFileWriter(fileProperties_);
     if (!writerResult.is_ok()) {
       return writerResult;
@@ -164,7 +163,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
         ANDROID_LOG_INFO,
         "AndroidAudioRecorder",
         "File created successfully at path: %s",
-        filePath_.c_str());
+        fileWriter_->getFilePath().c_str());
   }
 
   if (wantsCallback()) {

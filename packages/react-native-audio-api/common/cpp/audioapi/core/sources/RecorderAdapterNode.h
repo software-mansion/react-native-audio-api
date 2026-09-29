@@ -31,6 +31,10 @@ class RecorderAdapterNode : public AudioNode {
   void init(size_t bufferSize, int channelCount, float sampleRate);
   void adapterCleanup();
 
+  /// Recorder input thread, under the recorder's adapter lock. @p channels holds one pointer per
+  /// channel the node was initialized with. A burst larger than the init buffer size is dropped.
+  void writeFrames(const float *const *channels, size_t numFrames);
+
   // TODO: CircularOverflowableAudioBuffer
   std::vector<std::shared_ptr<CircularOverflowableAudioArray>> buff_;
 

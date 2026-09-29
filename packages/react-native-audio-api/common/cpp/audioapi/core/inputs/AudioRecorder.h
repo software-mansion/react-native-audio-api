@@ -2,7 +2,6 @@
 
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
-#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 
@@ -131,17 +130,10 @@ class AudioRecorder {
   std::mutex callbackMutex_;
   mutable std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;
-  /// Guards recordingSegmentPaths_, which the writer's worker thread appends to on rotation.
-  /// Its own lock because the JS thread holds fileWriterMutex_ while joining that worker.
-  std::mutex segmentPathsMutex_;
   mutable std::mutex adapterNodeMutex_;
-  mutable std::recursive_mutex streamMutex_;
 
   std::atomic<uint64_t> errorCallbackId_{0};
 
-  std::string filePath_;
-  /// Every file of the current session, in open order. Guarded by segmentPathsMutex_.
-  std::vector<std::string> recordingSegmentPaths_;
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;
   /// Payload of adapterNodeHandle_. Valid exactly as long as that handle is held, so the two
@@ -150,10 +142,6 @@ class AudioRecorder {
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
-  /// Stream layout the adapter node was prepared for. Set on the JS thread under
-  /// adapterNodeMutex_; the audio thread reads them under the same tryLock.
-  int adapterStreamChannelCount_{0};
-  size_t adapterMaxFramesPerBuffer_{0};
   /// Updated on the audio thread from each input callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   /// Sample rate of the live input stream, published for readers off the JS thread.

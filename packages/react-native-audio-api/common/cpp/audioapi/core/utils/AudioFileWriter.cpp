@@ -21,6 +21,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -36,10 +37,8 @@ PlatformFileBackend createOsFileBackend() {
 AudioFileWriter::AudioFileWriter(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
-    OnFileOpenedCallback onFileOpened,
     PlatformFileBackend backend)
     : fileProperties_(fileProperties),
-      onFileOpened_(std::move(onFileOpened)),
       backend_(std::move(backend)),
       errorEvent_(audioEventHandlerRegistry) {}
 
@@ -60,6 +59,7 @@ OpenFileResult AudioFileWriter::openFile(
   {
     std::scoped_lock lock(fileMutex_);
     sessionStem_ = recordingfilename::sessionStem(fileProperties_);
+    sessionFilePaths_.clear();
     openedFileCount_ = 0;
     finishedFilesSizeMB_ = 0.0;
     finishedFilesDurationSec_ = 0.0;
@@ -79,11 +79,15 @@ CloseFileResult AudioFileWriter::closeFile() {
   }
 
   std::scoped_lock lock(fileMutex_);
-  const double sessionSizeMB = finishedFilesSizeMB_;
-  const double sessionDurationSec = finishedFilesDurationSec_;
+  ClosedSession session{
+      .filePaths = std::move(sessionFilePaths_),
+      .sizeMB = finishedFilesSizeMB_,
+      .durationSec = finishedFilesDurationSec_,
+  };
+  sessionFilePaths_.clear();
   finishedFilesSizeMB_ = 0.0;
   finishedFilesDurationSec_ = 0.0;
-  return CloseFileResult::Ok({sessionSizeMB, sessionDurationSec});
+  return CloseFileResult::Ok(std::move(session));
 }
 
 OpenFileResult AudioFileWriter::reprepareStreamFormat(
@@ -161,8 +165,11 @@ OpenFileResult AudioFileWriter::startNextFile(
     return OpenFileResult::Err("Failed to preallocate file writer buffers");
   }
 
+  {
+    std::scoped_lock lock(fileMutex_);
+    sessionFilePaths_.push_back(openResult.unwrap());
+  }
   isFileOpen_.store(true, std::memory_order_release);
-  announceFileOpened(openResult.unwrap());
   return openResult;
 }
 
@@ -332,7 +339,6 @@ void AudioFileWriter::rotateOnceFileOutgrowsCap() {
     return;
   }
 
-  std::string openedPath;
   std::string rotationError;
   {
     std::scoped_lock lock(fileMutex_);
@@ -357,7 +363,7 @@ void AudioFileWriter::rotateOnceFileOutgrowsCap() {
       if (openResult.is_err()) {
         rotationError = openResult.unwrap_err();
       } else {
-        openedPath = openResult.unwrap();
+        sessionFilePaths_.push_back(openResult.unwrap());
       }
     }
 
@@ -367,17 +373,9 @@ void AudioFileWriter::rotateOnceFileOutgrowsCap() {
     }
   }
 
-  // Both reach back into the outside world, so neither runs under the lock.
+  // Reaches back into the outside world, so it does not run under the lock.
   if (!rotationError.empty()) {
     invokeOnErrorCallback("Failed to start the next recording segment: " + rotationError);
-    return;
-  }
-  announceFileOpened(openedPath);
-}
-
-void AudioFileWriter::announceFileOpened(const std::string &path) {
-  if (onFileOpened_ && !path.empty()) {
-    onFileOpened_(path);
   }
 }
 
@@ -478,6 +476,11 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
 std::string AudioFileWriter::getFilePath() const {
   std::scoped_lock lock(fileMutex_);
   return filePath_;
+}
+
+std::vector<std::string> AudioFileWriter::getSessionFilePaths() const {
+  std::scoped_lock lock(fileMutex_);
+  return sessionFilePaths_;
 }
 
 double AudioFileWriter::getCurrentDuration() const {

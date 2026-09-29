@@ -39,7 +39,6 @@ struct FakeEncoderLog {
   /// assert on the names directly.
   std::string pathPrefix;
   std::vector<std::string> openedFileNames;
-  std::vector<std::string> openedPaths;
   StreamFormat lastOpenedFormat{};
   size_t lastOpenedMaxFramesPerBuffer = 0;
   StreamFormat lastRepreparedFormat{};
@@ -201,14 +200,7 @@ class AudioFileWriterTest : public ::testing::Test {
             .androidFlushIntervalMs = 0,
         });
 
-    writer_ = std::make_unique<AudioFileWriter>(
-        eventRegistry_,
-        properties_,
-        [this](const std::string &path) {
-          std::scoped_lock lock(log_.mutex);
-          log_.openedPaths.push_back(path);
-        },
-        makeFakeBackend(log_));
+    writer_ = std::make_unique<AudioFileWriter>(eventRegistry_, properties_, makeFakeBackend(log_));
   }
 
   OpenFileResult open() {
@@ -229,11 +221,6 @@ class AudioFileWriterTest : public ::testing::Test {
     return log_.openedFileNames;
   }
 
-  std::vector<std::string> openedPaths() {
-    std::scoped_lock lock(log_.mutex);
-    return log_.openedPaths;
-  }
-
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry_;
   std::shared_ptr<AudioFileProperties> properties_;
   FakeEncoderLog log_;
@@ -251,7 +238,7 @@ TEST_F(AudioFileWriterTest, OpensTheSessionUnderItsPlainName) {
   EXPECT_EQ(writer_->getFilePath(), "session.wav");
 
   const std::vector<std::string> expectedPaths{"session.wav"};
-  EXPECT_EQ(openedPaths(), expectedPaths);
+  EXPECT_EQ(writer_->getSessionFilePaths(), expectedPaths);
 }
 
 // The platform capability table is empty unless the host is iOS or Android, so a writer that
@@ -300,7 +287,7 @@ TEST_F(AudioFileWriterTest, ReprepareStreamFormatKeepsTheFileAndRetargetsTheEnco
   EXPECT_EQ(writer_->getFilePath(), "session.wav");
 
   const std::vector<std::string> expectedPaths{"session.wav"};
-  EXPECT_EQ(openedPaths(), expectedPaths);
+  EXPECT_EQ(writer_->getSessionFilePaths(), expectedPaths);
   EXPECT_EQ(openedFileNames(), expectedPaths);
   EXPECT_EQ(log_.closedFiles.load(), 0);
 
@@ -366,8 +353,8 @@ TEST_F(AudioFileWriterTest, ReprepareStreamFormatLeavesOneFileInTheTotals) {
   ASSERT_TRUE(closeResult.is_ok());
 
   const auto &totals = closeResult.unwrap();
-  EXPECT_DOUBLE_EQ(std::get<0>(totals), log_.fileSizeMB);
-  EXPECT_DOUBLE_EQ(std::get<1>(totals), log_.fileDurationSec);
+  EXPECT_DOUBLE_EQ(totals.sizeMB, log_.fileSizeMB);
+  EXPECT_DOUBLE_EQ(totals.durationSec, log_.fileDurationSec);
 }
 
 TEST_F(AudioFileWriterTest, ReprepareStreamFormatWithoutOpenFails) {
@@ -399,7 +386,7 @@ TEST_F(AudioFileWriterTest, AFormatChangeFailsWithoutAPlatformHookForIt) {
   createWriter(/*rotates=*/false);
   auto backend = makeFakeBackend(log_);
   backend.reprepareEncoderInput = nullptr;
-  writer_ = std::make_unique<AudioFileWriter>(eventRegistry_, properties_, nullptr, backend);
+  writer_ = std::make_unique<AudioFileWriter>(eventRegistry_, properties_, backend);
   ASSERT_TRUE(open().is_ok());
 
   EXPECT_TRUE(writer_->reprepareStreamFormat(44100.0F, 1, 256).is_err());
@@ -479,8 +466,8 @@ TEST_F(AudioFileWriterTest, SessionTotalsStartOverWithEachOpen) {
   ASSERT_TRUE(closeResult.is_ok());
 
   const auto &totals = closeResult.unwrap();
-  EXPECT_DOUBLE_EQ(std::get<0>(totals), log_.fileSizeMB);
-  EXPECT_DOUBLE_EQ(std::get<1>(totals), log_.fileDurationSec);
+  EXPECT_DOUBLE_EQ(totals.sizeMB, log_.fileSizeMB);
+  EXPECT_DOUBLE_EQ(totals.durationSec, log_.fileDurationSec);
 }
 
 TEST_F(AudioFileWriterTest, RotatesOnceTheFileOutgrowsTheCap) {
@@ -489,11 +476,12 @@ TEST_F(AudioFileWriterTest, RotatesOnceTheFileOutgrowsTheCap) {
   log_.fileSizeBytes.store(kRotateIntervalBytes + 1);
 
   writeBuffers(kBuffersBetweenSizeChecks);
-  ASSERT_TRUE(writer_->closeFile().is_ok());
+  auto closeResult = writer_->closeFile();
+  ASSERT_TRUE(closeResult.is_ok());
 
   const std::vector<std::string> expectedNames{"session_001.wav", "session_002.wav"};
   EXPECT_EQ(openedFileNames(), expectedNames);
-  EXPECT_EQ(openedPaths(), expectedNames);
+  EXPECT_EQ(closeResult.unwrap().filePaths, expectedNames);
 }
 
 TEST_F(AudioFileWriterTest, FileSizeIsMeasuredOnlyEveryNthBuffer) {
@@ -542,8 +530,8 @@ TEST_F(AudioFileWriterTest, RotationFoldsFinishedFilesIntoTheTotals) {
 
   // The rotated file plus the final one.
   const auto &totals = closeResult.unwrap();
-  EXPECT_DOUBLE_EQ(std::get<0>(totals), 2.0 * log_.fileSizeMB);
-  EXPECT_DOUBLE_EQ(std::get<1>(totals), 2.0 * log_.fileDurationSec);
+  EXPECT_DOUBLE_EQ(totals.sizeMB, 2.0 * log_.fileSizeMB);
+  EXPECT_DOUBLE_EQ(totals.durationSec, 2.0 * log_.fileDurationSec);
 }
 
 TEST_F(AudioFileWriterTest, AFailedRotationStopsTheWriter) {
@@ -556,7 +544,7 @@ TEST_F(AudioFileWriterTest, AFailedRotationStopsTheWriter) {
 
   EXPECT_TRUE(writer_->closeFile().is_err());
   const std::vector<std::string> expectedPaths{"session_001.wav"};
-  EXPECT_EQ(openedPaths(), expectedPaths);
+  EXPECT_EQ(writer_->getSessionFilePaths(), expectedPaths);
 }
 
 // NOLINTEND

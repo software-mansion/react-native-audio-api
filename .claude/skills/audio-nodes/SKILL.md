@@ -162,10 +162,14 @@ that happens to recorded frames (file writer, JS callback, adapter node — `ena
 subclasses own only the platform input stream. The one thing the base needs from the platform is
 `resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
 it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values
-cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform.
+cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform;
+state only one platform touches (Android's `streamMutex_`, iOS's `inputChannelCount_`) lives in
+that subclass. State a consumer already owns stays with the consumer: the adapter node's ring
+layout (`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
+`AudioFileWriter::closeFile()`) are not mirrored in the recorder.
 
-Pitfall: never redeclare a base member (`deinterleavingBuffer_`, `streamSampleRate_`,
-`recordingSegmentPaths_`) in a platform recorder. The shadowing copy compiles fine, but the base's
+Pitfall: never redeclare a base member (`streamSampleRate_`, `fileWriter_`,
+`lastCallbackFrameCount_`) in a platform recorder. The shadowing copy compiles fine, but the base's
 audio-thread fan-out reads its own member and silently drops that output.
 
 ---
