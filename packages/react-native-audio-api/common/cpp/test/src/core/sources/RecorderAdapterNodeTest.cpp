@@ -12,7 +12,7 @@ TEST(RecorderAdapterNodeTest, TrivialConstructAndInit) {
   auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
   auto context = std::make_shared<OfflineAudioContext>(2, 128, 44100.0f, registry);
   RecorderAdapterNode adapter(context);
-  adapter.init(256, 1, 44100.0f);
+  adapter.init(StreamFormat{.sampleRate = 44100.0f, .channelCount = 1, .maxFramesPerBuffer = 256});
   adapter.adapterCleanup();
 }
 

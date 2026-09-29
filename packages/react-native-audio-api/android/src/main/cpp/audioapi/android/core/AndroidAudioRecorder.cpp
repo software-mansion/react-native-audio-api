@@ -170,10 +170,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
     }
 
     dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-    auto callbackResult = dataCallback_->prepare(
-        streamFormat.sampleRate,
-        streamFormat.channelCount,
-        static_cast<size_t>(streamFormat.maxFramesPerBuffer));
+    auto callbackResult = dataCallback_->prepare(streamFormat);
 
     if (!callbackResult.is_ok()) {
       return Err("Failed to prepare callback: " + callbackResult.unwrap_err());
@@ -281,7 +278,7 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
   return oboe::DataCallbackResult::Continue;
 }
 
-Result<AudioRecorder::StreamFormat, std::string> AndroidAudioRecorder::resolveStreamFormat() const {
+Result<StreamFormat, std::string> AndroidAudioRecorder::resolveStreamFormat() const {
   const auto sampleRate = streamSampleRate_.load(std::memory_order_acquire);
 
   if (sampleRate <= 0.0F || streamChannelCount_ <= 0 || streamMaxBufferSizeInFrames_ <= 0) {
@@ -292,7 +289,7 @@ Result<AudioRecorder::StreamFormat, std::string> AndroidAudioRecorder::resolveSt
       StreamFormat{
           .sampleRate = sampleRate,
           .channelCount = streamChannelCount_,
-          .maxFramesPerBuffer = streamMaxBufferSizeInFrames_});
+          .maxFramesPerBuffer = static_cast<size_t>(streamMaxBufferSizeInFrames_)});
 }
 
 bool AndroidAudioRecorder::isRecording() const {

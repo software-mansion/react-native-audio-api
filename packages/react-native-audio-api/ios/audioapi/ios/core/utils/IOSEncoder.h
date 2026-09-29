@@ -13,18 +13,17 @@ struct IOSEncoderState;
 /// iOS system-API encoder backed by AVAudioFile + AVAudioConverter.
 class IOSEncoder : public AudioEncoder {
  public:
-  explicit IOSEncoder(const std::shared_ptr<AudioFileProperties> &fileProperties);
+  explicit IOSEncoder(const EncoderSettings &settings);
   ~IOSEncoder() override;
 
   OpenEncoderResult open(
       const StreamFormat &inputFormat,
       const EncoderOutputSpec &outputSpec,
-      size_t maxBufferSizeInFrames,
       const std::string &filePath) override;
 
   /// Switches an open encoder to a new input format without touching the output file: only
   /// the converter, which is built for the input, is rebuilt.
-  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat, size_t maxBufferSizeInFrames);
+  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat);
 
   EncodeResult encode(const float *const *channels, int numFrames) override;
 
@@ -34,9 +33,7 @@ class IOSEncoder : public AudioEncoder {
 
  private:
   /// Builds the input format, converter and conversion buffers for an already open file.
-  Result<NoneType, std::string> prepareConversionPipeline(
-      const StreamFormat &inputFormat,
-      size_t maxBufferSizeInFrames);
+  Result<NoneType, std::string> prepareConversionPipeline(const StreamFormat &inputFormat);
   void releaseConversionPipeline();
 
   std::unique_ptr<IOSEncoderState> impl_;

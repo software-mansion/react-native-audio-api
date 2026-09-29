@@ -21,18 +21,19 @@ RecorderAdapterNode::RecorderAdapterNode(const std::shared_ptr<BaseAudioContext>
   isInitialized_.store(false, std::memory_order_release);
 }
 
-void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sampleRate) {
+void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (isInitialized_.load(std::memory_order_acquire) || context == nullptr) {
     return;
   }
 
-  channelCount_ = channelCount;
+  const float sampleRate = streamFormat.sampleRate;
+  channelCount_ = streamFormat.channelCount;
 
   buff_.resize(channelCount_);
 
   for (int i = 0; i < channelCount_; ++i) {
-    buff_[i] = std::make_shared<CircularOverflowableAudioArray>(bufferSize);
+    buff_[i] = std::make_shared<CircularOverflowableAudioArray>(streamFormat.maxFramesPerBuffer);
   }
 
   float contextSampleRate = context->getSampleRate();

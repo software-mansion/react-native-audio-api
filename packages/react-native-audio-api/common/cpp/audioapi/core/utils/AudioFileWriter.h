@@ -44,44 +44,51 @@ struct PendingFileWrite {
 };
 
 struct PlatformFileBackend {
+  /// Maps the requested file format to the container, codec and file extension this platform
+  /// writes it as. Fails when the platform cannot encode that format, before any file exists.
   std::function<Result<EncoderOutputSpec, std::string>(AudioFileProperties::FileFormat)>
       resolveOutputSpec;
+  /// Turns a bare file name (stem and extension, no directory) into the absolute path inside
+  /// the directory the properties select, creating that directory if it is missing.
   std::function<Result<std::string, std::string>(
       const std::shared_ptr<AudioFileProperties> &,
       const std::string &fileName)>
       resolvePath;
-  std::function<std::unique_ptr<AudioEncoder>(const std::shared_ptr<AudioFileProperties> &)>
-      createEncoder;
-  /// Points an open encoder at a new input format while the file stays the same.
-  std::function<OpenEncoderResult(AudioEncoder &, const StreamFormat &, size_t maxFramesPerBuffer)>
-      reprepareEncoderInput;
+  /// Builds an encoder that is not open yet; the writer opens it on the resolved path. Called
+  /// once per file, so a rotating session creates one encoder per segment.
+  std::function<std::unique_ptr<AudioEncoder>(const EncoderSettings &)> createEncoder;
+  /// Points an open encoder at a new input format while the file stays the same. Used when the
+  /// input changes mid-session (an iOS route change), so the recording continues in one file
+  /// rather than splitting. Left empty, every format change fails and closes the file.
+  std::function<OpenEncoderResult(AudioEncoder &, const StreamFormat &)> reprepareEncoderInput;
 };
 
-/// The iOS and Android implementations of the steps above.
-PlatformFileBackend createOsFileBackend();
+/// The iOS and Android backend, built once and shared by every writer.
+[[nodiscard]] const PlatformFileBackend &osFileBackend();
 
 class AudioFileWriter final {
  public:
   AudioFileWriter(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
-      PlatformFileBackend backend = createOsFileBackend());
+      const PlatformFileBackend &backend = osFileBackend());
+  /// The writer borrows @p backend, so a temporary would dangle.
+  AudioFileWriter(
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<AudioFileProperties> &fileProperties,
+      PlatformFileBackend &&backend) = delete;
   ~AudioFileWriter();
   DELETE_COPY_AND_MOVE(AudioFileWriter);
 
-  /// JS thread. @p maxFramesPerBuffer bounds a single writeAudioData() call.
+  /// JS thread. @p streamFormat's maxFramesPerBuffer bounds a single writeAudioData() call.
   /// Returns the opened file's path.
-  OpenFileResult
-  openFile(float streamSampleRate, int32_t streamChannelCount, int32_t maxFramesPerBuffer);
+  OpenFileResult openFile(const StreamFormat &streamFormat);
 
   /// JS thread. Sizes and durations are summed over every file of the session.
   CloseFileResult closeFile();
 
   /// ios only because android handles input format changes automatically. Returns the file path on success.
-  OpenFileResult reprepareStreamFormat(
-      float streamSampleRate,
-      int32_t streamChannelCount,
-      int32_t maxFramesPerBuffer);
+  OpenFileResult reprepareStreamFormat(const StreamFormat &streamFormat);
 
   /// Audio thread. @p channels holds one pointer per stream channel, each to numFrames float32
   /// samples, valid only for the call. Never blocks; drops the buffer when no pool slot is free.
@@ -117,8 +124,7 @@ class AudioFileWriter final {
   [[nodiscard]] bool rotatesFiles() const;
 
   /// JS thread, with no worker running: also sizes the buffer pool and starts the worker.
-  OpenFileResult
-  startNextFile(float streamSampleRate, int32_t streamChannelCount, int32_t maxFramesPerBuffer);
+  OpenFileResult startNextFile(const StreamFormat &streamFormat);
   /// JS thread. Joins the worker, then folds the file into the session totals.
   CloseEncoderResult finishCurrentFile();
 
@@ -149,15 +155,14 @@ class AudioFileWriter final {
 
   std::shared_ptr<AudioFileProperties> fileProperties_;
   /// Declared before offloader_, so the worker thread that calls into it is joined first.
-  PlatformFileBackend backend_;
+  /// Borrowed; must outlive the writer.
+  const PlatformFileBackend &backend_;
   EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
 
   std::atomic<bool> isFileOpen_{false};
   std::atomic<size_t> framesWritten_{0};
 
-  float streamSampleRate_{0.0F};
-  int32_t streamChannelCount_{0};
-  int32_t maxFramesPerBuffer_{0};
+  StreamFormat streamFormat_{};
 
   /// Guards the members below, which a rotation advances on the worker thread while the JS
   /// thread reads them. Never taken on the audio thread.
@@ -174,7 +179,7 @@ class AudioFileWriter final {
   /// in the current stream rate only. The encoder reports the whole file on close.
   double currentFileEarlierFormatsDurationSec_{0.0};
 
-  /// Planar buffers of maxFramesPerBuffer_ x streamChannelCount_ that carry audio-thread
+  /// Planar buffers of maxFramesPerBuffer x channelCount of streamFormat_ that carry audio-thread
   /// callbacks to the worker.
   AudioBufferPool<POOL_SIZE> inputBufferPool_;
   std::unique_ptr<Offloader> offloader_;

@@ -234,36 +234,28 @@ AudioFileConcatResult concatAudioFilesWithOsRemux(
   return remuxConcatAudioFiles(inputPaths, outputPath);
 }
 
-std::shared_ptr<AudioFileProperties> makeOutputProperties(
+EncoderSettings makeEncoderSettings(
     AudioFileProperties::FileFormat format,
     uint32_t sampleRate,
     uint32_t channels) {
-  // Directory, prefix, and rotation are recorder concerns; the concat encoder
-  // receives an explicit output path, so they stay at neutral values.
-  return std::make_shared<AudioFileProperties>(
-      AudioFileProperties::PathConfig{
-          .directory = AudioFileProperties::FileDirectory::Cache,
-          .subDirectory = std::string(),
-          .fileName = std::string(),
-      },
-      AudioFileProperties::StreamConfig{
-          .sampleRate = static_cast<float>(sampleRate),
-          .channelCount = static_cast<int>(channels),
-      },
-      AudioFileProperties::EncodingConfig{
-          .format = format,
-          .bitRate = 0,
-          // WAV keeps the decoded float32 samples as they are; FLAC is integer-only.
-          .bitDepth = format == AudioFileProperties::FileFormat::WAV
-              ? AudioFileProperties::BitDepth::Bit32
-              : AudioFileProperties::BitDepth::Bit16,
-          .flacCompressionLevel = DEFAULT_FLAC_COMPRESSION_LEVEL,
-          .iosAudioQuality = AudioFileProperties::IOSAudioQuality::Max,
-      },
-      AudioFileProperties::WriterConfig{
-          .rotateIntervalBytes = 0,
-          .androidFlushIntervalMs = 0,
-      });
+  return EncoderSettings{
+      .stream =
+          {
+              .sampleRate = static_cast<float>(sampleRate),
+              .channelCount = static_cast<int>(channels),
+          },
+      .encoding =
+          {
+              .format = format,
+              .bitRate = 0,
+              // WAV keeps the decoded float32 samples as they are; FLAC is integer-only.
+              .bitDepth = format == AudioFileProperties::FileFormat::WAV
+                  ? AudioFileProperties::BitDepth::Bit32
+                  : AudioFileProperties::BitDepth::Bit16,
+              .flacCompressionLevel = DEFAULT_FLAC_COMPRESSION_LEVEL,
+              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::Max,
+          },
+  };
 }
 
 /// Decodes every input and re-encodes the frames into one @p format file. Only WAV and FLAC
@@ -312,16 +304,18 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
         "concatAudioFiles " + formatName + " output: channel count exceeds MAX_CHANNEL_COUNT.");
   }
 
-  auto encoder = createEncoder(makeOutputProperties(format, sampleRate, channels));
+  auto encoder = createEncoder(makeEncoderSettings(format, sampleRate, channels));
   if (encoder == nullptr) {
     return Err(unavailableError);
   }
 
   auto openResult = encoder->open(
       StreamFormat{
-          .sampleRate = static_cast<float>(sampleRate), .channelCount = static_cast<int>(channels)},
+          .sampleRate = static_cast<float>(sampleRate),
+          .channelCount = static_cast<int>(channels),
+          .maxFramesPerBuffer = DECODE_CHUNK_FRAMES,
+      },
       outputSpec,
-      DECODE_CHUNK_FRAMES,
       outputPath);
   if (openResult.is_err()) {
     return Err(

@@ -17,8 +17,7 @@ using AudioFileConcatResult = Result<std::string, std::string>;
 
 /// Builds the encoder that writes WAV and FLAC output. An empty function means the platform
 /// has no encoder, and those formats fail with an "unavailable" error.
-using ConcatEncoderFactory =
-    std::function<std::unique_ptr<AudioEncoder>(const std::shared_ptr<AudioFileProperties> &)>;
+using ConcatEncoderFactory = std::function<std::unique_ptr<AudioEncoder>(const EncoderSettings &)>;
 
 class AudioFileReader {
  public:

@@ -3,6 +3,7 @@
 #include <audioapi/core/inputs/FileInfo.h>
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
+#include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 
@@ -83,12 +84,6 @@ class AudioRecorder {
     Requested,
     /// Prepared for the current stream format; the audio thread may feed it.
     Active,
-  };
-
-  struct StreamFormat {
-    float sampleRate = 0.0F;
-    int32_t channelCount = 0;
-    int32_t maxFramesPerBuffer = 0;
   };
 
   /// Closing these can block, so it happens in finalizeSideEffects() with no mutex held.

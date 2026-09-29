@@ -1,17 +1,11 @@
 #pragma once
 
-#include <memory>
+#include <audioapi/utils/AudioFileProperties.h>
 
-namespace audioapi {
+namespace audioapi::ios_encoder {
 
-class AudioFileProperties;
+NSInteger getQuality(const AudioFileProperties::EncodingConfig &encoding);
+NSInteger getFlacCompressionLevel(const AudioFileProperties::EncodingConfig &encoding);
+NSInteger getBitDepth(const AudioFileProperties::EncodingConfig &encoding);
 
-namespace ios_encoder {
-
-NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties);
-NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &properties);
-NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties);
-
-} // namespace ios_encoder
-
-} // namespace audioapi
+} // namespace audioapi::ios_encoder

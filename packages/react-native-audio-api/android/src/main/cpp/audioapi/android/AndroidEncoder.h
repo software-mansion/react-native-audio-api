@@ -13,13 +13,12 @@ class IEncoderBackend;
 /// Android system-API encoder (RIFF / MediaCodec + MediaMuxer).
 class AndroidEncoder : public AudioEncoder {
  public:
-  explicit AndroidEncoder(const std::shared_ptr<AudioFileProperties> &fileProperties);
+  explicit AndroidEncoder(const EncoderSettings &settings);
   ~AndroidEncoder() override;
 
   OpenEncoderResult open(
       const StreamFormat &inputFormat,
       const EncoderOutputSpec &outputSpec,
-      size_t maxBufferSizeInFrames,
       const std::string &filePath) override;
 
   EncodeResult encode(const float *const *channels, int numFrames) override;

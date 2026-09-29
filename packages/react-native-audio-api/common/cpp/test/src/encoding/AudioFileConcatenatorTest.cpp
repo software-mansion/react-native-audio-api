@@ -61,14 +61,13 @@ void writeWavFile(const std::string &path, const std::vector<float> &frames) {
 /// Stands in for the platform encoder, which the desktop build does not have.
 class FakeWavEncoder final : public AudioEncoder {
  public:
-  FakeWavEncoder(const std::shared_ptr<AudioFileProperties> &properties, bool failEncode)
-      : AudioEncoder(properties), failEncode_(failEncode) {}
+  FakeWavEncoder(const EncoderSettings &settings, bool failEncode)
+      : AudioEncoder(settings), failEncode_(failEncode) {}
 
   /// Creates the file straight away, as the platform encoders do.
   OpenEncoderResult open(
       const StreamFormat & /*inputFormat*/,
       const EncoderOutputSpec & /*outputSpec*/,
-      size_t /*maxBufferSizeInFrames*/,
       const std::string &filePath) override {
     filePath_ = filePath;
     std::ofstream created(filePath, std::ios::binary);
@@ -99,14 +98,12 @@ class FakeWavEncoder final : public AudioEncoder {
   std::vector<float> frames_;
 };
 
-std::unique_ptr<AudioEncoder> createFakeWavEncoder(
-    const std::shared_ptr<AudioFileProperties> &properties) {
-  return std::make_unique<FakeWavEncoder>(properties, /*failEncode=*/false);
+std::unique_ptr<AudioEncoder> createFakeWavEncoder(const EncoderSettings &settings) {
+  return std::make_unique<FakeWavEncoder>(settings, /*failEncode=*/false);
 }
 
-std::unique_ptr<AudioEncoder> createFailingWavEncoder(
-    const std::shared_ptr<AudioFileProperties> &properties) {
-  return std::make_unique<FakeWavEncoder>(properties, /*failEncode=*/true);
+std::unique_ptr<AudioEncoder> createFailingWavEncoder(const EncoderSettings &settings) {
+  return std::make_unique<FakeWavEncoder>(settings, /*failEncode=*/true);
 }
 
 std::vector<float> readWavFile(const std::string &path) {

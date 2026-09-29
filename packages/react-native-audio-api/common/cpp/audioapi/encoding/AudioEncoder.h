@@ -8,7 +8,6 @@
 
 #include <atomic>
 #include <cstddef>
-#include <memory>
 #include <string>
 #include <tuple>
 
@@ -18,19 +17,25 @@ using OpenEncoderResult = Result<std::string, std::string>;
 using EncodeResult = Result<size_t, std::string>;
 using CloseEncoderResult = Result<std::tuple<double, double>, std::string>;
 
+/// What an encoder writes. The rest of AudioFileProperties (where the file goes, how a
+/// recording rotates) is the writer's business, so encoders never see it.
+struct EncoderSettings {
+  /// Sample rate and channel count of the file; the encoder converts its input to them.
+  AudioFileProperties::StreamConfig stream;
+  AudioFileProperties::EncodingConfig encoding;
+};
+
 /// Incremental audio encoder. `open`/`close` on the JS thread; `encode` on the
 /// file-writer worker. Platform implementations use system APIs only.
 class AudioEncoder {
  public:
-  explicit AudioEncoder(const std::shared_ptr<AudioFileProperties> &fileProperties)
-      : fileProperties_(fileProperties) {}
+  explicit AudioEncoder(const EncoderSettings &settings) : settings_(settings) {}
   virtual ~AudioEncoder() = default;
   DELETE_COPY_AND_MOVE(AudioEncoder);
 
   virtual OpenEncoderResult open(
       const StreamFormat &inputFormat,
       const EncoderOutputSpec &outputSpec,
-      size_t maxBufferSizeInFrames,
       const std::string &filePath) = 0;
 
   /// @p channels holds inputFormat.channelCount pointers, each to numFrames float32 samples,
@@ -57,8 +62,7 @@ class AudioEncoder {
   }
 
   [[nodiscard]] double getEncodedDurationSeconds() const {
-    const double sampleRate =
-        fileProperties_ ? static_cast<double>(fileProperties_->stream.sampleRate) : 0.0;
+    const double sampleRate = static_cast<double>(settings_.stream.sampleRate);
     if (sampleRate <= 0.0) {
       return 0.0;
     }
@@ -73,10 +77,9 @@ class AudioEncoder {
     framesEncoded_.fetch_add(frames, std::memory_order_acq_rel);
   }
 
-  std::shared_ptr<AudioFileProperties> fileProperties_;
+  EncoderSettings settings_;
   StreamFormat inputFormat_;
   EncoderOutputSpec outputSpec_;
-  size_t maxBufferSizeInFrames_{0};
   std::string filePath_;
   std::atomic<size_t> framesEncoded_{0};
 

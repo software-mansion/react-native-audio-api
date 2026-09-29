@@ -85,8 +85,7 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
   fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
   const auto format = formatResult.unwrap();
-  auto fileResult =
-      fileWriter_->openFile(format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
+  auto fileResult = fileWriter_->openFile(format);
 
   if (!fileResult.is_ok()) {
     deactivate(fileOutputState_);
@@ -123,8 +122,7 @@ Result<NoneType, std::string> AudioRecorder::setOnAudioReadyCallback(
   }
 
   const auto format = formatResult.unwrap();
-  auto prepareResult = dataCallback_->prepare(
-      format.sampleRate, format.channelCount, static_cast<size_t>(format.maxFramesPerBuffer));
+  auto prepareResult = dataCallback_->prepare(format);
 
   if (!prepareResult.is_ok()) {
     callbackOutputState_.store(OutputState::Disabled, std::memory_order_release);
@@ -189,8 +187,7 @@ void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
     return;
   }
 
-  adapterNode_->init(
-      static_cast<size_t>(format.maxFramesPerBuffer), format.channelCount, format.sampleRate);
+  adapterNode_->init(format);
   connectionState_.store(OutputState::Active, std::memory_order_release);
 }
 

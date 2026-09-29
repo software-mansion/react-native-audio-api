@@ -94,7 +94,7 @@ IOSAudioRecorder::IOSAudioRecorder(
   nativeRecorder_.onInputConfigurationChange = ^{ this->handleInputConfigurationChange(); };
 }
 
-Result<AudioRecorder::StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
+Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
 {
   AVAudioFormat *inputFormat = [nativeRecorder_ getResolvedInputFormat];
   const int maxFramesPerBuffer = [nativeRecorder_ getResolvedBufferSize];
@@ -106,8 +106,8 @@ Result<AudioRecorder::StreamFormat, std::string> IOSAudioRecorder::resolveStream
   return Result<StreamFormat, std::string>::Ok(
       StreamFormat{
           .sampleRate = static_cast<float>(inputFormat.sampleRate),
-          .channelCount = static_cast<int32_t>(inputFormat.channelCount),
-          .maxFramesPerBuffer = maxFramesPerBuffer});
+          .channelCount = static_cast<int>(inputFormat.channelCount),
+          .maxFramesPerBuffer = static_cast<size_t>(maxFramesPerBuffer)});
 }
 
 void IOSAudioRecorder::handleInputConfigurationChange()
@@ -199,8 +199,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   }
 
   // The file stays the same; only the encoder's input side follows the new format.
-  auto result = fileWriter_->reprepareStreamFormat(
-      format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
+  auto result = fileWriter_->reprepareStreamFormat(format);
   if (result.is_err()) {
     deactivate(fileOutputState_);
     return Result<NoneType, std::string>::Err(
@@ -219,8 +218,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareCallback(const StreamFo
     return Result<NoneType, std::string>::Err("Callback is unavailable");
   }
 
-  auto result = dataCallback_->prepare(
-      format.sampleRate, format.channelCount, static_cast<size_t>(format.maxFramesPerBuffer));
+  auto result = dataCallback_->prepare(format);
   if (result.is_err()) {
     deactivate(callbackOutputState_);
     return Result<NoneType, std::string>::Err("Failed to prepare callback: " + result.unwrap_err());
@@ -319,7 +317,6 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   }
 
   const auto streamFormat = formatResult.unwrap();
-  const auto maxInputBufferLength = static_cast<size_t>(streamFormat.maxFramesPerBuffer);
   streamSampleRate_.store(streamFormat.sampleRate, std::memory_order_release);
 
   // The audio thread reads these before taking any consumer mutex, so they may only be
@@ -347,8 +344,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
     }
 
     dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-    auto callbackResult = dataCallback_->prepare(
-        streamFormat.sampleRate, streamFormat.channelCount, maxInputBufferLength);
+    auto callbackResult = dataCallback_->prepare(streamFormat);
 
     if (callbackResult.is_err()) {
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, fileWasOpened);

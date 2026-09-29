@@ -25,22 +25,21 @@
 
 namespace audioapi {
 
-PlatformFileBackend createOsFileBackend() {
-  return PlatformFileBackend{
+const PlatformFileBackend &osFileBackend() {
+  static const PlatformFileBackend backend{
       .resolveOutputSpec = &encoder_capabilities::resolveOutputSpec,
       .resolvePath = &resolveOsFilePath,
       .createEncoder = &createOsEncoder,
       .reprepareEncoderInput = &reprepareOsEncoderInput,
   };
+  return backend;
 }
 
 AudioFileWriter::AudioFileWriter(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
-    PlatformFileBackend backend)
-    : fileProperties_(fileProperties),
-      backend_(std::move(backend)),
-      errorEvent_(audioEventHandlerRegistry) {}
+    const PlatformFileBackend &backend)
+    : fileProperties_(fileProperties), backend_(backend), errorEvent_(audioEventHandlerRegistry) {}
 
 AudioFileWriter::~AudioFileWriter() {
   isFileOpen_.store(false, std::memory_order_release);
@@ -48,10 +47,7 @@ AudioFileWriter::~AudioFileWriter() {
   encoder_.reset();
 }
 
-OpenFileResult AudioFileWriter::openFile(
-    float streamSampleRate,
-    int32_t streamChannelCount,
-    int32_t maxFramesPerBuffer) {
+OpenFileResult AudioFileWriter::openFile(const StreamFormat &streamFormat) {
   if (isFileOpen()) {
     return OpenFileResult::Err("file already open");
   }
@@ -65,7 +61,7 @@ OpenFileResult AudioFileWriter::openFile(
     finishedFilesDurationSec_ = 0.0;
   }
 
-  return startNextFile(streamSampleRate, streamChannelCount, maxFramesPerBuffer);
+  return startNextFile(streamFormat);
 }
 
 CloseFileResult AudioFileWriter::closeFile() {
@@ -90,14 +86,12 @@ CloseFileResult AudioFileWriter::closeFile() {
   return CloseFileResult::Ok(std::move(session));
 }
 
-OpenFileResult AudioFileWriter::reprepareStreamFormat(
-    float streamSampleRate,
-    int32_t streamChannelCount,
-    int32_t maxFramesPerBuffer) {
+OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &streamFormat) {
   if (!isFileOpen()) {
     return OpenFileResult::Err("file is not open");
   }
-  if (streamSampleRate <= 0 || streamChannelCount <= 0 || maxFramesPerBuffer <= 0) {
+  if (streamFormat.sampleRate <= 0 || streamFormat.channelCount <= 0 ||
+      streamFormat.maxFramesPerBuffer == 0) {
     return OpenFileResult::Err(
         "Invalid input format: sampleRate, channelCount and buffer size must be greater than 0");
   }
@@ -108,14 +102,13 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(
   OpenFileResult reprepareResult = OpenFileResult::Err("");
   {
     std::scoped_lock lock(fileMutex_);
-    if (streamSampleRate_ > 0) {
+    if (streamFormat_.sampleRate > 0) {
       currentFileEarlierFormatsDurationSec_ +=
-          static_cast<double>(framesWritten_.load(std::memory_order_acquire)) / streamSampleRate_;
+          static_cast<double>(framesWritten_.load(std::memory_order_acquire)) /
+          streamFormat_.sampleRate;
     }
     framesWritten_.store(0, std::memory_order_release);
-    streamSampleRate_ = streamSampleRate;
-    streamChannelCount_ = streamChannelCount;
-    maxFramesPerBuffer_ = maxFramesPerBuffer;
+    streamFormat_ = streamFormat;
     reprepareResult = reprepareEncoderInput();
   }
   if (reprepareResult.is_err()) {
@@ -133,22 +126,18 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(
   return reprepareResult;
 }
 
-OpenFileResult AudioFileWriter::startNextFile(
-    float streamSampleRate,
-    int32_t streamChannelCount,
-    int32_t maxFramesPerBuffer) {
+OpenFileResult AudioFileWriter::startNextFile(const StreamFormat &streamFormat) {
   if (fileProperties_->stream.sampleRate <= 0 || fileProperties_->stream.channelCount <= 0) {
     return OpenFileResult::Err(
         "Invalid file properties: sampleRate and channelCount must be greater than 0");
   }
-  if (streamSampleRate <= 0 || streamChannelCount <= 0 || maxFramesPerBuffer <= 0) {
+  if (streamFormat.sampleRate <= 0 || streamFormat.channelCount <= 0 ||
+      streamFormat.maxFramesPerBuffer == 0) {
     return OpenFileResult::Err(
         "Invalid input format: sampleRate, channelCount and buffer size must be greater than 0");
   }
 
-  streamSampleRate_ = streamSampleRate;
-  streamChannelCount_ = streamChannelCount;
-  maxFramesPerBuffer_ = maxFramesPerBuffer;
+  streamFormat_ = streamFormat;
   framesWritten_.store(0, std::memory_order_release);
 
   OpenFileResult openResult = OpenFileResult::Err("");
@@ -252,17 +241,12 @@ OpenFileResult AudioFileWriter::openEncoderForNextFile() {
   }
   const std::string &filePath = filePathResult.unwrap();
 
-  const StreamFormat inputFormat{
-      .sampleRate = streamSampleRate_,
-      .channelCount = streamChannelCount_,
-  };
-
-  auto encoder = backend_.createEncoder(fileProperties_);
+  auto encoder = backend_.createEncoder(
+      EncoderSettings{.stream = fileProperties_->stream, .encoding = fileProperties_->encoding});
   if (encoder == nullptr) {
     return OpenFileResult::Err("Audio file recording requires iOS or Android.");
   }
-  auto openResult =
-      encoder->open(inputFormat, outputSpec, static_cast<size_t>(maxFramesPerBuffer_), filePath);
+  auto openResult = encoder->open(streamFormat_, outputSpec, filePath);
   if (openResult.is_err()) {
     return OpenFileResult::Err(openResult.unwrap_err());
   }
@@ -286,12 +270,7 @@ OpenFileResult AudioFileWriter::reprepareEncoderInput() {
     return OpenFileResult::Err("The platform cannot change the input format of an open file");
   }
 
-  const StreamFormat inputFormat{
-      .sampleRate = streamSampleRate_,
-      .channelCount = streamChannelCount_,
-  };
-  auto result = backend_.reprepareEncoderInput(
-      *encoder_, inputFormat, static_cast<size_t>(maxFramesPerBuffer_));
+  auto result = backend_.reprepareEncoderInput(*encoder_, streamFormat_);
   if (result.is_err()) {
     return OpenFileResult::Err(
         "Failed to switch the recording to the new input format: " + result.unwrap_err());
@@ -384,13 +363,13 @@ void AudioFileWriter::createOffloader() {
 bool AudioFileWriter::initializePreallocatedInputPool() {
   cleanupPreallocatedInputPool();
 
-  if (maxFramesPerBuffer_ <= 0 || streamChannelCount_ <= 0 ||
-      streamChannelCount_ > MAX_CHANNEL_COUNT) {
+  if (streamFormat_.maxFramesPerBuffer == 0 || streamFormat_.channelCount <= 0 ||
+      streamFormat_.channelCount > MAX_CHANNEL_COUNT) {
     return false;
   }
 
   if (!inputBufferPool_.allocate(
-          static_cast<size_t>(maxFramesPerBuffer_), streamChannelCount_, streamSampleRate_)) {
+          streamFormat_.maxFramesPerBuffer, streamFormat_.channelCount, streamFormat_.sampleRate)) {
     return false;
   }
 
@@ -420,7 +399,7 @@ void AudioFileWriter::writeAudioData(const float *const *channels, int numFrames
     return;
   }
 
-  for (int channel = 0; channel < streamChannelCount_; ++channel) {
+  for (int channel = 0; channel < streamFormat_.channelCount; ++channel) {
     std::memcpy(slot->getChannel(channel)->begin(), channels[channel], frames * sizeof(float));
   }
   // Never blocks: the channel has room for every buffer the pool can hand out.
@@ -435,7 +414,7 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
   const int numFrames = pending.numFrames;
 
   std::array<const float *, MAX_CHANNEL_COUNT> channels{};
-  for (int channel = 0; channel < streamChannelCount_; ++channel) {
+  for (int channel = 0; channel < streamFormat_.channelCount; ++channel) {
     channels[channel] = pending.buffer->getChannel(channel)->begin();
   }
 
@@ -481,7 +460,7 @@ std::vector<std::string> AudioFileWriter::getSessionFilePaths() const {
 double AudioFileWriter::getCurrentDuration() const {
   std::scoped_lock lock(fileMutex_);
   const double sampleRate =
-      streamSampleRate_ > 0 ? streamSampleRate_ : fileProperties_->stream.sampleRate;
+      streamFormat_.sampleRate > 0 ? streamFormat_.sampleRate : fileProperties_->stream.sampleRate;
   if (sampleRate <= 0) {
     return finishedFilesDurationSec_ + currentFileEarlierFormatsDurationSec_;
   }

@@ -49,17 +49,10 @@ AudioRecorderCallback::~AudioRecorderCallback() {
   cleanup();
 }
 
-/// @brief Prepares the callback by initializing the data converter and allocating buffers.
-/// @param streamSampleRate The sample rate of the incoming audio stream.
-/// @param streamChannelCount The channel count of the incoming audio stream.
-/// @param maxInputBufferLength The maximum buffer length of the incoming audio stream.
-Result<NoneType, std::string> AudioRecorderCallback::prepare(
-    float streamSampleRate,
-    int streamChannelCount,
-    size_t maxInputBufferLength) {
-  streamSampleRate_ = streamSampleRate;
-  streamChannelCount_ = streamChannelCount;
-  maxInputBufferLength_ = maxInputBufferLength;
+Result<NoneType, std::string> AudioRecorderCallback::prepare(const StreamFormat &streamFormat) {
+  streamSampleRate_ = streamFormat.sampleRate;
+  streamChannelCount_ = streamFormat.channelCount;
+  maxInputBufferLength_ = streamFormat.maxFramesPerBuffer;
 
   if (streamSampleRate_ <= 0 || streamChannelCount_ <= 0 || maxInputBufferLength_ == 0) {
     return Result<NoneType, std::string>::Err("Invalid stream sample rate or channel count");

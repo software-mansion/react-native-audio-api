@@ -6,12 +6,12 @@
 
 namespace audioapi::ios_encoder {
 
-/// @brief Maps AudioFileProperties to iOS AVFoundation audio quality settings.
-/// @param properties Shared pointer to AudioFileProperties.
+/// @brief Maps the encoding settings to an iOS AVFoundation audio quality.
+/// @param encoding The file's encoding settings.
 /// @returns Corresponding NSInteger value for AVAudioQuality.
-NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties)
+NSInteger getQuality(const AudioFileProperties::EncodingConfig &encoding)
 {
-  switch (properties->encoding.iosAudioQuality) {
+  switch (encoding.iosAudioQuality) {
     case AudioFileProperties::IOSAudioQuality::Min:
       return AVAudioQualityMin;
 
@@ -32,20 +32,20 @@ NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties)
   }
 }
 
-/// @brief Retrieves the FLAC compression level from AudioFileProperties.
-/// @param properties Shared pointer to AudioFileProperties.
+/// @brief Retrieves the FLAC compression level from the encoding settings.
+/// @param encoding The file's encoding settings.
 /// @returns NSInteger representing the FLAC compression level.
-NSInteger getFlacCompressionLevel(const std::shared_ptr<AudioFileProperties> &properties)
+NSInteger getFlacCompressionLevel(const AudioFileProperties::EncodingConfig &encoding)
 {
-  return properties->encoding.flacCompressionLevel;
+  return encoding.flacCompressionLevel;
 }
 
-/// @brief Retrieves the bit depth from AudioFileProperties.
-/// @param properties Shared pointer to AudioFileProperties.
+/// @brief Retrieves the bit depth from the encoding settings.
+/// @param encoding The file's encoding settings.
 /// @returns NSInteger representing the bit depth.
-NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
+NSInteger getBitDepth(const AudioFileProperties::EncodingConfig &encoding)
 {
-  switch (properties->encoding.bitDepth) {
+  switch (encoding.bitDepth) {
     case AudioFileProperties::BitDepth::Bit16:
       return 16;
 

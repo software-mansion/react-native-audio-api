@@ -59,13 +59,13 @@ class IEncoderBackend {
   virtual ~IEncoderBackend() = default;
 
   // Opens the backend. `desiredSampleRate`/`desiredChannelCount` come from the
-  // file properties; the backend may override them (e.g. Opus) via the out
+  // encoder settings; the backend may override them (e.g. Opus) via the out
   // parameters, which the caller then resamples/channel-maps to.
   virtual std::string open(
       int desiredSampleRate,
       int desiredChannelCount,
       const std::string &filePath,
-      const std::shared_ptr<AudioFileProperties> &properties,
+      const AudioFileProperties::EncodingConfig &encoding,
       const EncoderOutputSpec &outputSpec,
       int &effectiveSampleRate,
       int &effectiveChannelCount) = 0;
@@ -89,7 +89,7 @@ class WavBackend : public IEncoderBackend {
       int desiredSampleRate,
       int desiredChannelCount,
       const std::string &filePath,
-      const std::shared_ptr<AudioFileProperties> &properties,
+      const AudioFileProperties::EncodingConfig &encoding,
       const EncoderOutputSpec &outputSpec,
       int &effectiveSampleRate,
       int &effectiveChannelCount) override {
@@ -99,7 +99,7 @@ class WavBackend : public IEncoderBackend {
     effectiveSampleRate = sampleRate_;
     effectiveChannelCount = channelCount_;
 
-    switch (properties->encoding.bitDepth) {
+    switch (encoding.bitDepth) {
       case AudioFileProperties::BitDepth::Bit16:
         bytesPerSample_ = 2;
         isFloat_ = false;
@@ -470,7 +470,7 @@ class MuxedBackend : public MediaCodecBackend {
       int desiredSampleRate,
       int desiredChannelCount,
       const std::string &filePath,
-      const std::shared_ptr<AudioFileProperties> &properties,
+      const AudioFileProperties::EncodingConfig &encoding,
       const EncoderOutputSpec &outputSpec,
       int &effectiveSampleRate,
       int &effectiveChannelCount) override {
@@ -478,7 +478,7 @@ class MuxedBackend : public MediaCodecBackend {
     int channels = desiredChannelCount;
     const char *mime = "audio/mp4a-latm";
     bool isAac = false;
-    int bitRate = static_cast<int>(properties->encoding.bitRate);
+    int bitRate = static_cast<int>(encoding.bitRate);
 
     switch (outputSpec.codec) {
       case AudioCodec::AAC:
@@ -610,7 +610,7 @@ class FlacBackend : public MediaCodecBackend {
       int desiredSampleRate,
       int desiredChannelCount,
       const std::string &filePath,
-      const std::shared_ptr<AudioFileProperties> &properties,
+      const AudioFileProperties::EncodingConfig &encoding,
       const EncoderOutputSpec &outputSpec,
       int &effectiveSampleRate,
       int &effectiveChannelCount) override {
@@ -717,8 +717,7 @@ struct AndroidEncoder::ConversionState {
 // AndroidEncoder
 // ---------------------------------------------------------------------------
 
-AndroidEncoder::AndroidEncoder(const std::shared_ptr<AudioFileProperties> &fileProperties)
-    : AudioEncoder(fileProperties) {}
+AndroidEncoder::AndroidEncoder(const EncoderSettings &settings) : AudioEncoder(settings) {}
 
 AndroidEncoder::~AndroidEncoder() {
   if (isOpen()) {
@@ -729,7 +728,6 @@ AndroidEncoder::~AndroidEncoder() {
 OpenEncoderResult AndroidEncoder::open(
     const StreamFormat &inputFormat,
     const EncoderOutputSpec &outputSpec,
-    size_t maxBufferSizeInFrames,
     const std::string &filePath) {
   if (isOpen()) {
     return OpenEncoderResult::Err("Encoder already open");
@@ -740,7 +738,6 @@ OpenEncoderResult AndroidEncoder::open(
 
   inputFormat_ = inputFormat;
   outputSpec_ = outputSpec;
-  maxBufferSizeInFrames_ = maxBufferSizeInFrames;
   filePath_ = filePath;
   inputSampleRate_ = inputFormat.sampleRate;
   inputChannelCount_ = inputFormat.channelCount;
@@ -763,13 +760,13 @@ OpenEncoderResult AndroidEncoder::open(
           std::string(toString(outputSpec.codec)) + " is not encodable on Android");
   }
 
-  int effectiveSampleRate = static_cast<int>(fileProperties_->stream.sampleRate);
-  int effectiveChannelCount = fileProperties_->stream.channelCount;
+  int effectiveSampleRate = static_cast<int>(settings_.stream.sampleRate);
+  int effectiveChannelCount = settings_.stream.channelCount;
   std::string err = backend_->open(
-      static_cast<int>(fileProperties_->stream.sampleRate),
-      fileProperties_->stream.channelCount,
+      static_cast<int>(settings_.stream.sampleRate),
+      settings_.stream.channelCount,
       filePath,
-      fileProperties_,
+      settings_.encoding,
       outputSpec,
       effectiveSampleRate,
       effectiveChannelCount);
@@ -794,7 +791,7 @@ OpenEncoderResult AndroidEncoder::open(
         outputSampleRate_,
         inputChannelCount_,
         outputChannelCount_,
-        std::max<size_t>(maxBufferSizeInFrames, 1));
+        std::max<size_t>(inputFormat.maxFramesPerBuffer, 1));
   }
 
   markOpen();

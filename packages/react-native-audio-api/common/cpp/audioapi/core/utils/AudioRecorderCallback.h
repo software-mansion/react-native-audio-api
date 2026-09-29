@@ -2,6 +2,7 @@
 
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
+#include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -48,8 +49,7 @@ class AudioRecorderCallback {
   ~AudioRecorderCallback();
 
   /// JS thread. Builds the converter and the audio-thread → worker pool.
-  Result<NoneType, std::string>
-  prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
+  Result<NoneType, std::string> prepare(const StreamFormat &streamFormat);
   void cleanup();
 
   /// Audio thread. @p channels holds one pointer per stream channel, each to numFrames float32
