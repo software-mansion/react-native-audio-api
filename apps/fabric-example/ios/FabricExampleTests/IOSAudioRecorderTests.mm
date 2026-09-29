@@ -515,9 +515,9 @@ public:
   XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
   XCTAssertTrue(_recorder->isIdle());
   XCTAssertEqual(_recorder->currentFilePath(), "");
-  XCTAssertTrue(std::get<0>(stopResult.unwrap()).empty());
-  XCTAssertEqual(std::get<1>(stopResult.unwrap()), 0);
-  XCTAssertEqual(std::get<2>(stopResult.unwrap()), 0);
+  XCTAssertTrue(stopResult.unwrap().paths.empty());
+  XCTAssertEqual(stopResult.unwrap().size, 0);
+  XCTAssertEqual(stopResult.unwrap().duration, 0);
 }
 
 - (void)testStopClearsConfiguredStateButPreservesConfiguredIntent {
@@ -584,12 +584,12 @@ public:
 
   auto stopResult = _recorder->stop();
   XCTAssertTrue(stopResult.is_ok());
-  const auto &outputPaths = std::get<0>(stopResult.unwrap());
+  const auto &outputPaths = stopResult.unwrap().paths;
   XCTAssertEqual(outputPaths.size(), 1U);
   XCTAssertEqualObjects(NSStringFromStdString(outputPaths.front()),
                         [@"file://" stringByAppendingString:path]);
-  XCTAssertGreaterThanOrEqual(std::get<1>(stopResult.unwrap()), 0.0);
-  XCTAssertGreaterThanOrEqual(std::get<2>(stopResult.unwrap()), 0.0);
+  XCTAssertGreaterThanOrEqual(stopResult.unwrap().size, 0.0);
+  XCTAssertGreaterThanOrEqual(stopResult.unwrap().duration, 0.0);
   XCTAssertEqual(_recorder->currentFilePath(), "");
 
   [[NSFileManager defaultManager] removeItemAtPath:path error:nil];

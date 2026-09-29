@@ -224,7 +224,8 @@ AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
   return sideEffects;
 }
 
-AudioRecorder::StopResult AudioRecorder::finalizeSideEffects(DetachedSideEffects &&sideEffects) {
+Result<FileInfo, std::string> AudioRecorder::finalizeSideEffects(
+    DetachedSideEffects &&sideEffects) {
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
   auto movedSideEffects = std::move(sideEffects);
@@ -252,7 +253,12 @@ AudioRecorder::StopResult AudioRecorder::finalizeSideEffects(DetachedSideEffects
     movedSideEffects.adapterNode->adapterCleanup();
   }
 
-  return Ok(std::make_tuple(std::move(movedSideEffects.fileUris), outputFileSize, outputDuration));
+  return Ok(
+      FileInfo{
+          .paths = std::move(movedSideEffects.fileUris),
+          .size = outputFileSize,
+          .duration = outputDuration,
+      });
 }
 
 /// JS thread only.

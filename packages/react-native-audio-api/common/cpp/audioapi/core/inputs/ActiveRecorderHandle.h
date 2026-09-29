@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/inputs/FileInfo.h>
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
@@ -12,12 +13,6 @@
 namespace audioapi {
 
 class AudioRecorder;
-
-struct FileInfo {
-  std::vector<std::string> paths;
-  double size;
-  double duration;
-};
 
 /// @brief The process-wide view of the recording session that is currently active.
 ///

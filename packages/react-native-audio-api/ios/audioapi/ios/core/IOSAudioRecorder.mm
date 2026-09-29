@@ -375,12 +375,12 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
 }
 
 /// JS thread only.
-AudioRecorder::StopResult IOSAudioRecorder::stop()
+Result<FileInfo, std::string> IOSAudioRecorder::stop()
 {
   DetachedSideEffects sideEffects;
 
   if (isIdle()) {
-    return StopResult::Err("Recorder is not in recording state.");
+    return Result<FileInfo, std::string>::Err("Recorder is not in recording state.");
   }
 
   state_.store(RecorderState::Idle, std::memory_order_release);

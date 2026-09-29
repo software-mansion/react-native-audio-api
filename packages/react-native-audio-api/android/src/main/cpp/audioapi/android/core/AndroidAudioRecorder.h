@@ -31,7 +31,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   DELETE_COPY_AND_MOVE(AndroidAudioRecorder);
 
   Result<NoneType, std::string> start() override;
-  StopResult stop() override;
+  Result<FileInfo, std::string> stop() override;
 
   void pause() override;
   void resume() override;

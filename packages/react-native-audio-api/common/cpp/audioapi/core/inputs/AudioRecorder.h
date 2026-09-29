@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/inputs/FileInfo.h>
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/utils/Macros.h>
@@ -11,7 +12,6 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <tuple>
 #include <vector>
 
 namespace audioapi {
@@ -26,9 +26,6 @@ class RecorderAdapterNode;
 /// stream; the file writer, the JS callback and the adapter node are managed here.
 class AudioRecorder {
  public:
-  /// Every file the session produced, its total size in MB and its total duration in seconds.
-  using StopResult = Result<std::tuple<std::vector<std::string>, double, double>, std::string>;
-
   explicit AudioRecorder(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
       : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
@@ -36,7 +33,7 @@ class AudioRecorder {
   virtual ~AudioRecorder() = default;
 
   virtual Result<NoneType, std::string> start() = 0;
-  virtual StopResult stop() = 0;
+  virtual Result<FileInfo, std::string> stop() = 0;
 
   Result<NoneType, std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties);
   void disableFileOutput();
@@ -112,7 +109,7 @@ class AudioRecorder {
 
   /// Must run with no recorder mutex held: closing the writer joins its worker thread. The
   /// file URIs are collected only after that join, once a rotation in flight has reported its file.
-  StopResult finalizeSideEffects(DetachedSideEffects &&sideEffects);
+  Result<FileInfo, std::string> finalizeSideEffects(DetachedSideEffects &&sideEffects);
 
   bool wantsCallback() const;
   bool wantsFileOutput() const;

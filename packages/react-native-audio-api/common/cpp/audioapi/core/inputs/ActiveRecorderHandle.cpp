@@ -79,8 +79,7 @@ Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo() {
     return Result<FileInfo, std::string>::Err(result.unwrap_err());
   }
 
-  auto [paths, size, duration] = result.unwrap();
-  FileInfo recording{.paths = std::move(paths), .size = size, .duration = duration};
+  FileInfo recording = std::move(result).unwrap();
   if (!recording.paths.empty()) {
     lastResult_ = recording;
   }

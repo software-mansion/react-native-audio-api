@@ -43,12 +43,12 @@ class FakeAudioRecorder : public AudioRecorder {
 
   // Mirrors AndroidAudioRecorder::stop(): under its locks exactly one caller
   // transitions out of a non-idle state and closes the file; the loser errs.
-  StopResult stop() override {
+  Result<FileInfo, std::string> stop() override {
     if (state_.exchange(RecorderState::Idle) == RecorderState::Idle) {
       return Err(std::string("Recorder is not in recording state."));
     }
     stopCount += 1;
-    return Ok(std::make_tuple(stopPaths, 1.5, 10.0));
+    return Ok(FileInfo{.paths = stopPaths, .size = 1.5, .duration = 10.0});
   }
 
   void pause() override {
