@@ -28,14 +28,14 @@ namespace audioapi::android_decoder {
 namespace {
 
 // Codec output PCM encodings (android.media.AudioFormat constants).
-constexpr int kEncodingPcm16 = 2;
-constexpr int kEncodingPcm8 = 3;
-constexpr int kEncodingPcmFloat = 4;
-constexpr int kResampleMaxInFrames = 4096;
-constexpr int64_t kCodecTimeoutUs = 5000;
+constexpr int ENCODING_PCM_16 = 2;
+constexpr int ENCODING_PCM_8 = 3;
+constexpr int ENCODING_PCM_FLOAT = 4;
+constexpr int RESAMPLE_MAX_IN_FRAMES = 4096;
+constexpr int64_t CODEC_TIMEOUT_US = 5000;
 // Bail out of the drain loop if MediaCodec keeps saying "try again" after EOS
 // input without ever flagging EOS output (defensive against a stuck codec).
-constexpr int kMaxTryAgainAfterEos = 200;
+constexpr int MAX_TRY_AGAIN_AFTER_EOS = 200;
 
 template <auto DeleteFn>
 struct FnDeleter {
@@ -101,7 +101,7 @@ struct AndroidDecoderState {
   int nativeSampleRate = 0;
   int outputRate = 0;
   int channels = 0;
-  int pcmEncoding = kEncodingPcm16;
+  int pcmEncoding = ENCODING_PCM_16;
   double durationSeconds = 0.0;
 
   // Decoded PCM at the codec's native rate, interleaved float, waiting to be
@@ -139,13 +139,13 @@ void compactConsumed(std::vector<float> &buffer, size_t &cursor) {
 void appendNativePcm(AndroidDecoderState &state, const uint8_t *bytes, size_t byteCount) {
   compactConsumed(state.nativeLeftover, state.nativeCursor);
   auto &pcm = state.nativeLeftover;
-  if (state.pcmEncoding == kEncodingPcmFloat) {
+  if (state.pcmEncoding == ENCODING_PCM_FLOAT) {
     const size_t sampleCount = byteCount / sizeof(float);
     const auto *samples = reinterpret_cast<const float *>(bytes);
     pcm.insert(pcm.end(), samples, samples + sampleCount);
     return;
   }
-  if (state.pcmEncoding == kEncodingPcm8) {
+  if (state.pcmEncoding == ENCODING_PCM_8) {
     for (size_t i = 0; i < byteCount; ++i) {
       pcm.push_back((static_cast<float>(bytes[i]) - 128.0f) / 128.0f);
     }
@@ -177,9 +177,9 @@ void setupResamplerIfNeeded(AndroidDecoderState &state) {
   }
 
   state.resampler = std::make_unique<r8b::MultiChannelResampler>(
-      state.nativeSampleRate, state.outputRate, state.channels, kResampleMaxInFrames);
+      state.nativeSampleRate, state.outputRate, state.channels, RESAMPLE_MAX_IN_FRAMES);
   state.resampleIn = std::make_unique<AudioBuffer>(
-      static_cast<size_t>(kResampleMaxInFrames),
+      static_cast<size_t>(RESAMPLE_MAX_IN_FRAMES),
       state.channels,
       static_cast<float>(state.nativeSampleRate));
   state.resampleOut = std::make_unique<AudioBuffer>(
@@ -198,7 +198,7 @@ void applyCodecOutputFormat(AndroidDecoderState &state, AMediaFormat *outFormat)
   AMediaFormat_getInt32(outFormat, AMEDIAFORMAT_KEY_SAMPLE_RATE, &state.nativeSampleRate);
   AMediaFormat_getInt32(outFormat, AMEDIAFORMAT_KEY_CHANNEL_COUNT, &state.channels);
   if (!AMediaFormat_getInt32(outFormat, "pcm-encoding", &state.pcmEncoding)) {
-    state.pcmEncoding = kEncodingPcm16;
+    state.pcmEncoding = ENCODING_PCM_16;
   }
   if (state.channels <= 0) {
     state.channels = previousChannels > 0 ? previousChannels : 1;
@@ -229,7 +229,7 @@ void pumpCodec(AndroidDecoderState &state) {
   auto *extractor = state.extractor.get();
 
   if (!state.inputEnded) {
-    const ssize_t inIndex = AMediaCodec_dequeueInputBuffer(codec, kCodecTimeoutUs);
+    const ssize_t inIndex = AMediaCodec_dequeueInputBuffer(codec, CODEC_TIMEOUT_US);
     if (inIndex >= 0) {
       size_t bufSize = 0;
       uint8_t *buf = AMediaCodec_getInputBuffer(codec, static_cast<size_t>(inIndex), &bufSize);
@@ -249,7 +249,7 @@ void pumpCodec(AndroidDecoderState &state) {
   }
 
   AMediaCodecBufferInfo info{};
-  const ssize_t outIndex = AMediaCodec_dequeueOutputBuffer(codec, &info, kCodecTimeoutUs);
+  const ssize_t outIndex = AMediaCodec_dequeueOutputBuffer(codec, &info, CODEC_TIMEOUT_US);
   if (outIndex >= 0) {
     state.tryAgainAfterEos = 0;
     if (info.size > 0) {
@@ -271,7 +271,7 @@ void pumpCodec(AndroidDecoderState &state) {
       AMediaFormat_delete(outFormat);
     }
   } else if (outIndex == AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
-    if (state.inputEnded && ++state.tryAgainAfterEos > kMaxTryAgainAfterEos) {
+    if (state.inputEnded && ++state.tryAgainAfterEos > MAX_TRY_AGAIN_AFTER_EOS) {
       state.outputEnded = true;
     }
   }
@@ -316,7 +316,7 @@ size_t produceResampled(AndroidDecoderState &state) {
       return 0; // Codec fully drained and no leftover: genuine EOF.
     }
 
-    const auto inFrames = static_cast<int>(std::min<size_t>(availIn, kResampleMaxInFrames));
+    const auto inFrames = static_cast<int>(std::min<size_t>(availIn, RESAMPLE_MAX_IN_FRAMES));
     state.resampleIn->deinterleaveFrom(
         state.nativeLeftover.data() + state.nativeCursor, static_cast<size_t>(inFrames));
     state.nativeCursor += static_cast<size_t>(inFrames) * static_cast<size_t>(channels);
@@ -483,9 +483,9 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::LocalFileSource &so
   // through the media HTTP service, which is unavailable to app processes on
   // some devices ("NdkMediaExtractor: can't create http service", status
   // -10002). Local files must use the fd overload.
-  constexpr const char *fileUrlPrefix = "file://";
-  const std::string path = source.path.starts_with(fileUrlPrefix)
-      ? source.path.substr(std::strlen(fileUrlPrefix))
+  constexpr const char *FILE_URL_PREFIX = "file://";
+  const std::string path = source.path.starts_with(FILE_URL_PREFIX)
+      ? source.path.substr(std::strlen(FILE_URL_PREFIX))
       : source.path;
   const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
   if (fd < 0) {

@@ -29,6 +29,8 @@ class AndroidEncoder : public AudioEncoder {
   [[nodiscard]] size_t getFileSizeBytes() const override;
 
  private:
+  static constexpr int RESAMPLE_MAX_IN_FRAMES = 4096;
+
   /// Input that differs from the backend's effective format: channel mapping and resampling
   /// stay planar, and the backend interleaves while it quantizes.
   std::string encodeConverted(const float *const *channels, int numFrames);

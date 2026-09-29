@@ -100,7 +100,7 @@ Result<NoneType, std::string> AudioRecorderCallback::prepare(
   auto offloaderLambda = [this](PendingCallbackFrames pending) {
     runCallbackTask(std::move(pending));
   };
-  offloader_ = std::make_unique<Offloader>(RECORDER_CALLBACK_CHANNEL_CAPACITY, offloaderLambda);
+  offloader_ = std::make_unique<Offloader>(CHANNEL_CAPACITY, offloaderLambda);
   return Result<NoneType, std::string>::Ok(None);
 }
 
@@ -159,7 +159,7 @@ void AudioRecorderCallback::receiveAudioData(const float *const *channels, int n
   for (int channel = 0; channel < streamChannelCount_; ++channel) {
     std::memcpy(slot->getChannel(channel)->begin(), channels[channel], frames * sizeof(float));
   }
-  // send() cannot block here: we hold a slot from a pool of RECORDER_CALLBACK_POOL_SIZE,
+  // send() cannot block here: we hold a slot from a pool of POOL_SIZE,
   // and the channel is sized one larger, so the ring always has room while
   // any slot is in flight.
   offloader_->getSender()->send(

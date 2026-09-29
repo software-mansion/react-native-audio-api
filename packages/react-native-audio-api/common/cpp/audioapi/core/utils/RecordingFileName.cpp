@@ -12,9 +12,9 @@ namespace audioapi::recording_file_name {
 
 namespace {
 
-constexpr size_t kMaxFileNameLength = 128;
-constexpr size_t kSegmentIndexWidth = 3;
-constexpr std::string_view kGeneratedNamePrefix = "recording";
+constexpr size_t MAX_FILE_NAME_LENGTH = 128;
+constexpr size_t SEGMENT_INDEX_WIDTH = 3;
+constexpr std::string_view GENERATED_NAME_PREFIX = "recording";
 
 bool containsPathSeparator(const std::string &name) {
   return name.find('/') != std::string::npos || name.find('\\') != std::string::npos;
@@ -38,13 +38,13 @@ std::string sessionStem(const std::shared_ptr<AudioFileProperties> &properties) 
     return properties->path.fileName;
   }
 
-  return std::string(kGeneratedNamePrefix) + "_" + sessionTimestamp();
+  return std::string(GENERATED_NAME_PREFIX) + "_" + sessionTimestamp();
 }
 
 std::string segmentStem(const std::string &sessionStem, size_t segmentIndex) {
   std::string index = std::to_string(segmentIndex);
-  if (index.size() < kSegmentIndexWidth) {
-    index.insert(0, kSegmentIndexWidth - index.size(), '0');
+  if (index.size() < SEGMENT_INDEX_WIDTH) {
+    index.insert(0, SEGMENT_INDEX_WIDTH - index.size(), '0');
   }
   return sessionStem + "_" + index;
 }
@@ -66,9 +66,9 @@ Result<NoneType, std::string> validate(const std::shared_ptr<AudioFileProperties
         "fileName must not carry an extension — it follows from the chosen format.");
   }
 
-  if (fileName.size() > kMaxFileNameLength) {
+  if (fileName.size() > MAX_FILE_NAME_LENGTH) {
     return ValidationResult::Err(
-        "fileName is longer than the " + std::to_string(kMaxFileNameLength) +
+        "fileName is longer than the " + std::to_string(MAX_FILE_NAME_LENGTH) +
         " characters a file name can spare.");
   }
 

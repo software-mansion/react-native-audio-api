@@ -7,12 +7,12 @@
 #include <audioapi/events/AudioEventPayload.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/FileSystem.hpp>
 
 #ifdef ANDROID
 #include <android/log.h>
 #endif
 
-#include <sys/stat.h>
 #include <array>
 #include <cstdio>
 #include <cstring>
@@ -197,11 +197,6 @@ std::string AudioFileWriter::fileStem(size_t fileNumber) const {
   return sessionStem_;
 }
 
-static bool fileExists(const std::string &path) {
-  struct stat existing{};
-  return ::stat(path.c_str(), &existing) == 0;
-}
-
 static void warnAboutOverwrite(const std::string &path) {
 #ifdef ANDROID
   __android_log_print(
@@ -221,13 +216,13 @@ Result<std::string, std::string> AudioFileWriter::resolveNextFilePath(
 
   const bool userNamed = !fileProperties_->path.fileName.empty();
   if (userNamed) {
-    if (fileExists(pathResult.unwrap())) {
+    if (file_system::fileExists(pathResult.unwrap())) {
       warnAboutOverwrite(pathResult.unwrap());
     }
     return pathResult;
   }
 
-  for (size_t suffix = 1; fileExists(pathResult.unwrap()); ++suffix) {
+  for (size_t suffix = 1; file_system::fileExists(pathResult.unwrap()); ++suffix) {
     std::string suffixedName = stem;
     suffixedName += "_" + std::to_string(suffix) + "." + extension;
     pathResult = backend_.resolvePath(fileProperties_, suffixedName);
@@ -383,7 +378,7 @@ void AudioFileWriter::createOffloader() {
   auto offloaderLambda = [this](PendingFileWrite pending) {
     runWriterTask(std::move(pending));
   };
-  offloader_ = std::make_unique<Offloader>(FILE_WRITER_CHANNEL_CAPACITY, offloaderLambda);
+  offloader_ = std::make_unique<Offloader>(CHANNEL_CAPACITY, offloaderLambda);
 }
 
 bool AudioFileWriter::initializePreallocatedInputPool() {
@@ -501,11 +496,7 @@ size_t AudioFileWriter::getFileSizeBytes() const {
   if (encoder_ != nullptr) {
     return encoder_->getFileSizeBytes();
   }
-  struct stat st{};
-  if (!filePath_.empty() && stat(filePath_.c_str(), &st) == 0) {
-    return static_cast<size_t>(st.st_size);
-  }
-  return 0;
+  return file_system::fileSizeBytes(filePath_);
 }
 
 void AudioFileWriter::setOnErrorCallback(uint64_t callbackId) {

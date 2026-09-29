@@ -17,11 +17,11 @@
 namespace audioapi::android_remux {
 namespace {
 
-constexpr size_t kSampleBufferBytes = 256 * 1024;
+constexpr size_t SAMPLE_BUFFER_BYTES = 256 * 1024;
 
 // MPEG-4 Audio Object Types carried in the AudioSpecificConfig (ISO/IEC 14496-3).
-constexpr int kAudioObjectTypeAacLc = 2;
-constexpr int kAudioObjectTypeEscape = 31;
+constexpr int AUDIO_OBJECT_TYPE_AAC_LC = 2;
+constexpr int AUDIO_OBJECT_TYPE_ESCAPE = 31;
 
 struct TrackInfo {
   std::string mime;
@@ -44,7 +44,7 @@ struct TrackInfo {
   }
 
   const int objectType = (csd0[0] >> 3) & 0x1F;
-  if (objectType != kAudioObjectTypeEscape) {
+  if (objectType != AUDIO_OBJECT_TYPE_ESCAPE) {
     return objectType;
   }
 
@@ -57,7 +57,7 @@ struct TrackInfo {
 
 // Mirrors IOSRemux's `isAacFormatId`: only plain AAC-LC is remuxable.
 [[nodiscard]] bool isAacLcTrack(const TrackInfo &info) {
-  return info.mime == "audio/mp4a-latm" && info.audioObjectType == kAudioObjectTypeAacLc;
+  return info.mime == "audio/mp4a-latm" && info.audioObjectType == AUDIO_OBJECT_TYPE_AAC_LC;
 }
 
 class ExtractorGuard {
@@ -296,7 +296,7 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
     return Err("Failed to select audio track.");
   }
 
-  std::vector<uint8_t> buffer(kSampleBufferBytes);
+  std::vector<uint8_t> buffer(SAMPLE_BUFFER_BYTES);
   int64_t baseTimeUs = -1;
   int64_t segmentEndUs = timeOffsetUs;
 

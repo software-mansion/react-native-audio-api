@@ -5,10 +5,12 @@
 #define MINIAUDIO_IMPLEMENTATION
 #define MA_DEBUG_OUTPUT
 
-// MiniAudio is used for Vorbis/Ogg decoding (custom libvorbis backend) and WAV encoding
-// (`ma_encoder` only supports WAV). OS decoder covers WAV/MP3/FLAC decode.
+// MiniAudio only decodes, as the fallback behind the OS decoder: Ogg Vorbis and Opus through
+// the bundled libvorbis/libopus backends, plus WAV. The OS decoder covers MP3 and FLAC, and
+// every encoder is a system one.
 #define MA_NO_MP3
 #define MA_NO_FLAC
+#define MA_NO_ENCODING
 #define MA_NO_DEVICE_IO
 #define MA_NO_RESOURCE_MANAGER
 #define MA_NO_NODE_GRAPH

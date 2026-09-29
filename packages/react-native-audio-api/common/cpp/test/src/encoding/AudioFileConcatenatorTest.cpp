@@ -1,12 +1,14 @@
-#include <audioapi/decoding/AudioFileConcatenator.h>
+#include <audioapi/encoding/AudioFileConcatenator.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <gtest/gtest.h>
+#include <test/src/utils/TestWavFile.h>
 
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -28,35 +30,23 @@ void removeFile(const std::string &path) {
   std::remove(path.c_str());
 }
 
-void writeUint16LE(std::ofstream &output, uint16_t value) {
-  output.put(static_cast<char>(value & 0xFF));
-  output.put(static_cast<char>((value >> 8) & 0xFF));
-}
-
-void writeUint32LE(std::ofstream &output, uint32_t value) {
-  output.put(static_cast<char>(value & 0xFF));
-  output.put(static_cast<char>((value >> 8) & 0xFF));
-  output.put(static_cast<char>((value >> 16) & 0xFF));
-  output.put(static_cast<char>((value >> 24) & 0xFF));
-}
-
 void writeOversizedWavHeader(const std::string &path) {
   std::ofstream output(path, std::ios::binary);
   ASSERT_TRUE(output.is_open());
 
   output.write("RIFF", 4);
-  writeUint32LE(output, std::numeric_limits<uint32_t>::max());
+  test::writeUint32LE(output, std::numeric_limits<uint32_t>::max());
   output.write("WAVE", 4);
   output.write("fmt ", 4);
-  writeUint32LE(output, 16);
-  writeUint16LE(output, 1);
-  writeUint16LE(output, channelCount);
-  writeUint32LE(output, sampleRate);
-  writeUint32LE(output, sampleRate * channelCount);
-  writeUint16LE(output, channelCount);
-  writeUint16LE(output, 8);
+  test::writeUint32LE(output, 16);
+  test::writeUint16LE(output, 1);
+  test::writeUint16LE(output, channelCount);
+  test::writeUint32LE(output, sampleRate);
+  test::writeUint32LE(output, sampleRate * channelCount);
+  test::writeUint16LE(output, channelCount);
+  test::writeUint16LE(output, 8);
   output.write("data", 4);
-  writeUint32LE(output, maxOddRiffDataSize);
+  test::writeUint32LE(output, maxOddRiffDataSize);
   output.close();
 
   std::error_code error;
@@ -65,19 +55,58 @@ void writeOversizedWavHeader(const std::string &path) {
 }
 
 void writeWavFile(const std::string &path, const std::vector<float> &frames) {
-  ma_encoder encoder;
-  ma_encoder_config config =
-      ma_encoder_config_init(ma_encoding_format_wav, ma_format_f32, channelCount, sampleRate);
-  ASSERT_EQ(ma_encoder_init_file(path.c_str(), &config, &encoder), MA_SUCCESS);
+  test::writeFloatWavFile(path, frames, sampleRate, channelCount);
+}
 
-  ma_uint64 framesWritten = 0;
-  EXPECT_EQ(
-      ma_encoder_write_pcm_frames(
-          &encoder, frames.data(), static_cast<ma_uint64>(frames.size()), &framesWritten),
-      MA_SUCCESS);
-  EXPECT_EQ(framesWritten, frames.size());
+/// Stands in for the platform encoder, which the desktop build does not have.
+class FakeWavEncoder final : public AudioEncoder {
+ public:
+  FakeWavEncoder(const std::shared_ptr<AudioFileProperties> &properties, bool failEncode)
+      : AudioEncoder(properties), failEncode_(failEncode) {}
 
-  ma_encoder_uninit(&encoder);
+  /// Creates the file straight away, as the platform encoders do.
+  OpenEncoderResult open(
+      const StreamFormat & /*inputFormat*/,
+      const EncoderOutputSpec & /*outputSpec*/,
+      size_t /*maxBufferSizeInFrames*/,
+      const std::string &filePath) override {
+    filePath_ = filePath;
+    std::ofstream created(filePath, std::ios::binary);
+    markOpen();
+    return OpenEncoderResult::Ok(filePath);
+  }
+
+  EncodeResult encode(const float *const *channels, int numFrames) override {
+    if (failEncode_) {
+      return EncodeResult::Err("encoder refused the frames");
+    }
+    frames_.insert(frames_.end(), channels[0], channels[0] + numFrames);
+    return EncodeResult::Ok(static_cast<size_t>(numFrames));
+  }
+
+  CloseEncoderResult close() override {
+    writeWavFile(filePath_, frames_);
+    markClosed();
+    return CloseEncoderResult::Ok({0.0, 0.0});
+  }
+
+  [[nodiscard]] size_t getFileSizeBytes() const override {
+    return frames_.size() * sizeof(float);
+  }
+
+ private:
+  bool failEncode_;
+  std::vector<float> frames_;
+};
+
+std::unique_ptr<AudioEncoder> createFakeWavEncoder(
+    const std::shared_ptr<AudioFileProperties> &properties) {
+  return std::make_unique<FakeWavEncoder>(properties, /*failEncode=*/false);
+}
+
+std::unique_ptr<AudioEncoder> createFailingWavEncoder(
+    const std::shared_ptr<AudioFileProperties> &properties) {
+  return std::make_unique<FakeWavEncoder>(properties, /*failEncode=*/true);
 }
 
 std::vector<float> readWavFile(const std::string &path) {
@@ -109,14 +138,6 @@ std::vector<float> readWavFile(const std::string &path) {
 }
 
 } // namespace
-
-TEST(AudioFileConcatenatorTest, NormalizesFileUrls) {
-  EXPECT_EQ(normalizeFilePath("file:///tmp/audio%20segment.m4a"), "/tmp/audio segment.m4a");
-}
-
-TEST(AudioFileConcatenatorTest, KeepsFilesystemPaths) {
-  EXPECT_EQ(normalizeFilePath("/tmp/audio%20segment.m4a"), "/tmp/audio segment.m4a");
-}
 
 TEST(AudioFileConcatenatorTest, RejectsEmptyInputList) {
   auto result = concatAudioFiles({}, "/tmp/output.m4a");
@@ -171,7 +192,7 @@ TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForM4AOnDesktop) {
   EXPECT_EQ(result.unwrap_err(), "concatAudioFiles remux requires iOS or Android.");
 }
 
-TEST(AudioFileConcatenatorTest, ConcatenatesWavFilesWithMiniaudio) {
+TEST(AudioFileConcatenatorTest, ConcatenatesWavFilesThroughTheEncoder) {
   const std::string inputA = testFilePath("audio-concat-a.wav");
   const std::string inputB = testFilePath("audio-concat-b.wav");
   const std::string output = testFilePath("audio-concat-output.wav");
@@ -183,7 +204,7 @@ TEST(AudioFileConcatenatorTest, ConcatenatesWavFilesWithMiniaudio) {
   writeWavFile(inputA, {0.1F, 0.2F, 0.3F});
   writeWavFile(inputB, {0.4F, 0.5F});
 
-  auto result = concatAudioFiles({inputA, inputB}, output);
+  auto result = concatAudioFiles({inputA, inputB}, output, createFakeWavEncoder);
 
   if (result.is_err()) {
     FAIL() << result.unwrap_err();
@@ -205,7 +226,7 @@ TEST(AudioFileConcatenatorTest, RejectsWavOutputThatWouldExceedRiffLimit) {
 
   writeOversizedWavHeader(input);
 
-  auto result = concatAudioFiles({input}, output);
+  auto result = concatAudioFiles({input}, output, createFakeWavEncoder);
 
   EXPECT_TRUE(result.is_err());
   EXPECT_EQ(
@@ -214,6 +235,30 @@ TEST(AudioFileConcatenatorTest, RejectsWavOutputThatWouldExceedRiffLimit) {
 
   removeFile(input);
   removeFile(output);
+}
+
+TEST(AudioFileConcatenatorTest, RemovesTheOutputWhenEncodingFails) {
+  const std::string input = testFilePath("audio-concat-failing-input.wav");
+  const std::string output = testFilePath("audio-concat-failing-output.wav");
+
+  removeFile(input);
+  removeFile(output);
+
+  writeWavFile(input, {0.1F, 0.2F});
+
+  auto result = concatAudioFiles({input}, output, createFailingWavEncoder);
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_FALSE(std::filesystem::exists(output));
+
+  removeFile(input);
+}
+
+TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForWAVOnDesktop) {
+  auto result = concatAudioFiles({"/tmp/input.wav"}, "/tmp/output.wav");
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles WAV output requires iOS or Android.");
 }
 
 TEST(AudioFileConcatenatorTest, RejectsUnsupportedOutputFormat) {

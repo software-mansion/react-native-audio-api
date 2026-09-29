@@ -145,7 +145,7 @@ PlatformFileBackend makeFakeBackend(FakeEncoderLog &log) {
   };
 }
 
-// Mirror AudioFileWriter::FILE_SIZE_CHECK_WRITE_INTERVAL and FILE_WRITER_POOL_SIZE.
+// Mirror AudioFileWriter::FILE_SIZE_CHECK_WRITE_INTERVAL and POOL_SIZE.
 constexpr int kBuffersBetweenSizeChecks = 10;
 constexpr int kWriterPoolSize = 32;
 constexpr int kFramesPerBuffer = 128;

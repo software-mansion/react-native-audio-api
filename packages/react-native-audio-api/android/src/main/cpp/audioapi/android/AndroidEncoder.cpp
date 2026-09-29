@@ -4,6 +4,7 @@
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/FileSystem.hpp>
 
 #include <media/NdkMediaCodec.h>
 #include <media/NdkMediaFormat.h>
@@ -31,13 +32,6 @@
 
 namespace audioapi::android_encoder {
 namespace {
-
-constexpr int64_t kStreamTimeoutUs = 0;
-constexpr int64_t kDrainTimeoutUs = 10000;
-constexpr int kMaxTryAgainAtEos = 200;
-constexpr int kAacProfileLc = 2;     // MediaCodecInfo.CodecProfileLevel.AACObjectLC
-constexpr int kPcmEncoding16Bit = 2; // AudioFormat.ENCODING_PCM_16BIT
-constexpr int kResampleMaxInFrames = 4096;
 
 int16_t floatToS16(float sample) {
   float clamped = std::max(-1.0f, std::min(1.0f, sample));
@@ -264,7 +258,7 @@ class MediaCodecBackend : public IEncoderBackend {
     // draining until the codec reports EOS on the output, or we make no progress
     // for too long (defensive against a stuck codec).
     int stagnation = 0;
-    while (!outputDone_ && stagnation < kMaxTryAgainAtEos) {
+    while (!outputDone_ && stagnation < MAX_TRY_AGAIN_AT_EOS) {
       const size_t drainedBefore = drainCount_;
       const bool inputWasEnded = inputEnded_;
 
@@ -302,9 +296,9 @@ class MediaCodecBackend : public IEncoderBackend {
     if (bitRate > 0) {
       AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, bitRate);
     }
-    AMediaFormat_setInt32(format, "pcm-encoding", kPcmEncoding16Bit);
+    AMediaFormat_setInt32(format, "pcm-encoding", PCM_ENCODING_16BIT);
     if (isAac) {
-      AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_AAC_PROFILE, kAacProfileLc);
+      AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_AAC_PROFILE, AAC_PROFILE_LC);
     }
 
     AMediaCodec *codec = AMediaCodec_createEncoderByType(mime);
@@ -361,7 +355,7 @@ class MediaCodecBackend : public IEncoderBackend {
     auto *codec = codec_.get();
     size_t cursor = 0;
     while (cursor < pcmLeftover_.size() || (endOfStream && !inputEnded_)) {
-      const ssize_t inIndex = AMediaCodec_dequeueInputBuffer(codec, kStreamTimeoutUs);
+      const ssize_t inIndex = AMediaCodec_dequeueInputBuffer(codec, STREAM_TIMEOUT_US);
       if (inIndex < 0) {
         break; // no input buffer free right now
       }
@@ -410,7 +404,7 @@ class MediaCodecBackend : public IEncoderBackend {
 
   std::string drainOutput(bool endOfStream) {
     auto *codec = codec_.get();
-    const int64_t timeout = endOfStream ? kDrainTimeoutUs : kStreamTimeoutUs;
+    const int64_t timeout = endOfStream ? DRAIN_TIMEOUT_US : STREAM_TIMEOUT_US;
 
     while (true) {
       AMediaCodecBufferInfo info{};
@@ -453,6 +447,12 @@ class MediaCodecBackend : public IEncoderBackend {
   int channelCount_{0};
 
  private:
+  static constexpr int64_t STREAM_TIMEOUT_US = 0;
+  static constexpr int64_t DRAIN_TIMEOUT_US = 10000;
+  static constexpr int MAX_TRY_AGAIN_AT_EOS = 200;
+  static constexpr int AAC_PROFILE_LC = 2;     // MediaCodecInfo.CodecProfileLevel.AACObjectLC
+  static constexpr int PCM_ENCODING_16BIT = 2; // AudioFormat.ENCODING_PCM_16BIT
+
   std::vector<uint8_t> pcmLeftover_;
   uint64_t framesFed_{0};
   bool inputEnded_{false};
@@ -533,11 +533,7 @@ class MuxedBackend : public MediaCodecBackend {
   }
 
   [[nodiscard]] size_t getFileSizeBytes() const override {
-    struct stat st{};
-    if (!filePath_.empty() && ::stat(filePath_.c_str(), &st) == 0) {
-      return static_cast<size_t>(st.st_size);
-    }
-    return 0;
+    return file_system::fileSizeBytes(filePath_);
   }
 
  protected:
@@ -700,7 +696,7 @@ struct AndroidEncoder::ConversionState {
     }
     if (srcRate != dstRate) {
       resampler = std::make_unique<r8b::MultiChannelResampler>(
-          srcRate, dstRate, outputChannels, kResampleMaxInFrames);
+          srcRate, dstRate, outputChannels, RESAMPLE_MAX_IN_FRAMES);
       resampledPlanar = std::make_unique<AudioBuffer>(
           static_cast<size_t>(std::max(1, resampler->getMaxOutLen())),
           outputChannels,
@@ -841,7 +837,7 @@ std::string AndroidEncoder::encodeConverted(const float *const *channels, int nu
 
   int consumed = 0;
   while (consumed < numFrames) {
-    const int chunk = std::min(numFrames - consumed, kResampleMaxInFrames);
+    const int chunk = std::min(numFrames - consumed, RESAMPLE_MAX_IN_FRAMES);
     std::array<const float *, MAX_CHANNEL_COUNT> chunkChannels{};
     for (int channel = 0; channel < outputChannelCount_; ++channel) {
       chunkChannels[channel] = planar[channel] + consumed;

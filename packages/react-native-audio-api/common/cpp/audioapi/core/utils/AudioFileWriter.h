@@ -98,22 +98,20 @@ class AudioFileWriter final {
   void clearOnErrorCallback();
 
  private:
-  static constexpr auto FILE_WRITER_SPSC_OVERFLOW_STRATEGY =
+  static constexpr auto SPSC_OVERFLOW_STRATEGY =
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
-  static constexpr auto FILE_WRITER_SPSC_WAIT_STRATEGY = channels::spsc::WaitStrategy::ATOMIC_WAIT;
-  static constexpr size_t FILE_WRITER_POOL_SIZE = 32;
+  static constexpr auto SPSC_WAIT_STRATEGY = channels::spsc::WaitStrategy::ATOMIC_WAIT;
+  static constexpr size_t POOL_SIZE = 32;
   // SPSC rings hold at most (capacity - 1) elements.
-  static constexpr auto FILE_WRITER_CHANNEL_CAPACITY = FILE_WRITER_POOL_SIZE + 1;
+  static constexpr auto CHANNEL_CAPACITY = POOL_SIZE + 1;
   static_assert(
-      FILE_WRITER_POOL_SIZE <= FILE_WRITER_CHANNEL_CAPACITY - 1,
+      POOL_SIZE <= CHANNEL_CAPACITY - 1,
       "Channel must hold every in-flight slot so send() never blocks/overwrites");
   /// Checking the file size costs a stat(), so only do it every Nth encoded buffer.
   static constexpr int FILE_SIZE_CHECK_WRITE_INTERVAL = 10;
 
-  using Offloader = task_offloader::TaskOffloader<
-      PendingFileWrite,
-      FILE_WRITER_SPSC_OVERFLOW_STRATEGY,
-      FILE_WRITER_SPSC_WAIT_STRATEGY>;
+  using Offloader =
+      task_offloader::TaskOffloader<PendingFileWrite, SPSC_OVERFLOW_STRATEGY, SPSC_WAIT_STRATEGY>;
 
   [[nodiscard]] bool isFileOpen() const;
   [[nodiscard]] bool rotatesFiles() const;
@@ -178,7 +176,7 @@ class AudioFileWriter final {
 
   /// Planar buffers of maxFramesPerBuffer_ x streamChannelCount_ that carry audio-thread
   /// callbacks to the worker.
-  AudioBufferPool<FILE_WRITER_POOL_SIZE> inputBufferPool_;
+  AudioBufferPool<POOL_SIZE> inputBufferPool_;
   std::unique_ptr<Offloader> offloader_;
 };
 

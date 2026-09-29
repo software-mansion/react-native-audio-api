@@ -30,8 +30,8 @@ react-native-audio-api/
 │   │   └── src/main/cpp/audioapi/
 │   │       └── CMakeLists.txt          # Actual Android C++ build target
 │   ├── common/cpp/audioapi/            # Shared C++ (used by all platforms)
-│   │   ├── decoding/                   # Decoder factory, backends, SeekDecoderDaemon, AudioDecoding, AudioFileConcatenator
-│   │   ├── encoding/                   # AudioEncoder interface, EncoderCapabilities, OS encoder/remux selector headers
+│   │   ├── decoding/                   # Decoder factory, backends, SeekDecoderDaemon, AudioDecoding
+│   │   ├── encoding/                   # AudioEncoder interface, EncoderCapabilities, OS encoder/remux selector headers, AudioFileConcatenator
 │   │   ├── libs/                       # Third-party wrappers (FFmpeg, miniaudio, pffft, …)
 │   │   └── external/                   # Prebuilt binaries per platform
 │   │       ├── android/                # .a static libs (Opus, Ogg, Vorbis, OpenSSL)

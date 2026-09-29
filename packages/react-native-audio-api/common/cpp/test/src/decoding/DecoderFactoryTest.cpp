@@ -2,6 +2,7 @@
 #include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <gtest/gtest.h>
+#include <test/src/utils/TestWavFile.h>
 
 #include <cstdio>
 #include <fstream>
@@ -26,19 +27,7 @@ void removeFile(const std::string &path) {
 }
 
 void writeWavFile(const std::string &path, const std::vector<float> &frames) {
-  ma_encoder encoder;
-  ma_encoder_config config =
-      ma_encoder_config_init(ma_encoding_format_wav, ma_format_f32, channelCount, sampleRate);
-  ASSERT_EQ(ma_encoder_init_file(path.c_str(), &config, &encoder), MA_SUCCESS);
-
-  ma_uint64 framesWritten = 0;
-  EXPECT_EQ(
-      ma_encoder_write_pcm_frames(
-          &encoder, frames.data(), static_cast<ma_uint64>(frames.size()), &framesWritten),
-      MA_SUCCESS);
-  EXPECT_EQ(framesWritten, frames.size());
-
-  ma_encoder_uninit(&encoder);
+  test::writeFloatWavFile(path, frames, sampleRate, channelCount);
 }
 
 std::vector<uint8_t> readFileBytes(const std::string &path) {

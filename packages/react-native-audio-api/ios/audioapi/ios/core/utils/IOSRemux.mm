@@ -3,8 +3,8 @@
 #import <Foundation/Foundation.h>
 
 #include <audioapi/ios/core/utils/IOSRemux.h>
+#include <audioapi/utils/Path.h>
 
-#include <cctype>
 #include <string>
 
 namespace audioapi::ios_remux {
@@ -21,19 +21,6 @@ struct AudioFormatFingerprint {
   return [[NSString alloc] initWithBytes:path.data()
                                   length:path.size()
                                 encoding:NSUTF8StringEncoding];
-}
-
-[[nodiscard]] std::string lowercaseExtension(const std::string &path)
-{
-  const auto dot = path.find_last_of('.');
-  if (dot == std::string::npos) {
-    return "";
-  }
-  std::string extension = path.substr(dot + 1);
-  for (char &c : extension) {
-    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-  }
-  return extension;
 }
 
 [[nodiscard]] bool isAacFormatId(AudioFormatID formatId)
@@ -178,7 +165,7 @@ IOSRemuxResult concatAudioFiles(
     }
 
     exporter.outputURL = outputURL;
-    exporter.outputFileType = fileTypeForExtension(lowercaseExtension(outputPath));
+    exporter.outputFileType = fileTypeForExtension(path::lowercaseExtension(outputPath));
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     __block AVAssetExportSessionStatus exportStatus = AVAssetExportSessionStatusUnknown;

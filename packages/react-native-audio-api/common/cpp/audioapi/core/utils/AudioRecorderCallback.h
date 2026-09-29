@@ -70,24 +70,21 @@ class AudioRecorderCallback {
  private:
   void assignOnErrorCallbackId(uint64_t callbackId);
 
-  static constexpr auto RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY =
+  static constexpr auto SPSC_OVERFLOW_STRATEGY =
       channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
-  static constexpr auto RECORDER_CALLBACK_SPSC_WAIT_STRATEGY =
-      channels::spsc::WaitStrategy::ATOMIC_WAIT;
-  static constexpr size_t RECORDER_CALLBACK_POOL_SIZE = 32;
+  static constexpr auto SPSC_WAIT_STRATEGY = channels::spsc::WaitStrategy::ATOMIC_WAIT;
+  static constexpr size_t POOL_SIZE = 32;
   // SPSC rings hold at most (capacity - 1) elements.
-  static constexpr auto RECORDER_CALLBACK_CHANNEL_CAPACITY = RECORDER_CALLBACK_POOL_SIZE + 1;
+  static constexpr auto CHANNEL_CAPACITY = POOL_SIZE + 1;
   // At most POOL_SIZE slots can be in flight at once, so sizing the channel one
   // larger guarantees the ring is never full when a slot is available — which is
   // why the producer can use the blocking send() without it ever actually waiting.
   static_assert(
-      RECORDER_CALLBACK_POOL_SIZE <= RECORDER_CALLBACK_CHANNEL_CAPACITY - 1,
+      POOL_SIZE <= CHANNEL_CAPACITY - 1,
       "Channel must hold every in-flight slot so send() never blocks/overwrites");
 
-  using Offloader = task_offloader::TaskOffloader<
-      PendingCallbackFrames,
-      RECORDER_CALLBACK_SPSC_OVERFLOW_STRATEGY,
-      RECORDER_CALLBACK_SPSC_WAIT_STRATEGY>;
+  using Offloader = task_offloader::
+      TaskOffloader<PendingCallbackFrames, SPSC_OVERFLOW_STRATEGY, SPSC_WAIT_STRATEGY>;
 
   /// r8brain resamplers are built for a fixed maximum input block, so longer callbacks
   /// are fed through in chunks of this size.
@@ -128,7 +125,7 @@ class AudioRecorderCallback {
 
   /// Planar buffers of maxInputBufferLength_ x streamChannelCount_ that carry audio-thread
   /// callbacks to the worker.
-  AudioBufferPool<RECORDER_CALLBACK_POOL_SIZE> inputBufferPool_;
+  AudioBufferPool<POOL_SIZE> inputBufferPool_;
 
   // delay initialization of offloader until prepare is called
   std::unique_ptr<Offloader> offloader_;

@@ -142,6 +142,27 @@ For full API see [api.md](api.md#benchmarkhpp--timing-utilities-devdebug-only).
 
 ---
 
+### `Path.h` — path strings and file:// URLs
+
+```cpp
+audioapi::path::lowercaseExtension(path)            // "wav" for "/tmp/Take.WAV", "" when none
+audioapi::path::hasExtension(path, {"m4a", "mp4"})  // lowercase, no leading dot
+audioapi::path::hasNonFileProtocol(path)            // http://, content://, ...
+audioapi::path::normalizeFilePath(pathOrFileUrl)    // strips file:// and percent-decodes
+```
+
+Pure string work, never touches the disk (that is `FileSystem.hpp`). The extension comes from the file name only, so a dot in a directory name is not mistaken for one. `decoding::pathHasExtension` is a different, older suffix match used by the decoder.
+
+### `FileSystem.hpp` — path queries without `stat`
+
+```cpp
+audioapi::file_system::fileExists(path)     // false also when the path cannot be inspected
+audioapi::file_system::fileSizeBytes(path)  // 0 when missing or unreadable
+audioapi::file_system::removeFile(path)     // no-op when missing
+```
+
+Both wrap `std::filesystem` with an `error_code`, so they never throw. Use them instead of a local `::stat` helper; `fstat` on an fd you already opened is a different job and stays inline.
+
 ### `UnitConversion.h` — byte unit constants
 
 ```cpp

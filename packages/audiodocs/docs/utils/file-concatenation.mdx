@@ -24,13 +24,13 @@ recording is finished.
 **Only WAV, M4A, and FLAC concatenation is supported** — the recording formats
 available on both iOS and Android.
 
-WAV uses miniaudio (PCM remux). M4A/MP4 remuxes AAC packets with system APIs —
-iOS AVFoundation and Android MediaExtractor/MediaMuxer. FLAC decodes the
-segments and re-encodes them losslessly through the system FLAC encoder.
+WAV and FLAC decode the segments and write them out again through the system
+encoder — WAV as 32-bit float PCM, FLAC losslessly. M4A/MP4 remuxes AAC packets
+with system APIs — iOS AVFoundation and Android MediaExtractor/MediaMuxer.
 :::
 
 :::tip Segment size and quality
-`concatAudioFiles` joins segments losslessly for **WAV** (PCM remux) and
+`concatAudioFiles` joins segments losslessly for **WAV** (32-bit float PCM) and
 **FLAC** (lossless re-encode). For **M4A**,
 Android remuxes the encoded AAC packets losslessly, while iOS re-encodes the
 joined audio once through AVFoundation. Each rotated chunk is
