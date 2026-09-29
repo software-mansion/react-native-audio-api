@@ -117,7 +117,7 @@ class FakeEncoder final : public AudioEncoder {
 PlatformFileBackend makeFakeBackend(FakeEncoderLog &log) {
   return PlatformFileBackend{
       .resolveOutputSpec =
-          [&log](AudioFileProperties::Format /*format*/) {
+          [&log](AudioFileProperties::FileFormat /*format*/) {
             std::scoped_lock lock(log.mutex);
             return Result<EncoderOutputSpec, std::string>::Ok(log.outputSpec);
           },
@@ -189,7 +189,7 @@ class AudioFileWriterTest : public ::testing::Test {
         },
         AudioFileProperties::StreamConfig{.sampleRate = 48000.0F, .channelCount = kChannelCount},
         AudioFileProperties::EncodingConfig{
-            .format = AudioFileProperties::Format::WAV,
+            .format = AudioFileProperties::FileFormat::WAV,
             .bitRate = 128000,
             .bitDepth = AudioFileProperties::BitDepth::Bit16,
             .flacCompressionLevel = 5,

@@ -2,8 +2,8 @@
 #import <Foundation/Foundation.h>
 
 #include <audioapi/encoding/EncoderOutputSpec.h>
-#include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/IOSEncoder.h>
+#include <audioapi/ios/core/utils/IOSEncoderSettings.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
 
@@ -65,14 +65,14 @@ static NSDictionary *buildFileSettings(
   settings[AVFormatIDKey] = @(formatId);
   settings[AVSampleRateKey] = @(properties->stream.sampleRate);
   settings[AVNumberOfChannelsKey] = @(properties->stream.channelCount);
-  settings[AVEncoderAudioQualityKey] = @(ios::fileoptions::getQuality(properties));
+  settings[AVEncoderAudioQualityKey] = @(getQuality(properties));
 
   if (formatId == kAudioFormatMPEG4AAC && properties->encoding.bitRate > 0) {
     settings[AVEncoderBitRateKey] = @(properties->encoding.bitRate);
   }
 
   if (formatId == kAudioFormatLinearPCM) {
-    NSInteger bitDepth = ios::fileoptions::getBitDepth(properties);
+    NSInteger bitDepth = getBitDepth(properties);
     settings[AVLinearPCMBitDepthKey] = @(bitDepth);
     settings[AVLinearPCMIsFloatKey] = @(bitDepth == 32);
     settings[AVLinearPCMIsBigEndianKey] = @(NO);
@@ -80,7 +80,7 @@ static NSDictionary *buildFileSettings(
   }
 
   if (formatId == kAudioFormatFLAC) {
-    settings[@"FLACCompressionLevel"] = @(ios::fileoptions::getFlacCompressionLevel(properties));
+    settings[@"FLACCompressionLevel"] = @(getFlacCompressionLevel(properties));
   }
 
   return settings;

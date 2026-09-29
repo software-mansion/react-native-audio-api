@@ -423,7 +423,7 @@ std::shared_ptr<AudioFileProperties> makeFlacOutputProperties(
           .channelCount = static_cast<int>(channels),
       },
       AudioFileProperties::EncodingConfig{
-          .format = AudioFileProperties::Format::FLAC,
+          .format = AudioFileProperties::FileFormat::FLAC,
           .bitRate = 0,
           .bitDepth = AudioFileProperties::BitDepth::Bit16,
           .flacCompressionLevel = defaultFlacCompressionLevel,

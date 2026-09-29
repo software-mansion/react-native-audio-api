@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-namespace audioapi::recordingfilename {
+namespace audioapi::recording_file_name {
 
 namespace {
 
@@ -75,4 +75,4 @@ Result<NoneType, std::string> validate(const std::shared_ptr<AudioFileProperties
   return ValidationResult::Ok(None);
 }
 
-} // namespace audioapi::recordingfilename
+} // namespace audioapi::recording_file_name

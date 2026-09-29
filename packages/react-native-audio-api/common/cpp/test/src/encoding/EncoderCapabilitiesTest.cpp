@@ -10,46 +10,47 @@
 #include <vector>
 
 using namespace audioapi;
-using Format = AudioFileProperties::Format;
+using FileFormat = AudioFileProperties::FileFormat;
 
 // NOLINTBEGIN
 
 namespace {
 
-const std::vector<Format> kAllFormats = {
-    Format::WAV,
-    Format::CAF,
-    Format::M4A,
-    Format::FLAC,
-    Format::AIFF,
-    Format::ALAC,
-    Format::OPUS_OGG,
-    Format::OPUS_WEBM,
-    Format::VORBIS_WEBM,
-    Format::ULAW,
-    Format::ALAW,
+const std::vector<FileFormat> kAllFormats = {
+    FileFormat::WAV,
+    FileFormat::CAF,
+    FileFormat::M4A,
+    FileFormat::FLAC,
+    FileFormat::AIFF,
+    FileFormat::ALAC,
+    FileFormat::OPUS_OGG,
+    FileFormat::OPUS_WEBM,
+    FileFormat::VORBIS_WEBM,
+    FileFormat::ULAW,
+    FileFormat::ALAW,
 };
 
 } // namespace
 
 TEST(EncoderCapabilitiesTest, SpecForFormatMapsKnownFormats) {
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::WAV).container, AudioContainer::WAV);
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::WAV).codec, AudioCodec::PCM);
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::WAV).extension, "wav");
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::WAV).container, AudioContainer::WAV);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::WAV).codec, AudioCodec::PCM);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::WAV).extension, "wav");
 
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::M4A).container, AudioContainer::M4A);
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::M4A).codec, AudioCodec::AAC);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::M4A).container, AudioContainer::M4A);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::M4A).codec, AudioCodec::AAC);
 
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::OPUS_WEBM).container, AudioContainer::WEBM);
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::OPUS_WEBM).codec, AudioCodec::OPUS);
+  EXPECT_EQ(
+      encoder_capabilities::specForFormat(FileFormat::OPUS_WEBM).container, AudioContainer::WEBM);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::OPUS_WEBM).codec, AudioCodec::OPUS);
 
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::FLAC).container, AudioContainer::FLAC);
-  EXPECT_EQ(EncoderCapabilities::specForFormat(Format::FLAC).codec, AudioCodec::FLAC);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::FLAC).container, AudioContainer::FLAC);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::FLAC).codec, AudioCodec::FLAC);
 }
 
 TEST(EncoderCapabilitiesTest, ExtensionsAreLowercaseAndNonEmpty) {
-  for (Format format : kAllFormats) {
-    const auto ext = EncoderCapabilities::specForFormat(format).extension;
+  for (FileFormat format : kAllFormats) {
+    const auto ext = encoder_capabilities::specForFormat(format).extension;
     ASSERT_FALSE(ext.empty());
     for (char c : ext) {
       EXPECT_FALSE(std::isupper(static_cast<unsigned char>(c))) << "extension: " << ext;
@@ -58,10 +59,10 @@ TEST(EncoderCapabilitiesTest, ExtensionsAreLowercaseAndNonEmpty) {
 }
 
 TEST(EncoderCapabilitiesTest, ResolveMatchesIsSupported) {
-  for (Format format : kAllFormats) {
-    const EncoderOutputSpec spec = EncoderCapabilities::specForFormat(format);
-    const bool supported = EncoderCapabilities::isSupported(spec.container, spec.codec);
-    auto resolved = EncoderCapabilities::resolveOutputSpec(format);
+  for (FileFormat format : kAllFormats) {
+    const EncoderOutputSpec spec = encoder_capabilities::specForFormat(format);
+    const bool supported = encoder_capabilities::isSupported(spec.container, spec.codec);
+    auto resolved = encoder_capabilities::resolveOutputSpec(format);
 
     EXPECT_EQ(resolved.is_ok(), supported) << "format index: " << static_cast<int>(format);
     if (resolved.is_ok()) {
@@ -72,25 +73,25 @@ TEST(EncoderCapabilitiesTest, ResolveMatchesIsSupported) {
 }
 
 TEST(EncoderCapabilitiesTest, SupportedFormatsResolve) {
-  for (Format format : EncoderCapabilities::kSupportedFormats) {
-    EXPECT_TRUE(EncoderCapabilities::resolveOutputSpec(format).is_ok())
+  for (FileFormat format : encoder_capabilities::kSupportedFormats) {
+    EXPECT_TRUE(encoder_capabilities::resolveOutputSpec(format).is_ok())
         << "format index: " << static_cast<int>(format);
   }
 }
 
 #if defined(__APPLE__)
 TEST(EncoderCapabilitiesTest, ApplePlatformSupportsCoreFormats) {
-  EXPECT_TRUE(EncoderCapabilities::isSupported(AudioContainer::WAV, AudioCodec::PCM));
-  EXPECT_TRUE(EncoderCapabilities::isSupported(AudioContainer::CAF, AudioCodec::PCM));
-  EXPECT_TRUE(EncoderCapabilities::isSupported(AudioContainer::M4A, AudioCodec::AAC));
-  EXPECT_FALSE(EncoderCapabilities::isSupported(AudioContainer::WEBM, AudioCodec::OPUS));
+  EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::WAV, AudioCodec::PCM));
+  EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::CAF, AudioCodec::PCM));
+  EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::M4A, AudioCodec::AAC));
+  EXPECT_FALSE(encoder_capabilities::isSupported(AudioContainer::WEBM, AudioCodec::OPUS));
 }
 #elif defined(__ANDROID__)
 TEST(EncoderCapabilitiesTest, AndroidPlatformSupportsCoreFormats) {
-  EXPECT_TRUE(EncoderCapabilities::isSupported(AudioContainer::WAV, AudioCodec::PCM));
-  EXPECT_TRUE(EncoderCapabilities::isSupported(AudioContainer::M4A, AudioCodec::AAC));
-  EXPECT_TRUE(EncoderCapabilities::isSupported(AudioContainer::WEBM, AudioCodec::OPUS));
-  EXPECT_FALSE(EncoderCapabilities::isSupported(AudioContainer::CAF, AudioCodec::PCM));
+  EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::WAV, AudioCodec::PCM));
+  EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::M4A, AudioCodec::AAC));
+  EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::WEBM, AudioCodec::OPUS));
+  EXPECT_FALSE(encoder_capabilities::isSupported(AudioContainer::CAF, AudioCodec::PCM));
 }
 #endif
 

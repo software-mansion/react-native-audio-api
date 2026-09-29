@@ -9,9 +9,9 @@
 
 /// Declared system-API encoding capabilities of the current platform.
 /// A device may still reject a format at `AudioEncoder::open()`.
-namespace audioapi::EncoderCapabilities {
+namespace audioapi::encoder_capabilities {
 
-/// Container/codec/extension of every file format, indexed by `AudioFileProperties::Format`.
+/// Container/codec/extension of every file format, indexed by `AudioFileProperties::FileFormat`.
 inline constexpr std::array kSpecsByFormat = {
     EncoderOutputSpec{
         .container = AudioContainer::WAV,
@@ -60,40 +60,40 @@ inline constexpr std::array kSpecsByFormat = {
 };
 
 static_assert(
-    kSpecsByFormat.size() == static_cast<size_t>(AudioFileProperties::Format::ALAW) + 1,
-    "Every AudioFileProperties::Format needs an entry in kSpecsByFormat");
+    kSpecsByFormat.size() == static_cast<size_t>(AudioFileProperties::FileFormat::ALAW) + 1,
+    "Every AudioFileProperties::FileFormat needs an entry in kSpecsByFormat");
 
 /// Formats the platform's system encoders can produce.
 #ifdef __APPLE__
 inline constexpr std::array kSupportedFormats = {
-    AudioFileProperties::Format::WAV,
-    AudioFileProperties::Format::CAF,
-    AudioFileProperties::Format::AIFF,
-    AudioFileProperties::Format::M4A,
-    AudioFileProperties::Format::ALAC,
-    AudioFileProperties::Format::FLAC,
-    AudioFileProperties::Format::ULAW,
-    AudioFileProperties::Format::ALAW,
+    AudioFileProperties::FileFormat::WAV,
+    AudioFileProperties::FileFormat::CAF,
+    AudioFileProperties::FileFormat::AIFF,
+    AudioFileProperties::FileFormat::M4A,
+    AudioFileProperties::FileFormat::ALAC,
+    AudioFileProperties::FileFormat::FLAC,
+    AudioFileProperties::FileFormat::ULAW,
+    AudioFileProperties::FileFormat::ALAW,
 };
 #elif defined(__ANDROID__)
 inline constexpr std::array kSupportedFormats = {
-    AudioFileProperties::Format::WAV,
-    AudioFileProperties::Format::M4A,
-    AudioFileProperties::Format::FLAC,
-    AudioFileProperties::Format::OPUS_OGG,
-    AudioFileProperties::Format::OPUS_WEBM,
-    AudioFileProperties::Format::VORBIS_WEBM,
+    AudioFileProperties::FileFormat::WAV,
+    AudioFileProperties::FileFormat::M4A,
+    AudioFileProperties::FileFormat::FLAC,
+    AudioFileProperties::FileFormat::OPUS_OGG,
+    AudioFileProperties::FileFormat::OPUS_WEBM,
+    AudioFileProperties::FileFormat::VORBIS_WEBM,
 };
 #else
-inline constexpr std::array<AudioFileProperties::Format, 0> kSupportedFormats = {};
+inline constexpr std::array<AudioFileProperties::FileFormat, 0> kSupportedFormats = {};
 #endif
 
 bool isSupported(AudioContainer container, AudioCodec codec);
 
 /// Container/codec/extension mapping for a file format (ignores platform support).
-EncoderOutputSpec specForFormat(AudioFileProperties::Format format);
+EncoderOutputSpec specForFormat(AudioFileProperties::FileFormat format);
 
 /// Maps a format to a supported output spec, or an error if unavailable here.
-Result<EncoderOutputSpec, std::string> resolveOutputSpec(AudioFileProperties::Format format);
+Result<EncoderOutputSpec, std::string> resolveOutputSpec(AudioFileProperties::FileFormat format);
 
-} // namespace audioapi::EncoderCapabilities
+} // namespace audioapi::encoder_capabilities

@@ -27,7 +27,7 @@ namespace audioapi {
 
 PlatformFileBackend createOsFileBackend() {
   return PlatformFileBackend{
-      .resolveOutputSpec = &EncoderCapabilities::resolveOutputSpec,
+      .resolveOutputSpec = &encoder_capabilities::resolveOutputSpec,
       .resolvePath = &resolveOsFilePath,
       .createEncoder = &createOsEncoder,
       .reprepareEncoderInput = &reprepareOsEncoderInput,
@@ -58,7 +58,7 @@ OpenFileResult AudioFileWriter::openFile(
 
   {
     std::scoped_lock lock(fileMutex_);
-    sessionStem_ = recordingfilename::sessionStem(fileProperties_);
+    sessionStem_ = recording_file_name::sessionStem(fileProperties_);
     sessionFilePaths_.clear();
     openedFileCount_ = 0;
     finishedFilesSizeMB_ = 0.0;
@@ -192,7 +192,7 @@ CloseEncoderResult AudioFileWriter::finishCurrentFile() {
 
 std::string AudioFileWriter::fileStem(size_t fileNumber) const {
   if (rotatesFiles()) {
-    return recordingfilename::segmentStem(sessionStem_, fileNumber);
+    return recording_file_name::segmentStem(sessionStem_, fileNumber);
   }
   return sessionStem_;
 }

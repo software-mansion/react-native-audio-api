@@ -20,8 +20,8 @@ class AudioFileProperties {
 
   // Values must stay in sync with the TypeScript `FileFormat` enum in src/types.ts.
   // Each value maps to a concrete container+codec via EncoderCapabilities.
-  // Availability is platform-dependent (see EncoderCapabilities::isSupported).
-  enum class Format : std::uint8_t {
+  // Availability is platform-dependent (see encoder_capabilities::isSupported).
+  enum class FileFormat : std::uint8_t {
     WAV,
     CAF,
     M4A,
@@ -61,7 +61,7 @@ class AudioFileProperties {
   };
 
   struct EncodingConfig {
-    Format format;
+    FileFormat format;
     size_t bitRate;
     BitDepth bitDepth;
     int flacCompressionLevel;

@@ -302,7 +302,7 @@ public:
       },
       AudioFileProperties::StreamConfig{.sampleRate = 44100, .channelCount = 2},
       AudioFileProperties::EncodingConfig{
-          .format = AudioFileProperties::Format::WAV,
+          .format = AudioFileProperties::FileFormat::WAV,
           .bitRate = 128000,
           .bitDepth = AudioFileProperties::BitDepth::Bit16,
           .flacCompressionLevel = 0,

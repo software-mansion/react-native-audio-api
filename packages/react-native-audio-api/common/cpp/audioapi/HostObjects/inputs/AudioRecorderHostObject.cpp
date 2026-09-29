@@ -134,7 +134,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isPaused) {
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
   auto fileProperties = AudioFileProperties::CreateFromJSIValue(runtime, args[0]);
 
-  auto result = recordingfilename::validate(fileProperties).and_then([&](NoneType) {
+  auto result = recording_file_name::validate(fileProperties).and_then([&](NoneType) {
     return audioRecorder_->enableFileOutput(fileProperties);
   });
   auto jsResult = jsi::Object(runtime);

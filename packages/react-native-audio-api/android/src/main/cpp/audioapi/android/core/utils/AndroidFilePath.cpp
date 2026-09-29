@@ -1,5 +1,5 @@
 #include <android/log.h>
-#include <audioapi/android/core/utils/FileOptions.h>
+#include <audioapi/android/core/utils/AndroidFilePath.h>
 #include <audioapi/android/system/NativeFileInfo.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <filesystem>
@@ -7,7 +7,9 @@
 #include <memory>
 #include <string>
 
-namespace audioapi::android::fileoptions {
+namespace audioapi::android_file_path {
+
+namespace {
 
 Result<NoneType, std::string> createDirectoryIfNotExists(const std::string &directoryPath) {
   std::error_code ec;
@@ -36,7 +38,9 @@ std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties)
   return NativeFileInfo::getFilesDir();
 }
 
-Result<std::string, std::string> getFilePath(
+} // namespace
+
+ResolveFilePathResult resolveFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileName) {
   std::string directory = getDirectory(properties);
@@ -45,10 +49,10 @@ Result<std::string, std::string> getFilePath(
   auto result = createDirectoryIfNotExists(subDirectory);
 
   if (!result.is_ok()) {
-    return Result<std::string, std::string>::Err(result.unwrap_err());
+    return ResolveFilePathResult::Err(result.unwrap_err());
   }
 
-  return Result<std::string, std::string>::Ok(std::format("{}/{}", subDirectory, fileName));
+  return ResolveFilePathResult::Ok(std::format("{}/{}", subDirectory, fileName));
 }
 
-} // namespace audioapi::android::fileoptions
+} // namespace audioapi::android_file_path

@@ -99,8 +99,8 @@ compare_enum_pairs() {
 }
 
 compare_enum_values \
-  "FileFormat / AudioFileProperties::Format" \
-  "$(extract_cpp_enum Format)" \
+  "FileFormat / AudioFileProperties::FileFormat" \
+  "$(extract_cpp_enum FileFormat)" \
   "$(extract_ts_enum FileFormat)"
 
 compare_enum_pairs \

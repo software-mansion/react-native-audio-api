@@ -10,7 +10,7 @@ namespace audioapi {
 
 class AudioFileProperties;
 
-namespace recordingfilename {
+namespace recording_file_name {
 
 /// Local-time stamp that keeps generated names apart between sessions.
 std::string sessionTimestamp();
@@ -25,6 +25,6 @@ std::string segmentStem(const std::string &sessionStem, size_t segmentIndex);
 /// @returns Ok when the properties are usable, Err describing what is wrong otherwise.
 Result<NoneType, std::string> validate(const std::shared_ptr<AudioFileProperties> &properties);
 
-} // namespace recordingfilename
+} // namespace recording_file_name
 
 } // namespace audioapi

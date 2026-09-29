@@ -6,6 +6,7 @@
 #include <audioapi/utils/AudioRecorderOptions.h>
 
 #include <memory>
+#include "audioapi/utils/Macros.h"
 
 namespace audioapi {
 using namespace facebook;
@@ -21,6 +22,7 @@ class AudioRecorderHostObject : public HostObject {
       const std::shared_ptr<react::CallInvoker> &callInvoker,
       AudioRecorderOptions options);
   ~AudioRecorderHostObject() override;
+  DELETE_COPY_AND_MOVE(AudioRecorderHostObject);
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);

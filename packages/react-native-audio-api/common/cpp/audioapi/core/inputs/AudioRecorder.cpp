@@ -49,15 +49,14 @@ Result<NoneType, std::string> AudioRecorder::enableFileOutput(
   std::scoped_lock fileWriterLock(fileWriterMutex_, errorCallbackMutex_);
 
   if (!isIdle()) {
-    return Result<NoneType, std::string>::Err(
-        "File output cannot be changed while a recording session is active");
+    return Err("File output cannot be changed while a recording session is active");
   }
 
   fileProperties_ = std::move(properties);
   fileOutputEnabled_.store(true, std::memory_order_release);
   fileOutputConfigured_.store(false, std::memory_order_release);
 
-  return Result<NoneType, std::string>::Ok(None);
+  return Ok(None);
 }
 
 /// JS thread only. Closes the file immediately when called mid-recording.
@@ -81,8 +80,7 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
   auto formatResult = resolveStreamFormat();
 
   if (!formatResult.is_ok()) {
-    return Result<NoneType, std::string>::Err(
-        "Failed to open file for writing: " + formatResult.unwrap_err());
+    return Err("Failed to open file for writing: " + formatResult.unwrap_err());
   }
 
   fileWriter_ = std::make_shared<AudioFileWriter>(audioEventHandlerRegistry_, properties);
@@ -95,12 +93,11 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
   if (!fileResult.is_ok()) {
     fileOutputConfigured_.store(false, std::memory_order_release);
     fileWriter_ = nullptr;
-    return Result<NoneType, std::string>::Err(
-        "Failed to open file for writing: " + fileResult.unwrap_err());
+    return Err("Failed to open file for writing: " + fileResult.unwrap_err());
   }
 
   fileOutputConfigured_.store(true, std::memory_order_release);
-  return Result<NoneType, std::string>::Ok(None);
+  return Ok(None);
 }
 
 /// JS thread only. Prepares the callback immediately when called mid-recording.
@@ -117,7 +114,7 @@ Result<NoneType, std::string> AudioRecorder::setOnAudioReadyCallback(
   callbackOutputConfigured_.store(false, std::memory_order_release);
 
   if (isIdle()) {
-    return Result<NoneType, std::string>::Ok(None);
+    return Ok(None);
   }
 
   auto formatResult = resolveStreamFormat();
@@ -125,7 +122,7 @@ Result<NoneType, std::string> AudioRecorder::setOnAudioReadyCallback(
   // The input is unavailable only transiently, so keep the callback registered: the next
   // start() prepares it against whatever format the input comes back with.
   if (!formatResult.is_ok()) {
-    return Result<NoneType, std::string>::Err(formatResult.unwrap_err());
+    return Err(formatResult.unwrap_err());
   }
 
   const auto format = formatResult.unwrap();
@@ -136,11 +133,11 @@ Result<NoneType, std::string> AudioRecorder::setOnAudioReadyCallback(
     callbackOutputEnabled_.store(false, std::memory_order_release);
     callbackOutputConfigured_.store(false, std::memory_order_release);
     dataCallback_ = nullptr;
-    return Result<NoneType, std::string>::Err(prepareResult.unwrap_err());
+    return Err(prepareResult.unwrap_err());
   }
 
   callbackOutputConfigured_.store(true, std::memory_order_release);
-  return Result<NoneType, std::string>::Ok(None);
+  return Ok(None);
 }
 
 /// JS thread only.
@@ -236,7 +233,7 @@ AudioRecorder::StopResult AudioRecorder::finalizeSideEffects(DetachedSideEffects
     auto fileResult = movedSideEffects.fileWriter->closeFile();
 
     if (!fileResult.is_ok()) {
-      return StopResult::Err("Failed to close file: " + fileResult.unwrap_err());
+      return Err("Failed to close file: " + fileResult.unwrap_err());
     }
 
     const auto &session = fileResult.unwrap();
@@ -255,8 +252,7 @@ AudioRecorder::StopResult AudioRecorder::finalizeSideEffects(DetachedSideEffects
     movedSideEffects.adapterNode->adapterCleanup();
   }
 
-  return StopResult::Ok(
-      std::make_tuple(std::move(movedSideEffects.fileUris), outputFileSize, outputDuration));
+  return Ok(std::make_tuple(std::move(movedSideEffects.fileUris), outputFileSize, outputDuration));
 }
 
 /// JS thread only.

@@ -33,7 +33,7 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
   size_t rotateIntervalBytes =
       static_cast<size_t>(options.getProperty(runtime, "rotateIntervalBytes").getNumber());
 
-  Format format = static_cast<Format>(options.getProperty(runtime, "format").getNumber());
+  FileFormat format = static_cast<FileFormat>(options.getProperty(runtime, "format").getNumber());
 
   int androidFlushIntervalMs =
       static_cast<int>(options.getProperty(runtime, "androidFlushIntervalMs").getNumber());

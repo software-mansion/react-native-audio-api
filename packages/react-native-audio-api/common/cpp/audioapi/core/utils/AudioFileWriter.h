@@ -44,7 +44,7 @@ struct PendingFileWrite {
 };
 
 struct PlatformFileBackend {
-  std::function<Result<EncoderOutputSpec, std::string>(AudioFileProperties::Format)>
+  std::function<Result<EncoderOutputSpec, std::string>(AudioFileProperties::FileFormat)>
       resolveOutputSpec;
   std::function<Result<std::string, std::string>(
       const std::shared_ptr<AudioFileProperties> &,

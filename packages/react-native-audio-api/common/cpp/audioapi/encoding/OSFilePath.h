@@ -6,7 +6,7 @@
 #include <string>
 
 #if defined(__ANDROID__)
-#include <audioapi/android/core/utils/FileOptions.h>
+#include <audioapi/android/core/utils/AndroidFilePath.h>
 #define RN_AUDIO_API_HAS_OS_FILE_PATH 1
 #elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)
 #include <audioapi/ios/core/utils/IOSFilePath.h>
@@ -26,9 +26,9 @@ inline ResolveFilePathResult resolveOsFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileName) {
 #if defined(__ANDROID__)
-  return android::fileoptions::getFilePath(properties, fileName);
+  return android_file_path::resolveFilePath(properties, fileName);
 #elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)
-  return ios_filepath::resolveFilePath(properties, fileName);
+  return ios_file_path::resolveFilePath(properties, fileName);
 #else
   (void)properties;
   (void)fileName;

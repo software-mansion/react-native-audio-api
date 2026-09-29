@@ -1,10 +1,10 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-#include <audioapi/ios/core/utils/FileOptions.h>
+#include <audioapi/ios/core/utils/IOSEncoderSettings.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
-namespace audioapi::ios::fileoptions {
+namespace audioapi::ios_encoder {
 
 /// @brief Maps AudioFileProperties to iOS AVFoundation audio quality settings.
 /// @param properties Shared pointer to AudioFileProperties.
@@ -58,4 +58,4 @@ NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
   }
 }
 
-} // namespace audioapi::ios::fileoptions
+} // namespace audioapi::ios_encoder

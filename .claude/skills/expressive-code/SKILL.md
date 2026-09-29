@@ -36,6 +36,9 @@ If the **semantics are complex**, it might be due to one of the following:
 
 Generally, prefer standard, idiomatic names.
 
+C++ namespaces are `snake_case` with every word separated (`encoder_capabilities`,
+`recording_file_name`, `ios_file_path`) — never PascalCase, never run-together (`filepath`).
+
 ### Frequency of Comments
 Use **comments only when necessary**. Add them only when something cannot be expressed easily in code. Their purpose is to make complex fragments easier to understand. Most code fragments are relatively easy to understand simply by **reading them like prose** (as explained above).
 
