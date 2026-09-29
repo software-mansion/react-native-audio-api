@@ -53,8 +53,7 @@ Result<NoneType, std::string> AudioRecorder::enableFileOutput(
   }
 
   fileProperties_ = std::move(properties);
-  fileOutputEnabled_.store(true, std::memory_order_release);
-  fileOutputConfigured_.store(false, std::memory_order_release);
+  fileOutputState_.store(OutputState::Requested, std::memory_order_release);
 
   return Ok(None);
 }
@@ -65,8 +64,7 @@ void AudioRecorder::disableFileOutput() {
 
   {
     std::scoped_lock fileWriterLock(fileWriterMutex_);
-    fileOutputConfigured_.store(false, std::memory_order_release);
-    fileOutputEnabled_.store(false, std::memory_order_release);
+    fileOutputState_.store(OutputState::Disabled, std::memory_order_release);
     fileWriter = std::move(fileWriter_);
   }
 
@@ -91,12 +89,12 @@ Result<NoneType, std::string> AudioRecorder::setupFileWriter(
       fileWriter_->openFile(format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
 
   if (!fileResult.is_ok()) {
-    fileOutputConfigured_.store(false, std::memory_order_release);
+    deactivate(fileOutputState_);
     fileWriter_ = nullptr;
     return Err("Failed to open file for writing: " + fileResult.unwrap_err());
   }
 
-  fileOutputConfigured_.store(true, std::memory_order_release);
+  fileOutputState_.store(OutputState::Active, std::memory_order_release);
   return Ok(None);
 }
 
@@ -110,8 +108,7 @@ Result<NoneType, std::string> AudioRecorder::setOnAudioReadyCallback(
   dataCallback_ = std::make_shared<AudioRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
   dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-  callbackOutputEnabled_.store(true, std::memory_order_release);
-  callbackOutputConfigured_.store(false, std::memory_order_release);
+  callbackOutputState_.store(OutputState::Requested, std::memory_order_release);
 
   if (isIdle()) {
     return Ok(None);
@@ -130,21 +127,19 @@ Result<NoneType, std::string> AudioRecorder::setOnAudioReadyCallback(
       format.sampleRate, format.channelCount, static_cast<size_t>(format.maxFramesPerBuffer));
 
   if (!prepareResult.is_ok()) {
-    callbackOutputEnabled_.store(false, std::memory_order_release);
-    callbackOutputConfigured_.store(false, std::memory_order_release);
+    callbackOutputState_.store(OutputState::Disabled, std::memory_order_release);
     dataCallback_ = nullptr;
     return Err(prepareResult.unwrap_err());
   }
 
-  callbackOutputConfigured_.store(true, std::memory_order_release);
+  callbackOutputState_.store(OutputState::Active, std::memory_order_release);
   return Ok(None);
 }
 
 /// JS thread only.
 void AudioRecorder::clearOnAudioReadyCallback() {
   std::scoped_lock callbackLock(callbackMutex_);
-  callbackOutputConfigured_.store(false, std::memory_order_release);
-  callbackOutputEnabled_.store(false, std::memory_order_release);
+  callbackOutputState_.store(OutputState::Disabled, std::memory_order_release);
   dataCallback_ = nullptr;
 }
 
@@ -155,8 +150,7 @@ void AudioRecorder::connect(
   std::scoped_lock adapterLock(adapterNodeMutex_);
   adapterNodeHandle_ = node;
   adapterNode_ = adapterNode;
-  isConnected_.store(true, std::memory_order_release);
-  connectedConfigured_.store(false, std::memory_order_release);
+  connectionState_.store(OutputState::Requested, std::memory_order_release);
 
   if (isIdle()) {
     return;
@@ -180,8 +174,7 @@ void AudioRecorder::disconnect() {
   {
     std::scoped_lock adapterLock(adapterNodeMutex_);
     hadConnection = isConnected();
-    connectedConfigured_.store(false, std::memory_order_release);
-    isConnected_.store(false, std::memory_order_release);
+    connectionState_.store(OutputState::Disabled, std::memory_order_release);
     adapterNodeHandle = std::move(adapterNodeHandle_);
     adapterNode = std::exchange(adapterNode_, nullptr);
   }
@@ -198,25 +191,25 @@ void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
 
   adapterNode_->init(
       static_cast<size_t>(format.maxFramesPerBuffer), format.channelCount, format.sampleRate);
-  connectedConfigured_.store(true, std::memory_order_release);
+  connectionState_.store(OutputState::Active, std::memory_order_release);
 }
 
 AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
   DetachedSideEffects sideEffects;
 
   if (usesFileOutput()) {
-    fileOutputConfigured_.store(false, std::memory_order_release);
+    deactivate(fileOutputState_);
     sideEffects.fileWriter = std::move(fileWriter_);
   }
 
   if (usesCallback()) {
-    callbackOutputConfigured_.store(false, std::memory_order_release);
+    deactivate(callbackOutputState_);
     // Kept registered rather than moved out, so a later start() can re-prepare it.
     sideEffects.dataCallback = dataCallback_;
   }
 
   if (isConnected()) {
-    connectedConfigured_.store(false, std::memory_order_release);
+    deactivate(connectionState_);
     sideEffects.adapterNodeHandle = std::move(adapterNodeHandle_);
     sideEffects.adapterNode = std::exchange(adapterNode_, nullptr);
   }
@@ -310,27 +303,32 @@ RecorderState AudioRecorder::getState() const {
 }
 
 bool AudioRecorder::usesCallback() const {
-  return wantsCallback() && callbackOutputConfigured_.load(std::memory_order_acquire);
+  return callbackOutputState_.load(std::memory_order_acquire) == OutputState::Active;
 }
 
 bool AudioRecorder::usesFileOutput() const {
-  return wantsFileOutput() && fileOutputConfigured_.load(std::memory_order_acquire);
+  return fileOutputState_.load(std::memory_order_acquire) == OutputState::Active;
 }
 
 bool AudioRecorder::isConnected() const {
-  return wantsConnection() && connectedConfigured_.load(std::memory_order_acquire);
+  return connectionState_.load(std::memory_order_acquire) == OutputState::Active;
 }
 
 bool AudioRecorder::wantsCallback() const {
-  return callbackOutputEnabled_.load(std::memory_order_acquire);
+  return callbackOutputState_.load(std::memory_order_acquire) != OutputState::Disabled;
 }
 
 bool AudioRecorder::wantsFileOutput() const {
-  return fileOutputEnabled_.load(std::memory_order_acquire);
+  return fileOutputState_.load(std::memory_order_acquire) != OutputState::Disabled;
 }
 
 bool AudioRecorder::wantsConnection() const {
-  return isConnected_.load(std::memory_order_acquire);
+  return connectionState_.load(std::memory_order_acquire) != OutputState::Disabled;
+}
+
+void AudioRecorder::deactivate(std::atomic<OutputState> &state) {
+  auto expected = OutputState::Active;
+  state.compare_exchange_strong(expected, OutputState::Requested, std::memory_order_acq_rel);
 }
 
 } // namespace audioapi

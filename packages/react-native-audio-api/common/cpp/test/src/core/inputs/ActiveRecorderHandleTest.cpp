@@ -5,7 +5,6 @@
 #include <memory>
 #include <string>
 #include <thread>
-#include <tuple>
 #include <vector>
 
 using namespace audioapi;

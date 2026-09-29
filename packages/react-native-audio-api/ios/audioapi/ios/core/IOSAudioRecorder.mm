@@ -202,12 +202,12 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   auto result = fileWriter_->reprepareStreamFormat(
       format.sampleRate, format.channelCount, format.maxFramesPerBuffer);
   if (result.is_err()) {
-    fileOutputConfigured_.store(false, std::memory_order_release);
+    deactivate(fileOutputState_);
     return Result<NoneType, std::string>::Err(
         "Failed to continue the recording in the new input format: " + result.unwrap_err());
   }
 
-  fileOutputConfigured_.store(true, std::memory_order_release);
+  fileOutputState_.store(OutputState::Active, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
 }
 
@@ -222,11 +222,11 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareCallback(const StreamFo
   auto result = dataCallback_->prepare(
       format.sampleRate, format.channelCount, static_cast<size_t>(format.maxFramesPerBuffer));
   if (result.is_err()) {
-    callbackOutputConfigured_.store(false, std::memory_order_release);
+    deactivate(callbackOutputState_);
     return Result<NoneType, std::string>::Err("Failed to prepare callback: " + result.unwrap_err());
   }
 
-  callbackOutputConfigured_.store(true, std::memory_order_release);
+  callbackOutputState_.store(OutputState::Active, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
 }
 
@@ -238,12 +238,9 @@ IOSAudioRecorder::~IOSAudioRecorder()
 
   {
     std::scoped_lock lock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
-    callbackOutputConfigured_.store(false, std::memory_order_release);
-    callbackOutputEnabled_.store(false, std::memory_order_release);
-    fileOutputConfigured_.store(false, std::memory_order_release);
-    fileOutputEnabled_.store(false, std::memory_order_release);
-    connectedConfigured_.store(false, std::memory_order_release);
-    isConnected_.store(false, std::memory_order_release);
+    callbackOutputState_.store(OutputState::Disabled, std::memory_order_release);
+    fileOutputState_.store(OutputState::Disabled, std::memory_order_release);
+    connectionState_.store(OutputState::Disabled, std::memory_order_release);
     dataCallback_ = nullptr;
     fileWriter_ = nullptr;
     adapterNodeHandle_ = nullptr;
@@ -343,7 +340,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   if (wantsCallback()) {
     if (dataCallback_ == nullptr) {
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, fileWasOpened);
-      fileOutputConfigured_.store(false, std::memory_order_release);
+      deactivate(fileOutputState_);
       fileWriter_ = nullptr;
       return Result<NoneType, std::string>::Err(
           "Failed to prepare callback: callback is unavailable");
@@ -355,14 +352,14 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
 
     if (callbackResult.is_err()) {
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, fileWasOpened);
-      callbackOutputConfigured_.store(false, std::memory_order_release);
-      fileOutputConfigured_.store(false, std::memory_order_release);
+      deactivate(callbackOutputState_);
+      deactivate(fileOutputState_);
       fileWriter_ = nullptr;
       return Result<NoneType, std::string>::Err(
           "Failed to prepare callback: " + callbackResult.unwrap_err());
     }
 
-    callbackOutputConfigured_.store(true, std::memory_order_release);
+    callbackOutputState_.store(OutputState::Active, std::memory_order_release);
   }
 
   if (wantsConnection()) {

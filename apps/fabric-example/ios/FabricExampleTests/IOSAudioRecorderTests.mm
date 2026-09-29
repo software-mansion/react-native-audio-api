@@ -225,27 +225,27 @@ public:
   }
 
   bool fileOutputEnabledIntent() const {
-    return fileOutputEnabled_.load(std::memory_order_acquire);
+    return wantsFileOutput();
   }
 
   bool fileOutputConfigured() const {
-    return fileOutputConfigured_.load(std::memory_order_acquire);
+    return usesFileOutput();
   }
 
   bool callbackOutputEnabledIntent() const {
-    return callbackOutputEnabled_.load(std::memory_order_acquire);
+    return wantsCallback();
   }
 
   bool callbackOutputConfigured() const {
-    return callbackOutputConfigured_.load(std::memory_order_acquire);
+    return usesCallback();
   }
 
   bool connectionEnabledIntent() const {
-    return isConnected_.load(std::memory_order_acquire);
+    return wantsConnection();
   }
 
   bool connectionConfigured() const {
-    return connectedConfigured_.load(std::memory_order_acquire);
+    return isConnected();
   }
 };
 

@@ -72,6 +72,19 @@ class AudioRecorder {
   [[nodiscard]] virtual double getInputLatency() const = 0;
 
  protected:
+  /// @brief Lifecycle of one recorder output: the file writer, the JS callback, or the adapter
+  /// node. Written on the JS thread under that output's mutex; the audio thread reads it
+  /// lock-free to decide whether to feed the output.
+  enum class OutputState : uint8_t {
+    /// Not requested.
+    Disabled,
+    /// Requested, but not yet prepared for the current stream format. The next start(), or an
+    /// input format change, prepares it.
+    Requested,
+    /// Prepared for the current stream format; the audio thread may feed it.
+    Active,
+  };
+
   struct StreamFormat {
     float sampleRate = 0.0F;
     int32_t channelCount = 0;
@@ -115,14 +128,15 @@ class AudioRecorder {
   bool wantsFileOutput() const;
   bool wantsConnection() const;
 
+  /// Active becomes Requested; Disabled stays Disabled, so an output that was never requested
+  /// cannot be switched on by a failed prepare.
+  static void deactivate(std::atomic<OutputState> &state);
+
   std::atomic<RecorderState> state_{RecorderState::Idle};
 
-  std::atomic<bool> isConnected_{false};
-  std::atomic<bool> fileOutputEnabled_{false};
-  std::atomic<bool> callbackOutputEnabled_{false};
-  std::atomic<bool> connectedConfigured_{false};
-  std::atomic<bool> fileOutputConfigured_{false};
-  std::atomic<bool> callbackOutputConfigured_{false};
+  std::atomic<OutputState> fileOutputState_{OutputState::Disabled};
+  std::atomic<OutputState> callbackOutputState_{OutputState::Disabled};
+  std::atomic<OutputState> connectionState_{OutputState::Disabled};
 
   std::mutex callbackMutex_;
   mutable std::mutex fileWriterMutex_;

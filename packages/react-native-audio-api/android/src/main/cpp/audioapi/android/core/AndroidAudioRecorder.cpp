@@ -64,9 +64,9 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
   {
     std::scoped_lock lock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
     leftovers = detachSideEffects();
-    callbackOutputEnabled_.store(false, std::memory_order_release);
-    fileOutputEnabled_.store(false, std::memory_order_release);
-    isConnected_.store(false, std::memory_order_release);
+    callbackOutputState_.store(OutputState::Disabled, std::memory_order_release);
+    fileOutputState_.store(OutputState::Disabled, std::memory_order_release);
+    connectionState_.store(OutputState::Disabled, std::memory_order_release);
     dataCallback_ = nullptr;
   }
   finalizeSideEffects(std::move(leftovers));
@@ -179,7 +179,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
       return Err("Failed to prepare callback: " + callbackResult.unwrap_err());
     }
 
-    callbackOutputConfigured_.store(true, std::memory_order_release);
+    callbackOutputState_.store(OutputState::Active, std::memory_order_release);
   }
 
   if (wantsConnection()) {
