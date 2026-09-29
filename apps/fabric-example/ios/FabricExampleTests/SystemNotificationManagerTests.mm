@@ -561,6 +561,34 @@ static void ClearFakeSharedAudioSession(void)
   XCTAssertTrue(self.fakeAudioEngine.lastShouldResume);
 }
 
+- (void)testForegroundRetryReplaysCapturedInterruptionShouldResumeNo
+{
+  [self.manager observeAudioInterruptions:YES];
+  [self prepareInterruptedRecordingEngine];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeStillInterrupted;
+
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeBegan
+                                                                   option:0]];
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
+                                                                   option:0]];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
+  XCTAssertFalse(self.fakeAudioEngine.lastShouldResume);
+  XCTAssertEqualObjects(self.manager.interruptionShouldResume, @NO);
+
+  [self.module resetCapturedEvent];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeRunning;
+
+  [self.manager handleWillEnterForeground:nil];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 2);
+  XCTAssertFalse(self.fakeAudioEngine.lastShouldResume);
+  XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"ended");
+  XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @NO);
+}
+
 - (void)testForegroundRetryEmitsEndedWhenObservedResumeSucceedsAfterFailedEnd
 {
   [self.manager observeAudioInterruptions:YES];
@@ -584,8 +612,10 @@ static void ClearFakeSharedAudioSession(void)
   [self flushMainQueue];
 
   XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 2);
+  XCTAssertTrue(self.fakeAudioEngine.lastShouldResume);
   XCTAssertEqual(self.module.eventInvocationCount, 1);
   XCTAssertEqualObjects(self.module.lastEventBody[@"type"], @"ended");
+  XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @YES);
 }
 
 - (void)testForegroundRetryAfterSuccessfulResumeIsNoOp
@@ -788,6 +818,32 @@ static void ClearFakeSharedAudioSession(void)
   XCTAssertEqual(self.module.eventInvocationCount, 0);
   XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
   XCTAssertTrue(self.fakeAudioEngine.lastShouldResume);
+}
+
+- (void)testCheckSecondaryAudioHintResumeKeepsCapturedInterruptionShouldResumeNo
+{
+  [self.manager observeAudioInterruptions:YES];
+  [self prepareInterruptedRecordingEngine];
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeStillInterrupted;
+
+  [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
+                                                                   option:0]];
+  [self flushMainQueue];
+
+  XCTAssertEqualObjects(self.manager.interruptionShouldResume, @NO);
+  XCTAssertFalse(self.fakeAudioEngine.lastShouldResume);
+
+  self.fakeSharedAudioSession.secondaryAudioShouldBeSilencedHint = NO;
+  self.manager.wasOtherAudioPlaying = YES;
+  self.fakeAudioEngine.interruptionEndOutcome = AudioEngineInterruptionEndOutcomeRunning;
+
+  [self.manager checkSecondaryAudioHint];
+  [self flushMainQueue];
+
+  XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 2);
+  XCTAssertFalse(self.fakeAudioEngine.lastShouldResume);
+  XCTAssertEqualObjects(self.manager.interruptionShouldResume, @NO);
+  XCTAssertEqualObjects(self.module.lastEventBody[@"shouldResume"], @NO);
 }
 
 @end

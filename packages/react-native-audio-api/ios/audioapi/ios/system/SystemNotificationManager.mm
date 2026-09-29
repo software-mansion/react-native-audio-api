@@ -166,12 +166,22 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   });
 }
 
+- (bool)shouldResumeForInterruptionRecovery
+{
+  if (self.interruptionShouldResume == nil) {
+    return true;
+  }
+
+  return self.interruptionShouldResume.boolValue;
+}
+
 - (void)retryInterruptedRecordingIfNeeded
 {
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
   if (self.interruptionEndedDelivered && [audioEngine getState] == AudioEngineStateInterrupted) {
-    [self performInterruptionEndOnEngine:audioEngine shouldResume:true];
+    [self performInterruptionEndOnEngine:audioEngine
+                            shouldResume:[self shouldResumeForInterruptionRecovery]];
   }
 }
 
@@ -197,6 +207,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   bool shouldResume = interruptionOption == AVAudioSessionInterruptionOptionShouldResume;
 
+  self.interruptionShouldResume = @(shouldResume);
   self.interruptionEndedDelivered = true;
   [self performInterruptionEndOnEngine:audioEngine shouldResume:shouldResume];
 }
@@ -377,7 +388,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   }
 
   self.interruptionEndedDelivered = true;
-  [self performInterruptionEndOnEngine:audioEngine shouldResume:true];
+  [self performInterruptionEndOnEngine:audioEngine
+                          shouldResume:[self shouldResumeForInterruptionRecovery]];
 }
 
 @end

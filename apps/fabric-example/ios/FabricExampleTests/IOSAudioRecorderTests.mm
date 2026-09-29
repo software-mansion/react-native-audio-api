@@ -482,7 +482,7 @@ public:
 }
 
 - (void)testResumeDoesNotStoreRecordingWhenNativeResumeFails {
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Recording);
+  _recorder->setRecorderState(RecorderState::Recording);
   self.audioEngine.state = AudioEngineStateRunning;
   _recorder->pause();
   self.nativeRecorder.resumeResult = NO;
