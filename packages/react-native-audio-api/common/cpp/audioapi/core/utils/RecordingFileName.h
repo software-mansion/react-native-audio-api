@@ -21,9 +21,9 @@ std::string sessionStem(const std::shared_ptr<AudioFileProperties> &properties);
 /// The stem of one rotated segment. @p segmentIndex is 1-based and zero-padded
 std::string segmentStem(const std::string &sessionStem, size_t segmentIndex);
 
-/// Rejects a `fileName` that cannot produce a usable file.
-/// @returns Ok when the properties are usable, Err describing what is wrong otherwise.
-Result<NoneType, std::string> validate(const std::shared_ptr<AudioFileProperties> &properties);
+/// Rejects a user-chosen file name that cannot produce a usable file. An empty name is valid:
+/// the session then generates one.
+Result<NoneType, std::string> validateFileName(const std::string &fileName);
 
 } // namespace recording_file_name
 

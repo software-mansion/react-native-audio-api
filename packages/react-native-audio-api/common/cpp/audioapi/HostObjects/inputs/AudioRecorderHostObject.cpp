@@ -5,7 +5,6 @@
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/core/utils/RecordingFileName.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/jsi/JsiUtils.h>
@@ -134,9 +133,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isPaused) {
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
   auto fileProperties = AudioFileProperties::CreateFromJSIValue(runtime, args[0]);
 
-  auto result = recording_file_name::validate(fileProperties).and_then([&](NoneType) {
-    return audioRecorder_->enableFileOutput(fileProperties);
-  });
+  auto result = audioRecorder_->enableFileOutput(fileProperties);
   auto jsResult = jsi::Object(runtime);
 
   jsResult.setProperty(

@@ -21,6 +21,7 @@
 namespace audioapi {
 
 class AudioFileProperties;
+class RecordingFile;
 class IAudioEventHandlerRegistry;
 
 using OpenFileResult = Result<std::string, std::string>;
@@ -134,12 +135,16 @@ class AudioFileWriter final {
   [[nodiscard]] Result<std::string, std::string> resolveNextFilePath(
       const std::string &stem,
       const std::string &extension) const;
+  /// Appends _1, _2, ... to @p stem until the resolved path names no existing file, so a
+  /// generated name never overwrites an earlier recording. @p path is the unsuffixed one.
+  [[nodiscard]] Result<std::string, std::string>
+  firstUnusedPath(const std::string &stem, const std::string &extension, std::string path) const;
   /// The caller must hold fileMutex_.
-  OpenFileResult openEncoderForNextFile();
+  OpenFileResult openNextFile();
   /// The caller must hold fileMutex_.
-  OpenFileResult reprepareEncoderInput();
+  OpenFileResult retargetCurrentFile();
   /// The caller must hold fileMutex_.
-  CloseEncoderResult retireEncoder();
+  CloseEncoderResult closeCurrentFile();
   /// The caller must hold fileMutex_.
   void foldFinishedFile(const std::tuple<double, double> &finished);
   void rollbackFailedOpen();
@@ -160,24 +165,20 @@ class AudioFileWriter final {
   EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
 
   std::atomic<bool> isFileOpen_{false};
-  std::atomic<size_t> framesWritten_{0};
 
   StreamFormat streamFormat_{};
 
   /// Guards the members below, which a rotation advances on the worker thread while the JS
   /// thread reads them. Never taken on the audio thread.
   mutable std::mutex fileMutex_;
-  std::string filePath_;
-  std::unique_ptr<AudioEncoder> encoder_;
+  /// nullptr between files, and after a rotation fails.
+  std::unique_ptr<RecordingFile> currentFile_;
   std::string sessionStem_;
   std::vector<std::string> sessionFilePaths_;
   size_t openedFileCount_{0};
   int writesSinceLastSizeCheck_{0};
   double finishedFilesSizeMB_{0.0};
   double finishedFilesDurationSec_{0.0};
-  /// What the current file held before its last input-format change; framesWritten_ counts
-  /// in the current stream rate only. The encoder reports the whole file on close.
-  double currentFileEarlierFormatsDurationSec_{0.0};
 
   /// Planar buffers of maxFramesPerBuffer x channelCount of streamFormat_ that carry audio-thread
   /// callbacks to the worker.

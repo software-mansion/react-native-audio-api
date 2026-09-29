@@ -908,7 +908,7 @@ interface AudioRecorderFileOptions {
 }
 ```
 
-- `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
+- `channelCount` - The channel count of the resulting file: `1` (mono) or `2` (stereo).
 - `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, each segment carries a three-digit index (`_001`, `_002`, …) — see [File naming](#file-naming). You can join the rotated files after recording with [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles).
   - Use a large enough value for your format. Very small thresholds rotate often, which increases the chance of audible gaps or muffled joins after concatenation — especially for **M4A**, where each segment is a separate AAC encode.
   - Practical starting points: **≥ 1 MB** for WAV, **≥ 200 KB** for M4A (adjust upward if you still hear artifacts at segment boundaries).

@@ -1,4 +1,5 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
+#include <audioapi/core/utils/RecordingFile.h>
 #include <audioapi/core/utils/RecordingFileName.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
 #include <audioapi/encoding/OSEncoding.h>
@@ -44,7 +45,7 @@ AudioFileWriter::AudioFileWriter(
 AudioFileWriter::~AudioFileWriter() {
   isFileOpen_.store(false, std::memory_order_release);
   cleanupPreallocatedInputPool();
-  encoder_.reset();
+  currentFile_.reset();
 }
 
 OpenFileResult AudioFileWriter::openFile(const StreamFormat &streamFormat) {
@@ -102,14 +103,8 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &stream
   OpenFileResult reprepareResult = OpenFileResult::Err("");
   {
     std::scoped_lock lock(fileMutex_);
-    if (streamFormat_.sampleRate > 0) {
-      currentFileEarlierFormatsDurationSec_ +=
-          static_cast<double>(framesWritten_.load(std::memory_order_acquire)) /
-          streamFormat_.sampleRate;
-    }
-    framesWritten_.store(0, std::memory_order_release);
     streamFormat_ = streamFormat;
-    reprepareResult = reprepareEncoderInput();
+    reprepareResult = retargetCurrentFile();
   }
   if (reprepareResult.is_err()) {
     // Nothing more can be encoded in the new format, so the file is finished as far as it got.
@@ -127,10 +122,6 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &stream
 }
 
 OpenFileResult AudioFileWriter::startNextFile(const StreamFormat &streamFormat) {
-  if (fileProperties_->stream.sampleRate <= 0 || fileProperties_->stream.channelCount <= 0) {
-    return OpenFileResult::Err(
-        "Invalid file properties: sampleRate and channelCount must be greater than 0");
-  }
   if (streamFormat.sampleRate <= 0 || streamFormat.channelCount <= 0 ||
       streamFormat.maxFramesPerBuffer == 0) {
     return OpenFileResult::Err(
@@ -138,12 +129,11 @@ OpenFileResult AudioFileWriter::startNextFile(const StreamFormat &streamFormat) 
   }
 
   streamFormat_ = streamFormat;
-  framesWritten_.store(0, std::memory_order_release);
 
   OpenFileResult openResult = OpenFileResult::Err("");
   {
     std::scoped_lock lock(fileMutex_);
-    openResult = openEncoderForNextFile();
+    openResult = openNextFile();
   }
   if (openResult.is_err()) {
     return openResult;
@@ -170,8 +160,7 @@ CloseEncoderResult AudioFileWriter::finishCurrentFile() {
   isFileOpen_.store(false, std::memory_order_release);
 
   std::scoped_lock lock(fileMutex_);
-  auto closeResult = retireEncoder();
-  filePath_ = "";
+  auto closeResult = closeCurrentFile();
 
   if (closeResult.is_ok()) {
     foldFinishedFile(closeResult.unwrap());
@@ -211,18 +200,25 @@ Result<std::string, std::string> AudioFileWriter::resolveNextFilePath(
     return pathResult;
   }
 
-  for (size_t suffix = 1; file_system::fileExists(pathResult.unwrap()); ++suffix) {
-    std::string suffixedName = stem;
-    suffixedName += "_" + std::to_string(suffix) + "." + extension;
-    pathResult = backend_.resolvePath(fileProperties_, suffixedName);
-    if (pathResult.is_err()) {
-      return pathResult;
-    }
-  }
-  return pathResult;
+  return firstUnusedPath(stem, extension, std::move(pathResult).unwrap());
 }
 
-OpenFileResult AudioFileWriter::openEncoderForNextFile() {
+Result<std::string, std::string> AudioFileWriter::firstUnusedPath(
+    const std::string &stem,
+    const std::string &extension,
+    std::string path) const {
+  for (size_t suffix = 1; file_system::fileExists(path); ++suffix) {
+    auto suffixedPath = backend_.resolvePath(
+        fileProperties_, stem + "_" + std::to_string(suffix) + "." + extension);
+    if (suffixedPath.is_err()) {
+      return suffixedPath;
+    }
+    path = std::move(suffixedPath).unwrap();
+  }
+  return Ok(std::move(path));
+}
+
+OpenFileResult AudioFileWriter::openNextFile() {
   // Calling an empty std::function throws, which on the worker thread would terminate.
   if (!backend_.resolveOutputSpec || !backend_.resolvePath || !backend_.createEncoder) {
     return OpenFileResult::Err("File writer was constructed without a platform backend");
@@ -246,47 +242,41 @@ OpenFileResult AudioFileWriter::openEncoderForNextFile() {
   if (encoder == nullptr) {
     return OpenFileResult::Err("Audio file recording requires iOS or Android.");
   }
-  auto openResult = encoder->open(streamFormat_, outputSpec, filePath);
-  if (openResult.is_err()) {
-    return OpenFileResult::Err(openResult.unwrap_err());
+  auto fileResult = RecordingFile::open(std::move(encoder), streamFormat_, outputSpec, filePath);
+  if (fileResult.is_err()) {
+    return OpenFileResult::Err(fileResult.unwrap_err());
   }
 
-  encoder_ = std::move(encoder);
-  filePath_ = filePath;
+  currentFile_ = std::move(fileResult).unwrap();
   ++openedFileCount_;
   writesSinceLastSizeCheck_ = 0;
-  currentFileEarlierFormatsDurationSec_ = 0.0;
-  framesWritten_.store(0, std::memory_order_release);
-
-  return OpenFileResult::Ok(filePath_);
+  return OpenFileResult::Ok(currentFile_->path());
 }
 
-OpenFileResult AudioFileWriter::reprepareEncoderInput() {
-  if (encoder_ == nullptr) {
-    return OpenFileResult::Err("file is not open: " + filePath_);
+OpenFileResult AudioFileWriter::retargetCurrentFile() {
+  if (currentFile_ == nullptr) {
+    return OpenFileResult::Err("file is not open");
   }
 
   if (!backend_.reprepareEncoderInput) {
     return OpenFileResult::Err("The platform cannot change the input format of an open file");
   }
 
-  auto result = backend_.reprepareEncoderInput(*encoder_, streamFormat_);
+  auto result = currentFile_->changeInputFormat(streamFormat_, backend_.reprepareEncoderInput);
   if (result.is_err()) {
     return OpenFileResult::Err(
         "Failed to switch the recording to the new input format: " + result.unwrap_err());
   }
-  return OpenFileResult::Ok(filePath_);
+  return OpenFileResult::Ok(currentFile_->path());
 }
 
-CloseEncoderResult AudioFileWriter::retireEncoder() {
-  if (encoder_ == nullptr) {
-    return CloseEncoderResult::Err("file is not open: " + filePath_);
+CloseEncoderResult AudioFileWriter::closeCurrentFile() {
+  if (currentFile_ == nullptr) {
+    return CloseEncoderResult::Err("file is not open");
   }
 
-  auto closeResult = encoder_->close();
-  encoder_.reset();
-  currentFileEarlierFormatsDurationSec_ = 0.0;
-  framesWritten_.store(0, std::memory_order_release);
+  auto closeResult = currentFile_->close();
+  currentFile_.reset();
   return closeResult;
 }
 
@@ -299,11 +289,9 @@ void AudioFileWriter::rollbackFailedOpen() {
   cleanupPreallocatedInputPool();
 
   std::scoped_lock lock(fileMutex_);
-  // Whatever the encoder reports about a file that is about to be deleted is of no use.
-  retireEncoder();
-  if (!filePath_.empty()) {
-    std::remove(filePath_.c_str());
-    filePath_ = "";
+  if (currentFile_ != nullptr) {
+    currentFile_->discard();
+    currentFile_.reset();
   }
   isFileOpen_.store(false, std::memory_order_release);
 }
@@ -316,7 +304,7 @@ void AudioFileWriter::rotateOnceFileOutgrowsCap() {
   std::string rotationError;
   {
     std::scoped_lock lock(fileMutex_);
-    if (!isFileOpen() || encoder_ == nullptr) {
+    if (!isFileOpen() || currentFile_ == nullptr) {
       return;
     }
     if (++writesSinceLastSizeCheck_ < FILE_SIZE_CHECK_WRITE_INTERVAL) {
@@ -324,16 +312,16 @@ void AudioFileWriter::rotateOnceFileOutgrowsCap() {
     }
     writesSinceLastSizeCheck_ = 0;
 
-    if (encoder_->getFileSizeBytes() <= fileProperties_->writer.rotateIntervalBytes) {
+    if (currentFile_->sizeBytes() <= fileProperties_->writer.rotateIntervalBytes) {
       return;
     }
 
-    auto closeResult = retireEncoder();
+    auto closeResult = closeCurrentFile();
     if (closeResult.is_err()) {
       rotationError = closeResult.unwrap_err();
     } else {
       foldFinishedFile(closeResult.unwrap());
-      auto openResult = openEncoderForNextFile();
+      auto openResult = openNextFile();
       if (openResult.is_err()) {
         rotationError = openResult.unwrap_err();
       } else {
@@ -422,14 +410,13 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
   bool encoded = false;
   {
     std::scoped_lock lock(fileMutex_);
-    if (isFileOpen() && encoder_ != nullptr) {
-      auto result = encoder_->encode(channels.data(), numFrames);
+    if (isFileOpen() && currentFile_ != nullptr) {
+      auto result = currentFile_->encode(channels.data(), numFrames);
       if (result.is_ok()) {
-        framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
         encoded = true;
       } else {
-        encodeError =
-            "Failed to write audio data to file: " + filePath_ + " - " + result.unwrap_err();
+        encodeError = "Failed to write audio data to file: " + currentFile_->path() + " - " +
+            result.unwrap_err();
       }
     }
   }
@@ -449,7 +436,7 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
 
 std::string AudioFileWriter::getFilePath() const {
   std::scoped_lock lock(fileMutex_);
-  return filePath_;
+  return currentFile_ != nullptr ? currentFile_->path() : std::string();
 }
 
 std::vector<std::string> AudioFileWriter::getSessionFilePaths() const {
@@ -459,23 +446,13 @@ std::vector<std::string> AudioFileWriter::getSessionFilePaths() const {
 
 double AudioFileWriter::getCurrentDuration() const {
   std::scoped_lock lock(fileMutex_);
-  const double sampleRate =
-      streamFormat_.sampleRate > 0 ? streamFormat_.sampleRate : fileProperties_->stream.sampleRate;
-  if (sampleRate <= 0) {
-    return finishedFilesDurationSec_ + currentFileEarlierFormatsDurationSec_;
-  }
-  const double currentFormatDurationSec =
-      static_cast<double>(framesWritten_.load(std::memory_order_acquire)) / sampleRate;
-  return finishedFilesDurationSec_ + currentFileEarlierFormatsDurationSec_ +
-      currentFormatDurationSec;
+  const double currentFileDurationSec = currentFile_ != nullptr ? currentFile_->durationSec() : 0.0;
+  return finishedFilesDurationSec_ + currentFileDurationSec;
 }
 
 size_t AudioFileWriter::getFileSizeBytes() const {
   std::scoped_lock lock(fileMutex_);
-  if (encoder_ != nullptr) {
-    return encoder_->getFileSizeBytes();
-  }
-  return file_system::fileSizeBytes(filePath_);
+  return currentFile_ != nullptr ? currentFile_->sizeBytes() : 0;
 }
 
 void AudioFileWriter::setOnErrorCallback(uint64_t callbackId) {

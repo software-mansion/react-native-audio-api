@@ -4,6 +4,7 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/encoding/EncoderCapabilities.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
 #include <memory>
@@ -41,11 +42,23 @@ void AudioRecorder::onAudioFrames(const float *const *channels, int numFrames) {
   }
 }
 
-/// JS thread only. The file itself is created by the next start(). An active (recording or
-/// paused) session keeps the output it started with, so calling this during a session fails and
-/// changes nothing.
+/// JS thread only. The file itself is created by the next start(). An
+/// active (recording or paused) session keeps the output it started with, so calling this during
+/// a session fails and changes nothing.
 Result<NoneType, std::string> AudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
+  if (properties == nullptr) {
+    return Err("File output requires file properties");
+  }
+  auto validationResult = properties->validate();
+  if (validationResult.is_err()) {
+    return validationResult;
+  }
+  auto outputSpecResult = encoder_capabilities::resolveOutputSpec(properties->encoding.format);
+  if (outputSpecResult.is_err()) {
+    return Err(outputSpecResult.unwrap_err());
+  }
+
   std::scoped_lock fileWriterLock(fileWriterMutex_, errorCallbackMutex_);
 
   if (!isIdle()) {

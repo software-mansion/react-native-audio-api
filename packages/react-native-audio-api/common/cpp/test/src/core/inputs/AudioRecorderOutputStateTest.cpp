@@ -83,16 +83,22 @@ TEST(AudioRecorderOutputStateTest, DeactivateNeverEnablesADisabledOutput) {
   EXPECT_EQ(state.load(), OutputState::Disabled);
 }
 
-TEST(AudioRecorderOutputStateTest, FileOutputIsRequestedUntilAStreamPreparesIt) {
+TEST(AudioRecorderOutputStateTest, InvalidFilePropertiesAreRejectedAtEnable) {
   IdleAudioRecorder recorder;
+  auto properties = wavProperties();
+  properties->stream.sampleRate = 0.0F;
 
-  ASSERT_TRUE(recorder.enableFileOutput(wavProperties()).is_ok());
-  EXPECT_TRUE(recorder.wantsFileOutput());
-  EXPECT_FALSE(recorder.usesFileOutput());
-
-  recorder.disableFileOutput();
+  EXPECT_TRUE(recorder.enableFileOutput(properties).is_err());
   EXPECT_FALSE(recorder.wantsFileOutput());
-  EXPECT_FALSE(recorder.usesFileOutput());
+}
+
+TEST(AudioRecorderOutputStateTest, AFormatThePlatformCannotWriteIsRejectedAtEnable) {
+  IdleAudioRecorder recorder;
+  auto properties = wavProperties();
+  properties->encoding.format = AudioFileProperties::FileFormat::OPUS_WEBM;
+
+  EXPECT_TRUE(recorder.enableFileOutput(properties).is_err());
+  EXPECT_FALSE(recorder.wantsFileOutput());
 }
 
 TEST(AudioRecorderOutputStateTest, CallbackIsRequestedUntilAStreamPreparesIt) {

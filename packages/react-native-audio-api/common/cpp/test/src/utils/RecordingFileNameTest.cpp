@@ -72,26 +72,26 @@ TEST(RecordingFileNameTest, SegmentIndexKeepsCountingPastThePaddedWidth) {
 }
 
 TEST(RecordingFileNameTest, GeneratedNameNeedsNoValidation) {
-  EXPECT_TRUE(recording_file_name::validate(makeProperties("")).is_ok());
+  EXPECT_TRUE(recording_file_name::validateFileName("").is_ok());
 }
 
 TEST(RecordingFileNameTest, PlainFileNameValidates) {
-  EXPECT_TRUE(recording_file_name::validate(makeProperties("session-42")).is_ok());
+  EXPECT_TRUE(recording_file_name::validateFileName("session-42").is_ok());
 }
 
 TEST(RecordingFileNameTest, FileNameCannotEscapeTheRecordingDirectory) {
-  EXPECT_TRUE(recording_file_name::validate(makeProperties("../../etc/passwd")).is_err());
-  EXPECT_TRUE(recording_file_name::validate(makeProperties("nested/name")).is_err());
-  EXPECT_TRUE(recording_file_name::validate(makeProperties("nested\\name")).is_err());
+  EXPECT_TRUE(recording_file_name::validateFileName("../../etc/passwd").is_err());
+  EXPECT_TRUE(recording_file_name::validateFileName("nested/name").is_err());
+  EXPECT_TRUE(recording_file_name::validateFileName("nested\\name").is_err());
 }
 
 TEST(RecordingFileNameTest, FileNameCannotCarryAnExtension) {
-  EXPECT_TRUE(recording_file_name::validate(makeProperties("session-42.wav")).is_err());
+  EXPECT_TRUE(recording_file_name::validateFileName("session-42.wav").is_err());
 }
 
 TEST(RecordingFileNameTest, OverlyLongFileNameIsRejected) {
-  EXPECT_TRUE(recording_file_name::validate(makeProperties(std::string(129, 'a'))).is_err());
-  EXPECT_TRUE(recording_file_name::validate(makeProperties(std::string(128, 'a'))).is_ok());
+  EXPECT_TRUE(recording_file_name::validateFileName(std::string(129, 'a')).is_err());
+  EXPECT_TRUE(recording_file_name::validateFileName(std::string(128, 'a')).is_ok());
 }
 
 // NOLINTEND

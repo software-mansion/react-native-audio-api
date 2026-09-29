@@ -49,10 +49,9 @@ std::string segmentStem(const std::string &sessionStem, size_t segmentIndex) {
   return sessionStem + "_" + index;
 }
 
-Result<NoneType, std::string> validate(const std::shared_ptr<AudioFileProperties> &properties) {
+Result<NoneType, std::string> validateFileName(const std::string &fileName) {
   using ValidationResult = Result<NoneType, std::string>;
 
-  const std::string &fileName = properties->path.fileName;
   if (fileName.empty()) {
     return ValidationResult::Ok(None);
   }

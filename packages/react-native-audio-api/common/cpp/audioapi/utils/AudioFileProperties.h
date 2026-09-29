@@ -1,6 +1,9 @@
 #pragma once
 
+#include <audioapi/utils/Result.hpp>
+
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -53,11 +56,20 @@ class AudioFileProperties {
     FileDirectory directory;
     std::string subDirectory;
     std::string fileName;
+
+    /// The file name rules, and that directory holds a FileDirectory value.
+    [[nodiscard]] Result<NoneType, std::string> validate() const;
   };
+
+  /// Mono or stereo.
+  static constexpr int MAX_FILE_CHANNEL_COUNT = 2;
 
   struct StreamConfig {
     float sampleRate;
     int channelCount;
+
+    /// A positive sample rate, and between 1 and MAX_FILE_CHANNEL_COUNT channels.
+    [[nodiscard]] Result<NoneType, std::string> validate() const;
   };
 
   struct EncodingConfig {
@@ -66,6 +78,10 @@ class AudioFileProperties {
     BitDepth bitDepth;
     int flacCompressionLevel;
     IOSAudioQuality iosAudioQuality;
+
+    /// Every enum holds one of its values, and the FLAC level is within 0-8. Whether this
+    /// platform can write the format is not checked here.
+    [[nodiscard]] Result<NoneType, std::string> validate() const;
   };
 
   struct WriterConfig {
@@ -78,6 +94,11 @@ class AudioFileProperties {
       StreamConfig stream,
       EncodingConfig encoding,
       WriterConfig writer);
+
+  /// Validates each group in turn and reports the first problem. WriterConfig needs no check:
+  /// any value of its fields is usable. Whether this platform can write the format is a
+  /// separate question; AudioRecorder::enableFileOutput asks both.
+  [[nodiscard]] Result<NoneType, std::string> validate() const;
 
   static std::shared_ptr<AudioFileProperties> CreateFromJSIValue(
       facebook::jsi::Runtime &runtime,
