@@ -46,7 +46,7 @@ class TestableQueueSourceNode : public AudioBufferQueueSourceNode {
 /// Recovers the concrete audio node owned by a graph node that was just added
 /// via Graph::addNode (the unique_ptr payload lives inside the NodeHandle).
 template <typename NodeT>
-NodeT *nodeOf(utils::graph::HostGraph::Node *hostNode) {
+NodeT *nodeOf(utils::graph::HostGraph::HostVertex *hostNode) {
   return static_cast<NodeT *>(hostNode->handle->audioNode->asAudioNode());
 }
 

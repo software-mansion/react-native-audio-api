@@ -24,7 +24,7 @@ struct NodeHandle {
 };
 ```
 
-A handle is created on the JS thread and stored in both `HostGraph::Node` and `AudioGraph::Node`, so its reference
+A handle is created on the JS thread and stored in both `HostGraph::HostVertex` and `AudioGraph::Vertex`, so its reference
 count is 2 for as long as the node is alive in both graphs. `AudioGraph` sorts and compacts its array freely and rewrites `index` after every
 move, which is how an event built on the JS thread (`graph[handle->index]`) finds the right node when it runs on the audio thread. `index`
 is never read on the JS thread.
@@ -35,13 +35,13 @@ The count going from 2 to 1 is the signal that the audio thread has dropped the 
 ```mermaid
 flowchart LR
   subgraph JS["JS thread"]
-    HN["HostGraph::Node<br/>inputs / outputs<br/>ghost"]
+    HN["HostGraph::HostVertex<br/>inputs / outputs<br/>ghost"]
   end
   subgraph shared["shared_ptr, use_count = 2"]
     H["NodeHandle<br/>audioNode: unique_ptr&lt;GraphObject&gt;<br/>index: uint32"]
   end
   subgraph audio["audio thread"]
-    AN["AudioGraph::Node<br/>input_head / link_head<br/>orphaned"]
+    AN["AudioGraph::Vertex<br/>input_head / link_head<br/>orphaned"]
   end
   HN --> H
   AN --> H
@@ -66,21 +66,21 @@ The audio thread decides *when* (a node may be a ghost for a long time if it is 
 
 ## Host graph
 
-`HostGraph::Node` is a plain adjacency-list node:
+`HostGraph::HostVertex` is a plain adjacency-list node:
 
 ```cpp
-struct Node {
-  std::vector<Node *> inputs;       // reversed edges
-  std::vector<Node *> outputs;      // forward edges
-  std::vector<Node *> linkedNodes;  // processable-state links, see below
-  TraversalState traversalState;    // DFS visit stamp
-  ChannelLayoutState channelLayout; // pending channel-count negotiation
+struct HostVertex {
+  std::vector<HostVertex *> inputs;      // reversed edges
+  std::vector<HostVertex *> outputs;     // forward edges
+  std::vector<HostVertex *> linkedNodes; // processable-state links, see below
+  TraversalState traversalState;        // DFS visit stamp
+  ChannelLayoutState channelLayout;     // pending channel-count negotiation
   std::shared_ptr<NodeHandle> handle;
   bool ghost = false;
 };
 ```
 
-All nodes are heap-allocated and held in a `std::vector<Node *>`, so pointers stay valid across mutations; `Graph::addNode` returns the raw
+All nodes are heap-allocated and held in a `std::vector<HostVertex *>`, so pointers stay valid across mutations; `Graph::addNode` returns the raw
 pointer, and the `HostNode` RAII wrapper keeps it until destruction. Every public method takes `nodesMutex_`. That mutex is JS-side only: it
 serializes the JS thread against the GC finalizer thread, which also calls `removeNode`. The audio thread never touches `HostGraph`.
 
@@ -131,27 +131,27 @@ endpoints, but traverse them.
 ### Ghost collection
 
 `collectDisposedNodes` scans for ghosts whose handle has `use_count() == 1`, removes them from the vector (swap with last, pop), and
-`delete`s them. `Node::~Node` unlinks the node from every neighbour's `inputs` and `outputs`. This runs on the JS side, so `delete` is fine.
+`delete`s them. `HostVertex::~HostVertex` unlinks the node from every neighbour's `inputs` and `outputs`. This runs on the JS side, so `delete` is fine.
 It is called from `HostNode::~HostNode` just before `removeNode`, and from the context's promise worker before a lifecycle operation, so
 ghosts are collected as a side effect of the next node going away rather than on a timer.
 
 ## Audio graph
 
-`AudioGraph::Node` holds no pointers to other nodes, only indices, and packs its scratch fields into bitfields:
+`AudioGraph::Vertex` holds no pointers to other nodes, only indices, and packs its scratch fields into bitfields:
 
 ```cpp
-struct Node {
+struct Vertex {
   std::shared_ptr<NodeHandle> handle;
   std::uint32_t input_head = kNull;   // head of this node's input list in the pool
   std::uint32_t link_head  = kNull;   // head of this node's processable-link list
   std::uint32_t topo_out_degree : 31; // scratch, toposort
   unsigned      will_be_deleted : 1;  // scratch, compaction
-  std::int32_t  target_index : 31;    // scratch, where the node moves to; ready-stack link during the sort
+  std::int32_t  target_place : 31;    // scratch, where the node moves to; ready-stack link during the sort
   unsigned      orphaned : 1;         // set by the removeNode event
 };
 ```
 
-The nodes live in a `std::vector<Node>` that is kept in topological order, sources first, sinks last. Three properties follow:
+The nodes live in a `std::vector<Vertex>` that is kept in topological order, sources first, sinks last. Three properties follow:
 
 - **An input always has a lower index than its consumer.** A forward pass renders each node after everything it reads from.
 - **Rendering is one linear walk** over contiguous memory. `iter()` filters out non-processable nodes and yields each node with a view of its
@@ -190,13 +190,13 @@ The sort runs only when an edge was added or removed since the last one; the edg
 reverse, sinks first, and it uses no extra memory:
 
 1. Count each node's out-degree by walking every input list and incrementing the *input's* counter (`topo_out_degree`).
-2. Push every node with out-degree 0 (the sinks) onto a ready stack. The stack is a linked list threaded through `target_index`, so it costs
+2. Push every node with out-degree 0 (the sinks) onto a ready stack. The stack is a linked list threaded through `target_place`, so it costs
    nothing to allocate. Any order of taking ready nodes gives a valid topological order, so a stack is enough.
 3. Pop until the stack is empty. Each popped node gets the next position counting down from the end (`--write`), written into the same
-   `target_index` field that held its stack link a moment ago. Every input whose out-degree drops to 0 is pushed. Sinks end up at the back,
+   `target_place` field that held its stack link a moment ago. Every input whose out-degree drops to 0 is pushed. Sinks end up at the back,
    sources at the front.
 4. Rewrite every index stored in the pool (inputs and links) to the new positions. This has to happen before nodes move.
-5. Apply the permutation in place with cycle sort: `while (nodes[i].target_index != i) swap(nodes[i], nodes[target])`.
+5. Apply the permutation in place with cycle sort: `while (nodes[i].target_place != i) swap(nodes[i], nodes[target])`.
 6. Write the new position into each handle's `index` and reset scratch.
 
 Cycles cannot reach this code because `HostGraph` rejects them, so every node is eventually popped.
@@ -220,7 +220,7 @@ flowchart LR
 ```
 
 Phase 1 counts out-degrees: `Osc 1, Gain 1, Dest 0`. Phase 2 then runs the stack. Each row is the state after the operation in the first column;
-`target_index` shows the field's meaning at that moment, a stack link (`→`) or a final position:
+`target_place` shows the field's meaning at that moment, a stack link (`→`) or a final position:
 
 | step | stack (top first) | `write` | Dest | Gain | Osc |
 |---|---|---|---|---|---|
@@ -231,7 +231,7 @@ Phase 1 counts out-degrees: `Osc 1, Gain 1, Dest 0`. Phase 2 then runs the stack
 | Gain's input Osc reaches 0, push | Osc | 1 | 2 | 1 | → −1 |
 | pop Osc, assign | *empty* | 0 | 2 | 1 | **0** |
 
-Phase 3 rewrites the stored indices through `target_index` while the nodes are still in place: `Dest.inputs [1]` stays `[1]` because Gain's
+Phase 3 rewrites the stored indices through `target_place` while the nodes are still in place: `Dest.inputs [1]` stays `[1]` because Gain's
 target is 1, and `Gain.inputs [2]` becomes `[0]` because Osc's target is 0. Phase 4 cycle-sorts: at `i = 0`, `Dest` wants position 2, so it
 swaps with `Osc`; now every node is at its target. Phase 5 writes `handle->index` and resets the field to −1.
 
@@ -259,8 +259,8 @@ agrees it can be destroyed (a source that is still playing says no). It is two p
    input of it is already marked, and it agrees. Because inputs come before consumers, an orphaned chain collapses in one pass: the source
    is marked, its consumer sees only marked inputs, and so on. Scrubbing runs afterwards, once every mark is final, and drops every input
    and link entry that points at a marked node in one loop; direction no longer matters, so links need no special treatment here.
-2. **Assign, remap and shift.** Survivors get consecutive `target_index` values in array order; deleted nodes keep −1 and hand their pool
-   slots back right away. Every stored index is rewritten through `target_index` (the same helper the sort uses), then survivors are moved left
+2. **Assign, remap and shift.** Survivors get consecutive `target_place` values in array order; deleted nodes keep −1 and hand their pool
+   slots back right away. Every stored index is rewritten through `target_place` (the same helper the sort uses), then survivors are moved left
    with a single read cursor and write cursor. Slots past the write cursor have their `handle` set to null, which is the `2 → 1` decrement the
    host side is waiting for, and `resize` drops them; on a vector that only shrinks, that does not allocate.
 
@@ -318,7 +318,7 @@ Not every node in the array should render. Which ones do is decided once per qua
 *always processable* for the pull roots (the destination, an analyser), *not processable*, or *conditionally processable* for nodes that are
 pulled this quantum only. The settle is a reachability walk: starting from every node that is not *not processable* on entry (the roots), it
 promotes each dependency from *not* to *conditional* and continues from the nodes it just promoted. A node's dependencies are its audio
-inputs plus its **links** (below). The walk is a depth-first traversal that borrows `target_index` as an embedded stack, the same trick the
+inputs plus its **links** (below). The walk is a depth-first traversal that borrows `target_place` as an embedded stack, the same trick the
 toposort uses for its ready set, and it uses the state itself as the visited marker: a node is pushed only on its *not* to *conditional*
 transition, so every node and every list is visited once and the pass is O(V+E). A conditional node flips itself back to *not* after it
 renders, so the cone is re-derived from the roots every quantum with no global reset.
@@ -346,7 +346,7 @@ touched at all; `iter()` simply skips it.
 
 ## Input pool
 
-Every list an `AudioGraph::Node` owns, inputs and links, is a singly linked list whose nodes are slots in one `InputPool`. A slot is 8 bytes:
+Every list an `AudioGraph::Vertex` owns, inputs and links, is a singly linked list whose nodes are slots in one `InputPool`. A slot is 8 bytes:
 
 ```cpp
 struct Slot {

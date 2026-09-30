@@ -103,13 +103,13 @@ Which nodes run each render quantum is decided by `AudioGraph::settleProcessable
 - `NOT_PROCESSABLE` — idle / disconnected / default.
 
 Settle algorithm (allocation-free):
-1. **Dependency pull**: depth-first from every `ALWAYS_`/`CONDITIONAL_PROCESSABLE` seed, mark each dependency (audio inputs and processable-links alike) `CONDITIONAL_PROCESSABLE` and continue from it. Uses `target_index` as an embedded stack and the state as the visited marker, so it is a single O(V+E) pass independent of array order.
+1. **Dependency pull**: depth-first from every `ALWAYS_`/`CONDITIONAL_PROCESSABLE` seed, mark each dependency (audio inputs and processable-links alike) `CONDITIONAL_PROCESSABLE` and continue from it. Uses `target_place` as an embedded stack and the state as the visited marker, so it is a single O(V+E) pass independent of array order.
 2. **End-of-quantum demotion**: after `processInputs()`, each node that was `CONDITIONAL_PROCESSABLE` flips back to `NOT_PROCESSABLE` in `GraphObject::process()`. That replaces a global reset at the start of settle — nodes that ran last quantum are already idle when the next pull begins.
 
 Key invariants:
 - **Pull from `processableState_`, never `AudioNode::isProcessable()`.** A tail-bearing node (Delay/Convolver/Biquad) overrides `isProcessable()` to stay `true` while its tail drains after a disconnect; using that for the pull would wrongly re-activate its whole upstream cone. The tail node stays scheduled via that override; its `processableState_` is `NOT_PROCESSABLE`, so it correctly does not pull upstream.
 - **`disable()` is sticky.** `AudioNode::disable()` sets `NOT_PROCESSABLE` **and** `alwaysNotProcessable_ = true`, so a finished source still wired to a live consumer is not re-activated by the every-quantum pull. Sources call `disable()` from the audio thread when playback finishes.
-- **DelayReader → DelayWriter** have no audio edge (they share a ring buffer). `Graph::linkNodes(reader, writer)` records a processable-link, mirrored onto `AudioGraph::Node::link_head`. Settle follows links so pulling the reader also pulls the writer and the writer's inputs. Links are NOT part of the topological sort (that would create a cycle for feedback delays).
+- **DelayReader → DelayWriter** have no audio edge (they share a ring buffer). `Graph::linkNodes(reader, writer)` records a processable-link, mirrored onto `AudioGraph::Vertex::link_head`. Settle follows links so pulling the reader also pulls the writer and the writer's inputs. Links are NOT part of the topological sort (that would create a cycle for feedback delays).
 
 ---
 

@@ -21,11 +21,11 @@ namespace audioapi::utils::graph {
 ///
 /// @note Can store at most 2^30 nodes due to bit-packed indices (~10^9).
 class AudioGraph {
-  // ── Node ────────────────────────────────────────────────────────────────
+  // ── Vertex ──────────────────────────────────────────────────────────────
 
-  struct Node {
-    Node() = default;
-    explicit Node(std::shared_ptr<NodeHandle> handle) : handle(std::move(handle)) {}
+  struct Vertex {
+    Vertex() = default;
+    explicit Vertex(std::shared_ptr<NodeHandle> handle) : handle(std::move(handle)) {}
 
     std::shared_ptr<NodeHandle> handle = nullptr; // owned handle bridging to HostGraph
     std::uint32_t input_head = InputPool::kNull;  // head of input linked list in pool_
@@ -38,9 +38,9 @@ class AudioGraph {
 
     std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
     unsigned will_be_deleted : 1 = 0;       // scratch — marked for compaction removal
-    std::int32_t target_index : 31 = -1;    // scratch - new index after compaction
+    std::int32_t target_place : 31 = -1;    // scratch - new index after compaction
 
-    /// Node is removed when: orphaned && inputs.empty() && canBeDestructed()
+    /// Vertex is removed when: orphaned && inputs.empty() && canBeDestructed()
     unsigned orphaned : 1 = 0; // means this node was removed from host graph
 
 #if RN_AUDIO_API_TEST
@@ -66,7 +66,7 @@ class AudioGraph {
   /// audio thread via adoptNodeBuffer(). The returned (old) buffer must be
   /// disposed off the audio thread.
   struct NodeBuffer {
-    std::vector<Node> data;
+    std::vector<Vertex> data;
     explicit NodeBuffer(std::uint32_t capacity) {
       data.reserve(capacity);
     }
@@ -97,10 +97,10 @@ class AudioGraph {
   // ── Accessors ───────────────────────────────────────────────────────────
 
   /// @brief Access node by flat-vector index.
-  [[nodiscard]] Node &operator[](std::uint32_t index);
+  [[nodiscard]] Vertex &operator[](std::uint32_t index);
 
   /// @brief Access node by flat-vector index (const).
-  [[nodiscard]] const Node &operator[](std::uint32_t index) const;
+  [[nodiscard]] const Vertex &operator[](std::uint32_t index) const;
 
   /// @brief Number of live nodes in the graph.
   [[nodiscard]] size_t size() const;
@@ -175,7 +175,7 @@ class AudioGraph {
   /// on the topological order, which is what lets links (whose targets may
   /// sit anywhere in the array) share the loop with inputs.
   ///
-  /// Uses `target_index` as an embedded stack, the same way kahn_toposort()
+  /// Uses `target_place` as an embedded stack, the same way kahn_toposort()
   /// does; it is restored to -1 for every node before returning.
   ///
   /// Must derive state ONLY from `processableState_`, never from
@@ -189,7 +189,7 @@ class AudioGraph {
   void settleProcessableState();
 
  private:
-  std::vector<Node> nodes;       // always kept topologically sorted
+  std::vector<Vertex> nodes;     // always kept topologically sorted
   InputPool pool_;               // pool backing all input linked lists
   bool topo_order_dirty = false; // set by markDirty(), cleared by sortAndCompact()
 
@@ -199,7 +199,7 @@ class AudioGraph {
   void markDeletions();
 
   /// @brief Rewrites every index stored in the input and link lists through
-  /// `target_index`. Call after targets are assigned and before nodes move.
+  /// `target_place`. Call after targets are assigned and before nodes move.
   void remapListsToTargetIndex();
 
   /// @brief Invokes `fn(head)` for each list head that holds dependencies of
@@ -207,14 +207,14 @@ class AudioGraph {
   /// what a processable node pulls into processing; only the input list
   /// additionally carries audio and orders the toposort.
   template <typename Fn>
-  static void forEachDependencyList(Node &node, Fn fn) {
+  static void forEachDependencyList(Vertex &node, Fn fn) {
     fn(node.input_head);
     fn(node.link_head);
   }
 
   /// @brief In-place Kahn's toposort (sources first, sinks last).
   ///
-  /// Uses `target_index` as an embedded linked-list stack for the
+  /// Uses `target_place` as an embedded linked-list stack for the
   /// ready set, and cycle-sort for the final permutation.
   ///
   /// Time: O(V + E)
@@ -225,8 +225,8 @@ class AudioGraph {
 
 inline auto AudioGraph::iter() {
   return nodes |
-      std::views::filter([](const Node &n) { return n.handle->audioNode->isProcessable(); }) |
-      std::views::transform([this](Node &node) {
+      std::views::filter([](const Vertex &n) { return n.handle->audioNode->isProcessable(); }) |
+      std::views::transform([this](Vertex &node) {
            return Entry{
                .graphObject = *node.handle->audioNode,
                .inputs = pool_.view(node.input_head) |

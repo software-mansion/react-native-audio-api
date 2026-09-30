@@ -8,11 +8,11 @@ namespace audioapi::utils::graph {
 
 // ── Accessors ─────────────────────────────────────────────────────────────
 
-auto AudioGraph::operator[](std::uint32_t index) -> Node & {
+auto AudioGraph::operator[](std::uint32_t index) -> Vertex & {
   return nodes[index];
 }
 
-auto AudioGraph::operator[](std::uint32_t index) const -> const Node & {
+auto AudioGraph::operator[](std::uint32_t index) const -> const Vertex & {
   return nodes[index];
 }
 
@@ -76,8 +76,8 @@ void AudioGraph::remapListsToTargetIndex() {
   // longer names the node it was written for.
   for (auto &node : nodes) {
     forEachDependencyList(node, [this](std::uint32_t head) {
-      for (auto &inputIndex : pool_.mutableView(head)) {
-        inputIndex = static_cast<std::uint32_t>(nodes[inputIndex].target_index);
+      for (auto &inputVertex : pool_.mutableView(head)) {
+        inputVertex = static_cast<std::uint32_t>(nodes[inputVertex].target_place);
       }
     });
   }
@@ -90,23 +90,21 @@ void AudioGraph::sortAndCompact() {
   }
 
   // Only orphaned nodes can be deleted, so with none present skip the rest of the function.
-  if (std::ranges::none_of(nodes, [](const Node &node) { return node.orphaned; })) {
+  if (std::ranges::none_of(nodes, [](const Vertex &node) { return node.orphaned; })) {
     return;
   }
-
-  const auto n = static_cast<std::uint32_t>(nodes.size());
 
   markDeletions();
 
   // ── Assign each survivor its post-compaction position ───────────────────
-  // Deleted nodes keep target_index == -1 and give their pool slots back now,
+  // Deleted nodes keep target_place == -1 and give their pool slots back now,
   // so the remap below never has to special-case them.
   std::uint32_t new_pos = 0;
   for (auto &node : nodes) {
     if (node.will_be_deleted) {
       forEachDependencyList(node, [this](std::uint32_t &head) { pool_.freeAll(head); });
     } else {
-      node.target_index = static_cast<std::int32_t>(new_pos++);
+      node.target_place = static_cast<std::int32_t>(new_pos++);
     }
   }
 
@@ -114,6 +112,7 @@ void AudioGraph::sortAndCompact() {
 
   // ── Pass 2b: compact — shift kept nodes left ───────────────────────────
   std::uint32_t b = 0;
+  const auto n = static_cast<std::uint32_t>(nodes.size());
   for (std::uint32_t e = 0; e < n; e++) {
     if (nodes[e].will_be_deleted) {
       continue;
@@ -135,42 +134,22 @@ void AudioGraph::sortAndCompact() {
 
   // Reset scratch fields for next compaction
   for (auto &node : nodes) {
-    node.target_index = -1;
+    node.target_place = -1;
     node.will_be_deleted = false;
   }
 }
 
 void AudioGraph::settleProcessableState() {
   using PS = GraphObject::PROCESSABLE_STATE;
-
-  std::int32_t top = -1;
-  auto push = [&](std::uint32_t i) {
-    nodes[i].target_index = top;
-    top = static_cast<std::int32_t>(i);
-  };
-
-  for (std::uint32_t i = 0; i < nodes.size(); i++) {
-    if (nodes[i].handle->audioNode->processableState_ != PS::NOT_PROCESSABLE) {
-      push(i);
+  for (auto i = nodes.size(); i-- > 0;) {
+    if (nodes[i].handle->audioNode->processableState_ == PS::NOT_PROCESSABLE) {
+      continue;
     }
-  }
-
-  // Promote each popped node's dependencies to CONDITIONAL_PROCESSABLE and
-  // push the ones that transitioned. A node that opted out via
-  // excludeFromProcessablePull_ stays NOT_PROCESSABLE and is never pushed, so
-  // nothing propagates through it.
-  while (top != -1) {
-    // pop
-    const auto idx = static_cast<std::uint32_t>(top);
-    top = nodes[idx].target_index;
-    nodes[idx].target_index = -1;
-
-    forEachDependencyList(nodes[idx], [&](std::uint32_t head) {
-      for (const auto dep : pool_.view(head)) {
-        auto &obj = *nodes[dep].handle->audioNode;
+    forEachDependencyList(nodes[i], [&](std::uint32_t head) {
+      for (const auto inputIdx : pool_.view(head)) {
+        auto &obj = *nodes[inputIdx].handle->audioNode;
         if (obj.processableState_ == PS::NOT_PROCESSABLE && !obj.excludeFromProcessablePull_) {
           obj.processableState_ = PS::CONDITIONAL_PROCESSABLE;
-          push(dep);
         }
       }
     });
@@ -195,7 +174,7 @@ void AudioGraph::kahn_toposort() {
   // Phase 2: reverse Kahn — sinks first, sources last in pop order.
   std::int32_t top = -1;
   auto push = [&](std::uint32_t i) {
-    nodes[i].target_index = top; // temporary: link to the node below on the ready stack
+    nodes[i].target_place = top; // temporary: link to the node below on the ready stack
     top = static_cast<std::int32_t>(i);
   };
 
@@ -205,12 +184,13 @@ void AudioGraph::kahn_toposort() {
     }
   }
 
+  // sinks are processed first, thus we start with n so they end up last
   std::uint32_t write = n;
   while (top != -1) {
     // pop
     const auto idx = static_cast<std::uint32_t>(top);
-    top = nodes[idx].target_index;
-    nodes[idx].target_index = static_cast<std::int32_t>(--write); // final: position after the sort
+    top = nodes[idx].target_place;
+    nodes[idx].target_place = static_cast<std::int32_t>(--write); // final: position after the sort
 
     for (const auto inp : pool_.view(nodes[idx].input_head)) {
       if (--nodes[inp].topo_out_degree == 0) {
@@ -224,8 +204,8 @@ void AudioGraph::kahn_toposort() {
 
   // Phase 4: apply permutation in place via cycle sort
   for (std::uint32_t i = 0; i < n; i++) {
-    while (nodes[i].target_index != static_cast<std::int32_t>(i)) {
-      const auto t = static_cast<std::uint32_t>(nodes[i].target_index);
+    while (nodes[i].target_place != static_cast<std::int32_t>(i)) {
+      const auto t = static_cast<std::uint32_t>(nodes[i].target_place);
       std::swap(nodes[i], nodes[t]);
     }
   }
@@ -235,7 +215,7 @@ void AudioGraph::kahn_toposort() {
     if (nodes[i].handle) {
       nodes[i].handle->index = i;
     }
-    nodes[i].target_index = -1;
+    nodes[i].target_place = -1;
   }
 }
 

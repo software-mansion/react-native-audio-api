@@ -53,7 +53,7 @@ TEST(BridgeNodeContract, BridgeNodeStoresParam) {
 
 class BridgeGraphTest : public ::testing::Test {
  protected:
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   using AGEvent = HostGraph::AGEvent;
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
@@ -61,7 +61,7 @@ class BridgeGraphTest : public ::testing::Test {
   HostGraph hostGraph;
   DisposerImpl<kPayloadSize> disposer_{64};
 
-  HNode *addMockNode() {
+  HostVertex *addMockNode() {
     auto obj = std::make_unique<MockNode>();
     auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
@@ -69,7 +69,7 @@ class BridgeGraphTest : public ::testing::Test {
     return hostNode;
   }
 
-  HNode *addBridgeNode(AudioParam *param = nullptr) {
+  HostVertex *addBridgeNode(AudioParam *param = nullptr) {
     auto obj = std::make_unique<BridgeNode>(param);
     auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
@@ -77,7 +77,7 @@ class BridgeGraphTest : public ::testing::Test {
     return hostNode;
   }
 
-  bool addEdge(HNode *from, HNode *to) {
+  bool addEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.addEdge(from, to);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
@@ -87,7 +87,7 @@ class BridgeGraphTest : public ::testing::Test {
     return false;
   }
 
-  bool removeEdge(HNode *from, HNode *to) {
+  bool removeEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.removeEdge(from, to);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
@@ -97,7 +97,7 @@ class BridgeGraphTest : public ::testing::Test {
     return false;
   }
 
-  bool removeNode(HNode *node) {
+  bool removeNode(HostVertex *node) {
     auto result = hostGraph.removeNode(node);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
@@ -142,7 +142,7 @@ TEST_F(BridgeGraphTest, CycleDetectionThroughBridges) {
   // Now B → A should be rejected as a cycle
   auto result = hostGraph.addEdge(nodeB, nodeA);
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::CYCLE_DETECTED);
+  EXPECT_EQ(result.unwrap_err(), HostGraph::GraphError::CYCLE_DETECTED);
 }
 
 TEST_F(BridgeGraphTest, DuplicateEdgeRejectionWithBridges) {
@@ -153,7 +153,7 @@ TEST_F(BridgeGraphTest, DuplicateEdgeRejectionWithBridges) {
   // Same edge again should be rejected
   auto result = hostGraph.addEdge(source, bridge);
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::EDGE_ALREADY_EXISTS);
+  EXPECT_EQ(result.unwrap_err(), HostGraph::GraphError::EDGE_ALREADY_EXISTS);
 }
 
 // =========================================================================
@@ -162,21 +162,21 @@ TEST_F(BridgeGraphTest, DuplicateEdgeRejectionWithBridges) {
 
 class BridgeIterTest : public ::testing::Test {
  protected:
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   AudioGraph audioGraph;
   HostGraph hostGraph;
   DisposerImpl<kPayloadSize> disposer_{64};
 
-  HNode *addNode(std::unique_ptr<GraphObject> obj) {
+  HostVertex *addNode(std::unique_ptr<GraphObject> obj) {
     auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
   }
 
-  bool addEdge(HNode *from, HNode *to) {
+  bool addEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.addEdge(from, to);
     if (result.is_ok()) {
       std::move(result).unwrap()(audioGraph, disposer_);
@@ -323,7 +323,7 @@ TEST_F(BridgeGraphTest, BridgeOrphanedAndNoInputsGetsCompacted) {
 
 class BridgeGraphWrapperTest : public ::testing::Test {
  protected:
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;
@@ -340,7 +340,7 @@ class BridgeGraphWrapperTest : public ::testing::Test {
   }
 
   /// Simulates AudioParamHostObject: creates bridge, adds to graph, connects bridge→owner
-  HNode *createParamBridge(AudioParam *param, HNode *owner) {
+  HostVertex *createParamBridge(AudioParam *param, HostVertex *owner) {
     auto *bridge = graph->addNode(std::make_unique<BridgeNode>(param));
     EXPECT_TRUE(graph->addEdge(bridge, owner).is_ok());
     return bridge;
@@ -413,7 +413,7 @@ TEST_F(BridgeGraphWrapperTest, DuplicateEdgeToBridgeRejected) {
   // Same edge again should fail
   auto result = graph->addEdge(source, bridge);
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::EDGE_ALREADY_EXISTS);
+  EXPECT_EQ(result.unwrap_err(), HostGraph::GraphError::EDGE_ALREADY_EXISTS);
 }
 
 TEST_F(BridgeGraphWrapperTest, CycleDetectedThroughBridge) {
@@ -430,7 +430,7 @@ TEST_F(BridgeGraphWrapperTest, CycleDetectedThroughBridge) {
   // Try B → bridge — combined with bridge → A and A → B creates cycle
   auto result = graph->addEdge(nodeB, bridge);
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::CYCLE_DETECTED);
+  EXPECT_EQ(result.unwrap_err(), HostGraph::GraphError::CYCLE_DETECTED);
 }
 
 TEST_F(BridgeGraphWrapperTest, BridgeRemovalWhenParamDestroyed) {
@@ -532,14 +532,14 @@ TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
 
 class BridgeFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;
   std::mt19937_64 rng;
-  std::vector<HNode *> liveNodes;
-  std::vector<HNode *> bridgeNodes;
+  std::vector<HostVertex *> liveNodes;
+  std::vector<HostVertex *> bridgeNodes;
   std::vector<std::shared_ptr<AudioParam>> params_; // Real params
   std::vector<AudioParam *> paramPtrs_;             // Raw pointers for test use
 
@@ -562,13 +562,13 @@ class BridgeFuzzTest : public ::testing::TestWithParam<uint64_t> {
     }
   }
 
-  HNode *pickRandom() {
+  HostVertex *pickRandom() {
     if (liveNodes.empty())
       return nullptr;
     return liveNodes[std::uniform_int_distribution<size_t>(0, liveNodes.size() - 1)(rng)];
   }
 
-  HNode *pickBridge() {
+  HostVertex *pickBridge() {
     if (bridgeNodes.empty())
       return nullptr;
     return bridgeNodes[std::uniform_int_distribution<size_t>(0, bridgeNodes.size() - 1)(rng)];

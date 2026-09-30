@@ -23,8 +23,8 @@ class HostGraphTest : public ::testing::Test {
       const std::vector<std::vector<size_t>> &expectedAdjacencyList) {
     // Find nodes by ID
 
-    HostGraph::Node *fromNode = nullptr;
-    HostGraph::Node *toNode = nullptr;
+    HostGraph::HostVertex *fromNode = nullptr;
+    HostGraph::HostVertex *toNode = nullptr;
 
     for (auto *n : hostGraph.nodes) {
       if (n->test_node_identifier__ == fromId)
@@ -61,7 +61,7 @@ class HostGraphTest : public ::testing::Test {
         << "HostGraph does not match expected adjacency list";
   }
 
-  HostGraph::Node *findNode(const HostGraph &hostGraph, size_t id) {
+  HostGraph::HostVertex *findNode(const HostGraph &hostGraph, size_t id) {
     for (auto *n : hostGraph.nodes) {
       if (n->test_node_identifier__ == id)
         return n;
@@ -198,13 +198,13 @@ TEST_F(HostGraphTest, AddEdge_CycleDetection) {
   auto hostAdjBefore = TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph);
   auto audioAdjBefore = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
 
-  HostGraph::Node *node0 = findNode(hostGraph, 0);
-  HostGraph::Node *node2 = findNode(hostGraph, 2);
+  HostGraph::HostVertex *node0 = findNode(hostGraph, 0);
+  HostGraph::HostVertex *node2 = findNode(hostGraph, 2);
 
   // Try adding cycle 2->0
   auto result = hostGraph.addEdge(node2, node0);
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::CYCLE_DETECTED);
+  EXPECT_EQ(result.unwrap_err(), HostGraph::GraphError::CYCLE_DETECTED);
 
   // HostGraph should NOT change
   auto hostAdjAfter = TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph);
@@ -265,8 +265,8 @@ TEST_F(HostGraphTest, AddEdge_GridInterconnect) {
   // If we try 5->0 -> Cycle (5 reachable from 0)
 
   auto hostAdjBefore = TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph);
-  HostGraph::Node *node5 = findNode(hostGraph, 5);
-  HostGraph::Node *node0 = findNode(hostGraph, 0);
+  HostGraph::HostVertex *node5 = findNode(hostGraph, 5);
+  HostGraph::HostVertex *node0 = findNode(hostGraph, 0);
 
   auto result = hostGraph.addEdge(node5, node0);
   EXPECT_TRUE(result.is_err());
@@ -295,9 +295,9 @@ TEST_F(HostGraphTest, RemoveNode_GhostNodeMustNotAllowCycle) {
       {}   // 2
   });
 
-  HostGraph::Node *node0 = findNode(hostGraph, 0);
-  HostGraph::Node *node1 = findNode(hostGraph, 1);
-  HostGraph::Node *node2 = findNode(hostGraph, 2);
+  HostGraph::HostVertex *node0 = findNode(hostGraph, 0);
+  HostGraph::HostVertex *node1 = findNode(hostGraph, 1);
+  HostGraph::HostVertex *node2 = findNode(hostGraph, 2);
   ASSERT_NE(node0, nullptr);
   ASSERT_NE(node1, nullptr);
   ASSERT_NE(node2, nullptr);
@@ -319,7 +319,7 @@ TEST_F(HostGraphTest, RemoveNode_GhostNodeMustNotAllowCycle) {
   auto addResult = hostGraph.addEdge(node2, node0);
 
   EXPECT_TRUE(addResult.is_err()) << "HostGraph should detect the cycle through the ghost node";
-  EXPECT_EQ(addResult.unwrap_err(), HostGraph::ResultError::CYCLE_DETECTED);
+  EXPECT_EQ(addResult.unwrap_err(), HostGraph::GraphError::CYCLE_DETECTED);
 }
 
 } // namespace audioapi::utils::graph

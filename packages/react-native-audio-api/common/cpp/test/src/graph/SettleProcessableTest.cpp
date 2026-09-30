@@ -33,21 +33,21 @@ struct DisableMockNode : MockNode {
 // ── Low-level fixture: drive AudioGraph + HostGraph directly + settle ───────
 class SettleProcessableTest : public ::testing::Test {
  protected:
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   AudioGraph audioGraph;
   HostGraph hostGraph;
   DisposerImpl<kPayloadSize> disposer_{64};
 
-  HNode *addNode(std::unique_ptr<GraphObject> obj) {
+  HostVertex *addNode(std::unique_ptr<GraphObject> obj) {
     auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
   }
 
-  bool addEdge(HNode *from, HNode *to) {
+  bool addEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.addEdge(from, to);
     if (result.is_ok()) {
       std::move(result).unwrap()(audioGraph, disposer_);
@@ -56,7 +56,7 @@ class SettleProcessableTest : public ::testing::Test {
     return false;
   }
 
-  bool removeEdge(HNode *from, HNode *to) {
+  bool removeEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.removeEdge(from, to);
     if (result.is_ok()) {
       std::move(result).unwrap()(audioGraph, disposer_);
@@ -77,7 +77,7 @@ class SettleProcessableTest : public ::testing::Test {
     }
   }
 
-  static bool processable(HNode *node) {
+  static bool processable(HostVertex *node) {
     return node->handle->audioNode->isProcessable();
   }
 };
@@ -148,7 +148,7 @@ TEST_F(SettleProcessableTest, TailNodeDoesNotReactivateUpstream) {
 // ── Wrapper fixture: exercise Graph::linkNodes + settle via process() ───────
 class SettleLinkTest : public ::testing::Test {
  protected:
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;
