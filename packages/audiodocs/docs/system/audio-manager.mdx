@@ -193,11 +193,11 @@ A resume that completes while the app is still backgrounded is possible only whe
   - `iosCategory` set to `record` or `playAndRecord`, so the session can record. These categories also allow background recording. An incompatible category leads to a [`cannotStartPlaying`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotstartplaying) error.
   - `iosMode` set to `default`.
   - `iosOptions` include `mixWithOthers`, so the system can mix this session with audio from active sessions in other apps. Trying to resume recording in the background with a non-mixable session leads to [`cannotInterruptOthers`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotinterruptothers).
-- The app must declare [background audio mode](/docs/other/audio-api-plugin#iosbackgroundmode).
+- The app must declare [background audio mode](../other/audio-api-plugin.mdx#iosbackgroundmode).
 
 #### Execution
 
-To complete a background resume, audio I/O must have been started in the foreground, and it must still have been running when the app went to the background. The background audio mode lets that already-running I/O *continue*; it does not allow *starting* audio from the background. iOS treats an `interruption` event of type `ended` as the wake on which a background resume may be attempted. A later background timer is not such a wake. Another app must have released the audio route and the microphone. For recording, the recorder must not have been stopped with [`stop()`](/docs/inputs/audio-recorder#stop), because stopping ends the take.
+To complete a background resume, audio I/O must have been started in the foreground, and it must still have been running when the app went to the background. The background audio mode lets that already-running I/O *continue*; it does not allow *starting* audio from the background. iOS treats an `interruption` event of type `ended` as the wake on which a background resume may be attempted. A later background timer is not such a wake. Another app must have released the audio route and the microphone. For recording, the recorder must not have been stopped with [`stop()`](../inputs/audio-recorder.mdx#stop), because stopping ends the take.
 
 #### iOS policy
 
