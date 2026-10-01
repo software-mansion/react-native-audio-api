@@ -36,7 +36,7 @@ class IOSEncoder : public AudioEncoder {
   Result<NoneType, std::string> prepareConversionPipeline(const StreamFormat &inputFormat);
   void releaseConversionPipeline();
 
-  std::unique_ptr<IOSEncoderState> impl_;
+  std::unique_ptr<IOSEncoderState> state_;
 };
 
 } // namespace audioapi::ios::encoder

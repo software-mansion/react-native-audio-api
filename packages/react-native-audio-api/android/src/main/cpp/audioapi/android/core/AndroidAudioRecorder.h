@@ -51,9 +51,16 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override;
 
  private:
+  /// The caller holds streamMutex_.
   Result<NoneType, std::string> openAudioStream();
+  /// Marks the recorder idle and closes the stream. The caller holds streamMutex_.
+  void closeStream();
+  /// The caller holds streamMutex_.
+  [[nodiscard]] bool isStreamRecording() const;
 
-  mutable std::recursive_mutex streamMutex_;
+  /// Taken once by each entry point (the public methods and Oboe's error callback); the
+  /// private stream helpers above never take it.
+  mutable std::mutex streamMutex_;
 
   AudioRecorderOptions::AndroidInputPreset inputPreset_;
   int32_t streamChannelCount_{0};

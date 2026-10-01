@@ -78,7 +78,6 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// Callable from the JS thread only.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
-  std::scoped_lock streamLock(streamMutex_);
   if (mStream_ != nullptr) {
     return Ok(None);
   }
@@ -223,7 +222,7 @@ Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
 /// This method should be called from the JS thread only.
 void AndroidAudioRecorder::pause() {
   std::scoped_lock streamLock(streamMutex_);
-  if (!isRecording()) {
+  if (!isStreamRecording()) {
     return;
   }
 
@@ -290,6 +289,10 @@ Result<StreamFormat, std::string> AndroidAudioRecorder::resolveStreamFormat() co
 
 bool AndroidAudioRecorder::isRecording() const {
   std::scoped_lock streamLock(streamMutex_);
+  return isStreamRecording();
+}
+
+bool AndroidAudioRecorder::isStreamRecording() const {
   return mStream_ != nullptr &&
       state_.load(std::memory_order_acquire) == RecorderState::Recording &&
       mStream_->getState() == oboe::StreamState::Started;
@@ -305,6 +308,10 @@ bool AndroidAudioRecorder::isIdle() const {
 
 void AndroidAudioRecorder::cleanup() {
   std::scoped_lock streamLock(streamMutex_);
+  closeStream();
+}
+
+void AndroidAudioRecorder::closeStream() {
   state_.store(RecorderState::Idle, std::memory_order_release);
 
   if (mStream_ != nullptr) {
@@ -330,7 +337,7 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 
     const auto stateBeforeTeardown = state_.load(std::memory_order_acquire);
 
-    cleanup();
+    closeStream();
 
     if (stateBeforeTeardown == RecorderState::Idle) {
       return;

@@ -29,8 +29,9 @@ struct TrackFormat {
   return formatId == kAudioFormatMPEG4AAC;
 }
 
-[[nodiscard]] IOSRemuxResult
-readTrackFormat(AVAssetTrack *track, TrackFormat &out, const std::string &filePath)
+[[nodiscard]] Result<TrackFormat, std::string> readTrackFormat(
+    AVAssetTrack *track,
+    const std::string &filePath)
 {
   NSArray *descriptions = track.formatDescriptions;
   if (descriptions == nil || descriptions.count == 0) {
@@ -44,10 +45,12 @@ readTrackFormat(AVAssetTrack *track, TrackFormat &out, const std::string &filePa
     return Err("Input file '" + filePath + "' is missing audio stream basic description.");
   }
 
-  out.formatId = asbd->mFormatID;
-  out.sampleRate = asbd->mSampleRate;
-  out.channelCount = asbd->mChannelsPerFrame;
-  return Ok(filePath);
+  return Ok(
+      TrackFormat{
+          .formatId = asbd->mFormatID,
+          .sampleRate = asbd->mSampleRate,
+          .channelCount = asbd->mChannelsPerFrame,
+      });
 }
 
 [[nodiscard]] IOSRemuxResult validateCompatible(
@@ -100,11 +103,11 @@ IOSRemuxResult concatAudioFiles(
       }
 
       AVAssetTrack *audioTrack = audioTracks.firstObject;
-      TrackFormat trackFormat;
-      auto trackFormatResult = readTrackFormat(audioTrack, trackFormat, path);
+      auto trackFormatResult = readTrackFormat(audioTrack, path);
       if (trackFormatResult.is_err()) {
-        return trackFormatResult;
+        return Err(trackFormatResult.unwrap_err());
       }
+      const TrackFormat trackFormat = trackFormatResult.unwrap();
 
       if (!isAacFormatId(trackFormat.formatId)) {
         return Err(

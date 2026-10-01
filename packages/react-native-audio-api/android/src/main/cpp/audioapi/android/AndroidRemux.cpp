@@ -36,6 +36,12 @@ struct TrackInfo {
   std::vector<uint8_t> csd0;
 };
 
+struct AudioTrack {
+  /// Of the track within its extractor.
+  size_t index{0};
+  TrackInfo info;
+};
+
 // Reads the leading audioObjectType from an AudioSpecificConfig. Returns 0 when
 // the config is too short to classify.
 //
@@ -194,8 +200,7 @@ class MuxerGuard {
   bool started_{false};
 };
 
-[[nodiscard]] Result<std::string, std::string>
-findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) {
+[[nodiscard]] Result<AudioTrack, std::string> findAudioTrack(AMediaExtractor *extractor) {
   const size_t trackCount = AMediaExtractor_getTrackCount(extractor);
   for (size_t i = 0; i < trackCount; ++i) {
     AMediaFormat *format = AMediaExtractor_getTrackFormat(extractor, i);
@@ -243,9 +248,7 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
     candidate.audioObjectType = audioObjectTypeFromAudioSpecificConfig(candidate.csd0);
 
     AMediaFormat_delete(format);
-    trackIndex = i;
-    info = std::move(candidate);
-    return Ok(std::string());
+    return Ok(AudioTrack{.index = i, .info = std::move(candidate)});
   }
 
   return Err("Input file does not contain an audio stream.");
@@ -253,22 +256,20 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
 
 // Opens an extractor for `path` and locates its audio track, prefixing any
 // track error with the file path for consistent messages.
-[[nodiscard]] Result<std::string, std::string> openAndFindAudioTrack(
+[[nodiscard]] Result<AudioTrack, std::string> openAndFindAudioTrack(
     const std::string &path,
-    ExtractorGuard &extractor,
-    size_t &trackIndex,
-    TrackInfo &info) {
+    ExtractorGuard &extractor) {
   auto openResult = extractor.open(path);
   if (openResult.is_err()) {
-    return openResult;
+    return Err(openResult.unwrap_err());
   }
 
-  auto found = findAudioTrack(extractor.get(), trackIndex, info);
+  auto found = findAudioTrack(extractor.get());
   if (found.is_err()) {
     return Err("Input file '" + path + "': " + found.unwrap_err());
   }
 
-  return Ok(path);
+  return found;
 }
 
 [[nodiscard]] Result<std::string, std::string> validateCompatible(
@@ -370,13 +371,11 @@ Result<std::string, std::string> concatAudioFiles(
   }
 
   ExtractorGuard firstExtractor;
-  size_t firstTrackIndex = 0;
-  TrackInfo referenceInfo;
-  auto refResult =
-      openAndFindAudioTrack(inputPaths.front(), firstExtractor, firstTrackIndex, referenceInfo);
+  auto refResult = openAndFindAudioTrack(inputPaths.front(), firstExtractor);
   if (refResult.is_err()) {
-    return refResult;
+    return Err(refResult.unwrap_err());
   }
+  const TrackInfo referenceInfo = refResult.unwrap().info;
 
   if (!isAacLcTrack(referenceInfo)) {
     return Err(
@@ -386,12 +385,11 @@ Result<std::string, std::string> concatAudioFiles(
 
   for (size_t i = 1; i < inputPaths.size(); ++i) {
     ExtractorGuard extractor;
-    size_t trackIndex = 0;
-    TrackInfo info;
-    auto result = openAndFindAudioTrack(inputPaths[i], extractor, trackIndex, info);
+    auto result = openAndFindAudioTrack(inputPaths[i], extractor);
     if (result.is_err()) {
-      return result;
+      return Err(result.unwrap_err());
     }
+    const TrackInfo info = result.unwrap().info;
 
     if (!isAacLcTrack(info)) {
       return Err(
@@ -424,15 +422,13 @@ Result<std::string, std::string> concatAudioFiles(
   firstExtractor.reset();
   for (const auto &inputPath : inputPaths) {
     ExtractorGuard extractor;
-    size_t extractorTrackIndex = 0;
-    TrackInfo info;
-    auto result = openAndFindAudioTrack(inputPath, extractor, extractorTrackIndex, info);
+    auto result = openAndFindAudioTrack(inputPath, extractor);
     if (result.is_err()) {
-      return result;
+      return Err(result.unwrap_err());
     }
 
     auto appendResult = appendSamples(
-        extractor.get(), extractorTrackIndex, muxer.get(), muxerTrackIndex, timeOffsetUs);
+        extractor.get(), result.unwrap().index, muxer.get(), muxerTrackIndex, timeOffsetUs);
     if (appendResult.is_err()) {
       return Err("Failed while remuxing '" + inputPath + "': " + appendResult.unwrap_err());
     }
