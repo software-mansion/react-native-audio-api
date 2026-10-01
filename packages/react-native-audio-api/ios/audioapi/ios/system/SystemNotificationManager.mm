@@ -334,7 +334,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [audioEngine markGraphNeedsRebuild];
       return;
     }
-
     [sessionManager markInactive];
     [audioEngine restartAudioEngine];
   });
