@@ -730,10 +730,10 @@ OpenEncoderResult AndroidEncoder::open(
     const EncoderOutputSpec &outputSpec,
     const std::string &filePath) {
   if (isOpen()) {
-    return OpenEncoderResult::Err("Encoder already open");
+    return Err("Encoder already open");
   }
   if (inputFormat.sampleRate <= 0 || inputFormat.channelCount <= 0) {
-    return OpenEncoderResult::Err("Invalid input format");
+    return Err("Invalid input format");
   }
 
   inputFormat_ = inputFormat;
@@ -756,8 +756,7 @@ OpenEncoderResult AndroidEncoder::open(
       backend_ = std::make_unique<MuxedBackend>();
       break;
     default:
-      return OpenEncoderResult::Err(
-          std::string(toString(outputSpec.codec)) + " is not encodable on Android");
+      return Err(std::string(toString(outputSpec.codec)) + " is not encodable on Android");
   }
 
   int effectiveSampleRate = static_cast<int>(settings_.stream.sampleRate);
@@ -772,7 +771,7 @@ OpenEncoderResult AndroidEncoder::open(
       effectiveChannelCount);
   if (!err.empty()) {
     backend_.reset();
-    return OpenEncoderResult::Err(err);
+    return Err(err);
   }
 
   outputSampleRate_ = effectiveSampleRate;
@@ -784,7 +783,7 @@ OpenEncoderResult AndroidEncoder::open(
     if (inputChannelCount_ > MAX_CHANNEL_COUNT || outputChannelCount_ > MAX_CHANNEL_COUNT) {
       backend_->close();
       backend_.reset();
-      return OpenEncoderResult::Err("Channel count exceeds MAX_CHANNEL_COUNT");
+      return Err("Channel count exceeds MAX_CHANNEL_COUNT");
     }
     conversion_ = std::make_unique<ConversionState>(
         static_cast<int>(inputSampleRate_),
@@ -795,7 +794,7 @@ OpenEncoderResult AndroidEncoder::open(
   }
 
   markOpen();
-  return OpenEncoderResult::Ok(filePath_);
+  return Ok(filePath_);
 }
 
 std::string AndroidEncoder::encodeConverted(const float *const *channels, int numFrames) {
@@ -854,10 +853,10 @@ std::string AndroidEncoder::encodeConverted(const float *const *channels, int nu
 
 EncodeResult AndroidEncoder::encode(const float *const *channels, int numFrames) {
   if (!isOpen() || backend_ == nullptr) {
-    return EncodeResult::Err("Encoder is not open");
+    return Err("Encoder is not open");
   }
   if (channels == nullptr || numFrames <= 0) {
-    return EncodeResult::Err("Invalid encode input");
+    return Err("Invalid encode input");
   }
 
   // Frames already in the backend's format go straight through; the backend interleaves
@@ -865,16 +864,16 @@ EncodeResult AndroidEncoder::encode(const float *const *channels, int numFrames)
   std::string err = conversion_ != nullptr ? encodeConverted(channels, numFrames)
                                            : backend_->encodePlanar(channels, numFrames);
   if (!err.empty()) {
-    return EncodeResult::Err(err);
+    return Err(err);
   }
 
   addEncodedFrames(static_cast<size_t>(numFrames));
-  return EncodeResult::Ok(static_cast<size_t>(numFrames));
+  return Ok(static_cast<size_t>(numFrames));
 }
 
 CloseEncoderResult AndroidEncoder::close() {
   if (!isOpen() || backend_ == nullptr) {
-    return CloseEncoderResult::Err("Encoder is not open");
+    return Err("Encoder is not open");
   }
   markClosed();
 
@@ -888,11 +887,11 @@ CloseEncoderResult AndroidEncoder::close() {
   resetFramesEncoded();
 
   if (!err.empty()) {
-    return CloseEncoderResult::Err(err);
+    return Err(err);
   }
 
   const double sizeMB = static_cast<double>(sizeBytes) / (1024.0 * 1024.0);
-  return CloseEncoderResult::Ok(std::make_tuple(sizeMB, durationSeconds));
+  return Ok(std::make_tuple(sizeMB, durationSeconds));
 }
 
 size_t AndroidEncoder::getFileSizeBytes() const {

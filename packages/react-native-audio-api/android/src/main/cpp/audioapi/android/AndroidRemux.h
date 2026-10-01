@@ -7,10 +7,8 @@
 
 namespace audioapi::android_remux {
 
-using AndroidRemuxResult = Result<std::string, std::string>;
-
 /// Packet-copy remux of compatible AAC-in-M4A/MP4 via AMediaExtractor + AMediaMuxer.
-[[nodiscard]] AndroidRemuxResult concatAudioFiles(
+[[nodiscard]] Result<std::string, std::string> concatAudioFiles(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath);
 

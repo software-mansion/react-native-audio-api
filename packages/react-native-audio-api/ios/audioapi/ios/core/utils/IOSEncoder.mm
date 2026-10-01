@@ -109,15 +109,13 @@ OpenEncoderResult IOSEncoder::open(
 {
   @autoreleasepool {
     if (isOpen()) {
-      return OpenEncoderResult::Err("Encoder already open");
+      return Err("Encoder already open");
     }
     if (inputFormat.sampleRate <= 0 || inputFormat.channelCount <= 0) {
-      return OpenEncoderResult::Err(
-          "Invalid input format: sampleRate and channelCount must be greater than 0");
+      return Err("Invalid input format: sampleRate and channelCount must be greater than 0");
     }
     if (settings_.stream.sampleRate <= 0 || settings_.stream.channelCount <= 0) {
-      return OpenEncoderResult::Err(
-          "Invalid encoder settings: sampleRate and channelCount must be greater than 0");
+      return Err("Invalid encoder settings: sampleRate and channelCount must be greater than 0");
     }
 
     outputSpec_ = outputSpec;
@@ -136,7 +134,7 @@ OpenEncoderResult IOSEncoder::open(
                                                interleaved:NO
                                                      error:&error];
     if (error != nil || impl_->audioFile == nil) {
-      return OpenEncoderResult::Err(
+      return Err(
           std::string("Error creating audio file for writing: ") +
           (error != nil ? [[error debugDescription] UTF8String] : "unknown"));
     }
@@ -145,11 +143,11 @@ OpenEncoderResult IOSEncoder::open(
     if (pipelineResult.is_err()) {
       releaseConversionPipeline();
       impl_->audioFile = nil;
-      return OpenEncoderResult::Err(pipelineResult.unwrap_err());
+      return Err(pipelineResult.unwrap_err());
     }
 
     markOpen();
-    return OpenEncoderResult::Ok(filePath_);
+    return Ok(filePath_);
   }
 }
 
@@ -157,11 +155,10 @@ OpenEncoderResult IOSEncoder::reprepareInput(const StreamFormat &inputFormat)
 {
   @autoreleasepool {
     if (!isOpen() || impl_->audioFile == nil) {
-      return OpenEncoderResult::Err("Encoder is not open");
+      return Err("Encoder is not open");
     }
     if (inputFormat.sampleRate <= 0 || inputFormat.channelCount <= 0) {
-      return OpenEncoderResult::Err(
-          "Invalid input format: sampleRate and channelCount must be greater than 0");
+      return Err("Invalid input format: sampleRate and channelCount must be greater than 0");
     }
 
     // The file's settings come from the encoder settings, not the input, so it stays open and the recording
@@ -171,20 +168,18 @@ OpenEncoderResult IOSEncoder::reprepareInput(const StreamFormat &inputFormat)
     auto pipelineResult = prepareConversionPipeline(inputFormat);
     if (pipelineResult.is_err()) {
       releaseConversionPipeline();
-      return OpenEncoderResult::Err(pipelineResult.unwrap_err());
+      return Err(pipelineResult.unwrap_err());
     }
 
-    return OpenEncoderResult::Ok(filePath_);
+    return Ok(filePath_);
   }
 }
 
 Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const StreamFormat &inputFormat)
 {
-  using PipelineResult = Result<NoneType, std::string>;
-
   @autoreleasepool {
     if (inputFormat.channelCount > MAX_CHANNEL_COUNT) {
-      return PipelineResult::Err("Channel count exceeds MAX_CHANNEL_COUNT");
+      return Err("Channel count exceeds MAX_CHANNEL_COUNT");
     }
     inputFormat_ = inputFormat;
     impl_->inputChannelCount = inputFormat.channelCount;
@@ -200,14 +195,14 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
                                            channels:(AVAudioChannelCount)inputFormat.channelCount
                                         interleaved:NO];
     if (impl_->inputFormat == nil) {
-      return PipelineResult::Err("Failed to build input AVAudioFormat");
+      return Err("Failed to build input AVAudioFormat");
     }
 
     impl_->converter =
         [[AVAudioConverter alloc] initFromFormat:impl_->inputFormat
                                         toFormat:[impl_->audioFile processingFormat]];
     if (impl_->converter == nil) {
-      return PipelineResult::Err("Failed to create AVAudioConverter");
+      return Err("Failed to create AVAudioConverter");
     }
     impl_->converter.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
     impl_->converter.sampleRateConverterQuality = AVAudioQualityMax;
@@ -222,10 +217,10 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
                                       frameCapacity:(AVAudioFrameCount)outputCapacity];
 
     if (impl_->converterOutputBuffer == nil) {
-      return PipelineResult::Err("Failed to allocate converter buffers");
+      return Err("Failed to allocate converter buffers");
     }
 
-    return PipelineResult::Ok(None);
+    return Ok(None);
   }
 }
 
@@ -242,13 +237,13 @@ void IOSEncoder::releaseConversionPipeline()
 EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
 {
   if (!isOpen() || impl_->audioFile == nil) {
-    return EncodeResult::Err("Encoder is not open");
+    return Err("Encoder is not open");
   }
   if (channels == nullptr || numFrames <= 0) {
-    return EncodeResult::Err("Invalid encode input");
+    return Err("Invalid encode input");
   }
   if (static_cast<size_t>(numFrames) > impl_->maxInputFrames) {
-    return EncodeResult::Err("Encode input exceeds the buffer size declared at open()");
+    return Err("Encode input exceeds the buffer size declared at open()");
   }
 
   @autoreleasepool {
@@ -270,7 +265,7 @@ EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
                                                                bufferListNoCopy:bufferList
                                                                     deallocator:nil];
     if (inputBuffer == nil) {
-      return EncodeResult::Err("Failed to wrap encode input");
+      return Err("Failed to wrap encode input");
     }
 
     AVAudioFormat *fileFormat = [impl_->audioFile processingFormat];
@@ -281,12 +276,12 @@ EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
     if (formatsMatch) {
       [impl_->audioFile writeFromBuffer:inputBuffer error:&error];
       if (error != nil) {
-        return EncodeResult::Err(
+        return Err(
             std::string("Error writing audio data to file: ") +
             [[error debugDescription] UTF8String]);
       }
       addEncodedFrames(static_cast<size_t>(numFrames));
-      return EncodeResult::Ok(static_cast<size_t>(numFrames));
+      return Ok(static_cast<size_t>(numFrames));
     }
 
     __block BOOL handedOff = NO;
@@ -306,24 +301,24 @@ EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
                                 error:&error
                    withInputFromBlock:inputBlock];
     if (error != nil) {
-      return EncodeResult::Err(
+      return Err(
           std::string("Error during audio conversion: ") + [[error debugDescription] UTF8String]);
     }
 
     AVAudioFrameCount producedFrames = impl_->converterOutputBuffer.frameLength;
     if (producedFrames == 0) {
-      return EncodeResult::Ok(static_cast<size_t>(numFrames));
+      return Ok(static_cast<size_t>(numFrames));
     }
 
     [impl_->audioFile writeFromBuffer:impl_->converterOutputBuffer error:&error];
     if (error != nil) {
-      return EncodeResult::Err(
+      return Err(
           std::string("Error writing audio data to file: ") +
           [[error debugDescription] UTF8String]);
     }
 
     addEncodedFrames(static_cast<size_t>(producedFrames));
-    return EncodeResult::Ok(static_cast<size_t>(numFrames));
+    return Ok(static_cast<size_t>(numFrames));
   }
 }
 
@@ -331,7 +326,7 @@ CloseEncoderResult IOSEncoder::close()
 {
   @autoreleasepool {
     if (!isOpen() || impl_->audioFile == nil) {
-      return CloseEncoderResult::Err("Encoder is not open");
+      return Err("Encoder is not open");
     }
     markClosed();
 
@@ -358,7 +353,7 @@ CloseEncoderResult IOSEncoder::close()
     impl_->fileURL = nil;
     resetFramesEncoded();
 
-    return CloseEncoderResult::Ok(std::make_tuple(fileSizeMB, durationSeconds));
+    return Ok(std::make_tuple(fileSizeMB, durationSeconds));
   }
 }
 

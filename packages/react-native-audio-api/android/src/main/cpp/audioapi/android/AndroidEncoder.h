@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include "audioapi/utils/Macros.h"
 
 namespace audioapi::android_encoder {
 
@@ -15,6 +16,7 @@ class AndroidEncoder : public AudioEncoder {
  public:
   explicit AndroidEncoder(const EncoderSettings &settings);
   ~AndroidEncoder() override;
+  DELETE_COPY_AND_MOVE(AndroidEncoder);
 
   OpenEncoderResult open(
       const StreamFormat &inputFormat,

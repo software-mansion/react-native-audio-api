@@ -144,7 +144,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
   auto formatResult = resolveStreamFormat();
 
   if (!formatResult.is_ok()) {
-    return Result<NoneType, std::string>::Err("Audio stream is not initialized.");
+    return Err("Audio stream is not initialized.");
   }
 
   const auto streamFormat = formatResult.unwrap();
@@ -279,10 +279,10 @@ Result<StreamFormat, std::string> AndroidAudioRecorder::resolveStreamFormat() co
   const auto sampleRate = streamSampleRate_.load(std::memory_order_acquire);
 
   if (sampleRate <= 0.0F || streamChannelCount_ <= 0 || streamMaxBufferSizeInFrames_ <= 0) {
-    return Result<StreamFormat, std::string>::Err("audio stream is not initialized");
+    return Err("audio stream is not initialized");
   }
 
-  return Result<StreamFormat, std::string>::Ok(
+  return Ok(
       StreamFormat{
           .sampleRate = sampleRate,
           .channelCount = streamChannelCount_,

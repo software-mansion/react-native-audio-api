@@ -85,7 +85,7 @@ class ExtractorGuard {
     return extractor_;
   }
 
-  [[nodiscard]] AndroidRemuxResult open(const std::string &path) {
+  [[nodiscard]] Result<std::string, std::string> open(const std::string &path) {
     reset();
 
     fd_ = ::open(path.c_str(), O_RDONLY);
@@ -153,7 +153,7 @@ class MuxerGuard {
     return trackIndex_;
   }
 
-  [[nodiscard]] AndroidRemuxResult open(const std::string &path) {
+  [[nodiscard]] Result<std::string, std::string> open(const std::string &path) {
     reset();
 
     fd_ = ::open(path.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -170,7 +170,7 @@ class MuxerGuard {
     return Ok(path);
   }
 
-  [[nodiscard]] AndroidRemuxResult addTrackAndStart(AMediaFormat *format) {
+  [[nodiscard]] Result<std::string, std::string> addTrackAndStart(AMediaFormat *format) {
     trackIndex_ = AMediaMuxer_addTrack(muxer_, format);
     if (trackIndex_ < 0) {
       return Err("Failed to add audio track to MediaMuxer.");
@@ -189,7 +189,7 @@ class MuxerGuard {
   bool started_{false};
 };
 
-[[nodiscard]] AndroidRemuxResult
+[[nodiscard]] Result<std::string, std::string>
 findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) {
   const size_t trackCount = AMediaExtractor_getTrackCount(extractor);
   for (size_t i = 0; i < trackCount; ++i) {
@@ -241,7 +241,7 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
 
 // Opens an extractor for `path` and locates its audio track, prefixing any
 // track error with the file path for consistent messages.
-[[nodiscard]] AndroidRemuxResult openAndFindAudioTrack(
+[[nodiscard]] Result<std::string, std::string> openAndFindAudioTrack(
     const std::string &path,
     ExtractorGuard &extractor,
     size_t &trackIndex,
@@ -259,7 +259,7 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
   return Ok(path);
 }
 
-[[nodiscard]] AndroidRemuxResult validateCompatible(
+[[nodiscard]] Result<std::string, std::string> validateCompatible(
     const TrackInfo &candidate,
     const TrackInfo &reference,
     const std::string &filePath) {
@@ -286,7 +286,7 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
   return format;
 }
 
-[[nodiscard]] AndroidRemuxResult appendSamples(
+[[nodiscard]] Result<std::string, std::string> appendSamples(
     AMediaExtractor *extractor,
     size_t extractorTrackIndex,
     AMediaMuxer *muxer,
@@ -350,7 +350,7 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
 
 } // namespace
 
-AndroidRemuxResult concatAudioFiles(
+Result<std::string, std::string> concatAudioFiles(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
   if (inputPaths.empty()) {

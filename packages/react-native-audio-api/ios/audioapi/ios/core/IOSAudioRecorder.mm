@@ -100,10 +100,10 @@ Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
   const int maxFramesPerBuffer = [nativeRecorder_ getResolvedBufferSize];
 
   if (!hasUsableRecorderFormat(inputFormat) || maxFramesPerBuffer <= 0) {
-    return Result<StreamFormat, std::string>::Err("recorder input format is unavailable");
+    return Err("recorder input format is unavailable");
   }
 
-  return Result<StreamFormat, std::string>::Ok(
+  return Ok(
       StreamFormat{
           .sampleRate = static_cast<float>(inputFormat.sampleRate),
           .channelCount = static_cast<int>(inputFormat.channelCount),
@@ -134,13 +134,13 @@ void IOSAudioRecorder::handleInputConfigurationChange()
 Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
 {
   if (isIdle()) {
-    return Result<NoneType, std::string>::Ok(None);
+    return Ok(None);
   }
 
   auto formatResult = resolveStreamFormat();
 
   if (!formatResult.is_ok()) {
-    return Result<NoneType, std::string>::Err("Recorder input format is unavailable");
+    return Err("Recorder input format is unavailable");
   }
 
   const auto format = formatResult.unwrap();
@@ -187,7 +187,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
     [nativeRecorder_ setInputArmed:true];
   }
 
-  return Result<NoneType, std::string>::Ok(None);
+  return Ok(None);
 }
 
 Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const StreamFormat &format)
@@ -195,19 +195,18 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   std::scoped_lock lock(fileWriterMutex_);
 
   if (fileWriter_ == nullptr) {
-    return Result<NoneType, std::string>::Err("File writer is unavailable");
+    return Err("File writer is unavailable");
   }
 
   // The file stays the same; only the encoder's input side follows the new format.
   auto result = fileWriter_->reprepareStreamFormat(format);
   if (result.is_err()) {
     deactivate(fileOutputState_);
-    return Result<NoneType, std::string>::Err(
-        "Failed to continue the recording in the new input format: " + result.unwrap_err());
+    return Err("Failed to continue the recording in the new input format: " + result.unwrap_err());
   }
 
   fileOutputState_.store(OutputState::Active, std::memory_order_release);
-  return Result<NoneType, std::string>::Ok(None);
+  return Ok(None);
 }
 
 Result<NoneType, std::string> IOSAudioRecorder::reprepareCallback(const StreamFormat &format)
@@ -215,17 +214,17 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareCallback(const StreamFo
   std::scoped_lock lock(callbackMutex_);
 
   if (dataCallback_ == nullptr) {
-    return Result<NoneType, std::string>::Err("Callback is unavailable");
+    return Err("Callback is unavailable");
   }
 
   auto result = dataCallback_->prepare(format);
   if (result.is_err()) {
     deactivate(callbackOutputState_);
-    return Result<NoneType, std::string>::Err("Failed to prepare callback: " + result.unwrap_err());
+    return Err("Failed to prepare callback: " + result.unwrap_err());
   }
 
   callbackOutputState_.store(OutputState::Active, std::memory_order_release);
-  return Result<NoneType, std::string>::Ok(None);
+  return Ok(None);
 }
 
 IOSAudioRecorder::~IOSAudioRecorder()
@@ -251,14 +250,14 @@ IOSAudioRecorder::~IOSAudioRecorder()
 Result<NoneType, std::string> IOSAudioRecorder::start()
 {
   if (!isIdle()) {
-    return Result<NoneType, std::string>::Err("Recorder is already recording");
+    return Err("Recorder is already recording");
   }
 
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
   AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
 
   if ([[audioSessionManager checkRecordingPermissions] isEqual:@"Denied"]) {
-    return Result<NoneType, std::string>::Err("Microphone permissions are not granted");
+    return Err("Microphone permissions are not granted");
   }
 
   NSError *nativeStartError = nil;
@@ -281,7 +280,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
     message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
 #endif
 
-    return Result<NoneType, std::string>::Err(message);
+    return Err(message);
   }
 
   if (!didStartNativeRecorder) {
@@ -299,7 +298,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
     message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
 #endif
 
-    return Result<NoneType, std::string>::Err(message);
+    return Err(message);
   }
 
   auto formatResult = resolveStreamFormat();
@@ -313,7 +312,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
 #endif
 
     cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
-    return Result<NoneType, std::string>::Err(message);
+    return Err(message);
   }
 
   const auto streamFormat = formatResult.unwrap();
@@ -329,7 +328,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
     auto writerResult = setupFileWriter(fileProperties_);
     if (!writerResult.is_ok()) {
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, false);
-      return Result<NoneType, std::string>::Err(writerResult.unwrap_err());
+      return Err(writerResult.unwrap_err());
     }
     fileWasOpened = true;
   }
@@ -339,8 +338,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
       cleanupStartedRecorder(nativeRecorder_, fileWriter_, fileWasOpened);
       deactivate(fileOutputState_);
       fileWriter_ = nullptr;
-      return Result<NoneType, std::string>::Err(
-          "Failed to prepare callback: callback is unavailable");
+      return Err("Failed to prepare callback: callback is unavailable");
     }
 
     dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
@@ -351,8 +349,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
       deactivate(callbackOutputState_);
       deactivate(fileOutputState_);
       fileWriter_ = nullptr;
-      return Result<NoneType, std::string>::Err(
-          "Failed to prepare callback: " + callbackResult.unwrap_err());
+      return Err("Failed to prepare callback: " + callbackResult.unwrap_err());
     }
 
     callbackOutputState_.store(OutputState::Active, std::memory_order_release);
@@ -364,7 +361,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
 
   [nativeRecorder_ setInputArmed:true];
   state_.store(RecorderState::Recording, std::memory_order_release);
-  return Result<NoneType, std::string>::Ok(None);
+  return Ok(None);
 }
 
 /// JS thread only.
@@ -373,7 +370,7 @@ Result<FileInfo, std::string> IOSAudioRecorder::stop()
   DetachedSideEffects sideEffects;
 
   if (isIdle()) {
-    return Result<FileInfo, std::string>::Err("Recorder is not in recording state.");
+    return Err("Recorder is not in recording state.");
   }
 
   state_.store(RecorderState::Idle, std::memory_order_release);

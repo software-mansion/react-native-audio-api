@@ -15,20 +15,20 @@ Result<NoneType, std::string> createDirectoryIfNotExists(const std::string &dire
   std::error_code ec;
 
   if (std::filesystem::exists(directoryPath, ec)) {
-    return Result<NoneType, std::string>::Ok(None);
+    return Ok(None);
   }
 
   bool created = std::filesystem::create_directories(directoryPath, ec);
 
   if (!created) {
-    return Result<NoneType, std::string>::Err("Failed to create directory: " + directoryPath);
+    return Err("Failed to create directory: " + directoryPath);
   }
 
   if (ec) {
-    return Result<NoneType, std::string>::Err(ec.message());
+    return Err(ec.message());
   }
 
-  return Result<NoneType, std::string>::Ok(None);
+  return Ok(None);
 }
 
 std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties) {
@@ -49,10 +49,10 @@ ResolveFilePathResult resolveFilePath(
   auto result = createDirectoryIfNotExists(subDirectory);
 
   if (!result.is_ok()) {
-    return ResolveFilePathResult::Err(result.unwrap_err());
+    return Err(result.unwrap_err());
   }
 
-  return ResolveFilePathResult::Ok(std::format("{}/{}", subDirectory, fileName));
+  return Ok(std::format("{}/{}", subDirectory, fileName));
 }
 
 } // namespace audioapi::android_file_path

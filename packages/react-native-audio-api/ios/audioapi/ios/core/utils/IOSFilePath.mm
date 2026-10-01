@@ -58,16 +58,16 @@ ResolveFilePathResult resolveFilePath(
   @autoreleasepool {
     NSURL *fileURL = getFileURL(properties, fileName);
     if (fileURL == nil) {
-      return ResolveFilePathResult::Err("Could not resolve an output path for the recording");
+      return Err("Could not resolve an output path for the recording");
     }
 
     NSString *path = [fileURL path];
     if (path == nil) {
-      return ResolveFilePathResult::Err(
+      return Err(
           std::string("Output URL has no file path: ") + [[fileURL absoluteString] UTF8String]);
     }
 
-    return ResolveFilePathResult::Ok(std::string([path UTF8String]));
+    return Ok(std::string([path UTF8String]));
   }
 }
 
