@@ -19,7 +19,7 @@ void AudioFileWriter::invokeOnErrorCallback(const std::string &message) {
   errorEvent_.dispatch(StringPayload{.name = "message", .reason = message});
 }
 
-bool AudioFileWriter::isFileOpen() {
+bool AudioFileWriter::isFileOpen() const {
   return isFileOpen_.load(std::memory_order_acquire);
 }
 
