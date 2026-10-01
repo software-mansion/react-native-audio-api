@@ -1,0 +1,87 @@
+---
+sidebar_position: 3
+---
+
+# Comparison with Expo Audio
+
+[Expo Audio](https://docs.expo.dev/versions/latest/sdk/audio/) and React Native Audio API both play and record audio, but they solve different problems.
+Expo Audio is a media player: you give it a file or URL and control playback.
+React Native Audio API is an audio engine: you build a graph of nodes that generate, process, and analyze sound in real time.
+
+## Feature comparison
+
+### Playback
+
+| | Expo Audio | **React Native Audio API** |
+|---|---|---|
+| File and URL playback | Yes, including HLS | Yes, including HLS through [`<Audio>`](../sources/audio-tag.mdx) |
+| Raw PCM playback | No, sources are files and URLs | Yes, write samples into an [`AudioBuffer`](../sources/audio-buffer.mdx) with [`copyToChannel`](../sources/audio-buffer.mdx#copytochannel), or turn base64 PCM into one with [`decodePCMInBase64`](../utils/decoding.mdx#decodepcminbase64), then play it with any buffer source |
+| Lock screen controls and background playback | Yes | Yes, through [`PlaybackNotificationManager`](../system/playback-notification-manager.mdx) |
+| Mixing and syncing many sounds | One player per sound, each started separately with no sync | Any number of sources in one graph, each with its own volume and routing, on a shared clock so they start together and stay in sync |
+| Sample-accurate scheduling | No | Yes |
+| Animating UI from audio without the JS thread | No, sample data arrives on the JS thread | Yes, [`WorkletNode`](../worklets/worklet-node.mdx) runs your callback on the UI runtime, where it can update Reanimated shared values directly |
+| Built-in playlist | Yes, with `useAudioPlaylist` | No, you queue tracks yourself |
+| Playing audio data that arrives in chunks, for example from a text-to-speech or streaming API | No, plays files and URLs | Yes, [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx) plays buffers as you enqueue them, so you decide how much audio is held in memory at once (mobile only) |
+| Playback rate and pitch correction | Yes | Yes |
+
+### Recording
+
+| | Expo Audio | **React Native Audio API** |
+|---|---|---|
+| Recording presets and formats | Two presets, high and low quality. Every option is configurable per platform, including format, encoder, sample rate, and bit rate | Four [built-in presets](../inputs/audio-recorder.mdx#built-in-file-presets), from lossless to low quality, each [customizable](../inputs/audio-recorder.mdx#preset-customization), including bit rate, sample rate, and bit depth. Records to WAV, M4A, and FLAC on both platforms, plus [more formats](../inputs/audio-recorder.mdx#fileformat) that depend on the platform |
+| Long recordings | One file per recording | [File rotation](../inputs/audio-recorder.mdx#audiorecorderfileoptions) starts a new file at a size you choose, which limits data loss if the app is killed. Join the files later with [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles) |
+| Background recording and notification | Yes, enabled through the config plugin. On Android, a fixed "Recording audio" notification with a stop button is shown while recording | Yes. On Android, [`RecordingNotificationManager`](../system/recording-notification-manager.mdx) shows a notification with your own text and pause, resume, and stop actions, and the recording [can survive the app being closed](../inputs/audio-recorder.mdx#keeping-the-recording-alive-when-the-app-is-closed) |
+| Live access to recorded data | Input level metering, and raw microphone samples through `useAudioStream` | [`onAudioReady`](../inputs/audio-recorder.mdx#data-callback) delivers raw buffers with the sample rate, channel count, and buffer size you choose |
+| Echo cancellation for full-duplex audio (playing while recording) ??? | Android only, through the `voice_communication` recording source. How well it works depends on the device | Yes, on both platforms. Set [`androidInputPreset`](../inputs/audio-recorder.mdx#audiorecorderoptions) to `voiceCommunication` on Android or `iosVoiceProcessing` on iOS. Both also turn on noise suppression. On Android, quality depends on the device |
+| Processing microphone input | No | Yes, [`connect`](../inputs/audio-recorder.mdx#graph-processing) routes the recorder into an audio graph, where you can apply effects and analyze it live |
+| Animating UI from microphone input without the JS thread | No, microphone samples arrive on the JS thread | Yes, connect the recorder to a [`WorkletNode`](../worklets/worklet-node.mdx), which runs your callback on the UI runtime to drive Reanimated. Use a [`WorkletAudioContext`](../worklets/worklet-audio-context.mdx) to do it without playing the input through the speakers |
+
+### Sound processing and analysis
+
+| | Expo Audio | **React Native Audio API** |
+|---|---|---|
+| Effects (filters, delay, reverb, panning, distortion) | No | Yes, see [`BiquadFilterNode`](../effects/biquad-filter-node.mdx) and the other effect nodes |
+| Synthesis (oscillators, generated buffers) | No | Yes, see [`OscillatorNode`](../sources/oscillator-node.mdx) |
+| Real-time analysis (FFT, waveform) | Raw PCM samples of a player | [`AnalyserNode`](../analysis/analyser-node.mdx) with time-domain and frequency-domain data |
+| Offline rendering | No | Yes, see [`OfflineAudioContext`](../core/offline-audio-context.mdx) |
+| Custom processing in JavaScript on the audio thread | No | Yes, see [worklets](../worklets/introduction.mdx) |
+
+### System integration
+
+| | Expo Audio | **React Native Audio API** |
+|---|---|---|
+| Audio session configuration | `setAudioModeAsync` sets the interruption mode (mix, duck, or exclusive), silent mode, background audio, and earpiece routing | [`setAudioSessionOptions`](../system/audio-manager.mdx) gives full control of the iOS session category, mode, and options. You can also turn off the library's session management and handle the session yourself |
+| Interruption and route change events | No dedicated events | [`addSystemEventListener`](../system/audio-manager.mdx#addsystemeventlistener) reports interruptions, ducking, and route changes, such as headphones being plugged in |
+| System volume | No | [`getSystemVolume`](../system/audio-manager.mdx#getsystemvolume) reads it, and [`useSystemVolume`](../hooks/system-volume.mdx) re-renders when the user changes it |
+| Audio devices | Lists and selects recording inputs | [`getDevicesInfo`](../system/audio-manager.mdx#getdevicesinfo) lists available inputs and outputs. [`useAudioInput`](../hooks/select-input.mdx) selects the input on both platforms, including USB devices on Android |
+
+### Other
+
+| | Expo Audio | **React Native Audio API** |
+|---|---|---|
+| Decoding files to raw samples | No, files can only be played | Yes, [`decodeAudioData`](../utils/decoding.mdx#decodeaudiodata) decodes a URL, file, or `ArrayBuffer` into an `AudioBuffer` without an audio context. It supports MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, and AIFF |
+| Encoding to a file | Only while recording | Yes, encodes any audio, such as a decoded or rendered buffer, to a file |
+| Joining audio files | No | Yes, [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles) joins WAV, M4A, or FLAC files into one (mobile only) |
+
+## When to choose Expo Audio
+
+- **Simple playback.** Music, podcasts, audiobooks, or sound effects played as they are, without changing the sound.
+- **Playlists.** A ready-made queue with gapless playback, looping, and next and previous controls.
+- **Simple recording.** Voice memos or similar clips recorded with standard quality settings.
+- **Quick prototypes.** Trying ideas in Expo Go without making a development build.
+
+## When to choose React Native Audio API
+
+- **Music apps and games.** Instruments, drum machines, sequencers, DJ apps, or games where sounds must start at an exact moment.
+- **Multitrack playback.** Stems, music practice apps, or layered soundscapes where many sounds play in sync, each with its own volume and routing.
+- **Sound design.** Effects, filters, spatial audio, or sound generated in code instead of loaded from files.
+- **Voice and AI apps.** Playing text-to-speech that arrives in chunks, sending microphone audio to a speech or AI service at the sample rate it expects, or full-duplex voice chat with echo cancellation.
+- **Live microphone processing.** Tuners, pitch detection, karaoke, voice effects, or level meters that react to the microphone as it records.
+- **Audio-reactive UI.** Visualizers, waveforms, and animations driven by audio on the UI thread, without waiting for the JS thread.
+- **Long or critical recordings.** Meetings, lectures, interviews, or field recordings that must survive the app being killed, with a notification the user can pause and resume from on Android.
+- **Audio editing and processing.** Decoding files to raw samples, processing them faster than real time, encoding the result, and joining files.
+- **External audio gear.** Recording from a selected input, such as a USB audio interface or instrument.
+- **Control over system audio.** Your own audio session setup, handling of interruptions and route changes, or UI that follows the system volume.
+
+If you only need simple playback today but expect to add effects or visualization later, start with the [`<Audio>`](../sources/audio-tag.mdx) component.
+You can route it into an audio graph with [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-node.mdx) when you need more.
