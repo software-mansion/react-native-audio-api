@@ -7,6 +7,7 @@
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioBufferPool.hpp>
+#include <audioapi/utils/AudioLayout.h>
 #include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
@@ -105,8 +106,7 @@ class AudioRecorderCallback {
   size_t ringBufferSize_;
   uint64_t framesEmitted_ = 0;
 
-  float streamSampleRate_{0.0F};
-  int streamChannelCount_{0};
+  AudioLayout streamLayout_;
   size_t maxInputBufferLength_{0};
 
   EventCaller<AudioEvent::AUDIO_READY> audioReadyEvent_;
@@ -123,8 +123,8 @@ class AudioRecorderCallback {
   std::unique_ptr<AudioBuffer> remixedChunk_; // one chunk, callback channel count
   std::unique_ptr<AudioBuffer> resamplerOutput_;
 
-  /// Planar buffers of maxInputBufferLength_ x streamChannelCount_ that carry audio-thread
-  /// callbacks to the worker.
+  /// Planar buffers of maxInputBufferLength_ x streamLayout_.channelCount that carry
+  /// audio-thread callbacks to the worker.
   AudioBufferPool<POOL_SIZE> inputBufferPool_;
 
   // delay initialization of offloader until prepare is called

@@ -3,7 +3,6 @@
 
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/ios/core/utils/IOSEncoder.h>
-#include <audioapi/ios/core/utils/IOSEncoderSettings.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/UnitConversion.h>
 
@@ -15,6 +14,7 @@
 
 #include <audioapi/core/utils/Constants.h>
 
+// NOLINTBEGIN
 namespace audioapi::ios::encoder {
 
 struct IOSEncoderState {
@@ -55,6 +55,36 @@ static AudioFormatID audioFormatIdForCodec(AudioCodec codec)
   }
 }
 
+static AVAudioQuality avAudioQualityFor(AudioFileProperties::IOSAudioQuality quality)
+{
+  switch (quality) {
+    case AudioFileProperties::IOSAudioQuality::Min:
+      return AVAudioQualityMin;
+    case AudioFileProperties::IOSAudioQuality::Low:
+      return AVAudioQualityLow;
+    case AudioFileProperties::IOSAudioQuality::High:
+      return AVAudioQualityHigh;
+    case AudioFileProperties::IOSAudioQuality::Max:
+      return AVAudioQualityMax;
+    case AudioFileProperties::IOSAudioQuality::Medium:
+    default:
+      return AVAudioQualityMedium;
+  }
+}
+
+static NSInteger bitsForBitDepth(AudioFileProperties::BitDepth bitDepth)
+{
+  switch (bitDepth) {
+    case AudioFileProperties::BitDepth::Bit16:
+      return 16;
+    case AudioFileProperties::BitDepth::Bit24:
+      return 24;
+    case AudioFileProperties::BitDepth::Bit32:
+    default:
+      return 32;
+  }
+}
+
 static NSDictionary *buildFileSettings(
     const EncoderSettings &encoderSettings,
     const EncoderOutputSpec &outputSpec)
@@ -65,14 +95,15 @@ static NSDictionary *buildFileSettings(
   settings[AVFormatIDKey] = @(formatId);
   settings[AVSampleRateKey] = @(encoderSettings.stream.sampleRate);
   settings[AVNumberOfChannelsKey] = @(encoderSettings.stream.channelCount);
-  settings[AVEncoderAudioQualityKey] = @(getQuality(encoderSettings.encoding));
+  settings[AVEncoderAudioQualityKey] =
+      @(avAudioQualityFor(encoderSettings.encoding.iosAudioQuality));
 
   if (formatId == kAudioFormatMPEG4AAC && encoderSettings.encoding.bitRate > 0) {
     settings[AVEncoderBitRateKey] = @(encoderSettings.encoding.bitRate);
   }
 
   if (formatId == kAudioFormatLinearPCM) {
-    NSInteger bitDepth = getBitDepth(encoderSettings.encoding);
+    NSInteger bitDepth = bitsForBitDepth(encoderSettings.encoding.bitDepth);
     settings[AVLinearPCMBitDepthKey] = @(bitDepth);
     settings[AVLinearPCMIsFloatKey] = @(bitDepth == 32);
     settings[AVLinearPCMIsBigEndianKey] = @(NO);
@@ -80,7 +111,7 @@ static NSDictionary *buildFileSettings(
   }
 
   if (formatId == kAudioFormatFLAC) {
-    settings[@"FLACCompressionLevel"] = @(getFlacCompressionLevel(encoderSettings.encoding));
+    settings[@"FLACCompressionLevel"] = @(encoderSettings.encoding.flacCompressionLevel);
   }
 
   return settings;
@@ -111,7 +142,7 @@ OpenEncoderResult IOSEncoder::open(
     if (isOpen()) {
       return Err("Encoder already open");
     }
-    if (inputFormat.sampleRate <= 0 || inputFormat.channelCount <= 0) {
+    if (inputFormat.layout.sampleRate <= 0 || inputFormat.layout.channelCount <= 0) {
       return Err("Invalid input format: sampleRate and channelCount must be greater than 0");
     }
     if (settings_.stream.sampleRate <= 0 || settings_.stream.channelCount <= 0) {
@@ -157,7 +188,7 @@ OpenEncoderResult IOSEncoder::reprepareInput(const StreamFormat &inputFormat)
     if (!isOpen() || impl_->audioFile == nil) {
       return Err("Encoder is not open");
     }
-    if (inputFormat.sampleRate <= 0 || inputFormat.channelCount <= 0) {
+    if (inputFormat.layout.sampleRate <= 0 || inputFormat.layout.channelCount <= 0) {
       return Err("Invalid input format: sampleRate and channelCount must be greater than 0");
     }
 
@@ -178,21 +209,22 @@ OpenEncoderResult IOSEncoder::reprepareInput(const StreamFormat &inputFormat)
 Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const StreamFormat &inputFormat)
 {
   @autoreleasepool {
-    if (inputFormat.channelCount > MAX_CHANNEL_COUNT) {
+    const AudioLayout &inputLayout = inputFormat.layout;
+    if (inputLayout.channelCount > MAX_CHANNEL_COUNT) {
       return Err("Channel count exceeds MAX_CHANNEL_COUNT");
     }
     inputFormat_ = inputFormat;
-    impl_->inputChannelCount = inputFormat.channelCount;
+    impl_->inputChannelCount = inputLayout.channelCount;
     impl_->maxInputFrames = inputFormat.maxFramesPerBuffer;
     impl_->inputBufferListStorage.assign(
         offsetof(AudioBufferList, mBuffers) +
-            static_cast<size_t>(inputFormat.channelCount) * sizeof(::AudioBuffer),
+            static_cast<size_t>(inputLayout.channelCount) * sizeof(::AudioBuffer),
         0);
 
     impl_->inputFormat =
         [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                         sampleRate:inputFormat.sampleRate
-                                           channels:(AVAudioChannelCount)inputFormat.channelCount
+                                         sampleRate:inputLayout.sampleRate
+                                           channels:(AVAudioChannelCount)inputLayout.channelCount
                                         interleaved:NO];
     if (impl_->inputFormat == nil) {
       return Err("Failed to build input AVAudioFormat");
@@ -210,7 +242,7 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
 
     size_t outputCapacity = std::max(
         static_cast<float>(inputFormat.maxFramesPerBuffer),
-        settings_.stream.sampleRate / inputFormat.sampleRate * inputFormat.maxFramesPerBuffer);
+        settings_.stream.sampleRate / inputLayout.sampleRate * inputFormat.maxFramesPerBuffer);
 
     impl_->converterOutputBuffer =
         [[AVAudioPCMBuffer alloc] initWithPCMFormat:[impl_->audioFile processingFormat]
@@ -364,3 +396,4 @@ size_t IOSEncoder::getFileSizeBytes() const
 }
 
 } // namespace audioapi::ios::encoder
+// NOLINTEND

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/utils/AudioLayout.h>
 #include <audioapi/utils/Result.hpp>
 
 #include <cstddef>
@@ -64,14 +65,6 @@ class AudioFileProperties {
   /// Mono or stereo.
   static constexpr int MAX_FILE_CHANNEL_COUNT = 2;
 
-  struct StreamConfig {
-    float sampleRate;
-    int channelCount;
-
-    /// A positive sample rate, and between 1 and MAX_FILE_CHANNEL_COUNT channels.
-    [[nodiscard]] Result<NoneType, std::string> validate() const;
-  };
-
   struct EncodingConfig {
     FileFormat format;
     size_t bitRate;
@@ -91,7 +84,7 @@ class AudioFileProperties {
 
   AudioFileProperties(
       PathConfig path,
-      StreamConfig stream,
+      AudioLayout stream,
       EncodingConfig encoding,
       WriterConfig writer);
 
@@ -105,7 +98,7 @@ class AudioFileProperties {
       const facebook::jsi::Value &value);
 
   PathConfig path;
-  StreamConfig stream;
+  AudioLayout stream;
   EncodingConfig encoding;
   WriterConfig writer;
 };

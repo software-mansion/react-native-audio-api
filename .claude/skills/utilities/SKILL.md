@@ -171,6 +171,10 @@ audioapi::MB_IN_BYTES   // 1024 * 1024.0
 audioapi::GB_IN_BYTES   // 1024^3.0
 ```
 
+### `AudioLayout.h` — sample rate + channel count
+
+`AudioLayout { float sampleRate; int channelCount; }` with a defaulted `operator==`. It is the file stream in `AudioFileProperties::stream` / `EncoderSettings::stream` and the `layout` of a `StreamFormat` (`encoding/StreamFormat.h`, which adds `maxFramesPerBuffer`). Hold a new pair of these as one `AudioLayout` and compare whole layouts (`inputLayout != outputLayout_`) rather than two fields. Storage typed for a native API stays native: the remux `TrackInfo` structs (`int32_t` from `AMediaFormat_getInt32`, `UInt32` from an ASBD) and the integer rates the Android encoder backends write into WAV headers and `MediaCodec` formats.
+
 ---
 
 ## `common/cpp/audioapi/core/utils/` — Node and context utilities

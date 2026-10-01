@@ -231,14 +231,9 @@ AudioFileConcatResult concatAudioFilesWithOsRemux(
 
 EncoderSettings makeEncoderSettings(
     AudioFileProperties::FileFormat format,
-    uint32_t sampleRate,
-    uint32_t channels) {
+    const AudioLayout &layout) {
   return EncoderSettings{
-      .stream =
-          {
-              .sampleRate = static_cast<float>(sampleRate),
-              .channelCount = static_cast<int>(channels),
-          },
+      .stream = layout,
       .encoding =
           {
               .format = format,
@@ -299,15 +294,18 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
         "concatAudioFiles " + formatName + " output: channel count exceeds MAX_CHANNEL_COUNT.");
   }
 
-  auto encoder = createEncoder(makeEncoderSettings(format, sampleRate, channels));
+  const AudioLayout layout{
+      .sampleRate = static_cast<float>(sampleRate),
+      .channelCount = static_cast<int>(channels),
+  };
+  auto encoder = createEncoder(makeEncoderSettings(format, layout));
   if (encoder == nullptr) {
     return Err(unavailableError);
   }
 
   auto openResult = encoder->open(
       StreamFormat{
-          .sampleRate = static_cast<float>(sampleRate),
-          .channelCount = static_cast<int>(channels),
+          .layout = layout,
           .maxFramesPerBuffer = DECODE_CHUNK_FRAMES,
       },
       outputSpec,

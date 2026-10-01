@@ -43,16 +43,18 @@ std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties)
 ResolveFilePathResult resolveFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileName) {
-  std::string directory = getDirectory(properties);
-  std::string subDirectory = std::format("{}/{}", directory, properties->path.subDirectory);
+  std::string directoryPath = getDirectory(properties);
+  if (properties && !properties->path.subDirectory.empty()) {
+    directoryPath = std::format("{}/{}", directoryPath, properties->path.subDirectory);
+  }
 
-  auto result = createDirectoryIfNotExists(subDirectory);
+  auto result = createDirectoryIfNotExists(directoryPath);
 
   if (!result.is_ok()) {
     return Err(result.unwrap_err());
   }
 
-  return Ok(std::format("{}/{}", subDirectory, fileName));
+  return Ok(std::format("{}/{}", directoryPath, fileName));
 }
 
 } // namespace audioapi::android::file_path

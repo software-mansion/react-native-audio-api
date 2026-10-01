@@ -105,8 +105,11 @@ Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
 
   return Ok(
       StreamFormat{
-          .sampleRate = static_cast<float>(inputFormat.sampleRate),
-          .channelCount = static_cast<int>(inputFormat.channelCount),
+          .layout =
+              {
+                  .sampleRate = static_cast<float>(inputFormat.sampleRate),
+                  .channelCount = static_cast<int>(inputFormat.channelCount),
+              },
           .maxFramesPerBuffer = static_cast<size_t>(maxFramesPerBuffer)});
 }
 
@@ -150,7 +153,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
   // Safe only because the input is now disarmed: the audio thread reads this unlocked.
   // Must happen before any early return below, or a channel-count change would make
   // collectPlanarInputChannels() drop every buffer once the input is re-armed.
-  inputChannelCount_ = format.channelCount;
+  inputChannelCount_ = format.layout.channelCount;
 
   if (usesFileOutput()) {
     auto fileResult = reprepareFileWriter(format);
@@ -181,7 +184,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()
     prepareAdapterNode(format);
   }
 
-  streamSampleRate_.store(format.sampleRate, std::memory_order_release);
+  streamSampleRate_.store(format.layout.sampleRate, std::memory_order_release);
 
   if (shouldArmInput) {
     [nativeRecorder_ setInputArmed:true];
@@ -316,11 +319,11 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   }
 
   const auto streamFormat = formatResult.unwrap();
-  streamSampleRate_.store(streamFormat.sampleRate, std::memory_order_release);
+  streamSampleRate_.store(streamFormat.layout.sampleRate, std::memory_order_release);
 
   // The audio thread reads these before taking any consumer mutex, so they may only be
   // touched while the input is disarmed — i.e. here and in stop().
-  inputChannelCount_ = streamFormat.channelCount;
+  inputChannelCount_ = streamFormat.layout.channelCount;
   lastCallbackFrameCount_.store(0, std::memory_order_release);
   bool fileWasOpened = false;
 

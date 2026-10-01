@@ -19,7 +19,7 @@ std::shared_ptr<AudioFileProperties> makeProperties(
           .subDirectory = "AudioAPI",
           .fileName = fileName,
       },
-      AudioFileProperties::StreamConfig{.sampleRate = 48000.0F, .channelCount = 2},
+      AudioLayout{.sampleRate = 48000.0F, .channelCount = 2},
       AudioFileProperties::EncodingConfig{
           .format = AudioFileProperties::FileFormat::WAV,
           .bitRate = 128000,

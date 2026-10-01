@@ -27,8 +27,8 @@ void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
     return;
   }
 
-  const float sampleRate = streamFormat.sampleRate;
-  channelCount_ = streamFormat.channelCount;
+  const float sampleRate = streamFormat.layout.sampleRate;
+  channelCount_ = streamFormat.layout.channelCount;
 
   buff_.resize(channelCount_);
 

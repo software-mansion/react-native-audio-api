@@ -9,10 +9,12 @@
 namespace audioapi::ios::remux {
 namespace {
 
-struct AudioFormatFingerprint {
+struct TrackFormat {
   AudioFormatID formatId{0};
   double sampleRate{0.0};
   UInt32 channelCount{0};
+
+  bool operator==(const TrackFormat &) const = default;
 };
 
 [[nodiscard]] NSString *nsStringFromPath(const std::string &path)
@@ -28,7 +30,7 @@ struct AudioFormatFingerprint {
 }
 
 [[nodiscard]] IOSRemuxResult
-extractFingerprint(AVAssetTrack *track, AudioFormatFingerprint &out, const std::string &filePath)
+readTrackFormat(AVAssetTrack *track, TrackFormat &out, const std::string &filePath)
 {
   NSArray *descriptions = track.formatDescriptions;
   if (descriptions == nil || descriptions.count == 0) {
@@ -49,18 +51,14 @@ extractFingerprint(AVAssetTrack *track, AudioFormatFingerprint &out, const std::
 }
 
 [[nodiscard]] IOSRemuxResult validateCompatible(
-    const AudioFormatFingerprint &candidate,
-    const AudioFormatFingerprint &reference,
+    const TrackFormat &candidate,
+    const TrackFormat &reference,
     const std::string &filePath)
 {
-  if (candidate.formatId != reference.formatId) {
-    return Err("Input file '" + filePath + "' uses a different audio codec.");
-  }
-  if (candidate.sampleRate != reference.sampleRate) {
-    return Err("Input file '" + filePath + "' uses a different sample rate.");
-  }
-  if (candidate.channelCount != reference.channelCount) {
-    return Err("Input file '" + filePath + "' uses a different channel layout.");
+  if (candidate != reference) {
+    return Err(
+        "Input file '" + filePath +
+        "' uses a different audio codec, sample rate or channel layout.");
   }
   return Ok(filePath);
 }
@@ -85,7 +83,7 @@ IOSRemuxResult concatAudioFiles(
       return Err("Failed to create AVMutableComposition audio track.");
     }
 
-    AudioFormatFingerprint referenceFingerprint;
+    TrackFormat referenceFormat;
     bool hasReference = false;
     CMTime cursor = kCMTimeZero;
 
@@ -102,22 +100,22 @@ IOSRemuxResult concatAudioFiles(
       }
 
       AVAssetTrack *audioTrack = audioTracks.firstObject;
-      AudioFormatFingerprint fingerprint;
-      auto fingerprintResult = extractFingerprint(audioTrack, fingerprint, path);
-      if (fingerprintResult.is_err()) {
-        return fingerprintResult;
+      TrackFormat trackFormat;
+      auto trackFormatResult = readTrackFormat(audioTrack, trackFormat, path);
+      if (trackFormatResult.is_err()) {
+        return trackFormatResult;
       }
 
-      if (!isAacFormatId(fingerprint.formatId)) {
+      if (!isAacFormatId(trackFormat.formatId)) {
         return Err(
             "Input file '" + path + "' is not AAC-LC in M4A; only AAC-LC concat is supported.");
       }
 
       if (!hasReference) {
-        referenceFingerprint = fingerprint;
+        referenceFormat = trackFormat;
         hasReference = true;
       } else {
-        auto validation = validateCompatible(fingerprint, referenceFingerprint, path);
+        auto validation = validateCompatible(trackFormat, referenceFormat, path);
         if (validation.is_err()) {
           return validation;
         }

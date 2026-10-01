@@ -37,7 +37,9 @@ If the **semantics are complex**, it might be due to one of the following:
 Generally, prefer standard, idiomatic names.
 
 C++ namespaces are `snake_case` with every word separated (`encoder_capabilities`,
-`recording_file_name`, `ios_file_path`) — never PascalCase, never run-together (`filepath`).
+`recording_file_name`, `file_path`) — never PascalCase, never run-together (`filepath`).
+Platform code nests under `audioapi::android` / `audioapi::ios` (`android::encoder`,
+`ios::file_path`) instead of carrying a platform prefix (`android_encoder`).
 
 C++ constants are `SCREAMING_CASE` (`POOL_SIZE`, `DRAIN_TIMEOUT_US`). A constant only one class uses is
 a private `static constexpr` member of that class — no class-name prefix, the scope already says it.

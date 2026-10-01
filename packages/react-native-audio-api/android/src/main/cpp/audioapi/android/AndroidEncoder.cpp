@@ -26,6 +26,7 @@
 // AMEDIAMUXER_OUTPUT_FORMAT_OGG was added to the NDK at API level 34; fall back
 // to a numeric value so builds against older NDK headers still compile. Runtime
 // availability is still gated by the device OS version.
+// NOLINTBEGIN
 #ifndef AMEDIAMUXER_OUTPUT_FORMAT_OGG
 #define AMEDIAMUXER_OUTPUT_FORMAT_OGG 4
 #endif
@@ -58,17 +59,14 @@ class IEncoderBackend {
  public:
   virtual ~IEncoderBackend() = default;
 
-  // Opens the backend. `desiredSampleRate`/`desiredChannelCount` come from the
-  // encoder settings; the backend may override them (e.g. Opus) via the out
-  // parameters, which the caller then resamples/channel-maps to.
+  // Opens the backend. `desired` comes from the encoder settings; the backend may
+  // override it (e.g. Opus) via `effective`, which the caller then resamples/channel-maps to.
   virtual std::string open(
-      int desiredSampleRate,
-      int desiredChannelCount,
+      const AudioLayout &desired,
       const std::string &filePath,
       const AudioFileProperties::EncodingConfig &encoding,
       const EncoderOutputSpec &outputSpec,
-      int &effectiveSampleRate,
-      int &effectiveChannelCount) = 0;
+      AudioLayout &effective) = 0;
 
   // Encodes frames already in the backend's effective format, one float32 pointer per
   // channel. Backends interleave while they quantize, so no separate interleave pass exists.
@@ -86,18 +84,15 @@ class IEncoderBackend {
 class WavBackend : public IEncoderBackend {
  public:
   std::string open(
-      int desiredSampleRate,
-      int desiredChannelCount,
+      const AudioLayout &desired,
       const std::string &filePath,
       const AudioFileProperties::EncodingConfig &encoding,
       const EncoderOutputSpec &outputSpec,
-      int &effectiveSampleRate,
-      int &effectiveChannelCount) override {
+      AudioLayout &effective) override {
     (void)outputSpec;
-    sampleRate_ = desiredSampleRate;
-    channelCount_ = desiredChannelCount;
-    effectiveSampleRate = sampleRate_;
-    effectiveChannelCount = channelCount_;
+    sampleRate_ = static_cast<int>(desired.sampleRate);
+    channelCount_ = desired.channelCount;
+    effective = desired;
 
     switch (encoding.bitDepth) {
       case AudioFileProperties::BitDepth::Bit16:
@@ -467,15 +462,12 @@ class MediaCodecBackend : public IEncoderBackend {
 class MuxedBackend : public MediaCodecBackend {
  public:
   std::string open(
-      int desiredSampleRate,
-      int desiredChannelCount,
+      const AudioLayout &desired,
       const std::string &filePath,
       const AudioFileProperties::EncodingConfig &encoding,
       const EncoderOutputSpec &outputSpec,
-      int &effectiveSampleRate,
-      int &effectiveChannelCount) override {
-    int sampleRate = desiredSampleRate;
-    int channels = desiredChannelCount;
+      AudioLayout &effective) override {
+    effective = desired;
     const char *mime = "audio/mp4a-latm";
     bool isAac = false;
     int bitRate = static_cast<int>(encoding.bitRate);
@@ -488,7 +480,7 @@ class MuxedBackend : public MediaCodecBackend {
         break;
       case AudioCodec::OPUS:
         mime = "audio/opus";
-        sampleRate = 48000;
+        effective.sampleRate = 48000;
         if (bitRate <= 0) {
           bitRate = 96000;
         }
@@ -506,9 +498,6 @@ class MuxedBackend : public MediaCodecBackend {
         return "MuxedBackend: unsupported codec";
     }
 
-    effectiveSampleRate = sampleRate;
-    effectiveChannelCount = channels;
-
     fd_ = ::open(filePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd_ < 0) {
       return "MuxedBackend: failed to open file descriptor";
@@ -520,7 +509,8 @@ class MuxedBackend : public MediaCodecBackend {
       return "MuxedBackend: failed to create muxer";
     }
 
-    std::string err = startCodec(mime, sampleRate, channels, bitRate, isAac);
+    std::string err = startCodec(
+        mime, static_cast<int>(effective.sampleRate), effective.channelCount, bitRate, isAac);
     if (!err.empty()) {
       AMediaMuxer_delete(muxer_);
       muxer_ = nullptr;
@@ -607,16 +597,13 @@ class MuxedBackend : public MediaCodecBackend {
 class FlacBackend : public MediaCodecBackend {
  public:
   std::string open(
-      int desiredSampleRate,
-      int desiredChannelCount,
+      const AudioLayout &desired,
       const std::string &filePath,
       const AudioFileProperties::EncodingConfig &encoding,
       const EncoderOutputSpec &outputSpec,
-      int &effectiveSampleRate,
-      int &effectiveChannelCount) override {
+      AudioLayout &effective) override {
     (void)outputSpec;
-    effectiveSampleRate = desiredSampleRate;
-    effectiveChannelCount = desiredChannelCount;
+    effective = desired;
 
     file_ = std::fopen(filePath.c_str(), "wb");
     if (file_ == nullptr) {
@@ -628,8 +615,8 @@ class FlacBackend : public MediaCodecBackend {
     // codec-config, followed by raw FLAC frames — concatenating yields a valid
     // .flac file. compression-level is advisory.
     int bitRate = 0; // lossless; ignored
-    std::string err =
-        startCodec("audio/flac", desiredSampleRate, desiredChannelCount, bitRate, false);
+    std::string err = startCodec(
+        "audio/flac", static_cast<int>(desired.sampleRate), desired.channelCount, bitRate, false);
     if (!err.empty()) {
       std::fclose(file_);
       file_ = nullptr;
@@ -681,26 +668,21 @@ class FlacBackend : public MediaCodecBackend {
 // ---------------------------------------------------------------------------
 
 struct AndroidEncoder::ConversionState {
-  ConversionState(
-      int srcRate,
-      int dstRate,
-      int inputChannels,
-      int outputChannels,
-      size_t maxInputFrames)
+  ConversionState(const AudioLayout &input, const AudioLayout &output, size_t maxInputFrames)
       : maxInputFrames(maxInputFrames) {
-    if (inputChannels != outputChannels) {
+    if (input.channelCount != output.channelCount) {
       inputPlanar =
-          std::make_unique<AudioBuffer>(maxInputFrames, inputChannels, static_cast<float>(srcRate));
-      mappedPlanar = std::make_unique<AudioBuffer>(
-          maxInputFrames, outputChannels, static_cast<float>(srcRate));
+          std::make_unique<AudioBuffer>(maxInputFrames, input.channelCount, input.sampleRate);
+      mappedPlanar =
+          std::make_unique<AudioBuffer>(maxInputFrames, output.channelCount, input.sampleRate);
     }
-    if (srcRate != dstRate) {
+    if (input.sampleRate != output.sampleRate) {
       resampler = std::make_unique<r8b::MultiChannelResampler>(
-          srcRate, dstRate, outputChannels, RESAMPLE_MAX_IN_FRAMES);
+          input.sampleRate, output.sampleRate, output.channelCount, RESAMPLE_MAX_IN_FRAMES);
       resampledPlanar = std::make_unique<AudioBuffer>(
           static_cast<size_t>(std::max(1, resampler->getMaxOutLen())),
-          outputChannels,
-          static_cast<float>(dstRate));
+          output.channelCount,
+          output.sampleRate);
     }
   }
 
@@ -732,15 +714,13 @@ OpenEncoderResult AndroidEncoder::open(
   if (isOpen()) {
     return Err("Encoder already open");
   }
-  if (inputFormat.sampleRate <= 0 || inputFormat.channelCount <= 0) {
+  if (inputFormat.layout.sampleRate <= 0 || inputFormat.layout.channelCount <= 0) {
     return Err("Invalid input format");
   }
 
   inputFormat_ = inputFormat;
   outputSpec_ = outputSpec;
   filePath_ = filePath;
-  inputSampleRate_ = inputFormat.sampleRate;
-  inputChannelCount_ = inputFormat.channelCount;
   resetFramesEncoded();
 
   switch (outputSpec.codec) {
@@ -759,38 +739,23 @@ OpenEncoderResult AndroidEncoder::open(
       return Err(std::string(toString(outputSpec.codec)) + " is not encodable on Android");
   }
 
-  int effectiveSampleRate = static_cast<int>(settings_.stream.sampleRate);
-  int effectiveChannelCount = settings_.stream.channelCount;
-  std::string err = backend_->open(
-      static_cast<int>(settings_.stream.sampleRate),
-      settings_.stream.channelCount,
-      filePath,
-      settings_.encoding,
-      outputSpec,
-      effectiveSampleRate,
-      effectiveChannelCount);
+  std::string err =
+      backend_->open(settings_.stream, filePath, settings_.encoding, outputSpec, outputLayout_);
   if (!err.empty()) {
     backend_.reset();
     return Err(err);
   }
 
-  outputSampleRate_ = effectiveSampleRate;
-  outputChannelCount_ = effectiveChannelCount;
-
-  const bool needsConversion = inputChannelCount_ != outputChannelCount_ ||
-      static_cast<int>(inputSampleRate_) != outputSampleRate_;
-  if (needsConversion) {
-    if (inputChannelCount_ > MAX_CHANNEL_COUNT || outputChannelCount_ > MAX_CHANNEL_COUNT) {
+  const AudioLayout &inputLayout = inputFormat.layout;
+  if (inputLayout != outputLayout_) {
+    if (inputLayout.channelCount > MAX_CHANNEL_COUNT ||
+        outputLayout_.channelCount > MAX_CHANNEL_COUNT) {
       backend_->close();
       backend_.reset();
       return Err("Channel count exceeds MAX_CHANNEL_COUNT");
     }
     conversion_ = std::make_unique<ConversionState>(
-        static_cast<int>(inputSampleRate_),
-        outputSampleRate_,
-        inputChannelCount_,
-        outputChannelCount_,
-        std::max<size_t>(inputFormat.maxFramesPerBuffer, 1));
+        inputLayout, outputLayout_, std::max<size_t>(inputFormat.maxFramesPerBuffer, 1));
   }
 
   markOpen();
@@ -806,18 +771,18 @@ std::string AndroidEncoder::encodeConverted(const float *const *channels, int nu
 
   std::array<const float *, MAX_CHANNEL_COUNT> planar{};
   if (state.mappedPlanar != nullptr) {
-    for (int channel = 0; channel < inputChannelCount_; ++channel) {
+    for (int channel = 0; channel < inputFormat_.layout.channelCount; ++channel) {
       std::memcpy(
           state.inputPlanar->getChannel(channel)->begin(),
           channels[channel],
           frames * sizeof(float));
     }
     state.mappedPlanar->copy(*state.inputPlanar, 0, 0, frames);
-    for (int channel = 0; channel < outputChannelCount_; ++channel) {
+    for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
       planar[channel] = state.mappedPlanar->getChannel(channel)->begin();
     }
   } else {
-    for (int channel = 0; channel < outputChannelCount_; ++channel) {
+    for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
       planar[channel] = channels[channel];
     }
   }
@@ -827,7 +792,7 @@ std::string AndroidEncoder::encodeConverted(const float *const *channels, int nu
   }
 
   std::array<float *, MAX_CHANNEL_COUNT> resampled{};
-  for (int channel = 0; channel < outputChannelCount_; ++channel) {
+  for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
     resampled[channel] = state.resampledPlanar->getChannel(channel)->begin();
   }
 
@@ -835,7 +800,7 @@ std::string AndroidEncoder::encodeConverted(const float *const *channels, int nu
   while (consumed < numFrames) {
     const int chunk = std::min(numFrames - consumed, RESAMPLE_MAX_IN_FRAMES);
     std::array<const float *, MAX_CHANNEL_COUNT> chunkChannels{};
-    for (int channel = 0; channel < outputChannelCount_; ++channel) {
+    for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
       chunkChannels[channel] = planar[channel] + consumed;
     }
     const int produced = state.resampler->process(chunkChannels.data(), chunk, resampled.data());
@@ -879,8 +844,9 @@ CloseEncoderResult AndroidEncoder::close() {
 
   std::string err = backend_->close();
   const size_t sizeBytes = backend_->getFileSizeBytes();
-  const double durationSeconds = inputSampleRate_ > 0
-      ? static_cast<double>(framesEncoded_.load(std::memory_order_acquire)) / inputSampleRate_
+  const double inputSampleRate = inputFormat_.layout.sampleRate;
+  const double durationSeconds = inputSampleRate > 0
+      ? static_cast<double>(framesEncoded_.load(std::memory_order_acquire)) / inputSampleRate
       : 0.0;
   backend_.reset();
   conversion_.reset();
@@ -902,3 +868,4 @@ size_t AndroidEncoder::getFileSizeBytes() const {
 }
 
 } // namespace audioapi::android::encoder
+// NOLINTEND

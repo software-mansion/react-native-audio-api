@@ -3,6 +3,7 @@
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/AudioLayout.h>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 
@@ -21,7 +22,7 @@ using CloseEncoderResult = Result<std::tuple<double, double>, std::string>;
 /// recording rotates) is the writer's business, so encoders never see it.
 struct EncoderSettings {
   /// Sample rate and channel count of the file; the encoder converts its input to them.
-  AudioFileProperties::StreamConfig stream;
+  AudioLayout stream;
   AudioFileProperties::EncodingConfig encoding;
 };
 

@@ -182,7 +182,7 @@ class AudioFileWriterTest : public ::testing::Test {
             .subDirectory = "",
             .fileName = fileName,
         },
-        AudioFileProperties::StreamConfig{.sampleRate = 48000.0F, .channelCount = kChannelCount},
+        AudioLayout{.sampleRate = 48000.0F, .channelCount = kChannelCount},
         AudioFileProperties::EncodingConfig{
             .format = AudioFileProperties::FileFormat::WAV,
             .bitRate = 128000,
@@ -201,8 +201,7 @@ class AudioFileWriterTest : public ::testing::Test {
   OpenFileResult open() {
     return writer_->openFile(
         StreamFormat{
-            .sampleRate = 48000.0F,
-            .channelCount = kChannelCount,
+            .layout = {.sampleRate = 48000.0F, .channelCount = kChannelCount},
             .maxFramesPerBuffer = kFramesPerBuffer,
         });
   }
@@ -294,8 +293,8 @@ TEST_F(AudioFileWriterTest, ReprepareStreamFormatKeepsTheFileAndRetargetsTheEnco
   EXPECT_EQ(log_.closedFiles.load(), 0);
 
   std::scoped_lock lock(log_.mutex);
-  EXPECT_FLOAT_EQ(log_.lastRepreparedFormat.sampleRate, 44100.0F);
-  EXPECT_EQ(log_.lastRepreparedFormat.channelCount, 1);
+  EXPECT_FLOAT_EQ(log_.lastRepreparedFormat.layout.sampleRate, 44100.0F);
+  EXPECT_EQ(log_.lastRepreparedFormat.layout.channelCount, 1);
   EXPECT_EQ(log_.lastRepreparedMaxFramesPerBuffer, 256U);
 }
 

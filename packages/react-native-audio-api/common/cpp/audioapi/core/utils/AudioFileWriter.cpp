@@ -91,7 +91,7 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &stream
   if (!isFileOpen()) {
     return OpenFileResult::Err("file is not open");
   }
-  if (streamFormat.sampleRate <= 0 || streamFormat.channelCount <= 0 ||
+  if (streamFormat.layout.sampleRate <= 0 || streamFormat.layout.channelCount <= 0 ||
       streamFormat.maxFramesPerBuffer == 0) {
     return OpenFileResult::Err(
         "Invalid input format: sampleRate, channelCount and buffer size must be greater than 0");
@@ -122,7 +122,7 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &stream
 }
 
 OpenFileResult AudioFileWriter::startNextFile(const StreamFormat &streamFormat) {
-  if (streamFormat.sampleRate <= 0 || streamFormat.channelCount <= 0 ||
+  if (streamFormat.layout.sampleRate <= 0 || streamFormat.layout.channelCount <= 0 ||
       streamFormat.maxFramesPerBuffer == 0) {
     return OpenFileResult::Err(
         "Invalid input format: sampleRate, channelCount and buffer size must be greater than 0");
@@ -351,13 +351,15 @@ void AudioFileWriter::createOffloader() {
 bool AudioFileWriter::initializePreallocatedInputPool() {
   cleanupPreallocatedInputPool();
 
-  if (streamFormat_.maxFramesPerBuffer == 0 || streamFormat_.channelCount <= 0 ||
-      streamFormat_.channelCount > MAX_CHANNEL_COUNT) {
+  if (streamFormat_.maxFramesPerBuffer == 0 || streamFormat_.layout.channelCount <= 0 ||
+      streamFormat_.layout.channelCount > MAX_CHANNEL_COUNT) {
     return false;
   }
 
   if (!inputBufferPool_.allocate(
-          streamFormat_.maxFramesPerBuffer, streamFormat_.channelCount, streamFormat_.sampleRate)) {
+          streamFormat_.maxFramesPerBuffer,
+          streamFormat_.layout.channelCount,
+          streamFormat_.layout.sampleRate)) {
     return false;
   }
 
@@ -387,7 +389,7 @@ void AudioFileWriter::writeAudioData(const float *const *channels, int numFrames
     return;
   }
 
-  for (int channel = 0; channel < streamFormat_.channelCount; ++channel) {
+  for (int channel = 0; channel < streamFormat_.layout.channelCount; ++channel) {
     std::memcpy(slot->getChannel(channel)->begin(), channels[channel], frames * sizeof(float));
   }
   // Never blocks: the channel has room for every buffer the pool can hand out.
@@ -402,7 +404,7 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
   const int numFrames = pending.numFrames;
 
   std::array<const float *, MAX_CHANNEL_COUNT> channels{};
-  for (int channel = 0; channel < streamFormat_.channelCount; ++channel) {
+  for (int channel = 0; channel < streamFormat_.layout.channelCount; ++channel) {
     channels[channel] = pending.buffer->getChannel(channel)->begin();
   }
 

@@ -38,10 +38,8 @@ class AndroidEncoder : public AudioEncoder {
 
   std::unique_ptr<IEncoderBackend> backend_;
 
-  double inputSampleRate_{0.0};
-  double outputSampleRate_{0.0};
-  int inputChannelCount_{0};
-  int outputChannelCount_{0};
+  /// What the backend encodes at; the input differs from it only when conversion_ is set.
+  AudioLayout outputLayout_;
 
   struct ConversionState;
   std::unique_ptr<ConversionState> conversion_; // null when no conversion is needed

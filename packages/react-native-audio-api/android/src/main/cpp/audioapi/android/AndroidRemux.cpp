@@ -1,4 +1,5 @@
 #include <audioapi/android/AndroidRemux.h>
+#include <audioapi/android/core/utils/AndroidMediaFormat.h>
 
 #include <media/NdkMediaCodec.h>
 #include <media/NdkMediaExtractor.h>
@@ -10,6 +11,7 @@
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -19,12 +21,15 @@ namespace {
 
 constexpr size_t SAMPLE_BUFFER_BYTES = 256 * 1024;
 
+// The codec-specific data key.
+constexpr const char *KEY_CSD_0 = "csd-0";
+
 // MPEG-4 Audio Object Types carried in the AudioSpecificConfig (ISO/IEC 14496-3).
 constexpr int AUDIO_OBJECT_TYPE_AAC_LC = 2;
 constexpr int AUDIO_OBJECT_TYPE_ESCAPE = 31;
 
 struct TrackInfo {
-  std::string mime;
+  AudioCodec codec{AudioCodec::AAC};
   int32_t sampleRate{0};
   int32_t channelCount{0};
   int audioObjectType{0};
@@ -57,7 +62,7 @@ struct TrackInfo {
 
 // Mirrors IOSRemux's `isAacFormatId`: only plain AAC-LC is remuxable.
 [[nodiscard]] bool isAacLcTrack(const TrackInfo &info) {
-  return info.mime == "audio/mp4a-latm" && info.audioObjectType == AUDIO_OBJECT_TYPE_AAC_LC;
+  return info.codec == AudioCodec::AAC && info.audioObjectType == AUDIO_OBJECT_TYPE_AAC_LC;
 }
 
 class ExtractorGuard {
@@ -204,13 +209,19 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
       continue;
     }
 
-    if (std::strncmp(mime, "audio/", 6) != 0) {
+    if (!media_format::isAudioMime(mime)) {
       AMediaFormat_delete(format);
       continue;
     }
 
+    const std::optional<AudioCodec> codec = media_format::codecForMime(mime);
+    if (!codec.has_value()) {
+      AMediaFormat_delete(format);
+      return Err("Input audio track is not AAC-LC; only AAC-LC concat is supported.");
+    }
+
     TrackInfo candidate;
-    candidate.mime = mime;
+    candidate.codec = *codec;
     if (!AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, &candidate.sampleRate) ||
         candidate.sampleRate <= 0) {
       AMediaFormat_delete(format);
@@ -224,7 +235,8 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
 
     void *csd = nullptr;
     size_t csdSize = 0;
-    if (AMediaFormat_getBuffer(format, "csd-0", &csd, &csdSize) && csd != nullptr && csdSize > 0) {
+    if (AMediaFormat_getBuffer(format, KEY_CSD_0, &csd, &csdSize) && csd != nullptr &&
+        csdSize > 0) {
       const auto *bytes = static_cast<const uint8_t *>(csd);
       candidate.csd0.assign(bytes, bytes + csdSize);
     }
@@ -263,7 +275,7 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
     const TrackInfo &candidate,
     const TrackInfo &reference,
     const std::string &filePath) {
-  if (candidate.mime != reference.mime) {
+  if (candidate.codec != reference.codec) {
     return Err("Input file '" + filePath + "' uses a different audio codec.");
   }
   if (candidate.sampleRate != reference.sampleRate) {
@@ -277,11 +289,11 @@ findAudioTrack(AMediaExtractor *extractor, size_t &trackIndex, TrackInfo &info) 
 
 [[nodiscard]] AMediaFormat *buildOutputFormat(const TrackInfo &info) {
   AMediaFormat *format = AMediaFormat_new();
-  AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, info.mime.c_str());
+  AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, media_format::mimeForCodec(info.codec));
   AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, info.sampleRate);
   AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, info.channelCount);
   if (!info.csd0.empty()) {
-    AMediaFormat_setBuffer(format, "csd-0", info.csd0.data(), info.csd0.size());
+    AMediaFormat_setBuffer(format, KEY_CSD_0, info.csd0.data(), info.csd0.size());
   }
   return format;
 }

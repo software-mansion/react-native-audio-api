@@ -56,7 +56,7 @@ std::shared_ptr<AudioFileProperties> wavProperties() {
           .subDirectory = "",
           .fileName = "",
       },
-      AudioFileProperties::StreamConfig{.sampleRate = 48000.0F, .channelCount = 1},
+      AudioLayout{.sampleRate = 48000.0F, .channelCount = 1},
       AudioFileProperties::EncodingConfig{
           .format = AudioFileProperties::FileFormat::WAV,
           .bitRate = 0,

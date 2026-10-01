@@ -24,7 +24,7 @@ Result<std::unique_ptr<RecordingFile>, std::string> RecordingFile::open(
   }
   return Ok(
       std::unique_ptr<RecordingFile>(
-          new RecordingFile(std::move(encoder), path, inputFormat.sampleRate)));
+          new RecordingFile(std::move(encoder), path, inputFormat.layout.sampleRate)));
 }
 
 const std::string &RecordingFile::path() const {
@@ -44,7 +44,7 @@ OpenEncoderResult RecordingFile::changeInputFormat(
     const RetargetEncoder &retargetEncoder) {
   earlierFormatsDurationSec_ = durationSec();
   framesInCurrentFormat_ = 0;
-  inputSampleRate_ = inputFormat.sampleRate;
+  inputSampleRate_ = inputFormat.layout.sampleRate;
   return retargetEncoder(*encoder_, inputFormat);
 }
 

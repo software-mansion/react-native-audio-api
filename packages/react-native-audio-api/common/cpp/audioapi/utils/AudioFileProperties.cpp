@@ -11,7 +11,7 @@ namespace audioapi {
 
 AudioFileProperties::AudioFileProperties(
     PathConfig path,
-    StreamConfig stream,
+    AudioLayout stream,
     EncodingConfig encoding,
     WriterConfig writer)
     : path(std::move(path)), stream(stream), encoding(encoding), writer(writer) {}
@@ -26,6 +26,18 @@ bool isWithin(Enum value, Enum last) {
   return static_cast<std::uint8_t>(value) <= static_cast<std::uint8_t>(last);
 }
 
+/// A positive sample rate, and between 1 and MAX_FILE_CHANNEL_COUNT channels.
+Result<NoneType, std::string> validateStream(const AudioLayout &stream) {
+  if (!(stream.sampleRate > 0)) {
+    return Err("sampleRate must be greater than 0.");
+  }
+  if (stream.channelCount <= 0 ||
+      stream.channelCount > AudioFileProperties::MAX_FILE_CHANNEL_COUNT) {
+    return Err("channelCount must be 1 (mono) or 2 (stereo); file output supports no more.");
+  }
+  return Ok(None);
+}
+
 } // namespace
 
 Result<NoneType, std::string> AudioFileProperties::PathConfig::validate() const {
@@ -35,16 +47,6 @@ Result<NoneType, std::string> AudioFileProperties::PathConfig::validate() const 
   }
   if (!isWithin(directory, FileDirectory::Cache)) {
     return Err("directory is not a FileDirectory value.");
-  }
-  return Ok(None);
-}
-
-Result<NoneType, std::string> AudioFileProperties::StreamConfig::validate() const {
-  if (!(sampleRate > 0)) {
-    return Err("sampleRate must be greater than 0.");
-  }
-  if (channelCount <= 0 || channelCount > MAX_FILE_CHANNEL_COUNT) {
-    return Err("channelCount must be 1 (mono) or 2 (stereo); file output supports no more.");
   }
   return Ok(None);
 }
@@ -69,7 +71,7 @@ Result<NoneType, std::string> AudioFileProperties::EncodingConfig::validate() co
 
 Result<NoneType, std::string> AudioFileProperties::validate() const {
   return path.validate()
-      .and_then([this](NoneType) { return stream.validate(); })
+      .and_then([this](NoneType) { return validateStream(stream); })
       .and_then([this](NoneType) { return encoding.validate(); });
 }
 
@@ -118,7 +120,7 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
           .subDirectory = std::move(subDirectory),
           .fileName = std::move(fileName),
       },
-      StreamConfig{
+      AudioLayout{
           .sampleRate = sampleRate,
           .channelCount = channelCount,
       },

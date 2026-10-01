@@ -284,8 +284,7 @@ Result<StreamFormat, std::string> AndroidAudioRecorder::resolveStreamFormat() co
 
   return Ok(
       StreamFormat{
-          .sampleRate = sampleRate,
-          .channelCount = streamChannelCount_,
+          .layout = {.sampleRate = sampleRate, .channelCount = streamChannelCount_},
           .maxFramesPerBuffer = static_cast<size_t>(streamMaxBufferSizeInFrames_)});
 }
 

@@ -16,7 +16,7 @@ AudioFileProperties validProperties() {
           .subDirectory = "AudioAPI",
           .fileName = "session",
       },
-      AudioFileProperties::StreamConfig{.sampleRate = 48000.0F, .channelCount = 2},
+      AudioLayout{.sampleRate = 48000.0F, .channelCount = 2},
       AudioFileProperties::EncodingConfig{
           .format = AudioFileProperties::FileFormat::FLAC,
           .bitRate = 0,

@@ -58,7 +58,8 @@ const EncoderOutputSpec WAV_SPEC{
     .extension = "wav"};
 
 StreamFormat monoAt(float sampleRate) {
-  return StreamFormat{.sampleRate = sampleRate, .channelCount = 1, .maxFramesPerBuffer = 4800};
+  return StreamFormat{
+      .layout = {.sampleRate = sampleRate, .channelCount = 1}, .maxFramesPerBuffer = 4800};
 }
 
 std::string scratchPath(const std::string &name) {

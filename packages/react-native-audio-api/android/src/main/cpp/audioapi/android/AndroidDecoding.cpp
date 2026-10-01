@@ -1,8 +1,10 @@
 #include <audioapi/android/AndroidDecoding.h>
 #include <audioapi/android/AndroidDecodingDataSource.h>
+#include <audioapi/android/core/utils/AndroidMediaFormat.h>
 
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/Path.h>
 
 #include <android/api-level.h>
 #include <media/NdkMediaCodec.h>
@@ -350,7 +352,7 @@ decoding::DecoderResult configureExtractorMetadata(
     AMediaFormat *candidate = AMediaExtractor_getTrackFormat(extractor, i);
     const char *mime = nullptr;
     if (AMediaFormat_getString(candidate, AMEDIAFORMAT_KEY_MIME, &mime) && mime != nullptr &&
-        std::strncmp(mime, "audio/", 6) == 0) {
+        media_format::isAudioMime(mime)) {
       state.audioTrackIndex = i;
       format = candidate;
       break;
@@ -483,11 +485,8 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::LocalFileSource &so
   // through the media HTTP service, which is unavailable to app processes on
   // some devices ("NdkMediaExtractor: can't create http service", status
   // -10002). Local files must use the fd overload.
-  constexpr const char *FILE_URL_PREFIX = "file://";
-  const std::string path = source.path.starts_with(FILE_URL_PREFIX)
-      ? source.path.substr(std::strlen(FILE_URL_PREFIX))
-      : source.path;
-  const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
+  const std::string filePath = path::normalizeFilePath(source.path);
+  const int fd = ::open(filePath.c_str(), O_RDONLY | O_CLOEXEC);
   if (fd < 0) {
     return Err(
         "AndroidDecoder::open: failed to open '" + source.path + "': " + std::strerror(errno));

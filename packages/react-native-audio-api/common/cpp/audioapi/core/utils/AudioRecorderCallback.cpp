@@ -50,34 +50,35 @@ AudioRecorderCallback::~AudioRecorderCallback() {
 }
 
 Result<NoneType, std::string> AudioRecorderCallback::prepare(const StreamFormat &streamFormat) {
-  streamSampleRate_ = streamFormat.sampleRate;
-  streamChannelCount_ = streamFormat.channelCount;
+  streamLayout_ = streamFormat.layout;
   maxInputBufferLength_ = streamFormat.maxFramesPerBuffer;
 
-  if (streamSampleRate_ <= 0 || streamChannelCount_ <= 0 || maxInputBufferLength_ == 0) {
+  if (streamLayout_.sampleRate <= 0 || streamLayout_.channelCount <= 0 ||
+      maxInputBufferLength_ == 0) {
     return Result<NoneType, std::string>::Err("Invalid stream sample rate or channel count");
   }
 
   if (sampleRate_ <= 0 || channelCount_ <= 0) {
     return Result<NoneType, std::string>::Err("Invalid callback sample rate or channel count");
   }
-  if (streamChannelCount_ > MAX_CHANNEL_COUNT || channelCount_ > MAX_CHANNEL_COUNT) {
+  if (streamLayout_.channelCount > MAX_CHANNEL_COUNT || channelCount_ > MAX_CHANNEL_COUNT) {
     return Result<NoneType, std::string>::Err("Channel count exceeds MAX_CHANNEL_COUNT");
   }
 
-  const bool needsRemix = streamChannelCount_ != channelCount_;
-  const bool needsResampling = streamSampleRate_ != sampleRate_;
+  const bool needsRemix = streamLayout_.channelCount != channelCount_;
+  const bool needsResampling = streamLayout_.sampleRate != sampleRate_;
 
   if (needsRemix || needsResampling) {
     const auto chunkFrames = static_cast<size_t>(RESAMPLER_MAX_INPUT_FRAMES);
 
     if (needsRemix) {
-      remixedChunk_ = std::make_unique<AudioBuffer>(chunkFrames, channelCount_, streamSampleRate_);
+      remixedChunk_ =
+          std::make_unique<AudioBuffer>(chunkFrames, channelCount_, streamLayout_.sampleRate);
     }
 
     if (needsResampling) {
       resampler_ = std::make_unique<r8b::MultiChannelResampler>(
-          streamSampleRate_, sampleRate_, channelCount_, RESAMPLER_MAX_INPUT_FRAMES);
+          streamLayout_.sampleRate, sampleRate_, channelCount_, RESAMPLER_MAX_INPUT_FRAMES);
       // r8brain reports how much one full input block can expand to; size the output
       // to that so process() can never write past the end.
       const auto maxOutFrames = static_cast<size_t>(std::max(resampler_->getMaxOutLen(), 1));
@@ -85,7 +86,8 @@ Result<NoneType, std::string> AudioRecorderCallback::prepare(const StreamFormat 
     }
   }
 
-  if (!inputBufferPool_.allocate(maxInputBufferLength_, streamChannelCount_, streamSampleRate_)) {
+  if (!inputBufferPool_.allocate(
+          maxInputBufferLength_, streamLayout_.channelCount, streamLayout_.sampleRate)) {
     releaseProcessingResources();
     return Result<NoneType, std::string>::Err("Failed to preallocate recorder callback buffers");
   }
@@ -149,7 +151,7 @@ void AudioRecorderCallback::receiveAudioData(const float *const *channels, int n
 
   // The recorder owns `channels` only for the duration of this synchronous callback. Copy
   // into a leased buffer before handing off to the worker thread.
-  for (int channel = 0; channel < streamChannelCount_; ++channel) {
+  for (int channel = 0; channel < streamLayout_.channelCount; ++channel) {
     std::memcpy(slot->getChannel(channel)->begin(), channels[channel], frames * sizeof(float));
   }
   // send() cannot block here: we hold a slot from a pool of POOL_SIZE,
