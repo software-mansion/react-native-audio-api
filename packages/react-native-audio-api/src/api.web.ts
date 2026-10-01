@@ -18,6 +18,7 @@ export { default as MediaElementAudioSourceNode } from './web-core/MediaElementA
 export type { MediaElementAudioSourceOptions } from './web-core/MediaElementAudioSourceNode.web';
 export { default as OscillatorNode } from './web-core/OscillatorNode.web';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode.web';
+export { default as PannerNode } from './web-core/PannerNode.web';
 export { default as ConstantSourceNode } from './web-core/ConstantSourceNode.web';
 export { default as ConvolverNode } from './web-core/ConvolverNode.web';
 export { default as PeriodicWave } from './web-core/PeriodicWave.web';
