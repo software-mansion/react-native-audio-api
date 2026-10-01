@@ -263,8 +263,6 @@
   self.audioEngine = [[TestableAudioEngine alloc] init];
   AVAudioFormat *inputFormat = [self testInputFormat];
   self.audioEngine.defaultCreatedEngineInputFormat = inputFormat;
-  self.audioEngine.currentFakeAudioEngine.fakeInputNode.outputFormat =
-      inputFormat;
   self.sessionManager = [[FakeAudioSessionManager alloc] init];
   self.audioEngine.sessionManager = self.sessionManager;
 }
@@ -332,6 +330,11 @@
                          channelCount:2];
 }
 
+- (FakeAudioEngine *)createFakeAudioEngine {
+  [self.audioEngine createAudioEngineIfNeeded];
+  return self.audioEngine.currentFakeAudioEngine;
+}
+
 - (void)testCleanupDestroysInternalEngineAndResetsStateAndDeactivatesSession {
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.graphNeedsRebuild = YES;
@@ -350,7 +353,7 @@
 }
 
 - (void)testGetStateAndIsEngineRunningReflectUnderlyingEngine {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
 
   XCTAssertEqual([self.audioEngine getState], AudioEngineStateIdle);
   XCTAssertFalse([self.audioEngine isEngineRunning]);
@@ -365,12 +368,22 @@
   XCTAssertFalse([self.audioEngine isEngineRunning]);
 }
 
+- (void)testAudioEngineIsNotCreatedUntilFirstNodeAttach {
+  XCTAssertNil(self.audioEngine.audioEngine);
+  XCTAssertEqual(self.audioEngine.createdFakeEngines.count, 0UL);
+
+  [self attachSourceNodeToAudioEngine];
+
+  XCTAssertNotNil(self.audioEngine.audioEngine);
+  XCTAssertEqual(self.audioEngine.createdFakeEngines.count, 1UL);
+}
+
 - (void)testAttachSourceNodeStoresAndConnectsSource {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   NSString *sourceNodeId = [self.audioEngine
       attachSourceNodeWithRenderBlock:[self testSourceRenderBlock]
                            sampleRate:44100
                          channelCount:2];
+  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   AVAudioSourceNode *sourceNode = self.audioEngine.sourceNodes[sourceNodeId];
   AVAudioFormat *format = self.audioEngine.sourceFormats[sourceNodeId];
 
@@ -393,7 +406,7 @@
 }
 
 - (void)testDetachSourceNodeWithUnknownIdDoesNothing {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
 
   [self.audioEngine detachSourceNodeWithId:@"missing-source"];
 
@@ -434,12 +447,12 @@
 }
 
 - (void)testAttachInputNodeStoresAndConnectsInput {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   [self.audioEngine
       attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
                 voiceProcessingEnabled:NO
             onInputConfigurationChange:nil];
 
+  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   AVAudioSinkNode *inputNode = self.audioEngine.inputNode;
   XCTAssertNotNil(inputNode);
   XCTAssertEqual(fakeEngine.attachNodeCallCount, 1);
@@ -454,14 +467,14 @@
 }
 
 - (void)testAttachInputNodeDefersConnectionUntilLiveInputFormatIsAvailable {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
-  fakeEngine.fakeInputNode.outputFormat = nil;
+  self.audioEngine.defaultCreatedEngineInputFormat = nil;
 
   [self.audioEngine
       attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
                 voiceProcessingEnabled:NO
             onInputConfigurationChange:nil];
 
+  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   XCTAssertNil(self.audioEngine.inputNode);
   XCTAssertEqual(fakeEngine.attachNodeCallCount, 0);
   XCTAssertEqual(fakeEngine.connectCallCount, 0);
@@ -478,7 +491,7 @@
 }
 
 - (void)testDetachInputNodeWithoutInputDoesNothing {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
 
   [self.audioEngine detachInputNode];
 
@@ -512,13 +525,13 @@
 }
 
 - (void)testDetachInputNodePreservesSessionDeactivationInvalidation {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
-  fakeEngine.fakeRunning = YES;
-  self.audioEngine.state = AudioEngineStateRunning;
   [self.audioEngine
       attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
                 voiceProcessingEnabled:NO
             onInputConfigurationChange:nil];
+  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  fakeEngine.fakeRunning = YES;
+  self.audioEngine.state = AudioEngineStateRunning;
 
   [self.audioEngine onSessionDeactivated];
   [self.audioEngine detachInputNode];
@@ -542,7 +555,7 @@
 }
 
 - (void)testOnSessionDeactivatedNoOpsFromIdle {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
 
   [self.audioEngine onSessionDeactivated];
 
@@ -551,7 +564,7 @@
 }
 
 - (void)testOnSessionDeactivatedPausesRunningEngine {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
   fakeEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
 
@@ -563,10 +576,10 @@
 }
 
 - (void)testOnSessionDeactivatedMarksGraphForRebuildWhenNodesAreAttached {
+  [self attachSourceNodeToAudioEngine];
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   fakeEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
-  [self attachSourceNodeToAudioEngine];
 
   [self.audioEngine onSessionDeactivated];
 
@@ -578,7 +591,7 @@
 
 - (void)
     testOnSessionDeactivatedTransitionsToPausedWithoutPauseWhenEngineStopped {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
   fakeEngine.fakeRunning = NO;
   self.audioEngine.state = AudioEngineStateRunning;
 
@@ -591,10 +604,10 @@
 
 - (void)
     testOnSessionDeactivatedMarksStoppedGraphForRebuildWhenNodesAreAttached {
+  [self attachSourceNodeToAudioEngine];
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   fakeEngine.fakeRunning = NO;
   self.audioEngine.state = AudioEngineStateRunning;
-  [self attachSourceNodeToAudioEngine];
 
   [self.audioEngine onSessionDeactivated];
 
@@ -605,7 +618,7 @@
 }
 
 - (void)testOnInterruptionEndNoOpsUnlessInterrupted {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
 
   [self.audioEngine onInterruptionEnd:true];
 
@@ -668,7 +681,7 @@
 }
 
 - (void)testStartIfNecessaryReturnsTrueWhenAlreadyRunning {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
   fakeEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
 
@@ -822,7 +835,7 @@
 }
 
 - (void)testPauseIfNecessaryNoOpsWhenAlreadyPaused {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
   self.audioEngine.state = AudioEngineStatePaused;
 
   [self.audioEngine pauseIfNecessary];
@@ -832,7 +845,7 @@
 }
 
 - (void)testPauseIfNecessaryPausesActiveEngine {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
   self.audioEngine.state = AudioEngineStateRunning;
 
   [self.audioEngine pauseIfNecessary];
@@ -842,7 +855,7 @@
 }
 
 - (void)testStopIfNecessaryNoOpsFromIdle {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
 
   [self.audioEngine stopIfNecessary];
 
@@ -879,7 +892,7 @@
 }
 
 - (void)testStopIfPossibleKeepsIdleGraphlessEngineAlive {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
 
   [self.audioEngine stopIfPossible];
 
@@ -890,7 +903,7 @@
 }
 
 - (void)testStopIfPossibleStopsNonIdleGraphlessEngineWithoutDestroyingIt {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
   fakeEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
 
