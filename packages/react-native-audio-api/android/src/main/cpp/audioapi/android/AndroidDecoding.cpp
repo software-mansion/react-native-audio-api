@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-namespace audioapi::android_decoder {
+namespace audioapi::android::decoder {
 namespace {
 
 // Codec output PCM encodings (android.media.AudioFormat constants).
@@ -645,4 +645,4 @@ void AndroidDecoder::releaseImpl() {
   impl_.reset();
 }
 
-} // namespace audioapi::android_decoder
+} // namespace audioapi::android::decoder

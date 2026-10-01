@@ -9,7 +9,7 @@ namespace audioapi {
 
 class AudioFileProperties;
 
-namespace android_file_path {
+namespace android::file_path {
 
 using ResolveFilePathResult = Result<std::string, std::string>;
 
@@ -18,6 +18,6 @@ using ResolveFilePathResult = Result<std::string, std::string>;
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileName);
 
-} // namespace android_file_path
+} // namespace android::file_path
 
 } // namespace audioapi

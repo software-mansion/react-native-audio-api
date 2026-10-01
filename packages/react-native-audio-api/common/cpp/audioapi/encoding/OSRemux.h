@@ -23,9 +23,9 @@ inline AudioRemuxResult remuxConcatAudioFiles(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
 #if defined(__ANDROID__)
-  return android_remux::concatAudioFiles(inputPaths, outputPath);
+  return android::remux::concatAudioFiles(inputPaths, outputPath);
 #elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)
-  return ios_remux::concatAudioFiles(inputPaths, outputPath);
+  return ios::remux::concatAudioFiles(inputPaths, outputPath);
 #else
   (void)inputPaths;
   (void)outputPath;

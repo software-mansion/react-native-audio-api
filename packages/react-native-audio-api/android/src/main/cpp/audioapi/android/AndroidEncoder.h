@@ -7,7 +7,7 @@
 #include <string>
 #include "audioapi/utils/Macros.h"
 
-namespace audioapi::android_encoder {
+namespace audioapi::android::encoder {
 
 class IEncoderBackend;
 
@@ -47,4 +47,4 @@ class AndroidEncoder : public AudioEncoder {
   std::unique_ptr<ConversionState> conversion_; // null when no conversion is needed
 };
 
-} // namespace audioapi::android_encoder
+} // namespace audioapi::android::encoder

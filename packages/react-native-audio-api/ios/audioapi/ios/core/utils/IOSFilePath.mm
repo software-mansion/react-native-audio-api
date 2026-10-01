@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-namespace audioapi::ios_file_path {
+namespace audioapi::ios::file_path {
 
 namespace {
 
@@ -71,4 +71,4 @@ ResolveFilePathResult resolveFilePath(
   }
 }
 
-} // namespace audioapi::ios_file_path
+} // namespace audioapi::ios::file_path

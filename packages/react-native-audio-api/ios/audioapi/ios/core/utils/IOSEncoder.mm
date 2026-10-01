@@ -15,7 +15,7 @@
 
 #include <audioapi/core/utils/Constants.h>
 
-namespace audioapi::ios_encoder {
+namespace audioapi::ios::encoder {
 
 struct IOSEncoderState {
   NSURL *fileURL = nil;
@@ -330,8 +330,6 @@ CloseEncoderResult IOSEncoder::close()
     }
     markClosed();
 
-    NSURL *fileURL = impl_->fileURL;
-
     // AVAudioFile finalizes the file on deallocation.
     impl_->audioFile = nil;
     impl_->converter = nil;
@@ -340,15 +338,7 @@ CloseEncoderResult IOSEncoder::close()
     impl_->inputBufferListStorage.clear();
 
     const double durationSeconds = getEncodedDurationSeconds();
-
-    NSError *error = nil;
-    double fileSizeMB = static_cast<double>([[[NSFileManager defaultManager]
-                            attributesOfItemAtPath:[fileURL path]
-                                             error:&error] fileSize]) /
-        MB_IN_BYTES;
-    if (error != nil) {
-      fileSizeMB = 0.0;
-    }
+    const double fileSizeMB = static_cast<double>(getFileSizeBytes()) / MB_IN_BYTES;
 
     impl_->fileURL = nil;
     resetFramesEncoded();
@@ -373,4 +363,4 @@ size_t IOSEncoder::getFileSizeBytes() const
   }
 }
 
-} // namespace audioapi::ios_encoder
+} // namespace audioapi::ios::encoder

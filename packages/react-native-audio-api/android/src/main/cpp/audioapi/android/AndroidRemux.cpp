@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-namespace audioapi::android_remux {
+namespace audioapi::android::remux {
 namespace {
 
 constexpr size_t SAMPLE_BUFFER_BYTES = 256 * 1024;
@@ -430,4 +430,4 @@ Result<std::string, std::string> concatAudioFiles(
   return Ok(outputPath);
 }
 
-} // namespace audioapi::android_remux
+} // namespace audioapi::android::remux

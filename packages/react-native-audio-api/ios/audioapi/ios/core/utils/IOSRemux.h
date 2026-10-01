@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace audioapi::ios_remux {
+namespace audioapi::ios::remux {
 
 using IOSRemuxResult = Result<std::string, std::string>;
 
@@ -15,4 +15,4 @@ using IOSRemuxResult = Result<std::string, std::string>;
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath);
 
-} // namespace audioapi::ios_remux
+} // namespace audioapi::ios::remux

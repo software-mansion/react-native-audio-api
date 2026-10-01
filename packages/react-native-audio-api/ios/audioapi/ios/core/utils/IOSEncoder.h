@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-namespace audioapi::ios_encoder {
+namespace audioapi::ios::encoder {
 
 struct IOSEncoderState;
 
@@ -39,4 +39,4 @@ class IOSEncoder : public AudioEncoder {
   std::unique_ptr<IOSEncoderState> impl_;
 };
 
-} // namespace audioapi::ios_encoder
+} // namespace audioapi::ios::encoder

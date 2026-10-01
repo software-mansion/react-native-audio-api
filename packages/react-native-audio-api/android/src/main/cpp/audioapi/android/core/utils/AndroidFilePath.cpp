@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-namespace audioapi::android_file_path {
+namespace audioapi::android::file_path {
 
 namespace {
 
@@ -55,4 +55,4 @@ ResolveFilePathResult resolveFilePath(
   return Ok(std::format("{}/{}", subDirectory, fileName));
 }
 
-} // namespace audioapi::android_file_path
+} // namespace audioapi::android::file_path

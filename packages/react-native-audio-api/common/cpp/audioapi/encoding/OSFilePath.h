@@ -26,9 +26,9 @@ inline ResolveFilePathResult resolveOsFilePath(
     const std::shared_ptr<AudioFileProperties> &properties,
     const std::string &fileName) {
 #if defined(__ANDROID__)
-  return android_file_path::resolveFilePath(properties, fileName);
+  return android::file_path::resolveFilePath(properties, fileName);
 #elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)
-  return ios_file_path::resolveFilePath(properties, fileName);
+  return ios::file_path::resolveFilePath(properties, fileName);
 #else
   (void)properties;
   (void)fileName;

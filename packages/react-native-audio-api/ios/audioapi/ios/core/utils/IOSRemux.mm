@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace audioapi::ios_remux {
+namespace audioapi::ios::remux {
 namespace {
 
 struct AudioFormatFingerprint {
@@ -184,4 +184,4 @@ IOSRemuxResult concatAudioFiles(
   }
 }
 
-} // namespace audioapi::ios_remux
+} // namespace audioapi::ios::remux

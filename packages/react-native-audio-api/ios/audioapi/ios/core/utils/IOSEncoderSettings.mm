@@ -4,7 +4,7 @@
 #include <audioapi/ios/core/utils/IOSEncoderSettings.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
-namespace audioapi::ios_encoder {
+namespace audioapi::ios::encoder {
 
 /// @brief Maps the encoding settings to an iOS AVFoundation audio quality.
 /// @param encoding The file's encoding settings.
@@ -58,4 +58,4 @@ NSInteger getBitDepth(const AudioFileProperties::EncodingConfig &encoding)
   }
 }
 
-} // namespace audioapi::ios_encoder
+} // namespace audioapi::ios::encoder

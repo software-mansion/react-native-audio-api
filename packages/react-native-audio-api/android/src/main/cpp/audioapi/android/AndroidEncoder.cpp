@@ -30,7 +30,7 @@
 #define AMEDIAMUXER_OUTPUT_FORMAT_OGG 4
 #endif
 
-namespace audioapi::android_encoder {
+namespace audioapi::android::encoder {
 namespace {
 
 int16_t floatToS16(float sample) {
@@ -901,4 +901,4 @@ size_t AndroidEncoder::getFileSizeBytes() const {
   return backend_->getFileSizeBytes();
 }
 
-} // namespace audioapi::android_encoder
+} // namespace audioapi::android::encoder
