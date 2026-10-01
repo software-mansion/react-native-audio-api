@@ -85,14 +85,14 @@ const Record: FC = () => {
       setHasPermissions(true);
     }
 
-    AudioManager.setAudioSessionOptions({
+    AudioManager.setSystemOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'default',
       iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     });
 
     try {
-      await AudioManager.setAudioSessionActivity(true);
+      await AudioManager.setSystemActivity(true);
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to activate audio session for recording.');
@@ -337,7 +337,7 @@ const Record: FC = () => {
       stopPlayback();
 
       if (!AudioRecorder.isRecordingOngoing()) {
-        AudioManager.setAudioSessionActivity(false);
+        AudioManager.setSystemActivity(false);
       }
     };
   }, [stopPlayback]);

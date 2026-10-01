@@ -80,8 +80,8 @@ Defines the TypeScript interface for the native module. Codegen (React Native's 
 interface Spec extends TurboModule {
   install(): boolean;                           // synchronous — MUST run first
   getDevicePreferredSampleRate(): number;       // synchronous
-  setAudioSessionActivity(enabled: boolean): Promise<boolean>;
-  setAudioSessionOptions(...): void;
+  setSystemActivity(enabled: boolean): Promise<boolean>;
+  setSystemOptions(...): void;
   observeAudioInterruptions(focusType, enabled): void;
   requestRecordingPermissions(): Promise<PermissionStatus>;
   // ... audio devices, notifications ...

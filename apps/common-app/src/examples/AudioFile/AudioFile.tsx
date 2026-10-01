@@ -29,14 +29,14 @@ const AudioFile: FC = () => {
         setPositionPercentage(offset);
       });
 
-      AudioManager.setAudioSessionOptions({
+      AudioManager.setSystemOptions({
         iosCategory: 'playback',
         iosMode: 'default',
         iosOptions: [],
       });
 
       try {
-        await AudioManager.setAudioSessionActivity(true);
+        await AudioManager.setSystemActivity(true);
       } catch (error) {
         console.error('Failed to activate audio session:', error);
         Alert.alert(
@@ -100,7 +100,7 @@ const AudioFile: FC = () => {
     return () => {
       AudioPlayer.reset();
       PlaybackNotificationManager.hide();
-      AudioManager.setAudioSessionActivity(false);
+      AudioManager.setSystemActivity(false);
     };
   }, [fetchAudioBuffer]);
 
@@ -152,7 +152,7 @@ const AudioFile: FC = () => {
         if (event.type === 'ended' && wasPlaying) {
           BackgroundTimer.setTimeout(async () => {
             AudioPlayer.setVolume(1.0);
-            AudioManager.setAudioSessionActivity(true);
+            AudioManager.setSystemActivity(true);
             await AudioPlayer.play();
             setIsPlaying(true);
             setWasPlaying(false);

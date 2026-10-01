@@ -16,6 +16,7 @@ import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
 import ChannelMergerSplitter from './ChannelMergerSplitter';
+import EchoCancellation from './EchoCancellation';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -38,6 +39,7 @@ type NavigationParamList = {
   AudioParamPipeline: undefined;
   TestScreen: undefined;
   LatencyValidation: undefined;
+  EchoCancellation: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -145,5 +147,11 @@ export const Examples: Example[] = [
     title: 'Channel Count',
     Icon: icons.Columns3,
     screen: ChannelCount,
+  },
+  {
+    key: 'EchoCancellation',
+    title: 'EAC',
+    Icon: icons.AudioLines,
+    screen: EchoCancellation,
   },
 ] as const;
