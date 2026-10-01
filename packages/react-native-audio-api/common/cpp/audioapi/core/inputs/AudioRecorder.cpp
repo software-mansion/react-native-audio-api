@@ -36,8 +36,11 @@ void AudioRecorder::onAudioFrames(const float *const *channels, int numFrames) {
 
   if (isConnected()) {
     auto adapterLock = Locker::tryLock(adapterNodeMutex_);
-    if (adapterLock && adapterNode_ != nullptr) {
-      adapterNode_->writeFrames(channels, static_cast<size_t>(numFrames));
+    if (!adapterLock) {
+      return;
+    }
+    if (auto *adapterNode = adapterNodeOf(adapterNodeHandle_)) {
+      adapterNode->writeFrames(channels, static_cast<size_t>(numFrames));
     }
   }
 }
@@ -155,12 +158,9 @@ void AudioRecorder::clearOnAudioReadyCallback() {
 }
 
 /// JS thread only. Prepares the node immediately when called mid-recording.
-void AudioRecorder::connect(
-    const std::shared_ptr<utils::graph::NodeHandle> &node,
-    RecorderAdapterNode *adapterNode) {
+void AudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &node) {
   std::scoped_lock adapterLock(adapterNodeMutex_);
   adapterNodeHandle_ = node;
-  adapterNode_ = adapterNode;
   connectionState_.store(OutputState::Requested, std::memory_order_release);
 
   if (isIdle()) {
@@ -179,7 +179,6 @@ void AudioRecorder::connect(
 /// JS thread only.
 void AudioRecorder::disconnect() {
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
-  RecorderAdapterNode *adapterNode = nullptr;
   bool hadConnection = false;
 
   {
@@ -187,21 +186,31 @@ void AudioRecorder::disconnect() {
     hadConnection = isConnected();
     connectionState_.store(OutputState::Disabled, std::memory_order_release);
     adapterNodeHandle = std::move(adapterNodeHandle_);
-    adapterNode = std::exchange(adapterNode_, nullptr);
   }
 
-  if (hadConnection && adapterNode != nullptr) {
+  if (auto *adapterNode = hadConnection ? adapterNodeOf(adapterNodeHandle) : nullptr) {
     adapterNode->adapterCleanup();
   }
 }
 
 void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
-  if (adapterNode_ == nullptr) {
+  auto *adapterNode = adapterNodeOf(adapterNodeHandle_);
+  if (adapterNode == nullptr) {
     return;
   }
 
-  adapterNode_->init(format);
+  adapterNode->init(format);
   connectionState_.store(OutputState::Active, std::memory_order_release);
+}
+
+RecorderAdapterNode *AudioRecorder::adapterNodeOf(
+    const std::shared_ptr<utils::graph::NodeHandle> &handle) {
+  if (handle == nullptr || handle->audioNode == nullptr) {
+    return nullptr;
+  }
+  // NOLINTBEGIN (cppcoreguidelines-pro-type-static-cast-downcast)
+  return static_cast<RecorderAdapterNode *>(handle->audioNode->asAudioNode());
+  // NOLINTEND (cppcoreguidelines-pro-type-static-cast-downcast)
 }
 
 AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
@@ -221,7 +230,6 @@ AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
   if (isConnected()) {
     deactivate(connectionState_);
     sideEffects.adapterNodeHandle = std::move(adapterNodeHandle_);
-    sideEffects.adapterNode = std::exchange(adapterNode_, nullptr);
   }
 
   return sideEffects;
@@ -250,8 +258,8 @@ Result<FileInfo, std::string> AudioRecorder::finalizeSideEffects(DetachedSideEff
     sideEffects.dataCallback->cleanup();
   }
 
-  if (sideEffects.adapterNode != nullptr) {
-    sideEffects.adapterNode->adapterCleanup();
+  if (auto *adapterNode = adapterNodeOf(sideEffects.adapterNodeHandle)) {
+    adapterNode->adapterCleanup();
   }
 
   return Ok(

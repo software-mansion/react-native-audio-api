@@ -1,6 +1,5 @@
 #include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
 
-#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
@@ -169,10 +168,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, connect) {
   auto adapterNodeHostObject =
       args[0].getObject(runtime).getHostObject<RecorderAdapterNodeHostObject>(runtime);
 
-  // The handle keeps the node alive for the raw pointer; see AudioRecorder::connect.
-  audioRecorder_->connect(
-      adapterNodeHostObject->node_->handle,
-      typedAudioNode<RecorderAdapterNode>(adapterNodeHostObject->node_));
+  audioRecorder_->connect(adapterNodeHostObject->node_->handle);
   return jsi::Value::undefined();
 }
 

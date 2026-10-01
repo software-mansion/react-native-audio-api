@@ -42,10 +42,8 @@ class AudioRecorder {
   virtual void pause() = 0;
   virtual void resume() = 0;
 
-  /// @p adapterNode is the payload of @p node; the handle keeps it alive while connected.
-  void connect(
-      const std::shared_ptr<utils::graph::NodeHandle> &node,
-      RecorderAdapterNode *adapterNode);
+  /// @p node must carry a RecorderAdapterNode; the handle keeps it alive while connected.
+  void connect(const std::shared_ptr<utils::graph::NodeHandle> &node);
   void disconnect();
 
   Result<NoneType, std::string> setOnAudioReadyCallback(
@@ -91,7 +89,6 @@ class AudioRecorder {
     std::shared_ptr<AudioFileWriter> fileWriter;
     std::shared_ptr<AudioRecorderCallback> dataCallback;
     std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
-    RecorderAdapterNode *adapterNode = nullptr;
     std::vector<std::string> fileUris;
   };
 
@@ -110,6 +107,11 @@ class AudioRecorder {
 
   /// The caller must hold adapterNodeMutex_.
   void prepareAdapterNode(const StreamFormat &format);
+
+  /// Payload of @p handle, or nullptr when not connected. Valid exactly as long as the handle
+  /// is held, so callers keep the handle (or adapterNodeMutex_) for the pointer's lifetime.
+  static RecorderAdapterNode *adapterNodeOf(
+      const std::shared_ptr<utils::graph::NodeHandle> &handle);
 
   /// Stops the audio thread from touching the side effects before they are closed.
   /// The caller must hold callbackMutex_, fileWriterMutex_ and adapterNodeMutex_.
@@ -142,9 +144,6 @@ class AudioRecorder {
 
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;
-  /// Payload of adapterNodeHandle_. Valid exactly as long as that handle is held, so the two
-  /// are set and cleared together under adapterNodeMutex_.
-  RecorderAdapterNode *adapterNode_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
