@@ -21,7 +21,6 @@ Expo Audio is a media player: you give it a file or URL and control playback.
 | Lock screen controls and background playback | ✅ | ✅ |
 | Mixing and syncing many sounds | ❌ | ✅ |
 | Sample-accurate scheduling | ❌ | ✅ |
-| Animating UI from audio without the JS thread | ❌ | ✅ <br /> [`WorkletNode`](../worklets/worklet-node.mdx) runs your callback on the UI runtime, where it can update Reanimated shared values directly |
 | Built-in playlist | ✅ | ❌ |
 | Playing chunked audio, for example from a text-to-speech API | ❌ | ✅ <br /> [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx) plays buffers as you enqueue them gapless |
 | Playback rate and pitch correction | ✅ | ✅ |
@@ -37,8 +36,6 @@ Expo Audio is a media player: you give it a file or URL and control playback.
 | Long recordings | ✅ <br /> One large file per recording | ✅ <br /> [File rotation](../inputs/audio-recorder.mdx#audiorecorderfileoptions) chunks recording, which limits data loss if the app is killed. |
 | Background recording and notification | ✅ | ✅ |
 | Live access to recorded data | ✅ | ✅ |
-| Echo cancellation | ❌ | ✅ |
-| Animating UI from microphone input without the JS thread | ❌ | ✅ <br /> [`WorkletNode`](../worklets/worklet-node.mdx) runs your callback on the UI runtime, where it can update Reanimated shared values directly |
 
 </div>
 
@@ -52,7 +49,6 @@ Expo Audio is a media player: you give it a file or URL and control playback.
 | Synthesis (oscillators, generated buffers) | ❌ | ✅ |
 | Real-time analysis (FFT, waveform) | ❌ <br /> Raw PCM samples of a player | ✅ <br /> e.g.&nbsp;[`AnalyserNode`](../analysis/analyser-node.mdx) |
 | Offline rendering | ❌ | ✅ |
-| Custom processing in JavaScript on the audio thread | ❌ | ✅ <br /> e.g.&nbsp;[`WorkletProcessingNode`](../worklets/worklet-processing-node.mdx) |
 
 </div>
 
@@ -65,7 +61,6 @@ Expo Audio is a media player: you give it a file or URL and control playback.
 | Audio session configuration | ✅ | ✅ |
 | Interruption and route change events | ❌ | ✅ |
 | System volume | ❌ | ✅ |
-| Audio devices | ✅ | ✅ |
 
 </div>
 
