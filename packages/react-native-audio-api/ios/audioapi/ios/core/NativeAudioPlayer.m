@@ -4,7 +4,6 @@
 
 @interface NativeAudioPlayer () {
   int _preferredIOBufferFrames;
-  NSString *_ioBufferClientId;
 }
 @end
 
@@ -39,11 +38,6 @@
   return [audioEngine startIfNecessary];
 }
 
-- (void)releasePreferredIOBuffer
-{
-  [[AudioSessionManager sharedInstance] releaseIOBufferFramesForClient:_ioBufferClientId];
-}
-
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                          sampleRate:(float)sampleRate
                        channelCount:(int)channelCount
@@ -52,7 +46,6 @@
   if (self = [super init]) {
     self.sampleRate = sampleRate;
     _preferredIOBufferFrames = preferredIOBufferFrames;
-    _ioBufferClientId = [[NSUUID UUID] UUIDString];
 
     self.channelCount = channelCount;
     self.renderAudio = [renderAudio copy];
@@ -83,12 +76,12 @@
   assert(audioEngine != nil);
 
   // AVAudioEngine adopts a new buffer duration only when it starts, so it is requested first.
-  [sessionManager requestIOBufferFrames:_preferredIOBufferFrames forClient:_ioBufferClientId];
+  [sessionManager setPreferredIOBufferFrames:_preferredIOBufferFrames];
 
   NSError *error = nil;
   if (![sessionManager ensureActive:false error:&error]) {
     NSLog(@"Error while activating audio session for playback: %@", [error debugDescription]);
-    [self releasePreferredIOBuffer];
+    [sessionManager resetPreferredIOBufferFrames];
     return false;
   }
 
@@ -101,7 +94,7 @@
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop player very frequently
   if (![self startPlaybackGraph:audioEngine]) {
-    [self releasePreferredIOBuffer];
+    [sessionManager resetPreferredIOBufferFrames];
     return false;
   }
 
@@ -110,7 +103,7 @@
 
 - (void)stop
 {
-  [self releasePreferredIOBuffer];
+  [[AudioSessionManager sharedInstance] resetPreferredIOBufferFrames];
 
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   if (audioEngine != nil) {
@@ -126,7 +119,7 @@
 
 - (void)suspend
 {
-  [self releasePreferredIOBuffer];
+  [[AudioSessionManager sharedInstance] resetPreferredIOBufferFrames];
 
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
@@ -137,8 +130,6 @@
 
 - (void)cleanup
 {
-  [self releasePreferredIOBuffer];
-
   self.renderAudio = nil;
   self.renderBlock = nil;
   self.onStreamFail = nil;

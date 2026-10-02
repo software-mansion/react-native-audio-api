@@ -39,10 +39,12 @@
 /// Switches the manager into external owner mode and stops all session mutations.
 - (void)disableSessionManagement;
 
-/// One IO buffer duration serves the whole process, so the shortest live request wins;
-/// releasing the last asks for one render quantum, the default of an interactive context.
-- (void)requestIOBufferFrames:(int)frames forClient:(NSString *)clientId;
-- (void)releaseIOBufferFramesForClient:(NSString *)clientId;
+/// Asks the session for an IO buffer of @p frames (in frames of the session's own rate).
+/// One buffer duration serves the whole process and nothing is tracked per caller: the latest
+/// request simply replaces the previous one.
+- (void)setPreferredIOBufferFrames:(int)frames;
+/// Asks for one render quantum again, the default of an interactive context.
+- (void)resetPreferredIOBufferFrames;
 
 - (NSNumber *)getDevicePreferredSampleRate;
 - (NSNumber *)getSystemVolume;

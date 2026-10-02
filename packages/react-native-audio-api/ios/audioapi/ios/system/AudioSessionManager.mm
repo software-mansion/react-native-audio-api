@@ -6,8 +6,6 @@
 
 @interface AudioSessionManager ()
 
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *ioBufferFramesRequests;
-
 - (id)microphoneUsageDescriptionValue;
 - (bool)usesAudioApplicationRecordPermissionAPI;
 - (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion;
@@ -24,8 +22,6 @@
 static const AVAudioSessionCategoryOptions
     RNAudioSessionCategoryOptionBluetoothHighQualityRecordingMask = 1 << 19;
 static const AVAudioSessionCategoryOptions RNAudioSessionCategoryOptionFarFieldInputMask = 1 << 18;
-
-static const int kDefaultIOBufferFrames = audioapi::RENDER_QUANTUM_SIZE;
 
 @implementation AudioSessionManager
 
@@ -44,8 +40,6 @@ static AudioSessionManager *_sharedInstance = nil;
     self.desiredOptions = 0;
     self.allowHapticsAndSounds = false;
     self.notifyOthersOnDeactivation = true;
-
-    self.ioBufferFramesRequests = [[NSMutableDictionary alloc] init];
   }
 
   _sharedInstance = self;
@@ -60,12 +54,7 @@ static AudioSessionManager *_sharedInstance = nil;
 - (void)cleanup
 {
   // The preference outlives this manager.
-  @synchronized(self) {
-    if (self.ioBufferFramesRequests.count > 0) {
-      [self.ioBufferFramesRequests removeAllObjects];
-      [self applyPreferredIOBufferDuration];
-    }
-  }
+  [self resetPreferredIOBufferFrames];
 
   self.audioSession = nil;
 }
@@ -79,15 +68,12 @@ static AudioSessionManager *_sharedInstance = nil;
       self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
 }
 
-/// Caller holds the lock on self.
-- (void)applyPreferredIOBufferDuration
+- (void)setPreferredIOBufferFrames:(int)frames
 {
   if (!self.shouldManageSession) {
     return;
   }
 
-  NSNumber *shortestRequest = [self.ioBufferFramesRequests.allValues valueForKeyPath:@"@min.self"];
-  int frames = shortestRequest != nil ? shortestRequest.intValue : kDefaultIOBufferFrames;
   double duration = frames / self.audioSession.sampleRate;
 
   NSError *error = nil;
@@ -99,24 +85,9 @@ static AudioSessionManager *_sharedInstance = nil;
   }
 }
 
-- (void)requestIOBufferFrames:(int)frames forClient:(NSString *)clientId
+- (void)resetPreferredIOBufferFrames
 {
-  @synchronized(self) {
-    self.ioBufferFramesRequests[clientId] = @(frames);
-    [self applyPreferredIOBufferDuration];
-  }
-}
-
-- (void)releaseIOBufferFramesForClient:(NSString *)clientId
-{
-  @synchronized(self) {
-    if (self.ioBufferFramesRequests[clientId] == nil) {
-      return;
-    }
-
-    [self.ioBufferFramesRequests removeObjectForKey:clientId];
-    [self applyPreferredIOBufferDuration];
-  }
+  [self setPreferredIOBufferFrames:audioapi::RENDER_QUANTUM_SIZE];
 }
 
 - (bool)configureAudioSession:(NSError **)outError
