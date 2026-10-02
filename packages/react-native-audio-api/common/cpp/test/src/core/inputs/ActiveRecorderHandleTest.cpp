@@ -62,6 +62,9 @@ class FakeAudioRecorder : public AudioRecorder {
   void resume() override {
     state_ = RecorderState::Recording;
   }
+  Result<NoneType, std::string> rerouteInput() override {
+    return Result<NoneType, std::string>::Ok(None);
+  }
 
   void connect(const std::shared_ptr<utils::graph::NodeHandle> &) override {}
   void disconnect() override {}

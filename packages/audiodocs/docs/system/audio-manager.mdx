@@ -177,7 +177,7 @@ Checks if notification permissions were previously granted.
 
 Checks currently used and available devices.
 
-On Android, `currentInputs` reports the device selected through [`setInputDevice`](#setinputdevice) and is empty until one is selected, since the platform does not report which input it would pick on its own. `currentOutputs` is always empty on Android.
+On Android, `currentInputs` reports the device selected through [`setInputDevice`](#setinputdevice) and is empty until one is selected, since the platform does not report which input it would pick on its own. When the selected device is disconnected, the selection returns to the system default and `currentInputs` is empty again; a reconnected device has to be selected anew. `currentOutputs` is always empty on Android.
 
 #### Returns `Promise<AudioDevicesInfo>`, which is resolved after receiving the answer from the system.
 
@@ -187,15 +187,14 @@ Selects the device that audio is captured from, using an `id` taken from `getDev
 
 | Name | Type | Description |
 | :----: | :----: | :---- |
-| `deviceId` | `string` | Identifier of the input device to capture from. |
+| `deviceId` | `string \| null` | Identifier of the input device to capture from. `null` drops the selection, so the system chooses the input again. |
 
-The two platforms differ in when the selection takes effect:
+If the new input has a different configuration, the recorded file continues in a new segment, so [`stop`](../inputs/audio-recorder.mdx#stop) can return more than one path.
 
-- **iOS** sets the session's preferred input, which reroutes a running session right away.
-- **Android** binds the device while an Oboe capture stream opens, so the selection applies to recorders started afterwards. Calling it while a recorder is running or paused rejects instead of deferring the switch silently: stop the recorder, select the device, then start it again.
+On Android, a recorder with no device selected uses the first external microphone connected, in this order: USB microphone or audio interface, USB headset, wired headset, Bluetooth headset. Using a Bluetooth headset's microphone on Android 11 and below requires the `android.permission.MODIFY_AUDIO_SETTINGS` permission; without it such a recorder records from the phone's microphone, and starting one with a Bluetooth microphone explicitly selected fails.
 
 #### Returns `Promise<void>`
-resolved once the device is selected and rejected when the device cannot be found, when the system fails to switch to it, or, on Android, when a recorder is running or paused.
+resolved once the device is selected and rejected when the device cannot be found or when the system fails to switch to it.
 
 ## Remarks
 

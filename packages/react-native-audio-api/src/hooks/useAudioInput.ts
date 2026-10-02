@@ -22,9 +22,7 @@ const meaningfulReasons: RouteChangeReason[] = [
  * configuration changes and updates its state. If you need more granular
  * control, consider using the AudioManager API directly.
  *
- * On Android the selection is bound while a capture stream opens, so
- * `onSelectInput` throws while a recorder is running or paused, and
- * `currentInput` stays null until a device is picked. See
+ * On Android `currentInput` stays null until a device is picked. See
  * `AudioManager.setInputDevice`.
  *
  * @returns An object containing audio input information and selection
@@ -34,9 +32,9 @@ export default function useAudioInput() {
   const [availableInputs, setAvailableInputs] = useState<AudioDeviceList>([]);
   const [currentInput, setCurrentInput] = useState<string | null>(null);
 
-  const onSelectInput = useCallback(async (device: AudioDeviceInfo) => {
-    await AudioManager.setInputDevice(device.id);
-    setCurrentInput(device.id);
+  const onSelectInput = useCallback(async (device: AudioDeviceInfo | null) => {
+    await AudioManager.setInputDevice(device?.id ?? null);
+    setCurrentInput(device?.id ?? null);
 
     const devicesInfo: AudioDevicesInfo = await AudioManager.getDevicesInfo();
     setAvailableInputs(devicesInfo.availableInputs);
@@ -85,8 +83,8 @@ export default function useAudioInput() {
        */
       currentInput: availableInputs.find((d) => d.id === currentInput) || null,
       /**
-       * Selects the given device as the current input. Resolves once the device
-       * is selected, throws otherwise.
+       * Selects the given device as the current input, or with `null` hands the
+       * choice back to the system. Resolves once done, throws otherwise.
        */
       onSelectInput,
     }),

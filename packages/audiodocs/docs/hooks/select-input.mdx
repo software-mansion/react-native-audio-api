@@ -14,9 +14,7 @@ The `useAudioInput` hook provides an interface for:
 - switching between different input devices
 
 :::info Platform support
-Input device selection works on iOS and on Android. The two platforms differ in when a selection takes effect: iOS reroutes the running session immediately, while Android binds the device as a capture stream opens, so the selection applies to recorders started afterwards. Calling `onSelectInput` on Android while a recorder is running or paused throws, rather than deferring the switch without saying so.
-
-On Android, `currentInput` is `null` until a device is selected through this hook, because the platform does not report which input it would pick on its own.
+On Android, `currentInput` is `null` until a device is selected through this hook, because the platform does not report which input it would pick on its own. It becomes `null` again when the selected device is disconnected.
 :::
 
 ## Signature
@@ -25,7 +23,7 @@ On Android, `currentInput` is `null` until a device is selected through this hoo
 function useAudioInput(): {
   availableInputs: AudioDeviceInfo[];
   currentInput: AudioDeviceInfo | null;
-  onSelectInput: (device: AudioDeviceInfo) => Promise<void>;
+  onSelectInput: (device: AudioDeviceInfo | null) => Promise<void>;
 }
 ```
 
@@ -63,7 +61,7 @@ function AudioInputSelector() {
 | :----: | :----: | :---- |
 | `availableInputs` | [`AudioDeviceInfo[]`](../system/audio-manager.mdx#audiodeviceinfo) | List of available audio input devices under the current device configuration. |
 | `currentInput` | [`AudioDeviceInfo`](../system/audio-manager.mdx#audiodeviceinfo) \| `null` | The currently selected audio input device, or `null` if none is yet selected by the system. |
-| `onSelectInput` | `(device: AudioDeviceInfo) => Promise<void>` | Selects the given device as the current input. Resolves once the device is selected; throws otherwise. |
+| `onSelectInput` | `(device: AudioDeviceInfo \| null) => Promise<void>` | Selects the given device as the current input; `null` hands the choice back to the system. Resolves once done; throws otherwise. |
 
 ## Related
 

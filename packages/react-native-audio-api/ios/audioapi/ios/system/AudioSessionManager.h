@@ -53,6 +53,7 @@
 
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
 - (NSArray<NSDictionary *> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription *> *)devices;
+/// A nil @p deviceId clears the preferred input, so the system chooses again.
 - (void)setInputDevice:(NSString *)deviceId
                resolve:(RCTPromiseResolveBlock)resolve
                 reject:(RCTPromiseRejectBlock)reject;

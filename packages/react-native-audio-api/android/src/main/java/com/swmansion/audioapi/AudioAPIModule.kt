@@ -52,8 +52,6 @@ class AudioAPIModule(
     eventBody: Map<String, Any>,
   )
 
-  private external fun setPreferredInputDeviceId(deviceId: Int): Boolean
-
   init {
     try {
       System.loadLibrary("react-native-audio-api")
@@ -182,21 +180,20 @@ class AudioAPIModule(
   ) {
     val device = deviceId?.let { MediaSessionManager.findInputDevice(it) }
 
-    if (device == null) {
+    if (deviceId != null && device == null) {
       promise?.reject(INPUT_DEVICE_ERROR, "Input device with id $deviceId not found", null)
       return
     }
 
-    if (!setPreferredInputDeviceId(device.id)) {
+    if (!MediaSessionManager.setPreferredInputDevice(device)) {
       promise?.reject(
         INPUT_DEVICE_ERROR,
-        "Cannot change the input device while a recorder is running or paused. Stop the recorder, select the device, then start it again.",
+        "The running recording could not continue on the selected input device.",
         null,
       )
       return
     }
 
-    MediaSessionManager.setPreferredInputDevice(device)
     promise?.resolve(null)
   }
 

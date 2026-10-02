@@ -638,6 +638,11 @@ void IOSAudioRecorder::pause()
   state_.store(RecorderState::Paused, std::memory_order_release);
 }
 
+Result<NoneType, std::string> IOSAudioRecorder::rerouteInput()
+{
+  return Result<NoneType, std::string>::Ok(None);
+}
+
 void IOSAudioRecorder::resume()
 {
   if (!isPaused()) {

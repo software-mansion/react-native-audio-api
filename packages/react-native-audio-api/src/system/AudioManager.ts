@@ -121,17 +121,16 @@ class AudioManager implements IAudioManager {
   }
 
   /**
-   * Selects the given device as the current audio input.
+   * Selects the given device as the current audio input. Passing `null` drops
+   * the selection, so the system chooses the input again.
    *
    * Resolves when the input device was set successfully and rejects when the
    * device cannot be found or the system fails to switch to it.
    *
-   * On iOS the running session is rerouted right away. On Android the device is
-   * bound while a capture stream opens, so the selection applies to recorders
-   * started afterwards, and calling this while a recorder is running or paused
-   * rejects rather than deferring the switch silently.
+   * A recording in progress moves to the new input right away. When the new
+   * input has a different format, the recorded file rotates.
    */
-  async setInputDevice(deviceId: string): Promise<void> {
+  async setInputDevice(deviceId: string | null): Promise<void> {
     await NativeAudioAPIModule.setInputDevice(deviceId);
   }
 }
