@@ -82,6 +82,7 @@ interface AudioAPIEvents {
   /** `value` is true while an `<Audio>` source is stalled on decoded data. */
   bufferingStateChanged: EventTypeWithBool;
   stateChange: EventEmptyType;
+  contextError: EventEmptyType;
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;

@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -21,11 +22,7 @@ namespace audioapi {
 
 class IOSAudioPlayer : public CommonPlayer {
  public:
-  IOSAudioPlayer(
-      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-      float sampleRate,
-      int channelCount,
-      std::atomic<uint32_t> &currentRenders);
+  using CommonPlayer::CommonPlayer;
   ~IOSAudioPlayer() override;
 
   bool start() override;
@@ -40,16 +37,12 @@ class IOSAudioPlayer : public CommonPlayer {
   [[nodiscard]] double getOutputLatency() const override;
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
-  NativeAudioPlayer *audioPlayer_;
-  float sampleRate_;
-  std::function<void(DSPAudioBuffer *, int)> renderAudio_;
-  std::atomic<uint32_t> &currentRenders_;
-  int channelCount_;
-  std::atomic<bool> isRunning_;
-  std::atomic<bool> flushOverflowNextPull_;
-  int pendingSavedCount_;
-  DSPAudioBuffer pendingSaved_;
+  NativeAudioPlayer *createNativePlayer();
+
+  NativeAudioPlayer *audioPlayer_ = createNativePlayer();
+  std::atomic<bool> flushOverflowNextPull_{false};
+  int pendingSavedCount_{0};
+  DSPAudioBuffer pendingSaved_{RENDER_QUANTUM_SIZE, channelCount_, sampleRate_};
 };
 
 } // namespace audioapi
@@ -159,6 +152,7 @@ class IOSAudioPlayer : public CommonPlayer {
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
                                    sampleRate:(float)sampleRate
                                  channelCount:(AVAudioChannelCount)channelCount
+                     onOutputRecoveryFailed:(OnOutputRecoveryFailedBlock)onOutputRecoveryFailed
 {
   self.attachSourceNodeCallCount += 1;
   self.lastAttachedRenderBlock = renderBlock;
@@ -235,7 +229,14 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
       float sampleRate,
       int channelCount)
       : currentRendersStorage_(0),
-        IOSAudioPlayer(renderAudio, sampleRate, channelCount, currentRendersStorage_) {}
+        IOSAudioPlayer(
+            renderAudio,
+            sampleRate,
+            channelCount,
+            currentRendersStorage_,
+            std::weak_ptr<AudioContext>{},
+            nullptr,
+            AudioContextLatencyHint::INTERACTIVE) {}
 
   NativeAudioPlayer *replaceAudioPlayer(NativeAudioPlayer *audioPlayer) {
     NativeAudioPlayer *previous = audioPlayer_;
@@ -248,7 +249,7 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
   }
 
   std::shared_ptr<DSPAudioBuffer> getAudioBuffer() const {
-    return audioBuffer_;
+    return renderBuffer_;
   }
 
   void setRunning(bool isRunning) {
@@ -317,7 +318,8 @@ struct TestAudioOutput {
     }
   }
                                              sampleRate:48000
-                                           channelCount:2];
+                                           channelCount:2
+                                preferredIOBufferFrames:RENDER_QUANTUM_SIZE];
 }
 
 - (void)assertStartLikeOperationRunsGraphForSelector:(SEL)selector
@@ -380,8 +382,9 @@ struct TestAudioOutput {
         renderedFrameCount = static_cast<AVAudioFrameCount>(numFrames);
         renderedBufferList = outputBuffer;
       }
-            sampleRate:48000
-          channelCount:2];
+                   sampleRate:48000
+                 channelCount:2
+      preferredIOBufferFrames:RENDER_QUANTUM_SIZE];
   TestAudioOutput output(2, 64, 0.0f);
   BOOL isSilence = NO;
   AudioTimeStamp timestamp = {};
