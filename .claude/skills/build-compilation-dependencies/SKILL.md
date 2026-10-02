@@ -151,6 +151,8 @@ Downloaded artifacts land in:
 - 16KB page size alignment enabled for Android 15+
 - **Extension API (prefab)**: single public C++ header `<audioapi/compatibility/StableAPI.h>`; prefab publishes transitive headers needed to compile it (`prepareAudioApiHeadersForPrefabs`); `fix-prefab.gradle` ensures the `.so` is in prefab metadata. Contract: `EXTENSION_API.md`
 - CMake exposes `COMMON_CPP_DIR` and `ANDROID_CPP_DIR` as **PUBLIC** include dirs so prefab consumers resolve `<audioapi/...>`
+- **React Native's transitive Kotlin/Java deps are usable without declaring them.** `ReactAndroid` declares several libraries with `api(...)` rather than `implementation(...)`, so they reach us through the existing `implementation "com.facebook.react:react-native:+"`. Fresco is the notable one (`com.facebook.fresco:fresco` — 3.2.0 on RN 0.76, 3.7.0 on RN 0.87), used by `system/notification/ArtworkLoader.kt`. Check the RN version's `ReactAndroid/build.gradle.kts` before adding a dependency that RN may already expose; adding it explicitly only risks a version conflict.
+- **Verify any such API at the RN floor, not just the checked-in version.** `android/build.gradle` asserts RN minor >= 76, so a Kotlin API that exists in `node_modules` today may not exist at 0.76. Fresco's API surface happens to be identical across 3.2.0-3.7.0, but the third `ResizeOptions` constructor parameter was renamed (`maxBitmapSize` -> `maxBitmapDimension`), so positional arguments are required. Sources for a given version are fetchable from `raw.githubusercontent.com/facebook/{react-native,fresco}/v<tag>/...`.
 
 For full per-line analysis see [build-details.md](build-details.md#android-androidcmakeliststxt-root--detailed-analysis).
 

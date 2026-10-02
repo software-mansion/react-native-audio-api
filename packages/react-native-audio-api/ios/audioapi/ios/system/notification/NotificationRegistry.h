@@ -10,6 +10,8 @@
  *
  * Central manager for all notification types.
  * Manages registration, lifecycle, and routing of notification implementations.
+ *
+ * Every method below hops onto the main queue, which owns the notifications, and answers from there.
  */
 @interface NotificationRegistry : NSObject
 
@@ -22,28 +24,29 @@
  * @param type The notification type identifier
  * @param key The notification key
  * @param options Options for showing the notification
- * @return YES if successful, NO otherwise
+ * @param completion Receives YES if successful, NO otherwise
  */
-- (BOOL)showNotificationWithType:(NSString *)type
+- (void)showNotificationWithType:(NSString *)type
                              key:(NSString *)key
-                         options:(NSDictionary *)options;
+                         options:(NSDictionary *)options
+                      completion:(void (^)(BOOL success))completion;
 
 /**
  * Hide a notification.
  * @param key The notification key
- * @return YES if successful, NO otherwise
+ * @param completion Receives YES if successful, NO otherwise
  */
-- (BOOL)hideNotificationWithKey:(NSString *)key;
+- (void)hideNotificationWithKey:(NSString *)key completion:(void (^)(BOOL success))completion;
 
 /**
  * Check if a notification is active.
  * @param key The notification key
- * @return YES if active, NO otherwise
+ * @param completion Receives YES if active, NO otherwise
  */
-- (BOOL)isNotificationActiveWithKey:(NSString *)key;
+- (void)isNotificationActiveWithKey:(NSString *)key completion:(void (^)(BOOL isActive))completion;
 
 /**
- * Clean up all notifications.
+ * Clean up all notifications. Blocks until the main queue has run it.
  */
 - (void)cleanup;
 

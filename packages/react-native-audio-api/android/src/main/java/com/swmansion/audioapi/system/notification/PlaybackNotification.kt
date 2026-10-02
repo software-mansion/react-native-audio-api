@@ -5,24 +5,24 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
 import android.os.Build
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
+import com.facebook.react.views.imagehelper.ResourceDrawableIdHelper
 import com.swmansion.audioapi.AudioAPIModule
 import com.swmansion.audioapi.R
 import com.swmansion.audioapi.system.AudioEvent
-import java.io.IOException
+import java.io.File
 import java.lang.ref.WeakReference
-import java.net.URL
 
 /**
  * PlaybackNotification
@@ -33,12 +33,18 @@ import java.net.URL
  * - Integrates with Android MediaSession for lock screen controls
  * - Is persistent and cannot be swiped away when playing
  * - Notifies its dismissal via PlaybackNotificationReceiver
+ *
+ * Every mutable field below is confined to the React NativeModules queue thread.
+ * Artwork arrives asynchronously and is therefore delivered back onto the
+ * same queue rather than onto the JS or main thread.
  */
 class PlaybackNotification(
   private val reactContext: WeakReference<ReactApplicationContext>,
   private val audioAPIModule: WeakReference<AudioAPIModule>,
   private val notificationId: Int,
   private val channelId: String,
+  private val artworkLoader: ArtworkLoader,
+  private val notificationRedisplay: NotificationRedisplay,
 ) : BaseNotification {
   companion object {
     const val MEDIA_BUTTON = "playback_notification_media_button"
@@ -48,6 +54,7 @@ class PlaybackNotification(
 
     // Must match kDefaultSkipIntervalSeconds on iOS.
     const val DEFAULT_SKIP_INTERVAL_SECONDS = 15
+    private const val ARTWORK_TARGET_SIZE_PX = 512
   }
 
   private var skipIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS
@@ -71,7 +78,17 @@ class PlaybackNotification(
   private var speed: Float = 1.0F
   private var playbackStateVal: Int = PlaybackStateCompat.STATE_PAUSED
 
-  private var artworkThread: Thread? = null
+  private var artworkRequest: ArtworkLoader.Handle? = null
+
+  /** The artwork currently shown or in flight; the key that de-duplicates repeated updates. */
+  private var displayedArtworkUri: Uri? = null
+
+  /**
+   * Incremented by every new artwork request and by [hide].
+   *
+   * A load captures the generation it started with and its result is dropped if that no longer matches.
+   */
+  private var artworkGeneration: Long = 0
 
   private fun initializeIfNeeded() {
     if (isInitialized) return
@@ -182,10 +199,11 @@ class PlaybackNotification(
   override fun hide() {
     if (!isInitialized) return
 
-    if (artworkThread != null && artworkThread!!.isAlive) {
-      artworkThread!!.interrupt()
-    }
-    artworkThread = null
+    // Invalidates any load already on its way back to this queue; see artworkGeneration.
+    artworkGeneration++
+    artworkRequest?.cancel()
+    artworkRequest = null
+    displayedArtworkUri = null
 
     mediaSession?.isActive = false
     mediaSession?.release()
@@ -240,63 +258,32 @@ class PlaybackNotification(
 
     if (info.hasKey("control") && info.hasKey("enabled")) {
       enableControl(info.getString("control"), info.getBoolean("enabled"))
+      return
     }
-
-    val md = MediaMetadataCompat.Builder()
 
     if (info.hasKey("title")) title = info.getString("title")
     if (info.hasKey("artist")) artist = info.getString("artist")
     if (info.hasKey("album")) album = info.getString("album")
     if (info.hasKey("duration")) duration = (info.getDouble("duration") * 1000).toLong()
 
-    md.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
-    md.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
-    md.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
-    md.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
-
-    notificationBuilder?.setContentTitle(title)
-    notificationBuilder?.setContentText(artist)
-    notificationBuilder?.setContentInfo(album)
+    if (info.hasKey("androidSmallIcon")) {
+      val smallIcon = resolveSmallIconResource(info)
+      if (smallIcon != 0) {
+        notificationBuilder?.setSmallIcon(smallIcon)
+      }
+    }
 
     if (info.hasKey("artwork")) {
-      if (artworkThread != null && artworkThread!!.isAlive) {
-        artworkThread!!.interrupt()
-      }
+      val artworkUri = resolveArtworkUri(info)
+      if (artworkUri != null && artworkUri != displayedArtworkUri) {
+        artworkRequest?.cancel()
+        displayedArtworkUri = artworkUri
 
-      var localArtwork = false
-      val artworkUri =
-        if (info.getType("artwork") == ReadableType.Map) {
-          localArtwork = true
-          info.getMap("artwork")?.getString("uri")
-        } else {
-          info.getString("artwork")
-        }
-
-      if (artworkUri != null) {
-        artworkThread =
-          Thread {
-            try {
-              val bitmap = loadArtwork(artworkUri, localArtwork)
-              if (bitmap != null) {
-                artwork = bitmap
-                val context = reactContext.get()
-                context?.runOnUiQueueThread {
-                  notificationBuilder?.setLargeIcon(bitmap)
-
-                  val currentMetadata = mediaSession?.controller?.metadata
-                  val newBuilder = MediaMetadataCompat.Builder(currentMetadata ?: MediaMetadataCompat.Builder().build())
-                  mediaSession?.setMetadata(newBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, bitmap).build())
-
-                  // Trigger update
-                  val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                  notificationManager.notify(notificationId, buildNotification())
-                }
-              }
-            } catch (ex: Exception) {
-              ex.printStackTrace()
-            }
+        val generation = ++artworkGeneration
+        artworkRequest =
+          artworkLoader.load(artworkUri, ARTWORK_TARGET_SIZE_PX) { bitmap ->
+            onArtworkLoaded(generation, bitmap)
           }
-        artworkThread!!.start()
       }
     }
 
@@ -325,12 +312,45 @@ class PlaybackNotification(
 
     updatePlaybackState(playbackStateVal)
 
-    if (artwork != null) {
-      md.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, artwork)
-    }
-    mediaSession?.setMetadata(md.build())
+    publishMetadata()
 
     updateNotificationsActions()
+  }
+
+  private fun publishMetadata() {
+    val session = mediaSession ?: return
+
+    session.setMetadata(
+      MediaMetadataCompat
+        .Builder()
+        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+        .apply { artwork?.let { putBitmap(MediaMetadataCompat.METADATA_KEY_ART, it) } }
+        .build(),
+    )
+  }
+
+  private fun onArtworkLoaded(
+    generation: Long,
+    bitmap: Bitmap?,
+  ) {
+    if (generation != artworkGeneration) return
+    artworkRequest = null
+
+    if (bitmap == null) {
+      // Clearing the key lets the same artwork be retried after a transient failure.
+      displayedArtworkUri = null
+      return
+    }
+
+    artwork = bitmap
+
+    val builder = notificationBuilder ?: return
+    builder.setLargeIcon(bitmap)
+    publishMetadata()
+    notificationRedisplay.redisplay(builder.build())
   }
 
   private fun enableControl(
@@ -413,14 +433,14 @@ class PlaybackNotification(
 
     if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
       notificationBuilder?.addAction(
-        createAction("previousTrack", "Previous track", android.R.drawable.ic_media_previous, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS),
+        createAction("previousTrack", "Previous track", PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS),
       )
       actionsList.add(index++)
     }
 
     if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
       notificationBuilder?.addAction(
-        createAction("skip_backward", "Skip Backward", skipBackwardIcon(), PlaybackStateCompat.ACTION_REWIND),
+        createAction("skip_backward", "Skip Backward", PlaybackStateCompat.ACTION_REWIND),
       )
       actionsList.add(index++)
     }
@@ -428,32 +448,32 @@ class PlaybackNotification(
     if (isPlaying) {
       if (hasControl(PlaybackStateCompat.ACTION_PAUSE)) {
         notificationBuilder?.addAction(
-          createAction("pause", "Pause", android.R.drawable.ic_media_pause, PlaybackStateCompat.ACTION_PAUSE),
+          createAction("pause", "Pause", PlaybackStateCompat.ACTION_PAUSE),
         )
         actionsList.add(index++)
       } else if (hasControl(PlaybackStateCompat.ACTION_STOP)) {
         notificationBuilder?.addAction(
-          createAction("stop", "Stop", R.drawable.stop, PlaybackStateCompat.ACTION_STOP),
+          createAction("stop", "Stop", PlaybackStateCompat.ACTION_STOP),
         )
         actionsList.add(index++)
       }
     } else {
       if (hasControl(PlaybackStateCompat.ACTION_PLAY)) {
-        notificationBuilder?.addAction(createAction("play", "Play", android.R.drawable.ic_media_play, PlaybackStateCompat.ACTION_PLAY))
+        notificationBuilder?.addAction(createAction("play", "Play", PlaybackStateCompat.ACTION_PLAY))
         actionsList.add(index++)
       }
     }
 
     if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
       notificationBuilder?.addAction(
-        createAction("skip_forward", "Skip Forward", skipForwardIcon(), PlaybackStateCompat.ACTION_FAST_FORWARD),
+        createAction("skip_forward", "Skip Forward", PlaybackStateCompat.ACTION_FAST_FORWARD),
       )
       actionsList.add(index++)
     }
 
     if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)) {
       notificationBuilder?.addAction(
-        createAction("nextTrack", "Next track", android.R.drawable.ic_media_next, PlaybackStateCompat.ACTION_SKIP_TO_NEXT),
+        createAction("nextTrack", "Next track", PlaybackStateCompat.ACTION_SKIP_TO_NEXT),
       )
       actionsList.add(index++)
     }
@@ -470,7 +490,6 @@ class PlaybackNotification(
   private fun createAction(
     name: String,
     title: String,
-    icon: Int,
     mediaAction: Long,
   ): NotificationCompat.Action {
     val context = reactContext.get()!!
@@ -501,41 +520,67 @@ class PlaybackNotification(
           PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
     }
-    return NotificationCompat.Action(icon, title, pendingIntent)
+    return NotificationCompat.Action(actionIcon(name), title, pendingIntent)
   }
+
+  /**
+   * Icon drawn on the notification's own action button.
+   *
+   * Only Android 12 and below show these. From Android 13 the system builds media controls from the
+   * PlaybackState and draws its own glyphs for the standard transport actions; the only app-supplied
+   * icons that survive there are the ones attached to the custom actions in
+   * [updatePlaybackActionState]. This mapping becomes dead once minSdk reaches 33.
+   */
+  private fun actionIcon(name: String): Int =
+    when (name) {
+      "play" -> android.R.drawable.ic_media_play
+      "pause" -> android.R.drawable.ic_media_pause
+      "stop" -> R.drawable.stop
+      "nextTrack" -> android.R.drawable.ic_media_next
+      "previousTrack" -> android.R.drawable.ic_media_previous
+      "skip_forward" -> skipForwardIcon()
+      "skip_backward" -> skipBackwardIcon()
+      else -> 0
+    }
 
   private fun hasControl(control: Long): Boolean = (controls and control) == control
 
-  private fun loadArtwork(
-    url: String,
-    local: Boolean,
-  ): Bitmap? {
+  private fun resolveSmallIconResource(info: ReadableMap): Int {
+    val context = reactContext.get() ?: return 0
+
+    val name =
+      if (info.getType("androidSmallIcon") == ReadableType.Map) {
+        info.getMap("androidSmallIcon")?.getString("uri")
+      } else {
+        info.getString("androidSmallIcon")
+      }
+    if (name.isNullOrEmpty()) return 0
+
+    return ResourceDrawableIdHelper
+      .getResourceDrawableId(context, name)
+  }
+
+  private fun resolveArtworkUri(info: ReadableMap): Uri? {
     val context = reactContext.get() ?: return null
 
-    return try {
-      if (local && !url.startsWith("http")) {
-        val helper =
-          com.facebook.react.views.imagehelper.ResourceDrawableIdHelper
-            .getInstance()
-        val drawable = helper.getResourceDrawable(context, url)
-        if (drawable is BitmapDrawable) {
-          drawable.bitmap
-        } else {
-          BitmapFactory.decodeFile(url)
-        }
+    val isBundledAsset = info.getType("artwork") == ReadableType.Map
+    val source =
+      if (isBundledAsset) {
+        info.getMap("artwork")?.getString("uri")
       } else {
-        val connection = URL(url).openConnection()
-        connection.connect()
-        val inputStream = connection.getInputStream()
-        val bitmap = BitmapFactory.decodeStream(inputStream)
-        inputStream.close()
-        bitmap
+        info.getString("artwork")
       }
-    } catch (e: IOException) {
-      null
-    } catch (e: Exception) {
-      null
+    if (source.isNullOrEmpty()) return null
+
+    if (isBundledAsset && !source.startsWith("http")) {
+      // Yields Uri.EMPTY, never null, when the drawable cannot be resolved.
+      val drawableUri =
+        ResourceDrawableIdHelper
+          .getResourceDrawableUri(context, source)
+      if (drawableUri != Uri.EMPTY) return drawableUri
     }
+
+    return if (source.startsWith("/")) Uri.fromFile(File(source)) else source.toUri()
   }
 
   private fun createNotificationChannel() {
