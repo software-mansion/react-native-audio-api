@@ -36,6 +36,15 @@ If the **semantics are complex**, it might be due to one of the following:
 
 Generally, prefer standard, idiomatic names.
 
+C++ namespaces are `snake_case` with every word separated (`encoder_capabilities`,
+`recording_file_name`, `file_path`) — never PascalCase, never run-together (`filepath`).
+Platform code nests under `audioapi::android` / `audioapi::ios` (`android::encoder`,
+`ios::file_path`) instead of carrying a platform prefix (`android_encoder`).
+
+C++ constants are `SCREAMING_CASE` (`POOL_SIZE`, `DRAIN_TIMEOUT_US`). A constant only one class uses is
+a private `static constexpr` member of that class — no class-name prefix, the scope already says it.
+Only a constant shared by free functions stays file-private in the `.cpp`'s anonymous namespace.
+
 ### Frequency of Comments
 Use **comments only when necessary**. Add them only when something cannot be expressed easily in code. Their purpose is to make complex fragments easier to understand. Most code fragments are relatively easy to understand simply by **reading them like prose** (as explained above).
 
