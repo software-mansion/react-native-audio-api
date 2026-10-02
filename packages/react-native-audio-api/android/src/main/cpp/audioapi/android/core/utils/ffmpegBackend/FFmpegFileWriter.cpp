@@ -20,8 +20,10 @@ extern "C" {
 
 #include <sys/stat.h>
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstdio>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <utility>
@@ -29,6 +31,24 @@ extern "C" {
 constexpr int fallbackFIFOSize = 8192;
 constexpr int fallbackFrameSize = 512;
 constexpr int defaultFlushInterval = 100;
+constexpr int adtsHeaderSize = 7;
+
+namespace {
+
+/// @brief MPEG-4 sampling frequency index for the ADTS header, or -1 if the
+/// rate has no index (ADTS cannot express it).
+int adtsFreqIndex(int sampleRate) {
+  static constexpr int rates[] = {
+      96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350};
+  for (size_t i = 0; i < std::size(rates); i++) {
+    if (rates[i] == sampleRate) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+} // namespace
 
 namespace audioapi::android::ffmpeg {
 
@@ -81,20 +101,38 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
     return OpenFileResult::Err("Unsupported codec for the given file format");
   }
 
-  return initializeFormatContext(codec)
-      .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
-      .and_then([this](auto) { return initializeStream(); })
-      .and_then([this](auto) { return openIOAndWriteHeader(); })
+  // ADTS is muxer-less: raw AAC packets each get a hand-built 7-byte header
+  // (see writeAdtsPacket), so only the encoder and a plain AVIOContext are
+  // needed. This also sidesteps the prebuilt FFmpeg, which does not compile
+  // in the adts muxer.
+  isAdts_ = fileProperties_->format == AudioFileProperties::Format::ADTS;
+
+  auto containerInit = isAdts_
+      ? configureAndOpenCodec(codec).and_then([this](auto) { return openAdtsIO(); })
+      : initializeFormatContext(codec)
+            .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
+            .and_then([this](auto) { return initializeStream(); })
+            .and_then([this](auto) { return openIOAndWriteHeader(); });
+
+  // `and_then` is rvalue-ref-qualified (Result.hpp), so the accumulated chain
+  // must be consumed as an rvalue — `containerInit` is a named lvalue here.
+  // Any failure in the chain rolls back every resource acquired so far (codec,
+  // format/ADTS IO, resampler, pool), so a late failure cannot leak an open
+  // AVIOContext or a partial output file.
+  return std::move(containerInit)
       .and_then(
           [this](auto) { return initializeResampler(streamSampleRate_, streamChannelCount_); })
       .and_then([this](auto) {
         initializeBuffers(streamMaxBufferSize_);
         if (!initializePreallocatedInputPool()) {
-          rollbackFailedOpen();
           return OpenFileResult::Err("Failed to preallocate Android file writer buffers");
         }
         isFileOpen_.store(true, std::memory_order_release);
         return OpenFileResult::Ok(filePath_);
+      })
+      .or_else([this](std::string error) {
+        rollbackFailedOpen();
+        return OpenFileResult::Err(std::move(error));
       });
 }
 
@@ -245,7 +283,39 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::openIOAndWriteHeader() {
   return Result<NoneType, std::string>::Ok(None);
 }
 
+/// @brief Opens the raw byte output for ADTS (no muxer, no container header).
+/// @returns Success status or Error status with message.
+Result<NoneType, std::string> FFmpegAudioFileWriter::openAdtsIO() {
+  if (adtsFreqIndex(static_cast<int>(encoderCtx_->sample_rate)) < 0) {
+    return Result<NoneType, std::string>::Err(
+        "Sample rate not expressible in an ADTS header: " +
+        std::to_string(encoderCtx_->sample_rate));
+  }
+
+  // channel_configuration is a 3-bit field: 1..6 map to the channel count,
+  // 7 means 7.1 and 0 means "defined by an in-band PCE", which the header
+  // written here never carries.
+  const int channelCount = encoderCtx_->ch_layout.nb_channels;
+  if (channelCount < 1 || channelCount > 6) {
+    return Result<NoneType, std::string>::Err(
+        "Channel count not expressible in an ADTS header: " + std::to_string(channelCount));
+  }
+
+  int result = avio_open(&adtsIo_, filePath_.c_str(), AVIO_FLAG_WRITE);
+
+  if (result < 0) {
+    return Result<NoneType, std::string>::Err(
+        "Failed to open output file with error: " + parseErrorCode(result));
+  }
+
+  return Result<NoneType, std::string>::Ok(None);
+}
+
 size_t FFmpegAudioFileWriter::getFileSizeBytes() const {
+  if (adtsIo_ != nullptr) {
+    return static_cast<size_t>(avio_tell(adtsIo_));
+  }
+
   if (formatCtx_ == nullptr) {
     return 0;
   }
@@ -431,17 +501,22 @@ int FFmpegAudioFileWriter::writeEncodedPackets() {
       return result;
     }
 
-    av_packet_rescale_ts(packet_.get(), encoderCtx_->time_base, stream_->time_base);
-    packet_->stream_index = stream_->index;
+    if (isAdts_) {
+      result = writeAdtsPacket();
+    } else {
+      av_packet_rescale_ts(packet_.get(), encoderCtx_->time_base, stream_->time_base);
+      packet_->stream_index = stream_->index;
 
-    result = av_interleaved_write_frame(formatCtx_.get(), packet_.get());
+      result = av_interleaved_write_frame(formatCtx_.get(), packet_.get());
+    }
 
+    AVIOContext *io = isAdts_ ? adtsIo_ : formatCtx_->pb;
     auto now = std::chrono::steady_clock::now();
     auto elapsedMs =
         std::chrono::duration_cast<std::chrono::milliseconds>(now - lastFlushTime_).count();
 
-    if (formatCtx_->pb && elapsedMs >= flushIntervalMs_) {
-      avio_flush(formatCtx_->pb);
+    if (io && elapsedMs >= flushIntervalMs_) {
+      avio_flush(io);
       lastFlushTime_ = now;
     }
 
@@ -451,21 +526,69 @@ int FFmpegAudioFileWriter::writeEncodedPackets() {
   }
 }
 
+/// @brief Writes one encoded AAC packet as a self-delimiting ADTS frame:
+/// a 7-byte header (syncword, profile, sample-rate index, channel config,
+/// frame length) followed by the raw packet bytes. Because every frame is
+/// self-contained, a recording truncated by a crash or force-kill stays
+/// decodable up to the last complete frame — no trailer required.
+/// @returns 0 on success, AV_ERROR code on failure
+int FFmpegAudioFileWriter::writeAdtsPacket() {
+  const int freqIdx = adtsFreqIndex(static_cast<int>(encoderCtx_->sample_rate));
+  const int chanCfg = encoderCtx_->ch_layout.nb_channels;
+  const int frameLen = packet_->size + adtsHeaderSize;
+
+  // 13-bit frame length is the format's hard ceiling; an AAC-LC packet
+  // (max 768 bytes/channel) never reaches it, but fail closed regardless.
+  if (frameLen >= (1 << 13)) {
+    av_packet_unref(packet_.get());
+    return AVERROR(EINVAL);
+  }
+
+  std::array<uint8_t, adtsHeaderSize> header{};
+  header[0] = 0xFF; // syncword high
+  header[1] = 0xF1; // syncword low, MPEG-4, layer 0, no CRC
+  // profile (AAC-LC = 2, stored as profile - 1), sampling index, channel cfg high bit
+  header[2] = static_cast<uint8_t>(
+      (1U << 6) | (static_cast<unsigned>(freqIdx) << 2) |
+      ((static_cast<unsigned>(chanCfg) >> 2) & 0x1U));
+  header[3] = static_cast<uint8_t>(
+      ((static_cast<unsigned>(chanCfg) & 0x3U) << 6) |
+      ((static_cast<unsigned>(frameLen) >> 11) & 0x3U));
+  header[4] = static_cast<uint8_t>((static_cast<unsigned>(frameLen) >> 3) & 0xFFU);
+  header[5] = static_cast<uint8_t>(((static_cast<unsigned>(frameLen) & 0x7U) << 5) | 0x1FU);
+  header[6] = 0xFC; // buffer fullness low bits (0x7FF = VBR), 1 frame per ADTS frame
+
+  avio_write(adtsIo_, header.data(), adtsHeaderSize);
+  avio_write(adtsIo_, packet_->data, packet_->size);
+  av_packet_unref(packet_.get());
+
+  return adtsIo_->error < 0 ? adtsIo_->error : 0;
+}
+
 /// @brief Closes the currently opened audio file, flushing any remaining data and finalizing the file.
 /// Method checks the file size and duration for convenience.
 /// @returns CloseFileResult indicating success or error details
 CloseFileResult FFmpegAudioFileWriter::finalizeOutput() {
-  int result = av_write_trailer(formatCtx_.get());
-
-  if (result < 0) {
-    return CloseFileResult::Err("Failed to write trailer: " + parseErrorCode(result));
-  }
-
   double fileSizeInMB = 0;
 
-  if (formatCtx_->pb) {
-    fileSizeInMB = static_cast<double>(avio_size(formatCtx_->pb)) / MB_IN_BYTES;
-    avio_closep(&formatCtx_->pb);
+  if (isAdts_) {
+    // No trailer — an ADTS stream is complete after its last frame.
+    if (adtsIo_) {
+      avio_flush(adtsIo_);
+      fileSizeInMB = static_cast<double>(avio_tell(adtsIo_)) / MB_IN_BYTES;
+      avio_closep(&adtsIo_);
+    }
+  } else {
+    int result = av_write_trailer(formatCtx_.get());
+
+    if (result < 0) {
+      return CloseFileResult::Err("Failed to write trailer: " + parseErrorCode(result));
+    }
+
+    if (formatCtx_->pb) {
+      fileSizeInMB = static_cast<double>(avio_size(formatCtx_->pb)) / MB_IN_BYTES;
+      avio_closep(&formatCtx_->pb);
+    }
   }
 
   double durationInSeconds = 0.0;
@@ -484,6 +607,11 @@ void FFmpegAudioFileWriter::rollbackFailedOpen() {
   if (formatCtx_ != nullptr && formatCtx_->pb != nullptr) {
     avio_closep(&formatCtx_->pb);
   }
+
+  if (adtsIo_ != nullptr) {
+    avio_closep(&adtsIo_);
+  }
+  isAdts_ = false;
 
   encoderCtx_.reset();
   formatCtx_.reset();

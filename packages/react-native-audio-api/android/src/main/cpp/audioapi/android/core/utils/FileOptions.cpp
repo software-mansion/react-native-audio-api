@@ -57,6 +57,8 @@ std::string getFileExtension(const std::shared_ptr<AudioFileProperties> &propert
       return "m4a";
     case AudioFileProperties::Format::FLAC:
       return "flac";
+    case AudioFileProperties::Format::ADTS:
+      return "aac";
     default:
       return "m4a";
   }

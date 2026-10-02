@@ -31,7 +31,7 @@ if (!isFfmpegEnabled()) {
 | :---: | :---: | :---- |
 | Streaming | [`Audio tag`](../sources/audio-tag.mdx), `createFileSource` | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
 | Metadata | [`getAudioDuration`](../utils/decoding.mdx#getaudioduration), [`<Audio>`](../sources/audio-tag.mdx) `preload="metadata"` | Remote `http(s):` URL duration probing |
-| Recording | [`AudioRecorder`](../inputs/audio-recorder.mdx) file output | **Android only:** `M4A`, `FLAC`, and `CAF` (WAV uses miniaudio). iOS uses system AVFoundation instead. |
+| Recording | [`AudioRecorder`](../inputs/audio-recorder.mdx) file output | **Android only:** `M4A`, `FLAC`, `CAF`, and `ADTS` (WAV uses miniaudio). iOS uses system AVFoundation instead. |
 | File utils | [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles) | M4A concatenation (WAV uses miniaudio) |
 
 Batch decoding ([`decodeAudioData`](../utils/decoding.mdx#decodeaudiodata)) uses OS APIs on mobile (and miniaudio for formats like Ogg/Opus) — not FFmpeg. Without FFmpeg, remote progressive sources can still be fully downloaded in JS and decoded that way; HLS and in-place URL streaming remain unavailable.
