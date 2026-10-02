@@ -32,6 +32,10 @@ export default class AudioBufferSourceNode {
     this.node.stop(when);
   }
 
+  dispose(): void {
+    this.node.dispose();
+  }
+
   get onended(): ((event: Event) => void) | null {
     return this.node.onended;
   }

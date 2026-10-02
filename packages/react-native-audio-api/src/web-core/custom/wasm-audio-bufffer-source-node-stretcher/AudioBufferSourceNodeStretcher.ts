@@ -41,8 +41,11 @@ type PendingParamEvent = {
 };
 
 export default class AudioBufferSourceNodeStretcher implements AudioBufferSourceNodeBackend {
-  private stretcherPromise: Promise<WasmAudioBufferSourceStretcherNode> | null =
-    null;
+  private disposed = false;
+  private readonly initialization = new AbortController();
+  private pendingActions: ((
+    node: WasmAudioBufferSourceStretcherNode
+  ) => void)[] = [];
 
   private node: WasmAudioBufferSourceStretcherNode | null = null;
   private hasBeenStarted: boolean = false;
@@ -60,7 +63,6 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
 
   private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
-  private _operationChain: Promise<void> = Promise.resolve();
   private _pendingParamEvents: PendingParamEvent[] = [];
 
   constructor(context: BaseAudioContext, options: AudioBufferSourceOptions) {
@@ -71,18 +73,42 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     const stretcherPromise = (async () => {
       await LoadCustomWasm('/react-native-audio-api');
       await globalWasmPromise;
+      if (this.disposed) return null;
       const factory = (
         window as unknown as Record<
           string,
           WasmAudioBufferSourceStretcherNodeFactory
         >
       )[globalTag];
-      return factory(context.context);
+      return factory(context.context, undefined, this.initialization.signal);
     })();
-    this.stretcherPromise = stretcherPromise;
-    stretcherPromise.then((node) => {
-      this.node = node;
-    });
+    stretcherPromise
+      .then((node) => {
+        if (!node) return;
+        if (this.disposed) {
+          node.dispose();
+          return;
+        }
+        this.node = node;
+        const actions = this.pendingActions;
+        this.pendingActions = [];
+        actions.forEach((action) => {
+          if (!this.disposed) action(node);
+        });
+      })
+      .catch((error: unknown) => {
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'name' in error &&
+          error.name === 'AbortError' &&
+          context.context.state === 'closed'
+        ) {
+          this.dispose();
+          return;
+        }
+        if (!this.disposed) throw error;
+      });
 
     this.detune = new AudioStretcherParam(
       context,
@@ -117,13 +143,32 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     this.buffer = (options.buffer as AudioBuffer) ?? null;
   }
 
+  private assertNotDisposed(): void {
+    if (this.disposed)
+      throw new InvalidStateError('AudioBufferSourceNode is disposed');
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.pendingActions = [];
+    this._pendingParamEvents = [];
+    this._buffer = null;
+    this._onended = null;
+    this._onloopended = undefined;
+    this.detune.dispose();
+    this.playbackRate.dispose();
+    this.initialization.abort();
+    this.node?.dispose();
+    this.node = null;
+  }
+
   private runOnStretcher(
     action: (node: WasmAudioBufferSourceStretcherNode) => void
-  ): Promise<void> {
-    this._operationChain = this._operationChain.then(() =>
-      this.stretcherPromise!.then(action)
-    );
-    return this._operationChain;
+  ): void {
+    if (this.disposed) return;
+    if (this.node) action(this.node);
+    else this.pendingActions.push(action);
   }
 
   private scheduleStretcher(
@@ -182,6 +227,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   }
 
   connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+    this.assertNotDisposed();
     const action = (node: WasmAudioBufferSourceStretcherNode) => {
       if (destination instanceof AudioParam) {
         node.connect(destination.param);
@@ -212,6 +258,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   }
 
   start(when?: number, offset?: number, duration?: number): void {
+    this.assertNotDisposed();
     if (when && when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
@@ -284,6 +331,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   }
 
   set buffer(buffer: AudioBuffer | null) {
+    this.assertNotDisposed();
     if (buffer !== null && this.bufferHasBeenSet) {
       throw new InvalidStateError(
         'The buffer can only be set once and cannot be changed afterwards.'
@@ -373,6 +421,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
 
   // The WASM stretcher has no per-loop event; callback is stored but never fired.
   set onloopended(callback: ((event: object) => void) | null) {
+    this.assertNotDisposed();
     this._onloopended = callback ?? undefined;
   }
 
@@ -381,6 +430,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   }
 
   set onended(callback: ((event: Event) => void) | null) {
+    this.assertNotDisposed();
     this._onended = callback;
     this.runOnStretcher((node) => {
       node.onEnded = callback;
