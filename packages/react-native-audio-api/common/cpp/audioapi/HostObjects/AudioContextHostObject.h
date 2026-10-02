@@ -18,6 +18,7 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker);
+  ~AudioContextHostObject() override;
 
   JSI_HOST_FUNCTION_DECL(close);
   JSI_HOST_FUNCTION_DECL(resume);
@@ -26,5 +27,6 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
 
   JSI_PROPERTY_GETTER_DECL(outputLatency);
   JSI_PROPERTY_GETTER_DECL(baseLatency);
+  JSI_PROPERTY_SETTER_DECL(onerror);
 };
 } // namespace audioapi

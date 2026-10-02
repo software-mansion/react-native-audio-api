@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include <audioapi/core/AudioContext.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
@@ -11,21 +12,47 @@
 #include <audioapi/ios/system/AudioSessionManager.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
+#include <mutex>
+
 namespace audioapi {
+
+namespace {
+
+void reportStreamFailToContext(
+    std::mutex *driverMutex,
+    const std::weak_ptr<AudioContext> &context,
+    const std::function<bool()> &isStillFailed)
+{
+  auto ctx = context.lock();
+  if (driverMutex == nullptr || ctx == nullptr) {
+    return;
+  }
+
+  std::scoped_lock lock(*driverMutex);
+  if (ctx->isClosed() || !isStillFailed()) {
+    return;
+  }
+  ctx->onStreamFail();
+}
+
+} // namespace
 
 IOSAudioPlayer::IOSAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
-    std::atomic<uint32_t> &currentRenders)
-    : audioBuffer_(nullptr),
+    std::atomic<uint32_t> &currentRenders,
+    std::weak_ptr<AudioContext> context,
+    std::mutex *driverMutex)
+    : CommonPlayer(
+          renderAudio,
+          sampleRate,
+          channelCount,
+          currentRenders,
+          std::move(context),
+          driverMutex),
       audioPlayer_(nullptr),
-      renderAudio_(renderAudio),
-      sampleRate_(sampleRate),
-      currentRenders_(currentRenders),
-      channelCount_(channelCount),
-      isRunning_(false),
-      pendingSaved_(RENDER_QUANTUM_SIZE, channelCount_, sampleRate)
+      pendingSaved_(RENDER_QUANTUM_SIZE, channelCount, sampleRate)
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     deliverOutputBuffers(outputData, numFrames);
@@ -34,7 +61,16 @@ IOSAudioPlayer::IOSAudioPlayer(
   audioPlayer_ = [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
                                                      sampleRate:sampleRate
                                                    channelCount:channelCount_];
-  audioBuffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate);
+
+  std::mutex *driverMutexForCallback = driverMutex_;
+  std::weak_ptr<AudioContext> weakContext = context_;
+  IOSAudioPlayer *player = this;
+  audioPlayer_.onStreamFail = ^{
+    // Called only once the context, which owns this player, is locked alive.
+    reportStreamFailToContext(driverMutexForCallback, weakContext, [player] {
+      return player->isRunning_.load(std::memory_order_acquire) && !player->isRunning();
+    });
+  };
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
@@ -92,18 +128,13 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
       continue;
     }
 
-    renderAudio_(audioBuffer_.get(), RENDER_QUANTUM_SIZE);
-
-    // Peak-normalize the rendered quantum before it reaches the hardware. This
-    // limiting lives in the player (not the destination node) so offline
-    // renders stay spec-accurate.
-    audioBuffer_->normalize();
+    renderNormalizedQuantum(RENDER_QUANTUM_SIZE);
 
     // normal rendering - take RENDER_QUANTUM_SIZE frames from the graph and copy to output
     const int stillNeed = numFrames - outPos;
     if (stillNeed >= RENDER_QUANTUM_SIZE) {
       for (int ch = 0; ch < channelCount_; ++ch) {
-        auto *src = (*audioBuffer_)[ch].begin();
+        auto *src = (*renderBuffer_)[ch].begin();
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
         std::memcpy(dst, src, RENDER_QUANTUM_SIZE * sizeof(float));
       }
@@ -112,11 +143,11 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
       // when output will be sliced, copy the remaining frames to pendingSaved
       const int tail = RENDER_QUANTUM_SIZE - stillNeed;
       for (int ch = 0; ch < channelCount_; ++ch) {
-        auto *src = (*audioBuffer_)[ch].begin();
+        auto *src = (*renderBuffer_)[ch].begin();
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
         std::memcpy(dst, src, stillNeed * sizeof(float));
       }
-      pendingSaved_.copy(*audioBuffer_, stillNeed, 0, tail);
+      pendingSaved_.copy(*renderBuffer_, stillNeed, 0, tail);
       pendingSavedCount_ = tail;
       outPos += stillNeed;
     }
@@ -175,7 +206,7 @@ void IOSAudioPlayer::cleanup()
 {
   stop();
   [audioPlayer_ cleanup];
-  audioBuffer_ = nullptr;
+  renderBuffer_ = nullptr;
 }
 
 double IOSAudioPlayer::getBaseLatency() const
