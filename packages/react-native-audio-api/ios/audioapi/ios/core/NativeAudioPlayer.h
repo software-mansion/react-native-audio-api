@@ -12,6 +12,7 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
 @property (nonatomic, assign) int channelCount;
 @property (nonatomic, strong) NSString *sourceNodeId;
 @property (nonatomic, strong) AVAudioSourceNodeRenderBlock renderBlock;
+@property (nonatomic, copy) void (^onStreamFail)(void);
 
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                          sampleRate:(float)sampleRate

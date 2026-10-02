@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -25,7 +26,9 @@ class IOSAudioPlayer : public CommonPlayer {
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount,
-      std::atomic<uint32_t> &currentRenders);
+      std::atomic<uint32_t> &currentRenders,
+      std::weak_ptr<AudioContext> context,
+      std::mutex *driverMutex);
   ~IOSAudioPlayer() override;
 
   bool start() override;
@@ -40,13 +43,7 @@ class IOSAudioPlayer : public CommonPlayer {
   [[nodiscard]] double getOutputLatency() const override;
 
  protected:
-  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
   NativeAudioPlayer *audioPlayer_;
-  float sampleRate_;
-  std::function<void(DSPAudioBuffer *, int)> renderAudio_;
-  std::atomic<uint32_t> &currentRenders_;
-  int channelCount_;
-  std::atomic<bool> isRunning_;
   std::atomic<bool> flushOverflowNextPull_;
   int pendingSavedCount_;
   DSPAudioBuffer pendingSaved_;
@@ -159,6 +156,7 @@ class IOSAudioPlayer : public CommonPlayer {
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
                                    sampleRate:(float)sampleRate
                                  channelCount:(AVAudioChannelCount)channelCount
+                     onOutputRecoveryFailed:(OnOutputRecoveryFailedBlock)onOutputRecoveryFailed
 {
   self.attachSourceNodeCallCount += 1;
   self.lastAttachedRenderBlock = renderBlock;
@@ -235,7 +233,13 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
       float sampleRate,
       int channelCount)
       : currentRendersStorage_(0),
-        IOSAudioPlayer(renderAudio, sampleRate, channelCount, currentRendersStorage_) {}
+        IOSAudioPlayer(
+            renderAudio,
+            sampleRate,
+            channelCount,
+            currentRendersStorage_,
+            std::weak_ptr<AudioContext>{},
+            nullptr) {}
 
   NativeAudioPlayer *replaceAudioPlayer(NativeAudioPlayer *audioPlayer) {
     NativeAudioPlayer *previous = audioPlayer_;
@@ -248,7 +252,7 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
   }
 
   std::shared_ptr<DSPAudioBuffer> getAudioBuffer() const {
-    return audioBuffer_;
+    return renderBuffer_;
   }
 
   void setRunning(bool isRunning) {

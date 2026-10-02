@@ -1,6 +1,7 @@
 import { InvalidStateError } from '../errors';
 import { assertSupportedSampleRate } from '../utils/validation';
 import { AudioTagHandle } from '../Audio/types';
+import { AudioEventEmitter } from '../events';
 import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
 import { AudioContextOptions, ContextState } from '../types';
@@ -8,6 +9,12 @@ import BaseAudioContext from './BaseAudioContext';
 import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
 
 export default class AudioContext extends BaseAudioContext {
+  public onerror: (() => void) | null = null;
+
+  private readonly errorSubscription: ReturnType<
+    AudioEventEmitter['addAudioEventListener']
+  >;
+
   constructor(options?: AudioContextOptions) {
     if (options?.sampleRate != null) {
       assertSupportedSampleRate(options.sampleRate);
@@ -18,6 +25,13 @@ export default class AudioContext extends BaseAudioContext {
         options?.sampleRate || AudioManager.getDevicePreferredSampleRate()
       )
     );
+
+    this.errorSubscription = this.audioEventEmitter.addAudioEventListener(
+      'contextError',
+      () => this.onerror?.()
+    );
+    (this.context as IAudioContext).onerror =
+      this.errorSubscription.subscriptionId;
   }
 
   public get baseLatency(): number {
@@ -33,9 +47,11 @@ export default class AudioContext extends BaseAudioContext {
       throw new InvalidStateError('Cannot close a closed audio context.');
     }
 
-    return this.transitionTo('closed', () =>
+    await this.transitionTo('closed', () =>
       (this.context as IAudioContext).close()
     );
+    this.errorSubscription.remove();
+    return undefined;
   }
 
   async resume(): Promise<undefined> {

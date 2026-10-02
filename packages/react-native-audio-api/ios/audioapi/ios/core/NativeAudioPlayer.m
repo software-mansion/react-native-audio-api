@@ -22,7 +22,8 @@
 
   self.sourceNodeId = [audioEngine attachSourceNodeWithRenderBlock:self.renderBlock
                                                         sampleRate:self.sampleRate
-                                                      channelCount:self.channelCount];
+                                                      channelCount:self.channelCount
+                                            onOutputRecoveryFailed:self.onStreamFail];
 }
 
 - (bool)startPlaybackGraph:(AudioEngine *)audioEngine
@@ -121,6 +122,7 @@
 {
   self.renderAudio = nil;
   self.renderBlock = nil;
+  self.onStreamFail = nil;
 }
 
 @end
