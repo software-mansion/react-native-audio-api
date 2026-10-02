@@ -13,13 +13,13 @@
 namespace audioapi {
 namespace {
 
-bool isMissingEdge(const utils::graph::HostNode::Res &result) {
+bool isMissingEdge(const Result<NoneType, utils::graph::HostNode::GraphError> &result) {
   if (result.is_ok()) {
     return false;
   }
   const auto err = result.unwrap_err();
-  return err == utils::graph::HostGraph::ResultError::EDGE_NOT_FOUND ||
-      err == utils::graph::HostGraph::ResultError::NODE_NOT_FOUND;
+  return err == utils::graph::HostGraph::GraphError::EDGE_NOT_FOUND ||
+      err == utils::graph::HostGraph::GraphError::NODE_NOT_FOUND;
 }
 
 constexpr const char *kDisconnectNotConnected =
@@ -29,11 +29,11 @@ constexpr const char *kDisconnectNotConnected =
 /// InvalidAccessError if none existed (or on unexpected graph errors).
 template <typename TryRemove>
   requires requires(TryRemove &&tryRemove) {
-    tryRemove([](const utils::graph::HostNode::Res &) {});
+    tryRemove([](const Result<NoneType, utils::graph::HostNode::GraphError> &) {});
   }
 void disconnectMatchingEdges(jsi::Runtime &runtime, TryRemove &&tryRemove) {
   bool removedAny = false;
-  tryRemove([&](const utils::graph::HostNode::Res &result) {
+  tryRemove([&](const Result<NoneType, utils::graph::HostNode::GraphError> &result) {
     if (result.is_ok()) {
       removedAny = true;
     } else if (!isMissingEdge(result)) {

@@ -13,7 +13,7 @@ namespace audioapi::utils::graph {
 /// @brief RAII base class for host-side nodes.
 ///
 /// Holds a `shared_ptr<Graph>` to keep the graph alive and owns a
-/// `HostGraph::Node*` managed by that graph. On construction the node is
+/// `HostGraph::HostVertex*` managed by that graph. On construction the node is
 /// registered in the graph (and an event is sent to AudioGraph); on
 /// destruction the node is removed (scheduling orphan-marking on AudioGraph).
 ///
@@ -39,10 +39,8 @@ namespace audioapi::utils::graph {
 /// ```
 class HostNode {
  public:
-  using GraphType = Graph;
-  using HNode = HostGraph::Node;
-  using ResultError = HostGraph::ResultError;
-  using Res = Result<NoneType, ResultError>;
+  using HostVertex = HostGraph::HostVertex;
+  using GraphError = HostGraph::GraphError;
 
   /// @brief Constructs a HostNode, adding it to the graph.
   /// @param graph shared ownership of the Graph — prevents the graph from
@@ -50,12 +48,12 @@ class HostNode {
   /// @param graphObject the payload (ownership transferred through to
   ///                    AudioGraph via NodeHandle)
   explicit HostNode(
-      std::shared_ptr<GraphType> graph,
+      std::shared_ptr<Graph> graph,
       std::unique_ptr<GraphObject> graphObject = nullptr);
 
   template <typename TObject>
     requires std::derived_from<TObject, GraphObject>
-  explicit HostNode(std::shared_ptr<GraphType> graph, std::unique_ptr<TObject> graphObject)
+  explicit HostNode(std::shared_ptr<Graph> graph, std::unique_ptr<TObject> graphObject)
       : HostNode(std::move(graph), std::unique_ptr<GraphObject>(std::move(graphObject))) {}
 
   /// @brief Destructor removes the node from the graph.
@@ -73,30 +71,30 @@ class HostNode {
 
   /// @brief Connects this node's output to another node's input (this → other).
   /// @return Ok on success, Err on cycle / duplicate / not-found
-  Res connect(HostNode &other);
+  Result<NoneType, GraphError> connect(HostNode &other);
 
   /// @brief Disconnects this node's output from another node's input.
   /// @return Ok on success, Err on not-found
-  Res disconnect(HostNode &other);
+  Result<NoneType, GraphError> disconnect(HostNode &other);
 
   /// @brief Disconnects all this node's outputs.
   /// @return Ok on success, Err on not-found
-  Res disconnect();
+  Result<NoneType, GraphError> disconnect();
 
   /// @brief Recomputes channel-count negotiation for this node (cascading
   /// downstream) after a `channelCount` / `channelCountMode` change.
   /// @return Ok on success, Err on not-found
-  Res renegotiate();
+  Result<NoneType, GraphError> renegotiate();
 
-  /// @brief Returns the raw HostGraph::Node pointer (for advanced usage / testing).
-  [[nodiscard]] HNode *rawNode() const;
+  /// @brief Returns the raw HostGraph::HostVertex pointer (for advanced usage / testing).
+  [[nodiscard]] HostVertex *rawNode() const;
 
   /// @brief Returns the Graph this node belongs to.
-  [[nodiscard]] const std::shared_ptr<GraphType> &graph() const;
+  [[nodiscard]] const std::shared_ptr<Graph> &graph() const;
 
  protected:
-  std::shared_ptr<GraphType> graph_;
-  HNode *node_ = nullptr;
+  std::shared_ptr<Graph> graph_;
+  HostVertex *node_ = nullptr;
 };
 
 } // namespace audioapi::utils::graph

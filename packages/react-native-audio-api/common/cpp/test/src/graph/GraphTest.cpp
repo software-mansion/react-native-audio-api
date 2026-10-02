@@ -67,20 +67,20 @@ struct ChannelOpts {
 
 /// @returns the computed number of channels on the output buffer of the
 /// AudioNode that backs `node`.
-inline size_t channelsOf(const HostGraph::Node *node) {
+inline size_t channelsOf(const HostGraph::HostVertex *node) {
   auto *audioNode = node->handle->audioNode->asAudioNode();
   return audioNode->getOutputBuffer()->getNumberOfChannels();
 }
 
-inline size_t inputChannelsOf(const HostGraph::Node *node) {
+inline size_t inputChannelsOf(const HostGraph::HostVertex *node) {
   auto *audioNode = node->handle->audioNode->asAudioNode();
   return audioNode->getInputBuffer()->getNumberOfChannels();
 }
 
 /// Adds a ChannelCountTestNode with the given options to the managed
-/// `graph`. Returns the HostGraph::Node pointer; the associated AudioGraph
+/// `graph`. Returns the HostGraph::HostVertex pointer; the associated AudioGraph
 /// slot is populated once `graph->processEvents()` is called.
-inline HostGraph::Node *addChannelCountNode(Graph &graph, const ChannelOpts &opts) {
+inline HostGraph::HostVertex *addChannelCountNode(Graph &graph, const ChannelOpts &opts) {
   audioapi::AudioNodeOptions audioNodeOpts;
   audioNodeOpts.channelCount = opts.channelCount;
   audioNodeOpts.channelCountMode = opts.mode;
@@ -89,13 +89,13 @@ inline HostGraph::Node *addChannelCountNode(Graph &graph, const ChannelOpts &opt
   return graph.addNode(std::move(audioNode));
 }
 
-inline HostGraph::Node *addStereoPannerNode(Graph &graph) {
+inline HostGraph::HostVertex *addStereoPannerNode(Graph &graph) {
   audioapi::StereoPannerOptions options;
   auto audioNode = std::make_unique<audioapi::StereoPannerNode>(getGraphTestContext(), options);
   return graph.addNode(std::move(audioNode));
 }
 
-inline HostGraph::Node *addPannerNode(Graph &graph) {
+inline HostGraph::HostVertex *addPannerNode(Graph &graph) {
   audioapi::PannerOptions options;
   auto listener = std::make_shared<audioapi::AudioListener>(getGraphTestContext());
   auto audioNode =
@@ -146,7 +146,7 @@ TEST_F(GraphTest, NoUselessEventsScheduled) {
   // Try adding SAME edge (should fail)
   auto result = graph->addEdge(node1, node2);
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::EDGE_ALREADY_EXISTS);
+  EXPECT_EQ(result.unwrap_err(), HostGraph::GraphError::EDGE_ALREADY_EXISTS);
 
   // Even if we call processEvents, state should not change (and no event should be consumed ideally,
   // impossible to check queue count easily without friend or mock, but state check is good enough)
@@ -162,7 +162,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
   // One thread processes events (consumer)
 
   std::atomic<bool> running{true};
-  std::vector<HostGraph::Node *> nodes;
+  std::vector<HostGraph::HostVertex *> nodes;
 
   // Add initial nodes
   for (int i = 0; i < 10; ++i) {
@@ -190,7 +190,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
       nodes.push_back(n);
     } else if (op == 1 && nodes.size() > 2) {
       // Add edge
-      HostGraph::Node *n1, *n2;
+      HostGraph::HostVertex *n1, *n2;
       {
         n1 = nodes[rand_r(&seed) % nodes.size()];
         n2 = nodes[rand_r(&seed) % nodes.size()];
@@ -201,7 +201,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
       }
     } else if (op == 2 && nodes.size() > 5) {
       // Remove edge
-      HostGraph::Node *n1, *n2;
+      HostGraph::HostVertex *n1, *n2;
       {
         n1 = nodes[rand_r(&seed) % nodes.size()];
         n2 = nodes[rand_r(&seed) % nodes.size()];

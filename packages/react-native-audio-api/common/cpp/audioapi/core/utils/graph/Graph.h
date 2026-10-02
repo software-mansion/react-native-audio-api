@@ -75,11 +75,11 @@ class Graph {
   using GcEventSender = audioapi::channels::spsc::
       Sender<OrphanEnvelope, EVENT_OVERFLOW_STRATEGY, EVENT_WAIT_STRATEGY>;
 
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
 
  public:
-  using ResultError = HostGraph::ResultError;
-  using Res = Result<NoneType, ResultError>;
+  using GraphError = HostGraph::GraphError;
+  using Res = Result<NoneType, GraphError>;
 
   Graph(
       size_t eventQueueCapacity,
@@ -101,7 +101,8 @@ class Graph {
   void processEvents();
 
   /// @brief Runs toposort + compaction on the audio graph, then settles every
-  /// node's processable state for the coming quantum (reverse-topo pull).
+  /// node's processable state for the coming quantum (dependency pull from
+  /// the always-processable roots).
   /// Allocation-free.
   /// @note Should be called only from the audio thread.
   void process();
@@ -121,20 +122,20 @@ class Graph {
 
   /// @brief Adds a new node to the graph and returns a pointer to it.
   /// @param audioNode the audio processing node to add (ownership transferred)
-  /// @return pointer to the newly added HostGraph::Node
-  HNode *addNode(std::unique_ptr<GraphObject> audioNode);
+  /// @return pointer to the newly added HostGraph::HostVertex
+  HostVertex *addNode(std::unique_ptr<GraphObject> audioNode);
 
   template <std::derived_from<GraphObject> TObject>
-  HNode *addNode(std::unique_ptr<TObject> audioNode) {
+  HostVertex *addNode(std::unique_ptr<TObject> audioNode) {
     return addNode(std::unique_ptr<GraphObject>(std::move(audioNode)));
   }
 
   /// @brief Removes a node (marks as ghost). Pointer remains valid until
   /// the ghost is collected after AudioGraph releases its shared_ptr.
-  Res removeNode(HNode *node);
+  Res removeNode(HostVertex *node);
 
   /// @brief Adds a directed edge from → to. Rejects cycles and duplicates.
-  Res addEdge(HNode *from, HNode *to);
+  Res addEdge(HostVertex *from, HostVertex *to);
 
   /// @brief Links two nodes so that `to` follows the processable state of
   /// `from` (one-way), for nodes that share processing semantics but not an
@@ -142,18 +143,18 @@ class Graph {
   /// ring buffer). Records the link on both the host graph (for cleanup) and
   /// the audio graph (a `link_head` entry consumed by
   /// AudioGraph::settleProcessableState()). Idempotent.
-  void linkNodes(HNode *from, HNode *to);
+  void linkNodes(HostVertex *from, HostVertex *to);
 
   /// @brief Removes a directed edge from → to.
-  Res removeEdge(HNode *from, HNode *to);
+  Res removeEdge(HostVertex *from, HostVertex *to);
 
   /// @brief Removes all outgoing edges from `from`.
-  Res removeAllEdges(HNode *from);
+  Res removeAllEdges(HostVertex *from);
 
   /// @brief Recomputes channel-count negotiation for `node` (cascading
   /// downstream) after its `channelCount` / `channelCountMode` changed. Sends
   /// the resulting buffer-swap event through Channel A.
-  Res renegotiateNodeChannels(HNode *node);
+  Res renegotiateNodeChannels(HostVertex *node);
 
   void collectDisposedNodes();
 

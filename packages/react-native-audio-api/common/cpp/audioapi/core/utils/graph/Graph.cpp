@@ -71,11 +71,11 @@ void Graph::processEvents() {
 }
 
 void Graph::process() {
-  audioGraph.process();
+  audioGraph.sortAndCompact();
   audioGraph.settleProcessableState();
 }
 
-Graph::HNode *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
+Graph::HostVertex *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
   // collectDisposedNodes();
 
   auto handle = std::make_shared<NodeHandle>(0, std::move(audioNode));
@@ -88,7 +88,7 @@ Graph::HNode *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
   return hostNode;
 }
 
-Graph::Res Graph::removeNode(HNode *node) {
+Graph::Res Graph::removeNode(HostVertex *node) {
   // collectDisposedNodes();
   // Routed through Channel B: HostNode destructors (and therefore this
   // call) may fire on the JS runtime's finalizer thread (e.g. Hermes GC).
@@ -108,7 +108,7 @@ Graph::Res Graph::removeNode(HNode *node) {
   });
 }
 
-Graph::Res Graph::addEdge(HNode *from, HNode *to) {
+Graph::Res Graph::addEdge(HostVertex *from, HostVertex *to) {
   // collectDisposedNodes();
   return hostGraph.addEdge(from, to).map([&](AGEvent event) {
     sendPoolGrowIfNeeded();
@@ -118,14 +118,14 @@ Graph::Res Graph::addEdge(HNode *from, HNode *to) {
   });
 }
 
-void Graph::linkNodes(HNode *from, HNode *to) {
+void Graph::linkNodes(HostVertex *from, HostVertex *to) {
   if (auto event = hostGraph.linkNodes(from, to)) {
     sendPoolGrowIfNeeded();
     eventSender_.send(std::move(*event));
   }
 }
 
-Graph::Res Graph::removeEdge(HNode *from, HNode *to) {
+Graph::Res Graph::removeEdge(HostVertex *from, HostVertex *to) {
   // collectDisposedNodes();
   return hostGraph.removeEdge(from, to).map([&](AGEvent event) {
     eventSender_.send(std::move(event));
@@ -134,7 +134,7 @@ Graph::Res Graph::removeEdge(HNode *from, HNode *to) {
   });
 }
 
-Graph::Res Graph::removeAllEdges(HNode *from) {
+Graph::Res Graph::removeAllEdges(HostVertex *from) {
   // collectDisposedNodes();
   return hostGraph.removeAllEdges(from).map([&](AGEvent event) {
     eventSender_.send(std::move(event));
@@ -143,7 +143,7 @@ Graph::Res Graph::removeAllEdges(HNode *from) {
   });
 }
 
-Graph::Res Graph::renegotiateNodeChannels(HNode *node) {
+Graph::Res Graph::renegotiateNodeChannels(HostVertex *node) {
   return hostGraph.renegotiateNodeChannels(node).map([&](AGEvent event) {
     eventSender_.send(std::move(event));
     drainProducedEventsIfSelfDraining();

@@ -135,8 +135,11 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
 #ifdef DEBUG
   test::AudioThreadGuard::Scope guard;
 #endif
+  // ongoing modifications of node's properties in graph (f.e. setting param's automation event)
   processAudioEvents();
+  // events mutating graph (f.e. connect/disconnect nodes) are processed in the graph itself
   graph_->processEvents();
+  // sorting, deleting, and deciding which to process
   graph_->process();
 
   for (auto &&[node, inputs] : graph_->iter()) {

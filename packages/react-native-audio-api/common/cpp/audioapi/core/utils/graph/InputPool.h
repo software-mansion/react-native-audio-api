@@ -9,7 +9,7 @@ namespace audioapi::utils::graph {
 
 /// @brief Free-list-based pool for storing input edges as singly-linked lists.
 ///
-/// Replaces `std::vector<std::uint32_t>` inside AudioGraph::Node with a
+/// Replaces `std::vector<std::uint32_t>` inside AudioGraph::Vertex with a
 /// pool-allocated linked list, eliminating all heap allocations during
 /// audio-thread processing (toposort + compaction + iteration).
 ///
