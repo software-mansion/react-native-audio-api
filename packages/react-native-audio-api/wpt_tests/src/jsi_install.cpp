@@ -8,6 +8,8 @@
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -23,6 +25,7 @@ namespace {
 using audioapi::AudioBuffer;
 using audioapi::AudioBufferHostObject;
 using audioapi::AudioContextHostObject;
+using audioapi::AudioContextLatencyHint;
 using audioapi::AudioEventHandlerRegistry;
 using audioapi::AudioEventHandlerRegistryHostObject;
 using audioapi::IAudioEventHandlerRegistry;
@@ -201,11 +204,19 @@ void installAudioContextBinding(
         }
 
         const auto sampleRate = static_cast<float>(args[0].getNumber());
+
+        auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
+        if (count > 1 && args[1].isString()) {
+          latencyHint = audioapi::js_enum_parser::latencyHintFromString(
+              args[1].getString(rt).utf8(rt));
+        }
+
         auto hostObject = std::make_shared<AudioContextHostObject>(
             sampleRate,
             eventRegistry,
             &rt,
-            callInvoker);
+            callInvoker,
+            latencyHint);
 
         return makeContextObject(rt, hostObject);
       });

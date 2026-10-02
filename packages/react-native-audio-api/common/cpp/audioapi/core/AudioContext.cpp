@@ -24,8 +24,10 @@ using PlatformAudioPlayer = IOSAudioPlayer;
 
 AudioContext::AudioContext(
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    AudioContextLatencyHint latencyHint)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+      latencyHint_(latencyHint),
       isInitialized_(false),
       onErrorEvent_(audioEventHandlerRegistry) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
@@ -50,7 +52,8 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       destination_->getChannelCount(),
       currentRenders_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
-      &driverMutex_);
+      &driverMutex_,
+      latencyHint_);
 }
 
 bool AudioContext::tryStartDriver() {

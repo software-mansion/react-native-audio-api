@@ -15,6 +15,22 @@
 
 namespace audioapi {
 
+namespace {
+
+PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
+  switch (latencyHint) {
+    case AudioContextLatencyHint::INTERACTIVE:
+      return PerformanceMode::LowLatency;
+    case AudioContextLatencyHint::BALANCED:
+      return PerformanceMode::None;
+    case AudioContextLatencyHint::PLAYBACK:
+      return PerformanceMode::PowerSaving;
+  }
+  return PerformanceMode::LowLatency;
+}
+
+} // namespace
+
 bool AudioPlayer::openAudioStream() {
   std::scoped_lock lock(streamMutex_);
   AudioStreamBuilder builder;
@@ -22,7 +38,7 @@ bool AudioPlayer::openAudioStream() {
   builder.setSharingMode(SharingMode::Exclusive)
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setPerformanceMode(performanceModeFor(latencyHint_))
       ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)

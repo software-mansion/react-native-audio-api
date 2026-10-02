@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -23,7 +24,8 @@ class CommonPlayer {
       int channelCount,
       std::atomic<uint32_t> &currentRenders,
       std::weak_ptr<AudioContext> context,
-      std::mutex *driverMutex)
+      std::mutex *driverMutex,
+      AudioContextLatencyHint latencyHint)
       : renderAudio_(renderAudio),
         renderBuffer_(
             std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount, sampleRate)),
@@ -31,7 +33,8 @@ class CommonPlayer {
         channelCount_(channelCount),
         currentRenders_(currentRenders),
         context_(std::move(context)),
-        driverMutex_(driverMutex) {}
+        driverMutex_(driverMutex),
+        latencyHint_(latencyHint) {}
   DELETE_COPY_AND_MOVE(CommonPlayer);
   virtual ~CommonPlayer() = default;
 
@@ -65,6 +68,7 @@ class CommonPlayer {
   /// The owning context's driver mutex; `nullptr` disables stream-failure reporting.
   std::mutex *driverMutex_;
   std::atomic<bool> isRunning_{false};
+  AudioContextLatencyHint latencyHint_;
 };
 
 } // namespace audioapi

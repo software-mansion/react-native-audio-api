@@ -22,13 +22,7 @@ namespace audioapi {
 
 class IOSAudioPlayer : public CommonPlayer {
  public:
-  IOSAudioPlayer(
-      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-      float sampleRate,
-      int channelCount,
-      std::atomic<uint32_t> &currentRenders,
-      std::weak_ptr<AudioContext> context,
-      std::mutex *driverMutex);
+  using CommonPlayer::CommonPlayer;
   ~IOSAudioPlayer() override;
 
   bool start() override;
@@ -43,10 +37,12 @@ class IOSAudioPlayer : public CommonPlayer {
   [[nodiscard]] double getOutputLatency() const override;
 
  protected:
-  NativeAudioPlayer *audioPlayer_;
-  std::atomic<bool> flushOverflowNextPull_;
-  int pendingSavedCount_;
-  DSPAudioBuffer pendingSaved_;
+  NativeAudioPlayer *createNativePlayer();
+
+  NativeAudioPlayer *audioPlayer_ = createNativePlayer();
+  std::atomic<bool> flushOverflowNextPull_{false};
+  int pendingSavedCount_{0};
+  DSPAudioBuffer pendingSaved_{RENDER_QUANTUM_SIZE, channelCount_, sampleRate_};
 };
 
 } // namespace audioapi
@@ -239,7 +235,8 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
             channelCount,
             currentRendersStorage_,
             std::weak_ptr<AudioContext>{},
-            nullptr) {}
+            nullptr,
+            AudioContextLatencyHint::INTERACTIVE) {}
 
   NativeAudioPlayer *replaceAudioPlayer(NativeAudioPlayer *audioPlayer) {
     NativeAudioPlayer *previous = audioPlayer_;
@@ -321,7 +318,8 @@ struct TestAudioOutput {
     }
   }
                                              sampleRate:48000
-                                           channelCount:2];
+                                           channelCount:2
+                                preferredIOBufferFrames:RENDER_QUANTUM_SIZE];
 }
 
 - (void)assertStartLikeOperationRunsGraphForSelector:(SEL)selector
@@ -384,8 +382,9 @@ struct TestAudioOutput {
         renderedFrameCount = static_cast<AVAudioFrameCount>(numFrames);
         renderedBufferList = outputBuffer;
       }
-            sampleRate:48000
-          channelCount:2];
+                   sampleRate:48000
+                 channelCount:2
+      preferredIOBufferFrames:RENDER_QUANTUM_SIZE];
   TestAudioOutput output(2, 64, 0.0f);
   BOOL isSilence = NO;
   AudioTimeStamp timestamp = {};

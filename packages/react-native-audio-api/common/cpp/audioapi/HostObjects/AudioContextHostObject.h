@@ -1,9 +1,11 @@
 #pragma once
 
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <jsi/jsi.h>
+
 #include <memory>
 
 namespace audioapi {
@@ -17,7 +19,8 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker);
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      AudioContextLatencyHint latencyHint);
   ~AudioContextHostObject() override;
 
   JSI_HOST_FUNCTION_DECL(close);
