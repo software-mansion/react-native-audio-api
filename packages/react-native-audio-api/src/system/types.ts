@@ -68,8 +68,14 @@ export type AudioDeviceList = AudioDeviceInfo[];
 export interface AudioDevicesInfo {
   availableInputs: AudioDeviceList;
   availableOutputs: AudioDeviceList;
-  currentInputs: AudioDeviceList; // iOS only
-  currentOutputs: AudioDeviceList; // iOS only
+  /**
+   * On iOS, the inputs of the current route. On Android, the device selected
+   * through `setInputDevice`, and empty until one is selected: the platform
+   * does not report which input it would pick on its own.
+   */
+  currentInputs: AudioDeviceList;
+  /** Outputs of the current route. Always empty on Android. */
+  currentOutputs: AudioDeviceList;
 }
 
 export interface IAudioManager {
@@ -90,5 +96,5 @@ export interface IAudioManager {
   requestNotificationPermissions(): Promise<PermissionStatus>;
   checkNotificationPermissions(): Promise<PermissionStatus>;
   getDevicesInfo(): Promise<AudioDevicesInfo>;
-  setInputDevice(deviceId: string): Promise<void>;
+  setInputDevice(deviceId: string | null): Promise<void>;
 }

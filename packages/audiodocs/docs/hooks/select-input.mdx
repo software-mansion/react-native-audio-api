@@ -14,7 +14,7 @@ The `useAudioInput` hook provides an interface for:
 - switching between different input devices
 
 :::info Platform support
-Input device selection is currently only supported on iOS. On Android, `useAudioInput` is implemented as a no-op: the hook will not list or switch input devices, and any selection calls will effectively be ignored.
+On Android, `currentInput` is `null` until a device is selected through this hook, because the platform does not report which input it would pick on its own. It becomes `null` again when the selected device is disconnected.
 :::
 
 ## Signature
@@ -23,7 +23,7 @@ Input device selection is currently only supported on iOS. On Android, `useAudio
 function useAudioInput(): {
   availableInputs: AudioDeviceInfo[];
   currentInput: AudioDeviceInfo | null;
-  onSelectInput: (device: AudioDeviceInfo) => Promise<void>;
+  onSelectInput: (device: AudioDeviceInfo | null) => Promise<void>;
 }
 ```
 
@@ -61,7 +61,7 @@ function AudioInputSelector() {
 | :----: | :----: | :---- |
 | `availableInputs` | [`AudioDeviceInfo[]`](../system/audio-manager.mdx#audiodeviceinfo) | List of available audio input devices under the current device configuration. |
 | `currentInput` | [`AudioDeviceInfo`](../system/audio-manager.mdx#audiodeviceinfo) \| `null` | The currently selected audio input device, or `null` if none is yet selected by the system. |
-| `onSelectInput` | `(device: AudioDeviceInfo) => Promise<void>` | Selects the given device as the current input. Resolves once the device is selected; throws otherwise. |
+| `onSelectInput` | `(device: AudioDeviceInfo \| null) => Promise<void>` | Selects the given device as the current input; `null` hands the choice back to the system. Resolves once done; throws otherwise. |
 
 ## Related
 

@@ -38,6 +38,10 @@ class AudioRecorder {
   virtual void pause() = 0;
   virtual void resume() = 0;
 
+  /// @brief Moves a recording or paused session onto the input device the platform
+  /// currently selects.
+  virtual Result<NoneType, std::string> rerouteInput() = 0;
+
   virtual void connect(const std::shared_ptr<utils::graph::NodeHandle> &node) = 0;
   virtual void disconnect() = 0;
 

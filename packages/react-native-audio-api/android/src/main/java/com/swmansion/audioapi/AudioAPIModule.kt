@@ -31,6 +31,7 @@ class AudioAPIModule(
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
     private const val TAG = "AudioAPIModule"
+    private const val INPUT_DEVICE_ERROR = "E_INPUT_DEVICE"
   }
 
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
@@ -93,8 +94,8 @@ class AudioAPIModule(
 
   override fun invalidate() {
     reactContext.get()?.removeLifecycleEventListener(this)
-    // Cleanup foreground service manager
     ForegroundServiceManager.cleanup()
+    MediaSessionManager.cleanup()
   }
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
@@ -115,7 +116,7 @@ class AudioAPIModule(
     allowHaptics: Boolean,
     notifyOthersOnDeactivation: Boolean,
   ) {
-    // noting to do here
+    // nothing to do here
   }
 
   override fun disableSessionManagement() {
@@ -172,12 +173,27 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 
+  @RequiresApi(Build.VERSION_CODES.M)
   override fun setInputDevice(
     deviceId: String?,
     promise: Promise?,
   ) {
-    // TODO: noop for now, but it should be moved to upcoming
-    // audio engine implementation for android (duplex stream)
+    val device = deviceId?.let { MediaSessionManager.findInputDevice(it) }
+
+    if (deviceId != null && device == null) {
+      promise?.reject(INPUT_DEVICE_ERROR, "Input device with id $deviceId not found", null)
+      return
+    }
+
+    if (!MediaSessionManager.setPreferredInputDevice(device)) {
+      promise?.reject(
+        INPUT_DEVICE_ERROR,
+        "The running recording could not continue on the selected input device.",
+        null,
+      )
+      return
+    }
+
     promise?.resolve(null)
   }
 

@@ -50,6 +50,9 @@ class ActiveRecorderHandle {
   /// @brief Resumes a paused session; a no-op in any other state.
   RecorderState resume();
 
+  /// @brief AudioRecorder::rerouteInput() on the occupant; Ok when the slot is empty.
+  Result<NoneType, std::string> rerouteInput();
+
   /// @brief Stops the occupant and returns AudioRecorder::stop()'s Result,
   /// including the original error. On success with non-empty paths, stashes a
   /// copy for consumeLastRecordingResult() and clears the slot. Blocks until

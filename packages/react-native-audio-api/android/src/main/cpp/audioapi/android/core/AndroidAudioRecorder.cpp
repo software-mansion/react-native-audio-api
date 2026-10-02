@@ -2,6 +2,7 @@
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/AndroidRecorderCallback.h>
+#include <audioapi/android/system/NativeInputRouting.h>
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
@@ -9,6 +10,7 @@
 
 #include <audioapi/android/core/utils/AndroidRotatingFileWriter.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
@@ -51,6 +53,34 @@ std::optional<oboe::InputPreset> inputPresetFromString(const std::string &name) 
   }
   return std::nullopt;
 }
+
+/// Runs an action when the scope ends unless dismiss() is called first. Lets a
+/// multi-step operation roll back an early step on every failure path without
+/// repeating the rollback before each return.
+RecorderAdapterNode *adapterNodeOf(const std::shared_ptr<utils::graph::NodeHandle> &handle) {
+  return static_cast<RecorderAdapterNode *>(handle->audioNode.get());
+}
+
+template <typename Action>
+class ScopeExit {
+ public:
+  explicit ScopeExit(Action action) : action_(std::move(action)) {}
+  ~ScopeExit() {
+    if (armed_) {
+      action_();
+    }
+  }
+
+  DELETE_COPY_AND_MOVE(ScopeExit);
+
+  void dismiss() {
+    armed_ = false;
+  }
+
+ private:
+  Action action_;
+  bool armed_ = true;
+};
 } // namespace
 
 AndroidAudioRecorder::AndroidAudioRecorder(
@@ -60,7 +90,8 @@ AndroidAudioRecorder::AndroidAudioRecorder(
       inputPreset_(std::move(options.androidInputPreset)),
       streamSampleRate_(0.0),
       streamChannelCount_(0),
-      streamMaxBufferSizeInFrames_(0) {}
+      streamMaxBufferSizeInFrames_(0),
+      streamDeviceId_(NativeInputRouting::kSystemDefaultDeviceId) {}
 
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
 /// callable from the JS thread or handled by audio thread (if js dropped recorder first).
@@ -78,7 +109,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
     dataCallback_->cleanup();
   }
   if (adapterNodeHandle_ != nullptr) {
-    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())->adapterCleanup();
+    adapterNodeOf(adapterNodeHandle_)->adapterCleanup();
   }
 
   cleanup();
@@ -87,12 +118,22 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// @brief Creates and opens the Oboe audio input stream for recording.
 /// calculates the "native" or hardware stream parameters for other interfaces
 /// to use.
-/// Callable from the JS thread only.
+/// Called from start() on the promise thread pool and from onErrorAfterClose()
+/// on the Oboe error thread.
+/// The caller must hold an input route (see adoptInputRoute). An already open
+/// stream bound to a device other than that route's is closed and reopened.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
   std::scoped_lock streamLock(streamMutex_);
+
+  const int32_t preferredDeviceId = captureDeviceId_;
+
   if (mStream_ != nullptr) {
-    return Result<NoneType, std::string>::Ok(None);
+    if (streamDeviceId_ == preferredDeviceId) {
+      return Result<NoneType, std::string>::Ok(None);
+    }
+
+    closeAudioStream();
   }
 
   oboe::AudioStreamBuilder builder;
@@ -109,6 +150,10 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
     builder.setInputPreset(*preset);
   }
 
+  if (preferredDeviceId != NativeInputRouting::kSystemDefaultDeviceId) {
+    builder.setDeviceId(preferredDeviceId);
+  }
+
   auto result = builder.openStream(mStream_);
 
   if (result != oboe::Result::OK || mStream_ == nullptr) {
@@ -116,6 +161,20 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
         "Failed to open audio stream: " + std::string(oboe::convertToText(result)));
   }
 
+  // The selection is a preference, as on iOS: when the platform routes elsewhere
+  // (the device is gone, or OpenSL ES, which ignores setDeviceId and reports
+  // kUnspecified), recording continues on the routed device instead of failing.
+  if (preferredDeviceId != NativeInputRouting::kSystemDefaultDeviceId &&
+      mStream_->getDeviceId() != preferredDeviceId) {
+    __android_log_print(
+        ANDROID_LOG_WARN,
+        "AndroidAudioRecorder",
+        "Input device %d was requested, but the capture stream opened on device %d",
+        preferredDeviceId,
+        mStream_->getDeviceId());
+  }
+
+  streamDeviceId_ = preferredDeviceId;
   streamSampleRate_ = static_cast<float>(mStream_->getSampleRate());
   streamChannelCount_ = mStream_->getChannelCount();
   streamMaxBufferSizeInFrames_ = mStream_->getBufferSizeInFrames();
@@ -132,10 +191,27 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 /// Most likely this was due to alpha version mistakes, but in case of problems leaving this here. (ㆆ _ ㆆ)
 /// @returns On success, returns the file URI where the recording is being saved (if file output is enabled).
 Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fileNameOverride) {
+  if (!isIdle()) {
+    return Result<NoneType, std::string>::Err("Recorder is already recording");
+  }
+
+  // Acquired before taking the recorder's mutexes: it can wait seconds for a Bluetooth link,
+  // and getters called from the JS thread must not be stuck behind that wait.
+  const auto routedDeviceId = NativeInputRouting::acquireInputRoute();
+
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_, streamMutex_);
 
   if (!isIdle()) {
+    NativeInputRouting::releaseInputRoute();
     return Result<NoneType, std::string>::Err("Recorder is already recording");
+  }
+
+  adoptInputRoute(routedDeviceId);
+  ScopeExit releaseRoute([this] { releaseInputRoute(); });
+
+  if (!routedDeviceId.has_value()) {
+    return Result<NoneType, std::string>::Err(
+        "The selected Bluetooth microphone could not be connected.");
   }
 
   auto streamResult = openAudioStream();
@@ -150,6 +226,8 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
 
   if (wantsFileOutput()) {
     recordingSegmentPaths_.clear();
+    closedSegmentsSizeMb_ = 0.0;
+    closedSegmentsDuration_ = 0.0;
     auto writerResult = setupFileWriter(fileProperties_, fileNameOverride);
     if (!writerResult.is_ok()) {
       return writerResult;
@@ -167,17 +245,14 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
     }
 
     dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-    std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
-        ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
-    callbackOutputConfigured_.store(true, std::memory_order_release);
+    auto callbackResult = prepareCallback();
+    if (!callbackResult.is_ok()) {
+      return callbackResult;
+    }
   }
 
   if (wantsConnection() && adapterNodeHandle_ != nullptr) {
-    deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
-        streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
-        ->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    connectedConfigured_.store(true, std::memory_order_release);
+    prepareAdapterNode();
   }
 
   auto result = mStream_->requestStart();
@@ -187,8 +262,26 @@ Result<NoneType, std::string> AndroidAudioRecorder::start(const std::string &fil
         "Failed to start stream: " + std::string(oboe::convertToText(result)));
   }
 
+  releaseRoute.dismiss();
   state_.store(RecorderState::Recording, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
+}
+
+void AndroidAudioRecorder::adoptInputRoute(std::optional<int32_t> routedDeviceId) {
+  std::scoped_lock streamLock(streamMutex_);
+  holdsInputRoute_ = true;
+  captureDeviceId_ = routedDeviceId.value_or(NativeInputRouting::kSystemDefaultDeviceId);
+}
+
+void AndroidAudioRecorder::releaseInputRoute() {
+  std::scoped_lock streamLock(streamMutex_);
+
+  if (!holdsInputRoute_) {
+    return;
+  }
+
+  holdsInputRoute_ = false;
+  NativeInputRouting::releaseInputRoute();
 }
 
 /// @brief Stops the audio stream and finalizes any output (file writing, callback, adapter node).
@@ -204,6 +297,8 @@ AndroidAudioRecorder::stop() {
 
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
+  double closedSegmentsSizeMb = 0.0;
+  double closedSegmentsDuration = 0.0;
   bool hadFileOutput = false;
 
   {
@@ -214,20 +309,23 @@ AndroidAudioRecorder::stop() {
           "Recorder is not in recording state.");
     }
 
-    if (mStream_ == nullptr) {
-      return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Err(
-          "Audio stream is not initialized.");
-    }
-
     state_.store(RecorderState::Idle, std::memory_order_release);
+    releaseInputRoute();
     lastCallbackFrameCount_.store(0, std::memory_order_release);
-    mStream_->requestStop();
+
+    // There is no stream while restartCapture() is between closing the old one and opening
+    // the new one; the outputs are finalized all the same.
+    if (mStream_ != nullptr) {
+      mStream_->requestStop();
+    }
 
     hadFileOutput = usesFileOutput();
 
     if (hadFileOutput) {
       fileOutputConfigured_.store(false, std::memory_order_release);
       fileWriter = std::move(fileWriter_);
+      closedSegmentsSizeMb = closedSegmentsSizeMb_;
+      closedSegmentsDuration = closedSegmentsDuration_;
     }
 
     if (usesCallback()) {
@@ -261,8 +359,8 @@ AndroidAudioRecorder::stop() {
           "Failed to close file: " + fileResult.unwrap_err());
     }
 
-    outputFileSize = std::get<0>(fileResult.unwrap());
-    outputDuration = std::get<1>(fileResult.unwrap());
+    outputFileSize = closedSegmentsSizeMb + std::get<0>(fileResult.unwrap());
+    outputDuration = closedSegmentsDuration + std::get<1>(fileResult.unwrap());
   }
 
   if (dataCallback != nullptr) {
@@ -270,7 +368,7 @@ AndroidAudioRecorder::stop() {
   }
 
   if (adapterNodeHandle != nullptr) {
-    static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get())->adapterCleanup();
+    adapterNodeOf(adapterNodeHandle)->adapterCleanup();
   }
 
   return Result<std::tuple<std::vector<std::string>, double, double>, std::string>::Ok(
@@ -430,9 +528,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::setOnAudioReadyCallback(
   callbackOutputConfigured_.store(false, std::memory_order_release);
 
   if (!isIdle()) {
-    std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
-        ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
-    callbackOutputConfigured_.store(true, std::memory_order_release);
+    return prepareCallback();
   }
 
   return Result<NoneType, std::string>::Ok(None);
@@ -459,11 +555,7 @@ void AndroidAudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandl
   connectedConfigured_.store(false, std::memory_order_release);
 
   if (!isIdle()) {
-    deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
-        streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    static_cast<RecorderAdapterNode *>(adapterNodeHandle_->audioNode.get())
-        ->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
-    connectedConfigured_.store(true, std::memory_order_release);
+    prepareAdapterNode();
   }
 }
 
@@ -483,7 +575,7 @@ void AndroidAudioRecorder::disconnect() {
   }
 
   if (hadConnection && adapterNodeHandle != nullptr) {
-    static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get())->adapterCleanup();
+    adapterNodeOf(adapterNodeHandle)->adapterCleanup();
   }
 }
 
@@ -534,7 +626,7 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
         return oboe::DataCallbackResult::Continue;
       }
 
-      auto *adapterNode = static_cast<RecorderAdapterNode *>(adapterNodeHandle->audioNode.get());
+      auto *adapterNode = adapterNodeOf(adapterNodeHandle);
 
       auto const data = static_cast<float *>(audioData);
       deinterleavingBuffer->deinterleaveFrom(data, numFrames);
@@ -566,6 +658,12 @@ bool AndroidAudioRecorder::isIdle() const {
 void AndroidAudioRecorder::cleanup() {
   std::scoped_lock streamLock(streamMutex_);
   state_.store(RecorderState::Idle, std::memory_order_release);
+  releaseInputRoute();
+  closeAudioStream();
+}
+
+void AndroidAudioRecorder::closeAudioStream() {
+  std::scoped_lock streamLock(streamMutex_);
 
   if (mStream_ != nullptr) {
     mStream_->requestStop();
@@ -574,50 +672,226 @@ void AndroidAudioRecorder::cleanup() {
   }
 }
 
+AndroidAudioRecorder::StreamFormat AndroidAudioRecorder::streamFormat() const {
+  return {
+      .sampleRate = streamSampleRate_.load(std::memory_order_acquire),
+      .channelCount = streamChannelCount_,
+      .maxBufferSizeInFrames = streamMaxBufferSizeInFrames_,
+  };
+}
+
+Result<NoneType, std::string> AndroidAudioRecorder::rerouteInput() {
+  return restartCapture();
+}
+
+Result<NoneType, std::string> AndroidAudioRecorder::restartCapture() {
+  StreamFormat previousFormat{};
+  RecorderState stateToRestore = RecorderState::Idle;
+
+  {
+    std::scoped_lock streamLock(streamMutex_);
+
+    // No stream on a non-idle recorder means another restart is already under way.
+    if (isIdle() || mStream_ == nullptr) {
+      return Result<NoneType, std::string>::Ok(None);
+    }
+
+    previousFormat = streamFormat();
+    stateToRestore = state_.load(std::memory_order_acquire);
+    closeAudioStream();
+    releaseInputRoute();
+  }
+
+  // Outside the recorder's mutexes for the same reason as in start(). stop() may run in
+  // this window; it finds no stream and finalizes the session.
+  const auto routedDeviceId = NativeInputRouting::acquireInputRoute();
+  if (!routedDeviceId.has_value()) {
+    __android_log_print(
+        ANDROID_LOG_WARN,
+        "AndroidAudioRecorder",
+        "The selected input could not be routed, continuing on the default input");
+  }
+
+  auto result = Result<NoneType, std::string>::Ok(None);
+  {
+    std::scoped_lock restartLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_, streamMutex_);
+
+    // Stopped, or stopped and started again, while the route was being acquired.
+    if (isIdle() || mStream_ != nullptr) {
+      NativeInputRouting::releaseInputRoute();
+      return Result<NoneType, std::string>::Ok(None);
+    }
+
+    adoptInputRoute(routedDeviceId);
+    result = reopenAudioStream(previousFormat, stateToRestore);
+  }
+
+  if (!result.is_ok()) {
+    endSessionAfterFailedRestart(result.unwrap_err());
+  }
+  return result;
+}
+
+Result<NoneType, std::string> AndroidAudioRecorder::reopenAudioStream(
+    const StreamFormat &previousFormat,
+    RecorderState stateToRestore) {
+  auto streamResult = openAudioStream();
+  if (!streamResult.is_ok()) {
+    return streamResult;
+  }
+
+  if (streamFormat() != previousFormat) {
+    auto outputsResult = reprepareOutputs();
+    if (!outputsResult.is_ok()) {
+      return outputsResult;
+    }
+  }
+
+  if (stateToRestore == RecorderState::Recording) {
+    auto startResult = mStream_->requestStart();
+    if (startResult != oboe::Result::OK) {
+      return Result<NoneType, std::string>::Err(
+          "Failed to start stream: " + std::string(oboe::convertToText(startResult)));
+    }
+  }
+
+  return Result<NoneType, std::string>::Ok(None);
+}
+
+void AndroidAudioRecorder::endSessionAfterFailedRestart(const std::string &reason) {
+  // Stopping through the handle finalizes the outputs and keeps the file info for
+  // AudioRecorder.consumeLastRecordingResult(), so what was recorded so far is not lost.
+  auto stopResult = ActiveRecorderHandle::global().stopAndReturnInfo(shared_from_this());
+
+  // The handle only stops the session it started; end any other one directly.
+  if (!stopResult.is_ok() && !isIdle()) {
+    stop();
+  }
+
+  closeAudioStream();
+  reportError(reason);
+}
+
+Result<NoneType, std::string> AndroidAudioRecorder::reprepareOutputs() {
+  if (usesFileOutput() && fileWriter_ != nullptr) {
+    // The encoder was configured for the previous stream format, so the audio that follows
+    // goes to a new file; stop() returns every segment.
+    const std::string segmentFileName = nextSegmentFileName();
+    auto closeResult = fileWriter_->closeFile();
+    if (closeResult.is_ok()) {
+      closedSegmentsSizeMb_ += std::get<0>(closeResult.unwrap());
+      closedSegmentsDuration_ += std::get<1>(closeResult.unwrap());
+    }
+
+    fileOutputConfigured_.store(false, std::memory_order_release);
+    fileWriter_ = nullptr;
+
+    auto writerResult = setupFileWriter(fileProperties_, segmentFileName);
+    if (!writerResult.is_ok()) {
+      return writerResult;
+    }
+  }
+
+  if (usesCallback() && dataCallback_ != nullptr) {
+    callbackOutputConfigured_.store(false, std::memory_order_release);
+    dataCallback_->cleanup();
+
+    auto callbackResult = prepareCallback();
+    if (!callbackResult.is_ok()) {
+      return callbackResult;
+    }
+  }
+
+  if (isConnected() && adapterNodeHandle_ != nullptr) {
+    connectedConfigured_.store(false, std::memory_order_release);
+    adapterNodeOf(adapterNodeHandle_)->adapterCleanup();
+    prepareAdapterNode();
+  }
+
+  return Result<NoneType, std::string>::Ok(None);
+}
+
+Result<NoneType, std::string> AndroidAudioRecorder::prepareCallback() {
+  auto result = std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
+                    ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+  if (result.is_ok()) {
+    callbackOutputConfigured_.store(true, std::memory_order_release);
+  }
+  return result;
+}
+
+void AndroidAudioRecorder::prepareAdapterNode() {
+  deinterleavingBuffer_ = std::make_shared<AudioBuffer>(
+      streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
+  adapterNodeOf(adapterNodeHandle_)
+      ->init(streamMaxBufferSizeInFrames_, streamChannelCount_, streamSampleRate_);
+  connectedConfigured_.store(true, std::memory_order_release);
+}
+
+std::string AndroidAudioRecorder::nextSegmentFileName() const {
+  if (recordingSegmentPaths_.empty() || fileProperties_ == nullptr ||
+      fileProperties_->rotateIntervalBytes > 0) {
+    return "";
+  }
+
+  const std::string &firstSegmentPath = recordingSegmentPaths_.front();
+  const size_t nameStart = firstSegmentPath.find_last_of('/') + 1;
+  const size_t extensionStart = firstSegmentPath.find_last_of('.');
+  const size_t nameLength = extensionStart != std::string::npos && extensionStart > nameStart
+      ? extensionStart - nameStart
+      : std::string::npos;
+
+  return std::format(
+      "{}_{}", firstSegmentPath.substr(nameStart, nameLength), recordingSegmentPaths_.size() + 1);
+}
+
+void AndroidAudioRecorder::reportError(const std::string &message) {
+  uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
+
+  if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
+    return;
+  }
+
+  audioEventHandlerRegistry_->dispatchEvent(
+      AudioEvent::RECORDER_ERROR,
+      callbackId,
+      StringPayload{.name = "message", .reason = "Android recorder error: " + message});
+}
+
 /// @brief onError callback that is invoked by the Oboe stream when an error occurs.
 /// This method runs on a background thread spawned by Oboe as per AudioStreamAAudio::internalErrorCallback.
 /// If the error is a disconnection, it attempts to reopen the stream and resume recording.
 /// @param oboeStream Pointer to the Oboe audio stream.
 /// @param error The oboe::Result error code.
 void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
-  std::scoped_lock streamLock(streamMutex_);
-  if (error == oboe::Result::ErrorDisconnected) {
+  if (error != oboe::Result::ErrorDisconnected) {
+    return;
+  }
+
+  {
+    std::scoped_lock streamLock(streamMutex_);
 
     // Since this runs on a background thread, it can be delayed, so do not teardown an already healthy stream.
     if (mStream_.get() != stream) {
       return;
     }
 
-    const auto stateBeforeTeardown = state_.load(std::memory_order_acquire);
-
-    cleanup();
-
-    if (stateBeforeTeardown == RecorderState::Idle) {
+    if (isIdle()) {
+      cleanup();
       return;
     }
-
-    auto streamResult = openAudioStream();
-
-    if (!streamResult.is_ok()) {
-      uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
-
-      if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
-        return;
-      }
-
-      std::string message = "Android recorder error: " + streamResult.unwrap_err();
-      audioEventHandlerRegistry_->dispatchEvent(
-          AudioEvent::RECORDER_ERROR,
-          callbackId,
-          StringPayload{.name = "message", .reason = std::move(message)});
-      return;
-    }
-
-    if (stateBeforeTeardown == RecorderState::Recording) {
-      mStream_->requestStart();
-    }
-    state_.store(stateBeforeTeardown, std::memory_order_release);
   }
+
+  restartCapture();
+}
+
+double AndroidAudioRecorder::getCurrentDuration() const {
+  std::scoped_lock lock(fileWriterMutex_);
+
+  if (!usesFileOutput() || fileWriter_ == nullptr) {
+    return 0.0;
+  }
+  return closedSegmentsDuration_ + fileWriter_->getCurrentDuration();
 }
 
 double AndroidAudioRecorder::getInputLatency() const {
