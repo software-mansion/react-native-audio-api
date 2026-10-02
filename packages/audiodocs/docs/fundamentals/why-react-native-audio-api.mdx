@@ -1,0 +1,90 @@
+---
+sidebar_position: 2
+---
+
+# Why React Native Audio API?
+
+**React Native Audio API** and [**Expo Audio**](https://docs.expo.dev/versions/latest/sdk/audio/) both play and record audio, but they solve different problems.
+React Native Audio API is an audio engine: you build a graph of nodes that generate, process, and analyze sound in real time.
+Expo Audio is a media player: you give it a file or URL and control playback.
+
+## Feature comparison
+
+### Playback
+
+<div className="comparison-table">
+
+| | **Expo Audio** | **React Native Audio API** |
+|---|:---:|:---:|
+| File and URL playback | ✅ | ✅ |
+| Raw PCM playback | ❌ | ✅ |
+| Lock screen controls and background playback | ✅ | ✅ |
+| Mixing and syncing many sounds | ❌ | ✅ |
+| Sample-accurate scheduling | ❌ | ✅ |
+| Animating UI from audio without the JS thread | ❌ | ✅ <br /> [`WorkletNode`](../worklets/worklet-node.mdx) runs your callback on the UI runtime, where it can update Reanimated shared values directly |
+| Built-in playlist | ✅ | ❌ |
+| Playing chunked audio, for example from a text-to-speech API | ❌ | ✅ <br /> [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx) plays buffers as you enqueue them gapless |
+| Playback rate and pitch correction | ✅ | ✅ |
+
+</div>
+
+### Recording
+
+<div className="comparison-table">
+
+| | **Expo Audio** | **React Native Audio API** |
+|---|:---:|:---:|
+| Long recordings | ✅ <br /> One large file per recording | ✅ <br /> [File rotation](../inputs/audio-recorder.mdx#audiorecorderfileoptions) chunks recording, which limits data loss if the app is killed. |
+| Background recording and notification | ✅ | ✅ |
+| Live access to recorded data | ✅ | ✅ |
+| Echo cancellation | ❌ | ✅ |
+| Animating UI from microphone input without the JS thread | ❌ | ✅ <br /> [`WorkletNode`](../worklets/worklet-node.mdx) runs your callback on the UI runtime, where it can update Reanimated shared values directly |
+
+</div>
+
+### Sound processing and analysis
+
+<div className="comparison-table">
+
+| | **Expo Audio** | **React Native Audio API** |
+|---|:---:|:---:|
+| Effects (filters, delay, reverb, panning, distortion) | ❌ | ✅ <br /> e.g.&nbsp;[`BiquadFilterNode`](../effects/biquad-filter-node.mdx) |
+| Synthesis (oscillators, generated buffers) | ❌ | ✅ |
+| Real-time analysis (FFT, waveform) | ❌ <br /> Raw PCM samples of a player | ✅ <br /> e.g.&nbsp;[`AnalyserNode`](../analysis/analyser-node.mdx) |
+| Offline rendering | ❌ | ✅ |
+| Custom processing in JavaScript on the audio thread | ❌ | ✅ <br /> e.g.&nbsp;[`WorkletProcessingNode`](../worklets/worklet-processing-node.mdx) |
+
+</div>
+
+### System integration
+
+<div className="comparison-table">
+
+| | **Expo Audio** | **React Native Audio API** |
+|---|:---:|:---:|
+| Audio session configuration | ✅ | ✅ |
+| Interruption and route change events | ❌ | ✅ |
+| System volume | ❌ | ✅ |
+| Audio devices | ✅ | ✅ |
+
+</div>
+
+## When to choose Expo Audio
+
+- **Simple playback.** Music, podcasts, audiobooks, or sound effects played as they are, without changing the sound.
+- **Playlists.** A ready-made queue with looping, and next and previous controls.
+- **Simple recording.** Voice memos or similar clips recorded with standard quality settings.
+- **Quick prototypes.** Trying ideas in Expo Go without making a development build.
+
+## When to choose React Native Audio API
+
+- **Music apps and games.** Instruments, drum machines, sequencers, DJ apps, or games where sounds must start at an exact moment.
+- **Multitrack playback.** Stems, music practice apps, or layered soundscapes where many sounds play in sync, each with its own volume and routing.
+- **Sound design.** Effects, filters, spatial audio, or sound generated in code instead of loaded from files.
+- **Voice and AI apps.** Playing text-to-speech that arrives in chunks, sending microphone audio to a speech or AI service at the sample rate it expects, or full-duplex voice chat with echo cancellation.
+- **Audio-reactive UI.** Visualizers, waveforms, and animations driven by audio on the UI thread, without waiting for the JS thread.
+- **Long or critical recordings.** Meetings, lectures, interviews, or field recordings that must survive the app being killed, with a notification the user can pause and resume from on Android.
+- **Control over system audio.** Your own audio session setup, handling of interruptions and route changes, or UI that follows the system volume.
+
+If you only need simple playback today but expect to add effects or visualization later, start with the [`<Audio>`](../sources/audio-tag.mdx) component.
+You can route it into an audio graph with [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-node.mdx) when you need more.

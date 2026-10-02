@@ -63,7 +63,7 @@ const FrequencyResponseGraph: React.FC = () => {
 
       setIsLoading(true);
       try {
-        const speech = await fetch('/react-native-audio-api/audio/voice/example-voice-01.mp3')
+        const speech = await fetch('/react-native-audio-api/audio/voice/example-voice-02.mp3')
           .then((response) => response.arrayBuffer())
           .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
 

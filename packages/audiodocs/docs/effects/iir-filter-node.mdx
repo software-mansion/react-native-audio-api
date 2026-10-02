@@ -4,6 +4,8 @@ sidebar_position: 7
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useIIRFilterPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useIIRFilterPlayground';
 
 # IIRFilterNode
 
@@ -14,6 +16,10 @@ It is an [`AudioNode`](../core/audio-node.mdx) used for tone controls, graphic e
 In general, it is recommended to use [`BiquadFilterNode`](./biquad-filter-node.mdx) for implementing higher-order filters,
 as it is less sensitive to numeric issues and its parameters can be automated. You can create all even-order IIR filters with `BiquadFilterNode`,
 but if odd-ordered filters are needed or automation is not needed, then `IIRFilterNode` may be appropriate.
+
+Press play, then click the `IIRFilterNode` box to bypass it. The coefficients in the code are computed from the filter type, order and cutoff frequency for the context's sample rate, and the line over the spectrum is the resulting frequency response.
+
+<InteractivePlayground tag="IIRFilterNode" usePlayground={useIIRFilterPlayground} />
 
 
 ## Constructor
