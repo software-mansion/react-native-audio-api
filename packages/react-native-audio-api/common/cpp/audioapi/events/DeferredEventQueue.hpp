@@ -23,12 +23,17 @@ namespace audioapi {
 /// never a reference to the emitter; a dispatch whose handler has since been
 /// unregistered is dropped by the registry on the JS thread.
 ///
-/// @note Render-serialized only (audio thread, or the synchronous
-/// `scheduleAudioEvent` path) — no lock, so no other thread may touch it.
+/// @note Render-serialized only — no lock of its own. Touched by the audio thread,
+/// or by any thread that holds `driverMutex_` while the driver is stopped and
+/// quiescent (the synchronous `scheduleAudioEvent` path, `AudioContext::close()`).
 class DeferredEventQueue {
  public:
-  explicit DeferredEventQueue(std::shared_ptr<IAudioEventHandlerRegistry> registry)
-      : registry_(std::move(registry)) {}
+  /// @param audioEventProducer The owning context's dispatch lane — `dispatchDue` always runs
+  /// on that context's render thread.
+  DeferredEventQueue(
+      std::shared_ptr<IAudioEventHandlerRegistry> registry,
+      std::shared_ptr<AudioEventProducer> audioEventProducer)
+      : registry_(std::move(registry)), audioEventProducer_(std::move(audioEventProducer)) {}
 
   /// @brief Queues @p event for dispatch once the clock reaches @p dueTime.
   /// @return False when there is nothing to queue (@p callbackId unset) or no
@@ -74,16 +79,20 @@ class DeferredEventQueue {
   };
 
   void dispatch(const DeferredEvent &deferred) const {
-    if (registry_ == nullptr) {
+    if (registry_ == nullptr || audioEventProducer_ == nullptr) {
       return;
     }
 
     registry_->dispatchEventFromAudioThread(
-        deferred.event, deferred.callbackId, AudioEventPayload{EmptyPayload{}});
+        *audioEventProducer_,
+        deferred.event,
+        deferred.callbackId,
+        AudioEventPayload{EmptyPayload{}});
   }
 
   BoundedPriorityQueue<DeferredEvent, MAX_PENDING_EVENTS, ByDueTime> pending_;
   std::shared_ptr<IAudioEventHandlerRegistry> registry_;
+  std::shared_ptr<AudioEventProducer> audioEventProducer_;
 };
 
 } // namespace audioapi

@@ -1,8 +1,8 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('./src/theme/CodeBlock/highlighting-light.js');
-const darkCodeTheme = require('./src/theme/CodeBlock/highlighting-dark.js');
+const lightCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-light.js');
+const darkCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-dark.js');
 
 import { topbarBannerReservationScript } from '@swmansion/t-rex-ui/topbar-banner'; // eslint-disable-line import/first, import/no-unresolved
 // @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
@@ -85,7 +85,10 @@ const config = {
         },
         blog: false,
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: [
+            require.resolve('docs-theme/css/custom.css'),
+            './src/css/site.css',
+          ],
         },
       },
     ],
@@ -177,6 +180,10 @@ const config = {
         // @ts-ignore
         configureWebpack(_config, isServer, _utils) {
           const processMock = !isServer ? { process: { env: {} } } : {};
+          const path = require('path');
+          const docsThemeDir = path.dirname(
+            require.resolve('docs-theme/package.json')
+          );
 
           const raf = require('raf');
           raf.polyfill();
@@ -204,6 +211,18 @@ const config = {
                 {
                   test: /\.tsx?$/,
                   use: 'babel-loader',
+                },
+                {
+                  test: /\.(js|jsx)$/,
+                  include: [docsThemeDir],
+                  use: {
+                    loader: 'babel-loader',
+                    options: {
+                      presets: [
+                        ['@babel/preset-react', { runtime: 'automatic' }],
+                      ],
+                    },
+                  },
                 },
                 {
                   test: /\.(js|jsx)$/,

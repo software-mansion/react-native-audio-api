@@ -114,7 +114,7 @@ const ChannelMergerSplitter: FC = () => {
     channelGainsRef.current = channelGains;
     outputNodeRef.current = stereoMerger;
 
-    source.onEnded = () => {
+    source.onended = () => {
       setIsPlaying(false);
       teardown();
     };

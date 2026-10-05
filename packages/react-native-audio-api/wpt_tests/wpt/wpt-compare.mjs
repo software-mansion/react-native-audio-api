@@ -98,6 +98,67 @@ const candidate = loadReport(options.candidate);
 const baselineCategories = categoryPassMap(baseline);
 const candidateCategories = categoryPassMap(candidate);
 
+/**
+ * The audit harness interleaves real assertion failures (`X <assertion>`) with
+ * roll-up lines that embed a running count — `< [task] 3 out of 3 assertions
+ * were failed.` and `# AUDIT TASK RUNNER FINISHED: 6 out of 17 tasks were
+ * failed.`. Fixing an assertion rewrites those counts, so a literal set
+ * difference reads the improved roll-up as a brand-new failure. Only the
+ * assertion lines identify a subtest, so only they gate the comparison.
+ */
+const isAssertionFailure = (message) => message.startsWith('X ');
+
+/**
+ * Exact per-file comparison. Category pass counts cannot see an equal-count
+ * swap (test X regresses while test Y starts passing), so when both reports
+ * carry per-file data — reports written before it exists fall back to the
+ * category-level gate — the failing-subtest sets are compared directly.
+ */
+function compareFiles(baselineReport, candidateReport) {
+  if (!Array.isArray(baselineReport.files) || !Array.isArray(candidateReport.files)) {
+    return null;
+  }
+
+  const toMap = (report) =>
+    new Map(report.files.map((file) => [file.path, file]));
+  const baseFiles = toMap(baselineReport);
+  const headFiles = toMap(candidateReport);
+
+  const newFailures = []; // { path, subtests: string[] }
+  const brokenFiles = []; // { path, status } — crashed/hung/missing in candidate
+  const newFiles = []; // informational: files only the candidate ran
+
+  for (const [filePath, base] of baseFiles) {
+    const head = headFiles.get(filePath);
+    if (head == null) {
+      brokenFiles.push({ path: filePath, status: 'missing' });
+      continue;
+    }
+    if (head.status !== 'ok' && base.status === 'ok') {
+      brokenFiles.push({ path: filePath, status: head.status });
+      continue;
+    }
+
+    const baseFailures = new Set((base.failures ?? []).filter(isAssertionFailure));
+    const subtests = (head.failures ?? [])
+      .filter(isAssertionFailure)
+      .filter((message) => !baseFailures.has(message));
+    if (subtests.length > 0) {
+      newFailures.push({ path: filePath, subtests });
+    }
+  }
+
+  for (const filePath of headFiles.keys()) {
+    if (!baseFiles.has(filePath)) {
+      newFiles.push(filePath);
+    }
+  }
+
+  return { newFailures, brokenFiles, newFiles };
+}
+
+const fileComparison = compareFiles(baseline, candidate);
+
 const regressions = [];
 const improvements = [];
 const unchanged = [];
@@ -142,7 +203,10 @@ const summaryDelta = candidateSummaryPass - baselineSummaryPass;
 // pass maps, so the per-category diff stays clean while the overall pass count falls.
 // The summary therefore needs a regression check of its own.
 const summaryRegressed = summaryDelta < 0;
-const hasRegression = regressions.length > 0 || summaryRegressed;
+const fileRegressed =
+  fileComparison != null &&
+  (fileComparison.newFailures.length > 0 || fileComparison.brokenFiles.length > 0);
+const hasRegression = regressions.length > 0 || summaryRegressed || fileRegressed;
 
 const signed = (delta) => `${delta > 0 ? '+' : ''}${delta}`;
 
@@ -154,8 +218,24 @@ const tableHeader = [
   '| --- | ---: | ---: | ---: |',
 ];
 
+const regressionParts = [];
+if (regressions.length > 0) {
+  regressionParts.push(`${regressions.length} regressed section(s)`);
+}
+if (fileComparison != null && fileComparison.newFailures.length > 0) {
+  regressionParts.push(
+    `${fileComparison.newFailures.length} file(s) with new failing subtests`
+  );
+}
+if (fileComparison != null && fileComparison.brokenFiles.length > 0) {
+  regressionParts.push(`${fileComparison.brokenFiles.length} broken file(s)`);
+}
+if (regressionParts.length === 0 && summaryRegressed) {
+  regressionParts.push('overall pass count dropped');
+}
+
 const verdict = hasRegression
-  ? `**FAIL** — ${regressions.length} regressed section(s)`
+  ? `**FAIL** — ${regressionParts.join(', ')}`
   : '**PASS** — no regressions';
 
 const lines = [
@@ -168,6 +248,54 @@ const lines = [
 const changed = [...regressions, ...improvements];
 if (changed.length > 0) {
   lines.push(...tableHeader, ...changed.map(formatRow), '');
+}
+
+if (fileComparison == null) {
+  lines.push(
+    '_Per-file data unavailable in one of the reports — category-level comparison only._',
+    ''
+  );
+} else {
+  const MAX_LISTED_SUBTESTS = 30;
+  const { newFailures, brokenFiles, newFiles } = fileComparison;
+
+  if (brokenFiles.length > 0) {
+    lines.push('**Broken test files:**', '');
+    for (const { path: filePath, status } of brokenFiles) {
+      lines.push(`- \`${filePath}\` — ${status}`);
+    }
+    lines.push('');
+  }
+
+  if (newFailures.length > 0) {
+    lines.push('**New failing subtests:**', '');
+    let listed = 0;
+    for (const { path: filePath, subtests } of newFailures) {
+      lines.push(`- \`${filePath}\``);
+      for (const subtest of subtests) {
+        if (listed >= MAX_LISTED_SUBTESTS) {
+          break;
+        }
+        lines.push(`  - ${subtest}`);
+        listed += 1;
+      }
+    }
+    const totalSubtests = newFailures.reduce(
+      (acc, { subtests }) => acc + subtests.length,
+      0
+    );
+    if (totalSubtests > MAX_LISTED_SUBTESTS) {
+      lines.push(`  - _…and ${totalSubtests - MAX_LISTED_SUBTESTS} more_`);
+    }
+    lines.push('');
+  }
+
+  if (newFiles.length > 0) {
+    lines.push(
+      `<sub>${newFiles.length} test file(s) ran only in the candidate (informational).</sub>`,
+      ''
+    );
+  }
 }
 
 // Unchanged sections outnumber changed ones on almost every run, so they are collapsed
@@ -192,6 +320,17 @@ if (hasRegression) {
   console.error(`WPT regression: ${regressions.length} worse result(s) vs baseline.`);
   for (const row of regressions) {
     console.error(`  - ${row.label}: ${row.head} pass (was ${row.base}, delta ${row.delta})`);
+  }
+  if (fileComparison != null) {
+    for (const { path: filePath, status } of fileComparison.brokenFiles) {
+      console.error(`  - ${filePath}: ${status}`);
+    }
+    for (const { path: filePath, subtests } of fileComparison.newFailures) {
+      console.error(`  - ${filePath}: ${subtests.length} new failing subtest(s)`);
+      for (const subtest of subtests.slice(0, 5)) {
+        console.error(`      ${subtest}`);
+      }
+    }
   }
   if (summaryRegressed) {
     console.error(

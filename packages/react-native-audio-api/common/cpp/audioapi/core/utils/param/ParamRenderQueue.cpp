@@ -2,17 +2,20 @@
 #include <audioapi/core/utils/param/ParamQueueBase.hpp>
 #include <audioapi/core/utils/param/ParamRenderEventFactory.h>
 #include <audioapi/core/utils/param/ParamRenderQueue.h>
-#include <cstddef>
+#include <cmath>
 #include <optional>
 #include <utility>
 
 namespace audioapi {
 
+double ParamRenderQueue::snapToSampleFrameTime(double time) const {
+  return std::round(time * sampleRate_) / sampleRate_;
+}
+
 std::optional<float> ParamRenderQueue::computeValueAtTime(double time) {
   while (
       !eventQueue_.isEmpty() &&
-      (!currentEvent_ ||
-       (time >= currentEvent_->getEndTime() && eventQueue_.peekFront().getStartTime() <= time))) {
+      (!currentEvent_ || snapToSampleFrameTime(eventQueue_.peekFront().getStartTime()) <= time)) {
     RenderParamEvent next;
     eventQueue_.pop(next);
     currentEvent_ = std::move(next);
@@ -22,12 +25,21 @@ std::optional<float> ParamRenderQueue::computeValueAtTime(double time) {
     return std::nullopt;
   }
 
-  return currentEvent_->getCalculateValue()(
-      currentEvent_->getStartTime(),
-      currentEvent_->getEndTime(),
-      currentEvent_->getStartValue(),
-      currentEvent_->getEndValue(),
-      time);
+  const RenderParamEvent &event = *currentEvent_;
+  if (time < snapToSampleFrameTime(event.getStartTime())) {
+    return event.getStartValue();
+  }
+
+  // Ramps stay active until their scheduled end so sub-frame intervals still
+  // interpolate; other finite events end on their snapped boundary. SetTarget
+  // never ends on its own.
+  double effectiveEndTime =
+      event.isRampType() ? event.getEndTime() : snapToSampleFrameTime(event.getEndTime());
+  if (event.getType() != ParamEventType::SET_TARGET && time >= effectiveEndTime) {
+    return event.getEndValue();
+  }
+
+  return event.calculateValueAtTime(time);
 }
 
 bool ParamRenderQueue::push(RenderParamEvent &&event) {
@@ -67,8 +79,8 @@ void ParamRenderQueue::resolveEventValues(RenderParamEvent &event) {
 
     // If the predecessor is a setTarget event, adjust its endTime and endValue to connect to the new event
     if (currentEvent_->getType() == ParamEventType::SET_TARGET) {
-      currentEvent_->setEndTime(event.getStartTime());
       currentEvent_->setEndValue(getValueOfPreviousEventAt(*currentEvent_, event.getStartTime()));
+      currentEvent_->setEndTime(event.getStartTime());
     }
   } else {
     // Case 3: no predecessor at all — fall back to default value
@@ -87,24 +99,43 @@ void ParamRenderQueue::resolveEventValues(RenderParamEvent &event) {
 
 float ParamRenderQueue::getValueOfPreviousEventAt(const RenderParamEvent &event, double time) {
   if (event.getType() == ParamEventType::SET_TARGET) {
-    return event.getCalculateValue()(
-        event.getStartTime(), event.getEndTime(), event.getStartValue(), event.getEndValue(), time);
+    return event.calculateValueAtTime(time);
   }
   return event.getEndValue();
 }
 
+void ParamRenderQueue::cancelScheduledValues(double cancelTime) {
+  ParamQueueBase::cancelScheduledValues(cancelTime);
+
+  // An event may already have been promoted out of the queue; the erase above cannot see it
+  if (currentEvent_ && currentEvent_->getAutomationTime() >= cancelTime) {
+    // restore value from before currentEvent_ and discard it
+    currentEvent_ = ParamRenderEventFactory::createSetValueEvent(
+        currentEvent_->getStartValue(), currentEvent_->getStartTime());
+  }
+}
+
+void ParamRenderQueue::truncateCurrentEventAt(double holdTime) {
+  float holdValue = currentEvent_->calculateValueAtTime(holdTime);
+  currentEvent_->setEndTime(holdTime);
+  currentEvent_->setEndValue(holdValue);
+}
+
 void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
-  // E2: first event with automationTime strictly after cancelTime
+  // E2: handle the case with currentEvent_ first, since it is no longer in queue
+  if (currentEvent_ && currentEvent_->isRampType() && cancelTime < currentEvent_->getEndTime()) {
+    truncateCurrentEventAt(cancelTime);
+    // Step 5: remove everything strictly after cancelTime
+    eventQueue_.erase(eventQueue_.upperBound(cancelTime), eventQueue_.end());
+    return;
+  }
+
+  // E2: find the first event with automationTime > cancelTime
   auto e2It = eventQueue_.upperBound(cancelTime);
 
   if (e2It != eventQueue_.end() && e2It->isRampType()) {
     // Spec step 3: E2 is a ramp — truncate it to end at cancelTime
-    float holdValue = e2It->getCalculateValue()(
-        e2It->getStartTime(),
-        e2It->getEndTime(),
-        e2It->getStartValue(),
-        e2It->getEndValue(),
-        cancelTime);
+    float holdValue = e2It->calculateValueAtTime(cancelTime);
     auto node = eventQueue_.extract(e2It);
     node.value().setEndTime(cancelTime);
     node.value().setEndValue(holdValue);
@@ -129,12 +160,7 @@ void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
 
     if (e1It->getType() == ParamEventType::SET_VALUE_CURVE && cancelTime <= e1It->getEndTime()) {
       // Truncate curve; compute holdValue using original endTime to preserve sampling behaviour
-      float holdValue = e1It->getCalculateValue()(
-          e1It->getStartTime(),
-          e1It->getEndTime(),
-          e1It->getStartValue(),
-          e1It->getEndValue(),
-          cancelTime);
+      float holdValue = e1It->calculateValueAtTime(cancelTime);
       auto hint = std::next(e1It);
       auto node = eventQueue_.extract(e1It);
       node.value().setEndTime(cancelTime);
@@ -154,14 +180,7 @@ void ParamRenderQueue::cancelAndHoldAtTime(double cancelTime) {
 
     if (currentEvent_->getType() == ParamEventType::SET_VALUE_CURVE &&
         cancelTime <= currentEvent_->getEndTime()) {
-      float holdValue = currentEvent_->getCalculateValue()(
-          currentEvent_->getStartTime(),
-          currentEvent_->getEndTime(),
-          currentEvent_->getStartValue(),
-          currentEvent_->getEndValue(),
-          cancelTime);
-      currentEvent_->setEndTime(cancelTime);
-      currentEvent_->setEndValue(holdValue);
+      truncateCurrentEventAt(cancelTime);
       // fall through to step 5
     }
   }

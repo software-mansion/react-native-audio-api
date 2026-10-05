@@ -324,6 +324,139 @@ TEST_F(AudioParamTest, CancelScheduledValuesAfterSetTargetStartLeavesIt) {
   EXPECT_NEAR(param.process(0.3), 1.0f - std::exp(-3.0f), 1e-5f);
 }
 
+// --- cancelScheduledValues against an in-flight event (issue #1266) ---
+// Once the render thread has promoted a ramp into currentEvent_, cancelling it must still
+// remove it: the spec restores the value from before the automation.
+
+TEST_F(AudioParamTest, CancelScheduledValuesDuringInFlightLinearRampRestoresPreviousValue) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(1.0, 0.0);
+  param.linearRampToValueAtTime(0.0, 10.0);
+
+  EXPECT_FLOAT_EQ(param.process(5.0), 0.5f); // ramp is now currentEvent_
+
+  param.cancelScheduledValues(5.0);
+
+  EXPECT_FLOAT_EQ(param.process(5.5), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(7.5), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(12.0), 1.0f);
+}
+
+TEST_F(AudioParamTest, CancelScheduledValuesDuringInFlightExponentialRampRestoresPreviousValue) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(1.0, 0.0);
+  param.exponentialRampToValueAtTime(0.01, 1.0);
+
+  EXPECT_NEAR(param.process(0.5), 0.1f, 1e-5f); // ramp is now currentEvent_
+
+  param.cancelScheduledValues(0.5);
+
+  EXPECT_FLOAT_EQ(param.process(0.6), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(2.0), 1.0f);
+}
+
+TEST_F(AudioParamTest, CancelScheduledValuesBeforeInFlightRampEndLeavesQueueClean) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(1.0, 0.0);
+  param.linearRampToValueAtTime(0.0, 10.0);
+  param.setValueAtTime(0.3, 12.0);
+
+  EXPECT_FLOAT_EQ(param.process(5.0), 0.5f);
+
+  param.cancelScheduledValues(5.0); // removes the ramp and the event at 12.0
+
+  EXPECT_FLOAT_EQ(param.process(6.0), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(12.0), 1.0f);
+  EXPECT_FLOAT_EQ(param.process(13.0), 1.0f);
+}
+
+TEST_F(AudioParamTest, SetValueAtTimeAfterCancellingInFlightRampAppliesImmediately) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(1.0, 0.0);
+  param.linearRampToValueAtTime(0.0, 10.0);
+
+  EXPECT_FLOAT_EQ(param.process(5.0), 0.5f);
+
+  param.cancelScheduledValues(5.0);
+  param.setValueAtTime(0.2, 5.0);
+
+  EXPECT_FLOAT_EQ(param.process(5.1), 0.2f);
+  EXPECT_FLOAT_EQ(param.process(9.9), 0.2f);
+  EXPECT_FLOAT_EQ(param.process(10.5), 0.2f);
+}
+
+// The retargeting idiom from the issue report: cancel + setValueAtTime + setTargetAtTime mid-ramp.
+// The value must follow setTargetAtTime from the cancel point on, with no jump when the cancelled
+// ramp would originally have ended.
+TEST_F(AudioParamTest, SetTargetAfterCancellingInFlightRampHasNoDiscontinuity) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(1.0, 0.0);
+  param.linearRampToValueAtTime(0.0, 10.0);
+
+  EXPECT_FLOAT_EQ(param.process(5.0), 0.5f);
+
+  param.cancelScheduledValues(5.0);
+  param.setValueAtTime(0.0, 5.0);
+  param.setTargetAtTime(0.8, 5.0, 1.0);
+
+  auto expected = [](double t) {
+    return 0.8f * (1.0f - std::exp(-static_cast<float>(t - 5.0)));
+  };
+
+  EXPECT_NEAR(param.process(5.5), expected(5.5), 1e-5f);
+  EXPECT_NEAR(param.process(9.9), expected(9.9), 1e-5f);
+  EXPECT_NEAR(param.process(10.1), expected(10.1), 1e-5f);
+  EXPECT_NEAR(param.process(12.0), expected(12.0), 1e-5f);
+}
+
+TEST_F(AudioParamTest, LinearRampAfterCancellingInFlightRampStartsFromRestoredValue) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(1.0, 0.0);
+  param.linearRampToValueAtTime(0.0, 10.0);
+
+  EXPECT_FLOAT_EQ(param.process(5.0), 0.5f);
+
+  param.cancelScheduledValues(5.0);
+  param.setValueAtTime(1.0, 5.0);
+  param.linearRampToValueAtTime(0.0, 7.0);
+
+  EXPECT_FLOAT_EQ(param.process(6.0), 0.5f);
+  EXPECT_FLOAT_EQ(param.process(7.0), 0.0f);
+  EXPECT_FLOAT_EQ(param.process(10.5), 0.0f);
+}
+
+// A setTarget already promoted into currentEvent_ has automationTime < cancelTime: it survives,
+// matching the queue-side rule pinned by CancelScheduledValuesAfterSetTargetStartLeavesIt.
+TEST_F(AudioParamTest, CancelScheduledValuesAfterInFlightSetTargetStartLeavesIt) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setTargetAtTime(1.0, 0.0, 0.1);
+  param.setValueAtTime(0.5, 0.3);
+
+  EXPECT_NEAR(param.process(0.1), 1.0f - std::exp(-1.0f), 1e-5f);
+
+  param.cancelScheduledValues(0.2);
+
+  EXPECT_NEAR(param.process(0.3), 1.0f - std::exp(-3.0f), 1e-5f);
+}
+
+// --- cancelAndHoldAtTime against an in-flight ramp ---
+
+TEST_F(AudioParamTest, CancelAndHoldAtTimeDuringInFlightLinearRampHoldsRampValue) {
+  auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
+  param.setValueAtTime(0.0, 0.0);
+  param.linearRampToValueAtTime(1.0, 1.0);
+  param.setValueAtTime(0.2, 2.0);
+
+  EXPECT_FLOAT_EQ(param.process(0.25), 0.25f); // ramp is now currentEvent_
+
+  param.cancelAndHoldAtTime(0.5);
+
+  EXPECT_FLOAT_EQ(param.process(0.4), 0.4f);
+  EXPECT_FLOAT_EQ(param.process(0.5), 0.5f);
+  EXPECT_FLOAT_EQ(param.process(0.9), 0.5f);
+  EXPECT_FLOAT_EQ(param.process(2.5), 0.5f);
+}
+
 // --- cancelAndHoldAtTime ---
 
 // No events: no-op, value_ is returned.

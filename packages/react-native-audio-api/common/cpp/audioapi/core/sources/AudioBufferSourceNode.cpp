@@ -24,7 +24,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd),
-      onLoopEndedEvent_(context->getAudioEventHandlerRegistry()) {
+      onLoopEndedEvent_(context->getAudioEventHandlerRegistry(), context->getAudioEventProducer()) {
   auto onLoopEnded = [this]() {
     sendOnLoopEndedEvent();
   };
@@ -59,14 +59,7 @@ void AudioBufferSourceNode::setBuffer(
     return;
   }
 
-  if (buffer_ == nullptr) {
-    loopEnd_ = 0;
-    channelCount_ = AudioBufferSourceOptions::kDefaultChannelCount;
-    return;
-  }
-
-  channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
-  loopEnd_ = buffer_->getDuration();
+  loopEnd_ = buffer_ == nullptr ? 0 : buffer_->getDuration();
 }
 
 void AudioBufferSourceNode::replaceBufferContent(
@@ -81,6 +74,10 @@ bool AudioBufferSourceNode::swapBuffers(
   std::shared_ptr<BaseAudioContext> context = context_.lock();
 
   if (context == nullptr) {
+    return false;
+  }
+
+  if (isFinished()) {
     return false;
   }
 

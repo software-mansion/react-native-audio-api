@@ -8,6 +8,7 @@
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/DeferredEventQueue.hpp>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
@@ -47,6 +48,23 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   void setState(ContextState state);
 
+  /// The value behind the JS `state` attribute. Read from the JSI getter on
+  /// the JS thread.
+  [[nodiscard]] ContextState getPublishedState() const {
+    return publishedState_.load(std::memory_order_acquire);
+  }
+
+  /// Publishes an acknowledged transition to the JS-visible state.
+  void setPublishedState(ContextState state) {
+    publishedState_.store(state, std::memory_order_release);
+  }
+
+  /// JS thread. Wires the `statechange` listener registered by the TS context.
+  void assignOnStateChangeCallbackId(uint64_t callbackId);
+
+  /// Fires `statechange` for an acknowledged transition to @p state.
+  void dispatchStateChange(ContextState state);
+
   [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
@@ -79,6 +97,13 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   /// @note Render-serialized only, like the queue itself.
   [[nodiscard]] DeferredEventQueue &getDeferredEvents() {
     return deferredEvents_;
+  }
+
+  /// @brief This context's dispatch lane, for nodes that emit events from the render thread.
+  /// Every node of a context shares it because they all render on that one thread; a node of
+  /// another context must never use it.
+  [[nodiscard]] std::shared_ptr<AudioEventProducer> getAudioEventProducer() const {
+    return audioEventProducer_;
   }
 
   template <typename F>
@@ -158,6 +183,14 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  private:
   std::atomic<float> sampleRate_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  /// context's own lane into the registry's dispatch queue, shared with every node it owns.
+  std::shared_ptr<AudioEventProducer> audioEventProducer_;
+
+  EventCaller<AudioEvent::STATE_CHANGE> stateChangeEvent_;
+  /// Ledger backing dispatchStateChange()'s dedupe; contexts start suspended.
+  std::atomic<ContextState> lastDispatchedState_{ContextState::SUSPENDED};
+  /// Backs the JS `state` attribute; written only via setPublishedState().
+  std::atomic<ContextState> publishedState_{ContextState::SUSPENDED};
 
   std::shared_ptr<PeriodicWave> cachedSineWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;

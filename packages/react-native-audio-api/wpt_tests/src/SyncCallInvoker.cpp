@@ -78,16 +78,31 @@ void SyncCallInvoker::invokeAsync(facebook::react::CallFunc &&func) noexcept {
     return;
   }
 
-  if (std::this_thread::get_id() == mainThreadId_ || tsfn_ == nullptr) {
+  // Before initialize() only the main thread exists; run inline.
+  if (tsfn_ == nullptr) {
     func(*runtime_);
     return;
   }
 
+  // Always queue — even from the JS thread. Running main-thread posts inline
+  // let them jump ahead of audio-thread posts already sitting in the queue, so
+  // promise-resolution order depended on which thread happened to enqueue
+  // first (the suspend-after-construct WPT flake). One queue gives one FIFO
+  // order, matching React Native's CallInvoker contract that invokeAsync never
+  // executes synchronously.
   auto *callFunc = new facebook::react::CallFunc(std::move(func));
   napi_call_threadsafe_function(tsfn_, callFunc, napi_tsfn_blocking);
 }
 
 void SyncCallInvoker::invokeSync(facebook::react::CallFunc &&func) {
+  // Genuinely synchronous only on the JS thread. From any other thread a
+  // blocking wait would deadlock against the event loop this queue drains on,
+  // so those posts degrade to async FIFO — a documented harness limitation.
+  if (std::this_thread::get_id() == mainThreadId_ && runtime_ != nullptr) {
+    func(*runtime_);
+    return;
+  }
+
   invokeAsync(std::move(func));
 }
 

@@ -39,7 +39,7 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopSkip),
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopStart),
       JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, loopEnd),
-      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onLoopEnded));
+      JSI_EXPORT_PROPERTY_SETTER(AudioBufferSourceNodeHostObject, onloopended));
 
   // start method is overridden in this class
   functions_->erase("start");
@@ -120,7 +120,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, loopEnd) {
   loopEnd_ = loopEnd;
 }
 
-JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onLoopEnded) {
+JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onloopended) {
   audioBufferSourceNode_->assignOnLoopEndedCallbackId(
       std::stoull(value.getString(runtime).utf8(runtime)));
 }
@@ -195,7 +195,7 @@ AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::pr
     buffers.nodeBuffer = nullptr;
     buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
-        AudioBufferSourceOptions::kDefaultChannelCount,
+        AudioBufferSourceOptions::kDefaultOutputChannelNumber,
         audioBufferSourceNode_->getContextSampleRate());
     return buffers;
   }
@@ -236,11 +236,15 @@ void AudioBufferSourceNodeHostObject::setBuffer(
   bufferHostObject_ = bufferHostObject;
   auto buffers = prepareNodeBuffers(buffer, bufferHostObject);
 
-  // Update channelCount on the host thread before renegotiation so MAX /
-  // CLAMPED_MAX downstream nodes see the new width immediately.
-  const size_t newChannelCount = buffer == nullptr ? AudioBufferSourceOptions::kDefaultChannelCount
-                                                   : buffer->getNumberOfChannels();
-  updateChannelCount(newChannelCount);
+  // Publish the new output width on the host thread before renegotiation so
+  // MAX / CLAMPED_MAX downstream nodes see it immediately
+  const size_t newOutputChannelNumber = buffer == nullptr
+      ? AudioBufferSourceOptions::kDefaultOutputChannelNumber
+      : buffer->getNumberOfChannels();
+  if (newOutputChannelNumber != audioBufferSourceNode_->getOutputChannelNumber()) {
+    audioBufferSourceNode_->setOutputChannelNumber(newOutputChannelNumber);
+    renegotiate();
+  }
 
   auto event =
       [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {

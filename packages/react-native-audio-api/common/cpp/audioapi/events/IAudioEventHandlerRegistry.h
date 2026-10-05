@@ -13,6 +13,8 @@
 
 namespace audioapi {
 
+class AudioEventProducer;
+
 class IAudioEventHandlerRegistry {
  public:
   IAudioEventHandlerRegistry() = default;
@@ -31,7 +33,14 @@ class IAudioEventHandlerRegistry {
       uint64_t listenerId,
       AudioEventPayload &&payload) noexcept = 0;
 
+  /// @brief Creates a dispatch lane for one audio thread. Every owner of an audio
+  /// thread needs its own — see AudioEventProducer for why sharing one corrupts the queue.
+  virtual std::shared_ptr<AudioEventProducer> createAudioEventProducer() = 0;
+
+  /// @param producer The calling audio thread's own producer, never one shared with
+  /// another thread.
   virtual bool dispatchEventFromAudioThread(
+      AudioEventProducer &producer,
       AudioEvent eventName,
       uint64_t listenerId,
       AudioEventPayload &&payload) noexcept = 0;

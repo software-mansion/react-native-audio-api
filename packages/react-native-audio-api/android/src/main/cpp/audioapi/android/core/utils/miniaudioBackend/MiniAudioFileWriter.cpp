@@ -98,14 +98,14 @@ OpenFileResult MiniAudioFileWriter::openFile(
   result = initializeConverterIfNeeded();
 
   if (result != MA_SUCCESS) {
-    return OpenFileResult ::Err(
+    return OpenFileResult::Err(
         "Failed to initialize converter" + std::string(ma_result_description(result)));
   }
 
   result = initializeEncoder(fileNameOverride);
 
   if (result != MA_SUCCESS) {
-    return OpenFileResult ::Err(
+    return OpenFileResult::Err(
         "Failed to initialize encoder" + std::string(ma_result_description(result)));
   }
 
@@ -115,7 +115,7 @@ OpenFileResult MiniAudioFileWriter::openFile(
   }
 
   isFileOpen_.store(true, std::memory_order_release);
-  return OpenFileResult ::Ok(filePath_);
+  return OpenFileResult::Ok(filePath_);
 }
 
 void MiniAudioFileWriter::rollbackFailedOpen() {
@@ -153,7 +153,7 @@ void MiniAudioFileWriter::rollbackFailedOpen() {
 /// @return The status of the file closing operation.
 CloseFileResult MiniAudioFileWriter::closeFile() {
   if (!isFileOpen()) {
-    return CloseFileResult ::Err("File is not open");
+    return CloseFileResult::Err("File is not open");
   }
 
   isFileOpen_.store(false, std::memory_order_release);
@@ -203,7 +203,7 @@ CloseFileResult MiniAudioFileWriter::closeFile() {
   }
 
   filePath_ = "";
-  return CloseFileResult ::Ok({fileSizeInMB, durationInSeconds});
+  return CloseFileResult::Ok({fileSizeInMB, durationInSeconds});
 }
 
 /// @brief Get the current file size in bytes.

@@ -169,7 +169,11 @@ enum class PlaybackState {
 
 Subclasses call `updatePlaybackInfo(currentTime, framesToProcess)` at the top of `processNode()` to transition the state machine and handle sample-accurate start/stop.
 
-When the node finishes, fire the `ENDED` event to JS via `audioEventHandlerRegistry_->invokeHandlerWithEventBody(AudioEvent::ENDED, {})`.
+When the node finishes, `AudioScheduledSourceNode::disable()` fires `ENDED` through its `EventCaller` (`dispatchEmptyFromAudioThread`); a node that will never render (stop-before-start) defers it with `EventCaller::deferEmpty` instead — see `thread-safety-itc`.
+
+Pitfalls:
+- `start(double)` in this base class is a separate overload from `AudioBufferSourceNode::start(when, offset, duration)`. Calling `node->start(when)` on an ABSN skips the derived logic; the HostObject always passes three arguments, and so must tests.
+- `AudioBufferBaseSourceNode::processNode` is `final` and returns early on `isEmpty()`. Whether a started-but-empty source ends there (`ended` fires) is `endsWhenStartedEmpty()`: the base default is true (spec: a null buffer forces `stop = currentTime`); `AudioBufferQueueSourceNode` overrides it to false because an empty queue is waiting for the next enqueue. The check runs per quantum on the audio thread on purpose, because the buffer setter legitimately acquires content assigned after `start()` but before the first render.
 
 ---
 
@@ -278,6 +282,35 @@ quantum). Consequently, unit tests that re-process the same node must advance th
 `getValueAtTimeUnmodulated` / `ParamRenderQueue`). Clip only in `finalizeKRate` /
 `finalizeARate` after adding modulation — never on the intrinsic alone before modulation.
 
+**Automation timing model (scheduled times, snapped on demand):** a `RenderParamEvent` stores
+only its scheduled `startTime`/`endTime`, and `calculateValueAtTime` interpolates on them unmodified
+(the spec defines the formulas on real times; a ramp between two times inside one frame must still
+interpolate on those times — WPT `audioparam-close.html`). Effect boundaries live on the frame grid
+instead: `ParamRenderQueue::computeValueAtTime` calls `snapToSampleFrameTime`
+(`std::round(t * sampleRate) / sampleRate`) on the scheduled times whenever it decides which event
+is in effect, matching Blink and the WPT reference's `timeToSampleFrame`. Nothing stores the
+snapped values, so resolving neighbours (`resolveEventValues`, `cancelAndHoldAtTime`) only ever
+touches the scheduled times. A queued event supersedes the current one as soon as its snapped
+start is due, even mid-ramp; ramps stay active until their scheduled end, other finite events end
+on their snapped end. On the evaluation side, `processARateParam` derives each sample's time as
+`(quantumStartFrame + i) / sampleRate` — never accumulate `time += 1/sampleRate`, the ULP drift
+lands boundaries one frame late.
+
+**Never snap an automation time through an integer type.** `snapToSampleFrameTime` rounds in
+`double` instead of reusing `dsp::timeToSampleFrame`, which returns a frame index as `size_t`.
+Automation times are unvalidated user input: nothing in `AudioParam` or its host object rejects
+negative or absurd values, and WPT schedules ramps at `1e300` (`audioparam-large-endtime.html`).
+A `double → size_t → int` round trip on that is undefined behaviour, and in practice produced a
+small *negative* time that sorted the event ahead of everything legitimately scheduled. The same
+unguarded cast is still reachable from `AudioScheduledSourceNode`'s `startTime_`/`stopTime_`
+conversions.
+
+**Param queue capacity:** both param event queues (`ParamRenderQueue` on `AudioParam`,
+`ParamControlQueue` on the host object) are bounded by `AUDIO_PARAM_MAX_QUEUED_EVENTS` and
+**silently drop** events past capacity (`BoundedPriorityQueue::push` returns false, nobody
+checks). Automation scheduled far ahead must fit entirely; the WPT audioparam suites queue
+100 events per file. Symptom of overflow: automation freezes at the last accepted event.
+
 ### JS → Audio Thread parameter updates
 
 `CrossThreadEventScheduler<T>` is a lock-free SPSC channel. When JS calls `param.setValueAtTime(...)`, it enqueues a lambda on the scheduler. The audio thread drains the queue at the start of each `processARateParam` / `processKRateParam` call.
@@ -318,7 +351,14 @@ Callback IDs are stored as `std::atomic<uint64_t>` on the node. `0` means no lis
 All graph mutations are queued via `AudioGraphManager` using its own SPSC channel (`addPendingNodeConnection`, `addPendingParamConnection`). The audio thread calls `graphManager_->preProcessGraph()` before each render pass to apply pending changes.
 
 ### Settable channel attributes (channelCount / channelCountMode / channelInterpretation)
-These are mutable after construction. `AudioNode` (core) exposes virtual `setChannelCount` / `setChannelCountMode` / `setChannelInterpretation`. `channelCount` and `channelCountMode` are read only on the host thread during negotiation, so the JSI setter updates the core field directly then calls `HostNode::renegotiate()` → `Graph::renegotiateNodeChannels()` → `HostGraph::renegotiateNodeChannels()` (reuses `collectNegotiations` + an `AGEvent` buffer swap, self-drain aware when there is no audio/render consumer — offline construction/suspend and realtime suspended/stopped windows). When `AudioBufferSourceNode` `setBuffer` changes channel width, update `channelCount_` on the host thread then `renegotiate()` so MAX/CLAMPED_MAX downstream nodes update; the audio event still installs the prebuilt buffer (no audio-thread alloc). `channelInterpretation` is read on the audio thread in `processInputs` (`getInputBuffer()->sum(*input, channelInterpretation_)`), so it MUST be applied via `scheduleAudioEvent`, not mutated directly.
+These are mutable after construction. `AudioNode` (core) exposes virtual `setChannelCount` / `setChannelCountMode` / `setChannelInterpretation`. `channelCount` and `channelCountMode` are read only on the host thread during negotiation, so the JSI setter updates the core field directly then calls `HostNode::renegotiate()` → `Graph::renegotiateNodeChannels()` → `HostGraph::renegotiateNodeChannels()` (reuses `collectNegotiations` + an `AGEvent` buffer swap, self-drain aware when there is no audio/render consumer — offline construction/suspend and realtime suspended/stopped windows). When `AudioBufferSourceNode` `setBuffer` changes channel width, update `outputChannelNumber_` together with the buffer then `renegotiate()` so MAX/CLAMPED_MAX downstream nodes update; the audio event still installs the prebuilt buffer (no audio-thread alloc). `channelInterpretation` is read on the audio thread in `processInputs` (`getInputBuffer()->sum(*input, channelInterpretation_)`), so it MUST be applied via `scheduleAudioEvent`, not mutated directly.
+
+### Output channel number vs `channelCount` (sources)
+`channelCount` is the spec's input-mixing attribute and never decides how many channels a node emits. `AudioNode` keeps a separate atomic `outputChannelNumber_` (`getOutputChannelNumber()`), initialised from `AudioNodeOptions::outputChannelNumber` and falling back to `channelCount` for nodes whose output follows their negotiated input layout. `HostGraph` negotiation reads the output channel number for source inputs (`getUpstreamChannelCount` returns it when `numberOfInputs_ == 0`), so a spec-default `channelCount = 2` oscillator still negotiates a mono downstream buffer. Rules:
+- A node that always emits one channel (Oscillator, ConstantSource) derives its options from `MonoSourceNodeOptions`; do not lower `channelCount` or override `setChannelCount` to fake it.
+- A source that learns its width later (AudioBufferSource, AudioFileSource, AudioBufferQueueSource, RecorderAdapter) writes `outputChannelNumber_` in the same step it swaps `audioBuffer_`, never `channelCount_`.
+- When the host object schedules that swap (AudioBufferSourceNode `setBuffer`), it must first call `setOutputChannelNumber()` on the host thread and `renegotiate()`, otherwise downstream MAX / CLAMPED_MAX nodes negotiate against the stale width until the audio event lands (this broke the StereoPanner WPT `stereopannernode-panning` test when it lived on `updateChannelCount`). Never route this through `updateChannelCount`: that changes the JS-visible `channelCount` attribute.
+- Read the emitted width from `getOutputChannelNumber()` on any thread; the buffer pointer itself is audio-thread only.
 
 ### Idle-node stale-buffer zeroing (settleProcessableState)
 `AudioGraph::iter()` filters to `isProcessable()` nodes, so a node that has gone idle (e.g. a finished source) is skipped and its output buffer is NOT refreshed — it keeps the samples from an earlier quantum. Downstream consumers still read that buffer via `getOutput()` when collecting inputs, which would re-sum ghost echoes every quantum (this broke the `audionode-channel-rules` ~170-node WPT test).

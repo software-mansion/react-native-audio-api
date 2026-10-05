@@ -9,6 +9,7 @@
 #include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/PannerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
@@ -27,7 +28,6 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace audioapi {
@@ -48,7 +48,10 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, listener),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
-      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state));
+
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(BaseAudioContextHostObject, onstatechange));
 
   addFunctions(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
@@ -57,6 +60,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPanner),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
@@ -74,7 +78,20 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
 // "key function" for the audio classes - this allow for RTTI to work
 // properly across dynamic library boundaries (i.e. dynamic_cast that is used by
 // isHostObject method), android specific issue
-BaseAudioContextHostObject::~BaseAudioContextHostObject() = default;
+BaseAudioContextHostObject::~BaseAudioContextHostObject() {
+  // The C++ context can outlive this HostObject (lifecycle promises hold it);
+  // never let it fire statechange into a GC'd JSI function.
+  context_->assignOnStateChangeCallbackId(0);
+}
+
+JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, state) {
+  return jsi::String::createFromUtf8(
+      runtime, js_enum_parser::contextStateToString(context_->getPublishedState()));
+}
+
+JSI_PROPERTY_SETTER_IMPL(BaseAudioContextHostObject, onstatechange) {
+  context_->assignOnStateChangeCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
+}
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
   return jsi::Object::createFromHostObject(runtime, destination_);
@@ -176,6 +193,16 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
       std::make_shared<StereoPannerNodeHostObject>(context_, stereoPannerOptions);
   auto object = jsi::Object::createFromHostObject(runtime, stereoPannerHostObject);
   object.setExternalMemoryPressure(runtime, stereoPannerHostObject->getMemoryPressure());
+  return object;
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPanner) {
+  const auto options = args[0].asObject(runtime);
+  const auto pannerOptions = audioapi::option_parser::parsePannerOptions(runtime, options);
+  auto pannerHostObject =
+      std::make_shared<PannerNodeHostObject>(context_, listener_, pannerOptions);
+  auto object = jsi::Object::createFromHostObject(runtime, pannerHostObject);
+  object.setExternalMemoryPressure(runtime, pannerHostObject->getMemoryPressure());
   return object;
 }
 

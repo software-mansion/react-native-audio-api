@@ -58,6 +58,8 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 | `onPlay` | `() => void` | no-op | After `play()`. |
 | `onPause` | `() => void` | no-op | After `pause()`. |
 | `onVolumeChange` | `(volume: number) => void` | no-op | When effective volume changes. |
+| `onWaiting` | `() => void` | no-op | Playback stalled waiting on decoded data (network/decoder). Mirrors the HTML `waiting` event — not fired for a deliberate pause or seek. |
+| `onPlaying` | `() => void` | no-op | Playback resumed after a stall reported by `onWaiting`. Mirrors the HTML `playing` event — not fired for the initial `play()`, see `onPlay`. |
 
 ### `AudioSource`
 
@@ -134,6 +136,21 @@ type AudioComponentContextType = {
 <br />
 
 Useful for creating your custom UI component. Must be used under `<Audio>`. Throws an `Error` if used outside the provider.
+
+### `playbackState`
+
+`'idle' | 'playing' | 'paused' | 'buffering'`.
+
+`'buffering'` is a stall **during** playback, not a resting state: the user's play intent is still in effect, and playback resumes on its own once data arrives. A play/pause control must therefore treat it like `'playing'` — comparing against `'playing'` alone flips the button back to a play affordance mid-track. Use the exported `isPlaybackActive` helper instead of a direct comparison:
+
+```tsx
+import { isPlaybackActive } from 'react-native-audio-api';
+
+const { playbackState, play, pause } = useAudioTagContext();
+const isPlaying = isPlaybackActive(playbackState); // true while buffering too
+```
+
+The built-in `AudioControls` additionally runs an indeterminate sweep across the progress track while `playbackState === 'buffering'`.
 
 ```tsx
 import React from 'react';

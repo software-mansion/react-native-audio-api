@@ -23,6 +23,9 @@ import type {
   OverSampleType,
   Result,
   StereoPannerOptions,
+  PannerOptions,
+  PanningModelType,
+  DistanceModelType,
   WaveShaperOptions,
   AudioFileSourceOptions,
 } from './types';
@@ -43,6 +46,10 @@ export interface IBaseAudioContext {
   readonly currentTime: number;
   readonly decoder: IAudioDecoder;
 
+  readonly state: string;
+  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
+  onstatechange: string;
+
   createRecorderAdapter(): IRecorderAdapterNode;
   createOscillator(oscillatorOptions: IOscillatorOptions): IOscillatorNode;
   createConstantSource(
@@ -52,6 +59,7 @@ export interface IBaseAudioContext {
   createStereoPanner(
     stereoPannerOptions: StereoPannerOptions
   ): IStereoPannerNode;
+  createPanner(pannerOptions: PannerOptions): IPannerNode;
   createBiquadFilter: (
     biquadFilterOptions: BiquadFilterOptions
   ) => IBiquadFilterNode;
@@ -91,6 +99,7 @@ export interface IAudioContext extends IBaseAudioContext {
   close(): Promise<undefined>;
   resume(): Promise<undefined>;
   suspend(): Promise<undefined>;
+  onerror: string;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
@@ -136,6 +145,23 @@ export interface IStereoPannerNode extends IAudioNode {
   readonly pan: IAudioParam;
 }
 
+export interface IPannerNode extends IAudioNode {
+  readonly positionX: IAudioParam;
+  readonly positionY: IAudioParam;
+  readonly positionZ: IAudioParam;
+  readonly orientationX: IAudioParam;
+  readonly orientationY: IAudioParam;
+  readonly orientationZ: IAudioParam;
+  panningModel: PanningModelType;
+  distanceModel: DistanceModelType;
+  refDistance: number;
+  maxDistance: number;
+  rolloffFactor: number;
+  coneInnerAngle: number;
+  coneOuterAngle: number;
+  coneOuterGain: number;
+}
+
 export interface IBiquadFilterNode extends IAudioNode {
   readonly frequency: IAudioParam;
   readonly detune: IAudioParam;
@@ -177,7 +203,7 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
   stop: (when: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onEnded: string;
+  onended: string;
 }
 
 export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
@@ -188,9 +214,9 @@ export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
   getOutputLatency: () => number;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onPositionChanged: string;
-  // set how often the onPositionChanged event is called
-  onPositionChangedInterval: number;
+  onpositionchanged: string;
+  // set how often the onpositionchanged event is called
+  onpositionchangedInterval: number;
 }
 
 export interface IOscillatorNode extends IAudioScheduledSourceNode {
@@ -216,7 +242,7 @@ export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
   setBuffer: (audioBuffer: IAudioBuffer | null) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onLoopEnded: string;
+  onloopended: string;
 }
 
 export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode {
@@ -230,7 +256,7 @@ export interface IAudioBufferQueueSourceNode extends IAudioBufferBaseSourceNode 
   resume: (when?: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onBufferEnded: string;
+  onbufferended: string;
 }
 
 export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
@@ -245,8 +271,8 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   seekToTime: (seconds: number) => void;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onPositionChanged: string;
-  onBufferingStateChanged: string;
+  onpositionchanged: string;
+  onbufferingstatechanged: string;
 }
 
 export interface IMediaElementAudioSourceNode extends IAudioNode {}

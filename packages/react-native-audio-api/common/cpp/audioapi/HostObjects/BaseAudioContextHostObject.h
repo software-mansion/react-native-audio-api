@@ -26,6 +26,9 @@ class BaseAudioContextHostObject : public HostObject {
   ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(destination);
+  JSI_PROPERTY_GETTER_DECL(state);
+  JSI_PROPERTY_SETTER_DECL(onstatechange);
+
   JSI_PROPERTY_GETTER_DECL(listener);
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
@@ -35,6 +38,7 @@ class BaseAudioContextHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(createConstantSource);
   JSI_HOST_FUNCTION_DECL(createGain);
   JSI_HOST_FUNCTION_DECL(createStereoPanner);
+  JSI_HOST_FUNCTION_DECL(createPanner);
   JSI_HOST_FUNCTION_DECL(createBiquadFilter);
   JSI_HOST_FUNCTION_DECL(createIIRFilter);
   JSI_HOST_FUNCTION_DECL(createBufferSource);

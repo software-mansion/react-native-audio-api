@@ -30,8 +30,8 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_PROPERTY_SETTER_DECL(playbackRate);
   JSI_PROPERTY_SETTER_DECL(preservesPitch);
   JSI_PROPERTY_SETTER_DECL(loop);
-  JSI_PROPERTY_SETTER_DECL(onPositionChanged);
-  JSI_PROPERTY_SETTER_DECL(onBufferingStateChanged);
+  JSI_PROPERTY_SETTER_DECL(onpositionchanged);
+  JSI_PROPERTY_SETTER_DECL(onbufferingstatechanged);
 
   JSI_HOST_FUNCTION_DECL(pause);
   JSI_HOST_FUNCTION_DECL(seekToStart);

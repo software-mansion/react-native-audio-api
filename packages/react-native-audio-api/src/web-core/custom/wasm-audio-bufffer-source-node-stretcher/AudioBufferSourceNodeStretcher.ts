@@ -50,13 +50,13 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   readonly detune: AudioStretcherParam;
   readonly playbackRate: AudioStretcherParam;
 
-  private _onEnded: ((event: Event) => void) | null = null;
+  private _onended: ((event: Event) => void) | null = null;
 
   private _loop: boolean = false;
   private _loopStart: number = -1;
   private _loopEnd: number = -1;
   private _loopSkip: boolean = false;
-  private _onLoopEnded: ((event: object) => void) | undefined = undefined;
+  private _onloopended: ((event: object) => void) | undefined = undefined;
 
   private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
@@ -367,21 +367,21 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     this._loopSkip = value;
   }
 
-  get onLoopEnded(): ((event: object) => void) | undefined {
-    return this._onLoopEnded;
+  get onloopended(): ((event: object) => void) | undefined {
+    return this._onloopended;
   }
 
   // The WASM stretcher has no per-loop event; callback is stored but never fired.
-  set onLoopEnded(callback: ((event: object) => void) | null) {
-    this._onLoopEnded = callback ?? undefined;
+  set onloopended(callback: ((event: object) => void) | null) {
+    this._onloopended = callback ?? undefined;
   }
 
-  get onEnded(): ((event: Event) => void) | null {
-    return this._onEnded;
+  get onended(): ((event: Event) => void) | null {
+    return this._onended;
   }
 
-  set onEnded(callback: ((event: Event) => void) | null) {
-    this._onEnded = callback;
+  set onended(callback: ((event: Event) => void) | null) {
+    this._onended = callback;
     this.runOnStretcher((node) => {
       node.onEnded = callback;
     });

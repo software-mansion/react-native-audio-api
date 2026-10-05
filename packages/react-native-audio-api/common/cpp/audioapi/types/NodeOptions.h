@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,12 +14,17 @@
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
+#include <audioapi/core/types/PannerTypes.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 struct AudioNodeOptions {
   int channelCount = 2;
+  /// Number of channels the node emits. Unset means "same as `channelCount`",
+  /// which is the right default for every node whose output follows its
+  /// negotiated input layout.
+  std::optional<int> outputChannelNumber;
   ChannelCountMode channelCountMode = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation = ChannelInterpretation::SPEAKERS;
   int numberOfInputs = 1;
@@ -46,6 +53,21 @@ struct AudioScheduledSourceNodeOptions : AudioNodeOptions {
   }
 };
 
+/// Sources whose output is always a single channel (spec: OscillatorNode,
+/// ConstantSourceNode).
+struct MonoSourceNodeOptions : AudioScheduledSourceNodeOptions {
+  static constexpr int kOutputChannelNumber = 1;
+
+  MonoSourceNodeOptions() {
+    outputChannelNumber = kOutputChannelNumber;
+  }
+
+  explicit MonoSourceNodeOptions(AudioNodeOptions options)
+      : AudioScheduledSourceNodeOptions(options) {
+    outputChannelNumber = kOutputChannelNumber;
+  }
+};
+
 struct GainOptions : AudioNodeOptions {
   float gain = 1.0f;
 };
@@ -62,21 +84,62 @@ struct StereoPannerOptions : AudioNodeOptions {
   }
 };
 
+struct PannerOptions : public AudioNodeOptions {
+  static constexpr double kDefaultRefDistance = 1.0;
+  static constexpr double kDefaultMaxDistance = 10000.0;
+  static constexpr double kDefaultRolloffFactor = 1.0;
+  static constexpr double kDefaultConeAngle = 360.0;
+  static constexpr double kDefaultConeOuterGain = 0.0;
+
+  PanningModelType panningModel = PanningModelType::EqualPower;
+  DistanceModelType distanceModel = DistanceModelType::Inverse;
+
+  float positionX = 0.0f;
+  float positionY = 0.0f;
+  float positionZ = 0.0f;
+
+  float orientationX = 1.0f;
+  float orientationY = 0.0f;
+  float orientationZ = 0.0f;
+
+  double refDistance = kDefaultRefDistance;
+  double maxDistance = kDefaultMaxDistance;
+  double rolloffFactor = kDefaultRolloffFactor;
+
+  double coneInnerAngle = kDefaultConeAngle;
+  double coneOuterAngle = kDefaultConeAngle;
+  double coneOuterGain = kDefaultConeOuterGain;
+
+  PannerOptions() {
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
+  }
+
+  explicit PannerOptions(const AudioNodeOptions &options) : AudioNodeOptions(options) {
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
+  }
+};
+
 struct ConvolverOptions : AudioNodeOptions {
   bool disableNormalization = false;
   std::shared_ptr<AudioBuffer> buffer = nullptr;
 
   ConvolverOptions() {
     requiresTailProcessing = true;
+    channelCountMode = ChannelCountMode::CLAMPED_MAX;
   }
 
   explicit ConvolverOptions(AudioNodeOptions options) : AudioNodeOptions(options) {
     requiresTailProcessing = true;
+    if (channelCountMode == ChannelCountMode::MAX) {
+      channelCountMode = ChannelCountMode::CLAMPED_MAX;
+    }
   }
 };
 
-struct ConstantSourceOptions : AudioScheduledSourceNodeOptions {
+struct ConstantSourceOptions : MonoSourceNodeOptions {
   float offset = 1.0f;
+
+  using MonoSourceNodeOptions::MonoSourceNodeOptions;
 };
 
 struct AnalyserOptions : AudioNodeOptions {
@@ -107,26 +170,26 @@ struct BiquadFilterOptions : AudioNodeOptions {
   }
 };
 
-struct OscillatorOptions : AudioScheduledSourceNodeOptions {
+struct OscillatorOptions : MonoSourceNodeOptions {
   static constexpr float kDefaultFrequency = 440.0f;
   std::shared_ptr<PeriodicWave> periodicWave = nullptr;
   float frequency = kDefaultFrequency;
   float detune = 0.0f;
   OscillatorType type = OscillatorType::SINE;
 
-  using AudioScheduledSourceNodeOptions::AudioScheduledSourceNodeOptions;
+  using MonoSourceNodeOptions::MonoSourceNodeOptions;
 };
 
 struct BaseAudioBufferSourceOptions : AudioScheduledSourceNodeOptions {
   bool pitchCorrection = false;
   float detune = 0.0f;
   float playbackRate = 1.0f;
-  int onPositionChangedInterval = 100;
+  int onpositionchangedInterval = 100;
 };
 
 struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
-  /// Spec default when no buffer is set (mono).
-  static constexpr size_t kDefaultChannelCount = 1;
+  /// Spec: with no buffer assigned the node emits one channel of silence.
+  static constexpr size_t kDefaultOutputChannelNumber = 1;
 
   std::shared_ptr<AudioBuffer> buffer = nullptr;
   float loopStart = 0.0f;
@@ -136,7 +199,7 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
 
   explicit AudioBufferSourceOptions(BaseAudioBufferSourceOptions options)
       : BaseAudioBufferSourceOptions(options) {
-    channelCount = kDefaultChannelCount;
+    outputChannelNumber = kDefaultOutputChannelNumber;
   }
 };
 
@@ -153,10 +216,10 @@ struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
 };
 
 struct MediaElementAudioSourceOptions : AudioNodeOptions {
-  explicit MediaElementAudioSourceOptions(int mediaChannelCount = 2) {
+  explicit MediaElementAudioSourceOptions(int mediaOutputChannelNumber = 2) {
     numberOfInputs = 0;
     numberOfOutputs = 1;
-    channelCount = mediaChannelCount;
+    outputChannelNumber = mediaOutputChannelNumber;
   }
 };
 

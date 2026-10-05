@@ -1,0 +1,177 @@
+---
+sidebar_position: 2
+sidebar_custom_props:
+  tags:
+    - plan
+    - wip
+---
+
+# Multi-port nodes
+
+## Rationale
+
+The [Web Audio API specification](https://webaudio.github.io/web-audio-api) allows a node to have an arbitrary [`numberOfInputs`](https://webaudio.github.io/web-audio-api/#dom-audionode-numberofinputs) or [`numberOfOutputs`](https://webaudio.github.io/web-audio-api/#dom-audionode-numberofoutputs). The native engine currently supports only a single input and a single output.
+
+Because of that limitation, [`ChannelMergerNode`](https://webaudio.github.io/web-audio-api/#ChannelMergerNode) and [`ChannelSplitterNode`](https://webaudio.github.io/web-audio-api/#ChannelSplitterNode) are implemented as a workaround: several `AudioNode`s sit behind a single `ChannelMergerNodeHostObject` or `ChannelSplitterNodeHostObject` facade.
+
+Also, implementation of [`AudioWorkletNode`](https://webaudio.github.io/web-audio-api/#AudioWorkletNode) is impossible, because it should allow a JS programmer to define an arbitrary [callback](https://webaudio.github.io/web-audio-api/#audioworkletprocess-callback-parameters), which should take `inputs` and `outputs` arguments as arrays.
+
+## Required changes
+
+### `HostGraph::Node`
+
+Represent an edge endpoint by its owning node and a port index:
+
+```cpp
+struct HostGraph::Port {
+  HostGraph::Node *node;
+  std::uint32_t index;
+};
+using HostGraph::InputPort = HostGraph::Port;
+using HostGraph::OutputPort = HostGraph::Port;
+```
+
+Change the node adjacency lists to:
+
+```cpp
+// diff-remove-start
+std::vector<Node *> inputs;
+std::vector<Node *> outputs;
+// diff-remove-end
+// diff-add-start
+std::vector<std::vector<OutputPort>> inputs;
+std::vector<std::vector<InputPort>> outputs;
+// diff-add-end
+```
+
+A node can then have multiple input ports (as `ChannelMergerNode` does), and several outputs can connect to one input. [The specification defines the following mixing strategy](https://webaudio.github.io/web-audio-api/#input):
+
+> For each input, an AudioNode performs a mixing of all connections to that input.
+
+An edge is therefore identified by `(source node, source output, destination node, destination input)` tuple. Only an identical tuple is a duplicate; connecting different ports of the same node pair is valid.
+
+### Graph operations
+
+These operations need extra arguments for port indices; the rest of the API stays the same:
+
+* `HostGraph`
+    * `addNode()`, `removeNode()`, `addEdge()`, `removeEdge()`, ...
+* `AudioGraph`
+    * `addNode()`, ...
+    * `AGEvent`s created in
+        * `Graph`
+        * `HostGraph`
+* `HostNode`
+    * `connect()`
+    * `disconnect()`
+    * ...
+
+### InputPool
+
+A single `std::uint32_t val` cannot represent a port. A port needs something like `(node id, adjacent edge id, input/output flag)`.
+
+* One approach is to template `InputPool` so a slot can hold a wider value and more generic value.
+
+    Currently, a slot has a size of 8 bytes for reasons related to memory and cache, therefore consequences of increasing it must be verified.
+
+* The tuple can likely be packed into 32 bits, because graphs stay small.
+
+### `AudioNode`
+
+* Allocate the intended number of inputs and outputs in the constructor.
+
+* Fix the **current spec inconsistency.** `AudioNode` currently updates the **output** buffer when setting the negotiated buffer during input up/down-mixing:
+
+  ```cpp
+  virtual void setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) {
+      setOutputBuffer(buffer);
+  }
+  ```
+
+  The specification does not define a node's **output** channel count during this step. Each node chooses its own output policy, so negotiation must not change output width from outside the node. The up/down-mixing process refers to [`computedNumberOfChannels`](https://webaudio.github.io/web-audio-api/#computednumberofchannels), which defines the number of **input** channels.
+
+  This works for most nodes because they share **one buffer** for input and output.
+
+    * `StereoPannerNode` is a node that requires **distinct** input and output buffers. We can see that it actually updates the input buffer inside of `setNegotiatedBuffer()`. It wouldn't need to, if the base implementation refered to the input buffer in the first place.
+
+* **Buffer policy.**
+    * A node may have an arbitrary number of ports, and each port mahy have an arbitrary number of channels. Store those ports in a runtime-allocated array (for example `std::vector`).
+    * Many nodes process frames in place on a single buffer, which is efficient, but that sharing is implicit. `AudioNode` should take a **constructor flag** that aliases `input[0]` and `output[0]` to the same buffer.
+
+* **Up/down-mixing.** Run the mix independently for each port.
+
+### Channel negotiation in `HostGraph.cpp`
+
+Generalize the algorithm to operate on ports rather than nodes. That means iterating over every port in several places. One extra pointer dereference should not matter much for this path.
+
+### `AudioNodeHostObject`
+
+`getOutput()` and `getInput()` currently ignore the index argument and return a pointer to a node. They should honor the index and return a reference to a port.
+
+## Open decisions
+
+* Are there broader implications of refactoring `InputPool`?
+* Is `NodeHandle` compatible with indexed ports?
+* Define how each output port obtains its channel count. For most existing nodes it may mirror input 0, but merger, splitter, source, destination, and future multi-bus nodes need explicit rules.
+* Review node options and constructor invariants. `numberOfInputs`/`numberOfOutputs` must be validated, immutable for the node lifetime, and used to allocate port storage before audio processing starts.
+
+## Implementation plan
+
+To be added...
+
+## Affected places
+
+### Edge representation
+
+| Path | Why |
+|------|-----|
+| `common/cpp/audioapi/core/utils/graph/HostGraph.h` / `.cpp` | `HostGraph::Node::{inputs,outputs}` are `vector<Node*>` — peer only, no port indices. `addEdge` / `removeEdge` / channel negotiation walk these lists. |
+| `common/cpp/audioapi/core/utils/graph/AudioGraph.h` / `.cpp` | Audio-thread adjacency via `input_head` + `InputPool`; `iter()` yields `(GraphObject, inputs)` with **no** output or input port. |
+| `common/cpp/audioapi/core/utils/graph/InputPool.h` / `.cpp` | Edge slots store only the peer node index (`val`) + `next` — no port fields. |
+| `common/cpp/audioapi/core/utils/graph/Graph.h` / `.cpp` | Public `addEdge` / `removeEdge` / `removeAllEdges` / AGEvent replay — unindexed `(from, to)`. |
+| `common/cpp/audioapi/core/utils/graph/HostNode.h` / `.cpp` | `connect(other)` / `disconnect(...)` → `graph_->addEdge` with **no indices**. |
+| `common/cpp/audioapi/core/utils/graph/NodeHandle.h` / `.cpp` | Bridges Host↔Audio; edges reference nodes through this, not ports. |
+| `common/cpp/audioapi/core/utils/graph/README.md` | Documents the current HostGraph / AudioGraph / InputPool edge model. |
+
+### Processing
+
+| Path | Why |
+|------|-----|
+| `common/cpp/audioapi/core/utils/graph/GraphObject.h` / `.cpp` | `process(inputs)` flattens upstream `getOutput()` into one `vector<const DSPAudioBuffer*>`; default `processInputs` is a no-op. |
+| `common/cpp/audioapi/core/AudioNode.h` / `.cpp` | Stores `numberOfInputs_` / `numberOfOutputs_` but the graph ignores them; single `audioBuffer_` for I/O; `processInputs` **sums all** inputs then `processNode`. |
+| `common/cpp/audioapi/core/BaseAudioContext.h` / `.cpp` | Render loop: `for ([node, inputs] : graph_->iter()) node.process(inputs, …)` — one unordered input set per node. |
+| `common/cpp/audioapi/utils/AudioBuffer.hpp` | `sum` / upmix / downmix used when collapsing all edges into one bus. |
+| `common/cpp/audioapi/core/types/ChannelCountMode.h`, `ChannelInterpretation.h` | Negotiation and mix semantics apply **per node**, not per indexed input. |
+| `common/cpp/audioapi/core/effects/StereoPannerNode.*` | Custom channel negotiation and separate input/output buffers — assumes one output bus per graph node. |
+
+### HostObject connect API
+
+| Path | Why |
+|------|-----|
+| `common/cpp/audioapi/HostObjects/AudioNodeHostObject.h` / `.cpp` | JSI `connect(dest, output=0, input=0)` validates indices then `getOutput(o)->connect(*getInput(i))`. Default `getInput` / `getOutput` return `this`. |
+| `common/cpp/audioapi/HostObjects/AudioParamHostObject.h` / `.cpp` | `connectToGraph()` + unindexed `addEdge(source, bridge)` / `addEdge(bridge, owner)`. |
+| `common/cpp/audioapi/core/utils/graph/BridgeNode.h` / `.cpp` | Param fan-in as a normal graph node; mixes all edges into `AudioParam`. |
+
+### Specific nodes
+
+#### Merger/splitter nodes
+
+| Path | Why |
+|------|-----|
+| `common/cpp/audioapi/HostObjects/effects/ChannelMergerNodeHostObject.h` / `.cpp` | Composite: N input `HostNode`s + self as output; `getInput(i)` returns a facade node. |
+| `common/cpp/audioapi/HostObjects/effects/ChannelSplitterNodeHostObject.h` / `.cpp` | Composite: self as input + N output `HostNode`s; `getOutput(i)` returns a facade node. |
+| `common/cpp/audioapi/core/effects/channel_merger/ChannelMergerInputNode.*` | Per-input mono fan-in into a shared bus; `getOutput()==nullptr` (order-only edge). |
+| `common/cpp/audioapi/core/effects/channel_merger/ChannelMergerOutputNode.*` | Shared multi-channel bus; custom `processInputs` skips mix. |
+| `common/cpp/audioapi/core/effects/channel_splitter/ChannelSplitterInputNode.*` | Shared N-channel bus; not mixed. |
+| `common/cpp/audioapi/core/effects/channel_splitter/ChannelSplitterOutputNode.*` | Copies `channelIndex_` from the bus into a mono buffer. |
+| `common/cpp/audioapi/HostObjects/BaseAudioContextHostObject.h` / `.cpp` | `createChannelMerger` / `createChannelSplitter` factories. |
+| `common/cpp/audioapi/types/NodeOptions.h` | `numberOfInputs` / `numberOfOutputs` plus merger/splitter option structs that drive facade fan-out. |
+| `common/cpp/audioapi/HostObjects/utils/NodeOptionsParser.h` | Parses JS options into those counts. |
+| `common/cpp/audioapi/core/utils/Constants.h` | `MAX_CHANNEL_COUNT` used by factories. |
+
+#### Delay node
+
+| Path | Why |
+|------|-----|
+| `common/cpp/audioapi/HostObjects/effects/DelayNodeHostObject.h` / `.cpp` | The only other override of `getInput`/`getOutput` (writer/reader); uses `linkNodes`, not multi-port edges. |
+| `common/cpp/audioapi/core/effects/delay/**` | Writer/reader payloads and ring buffer; may simplify once ports are first-class. |

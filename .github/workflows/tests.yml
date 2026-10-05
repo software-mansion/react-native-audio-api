@@ -2,14 +2,19 @@ name: Tests
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
-      run_cpp_tests:
-        description: Run C++ tests (GCC)
+      run_cpp_smoke_tests:
+        description: Run C++ smoke tests (GCC)
         type: boolean
         default: true
+      run_cpp_extended_graph:
+        description: Run C++ extended category graph
+        type: boolean
+        default: false
       run_cpp_coverage:
-        description: Run C++ coverage (Clang / llvm-cov)
+        description: Run C++ coverage (Clang / llvm-cov, smoke)
         type: boolean
         default: true
       run_js_tests:
@@ -18,13 +23,21 @@ on:
         default: true
 
 jobs:
-  cpp-tests:
-    if: github.event_name == 'pull_request' || inputs.run_cpp_tests
+  cpp-smoke-tests:
+    if: github.event_name == 'pull_request' || inputs.run_cpp_smoke_tests
     uses: ./.github/workflows/cpp-job.yml
     with:
-      name: C++ tests
-      working-directory: packages/react-native-audio-api
-      run: yarn test:cpp
+      name: C++ smoke
+      run: yarn test:cpp:smoke
+
+  cpp-extended-graph:
+    if: github.event_name == 'pull_request' || inputs.run_cpp_extended_graph
+    uses: ./.github/workflows/cpp-job.yml
+    with:
+      name: C++ extended (graph)
+      run: yarn test:cpp:extended -- graph
+      categories: graph
+      force: ${{ github.event_name == 'workflow_dispatch' }}
 
   cpp-coverage:
     if: github.event_name == 'pull_request' || inputs.run_cpp_coverage

@@ -1,9 +1,11 @@
 import { InvalidStateError, NotSupportedError } from '../errors';
+import { AudioEventEmitter } from '../events';
 import { IBaseAudioContext } from '../jsi-interfaces';
 import {
   ContextState,
   DecodeDataInput,
   AudioBufferQueueSourceOptions,
+  PannerOptions,
 } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
@@ -23,6 +25,7 @@ import IIRFilterNode from './IIRFilterNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import PannerNode from './PannerNode';
 import WaveShaperNode from './WaveShaperNode';
 
 export default class BaseAudioContext {
@@ -36,16 +39,41 @@ export default class BaseAudioContext {
     this.destination = new AudioDestinationNode(this, context.destination);
     this.listener = new AudioListener(this, context.listener);
     this.sampleRate = context.sampleRate;
+
+    this.stateChangeSubscription = this.audioEventEmitter.addAudioEventListener(
+      'stateChange',
+      () => this.onstatechange?.()
+    );
+    this.context.onstatechange = this.stateChangeSubscription.subscriptionId;
   }
 
+  /**
+   * Written synchronously the moment an operation is accepted, so the NEXT call
+   * validates against what has already been requested (e.g. close() right after
+   * resume() must see 'running').
+   */
   protected _state: ContextState = 'suspended';
+
+  protected readonly audioEventEmitter = new AudioEventEmitter(
+    globalThis.AudioEventEmitter
+  );
+
+  private stateChangeSubscription: ReturnType<
+    AudioEventEmitter['addAudioEventListener']
+  >;
+
+  public onstatechange: (() => void) | null = null;
+
+  protected setControlState(nextState: ContextState): void {
+    this._state = nextState;
+  }
 
   public get currentTime(): number {
     return this.context.currentTime;
   }
 
   public get state(): ContextState {
-    return this._state;
+    return this.context.state as ContextState;
   }
 
   /**
@@ -99,6 +127,10 @@ export default class BaseAudioContext {
 
   createStereoPanner(): StereoPannerNode {
     return new StereoPannerNode(this);
+  }
+
+  createPanner(options?: PannerOptions): PannerNode {
+    return new PannerNode(this, options);
   }
 
   createBiquadFilter(): BiquadFilterNode {

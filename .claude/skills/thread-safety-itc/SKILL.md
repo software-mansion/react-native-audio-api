@@ -95,7 +95,7 @@ Throttled events (e.g. `positionChanged`) use `PositionChangedDispatcher`, which
 - Clear callbacks in the **most-derived HostObject first** (each layer clears its own events; base destructors run afterward and clear parent events)
 - Do **not** inherit `EventCaller` on multiple node bases (ambiguous API); add member `EventCaller` fields per event instead
 
-**Time-delayed dispatch outside the node's lifetime** (e.g. firing `ended` at a context time the render path will not reach for this node): use `BaseAudioContext::deferEmptyEventDispatch(event, callbackId, dueTime)`. The context keeps a preallocated pending list drained each quantum in `processAudioEvents()`; the context clock is the timer (suspend pauses it, offline fires at render speed) and the context holds no node reference. Never use a detached timer thread for this — spawning a thread from an audio-event body runs on the audio thread (allocation + syscalls), and every capture choice has been a real bug in `AudioScheduledSourceNode::stop()`: raw `this` was a use-after-free, `weak_from_this().lock()` ran the node destructor on the timer thread (bypassing the graph's disposal path), and `std::move`-ing the `EventCaller` member raced the JS/GC-thread `assignCallbackId` paths (the registry `shared_ptr` inside `EventCaller` is only safe for concurrent access while it is never mutated — which is why `EventCaller` is non-movable).
+**Time-delayed dispatch outside the node's lifetime** (e.g. firing `ended` at a context time the render path will not reach for this node): use `EventCaller::deferEmpty(context->getDeferredEvents(), dueTime)`. The context keeps a preallocated `DeferredEventQueue` drained each quantum in `processAudioEvents()`; the context clock is the timer (suspend pauses it, offline fires at render speed) and the context holds no node reference. Never use a detached timer thread for this — spawning a thread from an audio-event body runs on the audio thread (allocation + syscalls), and every capture choice has been a real bug in `AudioScheduledSourceNode::stop()`: raw `this` was a use-after-free, `weak_from_this().lock()` ran the node destructor on the timer thread (bypassing the graph's disposal path), and `std::move`-ing the `EventCaller` member raced the JS/GC-thread `assignCallbackId` paths (the registry `shared_ptr` inside `EventCaller` is only safe for concurrent access while it is never mutated — which is why `EventCaller` is non-movable).
 
 Low-level registry API (used internally by `EventCaller`):
 
@@ -132,6 +132,7 @@ Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is de
 | Non-primitive, can be written by audio thread | Triple buffer (see `AnalyserNode` for reference) |
 | CPU-heavy work, must not block JS or audio | `TaskOffloader` on a dedicated worker thread |
 | Context lifecycle (`resume`/`suspend`/`close`) | `scheduleContextPromise` → `pendingPromisesOffloader_` |
+| Platform code must reach the live recorder without going through JS | Process-global handle (`ActiveRecorderHandle` — recursive mutex + `weak_ptr`; `tryStart` / `stopAndReturnInfo` / `stopAndReturnState` / `pause` / `resume` take the handle mutex before `AudioRecorder`). Android: static-JNI `NativeRecorderControl` (no HybridData). iOS: `AudioAPIModule.setAudioSessionActivity(false)` calls `stopAndReturnInfo()` before deactivating the session. HostObject `start` / `stop` go through the handle; HostObject `pause` / `resume` still call `AudioRecorder` directly. Android blocking calls run on a Kotlin executor (`goAsync()` in receivers), never a detached `std::thread` |
 
 ---
 
@@ -166,7 +167,9 @@ Control-plane synchronization uses two layers — both are non-recursive `std::m
 
 On Android, `AudioPlayer::onErrorAfterClose` also takes `driverMutex_` because Oboe error callbacks bypass `AudioContext`.
 
-**Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`. Platform drivers share the `CommonPlayer` abstract base (`common/cpp/audioapi/core/CommonPlayer.h`).
+**Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`. `NodeAudioPlayer` (WPT harness) receives the same reference but never opens a render scope.
+
+**Player base class:** all three drivers (`AudioPlayer` on Android, `IOSAudioPlayer`, `NodeAudioPlayer` in `wpt_tests/src/`) derive from `CommonPlayer` (`common/cpp/audioapi/core/CommonPlayer.h`). It owns the shared driver state as protected members: `renderAudio_`, `renderBuffer_` (one render quantum, allocated once in the constructor), `sampleRate_`, `channelCount_`, `currentRenders_`, `context_`, `driverMutex_`, and `isRunning_`. It also takes one constructor signature for every platform, so `AudioContext::initialize()` builds a single `PlatformAudioPlayer` alias. Render through `renderNormalizedQuantum()`, which keeps the output peak-limiting in the player so offline renders are never limited. `AudioPlayerTests.mm` (fabric-example XCTest) hand-copies `IOSAudioPlayer`'s member layout to reach its private members, so any change to `IOSAudioPlayer`'s data members must also be made there.
 
 **Graph producer self-drain:** `Graph::enableProducerSelfDrain()` makes producer threads drain the event channels themselves after each enqueue; `disableProducerSelfDrain()` hands consumption back to the audio/render thread. Both flush the channels internally (no separate `processEvents()` call needed) and serialize with in-flight drains via `selfDrainMutex_`, because two producers can drain concurrently: the JS thread (mutations) and the GC finalizer thread (`removeNode`, which self-drains after its Channel B orphan send — otherwise a finalizer burst with no consumer fills the bounded channel and blocks forever, e.g. at process exit). Enable only when there is no audio/render consumer (realtime: construction + after `suspend`/`close` quiescence; offline: before `startRendering` and after a scheduled suspend); disable *before* starting the audio/render consumer; re-enable if start/resume fails.
 
@@ -194,6 +197,30 @@ bodies must not re-lock `driverMutex_` or `waitForRenderQuiescence()` while `cur
 together in the `ContextPromise` resolve task (CallInvoker), after driver work — so `.state`
 still reads the prior value until settlement (needed when `resume()` then `suspend()` are issued
 back-to-back).
+
+**Context `statechange` event:** `BaseAudioContext::dispatchStateChange(state)` fires
+`AudioEvent::STATE_CHANGE` (payload `{state: "..."}`), deduped against the last dispatched state so
+the two paths that both reach RUNNING (implicit `tryStartDriver` from a source start, then the
+`resume()` promise) emit once. Call it *after* the `jsiPromise->resolve(...)` enqueue in the
+`ContextPromiseResolver` factory lambdas — the registry worker can only enqueue its own
+`invokeAsync` later, so the event's JS task always lands behind the resolve task and its
+microtasks (spec's promise-then-statechange order). Carry the state by value: `getState()` may
+still report SUSPENDED until the driver settles. On the TS side the event handler is
+notification-only — it must NOT write the `state` attribute; a rapid `resume()+suspend()` settles
+both operations before either event arrives, and a handler write would roll the attribute back to
+the stale event's value. The attribute is fully native: `BaseAudioContext::publishedState_` is read
+by the JSI `state` getter and written by `setPublishedState()` **inside each promise's own
+resolution lambda** (the callback passed to `jsiPromise->resolve`, which runs on the JS thread in
+that promise's resolve task) — never from the worker/render thread directly, where a later
+operation's write can land before an earlier operation's continuations read. The statechange event
+must use `EventCaller::dispatchOnJSQueue` (registry `dispatchEventOnJSQueue`, straight
+`invokeAsync`), NOT the worker-queue `dispatch`: FIFO placement right behind its own resolve task
+makes the handler observe each intermediate state instead of only the final one. Do not dispatch
+statechange from mid-lifecycle bodies (`tryStartDriver`) — that enqueues the event before the
+resolve task, so the handler reads the pre-transition state; the resolver's dispatch covers the
+implicit-start path because TS always issues `resume()` for it. Verified with WPT
+`suspend-after-construct` (5/0) and a probe asserting `resume.then→running, event→running,
+suspend.then→suspended, event→suspended`.
 
 ---
 

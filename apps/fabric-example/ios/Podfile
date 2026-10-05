@@ -53,4 +53,21 @@ post_install do |installer|
     :mac_catalyst_enabled => false,
     # :ccache_enabled => true
   )
+
+  # TODO: Remove this loop once a `react-native-svg` release includes
+  # software-mansion/react-native-svg#3022 (`:ios => "15.1"` in RNSVG.podspec)
+  # *and* `pod install` without this block leaves no
+  # IPHONEOS_DEPLOYMENT_TARGET below 15.0 in Pods.xcodeproj (in particular
+  # RNSVG-RNSVGFilters). Xcode 27 rejects targets under 15.0;
+  # react_native_post_install only bumps each pod's native_target, so
+  # CocoaPods resource-bundle targets keep the podspec min (12.4 in 15.15.4).
+  min_ios = min_ios_version_supported
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+      next if current && current.to_f >= min_ios.to_f
+
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios
+    end
+  end
 end

@@ -25,11 +25,11 @@ export default class StressPlaybackController {
     this.ended = false;
     this.source = source;
     source.buffer = buffer;
-    source.onPositionChangedInterval = 50;
-    source.onPositionChanged = (event) => {
+    source.onpositionchangedInterval = 50;
+    source.onpositionchanged = (event) => {
       this.lastPositionSeconds = event.value;
     };
-    source.onEnded = () => {
+    source.onended = () => {
       this.ended = true;
     };
     source.connect(this.context.destination);
@@ -41,8 +41,8 @@ export default class StressPlaybackController {
       return;
     }
 
-    this.source.onEnded = null;
-    this.source.onPositionChanged = null;
+    this.source.onended = null;
+    this.source.onpositionchanged = null;
 
     try {
       this.source.stop(this.context.currentTime);

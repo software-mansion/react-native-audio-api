@@ -1,7 +1,7 @@
 ---
 ColumnLimit: 100
 AccessModifierOffset: -1
-AlignAfterOpenBracket: false
+AlignAfterOpenBracket: true
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: DontAlign

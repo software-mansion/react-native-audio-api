@@ -196,14 +196,14 @@ const Crossfade: FC = () => {
     gainNode2.current.gain.setValueAtTime(visibleTrack !== 1 ? MAX_GAIN : 0, now);
     progress.value = visibleTrack === 1 ? 0 : 1;
 
-    sourceNode1.current.onPositionChanged = (event) => {
+    sourceNode1.current.onpositionchanged = (event) => {
       if (visibleTrackRef.current === 1) {
         setPlaybackPosition(event.value);
       }
     };
     sourceNode1.current.start(now, startOffset);
 
-    sourceNode2.current.onPositionChanged = (event) => {
+    sourceNode2.current.onpositionchanged = (event) => {
       if (visibleTrackRef.current === 2) {
         setPlaybackPosition(event.value);
       }

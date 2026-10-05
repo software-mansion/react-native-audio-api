@@ -8,6 +8,8 @@
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -23,6 +25,7 @@ namespace {
 using audioapi::AudioBuffer;
 using audioapi::AudioBufferHostObject;
 using audioapi::AudioContextHostObject;
+using audioapi::AudioContextLatencyHint;
 using audioapi::AudioEventHandlerRegistry;
 using audioapi::AudioEventHandlerRegistryHostObject;
 using audioapi::IAudioEventHandlerRegistry;
@@ -52,6 +55,24 @@ void cleanupInstallState(void *data) {
   auto *env = reinterpret_cast<napi_env>(data);
   std::lock_guard<std::mutex> lock(gInstallMutex);
   gInstallStates.erase(env);
+}
+
+/// Advertised GC cost of one audio context HostObject. A context owns worker
+/// threads (promise offloader, disposer, per-context pools) and buffers that
+/// live outside the V8 heap; without this hint V8 sees a tiny object and lets
+/// abandoned contexts linger for the rest of the process.
+constexpr size_t kAudioContextExternalMemoryPressure = 8 * 1024 * 1024;
+
+Object makeContextObject(
+    Runtime &rt,
+    const std::shared_ptr<facebook::jsi::HostObject> &hostObject) {
+  auto object = Object::createFromHostObject(rt, hostObject);
+  try {
+    object.setExternalMemoryPressure(rt, kAudioContextExternalMemoryPressure);
+  } catch (...) {
+    // Runtimes without instrumentation support just skip the hint.
+  }
+  return object;
 }
 
 napi_value makeBoolean(napi_env env, bool value) {
@@ -135,7 +156,7 @@ void installOfflineBindings(
             &rt,
             callInvoker);
 
-        return Object::createFromHostObject(rt, hostObject);
+        return makeContextObject(rt, hostObject);
       });
   runtime.global().setProperty(runtime, "createOfflineAudioContext", createOfflineAudioContext);
 
@@ -183,13 +204,21 @@ void installAudioContextBinding(
         }
 
         const auto sampleRate = static_cast<float>(args[0].getNumber());
+
+        auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
+        if (count > 1 && args[1].isString()) {
+          latencyHint = audioapi::js_enum_parser::latencyHintFromString(
+              args[1].getString(rt).utf8(rt));
+        }
+
         auto hostObject = std::make_shared<AudioContextHostObject>(
             sampleRate,
             eventRegistry,
             &rt,
-            callInvoker);
+            callInvoker,
+            latencyHint);
 
-        return Object::createFromHostObject(rt, hostObject);
+        return makeContextObject(rt, hostObject);
       });
 
   runtime.global().setProperty(runtime, "createAudioContext", createAudioContext);

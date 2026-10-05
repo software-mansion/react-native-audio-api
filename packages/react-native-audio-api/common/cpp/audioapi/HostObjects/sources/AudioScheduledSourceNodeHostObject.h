@@ -21,7 +21,7 @@ class AudioScheduledSourceNodeHostObject : public AudioNodeHostObject {
   ~AudioScheduledSourceNodeHostObject() override;
   DELETE_COPY_AND_MOVE(AudioScheduledSourceNodeHostObject);
 
-  JSI_PROPERTY_SETTER_DECL(onEnded);
+  JSI_PROPERTY_SETTER_DECL(onended);
 
   virtual JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);

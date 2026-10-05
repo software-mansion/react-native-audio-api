@@ -18,6 +18,7 @@ import MediaElementAudioSourceNode from './MediaElementAudioSourceNode.web';
 import OscillatorNode from './OscillatorNode.web';
 import PeriodicWave from './PeriodicWave.web';
 import StereoPannerNode from './StereoPannerNode.web';
+import PannerNode from './PannerNode.web';
 import ConstantSourceNode from './ConstantSourceNode.web';
 import WaveShaperNode from './WaveShaperNode.web';
 
@@ -28,16 +29,23 @@ export default class AudioContext implements BaseAudioContext {
   readonly listener: AudioListener;
   readonly sampleRate: number;
 
+  public onerror: (() => void) | null = null;
+
   constructor(options?: AudioContextOptions) {
     if (options?.sampleRate != null) {
       assertSupportedSampleRate(options.sampleRate);
     }
 
-    this.context = new window.AudioContext({ sampleRate: options?.sampleRate });
+    this.context = new window.AudioContext({
+      sampleRate: options?.sampleRate,
+      latencyHint: options?.latencyHint,
+    });
 
     this.sampleRate = this.context.sampleRate;
     this.destination = new AudioDestinationNode(this, this.context.destination);
     this.listener = new AudioListener(this, this.context.listener);
+
+    this.context.addEventListener('error', () => this.onerror?.());
   }
 
   public get currentTime(): number {
@@ -74,6 +82,10 @@ export default class AudioContext implements BaseAudioContext {
 
   createStereoPanner(): StereoPannerNode {
     return new StereoPannerNode(this);
+  }
+
+  createPanner(): PannerNode {
+    return new PannerNode(this);
   }
 
   createBiquadFilter(): BiquadFilterNode {

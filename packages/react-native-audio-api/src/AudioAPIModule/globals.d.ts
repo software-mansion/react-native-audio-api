@@ -7,11 +7,18 @@ import type {
   IAudioBuffer,
   IOfflineAudioContext,
 } from '../jsi-interfaces';
-import type { AudioRecorderOptions } from '../types';
+import type {
+  AudioContextLatencyCategory,
+  AudioRecorderOptions,
+  FileInfo,
+} from '../types';
 
 /* eslint-disable no-var */
 declare global {
-  var createAudioContext: (sampleRate: number) => IAudioContext;
+  var createAudioContext: (
+    sampleRate: number,
+    latencyHint?: AudioContextLatencyCategory
+  ) => IAudioContext;
   var createOfflineAudioContext: (
     numberOfChannels: number,
     length: number,
@@ -19,6 +26,10 @@ declare global {
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
+
+  var isRecordingOngoing: (() => boolean) | undefined;
+
+  var consumeLastRecordingResult: (() => FileInfo | null) | undefined;
 
   var createAudioBuffer: (
     numberOfChannels: number,

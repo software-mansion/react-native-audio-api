@@ -42,7 +42,7 @@ react-native-audio-api/
 │   │       └── include_ffmpeg/         # Headers for FFmpeg
 │   ├── common/cpp/test/
 │   │   ├── CMakeLists.txt              # Standalone test build (no Android/iOS)
-│   │   ├── RunTests.sh                 # Test runner script
+│   │   ├── run-tests.sh / filters.sh    # smoke|extended|full (+ categories, CI path filters)
 │   │   └── src/                        # Google Test files
 │   ├── RNAudioAPI.podspec              # CocoaPods spec for iOS
 │   └── scripts/
@@ -233,10 +233,11 @@ CI intentionally skips native Android/iOS builds (expensive). Use the tiered loc
 
 ```bash
 yarn validate:fast      # CI parity (format, lint, typecheck, enum sync, build, C++ + JS tests)
-yarn validate:graph     # graph tests + ASan (optional; graph path changes)
+yarn validate:cpp       # C++ smoke
+yarn validate:cpp-extended  # C++ extended (all categories)
 yarn validate:android   # yarn workspace … build:android
 yarn validate:ios       # yarn workspace … build:ios (macOS only)
-yarn validate:full      # --fast + --android + --ios
+yarn validate:full      # --fast + C++ extended + --android + --ios
 ```
 
 Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
@@ -246,10 +247,10 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 | Layer | CI (`ci.yml` + `tests.yml`) | Local tiers |
 |---|---|---|
 | TS build (`bob build`) | Yes | `--fast` |
-| C++ test subset (`RunTests.sh`) | Yes | `--fast` |
-| C++ coverage (`RunCoverage.sh`, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
+| C++ smoke (`run-tests.sh`) | Yes | `--fast` |
+| C++ coverage (`run-coverage.sh`, smoke, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
 | Jest | Yes | `--fast` |
-| Graph tests | No, path-filtered in `graph-tests.yml` | `--graph` |
+| Extended C++ by category (e.g. graph) | Path change or manual dispatch in `tests.yml` | `--cpp-extended` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
 | Android JNI C++ + Kotlin | **No** | `--android` |
 | iOS ObjC++ | **No** | `--ios` |
@@ -272,7 +273,7 @@ Android (NDK) and iOS (Clang) cannot share object files — reuse is at the preb
 
 - `--ios` on Linux → skip with message (exit 0)
 - `--android` without `ANDROID_HOME` → fail on explicit `--android`; skip with warning inside `--full`
-- Graph tests are separate from `--full` (slow; CI path-filters them)
+- `--full` includes C++ extended (all categories) after `--fast`’s smoke, so local full covers C++ full + native builds
 
 ### Which tier to run
 
@@ -287,18 +288,12 @@ See the decision table in [post-work-checks](../post-work-checks/SKILL.md).
 
 ### How to run
 ```bash
-yarn test   # from monorepo root — runs RunTests.sh
+yarn test   # Jest + C++ smoke
+yarn workspace react-native-audio-api test:cpp:smoke|extended|full
+yarn workspace react-native-audio-api test:cpp:extended -- graph
 ```
 
-`RunTests.sh` does:
-```bash
-cd packages/react-native-audio-api/common/cpp/test
-cmake -S . -B build -Wno-dev
-cd build && make -j10
-./tests --gtest_print_time=1
-```
-
-The `build/` directory is deleted after each run.
+`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
 
 ### Coverage (Clang / llvm-cov)
 
@@ -307,9 +302,9 @@ yarn workspace react-native-audio-api test:cpp:coverage
 # open packages/react-native-audio-api/common/cpp/test/coverage-html/index.html
 ```
 
-`RunCoverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the same gtest filter as `RunTests.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
+`run-coverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the **smoke** filter from `filters.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
 
-CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM apt packages, separate from the GCC `cpp-tests` job). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. Manual `workflow_dispatch` on `tests.yml` accepts booleans `run_cpp_tests` / `run_cpp_coverage` / `run_js_tests` (default true); PRs always run all three.
+CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM apt packages, separate from the GCC `cpp-smoke-tests` job). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. Manual `workflow_dispatch` on `tests.yml` accepts booleans `run_cpp_smoke_tests` / `run_cpp_coverage` / `run_js_tests` (default true); non-draft PRs always run all three, including when a draft is marked ready for review (`ready_for_review` is listed explicitly because it is not a default `pull_request` type). Extended categories share `cpp-job.yml` and pass `categories`; path-filter YAML is generated by `filters.sh path-filters`.
 
 > **Generated build trees must be named `build*`.** The C++ linters walk the filesystem with `find` and never consult git, so a `.gitignore` entry does not keep generated sources out of them. Exclusion happens by directory name in two places that must stay in sync: `**/build*/**` in `.clang-format-ignore` (used by `format:check:common`) and `-type d -name 'build*' -prune` in `scripts/cpplint.sh`. A CMake binary directory outside that prefix makes the pre-commit hook fail on generated files such as `CMakeFiles/*/CompilerIdCXX/CMakeCXXCompilerId.cpp`. CI never hits this because it checks out a clean tree.
 
@@ -317,6 +312,7 @@ CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.ym
 - Completely standalone — no Gradle, no Xcode, no prebuilt Android libraries needed
 - Sources resolved from `node_modules` (symlinked to `packages/` in yarn workspaces)
 - HostObjects, worklets nodes, AudioContext, and FfmpegDecoder are excluded from the test build
+- HostObject **headers** still compile under `RN_AUDIO_API_TEST`; only their `.cpp` bodies are missing. When a test first links core code that constructs one (e.g. `AudioRecorderCallback` → `AudioBufferHostObject`), the linker fails on the constructor. Fix it with a stub translation unit under `test/src/` that defines just the constructors (see `test/src/AudioBufferHostObjectStub.cpp`), never with an `#if RN_AUDIO_API_TEST` test double inside the production header. The static lib also compiles `jsi/jsi.cpp` so `jsi::HostObject`'s virtuals resolve
 - Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_FFMPEG_DISABLED=1`
 - Google Test auto-fetched via `FetchContent` if not installed locally
 - New test files in `test/src/**/*.cpp` are picked up automatically by glob — no CMakeLists edit needed
@@ -372,6 +368,39 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | New `.cpp` not compiled in tests | Glob picks it up automatically — may need cmake reconfigure | Delete `test/build/` and re-run |
 | iOS compile error `unknown type 'id'` | C++ file included ObjC-only header | Compile that file as ObjC++ (separate subspec with `-x objective-c++`) |
 | `RCT_NEW_ARCH_ENABLED` undefined on Android | Old RN gradle plugin | Ensure `newArchEnabled=true` in app's `gradle.properties` |
+| clangd only: `'React/RCTBridgeModule.h' file not found` in `.mm` files | `compile_commands.json` has no framework search path | See *clangd compile database* below — regenerate with `yarn setup:clangd` |
+
+## clangd compile database
+
+`packages/react-native-audio-api/common/cpp/clangd/` generates the repo-root
+`compile_commands.json` that clangd reads (`yarn setup:clangd`, or
+`yarn setup:clangd:clean` after a native dependency bump). It is editor tooling
+only — it never participates in a real build. See its `SETUP.md`.
+
+The iOS half reuses whatever `pod install` resolved for `apps/fabric-example`,
+reading **both** `HEADER_SEARCH_PATHS` and `FRAMEWORK_SEARCH_PATHS` out of
+`Pods/Target Support Files/Pods-FabricExample/Pods-FabricExample.debug.xcconfig`.
+
+Framework search paths matter because React-Core ships prebuilt as
+`React.xcframework` since RN 0.87: `#import <React/RCTBridgeModule.h>` resolves
+via `-F`, not `-I`, so an `-I`-only database fails every `.mm` that imports
+React. Xcode's own `-F` points at `PODS_XCFRAMEWORKS_BUILD_DIR`, which only
+exists after Xcode has unpacked the slices — the CMakeLists globs the
+`ios-*simulator*` slices inside the `.xcframework` bundles instead, so a bare
+`pod install` suffices.
+
+To check the database rather than guessing at clangd, replay an entry directly:
+
+```bash
+python3 -c "
+import json,shlex,subprocess
+e=[x for x in json.load(open('compile_commands.json')) if x['file'].endswith('ios/AudioAPIModule.mm')][0]
+toks=[t for t in shlex.split(e['command']) if t!='-c']
+subprocess.run(toks[:toks.index('-o')]+toks[toks.index('-o')+2:]+['-fsyntax-only'], cwd=e['directory'])
+"
+```
+
+If that reproduces the error, the database is wrong — not the editor's LSP setup.
 
 ---
 

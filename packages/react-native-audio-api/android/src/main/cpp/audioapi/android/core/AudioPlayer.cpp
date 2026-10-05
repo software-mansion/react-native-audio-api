@@ -4,29 +4,32 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <audioapi/utils/Macros.h>
 
 #include <jni.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <mutex>
 
 namespace audioapi {
 
-AudioPlayer::AudioPlayer(
-    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-    float sampleRate,
-    int channelCount,
-    std::mutex *driverMutex,
-    const std::shared_ptr<AudioContext> &context,
-    std::atomic<uint32_t> &currentRenders)
-    : renderAudio_(renderAudio),
-      currentRenders_(currentRenders),
-      sampleRate_(sampleRate),
-      channelCount_(channelCount),
-      isRunning_(false),
-      driverMutex_(driverMutex),
-      context_(context) {}
+namespace {
+
+PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
+  switch (latencyHint) {
+    case AudioContextLatencyHint::INTERACTIVE:
+      return PerformanceMode::LowLatency;
+    case AudioContextLatencyHint::BALANCED:
+      return PerformanceMode::None;
+    case AudioContextLatencyHint::PLAYBACK:
+      return PerformanceMode::PowerSaving;
+  }
+  return PerformanceMode::LowLatency;
+}
+
+} // namespace
 
 bool AudioPlayer::openAudioStream() {
   std::scoped_lock lock(streamMutex_);
@@ -35,7 +38,7 @@ bool AudioPlayer::openAudioStream() {
   builder.setSharingMode(SharingMode::Exclusive)
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::LowLatency)
+      ->setPerformanceMode(performanceModeFor(latencyHint_))
       ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)
@@ -50,17 +53,20 @@ bool AudioPlayer::openAudioStream() {
     return false;
   }
 
-  buffer_ = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, sampleRate_);
   isInitialized_.store(true, std::memory_order_release);
   return true;
 }
 
+bool AudioPlayer::rebuildStream() {
+  cleanup();
+  return openAudioStream();
+}
+
 bool AudioPlayer::start() {
   std::scoped_lock lock(streamMutex_);
-  if (!isInitialized_.load(std::memory_order_acquire)) {
-    if (!openAudioStream()) {
-      return false;
-    }
+
+  if ((!isInitialized_.load(std::memory_order_acquire)) && (!openAudioStream())) {
+    return false;
   }
 
   if (mStream_ != nullptr) {
@@ -85,6 +91,11 @@ bool AudioPlayer::resume() {
   std::scoped_lock lock(streamMutex_);
   if (isRunning()) {
     return true;
+  }
+
+  // The stream may have been dropped by onErrorAfterClose while suspended.
+  if ((!isInitialized_.load(std::memory_order_acquire)) && (!openAudioStream())) {
+    return false;
   }
 
   if (mStream_ != nullptr) {
@@ -139,34 +150,66 @@ AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numF
     auto framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
     if (isRunning_.load(std::memory_order_acquire)) {
-      renderAudio_(buffer_.get(), framesToProcess);
-      // Peak-normalize the rendered quantum before it reaches the hardware.
-      // This limiting lives in the player (not the destination node) so
-      // offline renders stay spec-accurate.
-      buffer_->normalize();
+      renderNormalizedQuantum(framesToProcess);
     } else {
-      buffer_->zero();
+      renderBuffer_->zero();
     }
 
-    float *destination = buffer + (processedFrames * channelCount_);
+    float *destination = buffer + (static_cast<ptrdiff_t>(processedFrames * channelCount_));
 
-    buffer_->interleaveTo(destination, framesToProcess);
+    renderBuffer_->interleaveTo(destination, framesToProcess);
     processedFrames += framesToProcess;
   }
 
   return DataCallbackResult::Continue;
 }
 
+namespace {
+struct ReentrancyGuard {
+  DELETE_COPY_AND_MOVE(ReentrancyGuard);
+  explicit ReentrancyGuard(bool *f) : flag(f) {
+    *flag = true;
+  }
+  ~ReentrancyGuard() {
+    *flag = false;
+  }
+
+ private:
+  bool *flag;
+};
+} // namespace
+
 void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
-  if (error != oboe::Result::ErrorDisconnected || driverMutex_ == nullptr) {
+  if (driverMutex_ == nullptr) {
+    return;
+  }
+
+  switch (error) {
+    case oboe::Result::ErrorDisconnected:
+    case oboe::Result::ErrorTimeout:
+    case oboe::Result::ErrorInternal:
+    case oboe::Result::ErrorNoService:
+      break;
+    default:
+      return;
+  }
+
+  // Reentrancy guard - prevent recursive calls to onErrorAfterClose.
+  static thread_local bool isInsideOnError = false;
+  if (isInsideOnError) {
+    return;
+  }
+  ReentrancyGuard guard(&isInsideOnError);
+
+  auto context = context_.lock();
+  if (context == nullptr) {
     return;
   }
 
   // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
   std::scoped_lock lock(*driverMutex_, streamMutex_);
 
-  auto context = context_.lock();
-  if (context == nullptr || context->isClosed()) {
+  if (context->isClosed()) {
     return;
   }
 
@@ -176,10 +219,30 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
     return;
   }
 
-  cleanup();
-  if (openAudioStream()) {
-    resume();
+  // Check if the stream was expected to be running when the error occurred
+  const bool wasRunning = isRunning_.load(std::memory_order_acquire);
+
+  // Best effort rebuild; a suspended context keeps the rebuilt stream paused until resume().
+  if (error == oboe::Result::ErrorDisconnected && rebuildStream()) {
+    if (!wasRunning) {
+      return;
+    }
+    if (mStream_->requestStart() == oboe::Result::OK) {
+      isRunning_.store(true, std::memory_order_release);
+      return;
+    }
   }
+
+  isRunning_.store(false, std::memory_order_release);
+
+  if (!wasRunning) {
+    // Nothing was playing, so there is no failure to report: drop the dead stream
+    // and let resume() open a new one.
+    cleanup();
+    return;
+  }
+
+  context->onStreamFail();
 }
 
 double AudioPlayer::getBaseLatency() const {

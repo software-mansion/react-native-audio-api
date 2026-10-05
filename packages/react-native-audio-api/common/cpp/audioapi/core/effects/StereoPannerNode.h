@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <memory>
+#include <optional>
 
 namespace audioapi {
 
@@ -21,7 +22,7 @@ class StereoPannerNode : public AudioNode {
   [[nodiscard]] std::shared_ptr<DSPAudioBuffer> getOutputBuffer() const override;
   [[nodiscard]] std::shared_ptr<DSPAudioBuffer> getNegotiatedBuffer() const override;
   void setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) override;
-  [[nodiscard]] size_t getUpstreamChannelCount(size_t negotiatedChannelCount) const override;
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
  protected:
   void processNode(int framesToProcess) override;
@@ -30,6 +31,8 @@ class StereoPannerNode : public AudioNode {
   }
 
  private:
+  static constexpr size_t kOutputChannelNumber = 2;
+
   const std::shared_ptr<AudioParam> panParam_;
   const std::shared_ptr<DSPAudioBuffer> outputBuffer_;
 };
