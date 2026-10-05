@@ -1,7 +1,7 @@
 #ifdef RN_AUDIO_API_NODE
 #include "NodeAudioPlayer.h"
 #elif defined(ANDROID)
-#include <audioapi/android/core/AudioPlayer.h>
+#include <audioapi/android/core/AndroidAudioPlayer.h>
 #else
 #include <audioapi/ios/core/IOSAudioPlayer.h>
 #endif
@@ -17,7 +17,7 @@ namespace audioapi {
 #ifdef RN_AUDIO_API_NODE
 using PlatformAudioPlayer = NodeAudioPlayer;
 #elif defined(ANDROID)
-using PlatformAudioPlayer = AudioPlayer;
+using PlatformAudioPlayer = AndroidAudioPlayer;
 #else
 using PlatformAudioPlayer = IOSAudioPlayer;
 #endif

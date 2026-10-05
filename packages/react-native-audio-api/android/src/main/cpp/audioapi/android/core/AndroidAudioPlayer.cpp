@@ -1,5 +1,5 @@
 #include <android/log.h>
-#include <audioapi/android/core/AudioPlayer.h>
+#include <audioapi/android/core/AndroidAudioPlayer.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/CurrentRenderScope.h>
@@ -31,8 +31,7 @@ PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
 
 } // namespace
 
-bool AudioPlayer::openAudioStream() {
-  std::scoped_lock lock(streamMutex_);
+bool AndroidAudioPlayer::openAudioStreamLocked() {
   AudioStreamBuilder builder;
 
   builder.setSharingMode(SharingMode::Exclusive)
@@ -49,7 +48,10 @@ bool AudioPlayer::openAudioStream() {
   auto result = builder.openStream(mStream_);
   if (result != oboe::Result::OK || mStream_ == nullptr) {
     __android_log_print(
-        ANDROID_LOG_ERROR, "AudioPlayer", "Failed to open stream: %s", oboe::convertToText(result));
+        ANDROID_LOG_ERROR,
+        "AndroidAudioPlayer",
+        "Failed to open stream: %s",
+        oboe::convertToText(result));
     return false;
   }
 
@@ -57,28 +59,28 @@ bool AudioPlayer::openAudioStream() {
   return true;
 }
 
-bool AudioPlayer::rebuildStream() {
-  cleanup();
-  return openAudioStream();
+bool AndroidAudioPlayer::rebuildStreamLocked() {
+  cleanupLocked();
+  return openAudioStreamLocked();
 }
 
-bool AudioPlayer::start() {
+bool AndroidAudioPlayer::startStreamLocked() {
+  const bool started = mStream_ != nullptr && mStream_->requestStart() == oboe::Result::OK;
+  isRunning_.store(started, std::memory_order_release);
+  return started;
+}
+
+bool AndroidAudioPlayer::start() {
   std::scoped_lock lock(streamMutex_);
 
-  if ((!isInitialized_.load(std::memory_order_acquire)) && (!openAudioStream())) {
+  if ((!isInitialized_.load(std::memory_order_acquire)) && (!openAudioStreamLocked())) {
     return false;
   }
 
-  if (mStream_ != nullptr) {
-    auto result = mStream_->requestStart() == oboe::Result::OK;
-    isRunning_.store(result, std::memory_order_release);
-    return result;
-  }
-
-  return false;
+  return startStreamLocked();
 }
 
-void AudioPlayer::stop() {
+void AndroidAudioPlayer::stop() {
   std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
@@ -87,27 +89,28 @@ void AudioPlayer::stop() {
   }
 }
 
-bool AudioPlayer::resume() {
+bool AndroidAudioPlayer::resume() {
   std::scoped_lock lock(streamMutex_);
-  if (isRunning()) {
+  if (isRunningLocked()) {
     return true;
   }
 
   // The stream may have been dropped by onErrorAfterClose while suspended.
-  if ((!isInitialized_.load(std::memory_order_acquire)) && (!openAudioStream())) {
+  if (!isInitialized_.load(std::memory_order_acquire) && !openAudioStreamLocked()) {
     return false;
   }
 
-  if (mStream_ != nullptr) {
-    auto result = mStream_->requestStart() == oboe::Result::OK;
-    isRunning_.store(result, std::memory_order_release);
-    return result;
+  if (startStreamLocked()) {
+    return true;
   }
 
-  return false;
+  // Oboe reports a disconnect only through the callback thread, which a paused
+  // stream does not have. Thus it is impossible to observe, such a change.
+  // Because of that we attempt to rebuild the stream and start it again, and if that fails, we return false.
+  return rebuildStreamLocked() && startStreamLocked();
 }
 
-void AudioPlayer::suspend() {
+void AndroidAudioPlayer::suspend() {
   std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
     isRunning_.store(false, std::memory_order_release);
@@ -115,8 +118,12 @@ void AudioPlayer::suspend() {
   }
 }
 
-void AudioPlayer::cleanup() {
+void AndroidAudioPlayer::cleanup() {
   std::scoped_lock lock(streamMutex_);
+  cleanupLocked();
+}
+
+void AndroidAudioPlayer::cleanupLocked() {
   isInitialized_.store(false, std::memory_order_release);
 
   if (mStream_ != nullptr) {
@@ -125,14 +132,18 @@ void AudioPlayer::cleanup() {
   }
 }
 
-bool AudioPlayer::isRunning() const {
+bool AndroidAudioPlayer::isRunning() const {
   std::scoped_lock lock(streamMutex_);
+  return isRunningLocked();
+}
+
+bool AndroidAudioPlayer::isRunningLocked() const {
   return mStream_ != nullptr && mStream_->getState() == oboe::StreamState::Started &&
       isRunning_.load(std::memory_order_acquire);
 }
 
 DataCallbackResult
-AudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
+AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return DataCallbackResult::Continue;
   }
@@ -179,7 +190,7 @@ struct ReentrancyGuard {
 };
 } // namespace
 
-void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
+void AndroidAudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
   if (driverMutex_ == nullptr) {
     return;
   }
@@ -207,7 +218,8 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   }
 
   // Serialize with start()/resume()/suspend()/close() on the JS / promise-pool threads.
-  std::scoped_lock lock(*driverMutex_, streamMutex_);
+  std::scoped_lock driverLock(*driverMutex_);
+  std::unique_lock streamLock(streamMutex_);
 
   if (context->isClosed()) {
     return;
@@ -223,14 +235,9 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   const bool wasRunning = isRunning_.load(std::memory_order_acquire);
 
   // Best effort rebuild; a suspended context keeps the rebuilt stream paused until resume().
-  if (error == oboe::Result::ErrorDisconnected && rebuildStream()) {
-    if (!wasRunning) {
-      return;
-    }
-    if (mStream_->requestStart() == oboe::Result::OK) {
-      isRunning_.store(true, std::memory_order_release);
-      return;
-    }
+  if (error == oboe::Result::ErrorDisconnected && rebuildStreamLocked() &&
+      (!wasRunning || startStreamLocked())) {
+    return;
   }
 
   isRunning_.store(false, std::memory_order_release);
@@ -238,16 +245,19 @@ void AudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result erro
   if (!wasRunning) {
     // Nothing was playing, so there is no failure to report: drop the dead stream
     // and let resume() open a new one.
-    cleanup();
+    cleanupLocked();
     return;
   }
 
+  // onStreamFail() stops the player through the public stop(), which takes streamMutex_.
+  streamLock.unlock();
   context->onStreamFail();
 }
 
-double AudioPlayer::getBaseLatency() const {
+double AndroidAudioPlayer::getBaseLatency() const {
   std::scoped_lock lock(streamMutex_);
-  if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) || !isRunning()) {
+  if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) ||
+      !isRunningLocked()) {
     return 0.0;
   }
 
@@ -264,9 +274,10 @@ double AudioPlayer::getBaseLatency() const {
   return static_cast<double>(RENDER_QUANTUM_SIZE) / static_cast<double>(sampleRate_);
 }
 
-double AudioPlayer::getOutputLatency() const {
+double AndroidAudioPlayer::getOutputLatency() const {
   std::scoped_lock lock(streamMutex_);
-  if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) || !isRunning()) {
+  if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) ||
+      !isRunningLocked()) {
     return 0.0;
   }
 
