@@ -10,6 +10,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace audioapi {
@@ -26,10 +27,12 @@ class RecorderAdapterNode : public AudioNode {
   /// @brief Initialize the RecorderAdapterNode with a buffer size and channel count.
   /// @note This method should be called ONLY ONCE when the buffer size is known.
   /// @param bufferSize The size of the buffer to be used.
-  /// @param channelCount The number of channels.
+  /// @param channelCount The number of channels the recorder delivers; becomes the output channel number.
   /// @param sampleRate The recorder's native sample rate.
   void init(size_t bufferSize, int channelCount, float sampleRate);
   void adapterCleanup();
+
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
   // TODO: CircularOverflowableAudioBuffer
   std::vector<std::shared_ptr<CircularOverflowableAudioArray>> buff_;

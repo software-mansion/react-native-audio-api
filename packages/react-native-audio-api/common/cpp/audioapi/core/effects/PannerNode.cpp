@@ -49,7 +49,7 @@ PannerNode::PannerNode(
       outputBuffer_(
           std::make_shared<DSPAudioBuffer>(
               RENDER_QUANTUM_SIZE,
-              channelCount_,
+              kOutputChannelNumber,
               context->getSampleRate())) {}
 
 void PannerNode::processNode(int framesToProcess) {

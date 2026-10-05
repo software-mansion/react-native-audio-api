@@ -117,17 +117,18 @@ bool AudioFileSourceNode::initDecoder(
     return false;
   }
 
-  channelCount_ = decoderState_->channelCount.load();
+  outputChannelNumber_ = decoderState_->channelCount.load();
   sampleRate_ = decoderState_->sampleRate;
   duration_ = decoderState_->duration;
 
   audioBuffer_ = std::make_shared<DSPAudioBuffer>(
-      static_cast<size_t>(RENDER_QUANTUM_SIZE), channelCount_, context->getSampleRate());
-  wsolaStretcher_.configure(static_cast<size_t>(channelCount_), static_cast<float>(sampleRate_));
+      static_cast<size_t>(RENDER_QUANTUM_SIZE), outputChannelNumber_, context->getSampleRate());
+  wsolaStretcher_.configure(
+      static_cast<size_t>(outputChannelNumber_), static_cast<float>(sampleRate_));
   playbackRateBuffer_ = std::make_shared<DSPAudioBuffer>(
       std::max(
           static_cast<size_t>(DecoderData::MAX_FRAMES), wsolaStretcher_.getRequiredInputFrames()),
-      channelCount_,
+      outputChannelNumber_,
       context->getSampleRate());
 
   return true;
@@ -173,7 +174,7 @@ void AudioFileSourceNode::stashPendingDecoderChunk(
   }
 
   const size_t remaining = chunk.size - consumedFrames;
-  const auto channels = static_cast<size_t>(channelCount_);
+  const auto channels = static_cast<size_t>(outputChannelNumber_);
 
   pendingDecoderChunk_.state = chunk.state;
   pendingDecoderChunk_.timestamp = chunk.timestamp;
@@ -196,7 +197,7 @@ void AudioFileSourceNode::consumePendingDecoderChunkFront(size_t consumedFrames)
   }
 
   const size_t remaining = pendingDecoderChunk_.size - consumedFrames;
-  const auto channels = static_cast<size_t>(channelCount_);
+  const auto channels = static_cast<size_t>(outputChannelNumber_);
 
   std::memmove(
       pendingDecoderChunk_.interleavedBuffer.data(),
@@ -231,7 +232,8 @@ bool AudioFileSourceNode::ensurePlaybackRateBufferSize(size_t frames) {
   if (playbackRateBuffer_ == nullptr || playbackRateBuffer_->getSize() < frames) {
     const float bufferSampleRate =
         audioBuffer_ != nullptr ? audioBuffer_->getSampleRate() : static_cast<float>(sampleRate_);
-    playbackRateBuffer_ = std::make_shared<DSPAudioBuffer>(frames, channelCount_, bufferSampleRate);
+    playbackRateBuffer_ =
+        std::make_shared<DSPAudioBuffer>(frames, outputChannelNumber_, bufferSampleRate);
   }
 
   return playbackRateBuffer_ != nullptr;
@@ -482,7 +484,7 @@ size_t AudioFileSourceNode::appendFromInterleaved(
     return 0;
   }
 
-  const auto channels = static_cast<size_t>(channelCount_);
+  const auto channels = static_cast<size_t>(outputChannelNumber_);
   playbackRateBuffer_->deinterleaveFrom(
       interleaved + startFrame * channels, totalInputFrames, frames);
 
@@ -608,7 +610,7 @@ size_t AudioFileSourceNode::renderWithoutPitchPreservation(
       ? static_cast<float>(inputFrames - 1) / static_cast<float>(outputFrames - 1)
       : 0.0f;
 
-  for (size_t channel = 0; channel < static_cast<size_t>(channelCount_); ++channel) {
+  for (size_t channel = 0; channel < static_cast<size_t>(outputChannelNumber_); ++channel) {
     const float *input = playbackRateBuffer_->getChannel(channel)->begin();
     float *output = processingBuffer->getChannel(channel)->begin();
 

@@ -25,11 +25,6 @@ DelayNodeHostObject::DelayNodeHostObject(
   delayTimeParam_ =
       std::make_shared<AudioParamHostObject>(graph_, node_, delayNode_->getDelayTimeParam());
 
-  auto delayBuffer = std::make_shared<AudioBuffer>(
-      static_cast<size_t>(options.maxDelayTime * context->getSampleRate() + 1),
-      channelCount_,
-      context->getSampleRate());
-
   // order has to be preserved because adding cycle would not change their order in the graph
   delayReaderHostNode_ =
       std::make_shared<DelayReaderHostNode>(graph_, std::move(delayNode_->delayReader_));
@@ -47,12 +42,12 @@ DelayNodeHostObject::DelayNodeHostObject(
   addGetters(JSI_EXPORT_PROPERTY_GETTER(DelayNodeHostObject, delayTime));
 }
 
-std::shared_ptr<utils::graph::HostNode> DelayNodeHostObject::getInput(int /*outputIndex*/) {
-  return delayReaderHostNode_;
+std::shared_ptr<utils::graph::HostNode> DelayNodeHostObject::getInput(int /*inputIndex*/) {
+  return delayWriterHostNode_;
 }
 
-std::shared_ptr<utils::graph::HostNode> DelayNodeHostObject::getOutput(int /*inputIndex*/) {
-  return delayWriterHostNode_;
+std::shared_ptr<utils::graph::HostNode> DelayNodeHostObject::getOutput(int /*outputIndex*/) {
+  return delayReaderHostNode_;
 }
 
 JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
@@ -60,11 +55,9 @@ JSI_PROPERTY_GETTER_IMPL(DelayNodeHostObject, delayTime) {
 }
 
 size_t DelayNodeHostObject::getMemoryPressure() const {
-  const float maxDelaySeconds = delayNode_->getDelayTimeParam()->getMaxValue();
-  const float sampleRate = delayNode_->getContextSampleRate();
-  // The delay line ring buffer dominates: (maxDelay * sr + 1) frames * channels * float.
+  // The delay line ring buffer dominates: ring frames * channels * float.
   const size_t ringBytes =
-      static_cast<size_t>(maxDelaySeconds * sampleRate + 1) * channelCount_ * sizeof(float);
+      delayNode_->delayLine_->getBuffer()->getSize() * channelCount_ * sizeof(float);
   // Base `audioBuffer_` from AudioNodeHostObject::getMemoryPressure(), plus
   // the reader/writer AudioNode sub-nodes (each owns its own RQ audioBuffer_)
   // and the delayTime AudioParam.
