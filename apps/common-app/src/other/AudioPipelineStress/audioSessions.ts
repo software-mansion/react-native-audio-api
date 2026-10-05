@@ -1,21 +1,21 @@
 import { AudioManager } from 'react-native-audio-api';
 
 export async function activatePlaybackSession(): Promise<void> {
-  AudioManager.setAudioSessionOptions({
+  AudioManager.setSystemOptions({
     iosCategory: 'playback',
     iosMode: 'default',
     iosOptions: [],
   });
 
-  await AudioManager.setAudioSessionActivity(true);
+  await AudioManager.setSystemActivity(true);
 }
 
 export async function activateRecordingSession(): Promise<void> {
-  AudioManager.setAudioSessionOptions({
+  AudioManager.setSystemOptions({
     iosCategory: 'playAndRecord',
     iosMode: 'default',
     iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
   });
 
-  await AudioManager.setAudioSessionActivity(true);
+  await AudioManager.setSystemActivity(true);
 }

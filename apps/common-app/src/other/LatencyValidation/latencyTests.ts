@@ -517,7 +517,7 @@ export async function stopLoopbackAudioIO(
   }
 
   if (Platform.OS !== 'web') {
-    await AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setSystemActivity(false);
   }
 }
 

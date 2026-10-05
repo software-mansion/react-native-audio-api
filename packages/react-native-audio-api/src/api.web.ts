@@ -60,7 +60,7 @@ export type {
   IOSCategory,
   IOSMode,
   IOSOption,
-  SessionOptions,
+  SystemOptions,
   PermissionStatus,
 } from './system/types';
 

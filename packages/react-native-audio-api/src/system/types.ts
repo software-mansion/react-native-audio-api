@@ -40,7 +40,11 @@ export type AudioFocusType =
   | 'gainTransientExclusive'
   | 'gainTransientMayDuck';
 
-export interface SessionOptions {
+export type AndroidAudioMode = 'inCommunication';
+
+export type CommunicationDevice = 'speaker' | 'earpiece' | 'systemDefault';
+
+export interface SystemOptions {
   iosMode?: IOSMode;
   iosOptions?: IOSOption[];
   iosCategory?: IOSCategory;
@@ -53,6 +57,16 @@ export interface SessionOptions {
    * "Now playing" controls.
    */
   iosNotifyOthersOnDeactivation?: boolean;
+  /**
+   * Opts into Android's communication audio mode. Android 12 (API 31) or later
+   * is required when this option is used.
+   */
+  androidMode?: AndroidAudioMode;
+  /**
+   * Initial Android communication-device preference. `systemDefault` clears an
+   * explicit preference and lets Android choose the route.
+   */
+  androidCommunicationDevice?: CommunicationDevice;
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
@@ -74,8 +88,8 @@ export interface AudioDevicesInfo {
 
 export interface IAudioManager {
   getDevicePreferredSampleRate(): number;
-  setAudioSessionActivity(enabled: boolean): Promise<void>;
-  setAudioSessionOptions(options: SessionOptions): void;
+  setSystemActivity(enabled: boolean): Promise<void>;
+  setSystemOptions(options: SystemOptions): void;
   disableSessionManagement(): void;
   observeAudioInterruptions(enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
@@ -91,4 +105,6 @@ export interface IAudioManager {
   checkNotificationPermissions(): Promise<PermissionStatus>;
   getDevicesInfo(): Promise<AudioDevicesInfo>;
   setInputDevice(deviceId: string): Promise<void>;
+  setCommunicationDevice(device: CommunicationDevice): Promise<void>;
+  getCommunicationDevice(): Promise<AudioDeviceInfo | null>;
 }

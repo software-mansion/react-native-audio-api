@@ -38,11 +38,11 @@ export default function PedalBoard() {
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
-      AudioManager.setAudioSessionOptions({
+      AudioManager.setSystemOptions({
         iosCategory: 'playAndRecord',
         iosMode: 'default',
       })
-      AudioManager.setAudioSessionActivity(true);
+      AudioManager.setSystemActivity(true);
 
       try {
         // Load audio file
