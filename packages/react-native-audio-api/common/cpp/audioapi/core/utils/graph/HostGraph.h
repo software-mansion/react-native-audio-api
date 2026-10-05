@@ -63,7 +63,7 @@ class HostGraph {
   /// visited in that pass stamp `term` with the current value. A node is
   /// considered resolved for the pass when `term == channelLayoutTerm_`.
   ///
-  /// During the pass, `upstreamChannelCount` stores how many channels this
+  /// During the pass, `outputChannelNumber` stores how many channels this
   /// node will present on upstream connections (toward AudioDestinationNode)
   /// after negotiation — including overrides such as StereoPanner's fixed
   /// stereo output. Downstream nodes read these pending widths from their
@@ -72,15 +72,15 @@ class HostGraph {
   /// consistent layouts. Values are never read on the audio thread.
   struct ChannelLayoutState {
     size_t term = 0;
-    size_t upstreamChannelCount = 0;
+    size_t outputChannelNumber = 0;
 
     [[nodiscard]] bool isResolvedFor(size_t currentTerm) const {
       return term == currentTerm;
     }
 
-    void setResolved(size_t currentTerm, size_t count) {
+    void setResolved(size_t currentTerm, size_t resolvedOutputChannelNumber) {
       term = currentTerm;
-      upstreamChannelCount = count;
+      outputChannelNumber = resolvedOutputChannelNumber;
     }
   };
 
@@ -159,7 +159,7 @@ class HostGraph {
   /// @return single AGEvent that removes all inputs on the AudioGraph side, or NODE_NOT_FOUND.
   Result<AGEvent, GraphError> removeAllEdges(HostVertex *from);
 
-  /// @brief Recomputes channel-count negotiation starting at `node` (and
+  /// @brief Recomputes channel negotiation starting at `node` (and
   /// cascading downstream toward AudioDestinationNode), without any structural
   /// change. Used when a node's `channelCount` / `channelCountMode` attribute
   /// changes after construction. The returned AGEvent applies the negotiated

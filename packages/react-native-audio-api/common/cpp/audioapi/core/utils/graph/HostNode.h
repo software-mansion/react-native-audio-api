@@ -81,7 +81,7 @@ class HostNode {
   /// @return Ok on success, Err on not-found
   Result<NoneType, GraphError> disconnect();
 
-  /// @brief Recomputes channel-count negotiation for this node (cascading
+  /// @brief Recomputes channel negotiation for this node (cascading
   /// downstream) after a `channelCount` / `channelCountMode` change.
   /// @return Ok on success, Err on not-found
   Result<NoneType, GraphError> renegotiate();

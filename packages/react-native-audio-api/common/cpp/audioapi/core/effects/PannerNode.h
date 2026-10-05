@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
@@ -18,9 +19,6 @@ class PannerNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       AudioListener *listener,
       const PannerOptions &options);
-
-  ~PannerNode() override = default;
-
   [[nodiscard]] std::shared_ptr<AudioParam> getPositionXParam() const {
     return positionXParam_;
   }
@@ -105,8 +103,8 @@ class PannerNode : public AudioNode {
   void setNegotiatedBuffer(const std::shared_ptr<DSPAudioBuffer> &buffer) override {
     audioBuffer_ = buffer;
   }
-  [[nodiscard]] size_t getUpstreamChannelCount(size_t /*negotiatedChannelCount*/) const override {
-    return outputBuffer_->getNumberOfChannels();
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override {
+    return kOutputChannelNumber;
   }
 
  protected:
@@ -116,6 +114,8 @@ class PannerNode : public AudioNode {
   }
 
  private:
+  static constexpr size_t kOutputChannelNumber = 2;
+
   AudioListener *listener_ = nullptr;
 
   const std::shared_ptr<AudioParam> positionXParam_;

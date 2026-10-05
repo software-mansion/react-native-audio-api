@@ -44,6 +44,10 @@ Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 | `buffer` | [`AudioBuffer`](../sources/audio-buffer.mdx) | Associated AudioBuffer. Setting it throws `NotSupportedError` unless the buffer has 1, 2 or 4 channels and the same sample rate as the context. |
 | `normalize` | `boolean` | Whether the impulse response from the buffer will be scaled by an equal-power normalization when the buffer attribute is set. |
 
+:::info Channel constraints
+The input is mixed down to mono or stereo before convolution. `channelCount` cannot be set above `2` and `channelCountMode` cannot be set to `'max'`; either attempt, in the constructor options or via the setter, throws `NotSupportedError`.
+:::
+
 :::caution
 Linear convolution is a heavy computational process, so if your audio has some weird artefacts that should not be there, try to decrease the duration of impulse response buffer.
 :::
