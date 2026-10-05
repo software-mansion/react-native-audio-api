@@ -57,7 +57,11 @@ class ArtworkLoader(
     targetSizePx: Int,
     onResult: (Bitmap?) -> Unit,
   ): Handle {
-    val imagePipeline = imagePipelineOrNull() ?: return deliverNothing(onResult)
+    val imagePipeline =
+      imagePipelineOrNull() ?: run {
+        postToNativeModulesQueue { onResult(null) }
+        return Handle {}
+      }
 
     val request =
       ImageRequestBuilder
@@ -72,11 +76,6 @@ class ArtworkLoader(
         ).build()
 
     return Fetch(imagePipeline.fetchDecodedImage(request, null), uri, onResult).also { it.start() }
-  }
-
-  private fun deliverNothing(onResult: (Bitmap?) -> Unit): Handle {
-    postToNativeModulesQueue { onResult(null) }
-    return Handle {}
   }
 
   private fun postToNativeModulesQueue(action: () -> Unit) {
