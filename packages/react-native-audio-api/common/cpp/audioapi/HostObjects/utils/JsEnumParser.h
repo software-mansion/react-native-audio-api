@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/analysis/AnalyserNode.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/core/types/BiquadFilterType.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
@@ -29,4 +30,6 @@ std::string distanceModelToString(DistanceModelType model);
 DistanceModelType distanceModelFromString(const std::string &model);
 ChannelInterpretation channelInterpretationFromString(const std::string &interpretation);
 std::string contextStateToString(ContextState state);
+/// Interactive, the spec default, for an unrecognised string; a browser would throw a TypeError.
+AudioContextLatencyHint latencyHintFromString(const std::string &hint);
 } // namespace audioapi::js_enum_parser

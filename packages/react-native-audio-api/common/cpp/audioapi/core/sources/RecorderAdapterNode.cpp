@@ -21,6 +21,10 @@ RecorderAdapterNode::RecorderAdapterNode(const std::shared_ptr<BaseAudioContext>
   isInitialized_.store(false, std::memory_order_release);
 }
 
+std::optional<size_t> RecorderAdapterNode::getOutputChannelNumber() const {
+  return outputChannelNumber_.load(std::memory_order_acquire);
+}
+
 void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (isInitialized_.load(std::memory_order_acquire) || context == nullptr) {
@@ -28,11 +32,11 @@ void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
   }
 
   const float sampleRate = streamFormat.layout.sampleRate;
-  channelCount_ = streamFormat.layout.channelCount;
+  outputChannelNumber_ = streamFormat.layout.channelCount;
 
-  buff_.resize(channelCount_);
+  buff_.resize(outputChannelNumber_);
 
-  for (int i = 0; i < channelCount_; ++i) {
+  for (int i = 0; i < outputChannelNumber_; ++i) {
     buff_[i] = std::make_shared<CircularOverflowableAudioArray>(streamFormat.maxFramesPerBuffer);
   }
 
@@ -40,21 +44,21 @@ void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
   needsResampling_ = static_cast<int>(sampleRate) != static_cast<int>(contextSampleRate);
 
   adapterOutputBuffer_ =
-      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, channelCount_, contextSampleRate);
+      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, outputChannelNumber_, contextSampleRate);
 
   if (needsResampling_) {
     inputChunkSize_ =
         static_cast<size_t>(std::ceil(RENDER_QUANTUM_SIZE * sampleRate / contextSampleRate)) + 4;
 
     resampler_ = std::make_unique<r8b::MultiChannelResampler>(
-        sampleRate, contextSampleRate, channelCount_, static_cast<int>(inputChunkSize_));
+        sampleRate, contextSampleRate, outputChannelNumber_, static_cast<int>(inputChunkSize_));
 
     const int maxOutLen = resampler_->getMaxOutLen();
 
-    resamplerInputBuffer_ = AudioBuffer(inputChunkSize_, channelCount_, sampleRate);
+    resamplerInputBuffer_ = AudioBuffer(inputChunkSize_, outputChannelNumber_, sampleRate);
     resamplerOutputBuffer_ =
-        AudioBuffer(static_cast<size_t>(maxOutLen), channelCount_, contextSampleRate);
-    overflowBuffer_ = AudioBuffer(2 * maxOutLen, channelCount_, contextSampleRate);
+        AudioBuffer(static_cast<size_t>(maxOutLen), outputChannelNumber_, contextSampleRate);
+    overflowBuffer_ = AudioBuffer(2 * maxOutLen, outputChannelNumber_, contextSampleRate);
     overflowSize_ = 0;
   }
 
@@ -115,7 +119,7 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
 
     if (toCopy < overflowSize_) {
       const size_t remaining = overflowSize_ - toCopy;
-      for (int ch = 0; ch < channelCount_; ++ch) {
+      for (int ch = 0; ch < outputChannelNumber_; ++ch) {
         overflowBuffer_[ch].copyWithin(toCopy, 0, remaining);
       }
     }
@@ -149,7 +153,7 @@ void RecorderAdapterNode::processResampled(int framesToProcess) {
 void RecorderAdapterNode::readFrames(AudioBuffer &target, const size_t framesToRead) {
   target.zero();
 
-  for (size_t channel = 0; channel < channelCount_; ++channel) {
+  for (size_t channel = 0; channel < outputChannelNumber_; ++channel) {
     buff_[channel]->read(*target.getChannel(channel), framesToRead);
   }
 }

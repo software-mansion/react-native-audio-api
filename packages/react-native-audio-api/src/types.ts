@@ -45,8 +45,19 @@ export type OscillatorType =
   | 'triangle'
   | 'custom';
 
+export type AudioContextLatencyCategory =
+  | 'balanced'
+  | 'interactive'
+  | 'playback';
+
 export interface AudioContextOptions {
   sampleRate?: number;
+  /**
+   * What the context should optimize its output stream for; defaults to
+   * `'interactive'`. See the platform table in the docs. Numeric hints are not
+   * supported yet.
+   */
+  latencyHint?: AudioContextLatencyCategory;
 }
 
 export interface OfflineAudioContextOptions {

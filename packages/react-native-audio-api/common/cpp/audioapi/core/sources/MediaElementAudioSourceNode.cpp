@@ -33,6 +33,10 @@ bool MediaElementAudioSourceNode::canBeDestructed() const {
   return fileSourceNodePaused();
 }
 
+std::optional<size_t> MediaElementAudioSourceNode::getOutputChannelNumber() const {
+  return outputChannelNumber_.load(std::memory_order_acquire);
+}
+
 void MediaElementAudioSourceNode::onOutputsDisconnected() {
   if (fileSource_ != nullptr) {
     fileSource_->releaseMediaElementSource(bindingId_);

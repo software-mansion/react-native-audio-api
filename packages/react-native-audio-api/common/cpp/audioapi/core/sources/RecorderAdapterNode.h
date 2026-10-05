@@ -11,6 +11,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace audioapi {
@@ -33,6 +34,8 @@ class RecorderAdapterNode : public AudioNode {
   /// Recorder input thread, under the recorder's adapter lock. @p channels holds one pointer per
   /// channel the node was initialized with. A burst larger than the init buffer size is dropped.
   void writeFrames(const float *const *channels, size_t numFrames);
+
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
   // TODO: CircularOverflowableAudioBuffer
   std::vector<std::shared_ptr<CircularOverflowableAudioArray>> buff_;
