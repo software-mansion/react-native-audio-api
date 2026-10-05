@@ -740,7 +740,7 @@ OpenEncoderResult AndroidEncoder::open(
   }
 
   std::string err =
-      backend_->open(settings_.stream, filePath, settings_.encoding, outputSpec, outputLayout_);
+      backend_->open(settings_.fileLayout, filePath, settings_.encoding, outputSpec, outputLayout_);
   if (!err.empty()) {
     backend_.reset();
     return Err(err);

@@ -9,6 +9,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <tuple>
 
@@ -18,11 +19,14 @@ using OpenEncoderResult = Result<std::string, std::string>;
 using EncodeResult = Result<size_t, std::string>;
 using CloseEncoderResult = Result<std::tuple<double, double>, std::string>;
 
+class AudioEncoder;
+using CreateEncoderResult = Result<std::unique_ptr<AudioEncoder>, std::string>;
+
 /// What an encoder writes. The rest of AudioFileProperties (where the file goes, how a
 /// recording rotates) is the writer's business, so encoders never see it.
 struct EncoderSettings {
   /// Sample rate and channel count of the file; the encoder converts its input to them.
-  AudioLayout stream;
+  AudioLayout fileLayout;
   AudioFileProperties::EncodingConfig encoding;
 };
 
@@ -63,7 +67,7 @@ class AudioEncoder {
   }
 
   [[nodiscard]] double getEncodedDurationSeconds() const {
-    const double sampleRate = static_cast<double>(settings_.stream.sampleRate);
+    const double sampleRate = static_cast<double>(settings_.fileLayout.sampleRate);
     if (sampleRate <= 0.0) {
       return 0.0;
     }

@@ -84,7 +84,7 @@ class AudioFileProperties {
 
   AudioFileProperties(
       PathConfig path,
-      AudioLayout stream,
+      AudioLayout fileLayout,
       EncodingConfig encoding,
       WriterConfig writer);
 
@@ -98,7 +98,7 @@ class AudioFileProperties {
       const facebook::jsi::Value &value);
 
   PathConfig path;
-  AudioLayout stream;
+  AudioLayout fileLayout;
   EncodingConfig encoding;
   WriterConfig writer;
 };

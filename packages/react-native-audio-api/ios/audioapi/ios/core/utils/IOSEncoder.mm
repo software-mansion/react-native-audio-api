@@ -93,8 +93,8 @@ static NSDictionary *buildFileSettings(
   NSMutableDictionary *settings = [NSMutableDictionary dictionary];
 
   settings[AVFormatIDKey] = @(formatId);
-  settings[AVSampleRateKey] = @(encoderSettings.stream.sampleRate);
-  settings[AVNumberOfChannelsKey] = @(encoderSettings.stream.channelCount);
+  settings[AVSampleRateKey] = @(encoderSettings.fileLayout.sampleRate);
+  settings[AVNumberOfChannelsKey] = @(encoderSettings.fileLayout.channelCount);
   settings[AVEncoderAudioQualityKey] =
       @(avAudioQualityFor(encoderSettings.encoding.iosAudioQuality));
 
@@ -145,7 +145,7 @@ OpenEncoderResult IOSEncoder::open(
     if (inputFormat.layout.sampleRate <= 0 || inputFormat.layout.channelCount <= 0) {
       return Err("Invalid input format: sampleRate and channelCount must be greater than 0");
     }
-    if (settings_.stream.sampleRate <= 0 || settings_.stream.channelCount <= 0) {
+    if (settings_.fileLayout.sampleRate <= 0 || settings_.fileLayout.channelCount <= 0) {
       return Err("Invalid encoder settings: sampleRate and channelCount must be greater than 0");
     }
 
@@ -242,7 +242,7 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
 
     size_t outputCapacity = std::max(
         static_cast<float>(inputFormat.maxFramesPerBuffer),
-        settings_.stream.sampleRate / inputLayout.sampleRate * inputFormat.maxFramesPerBuffer);
+        settings_.fileLayout.sampleRate / inputLayout.sampleRate * inputFormat.maxFramesPerBuffer);
 
     state_->converterOutputBuffer =
         [[AVAudioPCMBuffer alloc] initWithPCMFormat:[state_->audioFile processingFormat]

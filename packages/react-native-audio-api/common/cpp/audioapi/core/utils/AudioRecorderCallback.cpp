@@ -34,11 +34,12 @@ AudioRecorderCallback::AudioRecorderCallback(
       audioReadyEvent_(audioEventHandlerRegistry),
       errorEvent_(audioEventHandlerRegistry) {
   audioReadyEvent_.assignCallbackId(callbackId);
-  ringBufferSize_ = std::max(bufferLength * 2, static_cast<size_t>(DEFAULT_RING_BUFFER_SIZE));
+  const size_t ringBufferSize =
+      std::max(bufferLength * 2, static_cast<size_t>(DEFAULT_RING_BUFFER_SIZE));
   circularBuffer_.resize(channelCount_);
 
-  for (size_t i = 0; i < circularBuffer_.size(); ++i) {
-    circularBuffer_[i] = std::make_shared<CircularAudioArray>(ringBufferSize_);
+  for (auto &arr : circularBuffer_) {
+    arr = std::make_shared<CircularAudioArray>(ringBufferSize);
   }
 
   isInitialized_.store(true, std::memory_order_release);

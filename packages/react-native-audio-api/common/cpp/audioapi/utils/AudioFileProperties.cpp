@@ -11,10 +11,10 @@ namespace audioapi {
 
 AudioFileProperties::AudioFileProperties(
     PathConfig path,
-    AudioLayout stream,
+    AudioLayout fileLayout,
     EncodingConfig encoding,
     WriterConfig writer)
-    : path(std::move(path)), stream(stream), encoding(encoding), writer(writer) {}
+    : path(std::move(path)), fileLayout(fileLayout), encoding(encoding), writer(writer) {}
 
 namespace {
 
@@ -27,12 +27,12 @@ bool isWithin(Enum value, Enum last) {
 }
 
 /// A positive sample rate, and between 1 and MAX_FILE_CHANNEL_COUNT channels.
-Result<NoneType, std::string> validateStream(const AudioLayout &stream) {
-  if (!(stream.sampleRate > 0)) {
+Result<NoneType, std::string> validateFileLayout(const AudioLayout &fileLayout) {
+  if (!(fileLayout.sampleRate > 0)) {
     return Err("sampleRate must be greater than 0.");
   }
-  if (stream.channelCount <= 0 ||
-      stream.channelCount > AudioFileProperties::MAX_FILE_CHANNEL_COUNT) {
+  if (fileLayout.channelCount <= 0 ||
+      fileLayout.channelCount > AudioFileProperties::MAX_FILE_CHANNEL_COUNT) {
     return Err("channelCount must be 1 (mono) or 2 (stereo); file output supports no more.");
   }
   return Ok(None);
@@ -71,7 +71,7 @@ Result<NoneType, std::string> AudioFileProperties::EncodingConfig::validate() co
 
 Result<NoneType, std::string> AudioFileProperties::validate() const {
   return path.validate()
-      .and_then([this](NoneType) { return validateStream(stream); })
+      .and_then([this](NoneType) { return validateFileLayout(fileLayout); })
       .and_then([this](NoneType) { return encoding.validate(); });
 }
 

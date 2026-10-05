@@ -14,21 +14,21 @@ namespace audioapi::android::media_format {
   return mime.starts_with("audio/");
 }
 
-inline constexpr std::array<std::pair<AudioCodec, const char *>, 4> CODEC_MIMES{{
+inline constexpr std::array<std::pair<AudioCodec, std::string_view>, 4> CODEC_MIMES{{
     {AudioCodec::AAC, "audio/mp4a-latm"},
     {AudioCodec::FLAC, "audio/flac"},
     {AudioCodec::OPUS, "audio/opus"},
     {AudioCodec::VORBIS, "audio/vorbis"},
 }};
 
-/// The AMEDIAFORMAT_KEY_MIME value for @p codec, or nullptr for a codec MediaCodec does not name.
-[[nodiscard]] inline const char *mimeForCodec(AudioCodec codec) {
+/// The AMEDIAFORMAT_KEY_MIME value for @p codec, or nullopt for a codec outside CODEC_MIMES.
+[[nodiscard]] inline std::optional<std::string_view> mimeForCodec(AudioCodec codec) {
   for (const auto &[knownCodec, mime] : CODEC_MIMES) {
     if (knownCodec == codec) {
       return mime;
     }
   }
-  return nullptr;
+  return std::nullopt;
 }
 
 /// The codec an AMEDIAFORMAT_KEY_MIME value names, or nullopt for one outside CODEC_MIMES.

@@ -86,7 +86,7 @@ TEST(AudioRecorderOutputStateTest, DeactivateNeverEnablesADisabledOutput) {
 TEST(AudioRecorderOutputStateTest, InvalidFilePropertiesAreRejectedAtEnable) {
   IdleAudioRecorder recorder;
   auto properties = wavProperties();
-  properties->stream.sampleRate = 0.0F;
+  properties->fileLayout.sampleRate = 0.0F;
 
   EXPECT_TRUE(recorder.enableFileOutput(properties).is_err());
   EXPECT_FALSE(recorder.wantsFileOutput());

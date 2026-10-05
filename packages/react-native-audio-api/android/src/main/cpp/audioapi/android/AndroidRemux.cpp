@@ -21,6 +21,7 @@ namespace {
 
 constexpr size_t SAMPLE_BUFFER_BYTES = 256 * 1024;
 
+// TODO: replace with the NDK constant AMEDIAFORMAT_KEY_CSD_0 on bump to sdk-28
 // The codec-specific data key.
 constexpr const char *KEY_CSD_0 = "csd-0";
 
@@ -290,7 +291,10 @@ class MuxerGuard {
 
 [[nodiscard]] AMediaFormat *buildOutputFormat(const TrackInfo &info) {
   AMediaFormat *format = AMediaFormat_new();
-  AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, media_format::mimeForCodec(info.codec));
+  if (const auto mime = media_format::mimeForCodec(info.codec); mime.has_value()) {
+    // The NDK takes a null-terminated string, which a string_view does not promise.
+    AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, std::string(*mime).c_str());
+  }
   AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, info.sampleRate);
   AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, info.channelCount);
   if (!info.csd0.empty()) {

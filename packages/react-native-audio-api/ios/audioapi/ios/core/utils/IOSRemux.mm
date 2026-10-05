@@ -53,7 +53,7 @@ struct TrackFormat {
       });
 }
 
-[[nodiscard]] IOSRemuxResult validateCompatible(
+[[nodiscard]] Result<std::string, std::string> validateCompatible(
     const TrackFormat &candidate,
     const TrackFormat &reference,
     const std::string &filePath)

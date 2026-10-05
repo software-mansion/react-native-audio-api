@@ -98,12 +98,12 @@ class FakeWavEncoder final : public AudioEncoder {
   std::vector<float> frames_;
 };
 
-std::unique_ptr<AudioEncoder> createFakeWavEncoder(const EncoderSettings &settings) {
-  return std::make_unique<FakeWavEncoder>(settings, /*failEncode=*/false);
+CreateEncoderResult createFakeWavEncoder(const EncoderSettings &settings) {
+  return CreateEncoderResult::Ok(std::make_unique<FakeWavEncoder>(settings, /*failEncode=*/false));
 }
 
-std::unique_ptr<AudioEncoder> createFailingWavEncoder(const EncoderSettings &settings) {
-  return std::make_unique<FakeWavEncoder>(settings, /*failEncode=*/true);
+CreateEncoderResult createFailingWavEncoder(const EncoderSettings &settings) {
+  return CreateEncoderResult::Ok(std::make_unique<FakeWavEncoder>(settings, /*failEncode=*/true));
 }
 
 std::vector<float> readWavFile(const std::string &path) {

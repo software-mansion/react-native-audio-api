@@ -130,8 +130,8 @@ PlatformFileBackend makeFakeBackend(FakeEncoderLog &log) {
             }
             return Result<std::string, std::string>::Ok(path);
           },
-      .createEncoder = [&log](const EncoderSettings &settings) -> std::unique_ptr<AudioEncoder> {
-        return std::make_unique<FakeEncoder>(settings, log);
+      .createEncoder = [&log](const EncoderSettings &settings) -> CreateEncoderResult {
+        return CreateEncoderResult::Ok(std::make_unique<FakeEncoder>(settings, log));
       },
       .reprepareEncoderInput =
           [](AudioEncoder &encoder, const StreamFormat &inputFormat) {

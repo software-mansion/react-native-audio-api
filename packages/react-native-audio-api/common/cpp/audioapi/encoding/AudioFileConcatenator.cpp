@@ -233,7 +233,7 @@ EncoderSettings makeEncoderSettings(
     AudioFileProperties::FileFormat format,
     const AudioLayout &layout) {
   return EncoderSettings{
-      .stream = layout,
+      .fileLayout = layout,
       .encoding =
           {
               .format = format,
@@ -298,10 +298,12 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
       .sampleRate = static_cast<float>(sampleRate),
       .channelCount = static_cast<int>(channels),
   };
-  auto encoder = createEncoder(makeEncoderSettings(format, layout));
-  if (encoder == nullptr) {
-    return Err(unavailableError);
+  auto encoderResult = createEncoder(makeEncoderSettings(format, layout));
+  if (encoderResult.is_err()) {
+    return Err(
+        "concatAudioFiles " + formatName + " output has no encoder: " + encoderResult.unwrap_err());
   }
+  auto encoder = std::move(encoderResult).unwrap();
 
   auto openResult = encoder->open(
       StreamFormat{

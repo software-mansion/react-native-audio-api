@@ -41,19 +41,19 @@ TEST(AudioFilePropertiesTest, RejectsAnUnusableFileName) {
 
 TEST(AudioFilePropertiesTest, RejectsANonPositiveSampleRate) {
   auto properties = validProperties();
-  properties.stream.sampleRate = 0.0F;
+  properties.fileLayout.sampleRate = 0.0F;
   EXPECT_TRUE(properties.validate().is_err());
 }
 
 TEST(AudioFilePropertiesTest, AcceptsOnlyMonoOrStereo) {
   auto properties = validProperties();
-  properties.stream.channelCount = 0;
+  properties.fileLayout.channelCount = 0;
   EXPECT_TRUE(properties.validate().is_err());
 
-  properties.stream.channelCount = 1;
+  properties.fileLayout.channelCount = 1;
   EXPECT_TRUE(properties.validate().is_ok());
 
-  properties.stream.channelCount = 3;
+  properties.fileLayout.channelCount = 3;
   EXPECT_TRUE(properties.validate().is_err());
 }
 

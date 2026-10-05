@@ -57,7 +57,7 @@ struct PlatformFileBackend {
       resolvePath;
   /// Builds an encoder that is not open yet; the writer opens it on the resolved path. Called
   /// once per file, so a rotating session creates one encoder per segment.
-  std::function<std::unique_ptr<AudioEncoder>(const EncoderSettings &)> createEncoder;
+  std::function<CreateEncoderResult(const EncoderSettings &)> createEncoder;
   /// Points an open encoder at a new input format while the file stays the same. Used when the
   /// input changes mid-session (an iOS route change), so the recording continues in one file
   /// rather than splitting. Left empty, every format change fails and closes the file.
@@ -126,7 +126,7 @@ class AudioFileWriter final {
 
   /// JS thread, with no worker running: also sizes the buffer pool and starts the worker.
   OpenFileResult startNextFile(const StreamFormat &streamFormat);
-  /// JS thread. Joins the worker, then folds the file into the session totals.
+  /// JS thread. Joins the worker, then adds the file to the session totals.
   CloseEncoderResult finishCurrentFile();
 
   /// @p fileNumber is 1-based. A rotated session numbers every file; one that is not has a
@@ -142,11 +142,11 @@ class AudioFileWriter final {
   /// The caller must hold fileMutex_.
   OpenFileResult openNextFile();
   /// The caller must hold fileMutex_.
-  OpenFileResult retargetCurrentFile();
+  OpenFileResult changeCurrentFileInputFormat();
   /// The caller must hold fileMutex_.
   CloseEncoderResult closeCurrentFile();
   /// The caller must hold fileMutex_.
-  void foldFinishedFile(const std::tuple<double, double> &finished);
+  void addFinishedFile(const std::tuple<double, double> &finished);
   void rollbackFailedOpen();
 
   /// Worker thread, once per encoded buffer. Swaps the encoder underneath the running worker.

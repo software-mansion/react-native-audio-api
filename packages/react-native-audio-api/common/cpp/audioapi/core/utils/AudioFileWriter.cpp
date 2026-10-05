@@ -104,7 +104,7 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &stream
   {
     std::scoped_lock lock(fileMutex_);
     streamFormat_ = streamFormat;
-    reprepareResult = retargetCurrentFile();
+    reprepareResult = changeCurrentFileInputFormat();
   }
   if (reprepareResult.is_err()) {
     // Nothing more can be encoded in the new format, so the file is finished as far as it got.
@@ -163,7 +163,7 @@ CloseEncoderResult AudioFileWriter::finishCurrentFile() {
   auto closeResult = closeCurrentFile();
 
   if (closeResult.is_ok()) {
-    foldFinishedFile(closeResult.unwrap());
+    addFinishedFile(closeResult.unwrap());
   }
   return closeResult;
 }
@@ -237,12 +237,16 @@ OpenFileResult AudioFileWriter::openNextFile() {
   }
   const std::string &filePath = filePathResult.unwrap();
 
-  auto encoder = backend_.createEncoder(
-      EncoderSettings{.stream = fileProperties_->stream, .encoding = fileProperties_->encoding});
-  if (encoder == nullptr) {
-    return OpenFileResult::Err("Audio file recording requires iOS or Android.");
+  auto encoderResult = backend_.createEncoder(
+      EncoderSettings{
+          .fileLayout = fileProperties_->fileLayout,
+          .encoding = fileProperties_->encoding,
+      });
+  if (encoderResult.is_err()) {
+    return OpenFileResult::Err(encoderResult.unwrap_err());
   }
-  auto fileResult = RecordingFile::open(std::move(encoder), streamFormat_, outputSpec, filePath);
+  auto fileResult =
+      RecordingFile::open(std::move(encoderResult).unwrap(), streamFormat_, outputSpec, filePath);
   if (fileResult.is_err()) {
     return OpenFileResult::Err(fileResult.unwrap_err());
   }
@@ -253,7 +257,7 @@ OpenFileResult AudioFileWriter::openNextFile() {
   return OpenFileResult::Ok(currentFile_->path());
 }
 
-OpenFileResult AudioFileWriter::retargetCurrentFile() {
+OpenFileResult AudioFileWriter::changeCurrentFileInputFormat() {
   if (currentFile_ == nullptr) {
     return OpenFileResult::Err("file is not open");
   }
@@ -280,7 +284,7 @@ CloseEncoderResult AudioFileWriter::closeCurrentFile() {
   return closeResult;
 }
 
-void AudioFileWriter::foldFinishedFile(const std::tuple<double, double> &finished) {
+void AudioFileWriter::addFinishedFile(const std::tuple<double, double> &finished) {
   finishedFilesSizeMB_ += std::get<0>(finished);
   finishedFilesDurationSec_ += std::get<1>(finished);
 }
@@ -320,7 +324,7 @@ void AudioFileWriter::rotateIfFileOutgrowsCap() {
     if (closeResult.is_err()) {
       rotationError = closeResult.unwrap_err();
     } else {
-      foldFinishedFile(closeResult.unwrap());
+      addFinishedFile(closeResult.unwrap());
       auto openResult = openNextFile();
       if (openResult.is_err()) {
         rotationError = openResult.unwrap_err();

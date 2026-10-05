@@ -23,13 +23,13 @@ using Encoder = ios::encoder::IOSEncoder;
 
 namespace audioapi {
 
-/// Returns nullptr on platforms without a system encoder (e.g. the desktop test build).
-inline std::unique_ptr<AudioEncoder> createOsEncoder(const EncoderSettings &settings) {
+/// Fails on platforms without a system encoder (e.g. the desktop test build).
+inline CreateEncoderResult createOsEncoder(const EncoderSettings &settings) {
 #if RN_AUDIO_API_HAS_OS_ENCODER
-  return std::make_unique<os_encoder::Encoder>(settings);
+  return CreateEncoderResult::Ok(std::make_unique<os_encoder::Encoder>(settings));
 #else
   (void)settings;
-  return nullptr;
+  return CreateEncoderResult::Err("Audio file recording requires iOS or Android.");
 #endif
 }
 
