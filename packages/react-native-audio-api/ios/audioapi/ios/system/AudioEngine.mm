@@ -37,6 +37,9 @@
 @property (nonatomic, strong)
     NSMutableDictionary<NSString *, AudioEngineSourceRegistration *> *sourceRegistrations;
 @property (nonatomic, strong) AudioEngineInputRegistration *inputRegistration;
+/// Format the sink node was connected with; compared against the live input
+/// format to tell a route change that altered the input from one that did not.
+@property (nonatomic, strong) AVAudioFormat *inputConnectionFormat;
 
 - (void)createAudioEngineIfNeeded;
 - (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState;
@@ -44,6 +47,7 @@
 - (AVAudioFormat *)currentInputConnectionFormat;
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId;
 - (BOOL)materializeInputNodeIfNeeded;
+- (BOOL)hasInputConnectionFormatChanged;
 - (BOOL)prepareInputForMaterialization;
 - (BOOL)applyVoiceProcessing;
 - (BOOL)materializeTrackedNodesIfNeeded;
@@ -95,6 +99,7 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceNodes = [[NSMutableDictionary alloc] init];
   self.sourceFormats = [[NSMutableDictionary alloc] init];
   self.inputNode = nil;
+  self.inputConnectionFormat = nil;
   self.graphNeedsRebuild = hadGraph;
   _voiceProcessingApplied = NO;
 
@@ -114,6 +119,7 @@ static AudioEngine *_sharedInstance = nil;
     self.state = AudioEngineState::AudioEngineStateIdle;
     self.audioEngine = nil;
     self.inputNode = nil;
+    self.inputConnectionFormat = nil;
     self.graphNeedsRebuild = false;
     self.sessionDeactivationInvalidatedGraph = false;
 
@@ -139,6 +145,7 @@ static AudioEngine *_sharedInstance = nil;
   self.sourceFormats = nil;
   self.inputRegistration = nil;
   self.inputNode = nil;
+  self.inputConnectionFormat = nil;
   self.graphNeedsRebuild = false;
   self.sessionDeactivationInvalidatedGraph = false;
 
@@ -247,9 +254,27 @@ static AudioEngine *_sharedInstance = nil;
 
   self.inputNode =
       [[AVAudioSinkNode alloc] initWithReceiverBlock:self.inputRegistration.receiverBlock];
+  self.inputConnectionFormat = inputFormat;
   [self.audioEngine attachNode:self.inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:inputFormat];
   return YES;
+}
+
+- (BOOL)hasInputConnectionFormatChanged
+{
+  if (self.inputNode == nil || self.inputConnectionFormat == nil) {
+    return NO;
+  }
+
+  AVAudioFormat *liveFormat = [self liveInputFormat];
+
+  if (liveFormat == nil) {
+    return NO;
+  }
+
+  return liveFormat.sampleRate != self.inputConnectionFormat.sampleRate ||
+      liveFormat.channelCount != self.inputConnectionFormat.channelCount ||
+      liveFormat.isInterleaved != self.inputConnectionFormat.isInterleaved;
 }
 
 // Apple's voice-processing I/O (echo cancellation, noise suppression, AGC) is
@@ -414,8 +439,14 @@ static AudioEngine *_sharedInstance = nil;
     [self.audioEngine detachNode:self.inputNode];
   }
 
+  // Voice processing left its own mode and options on the session; restore ours.
+  if (self.inputRegistration.voiceProcessingEnabled) {
+    [self.sessionManager invalidateAppliedConfiguration];
+  }
+
   self.inputRegistration = nil;
   self.inputNode = nil;
+  self.inputConnectionFormat = nil;
 
   if (![self hasTrackedGraph]) {
     self.graphNeedsRebuild = false;
@@ -542,6 +573,12 @@ static AudioEngine *_sharedInstance = nil;
 {
   std::scoped_lock lock(_engineLock);
   return [self hasTrackedGraph] || self.audioEngine != nil;
+}
+
+- (bool)ownsAudioEngine:(AVAudioEngine *)engine
+{
+  std::scoped_lock lock(_engineLock);
+  return engine != nil && engine == self.audioEngine;
 }
 
 - (BOOL)rebuildAudioEngineAndResumeIfNeeded
@@ -715,6 +752,22 @@ static AudioEngine *_sharedInstance = nil;
     self.state = AudioEngineState::AudioEngineStatePaused;
     [self notifyConfigurationChanges];
   }
+}
+
+- (void)onRouteChanged
+{
+  std::scoped_lock lock(_engineLock);
+
+  if (![self hasTrackedGraph] && self.audioEngine == nil) {
+    return;
+  }
+
+  if (![self hasInputConnectionFormatChanged]) {
+    [self notifyConfigurationChanges];
+    return;
+  }
+
+  [self restartAudioEngine];
 }
 
 - (void)logAudioEngineState

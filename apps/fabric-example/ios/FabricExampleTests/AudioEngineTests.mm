@@ -1034,6 +1034,62 @@
   XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
 }
 
+- (void)testOnRouteChangedKeepsEngineWhenInputFormatIsUnchanged {
+  __block NSInteger configurationChangeCount = 0;
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:YES
+            onInputConfigurationChange:^{
+              configurationChangeCount += 1;
+            }];
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+  FakeAudioEngine *engine = self.audioEngine.currentFakeAudioEngine;
+
+  [self.audioEngine onRouteChanged];
+
+  XCTAssertEqual(self.audioEngine.currentFakeAudioEngine, engine);
+  XCTAssertEqual(engine.fakeInputNode.setVoiceProcessingCallCount, 1);
+  XCTAssertEqual(engine.stopCallCount, 0);
+  XCTAssertEqual(configurationChangeCount, 1);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+}
+
+- (void)testOnRouteChangedRebuildsWhenInputFormatChanged {
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+            onInputConfigurationChange:nil];
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+  FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
+  AVAudioFormat *handsFreeFormat = [self testInputFormatWithSampleRate:16000
+                                                          channelCount:1];
+  oldEngine.fakeInputNode.outputFormat = handsFreeFormat;
+  self.audioEngine.nextCreatedEngineInputFormat = handsFreeFormat;
+
+  [self.audioEngine onRouteChanged];
+
+  FakeAudioEngine *newEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(newEngine, oldEngine);
+  XCTAssertEqual(oldEngine.stopCallCount, 1);
+  XCTAssertEqual(newEngine.connectCallCount, 1);
+  AVAudioFormat *connectionFormat = newEngine.connections.firstObject[@"format"];
+  XCTAssertEqualWithAccuracy(connectionFormat.sampleRate, 16000.0, 0.1);
+  XCTAssertEqual(newEngine.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+}
+
+- (void)testOnRouteChangedLeavesPlaybackOnlyGraphAlone {
+  [self attachSourceNodeToAudioEngine];
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+  FakeAudioEngine *engine = self.audioEngine.currentFakeAudioEngine;
+
+  [self.audioEngine onRouteChanged];
+
+  XCTAssertEqual(self.audioEngine.currentFakeAudioEngine, engine);
+  XCTAssertEqual(engine.stopCallCount, 0);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+}
+
 - (void)
     testConfigurationChangeCallbackCanReadLiveInputFormatWhileRestartHoldsLock {
   __block BOOL callbackRan = NO;

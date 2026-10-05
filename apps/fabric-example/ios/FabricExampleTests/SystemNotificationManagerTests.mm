@@ -97,10 +97,22 @@
 @property(nonatomic, assign) NSInteger interruptionEndCallCount;
 @property(nonatomic, assign) NSInteger restartAudioEngineCallCount;
 @property(nonatomic, assign) BOOL lastShouldResume;
+@property(nonatomic, assign) BOOL fakeInUse;
+@property(nonatomic, assign) BOOL fakeOwnsNotifyingEngine;
 
 @end
 
 @implementation SNMFakeAudioEngine
+
+- (bool)isInUse
+{
+  return self.fakeInUse;
+}
+
+- (bool)ownsAudioEngine:(AVAudioEngine *)engine
+{
+  return self.fakeOwnsNotifyingEngine;
+}
 
 - (void)onInterruptionBegin
 {
@@ -116,13 +128,6 @@
 - (void)restartAudioEngine
 {
   self.restartAudioEngineCallCount += 1;
-}
-
-/// The engine is created lazily, so a fresh fake reads as not in use and the manager would
-/// ignore every notification meant for it.
-- (bool)isInUse
-{
-  return true;
 }
 
 @end
@@ -307,8 +312,12 @@ static void ClearFakeSharedAudioSession(void)
   [super tearDown];
 }
 
-- (void)flushMainQueue
+- (void)flushPendingWork
 {
+  // Engine reactions run on the manager's own queue; the secondary-audio polling
+  // timer is started on the main queue.
+  dispatch_sync(self.manager.engineLifecycleQueue, ^{});
+
   XCTestExpectation *expectation = [self expectationWithDescription:@"Flush main queue"];
   dispatch_async(dispatch_get_main_queue(), ^{ [expectation fulfill]; });
   [self waitForExpectations:@[ expectation ] timeout:1.0];
@@ -390,7 +399,7 @@ static void ClearFakeSharedAudioSession(void)
   self.manager.notificationCenter = (NSNotificationCenter *)fakeNotificationCenter;
 
   [self.manager activelyReclaimSession:YES];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertEqual(fakeNotificationCenter.addObserverCallCount, 1);
   XCTAssertEqualObjects(fakeNotificationCenter.addedNotificationNames.firstObject,
@@ -411,7 +420,7 @@ static void ClearFakeSharedAudioSession(void)
 
   [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeBegan
                                                                    option:0]];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
   XCTAssertEqual(self.fakeAudioEngine.interruptionBeginCallCount, 1);
@@ -441,7 +450,7 @@ static void ClearFakeSharedAudioSession(void)
 {
   [self.manager handleInterruption:[self interruptionNotificationWithType:AVAudioSessionInterruptionTypeEnded
                                                                    option:AVAudioSessionInterruptionOptionShouldResume]];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertEqual(self.module.eventInvocationCount, 0);
   XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
@@ -455,7 +464,7 @@ static void ClearFakeSharedAudioSession(void)
   [self.manager
       handleSecondaryAudio:[self secondaryAudioNotificationWithType:
                                      AVAudioSessionSilenceSecondaryAudioHintTypeBegin]];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
   XCTAssertEqual(self.fakeAudioEngine.interruptionBeginCallCount, 1);
@@ -471,7 +480,7 @@ static void ClearFakeSharedAudioSession(void)
   [self.manager
       handleSecondaryAudio:[self secondaryAudioNotificationWithType:
                                      AVAudioSessionSilenceSecondaryAudioHintTypeEnd]];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertEqual(self.module.eventInvocationCount, 0);
   XCTAssertEqual(self.fakeAudioEngine.interruptionEndCallCount, 1);
@@ -516,9 +525,11 @@ static void ClearFakeSharedAudioSession(void)
 - (void)testHandleMediaServicesResetReactivatesSessionAndRestartsEngine
 {
   // Only a session that was active gets re-activated after the reset.
+  self.fakeAudioEngine.fakeInUse = YES;
   self.fakeSessionManager.isActive = true;
+
   [self.manager handleMediaServicesReset:nil];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
   XCTAssertEqual(self.fakeSessionManager.ensureActiveCallCount, 1);
@@ -528,8 +539,11 @@ static void ClearFakeSharedAudioSession(void)
 
 - (void)testHandleEngineConfigurationChangeMarksInactiveAndRestartsEngine
 {
+  self.fakeAudioEngine.fakeInUse = YES;
+  self.fakeAudioEngine.fakeOwnsNotifyingEngine = YES;
+
   [self.manager handleEngineConfigurationChange:nil];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
   XCTAssertEqual(self.fakeAudioEngine.restartAudioEngineCallCount, 1);
@@ -541,7 +555,7 @@ static void ClearFakeSharedAudioSession(void)
   self.manager.wasOtherAudioPlaying = NO;
 
   [self.manager checkSecondaryAudioHint];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertEqual(self.module.eventInvocationCount, 0);
   XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 0);
@@ -556,7 +570,7 @@ static void ClearFakeSharedAudioSession(void)
   self.manager.wasOtherAudioPlaying = NO;
 
   [self.manager checkSecondaryAudioHint];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertTrue(self.manager.wasOtherAudioPlaying);
   XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
@@ -591,7 +605,7 @@ static void ClearFakeSharedAudioSession(void)
   self.manager.wasOtherAudioPlaying = YES;
 
   [self.manager checkSecondaryAudioHint];
-  [self flushMainQueue];
+  [self flushPendingWork];
 
   XCTAssertFalse(self.manager.wasOtherAudioPlaying);
   XCTAssertEqual(self.module.eventInvocationCount, 0);

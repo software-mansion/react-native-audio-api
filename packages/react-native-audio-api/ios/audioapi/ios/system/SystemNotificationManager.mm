@@ -14,6 +14,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     self.audioAPIModule = audioAPIModule;
     self.notificationCenter = [NSNotificationCenter defaultCenter];
     self.audioInterruptionsObserved = false;
+    _engineLifecycleQueue =
+        dispatch_queue_create("com.swmansion.audioapi.EngineLifecycleQueue", DISPATCH_QUEUE_SERIAL);
 
     [self configureNotifications];
   }
@@ -122,7 +124,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.engineLifecycleQueue, ^{
       [audioEngine onInterruptionBegin];
       [sessionManager markInactive];
     });
@@ -144,7 +146,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                            payload:audioapi::InterruptionPayload{
                                        .type = "ended", .shouldResume = shouldResume}];
   } else {
-    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
+    dispatch_async(self.engineLifecycleQueue, ^{ [audioEngine onInterruptionEnd:shouldResume]; });
   }
 }
 
@@ -156,7 +158,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [notification.userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] integerValue];
 
   if (secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeBegin) {
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.engineLifecycleQueue, ^{
       [sessionManager markInactive];
       [audioEngine onInterruptionBegin];
     });
@@ -177,7 +179,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                            payload:audioapi::InterruptionPayload{
                                        .type = "ended", .shouldResume = shouldResume}];
   } else {
-    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:shouldResume]; });
+    dispatch_async(self.engineLifecycleQueue, ^{ [audioEngine onInterruptionEnd:shouldResume]; });
   }
 }
 
@@ -225,9 +227,11 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   switch (routeChangeReason) {
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
-    case AVAudioSessionRouteChangeReasonRouteConfigurationChange:
-      [self handleEngineConfigurationChange:nil];
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
+      AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+      dispatch_async(self.engineLifecycleQueue, ^{ [audioEngine onRouteChanged]; });
       break;
+    }
     default:
       break;
   }
@@ -245,9 +249,10 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   NSLog(
       @"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
 
-  dispatch_async(dispatch_get_main_queue(), ^{
+  dispatch_async(self.engineLifecycleQueue, ^{
     bool wasSessionActive = sessionManager.isActive;
     [sessionManager markInactive];
+    [sessionManager invalidateAppliedConfiguration];
 
     if (wasSessionActive) {
       [sessionManager ensureActive:true error:nil];
@@ -262,12 +267,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  dispatch_async(dispatch_get_main_queue(), ^{
+  dispatch_async(self.engineLifecycleQueue, ^{
     // This notification is registered with object:nil, so it also fires for
-    // AVAudioEngine instances owned by other libraries in the host app. Without
-    // an engine of our own there is nothing to restart, and marking the session
+    // AVAudioEngine instances owned by other libraries in the host app, and for
+    // an engine of ours that a rebuild has already replaced. Without a live
+    // engine of our own there is nothing to restart, and marking the session
     // inactive would corrupt bookkeeping for apps that only manage the session.
-    if (![audioEngine isInUse]) {
+    if (![audioEngine isInUse] || ![audioEngine ownsAudioEngine:notification.object]) {
       return;
     }
 
@@ -313,7 +319,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   self.wasOtherAudioPlaying = shouldSilence;
 
   if (shouldSilence) {
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.engineLifecycleQueue, ^{
       [sessionManager markInactive];
       [audioEngine onInterruptionBegin];
     });
@@ -331,7 +337,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                                             payload:audioapi::InterruptionPayload{
                                                         .type = "ended", .shouldResume = true}];
   } else {
-    dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onInterruptionEnd:true]; });
+    dispatch_async(self.engineLifecycleQueue, ^{ [audioEngine onInterruptionEnd:true]; });
   }
 }
 
