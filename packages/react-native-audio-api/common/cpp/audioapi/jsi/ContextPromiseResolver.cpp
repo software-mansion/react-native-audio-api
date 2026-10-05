@@ -21,7 +21,7 @@ std::shared_ptr<ContextPromiseResolver<void>> ContextPromiseResolver<T>::makeCon
 {
   auto jsiPromise = std::make_shared<Promise>(std::move(promise));
   return std::make_shared<ContextPromiseResolver<void>>(
-      [jsiPromise, audioContext, nextState]() {
+      [jsiPromise, audioContext, nextState] {
         // Spec: update the state attribute in the same follow-up task that
         // resolves the lifecycle promise (before statechange reactions).
         audioContext->setState(nextState);

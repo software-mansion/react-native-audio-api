@@ -2,7 +2,10 @@
 
 #include <audioapi/core/AudioParam.h>
 
+#include <cstddef>
 #include <memory>
+#include <optional>
+#include <span>
 
 namespace audioapi {
 
@@ -43,6 +46,40 @@ class AudioListener {
     return upZParam_;
   }
 
+  /// @brief Process listener AudioParams once per render quantum.
+  /// Multiple PannerNodes share these params; calling processARateParam from
+  /// each panner would advance automation and zero modulation inputs repeatedly.
+  /// @note Audio-thread only.
+  void processForQuantum(int framesToProcess, double time, std::size_t sampleFrame);
+
+  [[nodiscard]] std::span<const float> positionXValues() const {
+    return positionXValues_;
+  }
+  [[nodiscard]] std::span<const float> positionYValues() const {
+    return positionYValues_;
+  }
+  [[nodiscard]] std::span<const float> positionZValues() const {
+    return positionZValues_;
+  }
+  [[nodiscard]] std::span<const float> forwardXValues() const {
+    return forwardXValues_;
+  }
+  [[nodiscard]] std::span<const float> forwardYValues() const {
+    return forwardYValues_;
+  }
+  [[nodiscard]] std::span<const float> forwardZValues() const {
+    return forwardZValues_;
+  }
+  [[nodiscard]] std::span<const float> upXValues() const {
+    return upXValues_;
+  }
+  [[nodiscard]] std::span<const float> upYValues() const {
+    return upYValues_;
+  }
+  [[nodiscard]] std::span<const float> upZValues() const {
+    return upZValues_;
+  }
+
  private:
   std::shared_ptr<AudioParam> positionXParam_;
   std::shared_ptr<AudioParam> positionYParam_;
@@ -53,6 +90,17 @@ class AudioListener {
   std::shared_ptr<AudioParam> upXParam_;
   std::shared_ptr<AudioParam> upYParam_;
   std::shared_ptr<AudioParam> upZParam_;
+
+  std::optional<size_t> lastProcessedSampleFrame_;
+  std::span<const float> positionXValues_;
+  std::span<const float> positionYValues_;
+  std::span<const float> positionZValues_;
+  std::span<const float> forwardXValues_;
+  std::span<const float> forwardYValues_;
+  std::span<const float> forwardZValues_;
+  std::span<const float> upXValues_;
+  std::span<const float> upYValues_;
+  std::span<const float> upZValues_;
 };
 
 } // namespace audioapi
