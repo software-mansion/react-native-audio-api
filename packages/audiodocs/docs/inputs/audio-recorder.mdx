@@ -865,6 +865,11 @@ interface AudioRecorderCallbackOptions {
 
 - `channelCount` - The desired number of audio channels per buffer. Typically `1` for mono or `2` for stereo recordings.
 
+:::caution
+Incoming audio is collected in an internal buffer until a full `bufferLength` chunk can be emitted. That buffer can overflow when a single batch of microphone data is larger than it can hold, which happens when the requested `sampleRate` is much higher than the hardware rate (the data is upsampled before buffering) or when the system delivers input in large batches, for example under a high I/O buffer duration.
+When this happens the frames from that batch are dropped and `onError` is called instead of `onAudioReady`. If you see such errors, lower `sampleRate` towards the hardware rate, adjust `bufferLength` or lower system latency in [AudioContext](../core/audio-context#audiocontextoptions).
+:::
+
 #### OnRecorderErrorEventType
 
 ```tsx

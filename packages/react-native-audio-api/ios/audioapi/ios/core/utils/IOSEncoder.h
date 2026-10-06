@@ -21,15 +21,15 @@ class IOSEncoder : public AudioEncoder {
       const EncoderOutputSpec &outputSpec,
       const std::string &filePath) override;
 
-  /// Switches an open encoder to a new input format without touching the output file: only
-  /// the converter, which is built for the input, is rebuilt.
-  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat);
-
   EncodeResult encode(const float *const *channels, int numFrames) override;
 
   CloseEncoderResult close() override;
 
   [[nodiscard]] size_t getFileSizeBytes() const override;
+
+ protected:
+  /// Only the converter, which is built for the input, is rebuilt; the output file stays open.
+  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) override;
 
  private:
   /// Builds the input format, converter and conversion buffers for an already open file.

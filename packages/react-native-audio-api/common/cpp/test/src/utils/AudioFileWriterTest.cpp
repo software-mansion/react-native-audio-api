@@ -72,8 +72,8 @@ class FakeEncoder final : public AudioEncoder {
     return OpenEncoderResult::Ok(filePath);
   }
 
-  /// Mirrors IOSEncoder::reprepareInput, reached through the backend hook.
-  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) {
+  /// Mirrors IOSEncoder::reprepareInput.
+  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) override {
     if (!isOpen()) {
       return OpenEncoderResult::Err("encoder is not open");
     }
@@ -133,10 +133,6 @@ PlatformFileBackend makeFakeBackend(FakeEncoderLog &log) {
       .createEncoder = [&log](const EncoderSettings &settings) -> CreateEncoderResult {
         return CreateEncoderResult::Ok(std::make_unique<FakeEncoder>(settings, log));
       },
-      .reprepareEncoderInput =
-          [](AudioEncoder &encoder, const StreamFormat &inputFormat) {
-            return static_cast<FakeEncoder &>(encoder).reprepareInput(inputFormat);
-          },
   };
 }
 
@@ -381,15 +377,6 @@ TEST_F(AudioFileWriterTest, AFailedFormatChangeFinishesTheFile) {
 
   EXPECT_EQ(log_.closedFiles.load(), 1);
   EXPECT_TRUE(writer_->closeFile().is_err());
-}
-
-TEST_F(AudioFileWriterTest, AFormatChangeFailsWithoutAPlatformHookForIt) {
-  backend_.reprepareEncoderInput = nullptr;
-  createWriter(/*rotates=*/false);
-  ASSERT_TRUE(open().is_ok());
-
-  EXPECT_TRUE(writer_->reprepareStreamFormat({44100.0F, 1, 256}).is_err());
-  EXPECT_EQ(log_.closedFiles.load(), 1);
 }
 
 TEST_F(AudioFileWriterTest, GeneratedNameStepsAsideForAnExistingFile) {

@@ -721,7 +721,7 @@ OpenEncoderResult AndroidEncoder::open(
   inputFormat_ = inputFormat;
   outputSpec_ = outputSpec;
   filePath_ = filePath;
-  resetFramesEncoded();
+  resetEncodedDuration();
 
   switch (outputSpec.codec) {
     case AudioCodec::PCM:
@@ -844,13 +844,10 @@ CloseEncoderResult AndroidEncoder::close() {
 
   std::string err = backend_->close();
   const size_t sizeBytes = backend_->getFileSizeBytes();
-  const double inputSampleRate = inputFormat_.layout.sampleRate;
-  const double durationSeconds = inputSampleRate > 0
-      ? static_cast<double>(framesEncoded_.load(std::memory_order_acquire)) / inputSampleRate
-      : 0.0;
+  const double durationSeconds = getEncodedDurationSeconds();
   backend_.reset();
   conversion_.reset();
-  resetFramesEncoded();
+  resetEncodedDuration();
 
   if (!err.empty()) {
     return Err(err);

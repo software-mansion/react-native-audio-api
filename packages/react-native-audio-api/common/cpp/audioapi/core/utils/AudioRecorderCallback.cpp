@@ -10,6 +10,7 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -118,10 +119,6 @@ void AudioRecorderCallback::cleanup() {
   }
 
   releaseProcessingResources();
-
-  for (const auto &arr : circularBuffer_) {
-    arr->zero();
-  }
 }
 
 /// @brief Copies incoming audio into an owned slot and hands it to the worker thread.
@@ -163,14 +160,21 @@ void AudioRecorderCallback::receiveAudioData(const float *const *channels, int n
 }
 
 void AudioRecorderCallback::pushChannels(const AudioBuffer &planarFrames, int numFrames) {
+  std::array<const float *, MAX_CHANNEL_COUNT> channels{};
   for (int ch = 0; ch < channelCount_; ++ch) {
-    circularBuffer_[ch]->push_back(*planarFrames.getChannel(ch), numFrames);
+    channels[ch] = planarFrames.getChannel(ch)->begin();
   }
+  pushChannels(channels.data(), numFrames);
 }
 
 void AudioRecorderCallback::pushChannels(const float *const *planarFrames, int numFrames) {
-  for (int ch = 0; ch < channelCount_; ++ch) {
-    circularBuffer_[ch]->push_back(planarFrames[ch], numFrames);
+  try {
+    for (int ch = 0; ch < channelCount_; ++ch) {
+      circularBuffer_[ch]->push_back(planarFrames[ch], numFrames);
+    }
+  } catch (const std::overflow_error &e) {
+    invokeOnErrorCallback(
+        "Failed to push audio data into the circular buffer: " + std::string(e.what()));
   }
 }
 

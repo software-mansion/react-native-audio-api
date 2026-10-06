@@ -21,7 +21,6 @@
 namespace audioapi {
 
 class AudioFileProperties;
-class RecordingFile;
 class IAudioEventHandlerRegistry;
 
 using OpenFileResult = Result<std::string, std::string>;
@@ -58,10 +57,6 @@ struct PlatformFileBackend {
   /// Builds an encoder that is not open yet; the writer opens it on the resolved path. Called
   /// once per file, so a rotating session creates one encoder per segment.
   std::function<CreateEncoderResult(const EncoderSettings &)> createEncoder;
-  /// Points an open encoder at a new input format while the file stays the same. Used when the
-  /// input changes mid-session (an iOS route change), so the recording continues in one file
-  /// rather than splitting. Left empty, every format change fails and closes the file.
-  std::function<OpenEncoderResult(AudioEncoder &, const StreamFormat &)> reprepareEncoderInput;
 };
 
 /// The iOS and Android backend, built once and shared by every writer.
@@ -147,6 +142,8 @@ class AudioFileWriter final {
   CloseEncoderResult closeCurrentFile();
   /// The caller must hold fileMutex_.
   void addFinishedFile(const std::tuple<double, double> &finished);
+  /// Closes the current encoder and deletes its file, for a file that must not outlive a
+  /// failed open.
   void rollbackFailedOpen();
 
   /// Worker thread, once per encoded buffer. Swaps the encoder underneath the running worker.
@@ -171,8 +168,8 @@ class AudioFileWriter final {
   /// Guards the members below, which a rotation advances on the worker thread while the JS
   /// thread reads them. Never taken on the audio thread.
   mutable std::mutex fileMutex_;
-  /// nullptr between files, and after a rotation fails.
-  std::unique_ptr<RecordingFile> currentFile_;
+  /// Open on the current file; nullptr between files, and after a rotation fails.
+  std::unique_ptr<AudioEncoder> currentEncoder_;
   std::string sessionStem_;
   std::vector<std::string> sessionFilePaths_;
   size_t openedFileCount_{0};

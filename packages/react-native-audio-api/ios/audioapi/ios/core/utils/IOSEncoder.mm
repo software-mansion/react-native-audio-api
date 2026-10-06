@@ -151,7 +151,7 @@ OpenEncoderResult IOSEncoder::open(
 
     outputSpec_ = outputSpec;
     filePath_ = filePath;
-    resetFramesEncoded();
+    resetEncodedDuration();
 
     state_->fileURL = [NSURL fileURLWithPath:[NSString stringWithUTF8String:filePath.c_str()]];
 
@@ -349,7 +349,7 @@ EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
           [[error debugDescription] UTF8String]);
     }
 
-    addEncodedFrames(static_cast<size_t>(producedFrames));
+    addEncodedFrames(static_cast<size_t>(numFrames));
     return Ok(static_cast<size_t>(numFrames));
   }
 }
@@ -373,7 +373,7 @@ CloseEncoderResult IOSEncoder::close()
     const double fileSizeMB = static_cast<double>(getFileSizeBytes()) / MB_IN_BYTES;
 
     state_->fileURL = nil;
-    resetFramesEncoded();
+    resetEncodedDuration();
 
     return Ok(std::make_tuple(fileSizeMB, durationSeconds));
   }

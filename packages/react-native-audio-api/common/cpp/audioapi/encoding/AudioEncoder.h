@@ -50,6 +50,22 @@ class AudioEncoder {
   /// Flushes and closes the output file. Returns {sizeMB, durationSeconds}.
   virtual CloseEncoderResult close() = 0;
 
+  /// Keeps writing the same file from input in @p inputFormat, so a mid-session input change
+  /// (an iOS route change) does not split the recording. Fails, leaving the file as it was,
+  /// on platforms whose encoder cannot be re-pointed; the audio encoded so far keeps counting
+  /// at the rate it arrived in.
+  OpenEncoderResult changeInputFormat(const StreamFormat &inputFormat) {
+    // Measured before the hook runs, since implementations overwrite inputFormat_ in it.
+    const double durationSoFar = getEncodedDurationSeconds();
+    auto result = reprepareInput(inputFormat);
+    if (result.is_ok()) {
+      earlierFormatsDurationSec_ = durationSoFar;
+      framesEncoded_.store(0, std::memory_order_release);
+      inputFormat_ = inputFormat;
+    }
+    return result;
+  }
+
   [[nodiscard]] bool isOpen() const {
     return isOpen_.load(std::memory_order_acquire);
   }
@@ -58,7 +74,28 @@ class AudioEncoder {
   }
   [[nodiscard]] virtual size_t getFileSizeBytes() const = 0;
 
+  /// Of the input encoded so far, each frame measured at the sample rate it arrived in.
+  [[nodiscard]] double getEncodedDurationSeconds() const {
+    const auto inputSampleRate = static_cast<double>(inputFormat_.layout.sampleRate);
+    if (inputSampleRate <= 0.0) {
+      return earlierFormatsDurationSec_;
+    }
+    return earlierFormatsDurationSec_ +
+        static_cast<double>(framesEncoded_.load(std::memory_order_acquire)) / inputSampleRate;
+  }
+
  protected:
+  /// Rebuilds whatever the implementation derives from the input format while the output file
+  /// stays open. The default refuses, which is right for every platform but iOS.
+  virtual OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) {
+    // TODO(android): AndroidEncoder cannot re-point at a new input format, and
+    // AndroidAudioRecorder never asks it to — after an Oboe disconnect the stream is
+    // reopened without re-preparing the file writer, so a format change there goes
+    // unnoticed. Implement this and call reprepareStreamFormat from onErrorAfterClose.
+    (void)inputFormat;
+    return OpenEncoderResult::Err("Changing the input format of an open file is iOS only");
+  }
+
   void markOpen() {
     isOpen_.store(true, std::memory_order_release);
   }
@@ -66,30 +103,27 @@ class AudioEncoder {
     isOpen_.store(false, std::memory_order_release);
   }
 
-  [[nodiscard]] double getEncodedDurationSeconds() const {
-    const double sampleRate = static_cast<double>(settings_.fileLayout.sampleRate);
-    if (sampleRate <= 0.0) {
-      return 0.0;
-    }
-    return static_cast<double>(framesEncoded_.load(std::memory_order_acquire)) / sampleRate;
-  }
-
-  void resetFramesEncoded() {
+  /// For open(), so a reused encoder starts the next file from zero.
+  void resetEncodedDuration() {
     framesEncoded_.store(0, std::memory_order_release);
+    earlierFormatsDurationSec_ = 0.0;
   }
 
-  void addEncodedFrames(size_t frames) {
-    framesEncoded_.fetch_add(frames, std::memory_order_acq_rel);
+  /// @p inputFrames as handed to encode(), before any resampling.
+  void addEncodedFrames(size_t inputFrames) {
+    framesEncoded_.fetch_add(inputFrames, std::memory_order_acq_rel);
   }
 
   EncoderSettings settings_;
   StreamFormat inputFormat_;
   EncoderOutputSpec outputSpec_;
   std::string filePath_;
-  std::atomic<size_t> framesEncoded_{0};
 
  private:
   std::atomic<bool> isOpen_{false};
+  /// Written on the JS thread, read from the file-writer worker under the writer's mutex.
+  std::atomic<size_t> framesEncoded_{0};
+  double earlierFormatsDurationSec_{0.0};
 };
 
 } // namespace audioapi
