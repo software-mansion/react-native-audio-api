@@ -167,18 +167,22 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   [audioEngine pauseIfNecessary];
 }
 
-- (void)resume
+- (BOOL)resume
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  if ([audioEngine startIfNecessary]) {
-    if (self.onInputConfigurationChange != nil) {
-      self.onInputConfigurationChange();
-    } else {
-      self.inputArmed = YES;
-    }
+  if (![audioEngine startIfNecessary]) {
+    return NO;
   }
+
+  // Re-arming is the owner's call: the handler re-resolves the input format and arms only
+  // when the recorder is back in the recording state.
+  if (self.onInputConfigurationChange != nil) {
+    self.onInputConfigurationChange();
+  }
+
+  return YES;
 }
 
 - (void)cleanup
