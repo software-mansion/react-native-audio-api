@@ -56,7 +56,7 @@ struct PlatformFileBackend {
       resolvePath;
   /// Builds an encoder that is not open yet; the writer opens it on the resolved path. Called
   /// once per file, so a rotating session creates one encoder per segment.
-  std::function<CreateEncoderResult(const EncoderSettings &)> createEncoder;
+  EncoderFactory createEncoder;
 };
 
 /// The iOS and Android backend, built once and shared by every writer.

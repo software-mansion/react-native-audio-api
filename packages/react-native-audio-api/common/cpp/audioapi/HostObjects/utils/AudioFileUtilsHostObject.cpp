@@ -54,9 +54,9 @@ JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, concatAudioFiles) {
           };
         }
 
-        return [outputPath = std::move(outputPath)](
+        return [result = std::move(result)](
                    jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-          return jsi::String::createFromUtf8(runtime, outputPath);
+          return jsi::String::createFromUtf8(runtime, result.unwrap());
         };
       });
 

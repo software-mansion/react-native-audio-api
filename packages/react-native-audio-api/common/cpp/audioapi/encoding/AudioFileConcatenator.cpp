@@ -31,7 +31,10 @@ constexpr uint64_t WAV_HEADER_ALLOWANCE_BYTES = 8192;
 constexpr uint64_t MAX_RIFF_CHUNK_SIZE = std::numeric_limits<uint32_t>::max();
 constexpr int DEFAULT_FLAC_COMPRESSION_LEVEL = 5;
 
-AudioFileConcatResult validatePaths(
+using ValidationResult = Result<NoneType, std::string>;
+using FileFormat = AudioFileProperties::FileFormat;
+
+ValidationResult validatePaths(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
   if (inputPaths.empty()) {
@@ -58,10 +61,8 @@ AudioFileConcatResult validatePaths(
     return Err("concatAudioFiles output path must be a local file path or file:// URL.");
   }
 
-  return Ok(outputPath);
+  return Ok(None);
 }
-
-using FileFormat = AudioFileProperties::FileFormat;
 
 /// The formats concat can write. The output path's extension picks one, and every input must
 /// carry the same extension.
@@ -150,7 +151,7 @@ void AudioFileReader::close() {
 
 namespace {
 
-AudioFileConcatResult validateCompatibleDecodedInput(
+ValidationResult validateCompatibleDecodedInput(
     const AudioFileReader &input,
     const AudioFileReader &reference) {
   if (input.sampleRate() != reference.sampleRate()) {
@@ -161,18 +162,19 @@ AudioFileConcatResult validateCompatibleDecodedInput(
     return Err("Input file '" + input.filePath() + "' uses a different channel count.");
   }
 
-  return Ok(input.filePath());
+  return Ok(None);
 }
 
-AudioFileConcatResult openAndValidateDecodedInputs(
-    const std::vector<std::string> &inputPaths,
-    std::vector<AudioFileReader> &inputs) {
+/// Opens every input; all of them must share the first one's sample rate and channel count.
+Result<std::vector<AudioFileReader>, std::string> openCompatibleInputs(
+    const std::vector<std::string> &inputPaths) {
+  std::vector<AudioFileReader> inputs;
   inputs.reserve(inputPaths.size());
 
   for (const auto &inputPath : inputPaths) {
     auto inputResult = AudioFileReader::open(inputPath);
     if (inputResult.is_err()) {
-      return Err(inputResult.unwrap_err());
+      return Err(std::move(inputResult).unwrap_err());
     }
 
     inputs.emplace_back(std::move(inputResult).unwrap());
@@ -180,23 +182,23 @@ AudioFileConcatResult openAndValidateDecodedInputs(
     if (inputs.size() > 1) {
       auto validationResult = validateCompatibleDecodedInput(inputs.back(), inputs.front());
       if (validationResult.is_err()) {
-        return validationResult;
+        return Err(std::move(validationResult).unwrap_err());
       }
     }
   }
 
-  return Ok(std::string());
+  return Ok(std::move(inputs));
 }
 
-AudioFileConcatResult validateRiffWaveOutputSize(
-    std::vector<AudioFileReader> &inputs,
+ValidationResult validateRiffWaveOutputSize(
+    const std::vector<AudioFileReader> &inputs,
     uint64_t bytesPerFrame) {
   if (bytesPerFrame == 0) {
     return Err("Input files use an unsupported WAV sample format.");
   }
 
   uint64_t totalDataBytes = 0;
-  for (auto &input : inputs) {
+  for (const auto &input : inputs) {
     const uint64_t frameCount = input.totalPcmFrames();
     if (frameCount == 0) {
       return Err("Failed to determine decoded frame count for '" + input.filePath() + "'.");
@@ -214,7 +216,7 @@ AudioFileConcatResult validateRiffWaveOutputSize(
     }
   }
 
-  return Ok(std::string());
+  return Ok(None);
 }
 
 AudioFileConcatResult concatAudioFilesWithOsRemux(
@@ -229,9 +231,7 @@ AudioFileConcatResult concatAudioFilesWithOsRemux(
   return remuxConcatAudioFiles(inputPaths, outputPath);
 }
 
-EncoderSettings makeEncoderSettings(
-    AudioFileProperties::FileFormat format,
-    const AudioLayout &layout) {
+EncoderSettings makeEncoderSettings(FileFormat format, const AudioLayout &layout) {
   return EncoderSettings{
       .fileLayout = layout,
       .encoding =
@@ -239,9 +239,8 @@ EncoderSettings makeEncoderSettings(
               .format = format,
               .bitRate = 0,
               // WAV keeps the decoded float32 samples as they are; FLAC is integer-only.
-              .bitDepth = format == AudioFileProperties::FileFormat::WAV
-                  ? AudioFileProperties::BitDepth::Bit32
-                  : AudioFileProperties::BitDepth::Bit16,
+              .bitDepth = format == FileFormat::WAV ? AudioFileProperties::BitDepth::Bit32
+                                                    : AudioFileProperties::BitDepth::Bit16,
               .flacCompressionLevel = DEFAULT_FLAC_COMPRESSION_LEVEL,
               .iosAudioQuality = AudioFileProperties::IOSAudioQuality::Max,
           },
@@ -253,10 +252,10 @@ EncoderSettings makeEncoderSettings(
 AudioFileConcatResult concatAudioFilesWithEncoder(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath,
-    AudioFileProperties::FileFormat format,
-    const ConcatEncoderFactory &createEncoder) {
+    FileFormat format,
+    const EncoderFactory &createEncoder) {
   const EncoderOutputSpec outputSpec = encoder_capabilities::specForFormat(format);
-  const bool isWav = format == AudioFileProperties::FileFormat::WAV;
+  const bool isWav = format == FileFormat::WAV;
   const std::string formatName = isWav ? "WAV" : "FLAC";
 
   for (const auto &inputPath : inputPaths) {
@@ -273,11 +272,11 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
     return Err(unavailableError);
   }
 
-  std::vector<AudioFileReader> inputs;
-  auto inputValidationResult = openAndValidateDecodedInputs(inputPaths, inputs);
-  if (inputValidationResult.is_err()) {
-    return inputValidationResult;
+  auto inputsResult = openCompatibleInputs(inputPaths);
+  if (inputsResult.is_err()) {
+    return Err(std::move(inputsResult).unwrap_err());
   }
+  auto inputs = std::move(inputsResult).unwrap();
 
   const uint32_t sampleRate = inputs.front().sampleRate();
   const uint32_t channels = inputs.front().channels();
@@ -285,7 +284,7 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
   if (isWav) {
     auto outputSizeResult = validateRiffWaveOutputSize(inputs, uint64_t{channels} * sizeof(float));
     if (outputSizeResult.is_err()) {
-      return outputSizeResult;
+      return Err(std::move(outputSizeResult).unwrap_err());
     }
   }
 
@@ -357,7 +356,7 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
   return Ok(outputPath);
 }
 
-ConcatEncoderFactory platformEncoderFactory() {
+EncoderFactory platformEncoderFactory() {
 #if RN_AUDIO_API_HAS_OS_ENCODER
   return &createOsEncoder;
 #else
@@ -376,7 +375,7 @@ AudioFileConcatResult concatAudioFiles(
 AudioFileConcatResult concatAudioFiles(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath,
-    const ConcatEncoderFactory &createEncoder) {
+    const EncoderFactory &createEncoder) {
   std::vector<std::string> normalizedInputPaths;
   normalizedInputPaths.reserve(inputPaths.size());
   for (const auto &inputPath : inputPaths) {
@@ -387,7 +386,7 @@ AudioFileConcatResult concatAudioFiles(
 
   auto pathValidationResult = validatePaths(normalizedInputPaths, normalizedOutputPath);
   if (pathValidationResult.is_err()) {
-    return pathValidationResult;
+    return Err(std::move(pathValidationResult).unwrap_err());
   }
 
   // M4A remuxes the inputs' AAC packets through OS APIs. WAV and FLAC have no remux path on

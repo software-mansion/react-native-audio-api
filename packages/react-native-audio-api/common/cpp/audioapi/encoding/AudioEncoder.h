@@ -9,6 +9,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -29,6 +30,9 @@ struct EncoderSettings {
   AudioLayout fileLayout;
   AudioFileProperties::EncodingConfig encoding;
 };
+
+/// Builds an encoder that is not open yet; the caller opens it on the output path.
+using EncoderFactory = std::function<CreateEncoderResult(const EncoderSettings &)>;
 
 /// Incremental audio encoder. `open`/`close` on the JS thread; `encode` on the
 /// file-writer worker. Platform implementations use system APIs only.

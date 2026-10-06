@@ -6,18 +6,14 @@
 #include <audioapi/utils/Result.hpp>
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace audioapi {
 
+/// Ok carries the output path exactly as the caller passed it.
 using AudioFileConcatResult = Result<std::string, std::string>;
-
-/// Builds the encoder that writes WAV and FLAC output. An empty function means the platform
-/// has no encoder, and those formats fail with an "unavailable" error.
-using ConcatEncoderFactory = std::function<CreateEncoderResult(const EncoderSettings &)>;
 
 class AudioFileReader {
  public:
@@ -56,10 +52,11 @@ class AudioFileReader {
     const std::string &outputPath);
 
 /// WAV and FLAC output go through @p createEncoder instead of the platform encoder, so the
-/// concat can run where no platform encoder exists.
+/// concat can run where no platform encoder exists. An empty @p createEncoder makes those
+/// formats fail with an "unavailable" error.
 [[nodiscard]] AudioFileConcatResult concatAudioFiles(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath,
-    const ConcatEncoderFactory &createEncoder);
+    const EncoderFactory &createEncoder);
 
 } // namespace audioapi
