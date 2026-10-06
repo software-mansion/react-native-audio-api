@@ -6,6 +6,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
@@ -69,7 +70,7 @@ class AudioAPIModuleInstaller {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
-        1,
+        2,
         [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
@@ -77,8 +78,14 @@ class AudioAPIModuleInstaller {
             size_t count) -> jsi::Value {
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
+          auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
+          if (count > 1 && args[1].isString()) {
+            latencyHint =
+                js_enum_parser::latencyHintFromString(args[1].getString(runtime).utf8(runtime));
+          }
+
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              sampleRate, audioEventHandlerRegistry, &runtime, jsCallInvoker);
+              sampleRate, audioEventHandlerRegistry, &runtime, jsCallInvoker, latencyHint);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });
@@ -126,11 +133,18 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto options = count > 0 ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
-                                   : AudioRecorderOptions{};
+          auto optionsResult = count > 0
+              ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
+              : AudioRecorderOptions::CreateFromJSIValue(runtime, jsi::Value::undefined());
+          if (optionsResult.is_err()) {
+            throw jsi::JSError(runtime, optionsResult.unwrap_err());
+          }
 
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry, &runtime, jsCallInvoker, std::move(options));
+              audioEventHandlerRegistry,
+              &runtime,
+              jsCallInvoker,
+              std::move(optionsResult).unwrap());
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 

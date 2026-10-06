@@ -1,7 +1,7 @@
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/decoding/AudioDecoding.h>
-#include <audioapi/decoding/AudioFileConcatenator.h>
+#include <audioapi/encoding/AudioFileConcatenator.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
@@ -54,9 +54,9 @@ JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, concatAudioFiles) {
           };
         }
 
-        return [outputPath = std::move(outputPath)](
+        return [result = std::move(result)](
                    jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-          return jsi::String::createFromUtf8(runtime, outputPath);
+          return jsi::String::createFromUtf8(runtime, result.unwrap());
         };
       });
 

@@ -43,7 +43,8 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
 
   size_t bufferId_ = 0;
   bool stretchHasBeenInit_ = false;
-  bool channelCountSet_ = false;
+  /// Width of the first enqueued buffer; later buffers are mixed to it. 0 until then.
+  size_t outputChannelNumber_ = 0;
 };
 
 } // namespace audioapi

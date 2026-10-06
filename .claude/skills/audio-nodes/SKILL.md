@@ -141,7 +141,6 @@ classDiagram
   AudioNode <|-- WorkletNode
   AudioNode <|-- AnalyserNode
   AudioNode <|-- AudioDestinationNode
-  AudioNode <|-- AudioRecorder
 
   AudioScheduledSourceNode <|-- AudioBufferBaseSourceNode
   AudioScheduledSourceNode <|-- OscillatorNode
@@ -151,6 +150,29 @@ classDiagram
   AudioBufferBaseSourceNode <|-- AudioBufferSourceNode
   AudioBufferBaseSourceNode <|-- AudioBufferQueueSourceNode
 ```
+
+### AudioRecorder (not an AudioNode)
+
+`core/inputs/AudioRecorder` is a standalone base class, not part of the `AudioNode` hierarchy — it
+feeds the graph through a `RecorderAdapterNode` instead of being processed by it.
+
+The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
+that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
+`setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
+subclasses own only the platform input stream. The one thing the base needs from the platform is
+`resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
+it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values
+cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform;
+state only one platform touches (Android's `streamMutex_`, iOS's `inputChannelCount_`) lives in
+that subclass. State a consumer already owns stays with the consumer: the adapter node's ring
+layout (`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
+`AudioFileWriter::closeFile()`) are not mirrored in the recorder.
+
+Pitfall: never redeclare a base member (`streamSampleRate_`, `fileWriter_`,
+`lastCallbackFrameCount_`) in a platform recorder. The shadowing copy compiles fine, but the base's
+audio-thread fan-out reads its own member and silently drops that output.
+
+---
 
 ### AudioScheduledSourceNode (internal only — not exposed to JS directly)
 
@@ -351,7 +373,14 @@ Callback IDs are stored as `std::atomic<uint64_t>` on the node. `0` means no lis
 All graph mutations are queued via `AudioGraphManager` using its own SPSC channel (`addPendingNodeConnection`, `addPendingParamConnection`). The audio thread calls `graphManager_->preProcessGraph()` before each render pass to apply pending changes.
 
 ### Settable channel attributes (channelCount / channelCountMode / channelInterpretation)
-These are mutable after construction. `AudioNode` (core) exposes virtual `setChannelCount` / `setChannelCountMode` / `setChannelInterpretation`. `channelCount` and `channelCountMode` are read only on the host thread during negotiation, so the JSI setter updates the core field directly then calls `HostNode::renegotiate()` → `Graph::renegotiateNodeChannels()` → `HostGraph::renegotiateNodeChannels()` (reuses `collectNegotiations` + an `AGEvent` buffer swap, self-drain aware when there is no audio/render consumer — offline construction/suspend and realtime suspended/stopped windows). When `AudioBufferSourceNode` `setBuffer` changes channel width, update `channelCount_` on the host thread then `renegotiate()` so MAX/CLAMPED_MAX downstream nodes update; the audio event still installs the prebuilt buffer (no audio-thread alloc). `channelInterpretation` is read on the audio thread in `processInputs` (`getInputBuffer()->sum(*input, channelInterpretation_)`), so it MUST be applied via `scheduleAudioEvent`, not mutated directly.
+These are mutable after construction. `AudioNode` (core) exposes virtual `setChannelCount` / `setChannelCountMode` / `setChannelInterpretation`. `channelCount` and `channelCountMode` are read only on the host thread during negotiation, so the JSI setter updates the core field directly then calls `HostNode::renegotiate()` → `Graph::renegotiateNodeChannels()` → `HostGraph::renegotiateNodeChannels()` (reuses `collectNegotiations` + an `AGEvent` buffer swap, self-drain aware when there is no audio/render consumer — offline construction/suspend and realtime suspended/stopped windows). When `AudioBufferSourceNode` `setBuffer` changes channel width, update `outputChannelNumber_` together with the buffer then `renegotiate()` so MAX/CLAMPED_MAX downstream nodes update; the audio event still installs the prebuilt buffer (no audio-thread alloc). `channelInterpretation` is read on the audio thread in `processInputs` (`getInputBuffer()->sum(*input, channelInterpretation_)`), so it MUST be applied via `scheduleAudioEvent`, not mutated directly.
+
+### Output channel number vs `channelCount` (sources)
+`channelCount` is the spec's input-mixing attribute and never decides how many channels a node emits. `AudioNode` keeps a separate atomic `outputChannelNumber_` (`getOutputChannelNumber()`), initialised from `AudioNodeOptions::outputChannelNumber` and falling back to `channelCount` for nodes whose output follows their negotiated input layout. `HostGraph` negotiation reads the output channel number for source inputs (`getUpstreamChannelCount` returns it when `numberOfInputs_ == 0`), so a spec-default `channelCount = 2` oscillator still negotiates a mono downstream buffer. Rules:
+- A node that always emits one channel (Oscillator, ConstantSource) derives its options from `MonoSourceNodeOptions`; do not lower `channelCount` or override `setChannelCount` to fake it.
+- A source that learns its width later (AudioBufferSource, AudioFileSource, AudioBufferQueueSource, RecorderAdapter) writes `outputChannelNumber_` in the same step it swaps `audioBuffer_`, never `channelCount_`.
+- When the host object schedules that swap (AudioBufferSourceNode `setBuffer`), it must first call `setOutputChannelNumber()` on the host thread and `renegotiate()`, otherwise downstream MAX / CLAMPED_MAX nodes negotiate against the stale width until the audio event lands (this broke the StereoPanner WPT `stereopannernode-panning` test when it lived on `updateChannelCount`). Never route this through `updateChannelCount`: that changes the JS-visible `channelCount` attribute.
+- Read the emitted width from `getOutputChannelNumber()` on any thread; the buffer pointer itself is audio-thread only.
 
 ### Idle-node stale-buffer zeroing (settleProcessableState)
 `AudioGraph::iter()` filters to `isProcessable()` nodes, so a node that has gone idle (e.g. a finished source) is skipped and its output buffer is NOT refreshed — it keeps the samples from an earlier quantum. Downstream consumers still read that buffer via `getOutput()` when collecting inputs, which would re-sum ghost echoes every quantum (this broke the `audionode-channel-rules` ~170-node WPT test).

@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace audioapi {
 
@@ -52,6 +53,8 @@ class AudioScheduledSourceNode : public AudioNode {
   void assignOnEndedCallbackId(uint64_t callbackId);
 
   bool canBeDestructed() const override;
+
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
  protected:
   double startTime_;

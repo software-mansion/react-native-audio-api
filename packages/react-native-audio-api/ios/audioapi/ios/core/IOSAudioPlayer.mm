@@ -18,6 +18,20 @@ namespace audioapi {
 
 namespace {
 
+/// In frames of the session's own rate, which may differ from the context's.
+int preferredIOBufferFramesFor(AudioContextLatencyHint latencyHint)
+{
+  switch (latencyHint) {
+    case AudioContextLatencyHint::INTERACTIVE:
+      return RENDER_QUANTUM_SIZE;
+    case AudioContextLatencyHint::BALANCED:
+      return 8 * RENDER_QUANTUM_SIZE;
+    case AudioContextLatencyHint::PLAYBACK:
+      return 32 * RENDER_QUANTUM_SIZE;
+  }
+  return RENDER_QUANTUM_SIZE;
+}
+
 void reportStreamFailToContext(
     std::mutex *driverMutex,
     const std::weak_ptr<AudioContext> &context,
@@ -37,40 +51,29 @@ void reportStreamFailToContext(
 
 } // namespace
 
-IOSAudioPlayer::IOSAudioPlayer(
-    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-    float sampleRate,
-    int channelCount,
-    std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
-    std::mutex *driverMutex)
-    : CommonPlayer(
-          renderAudio,
-          sampleRate,
-          channelCount,
-          currentRenders,
-          std::move(context),
-          driverMutex),
-      audioPlayer_(nullptr),
-      pendingSaved_(RENDER_QUANTUM_SIZE, channelCount, sampleRate)
+NativeAudioPlayer *IOSAudioPlayer::createNativePlayer()
 {
   RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
     deliverOutputBuffers(outputData, numFrames);
   };
 
-  audioPlayer_ = [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
-                                                     sampleRate:sampleRate
-                                                   channelCount:channelCount_];
+  NativeAudioPlayer *nativePlayer =
+      [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
+                                          sampleRate:sampleRate_
+                                        channelCount:channelCount_
+                             preferredIOBufferFrames:preferredIOBufferFramesFor(latencyHint_)];
 
   std::mutex *driverMutexForCallback = driverMutex_;
   std::weak_ptr<AudioContext> weakContext = context_;
   IOSAudioPlayer *player = this;
-  audioPlayer_.onStreamFail = ^{
+  nativePlayer.onStreamFail = ^{
     // Called only once the context, which owns this player, is locked alive.
     reportStreamFailToContext(driverMutexForCallback, weakContext, [player] {
       return player->isRunning_.load(std::memory_order_acquire) && !player->isRunning();
     });
   };
+
+  return nativePlayer;
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()

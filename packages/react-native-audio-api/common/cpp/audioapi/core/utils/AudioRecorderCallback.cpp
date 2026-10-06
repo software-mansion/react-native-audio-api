@@ -1,14 +1,18 @@
-
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/events/AudioEventPayload.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/CircularArray.hpp>
 
-#include <audioapi/events/AudioEventPayload.h>
 #include <algorithm>
+#include <array>
+#include <cstring>
 #include <memory>
+#include <mutex>
+#include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace audioapi {
 
@@ -31,11 +35,12 @@ AudioRecorderCallback::AudioRecorderCallback(
       audioReadyEvent_(audioEventHandlerRegistry),
       errorEvent_(audioEventHandlerRegistry) {
   audioReadyEvent_.assignCallbackId(callbackId);
-  ringBufferSize_ = std::max(bufferLength * 2, static_cast<size_t>(DEFAULT_RING_BUFFER_SIZE));
+  const size_t ringBufferSize =
+      std::max(bufferLength * 2, static_cast<size_t>(DEFAULT_RING_BUFFER_SIZE));
   circularBuffer_.resize(channelCount_);
 
-  for (size_t i = 0; i < channelCount_; ++i) {
-    circularBuffer_[i] = std::make_shared<CircularAudioArray>(ringBufferSize_);
+  for (auto &arr : circularBuffer_) {
+    arr = std::make_shared<CircularAudioArray>(ringBufferSize);
   }
 
   isInitialized_.store(true, std::memory_order_release);
@@ -43,6 +48,197 @@ AudioRecorderCallback::AudioRecorderCallback(
 
 AudioRecorderCallback::~AudioRecorderCallback() {
   isInitialized_.store(false, std::memory_order_release);
+  cleanup();
+}
+
+Result<NoneType, std::string> AudioRecorderCallback::prepare(const StreamFormat &streamFormat) {
+  streamLayout_ = streamFormat.layout;
+  maxInputBufferLength_ = streamFormat.maxFramesPerBuffer;
+
+  if (streamLayout_.sampleRate <= 0 || streamLayout_.channelCount <= 0 ||
+      maxInputBufferLength_ == 0) {
+    return Result<NoneType, std::string>::Err("Invalid stream sample rate or channel count");
+  }
+
+  if (sampleRate_ <= 0 || channelCount_ <= 0) {
+    return Result<NoneType, std::string>::Err("Invalid callback sample rate or channel count");
+  }
+  if (streamLayout_.channelCount > MAX_CHANNEL_COUNT || channelCount_ > MAX_CHANNEL_COUNT) {
+    return Result<NoneType, std::string>::Err("Channel count exceeds MAX_CHANNEL_COUNT");
+  }
+
+  const bool needsRemix = streamLayout_.channelCount != channelCount_;
+  const bool needsResampling = streamLayout_.sampleRate != sampleRate_;
+
+  if (needsRemix || needsResampling) {
+    const auto chunkFrames = static_cast<size_t>(RESAMPLER_MAX_INPUT_FRAMES);
+
+    if (needsRemix) {
+      remixedChunk_ =
+          std::make_unique<AudioBuffer>(chunkFrames, channelCount_, streamLayout_.sampleRate);
+    }
+
+    if (needsResampling) {
+      resampler_ = std::make_unique<r8b::MultiChannelResampler>(
+          streamLayout_.sampleRate, sampleRate_, channelCount_, RESAMPLER_MAX_INPUT_FRAMES);
+      // r8brain reports how much one full input block can expand to; size the output
+      // to that so process() can never write past the end.
+      const auto maxOutFrames = static_cast<size_t>(std::max(resampler_->getMaxOutLen(), 1));
+      resamplerOutput_ = std::make_unique<AudioBuffer>(maxOutFrames, channelCount_, sampleRate_);
+    }
+  }
+
+  if (!inputBufferPool_.allocate(
+          maxInputBufferLength_, streamLayout_.channelCount, streamLayout_.sampleRate)) {
+    releaseProcessingResources();
+    return Result<NoneType, std::string>::Err("Failed to preallocate recorder callback buffers");
+  }
+
+  auto offloaderLambda = [this](PendingCallbackFrames pending) {
+    runCallbackTask(std::move(pending));
+  };
+  offloader_ = std::make_unique<Offloader>(CHANNEL_CAPACITY, offloaderLambda);
+  return Result<NoneType, std::string>::Ok(None);
+}
+
+void AudioRecorderCallback::releaseProcessingResources() {
+  resampler_.reset();
+  remixedChunk_.reset();
+  resamplerOutput_.reset();
+
+  inputBufferPool_.clear();
+}
+
+void AudioRecorderCallback::cleanup() {
+  std::scoped_lock audioLock(destructionAudioGuard_);
+  // join the worker
+  offloader_.reset();
+
+  if (!circularBuffer_.empty() && circularBuffer_[0]->getNumberOfAvailableFrames() > 0) {
+    emitAudioData(true);
+  }
+
+  releaseProcessingResources();
+}
+
+/// @brief Copies incoming audio into an owned slot and hands it to the worker thread.
+/// This method is called on the audio thread.
+void AudioRecorderCallback::receiveAudioData(const float *const *channels, int numFrames) {
+  // Don't block the audio thread: if cleanup() holds the guard we're being destroyed, drop the
+  // buffer.
+  std::unique_lock<std::mutex> lock(destructionAudioGuard_, std::try_to_lock);
+  if (!lock.owns_lock()) {
+    return;
+  }
+  if (channels == nullptr || numFrames <= 0 || offloader_ == nullptr) {
+    return;
+  }
+  if (!isInitialized_.load(std::memory_order_acquire)) {
+    return;
+  }
+
+  AudioBufferLease slot = inputBufferPool_.tryAcquire();
+  if (slot == nullptr) {
+    return;
+  }
+
+  const auto frames = static_cast<size_t>(numFrames);
+  if (frames > slot->getSize()) {
+    return;
+  }
+
+  // The recorder owns `channels` only for the duration of this synchronous callback. Copy
+  // into a leased buffer before handing off to the worker thread.
+  for (int channel = 0; channel < streamLayout_.channelCount; ++channel) {
+    std::memcpy(slot->getChannel(channel)->begin(), channels[channel], frames * sizeof(float));
+  }
+  // send() cannot block here: we hold a slot from a pool of POOL_SIZE,
+  // and the channel is sized one larger, so the ring always has room while
+  // any slot is in flight.
+  offloader_->getSender()->send(
+      PendingCallbackFrames{.buffer = std::move(slot), .numFrames = numFrames});
+}
+
+void AudioRecorderCallback::pushChannels(const AudioBuffer &planarFrames, int numFrames) {
+  std::array<const float *, MAX_CHANNEL_COUNT> channels{};
+  for (int ch = 0; ch < channelCount_; ++ch) {
+    channels[ch] = planarFrames.getChannel(ch)->begin();
+  }
+  pushChannels(channels.data(), numFrames);
+}
+
+void AudioRecorderCallback::pushChannels(const float *const *planarFrames, int numFrames) {
+  try {
+    for (int ch = 0; ch < channelCount_; ++ch) {
+      circularBuffer_[ch]->push_back(planarFrames[ch], numFrames);
+    }
+  } catch (const std::overflow_error &e) {
+    invokeOnErrorCallback(
+        "Failed to push audio data into the circular buffer: " + std::string(e.what()));
+  }
+}
+
+/// @brief Worker-thread handler: resamples/remixes if needed, pushes into the circular
+/// buffer and emits to JS once a full callback buffer has accumulated.
+void AudioRecorderCallback::runCallbackTask(PendingCallbackFrames pending) {
+  // The TaskOffloader destructor sends a default-constructed PendingCallbackFrames (no
+  // buffer) to unblock the receiver; ignore it here.
+  if (pending.buffer == nullptr) {
+    return;
+  }
+  const int numFrames = pending.numFrames;
+  const AudioBuffer &slotFrames = *pending.buffer;
+
+  if (resampler_ == nullptr && remixedChunk_ == nullptr) {
+    // Stream already matches what JS asked for.
+    pushChannels(slotFrames, numFrames);
+  } else {
+    convertAndPushChunks(slotFrames, numFrames);
+  }
+
+  if (circularBuffer_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
+    emitAudioData();
+  }
+}
+
+/// r8brain is built for a bounded input block, so the frames are fed through one chunk at a
+/// time. It resamples but never remixes, so a chunk is folded to the callback's channel count
+/// first when the counts differ; otherwise it is a window straight into the slot.
+void AudioRecorderCallback::convertAndPushChunks(const AudioBuffer &slotFrames, int numFrames) {
+  std::array<float *, MAX_CHANNEL_COUNT> resampled{};
+  if (resampler_ != nullptr) {
+    for (int ch = 0; ch < channelCount_; ++ch) {
+      resampled[ch] = resamplerOutput_->getChannel(ch)->begin();
+    }
+  }
+
+  for (int consumed = 0; consumed < numFrames;) {
+    const int chunkFrames = std::min(numFrames - consumed, RESAMPLER_MAX_INPUT_FRAMES);
+
+    std::array<const float *, MAX_CHANNEL_COUNT> chunk{};
+    if (remixedChunk_ != nullptr) {
+      remixedChunk_->copy(
+          slotFrames, static_cast<size_t>(consumed), 0, static_cast<size_t>(chunkFrames));
+      for (int ch = 0; ch < channelCount_; ++ch) {
+        chunk[ch] = remixedChunk_->getChannel(ch)->begin();
+      }
+    } else {
+      for (int ch = 0; ch < channelCount_; ++ch) {
+        chunk[ch] = slotFrames.getChannel(ch)->begin() + consumed;
+      }
+    }
+
+    if (resampler_ == nullptr) {
+      pushChannels(chunk.data(), chunkFrames);
+    } else {
+      const int producedFrames = resampler_->process(chunk.data(), chunkFrames, resampled.data());
+      if (producedFrames > 0) {
+        pushChannels(resampled.data(), producedFrames);
+      }
+    }
+
+    consumed += chunkFrames;
+  }
 }
 
 /// @brief Emits audio data from the circular buffer when enough frames are available.

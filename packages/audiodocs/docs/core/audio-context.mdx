@@ -21,6 +21,7 @@ constructor(options?: AudioContextOptions)
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
 | `sampleRate` <Optional /> | `number` | - | The preferred sample rate for the context. |
+| `latencyHint` <Optional /> | `'interactive' \| 'balanced' \| 'playback'` | `'interactive'` | What the context should optimize its output stream for. `interactive` requests the lowest latency the platform offers; `balanced` and `playback` trade output latency for a deeper buffer, which favours glitch-free sustained playback. |
 
 #### Errors
 

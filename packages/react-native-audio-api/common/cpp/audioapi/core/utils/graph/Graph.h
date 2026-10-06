@@ -150,7 +150,7 @@ class Graph {
   /// @brief Removes all outgoing edges from `from`.
   Res removeAllEdges(HNode *from);
 
-  /// @brief Recomputes channel-count negotiation for `node` (cascading
+  /// @brief Recomputes channel negotiation for `node` (cascading
   /// downstream) after its `channelCount` / `channelCountMode` changed. Sends
   /// the resulting buffer-swap event through Channel A.
   Res renegotiateNodeChannels(HNode *node);

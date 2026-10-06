@@ -15,7 +15,7 @@
 // nullptr on older devices instead of failing library load; every use is guarded
 // with __builtin_available. Requires NDK r26+.
 
-namespace audioapi::android_decoder {
+namespace audioapi::android::decoder {
 
 namespace {
 
@@ -108,4 +108,4 @@ decoding::DecoderResult attachMemoryExtractorViaDataSource(
   return Err("AndroidDecoder: AMediaDataSource is not supported on this device (requires API 28)");
 }
 
-} // namespace audioapi::android_decoder
+} // namespace audioapi::android::decoder

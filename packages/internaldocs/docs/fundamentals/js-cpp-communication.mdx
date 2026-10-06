@@ -1,0 +1,53 @@
+---
+sidebar_position: 3
+---
+
+# JS and C++ communication
+
+As an entry point to the underlying c++ engine, we utilize [the react-native native C++ module](https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules).
+We inject [the audio context](https://docs.swmansion.com/react-native-audio-api/docs/core/audio-context) constructor to the JavaScript global scope.
+[Detailed implementation](https://github.com/software-mansion/react-native-audio-api/blob/1966b4ac91efb990f1bc626fdb8899b034b770f4/packages/react-native-audio-api/common/cpp/audioapi/AudioAPIModuleInstaller.h).
+Utilizing it, we can access it directly in JavaScript
+```javascript
+globalThis.createAudioContext(
+  options?.sampleRate,
+  options?.latencyHint
+)
+```
+
+Later on, every JS object has its equivalent living in C++ side and the glue that connects those two worlds and serializes data passed is special class called HostObject.
+There is no need to dig how exactly it is implemented in React Native, all that matters is how we utilize it for the communication.
+For example let's look at the GainNode JavaScript and C++ code.
+
+```javascript
+// GainNode.ts
+class GainNode extends AudioNode {
+  readonly gain: AudioParam;
+
+  constructor(context: BaseAudioContext, options?: GainOptions) {
+    const gainNode: IGainNode = context.context.createGain(options || {});
+    super(context, gainNode, options);
+    // highlight-next-line
+    this.gain = new AudioParam(gainNode.gain, context, this);
+  }
+}
+```
+
+```cpp
+// GainNodeHostObject.h
+class GainNodeHostObject : public AudioNodeHostObject {
+ public:
+  explicit GainNodeHostObject(
+      const std::shared_ptr<BaseAudioContext> &context,
+      const GainOptions &options);
+
+  JSI_PROPERTY_GETTER_DECL(gain);
+
+ private:
+  // highlight-next-line
+  std::shared_ptr<AudioParamHostObject> gainParam_;
+};
+```
+
+We can see that js side creates concrete [AudioParam](https://docs.swmansion.com/react-native-audio-api/docs/core/audio-param), which is also present in `GainNodeHostObject`.
+They point to the same memory place, which can be accessed in both worlds.

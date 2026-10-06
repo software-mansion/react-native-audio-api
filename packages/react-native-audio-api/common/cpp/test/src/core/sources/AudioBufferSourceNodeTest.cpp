@@ -253,4 +253,20 @@ TEST_F(AudioBufferSourceNodeTest, BufferAssignedAfterNullBufferSourceEndedIsIgno
   EXPECT_TRUE(node->isEmpty());
 }
 
+/// Only the host thread publishes the output channel number. Applying an older
+/// buffer on the audio thread must not overwrite the width the host published
+/// for a newer one, or the host would skip the renegotiation for the next change.
+TEST_F(AudioBufferSourceNodeTest, BufferSwapKeepsHostPublishedOutputChannelNumber) {
+  auto *node = addNode(makeNodeWithoutBuffer());
+  node->setOutputChannelNumber(1);
+
+  auto olderStereoBuffer =
+      std::make_shared<AudioBuffer>(QUANTUM, 2, static_cast<float>(SAMPLE_RATE));
+  node->setBuffer(
+      olderStereoBuffer,
+      std::make_shared<DSPAudioBuffer>(QUANTUM, 2, static_cast<float>(SAMPLE_RATE)));
+
+  EXPECT_EQ(node->getOutputChannelNumber(), 1u);
+}
+
 // NOLINTEND
