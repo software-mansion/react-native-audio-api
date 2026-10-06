@@ -1,0 +1,80 @@
+/*
+ * Every colour comes from a theme variable or is redefined for dark mode, so
+ * the figure needs no background of its own.
+ */
+.figure {
+  --sampling-ink: var(--ifm-font-color-base);
+  --sampling-signal: var(--ifm-color-primary);
+  --sampling-sample: #1f9d6b;
+
+  margin: 1.5rem auto;
+  max-width: 720px;
+}
+
+[data-theme='dark'] .figure {
+  --sampling-sample: #5ad8a6;
+}
+
+.figure svg {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.axis {
+  stroke: var(--sampling-ink);
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.axisArrow {
+  fill: var(--sampling-ink);
+}
+
+.continuousSignal {
+  fill: none;
+  stroke: var(--sampling-signal);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.heldSignal {
+  fill: none;
+  opacity: 0.55;
+  stroke: var(--sampling-ink);
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.stem {
+  opacity: 0.4;
+  stroke: var(--sampling-ink);
+  stroke-dasharray: 2 4;
+  stroke-width: 1.5;
+}
+
+.sample {
+  fill: var(--sampling-sample);
+}
+
+.bracket line {
+  opacity: 0.7;
+  stroke: var(--sampling-ink);
+  stroke-width: 1.25;
+}
+
+.label,
+.legend {
+  fill: var(--sampling-ink);
+  font-family: var(--ifm-font-family-base);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.legend {
+  font-size: 12.5px;
+}
