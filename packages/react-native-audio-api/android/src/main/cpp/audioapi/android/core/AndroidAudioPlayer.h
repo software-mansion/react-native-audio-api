@@ -8,24 +8,24 @@
 #include <memory>
 #include <mutex>
 
-#include <audioapi/core/CommonPlayer.h>
+#include <audioapi/core/AudioPlayer.h>
 
 namespace audioapi {
 
 using namespace oboe;
 
-class AudioPlayer : public CommonPlayer,
-                    public AudioStreamDataCallback,
-                    public AudioStreamErrorCallback,
-                    public std::enable_shared_from_this<AudioPlayer> {
+class AndroidAudioPlayer : public AudioPlayer,
+                           public AudioStreamDataCallback,
+                           public AudioStreamErrorCallback,
+                           public std::enable_shared_from_this<AndroidAudioPlayer> {
  public:
-  using CommonPlayer::CommonPlayer;
+  using AudioPlayer::AudioPlayer;
 
-  ~AudioPlayer() override {
+  ~AndroidAudioPlayer() override {
     cleanup();
   }
 
-  DELETE_COPY_AND_MOVE(AudioPlayer);
+  DELETE_COPY_AND_MOVE(AndroidAudioPlayer);
 
   bool start() override;
   void stop() override;
@@ -45,13 +45,18 @@ class AudioPlayer : public CommonPlayer,
 
  private:
   std::shared_ptr<AudioStream> mStream_;
-  mutable std::recursive_mutex streamMutex_;
+  /// `Locked` methods require it to be held by the caller and must not call the public locking methods.
+  /// When both locks are needed, `driverMutex_` is taken first.
+  mutable std::mutex streamMutex_;
   std::atomic<bool> isInitialized_{false};
   /// Updated on the audio thread from each Oboe callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
 
-  bool openAudioStream();
-  bool rebuildStream();
+  bool openAudioStreamLocked();
+  bool rebuildStreamLocked();
+  bool startStreamLocked();
+  void cleanupLocked();
+  [[nodiscard]] bool isRunningLocked() const;
 };
 
 } // namespace audioapi

@@ -7,7 +7,7 @@ typedef struct objc_object NativeAudioPlayer;
 typedef struct objc_object AudioBufferList;
 #endif // __OBJC__
 
-#include <audioapi/core/CommonPlayer.h>
+#include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -20,9 +20,9 @@ typedef struct objc_object AudioBufferList;
 
 namespace audioapi {
 
-class IOSAudioPlayer : public CommonPlayer {
+class IOSAudioPlayer : public AudioPlayer {
  public:
-  using CommonPlayer::CommonPlayer;
+  using AudioPlayer::AudioPlayer;
   ~IOSAudioPlayer() override;
 
   DELETE_COPY_AND_MOVE(IOSAudioPlayer);

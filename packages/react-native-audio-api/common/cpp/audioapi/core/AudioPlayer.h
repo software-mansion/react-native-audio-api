@@ -16,9 +16,9 @@ namespace audioapi {
 
 class AudioContext;
 
-class CommonPlayer {
+class AudioPlayer {
  public:
-  CommonPlayer(
+  AudioPlayer(
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount,
@@ -35,8 +35,8 @@ class CommonPlayer {
         context_(std::move(context)),
         driverMutex_(driverMutex),
         latencyHint_(latencyHint) {}
-  DELETE_COPY_AND_MOVE(CommonPlayer);
-  virtual ~CommonPlayer() = default;
+  DELETE_COPY_AND_MOVE(AudioPlayer);
+  virtual ~AudioPlayer() = default;
 
   virtual bool start() = 0;
   virtual void stop() = 0;
