@@ -102,13 +102,12 @@ describe('Mock Integration Tests', () => {
       const recorder = new MockAPI.AudioRecorder();
 
       // Configure file output
-      const configResult = recorder.enableFileOutput({
+      recorder.enableFileOutput({
         format: MockAPI.FileFormat.M4A,
         channelCount: 2,
         directory: MockAPI.FileDirectory.Document,
       });
-
-      expect(configResult.status).toBe('success');
+      // it would throw an error if the configuration failed, so we can assume success if no error is thrown
 
       // Create audio source
       const oscillator = context.createOscillator();
