@@ -45,8 +45,19 @@ export type OscillatorType =
   | 'triangle'
   | 'custom';
 
+export type AudioContextLatencyCategory =
+  | 'balanced'
+  | 'interactive'
+  | 'playback';
+
 export interface AudioContextOptions {
   sampleRate?: number;
+  /**
+   * What the context should optimize its output stream for; defaults to
+   * `'interactive'`. See the platform table in the docs. Numeric hints are not
+   * supported yet.
+   */
+  latencyHint?: AudioContextLatencyCategory;
 }
 
 export interface OfflineAudioContextOptions {
@@ -172,6 +183,27 @@ export interface ChannelSplitterOptions extends AudioNodeOptions {
 
 export interface StereoPannerOptions extends AudioNodeOptions {
   pan?: number;
+}
+
+export type PanningModelType = 'equalpower';
+
+export type DistanceModelType = 'linear' | 'inverse' | 'exponential';
+
+export interface PannerOptions extends AudioNodeOptions {
+  panningModel?: PanningModelType;
+  distanceModel?: DistanceModelType;
+  positionX?: number;
+  positionY?: number;
+  positionZ?: number;
+  orientationX?: number;
+  orientationY?: number;
+  orientationZ?: number;
+  refDistance?: number;
+  maxDistance?: number;
+  rolloffFactor?: number;
+  coneInnerAngle?: number;
+  coneOuterAngle?: number;
+  coneOuterGain?: number;
 }
 
 export interface AnalyserOptions extends AudioNodeOptions {

@@ -180,7 +180,6 @@ void IOSFileWriter::rollbackFailedOpen()
 }
 
 /// @brief Closes the currently open audio file and finalizes writing.
-/// This method retrieves the final file duration and size before closing.
 /// This method should be called from the JS thread only.
 /// @returns A CloseFileResult indicating success with file duration and size or an error message.
 CloseFileResult IOSFileWriter::closeFile()
@@ -203,8 +202,7 @@ CloseFileResult IOSFileWriter::closeFile()
     // AVAudioFile automatically finalizes the file when deallocated
     audioFile_ = nil;
 
-    double fileDuration = CMTimeGetSeconds([[AVURLAsset URLAssetWithURL:fileURL_
-                                                                options:nil] duration]);
+    double fileDuration = getCurrentDuration();
     double fileSizeBytesMb = static_cast<double>([[[NSFileManager defaultManager]
                                  attributesOfItemAtPath:fileURL_.path
                                                   error:&error] fileSize]) /

@@ -27,7 +27,7 @@ Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audiono
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `maxDelayTime` <Optional /> | `number` | `1.0` | Maximum amount of time, in seconds, to buffer delayed values. |
+| `maxDelayTime` <Optional /> | `number` | `1.0` | Maximum amount of time, in seconds, to buffer delayed values. Must be greater than `0` and less than `180`, otherwise the constructor throws `NotSupportedError`. |
 | `delayTime` <Optional /> | `number` | `0.0` | Initial value for [`delayTime`](./delay-node.mdx#properties). |
 
 You can also create a `DelayNode` via the [`BaseAudioContext.createDelay(maxDelayTime?: number)`](../core/base-audio-context.mdx#createdelay) factory method, which uses default values when called without arguments.

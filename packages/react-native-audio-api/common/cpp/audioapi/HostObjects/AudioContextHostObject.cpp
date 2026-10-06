@@ -13,18 +13,24 @@ AudioContextHostObject::AudioContextHostObject(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    const std::shared_ptr<react::CallInvoker> &callInvoker,
+    AudioContextLatencyHint latencyHint)
     : BaseAudioContextHostObject(
-          std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry),
+          std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry, latencyHint),
           runtime,
           callInvoker) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, outputLatency));
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, baseLatency));
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioContextHostObject, onerror));
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, createMediaElementSource));
+}
+
+AudioContextHostObject::~AudioContextHostObject() {
+  std::static_pointer_cast<AudioContext>(context_)->assignOnErrorCallbackId(0);
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
@@ -76,6 +82,11 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
   auto object = jsi::Object::createFromHostObject(runtime, mediaElementHostObject);
   object.setExternalMemoryPressure(runtime, mediaElementHostObject->getMemoryPressure());
   return object;
+}
+
+JSI_PROPERTY_SETTER_IMPL(AudioContextHostObject, onerror) {
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+  audioContext->assignOnErrorCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 } // namespace audioapi

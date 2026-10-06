@@ -1,5 +1,5 @@
 import { IConvolverNode } from '../jsi-interfaces';
-import { ConvolverOptions } from '../types';
+import { ChannelCountMode, ConvolverOptions } from '../types';
 import type BaseAudioContext from './BaseAudioContext';
 import AudioNode from './AudioNode';
 import AudioBuffer from './AudioBuffer';
@@ -7,6 +7,8 @@ import {
   ConvolverOptionsValidator,
   validateConvolverBufferChannelCount,
   validateConvolverBufferSampleRate,
+  validateConvolverChannelCount,
+  validateConvolverChannelCountMode,
 } from '../utils/validation';
 
 export default class ConvolverNode extends AudioNode {
@@ -23,6 +25,24 @@ export default class ConvolverNode extends AudioNode {
       this.buffer = options.buffer as AudioBuffer;
     }
     this.normalize = convolverNode.normalize;
+  }
+
+  public override get channelCount(): number {
+    return super.channelCount;
+  }
+
+  public override set channelCount(value: number) {
+    validateConvolverChannelCount(value);
+    super.channelCount = value;
+  }
+
+  public override get channelCountMode(): ChannelCountMode {
+    return super.channelCountMode;
+  }
+
+  public override set channelCountMode(value: ChannelCountMode) {
+    validateConvolverChannelCountMode(value);
+    super.channelCountMode = value;
   }
 
   public get buffer(): AudioBuffer | null {

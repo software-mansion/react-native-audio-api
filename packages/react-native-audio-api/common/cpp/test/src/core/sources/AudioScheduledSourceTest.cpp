@@ -142,13 +142,13 @@ TEST_F(AudioScheduledSourceTest, StopBeforeStartFiresEndedWhenContextTimeReaches
 
   EXPECT_CALL(
       *eventRegistry,
-      dispatchEventFromAudioThread(AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
       .Times(0);
   sourceNode.playFrames(RENDER_QUANTUM); // context time is still before the stop time
 
   EXPECT_CALL(
       *eventRegistry,
-      dispatchEventFromAudioThread(AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
       .WillOnce(testing::Return(true));
   sourceNode.playFrames(RENDER_QUANTUM); // context time reaches the stop time
 
@@ -171,21 +171,24 @@ TEST_F(AudioScheduledSourceTest, DeferredEndedEventsFireInDueTimeOrderNotInserti
   earlyNode.stop(RENDER_QUANTUM_TIME);
 
   EXPECT_CALL(
-      *eventRegistry, dispatchEventFromAudioThread(AudioEvent::ENDED, testing::_, testing::_))
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, testing::_, testing::_))
       .Times(0);
   lateNode.playFrames(RENDER_QUANTUM); // context time is still 0
 
   EXPECT_CALL(
-      *eventRegistry, dispatchEventFromAudioThread(AudioEvent::ENDED, LATE_CALLBACK_ID, testing::_))
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, LATE_CALLBACK_ID, testing::_))
       .Times(0);
   EXPECT_CALL(
       *eventRegistry,
-      dispatchEventFromAudioThread(AudioEvent::ENDED, EARLY_CALLBACK_ID, testing::_))
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, EARLY_CALLBACK_ID, testing::_))
       .WillOnce(testing::Return(true));
   lateNode.playFrames(RENDER_QUANTUM); // context time reaches the earlier stop time
 
   EXPECT_CALL(
-      *eventRegistry, dispatchEventFromAudioThread(AudioEvent::ENDED, LATE_CALLBACK_ID, testing::_))
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, LATE_CALLBACK_ID, testing::_))
       .WillOnce(testing::Return(true));
   lateNode.playFrames(RENDER_QUANTUM); // context time reaches the later stop time
 
@@ -214,12 +217,12 @@ TEST_F(AudioScheduledSourceTest, DeferredEndedEventsDueInTheSameQuantumFireInDue
   testing::Sequence dueTimeOrder;
   EXPECT_CALL(
       *eventRegistry,
-      dispatchEventFromAudioThread(AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
       .InSequence(dueTimeOrder)
       .WillOnce(testing::Return(true));
   EXPECT_CALL(
       *eventRegistry,
-      dispatchEventFromAudioThread(AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
       .InSequence(dueTimeOrder)
       .WillOnce(testing::Return(true));
   laterNode.playFrames(RENDER_QUANTUM); // both due times have passed

@@ -49,6 +49,15 @@ std::string filterTypeToString(BiquadFilterType type) {
   }
 }
 
+AudioContextLatencyHint latencyHintFromString(const std::string &hint) {
+  if (hint == "balanced")
+    return AudioContextLatencyHint::BALANCED;
+  if (hint == "playback")
+    return AudioContextLatencyHint::PLAYBACK;
+
+  return AudioContextLatencyHint::INTERACTIVE;
+}
+
 OverSampleType overSampleTypeFromString(const std::string &type) {
   if (type == "2x")
     return OverSampleType::OVERSAMPLE_2X;
@@ -154,6 +163,8 @@ AudioEvent audioEventFromString(const std::string &event) {
     return AudioEvent::RECORDING_NOTIFICATION_STOP;
   if (event == "stateChange")
     return AudioEvent::STATE_CHANGE;
+  if (event == "contextError")
+    return AudioEvent::CONTEXT_ERROR;
 
   throw std::invalid_argument("Unknown audio event: " + event);
 }
@@ -193,6 +204,46 @@ std::string channelInterpretationToString(ChannelInterpretation interpretation) 
     default:
       throw std::invalid_argument("Unknown channel interpretation");
   }
+}
+
+std::string panningModelToString(PanningModelType model) {
+  switch (model) {
+    case PanningModelType::EqualPower:
+      return "equalpower";
+    default:
+      throw std::invalid_argument("Unknown panning model");
+  }
+}
+
+PanningModelType panningModelFromString(const std::string &model) {
+  if (model == "equalpower")
+    return PanningModelType::EqualPower;
+
+  throw std::invalid_argument("Invalid panning model: " + model);
+}
+
+std::string distanceModelToString(DistanceModelType model) {
+  switch (model) {
+    case DistanceModelType::Linear:
+      return "linear";
+    case DistanceModelType::Inverse:
+      return "inverse";
+    case DistanceModelType::Exponential:
+      return "exponential";
+    default:
+      throw std::invalid_argument("Unknown distance model");
+  }
+}
+
+DistanceModelType distanceModelFromString(const std::string &model) {
+  if (model == "linear")
+    return DistanceModelType::Linear;
+  if (model == "inverse")
+    return DistanceModelType::Inverse;
+  if (model == "exponential")
+    return DistanceModelType::Exponential;
+
+  throw std::invalid_argument("Invalid distance model: " + model);
 }
 
 ChannelInterpretation channelInterpretationFromString(const std::string &interpretation) {

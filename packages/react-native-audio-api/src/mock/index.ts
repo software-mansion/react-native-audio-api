@@ -28,6 +28,9 @@ import type {
   OscillatorOptions,
   PeriodicWaveOptions,
   StereoPannerOptions,
+  PannerOptions,
+  PanningModelType,
+  DistanceModelType,
   WaveShaperOptions,
 } from '../types';
 import { FileDirectory, FileFormat } from '../types';
@@ -500,6 +503,141 @@ class StereoPannerNodeMock extends AudioNodeMock {
   }
 }
 
+class PannerNodeMock extends AudioNodeMock {
+  readonly positionX: AudioParamMock;
+  readonly positionY: AudioParamMock;
+  readonly positionZ: AudioParamMock;
+  readonly orientationX: AudioParamMock;
+  readonly orientationY: AudioParamMock;
+  readonly orientationZ: AudioParamMock;
+  private _panningModel: PanningModelType = 'equalpower';
+  private _distanceModel: DistanceModelType = 'inverse';
+  private _refDistance = 1;
+  private _maxDistance = 10000;
+  private _rolloffFactor = 1;
+  private _coneInnerAngle = 360;
+  private _coneOuterAngle = 360;
+  private _coneOuterGain = 0;
+
+  constructor(context: BaseAudioContextMock, options?: PannerOptions) {
+    super(context, {});
+    this.positionX = new AudioParamMock({}, context);
+    this.positionY = new AudioParamMock({}, context);
+    this.positionZ = new AudioParamMock({}, context);
+    this.orientationX = new AudioParamMock({}, context);
+    this.orientationY = new AudioParamMock({}, context);
+    this.orientationZ = new AudioParamMock({}, context);
+    this.orientationX.value = 1;
+
+    if (options?.panningModel !== undefined) {
+      this._panningModel = options.panningModel;
+    }
+    if (options?.distanceModel !== undefined) {
+      this._distanceModel = options.distanceModel;
+    }
+    if (options?.positionX !== undefined) {
+      this.positionX.value = options.positionX;
+    }
+    if (options?.positionY !== undefined) {
+      this.positionY.value = options.positionY;
+    }
+    if (options?.positionZ !== undefined) {
+      this.positionZ.value = options.positionZ;
+    }
+    if (options?.orientationX !== undefined) {
+      this.orientationX.value = options.orientationX;
+    }
+    if (options?.orientationY !== undefined) {
+      this.orientationY.value = options.orientationY;
+    }
+    if (options?.orientationZ !== undefined) {
+      this.orientationZ.value = options.orientationZ;
+    }
+    if (options?.refDistance !== undefined) {
+      this._refDistance = options.refDistance;
+    }
+    if (options?.maxDistance !== undefined) {
+      this._maxDistance = options.maxDistance;
+    }
+    if (options?.rolloffFactor !== undefined) {
+      this._rolloffFactor = options.rolloffFactor;
+    }
+    if (options?.coneInnerAngle !== undefined) {
+      this._coneInnerAngle = options.coneInnerAngle;
+    }
+    if (options?.coneOuterAngle !== undefined) {
+      this._coneOuterAngle = options.coneOuterAngle;
+    }
+    if (options?.coneOuterGain !== undefined) {
+      this._coneOuterGain = options.coneOuterGain;
+    }
+  }
+
+  get panningModel(): PanningModelType {
+    return this._panningModel;
+  }
+
+  set panningModel(value: PanningModelType) {
+    this._panningModel = value;
+  }
+
+  get distanceModel(): DistanceModelType {
+    return this._distanceModel;
+  }
+
+  set distanceModel(value: DistanceModelType) {
+    this._distanceModel = value;
+  }
+
+  get refDistance(): number {
+    return this._refDistance;
+  }
+
+  set refDistance(value: number) {
+    this._refDistance = value;
+  }
+
+  get maxDistance(): number {
+    return this._maxDistance;
+  }
+
+  set maxDistance(value: number) {
+    this._maxDistance = value;
+  }
+
+  get rolloffFactor(): number {
+    return this._rolloffFactor;
+  }
+
+  set rolloffFactor(value: number) {
+    this._rolloffFactor = value;
+  }
+
+  get coneInnerAngle(): number {
+    return this._coneInnerAngle;
+  }
+
+  set coneInnerAngle(value: number) {
+    this._coneInnerAngle = value;
+  }
+
+  get coneOuterAngle(): number {
+    return this._coneOuterAngle;
+  }
+
+  set coneOuterAngle(value: number) {
+    this._coneOuterAngle = value;
+  }
+
+  get coneOuterGain(): number {
+    return this._coneOuterGain;
+  }
+
+  set coneOuterGain(value: number) {
+    this._coneOuterGain = value;
+  }
+}
+
 class OscillatorNodeMock extends AudioScheduledSourceNodeMock {
   private _type: OscillatorType = 'sine';
   readonly frequency: AudioParamMock;
@@ -785,6 +923,10 @@ class BaseAudioContextMock {
     return new StereoPannerNodeMock(this, options);
   }
 
+  createPanner(options?: PannerOptions): PannerNodeMock {
+    return new PannerNodeMock(this, options);
+  }
+
   createWaveShaper(options?: WaveShaperOptions): WaveShaperNodeMock {
     return new WaveShaperNodeMock(this, options);
   }
@@ -823,6 +965,8 @@ class AudioContextMock extends BaseAudioContextMock {
     this._state = 'suspended';
     return Promise.resolve();
   }
+
+  onerror: (() => void) | null = null;
 
   createMediaElementSource(
     mediaElement: HTMLMediaElement | AudioNodeMock
@@ -1219,6 +1363,7 @@ export const OfflineAudioContext = OfflineAudioContextMock;
 export const OscillatorNode = OscillatorNodeMock;
 export const RecorderAdapterNode = RecorderAdapterNodeMock;
 export const StereoPannerNode = StereoPannerNodeMock;
+export const PannerNode = PannerNodeMock;
 export const WaveShaperNode = WaveShaperNodeMock;
 export const PeriodicWave = PeriodicWaveMock;
 
@@ -1272,6 +1417,7 @@ export type OfflineAudioContext = OfflineAudioContextMock;
 export type OscillatorNode = OscillatorNodeMock;
 export type RecorderAdapterNode = RecorderAdapterNodeMock;
 export type StereoPannerNode = StereoPannerNodeMock;
+export type PannerNode = PannerNodeMock;
 export type WaveShaperNode = WaveShaperNodeMock;
 export type PeriodicWave = PeriodicWaveMock;
 
@@ -1304,6 +1450,9 @@ export {
   OscillatorOptions,
   PeriodicWaveOptions,
   StereoPannerOptions,
+  PannerOptions,
+  PanningModelType,
+  DistanceModelType,
   WaveShaperOptions,
 };
 
@@ -1332,6 +1481,7 @@ export default {
   OscillatorNode: OscillatorNodeMock,
   RecorderAdapterNode: RecorderAdapterNodeMock,
   StereoPannerNode: StereoPannerNodeMock,
+  PannerNode: PannerNodeMock,
   WaveShaperNode: WaveShaperNodeMock,
   PeriodicWave: PeriodicWaveMock,
 
