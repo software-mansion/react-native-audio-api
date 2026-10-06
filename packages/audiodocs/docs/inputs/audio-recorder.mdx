@@ -677,14 +677,21 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file. Returns `Result<{}>`.
+          Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file.
 
-          Must be called while the recorder is idle: the file is created by the next [start](#start). During an active (recording or paused) session the call returns an error result and the session keeps the output it started with.
+          Must be called while the recorder is idle: the file is created by the next [start](#start). The requested format is checked against the platform's system encoders at this call, so an unsupported format fails here.
 
-          For further information, see [AudioRecorderFileOptions](#audiorecorderfileoptions).
+          Throws `NotSupportedError` when the format cannot be encoded on this platform, the options are invalid, or a recording (or paused) session is active. In every case the previous file-output configuration stays in effect.
+
+          For further information, see [AudioRecorderFileOptions](#audiorecorderfileoptions) and the per-platform format table in [FileFormat](#fileformat).
         </div>
         ```tsx
-          audioRecorder.enableFileOutput();
+        try {
+          audioRecorder.enableFileOutput({ format: FileFormat.FLAC });
+        } catch (error) {
+          // NotSupportedError: the platform cannot encode the requested format
+          console.warn(error.message);
+        }
         ```
       </td>
     </tr>

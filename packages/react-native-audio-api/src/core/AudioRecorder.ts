@@ -1,4 +1,5 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
+import { NotSupportedError } from '../errors';
 import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
@@ -76,8 +77,13 @@ export default class AudioRecorder {
    * fresh AAC encode. Practical starting points: about **512 KB–1 MB** for WAV
    * and **≥ 200 KB** for M4A. This option controls segment file size, not
    * recording memory use.
+   *
+   * @throws {@link NotSupportedError} When the format cannot be encoded by this
+   *   platform's system encoders, the file options are invalid, or a recording
+   *   session is active. The previous file-output configuration stays in
+   *   effect.
    */
-  enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
+  enableFileOutput(options?: AudioRecorderFileOptions): void {
     const requestedOptions = options || {};
     const result = this.recorder.enableFileOutput(
       withDefaultFileOptions(requestedOptions)
@@ -85,9 +91,11 @@ export default class AudioRecorder {
 
     if (result.status === 'success') {
       this.options_ = requestedOptions;
+    } else {
+      throw new NotSupportedError(
+        'AudioRecorder.enableFileOutput failed: ' + result.message
+      );
     }
-
-    return result;
   }
 
   public get options(): AudioRecorderFileOptions | null {

@@ -133,8 +133,9 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto optionsResult = AudioRecorderOptions::CreateFromJSIValue(
-              runtime, count > 0 ? args[0] : jsi::Value::undefined());
+          auto optionsResult = count > 0
+              ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
+              : AudioRecorderOptions::CreateFromJSIValue(runtime, jsi::Value::undefined());
           if (optionsResult.is_err()) {
             throw jsi::JSError(runtime, optionsResult.unwrap_err());
           }

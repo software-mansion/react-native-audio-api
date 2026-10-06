@@ -1018,11 +1018,8 @@ class AudioRecorderMock {
     return null;
   }
 
-  enableFileOutput(
-    options?: AudioRecorderFileOptions
-  ): Result<{ path: string }> {
+  enableFileOutput(options?: AudioRecorderFileOptions): void {
     this._options = options || {};
-    return { status: 'success', path: '/mock/path/recordings' };
   }
 
   get options(): AudioRecorderFileOptions | null {
