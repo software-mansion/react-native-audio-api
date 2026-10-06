@@ -39,7 +39,8 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
         const AudioTimeStamp *_Nonnull timestamp,
         AVAudioFrameCount frameCount,
         const AudioBufferList *_Nonnull inputData) {
-      if (!weakSelf.inputArmed || weakSelf.receiverBlock == nil) {
+      if (!weakSelf.inputArmed || weakSelf.receiverBlock == nil ||
+          inputData->mNumberBuffers != weakSelf.expectedBufferCount) {
         return kAudioServicesNoError;
       }
 
@@ -55,6 +56,13 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 - (AVAudioFormat *)getResolvedInputFormat
 {
   return self.resolvedInputFormat;
+}
+
+- (void)storeResolvedInputFormat:(AVAudioFormat *)format
+{
+  self.resolvedInputFormat = format;
+  self.resolvedBufferSize = format == nil ? 0 : [self getBufferSize];
+  self.expectedBufferCount = format == nil ? 0 : (format.isInterleaved ? 1 : format.channelCount);
 }
 
 - (int)getBufferSize
@@ -88,8 +96,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
       previousFormat.channelCount != liveFormat.channelCount ||
       previousFormat.isInterleaved != liveFormat.isInterleaved;
 
-  self.resolvedInputFormat = liveFormat;
-  self.resolvedBufferSize = [self getBufferSize];
+  [self storeResolvedInputFormat:liveFormat];
 
   if (formatChanged != nil) {
     *formatChanged = changed;
@@ -112,8 +119,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop recorder very frequently
   self.inputArmed = NO;
-  self.resolvedInputFormat = nil;
-  self.resolvedBufferSize = 0;
+  [self storeResolvedInputFormat:nil];
 
   [audioEngine stopIfNecessary];
   [audioEngine attachInputNodeWithReceiverBlock:self.receiverSinkBlock
@@ -136,8 +142,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
     return NO;
   }
 
-  self.resolvedInputFormat = [self readLiveInputFormat];
-  self.resolvedBufferSize = [self getBufferSize];
+  [self storeResolvedInputFormat:[self readLiveInputFormat]];
 
   if (error != nil) {
     *error = nil;
@@ -154,8 +159,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   [audioEngine detachInputNode];
   [audioEngine stopIfPossible];
   [audioEngine restartAudioEngine];
-  self.resolvedInputFormat = nil;
-  self.resolvedBufferSize = 0;
+  [self storeResolvedInputFormat:nil];
 }
 
 - (void)pause
@@ -184,8 +188,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 - (void)cleanup
 {
   self.inputArmed = NO;
-  self.resolvedInputFormat = nil;
-  self.resolvedBufferSize = 0;
+  [self storeResolvedInputFormat:nil];
   self.receiverBlock = nil;
   self.receiverSinkBlock = nil;
   self.onInputConfigurationChange = nil;
