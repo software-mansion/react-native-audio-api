@@ -983,6 +983,7 @@ enum FileFormat {
   Wav,
   Caf,
   M4A,
+  Adts,
   Flac,
   Aiff,
   Alac,
@@ -1001,6 +1002,7 @@ The table below lists which formats each platform can encode with its system API
 | `Wav` | WAV / PCM | ✅ | ✅ |
 | `M4A` | M4A / AAC-LC | ✅ | ✅ |
 | `Flac` | FLAC / FLAC | ✅ | ✅ |
+| `Adts` | ADTS / AAC-LC | ✅ | ✅ |
 | `Caf` | CAF / PCM | ✅ | ❌ |
 | `Aiff` | AIFF / PCM | ✅ | ❌ |
 | `Alac` | M4A / Apple Lossless | ✅ | ❌ |
@@ -1009,6 +1011,8 @@ The table below lists which formats each platform can encode with its system API
 | `OpusOgg` | OGG / Opus | ❌ | ✅ |
 | `OpusWebm` | WebM / Opus | ❌ | ✅ |
 | `VorbisWebm` | WebM / Vorbis | ❌ | ✅ |
+
+`Adts` writes raw AAC-LC frames in ADTS framing (`.aac` extension) with no container. Every frame carries its own sync word and length, so a recording cut off by a crash or force-kill stays decodable up to the last complete frame, like `Flac` but at lossy AAC file sizes.
 
 :::caution Platform support
 Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusOgg` on iOS) fails when file output is enabled, with a descriptive error. Some Android formats also depend on the device OS version (Opus/OGG muxing requires newer releases); if a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, or `Flac` for the widest cross-platform support.

@@ -1,3 +1,4 @@
+#include <audioapi/encoding/AdtsHeader.h>
 #include <audioapi/encoding/AudioFileConcatenator.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <gtest/gtest.h>
@@ -7,6 +8,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <string>
@@ -132,6 +134,31 @@ std::vector<float> readWavFile(const std::string &path) {
 
   ma_decoder_uninit(&decoder);
   return frames;
+}
+
+/// One ADTS frame per payload byte count, so a stream's framing is known to the byte.
+std::vector<char> makeAdtsStream(
+    uint8_t samplingFrequencyIndex,
+    int channelCount,
+    const std::vector<size_t> &payloadSizes) {
+  std::vector<char> bytes;
+  for (size_t payload : payloadSizes) {
+    const auto header = *adts::makeHeader(samplingFrequencyIndex, channelCount, payload);
+    bytes.insert(bytes.end(), header.begin(), header.end());
+    bytes.insert(bytes.end(), payload, static_cast<char>(0xAB));
+  }
+  return bytes;
+}
+
+void writeBytes(const std::string &path, const std::vector<char> &bytes) {
+  std::ofstream output(path, std::ios::binary);
+  ASSERT_TRUE(output.is_open());
+  output.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+}
+
+std::vector<char> readBytes(const std::string &path) {
+  std::ifstream input(path, std::ios::binary);
+  return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
 }
 
 } // namespace
@@ -262,7 +289,7 @@ TEST(AudioFileConcatenatorTest, RejectsUnsupportedOutputFormat) {
   auto result = concatAudioFiles({"/tmp/input.ogg"}, "/tmp/output.ogg");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A, and FLAC output.");
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A, FLAC, and ADTS output.");
 }
 
 TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForFLACOnDesktop) {
@@ -285,7 +312,106 @@ TEST(AudioFileConcatenatorTest, RejectsMismatchedRemuxExtensions) {
   auto result = concatAudioFiles({"/tmp/input.m4a"}, "/tmp/output.caf");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A, and FLAC output.");
+  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A, FLAC, and ADTS output.");
+}
+
+TEST(AudioFileConcatenatorTest, AppendsAdtsFramesByteForByte) {
+  const std::string inputA = testFilePath("audio-concat-a.aac");
+  const std::string inputB = testFilePath("audio-concat-b.aac");
+  const std::string output = testFilePath("audio-concat-output.aac");
+  removeFile(inputA);
+  removeFile(inputB);
+  removeFile(output);
+
+  const auto streamA = makeAdtsStream(4, 2, {100, 250});
+  const auto streamB = makeAdtsStream(4, 2, {80});
+  writeBytes(inputA, streamA);
+  writeBytes(inputB, streamB);
+
+  auto result = concatAudioFiles({inputA, inputB}, output);
+
+  if (result.is_err()) {
+    FAIL() << result.unwrap_err();
+  }
+  EXPECT_EQ(result.unwrap(), output);
+  std::vector<char> expected = streamA;
+  expected.insert(expected.end(), streamB.begin(), streamB.end());
+  EXPECT_EQ(readBytes(output), expected);
+
+  removeFile(inputA);
+  removeFile(inputB);
+  removeFile(output);
+}
+
+TEST(AudioFileConcatenatorTest, DropsATrailingPartialAdtsFrame) {
+  const std::string inputA = testFilePath("audio-concat-cut.aac");
+  const std::string inputB = testFilePath("audio-concat-next.aac");
+  const std::string output = testFilePath("audio-concat-cut-output.aac");
+  removeFile(inputA);
+  removeFile(inputB);
+  removeFile(output);
+
+  // A recording killed mid-frame: the second frame is missing its last 10 bytes.
+  auto streamA = makeAdtsStream(4, 1, {100, 50});
+  const auto completeBytes = streamA.size() - 50 - adts::HEADER_SIZE;
+  streamA.resize(streamA.size() - 10);
+  const auto streamB = makeAdtsStream(4, 1, {60});
+  writeBytes(inputA, streamA);
+  writeBytes(inputB, streamB);
+
+  auto result = concatAudioFiles({inputA, inputB}, output);
+
+  if (result.is_err()) {
+    FAIL() << result.unwrap_err();
+  }
+  std::vector<char> expected(streamA.begin(), streamA.begin() + completeBytes);
+  expected.insert(expected.end(), streamB.begin(), streamB.end());
+  EXPECT_EQ(readBytes(output), expected);
+
+  removeFile(inputA);
+  removeFile(inputB);
+  removeFile(output);
+}
+
+TEST(AudioFileConcatenatorTest, RejectsAdtsInputsWithDifferentLayouts) {
+  const std::string inputA = testFilePath("audio-concat-stereo.aac");
+  const std::string inputB = testFilePath("audio-concat-mono.aac");
+  const std::string output = testFilePath("audio-concat-layout-output.aac");
+  removeFile(inputA);
+  removeFile(inputB);
+  removeFile(output);
+
+  writeBytes(inputA, makeAdtsStream(4, 2, {100}));
+  writeBytes(inputB, makeAdtsStream(4, 1, {100}));
+
+  auto result = concatAudioFiles({inputA, inputB}, output);
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "Input file '" + inputB + "' uses a different channel count.");
+  EXPECT_FALSE(std::filesystem::exists(output));
+
+  removeFile(inputA);
+  removeFile(inputB);
+}
+
+TEST(AudioFileConcatenatorTest, RejectsAdtsOutputWithNonAdtsInputs) {
+  const std::string input = testFilePath("audio-concat-not-adts.aac");
+  removeFile(input);
+  writeBytes(input, {'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'A', 'V', 'E'});
+
+  auto wrongExtension = concatAudioFiles({"/tmp/input.m4a"}, "/tmp/output.aac");
+  EXPECT_TRUE(wrongExtension.is_err());
+  EXPECT_EQ(
+      wrongExtension.unwrap_err(),
+      "concatAudioFiles ADTS output requires all input files to use the AAC extension.");
+
+  auto notAStream = concatAudioFiles({input}, testFilePath("audio-concat-not-adts-output.aac"));
+  EXPECT_TRUE(notAStream.is_err());
+  EXPECT_EQ(
+      notAStream.unwrap_err(),
+      "Input file '" + input + "' is not an ADTS stream (no frame at byte 0).");
+
+  removeFile(input);
 }
 
 // NOLINTEND

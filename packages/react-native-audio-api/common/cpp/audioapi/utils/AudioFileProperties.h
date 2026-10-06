@@ -29,6 +29,7 @@ class AudioFileProperties {
     WAV,
     CAF,
     M4A,
+    ADTS,
     FLAC,
     AIFF,
     ALAC,
