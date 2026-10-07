@@ -51,30 +51,28 @@ AudioRecorderHostObject::~AudioRecorderHostObject() {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
-  auto fileNameOverride = jsiutils::argToString(runtime, args, count, 0, "");
   auto audioRecorder = audioRecorder_;
 
-  return promiseVendor_->createAsyncPromise(
-      [audioRecorder, fileNameOverride = std::move(fileNameOverride)]() -> PromiseResolver {
-        auto result = ActiveRecorderHandle::global().tryStart(audioRecorder, fileNameOverride);
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    auto result = ActiveRecorderHandle::global().tryStart(audioRecorder);
 
-        return [result = std::move(result)](
-                   jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-          auto jsResult = jsi::Object(runtime);
+    return [result =
+                std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+      auto jsResult = jsi::Object(runtime);
 
-          jsResult.setProperty(
-              runtime,
-              "status",
-              jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+      jsResult.setProperty(
+          runtime,
+          "status",
+          jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-          if (!result.is_ok()) {
-            jsResult.setProperty(
-                runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
-          }
+      if (!result.is_ok()) {
+        jsResult.setProperty(
+            runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
+      }
 
-          return jsi::Value(std::move(jsResult));
-        };
-      });
+      return jsi::Value(std::move(jsResult));
+    };
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
@@ -114,11 +112,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isRecording) {
-  return jsi::Value(audioRecorder_->isRecording());
+  return {audioRecorder_->isRecording()};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isPaused) {
-  return jsi::Value(audioRecorder_->isPaused());
+  return {audioRecorder_->isPaused()};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
