@@ -10,7 +10,6 @@ set(ROOT ${PACKAGE_ROOT}/../..)
 set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
 set(JSI_IMPL_DIR "${JSI_DIR}/jsi")
-set(FFMPEG_INCLUDE_DIR "${PACKAGE_ROOT}/common/cpp/audioapi/external/include_ffmpeg")
 include(FetchContent)
 
 if(POLICY CMP0169)
@@ -73,6 +72,7 @@ list(FILTER RNAUDIOAPI_COMMON_SOURCES EXCLUDE REGEX ".*/android/.*\\.cpp$")
 list(FILTER RNAUDIOAPI_COMMON_SOURCES EXCLUDE REGEX ".*/ios/.*\\.cpp$")
 list(FILTER RNAUDIOAPI_COMMON_SOURCES EXCLUDE REGEX ".*/ios/.*\\.mm$")
 list(FILTER RNAUDIOAPI_COMMON_SOURCES EXCLUDE REGEX ".*/HostObjects/inputs/AudioRecorderHostObject\\.cpp$")
+list(FILTER RNAUDIOAPI_COMMON_SOURCES EXCLUDE REGEX ".*/decoding/backends/FfmpegDecoder\\.cpp$")
 
 list(APPEND RNAUDIOAPI_COMMON_SOURCES
   "${CMAKE_SOURCE_DIR}/src/addon_init.cpp"
@@ -115,11 +115,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${PACKAGE_ROOT}/common/cpp
-  ${FFMPEG_INCLUDE_DIR}
-  "${FFMPEG_INCLUDE_DIR}/libavcodec"
-  "${FFMPEG_INCLUDE_DIR}/libavformat"
-  "${FFMPEG_INCLUDE_DIR}/libavutil"
-  "${FFMPEG_INCLUDE_DIR}/libswresample"
   "${node_api_jsi_SOURCE_DIR}/src"
   "${node_api_jsi_SOURCE_DIR}/node-api"
   ${CMAKE_SOURCE_DIR}/src

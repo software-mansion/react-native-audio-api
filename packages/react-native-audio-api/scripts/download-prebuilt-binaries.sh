@@ -3,15 +3,18 @@
 
 MAIN_DOWNLOAD_URL="https://github.com/software-mansion-labs/rn-audio-libs/releases/download"
 TAG="v3.1.0"
+FFMPEG_HEADERS_ARCHIVE="include_ffmpeg.zip"
 ANDROID_DOWNLOAD_NAMES=(
     "android.zip"
     "jniLibs.zip"
+    "$FFMPEG_HEADERS_ARCHIVE"
 )
 IOS_DOWNLOAD_NAMES=(
     "ffmpeg_ios.zip"
     "iphoneos.zip"
     "iphonesimulator.zip"
     "macosx.zip"
+    "$FFMPEG_HEADERS_ARCHIVE"
 )
 STATIC_LIB_NAMES=(
     "libopusfile.a"
@@ -32,6 +35,13 @@ FFMPEG_ANDROID_SO_LIBS=(
     "libavformat.so"
     "libavutil.so"
     "libswresample.so"
+)
+# One umbrella header per library proves the header set was extracted.
+FFMPEG_HEADER_MARKERS=(
+    "libavcodec/avcodec.h"
+    "libavformat/avformat.h"
+    "libavutil/avutil.h"
+    "libswresample/swresample.h"
 )
 ANDROID_JNI_ABIS=(
     "armeabi-v7a"
@@ -121,6 +131,13 @@ artifacts_present() {
                 fi
             done
             ;;
+        include_ffmpeg)
+            for header in "${FFMPEG_HEADER_MARKERS[@]}"; do
+                if [ ! -f "${final_check_path}/${header}" ]; then
+                    return 1
+                fi
+            done
+            ;;
         jniLibs)
             for abi in "${ANDROID_JNI_ABIS[@]}"; do
                 for so_lib in "${FFMPEG_ANDROID_SO_LIBS[@]}"; do
@@ -162,7 +179,7 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
     # Get the directory name from the zip name (e.g., "armeabi-v7a.zip" -> "armeabi-v7a")
     EXTRACTED_DIR_NAME="${name%.zip}"
 
-    if [[ ("$EXTRACTED_DIR_NAME" == "ffmpeg_ios" || "$EXTRACTED_DIR_NAME" == "jniLibs") && "$SKIP_FFMPEG" == true ]]; then
+    if [[ ("$EXTRACTED_DIR_NAME" == "ffmpeg_ios" || "$EXTRACTED_DIR_NAME" == "jniLibs" || "$EXTRACTED_DIR_NAME" == "include_ffmpeg") && "$SKIP_FFMPEG" == true ]]; then
         continue
     fi
 
@@ -187,9 +204,12 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
     curl -fsSL "$ARCH_URL" -o "$ZIP_FILE_PATH"
 
     if [ $? -ne 0 ]; then
-        echo "Error: Download failed for ${name}."
+        # The build cannot succeed without these files, so fail here where the cause is
+        # visible instead of at compile/link time with a missing-header or symbol error.
+        echo "Error: Download failed for ${ARCH_URL}." >&2
         rm -f "$ZIP_FILE_PATH"
-        continue
+        rm -rf "$TEMP_DOWNLOAD_DIR"
+        exit 1
     fi
 
     echo "Unzipping ${name} to ${OUTPUT_DIR}"

@@ -18,9 +18,7 @@ foreach(src IN LISTS DSP_CPP_SOURCES_ABS)
 endforeach()
 
 if (RN_AUDIO_API_FFMPEG_DISABLED)
-  list(REMOVE_ITEM COMMON_CPP_SOURCES
-    "${COMMON_CPP_DIR}/audioapi/decoding/backends/FfmpegDecoder.cpp"
-  )
+  list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*FfmpegDecoder\\.cpp$")
 endif()
 
 # Debug-only: operator new/delete overrides must not ship in Release.
@@ -92,20 +90,29 @@ target_include_directories(
     "${COMMON_CPP_DIR}"
     "${ANDROID_CPP_DIR}"
   PRIVATE
-    "${INCLUDE_DIR}"
-    "${FFMPEG_INCLUDE_DIR}"
     "${REACT_NATIVE_DIR}/ReactCommon"
     "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
     "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
     "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
 )
 
+# Third-party headers are only on the include path for the libraries that are
+# actually linked, so a build without them never depends on their presence.
 if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   target_include_directories(
     react-native-audio-api
     PRIVATE
+      "${INCLUDE_DIR}"
       "${INCLUDE_DIR}/opus"
       "${INCLUDE_DIR}/vorbis"
+  )
+endif()
+
+if(NOT RN_AUDIO_API_FFMPEG_DISABLED)
+  target_include_directories(
+    react-native-audio-api
+    PRIVATE
+      "${FFMPEG_INCLUDE_DIR}"
   )
 endif()
 

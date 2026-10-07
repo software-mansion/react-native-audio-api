@@ -19,6 +19,8 @@ interface Options {
   androidForegroundService: boolean;
   androidFSTypes: string[];
   androidFSStopWithTask: boolean;
+  enableFFmpeg: boolean;
+  disableStaticExternalLibs: boolean;
 }
 ```
 
@@ -146,3 +148,19 @@ Set it to `false` to emit `android:stopWithTask="false"` on the service entry â€
 :::info
 The Foreground Service only exists while a library notification is shown, so this option has an effect only if a notification (e.g. via `RecordingNotificationManager.show()`) is displayed before the user closes the app. See [keeping the recording alive when the app is closed](../inputs/audio-recorder.mdx#keeping-the-recording-alive-when-the-app-is-closed) for the full set of requirements.
 :::
+
+### `enableFFmpeg`
+
+Defaults to `false`.
+
+Links the prebuilt FFmpeg libraries into the app, which enables remote URL streaming, HLS (`.m3u8`) playback and remote URL metadata. Writes `ENV['ENABLE_AUDIOAPI_FFMPEG'] = '1'` to the Podfile and `enableAudioapiFFmpeg=true` to `gradle.properties`. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx#enabling-ffmpeg) for what FFmpeg adds and what it costs.
+
+:::warning Migrating from 0.x
+`disableFFmpeg` was removed in 1.0.0 and is ignored with a warning during `expo prebuild`. FFmpeg is off by default, so the only action needed is to add `enableFFmpeg: true` if your app streams remote audio.
+:::
+
+### `disableStaticExternalLibs`
+
+Defaults to `false`.
+
+Removes the bundled Opus / Ogg / Vorbis static libraries. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx#disabling-other-external-libraries).

@@ -1,0 +1,81 @@
+---
+sidebar_position: 6
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Prebuilt libraries support
+
+`react-native-audio-api` can link a number of prebuilt third-party libraries that are downloaded at build time. They enable additional decoding and streaming features, but also add several megabytes to the resulting application binary, so each one can be toggled with a build flag.
+
+| Library set | Default | Flag | What it adds |
+| :---- | :---: | :---: | :---- |
+| FFmpeg (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | **off** | `enableFFmpeg` | Remote URL streaming (HTTP byte ranges), HLS (`.m3u8`), remote URL metadata — see [Runtime flags](./runtime-flags#where-ffmpeg-is-used). |
+| Static libs (`libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile`) | **on** | `disableStaticExternalLibs` | Decoding `ogg`, `opus`, `oga` files |
+
+The flags are independent and can be combined.
+
+:::info FFmpeg is opt-in
+Since FFmpeg is no longer linked by default, apps that stream remote audio or play HLS have to enable it explicitly (see below). Everything else — local file decoding, recording, encoding, concatenation — works without it. Use [`isFfmpegEnabled`](./runtime-flags#isffmpegenabled) to branch at runtime.
+:::
+
+## Enabling FFmpeg
+
+<Tabs queryString="platform">
+  <TabItem value="expo" label="Expo" default>
+    Add an entry in the [Audio API Expo plugin](./audio-api-plugin.mdx) configuration:
+
+    ```
+    "enableFFmpeg": true
+    ```
+  </TabItem>
+  <TabItem value="iOS" label="iOS">
+    Add an entry to the Podfile (before the targets), then run `pod install`:
+
+    ```
+    ENV['ENABLE_AUDIOAPI_FFMPEG'] = '1'
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android">
+    In `gradle.properties`:
+
+    ```
+    enableAudioapiFFmpeg=true
+    ```
+  </TabItem>
+</Tabs>
+
+With FFmpeg enabled, the FFmpeg binaries are downloaded during `pod install` / the first Gradle build and linked into the app. FFmpeg is distributed under the LGPL — see `THIRD_PARTY.md` in the repository for the notice that applies to FFmpeg-enabled builds.
+
+:::warning Migrating from 0.x
+Before 1.0.0 FFmpeg was linked by default and turned off with `disableFFmpeg` (Expo), `ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'` (iOS) or `disableAudioapiFFmpeg=true` (Android). Those flags are now ignored and only print a warning during `pod install` / Gradle configuration / `expo prebuild`. Apps that stream remote audio must opt in with the flags above; apps that already disabled FFmpeg need no change beyond removing the stale flag.
+:::
+
+## Disabling other external libraries
+
+This removes the bundled Opus / Ogg / Vorbis static libraries. With this flag enabled, attempts to decode `.ogg`, `.opus`, or `.oga` files through `AudioContext.decodeAudioData` (or any other decoding path) will return an error — those formats are handled inside miniaudio via the now-disabled custom backends.
+
+<Tabs queryString="platform">
+  <TabItem value="expo" label="Expo" default>
+    Add an entry in the [Audio API Expo plugin](./audio-api-plugin.mdx) configuration:
+
+    ```
+    "disableStaticExternalLibs": true
+    ```
+  </TabItem>
+  <TabItem value="iOS" label="iOS">
+    Add an entry to the Podfile:
+
+    ```
+    ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] = '1'
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android">
+    In `gradle.properties`:
+
+    ```
+    disableAudioapiStaticExternalLibs=true
+    ```
+  </TabItem>
+</Tabs>

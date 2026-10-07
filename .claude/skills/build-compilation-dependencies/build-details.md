@@ -14,8 +14,8 @@
 def isNewArchitectureEnabled() {
   return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
 }
-def isFFmpegDisabled() {
-  return rootProject.hasProperty("disableAudioapiFFmpeg") && rootProject.getProperty("disableAudioapiFFmpeg") == "true"
+def isFFmpegEnabled() {   // opt-in; pre-1.0 disableAudioapiFFmpeg only warns
+  return isPropertyTrue("enableAudioapiFFmpeg")
 }
 ```
 
@@ -30,7 +30,7 @@ def isFFmpegDisabled() {
 ### Forwarding flags to Kotlin via BuildConfig
 
 ```groovy
-buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_DISABLED", isFFmpegDisabled().toString()
+buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_DISABLED", IS_RN_AUDIO_API_FFMPEG_DISABLED.toString()
 buildConfigField "boolean", "RN_AUDIO_API_ENABLE_WORKLETS", "${isWorkletsAvailable}"
 ```
 
@@ -123,10 +123,8 @@ file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioa
 ### FFmpeg conditional exclusion
 
 ```cmake
-if(RN_AUDIO_API_FFMPEG_DISABLED)
-  list(REMOVE_ITEM COMMON_CPP_SOURCES
-    "${COMMON_CPP_DIR}/audioapi/decoding/backends/FfmpegDecoder.cpp"
-  )
+if(RN_AUDIO_API_FFMPEG_DISABLED)   # FILTER, not REMOVE_ITEM: the list holds relative paths
+  list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*FfmpegDecoder\\.cpp$")
 endif()
 ```
 

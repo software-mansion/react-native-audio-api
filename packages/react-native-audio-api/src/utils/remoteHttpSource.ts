@@ -1,3 +1,4 @@
+import { NotSupportedError } from '../errors';
 import { isFfmpegEnabled } from './flags';
 
 export function isRemoteHttpUrl(path: string): boolean {
@@ -71,6 +72,11 @@ export async function loadRemoteHttpSource(
   forceDownload = false
 ): Promise<ArrayBuffer | string> {
   if (isHlsPlaylistUrl(url)) {
+    if (!isFfmpegEnabled()) {
+      throw new NotSupportedError(
+        'HLS (.m3u8) playback requires FFmpeg, which is not enabled in this build. See the "Optional prebuilt libraries" docs to enable it.'
+      );
+    }
     return url;
   }
 
