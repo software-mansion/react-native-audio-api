@@ -1,4 +1,18 @@
+const fs = require('fs');
 const path = require('path');
+
+/**
+ * Workspace packages are symlinked into node_modules. Native autolinking
+ * registers whatever path it is given, so a symlinked root makes Gradle and
+ * CocoaPods see the package under node_modules/ while editors and language
+ * servers open it under packages/, leaving its sources outside the project.
+ *
+ * @param {string} name
+ */
+function resolveDependencyRoot(name) {
+  const linkedRoot = path.resolve(__dirname, `../../../node_modules/${name}`);
+  return fs.existsSync(linkedRoot) ? fs.realpathSync(linkedRoot) : linkedRoot;
+}
 
 /**
  * @param {Object<string, string>} dependencies
@@ -8,10 +22,7 @@ function resolveDependencies(dependencies = {}, exclude) {
   return Object.fromEntries(
     Object.keys(dependencies)
       .filter((name) => !exclude.has(name))
-      .map((name) => [
-        name,
-        { root: path.resolve(__dirname, `../../../node_modules/${name}`) },
-      ])
+      .map((name) => [name, { root: resolveDependencyRoot(name) }])
   );
 }
 
