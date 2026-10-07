@@ -29,8 +29,19 @@ class AndroidEncoder : public AudioEncoder {
 
   [[nodiscard]] size_t getFileSizeBytes() const override;
 
+ protected:
+  /// Only the conversion stage is rebuilt; the backend keeps writing at outputLayout_.
+  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) override;
+
  private:
   static constexpr int RESAMPLE_MAX_IN_FRAMES = 4096;
+
+  struct ConversionState;
+  using ConversionResult = Result<std::unique_ptr<ConversionState>, std::string>;
+
+  /// Builds the stage that maps @p inputFormat onto outputLayout_, or null when the two
+  /// already match.
+  [[nodiscard]] ConversionResult buildConversion(const StreamFormat &inputFormat) const;
 
   /// Input that differs from the backend's effective format: channel mapping and resampling
   /// stay planar, and the backend interleaves while it quantizes.
@@ -41,7 +52,6 @@ class AndroidEncoder : public AudioEncoder {
   /// What the backend encodes at; the input differs from it only when conversion_ is set.
   AudioLayout outputLayout_;
 
-  struct ConversionState;
   std::unique_ptr<ConversionState> conversion_; // null when no conversion is needed
 };
 

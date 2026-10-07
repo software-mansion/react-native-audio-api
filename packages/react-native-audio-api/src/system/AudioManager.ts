@@ -127,8 +127,8 @@ class AudioManager implements IAudioManager {
    * Resolves when the input device was set successfully and rejects when the
    * device cannot be found or the system fails to switch to it.
    *
-   * A recording in progress moves to the new input right away. When the new
-   * input has a different format, the recorded file rotates.
+   * A recording in progress moves to the new input right away and keeps writing
+   * the same file, whatever the new input's format.
    */
   async setInputDevice(deviceId: string | null): Promise<void> {
     await NativeAudioAPIModule.setInputDevice(deviceId);

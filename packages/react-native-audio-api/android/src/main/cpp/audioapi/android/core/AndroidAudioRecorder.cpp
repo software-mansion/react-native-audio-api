@@ -202,12 +202,17 @@ Result<NoneType, std::string> AndroidAudioRecorder::startCapture(
     return Err("Audio stream is not initialized.");
   }
 
-  if (preparedFormat != formatResult.unwrap()) {
-    auto outputsResult = prepareOutputs(formatResult.unwrap());
+  const auto streamFormat = formatResult.unwrap();
+  Result<NoneType, std::string> outputsResult = Ok(None);
 
-    if (!outputsResult.is_ok()) {
-      return outputsResult;
-    }
+  if (!preparedFormat.has_value()) {
+    outputsResult = prepareOutputs(streamFormat);
+  } else if (*preparedFormat != streamFormat) {
+    outputsResult = reprepareOutputs(streamFormat);
+  }
+
+  if (!outputsResult.is_ok()) {
+    return outputsResult;
   }
 
   if (targetState == RecorderState::Recording) {

@@ -2,7 +2,6 @@
 
 #include <audioapi/core/inputs/FileInfo.h>
 #include <audioapi/core/inputs/RecorderState.h>
-#include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/Macros.h>
@@ -94,7 +93,6 @@ class AudioRecorder {
     std::shared_ptr<AudioFileWriter> fileWriter;
     std::shared_ptr<AudioRecorderCallback> dataCallback;
     std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
-    std::vector<ClosedSession> closedSegments;
     std::vector<std::string> fileUris;
   };
 
@@ -114,11 +112,16 @@ class AudioRecorder {
   /// The caller must hold adapterNodeMutex_.
   void prepareAdapterNode(const StreamFormat &format);
 
-  /// @brief Prepares every requested output for @p format. An output that is already prepared
-  /// is torn down first, so call it at start and when the input format changed. A file writer
-  /// in use is closed and the recording continues in a new file, which stop() reports with
-  /// the earlier ones. The caller must hold callbackMutex_, fileWriterMutex_ and adapterNodeMutex_.
+  /// For a session that is starting; a live one follows an input change through
+  /// reprepareOutputs(). The caller must hold callbackMutex_, fileWriterMutex_ and
+  /// adapterNodeMutex_.
   Result<NoneType, std::string> prepareOutputs(const StreamFormat &format);
+
+  /// Follows an input format change mid-session: the file writer keeps its file, the callback
+  /// and the adapter node are rebuilt. Stops at the first output that fails, which stays off
+  /// until the next start(). Nothing may deliver frames in the old format once this runs.
+  /// The caller must hold callbackMutex_, fileWriterMutex_ and adapterNodeMutex_.
+  Result<NoneType, std::string> reprepareOutputs(const StreamFormat &format);
 
   /// Delivers @p message to the JS error callback, if one is registered.
   void reportError(const std::string &message);
@@ -162,19 +165,21 @@ class AudioRecorder {
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
-  /// One entry per file writer prepareOutputs() closed during this session. Guarded by
-  /// fileWriterMutex_.
-  std::vector<ClosedSession> closedSegments_;
   /// Updated on the audio thread from each input callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   /// Sample rate of the live input stream, published for readers off the JS thread.
   std::atomic<float> streamSampleRate_{0.0F};
 
  private:
-  /// Properties for the writer that continues the recording after a format change. The writer
-  /// overwrites a user-chosen name, so each segment gets that name suffixed with its number;
-  /// a generated name needs nothing, as the writer already picks an unused one.
-  [[nodiscard]] std::shared_ptr<AudioFileProperties> nextSegmentProperties() const;
+  /// The caller must hold callbackMutex_. A callback already prepared is flushed and torn
+  /// down first.
+  Result<NoneType, std::string> prepareCallback(const StreamFormat &format);
+
+  /// The caller must hold fileWriterMutex_.
+  Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
+
+  /// The caller must hold adapterNodeMutex_.
+  void reprepareAdapterNode(const StreamFormat &format);
 };
 
 } // namespace audioapi

@@ -62,10 +62,10 @@ class IOSAudioRecorder : public AudioRecorder {
   NativeAudioRecorder *nativeRecorder_;
 
  private:
+  /// Re-points the live outputs at the format the rebuilt engine input now delivers, with the
+  /// input disarmed meanwhile so no buffer in either format slips through.
   Result<NoneType, std::string> reprepareForLiveInput();
   void handleInputConfigurationChange();
-  Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
-  Result<NoneType, std::string> reprepareCallback(const StreamFormat &format);
 
   int32_t inputChannelCount_{0};
 };

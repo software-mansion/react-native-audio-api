@@ -37,8 +37,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   void pause() override;
   void resume() override;
   /// @brief Reopens the capture stream on the input MediaSessionManager currently selects.
-  /// A stream format that differs from the previous one re-prepares the outputs (see
-  /// prepareOutputs()). Does nothing while idle.
+  /// A stream format that differs from the previous one re-points the outputs at it without
+  /// splitting the file (see reprepareOutputs()). Does nothing while idle.
   Result<NoneType, std::string> rerouteInput() override;
   bool isRecording() const override;
   bool isPaused() const override;
@@ -64,8 +64,10 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   void closeStream();
   /// The caller holds streamMutex_.
   [[nodiscard]] bool isStreamRecording() const;
-  /// @brief Opens the stream on the adopted route, prepares the outputs unless they already
-  /// are for @p preparedFormat, and starts the stream when @p targetState is Recording.
+  /// @brief Opens the stream on the adopted route and starts it when @p targetState is
+  /// Recording. @p preparedFormat is nullopt for a new session, whose outputs are prepared
+  /// from scratch; for a live one it is the format its outputs were prepared for, and they
+  /// follow the stream only when its format differs.
   ///
   /// The caller holds callbackMutex_, fileWriterMutex_, adapterNodeMutex_ and streamMutex_.
   Result<NoneType, std::string> startCapture(

@@ -39,9 +39,15 @@ class CountingEncoder : public AudioEncoder {
   [[nodiscard]] size_t getFileSizeBytes() const override {
     return 0;
   }
+
+ protected:
+  /// Refuses, as an encoder that cannot re-point at a new input would.
+  OpenEncoderResult reprepareInput(const StreamFormat & /*inputFormat*/) override {
+    return OpenEncoderResult::Err("input format is fixed");
+  }
 };
 
-/// Mirrors IOSEncoder: the one encoder that keeps its file across an input format change.
+/// Mirrors the platform encoders, which keep their file across an input format change.
 class ChangeableEncoder final : public CountingEncoder {
  protected:
   OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) override {

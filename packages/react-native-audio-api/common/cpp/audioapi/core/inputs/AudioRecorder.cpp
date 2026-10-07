@@ -206,58 +206,89 @@ void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
 
 Result<NoneType, std::string> AudioRecorder::prepareOutputs(const StreamFormat &format) {
   if (wantsFileOutput()) {
-    if (fileWriter_ != nullptr) {
-      auto closeResult = fileWriter_->closeFile();
-      if (closeResult.is_ok()) {
-        closedSegments_.push_back(std::move(closeResult).unwrap());
-      }
-      fileWriter_ = nullptr;
-    }
-
-    auto writerResult = setupFileWriter(nextSegmentProperties());
+    auto writerResult = setupFileWriter(fileProperties_);
     if (!writerResult.is_ok()) {
       return writerResult;
     }
   }
 
   if (wantsCallback()) {
-    if (dataCallback_ == nullptr) {
-      return Err("Callback output is unavailable.");
-    }
-    if (usesCallback()) {
-      dataCallback_->cleanup();
-    }
-
-    dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-    auto callbackResult = dataCallback_->prepare(format);
-
+    auto callbackResult = prepareCallback(format);
     if (!callbackResult.is_ok()) {
-      deactivate(callbackOutputState_);
-      return Err("Failed to prepare callback: " + callbackResult.unwrap_err());
+      return callbackResult;
     }
-
-    callbackOutputState_.store(OutputState::Active, std::memory_order_release);
   }
 
   if (wantsConnection()) {
-    // init() is a no-op on an initialized adapter, so the old format has to be torn down first.
-    if (auto *adapterNode = isConnected() ? adapterNodeOf(adapterNodeHandle_) : nullptr) {
-      adapterNode->adapterCleanup();
-    }
     prepareAdapterNode(format);
   }
 
   return Ok(None);
 }
 
-std::shared_ptr<AudioFileProperties> AudioRecorder::nextSegmentProperties() const {
-  if (closedSegments_.empty() || fileProperties_->path.fileName.empty()) {
-    return fileProperties_;
+Result<NoneType, std::string> AudioRecorder::reprepareOutputs(const StreamFormat &format) {
+  if (usesFileOutput()) {
+    auto fileResult = reprepareFileWriter(format);
+    if (!fileResult.is_ok()) {
+      return fileResult;
+    }
   }
 
-  auto segmentProperties = std::make_shared<AudioFileProperties>(*fileProperties_);
-  segmentProperties->path.fileName += "_" + std::to_string(closedSegments_.size() + 1);
-  return segmentProperties;
+  if (usesCallback()) {
+    auto callbackResult = prepareCallback(format);
+    if (!callbackResult.is_ok()) {
+      return callbackResult;
+    }
+  }
+
+  if (isConnected()) {
+    reprepareAdapterNode(format);
+  }
+
+  return Ok(None);
+}
+
+Result<NoneType, std::string> AudioRecorder::prepareCallback(const StreamFormat &format) {
+  if (dataCallback_ == nullptr) {
+    return Err("Callback output is unavailable.");
+  }
+  if (usesCallback()) {
+    dataCallback_->cleanup();
+  }
+
+  dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+  auto callbackResult = dataCallback_->prepare(format);
+
+  if (!callbackResult.is_ok()) {
+    deactivate(callbackOutputState_);
+    return Err("Failed to prepare callback: " + callbackResult.unwrap_err());
+  }
+
+  callbackOutputState_.store(OutputState::Active, std::memory_order_release);
+  return Ok(None);
+}
+
+Result<NoneType, std::string> AudioRecorder::reprepareFileWriter(const StreamFormat &format) {
+  if (fileWriter_ == nullptr) {
+    return Err("File writer is unavailable");
+  }
+
+  auto result = fileWriter_->reprepareStreamFormat(format);
+  if (result.is_err()) {
+    deactivate(fileOutputState_);
+    return Err("Failed to continue the recording in the new input format: " + result.unwrap_err());
+  }
+
+  fileOutputState_.store(OutputState::Active, std::memory_order_release);
+  return Ok(None);
+}
+
+void AudioRecorder::reprepareAdapterNode(const StreamFormat &format) {
+  // init() is a no-op on an initialized adapter, so the old format has to be torn down first.
+  if (auto *adapterNode = adapterNodeOf(adapterNodeHandle_)) {
+    adapterNode->adapterCleanup();
+  }
+  prepareAdapterNode(format);
 }
 
 RecorderAdapterNode *AudioRecorder::adapterNodeOf(
@@ -289,22 +320,12 @@ AudioRecorder::DetachedSideEffects AudioRecorder::detachSideEffects() {
     sideEffects.adapterNodeHandle = std::move(adapterNodeHandle_);
   }
 
-  sideEffects.closedSegments = std::exchange(closedSegments_, {});
-
   return sideEffects;
 }
 
 Result<FileInfo, std::string> AudioRecorder::finalizeSideEffects(DetachedSideEffects sideEffects) {
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
-
-  for (const auto &segment : sideEffects.closedSegments) {
-    for (const auto &filePath : segment.filePaths) {
-      sideEffects.fileUris.push_back("file://" + filePath);
-    }
-    outputFileSize += segment.sizeMB;
-    outputDuration += segment.durationSec;
-  }
 
   if (sideEffects.fileWriter != nullptr) {
     auto fileResult = sideEffects.fileWriter->closeFile();
@@ -371,12 +392,8 @@ double AudioRecorder::getCurrentDuration() const {
   std::scoped_lock lock(fileWriterMutex_);
   double duration = 0.0;
 
-  for (const auto &segment : closedSegments_) {
-    duration += segment.durationSec;
-  }
-
   if (usesFileOutput() && fileWriter_ != nullptr) {
-    duration += fileWriter_->getCurrentDuration();
+    duration = fileWriter_->getCurrentDuration();
   }
 
   return duration;
