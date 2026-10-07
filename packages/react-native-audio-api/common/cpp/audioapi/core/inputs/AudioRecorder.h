@@ -16,6 +16,7 @@ class AudioFileWriter;
 class AudioFileProperties;
 class AudioRecorderCallback;
 class IAudioEventHandlerRegistry;
+struct AudioRecorderOptions;
 
 class AudioRecorder {
  public:
@@ -94,5 +95,10 @@ class AudioRecorder {
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
 };
+
+/// Builds the platform's AudioRecorder.
+std::shared_ptr<AudioRecorder> createPlatformAudioRecorder(
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const AudioRecorderOptions &options);
 
 } // namespace audioapi

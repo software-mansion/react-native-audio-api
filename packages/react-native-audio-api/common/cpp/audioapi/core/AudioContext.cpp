@@ -1,26 +1,11 @@
-#ifdef RN_AUDIO_API_NODE
-#include "NodeAudioPlayer.h"
-#elif defined(ANDROID)
-#include <audioapi/android/core/AndroidAudioPlayer.h>
-#else
-#include <audioapi/ios/core/IOSAudioPlayer.h>
-#endif
-
 #include <audioapi/core/AudioContext.h>
+#include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 
 #include <memory>
 #include <thread>
 
 namespace audioapi {
-
-#ifdef RN_AUDIO_API_NODE
-using PlatformAudioPlayer = NodeAudioPlayer;
-#elif defined(ANDROID)
-using PlatformAudioPlayer = AndroidAudioPlayer;
-#else
-using PlatformAudioPlayer = IOSAudioPlayer;
-#endif
 
 AudioContext::AudioContext(
     float sampleRate,
@@ -46,7 +31,7 @@ AudioContext::~AudioContext() {
 
 void AudioContext::initialize(const AudioDestinationNode *destination) {
   BaseAudioContext::initialize(destination);
-  audioPlayer_ = std::make_shared<PlatformAudioPlayer>(
+  audioPlayer_ = createPlatformAudioPlayer(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),

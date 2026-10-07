@@ -1,11 +1,6 @@
 #pragma once
 
-#ifdef __OBJC__ // when compiled as Objective-C
 #import <NativeAudioPlayer.h>
-#else  // when compiled as C++
-typedef struct objc_object NativeAudioPlayer;
-typedef struct objc_object AudioBufferList;
-#endif // __OBJC__
 
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>
@@ -22,14 +17,7 @@ namespace audioapi {
 
 class IOSAudioPlayer : public AudioPlayer {
  public:
-  IOSAudioPlayer(
-      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-      float sampleRate,
-      int channelCount,
-      std::atomic<uint32_t> &currentRenders,
-      std::weak_ptr<AudioContext> context,
-      std::mutex *driverMutex,
-      AudioContextLatencyHint latencyHint);
+  using AudioPlayer::AudioPlayer;
   ~IOSAudioPlayer() override;
 
   DELETE_COPY_AND_MOVE(IOSAudioPlayer);

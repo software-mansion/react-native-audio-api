@@ -13,6 +13,7 @@
 #include <audioapi/ios/system/AudioSessionManager.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
+#include <memory>
 #include <mutex>
 #include <utility>
 
@@ -52,25 +53,6 @@ void reportStreamFailToContext(
 }
 
 } // namespace
-
-IOSAudioPlayer::IOSAudioPlayer(
-    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-    float sampleRate,
-    int channelCount,
-    std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
-    std::mutex *driverMutex,
-    AudioContextLatencyHint latencyHint)
-    : AudioPlayer(
-          renderAudio,
-          sampleRate,
-          channelCount,
-          currentRenders,
-          std::move(context),
-          driverMutex,
-          latencyHint)
-{
-}
 
 IOSAudioPlayer::~IOSAudioPlayer()
 {
@@ -249,6 +231,25 @@ double IOSAudioPlayer::getOutputLatency() const
 
   AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
   return [sessionManager outputLatencySeconds] + [sessionManager ioBufferDurationSeconds];
+}
+
+std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+    float sampleRate,
+    int channelCount,
+    std::atomic<uint32_t> &currentRenders,
+    std::weak_ptr<AudioContext> context,
+    std::mutex *driverMutex,
+    AudioContextLatencyHint latencyHint)
+{
+  return std::make_shared<IOSAudioPlayer>(
+      renderAudio,
+      sampleRate,
+      channelCount,
+      currentRenders,
+      std::move(context),
+      driverMutex,
+      latencyHint);
 }
 
 } // namespace audioapi

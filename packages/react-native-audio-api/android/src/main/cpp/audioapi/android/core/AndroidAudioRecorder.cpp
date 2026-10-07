@@ -645,4 +645,10 @@ double AndroidAudioRecorder::getInputLatency() const {
   return 0.0;
 }
 
+std::shared_ptr<AudioRecorder> createPlatformAudioRecorder(
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const AudioRecorderOptions &options) {
+  return std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry, options);
+}
+
 } // namespace audioapi

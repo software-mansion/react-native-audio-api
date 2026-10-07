@@ -2,6 +2,7 @@
 #import <AudioEngine.h>
 #import <AudioSessionManager.h>
 #import <Foundation/Foundation.h>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -758,6 +759,13 @@ void IOSAudioRecorder::clearOnAudioReadyCallback()
   callbackOutputConfigured_.store(false, std::memory_order_release);
   callbackOutputEnabled_.store(false, std::memory_order_release);
   dataCallback_ = nullptr;
+}
+
+std::shared_ptr<AudioRecorder> createPlatformAudioRecorder(
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const AudioRecorderOptions &options)
+{
+  return std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, options);
 }
 
 } // namespace audioapi
