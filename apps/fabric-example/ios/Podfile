@@ -32,7 +32,7 @@ end
 
 # Minimal XCTest host: links RNAudioAPI + React Native core only
 target 'FabricExampleTestHost' do
-  pod 'RNAudioAPI', :path => '../../../node_modules/react-native-audio-api'
+  pod 'RNAudioAPI', :path => '../../../packages/react-native-audio-api'
 
   use_react_native!(
     :path => RN_RELATIVE_PATH,

@@ -96,7 +96,7 @@ yarn validate:ios       # yarn workspace … build:ios (macOS only)
 yarn validate:full      # --fast + C++ extended + --android + --ios
 ```
 
-The Gradle project resolves through the `node_modules/react-native-audio-api` workspace symlink, so local edits in `packages/react-native-audio-api/` are picked up.
+Autolinking registers workspace packages under their real `packages/` path (`apps/common-app/scripts/dependencies.js` follows the `node_modules` symlink), so Gradle and CocoaPods build local edits in `packages/react-native-audio-api/` directly.
 
 ### Extended graph (when graph / audio-thread code changes)
 
