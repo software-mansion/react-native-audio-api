@@ -2,10 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Workspace packages are symlinked into node_modules. Native autolinking
- * registers whatever path it is given, so a symlinked root makes Gradle and
- * CocoaPods see the package under node_modules/ while editors and language
- * servers open it under packages/, leaving its sources outside the project.
+ * Follows the node_modules symlink of workspace packages, so Gradle and
+ * CocoaPods register them under packages/, the same path editors use.
  *
  * @param {string} name
  */
