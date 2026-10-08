@@ -21,19 +21,6 @@ BaseAudioContext::BaseAudioContext(
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       audioEventProducer_(audioEventHandlerRegistry->createAudioEventProducer()),
       stateChangeEvent_(audioEventHandlerRegistry),
-      pendingPromisesOffloader_(
-          std::make_unique<task_offloader::TaskOffloader<
-              ContextPromiseTask,
-              PENDING_PROMISES_OVERFLOW_STRATEGY,
-              PENDING_PROMISES_WAIT_STRATEGY>>(
-              PENDING_PROMISES_CAPACITY,
-              [this](const ContextPromiseTask &task) {
-                if (!task.operation) {
-                  return;
-                }
-                std::scoped_lock lock(driverMutex_);
-                task.operation(*this);
-              })),
       audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY),
       gcAudioEventScheduler_(GC_AUDIO_SCHEDULER_CAPACITY),
       disposer_(

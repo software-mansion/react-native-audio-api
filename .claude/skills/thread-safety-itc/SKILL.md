@@ -131,10 +131,12 @@ Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is de
 | Property written by audio thread, JS reads it | `std::atomic<T>` on C++ node; getter reads directly |
 | Non-primitive, can be written by audio thread | Triple buffer (see `AnalyserNode` for reference) |
 | CPU-heavy work, must not block JS or audio | `TaskOffloader` on a dedicated worker thread |
-| Context lifecycle (`resume`/`suspend`/`close`) | `scheduleContextPromise` → `pendingPromisesOffloader_` |
-| Platform code must reach the live recorder without going through JS | Process-global handle (`ActiveRecorderHandle` — recursive mutex + `weak_ptr`; `tryStart` / `stopAndReturnInfo` / `stopAndReturnState` / `pause` / `resume` take the handle mutex before `AudioRecorder`). Android: static-JNI `NativeRecorderControl` (no HybridData). iOS: `AudioAPIModule.setAudioSessionActivity(false)` calls `stopAndReturnInfo()` before deactivating the session. HostObject `start` / `stop` go through the handle; HostObject `pause` / `resume` still call `AudioRecorder` directly. Android blocking calls run on a Kotlin executor (`goAsync()` in receivers), never a detached `std::thread` |
+| Context lifecycle (`resume`/`suspend`/`close`/offline start) | `createAsyncPromise` on the HostObject's serial `PromiseVendor` → `BaseAudioContext::runLifecycleOperation` (body under `driverMutex_`) |
+| Platform code must reach the live recorder without going through JS | Process-global handle (`ActiveRecorderHandle` — recursive mutex + `weak_ptr`; `tryStart` / `stopAndReturnInfo` / `stopAndReturnState` / `pause` / `resume` take the handle mutex before `AudioRecorder`). Android: static-JNI `NativeRecorderControl` (no HybridData). iOS: `AudioAPIModule.setAudioSessionActivity(false)` calls `stopAndReturnInfo()` before deactivating the session. HostObject `start` / `stop` / `pause` / `resume` all go through the handle (`pause(expected)` / `resume(expected)` refuse a recorder that is not the occupant). Android blocking calls run on a Kotlin executor (`goAsync()` in receivers), never a detached `std::thread` |
 
 ---
+
+**Recorder control lane.** `PromiseVendor` takes an `ITaskExecutor` (`utils/ITaskExecutor.h`): the default is `PooledTaskExecutor` (the 4-worker `ThreadPool`, round-robin, no ordering), and `AudioRecorderHostObject` and `BaseAudioContextHostObject` pass a `SerialTaskExecutor` (`utils/SerialTaskExecutor.hpp`, one `TaskOffloader` worker over an SPSC queue — not a 1-thread `ThreadPool`, which would still spawn a load balancer), so `start`, `stop`, `pause`, `resume` and `disableFileOutput` run strictly in the order JS called them even when the caller never awaits — with the old 4-worker pool, `start(); stop()` round-robined onto two workers and could stop before starting. Only the methods that block (stream open/close, `AVAudioEngine` start, file-writer join) live on the lane; `enableFileOutput`, `connect` / `disconnect`, `setOnAudioReady` and the error-callback setters stay synchronous on the JS thread and are excluded against lane work by the recorder's per-output mutexes (`fileWriterMutex_`, `callbackMutex_`, `adapterNodeMutex_`), which every platform `start` / `stop` holds. `getCurrentDuration` takes `fileWriterMutex_` because the lane resets `fileWriter_`. The HostObject destructor queues its stop on the lane via `PromiseVendor::scheduleDetached` (no runtime needed) rather than calling it, so a start still waiting on the lane cannot outlive it; `promiseVendor_` is declared after `audioRecorder_` and `TaskOffloader::shutdown()` drains the queue before joining.
 
 ## Off-Thread Work: `TaskOffloader`
 
@@ -194,18 +196,17 @@ On Android, `AndroidAudioPlayer::onErrorAfterClose` also takes `driverMutex_` be
 **Graph producer self-drain:** `Graph::enableProducerSelfDrain()` makes producer threads drain the event channels themselves after each enqueue; `disableProducerSelfDrain()` hands consumption back to the audio/render thread. Both flush the channels internally (no separate `processEvents()` call needed) and serialize with in-flight drains via `selfDrainMutex_`, because two producers can drain concurrently: the JS thread (mutations) and the GC finalizer thread (`removeNode`, which self-drains after its Channel B orphan send — otherwise a finalizer burst with no consumer fills the bounded channel and blocks forever, e.g. at process exit). Enable only when there is no audio/render consumer (realtime: construction + after `suspend`/`close` quiescence; offline: before `startRendering` and after a scheduled suspend); disable *before* starting the audio/render consumer; re-enable if start/resume fails.
 
 **Context lifecycle promises:** HostObjects wrap JSI `Promise`s via `ContextPromiseResolver`
-(`jsi/ContextPromiseResolver.hpp`); tasks are queued as `ContextPromiseTask`
-(`core/types/ContextPromiseTask.h`). Lifecycle
-ops (`resume` / `suspend` / `close` / offline start) are **control messages** on
-`pendingPromisesOffloader_` via `scheduleContextPromise` from the JS thread
-(`PromiseVendor::createPromise`, not the multi-worker `createAsyncPromise` — that would violate
-SPSC single-producer). A dedicated `TaskOffloader` worker thread drains the queue under
-`driverMutex_`, runs `collectDisposedNodes()` (host-graph ghost cleanup — never on the audio
-thread), then executes the lifecycle body and settles the promise on the CallInvoker. The
-`TaskOffloader` destructor joins the worker and drains any queued control messages — which is why
-`~AudioContext` / `~OfflineAudioContext` MUST call `joinPendingPromiseWorker()` as their first
-statement (and never while holding `driverMutex_`): default member destruction order would join the
-worker last, letting drained tasks run against an already-destroyed player/graph/disposer. The
+(`jsi/ContextPromiseResolver.hpp`). Lifecycle ops (`resume` / `suspend` / `close` / offline
+start) are queued from the JS thread with `createAsyncPromise` on the context HostObject's
+`PromiseVendor`, which is built on a `SerialTaskExecutor` (same lane shape as the recorder
+above), so they run FIFO on one worker and never on the JS thread. The body calls
+`BaseAudioContext::runLifecycleOperation`, which holds `driverMutex_` around the operation; the
+operation then settles the promise on the CallInvoker through the resolver. Every queued task
+captures the context `shared_ptr`, so a context cannot be destroyed while one of its lifecycle ops
+is pending — that is what replaced the former in-context `pendingPromisesOffloader_` and the
+"`joinPendingPromiseWorker()` first" destructor rule. A task's capture may be the context's last
+owner, in which case `~AudioContext` / `~OfflineAudioContext` run on the lane thread, after the
+operation has released `driverMutex_`. The
 offline render thread is likewise owned (`renderThread_` + `stopRendering_` flag, joined in the
 destructor, detach only when the last context reference drops on the render thread itself); the
 render lambda must release its `resumePromise` right after resolving, since resolver callbacks

@@ -21,8 +21,9 @@ AudioContext::AudioContext(
   getGraph()->enableProducerSelfDrain();
 }
 
+/// No lifecycle operation can still be pending here: each one holds a shared_ptr to the
+/// context while queued on the HostObject's promise lane.
 AudioContext::~AudioContext() {
-  joinPendingPromiseWorker();
   if (getState() != ContextState::CLOSED) {
     std::scoped_lock lock(driverMutex_);
     close(nullptr);

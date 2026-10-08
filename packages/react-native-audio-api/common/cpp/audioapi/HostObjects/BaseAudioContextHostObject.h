@@ -1,19 +1,28 @@
 #pragma once
 
+#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/types/ContextState.h>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
+#include <concepts>
 #include <cstddef>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 using namespace facebook;
 
-class BaseAudioContext;
 class AudioDestinationNodeHostObject;
 class AudioListenerHostObject;
+
+using LifecycleResolver = std::shared_ptr<ContextPromiseResolver<void>>;
+
+/// A lifecycle body: receives the context and the resolver the core method settles.
+template <typename F>
+concept LifecycleOperation = std::invocable<F, BaseAudioContext &, const LifecycleResolver &>;
 
 class BaseAudioContextHostObject : public HostObject {
  public:
@@ -59,6 +68,21 @@ class BaseAudioContextHostObject : public HostObject {
   }
 
  protected:
+  /// @brief Queues a lifecycle operation (resume / suspend / close) on the vendor's serial lane
+  /// and returns its JS promise. A successful settle moves the context to @p nextState.
+  /// Runs under the context's driver mutex, in the order JS issued the calls, and the captured
+  /// context keeps itself alive until its queued operation has run.
+  template <LifecycleOperation Operation>
+  jsi::Value createLifecyclePromise(ContextState nextState, Operation &&operation) {
+    return promiseVendor_->createAsyncPromise(
+        [context = context_, nextState, operation = std::forward<Operation>(operation)](
+            Promise &&promise) {
+          auto resolver = ContextPromiseResolver<void>::makeContextPromiseResolver(
+              std::move(promise), context, nextState);
+          context->runLifecycleOperation([&] { operation(*context, resolver); });
+        });
+  }
+
   std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;

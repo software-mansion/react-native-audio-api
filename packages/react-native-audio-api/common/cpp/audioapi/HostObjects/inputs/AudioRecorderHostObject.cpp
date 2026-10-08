@@ -11,6 +11,7 @@
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
 #include <audioapi/utils/Result.hpp>
+#include <audioapi/utils/SerialTaskExecutor.hpp>
 #include <memory>
 #include <string>
 #include <utility>
@@ -24,7 +25,11 @@ AudioRecorderHostObject::AudioRecorderHostObject(
     AudioRecorderOptions options) {
   audioRecorder_ = createPlatformAudioRecorder(audioEventHandlerRegistry, options);
 
-  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
+  // Serial executor, so start/stop/pause/resume/disableFileOutput run in the order JS called
+  // them even when the caller does not await. The remaining methods run on the JS thread
+  // and are excluded against lane work by the recorder's per-output mutexes.
+  promiseVendor_ =
+      std::make_shared<PromiseVendor>(runtime, callInvoker, std::make_shared<SerialTaskExecutor>());
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
@@ -47,7 +52,12 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 AudioRecorderHostObject::~AudioRecorderHostObject() {
-  ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder_);
+  // Queued rather than called, so a start() still waiting on the lane cannot outlive this
+  // stop. promiseVendor_ is destroyed right after this body and drains the queue before
+  // joining its worker, which keeps the blocking-stop contract of the previous direct call.
+  promiseVendor_->scheduleDetached([audioRecorder = audioRecorder_]() {
+    ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
@@ -138,20 +148,44 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
   return jsResult;
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, disableFileOutput) {
-  audioRecorder_->disableFileOutput();
-  return jsi::Value::undefined();
+namespace {
+
+PromiseResolver resolveWithUndefined() {
+  return [](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
+    return jsi::Value::undefined();
+  };
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, pause) {
-  audioRecorder_->pause();
+} // namespace
 
-  return jsi::Value::undefined();
+/// Closing a file mid-recording joins the writer thread, so it runs on the lane like stop().
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, disableFileOutput) {
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    audioRecorder->disableFileOutput();
+    return resolveWithUndefined();
+  });
+}
+
+/// Through the handle rather than the recorder, so it is excluded against the notification
+/// and audio-session paths that also drive the occupant.
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, pause) {
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    ActiveRecorderHandle::global().pause(audioRecorder);
+    return resolveWithUndefined();
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, resume) {
-  audioRecorder_->resume();
-  return jsi::Value::undefined();
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    ActiveRecorderHandle::global().resume(audioRecorder);
+    return resolveWithUndefined();
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, connect) {
