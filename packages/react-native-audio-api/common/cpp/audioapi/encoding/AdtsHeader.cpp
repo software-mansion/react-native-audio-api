@@ -11,8 +11,8 @@ namespace {
 constexpr std::array<int, 13> SAMPLING_FREQUENCIES =
     {96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350};
 
-/// MPEG-4, layer 0, no CRC.
 constexpr uint8_t SYNCWORD_HIGH = 0xFF;
+/// The low 4 sync bits, then ID 0 (MPEG-4), layer 0 and protection_absent 1 (no CRC).
 constexpr uint8_t SYNCWORD_LOW_FLAGS = 0xF1;
 /// AAC-LC is object type 2, stored as (type - 1) in the 2-bit profile field.
 constexpr unsigned PROFILE_AAC_LC = 1;

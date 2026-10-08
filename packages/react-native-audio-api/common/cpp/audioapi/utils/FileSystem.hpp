@@ -26,4 +26,13 @@ inline void removeFile(const std::string &path) {
   std::filesystem::remove(path, ignored);
 }
 
+/// Replaces @p toPath when it already exists. Returns the OS error when the move fails.
+[[nodiscard]] inline std::error_code moveFile(
+    const std::string &fromPath,
+    const std::string &toPath) {
+  std::error_code error;
+  std::filesystem::rename(fromPath, toPath, error);
+  return error;
+}
+
 } // namespace audioapi::file_system

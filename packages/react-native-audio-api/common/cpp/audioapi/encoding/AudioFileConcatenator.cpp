@@ -15,10 +15,12 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -86,6 +88,22 @@ std::optional<FileFormat> outputFormatForPath(const std::string &path) {
     }
   }
   return std::nullopt;
+}
+
+/// A sibling of @p outputPath under a name no file holds yet. The extension is kept because
+/// the iOS writers pick the container from it.
+std::string makeStagingPath(const std::string &outputPath) {
+  const std::filesystem::path finalPath(outputPath);
+  const std::string stem = finalPath.stem().string();
+  const std::string extension = finalPath.extension().string();
+  std::random_device entropy;
+  while (true) {
+    std::filesystem::path candidate = finalPath;
+    candidate.replace_filename(stem + ".partial-" + std::to_string(entropy()) + extension);
+    if (!file_system::fileExists(candidate.string())) {
+      return candidate.string();
+    }
+  }
 }
 
 } // namespace
@@ -383,7 +401,6 @@ Result<AdtsInputInfo, std::string> scanAdtsFrames(const std::string &inputPath) 
 
   std::optional<adts::FrameInfo> firstFrame;
   std::streamoff offset = 0;
-  // Only the headers are read; each payload is skipped with a seek.
   while (offset + static_cast<std::streamoff>(adts::HEADER_SIZE) <= fileSize) {
     adts::HeaderBytes header{};
     input.seekg(offset);
@@ -547,20 +564,35 @@ AudioFileConcatResult concatAudioFiles(
     return Err("concatAudioFiles supports WAV, M4A, FLAC, and ADTS output.");
   }
 
+  // The output is written under a staging name and moved into place once complete, so a failure
+  // never leaves a truncated file at the output path and the output may be one of the inputs.
+  const std::string stagingPath = makeStagingPath(normalizedOutputPath);
   AudioFileConcatResult result = Err(std::string{});
   switch (*outputFormat) {
     case FileFormat::M4A:
-      result = concatAudioFilesWithOsRemux(normalizedInputPaths, normalizedOutputPath);
+      result = concatAudioFilesWithOsRemux(normalizedInputPaths, stagingPath);
       break;
     case FileFormat::ADTS:
-      result = concatAudioFilesWithFrameAppend(normalizedInputPaths, normalizedOutputPath);
+      result = concatAudioFilesWithFrameAppend(normalizedInputPaths, stagingPath);
       break;
     default:
       result = concatAudioFilesWithEncoder(
-          normalizedInputPaths, normalizedOutputPath, *outputFormat, createEncoder);
+          normalizedInputPaths, stagingPath, *outputFormat, createEncoder);
       break;
   }
-  return std::move(result).map([&outputPath](const std::string &) { return outputPath; });
+  if (result.is_err()) {
+    file_system::removeFile(stagingPath);
+    return Err(std::move(result).unwrap_err());
+  }
+
+  const std::error_code moveError = file_system::moveFile(stagingPath, normalizedOutputPath);
+  if (moveError) {
+    file_system::removeFile(stagingPath);
+    return Err(
+        "Failed to move the concatenated file to '" + normalizedOutputPath +
+        "': " + moveError.message());
+  }
+  return Ok(outputPath);
 }
 
 } // namespace audioapi

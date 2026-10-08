@@ -60,13 +60,16 @@ void writeWavFile(const std::string &path, const std::vector<float> &frames) {
   test::writeFloatWavFile(path, frames, sampleRate, channelCount);
 }
 
+enum class EncodeOutcome { ACCEPTS_FRAMES, REFUSES_FRAMES };
+
 /// Stands in for the platform encoder, which the desktop build does not have.
 class FakeWavEncoder final : public AudioEncoder {
  public:
-  FakeWavEncoder(const EncoderSettings &settings, bool failEncode)
-      : AudioEncoder(settings), failEncode_(failEncode) {}
+  FakeWavEncoder(const EncoderSettings &settings, EncodeOutcome outcome)
+      : AudioEncoder(settings), outcome_(outcome) {}
 
-  /// Creates the file straight away, as the platform encoders do.
+  /// Creates the file on open like the platform encoders, so a concat that fails after this
+  /// point has a partial output to clean up.
   OpenEncoderResult open(
       const StreamFormat & /*inputFormat*/,
       const EncoderOutputSpec & /*outputSpec*/,
@@ -78,7 +81,7 @@ class FakeWavEncoder final : public AudioEncoder {
   }
 
   EncodeResult encode(const float *const *channels, int numFrames) override {
-    if (failEncode_) {
+    if (outcome_ == EncodeOutcome::REFUSES_FRAMES) {
       return EncodeResult::Err("encoder refused the frames");
     }
     frames_.insert(frames_.end(), channels[0], channels[0] + numFrames);
@@ -96,16 +99,18 @@ class FakeWavEncoder final : public AudioEncoder {
   }
 
  private:
-  bool failEncode_;
+  EncodeOutcome outcome_;
   std::vector<float> frames_;
 };
 
 CreateEncoderResult createFakeWavEncoder(const EncoderSettings &settings) {
-  return CreateEncoderResult::Ok(std::make_unique<FakeWavEncoder>(settings, /*failEncode=*/false));
+  return CreateEncoderResult::Ok(
+      std::make_unique<FakeWavEncoder>(settings, EncodeOutcome::ACCEPTS_FRAMES));
 }
 
 CreateEncoderResult createFailingWavEncoder(const EncoderSettings &settings) {
-  return CreateEncoderResult::Ok(std::make_unique<FakeWavEncoder>(settings, /*failEncode=*/true));
+  return CreateEncoderResult::Ok(
+      std::make_unique<FakeWavEncoder>(settings, EncodeOutcome::REFUSES_FRAMES));
 }
 
 std::vector<float> readWavFile(const std::string &path) {
@@ -351,10 +356,12 @@ TEST(AudioFileConcatenatorTest, DropsATrailingPartialAdtsFrame) {
   removeFile(inputB);
   removeFile(output);
 
-  // A recording killed mid-frame: the second frame is missing its last 10 bytes.
-  auto streamA = makeAdtsStream(4, 1, {100, 50});
-  const auto completeBytes = streamA.size() - 50 - adts::HEADER_SIZE;
-  streamA.resize(streamA.size() - 10);
+  // A recording killed mid-frame.
+  constexpr size_t lastPayloadBytes = 50;
+  constexpr size_t bytesLostToTheKill = 10;
+  auto streamA = makeAdtsStream(4, 1, {100, lastPayloadBytes});
+  const auto completeBytes = streamA.size() - lastPayloadBytes - adts::HEADER_SIZE;
+  streamA.resize(streamA.size() - bytesLostToTheKill);
   const auto streamB = makeAdtsStream(4, 1, {60});
   writeBytes(inputA, streamA);
   writeBytes(inputB, streamB);
@@ -412,6 +419,86 @@ TEST(AudioFileConcatenatorTest, RejectsAdtsOutputWithNonAdtsInputs) {
       "Input file '" + input + "' is not an ADTS stream (no frame at byte 0).");
 
   removeFile(input);
+}
+
+namespace {
+
+std::vector<std::string> tempFilesNamedLike(const std::string &prefix) {
+  std::vector<std::string> names;
+  for (const auto &entry : std::filesystem::directory_iterator(::testing::TempDir())) {
+    const std::string name = entry.path().filename().string();
+    if (name.rfind(prefix, 0) == 0) {
+      names.push_back(name);
+    }
+  }
+  return names;
+}
+
+} // namespace
+
+TEST(AudioFileConcatenatorTest, ConcatenatesInPlaceWhenTheOutputIsAnInput) {
+  const std::string recording = testFilePath("audio-concat-inplace.aac");
+  const std::string segment = testFilePath("audio-concat-inplace-segment.aac");
+  removeFile(recording);
+  removeFile(segment);
+
+  const auto streamA = makeAdtsStream(4, 2, {100, 250});
+  const auto streamB = makeAdtsStream(4, 2, {80});
+  writeBytes(recording, streamA);
+  writeBytes(segment, streamB);
+
+  auto result = concatAudioFiles({recording, segment}, recording);
+
+  if (result.is_err()) {
+    FAIL() << result.unwrap_err();
+  }
+  std::vector<char> expected = streamA;
+  expected.insert(expected.end(), streamB.begin(), streamB.end());
+  EXPECT_EQ(readBytes(recording), expected);
+  EXPECT_EQ(tempFilesNamedLike("audio-concat-inplace").size(), 2U);
+
+  removeFile(recording);
+  removeFile(segment);
+}
+
+TEST(AudioFileConcatenatorTest, KeepsAnExistingOutputWhenConcatenationFails) {
+  const std::string input = testFilePath("audio-concat-keep-input.wav");
+  const std::string output = testFilePath("audio-concat-keep-output.wav");
+  removeFile(input);
+  removeFile(output);
+
+  writeWavFile(input, {0.1F, 0.2F});
+  const std::vector<char> previous = {'o', 'l', 'd'};
+  writeBytes(output, previous);
+
+  auto result = concatAudioFiles({input}, output, createFailingWavEncoder);
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_EQ(readBytes(output), previous);
+  EXPECT_EQ(tempFilesNamedLike("audio-concat-keep-output").size(), 1U);
+
+  removeFile(input);
+  removeFile(output);
+}
+
+TEST(AudioFileConcatenatorTest, LeavesNoStagingFileAfterAFailedAdtsConcat) {
+  const std::string inputA = testFilePath("audio-concat-nostage-a.aac");
+  const std::string inputB = testFilePath("audio-concat-nostage-b.aac");
+  const std::string output = testFilePath("audio-concat-nostage-output.aac");
+  removeFile(inputA);
+  removeFile(inputB);
+  removeFile(output);
+
+  writeBytes(inputA, makeAdtsStream(4, 2, {100}));
+  writeBytes(inputB, makeAdtsStream(4, 1, {100}));
+
+  auto result = concatAudioFiles({inputA, inputB}, output);
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_TRUE(tempFilesNamedLike("audio-concat-nostage-output").empty());
+
+  removeFile(inputA);
+  removeFile(inputB);
 }
 
 // NOLINTEND

@@ -45,9 +45,9 @@ If playback quality is poor after joining rotated M4A files, increase `rotateInt
 
 Concatenates compatible local audio files into a single output file.
 
-|  Parameter   |    Type    | Description                                                                           |
-| :----------: | :--------: | :------------------------------------------------------------------------------------ |
-| `inputPaths` | `string[]` | Local filesystem paths or `file://` URLs to concatenate, in output order.             |
+|  Parameter   |    Type    | Description|
+| :----------: | :--------: | :--- |
+| `inputPaths` | `string[]` | Local filesystem paths or `file://` URLs to concatenate, in output order. |
 | `outputPath` |  `string`  | Local filesystem path or `file://` URL where the joined audio file should be written. |
 
 #### Returns `Promise<string>`.
@@ -68,12 +68,7 @@ come from the same recorder configuration:
 
 Use an output path with an extension that matches the input files, for example
 joining `.m4a` segments into an `.m4a` output file, `.wav` segments into a
-`.wav` output file, `.flac` segments into a `.flac` output file, or `.aac`
-(ADTS) segments into an `.aac` output file.
-
-ADTS segments are joined by appending their frames, with no decoding or
-re-encoding, on every platform. A segment that ends in an incomplete frame,
-such as a recording cut off by a crash, contributes its complete frames only.
+`.wav` output file and so on.
 
 <details>
 <summary>Example usage with rotated recordings</summary>

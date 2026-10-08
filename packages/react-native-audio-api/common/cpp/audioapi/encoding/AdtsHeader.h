@@ -47,7 +47,7 @@ struct FrameInfo {
 };
 
 /// Reads @p header back; nullopt when the sync word is missing or the frame length could
-/// not hold the header. The inverse of makeHeader(), and the way a stream is walked.
+/// not hold the header. The inverse of makeHeader().
 std::optional<FrameInfo> parseHeader(const HeaderBytes &header);
 
 } // namespace audioapi::adts
