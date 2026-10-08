@@ -48,10 +48,6 @@ Apps that would like to decode HLS or make use of URL streaming have to enable i
 
 With FFmpeg enabled, the FFmpeg binaries are downloaded during `pod install` / the first Gradle build and linked into the app. FFmpeg is distributed under the LGPL — see `THIRD_PARTY.md` in the repository for the notice that applies to FFmpeg-enabled builds.
 
-:::warning Migrating from 0.x
-Before 1.0.0 FFmpeg was linked by default and turned off with `disableFFmpeg` (Expo), `ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'` (iOS) or `disableAudioapiFFmpeg=true` (Android). Those flags are now ignored and only print a warning during `pod install` / Gradle configuration / `expo prebuild`. Apps that stream remote audio must opt in with the flags above; apps that already disabled FFmpeg need no change beyond removing the stale flag.
-:::
-
 ## Disabling other external libraries
 
 This removes the bundled Opus / Ogg / Vorbis static libraries. With this flag enabled, attempts to decode `.ogg`, `.opus`, or `.oga` files through `AudioContext.decodeAudioData` (or any other decoding path) will return an error — those formats are handled inside miniaudio via the now-disabled custom backends.

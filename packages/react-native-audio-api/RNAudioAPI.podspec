@@ -6,9 +6,6 @@ $audio_api_config = find_audio_api_config()
 
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 $RN_AUDIO_API_FFMPEG_ENABLED = ENV['ENABLE_AUDIOAPI_FFMPEG'] == '1'
-unless ENV['DISABLE_AUDIOAPI_FFMPEG'].nil?
-  Pod::UI.warn "[react-native-audio-api] DISABLE_AUDIOAPI_FFMPEG is ignored since 1.0.0: FFmpeg is off by default. Set ENV['ENABLE_AUDIOAPI_FFMPEG'] = '1' to link it."
-end
 $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED = ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'].nil? ? false : ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] == '1' # false by default
 
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''

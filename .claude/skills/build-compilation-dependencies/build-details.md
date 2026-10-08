@@ -14,7 +14,7 @@
 def isNewArchitectureEnabled() {
   return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
 }
-def isFFmpegEnabled() {   // opt-in; pre-1.0 disableAudioapiFFmpeg only warns
+def isFFmpegEnabled() {
   return isPropertyTrue("enableAudioapiFFmpeg")
 }
 ```

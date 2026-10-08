@@ -2,7 +2,6 @@ import {
   AndroidConfig,
   ConfigPlugin,
   createRunOncePlugin,
-  WarningAggregator,
   withAndroidManifest,
   withGradleProperties,
   withInfoPlist,
@@ -36,23 +35,6 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
     disableStaticExternalLibs: false,
     ...options,
   };
-};
-
-// TODO: remove this warning in some later versions after 1.0.0 is released
-const REMOVED_DISABLE_FFMPEG_MESSAGE =
-  '`disableFFmpeg` is ignored since 1.0.0: FFmpeg is off by default. Set `enableFFmpeg: true` to link it.';
-
-const warnAboutRemovedOptions = (options: object) => {
-  if ('disableFFmpeg' in options) {
-    WarningAggregator.addWarningIOS(
-      'react-native-audio-api',
-      REMOVED_DISABLE_FFMPEG_MESSAGE
-    );
-    WarningAggregator.addWarningAndroid(
-      'react-native-audio-api',
-      REMOVED_DISABLE_FFMPEG_MESSAGE
-    );
-  }
 };
 
 /**
@@ -242,7 +224,6 @@ const withStaticExternalLibsConfig: ConfigPlugin<Options> = (
 };
 
 const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
-  warnAboutRemovedOptions(optionsIn ?? {});
   const options = withDefaultOptions(optionsIn ?? {});
 
   if (options.iosBackgroundMode) {

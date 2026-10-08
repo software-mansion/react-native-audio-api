@@ -30,10 +30,6 @@ def isFFmpegEnabled() {
   return isPropertyTrue("enableAudioapiFFmpeg")
 }
 
-if (rootProject.hasProperty("disableAudioapiFFmpeg")) {
-  logger.warn("[react-native-audio-api] disableAudioapiFFmpeg is ignored since 1.0.0: FFmpeg is off by default. Set enableAudioapiFFmpeg=true to link it.")
-}
-
 def isStaticExternalLibsDisabled() {
   return isPropertyTrue("disableAudioapiStaticExternalLibs")
 }
