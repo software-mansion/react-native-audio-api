@@ -32,7 +32,7 @@ if (!isFfmpegEnabled()) {
 | Streaming | [`Audio tag`](/docs/sources/audio-tag), `createFileSource` | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
 | Metadata | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](../sources/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing |
 
-Batch decoding ([`decodeAudioData`](../utils/decoding.mdx#decodeaudiodata)) uses OS APIs on mobile (and miniaudio for formats like Ogg/Opus) — not FFmpeg. Without FFmpeg, remote progressive sources are fully downloaded in JS and decoded that way; `preload="metadata"` behaves like `none`; HLS sources fail with a `NotSupportedError`.
+Without FFmpeg, remote progressive sources are fully downloaded in JS and decoded that way; `preload="metadata"` behaves like `none`; HLS sources fail with a `NotSupportedError`.
 
 ### Enabling FFmpeg
 

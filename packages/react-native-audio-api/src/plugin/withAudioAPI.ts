@@ -38,6 +38,7 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
   };
 };
 
+// TODO: remove this warning in some later versions after 1.0.0 is released
 const REMOVED_DISABLE_FFMPEG_MESSAGE =
   '`disableFFmpeg` is ignored since 1.0.0: FFmpeg is off by default. Set `enableFFmpeg: true` to link it.';
 

@@ -17,7 +17,7 @@ import TabItem from '@theme/TabItem';
 The flags are independent and can be combined.
 
 :::info FFmpeg is opt-in
-Since FFmpeg is no longer linked by default, apps that stream remote audio or play HLS have to enable it explicitly (see below). Everything else — local file decoding, recording, encoding, concatenation — works without it. Use [`isFfmpegEnabled`](./runtime-flags#isffmpegenabled) to branch at runtime.
+Apps that would like to decode HLS or make use of URL streaming have to enable it explicitly (see below). Use [`isFfmpegEnabled`](./runtime-flags#isffmpegenabled) to branch at runtime.
 :::
 
 ## Enabling FFmpeg

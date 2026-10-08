@@ -153,7 +153,7 @@ The Foreground Service only exists while a library notification is shown, so thi
 
 Defaults to `false`.
 
-Links the prebuilt FFmpeg libraries into the app, which enables remote URL streaming, HLS (`.m3u8`) playback and remote URL metadata. Writes `ENV['ENABLE_AUDIOAPI_FFMPEG'] = '1'` to the Podfile and `enableAudioapiFFmpeg=true` to `gradle.properties`. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx#enabling-ffmpeg) for what FFmpeg adds and what it costs.
+Links the prebuilt FFmpeg libraries into the app, which enables remote URL streaming, HLS (`.m3u8`) playback and remote URL metadata. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx) for what FFmpeg adds and what it costs.
 
 :::warning Migrating from 0.x
 `disableFFmpeg` was removed in 1.0.0 and is ignored with a warning during `expo prebuild`. FFmpeg is off by default, so the only action needed is to add `enableFFmpeg: true` if your app streams remote audio.
