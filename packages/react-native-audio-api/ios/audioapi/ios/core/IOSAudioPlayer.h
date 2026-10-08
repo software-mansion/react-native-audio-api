@@ -1,11 +1,6 @@
 #pragma once
 
-#ifdef __OBJC__ // when compiled as Objective-C
 #import <NativeAudioPlayer.h>
-#else  // when compiled as C++
-typedef struct objc_object NativeAudioPlayer;
-typedef struct objc_object AudioBufferList;
-#endif // __OBJC__
 
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>

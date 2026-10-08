@@ -1,14 +1,6 @@
 #pragma once
 
-#ifdef __OBJC__ // when compiled as Objective-C
 #import <audioapi/ios/core/NativeAudioRecorder.h>
-#else
-typedef struct objc_object NSURL;
-typedef struct objc_object AVAudioFile;
-typedef struct objc_object AudioBufferList;
-typedef struct objc_object NativeAudioRecorder;
-typedef struct objc_object AVAudioFormat;
-#endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>

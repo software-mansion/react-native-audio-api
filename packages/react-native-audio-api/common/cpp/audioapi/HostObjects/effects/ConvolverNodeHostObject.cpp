@@ -24,6 +24,7 @@ ConvolverNodeHostObject::ConvolverNodeHostObject(
           std::make_unique<ConvolverNode>(context, options),
           options),
       convolverNode_(typedAudioNode<ConvolverNode>(node_)),
+      context_(context),
       normalize_(!options.disableNormalization) {
   if (options.buffer != nullptr) {
     setBuffer(options.buffer);
@@ -64,6 +65,11 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
 
   irBytes_ = buffer->getSize() * buffer->getNumberOfChannels() * sizeof(float);
 
+  auto context = context_.lock();
+  if (context == nullptr) {
+    return;
+  }
+
   auto copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
 
   float scaleFactor = 1.0f;
@@ -71,7 +77,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
     scaleFactor = convolverNode_->calculateNormalizationScale(copiedBuffer);
   }
 
-  auto threadPool = std::make_shared<ConvolverThreadPool>(4);
+  auto threadPool = context->getConvolverThreadPool();
   std::vector<std::unique_ptr<Convolver>> convolvers;
   for (size_t i = 0; i < copiedBuffer->getNumberOfChannels(); ++i) {
     AudioArray channelData(*copiedBuffer->getChannel(i));
@@ -107,7 +113,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
       .intermediateBuffer = intermediateBuffer,
       .scaleFactor = scaleFactor});
 
-  auto event = [node = convolverNode_, setupData](BaseAudioContext &context) {
+  auto event = [node = convolverNode_, setupData](BaseAudioContext &context) mutable {
     node->setBuffer(
         setupData->buffer,
         std::move(setupData->convolvers),
