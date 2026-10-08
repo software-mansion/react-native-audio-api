@@ -85,9 +85,9 @@ class AudioAPIModuleInstaller {
           }
 
           auto androidOutputProfile = AndroidOutputProfile::Media;
-          if (count > 2 && args[2].isString() &&
-              args[2].getString(runtime).utf8(runtime) == "voiceCommunication") {
-            androidOutputProfile = AndroidOutputProfile::VoiceCommunication;
+          if (count > 2 && args[2].isString()) {
+            androidOutputProfile = js_enum_parser::androidOutputProfileFromString(
+                args[2].getString(runtime).utf8(runtime));
           }
 
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
