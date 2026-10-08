@@ -37,11 +37,10 @@ class AndroidEncoder : public AudioEncoder {
   static constexpr int RESAMPLE_MAX_IN_FRAMES = 4096;
 
   struct ConversionState;
-  using ConversionResult = Result<std::unique_ptr<ConversionState>, std::string>;
 
-  /// Builds the stage that maps @p inputFormat onto outputLayout_, or null when the two
-  /// already match.
-  [[nodiscard]] ConversionResult buildConversion(const StreamFormat &inputFormat) const;
+  /// Sets conversion_ to what converts frames from @p inputFormat to the backend's effective
+  /// format (outputLayout_), or clears it when the two already match.
+  [[nodiscard]] Result<NoneType, std::string> prepareConversion(const StreamFormat &inputFormat);
 
   /// Input that differs from the backend's effective format: channel mapping and resampling
   /// stay planar, and the backend interleaves while it quantizes.

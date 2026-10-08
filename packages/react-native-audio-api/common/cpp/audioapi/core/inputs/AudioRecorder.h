@@ -110,7 +110,7 @@ class AudioRecorder {
       const std::shared_ptr<AudioFileProperties> &properties);
 
   /// The caller must hold adapterNodeMutex_.
-  void prepareAdapterNode(const StreamFormat &format);
+  Result<NoneType, std::string> prepareAdapterNode(const StreamFormat &format);
 
   /// For a session that is starting; a live one follows an input change through
   /// reprepareOutputs(). The caller must hold callbackMutex_, fileWriterMutex_ and
@@ -179,7 +179,7 @@ class AudioRecorder {
   Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
 
   /// The caller must hold adapterNodeMutex_.
-  void reprepareAdapterNode(const StreamFormat &format);
+  Result<NoneType, std::string> reprepareAdapterNode(const StreamFormat &format);
 };
 
 } // namespace audioapi

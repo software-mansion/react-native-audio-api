@@ -194,14 +194,16 @@ void AudioRecorder::disconnect() {
   }
 }
 
-void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
+Result<NoneType, std::string> AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
   auto *adapterNode = adapterNodeOf(adapterNodeHandle_);
   if (adapterNode == nullptr) {
-    return;
+    deactivate(connectionState_);
+    return Err("Recorder adapter node is unavailable.");
   }
 
   adapterNode->init(format);
   connectionState_.store(OutputState::Active, std::memory_order_release);
+  return Ok(None);
 }
 
 Result<NoneType, std::string> AudioRecorder::prepareOutputs(const StreamFormat &format) {
@@ -220,7 +222,10 @@ Result<NoneType, std::string> AudioRecorder::prepareOutputs(const StreamFormat &
   }
 
   if (wantsConnection()) {
-    prepareAdapterNode(format);
+    auto adapterResult = prepareAdapterNode(format);
+    if (!adapterResult.is_ok()) {
+      return adapterResult;
+    }
   }
 
   return Ok(None);
@@ -242,7 +247,10 @@ Result<NoneType, std::string> AudioRecorder::reprepareOutputs(const StreamFormat
   }
 
   if (isConnected()) {
-    reprepareAdapterNode(format);
+    auto adapterResult = reprepareAdapterNode(format);
+    if (!adapterResult.is_ok()) {
+      return adapterResult;
+    }
   }
 
   return Ok(None);
@@ -283,12 +291,12 @@ Result<NoneType, std::string> AudioRecorder::reprepareFileWriter(const StreamFor
   return Ok(None);
 }
 
-void AudioRecorder::reprepareAdapterNode(const StreamFormat &format) {
+Result<NoneType, std::string> AudioRecorder::reprepareAdapterNode(const StreamFormat &format) {
   // init() is a no-op on an initialized adapter, so the old format has to be torn down first.
   if (auto *adapterNode = adapterNodeOf(adapterNodeHandle_)) {
     adapterNode->adapterCleanup();
   }
-  prepareAdapterNode(format);
+  return prepareAdapterNode(format);
 }
 
 RecorderAdapterNode *AudioRecorder::adapterNodeOf(

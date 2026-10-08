@@ -1,9 +1,12 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/utils/graph/NodeHandle.h>
+#include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <gtest/gtest.h>
 
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <string>
 
 using namespace audioapi;
@@ -20,7 +23,13 @@ class IdleAudioRecorder : public AudioRecorder {
   using AudioRecorder::deactivate;
   using AudioRecorder::OutputState;
   using AudioRecorder::wantsCallback;
+  using AudioRecorder::wantsConnection;
   using AudioRecorder::wantsFileOutput;
+
+  Result<NoneType, std::string> prepareOutputsLocked(const StreamFormat &format) {
+    std::scoped_lock outputsLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+    return prepareOutputs(format);
+  }
 
   Result<NoneType, std::string> start() override {
     return Err(std::string("not supported"));
@@ -113,6 +122,22 @@ TEST(AudioRecorderOutputStateTest, CallbackIsRequestedUntilAStreamPreparesIt) {
 
   recorder.clearOnAudioReadyCallback();
   EXPECT_FALSE(recorder.wantsCallback());
+}
+
+TEST(AudioRecorderOutputStateTest, AConnectionWhoseAdapterNodeIsGoneFailsToPrepare) {
+  IdleAudioRecorder recorder;
+  recorder.connect(std::make_shared<utils::graph::NodeHandle>(0, nullptr));
+  ASSERT_TRUE(recorder.wantsConnection());
+
+  auto result = recorder.prepareOutputsLocked(
+      StreamFormat{
+          .layout = AudioLayout{.sampleRate = 48000.0F, .channelCount = 1},
+          .maxFramesPerBuffer = 1024,
+      });
+
+  EXPECT_TRUE(result.is_err());
+  EXPECT_FALSE(recorder.isConnected());
+  EXPECT_TRUE(recorder.wantsConnection());
 }
 
 // NOLINTEND

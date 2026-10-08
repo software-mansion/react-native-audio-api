@@ -20,7 +20,7 @@ enum Status {
 }
 
 const Record: FC = () => {
-  const { availableInputs, currentInput, onSelectInput } = useAudioInput();
+  const { availableInputs, currentInput, selectInput } = useAudioInput();
 
   const [status, setStatus] = useState<Status>(Status.Idle);
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
@@ -224,14 +224,14 @@ const Record: FC = () => {
       }
 
       try {
-        await onSelectInput(input);
+        await selectInput(input);
       } catch (error) {
         // Android refuses a switch while a recorder is running, and either
         // platform refuses a device that went away between listing and picking.
         Alert.alert('Input Device Error', `${error}`);
       }
     },
-    [availableInputs, onSelectInput]
+    [availableInputs, selectInput]
   );
 
   useEffect(() => {

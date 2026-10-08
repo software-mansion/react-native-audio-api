@@ -32,13 +32,18 @@ export default function useAudioInput() {
   const [availableInputs, setAvailableInputs] = useState<AudioDeviceList>([]);
   const [currentInput, setCurrentInput] = useState<string | null>(null);
 
-  const onSelectInput = useCallback(async (device: AudioDeviceInfo | null) => {
-    await AudioManager.setInputDevice(device?.id ?? null);
-    setCurrentInput(device?.id ?? null);
+  const selectInput = useCallback(
+    async (device: AudioDeviceInfo | 'default') => {
+      const selection = device === 'default' ? 'default' : device.id;
 
-    const devicesInfo: AudioDevicesInfo = await AudioManager.getDevicesInfo();
-    setAvailableInputs(devicesInfo.availableInputs);
-  }, []);
+      await AudioManager.setInputDevice(selection);
+      setCurrentInput(selection === 'default' ? null : selection);
+
+      const devicesInfo: AudioDevicesInfo = await AudioManager.getDevicesInfo();
+      setAvailableInputs(devicesInfo.availableInputs);
+    },
+    []
+  );
 
   useEffect(() => {
     async function fetchAvailableInputs() {
@@ -83,11 +88,12 @@ export default function useAudioInput() {
        */
       currentInput: availableInputs.find((d) => d.id === currentInput) || null,
       /**
-       * Selects the given device as the current input, or with `null` hands the
-       * choice back to the system. Resolves once done, throws otherwise.
+       * Selects the given device as the current input, or with `'default'`
+       * hands the choice back to the system. Resolves once done, throws
+       * otherwise.
        */
-      onSelectInput,
+      selectInput,
     }),
-    [availableInputs, currentInput, onSelectInput]
+    [availableInputs, currentInput, selectInput]
   );
 }

@@ -14,7 +14,7 @@ The `useAudioInput` hook provides an interface for:
 - switching between different input devices
 
 :::info Platform support
-On Android, `currentInput` is `null` until a device is selected through this hook, because the platform does not report which input it would pick on its own. It becomes `null` again when the selected device is disconnected.
+On Android, `currentInput` is `null` whenever the system picks the input: before a device is selected through this hook, after `selectInput('default')`, and after the selected device is disconnected. The platform does not report which device it would choose on its own.
 :::
 
 ## Signature
@@ -23,7 +23,7 @@ On Android, `currentInput` is `null` until a device is selected through this hoo
 function useAudioInput(): {
   availableInputs: AudioDeviceInfo[];
   currentInput: AudioDeviceInfo | null;
-  onSelectInput: (device: AudioDeviceInfo | null) => Promise<void>;
+  selectInput: (device: AudioDeviceInfo | 'default') => Promise<void>;
 }
 ```
 
@@ -35,17 +35,19 @@ import { View, Text, Button } from 'react-native';
 import { useAudioInput } from 'react-native-audio-api';
 
 function AudioInputSelector() {
-  const { availableInputs, currentInput, onSelectInput } = useAudioInput();
+  const { availableInputs, currentInput, selectInput } = useAudioInput();
 
   return (
     <View>
-      <Text>Current Input: {currentInput?.name || 'None'}</Text>
+      <Text>Current Input: {currentInput?.name || 'System default'}</Text>
+
+      <Button title="System default" onPress={() => selectInput('default')} />
 
       {availableInputs.map((input) => (
         <Button
           key={input.id}
           title={`${input.name} (${input.category})`}
-          onPress={() => onSelectInput(input)}
+          onPress={() => selectInput(input)}
         />
       ))}
     </View>
@@ -61,7 +63,7 @@ function AudioInputSelector() {
 | :----: | :----: | :---- |
 | `availableInputs` | [`AudioDeviceInfo[]`](../system/audio-manager.mdx#audiodeviceinfo) | List of available audio input devices under the current device configuration. |
 | `currentInput` | [`AudioDeviceInfo`](../system/audio-manager.mdx#audiodeviceinfo) \| `null` | The currently selected audio input device, or `null` if none is yet selected by the system. |
-| `onSelectInput` | `(device: AudioDeviceInfo \| null) => Promise<void>` | Selects the given device as the current input; `null` hands the choice back to the system. Resolves once done; throws otherwise. |
+| `selectInput` | `(device: AudioDeviceInfo \| 'default') => Promise<void>` | Selects the given device as the current input; `'default'` hands the choice back to the system. Resolves once done; throws otherwise. |
 
 ## Related
 

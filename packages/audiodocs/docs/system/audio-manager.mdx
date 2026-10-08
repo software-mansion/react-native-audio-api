@@ -187,7 +187,7 @@ Selects the device that audio is captured from, using an `id` taken from `getDev
 
 | Name | Type | Description |
 | :----: | :----: | :---- |
-| `deviceId` | `string \| null` | Identifier of the input device to capture from. `null` drops the selection, so the system chooses the input again. |
+| `deviceId` | `string \| 'default'` | Identifier of the input device to capture from. `'default'` drops the selection, so the system chooses the input again. |
 
 A recording in progress moves to the new input and keeps writing the same file.
 
@@ -197,8 +197,7 @@ On Android, a recorder with no device selected uses the first external microphon
 Some USB microphones also expose a headphone output, which the platform then prefers over wired or Bluetooth headphones. To record from such a microphone and hear playback on headphones, connect the microphone first and the headphones after it.
 :::
 
-#### Returns `Promise<void>`
-resolved once the device is selected and rejected when the device cannot be found or when the system fails to switch to it.
+#### Returns `Promise<void>`, resolved once the device is selected and rejected when the device cannot be found or when the system fails to switch to it. A rejected call leaves the previous selection in place.
 
 ## Remarks
 

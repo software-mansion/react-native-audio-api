@@ -46,6 +46,9 @@ object MediaSessionManager {
   private lateinit var deviceChangeListener: DeviceChangeListener
   private lateinit var playbackNotificationReceiver: PlaybackNotificationReceiver
 
+  /** Whether [volumeChangeListener] is registered; unregistering a receiver twice throws. */
+  private var observesVolumeChanges = false
+
   // New notification system
   private lateinit var notificationRegistry: NotificationRegistry
 
@@ -109,6 +112,18 @@ object MediaSessionManager {
   }
 
   fun cleanup() {
+    if (::audioFocusListener.isInitialized) {
+      audioFocusListener.abandonAudioFocus()
+    }
+
+    if (::volumeChangeListener.isInitialized) {
+      observeVolumeChanges(false)
+    }
+
+    if (::playbackNotificationReceiver.isInitialized) {
+      reactContext.get()?.unregisterReceiver(playbackNotificationReceiver)
+    }
+
     if (::deviceChangeListener.isInitialized) {
       audioManager.unregisterAudioDeviceCallback(deviceChangeListener)
     }
@@ -131,6 +146,10 @@ object MediaSessionManager {
   }
 
   fun observeVolumeChanges(observe: Boolean) {
+    if (observe == observesVolumeChanges) {
+      return
+    }
+
     if (observe) {
       ContextCompat.registerReceiver(
         reactContext.get()!!,
@@ -141,6 +160,8 @@ object MediaSessionManager {
     } else {
       reactContext.get()?.unregisterReceiver(volumeChangeListener)
     }
+
+    observesVolumeChanges = observe
   }
 
   fun requestRecordingPermissions(permissionListener: PermissionListener) {
@@ -291,19 +312,35 @@ object MediaSessionManager {
    * blocks while its stream reopens; never call it on the main thread.
    *
    * @param device null hands the choice back to the system.
-   * @return false when a recording was running and could not continue on the new input.
+   * @return false when a recording was running and could not continue on the new input,
+   *   in which case the previous selection stays in place.
    */
   fun setPreferredInputDevice(device: AudioDeviceInfo?): Boolean {
-    synchronized(inputSelectionLock) {
-      if (device?.id == preferredInputDeviceId) {
-        return true
+    val previousInputDeviceId =
+      synchronized(inputSelectionLock) {
+        if (device?.id == preferredInputDeviceId) {
+          return true
+        }
+
+        val previous = preferredInputDeviceId
+        preferredInputDeviceId = device?.id
+        previous
       }
 
-      preferredInputDeviceId = device?.id
+    // Does nothing when no recording is in progress.
+    if (NativeInputRouting.rerouteActiveCapture()) {
+      return true
     }
 
-    // Does nothing when no recording is in progress.
-    return NativeInputRouting.rerouteActiveCapture()
+    // The recording stopped instead of moving, so a selection that never took effect is not
+    // kept for the next one. A newer selection made meanwhile wins.
+    synchronized(inputSelectionLock) {
+      if (preferredInputDeviceId == device?.id) {
+        preferredInputDeviceId = previousInputDeviceId
+      }
+    }
+
+    return false
   }
 
   /**

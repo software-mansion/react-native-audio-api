@@ -49,7 +49,7 @@ const Record: FC = () => {
   );
   const currentPositionSV = useSharedValue(0);
   const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const { availableInputs, currentInput, onSelectInput } = useAudioInput();
+  const { availableInputs, currentInput, selectInput } = useAudioInput();
 
   const inputLabels = availableInputs.map(
     (device) => `${device.name} · ${device.category} #${device.id}`
@@ -66,7 +66,7 @@ const Record: FC = () => {
     }
 
     try {
-      await onSelectInput(input);
+      await selectInput(input);
     } catch (error) {
       Alert.alert('Input Device Error', `${error}`);
     }

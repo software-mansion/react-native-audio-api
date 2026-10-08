@@ -65,6 +65,13 @@ export interface AudioDeviceInfo {
 
 export type AudioDeviceList = AudioDeviceInfo[];
 
+/**
+ * An id from `AudioDevicesInfo.availableInputs`, or `'default'` to let the
+ * system choose. The intersection keeps `'default'` in completions, which a
+ * plain `string` union would swallow.
+ */
+export type InputDeviceSelection = 'default' | (string & {});
+
 export interface AudioDevicesInfo {
   availableInputs: AudioDeviceList;
   availableOutputs: AudioDeviceList;
@@ -96,5 +103,5 @@ export interface IAudioManager {
   requestNotificationPermissions(): Promise<PermissionStatus>;
   checkNotificationPermissions(): Promise<PermissionStatus>;
   getDevicesInfo(): Promise<AudioDevicesInfo>;
-  setInputDevice(deviceId: string | null): Promise<void>;
+  setInputDevice(deviceId: InputDeviceSelection): Promise<void>;
 }
