@@ -68,7 +68,6 @@ target_link_libraries(rnaudioapi_cursor ${LINK_LIBRARIES} gtest gmock gtest_main
 add_library(rnaudioapi_cursor_test OBJECT ${TEST_CPP_SOURCES})
 target_compile_definitions(rnaudioapi_cursor_test PRIVATE
   RN_AUDIO_API_TEST=1
-  RN_AUDIO_API_FFMPEG_DISABLED=1
   RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1
   MA_NO_LIBOPUS=1
   MA_NO_LIBVORBIS=1

@@ -3,7 +3,7 @@
 #include <audioapi/decoding/backends/MiniAudioDecoder.h>
 #include <audioapi/decoding/backends/RawPcmDecoder.h>
 
-#if !RN_AUDIO_API_FFMPEG_DISABLED
+#if RN_AUDIO_API_FFMPEG_ENABLED
 #include <audioapi/decoding/backends/FfmpegDecoder.h>
 #endif
 
@@ -87,7 +87,7 @@ CreateDecoderResult createDecoder(const DecoderSource &source) {
             if (remoteSource.url.empty()) {
               return Err("DecoderFactory: remote URL is empty");
             }
-#if !RN_AUDIO_API_FFMPEG_DISABLED
+#if RN_AUDIO_API_FFMPEG_ENABLED
             return createAndOpen<ffmpeg::FfmpegDecoder>(remoteSource);
 #else
             (void)remoteSource;

@@ -22,7 +22,7 @@ def isFFmpegEnabled() {   // opt-in; pre-1.0 disableAudioapiFFmpeg only warns
 ### Forwarding flags to CMake
 
 ```groovy
-"-DRN_AUDIO_API_FFMPEG_DISABLED=${IS_RN_AUDIO_API_FFMPEG_DISABLED}"
+"-DRN_AUDIO_API_FFMPEG_ENABLED=${IS_RN_AUDIO_API_FFMPEG_ENABLED}"
 "-DRN_AUDIO_API_WORKLETS_ENABLED=${isWorkletsAvailable}"
 "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}"
 ```
@@ -30,7 +30,7 @@ def isFFmpegEnabled() {   // opt-in; pre-1.0 disableAudioapiFFmpeg only warns
 ### Forwarding flags to Kotlin via BuildConfig
 
 ```groovy
-buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_DISABLED", IS_RN_AUDIO_API_FFMPEG_DISABLED.toString()
+buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_ENABLED", IS_RN_AUDIO_API_FFMPEG_ENABLED.toString()
 buildConfigField "boolean", "RN_AUDIO_API_ENABLE_WORKLETS", "${isWorkletsAvailable}"
 ```
 
@@ -123,7 +123,7 @@ file(GLOB_RECURSE COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/audioa
 ### FFmpeg conditional exclusion
 
 ```cmake
-if(RN_AUDIO_API_FFMPEG_DISABLED)   # FILTER, not REMOVE_ITEM: the list holds relative paths
+if(NOT RN_AUDIO_API_FFMPEG_ENABLED)   # FILTER, not REMOVE_ITEM: the list holds relative paths
   list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*FfmpegDecoder\\.cpp$")
 endif()
 ```
@@ -198,10 +198,10 @@ s.xcconfig = {
 CocoaPods handles embedding and signing automatically:
 
 ```ruby
-s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_DISABLED ? [] : [
+s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_ENABLED ? [
   'common/cpp/audioapi/external/ffmpeg_ios/libavcodec.xcframework',
   ...
-]
+] : []
 ```
 
 ### Header search paths split between pod target and consumers
@@ -268,7 +268,6 @@ list(REMOVE_ITEM RNAUDIOAPI_SRC ... "FfmpegDecoder.cpp")                       #
 ```cmake
 add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
-add_compile_definitions(RN_AUDIO_API_FFMPEG_DISABLED=1)
 ```
 
 Use `RN_AUDIO_API_TEST` in source code to conditionally compile test-only hooks.

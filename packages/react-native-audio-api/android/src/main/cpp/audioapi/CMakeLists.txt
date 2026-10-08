@@ -17,7 +17,7 @@ foreach(src IN LISTS DSP_CPP_SOURCES_ABS)
   list(APPEND DSP_CPP_SOURCES "${rel_src}")
 endforeach()
 
-if (RN_AUDIO_API_FFMPEG_DISABLED)
+if (NOT RN_AUDIO_API_FFMPEG_ENABLED)
   list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*FfmpegDecoder\\.cpp$")
 endif()
 
@@ -66,7 +66,7 @@ if (NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   endforeach()
 endif()
 
-if (NOT RN_AUDIO_API_FFMPEG_DISABLED)
+if (RN_AUDIO_API_FFMPEG_ENABLED)
   foreach (lib IN ITEMS avcodec avformat avutil swresample)
     add_library(${lib} SHARED IMPORTED)
     set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/lib${lib}.so)
@@ -108,7 +108,7 @@ if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   )
 endif()
 
-if(NOT RN_AUDIO_API_FFMPEG_DISABLED)
+if(RN_AUDIO_API_FFMPEG_ENABLED)
   target_include_directories(
     react-native-audio-api
     PRIVATE
@@ -129,10 +129,10 @@ set(RN_VERSION_LINK_LIBRARIES
   ReactAndroid::reactnative
 )
 
-if (RN_AUDIO_API_FFMPEG_DISABLED)
+if (RN_AUDIO_API_FFMPEG_ENABLED)
   target_compile_definitions(
     react-native-audio-api
-    PRIVATE RN_AUDIO_API_FFMPEG_DISABLED=1
+    PRIVATE RN_AUDIO_API_FFMPEG_ENABLED=1
   )
 endif()
 
@@ -178,7 +178,7 @@ if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   )
 endif()
 
-if(NOT RN_AUDIO_API_FFMPEG_DISABLED)
+if(RN_AUDIO_API_FFMPEG_ENABLED)
   target_link_libraries(react-native-audio-api
     avcodec
     avformat

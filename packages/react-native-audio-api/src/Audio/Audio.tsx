@@ -19,6 +19,12 @@ import { useStableAudioProps, resolveSourcePath } from './utils';
 import AudioControls from './controls/AudioControls';
 import { useAudioSourceLoader } from './useAudioSourceLoader';
 
+/**
+ * Remote http(s) sources are streamed over HTTP byte ranges, and HLS (.m3u8)
+ * playlists play at all, only when the native build includes FFmpeg. Without it
+ * every remote file is downloaded in full before playback and an HLS source
+ * rejects with NotSupportedError.
+ */
 const Audio = React.memo(
   React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     const { children } = props;

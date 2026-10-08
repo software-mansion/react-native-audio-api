@@ -99,7 +99,7 @@ class AudioAPIModule(
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
-  override fun isFfmpegEnabled(): Boolean = !BuildConfig.RN_AUDIO_API_FFMPEG_DISABLED
+  override fun isFfmpegEnabled(): Boolean = BuildConfig.RN_AUDIO_API_FFMPEG_ENABLED
 
   override fun setAudioSessionActivity(
     enabled: Boolean,

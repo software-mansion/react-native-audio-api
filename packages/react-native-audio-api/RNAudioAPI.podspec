@@ -5,7 +5,7 @@ package_json = JSON.parse(File.read(File.join(__dir__, "package.json")))
 $audio_api_config = find_audio_api_config()
 
 $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
-$RN_AUDIO_API_FFMPEG_DISABLED = ENV['ENABLE_AUDIOAPI_FFMPEG'] != '1'
+$RN_AUDIO_API_FFMPEG_ENABLED = ENV['ENABLE_AUDIOAPI_FFMPEG'] == '1'
 unless ENV['DISABLE_AUDIOAPI_FFMPEG'].nil?
   Pod::UI.warn "[react-native-audio-api] DISABLE_AUDIOAPI_FFMPEG is ignored since 1.0.0: FFmpeg is off by default. Set ENV['ENABLE_AUDIOAPI_FFMPEG'] = '1' to link it."
 end
@@ -15,9 +15,9 @@ fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 ios_min_version = '14.0'
 
-ffmpeg_flag = $RN_AUDIO_API_FFMPEG_DISABLED ? '-DRN_AUDIO_API_FFMPEG_DISABLED=1' : ''
+ffmpeg_flag = $RN_AUDIO_API_FFMPEG_ENABLED ? '-DRN_AUDIO_API_FFMPEG_ENABLED=1' : ''
 static_external_libs_flag = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? '-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1 -DMA_NO_LIBOPUS=1 -DMA_NO_LIBVORBIS=1' : ''
-skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_DISABLED ? 'skipffmpeg' : ''
+skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_ENABLED ? '' : 'skipffmpeg'
 download_script_env_prefix = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS=1 ' : ''
 
 Pod::Spec.new do |s|
@@ -33,7 +33,7 @@ Pod::Spec.new do |s|
 
   s.subspec "audioapi" do |ss|
     ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h,hpp}"
-    ss.exclude_files = $RN_AUDIO_API_FFMPEG_DISABLED ? ["common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp"] : []
+    ss.exclude_files = $RN_AUDIO_API_FFMPEG_ENABLED ? [] : ["common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp"]
     ss.header_dir = "audioapi"
     ss.header_mappings_dir = "common/cpp/audioapi"
 
@@ -86,7 +86,7 @@ Pod::Spec.new do |s|
   # `output_files` declares everything the linker (`-force_load` static libs in
   # `s.xcconfig`) and Copy XCFrameworks (FFmpeg) consume, so Xcode's build graph
   # knows this phase produces them.
-  unless $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED && $RN_AUDIO_API_FFMPEG_DISABLED
+  if !$RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED || $RN_AUDIO_API_FFMPEG_ENABLED
     download_output_files = []
 
     unless $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
@@ -95,7 +95,7 @@ Pod::Spec.new do |s|
       end
     end
 
-    unless $RN_AUDIO_API_FFMPEG_DISABLED
+    if $RN_AUDIO_API_FFMPEG_ENABLED
       ffmpeg_framework_names.each do |framework|
         download_output_files << "#{ffmpeg_dir}/#{framework}.xcframework"
       end
@@ -114,9 +114,9 @@ Pod::Spec.new do |s|
     }
   end
 
-  s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_DISABLED ? [] : ffmpeg_framework_names.map { |framework|
+  s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_ENABLED ? ffmpeg_framework_names.map { |framework|
     "common/cpp/audioapi/external/ffmpeg_ios/#{framework}.xcframework"
-  }
+  } : []
 
   s.pod_target_xcconfig = {
     "USE_HEADERMAP" => "YES",
@@ -136,7 +136,7 @@ Pod::Spec.new do |s|
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/opus\"",
       "\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include/vorbis\""
     ])
-    .concat($RN_AUDIO_API_FFMPEG_DISABLED ? [] : ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include_ffmpeg\""])
+    .concat($RN_AUDIO_API_FFMPEG_ENABLED ? ["\"$(PODS_TARGET_SRCROOT)/#{external_dir_relative}/include_ffmpeg\""] : [])
     .join(' '),
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',

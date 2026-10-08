@@ -143,7 +143,7 @@ file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { rea
 def REACT_NATIVE_VERSION = reactProperties.getProperty("VERSION_NAME")
 def REACT_NATIVE_MINOR_VERSION = REACT_NATIVE_VERSION.startsWith("0.0.0-") ? 1000 : REACT_NATIVE_VERSION.split("\\.")[1].toInteger()
 def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
-def IS_RN_AUDIO_API_FFMPEG_DISABLED = !isFFmpegEnabled()
+def IS_RN_AUDIO_API_FFMPEG_ENABLED = isFFmpegEnabled()
 def IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED = isStaticExternalLibsDisabled()
 
 apply from: "./fix-prefab.gradle"
@@ -152,7 +152,7 @@ android {
   sourceSets {
       main {
         // if ffmpeg is disabled, don't include the jniLibs directory, where the ffmpeg .so files are located
-        jniLibs.srcDirs = IS_RN_AUDIO_API_FFMPEG_DISABLED ? [] : ['src/main/jniLibs']
+        jniLibs.srcDirs = IS_RN_AUDIO_API_FFMPEG_ENABLED ? ['src/main/jniLibs'] : []
       }
   }
   if (supportsNamespace()) {
@@ -174,7 +174,7 @@ android {
     consumerProguardFiles("proguard-rules.pro")
 
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
-    buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_DISABLED", IS_RN_AUDIO_API_FFMPEG_DISABLED.toString()
+    buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_ENABLED", IS_RN_AUDIO_API_FFMPEG_ENABLED.toString()
     buildConfigField "boolean", "RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED", isStaticExternalLibsDisabled().toString()
 
     externalNativeBuild {
@@ -188,7 +188,7 @@ android {
           "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
           "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
           "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
-          "-DRN_AUDIO_API_FFMPEG_DISABLED=${IS_RN_AUDIO_API_FFMPEG_DISABLED}",
+          "-DRN_AUDIO_API_FFMPEG_ENABLED=${IS_RN_AUDIO_API_FFMPEG_ENABLED}",
           "-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=${IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED}"
         ]
 
