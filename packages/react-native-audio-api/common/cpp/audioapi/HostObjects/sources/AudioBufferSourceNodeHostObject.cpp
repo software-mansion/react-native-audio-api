@@ -127,7 +127,7 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onloopended) {
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
   hasBeenStarted_ = true;
-  acquireBufferContent(runtime);
+  acquireBufferContent();
 
   auto handle = node_->handle;
   auto event = [handle,
@@ -142,12 +142,12 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
   return jsi::Value::undefined();
 }
 
-void AudioBufferSourceNodeHostObject::acquireBufferContent(jsi::Runtime &runtime) {
+void AudioBufferSourceNodeHostObject::acquireBufferContent() {
   if (bufferHostObject_ == nullptr) {
     return;
   }
 
-  bufferHostObject_->detachReturnedChannelData(runtime);
+  bufferHostObject_->detachReturnedChannelData();
 
   if (bufferHostObject_->getContentVersion() == sharedContentVersion_) {
     // Nothing replaced the storage the node already reads, so it holds the content
@@ -156,12 +156,11 @@ void AudioBufferSourceNodeHostObject::acquireBufferContent(jsi::Runtime &runtime
   }
 
   // Some channel storage could be swapped since the node received its samples, either by
-  // the detach above or by an earlier copy-on-write. Re-hand it the current content,
-  // touching only the samples so loopEnd and friends survive.
+  // the detach above or by an earlier copy-on-write. Re-hand it the current content.
   auto buffers = prepareNodeBuffers(bufferHostObject_->audioBuffer_, bufferHostObject_);
   auto event =
       [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
-        node->replaceBufferContent(buffers.nodeBuffer, buffers.audioBuffer);
+        node->setBuffer(buffers.nodeBuffer, buffers.audioBuffer);
       };
   audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
 }
@@ -180,7 +179,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
   // Per Web Audio, assigning a buffer to an already-started source acquires its
   // content right away, because start() had nothing to acquire back then.
   if (hasBeenStarted_) {
-    acquireBufferContent(runtime);
+    acquireBufferContent();
   }
 
   return jsi::Value::undefined();

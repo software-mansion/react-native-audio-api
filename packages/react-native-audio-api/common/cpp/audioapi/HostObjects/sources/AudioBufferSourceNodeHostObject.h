@@ -34,7 +34,7 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   JSI_PROPERTY_SETTER_DECL(loopEnd);
   JSI_PROPERTY_SETTER_DECL(onloopended);
 
-  JSI_HOST_FUNCTION_DECL(start);
+  JSI_HOST_FUNCTION_DECL(start) override;
   JSI_HOST_FUNCTION_DECL(setBuffer);
 
   [[nodiscard]] size_t getMemoryPressure() const override {
@@ -81,7 +81,7 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   /// if the JS-facing buffer's storage moved on since the node last received it,
   /// re-hands the node the current content.
   /// https://webaudio.github.io/web-audio-api/#acquire-the-content
-  void acquireBufferContent(jsi::Runtime &runtime);
+  void acquireBufferContent();
 };
 
 } // namespace audioapi

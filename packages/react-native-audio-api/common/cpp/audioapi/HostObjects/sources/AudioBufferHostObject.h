@@ -4,6 +4,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <jsi/jsi.h>
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -31,7 +32,7 @@ class AudioBufferHostObject : public HostObject {
       audioBuffer_ = std::move(other.audioBuffer_);
       channelSharedWithNode_ = std::move(other.channelSharedWithNode_);
       contentVersion_ = other.contentVersion_;
-      returnedChannelDataArrays_ = std::move(other.returnedChannelDataArrays_);
+      channelViewHandedOut_ = std::move(other.channelViewHandedOut_);
     }
     return *this;
   }
@@ -54,15 +55,14 @@ class AudioBufferHostObject : public HostObject {
 
   /// @brief Web Audio's "acquire the content" step for the views handed out by
   /// `getChannelData`. Call once playback of this buffer has been scheduled. Every
-  /// previously returned Float32Array stops aliasing `audioBuffer_` and, if JS still
-  /// holds it, reads as zero-length; the next `getChannelData` call hands out a fresh
-  /// view, mirroring what a browser does when it detaches those ArrayBuffers.
-  void detachReturnedChannelData(jsi::Runtime &runtime);
+  /// channel with a previously returned Float32Array gets fresh storage, so those views
+  /// stop pointing to `audioBuffer_` and the next `getChannelData` call hands out a fresh view.
+  void detachReturnedChannelData();
 
   /// @brief Whether any `getChannelData` view is live, i.e. handed out since the last
   /// `detachReturnedChannelData`.
   [[nodiscard]] bool hasReturnedChannelData() const {
-    return !returnedChannelDataArrays_.empty();
+    return std::ranges::any_of(channelViewHandedOut_, [](bool handedOut) { return handedOut; });
   }
 
   JSI_PROPERTY_GETTER_DECL(sampleRate);
@@ -75,15 +75,6 @@ class AudioBufferHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(copyToChannel);
 
  private:
-  struct ReturnedChannelDataArray {
-    size_t channel;
-    /// Weak on purpose: a view JS already dropped must not be kept alive (nor keep its
-    /// external-memory-pressure hint alive) until the next start(). The channel is still
-    /// recorded so its storage gets swapped, since wrappers over the same ArrayBuffer may
-    /// outlive this particular Float32Array object.
-    jsi::WeakObject array;
-  };
-
   /// Copy-on-write: call before exposing or mutating a channel from JS. If a node may be
   /// reading that channel's storage, the buffer gets a private copy of it first.
   void makeChannelWritable(size_t channel);
@@ -95,8 +86,8 @@ class AudioBufferHostObject : public HostObject {
   /// be reading that channel's current storage.
   std::vector<bool> channelSharedWithNode_;
   uint64_t contentVersion_ = 0;
-  /// Float32Array views handed out by `getChannelData` since the last
-  /// `detachReturnedChannelData`, kept so they can be neutralised then.
-  std::vector<ReturnedChannelDataArray> returnedChannelDataArrays_;
+  /// true once `getChannelData` handed out a view of that channel's
+  /// current storage, cleared by `detachReturnedChannelData`.
+  std::vector<bool> channelViewHandedOut_;
 };
 } // namespace audioapi

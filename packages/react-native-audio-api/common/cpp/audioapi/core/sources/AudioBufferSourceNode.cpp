@@ -25,7 +25,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd),
       onLoopEndedEvent_(context->getAudioEventHandlerRegistry(), context->getAudioEventProducer()) {
-  auto onLoopEnded = [this]() {
+  auto onLoopEnded = [this] {
     sendOnLoopEndedEvent();
   };
 
@@ -55,30 +55,14 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
 void AudioBufferSourceNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
     const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
-  if (!swapBuffers(buffer, audioBuffer)) {
-    return;
-  }
-
-  loopEnd_ = buffer_ == nullptr ? 0 : buffer_->getDuration();
-}
-
-void AudioBufferSourceNode::replaceBufferContent(
-    const std::shared_ptr<AudioBuffer> &buffer,
-    const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
-  swapBuffers(buffer, audioBuffer);
-}
-
-bool AudioBufferSourceNode::swapBuffers(
-    const std::shared_ptr<AudioBuffer> &buffer,
-    const std::shared_ptr<DSPAudioBuffer> &audioBuffer) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
 
   if (context == nullptr) {
-    return false;
+    return;
   }
 
   if (isFinished()) {
-    return false;
+    return;
   }
 
   if (buffer_ != nullptr) {
@@ -92,7 +76,6 @@ bool AudioBufferSourceNode::swapBuffers(
   buffer_ = buffer;
   audioBuffer_ = audioBuffer;
   processor_->setBuffer(buffer_);
-  return true;
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
@@ -106,13 +89,12 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
     return;
   }
 
-  offset = std::min(offset, static_cast<double>(buffer_->getSize()) / buffer_->getSampleRate());
+  // Past the (effective) loop end, or past the buffer when not looping, playback starts
+  // at that boundary instead.
+  const auto sampleRate = buffer_->getSampleRate();
+  offset = std::min(offset, getVirtualEndFrame(sampleRate) / sampleRate);
 
-  if (loop_) {
-    offset = std::min(offset, loopEnd_);
-  }
-
-  vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
+  vReadIndex_ = sampleRate * offset;
 }
 
 void AudioBufferSourceNode::disable() {

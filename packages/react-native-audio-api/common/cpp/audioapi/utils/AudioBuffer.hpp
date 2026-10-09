@@ -156,7 +156,7 @@ class AlignedAudioBuffer {
 
   /// @brief Gives channel @p index fresh storage holding a copy of its current samples.
   /// Every handle previously obtained through getSharedChannel() keeps the old storage
-  /// alive but no longer aliases this buffer, so writes through it can't reach us anymore.
+  /// alive but no longer points to this buffer, so writes through it can't reach here anymore.
   void detachSharedChannel(size_t index) {
     channels_[index] = std::make_shared<AlignedAudioArrayBuffer<Alignment>>(*channels_[index]);
   }
@@ -390,6 +390,8 @@ class AlignedAudioBuffer {
     }
   }
 
+  // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+
   template <size_t OtherAlignment>
   void sumByUpMixing(
       const AlignedAudioBuffer<OtherAlignment> &source,
@@ -489,3 +491,5 @@ using AudioBuffer = AlignedAudioBuffer<alignof(std::max_align_t)>;
 using DSPAudioBuffer = AlignedAudioBuffer<DSP_ALIGNMENT>;
 
 } // namespace audioapi
+
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)

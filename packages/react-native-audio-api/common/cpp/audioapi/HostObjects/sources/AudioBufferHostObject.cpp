@@ -11,7 +11,7 @@
 namespace audioapi {
 
 AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> &audioBuffer)
-    : audioBuffer_(audioBuffer) {
+    : audioBuffer_(audioBuffer), channelViewHandedOut_(audioBuffer->getNumberOfChannels(), false) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, sampleRate),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, length),
@@ -29,7 +29,7 @@ AudioBufferHostObject::AudioBufferHostObject(AudioBufferHostObject &&other) noex
       audioBuffer_(std::move(other.audioBuffer_)),
       channelSharedWithNode_(std::move(other.channelSharedWithNode_)),
       contentVersion_(other.contentVersion_),
-      returnedChannelDataArrays_(std::move(other.returnedChannelDataArrays_)) {}
+      channelViewHandedOut_(std::move(other.channelViewHandedOut_)) {}
 
 std::shared_ptr<AudioBuffer> AudioBufferHostObject::shareForPlayback() {
   channelSharedWithNode_.assign(audioBuffer_->getNumberOfChannels(), true);
@@ -44,41 +44,18 @@ void AudioBufferHostObject::makeChannelWritable(size_t channel) {
 
 void AudioBufferHostObject::replaceChannelStorage(size_t channel) {
   // mark the channel as no longer shared with a node, so that future writes to it don't trigger another copy-on-write
-  if (channel < channelSharedWithNode_.size()) {
-    audioBuffer_->detachSharedChannel(channel);
-    channelSharedWithNode_[channel] = false;
-    ++contentVersion_;
-  }
+  audioBuffer_->detachSharedChannel(channel);
+  channelSharedWithNode_[channel] = false;
+  ++contentVersion_;
 }
 
-void AudioBufferHostObject::detachReturnedChannelData(jsi::Runtime &runtime) {
-  if (returnedChannelDataArrays_.empty()) {
-    return;
-  }
-
-  auto defineProperty = runtime.global()
-                            .getPropertyAsObject(runtime, "Object")
-                            .getPropertyAsFunction(runtime, "defineProperty");
-  auto zeroDescriptor = jsi::Object(runtime);
-  zeroDescriptor.setProperty(runtime, "value", 0);
-
-  std::vector<bool> channelDetached(audioBuffer_->getNumberOfChannels(), false);
-
-  for (const auto &returned : returnedChannelDataArrays_) {
-    auto array = returned.array.lock(runtime);
-    if (array.isObject()) {
-      for (const auto *sizeProperty : {"length", "byteLength", "byteOffset"}) {
-        defineProperty.call(runtime, array, sizeProperty, zeroDescriptor);
-      }
-    }
-
-    if (!channelDetached[returned.channel]) {
-      replaceChannelStorage(returned.channel);
-      channelDetached[returned.channel] = true;
+void AudioBufferHostObject::detachReturnedChannelData() {
+  for (size_t channel = 0; channel < channelViewHandedOut_.size(); ++channel) {
+    if (channelViewHandedOut_[channel]) {
+      replaceChannelStorage(channel);
+      channelViewHandedOut_[channel] = false;
     }
   }
-
-  returnedChannelDataArrays_.clear();
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, sampleRate) {
@@ -110,8 +87,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
 
   float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
-  returnedChannelDataArrays_.push_back(
-      {.channel = channel, .array = jsi::WeakObject(runtime, float32Array)});
+  channelViewHandedOut_[channel] = true;
 
   return float32Array;
 }

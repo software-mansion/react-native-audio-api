@@ -33,15 +33,12 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
     return loopEnd_;
   }
 
+  /// @brief Hands the current buffers to the disposer and installs the new ones. Serves
+  /// both a JS `buffer` assignment and the "acquire the content" refresh on start().
+  /// Loop bounds are left untouched: the effective loop end is resolved against the
+  /// buffer at render time, so a stale `loopEnd_` cannot outrun a shorter buffer.
   /// @note Audio Thread only
   void setBuffer(
-      const std::shared_ptr<AudioBuffer> &buffer,
-      const std::shared_ptr<DSPAudioBuffer> &audioBuffer);
-
-  /// @brief Swaps in a buffer holding the same frames, channels and sample rate as the
-  /// current one, keeping loop bounds and channel count untouched. This is the "acquire
-  /// the content" refresh: the samples may have changed since setBuffer(), the shape has not.
-  void replaceBufferContent(
       const std::shared_ptr<AudioBuffer> &buffer,
       const std::shared_ptr<DSPAudioBuffer> &audioBuffer);
 
@@ -83,12 +80,6 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   double getVirtualEndFrame(float sampleRate);
 
   std::unique_ptr<SingleBufferProcessor> processor_;
-
-  /// Hands the old buffers to the disposer and installs the new ones. Returns false when
-  /// the context is already gone.
-  bool swapBuffers(
-      const std::shared_ptr<AudioBuffer> &buffer,
-      const std::shared_ptr<DSPAudioBuffer> &audioBuffer);
 };
 
 } // namespace audioapi
