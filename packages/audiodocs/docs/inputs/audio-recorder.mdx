@@ -983,6 +983,7 @@ enum FileFormat {
   Wav,
   Caf,
   M4A,
+  Adts,
   Flac,
   Aiff,
   Alac,
@@ -1001,6 +1002,7 @@ The table below lists which formats each platform can encode with its system API
 | `Wav` | WAV / PCM | ✅ | ✅ |
 | `M4A` | M4A / AAC-LC | ✅ | ✅ |
 | `Flac` | FLAC / FLAC | ✅ | ✅ |
+| `Adts` | ADTS / AAC-LC | ✅ | ✅ |
 | `Caf` | CAF / PCM | ✅ | ❌ |
 | `Aiff` | AIFF / PCM | ✅ | ❌ |
 | `Alac` | M4A / Apple Lossless | ✅ | ❌ |
@@ -1010,8 +1012,13 @@ The table below lists which formats each platform can encode with its system API
 | `OpusWebm` | WebM / Opus | ❌ | ✅ |
 | `VorbisWebm` | WebM / Vorbis | ❌ | ✅ |
 
+:::tip
+Both `adts` and `flac` formats stays decodable after an app crash, but only former is lossy.
+`Adts` accepts only the sample rates an ADTS header can express: 7350, 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200 and 96000 Hz.
+:::
+
 :::caution Platform support
-Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusOgg` on iOS) fails when file output is enabled, with a descriptive error. Some Android formats also depend on the device OS version (Opus/OGG muxing requires newer releases); if a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, or `Flac` for the widest cross-platform support.
+Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusOgg` on iOS) fails when file output is enabled, with a descriptive error. Some Android formats also depend on the device OS version (Opus/OGG muxing requires newer releases); if a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, `Flac` or `Adts` for the widest cross-platform support.
 :::
 
 #### FileInfo
@@ -1170,7 +1177,7 @@ export interface FilePresetType {
       </div></td>
       <td>
         <div class="text-content">
-            Specifies the sampling frequency used during recording. Higher sample rates capture a wider frequency range but increase processing and storage requirements.
+            Specifies the sampling frequency used during recording. Higher sample rates capture a wider frequency range but increase processing and storage requirements. AAC output in the `Adts` format is limited to the standard AAC rates listed under [`FileFormat`](#fileformat).
         </div>
       </td>
     </tr>

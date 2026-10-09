@@ -31,7 +31,7 @@ react-native-audio-api/
 │   │       └── CMakeLists.txt          # Actual Android C++ build target
 │   ├── common/cpp/audioapi/            # Shared C++ (used by all platforms)
 │   │   ├── decoding/                   # Decoder factory, backends, SeekDecoderDaemon, AudioDecoding
-│   │   ├── encoding/                   # AudioEncoder interface, EncoderCapabilities, OS encoder/remux selector headers, AudioFileConcatenator
+│   │   ├── encoding/                   # AudioEncoder interface, EncoderCapabilities, OS encoder/remux selector headers, AudioFileConcatenator, AdtsHeader (ADTS framing)
 │   │   ├── libs/                       # Third-party wrappers (FFmpeg, miniaudio, pffft, …)
 │   │   └── external/                   # Prebuilt binaries per platform
 │   │       ├── android/                # .a static libs (Opus, Ogg, Vorbis, OpenSSL)
@@ -373,6 +373,10 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | iOS compile error `unknown type 'id'` | C++ file included ObjC-only header | Compile that file as ObjC++ (separate subspec with `-x objective-c++`) |
 | `RCT_NEW_ARCH_ENABLED` undefined on Android | Old RN gradle plugin | Ensure `newArchEnabled=true` in app's `gradle.properties` |
 | iOS: `'to_chars' is unavailable: introduced in iOS 16.3` from `formatter_floating_point.h`, instantiated by `std::format<...>` | `std::format` in code compiled for iOS. libc++ availability-gates the whole `<format>` library to iOS 16.3; the podspec minimum is `ios_min_version = '14.0'`. The desktop C++ test build and Android NDK have no such gate, so `yarn test:cpp` passes and only the iOS build fails. | Use `std::string` concatenation / `std::to_string` in `common/cpp` and `ios/`. Zero-pad by hand (`insert(0, n, '0')`). Android-only files (`android/src/main/cpp`) may keep `std::format`. |
+| iOS test target: `Undefined symbol: audioapi::<something>` for a function that exists in `common/cpp` and compiles in the pod | The XCTest bundle links against the host app, and the host app only pulls the static-lib members its own code references. A common symbol nobody in `ios/` or the HostObjects uses never reaches the host. | Compute it inline in the test, or make the library reference it; do not add a fake use in production code. |
+| iOS: new `common/cpp` `.cpp` not compiled at all (`Undefined symbol` with no `CompileC` line for it) | CocoaPods expands `source_files` globs at `pod install`, not at build time | `cd apps/fabric-example/ios && pod install` after adding a source file |
+| `check-audio-file-properties-enum-sync.sh` passes while `FileFormat` is out of sync | Its extractor only reads `Name = <number>` lines; `FileFormat` has no explicit values on either side, so it compares two empty lists ("in sync (0 entries)") | Keep the C++ and TS `FileFormat` lists in the same order by hand; `EncoderCapabilities.h`'s `static_assert` only checks the C++ count |
+| Android/iOS: after editing a C++/TS mirrored enum (`FileFormat`, `BitDepth`, …) the app silently uses the wrong value (e.g. records FLAC when JS asked for ADTS) | Metro hot-reloaded the TS enum with the new numbering, but the installed binary still carries the old C++ numbering; enum values cross JSI as plain numbers | Reinstall the app (`installDebug` / `run-ios`) after any enum reorder; a JS reload is never enough |
 | clangd only: `'React/RCTBridgeModule.h' file not found` in `.mm` files | `compile_commands.json` has no framework search path | See *clangd compile database* below — regenerate with `yarn setup:clangd` |
 
 ## clangd compile database
