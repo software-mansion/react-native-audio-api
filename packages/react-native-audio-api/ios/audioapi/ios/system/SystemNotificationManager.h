@@ -17,6 +17,10 @@
 @property (nonatomic, assign) bool volumeChangesObserved;
 @property (nonatomic, assign) bool wasOtherAudioPlaying;
 
+/// Serial queue on which reactions to system notifications reach the audio engine
+/// and session: off the thread that delivered the notification, and in arrival order.
+@property (nonatomic, strong, readonly) dispatch_queue_t engineLifecycleQueue;
+
 - (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule;
 - (void)cleanup;
 

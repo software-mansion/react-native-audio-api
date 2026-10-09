@@ -422,7 +422,7 @@ export default MyRecorder;
         const audioRecorder = new AudioRecorder();
         ```
         <div class="text-content">
-          Full-duplex voice apps (playing audio while recording) need platform echo cancellation on both platforms, otherwise the speaker output leaks back into the microphone:
+          Full-duplex voice apps can request the platforms' communication capture paths:
         </div>
         ```tsx
         const audioRecorder = new AudioRecorder({
@@ -430,6 +430,9 @@ export default MyRecorder;
           iosVoiceProcessing: true,
         });
         ```
+        <div class="text-content">
+          These options request platform processing; echo cancellation, noise suppression, and automatic gain control remain device- and route-dependent.
+        </div>
       </td>
     </tr>
 

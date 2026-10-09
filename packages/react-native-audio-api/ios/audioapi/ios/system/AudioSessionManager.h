@@ -34,6 +34,8 @@
 /// Ensures the library-managed session is active. In external owner mode this is a no-op.
 - (bool)ensureActive:(bool)force error:(NSError **)error;
 - (bool)setActive:(bool)active error:(NSError **)error;
+/// Forces the next activation to re-apply the desired configuration, e.g. after media services reset.
+- (void)invalidateAppliedConfiguration;
 /// Drops the cached active-state flag without reclaiming external ownership.
 - (void)markInactive;
 /// Switches the manager into external owner mode and stops all session mutations.

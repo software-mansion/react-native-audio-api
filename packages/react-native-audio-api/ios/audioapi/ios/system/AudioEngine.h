@@ -51,6 +51,8 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 - (AudioEngineState)getState;
 - (bool)isEngineRunning;
 - (bool)isInUse;
+/// Whether `engine` is the live AVAudioEngine instance, as opposed to one a rebuild has replaced.
+- (bool)ownsAudioEngine:(AVAudioEngine *)engine;
 
 - (bool)startIfNecessary;
 - (void)pauseIfNecessary;
@@ -59,6 +61,9 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 - (void)stopIfPossible;
 
 - (void)restartAudioEngine;
+/// Rebuilds the graph only when the live input format no longer matches the sink connection;
+/// otherwise lets the recorder re-check its format without touching the engine.
+- (void)onRouteChanged;
 
 - (void)logAudioEngineState;
 

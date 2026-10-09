@@ -12,6 +12,9 @@
 - (NSInteger)currentRecordPermissionStatus;
 - (NSString *)recordPermissionStatusString:(NSInteger)status;
 - (NSString *)formatPorts:(NSArray<AVAudioSessionPortDescription *> *)ports;
+- (bool)isDesiredConfigurationApplied;
+
+@property (nonatomic, assign) bool desiredConfigurationApplied;
 
 @end
 
@@ -40,6 +43,7 @@ static AudioSessionManager *_sharedInstance = nil;
     self.desiredOptions = 0;
     self.allowHapticsAndSounds = false;
     self.notifyOthersOnDeactivation = true;
+    self.desiredConfigurationApplied = false;
   }
 
   _sharedInstance = self;
@@ -90,9 +94,22 @@ static AudioSessionManager *_sharedInstance = nil;
   [self setPreferredIOBufferFrames:audioapi::RENDER_QUANTUM_SIZE];
 }
 
+// Voice processing rewrites the mode and options of the session it runs in.
+// Re-applying ours would toggle the route. Once our
+// configuration has been applied, only a foreign category change is drift.
+- (bool)isDesiredConfigurationApplied
+{
+  if (self.desiredConfigurationApplied) {
+    return self.audioSession.category == self.desiredCategory;
+  }
+
+  return [self areDesiredOptionsSet];
+}
+
 - (bool)configureAudioSession:(NSError **)outError
 {
-  if (!self.shouldManageSession || [self areDesiredOptionsSet]) {
+  if (!self.shouldManageSession || [self isDesiredConfigurationApplied]) {
+    self.desiredConfigurationApplied = self.shouldManageSession;
     return true;
   }
 
@@ -134,6 +151,7 @@ static AudioSessionManager *_sharedInstance = nil;
     }
   }
 
+  self.desiredConfigurationApplied = true;
   return true;
 }
 
@@ -154,6 +172,7 @@ static AudioSessionManager *_sharedInstance = nil;
   }
 
   if (configChanged) {
+    self.desiredConfigurationApplied = false;
     AudioEngine *audioEngine = [AudioEngine sharedInstance];
     [audioEngine markSessionDeactivationInvalidatedGraph];
   }
@@ -191,6 +210,7 @@ static AudioSessionManager *_sharedInstance = nil;
 
   if (success) {
     self.isActive = active;
+    self.desiredConfigurationApplied = false;
   }
 
   return success;
@@ -222,6 +242,11 @@ static AudioSessionManager *_sharedInstance = nil;
   }
 
   return success;
+}
+
+- (void)invalidateAppliedConfiguration
+{
+  self.desiredConfigurationApplied = false;
 }
 
 - (void)markInactive
