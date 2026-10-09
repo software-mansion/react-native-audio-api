@@ -15,13 +15,13 @@
 #include <audioapi/android/AndroidDecoding.h>
 #define RN_AUDIO_API_HAS_OS_DECODER 1
 namespace audioapi::os_decoder {
-using Decoder = android_decoder::AndroidDecoder;
+using Decoder = android::decoder::AndroidDecoder;
 } // namespace audioapi::os_decoder
 #elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)
 #include <audioapi/ios/core/utils/IOSDecoding.h>
 #define RN_AUDIO_API_HAS_OS_DECODER 1
 namespace audioapi::os_decoder {
-using Decoder = ios_decoder::IOSDecoder;
+using Decoder = ios::decoder::IOSDecoder;
 } // namespace audioapi::os_decoder
 #else
 #define RN_AUDIO_API_HAS_OS_DECODER 0

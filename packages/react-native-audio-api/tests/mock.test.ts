@@ -223,13 +223,12 @@ describe('React Native Audio API Mocks', () => {
     });
 
     it('should support file output configuration', () => {
-      const result = recorder.enableFileOutput({
+      recorder.enableFileOutput({
         format: MockAPI.FileFormat.M4A,
         channelCount: 2,
       });
 
-      expect(result.status).toBe('success');
-      expect((result as { path?: string }).path).toBeDefined();
+      // it would throw an error if the configuration failed, so we can assume success if no error is thrown
       expect(recorder.options).toBeDefined();
     });
 

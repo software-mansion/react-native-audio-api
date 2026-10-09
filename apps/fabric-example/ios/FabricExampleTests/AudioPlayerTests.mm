@@ -1,7 +1,7 @@
 #import <AudioToolbox/AudioServices.h>
 #import <XCTest/XCTest.h>
 
-#import <audioapi/core/CommonPlayer.h>
+#import <audioapi/core/AudioPlayer.h>
 #import <audioapi/core/utils/Constants.h>
 #import <audioapi/ios/core/NativeAudioPlayer.h>
 #import <audioapi/ios/system/AudioEngine.h>
@@ -20,9 +20,9 @@ using namespace audioapi;
 
 namespace audioapi {
 
-class IOSAudioPlayer : public CommonPlayer {
+class IOSAudioPlayer : public AudioPlayer {
  public:
-  using CommonPlayer::CommonPlayer;
+  using AudioPlayer::AudioPlayer;
   ~IOSAudioPlayer() override;
 
   bool start() override;
