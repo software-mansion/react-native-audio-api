@@ -514,7 +514,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 852ZJU38RC;
+				DEVELOPMENT_TEAM = 69ZDJMYM34;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = FabricExample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -534,7 +534,7 @@
 					"-lc++",
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3222233e.--PRODUCT-NAME-rfc1034identifier-";
+				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3222233e.--PRODUCT-NAME-rfc1034identifier-maro";
 				PRODUCT_NAME = FabricExample;
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -554,7 +554,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 852ZJU38RC;
+				DEVELOPMENT_TEAM = 69ZDJMYM34;
 				INFOPLIST_FILE = FabricExample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -573,7 +573,7 @@
 					"-lc++",
 				);
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3222233e.--PRODUCT-NAME-rfc1034identifier-";
+				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3222233e.--PRODUCT-NAME-rfc1034identifier-maro";
 				PRODUCT_NAME = FabricExample;
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
