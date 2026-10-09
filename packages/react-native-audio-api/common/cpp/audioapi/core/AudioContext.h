@@ -1,8 +1,9 @@
 #pragma once
 
+#include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/CommonPlayer.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>
+#include <audioapi/core/types/AudioContextOptions.h>
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
@@ -18,6 +19,7 @@ class AudioContext : public BaseAudioContext {
  public:
   explicit AudioContext(
       float sampleRate,
+      AndroidOutputProfile androidOutputProfile,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       AudioContextLatencyHint latencyHint);
   ~AudioContext() override;
@@ -48,8 +50,9 @@ class AudioContext : public BaseAudioContext {
   void assignOnErrorCallbackId(uint64_t callbackId);
 
  private:
-  std::shared_ptr<CommonPlayer> audioPlayer_;
+  std::shared_ptr<AudioPlayer> audioPlayer_;
   AudioContextLatencyHint latencyHint_;
+  AndroidOutputProfile androidOutputProfile_;
   std::atomic<bool> isInitialized_{false};
   /// Audio I/O callback thread increments around each platform render callback;
   /// control thread waits on suspend/close.

@@ -70,7 +70,7 @@ class AudioAPIModuleInstaller {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
-        2,
+        3,
         [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
@@ -84,8 +84,19 @@ class AudioAPIModuleInstaller {
                 js_enum_parser::latencyHintFromString(args[1].getString(runtime).utf8(runtime));
           }
 
+          auto androidOutputProfile = AndroidOutputProfile::Media;
+          if (count > 2 && args[2].isString()) {
+            androidOutputProfile = js_enum_parser::androidOutputProfileFromString(
+                args[2].getString(runtime).utf8(runtime));
+          }
+
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              sampleRate, audioEventHandlerRegistry, &runtime, jsCallInvoker, latencyHint);
+              sampleRate,
+              androidOutputProfile,
+              audioEventHandlerRegistry,
+              &runtime,
+              jsCallInvoker,
+              latencyHint);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });
@@ -133,11 +144,18 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto options = count > 0 ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
-                                   : AudioRecorderOptions{};
+          auto optionsResult = count > 0
+              ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
+              : AudioRecorderOptions::CreateFromJSIValue(runtime, jsi::Value::undefined());
+          if (optionsResult.is_err()) {
+            throw jsi::JSError(runtime, optionsResult.unwrap_err());
+          }
 
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry, &runtime, jsCallInvoker, std::move(options));
+              audioEventHandlerRegistry,
+              &runtime,
+              jsCallInvoker,
+              std::move(optionsResult).unwrap());
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 

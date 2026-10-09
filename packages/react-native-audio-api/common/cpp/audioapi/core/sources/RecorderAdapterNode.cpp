@@ -25,18 +25,19 @@ std::optional<size_t> RecorderAdapterNode::getOutputChannelNumber() const {
   return outputChannelNumber_.load(std::memory_order_acquire);
 }
 
-void RecorderAdapterNode::init(size_t bufferSize, int channelCount, float sampleRate) {
+void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
   if (isInitialized_.load(std::memory_order_acquire) || context == nullptr) {
     return;
   }
 
-  outputChannelNumber_ = channelCount;
+  const float sampleRate = streamFormat.layout.sampleRate;
+  outputChannelNumber_ = streamFormat.layout.channelCount;
 
   buff_.resize(outputChannelNumber_);
 
   for (int i = 0; i < outputChannelNumber_; ++i) {
-    buff_[i] = std::make_shared<CircularOverflowableAudioArray>(bufferSize);
+    buff_[i] = std::make_shared<CircularOverflowableAudioArray>(streamFormat.maxFramesPerBuffer);
   }
 
   float contextSampleRate = context->getSampleRate();
@@ -72,6 +73,12 @@ void RecorderAdapterNode::adapterCleanup() {
   buff_.clear();
   resampler_.reset();
   overflowSize_ = 0;
+}
+
+void RecorderAdapterNode::writeFrames(const float *const *channels, size_t numFrames) {
+  for (size_t channel = 0; channel < buff_.size(); ++channel) {
+    buff_[channel]->write(channels[channel], numFrames);
+  }
 }
 
 void RecorderAdapterNode::waitForProcessQuiescence() const {

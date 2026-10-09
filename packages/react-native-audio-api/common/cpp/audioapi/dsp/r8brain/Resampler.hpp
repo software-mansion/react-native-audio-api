@@ -90,6 +90,8 @@ class MultiChannelResampler : public BaseResampler {
       int maxInLen = DEFAULT_MAX_IN_LEN)
       : BaseResampler(srcRate, dstRate, numChannels, maxInLen) {}
 
+  using BaseResampler::process;
+
   template <size_t Alignment>
   int process(
       const audioapi::AlignedAudioBuffer<Alignment> &input,

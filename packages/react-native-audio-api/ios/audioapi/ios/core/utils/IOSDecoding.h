@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace audioapi::ios_decoder {
+namespace audioapi::ios::decoder {
 
 struct IosDecoderState;
 
@@ -41,4 +41,4 @@ class IOSDecoder : public decoding::OsDecoderBase {
   std::unique_ptr<IosDecoderState> impl_;
 };
 
-} // namespace audioapi::ios_decoder
+} // namespace audioapi::ios::decoder

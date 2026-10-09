@@ -32,6 +32,8 @@ inline constexpr float PI = std::numbers::pi_v<float>;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT = 4;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 32;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE = 32;
+// One partitioned-convolution job per IR channel (at most 4) runs in parallel.
+inline constexpr size_t CONVOLVER_THREAD_POOL_WORKER_COUNT = 4;
 
 // Disposer payload size (= sizeof(std::vector<T>))
 inline constexpr size_t DISPOSER_PAYLOAD_SIZE = 24;

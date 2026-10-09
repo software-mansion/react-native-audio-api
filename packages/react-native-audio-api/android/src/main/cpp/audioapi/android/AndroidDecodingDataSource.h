@@ -8,7 +8,7 @@
 
 struct AMediaExtractor;
 
-namespace audioapi::android_decoder {
+namespace audioapi::android::decoder {
 
 // AMediaDataSource / setDataSourceCustom require API 28. minSdk may be lower, so
 // AndroidDecodingDataSource.cpp weak-links these symbols and guards every call;
@@ -51,4 +51,4 @@ class AndroidMemoryDataSource {
     MemoryDataSourceContext &memorySourceContext,
     std::vector<uint8_t> data);
 
-} // namespace audioapi::android_decoder
+} // namespace audioapi::android::decoder
