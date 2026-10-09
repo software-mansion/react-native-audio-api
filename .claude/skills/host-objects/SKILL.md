@@ -357,6 +357,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
 
 The view aliases native memory for as long as JS keeps it, and the `shared_ptr` inside the `jsi::ArrayBuffer` keeps that memory alive on its own. When the native side later needs the view to stop aliasing (Web Audio's "acquire the content" on `AudioBufferSourceNode.start()`), it must retain the returned object and neutralise it afterwards — see `detachReturnedChannelData` in the real `AudioBufferHostObject`.
 
+`AudioBufferSourceNodeHostObject` hands samples to the audio thread in exactly one place, `acquireBufferContent`, which runs on `start()` and on a `setBuffer()` made after start. A `setBuffer()` before start only records the buffer and publishes its channel count; the node reads nothing until acquire, so every JS write made in between is played and nothing has to track content versions. Acquire detaches the live `getChannelData` views first and then calls `shareForPlayback`, so the per-channel bookkeeping vectors in `AudioBufferHostObject` must be sized in its constructor — sizing them lazily in `shareForPlayback` crashed `detachReturnedChannelData` the moment the order flipped.
+
 ### External memory pressure
 
 Call `setExternalMemoryPressure` whenever returning a HostObject or typed array that wraps a large native buffer. This lets the JS GC schedule collection correctly:

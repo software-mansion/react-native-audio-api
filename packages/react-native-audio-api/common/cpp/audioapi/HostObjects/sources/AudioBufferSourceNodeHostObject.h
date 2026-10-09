@@ -4,7 +4,6 @@
 #include <audioapi/HostObjects/sources/AudioBufferBaseSourceNodeHostObject.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
-#include <cstdint>
 #include <memory>
 
 namespace audioapi {
@@ -52,34 +51,30 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   double loopStart_;
   double loopEnd_;
 
-  /// The JS-visible buffer behind the last `setBuffer`, kept so the "acquire the
-  /// content" step can run on it. Null when the buffer came from options or was cleared.
-  std::shared_ptr<AudioBufferHostObject> bufferHostObject_;
-  /// `bufferHostObject_->getContentVersion()` at the moment the node last received its
-  /// samples. A newer version means JS replaced some channel storage since, so the node
-  /// is reading stale content and must be re-handed the buffer when it acquires it.
-  uint64_t sharedContentVersion_ = 0;
+  /// The JS-facing buffer assigned last, held here until "acquire the content" hands its
+  /// samples to the audio thread. Until then the node has not seen it, so JS can keep
+  /// writing into it and every write is honoured. Null when cleared.
+  std::shared_ptr<AudioBufferHostObject> assignedBufferHostObject_;
   bool hasBeenStarted_ = false;
 
-  /// The samples the node will read (shared with the JS-facing buffer when possible, a
-  /// padded private copy for pitch correction) plus its render-quantum scratch buffer.
+  /// The samples the node will read (storage shared with the JS-facing buffer) plus its
+  /// render-quantum scratch buffer.
   struct NodeBuffers {
     std::shared_ptr<AudioBuffer> nodeBuffer;
     std::shared_ptr<DSPAudioBuffer> audioBuffer;
   };
 
-  NodeBuffers prepareNodeBuffers(
-      const std::shared_ptr<AudioBuffer> &buffer,
-      const std::shared_ptr<AudioBufferHostObject> &bufferHostObject);
+  NodeBuffers prepareNodeBuffers(const std::shared_ptr<AudioBufferHostObject> &bufferHostObject);
 
-  void setBuffer(
-      const std::shared_ptr<AudioBuffer> &buffer,
-      const std::shared_ptr<AudioBufferHostObject> &bufferHostObject = nullptr);
+  /// Records the assignment and publishes the buffer's channel count to the graph. The
+  /// samples themselves reach the node only through `acquireBufferContent`, which runs
+  /// right away when the node has already started.
+  void setBuffer(const std::shared_ptr<AudioBufferHostObject> &bufferHostObject);
 
-  /// Web Audio's "acquire the content" step: runs on start() when a buffer is set, and on
-  /// setBuffer() once already started. Cuts off every live getChannelData() view and
-  /// if the JS-facing buffer's storage moved on since the node last received it,
-  /// re-hands the node the current content.
+  /// Web Audio's "acquire the content" step, the single point where the node receives
+  /// samples: runs on start(), and on setBuffer() once already started. Cuts off every
+  /// live getChannelData() view, then hands the node the buffer's content as it is now,
+  /// so JS writes made before this moment are played and later ones are not.
   /// https://webaudio.github.io/web-audio-api/#acquire-the-content
   void acquireBufferContent();
 };

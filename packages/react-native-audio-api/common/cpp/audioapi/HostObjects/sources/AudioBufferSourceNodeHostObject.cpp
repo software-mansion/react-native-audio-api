@@ -24,10 +24,6 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
-  if (options.buffer != nullptr) {
-    setBuffer(options.buffer);
-  }
-
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),
@@ -143,21 +139,11 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
 }
 
 void AudioBufferSourceNodeHostObject::acquireBufferContent() {
-  if (bufferHostObject_ == nullptr) {
-    return;
+  if (assignedBufferHostObject_ != nullptr) {
+    assignedBufferHostObject_->detachReturnedChannelData();
   }
 
-  bufferHostObject_->detachReturnedChannelData();
-
-  if (bufferHostObject_->getContentVersion() == sharedContentVersion_) {
-    // Nothing replaced the storage the node already reads, so it holds the content
-    // exactly as acquired.
-    return;
-  }
-
-  // Some channel storage could be swapped since the node received its samples, either by
-  // the detach above or by an earlier copy-on-write. Re-hand it the current content.
-  auto buffers = prepareNodeBuffers(bufferHostObject_->audioBuffer_, bufferHostObject_);
+  auto buffers = prepareNodeBuffers(assignedBufferHostObject_);
   auto event =
       [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
         node->setBuffer(buffers.nodeBuffer, buffers.audioBuffer);
@@ -173,24 +159,17 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
     thisValue.asObject(runtime).setExternalMemoryPressure(
         runtime, getMemoryPressure() + bufferHostObject->getSizeInBytes());
 
-    setBuffer(bufferHostObject->audioBuffer_, bufferHostObject);
-  }
-
-  // Per Web Audio, assigning a buffer to an already-started source acquires its
-  // content right away, because start() had nothing to acquire back then.
-  if (hasBeenStarted_) {
-    acquireBufferContent();
+    setBuffer(bufferHostObject);
   }
 
   return jsi::Value::undefined();
 }
 
 AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::prepareNodeBuffers(
-    const std::shared_ptr<AudioBuffer> &buffer,
     const std::shared_ptr<AudioBufferHostObject> &bufferHostObject) {
   NodeBuffers buffers;
 
-  if (buffer == nullptr) {
+  if (bufferHostObject == nullptr) {
     buffers.nodeBuffer = nullptr;
     buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
@@ -199,28 +178,14 @@ AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::pr
     return buffers;
   }
 
+  const auto &buffer = bufferHostObject->audioBuffer_;
   if (pitchCorrection_) {
-    // The stretcher needs tail padding past the end of the samples, so this path keeps
-    // its own padded copy.
     initStretch(static_cast<int>(buffer->getNumberOfChannels()), buffer->getSampleRate());
-    auto extraTailFrames =
-        static_cast<size_t>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
-    size_t totalSize = buffer->getSize() + extraTailFrames;
-    buffers.nodeBuffer = std::make_shared<AudioBuffer>(
-        totalSize, buffer->getNumberOfChannels(), buffer->getSampleRate());
-    buffers.nodeBuffer->copy(*buffer, 0, 0, buffer->getSize());
-    buffers.nodeBuffer->zero(buffer->getSize(), extraTailFrames);
-  } else if (bufferHostObject != nullptr) {
-    // stamp the buffer so from now on each call to getChannelData() returns a fresh view
-    // and the node can share the storage without risk of JS writing into it.
-    buffers.nodeBuffer = bufferHostObject->shareForPlayback();
-  } else {
-    buffers.nodeBuffer = std::make_shared<AudioBuffer>(*buffer);
   }
 
-  if (bufferHostObject != nullptr) {
-    sharedContentVersion_ = bufferHostObject->getContentVersion();
-  }
+  // The node reads the JS-facing storage directly; from now on JS writes to it go
+  // copy-on-write, so nothing can change the samples under the node.
+  buffers.nodeBuffer = bufferHostObject->shareForPlayback();
 
   buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
       RENDER_QUANTUM_SIZE,
@@ -230,26 +195,24 @@ AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::pr
 }
 
 void AudioBufferSourceNodeHostObject::setBuffer(
-    const std::shared_ptr<AudioBuffer> &buffer,
     const std::shared_ptr<AudioBufferHostObject> &bufferHostObject) {
-  bufferHostObject_ = bufferHostObject;
-  auto buffers = prepareNodeBuffers(buffer, bufferHostObject);
+  assignedBufferHostObject_ = bufferHostObject;
 
   // Publish the new output width on the host thread before renegotiation so
   // MAX / CLAMPED_MAX downstream nodes see it immediately
-  const size_t newOutputChannelNumber = buffer == nullptr
+  const size_t newOutputChannelNumber = bufferHostObject == nullptr
       ? AudioBufferSourceOptions::kDefaultOutputChannelNumber
-      : buffer->getNumberOfChannels();
+      : bufferHostObject->audioBuffer_->getNumberOfChannels();
   if (newOutputChannelNumber != audioBufferSourceNode_->getOutputChannelNumber()) {
     audioBufferSourceNode_->setOutputChannelNumber(newOutputChannelNumber);
     renegotiate();
   }
 
-  auto event =
-      [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
-        node->setBuffer(buffers.nodeBuffer, buffers.audioBuffer);
-      };
-  audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
+  // Per Web Audio, assigning a buffer to an already-started source acquires its
+  // content right away, because start() had nothing to acquire back then.
+  if (hasBeenStarted_) {
+    acquireBufferContent();
+  }
 }
 
 } // namespace audioapi

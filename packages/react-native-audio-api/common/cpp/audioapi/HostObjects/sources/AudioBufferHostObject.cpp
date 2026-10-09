@@ -11,7 +11,9 @@
 namespace audioapi {
 
 AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> &audioBuffer)
-    : audioBuffer_(audioBuffer), channelViewHandedOut_(audioBuffer->getNumberOfChannels(), false) {
+    : audioBuffer_(audioBuffer),
+      channelSharedWithNode_(audioBuffer->getNumberOfChannels(), false),
+      channelViewHandedOut_(audioBuffer->getNumberOfChannels(), false) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, sampleRate),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, length),
@@ -28,7 +30,6 @@ AudioBufferHostObject::AudioBufferHostObject(AudioBufferHostObject &&other) noex
     : HostObject(std::move(other)),
       audioBuffer_(std::move(other.audioBuffer_)),
       channelSharedWithNode_(std::move(other.channelSharedWithNode_)),
-      contentVersion_(other.contentVersion_),
       channelViewHandedOut_(std::move(other.channelViewHandedOut_)) {}
 
 std::shared_ptr<AudioBuffer> AudioBufferHostObject::shareForPlayback() {
@@ -37,7 +38,7 @@ std::shared_ptr<AudioBuffer> AudioBufferHostObject::shareForPlayback() {
 }
 
 void AudioBufferHostObject::makeChannelWritable(size_t channel) {
-  if (channel < channelSharedWithNode_.size() && channelSharedWithNode_[channel]) {
+  if (channelSharedWithNode_[channel]) {
     replaceChannelStorage(channel);
   }
 }
@@ -46,7 +47,6 @@ void AudioBufferHostObject::replaceChannelStorage(size_t channel) {
   // mark the channel as no longer shared with a node, so that future writes to it don't trigger another copy-on-write
   audioBuffer_->detachSharedChannel(channel);
   channelSharedWithNode_[channel] = false;
-  ++contentVersion_;
 }
 
 void AudioBufferHostObject::detachReturnedChannelData() {

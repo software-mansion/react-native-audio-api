@@ -31,7 +31,6 @@ class AudioBufferHostObject : public HostObject {
       HostObject::operator=(std::move(other));
       audioBuffer_ = std::move(other.audioBuffer_);
       channelSharedWithNode_ = std::move(other.channelSharedWithNode_);
-      contentVersion_ = other.contentVersion_;
       channelViewHandedOut_ = std::move(other.channelViewHandedOut_);
     }
     return *this;
@@ -46,12 +45,6 @@ class AudioBufferHostObject : public HostObject {
   /// @brief from this call both the js and native side can read the same channel storage.
   /// The JS side is copy-on-write, so it will get a fresh copy if it writes into it while a node is reading it.
   [[nodiscard]] std::shared_ptr<AudioBuffer> shareForPlayback();
-
-  /// @brief Bumped every time a channel's storage is replaced. A source node compares it
-  /// with the version it shared at to decide whether "acquire the content" must re-share.
-  [[nodiscard]] uint64_t getContentVersion() const {
-    return contentVersion_;
-  }
 
   /// @brief Web Audio's "acquire the content" step for the views handed out by
   /// `getChannelData`. Call once playback of this buffer has been scheduled. Every
@@ -85,7 +78,6 @@ class AudioBufferHostObject : public HostObject {
   /// One flag per channel: true while a node handed out by `shareForPlayback` may still
   /// be reading that channel's current storage.
   std::vector<bool> channelSharedWithNode_;
-  uint64_t contentVersion_ = 0;
   /// true once `getChannelData` handed out a view of that channel's
   /// current storage, cleared by `detachReturnedChannelData`.
   std::vector<bool> channelViewHandedOut_;

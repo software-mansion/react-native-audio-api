@@ -401,6 +401,7 @@ Tail-bearing nodes (Delay/Convolver/Biquad) need no special handling: while conn
    - `AudioNode` — standard effect or analysis node
    - `AudioScheduledSourceNode` — source with start/stop scheduling
    - `AudioBufferBaseSourceNode` — source that plays back an AudioBuffer with pitch control
+     With `pitchCorrection` the WSOLA stretcher holds ~30 ms of audio, so the node must outlive its last sample. It does that itself (`stretchTailFramesLeft_`): once the processor reports the source ran dry it keeps the node playing and feeds the stretcher the zero-filled input until `WsolaTimeStretcher::latencyTailFrames` are consumed. Never pad the buffer with silence to get the same effect — that forces a private copy per node and breaks buffer sharing with the JS-facing `AudioBuffer`.
 
 2. **Header file** (`core/<category>/MyNode.h`)
    - Annotate every method with `/// @note JS Thread only` or `/// @note Audio Thread only`
