@@ -17,12 +17,12 @@ def reactNativeArchitectures() {
   return value ? value.split(",") : ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"]
 }
 
-def isNewArchitectureEnabled() {
-  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
-}
-
 def isPropertyTrue(name) {
   return rootProject.hasProperty(name) && rootProject.getProperty(name) == "true"
+}
+
+def isNewArchitectureEnabled() {
+  return isPropertyTrue("newArchEnabled")
 }
 
 // FFmpeg is opt-in: `enableAudioapiFFmpeg=true` in the app's gradle.properties turns it on.
