@@ -93,6 +93,11 @@ class FakeWavEncoder final : public AudioEncoder {
     return frames_.size() * sizeof(float);
   }
 
+ protected:
+  OpenEncoderResult reprepareInput(const StreamFormat & /*inputFormat*/) override {
+    return OpenEncoderResult::Err("the concatenator never changes an encoder's input");
+  }
+
  private:
   bool failEncode_;
   std::vector<float> frames_;

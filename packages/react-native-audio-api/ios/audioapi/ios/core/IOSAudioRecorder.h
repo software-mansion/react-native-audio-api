@@ -36,6 +36,9 @@ class IOSAudioRecorder : public AudioRecorder {
 
   void pause() override;
   void resume() override;
+  /// Nothing to do: the session reroutes capture itself and the recorder follows through
+  /// the input notifications.
+  Result<NoneType, std::string> rerouteInput() override;
 
   bool isRecording() const override;
   bool isPaused() const override;
@@ -51,10 +54,10 @@ class IOSAudioRecorder : public AudioRecorder {
   NativeAudioRecorder *nativeRecorder_;
 
  private:
+  /// Re-points the live outputs at the format the rebuilt engine input now delivers, with the
+  /// input disarmed meanwhile so no buffer in either format slips through.
   Result<NoneType, std::string> reprepareForLiveInput();
   void handleInputConfigurationChange();
-  Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
-  Result<NoneType, std::string> reprepareCallback(const StreamFormat &format);
 
   int32_t inputChannelCount_{0};
 };

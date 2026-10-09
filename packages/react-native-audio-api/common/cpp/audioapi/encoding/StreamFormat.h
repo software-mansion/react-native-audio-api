@@ -11,6 +11,8 @@ struct StreamFormat {
   AudioLayout layout;
   /// The largest block delivered in one call; consumers size their buffers for it.
   size_t maxFramesPerBuffer = 0;
+
+  bool operator==(const StreamFormat &) const = default;
 };
 
 } // namespace audioapi

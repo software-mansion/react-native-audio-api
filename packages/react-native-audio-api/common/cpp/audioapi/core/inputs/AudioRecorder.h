@@ -43,6 +43,10 @@ class AudioRecorder {
   virtual void pause() = 0;
   virtual void resume() = 0;
 
+  /// @brief Moves a recording or paused session onto the input device the platform
+  /// currently selects.
+  virtual Result<NoneType, std::string> rerouteInput() = 0;
+
   /// @p node must carry a RecorderAdapterNode; the handle keeps it alive while connected.
   void connect(const std::shared_ptr<utils::graph::NodeHandle> &node);
   void disconnect();
@@ -107,7 +111,21 @@ class AudioRecorder {
       const std::shared_ptr<AudioFileProperties> &properties);
 
   /// The caller must hold adapterNodeMutex_.
-  void prepareAdapterNode(const StreamFormat &format);
+  Result<NoneType, std::string> prepareAdapterNode(const StreamFormat &format);
+
+  /// For a session that is starting; a live one follows an input change through
+  /// reprepareOutputs(). The caller must hold callbackMutex_, fileWriterMutex_ and
+  /// adapterNodeMutex_.
+  Result<NoneType, std::string> prepareOutputs(const StreamFormat &format);
+
+  /// Follows an input format change mid-session: the file writer keeps its file, the callback
+  /// and the adapter node are rebuilt. Stops at the first output that fails, which stays off
+  /// until the next start(). Nothing may deliver frames in the old format once this runs.
+  /// The caller must hold callbackMutex_, fileWriterMutex_ and adapterNodeMutex_.
+  Result<NoneType, std::string> reprepareOutputs(const StreamFormat &format);
+
+  /// Delivers @p message to the JS error callback, if one is registered.
+  void reportError(const std::string &message);
 
   /// Payload of @p handle, or nullptr when not connected. Valid exactly as long as the handle
   /// is held, so callers keep the handle (or adapterNodeMutex_) for the pointer's lifetime.
@@ -152,6 +170,17 @@ class AudioRecorder {
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   /// Sample rate of the live input stream, published for readers off the JS thread.
   std::atomic<float> streamSampleRate_{0.0F};
+
+ private:
+  /// The caller must hold callbackMutex_. A callback already prepared is flushed and torn
+  /// down first.
+  Result<NoneType, std::string> prepareCallback(const StreamFormat &format);
+
+  /// The caller must hold fileWriterMutex_.
+  Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
+
+  /// The caller must hold adapterNodeMutex_.
+  Result<NoneType, std::string> reprepareAdapterNode(const StreamFormat &format);
 };
 
 /// Builds the platform's AudioRecorder.

@@ -177,7 +177,27 @@ Checks if notification permissions were previously granted.
 
 Checks currently used and available devices.
 
+On Android, `currentInputs` reports the device selected through [`setInputDevice`](#setinputdevice) and is empty until one is selected, since the platform does not report which input it would pick on its own. When the selected device is disconnected, the selection returns to the system default and `currentInputs` is empty again; a reconnected device has to be selected anew. `currentOutputs` is always empty on Android.
+
 #### Returns `Promise<AudioDevicesInfo>`, which is resolved after receiving the answer from the system.
+
+### `setInputDevice`
+
+Selects the device that audio is captured from, using an `id` taken from `getDevicesInfo().availableInputs`.
+
+| Name | Type | Description |
+| :----: | :----: | :---- |
+| `deviceId` | `string \| 'default'` | Identifier of the input device to capture from. `'default'` drops the selection, so the system chooses the input again. |
+
+A recording in progress moves to the new input and keeps writing the same file.
+
+On Android, a recorder with no device selected uses the first external microphone connected, in this order: USB microphone or audio interface, USB headset, wired headset, Bluetooth headset. Using a Bluetooth headset's microphone on Android 11 and below requires the `android.permission.MODIFY_AUDIO_SETTINGS` permission; without it such a recorder records from the phone's microphone, and starting one with a Bluetooth microphone explicitly selected fails.
+
+:::tip
+Some USB microphones also expose a headphone output, which the platform then prefers over wired or Bluetooth headphones. To record from such a microphone and hear playback on headphones, connect the microphone first and the headphones after it.
+:::
+
+#### Returns `Promise<void>`, resolved once the device is selected and rejected when the device cannot be found or when the system fails to switch to it. A rejected call leaves the previous selection in place.
 
 ## Remarks
 
@@ -339,7 +359,7 @@ export type AudioDeviceList = AudioDeviceInfo[];
 export interface AudioDevicesInfo {
   availableInputs: AudioDeviceList;
   availableOutputs: AudioDeviceList;
-  currentInputs: AudioDeviceList; // iOS
+  currentInputs: AudioDeviceList;
   currentOutputs: AudioDeviceList; // iOS
 }
 ```

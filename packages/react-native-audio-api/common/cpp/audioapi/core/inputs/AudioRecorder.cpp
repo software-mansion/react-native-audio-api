@@ -5,6 +5,7 @@
 #include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
+#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
 #include <memory>
@@ -193,14 +194,109 @@ void AudioRecorder::disconnect() {
   }
 }
 
-void AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
+Result<NoneType, std::string> AudioRecorder::prepareAdapterNode(const StreamFormat &format) {
   auto *adapterNode = adapterNodeOf(adapterNodeHandle_);
   if (adapterNode == nullptr) {
-    return;
+    deactivate(connectionState_);
+    return Err("Recorder adapter node is unavailable.");
   }
 
   adapterNode->init(format);
   connectionState_.store(OutputState::Active, std::memory_order_release);
+  return Ok(None);
+}
+
+Result<NoneType, std::string> AudioRecorder::prepareOutputs(const StreamFormat &format) {
+  if (wantsFileOutput()) {
+    auto writerResult = setupFileWriter(fileProperties_);
+    if (!writerResult.is_ok()) {
+      return writerResult;
+    }
+  }
+
+  if (wantsCallback()) {
+    auto callbackResult = prepareCallback(format);
+    if (!callbackResult.is_ok()) {
+      return callbackResult;
+    }
+  }
+
+  if (wantsConnection()) {
+    auto adapterResult = prepareAdapterNode(format);
+    if (!adapterResult.is_ok()) {
+      return adapterResult;
+    }
+  }
+
+  return Ok(None);
+}
+
+Result<NoneType, std::string> AudioRecorder::reprepareOutputs(const StreamFormat &format) {
+  if (usesFileOutput()) {
+    auto fileResult = reprepareFileWriter(format);
+    if (!fileResult.is_ok()) {
+      return fileResult;
+    }
+  }
+
+  if (usesCallback()) {
+    auto callbackResult = prepareCallback(format);
+    if (!callbackResult.is_ok()) {
+      return callbackResult;
+    }
+  }
+
+  if (isConnected()) {
+    auto adapterResult = reprepareAdapterNode(format);
+    if (!adapterResult.is_ok()) {
+      return adapterResult;
+    }
+  }
+
+  return Ok(None);
+}
+
+Result<NoneType, std::string> AudioRecorder::prepareCallback(const StreamFormat &format) {
+  if (dataCallback_ == nullptr) {
+    return Err("Callback output is unavailable.");
+  }
+  if (usesCallback()) {
+    dataCallback_->cleanup();
+  }
+
+  dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
+  auto callbackResult = dataCallback_->prepare(format);
+
+  if (!callbackResult.is_ok()) {
+    deactivate(callbackOutputState_);
+    return Err("Failed to prepare callback: " + callbackResult.unwrap_err());
+  }
+
+  callbackOutputState_.store(OutputState::Active, std::memory_order_release);
+  return Ok(None);
+}
+
+Result<NoneType, std::string> AudioRecorder::reprepareFileWriter(const StreamFormat &format) {
+  if (fileWriter_ == nullptr) {
+    return Err("File writer is unavailable");
+  }
+
+  auto result = fileWriter_->reprepareStreamFormat(format);
+  if (result.is_err()) {
+    deactivate(fileOutputState_);
+    return Err("Failed to continue the recording in the new input format: " + result.unwrap_err());
+  }
+
+  fileOutputState_.store(OutputState::Active, std::memory_order_release);
+  return Ok(None);
+}
+
+Result<NoneType, std::string> AudioRecorder::reprepareAdapterNode(const StreamFormat &format) {
+  // init() is a no-op on an initialized adapter, so the old format has to be torn down first.
+  if (auto *adapterNode = adapterNodeOf(adapterNodeHandle_)) {
+    adapterNode->adapterCleanup();
+  }
+  return prepareAdapterNode(format);
 }
 
 RecorderAdapterNode *AudioRecorder::adapterNodeOf(
@@ -301,6 +397,7 @@ void AudioRecorder::clearOnErrorCallback() {
 }
 
 double AudioRecorder::getCurrentDuration() const {
+  std::scoped_lock lock(fileWriterMutex_);
   double duration = 0.0;
 
   if (usesFileOutput() && fileWriter_ != nullptr) {
@@ -308,6 +405,17 @@ double AudioRecorder::getCurrentDuration() const {
   }
 
   return duration;
+}
+
+void AudioRecorder::reportError(const std::string &message) {
+  const uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
+
+  if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
+    return;
+  }
+
+  audioEventHandlerRegistry_->dispatchEvent(
+      AudioEvent::RECORDER_ERROR, callbackId, StringPayload{.name = "message", .reason = message});
 }
 
 RecorderState AudioRecorder::getState() const {
