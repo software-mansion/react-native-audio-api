@@ -32,6 +32,7 @@ export default class AudioBufferBaseSourceNode extends AudioScheduledSourceNode 
   public set onpositionchanged(
     callback: ((event: EventTypeWithValue) => void) | null
   ) {
+    this.assertNotDisposed();
     this.onPositionChangedSubscription?.remove();
     this.onPositionChangedSubscription = null;
 

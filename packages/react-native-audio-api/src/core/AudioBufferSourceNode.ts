@@ -8,6 +8,7 @@ import type BaseAudioContext from './BaseAudioContext';
 import { AudioEventSubscription } from '../events';
 
 export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
+  private disposed = false;
   private onloopendedCallback?: (event: EventEmptyType) => void;
   private onLoopEndedSubscription: AudioEventSubscription | null = null;
 
@@ -26,11 +27,28 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
     }
   }
 
+  protected override assertNotDisposed(): void {
+    if (this.disposed)
+      throw new InvalidStateError('AudioBufferSourceNode is disposed');
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.clearEndedListeners();
+    this.onloopended = null;
+    this.onpositionchanged = null;
+    if (this.hasBeenStarted) this.stop();
+    this.disconnect();
+    this.buffer = null;
+    this.disposed = true;
+  }
+
   public get buffer(): AudioBuffer | null {
     return this._buffer;
   }
 
   public set buffer(buffer: AudioBuffer | null) {
+    this.assertNotDisposed();
     if (buffer === null) {
       if (this.buffer !== null) {
         (this.node as IAudioBufferSourceNode).setBuffer(null);
@@ -90,6 +108,7 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   }
 
   public start(when: number = 0, offset: number = 0, duration?: number): void {
+    this.assertNotDisposed();
     if (when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`
@@ -122,6 +141,7 @@ export default class AudioBufferSourceNode extends AudioBufferBaseSourceNode {
   }
 
   public set onloopended(callback: ((event: EventEmptyType) => void) | null) {
+    this.assertNotDisposed();
     this.onLoopEndedSubscription?.remove();
     this.onLoopEndedSubscription = null;
 
