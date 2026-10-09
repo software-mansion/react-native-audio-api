@@ -33,21 +33,21 @@ struct DisableMockNode : MockNode {
 // ── Low-level fixture: drive AudioGraph + HostGraph directly + settle ───────
 class SettleProcessableTest : public ::testing::Test {
  protected:
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
 
   AudioGraph audioGraph;
   HostGraph hostGraph;
   DisposerImpl<kPayloadSize> disposer_{64};
 
-  HNode *addNode(std::unique_ptr<GraphObject> obj) {
+  HostVertex *addNode(std::unique_ptr<GraphObject> obj) {
     auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
   }
 
-  bool addEdge(HNode *from, HNode *to) {
+  bool addEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.addEdge(from, to);
     if (result.is_ok()) {
       std::move(result).unwrap()(audioGraph, disposer_);
@@ -56,7 +56,7 @@ class SettleProcessableTest : public ::testing::Test {
     return false;
   }
 
-  bool removeEdge(HNode *from, HNode *to) {
+  bool removeEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.removeEdge(from, to);
     if (result.is_ok()) {
       std::move(result).unwrap()(audioGraph, disposer_);
@@ -66,7 +66,7 @@ class SettleProcessableTest : public ::testing::Test {
   }
 
   void settleOnly() {
-    audioGraph.process();
+    audioGraph.sortAndCompact();
     audioGraph.settleProcessableState();
   }
 
@@ -77,7 +77,7 @@ class SettleProcessableTest : public ::testing::Test {
     }
   }
 
-  static bool processable(HNode *node) {
+  static bool processable(HostVertex *node) {
     return node->handle->audioNode->isProcessable();
   }
 };
@@ -148,7 +148,7 @@ TEST_F(SettleProcessableTest, TailNodeDoesNotReactivateUpstream) {
 // ── Wrapper fixture: exercise Graph::linkNodes + settle via process() ───────
 class SettleLinkTest : public ::testing::Test {
  protected:
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::shared_ptr<Graph> graph;
@@ -198,6 +198,30 @@ TEST_F(SettleLinkTest, LinkPullsTargetAndItsInputs) {
 
   // After a full quantum only the ALWAYS consumer remains in iter().
   EXPECT_EQ(iterCount(), 1u);
+}
+
+// The writer is an audio sink, so the toposort places it after the reader
+// that links to it. The settle pass must still reach the writer's own
+// inputs, otherwise the source upstream of a DelayNode never renders.
+TEST_F(SettleLinkTest, LinkTargetSortedAfterHolderStillPullsItsInputs) {
+  auto seedNode = std::make_unique<MockNode>();
+  seedNode->setProcessable();
+  auto *consumer = graph->addNode(std::move(seedNode));
+
+  auto *reader = graph->addNode(std::make_unique<MockNode>());
+  auto *writer = graph->addNode(std::make_unique<MockNode>());
+  auto *source = graph->addNode(std::make_unique<MockNode>());
+
+  ASSERT_TRUE(graph->addEdge(source, writer).is_ok());
+  ASSERT_TRUE(graph->addEdge(reader, consumer).is_ok());
+  graph->linkNodes(reader, writer);
+
+  graph->processEvents();
+  graph->process();
+
+  // Mid-quantum, before process() flips CONDITIONAL nodes back to idle:
+  // consumer, reader, writer and source must all be scheduled to render.
+  EXPECT_EQ(iterCount(), 4u);
 }
 
 // Disconnecting the reader from the seed tears the linked writer (and its

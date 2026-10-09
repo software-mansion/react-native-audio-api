@@ -5,7 +5,7 @@
 
 namespace audioapi::utils::graph {
 
-HostNode::HostNode(std::shared_ptr<GraphType> graph, std::unique_ptr<GraphObject> graphObject)
+HostNode::HostNode(std::shared_ptr<Graph> graph, std::unique_ptr<GraphObject> graphObject)
     : graph_(std::move(graph)), node_(graph_->addNode(std::move(graphObject))) {}
 
 HostNode::~HostNode() {
@@ -33,27 +33,27 @@ HostNode &HostNode::operator=(HostNode &&other) noexcept {
   return *this;
 }
 
-HostNode::Res HostNode::connect(HostNode &other) {
+auto HostNode::connect(HostNode &other) -> Result<NoneType, GraphError> {
   return graph_->addEdge(node_, other.node_);
 }
 
-HostNode::Res HostNode::disconnect(HostNode &other) {
+auto HostNode::disconnect(HostNode &other) -> Result<NoneType, GraphError> {
   return graph_->removeEdge(node_, other.node_);
 }
 
-HostNode::Res HostNode::disconnect() {
+auto HostNode::disconnect() -> Result<NoneType, GraphError> {
   return graph_->removeAllEdges(node_);
 }
 
-HostNode::Res HostNode::renegotiate() {
+auto HostNode::renegotiate() -> Result<NoneType, GraphError> {
   return graph_->renegotiateNodeChannels(node_);
 }
 
-HostNode::HNode *HostNode::rawNode() const {
+HostNode::HostVertex *HostNode::rawNode() const {
   return node_;
 }
 
-const std::shared_ptr<HostNode::GraphType> &HostNode::graph() const {
+const std::shared_ptr<Graph> &HostNode::graph() const {
   return graph_;
 }
 

@@ -15,7 +15,7 @@ namespace audioapi::utils::graph {
 ///
 /// Ownership model (shared_ptr):
 /// - Created on the main thread via std::make_shared.
-/// - A shared_ptr is stored in both HostGraph::Node and AudioGraph::Node.
+/// - A shared_ptr is stored in both HostGraph::HostVertex and AudioGraph::Vertex.
 /// - When a host node is removed, HostGraph marks it as a ghost and keeps
 ///   its shared_ptr. The AudioGraph event sets orphaned = true.
 /// - When AudioGraph compacts out an orphaned node it releases its shared_ptr

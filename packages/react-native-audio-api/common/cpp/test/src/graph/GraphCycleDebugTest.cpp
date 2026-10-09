@@ -18,7 +18,7 @@ namespace audioapi::utils::graph {
 class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using MNode = MockNode;
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
   using AGEvent = HostGraph::AGEvent;
 
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
@@ -27,7 +27,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
   AudioGraph audioGraph;
   HostGraph hostGraph;
   DisposerImpl<kPayloadSize> disposer_{64};
-  std::vector<HNode *> liveNodes;
+  std::vector<HostVertex *> liveNodes;
   size_t nextId = 0;
 
   void SetUp() override {
@@ -36,7 +36,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
-  HNode *doAddNode() {
+  HostVertex *doAddNode() {
     std::unique_ptr<GraphObject> obj = std::make_unique<MNode>();
     auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
@@ -48,7 +48,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     return hostNode;
   }
 
-  void doRemoveNode(HNode *node) {
+  void doRemoveNode(HostVertex *node) {
     auto result = hostGraph.removeNode(node);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
@@ -58,7 +58,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     liveNodes.erase(std::remove(liveNodes.begin(), liveNodes.end(), node), liveNodes.end());
   }
 
-  bool doAddEdge(HNode *from, HNode *to) {
+  bool doAddEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.addEdge(from, to);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
@@ -68,7 +68,7 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     return false;
   }
 
-  bool doRemoveEdge(HNode *from, HNode *to) {
+  bool doRemoveEdge(HostVertex *from, HostVertex *to) {
     auto result = hostGraph.removeEdge(from, to);
     if (result.is_ok()) {
       auto event = std::move(result).unwrap();
@@ -79,19 +79,19 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
   }
 
   void doProcess() {
-    audioGraph.process();
+    audioGraph.sortAndCompact();
     // Note: this test only triggers audioGraph processing here.
     // Disposed-node collection is handled by higher-level wrappers in production code,
     // not directly inside the HostGraph addEdge/removeEdge methods used in this test.
   }
 
-  HNode *pickRandom() {
+  HostVertex *pickRandom() {
     if (liveNodes.empty())
       return nullptr;
     return liveNodes[std::uniform_int_distribution<size_t>(0, liveNodes.size() - 1)(rng)];
   }
 
-  std::pair<HNode *, HNode *> pickTwo() {
+  std::pair<HostVertex *, HostVertex *> pickTwo() {
     if (liveNodes.size() < 2)
       return {nullptr, nullptr};
     auto dist = std::uniform_int_distribution<size_t>(0, liveNodes.size() - 1);

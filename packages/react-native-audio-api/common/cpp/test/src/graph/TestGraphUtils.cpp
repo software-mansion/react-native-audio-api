@@ -73,7 +73,7 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList
 
   for (auto *n : hostGraph.nodes) {
     size_t nodeId = n->test_node_identifier__;
-    for (HostGraph::Node *output : n->outputs) {
+    for (HostGraph::HostVertex *output : n->outputs) {
       if (output) {
         adjacencyList[nodeId].push_back(output->test_node_identifier__);
       }
@@ -87,13 +87,13 @@ std::vector<std::vector<size_t>> TestGraphUtils::convertHostGraphToAdjacencyList
 HostGraph TestGraphUtils::makeFromAdjacencyList(
     const std::vector<std::vector<size_t>> &adjacencyList) {
   HostGraph graph;
-  std::vector<HostGraph::Node *> nodesVec;
+  std::vector<HostGraph::HostVertex *> nodesVec;
   nodesVec.reserve(adjacencyList.size());
 
   for (size_t i = 0; i < adjacencyList.size(); ++i) {
     auto audioNode = std::make_unique<BasicAudioNode>(getGraphTestContext(), AudioNodeOptions());
     auto handle = std::make_shared<NodeHandle>(static_cast<uint32_t>(i), std::move(audioNode));
-    auto *node = new HostGraph::Node();
+    auto *node = new HostGraph::HostVertex();
     node->handle = handle;
     node->test_node_identifier__ = i;
     nodesVec.push_back(node);
@@ -103,8 +103,8 @@ HostGraph TestGraphUtils::makeFromAdjacencyList(
   for (size_t fromIndex = 0; fromIndex < adjacencyList.size(); ++fromIndex) {
     for (size_t toIndex : adjacencyList[fromIndex]) {
       if (fromIndex < nodesVec.size() && toIndex < nodesVec.size()) {
-        HostGraph::Node *fromNode = nodesVec[fromIndex];
-        HostGraph::Node *toNode = nodesVec[toIndex];
+        HostGraph::HostVertex *fromNode = nodesVec[fromIndex];
+        HostGraph::HostVertex *toNode = nodesVec[toIndex];
         fromNode->outputs.push_back(toNode);
         toNode->inputs.push_back(fromNode);
       }
@@ -130,7 +130,7 @@ AudioGraph TestGraphUtils::createAudioGraphFromHostGraph(const HostGraph &hostGr
     audioGraph[idx].test_node_identifier__ = n->test_node_identifier__;
 
     audioGraph.pool().freeAll(audioGraph[idx].input_head);
-    for (HostGraph::Node *input : n->inputs) {
+    for (HostGraph::HostVertex *input : n->inputs) {
       audioGraph.pool().push(audioGraph[idx].input_head, input->handle->index);
     }
   }
