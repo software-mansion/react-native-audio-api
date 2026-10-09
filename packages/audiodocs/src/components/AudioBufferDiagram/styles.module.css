@@ -1,0 +1,83 @@
+.container {
+  width: 100%;
+  margin: 1.5rem 0;
+}
+
+.diagram {
+  --audiodocs-diagram-accent: var(--swm-red-light-100);
+  --audiodocs-diagram-accent-fill: var(--swm-red-light-20);
+
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+  font-family: var(--swm-body-font), sans-serif;
+}
+
+:root[data-theme='dark'] .diagram {
+  --audiodocs-diagram-accent: var(--swm-red-dark-100);
+  --audiodocs-diagram-accent-fill: var(--swm-red-dark-140);
+}
+
+.frameColumn {
+  fill: var(--swm-off-background);
+  stroke: var(--swm-border);
+  stroke-width: 1.5;
+}
+
+.frameHeader {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.6;
+  font-size: 12px;
+}
+
+.channelBand {
+  fill: var(--audiodocs-diagram-accent-fill);
+  fill-opacity: 0.45;
+  stroke: var(--audiodocs-diagram-accent);
+  stroke-width: 2;
+}
+
+.channelSeparator {
+  stroke: var(--audiodocs-diagram-accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0.6;
+}
+
+.channelLabel {
+  fill: var(--ifm-font-color-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.channelArrow {
+  fill: var(--audiodocs-diagram-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sample {
+  fill: var(--ifm-font-color-base);
+  font-family: var(--swm-code-font), monospace;
+  font-size: 12px;
+}
+
+.ellipsis {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.5;
+  font-size: 16px;
+}
+
+.bracket {
+  fill: none;
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 1.5;
+  opacity: 0.5;
+}
+
+.bracketLabel {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.7;
+  font-size: 12px;
+}

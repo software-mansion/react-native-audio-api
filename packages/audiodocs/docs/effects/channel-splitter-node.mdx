@@ -5,12 +5,18 @@ sidebar_position: 3
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional } from '@site/src/components/Badges';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useChannelRoutingPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useChannelRoutingPlayground';
 
 # ChannelSplitterNode
 
 The `ChannelSplitterNode` interface separates the individual channels of an audio signal into a set of mono outputs. It is an [`AudioNode`](../core/audio-node.mdx) with a single input and a variable number of single-channel outputs.
 
 Channel `i` of the input signal is exposed on output `i`. This is the counterpart of [`ChannelMergerNode`](./channel-merger-node.mdx).
+
+Press play, then click either box to bypass the pair and hear the original stereo image again. The default sample carries the voice in the left channel and the music in the right, so each routing choice is easy to place, and the meters show what reaches each speaker.
+
+<InteractivePlayground tag="ChannelSplitterNode" usePlayground={useChannelRoutingPlayground} />
 
 ## Constructor
 

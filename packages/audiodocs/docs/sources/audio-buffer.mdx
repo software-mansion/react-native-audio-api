@@ -3,6 +3,7 @@ sidebar_position: 1
 ---
 
 import { ReadOnly, Optional } from '@site/src/components/Badges';
+import AudioBufferDiagram from '@site/src/components/AudioBufferDiagram';
 
 # AudioBuffer
 
@@ -10,7 +11,7 @@ The `AudioBuffer` interface represents a short audio asset, commonly shorter the
 It can consists of one or more channels, each one appearing to be 32-bit floating-point linear [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) values with a nominal range of [`-1.0`, `1.0`] (but not limited to that range),
 specific sample rate which is the quantity of frames that will play in one second and length.
 
-![](/img/audioBuffer.png)
+<AudioBufferDiagram />
 
 It can be created from audio file using [`decodeAudioData`](../utils/decoding.mdx#decodeaudiodata) or from raw data using the [constructor](#constructor).
 Once you have data in `AudioBuffer`, audio can be played by passing it to [`AudioBufferSourceNode`](audio-buffer-source-node).

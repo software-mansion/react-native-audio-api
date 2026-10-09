@@ -1,7 +1,9 @@
 .chart {
     width: 100%;
-    max-height: 70vh;
-    aspect-ratio: 3/2;
+    max-width: 700px;
+    max-height: 60vh;
+    aspect-ratio: 16/9;
+    margin: 0 auto 1rem;
 }
 
 .leadingLine {
@@ -15,12 +17,12 @@
 .label {
     fill: var(--ifm-font-color-base);
     font-weight: normal;
-    font-size: medium;
+    font-size: small;
 }
 
 @media screen and (max-width: 500px) {
     .label {
-        font-size: small;
+        font-size: x-small;
     }
 }
 
