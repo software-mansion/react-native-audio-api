@@ -70,6 +70,10 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   const bool pitchCorrection_;
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
+  /// Silence still owed to the stretcher after the source runs dry, so the audio it
+  /// buffers is played out instead of being cut off with the last real sample. This
+  /// replaces padding the buffer itself, which would force a private copy per node.
+  size_t stretchTailFramesLeft_ = 0;
 
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;

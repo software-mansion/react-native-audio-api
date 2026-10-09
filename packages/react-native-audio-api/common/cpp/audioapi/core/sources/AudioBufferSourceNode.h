@@ -29,7 +29,14 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   /// @note Audio Thread only
   void setLoopEnd(double loopEnd);
+  [[nodiscard]] double getLoopEnd() const {
+    return loopEnd_;
+  }
 
+  /// @brief Hands the current buffers to the disposer and installs the new ones. Serves
+  /// both a JS `buffer` assignment and the "acquire the content" refresh on start().
+  /// Loop bounds are left untouched: the effective loop end is resolved against the
+  /// buffer at render time, so a stale `loopEnd_` cannot outrun a shorter buffer.
   /// @note Audio Thread only
   void setBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,

@@ -284,15 +284,6 @@ inline AudioBufferSourceOptions parseAudioBufferSourceOptions(
     const jsi::Object &optionsObject) {
   AudioBufferSourceOptions options(parseBaseAudioBufferSourceOptions(runtime, optionsObject));
 
-  if (optionsObject.hasProperty(runtime, "buffer")) {
-    auto bufferValue = optionsObject.getProperty(runtime, "buffer");
-    if (bufferValue.isObject() &&
-        bufferValue.getObject(runtime).isHostObject<AudioBufferHostObject>(runtime)) {
-      options.buffer =
-          bufferValue.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime)->audioBuffer_;
-    }
-  }
-
   auto loopValue = optionsObject.getProperty(runtime, "loop");
   if (loopValue.isBool()) {
     options.loop = loopValue.getBool();

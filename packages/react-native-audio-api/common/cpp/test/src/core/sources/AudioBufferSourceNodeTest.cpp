@@ -95,23 +95,19 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
   }
 
   std::unique_ptr<TestableAudioBufferSourceNode> makeNode(bool pitchCorrection) {
-    BaseAudioBufferSourceOptions baseOptions;
-    baseOptions.pitchCorrection = pitchCorrection;
-    baseOptions.playbackRate = 1.0f;
-    baseOptions.detune = 0.0f;
-    AudioBufferSourceOptions options(baseOptions);
+    auto node = makeNodeWithOptions(pitchCorrection);
 
-    auto node = std::make_unique<TestableAudioBufferSourceNode>(context, options);
+    // Enough source for NUM_QUANTA at 2x.
+    return startWithBuffer(
+        std::move(node), makeSilentBuffer(NUM_QUANTA * QUANTUM * 4), pitchCorrection);
+  }
 
-    // Enough source for NUM_QUANTA at 2x plus WSOLA tail padding (mirrors HostObject setBuffer).
-    const size_t extraTailFrames = static_cast<size_t>(
-        (WsolaTimeStretcher::INPUT_LATENCY_MS + WsolaTimeStretcher::OUTPUT_LATENCY_MS) / 1000.0f *
-        SAMPLE_RATE);
-    const size_t bufferFrames = static_cast<size_t>(NUM_QUANTA * QUANTUM * 4) + extraTailFrames;
-    auto buffer = makeSilentBuffer(bufferFrames);
-    auto outputBuffer =
-        std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
-
+  /// Mirrors the HostObject: a pitch-corrected node gets its stretcher initialised
+  /// before the buffer lands, and the buffer is handed over as-is (never padded).
+  std::unique_ptr<TestableAudioBufferSourceNode> startWithBuffer(
+      std::unique_ptr<TestableAudioBufferSourceNode> node,
+      const std::shared_ptr<AudioBuffer> &buffer,
+      bool pitchCorrection) {
     if (pitchCorrection) {
       auto playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
           static_cast<size_t>(WsolaTimeStretcher::MAX_PLAYBACK_RATE * QUANTUM),
@@ -120,9 +116,18 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
       node->initStretch(1, static_cast<float>(SAMPLE_RATE), playbackRateBuffer);
     }
 
-    node->setBuffer(buffer, outputBuffer);
+    node->setBuffer(buffer, makeOutputBuffer());
     node->start(0.0);
     return node;
+  }
+
+  std::unique_ptr<TestableAudioBufferSourceNode> makeNodeWithOptions(bool pitchCorrection) {
+    BaseAudioBufferSourceOptions baseOptions;
+    baseOptions.pitchCorrection = pitchCorrection;
+    baseOptions.playbackRate = 1.0f;
+    baseOptions.detune = 0.0f;
+    return std::make_unique<TestableAudioBufferSourceNode>(
+        context, AudioBufferSourceOptions(baseOptions));
   }
 
   std::unique_ptr<TestableAudioBufferSourceNode> makeNodeWithoutBuffer() {
@@ -267,6 +272,73 @@ TEST_F(AudioBufferSourceNodeTest, BufferSwapKeepsHostPublishedOutputChannelNumbe
       std::make_shared<DSPAudioBuffer>(QUANTUM, 2, static_cast<float>(SAMPLE_RATE)));
 
   EXPECT_EQ(node->getOutputChannelNumber(), 1u);
+}
+
+/// The stretcher holds ~INPUT_LATENCY + OUTPUT_LATENCY of audio. The buffer used to be
+/// copied with that much silence appended so the node outlived its last sample; now
+/// the node plays the buffer as handed over and feeds the stretcher silence itself
+/// once the source runs dry, ending only after the tail has drained.
+TEST_F(AudioBufferSourceNodeTest, PitchCorrectedSourceDrainsStretcherTailAfterBufferEnds) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 54;
+  // At the modulated 2x rate the whole buffer is consumed in two quanta.
+  static constexpr size_t BUFFER_FRAMES = 2 * QUANTUM * 2;
+  static constexpr size_t QUANTA_TO_CONSUME_BUFFER = 2;
+  const size_t tailFrames = WsolaTimeStretcher::latencyTailFrames(SAMPLE_RATE);
+  const size_t quantaToDrainTail = tailFrames / (2 * QUANTUM) + 1;
+
+  auto *node = addNode(startWithBuffer(
+      makeNodeWithOptions(/*pitchCorrection=*/true),
+      makeSilentBuffer(BUFFER_FRAMES),
+      /*pitchCorrection=*/true));
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  for (size_t q = 0; q < QUANTA_TO_CONSUME_BUFFER; ++q) {
+    renderQuantumWithModulation(*node, MODULATION);
+  }
+  EXPECT_TRUE(node->isPlaying()) << "the source ran dry but the stretcher tail is not drained";
+
+  const double bufferDuration = static_cast<double>(BUFFER_FRAMES) / SAMPLE_RATE;
+  size_t quantaUntilEnded = 0;
+  while (!node->isFinished() && quantaUntilEnded <= quantaToDrainTail) {
+    renderQuantumWithModulation(*node, MODULATION);
+    ++quantaUntilEnded;
+    if (node->isPlaying()) {
+      EXPECT_LE(node->getCurrentPosition(), bufferDuration)
+          << "the reported position must not run past the real buffer into the tail";
+    }
+  }
+
+  EXPECT_TRUE(node->isFinished()) << "the node never ended after the tail drained";
+  EXPECT_GE(quantaUntilEnded, quantaToDrainTail - 1);
+}
+
+/// Without the stretcher in the loop (rate 1 skips it) there is nothing to drain, so a
+/// pitch-corrected node ends as soon as its buffer does.
+TEST_F(AudioBufferSourceNodeTest, PitchCorrectedSourceAtUnityRateEndsWithItsBuffer) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 55;
+  static constexpr size_t BUFFER_FRAMES = 2 * QUANTUM;
+
+  auto *node = addNode(startWithBuffer(
+      makeNodeWithOptions(/*pitchCorrection=*/true),
+      makeSilentBuffer(BUFFER_FRAMES),
+      /*pitchCorrection=*/true));
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  processGraph();
+  processGraph();
+  EXPECT_TRUE(node->isFinished());
 }
 
 // NOLINTEND

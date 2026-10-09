@@ -4,13 +4,20 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <jsi/jsi.h>
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 using namespace facebook;
 
+/// @brief JS-facing AudioBuffer. Source nodes play its channel storage directly instead of
+/// deep-copying it (see `shareForPlayback`), so the one rule this class enforces is that the
+/// JS thread never writes into storage a node may be reading: every write path first gives
+/// the touched channel fresh storage (copy-on-write) and leaves the old one to the nodes.
 class AudioBufferHostObject : public HostObject {
  public:
   std::shared_ptr<AudioBuffer> audioBuffer_;
@@ -23,6 +30,8 @@ class AudioBufferHostObject : public HostObject {
     if (this != &other) {
       HostObject::operator=(std::move(other));
       audioBuffer_ = std::move(other.audioBuffer_);
+      channelSharedWithNode_ = std::move(other.channelSharedWithNode_);
+      channelViewHandedOut_ = std::move(other.channelViewHandedOut_);
     }
     return *this;
   }
@@ -30,8 +39,23 @@ class AudioBufferHostObject : public HostObject {
   ~AudioBufferHostObject() override = default;
 
   [[nodiscard]] size_t getSizeInBytes() const {
-    // *2 because every time buffer is passed we create a copy of it.
-    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float) * 2;
+    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float);
+  }
+
+  /// @brief from this call both the js and native side can read the same channel storage.
+  /// The JS side is copy-on-write, so it will get a fresh copy if it writes into it while a node is reading it.
+  [[nodiscard]] std::shared_ptr<AudioBuffer> shareForPlayback();
+
+  /// @brief Web Audio's "acquire the content" step for the views handed out by
+  /// `getChannelData`. Call once playback of this buffer has been scheduled. Every
+  /// channel with a previously returned Float32Array gets fresh storage, so those views
+  /// stop pointing to `audioBuffer_` and the next `getChannelData` call hands out a fresh view.
+  void detachReturnedChannelData();
+
+  /// @brief Whether any `getChannelData` view is live, i.e. handed out since the last
+  /// `detachReturnedChannelData`.
+  [[nodiscard]] bool hasReturnedChannelData() const {
+    return std::ranges::any_of(channelViewHandedOut_, [](bool handedOut) { return handedOut; });
   }
 
   JSI_PROPERTY_GETTER_DECL(sampleRate);
@@ -42,5 +66,20 @@ class AudioBufferHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(getChannelData);
   JSI_HOST_FUNCTION_DECL(copyFromChannel);
   JSI_HOST_FUNCTION_DECL(copyToChannel);
+
+ private:
+  /// Copy-on-write: call before exposing or mutating a channel from JS. If a node may be
+  /// reading that channel's storage, the buffer gets a private copy of it first.
+  void makeChannelWritable(size_t channel);
+
+  /// Replaces the channel's storage with a copy and records that nothing shares it yet.
+  void replaceChannelStorage(size_t channel);
+
+  /// One flag per channel: true while a node handed out by `shareForPlayback` may still
+  /// be reading that channel's current storage.
+  std::vector<bool> channelSharedWithNode_;
+  /// true once `getChannelData` handed out a view of that channel's
+  /// current storage, cleared by `detachReturnedChannelData`.
+  std::vector<bool> channelViewHandedOut_;
 };
 } // namespace audioapi

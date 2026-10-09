@@ -33,7 +33,7 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   JSI_PROPERTY_SETTER_DECL(loopEnd);
   JSI_PROPERTY_SETTER_DECL(onloopended);
 
-  JSI_HOST_FUNCTION_DECL(start);
+  JSI_HOST_FUNCTION_DECL(start) override;
   JSI_HOST_FUNCTION_DECL(setBuffer);
 
   [[nodiscard]] size_t getMemoryPressure() const override {
@@ -51,7 +51,32 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   double loopStart_;
   double loopEnd_;
 
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+  /// The JS-facing buffer assigned last, held here until "acquire the content" hands its
+  /// samples to the audio thread. Until then the node has not seen it, so JS can keep
+  /// writing into it and every write is honoured. Null when cleared.
+  std::shared_ptr<AudioBufferHostObject> assignedBufferHostObject_;
+  bool hasBeenStarted_ = false;
+
+  /// The samples the node will read (storage shared with the JS-facing buffer) plus its
+  /// render-quantum scratch buffer.
+  struct NodeBuffers {
+    std::shared_ptr<AudioBuffer> nodeBuffer;
+    std::shared_ptr<DSPAudioBuffer> audioBuffer;
+  };
+
+  NodeBuffers prepareNodeBuffers(const std::shared_ptr<AudioBufferHostObject> &bufferHostObject);
+
+  /// Records the assignment and publishes the buffer's channel count to the graph. The
+  /// samples themselves reach the node only through `acquireBufferContent`, which runs
+  /// right away when the node has already started.
+  void setBuffer(const std::shared_ptr<AudioBufferHostObject> &bufferHostObject);
+
+  /// Web Audio's "acquire the content" step, the single point where the node receives
+  /// samples: runs on start(), and on setBuffer() once already started. Cuts off every
+  /// live getChannelData() view, then hands the node the buffer's content as it is now,
+  /// so JS writes made before this moment are played and later ones are not.
+  /// https://webaudio.github.io/web-audio-api/#acquire-the-content
+  void acquireBufferContent();
 };
 
 } // namespace audioapi

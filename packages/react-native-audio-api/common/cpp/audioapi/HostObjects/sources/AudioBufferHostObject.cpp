@@ -6,11 +6,14 @@
 #include <cstddef>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
 AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> &audioBuffer)
-    : audioBuffer_(audioBuffer) {
+    : audioBuffer_(audioBuffer),
+      channelSharedWithNode_(audioBuffer->getNumberOfChannels(), false),
+      channelViewHandedOut_(audioBuffer->getNumberOfChannels(), false) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, sampleRate),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferHostObject, length),
@@ -24,7 +27,36 @@ AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> 
 }
 
 AudioBufferHostObject::AudioBufferHostObject(AudioBufferHostObject &&other) noexcept
-    : HostObject(std::move(other)), audioBuffer_(std::move(other.audioBuffer_)) {}
+    : HostObject(std::move(other)),
+      audioBuffer_(std::move(other.audioBuffer_)),
+      channelSharedWithNode_(std::move(other.channelSharedWithNode_)),
+      channelViewHandedOut_(std::move(other.channelViewHandedOut_)) {}
+
+std::shared_ptr<AudioBuffer> AudioBufferHostObject::shareForPlayback() {
+  channelSharedWithNode_.assign(audioBuffer_->getNumberOfChannels(), true);
+  return audioBuffer_->shareChannels();
+}
+
+void AudioBufferHostObject::makeChannelWritable(size_t channel) {
+  if (channelSharedWithNode_[channel]) {
+    replaceChannelStorage(channel);
+  }
+}
+
+void AudioBufferHostObject::replaceChannelStorage(size_t channel) {
+  // mark the channel as no longer shared with a node, so that future writes to it don't trigger another copy-on-write
+  audioBuffer_->detachSharedChannel(channel);
+  channelSharedWithNode_[channel] = false;
+}
+
+void AudioBufferHostObject::detachReturnedChannelData() {
+  for (size_t channel = 0; channel < channelViewHandedOut_.size(); ++channel) {
+    if (channelViewHandedOut_[channel]) {
+      replaceChannelStorage(channel);
+      channelViewHandedOut_[channel] = false;
+    }
+  }
+}
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, sampleRate) {
   return {audioBuffer_->getSampleRate()};
@@ -43,7 +75,11 @@ JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, numberOfChannels) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
-  auto channel = static_cast<int>(args[0].getNumber());
+  auto channel = static_cast<size_t>(args[0].getNumber());
+  // The returned Float32Array is a live, JS-writable view straight into audioBuffer_'s
+  // storage, so that storage must not be one a node is playing.
+  makeChannelWritable(channel);
+
   auto audioArrayBuffer = audioBuffer_->getSharedChannel(channel);
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
@@ -51,6 +87,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
 
   float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
+  channelViewHandedOut_[channel] = true;
 
   return float32Array;
 }
@@ -81,6 +118,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyToChannel) {
   auto *source = reinterpret_cast<float *>(arrayBuffer.data(runtime));
   auto sourceLength = arrayBuffer.size(runtime) / sizeof(float);
   auto channelNumber = static_cast<int>(args[1].getNumber());
+  // Mutates audioBuffer_ in place, so that channel must not be one a node is playing.
+  makeChannelWritable(static_cast<size_t>(channelNumber));
   auto rawStart = args[2].getNumber();
   auto channelSize = audioBuffer_->getSize();
 
