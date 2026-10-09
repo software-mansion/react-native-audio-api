@@ -141,15 +141,35 @@ void AudioGraph::sortAndCompact() {
 
 void AudioGraph::settleProcessableState() {
   using PS = GraphObject::PROCESSABLE_STATE;
-  for (auto i = nodes.size(); i-- > 0;) {
-    if (nodes[i].handle->audioNode->processableState_ == PS::NOT_PROCESSABLE) {
-      continue;
+
+  std::int32_t top = -1;
+  auto push = [&](std::uint32_t i) {
+    nodes[i].target_place = top;
+    top = static_cast<std::int32_t>(i);
+  };
+
+  for (std::uint32_t i = 0; i < nodes.size(); i++) {
+    if (nodes[i].handle->audioNode->processableState_ != PS::NOT_PROCESSABLE) {
+      push(i);
     }
-    forEachDependencyList(nodes[i], [&](std::uint32_t head) {
-      for (const auto inputIdx : pool_.view(head)) {
-        auto &obj = *nodes[inputIdx].handle->audioNode;
+  }
+
+  // Promote each popped node's dependencies to CONDITIONAL_PROCESSABLE and
+  // push the ones that transitioned. A node that opted out via
+  // excludeFromProcessablePull_ stays NOT_PROCESSABLE and is never pushed, so
+  // nothing propagates through it.
+  while (top != -1) {
+    // pop
+    const auto idx = static_cast<std::uint32_t>(top);
+    top = nodes[idx].target_place;
+    nodes[idx].target_place = -1;
+
+    forEachDependencyList(nodes[idx], [&](std::uint32_t head) {
+      for (const auto dep : pool_.view(head)) {
+        auto &obj = *nodes[dep].handle->audioNode;
         if (obj.processableState_ == PS::NOT_PROCESSABLE && !obj.excludeFromProcessablePull_) {
           obj.processableState_ = PS::CONDITIONAL_PROCESSABLE;
+          push(dep);
         }
       }
     });

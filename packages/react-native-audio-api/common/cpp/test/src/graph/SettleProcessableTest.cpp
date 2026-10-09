@@ -200,6 +200,30 @@ TEST_F(SettleLinkTest, LinkPullsTargetAndItsInputs) {
   EXPECT_EQ(iterCount(), 1u);
 }
 
+// The writer is an audio sink, so the toposort places it after the reader
+// that links to it. The settle pass must still reach the writer's own
+// inputs, otherwise the source upstream of a DelayNode never renders.
+TEST_F(SettleLinkTest, LinkTargetSortedAfterHolderStillPullsItsInputs) {
+  auto seedNode = std::make_unique<MockNode>();
+  seedNode->setProcessable();
+  auto *consumer = graph->addNode(std::move(seedNode));
+
+  auto *reader = graph->addNode(std::make_unique<MockNode>());
+  auto *writer = graph->addNode(std::make_unique<MockNode>());
+  auto *source = graph->addNode(std::make_unique<MockNode>());
+
+  ASSERT_TRUE(graph->addEdge(source, writer).is_ok());
+  ASSERT_TRUE(graph->addEdge(reader, consumer).is_ok());
+  graph->linkNodes(reader, writer);
+
+  graph->processEvents();
+  graph->process();
+
+  // Mid-quantum, before process() flips CONDITIONAL nodes back to idle:
+  // consumer, reader, writer and source must all be scheduled to render.
+  EXPECT_EQ(iterCount(), 4u);
+}
+
 // Disconnecting the reader from the seed tears the linked writer (and its
 // inputs) back down.
 TEST_F(SettleLinkTest, LinkDeactivatesOnDisconnect) {
