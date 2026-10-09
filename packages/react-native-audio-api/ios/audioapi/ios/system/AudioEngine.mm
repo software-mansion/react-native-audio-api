@@ -474,11 +474,9 @@ static AudioEngine *_sharedInstance = nil;
         // Resume recording and playback.
         resumeEngine = YES;
       } else {
-        // TODO: Ideally, we would
-        // only resume recording and not playback,
-        // but it would be complex to implement and
-        // the usecase is not common, therefore
-        // not resuming the engine is safer.
+        // TODO: Ideally, we would only resume recording and not playback,
+        // but it would be complex to implement and the usecase is not common,
+        // therefore not resuming the engine is safer.
         resumeEngine = NO;
       }
     } else {

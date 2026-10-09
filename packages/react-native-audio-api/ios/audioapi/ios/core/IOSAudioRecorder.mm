@@ -120,7 +120,7 @@ void IOSAudioRecorder::handleInputNotification(AudioEngineInputNotification noti
       handleHardwareChange();
       return;
     case AudioEngineInputNotificationCaptureLost:
-      handleCaptureLost();
+      handleRecordingLost();
       return;
   }
 }
@@ -151,7 +151,7 @@ void IOSAudioRecorder::handleHardwareChange()
   reprepareForLiveInput();
 }
 
-void IOSAudioRecorder::handleCaptureLost()
+void IOSAudioRecorder::handleRecordingLost()
 {
   if (isIdle()) {
     return;

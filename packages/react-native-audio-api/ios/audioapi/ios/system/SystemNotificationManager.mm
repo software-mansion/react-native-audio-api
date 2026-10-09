@@ -131,9 +131,9 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   [self retryInterruptedRecordingIfNeeded];
 }
 
-- (void)emitInterruptionBeganIfAccepted:(bool)accepted
+- (void)emitInterruptionBegan
 {
-  if (!self.audioInterruptionsObserved || !accepted) {
+  if (!self.audioInterruptionsObserved) {
     return;
   }
 
@@ -142,27 +142,43 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
                                                       .type = "began", .shouldResume = false}];
 }
 
-- (void)emitInterruptionEndedIfTransitioned:(AudioEngineInterruptionEndOutcome)outcome
-                               shouldResume:(bool)shouldResume
+- (void)emitInterruptionEnded:(bool)shouldResume
 {
   if (!self.audioInterruptionsObserved) {
     return;
   }
 
-  if (outcome == AudioEngineInterruptionEndOutcomeRunning ||
-      outcome == AudioEngineInterruptionEndOutcomePaused) {
-    [self.audioAPIModule
-        invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
-                           payload:audioapi::InterruptionPayload{
-                                       .type = "ended", .shouldResume = shouldResume}];
-  }
+  [self.audioAPIModule
+      invokeHandlerWithEventName:audioapi::AudioEvent::INTERRUPTION
+                         payload:audioapi::InterruptionPayload{
+                                     .type = "ended", .shouldResume = shouldResume}];
 }
 
-- (void)performInterruptionEndOnEngine:(AudioEngine *)audioEngine shouldResume:(bool)shouldResume
+- (void)handleInterruptionBegin
 {
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
+
+  self.interruptionEndedDelivered = false;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    bool transitioned = [audioEngine onInterruptionBegin];
+    [sessionManager markInactive];
+    if (transitioned) {
+      [self emitInterruptionBegan];
+    }
+  });
+}
+
+- (void)handleInterruptionEnd:(bool)shouldResume
+{
+  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+
   dispatch_async(dispatch_get_main_queue(), ^{
     AudioEngineInterruptionEndOutcome outcome = [audioEngine onInterruptionEnd:shouldResume];
-    [self emitInterruptionEndedIfTransitioned:outcome shouldResume:shouldResume];
+    if (outcome == AudioEngineInterruptionEndOutcomeRunning ||
+        outcome == AudioEngineInterruptionEndOutcomePaused) {
+      [self emitInterruptionEnded:shouldResume];
+    }
   });
 }
 
@@ -180,28 +196,19 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
   if (self.interruptionEndedDelivered && [audioEngine getState] == AudioEngineStateInterrupted) {
-    [self performInterruptionEndOnEngine:audioEngine
-                            shouldResume:[self shouldResumeForInterruptionRecovery]];
+    [self handleInterruptionEnd:[self shouldResumeForInterruptionRecovery]];
   }
 }
 
 - (void)handleInterruption:(NSNotification *)notification
 {
-  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
-
   NSInteger interruptionType =
       [notification.userInfo[AVAudioSessionInterruptionTypeKey] integerValue];
   NSInteger interruptionOption =
       [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    self.interruptionEndedDelivered = false;
-    dispatch_async(dispatch_get_main_queue(), ^{
-      bool accepted = [audioEngine onInterruptionBegin];
-      [sessionManager markInactive];
-      [self emitInterruptionBeganIfAccepted:accepted];
-    });
+    [self handleInterruptionBegin];
     return;
   }
 
@@ -209,30 +216,23 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   self.interruptionShouldResume = @(shouldResume);
   self.interruptionEndedDelivered = true;
-  [self performInterruptionEndOnEngine:audioEngine shouldResume:shouldResume];
+  [self handleInterruptionEnd:shouldResume];
 }
 
 - (void)handleSecondaryAudio:(NSNotification *)notification
 {
-  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
   NSInteger secondaryAudioType =
       [notification.userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] integerValue];
 
   if (secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeBegin) {
-    self.interruptionEndedDelivered = false;
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [sessionManager markInactive];
-      bool accepted = [audioEngine onInterruptionBegin];
-      [self emitInterruptionBeganIfAccepted:accepted];
-    });
+    [self handleInterruptionBegin];
     return;
   }
 
   bool shouldResume = secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeEnd;
 
   self.interruptionEndedDelivered = true;
-  [self performInterruptionEndOnEngine:audioEngine shouldResume:shouldResume];
+  [self handleInterruptionEnd:shouldResume];
 }
 
 - (void)handleRouteChange:(NSNotification *)notification
@@ -371,25 +371,15 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     return;
   }
 
-  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
-
   self.wasOtherAudioPlaying = shouldSilence;
 
   if (shouldSilence) {
-    self.interruptionEndedDelivered = false;
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [sessionManager markInactive];
-      bool accepted = [audioEngine onInterruptionBegin];
-      [self emitInterruptionBeganIfAccepted:accepted];
-    });
-
+    [self handleInterruptionBegin];
     return;
   }
 
   self.interruptionEndedDelivered = true;
-  [self performInterruptionEndOnEngine:audioEngine
-                          shouldResume:[self shouldResumeForInterruptionRecovery]];
+  [self handleInterruptionEnd:[self shouldResumeForInterruptionRecovery]];
 }
 
 @end

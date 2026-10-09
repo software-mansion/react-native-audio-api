@@ -78,7 +78,7 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<NoneType, std::string> reprepareForLiveInput();
   void handleInputNotification(AudioEngineInputNotification notification);
   void handleHardwareChange();
-  void handleCaptureLost();
+  void handleRecordingLost();
   Result<NoneType, std::string> reprepareFileWriter(
       AVAudioFormat *inputFormat,
       int maxInputBufferLength);
