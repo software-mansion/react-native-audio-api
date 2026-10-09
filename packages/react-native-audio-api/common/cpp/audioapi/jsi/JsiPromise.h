@@ -1,8 +1,8 @@
 #pragma once
 
 #include <ReactCommon/CallInvoker.h>
-#include <audioapi/core/utils/Constants.h>
-#include <audioapi/utils/ThreadPool.hpp>
+#include <audioapi/utils/ITaskExecutor.h>
+#include <audioapi/utils/PooledTaskExecutor.hpp>
 #include <jsi/jsi.h>
 #include <functional>
 #include <memory>
@@ -63,14 +63,23 @@ using PromiseResolver = std::function<std::variant<jsi::Value, std::string>(jsi:
 
 class PromiseVendor {
  public:
+  /// @brief Vendor whose `createAsyncPromise` bodies run on a multi-worker pool.
   PromiseVendor(jsi::Runtime *runtime, const std::shared_ptr<react::CallInvoker> &callInvoker)
-      : runtime_(runtime),
-        callInvoker_(callInvoker),
-        threadPool_(
-            std::make_shared<PromiseVendorThreadPool>(
-                audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT,
-                audioapi::PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE,
-                audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE)) {}
+      : PromiseVendor(runtime, callInvoker, std::make_shared<PooledTaskExecutor>()) {}
+
+  /// @param executor Runs `createAsyncPromise` bodies. A `SerialTaskExecutor` makes the vendor
+  /// a lane: bodies run in the order the promises were created.
+  PromiseVendor(
+      jsi::Runtime *runtime,
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      std::shared_ptr<ITaskExecutor> executor)
+      : runtime_(runtime), callInvoker_(callInvoker), executor_(std::move(executor)) {}
+
+  /// @brief Runs @p task on the vendor's executor with no JS promise attached.
+  /// On a serial executor it queues behind every promise body created before it, so it can be
+  /// used from places that have no runtime, such as a HostObject destructor.
+  /// @note Same single-producer rule as `createAsyncPromise`.
+  void scheduleDetached(std::function<void()> &&task);
 
   /// @brief Creates an asynchronous promise.
   /// @param function The function to execute asynchronously. It should return either a jsi::Value on success or a std::string error message on failure.
@@ -110,7 +119,7 @@ class PromiseVendor {
  private:
   jsi::Runtime *runtime_;
   std::shared_ptr<react::CallInvoker> callInvoker_;
-  std::shared_ptr<PromiseVendorThreadPool> threadPool_;
+  std::shared_ptr<ITaskExecutor> executor_;
 
   static void asyncPromiseJob(
       const std::shared_ptr<react::CallInvoker> &callInvoker,

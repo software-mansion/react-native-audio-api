@@ -39,33 +39,24 @@ AudioContextHostObject::~AudioContextHostObject() {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
-  return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
-        std::move(promise), context_, ContextState::CLOSED);
-    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
-      dynamic_cast<AudioContext &>(context).close(contextPromise);
-    });
-  });
+  return createLifecyclePromise(
+      ContextState::CLOSED, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
+        dynamic_cast<AudioContext &>(context).close(resolver);
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
-  return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
-        std::move(promise), context_, ContextState::RUNNING);
-    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
-      dynamic_cast<AudioContext &>(context).resume(contextPromise);
-    });
-  });
+  return createLifecyclePromise(
+      ContextState::RUNNING, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
+        dynamic_cast<AudioContext &>(context).resume(resolver);
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
-  return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
-        std::move(promise), context_, ContextState::SUSPENDED);
-    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
-      dynamic_cast<AudioContext &>(context).suspend(contextPromise);
-    });
-  });
+  return createLifecyclePromise(
+      ContextState::SUSPENDED, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
+        dynamic_cast<AudioContext &>(context).suspend(resolver);
+      });
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, outputLatency) {

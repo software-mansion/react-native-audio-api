@@ -36,10 +36,8 @@ OfflineAudioContext::OfflineAudioContext(
 }
 
 OfflineAudioContext::~OfflineAudioContext() {
-  // Join the promise worker first: a queued resume() task could spawn a fresh
-  // render thread after the join below. Both must be gone before base-class
-  // members (graph, disposer, driverMutex_) are destroyed.
-  joinPendingPromiseWorker();
+  /// No lifecycle operation can still be pending here: each one holds a shared_ptr to the
+  /// context while queued on the HostObject's promise lane.
   stopRendering_.store(true, std::memory_order_release);
   if (renderThread_.joinable()) {
     if (renderThread_.get_id() == std::this_thread::get_id()) {

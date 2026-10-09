@@ -134,6 +134,26 @@ TEST(ActiveRecorderHandleTest, PauseAndResumeActOnlyInMatchingStates) {
   EXPECT_TRUE(recorder->isRecording());
 }
 
+TEST(ActiveRecorderHandleTest, PauseAndResumeWithExpectedIgnoreForeignRecorder) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto current = std::make_shared<FakeAudioRecorder>();
+  auto other = std::make_shared<FakeAudioRecorder>();
+  ASSERT_TRUE(handle.tryStart(current).is_ok());
+
+  EXPECT_EQ(handle.pause(other), RecorderState::Idle);
+  EXPECT_TRUE(current->isRecording());
+
+  EXPECT_EQ(handle.pause(current), RecorderState::Paused);
+  EXPECT_TRUE(current->isPaused());
+
+  EXPECT_EQ(handle.resume(other), RecorderState::Idle);
+  EXPECT_TRUE(current->isPaused());
+
+  EXPECT_EQ(handle.resume(current), RecorderState::Recording);
+  EXPECT_TRUE(current->isRecording());
+}
+
 TEST(ActiveRecorderHandleTest, StopStashesResultForSingleConsumption) {
   auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
   ActiveRecorderHandle &handle = *handleOwner;

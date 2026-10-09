@@ -15,9 +15,9 @@ using namespace facebook;
 jsi::Value PromiseVendor::createAsyncPromise(std::function<PromiseResolver()> &&function) {
   auto &runtime = *runtime_;
   auto callInvoker = callInvoker_;
-  auto threadPool = threadPool_;
+  auto executor = executor_;
   auto promiseCtor = runtime.global().getPropertyAsFunction(runtime, "Promise");
-  auto promiseLambda = [threadPool = std::move(threadPool),
+  auto promiseLambda = [executor = std::move(executor),
                         callInvoker = std::move(callInvoker),
                         function = std::move(function)](
                            jsi::Runtime &runtime,
@@ -29,12 +29,12 @@ jsi::Value PromiseVendor::createAsyncPromise(std::function<PromiseResolver()> &&
     auto rejectLocal = arguments[1].asObject(runtime).asFunction(runtime);
     auto reject = std::make_shared<jsi::Function>(std::move(rejectLocal));
 
-    threadPool->schedule(
-        &PromiseVendor::asyncPromiseJob,
-        std::move(callInvoker),
-        std::move(function),
-        std::move(resolve),
-        std::move(reject));
+    executor->schedule([callInvoker = std::move(callInvoker),
+                        function = std::move(function),
+                        resolve = std::move(resolve),
+                        reject = std::move(reject)]() mutable {
+      PromiseVendor::asyncPromiseJob(callInvoker, function, std::move(resolve), std::move(reject));
+    });
     return jsi::Value::undefined();
   };
   auto promiseFunction = jsi::Function::createFromHostFunction(
@@ -45,9 +45,9 @@ jsi::Value PromiseVendor::createAsyncPromise(std::function<PromiseResolver()> &&
 jsi::Value PromiseVendor::createAsyncPromise(std::function<void(Promise &&)> &&function) {
   auto &runtime = *runtime_;
   auto callInvoker = callInvoker_;
-  auto threadPool = threadPool_;
+  auto executor = executor_;
   auto promiseCtor = runtime.global().getPropertyAsFunction(runtime, "Promise");
-  auto promiseLambda = [threadPool = std::move(threadPool),
+  auto promiseLambda = [executor = std::move(executor),
                         callInvoker = std::move(callInvoker),
                         function = std::move(function)](
                            jsi::Runtime &runtime,
@@ -59,7 +59,7 @@ jsi::Value PromiseVendor::createAsyncPromise(std::function<void(Promise &&)> &&f
 
     Promise promise(std::move(callInvoker), std::move(resolveLocal), std::move(rejectLocal));
 
-    threadPool->schedule([function = std::move(function), promise = std::move(promise)]() mutable {
+    executor->schedule([function = std::move(function), promise = std::move(promise)]() mutable {
 #ifdef ANDROID
       facebook::jni::ThreadScope::WithClassLoader([&]() { function(std::move(promise)); });
 #else
@@ -72,6 +72,16 @@ jsi::Value PromiseVendor::createAsyncPromise(std::function<void(Promise &&)> &&f
   auto promiseFunction = jsi::Function::createFromHostFunction(
       runtime, jsi::PropNameID::forUtf8(runtime, "asyncPromise"), 2, std::move(promiseLambda));
   return promiseCtor.callAsConstructor(runtime, std::move(promiseFunction));
+}
+
+void PromiseVendor::scheduleDetached(std::function<void()> &&task) {
+  executor_->schedule([task = std::move(task)]() {
+#ifdef ANDROID
+    facebook::jni::ThreadScope::WithClassLoader([&]() { task(); });
+#else
+    task();
+#endif
+  });
 }
 
 jsi::Value PromiseVendor::createPromise(std::function<void(Promise &&)> &&function) {

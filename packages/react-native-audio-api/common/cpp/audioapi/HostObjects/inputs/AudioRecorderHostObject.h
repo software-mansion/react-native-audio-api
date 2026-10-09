@@ -50,6 +50,8 @@ class AudioRecorderHostObject : public HostObject {
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
+  /// Vendor on a SerialTaskExecutor: lifecycle promises run strictly in call order. Declared
+  /// after audioRecorder_ so it is destroyed first and its queued stop still has a recorder.
   std::shared_ptr<PromiseVendor> promiseVendor_;
 };
 

@@ -1026,8 +1026,9 @@ class AudioRecorderMock {
     return this._options;
   }
 
-  disableFileOutput(): void {
+  disableFileOutput(): Promise<void> {
     this._options = null;
+    return Promise.resolve();
   }
 
   start(): Promise<Result<{ path: string }>> {
@@ -1048,12 +1049,14 @@ class AudioRecorderMock {
     });
   }
 
-  pause(): void {
+  pause(): Promise<void> {
     this._isPaused = true;
+    return Promise.resolve();
   }
 
-  resume(): void {
+  resume(): Promise<void> {
     this._isPaused = false;
+    return Promise.resolve();
   }
 
   connect(_node: RecorderAdapterNodeMock): void {

@@ -484,13 +484,19 @@ export default MyRecorder;
     <tr>
       <td><div class="text-content">
         ##### pause
+        <br />
+        (asynchronous)
       </div></td>
       <td>
         <div class="text-content">
-          Pauses the recording. This is useful when recording to file is active, but you do not want to finalize the file.
+          Pauses the recording. This is useful when recording to file is active, but you do not want to finalize the file. Returns a `Promise<void>` that resolves when the input stream has paused.
+
+          `start`, `stop`, `pause`, `resume` and `disableFileOutput` execute in the order they were called, so awaiting is only needed to observe the paused state.
         </div>
         ```tsx
-          audioRecorder.pause();
+        await audioRecorder.pause();
+
+        console.log(audioRecorder.isPaused());
         ```
       </td>
     </tr>
@@ -500,13 +506,17 @@ export default MyRecorder;
     <tr>
       <td><div class="text-content">
         ##### resume
+        <br />
+        (asynchronous)
       </div></td>
       <td>
         <div class="text-content">
-          Resumes the recording if it was previously paused; otherwise does nothing.
+          Resumes the recording if it was previously paused; otherwise does nothing. Returns a `Promise<void>` that resolves when the input stream is running again.
         </div>
         ```tsx
-          audioRecorder.resume();
+        await audioRecorder.resume();
+
+        console.log(audioRecorder.isRecording());
         ```
       </td>
     </tr>
@@ -699,13 +709,17 @@ export default MyRecorder;
     <tr>
       <td><div class="text-content">
         ##### disableFileOutput
+        <br />
+        (asynchronous)
       </div></td>
       <td>
         <div class="text-content">
-          Disables file output and finalizes the currently recorded file if the recorder is active.
+          Disables file output and finalizes the currently recorded file if the recorder is active. Returns a `Promise<void>` that resolves when the file has been closed.
+
+          Executes in call order with `start`, `stop`, `pause` and `resume`.
         </div>
         ```tsx
-          audioRecorder.disableFileOutput();
+        await audioRecorder.disableFileOutput();
         ```
       </td>
     </tr>
