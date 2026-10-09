@@ -37,6 +37,9 @@
   /// locked region would re-enter `_engineLock` (the handler reads the live input format
   /// back) and would take the recorder's own mutexes in the opposite order from the
   /// recorder's start path, which takes them before calling into the engine.
+  /// Set and taken within one locked region, so it never holds a value while the lock is
+  /// free: `restartAudioEngine` also runs on the thread that stops the recorder, and that
+  /// thread must not pick up a notification another thread queued.
   void (^_pendingInputNotification)(AudioEngineInputNotification);
   AudioEngineInputNotification _pendingInputNotificationKind;
   /// Tracks whether voice processing is currently engaged on the system input
@@ -54,6 +57,7 @@
 - (AVAudioFormat *)currentInputConnectionFormat;
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId;
 - (BOOL)materializeInputNodeIfNeeded;
+- (void)connectVoiceProcessingOutputWithFormat:(AVAudioFormat *)format;
 - (void)applyVoiceProcessing;
 - (void)materializeTrackedNodesIfNeeded;
 
@@ -64,7 +68,7 @@
 - (void)parkAfterFailedStart;
 - (void)rebuildAudioEngineAndResumeIfNeeded;
 - (void)queueInputNotification:(AudioEngineInputNotification)notification;
-- (void)deliverPendingInputNotification;
+- (dispatch_block_t)takePendingInputNotification;
 - (AudioEngineInterruptionEndOutcome)resumeAfterInterruption:(bool)shouldResume;
 
 @end
@@ -248,11 +252,31 @@ static AudioEngine *_sharedInstance = nil;
     return NO;
   }
 
+  if (_voiceProcessingApplied) {
+    [self connectVoiceProcessingOutputWithFormat:inputFormat];
+  }
+
   self.inputNode =
       [[AVAudioSinkNode alloc] initWithReceiverBlock:self.inputRegistration.receiverBlock];
   [self.audioEngine attachNode:self.inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:inputFormat];
   return YES;
+}
+
+/// @brief Gives the voice-processing unit's output bus a graph to pull from.
+/// @discussion Voice processing runs a single I/O unit in both directions, even when only
+/// the microphone is used. A recorder-only graph never creates the main mixer, so the output
+/// bus has no node behind it and the first render fails. Once the mixer exists, its
+/// connection to the output node is formatted by the engine unless made explicitly, and that
+/// format can differ from the input's (observed: 44.1 kHz against a 48 kHz input). Either
+/// way the engine stops itself shortly after starting. Voice processing requires the input
+/// node's output format and the output node's input format to match, so the connection is
+/// made with the input's format; the mixer converts whatever sources are attached to it.
+- (void)connectVoiceProcessingOutputWithFormat:(AVAudioFormat *)format
+{
+  [self.audioEngine connect:self.audioEngine.mainMixerNode
+                         to:self.audioEngine.outputNode
+                     format:format];
 }
 
 // Apple's voice-processing I/O (echo cancellation, noise suppression, AGC) is
@@ -455,16 +479,30 @@ static AudioEngine *_sharedInstance = nil;
   self.graphNeedsRebuild = true;
 }
 
+- (void)onRouteChange
+{
+  std::scoped_lock lock(_engineLock);
+  if (![self hasTrackedGraph] || [self.audioEngine isRunning]) {
+    return;
+  }
+
+  self.graphNeedsRebuild = true;
+}
+
 - (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
 {
   AudioEngineInterruptionEndOutcome outcome;
+  dispatch_block_t notifyInput;
 
   {
     std::scoped_lock lock(_engineLock);
     outcome = [self resumeAfterInterruption:shouldResume];
+    notifyInput = [self takePendingInputNotification];
   }
 
-  [self deliverPendingInputNotification];
+  if (notifyInput != nil) {
+    notifyInput();
+  }
 
   return outcome;
 }
@@ -532,18 +570,20 @@ static AudioEngine *_sharedInstance = nil;
   _pendingInputNotificationKind = notification;
 }
 
-/// @brief Runs the notification queued by the last graph change, if any.
-/// @discussion Must be called with `_engineLock` released; see `_pendingInputNotification`.
-- (void)deliverPendingInputNotification
+/// @brief Removes the notification queued by the last graph change and returns it ready to run.
+/// @discussion Must be called with `_engineLock` held, in the same locked region that queued
+/// it; the caller runs the result after releasing the lock. Returns nil when nothing is queued.
+- (dispatch_block_t)takePendingInputNotification
 {
-  void (^notification)(AudioEngineInputNotification) = _pendingInputNotification;
+  void (^handler)(AudioEngineInputNotification) = _pendingInputNotification;
 
-  if (notification == nil) {
-    return;
+  if (handler == nil) {
+    return nil;
   }
 
+  AudioEngineInputNotification notification = _pendingInputNotificationKind;
   _pendingInputNotification = nil;
-  notification(_pendingInputNotificationKind);
+  return ^{ handler(notification); };
 }
 
 - (AudioEngineState)getState
@@ -746,6 +786,8 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)restartAudioEngine
 {
+  dispatch_block_t notifyInput = nil;
+
   {
     std::scoped_lock lock(_engineLock);
 
@@ -757,9 +799,12 @@ static AudioEngine *_sharedInstance = nil;
     }
 
     [self rebuildAudioEngineAndResumeIfNeeded];
+    notifyInput = [self takePendingInputNotification];
   }
 
-  [self deliverPendingInputNotification];
+  if (notifyInput != nil) {
+    notifyInput();
+  }
 }
 
 - (void)logAudioEngineState

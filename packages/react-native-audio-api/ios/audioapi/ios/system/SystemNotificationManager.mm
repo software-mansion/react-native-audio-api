@@ -268,9 +268,15 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   switch (routeChangeReason) {
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
-    case AVAudioSessionRouteChangeReasonRouteConfigurationChange:
-      [self handleEngineConfigurationChange:nil];
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
+      // Not a restart: rebuilding the engine reconfigures its I/O unit, which itself posts
+      // RouteConfigurationChange, so restarting here would restart without end. A route
+      // change that alters the hardware format also arrives as
+      // AVAudioEngineConfigurationChangeNotification, which does restart the engine.
+      AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+      dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onRouteChange]; });
       break;
+    }
     default:
       break;
   }
