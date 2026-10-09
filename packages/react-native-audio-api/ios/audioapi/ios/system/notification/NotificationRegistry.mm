@@ -1,9 +1,12 @@
 #import <audioapi/ios/AudioAPIModule.h>
+#import <audioapi/ios/system/notification/ArtworkLoader.h>
+#import <audioapi/ios/system/notification/NotificationQueueAssertions.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 #import <audioapi/ios/system/notification/PlaybackNotification.h>
 
 @implementation NotificationRegistry {
   NSMutableDictionary<NSString *, id<BaseNotification>> *_notifications;
+  ArtworkLoader *_artworkLoader;
 }
 
 - (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule
@@ -11,17 +14,56 @@
   if (self = [super init]) {
     self.audioAPIModule = audioAPIModule;
     _notifications = [[NSMutableDictionary alloc] init];
-
-    NSLog(@"[NotificationRegistry] Initialized");
+    _artworkLoader = [[ArtworkLoader alloc] init];
   }
 
   return self;
 }
 
-- (BOOL)showNotificationWithType:(NSString *)type
+- (void)showNotificationWithType:(NSString *)type
                              key:(NSString *)key
                          options:(NSDictionary *)options
+                      completion:(void (^)(BOOL success))completion
 {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    completion([self showNotificationOnMainQueueWithType:type key:key options:options]);
+  });
+}
+
+- (void)hideNotificationWithKey:(NSString *)key completion:(void (^)(BOOL success))completion
+{
+  dispatch_async(
+      dispatch_get_main_queue(), ^{ completion([self hideNotificationOnMainQueueWithKey:key]); });
+}
+
+- (void)isNotificationActiveWithKey:(NSString *)key completion:(void (^)(BOOL isActive))completion
+{
+  dispatch_async(dispatch_get_main_queue(), ^{
+    id<BaseNotification> notification = self->_notifications[key];
+    completion(notification != nil && [notification isActive]);
+  });
+}
+
+- (void)cleanup
+{
+  // Synchronous, so teardown cannot race work already queued.
+  if ([NSThread isMainThread]) {
+    [self cleanupOnMainQueue];
+  } else {
+    dispatch_sync(dispatch_get_main_queue(), ^{ [self cleanupOnMainQueue]; });
+  }
+
+  [_artworkLoader cleanup];
+}
+
+#pragma mark - Private Methods
+
+- (BOOL)showNotificationOnMainQueueWithType:(NSString *)type
+                                        key:(NSString *)key
+                                    options:(NSDictionary *)options
+{
+  AUDIOAPI_ASSERT_ON_QUEUE(dispatch_get_main_queue());
+
   if (!key) {
     NSLog(@"[NotificationRegistry] Invalid key");
     return false;
@@ -30,7 +72,6 @@
   id<BaseNotification> notification = _notifications[key];
 
   bool created = false;
-  // Create if doesn't exist
   if (!notification) {
     if (!type) {
       NSLog(@"[NotificationRegistry] Type required for new notification: %@", key);
@@ -45,33 +86,22 @@
     }
 
     _notifications[key] = notification;
-    NSLog(@"[NotificationRegistry] Created notification type '%@' with key '%@'", type, key);
     created = true;
-  }
-
-  // Initialize if first time showing
-  if (![notification isActive]) {
-    if (![notification initializeWithOptions:options]) {
-      NSLog(@"[NotificationRegistry] Failed to initialize notification: %@", key);
-      return false;
-    }
   }
 
   BOOL success = [notification showWithOptions:options];
 
-  if (created) {
-    if (success) {
-      NSLog(@"[NotificationRegistry] Showed notification: %@", key);
-    } else {
-      NSLog(@"[NotificationRegistry] Failed to show notification: %@", key);
-    }
+  if (created && !success) {
+    NSLog(@"[NotificationRegistry] Failed to show notification: %@", key);
   }
 
   return success;
 }
 
-- (BOOL)hideNotificationWithKey:(NSString *)key
+- (BOOL)hideNotificationOnMainQueueWithKey:(NSString *)key
 {
+  AUDIOAPI_ASSERT_ON_QUEUE(dispatch_get_main_queue());
+
   id<BaseNotification> notification = _notifications[key];
 
   if (!notification) {
@@ -81,31 +111,17 @@
 
   BOOL success = [notification hide];
 
-  if (success) {
-    NSLog(@"[NotificationRegistry] Hid notification: %@", key);
-  } else {
+  if (!success) {
     NSLog(@"[NotificationRegistry] Failed to hide notification: %@", key);
   }
 
   return success;
 }
 
-- (BOOL)isNotificationActiveWithKey:(NSString *)key
+- (void)cleanupOnMainQueue
 {
-  id<BaseNotification> notification = _notifications[key];
+  AUDIOAPI_ASSERT_ON_QUEUE(dispatch_get_main_queue());
 
-  if (!notification) {
-    return false;
-  }
-
-  return [notification isActive];
-}
-
-- (void)cleanup
-{
-  NSLog(@"[NotificationRegistry] Cleaning up all notifications");
-
-  // Clean up all notifications
   for (id<BaseNotification> notification in [_notifications allValues]) {
     [notification cleanup];
   }
@@ -113,12 +129,11 @@
   [_notifications removeAllObjects];
 }
 
-#pragma mark - Private Methods
-
 - (id<BaseNotification>)createNotificationForType:(NSString *)type
 {
   if ([type isEqualToString:@"playback"]) {
-    return [[PlaybackNotification alloc] initWithAudioAPIModule:self.audioAPIModule];
+    return [[PlaybackNotification alloc] initWithAudioAPIModule:self.audioAPIModule
+                                                  artworkLoader:_artworkLoader];
   }
   // Future: Add more notification types here
   // else if ([type isEqualToString:@"recording"]) {

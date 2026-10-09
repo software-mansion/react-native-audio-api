@@ -12,6 +12,14 @@ import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 
 /**
+ * Re-posts a notification whose content changed after [BaseNotification.show] returned, such as
+ * artwork that finished loading asynchronously.
+ */
+fun interface NotificationRedisplay {
+  fun redisplay(notification: Notification)
+}
+
+/**
  * Central notification registry that manages multiple notification instances.
  * Automatically handles foreground service lifecycle based on active notifications.
  */
@@ -29,8 +37,8 @@ class NotificationRegistry(
     fun getBuiltNotification(notificationId: Int): Notification? = builtNotifications[notificationId]
   }
 
-  private val notifications = mutableMapOf<String, BaseNotification>()
-  private val activeNotifications = mutableMapOf<String, Boolean>()
+  private val notifications = HashMap<String, BaseNotification>()
+  private val activeNotifications = HashMap<String, Boolean>()
 
   /**
    * Show or update a notification.
@@ -146,7 +154,8 @@ class NotificationRegistry(
             audioAPIModule,
             PlaybackNotification.ID,
             "audio_playback",
-          )
+            ArtworkLoader(reactContext),
+          ) { redisplayIfActive(key, it) }
         }
 
         "recording" -> {
@@ -208,6 +217,17 @@ class NotificationRegistry(
     ForegroundServiceManager.cleanup()
 
     Log.d(TAG, "Cleaned up all notifications")
+  }
+
+  @Synchronized
+  @SuppressLint("MissingPermission")
+  private fun redisplayIfActive(
+    key: String,
+    notification: Notification,
+  ) {
+    if (!isNotificationActive(key)) return
+    val notificationId = notifications[key]?.getNotificationId() ?: return
+    displayNotification(notificationId, notification)
   }
 
   @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
