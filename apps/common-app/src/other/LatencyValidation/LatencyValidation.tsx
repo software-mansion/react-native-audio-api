@@ -62,7 +62,7 @@ const LatencyValidation: FC = () => {
       }
 
       if (Platform.OS !== 'web') {
-        AudioManager.setAudioSessionOptions({
+        AudioManager.setSystemOptions({
           iosCategory: 'playAndRecord',
           // 'measurement' keeps the signal path raw (no AGC/EQ) so the loopback
           // delay is accurate, while running the mic+speaker for the shortest
@@ -70,7 +70,7 @@ const LatencyValidation: FC = () => {
           iosMode: 'measurement',
           iosOptions: ['defaultToSpeaker'],
         });
-        await AudioManager.setAudioSessionActivity(true);
+        await AudioManager.setSystemActivity(true);
       }
 
       setCurrentStep('Playing beep pattern and analyzing microphone capture...');

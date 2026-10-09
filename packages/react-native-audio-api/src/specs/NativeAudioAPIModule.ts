@@ -1,7 +1,11 @@
 'use strict';
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
-import { AudioDevicesInfo, PermissionStatus } from '../system/types';
+import {
+  AudioDeviceInfo,
+  AudioDevicesInfo,
+  PermissionStatus,
+} from '../system/types';
 
 type OptionsMap = { [key: string]: string | boolean | number | undefined };
 type NotificationOpResponse = { success: boolean; error?: string };
@@ -18,13 +22,15 @@ interface Spec extends TurboModule {
   isFfmpegEnabled(): boolean;
 
   // AVAudioSession management
-  setAudioSessionActivity(enabled: boolean): Promise<void>;
-  setAudioSessionOptions(
+  setSystemActivity(enabled: boolean): Promise<void>;
+  setSystemOptions(
     category: string,
     mode: string,
     options: Array<string>,
     allowHaptics: boolean,
-    notifyOthersOnDeactivation: boolean
+    notifyOthersOnDeactivation: boolean,
+    androidMode: string,
+    androidCommunicationDevice: string
   ): void;
   disableSessionManagement(): void;
 
@@ -43,6 +49,8 @@ interface Spec extends TurboModule {
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
   setInputDevice(deviceId: string): Promise<void>;
+  setCommunicationDevice(device: string): Promise<void>;
+  getCommunicationDevice(): Promise<AudioDeviceInfo | null>;
 
   // Notification system
   showNotification(

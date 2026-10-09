@@ -5,9 +5,11 @@ import { parseNativeError } from './errors';
 import {
   AudioDevicesInfo,
   AudioFocusType,
+  AudioDeviceInfo,
+  CommunicationDevice,
   IAudioManager,
   PermissionStatus,
-  SessionOptions,
+  SystemOptions,
 } from './types';
 
 class AudioManager implements IAudioManager {
@@ -29,21 +31,23 @@ class AudioManager implements IAudioManager {
    * rejects with a {@link SessionActivationError} carrying the native error
    * details (`nativeErrorInfo`) when available.
    */
-  async setAudioSessionActivity(enabled: boolean): Promise<void> {
+  async setSystemActivity(enabled: boolean): Promise<void> {
     try {
-      await NativeAudioAPIModule.setAudioSessionActivity(enabled);
+      await NativeAudioAPIModule.setSystemActivity(enabled);
     } catch (error) {
       throw parseNativeError(error);
     }
   }
 
-  setAudioSessionOptions(options: SessionOptions) {
-    NativeAudioAPIModule.setAudioSessionOptions(
+  setSystemOptions(options: SystemOptions) {
+    NativeAudioAPIModule.setSystemOptions(
       options.iosCategory ?? '',
       options.iosMode ?? '',
       options.iosOptions ?? [],
       options.iosAllowHaptics ?? false,
-      options.iosNotifyOthersOnDeactivation ?? true
+      options.iosNotifyOthersOnDeactivation ?? true,
+      options.androidMode ?? '',
+      options.androidCommunicationDevice ?? ''
     );
   }
 
@@ -128,6 +132,23 @@ class AudioManager implements IAudioManager {
    */
   async setInputDevice(deviceId: string): Promise<void> {
     await NativeAudioAPIModule.setInputDevice(deviceId);
+  }
+
+  /**
+   * Requests the Android route for voice-communication audio, with or without
+   * an `inCommunication` session. `systemDefault` clears the request, as does
+   * `setSystemActivity(false)`.
+   */
+  async setCommunicationDevice(device: CommunicationDevice): Promise<void> {
+    await NativeAudioAPIModule.setCommunicationDevice(device);
+  }
+
+  /**
+   * Returns Android's currently selected communication device, including a
+   * route selected by the system after an accessory change.
+   */
+  async getCommunicationDevice(): Promise<AudioDeviceInfo | null> {
+    return NativeAudioAPIModule.getCommunicationDevice();
   }
 }
 

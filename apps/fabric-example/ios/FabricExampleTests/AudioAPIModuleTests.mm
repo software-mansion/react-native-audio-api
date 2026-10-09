@@ -6,9 +6,9 @@
 
 @interface AudioAPIModule (TestingPrivate)
 
-- (void)setAudioSessionActivity:(BOOL)enabled
-                        resolve:(RCTPromiseResolveBlock)resolve
-                         reject:(RCTPromiseRejectBlock)reject;
+- (void)setSystemActivity:(BOOL)enabled
+                  resolve:(RCTPromiseResolveBlock)resolve
+                   reject:(RCTPromiseRejectBlock)reject;
 
 @end
 
@@ -120,24 +120,24 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   [super tearDown];
 }
 
-- (void)testSetAudioSessionActivityFalseWaitsForSessionDeactivationBeforeResolve
+- (void)testSetSystemActivityFalseWaitsForSessionDeactivationBeforeResolve
 {
-  XCTestExpectation *resolveExpectation = [self expectationWithDescription:@"setAudioSessionActivity"];
+  XCTestExpectation *resolveExpectation = [self expectationWithDescription:@"setSystemActivity"];
   __block NSArray<NSString *> *eventsAtResolve = nil;
   __block NSString *rejectionCode = nil;
   NSMutableArray<NSString *> *eventLog = self.eventLog;
 
-  [self.module setAudioSessionActivity:NO
-                               resolve:^(id result) {
-                                 AppendAudioModuleEvent(eventLog, @"resolve");
-                                 eventsAtResolve = CopyAudioModuleEvents(eventLog);
-                                 XCTAssertNil(result);
-                                 [resolveExpectation fulfill];
-                               }
-                                reject:^(NSString *code, NSString *message, NSError *error) {
-                                  rejectionCode = code;
-                                  [resolveExpectation fulfill];
-                                }];
+  [self.module setSystemActivity:NO
+                         resolve:^(id result) {
+                           AppendAudioModuleEvent(eventLog, @"resolve");
+                           eventsAtResolve = CopyAudioModuleEvents(eventLog);
+                           XCTAssertNil(result);
+                           [resolveExpectation fulfill];
+                         }
+                          reject:^(NSString *code, NSString *message, NSError *error) {
+                            rejectionCode = code;
+                            [resolveExpectation fulfill];
+                          }];
 
   [self waitForExpectations:@[ resolveExpectation ] timeout:1.0];
 

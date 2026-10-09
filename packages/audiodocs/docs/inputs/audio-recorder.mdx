@@ -160,7 +160,7 @@ import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
+AudioManager.setSystemOptions({
   iosCategory: 'record',
   iosMode: 'default',
   iosOptions: [],
@@ -189,7 +189,7 @@ const MyRecorder: React.FC = () => {
 
     // Activate audio session
     try {
-      await AudioManager.setAudioSessionActivity(true);
+      await AudioManager.setSystemActivity(true);
     } catch (error) {
       console.warn('Could not activate the audio session', error);
       return;
@@ -213,7 +213,7 @@ const MyRecorder: React.FC = () => {
     const result = await audioRecorder.stop();
     console.log(result);
     setIsRecording(false);
-    await AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setSystemActivity(false);
   };
 
   return (
@@ -236,7 +236,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
+AudioManager.setSystemOptions({
   iosCategory: 'record',
   iosMode: 'default',
   iosOptions: [],
@@ -280,7 +280,7 @@ const MyRecorder: React.FC = () => {
 
     // Activate audio session
     try {
-      await AudioManager.setAudioSessionActivity(true);
+      await AudioManager.setSystemActivity(true);
     } catch (error) {
       console.warn('Could not activate the audio session', error);
       return;
@@ -303,7 +303,7 @@ const MyRecorder: React.FC = () => {
 
     await audioRecorder.stop();
     setIsRecording(false);
-    await AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setSystemActivity(false);
   };
 
   return (
@@ -326,7 +326,7 @@ import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioContext, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
+AudioManager.setSystemOptions({
   iosCategory: 'playAndRecord',
   iosMode: 'default',
   iosOptions: [],
@@ -353,7 +353,7 @@ const MyRecorder: React.FC = () => {
 
     // Activate audio session
     try {
-      await AudioManager.setAudioSessionActivity(true);
+      await AudioManager.setSystemActivity(true);
     } catch (error) {
       console.warn('Could not activate the audio session', error);
       return;
@@ -383,7 +383,7 @@ const MyRecorder: React.FC = () => {
     await audioRecorder.stop();
     audioContext.suspend();
     setIsRecording(false);
-    await AudioManager.setAudioSessionActivity(false);
+    await AudioManager.setSystemActivity(false);
   };
 
   return (
@@ -573,7 +573,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns the [FileInfo](#fileinfo) stashed by the last successful stop that produced output files, or `null` if there is none. That includes JS [stop](#stop), the Android [recording notification](../system/recording-notification-manager.mdx#native-action-handling), and [deactivating the iOS audio session](../system/audio-manager.mdx#setaudiosessionactivity) mid-recording. Consume-once: the stash is cleared on read, so a second call returns `null`.
+          Returns the [FileInfo](#fileinfo) stashed by the last successful stop that produced output files, or `null` if there is none. That includes JS [stop](#stop), the Android [recording notification](../system/recording-notification-manager.mdx#native-action-handling), and [deactivating the iOS audio session](../system/audio-manager.mdx#setsystemactivity) mid-recording. Consume-once: the stash is cleared on read, so a second call returns `null`.
 
           If the recording was already finalized natively, calling [stop](#stop) on an `AudioRecorder` instance does not return those files — it reports that the recorder is not recording. Read the stashed [FileInfo](#fileinfo) from this method instead.
         </div>
