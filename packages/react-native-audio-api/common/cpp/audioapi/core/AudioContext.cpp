@@ -9,10 +9,12 @@ namespace audioapi {
 
 AudioContext::AudioContext(
     float sampleRate,
+    AndroidOutputProfile androidOutputProfile,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     AudioContextLatencyHint latencyHint)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
       latencyHint_(latencyHint),
+      androidOutputProfile_(androidOutputProfile),
       isInitialized_(false),
       onErrorEvent_(audioEventHandlerRegistry) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
@@ -38,7 +40,12 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       currentRenders_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
       &driverMutex_,
+#if defined(ANDROID) && !defined(RN_AUDIO_API_NODE)
+      latencyHint_,
+      androidOutputProfile_);
+#else
       latencyHint_);
+#endif
 }
 
 bool AudioContext::tryStartDriver() {
