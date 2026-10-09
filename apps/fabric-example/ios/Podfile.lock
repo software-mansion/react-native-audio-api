@@ -2214,8 +2214,8 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../../../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../../../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
-  - RNAudioAPI (from `../../../node_modules/react-native-audio-api`)
-  - RNAudioWorklets (from `../../../node_modules/react-native-audio-worklets`)
+  - RNAudioAPI (from `../../../packages/react-native-audio-api`)
+  - RNAudioWorklets (from `../../../packages/react-native-audio-worklets`)
   - RNGestureHandler (from `../../../node_modules/react-native-gesture-handler`)
   - RNReanimated (from `../../../node_modules/react-native-reanimated`)
   - RNScreens (from `../../../node_modules/react-native-screens`)
@@ -2399,9 +2399,9 @@ EXTERNAL SOURCES:
   ReactNativeDependencies:
     :podspec: "../../../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
   RNAudioAPI:
-    :path: "../../../node_modules/react-native-audio-api"
+    :path: "../../../packages/react-native-audio-api"
   RNAudioWorklets:
-    :path: "../../../node_modules/react-native-audio-worklets"
+    :path: "../../../packages/react-native-audio-worklets"
   RNGestureHandler:
     :path: "../../../node_modules/react-native-gesture-handler"
   RNReanimated:
@@ -2514,6 +2514,6 @@ SPEC CHECKSUMS:
   SocketRocket: 37aec555668fb852ec12e3c0de59a86ca58f0871
   Yoga: d1c536142c5ff8ec8cd856ab2a7c227a1d875c8e
 
-PODFILE CHECKSUM: 2fbbdb3fb754264aa345dc912d51c3c6d295cdd9
+PODFILE CHECKSUM: c9697d12234c6c2a5ab29037cc719ef201b7f7b3
 
-COCOAPODS: 1.17.0
+COCOAPODS: 1.16.2
