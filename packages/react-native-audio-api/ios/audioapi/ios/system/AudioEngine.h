@@ -72,6 +72,10 @@ typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
 - (AudioEngineState)getState;
 - (bool)isEngineRunning;
 - (bool)isInUse;
+/// True when @p engine is the AVAudioEngine this object currently drives. False for nil, for
+/// engines owned by other code in the process, and for engines this object has already
+/// replaced during a rebuild.
+- (bool)isCurrentEngine:(AVAudioEngine *)engine;
 
 - (bool)startIfNecessary;
 - (void)pauseIfNecessary;
