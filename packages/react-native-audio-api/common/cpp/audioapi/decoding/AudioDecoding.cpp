@@ -125,19 +125,12 @@ AudioDurationResult probeDurationWithUrl(
     const std::string &url,
     int sampleRate,
     const std::map<std::string, std::string> &headers) {
-#if !RN_AUDIO_API_FFMPEG_DISABLED
   if (url.empty()) {
     return Err("Failed to open URL with FFmpeg decoder: url is empty");
   }
   return probeDurationFromSource(
       decoding::RemoteUrlSource{.url = url, .httpHeaders = headers, .sampleRate = sampleRate},
       "Failed to open URL with FFmpeg decoder");
-#else
-  (void)url;
-  (void)sampleRate;
-  (void)headers;
-  return Err("FFmpeg is disabled, cannot probe duration from URL");
-#endif
 }
 
 AudioBufferResult decodeWithFilePath(const std::string &path, float sampleRate) {

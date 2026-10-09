@@ -1,3 +1,4 @@
+import { NotSupportedError } from '../src/errors';
 import { isFfmpegEnabled } from '../src/utils/flags';
 import { loadRemoteHttpSource } from '../src/utils/remoteHttpSource';
 
@@ -14,6 +15,7 @@ describe('loadRemoteHttpSource', () => {
   beforeEach(() => {
     fetchMock.mockReset();
     isFfmpegEnabledMock.mockReset();
+    // @ts-ignore
     global.fetch = fetchMock as typeof fetch;
   });
 
@@ -33,6 +35,25 @@ describe('loadRemoteHttpSource', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/song.mp3', {
       headers: undefined,
     });
+  });
+
+  it('rejects HLS playlists with NotSupportedError when FFmpeg is disabled', async () => {
+    isFfmpegEnabledMock.mockReturnValue(false);
+
+    await expect(
+      loadRemoteHttpSource('https://example.com/live/playlist.m3u8?token=1')
+    ).rejects.toBeInstanceOf(NotSupportedError);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('hands HLS playlists to native untouched when FFmpeg is enabled', async () => {
+    isFfmpegEnabledMock.mockReturnValue(true);
+    const url = 'https://example.com/live/playlist.m3u8';
+
+    await expect(loadRemoteHttpSource(url)).resolves.toBe(url);
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('streams via URL when FFmpeg is enabled and byte ranges work', async () => {

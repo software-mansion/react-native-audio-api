@@ -122,18 +122,18 @@ TEST(AudioDecodingTest, DecodesMemoryWav) {
   removeFile(input);
 }
 
-TEST(AudioDecodingTest, ReturnsDisabledErrorForUrlProbeWhenFFmpegIsUnavailable) {
+TEST(AudioDecodingTest, RejectsUrlProbeWhenFFmpegIsUnavailable) {
   auto result = audiodecoding::probeDurationWithUrl("https://example.com/audio.mp3", 0, {});
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot probe duration from URL");
+  EXPECT_EQ(result.unwrap_err(), "Failed to open URL with FFmpeg decoder");
 }
 
-TEST(AudioDecodingTest, RejectsUnavailableDurationMetadataFromUrl) {
+TEST(AudioDecodingTest, RejectsEmptyUrlProbe) {
   auto result = audiodecoding::probeDurationWithUrl("", 0, {});
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot probe duration from URL");
+  EXPECT_EQ(result.unwrap_err(), "Failed to open URL with FFmpeg decoder: url is empty");
 }
 
 // NOLINTEND

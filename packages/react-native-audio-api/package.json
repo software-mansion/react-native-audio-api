@@ -83,6 +83,7 @@
     "!**/node_modules",
     "!common/cpp/clangd",
     "!common/cpp/test",
+    "!android/src/main/jniLibs",
     "scripts/setup-rn-audio-api-web.js",
     "scripts/rnaa_utils.rb",
     "scripts/download-prebuilt-binaries.sh",

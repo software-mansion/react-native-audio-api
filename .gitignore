@@ -96,7 +96,9 @@ openssl-prebuilt/
 prebuilt_libs/
 output/
 
-# External libs
+# External libs (prebuilt binaries fetched by scripts/download-prebuilt-binaries.sh).
+# The FFmpeg headers under external/include_ffmpeg/ are still tracked; once they move to
+# the download they belong on this list too.
 packages/react-native-audio-api/android/src/main/jniLibs/
 packages/react-native-audio-api/common/cpp/audioapi/external/**/*.a
 packages/react-native-audio-api/common/cpp/audioapi/external/*.xcframework

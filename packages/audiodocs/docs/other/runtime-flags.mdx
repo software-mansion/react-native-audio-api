@@ -2,15 +2,15 @@
 
 These helpers let you check at runtime which optional native features are compiled into your app. They are synchronous and safe to call from JavaScript after the library has been installed.
 
-Use them to branch UI or loading logic — for example, skip remote metadata preload when FFmpeg is disabled or disable hls streaming.
+Use them to branch UI or loading logic — for example, skip remote metadata preload or hide an HLS source when FFmpeg is not part of the build.
 
 :::info Build-time vs runtime
-To **disable** optional libraries at build time (and reduce app size), see [Disabling prebuilt libraries](./disabling-prebuilt-libraries.mdx). Runtime flags only tell you what ended up in the binary you are running.
+Optional libraries are chosen at build time — see [Prebuilt libraries support](./prebuilt-libraries-support.mdx). Runtime flags only tell you what ended up in the binary you are running.
 :::
 
 ## `isFfmpegEnabled`
 
-Returns whether the native build includes [`FFmpeg`](https://github.com/FFmpeg/FFmpeg). On web, this always returns `true` — the browser handles decoding.
+Returns whether the native build includes [`FFmpeg`](https://github.com/FFmpeg/FFmpeg). FFmpeg is **off by default** and returns `false` unless the app enabled it. On web, this always returns `true` — the browser handles decoding.
 
 #### Returns `boolean`
 
@@ -32,10 +32,8 @@ if (!isFfmpegEnabled()) {
 | Streaming | [`Audio tag`](/docs/sources/audio-tag), `createFileSource` | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
 | Metadata | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](../sources/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing |
 
-Batch decoding ([`decodeAudioData`](../utils/decoding.mdx#decodeaudiodata)) uses OS APIs on mobile (and miniaudio for formats like Ogg/Opus) — not FFmpeg. Without FFmpeg, remote progressive sources can still be fully downloaded in JS and decoded that way; HLS and in-place URL streaming remain unavailable.
+Without FFmpeg, remote progressive sources are fully downloaded in JS and decoded that way; `preload="metadata"` behaves like `none`; HLS sources fail with a `NotSupportedError`.
 
-When `isFfmpegEnabled()` returns `false`, the streaming/metadata features in the table above are unavailable or fall back to errors.
+### Enabling FFmpeg
 
-### Disabling FFmpeg
-
-FFmpeg is enabled by default. To omit it — for example because of symbol clashes with another FFmpeg build in your project — see [Disabling prebuilt libraries](./disabling-prebuilt-libraries.mdx).
+FFmpeg is **disabled by default** to keep the app binary small and to leave the LGPL notice to apps that actually ship FFmpeg. To turn it on, see [Prebuilt libraries support](./prebuilt-libraries-support.mdx#enabling-ffmpeg).

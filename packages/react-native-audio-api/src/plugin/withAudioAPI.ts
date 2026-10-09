@@ -16,7 +16,8 @@ interface Options {
   androidForegroundService: boolean;
   androidFSTypes: string[];
   androidFSStopWithTask: boolean;
-  disableFFmpeg: boolean;
+  /** Links FFmpeg for remote URL streaming / HLS. Off by default. */
+  enableFFmpeg: boolean;
   disableStaticExternalLibs: boolean;
 }
 
@@ -30,10 +31,35 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
     androidForegroundService: true,
     androidFSTypes: ['mediaPlayback'],
     androidFSStopWithTask: true,
-    disableFFmpeg: false,
+    enableFFmpeg: false,
     disableStaticExternalLibs: false,
     ...options,
   };
+};
+
+/**
+ * Keeps exactly one `key = value` line in the Podfile when `value` is set, and
+ * removes any existing line for that key when it is not.
+ */
+const upsertPodfileEnvLine = (
+  contents: string,
+  key: string,
+  value: string | null
+): string => {
+  const lineRegex = new RegExp(`^.*ENV\\['${key}'\\].*$`, 'gm');
+  const line = value === null ? '' : `ENV['${key}'] = '${value}'`;
+
+  if (contents.search(lineRegex) !== -1) {
+    return contents.replace(lineRegex, line);
+  }
+
+  if (line === '') {
+    return contents;
+  }
+
+  return contents.endsWith('\n')
+    ? `${contents}${line}`
+    : `${contents}\n${line}`;
 };
 
 const withBackgroundAudio: ConfigPlugin = (config) => {
@@ -106,27 +132,11 @@ const withForegroundService: ConfigPlugin<Options> = (
 
 const withFFmpegConfig: ConfigPlugin<Options> = (config, options) => {
   const iosConf = withPodfile(config, (mod) => {
-    let contents = mod.modResults.contents;
-    const ffmpegRegex = /^.*ENV\['DISABLE_AUDIOAPI_FFMPEG'\].*$/gm;
-    const podfileString = options.disableFFmpeg
-      ? `ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'`
-      : '';
-    // No existing setting
-    if (contents.search(ffmpegRegex) === -1) {
-      if (options.disableFFmpeg) {
-        if (contents.endsWith('\n')) {
-          contents = `${contents}${podfileString}`;
-        } else {
-          contents = `${contents}\n${podfileString}`;
-        }
-        mod.modResults.contents = contents;
-      }
-    } else {
-      // Existing setting found, will replace
-      contents = contents.replace(ffmpegRegex, podfileString);
-    }
-
-    mod.modResults.contents = contents;
+    mod.modResults.contents = upsertPodfileEnvLine(
+      mod.modResults.contents,
+      'ENABLE_AUDIOAPI_FFMPEG',
+      options.enableFFmpeg ? '1' : null
+    );
     return mod;
   });
 
@@ -134,20 +144,17 @@ const withFFmpegConfig: ConfigPlugin<Options> = (config, options) => {
     const gradleProperties = mod.modResults;
 
     const existingIndex = gradleProperties.findIndex(
-      (prop) => prop.type === 'property' && prop.key === 'disableAudioapiFFmpeg'
+      (prop) => prop.type === 'property' && prop.key === 'enableAudioapiFFmpeg'
     );
     if (existingIndex !== -1) {
       gradleProperties.splice(existingIndex, 1);
-    } else if (!options.disableFFmpeg) {
-      // No existing setting and FFmpeg is enabled, do nothing.
-      return mod;
     }
 
-    if (options.disableFFmpeg) {
+    if (options.enableFFmpeg) {
       gradleProperties.push({
         type: 'property',
-        key: 'disableAudioapiFFmpeg',
-        value: options.disableFFmpeg ? 'true' : 'false',
+        key: 'enableAudioapiFFmpeg',
+        value: 'true',
       });
     }
 
@@ -233,9 +240,7 @@ const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
     config = withIosMicrophonePermission(config, options);
   }
 
-  if (options.disableFFmpeg !== undefined) {
-    config = withFFmpegConfig(config, options);
-  }
+  config = withFFmpegConfig(config, options);
 
   if (options.disableStaticExternalLibs !== undefined) {
     config = withStaticExternalLibsConfig(config, options);

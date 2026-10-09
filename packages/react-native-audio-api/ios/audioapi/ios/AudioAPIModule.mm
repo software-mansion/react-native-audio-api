@@ -100,10 +100,10 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getSystemVolume)
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(isFfmpegEnabled)
 {
-#if RN_AUDIO_API_FFMPEG_DISABLED
-  return @NO;
-#else
+#if RN_AUDIO_API_FFMPEG_ENABLED
   return @YES;
+#else
+  return @NO;
 #endif
 }
 
