@@ -52,9 +52,7 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 AudioRecorderHostObject::~AudioRecorderHostObject() {
-  // Queued rather than called, so a start() still waiting on the lane cannot outlive this
-  // stop. lifecycleLane_ is destroyed right after this body and drains the queue before
-  // joining its worker, which keeps the blocking-stop contract of the previous direct call.
+  // Queued rather than called, so a start() still waiting on the lane cannot outlive this stop.
   lifecycleLane_->schedule([audioRecorder = audioRecorder_]() {
     ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
   });
