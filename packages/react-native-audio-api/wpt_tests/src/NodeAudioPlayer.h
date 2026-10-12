@@ -1,15 +1,15 @@
 #pragma once
 
-#include <audioapi/core/CommonPlayer.h>
+#include <audioapi/core/AudioPlayer.h>
 
 #include <atomic>
 #include <thread>
 
 namespace audioapi {
 
-class NodeAudioPlayer final : public CommonPlayer {
+class NodeAudioPlayer final : public AudioPlayer {
  public:
-  using CommonPlayer::CommonPlayer;
+  using AudioPlayer::AudioPlayer;
   ~NodeAudioPlayer() override;
 
   DELETE_COPY_AND_MOVE(NodeAudioPlayer);

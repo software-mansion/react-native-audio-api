@@ -13,7 +13,11 @@ export {
   ConvolverOptionsValidator,
   validateConvolverBufferChannelCount,
   validateConvolverBufferSampleRate,
+  validateConvolverChannelCount,
+  validateConvolverChannelCountMode,
 } from './convolver';
+
+export { DelayOptionsValidator, validateDelayMaxDelayTime } from './delay';
 
 export { OscillatorOptionsValidator } from './oscillator';
 

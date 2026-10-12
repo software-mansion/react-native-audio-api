@@ -263,6 +263,7 @@
   self.audioEngine = [[TestableAudioEngine alloc] init];
   AVAudioFormat *inputFormat = [self testInputFormat];
   self.audioEngine.defaultCreatedEngineInputFormat = inputFormat;
+  [self.audioEngine createAudioEngineIfNeeded];
   self.audioEngine.currentFakeAudioEngine.fakeInputNode.outputFormat =
       inputFormat;
   self.sessionManager = [[FakeAudioSessionManager alloc] init];

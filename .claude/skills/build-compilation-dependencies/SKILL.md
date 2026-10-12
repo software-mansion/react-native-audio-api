@@ -30,7 +30,8 @@ react-native-audio-api/
 │   │   └── src/main/cpp/audioapi/
 │   │       └── CMakeLists.txt          # Actual Android C++ build target
 │   ├── common/cpp/audioapi/            # Shared C++ (used by all platforms)
-│   │   ├── decoding/                   # Decoder factory, backends, SeekDecoderDaemon, AudioDecoding, AudioFileConcatenator
+│   │   ├── decoding/                   # Decoder factory, backends, SeekDecoderDaemon, AudioDecoding
+│   │   ├── encoding/                   # AudioEncoder interface, EncoderCapabilities, OS encoder/remux selector headers, AudioFileConcatenator
 │   │   ├── libs/                       # Third-party wrappers (FFmpeg, miniaudio, pffft, …)
 │   │   └── external/                   # Prebuilt binaries per platform
 │   │       ├── android/                # .a static libs (Opus, Ogg, Vorbis, OpenSSL)
@@ -39,7 +40,7 @@ react-native-audio-api/
 │   │       ├── macosx/                 # macOS .a libs
 │   │       ├── ffmpeg_ios/             # FFmpeg .xcframeworks (iOS only)
 │   │       ├── include/                # Headers for Opus/Ogg/Vorbis/OpenSSL
-│   │       └── include_ffmpeg/         # Headers for FFmpeg
+│   │       └── include_ffmpeg/         # FFmpeg headers (downloaded, FFmpeg builds only)
 │   ├── common/cpp/test/
 │   │   ├── CMakeLists.txt              # Standalone test build (no Android/iOS)
 │   │   ├── run-tests.sh / filters.sh    # smoke|extended|full (+ categories, CI path filters)
@@ -119,10 +120,14 @@ https://github.com/software-mansion-labs/rn-audio-libs/releases/download/<TAG>/
 Current tag: **v3.0.0** (see `scripts/download-prebuilt-binaries.sh`).
 
 The download script is triggered automatically:
-- **iOS**: by podspec `prepare_command` during `pod install` **and** by a `script_phase` (`[CP-User] Download RNAudioAPI prebuilt binaries`, `:before_headers`, always-out-of-date) on every Xcode build — downloads `ffmpeg_ios`, `iphoneos`, `iphonesimulator`, `macosx`. `prepare_command` ensures all vendored `.xcframework`s exist when CocoaPods generates `[CP] Copy XCFrameworks` (required for correct FFmpeg linking). The build-time phase handles CI setups that cache `Pods/` independently from `node_modules/` — it is a fast no-op when binaries are already present. **It must use `:before_headers`, not `:before_compile`** — CocoaPods inserts its own `[CP] Copy XCFrameworks` phase right after `Headers`; `:before_compile` would land *after* it. The phase's `output_files` declares both the `-force_load` static libs and the four FFmpeg xcframeworks. The whole phase is skipped only when *both* `DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS` and `DISABLE_AUDIOAPI_FFMPEG` are set.
+**FFmpeg is opt-in (off by default).** iOS: `ENV['ENABLE_AUDIOAPI_FFMPEG'] = '1'` in the Podfile; Android: `enableAudioapiFFmpeg=true` in `gradle.properties`; Expo: `enableFFmpeg: true`. The pre-1.0 `DISABLE_AUDIOAPI_FFMPEG` / `disableAudioapiFFmpeg` / `disableFFmpeg` flags are **not** read any more and produce no warning either: a leftover disable flag asks for the default, so there is nothing to tell the user, and a 1.0 migration note in the docs covers the switch. Internally every build file and source keys off the positive `$RN_AUDIO_API_FFMPEG_ENABLED` / `RN_AUDIO_API_FFMPEG_ENABLED`. The define is only emitted (`=1`) in an FFmpeg build; `#if RN_AUDIO_API_FFMPEG_ENABLED` reads an undefined macro as `0`, so the test, clangd and WPT builds do not mention it at all. The download script passes `skipffmpeg` in the default build, so neither the `.so`/xcframeworks nor (once published) the `include_ffmpeg.zip` header archive are fetched.
+
+- **iOS**: by podspec `prepare_command` during `pod install` **and** by a `script_phase` (`[CP-User] Download RNAudioAPI prebuilt binaries`, `:before_headers`, always-out-of-date) on every Xcode build — downloads `ffmpeg_ios`, `iphoneos`, `iphonesimulator`, `macosx`. `prepare_command` ensures all vendored `.xcframework`s exist when CocoaPods generates `[CP] Copy XCFrameworks` (required for correct FFmpeg linking). The build-time phase handles CI setups that cache `Pods/` independently from `node_modules/` — it is a fast no-op when binaries are already present. **It must use `:before_headers`, not `:before_compile`** — CocoaPods inserts its own `[CP] Copy XCFrameworks` phase right after `Headers`; `:before_compile` would land *after* it. The phase's `output_files` declares both the `-force_load` static libs and the four FFmpeg xcframeworks. The whole phase is skipped only when `DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS` is set *and* FFmpeg is not enabled.
 - **Android**: by `downloadPrebuiltBinaries` Gradle task, which runs before `preBuild` — downloads `android`, `jniLibs`
 
-The script is idempotent — it skips any archive whose destination directory already exists, so the per-build invocations are fast no-ops once binaries are present.
+The script is idempotent — it skips any archive whose expected artifacts already exist (`artifacts_present`), so the per-build invocations are fast no-ops once binaries are present. A failed download is a hard error (`exit 1`): a silent skip used to surface much later as a missing header or `undefined symbol`.
+
+**FFmpeg headers.** `external/include_ffmpeg/` is not tracked: it is gitignored, negated in `package.json` `files`, and fetched as `include_ffmpeg.zip` from the pinned rn-audio-libs release in the same pass as the FFmpeg binaries (`FFMPEG_HEADERS_ARCHIVE`, presence checked through `FFMPEG_HEADER_MARKERS`, skipped with `skipffmpeg`). The archive is produced by `yarn export` (`scripts/pack_outputs.sh`) in `rn-audio-libs`, which zips every `outputs/*` directory except `include`, so a new release of that repo ships the headers automatically — but every tag the download script pins must carry the asset or FFmpeg builds fail at the download step. Nothing else references the directory outside the gated include-path entries (podspec `pod_target_xcconfig`, Android CMake); `common/cpp/clangd/CMakeLists.txt` adds the path unconditionally, so in a checkout that never enabled FFmpeg clangd shows unresolved `libav*` includes only inside `FfmpegDecoder.cpp`. `FfmpegDecoder.h` includes `libav*` directly, but `DecoderFactory.cpp` is the only consumer and gates that include behind `RN_AUDIO_API_FFMPEG_ENABLED`, every disabled build also drops `FfmpegDecoder.cpp`, and the Gradle prefab header copy excludes `audioapi/external/**`.
 
 Downloaded artifacts land in:
 - `common/cpp/audioapi/external/android/<ABI>/` — `.a` static libs for Android ABIs
@@ -145,7 +150,9 @@ Downloaded artifacts land in:
 - `common/cpp/audioapi/compatibility/StableAPI.h` — single public C++ compatibility header for extensions
 
 ### Key behaviors
-- Feature flags (`newArchEnabled`, `disableAudioapiFFmpeg`) are read from app's `gradle.properties` and forwarded to both CMake and Kotlin `BuildConfig`
+- Feature flags (`newArchEnabled`, `enableAudioapiFFmpeg`, `disableAudioapiStaticExternalLibs`) are read from app's `gradle.properties` and forwarded to both CMake and Kotlin `BuildConfig`
+- Source exclusion in `android/src/main/cpp/audioapi/CMakeLists.txt` must use `list(FILTER … EXCLUDE REGEX)` — `COMMON_CPP_SOURCES` holds paths relative to that directory, so a `list(REMOVE_ITEM …)` with an absolute path silently matches nothing (this is how the FFmpeg exclusion was a no-op for a long time)
+- Third-party include dirs (`external/include`, `external/include_ffmpeg`) are only added when the corresponding library set is enabled
 - DSP sources always compiled with `-O3` regardless of overall build type
 - Sources gathered with `GLOB_RECURSE CONFIGURE_DEPENDS` — CMake re-runs automatically when files are added/removed
 - 16KB page size alignment enabled for Android 15+
@@ -201,9 +208,9 @@ open apps/fabric-example/ios/FabricExample.xcworkspace
 - After changing `rnaa_utils.rb` or `scripts/validate-worklets-version.js`
 - When prebuilt binaries need to be re-downloaded (podspec `prepare_command` runs on `pod install`)
 
-**Disable FFmpeg on iOS**:
+**Enable FFmpeg on iOS** (off by default; `apps/fabric-example/ios/Podfile` enables it):
 ```bash
-DISABLE_AUDIOAPI_FFMPEG=1 pod install
+ENABLE_AUDIOAPI_FFMPEG=1 pod install
 ```
 
 ### Android (fabric-example)
@@ -214,9 +221,9 @@ yarn workspace fabric-example android
 open apps/fabric-example/android
 ```
 
-**Disable FFmpeg on Android**: set in `android/gradle.properties`:
+**Enable FFmpeg on Android** (off by default; `apps/fabric-example/android/gradle.properties` enables it):
 ```
-disableAudioapiFFmpeg=true
+enableAudioapiFFmpeg=true
 ```
 
 **Clean CMake cache** (fixes most mysterious native build failures):
@@ -257,7 +264,7 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 | Prebuilt libs (Opus, FFmpeg, etc.) | **No** | `--android` / `--ios` (via `download-prebuilt-binaries.sh`) |
 | TurboModule codegen, worklets linking | **No** | `--android` / `--ios` |
 
-The C++ test build excludes HostObjects, `AudioContext.cpp`, `FFmpegDecoding.cpp`, and worklet nodes — see [C++ Tests](#c-tests-standalone-build) below. Passing `yarn test` alone does not prove native layers compile.
+The C++ test build excludes HostObjects, `AudioContext.cpp`, `FfmpegDecoder.cpp`, and worklet nodes — see [C++ Tests](#c-tests-standalone-build) below. Passing `yarn test` alone does not prove native layers compile.
 
 ### Shared prebuild phase (before native tiers)
 
@@ -313,9 +320,10 @@ CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.ym
 - Sources resolved from `node_modules` (symlinked to `packages/` in yarn workspaces)
 - HostObjects, worklets nodes, AudioContext, and FfmpegDecoder are excluded from the test build
 - HostObject **headers** still compile under `RN_AUDIO_API_TEST`; only their `.cpp` bodies are missing. When a test first links core code that constructs one (e.g. `AudioRecorderCallback` → `AudioBufferHostObject`), the linker fails on the constructor. Fix it with a stub translation unit under `test/src/` that defines just the constructors (see `test/src/AudioBufferHostObjectStub.cpp`), never with an `#if RN_AUDIO_API_TEST` test double inside the production header. The static lib also compiles `jsi/jsi.cpp` so `jsi::HostObject`'s virtuals resolve
-- Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_FFMPEG_DISABLED=1`
+- Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1` (FFmpeg is off because the define is simply absent)
 - Google Test auto-fetched via `FetchContent` if not installed locally
 - New test files in `test/src/**/*.cpp` are picked up automatically by glob — no CMakeLists edit needed
+- `jsi.cpp` is compiled into the static lib so library members that reference JSI symbols (e.g. `AudioFileProperties::CreateFromJSIValue`) link when a test first pulls them in; a static-lib member costs nothing unless demanded. If a new test triggers `Undefined symbols: facebook::jsi::...`, the referenced runtime source is missing from the lib — add it there rather than stubbing the symbol
 
 For `MockAudioEventHandlerRegistry`, `TestableXxx` pattern, and full CMakeLists analysis see [build-details.md](build-details.md#c-test-build--commoncpptestcmakeliststxt--detailed-analysis).
 
@@ -346,13 +354,15 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 
 | Flag | Android (CMake) | iOS (podspec) | Tests |
 |---|---|---|---|
-| `RN_AUDIO_API_FFMPEG_DISABLED` | `-DRN_AUDIO_API_FFMPEG_DISABLED` | `-DRN_AUDIO_API_FFMPEG_DISABLED=1` | Always set to 1 |
+| `RN_AUDIO_API_FFMPEG_ENABLED` | `-DRN_AUDIO_API_FFMPEG_ENABLED=1` (only when `enableAudioapiFFmpeg=true`) | `-DRN_AUDIO_API_FFMPEG_ENABLED=1` (only when `ENABLE_AUDIOAPI_FFMPEG=1`) | Not set (off) |
 | `RN_AUDIO_API_ENABLE_WORKLETS` | `-DRN_AUDIO_API_ENABLE_WORKLETS=1/0` | `-DRN_AUDIO_API_ENABLE_WORKLETS=1` | Always set to 0 |
 | `RCT_NEW_ARCH_ENABLED` | `-DRCT_NEW_ARCH_ENABLED` | `-DRCT_NEW_ARCH_ENABLED` | Not set |
 | `HAVE_ARM_NEON_INTRINSICS` | Set by CMake SIMD detection | Set by Xcode/Clang for arm64 | Set by CMake SIMD detection |
 | `HAVE_X86_SSE2` | Set by CMake SIMD detection | Not used | Set by CMake SIMD detection |
 | `HAVE_ACCELERATE` | Not set | `GCC_PREPROCESSOR_DEFINITIONS` | Not set |
 | `RN_AUDIO_API_TEST` | Not set | Not set | Always set to 1 |
+
+**OS-API selector headers** (`decoding/OSDecoding.h`, `encoding/OSEncoding.h`, `encoding/OSRemux.h`, `encoding/OSFilePath.h`): common code reaches platform implementations through `#if defined(__ANDROID__)` / `#elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)` dispatch. The Apple branch must exclude **both** desktop defines: the gtest build (`RN_AUDIO_API_TEST`) and the WPT node addon (`RN_AUDIO_API_NODE`) run on macOS (where `__APPLE__` is defined) but do not compile or link the `ios/` ObjC++ sources. The node build cannot borrow `RN_AUDIO_API_TEST` instead — that flag also switches on gtest-only code (`gtest_prod.h` includes, test `ArrayBuffer` shims). When adding a new OS-selector header, copy the full three-clause guard; an incremental `wpt_tests/build` dir can mask a missing clause for a long time, so verify with a clean `yarn node:build`. Platform glue selected this way lives in `android/src/main/cpp/audioapi/android/` (e.g. `AndroidDecoding`, `AndroidEncoder`, `AndroidRemux`) and `ios/audioapi/ios/core/utils/` (e.g. `IOSDecoding`, `IOSEncoder`, `IOSRemux`) — both picked up automatically by the CMake glob / podspec glob, no build-file edits needed.
 
 ---
 
@@ -362,12 +372,14 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 |---|---|---|
 | `file not found: libopus.a` | Prebuilt binaries not downloaded | Run `pod install` (iOS) or Gradle build (triggers download task) |
 | `No such module 'RNAudioAPI'` | Pod not installed | `cd apps/fabric-example/ios && pod install` |
-| `undefined symbol: av_*` | FFmpeg .so not in jniLibs | Build triggers download; verify `disableAudioapiFFmpeg` not set unexpectedly |
+| `undefined symbol: av_*` | FFmpeg .so not in jniLibs | Build triggers download; verify `enableAudioapiFFmpeg=true` is set (FFmpeg is off by default) |
+| `'libavcodec/avcodec.h' file not found` | FFmpeg include dir is gated on the enable flag; something compiled `FfmpegDecoder.cpp` in a disabled build | Check the source filter (`list(FILTER … FfmpegDecoder\.cpp$)` / podspec `exclude_files`) picked the file up |
 | CMake error on clean build | Stale `.cxx` cache | `rm -rf packages/react-native-audio-api/android/.cxx` |
 | Test build: `Cannot open include file: audioapi/...` | Node modules not linked | `yarn install` from root, then re-run tests |
 | New `.cpp` not compiled in tests | Glob picks it up automatically — may need cmake reconfigure | Delete `test/build/` and re-run |
 | iOS compile error `unknown type 'id'` | C++ file included ObjC-only header | Compile that file as ObjC++ (separate subspec with `-x objective-c++`) |
 | `RCT_NEW_ARCH_ENABLED` undefined on Android | Old RN gradle plugin | Ensure `newArchEnabled=true` in app's `gradle.properties` |
+| iOS: `'to_chars' is unavailable: introduced in iOS 16.3` from `formatter_floating_point.h`, instantiated by `std::format<...>` | `std::format` in code compiled for iOS. libc++ availability-gates the whole `<format>` library to iOS 16.3; the podspec minimum is `ios_min_version = '14.0'`. The desktop C++ test build and Android NDK have no such gate, so `yarn test:cpp` passes and only the iOS build fails. | Use `std::string` concatenation / `std::to_string` in `common/cpp` and `ios/`. Zero-pad by hand (`insert(0, n, '0')`). Android-only files (`android/src/main/cpp`) may keep `std::format`. |
 | clangd only: `'React/RCTBridgeModule.h' file not found` in `.mm` files | `compile_commands.json` has no framework search path | See *clangd compile database* below — regenerate with `yarn setup:clangd` |
 
 ## clangd compile database

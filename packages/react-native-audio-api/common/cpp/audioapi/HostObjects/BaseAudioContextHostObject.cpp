@@ -238,23 +238,13 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
-  auto makeFileSourceHostObject = [&](AudioFileSourceOptions &opts) -> jsi::Value {
-#if RN_AUDIO_API_FFMPEG_DISABLED
-    if (opts.requiresFFmpeg) {
-      return jsi::Value::undefined();
-    }
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-    const auto fileSourceHostObject =
-        std::make_shared<AudioFileSourceNodeHostObject>(context_, opts);
-    auto object = jsi::Object::createFromHostObject(runtime, fileSourceHostObject);
-    object.setExternalMemoryPressure(runtime, fileSourceHostObject->getMemoryPressure());
-    return object;
-  };
-
   const auto options = args[0].asObject(runtime);
-
   auto fileSourceOptions = audioapi::option_parser::parseAudioFileSourceOptions(runtime, options);
-  return makeFileSourceHostObject(fileSourceOptions);
+  auto fileSourceHostObject =
+      std::make_shared<AudioFileSourceNodeHostObject>(context_, fileSourceOptions);
+  auto object = jsi::Object::createFromHostObject(runtime, fileSourceHostObject);
+  object.setExternalMemoryPressure(runtime, fileSourceHostObject->getMemoryPressure());
+  return object;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {

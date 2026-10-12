@@ -1,12 +1,5 @@
-#ifdef RN_AUDIO_API_NODE
-#include "NodeAudioPlayer.h"
-#elif defined(ANDROID)
-#include <audioapi/android/core/AudioPlayer.h>
-#else
-#include <audioapi/ios/core/IOSAudioPlayer.h>
-#endif
-
 #include <audioapi/core/AudioContext.h>
+#include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 
 #include <memory>
@@ -14,20 +7,14 @@
 
 namespace audioapi {
 
-#ifdef RN_AUDIO_API_NODE
-using PlatformAudioPlayer = NodeAudioPlayer;
-#elif defined(ANDROID)
-using PlatformAudioPlayer = AudioPlayer;
-#else
-using PlatformAudioPlayer = IOSAudioPlayer;
-#endif
-
 AudioContext::AudioContext(
     float sampleRate,
+    AndroidOutputProfile androidOutputProfile,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     AudioContextLatencyHint latencyHint)
     : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
       latencyHint_(latencyHint),
+      androidOutputProfile_(androidOutputProfile),
       isInitialized_(false),
       onErrorEvent_(audioEventHandlerRegistry) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
@@ -46,14 +33,19 @@ AudioContext::~AudioContext() {
 
 void AudioContext::initialize(const AudioDestinationNode *destination) {
   BaseAudioContext::initialize(destination);
-  audioPlayer_ = std::make_shared<PlatformAudioPlayer>(
+  audioPlayer_ = createPlatformAudioPlayer(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),
       currentRenders_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
       &driverMutex_,
+#if defined(ANDROID) && !defined(RN_AUDIO_API_NODE)
+      latencyHint_,
+      androidOutputProfile_);
+#else
       latencyHint_);
+#endif
 }
 
 bool AudioContext::tryStartDriver() {

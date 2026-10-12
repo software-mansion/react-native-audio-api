@@ -2,6 +2,7 @@
 
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>
+#include <audioapi/core/types/AudioContextOptions.h>
 #include <audioapi/core/types/BiquadFilterType.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
@@ -32,4 +33,6 @@ ChannelInterpretation channelInterpretationFromString(const std::string &interpr
 std::string contextStateToString(ContextState state);
 /// Interactive, the spec default, for an unrecognised string; a browser would throw a TypeError.
 AudioContextLatencyHint latencyHintFromString(const std::string &hint);
+/// Media, the default profile, for an unrecognised string.
+AndroidOutputProfile androidOutputProfileFromString(const std::string &profile);
 } // namespace audioapi::js_enum_parser

@@ -29,6 +29,7 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
 
  private:
   ConvolverNode *const convolverNode_;
+  std::weak_ptr<BaseAudioContext> context_;
 
   bool normalize_;
   size_t irBytes_ = 0;

@@ -5,11 +5,13 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
+#include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace audioapi {
@@ -23,13 +25,17 @@ class RecorderAdapterNode : public AudioNode {
  public:
   explicit RecorderAdapterNode(const std::shared_ptr<BaseAudioContext> &context);
 
-  /// @brief Initialize the RecorderAdapterNode with a buffer size and channel count.
-  /// @note This method should be called ONLY ONCE when the buffer size is known.
-  /// @param bufferSize The size of the buffer to be used.
-  /// @param channelCount The number of channels.
-  /// @param sampleRate The recorder's native sample rate.
-  void init(size_t bufferSize, int channelCount, float sampleRate);
+  /// @brief Sizes the ring buffers for the recorder's stream and, when its rate differs from
+  /// the context's, the resampler.
+  /// @note A no-op on an initialized node; adapterCleanup() first to take a new format.
+  void init(const StreamFormat &streamFormat);
   void adapterCleanup();
+
+  /// Recorder input thread, under the recorder's adapter lock. @p channels holds one pointer per
+  /// channel the node was initialized with. A burst larger than the init buffer size is dropped.
+  void writeFrames(const float *const *channels, size_t numFrames);
+
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
   // TODO: CircularOverflowableAudioBuffer
   std::vector<std::shared_ptr<CircularOverflowableAudioArray>> buff_;

@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace audioapi::ios_decoder {
+namespace audioapi::ios::decoder {
 namespace {
 
 template <auto DisposeFn>
@@ -295,4 +295,4 @@ void IOSDecoder::releaseImpl()
   impl_.reset();
 }
 
-} // namespace audioapi::ios_decoder
+} // namespace audioapi::ios::decoder

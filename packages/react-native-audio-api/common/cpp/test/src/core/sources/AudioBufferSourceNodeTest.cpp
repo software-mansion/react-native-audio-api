@@ -45,7 +45,7 @@ class TestableAudioBufferSourceNode : public AudioBufferSourceNode {
 /// Recovers the concrete audio node owned by a graph node that was just added
 /// via Graph::addNode (the unique_ptr payload lives inside the NodeHandle).
 template <typename NodeT>
-NodeT *nodeOf(utils::graph::HostGraph::Node *hostNode) {
+NodeT *nodeOf(utils::graph::HostGraph::HostVertex *hostNode) {
   return static_cast<NodeT *>(hostNode->handle->audioNode->asAudioNode());
 }
 
@@ -55,7 +55,7 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
-  utils::graph::HostGraph::Node *destinationHostNode = nullptr;
+  utils::graph::HostGraph::HostVertex *destinationHostNode = nullptr;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
@@ -251,6 +251,22 @@ TEST_F(AudioBufferSourceNodeTest, BufferAssignedAfterNullBufferSourceEndedIsIgno
 
   EXPECT_TRUE(node->isFinished());
   EXPECT_TRUE(node->isEmpty());
+}
+
+/// Only the host thread publishes the output channel number. Applying an older
+/// buffer on the audio thread must not overwrite the width the host published
+/// for a newer one, or the host would skip the renegotiation for the next change.
+TEST_F(AudioBufferSourceNodeTest, BufferSwapKeepsHostPublishedOutputChannelNumber) {
+  auto *node = addNode(makeNodeWithoutBuffer());
+  node->setOutputChannelNumber(1);
+
+  auto olderStereoBuffer =
+      std::make_shared<AudioBuffer>(QUANTUM, 2, static_cast<float>(SAMPLE_RATE));
+  node->setBuffer(
+      olderStereoBuffer,
+      std::make_shared<DSPAudioBuffer>(QUANTUM, 2, static_cast<float>(SAMPLE_RATE)));
+
+  EXPECT_EQ(node->getOutputChannelNumber(), 1u);
 }
 
 // NOLINTEND
