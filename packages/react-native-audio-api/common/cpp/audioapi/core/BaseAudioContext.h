@@ -12,6 +12,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 #include <audioapi/utils/TaskOffloader.hpp>
+#include <audioapi/utils/ThreadPool.hpp>
 
 #include <audioapi/utils/Macros.h>
 #include <atomic>
@@ -74,6 +75,11 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<utils::graph::Graph> getGraph() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *getDisposer() const;
+
+  /// @brief Lazily created pool shared by every ConvolverNode of this context. Nodes render
+  /// sequentially on the one render thread, so sharing keeps the pool single-producer.
+  /// @note JS thread only.
+  std::shared_ptr<ConvolverThreadPool> getConvolverThreadPool();
 
   /// @brief Assigns the audio destination node to the context.
   /// @param destination The audio destination node to be associated with the context.
@@ -217,6 +223,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   CrossThreadEventScheduler<BaseAudioContext> gcAudioEventScheduler_;
 
   std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
+
+  std::shared_ptr<ConvolverThreadPool> convolverThreadPool_;
   std::shared_ptr<utils::graph::Graph> graph_;
 
   DeferredEventQueue deferredEvents_;

@@ -263,6 +263,7 @@
   self.audioEngine = [[TestableAudioEngine alloc] init];
   AVAudioFormat *inputFormat = [self testInputFormat];
   self.audioEngine.defaultCreatedEngineInputFormat = inputFormat;
+  [self.audioEngine createAudioEngineIfNeeded];
   self.audioEngine.currentFakeAudioEngine.fakeInputNode.outputFormat =
       inputFormat;
   self.sessionManager = [[FakeAudioSessionManager alloc] init];
@@ -329,7 +330,8 @@
   return [self.audioEngine
       attachSourceNodeWithRenderBlock:[self testSourceRenderBlock]
                            sampleRate:44100
-                         channelCount:2];
+                         channelCount:2
+             onOutputRecoveryFailed:nil];
 }
 
 - (void)testCleanupDestroysInternalEngineAndResetsStateAndDeactivatesSession {
@@ -370,7 +372,8 @@
   NSString *sourceNodeId = [self.audioEngine
       attachSourceNodeWithRenderBlock:[self testSourceRenderBlock]
                            sampleRate:44100
-                         channelCount:2];
+                         channelCount:2
+             onOutputRecoveryFailed:nil];
   AVAudioSourceNode *sourceNode = self.audioEngine.sourceNodes[sourceNodeId];
   AVAudioFormat *format = self.audioEngine.sourceFormats[sourceNodeId];
 

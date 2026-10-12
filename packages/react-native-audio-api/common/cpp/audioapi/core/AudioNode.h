@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -29,14 +30,18 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   ~AudioNode() override = default;
   DELETE_COPY_AND_MOVE(AudioNode);
 
-  /// @brief Returns this node's `channelCount` attribute.
-  /// @note Safe to call from any thread: `channelCount_` is atomic because
-  /// source subclasses update it on the audio thread while the JS thread reads
-  /// it during channel-count negotiation.
+  /// @brief Returns this node's `channelCount` attribute: the width inputs are
+  /// mixed to.
+  /// @note Read only on the host thread (channel negotiation), so
+  /// `setChannelCount` from the JS thread is race-free with audio processing.
   [[nodiscard]] size_t getChannelCount() const;
 
+  void setOutputChannelNumber(size_t outputChannelNumber) {
+    outputChannelNumber_.store(static_cast<int>(outputChannelNumber), std::memory_order_release);
+  }
+
   /// @brief Returns this node's `channelCountMode` attribute.
-  /// @note Read only on the host thread (channel-count negotiation) — never on
+  /// @note Read only on the host thread (channel negotiation) — never on
   /// the audio thread — so mutating it from the JS thread via
   /// `setChannelCountMode` is race-free with audio processing.
   [[nodiscard]] ChannelCountMode getChannelCountMode() const {
@@ -47,7 +52,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     return channelInterpretation_;
   }
 
-  /// @brief Sets `channelCount`. Drives channel-count negotiation, which reads
+  /// @brief Sets `channelCount`. Drives channel negotiation, which reads
   /// this value on the host thread. Callers must trigger a renegotiation so
   /// the change propagates to buffer layouts.
   /// @note Host (JS) thread only. Overridable for node-specific constraints.
@@ -122,11 +127,12 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     setOutputBuffer(buffer);
   }
 
-  /// @brief Channel count this node presents on upstream connections (toward
-  /// AudioDestinationNode) after negotiation. Default: the negotiated channel
-  /// count. StereoPanner always outputs stereo.
-  [[nodiscard]] virtual size_t getUpstreamChannelCount(size_t negotiatedChannelCount) const {
-    return negotiatedChannelCount;
+  /// @brief Number of channels this node emits toward AudioDestinationNode
+  /// when that does not follow its `computedNumberOfChannels`. Default:
+  /// nullopt, the output is as wide as the inputs are mixed to. Sources
+  /// present `outputChannelNumber_`; StereoPanner always outputs stereo.
+  [[nodiscard]] virtual std::optional<size_t> getOutputChannelNumber() const {
+    return std::nullopt;
   }
 
   /// @note JS Thread only
@@ -206,14 +212,16 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   const int numberOfInputs_ = 1;
   const int numberOfOutputs_ = 1;
-  /// @brief Number of channels this node presents.
+  /// @brief The `channelCount` attribute (input mixing width). Host thread only.
+  int channelCount_ = 2;
+  /// @brief Number of channels this node emits; the width of `audioBuffer_`
   ///
-  /// Atomic because it is read on the JS thread during channel-count
-  /// negotiation (`HostGraph`/`getChannelCount`) while source subclasses
-  /// (AudioBufferSource, Streamer, AudioFileSource, RecorderAdapter,
-  /// AudioBufferQueueSource) write it on the audio thread once they learn the
-  /// decoded/buffer channel count. Plain reads/writes here would race.
-  std::atomic<int> channelCount_ = 2;
+  /// Atomic because it is read on the JS thread during channel negotiation
+  /// (`getOutputChannelNumber` overrides) while AudioBufferQueueSource and
+  /// RecorderAdapter write it from other threads once they learn their
+  /// channel count. Every other writer is the host thread, which must
+  /// renegotiate after a change.
+  std::atomic<int> outputChannelNumber_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;

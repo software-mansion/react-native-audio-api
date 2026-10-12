@@ -24,6 +24,7 @@ class ConvolverNode : public AudioNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const ConvolverOptions &options);
 
+  /// @param threadPool The context-owned pool
   /// @note Audio Thread only
   void setBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,

@@ -19,7 +19,6 @@
 #include <string>
 #include <thread>
 
-#if !RN_AUDIO_API_FFMPEG_DISABLED
 extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/channel_layout.h>
@@ -438,22 +437,3 @@ size_t FfmpegDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
 }
 
 } // namespace audioapi::decoding::ffmpeg
-
-#else
-
-namespace audioapi::decoding::ffmpeg {
-FfmpegDecoder::~FfmpegDecoder() = default;
-void FfmpegDecoder::close() {}
-decoding::DecoderResult FfmpegDecoder::open(const decoding::RemoteUrlSource &) {
-  return Err("FFmpeg is disabled");
-}
-decoding::DecoderResult FfmpegDecoder::seekToTime(double) {
-  return Err("FFmpeg is disabled");
-}
-size_t FfmpegDecoder::readPcmFrames(float *, size_t) {
-  return 0;
-}
-
-} // namespace audioapi::decoding::ffmpeg
-
-#endif // !RN_AUDIO_API_FFMPEG_DISABLED

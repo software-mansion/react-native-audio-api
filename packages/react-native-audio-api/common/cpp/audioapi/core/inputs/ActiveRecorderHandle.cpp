@@ -15,8 +15,7 @@ ActiveRecorderHandle &ActiveRecorderHandle::global() {
 }
 
 Result<NoneType, std::string> ActiveRecorderHandle::tryStart(
-    const std::shared_ptr<AudioRecorder> &recorder,
-    const std::string &fileNameOverride) {
+    const std::shared_ptr<AudioRecorder> &recorder) {
   if (!recorder) {
     return Result<NoneType, std::string>::Err("Cannot start a null recorder");
   }
@@ -28,7 +27,7 @@ Result<NoneType, std::string> ActiveRecorderHandle::tryStart(
     return Result<NoneType, std::string>::Err("Another recording is already in progress");
   }
 
-  auto result = recorder->start(fileNameOverride);
+  auto result = recorder->start();
   if (result.is_ok()) {
     recorder_ = recorder;
   }
@@ -80,8 +79,7 @@ Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo() {
     return Result<FileInfo, std::string>::Err(result.unwrap_err());
   }
 
-  auto [paths, size, duration] = result.unwrap();
-  FileInfo recording{.paths = std::move(paths), .size = size, .duration = duration};
+  FileInfo recording = std::move(result).unwrap();
   if (!recording.paths.empty()) {
     lastResult_ = recording;
   }

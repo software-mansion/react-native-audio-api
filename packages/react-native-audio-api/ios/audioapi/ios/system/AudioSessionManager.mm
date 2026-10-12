@@ -2,6 +2,8 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+#include <audioapi/core/utils/Constants.h>
+
 @interface AudioSessionManager ()
 
 - (id)microphoneUsageDescriptionValue;
@@ -51,6 +53,9 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)cleanup
 {
+  // The preference outlives this manager.
+  [self resetPreferredIOBufferFrames];
+
   self.audioSession = nil;
 }
 
@@ -61,6 +66,28 @@ static AudioSessionManager *_sharedInstance = nil;
       self.audioSession.mode == self.desiredMode &&
       self.audioSession.categoryOptions == self.desiredOptions &&
       self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
+}
+
+- (void)setPreferredIOBufferFrames:(int)frames
+{
+  if (!self.shouldManageSession) {
+    return;
+  }
+
+  double duration = frames / self.audioSession.sampleRate;
+
+  NSError *error = nil;
+  if (![self.audioSession setPreferredIOBufferDuration:duration error:&error]) {
+    NSLog(
+        @"[AudioSessionManager] Error while requesting IO buffer duration %f s: %@",
+        duration,
+        [error debugDescription]);
+  }
+}
+
+- (void)resetPreferredIOBufferFrames
+{
+  [self setPreferredIOBufferFrames:audioapi::RENDER_QUANTUM_SIZE];
 }
 
 - (bool)configureAudioSession:(NSError **)outError

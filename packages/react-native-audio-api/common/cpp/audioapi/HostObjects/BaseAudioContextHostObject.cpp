@@ -9,6 +9,7 @@
 #include <audioapi/HostObjects/effects/DelayNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/effects/IIRFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/PannerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
@@ -59,6 +60,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createDelay),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPanner),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createIIRFilter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
@@ -194,6 +196,16 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
   return object;
 }
 
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPanner) {
+  const auto options = args[0].asObject(runtime);
+  const auto pannerOptions = audioapi::option_parser::parsePannerOptions(runtime, options);
+  auto pannerHostObject =
+      std::make_shared<PannerNodeHostObject>(context_, listener_, pannerOptions);
+  auto object = jsi::Object::createFromHostObject(runtime, pannerHostObject);
+  object.setExternalMemoryPressure(runtime, pannerHostObject->getMemoryPressure());
+  return object;
+}
+
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
   const auto options = args[0].asObject(runtime);
   const auto biquadFilterOptions =
@@ -226,23 +238,13 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createFileSource) {
-  auto makeFileSourceHostObject = [&](AudioFileSourceOptions &opts) -> jsi::Value {
-#if RN_AUDIO_API_FFMPEG_DISABLED
-    if (opts.requiresFFmpeg) {
-      return jsi::Value::undefined();
-    }
-#endif // RN_AUDIO_API_FFMPEG_DISABLED
-    const auto fileSourceHostObject =
-        std::make_shared<AudioFileSourceNodeHostObject>(context_, opts);
-    auto object = jsi::Object::createFromHostObject(runtime, fileSourceHostObject);
-    object.setExternalMemoryPressure(runtime, fileSourceHostObject->getMemoryPressure());
-    return object;
-  };
-
   const auto options = args[0].asObject(runtime);
-
   auto fileSourceOptions = audioapi::option_parser::parseAudioFileSourceOptions(runtime, options);
-  return makeFileSourceHostObject(fileSourceOptions);
+  auto fileSourceHostObject =
+      std::make_shared<AudioFileSourceNodeHostObject>(context_, fileSourceOptions);
+  auto object = jsi::Object::createFromHostObject(runtime, fileSourceHostObject);
+  object.setExternalMemoryPressure(runtime, fileSourceHostObject->getMemoryPressure());
+  return object;
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {

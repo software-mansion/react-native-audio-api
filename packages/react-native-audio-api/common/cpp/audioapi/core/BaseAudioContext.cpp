@@ -131,12 +131,23 @@ utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *BaseAudioContext::getDisposer() cons
   return disposer_.get();
 }
 
+std::shared_ptr<ConvolverThreadPool> BaseAudioContext::getConvolverThreadPool() {
+  if (convolverThreadPool_ == nullptr) {
+    convolverThreadPool_ =
+        std::make_shared<ConvolverThreadPool>(CONVOLVER_THREAD_POOL_WORKER_COUNT);
+  }
+  return convolverThreadPool_;
+}
+
 void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
 #ifdef DEBUG
   test::AudioThreadGuard::Scope guard;
 #endif
+  // ongoing modifications of node's properties in graph (f.e. setting param's automation event)
   processAudioEvents();
+  // events mutating graph (f.e. connect/disconnect nodes) are processed in the graph itself
   graph_->processEvents();
+  // sorting, deleting, and deciding which to process
   graph_->process();
 
   for (auto &&[node, inputs] : graph_->iter()) {

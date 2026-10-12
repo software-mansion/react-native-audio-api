@@ -72,6 +72,7 @@ HostObjects/
 │   ├── DelayNodeHostObject.h/.cpp
 │   ├── IIRFilterNodeHostObject.h/.cpp
 │   ├── StereoPannerNodeHostObject.h/.cpp
+│   ├── PannerNodeHostObject.h/.cpp
 │   ├── WaveShaperNodeHostObject.h/.cpp
 │   ├── ConvolverNodeHostObject.h/.cpp
 │   ├── ChannelMergerNodeHostObject.h/.cpp   # Composite: routes inputs to slot hosts
@@ -94,6 +95,7 @@ HostObjects/
 └── utils/
     ├── JsEnumParser.h/.cpp      # Enum ↔ string conversions
     ├── NodeOptionsParser.h      # Parses JS option objects into C++ structs
+    │                            # Use setNumericOption (NumericOption concept) for scalar numbers
     ├── AudioDecoderHostObject.h/.cpp
     └── AudioFileUtilsHostObject.h/.cpp
 ```

@@ -1,4 +1,5 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
+import { NotSupportedError } from '../errors';
 import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
@@ -8,7 +9,6 @@ import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
-  AudioRecorderStartOptions,
   FileDirectory,
   FileFormat,
   FileInfo,
@@ -30,7 +30,7 @@ function withDefaultFileOptions(
   return {
     directory: FileDirectory.Cache,
     subDirectory: 'AudioAPI',
-    fileNamePrefix: 'recording',
+    fileName: '',
     channelCount: 2,
     format: FileFormat.M4A,
     preset: FilePreset.High,
@@ -45,7 +45,6 @@ export default class AudioRecorder {
   protected onErrorSubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
-  private isFileOutputEnabled: boolean = false;
   private adapterNode: IRecorderAdapterNode | null = null;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
@@ -78,8 +77,13 @@ export default class AudioRecorder {
    * fresh AAC encode. Practical starting points: about **512 KB–1 MB** for WAV
    * and **≥ 200 KB** for M4A. This option controls segment file size, not
    * recording memory use.
+   *
+   * @throws {@link NotSupportedError} When the format cannot be encoded by this
+   *   platform's system encoders, the file options are invalid, or a recording
+   *   session is active. The previous file-output configuration stays in
+   *   effect.
    */
-  enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
+  enableFileOutput(options?: AudioRecorderFileOptions): void {
     const requestedOptions = options || {};
     const result = this.recorder.enableFileOutput(
       withDefaultFileOptions(requestedOptions)
@@ -87,10 +91,11 @@ export default class AudioRecorder {
 
     if (result.status === 'success') {
       this.options_ = requestedOptions;
-      this.isFileOutputEnabled = true;
+    } else {
+      throw new NotSupportedError(
+        'AudioRecorder.enableFileOutput failed: ' + result.message
+      );
     }
-
-    return result;
   }
 
   public get options(): AudioRecorderFileOptions | null {
@@ -100,16 +105,11 @@ export default class AudioRecorder {
   disableFileOutput(): void {
     this.options_ = null;
     this.recorder.disableFileOutput();
-    this.isFileOutputEnabled = false;
   }
 
   /** Starts the audio recording process with configured output options */
-  start(options?: AudioRecorderStartOptions): Promise<Result<{}>> {
-    if (!this.isFileOutputEnabled) {
-      return this.recorder.start();
-    }
-
-    return this.recorder.start(options?.fileNameOverride);
+  start(): Promise<Result<{}>> {
+    return this.recorder.start();
   }
 
   /** Stops the audio recording process and releases internal resources */
