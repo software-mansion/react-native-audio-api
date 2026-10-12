@@ -18,12 +18,12 @@ class DeviceChangeListener(
       return
     }
 
-    MediaSessionManager.followAddedInputDevices(addedDevices)
+    MediaSessionManager.inputRouter.followAddedInputDevices(addedDevices)
     dispatchRouteChange("NewDeviceAvailable")
   }
 
   override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
-    MediaSessionManager.forgetPreferredInputDeviceIfRemoved(removedDevices)
+    MediaSessionManager.inputRouter.forgetPreferredInputDeviceIfRemoved(removedDevices)
     dispatchRouteChange("OldDeviceUnavailable")
   }
 

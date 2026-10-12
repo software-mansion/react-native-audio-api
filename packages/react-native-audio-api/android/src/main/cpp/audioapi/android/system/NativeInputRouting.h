@@ -10,7 +10,7 @@ namespace audioapi {
 
 using namespace facebook;
 
-/// @brief JNI bridge to the Kotlin MediaSessionManager, which owns the input device
+/// @brief JNI bridge to the Kotlin AudioInputRouter, which owns the input device
 /// selected through AudioManager.setInputDevice and the routing that device needs.
 class NativeInputRouting : public jni::JavaClass<NativeInputRouting> {
  public:

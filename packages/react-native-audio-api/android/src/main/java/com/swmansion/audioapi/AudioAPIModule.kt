@@ -178,14 +178,14 @@ class AudioAPIModule(
     deviceId: String?,
     promise: Promise?,
   ) {
-    val device = deviceId?.let { MediaSessionManager.findInputDevice(it) }
+    val device = deviceId?.let { MediaSessionManager.inputRouter.findInputDevice(it) }
 
     if (deviceId != null && device == null) {
       promise?.reject(INPUT_DEVICE_ERROR, "Input device with id $deviceId not found", null)
       return
     }
 
-    if (!MediaSessionManager.setPreferredInputDevice(device)) {
+    if (!MediaSessionManager.inputRouter.setPreferredInputDevice(device)) {
       promise?.reject(
         INPUT_DEVICE_ERROR,
         "The running recording could not continue on the selected input device.",

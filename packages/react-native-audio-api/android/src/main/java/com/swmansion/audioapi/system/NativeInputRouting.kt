@@ -12,7 +12,7 @@ object NativeInputRouting {
   }
 
   /**
-   * Moves the active recording, if any, onto the input [MediaSessionManager.acquireInputRoute]
+   * Moves the active recording, if any, onto the input [AudioInputRouter.acquireInputRoute]
    * now hands out. Blocks while the stream reopens; never call it on the main thread.
    *
    * @return false when the recorder could not continue on the new input.
@@ -37,7 +37,7 @@ object NativeInputRouting {
     }
 
     return try {
-      val route = MediaSessionManager.acquireInputRoute()
+      val route = MediaSessionManager.inputRouter.acquireInputRoute()
 
       if (route.routed) route.deviceId ?: SYSTEM_DEFAULT_DEVICE_ID else ROUTING_FAILED
     } catch (exception: RuntimeException) {
@@ -53,7 +53,7 @@ object NativeInputRouting {
     }
 
     try {
-      MediaSessionManager.releaseInputRoute()
+      MediaSessionManager.inputRouter.releaseInputRoute()
     } catch (exception: RuntimeException) {
       Log.w(TAG, "Could not release the input route", exception)
     }

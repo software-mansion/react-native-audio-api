@@ -81,7 +81,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// calculates the "native" or hardware stream parameters for other interfaces
 /// to use.
 /// Called from start() on the promise thread pool and from a restart on the
-/// Oboe error thread or the thread MediaSessionManager reroutes on.
+/// Oboe error thread or the thread AudioInputRouter reroutes on.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
   const int32_t preferredDeviceId = captureDeviceId_;
