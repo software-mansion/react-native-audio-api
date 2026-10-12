@@ -13,9 +13,19 @@ export {
   ConvolverOptionsValidator,
   validateConvolverBufferChannelCount,
   validateConvolverBufferSampleRate,
+  validateConvolverChannelCount,
+  validateConvolverChannelCountMode,
 } from './convolver';
 
+export { DelayOptionsValidator, validateDelayMaxDelayTime } from './delay';
+
 export { OscillatorOptionsValidator } from './oscillator';
+
+export {
+  PannerOptionsValidator,
+  validatePannerChannelCount,
+  validatePannerChannelCountMode,
+} from './panner';
 
 export { PeriodicWaveOptionsValidator } from './periodicWave';
 

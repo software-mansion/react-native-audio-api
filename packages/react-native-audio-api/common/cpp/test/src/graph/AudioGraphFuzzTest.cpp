@@ -251,7 +251,7 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
   for (size_t i = 0; i < initialCount; i++) {
     doAddNode();
   }
-  graph.process();
+  graph.sortAndCompact();
   assertAllInvariants("after initial seeding");
 
   for (size_t i = 0; i < opCount; i++) {
@@ -307,7 +307,7 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
     } else {
       // Process
       bool hadDupsBefore = checkDuplicateInputs("BEFORE process at op " + std::to_string(i));
-      graph.process();
+      graph.sortAndCompact();
 
       // Null out handles for nodes that were compacted away.
       for (auto &h : handles) {
@@ -333,7 +333,7 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
   }
 
   // Final process
-  graph.process();
+  graph.sortAndCompact();
   for (auto &h : handles) {
     if (h && (h->index >= graph.size() || graph[h->index].handle != h)) {
       h = nullptr;

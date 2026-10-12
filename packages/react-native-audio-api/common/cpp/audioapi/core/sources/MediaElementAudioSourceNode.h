@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace audioapi {
 
@@ -25,6 +26,7 @@ class MediaElementAudioSourceNode : public AudioNode {
   size_t getFileSourceNodeUseCount() const;
   bool fileSourceNodePaused() const;
   bool canBeDestructed() const override;
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
   /// @note Audio Thread only — called after graph disconnects are applied.
   void onOutputsDisconnected();

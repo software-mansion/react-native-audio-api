@@ -21,6 +21,17 @@ import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
 
+// concatAudioFiles supports WAV, M4A, and FLAC — the formats recordable on
+// both iOS and Android.
+const RECORDING_EXTENSION = FileFormat.M4A;
+const ROTATING_SIZE = 250_000;
+
+const RECORDING_EXTENSION_NAME_MAP = {
+  [FileFormat.Wav]: 'wav',
+  [FileFormat.M4A]: 'm4a',
+  [FileFormat.Flac]: 'flac',
+};
+
 const Record: FC = () => {
   // Recover from "app disabled" state - recording can survive the app kill (android)
   const [state, setState] = useState<RecordingState>(() => {
@@ -102,9 +113,7 @@ const Record: FC = () => {
       return;
     }
 
-    const result = await Recorder.start({
-      fileNameOverride: `overridden_name_${Date.now()}`,
-    });
+    const result = await Recorder.start();
 
     setupNotification(false);
 
@@ -136,11 +145,12 @@ const Record: FC = () => {
     async (paths: string[]) => {
       setState(RecordingState.Loading);
 
+      const extension = RECORDING_EXTENSION_NAME_MAP[RECORDING_EXTENSION];
       const finalPath =
         paths.length > 1
           ? await concatAudioFiles(
               paths,
-              paths[0].replace(/[^/]+$/, 'recording.wav')
+              paths[0].replace(/[^/]+$/, `recording.${extension}`)
             )
           : paths[0];
 
@@ -364,7 +374,11 @@ const Record: FC = () => {
 
   useEffect(() => {
     if (!AudioRecorder.isRecordingOngoing()) {
-      Recorder.enableFileOutput({ format: FileFormat.Wav });
+      Recorder.enableFileOutput({
+        rotateIntervalBytes: ROTATING_SIZE,
+        format: RECORDING_EXTENSION,
+        fileName: 'my_recording',
+      });
     }
 
     return () => {

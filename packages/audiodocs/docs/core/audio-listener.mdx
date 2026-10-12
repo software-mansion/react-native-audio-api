@@ -7,7 +7,7 @@ import { ReadOnly } from '@site/src/components/Badges';
 # AudioListener
 
 The `AudioListener` interface represents the position and orientation of the person listening to the audio scene.
-It is used for 3D spatialization: all `PannerNode` objects spatialize sound in relation to the context's listener.
+It is used for 3D spatialization: all [`PannerNode`](../effects/panner-node.mdx) objects spatialize sound in relation to the context's listener.
 
 `AudioListener` is **not** an [`AudioNode`](./audio-node.mdx) — it has no inputs, outputs, or `connect()`/`disconnect()` methods. It only exposes nine [`AudioParam`](./audio-param.mdx) properties.
 
@@ -38,6 +38,8 @@ listener.positionX.linearRampToValueAtTime(10, ctx.currentTime + 2);
 
 All properties are [`AudioParam`](./audio-param.mdx)s with `minValue`/`maxValue` spanning the full single-precision float range (approximately ±3.4028235e38), a-rate automation.
 
+[Look here](https://webaudio.github.io/web-audio-api/#AudioListener) for more detailed explanation what each property means.
+
 | Name | Type | Default value | Description | |
 | :----: | :----: | :----: | :-------- | :-: |
 | `positionX` | [`AudioParam`](./audio-param.mdx) | `0` | x-coordinate of the listener's position. | <ReadOnly /> |
@@ -52,5 +54,4 @@ All properties are [`AudioParam`](./audio-param.mdx)s with `minValue`/`maxValue`
 
 ## Remarks
 
-- The deprecated Web Audio API methods `setPosition(x, y, z)` and `setOrientation(x, y, z, xUp, yUp, zUp)` are intentionally **not implemented**. Set the corresponding `AudioParam` values directly instead.
-- `PannerNode` — the consumer of these parameters — is not implemented yet, so changing the listener currently has no audible effect. The interface is provided ahead of `PannerNode` support.
+- Used by [`PannerNode`](../effects/panner-node.mdx) for 3D spatialization relative to the listener.

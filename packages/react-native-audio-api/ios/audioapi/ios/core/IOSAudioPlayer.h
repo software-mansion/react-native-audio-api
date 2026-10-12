@@ -1,30 +1,23 @@
 #pragma once
 
-#ifdef __OBJC__ // when compiled as Objective-C
 #import <NativeAudioPlayer.h>
-#else  // when compiled as C++
-typedef struct objc_object NativeAudioPlayer;
-typedef struct objc_object AudioBufferList;
-#endif // __OBJC__
 
-#include <audioapi/core/CommonPlayer.h>
+#include <audioapi/core/AudioPlayer.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
 
 #include <atomic>
-#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <mutex>
+
 namespace audioapi {
 
-class AudioContext;
-
-class IOSAudioPlayer : public CommonPlayer {
+class IOSAudioPlayer : public AudioPlayer {
  public:
-  IOSAudioPlayer(
-      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-      float sampleRate,
-      int channelCount,
-      std::atomic<uint32_t> &currentRenders);
+  using AudioPlayer::AudioPlayer;
   ~IOSAudioPlayer() override;
 
   DELETE_COPY_AND_MOVE(IOSAudioPlayer);
@@ -48,18 +41,17 @@ class IOSAudioPlayer : public CommonPlayer {
   /// is kept (max 128 frames) and played at the start of the next callback.
   void deliverOutputBuffers(AudioBufferList *outputData, int numFrames);
 
-  std::shared_ptr<DSPAudioBuffer> audioBuffer_;
-  NativeAudioPlayer *audioPlayer_;
-  float sampleRate_;
-  std::function<void(DSPAudioBuffer *, int)> renderAudio_;
-  std::atomic<uint32_t> &currentRenders_;
-  int channelCount_;
-  std::atomic<bool> isRunning_;
+  /// Builds the native player and points its render and stream-failure blocks at this object.
+  /// Runs as a member initializer, before the members below exist: the blocks only capture
+  /// `this` and must not be invoked until construction has finished.
+  NativeAudioPlayer *createNativePlayer();
+
+  NativeAudioPlayer *audioPlayer_ = createNativePlayer();
   /// Set from main thread on start/resume; consumed on audio thread to drop stale pending audio.
   std::atomic<bool> flushOverflowNextPull_{false};
   /// Frames valid at the front of each `pendingSaved_[ch]` (0 … RENDER_QUANTUM_SIZE).
   int pendingSavedCount_{0};
-  DSPAudioBuffer pendingSaved_;
+  DSPAudioBuffer pendingSaved_{RENDER_QUANTUM_SIZE, channelCount_, sampleRate_};
 };
 
 } // namespace audioapi

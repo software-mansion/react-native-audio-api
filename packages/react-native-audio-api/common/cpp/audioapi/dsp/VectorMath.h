@@ -88,4 +88,20 @@ void deinterleaveStereo(
     float *outputRight,
     size_t numberOfFrames);
 
+// Packs @p numberOfChannels planar channel pointers into one channel-interleaved buffer.
+// @p outputInterleaved must hold numberOfFrames * numberOfChannels floats.
+void interleave(
+    const float *const *inputChannels,
+    size_t numberOfChannels,
+    float *outputInterleaved,
+    size_t numberOfFrames);
+
+// Splits a channel-interleaved buffer into @p numberOfChannels planar channel pointers,
+// each of which must hold numberOfFrames floats.
+void deinterleave(
+    const float *inputInterleaved,
+    float *const *outputChannels,
+    size_t numberOfChannels,
+    size_t numberOfFrames);
+
 } // namespace audioapi::dsp

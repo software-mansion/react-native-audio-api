@@ -68,6 +68,10 @@ bool AudioScheduledSourceNode::canBeDestructed() const {
   return isUnscheduled() || isFinished();
 }
 
+std::optional<size_t> AudioScheduledSourceNode::getOutputChannelNumber() const {
+  return outputChannelNumber_.load(std::memory_order_acquire);
+}
+
 void AudioScheduledSourceNode::updatePlaybackInfo(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
