@@ -3,7 +3,6 @@ import type {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
-  AudioRecorderStartOptions,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
@@ -966,6 +965,8 @@ class AudioContextMock extends BaseAudioContextMock {
     return Promise.resolve();
   }
 
+  onerror: (() => void) | null = null;
+
   createMediaElementSource(
     mediaElement: HTMLMediaElement | AudioNodeMock
   ): MediaElementAudioSourceNodeMock {
@@ -999,7 +1000,6 @@ class AudioRecorderMock {
   private _isPaused: boolean = false;
   private _currentDuration: number = 0;
   private _options: AudioRecorderFileOptions | null = null;
-  private isFileOutputEnabled: boolean = false;
   private eventEmitter = new MockAudioEventEmitter();
   private onAudioReadySubscription: MockEventSubscription | null = null;
   private onErrorSubscription: MockEventSubscription | null = null;
@@ -1018,12 +1018,8 @@ class AudioRecorderMock {
     return null;
   }
 
-  enableFileOutput(
-    options?: AudioRecorderFileOptions
-  ): Result<{ path: string }> {
+  enableFileOutput(options?: AudioRecorderFileOptions): void {
     this._options = options || {};
-    this.isFileOutputEnabled = true;
-    return { status: 'success', path: '/mock/path/recordings' };
   }
 
   get options(): AudioRecorderFileOptions | null {
@@ -1032,16 +1028,12 @@ class AudioRecorderMock {
 
   disableFileOutput(): void {
     this._options = null;
-    this.isFileOutputEnabled = false;
   }
 
-  start(
-    options?: AudioRecorderStartOptions
-  ): Promise<Result<{ path: string }>> {
+  start(): Promise<Result<{ path: string }>> {
     this._isRecording = true;
     this._isPaused = false;
-    const path = options?.fileNameOverride || 'recording.m4a';
-    return Promise.resolve({ status: 'success', path });
+    return Promise.resolve({ status: 'success', path: 'recording.m4a' });
   }
 
   stop(): Promise<Result<FileInfo>> {
@@ -1424,7 +1416,6 @@ export {
   AudioContextOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
-  AudioRecorderStartOptions,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,

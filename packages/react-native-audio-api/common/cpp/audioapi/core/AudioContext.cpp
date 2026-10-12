@@ -1,22 +1,22 @@
-#ifdef RN_AUDIO_API_NODE
-#include "NodeAudioPlayer.h"
-#elif defined(ANDROID)
-#include <audioapi/android/core/AudioPlayer.h>
-#else
-#include <audioapi/ios/core/IOSAudioPlayer.h>
-#endif
-
 #include <audioapi/core/AudioContext.h>
+#include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+
 #include <memory>
-#include <string>
 #include <thread>
 
 namespace audioapi {
+
 AudioContext::AudioContext(
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {
+    AndroidOutputProfile androidOutputProfile,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    AudioContextLatencyHint latencyHint)
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+      latencyHint_(latencyHint),
+      androidOutputProfile_(androidOutputProfile),
+      isInitialized_(false),
+      onErrorEvent_(audioEventHandlerRegistry) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
   // drain the channels itself until start()/resume() hands draining to the
   // audio callback (same pattern as OfflineAudioContext before rendering).
@@ -33,25 +33,18 @@ AudioContext::~AudioContext() {
 
 void AudioContext::initialize(const AudioDestinationNode *destination) {
   BaseAudioContext::initialize(destination);
-#ifdef RN_AUDIO_API_NODE
-  audioPlayer_ = std::make_shared<NodeAudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount());
-#elif defined(ANDROID)
-  audioPlayer_ = std::make_shared<AudioPlayer>(
+  audioPlayer_ = createPlatformAudioPlayer(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),
-      &driverMutex_,
+      currentRenders_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
-      currentRenders_);
+      &driverMutex_,
+#if defined(ANDROID) && !defined(RN_AUDIO_API_NODE)
+      latencyHint_,
+      androidOutputProfile_);
 #else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount(),
-      currentRenders_);
+      latencyHint_);
 #endif
 }
 
@@ -92,6 +85,8 @@ void AudioContext::close(const std::shared_ptr<ContextPromiseResolver<void>> &pr
   // No audio-thread consumer after stop; allow producer self-drain for any
   // remaining graph mutations (and flush events already queued).
   getGraph()->enableProducerSelfDrain();
+
+  // safe to call because the promise worker holds the driver mutex while calling close()
   processAudioEvents();
   audioPlayer_->cleanup();
 
@@ -186,6 +181,27 @@ double AudioContext::getOutputLatency() const {
   }
 
   return audioPlayer_->getOutputLatency();
+}
+
+void AudioContext::assignOnErrorCallbackId(uint64_t callbackId) {
+  onErrorEvent_.assignCallbackId(callbackId);
+}
+
+void AudioContext::onStreamFail() {
+  assertDriverMutexHeld();
+
+  audioPlayer_->stop();
+  waitForRenderQuiescence();
+
+  // The failed driver was the only consumer of the graph channels.
+  getGraph()->enableProducerSelfDrain();
+
+  // safe to call because the driver mutex is held
+  processAudioEvents();
+
+  isInitialized_.store(false, std::memory_order_release);
+
+  onErrorEvent_.dispatchEmpty();
 }
 
 } // namespace audioapi

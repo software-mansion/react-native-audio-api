@@ -15,6 +15,7 @@ constexpr uint64_t ERROR_CALLBACK_ID = 88;
 constexpr uint64_t POSITION_CALLBACK_ID = 19;
 
 static_assert(EventPayloadFor<AudioEvent::ENDED, EmptyPayload>);
+static_assert(EventPayloadFor<AudioEvent::CONTEXT_ERROR, EmptyPayload>);
 static_assert(EventPayloadFor<AudioEvent::POSITION_CHANGED, DoubleValuePayload>);
 static_assert(EventPayloadFor<AudioEvent::RECORDER_ERROR, StringPayload>);
 static_assert(EventPayloadFor<AudioEvent::BUFFERING_STATE_CHANGE, BoolValuePayload>);

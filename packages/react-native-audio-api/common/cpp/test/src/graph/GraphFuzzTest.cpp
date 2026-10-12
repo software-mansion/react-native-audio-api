@@ -21,13 +21,13 @@ using audioapi::utils::DisposerImpl;
 class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using PNode = ProcessableMockNode;
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
 
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
   std::mt19937_64 rng;
   std::unique_ptr<Graph> graph;
-  std::vector<HNode *> nodes; // tracks live (non-removed) nodes
+  std::vector<HostVertex *> nodes; // tracks live (non-removed) nodes
   size_t initialNodeCount;
   size_t operationCount;
 
@@ -87,7 +87,7 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
   }
 
   /// @brief Pick two distinct random nodes from the live set.
-  std::pair<HNode *, HNode *> pickTwoNodes() {
+  std::pair<HostVertex *, HostVertex *> pickTwoNodes() {
     if (nodes.size() < 2) {
       return {nullptr, nullptr};
     }
@@ -110,7 +110,7 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
   /// @brief Performs a single random graph mutation using only the public API.
   /// @return (operation, node) — node is present for add/remove, nullptr otherwise
-  std::pair<Operation, HNode *> performRandomOperation() {
+  std::pair<Operation, HostVertex *> performRandomOperation() {
     size_t op = std::uniform_int_distribution<size_t>(0, 99)(rng);
 
     if (op < chances.addNode) {
@@ -122,7 +122,7 @@ class GraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     if (op < chances.addNode + chances.removeNode) {
       if (!nodes.empty()) {
         size_t idx = std::uniform_int_distribution<size_t>(0, nodes.size() - 1)(rng);
-        HNode *target = nodes[idx];
+        HostVertex *target = nodes[idx];
         nodes.erase(nodes.begin() + static_cast<std::ptrdiff_t>(idx));
         (void)graph->removeNode(target);
         return {Operation::RemoveNode, target};

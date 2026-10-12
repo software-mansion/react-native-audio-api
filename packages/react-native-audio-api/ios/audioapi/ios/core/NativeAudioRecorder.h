@@ -29,7 +29,7 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 
 - (void)pause;
 
-/// @return YES if the engine started.
+/// Returns NO when the audio engine could not be started, in which case input stays disarmed.
 - (BOOL)resume;
 
 - (void)cleanup;

@@ -25,6 +25,8 @@ typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
   AudioEngineInterruptionEndOutcomeStillInterrupted
 };
 
+typedef void (^OnOutputRecoveryFailedBlock)(void);
+
 @interface AudioEngine : NSObject
 
 @property (nonatomic, assign) AudioEngineState state;
@@ -43,7 +45,9 @@ typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
 
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
                                    sampleRate:(float)sampleRate
-                                 channelCount:(AVAudioChannelCount)channelCount;
+                                 channelCount:(AVAudioChannelCount)channelCount
+                       onOutputRecoveryFailed:
+                           (nullable OnOutputRecoveryFailedBlock)onOutputRecoveryFailed;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock

@@ -9,7 +9,7 @@ namespace audioapi {
 /// Valid for the HostObject lifetime — the concrete type is fixed at construction.
 template <typename NodeT>
   requires std::derived_from<NodeT, AudioNode>
-[[nodiscard]] NodeT *typedAudioNode(utils::graph::HostGraph::Node *graphNode) noexcept {
+[[nodiscard]] NodeT *typedAudioNode(utils::graph::HostGraph::HostVertex *graphNode) noexcept {
   return static_cast<NodeT *>(graphNode->handle->audioNode->asAudioNode());
 }
 

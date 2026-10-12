@@ -99,6 +99,7 @@ export interface IAudioContext extends IBaseAudioContext {
   close(): Promise<undefined>;
   resume(): Promise<undefined>;
   suspend(): Promise<undefined>;
+  onerror: string;
 }
 
 export interface IOfflineAudioContext extends IBaseAudioContext {
@@ -354,7 +355,7 @@ export interface IAudioRecorderCallbackOptions extends AudioRecorderCallbackOpti
 
 export interface IAudioRecorder {
   // default recorder methods
-  start: (fileNameOverride?: string) => Promise<Result<{}>>;
+  start: () => Promise<Result<{}>>;
   stop: () => Promise<Result<FileInfo>>;
   isRecording: () => boolean;
   isPaused: () => boolean;

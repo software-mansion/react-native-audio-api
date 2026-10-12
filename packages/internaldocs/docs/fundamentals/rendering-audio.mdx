@@ -1,0 +1,57 @@
+---
+sidebar_position: 2
+---
+
+import SamplingDiagram from '@site/src/components/SamplingDiagram';
+
+# Rendering audio
+
+## 1. Sample rate and render quantum size
+
+Sound is a continuous signal. To store and process it digitally we have to discretize it: we measure the wave at evenly spaced moments and keep only those measurements, called samples.
+
+<SamplingDiagram />
+
+**Sample rate** is how many samples describe one second of sound, measured in hertz. At 44.1 kHz one second of a single channel is 44,100 numbers. A set of samples taken at the same moment, one per channel, is a **frame**, so one second of stereo audio at 44.1 kHz is 44,100 frames and 88,200 samples.
+
+**Render quantum** is the block of frames the audio graph processes in one step. The engine never computes a single sample on its own: on every step each node receives a whole block from its inputs, processes it, and hands a whole block to its outputs. Working in blocks is what makes per-node overhead (virtual calls, parameter automation lookups, SIMD setup) affordable, because it is paid once per block instead of once per sample.
+
+**Render quantum size** is the number of frames in that block. It is fixed at 128 frames, the value the Web Audio API specification uses. It bounds two things:
+
+- **Timing resolution.** Anything the graph applies between blocks, such as a connection changing or a k-rate parameter updating, takes effect on a quantum boundary. At 44.1 kHz one quantum lasts $\frac{128}{44{,}100} \approx 2.9$ ms.
+- **Work per step.** A node is always asked for at most 128 frames, so its scratch buffers can be allocated once with that size and reused.
+
+The render quantum is our unit, not the operating system's. The operating system gives us a place in memory where to write some predefined number of frames and invokes a callback with the pointer and that number. We fill the system buffer by rendering quanta one after another until it is full.
+
+The concrete system buffer size is unspecified, but a usual value is 512 frames at a 44.1 kHz sample rate, which is four render quanta per callback.
+
+Let's calculate how many time we can spend in the system callback.
+
+1. **Convert sample rate to Hertz (Hz):**
+   $$44.1 \text{ kHz} = 44,100 \text{ Hz} \text{ (samples per second)}$$
+
+2. **Divide the samples by the sample rate:**
+   $$\text{Time} = \frac{512}{44,100} \approx 0.0116 \text{ seconds} = 11 \text{ miliseconds}$$
+
+## 2. Audio thread priority
+
+Those low numbers (**2.9 ms** per data callback or **11 ms** to generate whole block) mentioned previously require that
+OS's scheduler has to be very precise and tightly scheduled when operating with audio. That's why the threads created for purpose audio rendering has to be spawned with very high priority
+and one callback cannot run for longer duration or it will underrun frames and break all the processing.
+
+All of those informations introduce one more serious limitation.
+
+These are things the audio thread should NOT do:
+
+- allocate memory using, for example, malloc() or new
+- any file operations such as opening, closing, reading or writing
+- any network operations such as streaming
+- use any mutexes or other synchronization primitives
+- sleep
+
+Those operations introduce undetermined latency (f.e. waiting for lock acquire, blocking network request), thus
+it would be best if the rendering process was: lock-free, aloc-free, dealoc-free and very performant.
+
+[Learn more how we implement those features in the audio pipeline.](../graph/processing-model.mdx)
+
+

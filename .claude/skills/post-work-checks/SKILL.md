@@ -134,7 +134,9 @@ enum mirrored between C++ and Kotlin — currently `AudioEvent` and `RecorderSta
 cross JNI as plain ints and Kotlin maps them back by ordinal, so entry *order* is part of
 the contract; the check compares ignoring case and underscores, since the two languages
 name entries differently by convention. Add a new pair to the `MIRRORED_ENUMS` table at
-the top of the script.
+the top of the script. It then runs `check-audio-file-properties-enum-sync.sh`, which does
+the same for the `AudioFileProperties` enums that cross JSI into TypeScript (`FileFormat`,
+`FileDirectory`, `BitDepth`, `IOSAudioQuality`).
 
 **When**: only when you modify one of those enums or any file that maps event names across
 C++/Kotlin/TypeScript. Skip this step if you already ran `validate:fast` (it includes enum sync).

@@ -148,6 +148,13 @@
   return self.fakeHasInputRegistration;
 }
 
+/// The engine is created lazily, so a fresh fake reads as not in use and the manager would
+/// ignore every notification meant for it.
+- (bool)isInUse
+{
+  return true;
+}
+
 @end
 
 @interface SNMFakeAudioSessionManager : AudioSessionManager
@@ -722,6 +729,8 @@ static void ClearFakeSharedAudioSession(void)
 
 - (void)testHandleMediaServicesResetReactivatesSessionAndRestartsEngine
 {
+  // Only a session that was active gets re-activated after the reset.
+  self.fakeSessionManager.isActive = true;
   [self.manager handleMediaServicesReset:nil];
   [self flushMainQueue];
 

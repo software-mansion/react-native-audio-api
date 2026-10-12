@@ -1,5 +1,37 @@
 import { NotSupportedError } from '../../errors';
-import { ConvolverOptions, OptionsValidator } from '../../types';
+import {
+  ChannelCountMode,
+  ConvolverOptions,
+  OptionsValidator,
+} from '../../types';
+
+const MAX_CONVOLVER_CHANNEL_COUNT = 2;
+
+/**
+ * Spec channel limitation: a ConvolverNode processes at most stereo input, so
+ * `channelCount` above 2 is a NotSupportedError (constructor and setter).
+ */
+export function validateConvolverChannelCount(channelCount: number): void {
+  if (channelCount > MAX_CONVOLVER_CHANNEL_COUNT) {
+    throw new NotSupportedError(
+      `The channelCount value (${channelCount}) of ConvolverNode must be 1 or 2.`
+    );
+  }
+}
+
+/**
+ * Spec channel limitation: `max` would let a multichannel input bypass the
+ * stereo limit, so only `clamped-max` and `explicit` are allowed.
+ */
+export function validateConvolverChannelCountMode(
+  channelCountMode: ChannelCountMode
+): void {
+  if (channelCountMode === 'max') {
+    throw new NotSupportedError(
+      `The channelCountMode value ('max') is not supported by ConvolverNode; use 'clamped-max' or 'explicit'.`
+    );
+  }
+}
 
 export function validateConvolverBufferChannelCount(
   numberOfChannels: number
@@ -28,10 +60,20 @@ export function validateConvolverBufferSampleRate(
 
 export const ConvolverOptionsValidator: OptionsValidator<ConvolverOptions> = {
   validate(options?: ConvolverOptions): void {
-    if (!options?.buffer) {
+    if (!options) {
       return;
     }
 
-    validateConvolverBufferChannelCount(options.buffer.numberOfChannels);
+    if (options.channelCount !== undefined) {
+      validateConvolverChannelCount(options.channelCount);
+    }
+
+    if (options.channelCountMode !== undefined) {
+      validateConvolverChannelCountMode(options.channelCountMode);
+    }
+
+    if (options.buffer) {
+      validateConvolverBufferChannelCount(options.buffer.numberOfChannels);
+    }
   },
 };

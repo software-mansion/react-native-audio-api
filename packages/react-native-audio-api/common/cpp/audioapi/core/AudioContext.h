@@ -1,7 +1,11 @@
 #pragma once
 
+#include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/CommonPlayer.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
+#include <audioapi/core/types/AudioContextOptions.h>
+#include <audioapi/events/AudioEvent.h>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -15,7 +19,9 @@ class AudioContext : public BaseAudioContext {
  public:
   explicit AudioContext(
       float sampleRate,
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+      AndroidOutputProfile androidOutputProfile,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      AudioContextLatencyHint latencyHint);
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
 
@@ -37,12 +43,22 @@ class AudioContext : public BaseAudioContext {
   /// @returns The output latency in seconds.
   [[nodiscard]] double getOutputLatency() const;
 
+  /// @brief Called when the audio stream failed to rebuild.
+  /// @note This method is called when the audio stream fails.
+  void onStreamFail();
+
+  void assignOnErrorCallbackId(uint64_t callbackId);
+
  private:
-  std::shared_ptr<CommonPlayer> audioPlayer_;
+  std::shared_ptr<AudioPlayer> audioPlayer_;
+  AudioContextLatencyHint latencyHint_;
+  AndroidOutputProfile androidOutputProfile_;
   std::atomic<bool> isInitialized_{false};
   /// Audio I/O callback thread increments around each platform render callback;
   /// control thread waits on suspend/close.
   std::atomic<uint32_t> currentRenders_{0};
+
+  EventCaller<AudioEvent::CONTEXT_ERROR> onErrorEvent_;
 
   bool isDriverRunning() const override;
 
