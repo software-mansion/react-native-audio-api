@@ -75,12 +75,6 @@ class PromiseVendor {
       std::shared_ptr<ITaskExecutor> executor)
       : runtime_(runtime), callInvoker_(callInvoker), executor_(std::move(executor)) {}
 
-  /// @brief Runs @p task on the vendor's executor with no JS promise attached.
-  /// On a serial executor it queues behind every promise body created before it, so it can be
-  /// used from places that have no runtime, such as a HostObject destructor.
-  /// @note Same single-producer rule as `createAsyncPromise`.
-  void scheduleDetached(std::function<void()> &&task);
-
   /// @brief Creates an asynchronous promise.
   /// @param function The function to execute asynchronously. It should return either a jsi::Value on success or a std::string error message on failure.
   /// @return The created promise.

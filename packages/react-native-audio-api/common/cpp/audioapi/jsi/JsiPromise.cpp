@@ -74,16 +74,6 @@ jsi::Value PromiseVendor::createAsyncPromise(std::function<void(Promise &&)> &&f
   return promiseCtor.callAsConstructor(runtime, std::move(promiseFunction));
 }
 
-void PromiseVendor::scheduleDetached(std::function<void()> &&task) {
-  executor_->schedule([task = std::move(task)]() {
-#ifdef ANDROID
-    facebook::jni::ThreadScope::WithClassLoader([&]() { task(); });
-#else
-    task();
-#endif
-  });
-}
-
 jsi::Value PromiseVendor::createPromise(std::function<void(Promise &&)> &&function) {
   auto &runtime = *runtime_;
   auto callInvoker = callInvoker_;

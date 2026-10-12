@@ -28,8 +28,8 @@ AudioRecorderHostObject::AudioRecorderHostObject(
   // Serial executor, so start/stop/pause/resume/disableFileOutput run in the order JS called
   // them even when the caller does not await. The remaining methods run on the JS thread
   // and are excluded against lane work by the recorder's per-output mutexes.
-  promiseVendor_ =
-      std::make_shared<PromiseVendor>(runtime, callInvoker, std::make_shared<SerialTaskExecutor>());
+  lifecycleLane_ = std::make_shared<SerialTaskExecutor>();
+  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker, lifecycleLane_);
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
@@ -53,9 +53,9 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 
 AudioRecorderHostObject::~AudioRecorderHostObject() {
   // Queued rather than called, so a start() still waiting on the lane cannot outlive this
-  // stop. promiseVendor_ is destroyed right after this body and drains the queue before
+  // stop. lifecycleLane_ is destroyed right after this body and drains the queue before
   // joining its worker, which keeps the blocking-stop contract of the previous direct call.
-  promiseVendor_->scheduleDetached([audioRecorder = audioRecorder_]() {
+  lifecycleLane_->schedule([audioRecorder = audioRecorder_]() {
     ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
   });
 }
@@ -250,11 +250,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getCurrentDuration) {
   double duration = audioRecorder_->getCurrentDuration();
-  return jsi::Value(duration);
+  return {duration};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioRecorderHostObject, inputLatency) {
-  return jsi::Value(audioRecorder_->getInputLatency());
+  return {audioRecorder_->getInputLatency()};
 }
 
 } // namespace audioapi
