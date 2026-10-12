@@ -40,7 +40,7 @@ react-native-audio-api/
 │   │       ├── macosx/                 # macOS .a libs
 │   │       ├── ffmpeg_ios/             # FFmpeg .xcframeworks (iOS only)
 │   │       ├── include/                # Headers for Opus/Ogg/Vorbis/OpenSSL
-│   │       └── include_ffmpeg/         # Headers for FFmpeg
+│   │       └── include_ffmpeg/         # FFmpeg headers (downloaded, FFmpeg builds only)
 │   ├── common/cpp/test/
 │   │   ├── CMakeLists.txt              # Standalone test build (no Android/iOS)
 │   │   ├── run-tests.sh / filters.sh    # smoke|extended|full (+ categories, CI path filters)
@@ -127,7 +127,7 @@ The download script is triggered automatically:
 
 The script is idempotent — it skips any archive whose expected artifacts already exist (`artifacts_present`), so the per-build invocations are fast no-ops once binaries are present. A failed download is a hard error (`exit 1`): a silent skip used to surface much later as a missing header or `undefined symbol`.
 
-**FFmpeg headers.** `external/include_ffmpeg/` is still tracked in git (131 headers, 1.4 MB, shipped in the npm tarball via `common/`). The script already knows an `include_ffmpeg.zip` archive (`FFMPEG_HEADERS_ARCHIVE`, checked through `FFMPEG_HEADER_MARKERS`); because the headers are present in the checkout, that entry is a no-op today. Moving them out of git only needs: publish the archive in `rn-audio-libs`, `git rm` the directory, add it to `.gitignore` next to the other external rules, and negate it in `package.json` `files`. Nothing else references the directory outside the two gated include-path entries (podspec `pod_target_xcconfig`, Android CMake) — `FfmpegDecoder.h` includes `libav*` directly, but `DecoderFactory.cpp` is the only consumer and gates that include behind `RN_AUDIO_API_FFMPEG_ENABLED`, every disabled build also drops `FfmpegDecoder.cpp`, and the Gradle prefab header copy excludes `audioapi/external/**`.
+**FFmpeg headers.** `external/include_ffmpeg/` is not tracked: it is gitignored, negated in `package.json` `files`, and fetched as `include_ffmpeg.zip` from the pinned rn-audio-libs release in the same pass as the FFmpeg binaries (`FFMPEG_HEADERS_ARCHIVE`, presence checked through `FFMPEG_HEADER_MARKERS`, skipped with `skipffmpeg`). The archive is produced by `yarn export` (`scripts/pack_outputs.sh`) in `rn-audio-libs`, which zips every `outputs/*` directory except `include`, so a new release of that repo ships the headers automatically — but every tag the download script pins must carry the asset or FFmpeg builds fail at the download step. Nothing else references the directory outside the gated include-path entries (podspec `pod_target_xcconfig`, Android CMake); `common/cpp/clangd/CMakeLists.txt` adds the path unconditionally, so in a checkout that never enabled FFmpeg clangd shows unresolved `libav*` includes only inside `FfmpegDecoder.cpp`. `FfmpegDecoder.h` includes `libav*` directly, but `DecoderFactory.cpp` is the only consumer and gates that include behind `RN_AUDIO_API_FFMPEG_ENABLED`, every disabled build also drops `FfmpegDecoder.cpp`, and the Gradle prefab header copy excludes `audioapi/external/**`.
 
 Downloaded artifacts land in:
 - `common/cpp/audioapi/external/android/<ABI>/` — `.a` static libs for Android ABIs

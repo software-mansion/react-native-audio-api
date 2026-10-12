@@ -84,6 +84,7 @@
     "!common/cpp/clangd",
     "!common/cpp/test",
     "!android/src/main/jniLibs",
+    "!common/cpp/audioapi/external/include_ffmpeg",
     "scripts/setup-rn-audio-api-web.js",
     "scripts/rnaa_utils.rb",
     "scripts/download-prebuilt-binaries.sh",
