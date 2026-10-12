@@ -17,10 +17,8 @@ foreach(src IN LISTS DSP_CPP_SOURCES_ABS)
   list(APPEND DSP_CPP_SOURCES "${rel_src}")
 endforeach()
 
-if (RN_AUDIO_API_FFMPEG_DISABLED)
-  list(REMOVE_ITEM COMMON_CPP_SOURCES
-    "${COMMON_CPP_DIR}/audioapi/decoding/backends/FfmpegDecoder.cpp"
-  )
+if (NOT RN_AUDIO_API_FFMPEG_ENABLED)
+  list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*FfmpegDecoder\\.cpp$")
 endif()
 
 # Debug-only: operator new/delete overrides must not ship in Release.
@@ -68,7 +66,7 @@ if (NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   endforeach()
 endif()
 
-if (NOT RN_AUDIO_API_FFMPEG_DISABLED)
+if (RN_AUDIO_API_FFMPEG_ENABLED)
   foreach (lib IN ITEMS avcodec avformat avutil swresample)
     add_library(${lib} SHARED IMPORTED)
     set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/lib${lib}.so)
@@ -92,20 +90,29 @@ target_include_directories(
     "${COMMON_CPP_DIR}"
     "${ANDROID_CPP_DIR}"
   PRIVATE
-    "${INCLUDE_DIR}"
-    "${FFMPEG_INCLUDE_DIR}"
     "${REACT_NATIVE_DIR}/ReactCommon"
     "${REACT_NATIVE_DIR}/ReactCommon/jsiexecutor"
     "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule"
     "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
 )
 
+# Third-party headers are only on the include path for the libraries that are
+# actually linked, so a build without them never depends on their presence.
 if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   target_include_directories(
     react-native-audio-api
     PRIVATE
+      "${INCLUDE_DIR}"
       "${INCLUDE_DIR}/opus"
       "${INCLUDE_DIR}/vorbis"
+  )
+endif()
+
+if(RN_AUDIO_API_FFMPEG_ENABLED)
+  target_include_directories(
+    react-native-audio-api
+    PRIVATE
+      "${FFMPEG_INCLUDE_DIR}"
   )
 endif()
 
@@ -122,10 +129,10 @@ set(RN_VERSION_LINK_LIBRARIES
   ReactAndroid::reactnative
 )
 
-if (RN_AUDIO_API_FFMPEG_DISABLED)
+if (RN_AUDIO_API_FFMPEG_ENABLED)
   target_compile_definitions(
     react-native-audio-api
-    PRIVATE RN_AUDIO_API_FFMPEG_DISABLED=1
+    PRIVATE RN_AUDIO_API_FFMPEG_ENABLED=1
   )
 endif()
 
@@ -171,7 +178,7 @@ if(NOT RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
   )
 endif()
 
-if(NOT RN_AUDIO_API_FFMPEG_DISABLED)
+if(RN_AUDIO_API_FFMPEG_ENABLED)
   target_link_libraries(react-native-audio-api
     avcodec
     avformat
