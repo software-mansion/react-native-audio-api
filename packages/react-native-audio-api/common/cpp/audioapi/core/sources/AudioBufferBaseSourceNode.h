@@ -27,7 +27,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
-  /// @note Audio Thread only
+  /// @note JS Thread only, and only while the node has no content yet
   void initStretch(
       size_t channelCount,
       float sampleRate,
