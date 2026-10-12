@@ -686,7 +686,7 @@ class AdtsBackend : public MediaCodecBackend {
     }
     samplingFrequencyIndex_ = *adts::samplingFrequencyIndex(static_cast<int>(desired.sampleRate));
 
-    file_ = std::fopen(filePath.c_str(), "wb");
+    file_.reset(std::fopen(filePath.c_str(), "wb"));
     if (file_ == nullptr) {
       return "AdtsBackend: failed to open file for writing";
     }
@@ -698,8 +698,7 @@ class AdtsBackend : public MediaCodecBackend {
         static_cast<int>(encoding.bitRate),
         true);
     if (!err.empty()) {
-      std::fclose(file_);
-      file_ = nullptr;
+      file_.reset();
       return err;
     }
     return "";
@@ -731,28 +730,30 @@ class AdtsBackend : public MediaCodecBackend {
       return "AdtsBackend: encoded frame too long for an ADTS header";
     }
 
-    if (std::fwrite(header->data(), 1, header->size(), file_) != header->size() ||
-        std::fwrite(data + info.offset, 1, payloadSize, file_) != payloadSize) {
+    if (std::fwrite(header->data(), 1, header->size(), file_.get()) != header->size() ||
+        std::fwrite(data + info.offset, 1, payloadSize, file_.get()) != payloadSize) {
       return "AdtsBackend: short write";
     }
     // Flushed per frame, so the crash-recoverability the format exists for holds at frame
     // granularity rather than at stdio's buffer size.
-    std::fflush(file_);
+    if (std::fflush(file_.get()) != 0) {
+      return "AdtsBackend: failed to flush file";
+    }
     bytesWritten_ += header->size() + payloadSize;
     return "";
   }
 
   std::string finalize() override {
     codec_.reset();
-    if (file_ != nullptr) {
-      std::fclose(file_);
-      file_ = nullptr;
+    if (file_ != nullptr && std::fclose(file_.release()) != 0) {
+      return "AdtsBackend: failed to close file";
     }
     return "";
   }
 
  private:
-  std::FILE *file_{nullptr};
+  // Also closes the file when codec draining fails before finalize() is reached.
+  std::unique_ptr<std::FILE, decltype(&std::fclose)> file_{nullptr, &std::fclose};
   uint8_t samplingFrequencyIndex_{0};
   size_t bytesWritten_{0};
 };
