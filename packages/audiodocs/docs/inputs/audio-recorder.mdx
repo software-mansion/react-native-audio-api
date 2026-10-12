@@ -490,8 +490,6 @@ export default MyRecorder;
       <td>
         <div class="text-content">
           Pauses the recording. This is useful when recording to file is active, but you do not want to finalize the file. Returns a `Promise<void>` that resolves when the input stream has paused.
-
-          `start`, `stop`, `pause`, `resume` and `disableFileOutput` execute in the order they were called, so awaiting is only needed to observe the paused state.
         </div>
         ```tsx
         await audioRecorder.pause();
@@ -715,8 +713,6 @@ export default MyRecorder;
       <td>
         <div class="text-content">
           Disables file output and finalizes the currently recorded file if the recorder is active. Returns a `Promise<void>` that resolves when the file has been closed.
-
-          Executes in call order with `start`, `stop`, `pause` and `resume`.
         </div>
         ```tsx
         await audioRecorder.disableFileOutput();
@@ -1242,3 +1238,19 @@ export interface FilePresetType {
     </tr>
   </tbody>
 </table>
+
+## Remarks
+
+#### Asynchronous methods
+
+`start`, `stop`, `pause`, `resume` and `disableFileOutput` return promises, but a recorder runs them one at a time, in the order they were called. A later call never overtakes an earlier one, so you can fire several in a row without awaiting each:
+
+```tsx
+audioRecorder.start();
+audioRecorder.pause();
+await audioRecorder.resume(); // start and pause have already completed here
+```
+
+Await a call only when you need its result or want to observe the state it leaves behind, e.g. `isPaused()` after `pause`, or the [FileInfo](#fileinfo) returned by `stop`.
+
+[`AudioContext`](../core/audio-context.mdx#remarks) and [`OfflineAudioContext`](../core/offline-audio-context.mdx) order their `suspend`, `resume`, `close` and `startRendering` promises the same way.

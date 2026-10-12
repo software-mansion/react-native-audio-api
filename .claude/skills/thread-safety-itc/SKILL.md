@@ -209,8 +209,8 @@ owner, in which case `~AudioContext` / `~OfflineAudioContext` run on the lane th
 operation has released `driverMutex_`. The
 offline render thread is likewise owned (`renderThread_` + `stopRendering_` flag, joined in the
 destructor, detach only when the last context reference drops on the render thread itself); the
-render lambda must release its `resumePromise` right after resolving, since resolver callbacks
-capture the context and would otherwise make the render thread its own context's last owner. When
+render lambda must release its `resumePromise` right after resolving, since the resolver owns
+the context and would otherwise make the render thread its own context's last owner. When
 the driver is stopped, `scheduleAudioEvent` still drains already-queued SPSC events then runs
 the new event synchronously under `driverMutex_` (FIFO with prior messages). Control-message
 bodies must not re-lock `driverMutex_` or `waitForRenderQuiescence()` while `currentRenders_ > 0`
@@ -222,8 +222,8 @@ back-to-back).
 **Context `statechange` event:** `BaseAudioContext::dispatchStateChange(state)` fires
 `AudioEvent::STATE_CHANGE` (payload `{state: "..."}`), deduped against the last dispatched state so
 the two paths that both reach RUNNING (implicit `tryStartDriver` from a source start, then the
-`resume()` promise) emit once. Call it *after* the `jsiPromise->resolve(...)` enqueue in the
-`ContextPromiseResolver` factory lambdas — the registry worker can only enqueue its own
+`resume()` promise) emit once. Call it *after* the `jsiPromise_->resolve(...)` enqueue in
+`ContextPromiseResolver::settle` — the registry worker can only enqueue its own
 `invokeAsync` later, so the event's JS task always lands behind the resolve task and its
 microtasks (spec's promise-then-statechange order). Carry the state by value: `getState()` may
 still report SUSPENDED until the driver settles. On the TS side the event handler is

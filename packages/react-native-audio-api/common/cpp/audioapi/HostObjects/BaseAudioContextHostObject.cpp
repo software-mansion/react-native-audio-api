@@ -39,8 +39,6 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
     const std::shared_ptr<react::CallInvoker> &callInvoker,
     int destinationChannelCount)
     : context_(context),
-      // Serial: lifecycle promises (resume / suspend / close / startRendering) must run in
-      // the order JS called them.
       promiseVendor_(
           std::make_shared<PromiseVendor>(
               runtime,

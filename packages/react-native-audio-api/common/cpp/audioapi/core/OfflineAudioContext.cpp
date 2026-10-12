@@ -52,19 +52,18 @@ OfflineAudioContext::~OfflineAudioContext() {
   }
 }
 
-void OfflineAudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+void OfflineAudioContext::resume(const std::shared_ptr<ContextStateResolver> &promise) {
   // Control-message body: no locking. Serialized by `scheduleAudioEvent`
   // (sync under `driverMutex_`, or drained on the offline render thread which
   // already holds `driverMutex_` around `processGraph`).
   if (!renderingStarted_ || getState() == ContextState::CLOSED) {
-    ContextPromiseResolver<void>::reject(
-        promise, "Cannot resume an offline audio context that is not suspended.");
+    promise->reject(
+        "Cannot resume an offline audio context that is not started or already closed.");
     return;
   }
 
   if (getState() == ContextState::RUNNING) {
-    ContextPromiseResolver<void>::reject(
-        promise, "Cannot resume an offline audio context that is already running.");
+    promise->reject("Cannot resume and offline audio context that is already running.");
     return;
   }
 
@@ -73,22 +72,20 @@ void OfflineAudioContext::resume(const std::shared_ptr<ContextPromiseResolver<vo
 
 bool OfflineAudioContext::suspend(
     double when,
-    const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+    const std::shared_ptr<ContextStateResolver> &promise) {
   // Control-message body: no locking (see `resume`).
   auto frame = static_cast<size_t>(when * getSampleRate());
   frame = RENDER_QUANTUM_SIZE * ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
 
   if (frame == 0 || frame <= currentSampleFrame_ || frame >= length_) {
-    ContextPromiseResolver<void>::reject(
-        promise, "The suspend time must be within the remaining render duration.");
+    promise->reject("The suspend time must be within the remaining render duration.");
     return false;
   }
 
   if (scheduledSuspends_.contains(frame)) {
-    ContextPromiseResolver<void>::reject(
-        promise,
-        "cannot schedule more than one suspend at frame " + std::to_string(frame) + " (" +
-            std::to_string(when) + " seconds)");
+    promise->reject(
+        "Cannot schedule more than one suspend at the same frame " + std::to_string(frame) + " (" +
+        std::to_string(when) + " seconds)");
     return false;
   }
 
@@ -96,8 +93,7 @@ bool OfflineAudioContext::suspend(
   return true;
 }
 
-void OfflineAudioContext::renderAudio(
-    const std::shared_ptr<ContextPromiseResolver<void>> &resumePromise) {
+void OfflineAudioContext::renderAudio(const std::shared_ptr<ContextStateResolver> &resumePromise) {
   getGraph()->disableProducerSelfDrain();
 
   // first wait for the previous render thread to finish
@@ -107,11 +103,17 @@ void OfflineAudioContext::renderAudio(
   }
 
   renderThread_ = std::thread([this, resumePromise = resumePromise]() mutable {
-    ContextPromiseResolver<void>::resolve(resumePromise);
-    // The resolver's callbacks (transitively) own this context — both
-    // `startRendering` and the HostObject resume path capture it. Release the
-    // reference so the render thread never keeps its own context alive:
-    resumePromise.reset();
+    if (resumePromise != nullptr) {
+      resumePromise->resolve();
+      // The resolver owns this context. Release the reference so the render thread
+      // never keeps its own context alive:
+      resumePromise.reset();
+    } else {
+      // startRendering has no promise acknowledging this transition; the render thread
+      // actually starting is the acknowledgment.
+      setState(ContextState::RUNNING);
+      dispatchStateChange(ContextState::RUNNING);
+    }
 
     while (!stopRendering_.load(std::memory_order_acquire) && currentSampleFrame_ < length_) {
       Locker locker(driverMutex_);
@@ -137,7 +139,7 @@ void OfflineAudioContext::renderAudio(
         // callback until resume() restarts rendering.
         getGraph()->enableProducerSelfDrain();
         locker.unlock();
-        ContextPromiseResolver<void>::resolve(promise);
+        promise->resolve();
         return;
       }
     }
@@ -145,30 +147,20 @@ void OfflineAudioContext::renderAudio(
     if (stopRendering_.load(std::memory_order_acquire)) {
       return;
     }
-    OfflineAudioContextResultPromise::resolve(resultPromise_, resultBuffer_);
+    resultPromise_->resolve(resultBuffer_);
     resultPromise_.reset();
   });
 }
 
-void OfflineAudioContext::startRendering(
-    const std::shared_ptr<OfflineAudioContextResultPromise> &promise) {
+void OfflineAudioContext::startRendering(const std::shared_ptr<ContextRenderResolver> &promise) {
   if (renderingStarted_) {
-    OfflineAudioContextResultPromise::reject(
-        promise, "Offline audio rendering has already started.");
+    promise->reject("Offline audio rendering has already started.");
     return;
   }
 
   renderingStarted_ = true;
   resultPromise_ = promise;
-  auto runningStatePromise = std::make_shared<ContextPromiseResolver<void>>(
-      [self = shared_from_this()] {
-        self->setState(ContextState::RUNNING);
-        // startRendering has no acknowledging promise for this transition;
-        // the render thread actually starting is the acknowledgment.
-        self->dispatchStateChange(ContextState::RUNNING);
-      },
-      [](const std::string &) {});
-  renderAudio(runningStatePromise);
+  renderAudio(nullptr);
 }
 
 bool OfflineAudioContext::isDriverRunning() const {

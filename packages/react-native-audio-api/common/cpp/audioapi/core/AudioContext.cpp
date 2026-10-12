@@ -21,12 +21,10 @@ AudioContext::AudioContext(
   getGraph()->enableProducerSelfDrain();
 }
 
-/// No lifecycle operation can still be pending here: each one holds a shared_ptr to the
-/// context while queued on the HostObject's promise lane.
 AudioContext::~AudioContext() {
   if (getState() != ContextState::CLOSED) {
     std::scoped_lock lock(driverMutex_);
-    close(nullptr);
+    stopDriver();
   }
 }
 
@@ -67,12 +65,17 @@ bool AudioContext::tryStartDriver() {
   return false;
 }
 
-void AudioContext::close(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+void AudioContext::close(const std::shared_ptr<ContextStateResolver> &promise) {
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolver<void>::reject(promise, "Cannot close a closed audio context.");
+    promise->reject("Cannot close a closed audio context.");
     return;
   }
 
+  stopDriver();
+  promise->resolve();
+}
+
+void AudioContext::stopDriver() {
   audioPlayer_->stop();
   waitForRenderQuiescence();
 
@@ -80,21 +83,19 @@ void AudioContext::close(const std::shared_ptr<ContextPromiseResolver<void>> &pr
   // remaining graph mutations (and flush events already queued).
   getGraph()->enableProducerSelfDrain();
 
-  // safe to call because the promise worker holds the driver mutex while calling close()
+  // safe to call because the caller holds the driver mutex
   processAudioEvents();
   audioPlayer_->cleanup();
-
-  ContextPromiseResolver<void>::resolve(promise);
 }
 
-bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+bool AudioContext::resume(const std::shared_ptr<ContextStateResolver> &promise) {
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolver<void>::reject(promise, "Cannot resume a closed audio context.");
+    promise->reject("Cannot resume a closed audio context.");
     return false;
   }
 
   if (getState() == ContextState::RUNNING && isDriverRunning()) {
-    ContextPromiseResolver<void>::resolve(promise);
+    promise->resolve();
     return true;
   }
 
@@ -112,17 +113,17 @@ bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &p
 
   if (result) {
     // Visible RUNNING is applied inside the resolver
-    ContextPromiseResolver<void>::resolve(promise);
+    promise->resolve();
   } else {
-    ContextPromiseResolver<void>::reject(promise, "Failed to resume audio context.");
+    promise->reject("Failed to resume audio context.");
   }
   return result;
 }
 
-bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+bool AudioContext::suspend(const std::shared_ptr<ContextStateResolver> &promise) {
   // Control-message body: no locking (see `close`).
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolver<void>::reject(promise, "Cannot suspend a closed audio context.");
+    promise->reject("Cannot suspend a closed audio context.");
     return false;
   }
 
@@ -137,7 +138,7 @@ bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolver<void>> &
   }
 
   // Visible SUSPENDED is applied inside the resolver
-  ContextPromiseResolver<void>::resolve(promise);
+  promise->resolve();
   return true;
 }
 

@@ -3,7 +3,6 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/types/ContextState.h>
 #include <memory>
-#include <utility>
 
 namespace audioapi {
 
@@ -46,16 +45,13 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
       });
 }
 
-/// Resolves with the rendered buffer rather than a state, so it builds its own resolver.
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, startRendering) {
-  auto context = std::static_pointer_cast<OfflineAudioContext>(context_);
-  context->setPublishedState(ContextState::RUNNING);
+  context_->setPublishedState(ContextState::RUNNING);
 
-  return promiseVendor_->createAsyncPromise([context](Promise &&promise) {
-    auto resultPromise = OfflineAudioContextResultPromise::makeOfflineAudioContextResultResolver(
-        std::move(promise), context);
-    context->runLifecycleOperation([&] { context->startRendering(resultPromise); });
-  });
+  return createLifecyclePromise<ContextRenderResolver>(
+      ContextState::CLOSED, [](BaseAudioContext &context, const RenderResolver &resolver) {
+        dynamic_cast<OfflineAudioContext &>(context).startRendering(resolver);
+      });
 }
 
 } // namespace audioapi

@@ -29,6 +29,26 @@ namespace audioapi {
 class IAudioEventHandlerRegistry;
 class PeriodicWave;
 class AudioDestinationNode;
+class BaseAudioContext;
+
+class ContextPromiseResolver;
+class ContextStateResolver;
+class ContextRenderResolver;
+
+/// Settles a state-only lifecycle promise (resume / suspend / close).
+using LifecycleResolver = std::shared_ptr<ContextStateResolver>;
+/// Settles the offline `startRendering` promise with the rendered buffer.
+using RenderResolver = std::shared_ptr<ContextRenderResolver>;
+
+/// A `shared_ptr` to one of the `ContextPromiseResolver` subclasses.
+template <typename T>
+concept ContextPromiseResolverPtr = std::same_as<T, std::shared_ptr<typename T::element_type>> &&
+    std::derived_from<typename T::element_type, ContextPromiseResolver>;
+
+/// A lifecycle body: receives the context and the resolver the core method settles. The
+/// resolver type says what the promise resolves with, so a body cannot be handed the wrong one.
+template <typename F, typename Resolver = LifecycleResolver>
+concept LifecycleOperation = std::invocable<F, BaseAudioContext &, const Resolver &>;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
@@ -145,12 +165,13 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   }
 
   /// @brief Runs a lifecycle control operation (resume / suspend / close / offline start)
-  /// under `driverMutex_`. The context HostObject queues these on its serial promise lane,
-  /// so operations on one context run FIFO and never on the JS thread.
-  template <std::invocable F>
-  void runLifecycleOperation(F &&operation) {
+  /// under `driverMutex_`, handing it this context and @p resolver. The context HostObject
+  /// queues these on its serial promise lane, so operations on one context run FIFO and never
+  /// on the JS thread.
+  template <ContextPromiseResolverPtr Resolver, LifecycleOperation<Resolver> F>
+  void runLifecycleOperation(F &&operation, const Resolver &resolver) {
     std::scoped_lock lock(driverMutex_);
-    std::forward<F>(operation)();
+    std::forward<F>(operation)(*this, resolver);
   }
 
   void processGraph(DSPAudioBuffer *buffer, int numFrames);

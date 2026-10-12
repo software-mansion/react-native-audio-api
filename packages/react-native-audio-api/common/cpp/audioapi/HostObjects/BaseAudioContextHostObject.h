@@ -18,12 +18,6 @@ using namespace facebook;
 class AudioDestinationNodeHostObject;
 class AudioListenerHostObject;
 
-using LifecycleResolver = std::shared_ptr<ContextPromiseResolver<void>>;
-
-/// A lifecycle body: receives the context and the resolver the core method settles.
-template <typename F>
-concept LifecycleOperation = std::invocable<F, BaseAudioContext &, const LifecycleResolver &>;
-
 class BaseAudioContextHostObject : public HostObject {
  public:
   explicit BaseAudioContextHostObject(
@@ -68,18 +62,20 @@ class BaseAudioContextHostObject : public HostObject {
   }
 
  protected:
-  /// @brief Queues a lifecycle operation (resume / suspend / close) on the vendor's serial lane
-  /// and returns its JS promise. A successful settle moves the context to @p nextState.
+  /// @brief Queues a lifecycle operation (resume / suspend / close / startRendering) on the
+  /// vendor's serial lane and returns its JS promise. A successful settle moves the context to
+  /// @p nextState; @p Resolver fixes what the promise resolves with, `undefined` by default.
   /// Runs under the context's driver mutex, in the order JS issued the calls, and the captured
   /// context keeps itself alive until its queued operation has run.
-  template <LifecycleOperation Operation>
+  template <
+      std::derived_from<ContextPromiseResolver> Resolver = ContextStateResolver,
+      LifecycleOperation<std::shared_ptr<Resolver>> Operation>
   jsi::Value createLifecyclePromise(ContextState nextState, Operation &&operation) {
     return promiseVendor_->createAsyncPromise(
         [context = context_, nextState, operation = std::forward<Operation>(operation)](
             Promise &&promise) {
-          auto resolver = ContextPromiseResolver<void>::makeContextPromiseResolver(
-              std::move(promise), context, nextState);
-          context->runLifecycleOperation([&] { operation(*context, resolver); });
+          auto resolver = std::make_shared<Resolver>(std::move(promise), context, nextState);
+          context->runLifecycleOperation(operation, resolver);
         });
   }
 
