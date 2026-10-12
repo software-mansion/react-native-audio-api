@@ -164,6 +164,20 @@ void AudioScheduledSourceNode::disable() {
   AudioNode::disable();
 }
 
+void AudioScheduledSourceNode::advanceWithoutRender(std::size_t currentSampleFrame) {
+  if (isUnscheduled() || isFinished() || stopTime_ == -1.0) {
+    return;
+  }
+
+  const auto stopFrame = dsp::timeToSampleFrame(stopTime_, getContextSampleRate());
+  if (stopFrame >= currentSampleFrame) {
+    return;
+  }
+
+  playbackState_ = PlaybackState::STOP_SCHEDULED;
+  handleStopScheduled();
+}
+
 void AudioScheduledSourceNode::assignOnEndedCallbackId(uint64_t callbackId) {
   onEndedEvent_.assignCallbackId(callbackId);
 }

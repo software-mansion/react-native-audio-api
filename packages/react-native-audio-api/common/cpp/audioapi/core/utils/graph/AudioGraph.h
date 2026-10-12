@@ -5,6 +5,7 @@
 #include <audioapi/core/utils/graph/InputPool.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <ranges>
@@ -187,6 +188,13 @@ class AudioGraph {
   /// and before the forward iter() pass.
   /// @note Audio Thread only
   void settleProcessableState();
+
+  /// @brief Gives every node that will not be rendered this quantum its
+  /// `advanceWithoutRender` tick. Call after settleProcessableState() so the
+  /// processable set is final, and before the forward iter() pass.
+  /// Allocation-free.
+  /// @note Audio Thread only
+  void advanceUnpulledNodes(std::size_t currentSampleFrame);
 
  private:
   std::vector<Vertex> nodes;     // always kept topologically sorted

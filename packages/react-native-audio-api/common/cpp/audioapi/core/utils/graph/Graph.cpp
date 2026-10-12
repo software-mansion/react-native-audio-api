@@ -75,6 +75,10 @@ void Graph::process() {
   audioGraph.settleProcessableState();
 }
 
+void Graph::advanceUnpulledNodes(std::size_t currentSampleFrame) {
+  audioGraph.advanceUnpulledNodes(currentSampleFrame);
+}
+
 Graph::HostVertex *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
   // collectDisposedNodes();
 
