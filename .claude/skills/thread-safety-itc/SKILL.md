@@ -115,9 +115,9 @@ Do not call `AudioGraphManager` directly — go through `AudioNode::connect()` /
 
 ### Processable state is audio-thread-only
 
-Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is derived exclusively on the audio thread by `AudioGraph::settleProcessableState()` (a reverse-topological pull run inside `Graph::process()`), using only audio-thread-owned data: the topo-sorted node array, `InputPool` input lists, and `link_head` processable-links.
+Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is derived exclusively on the audio thread by `AudioGraph::settleProcessableState()` (a seed-driven dependency pull run inside `Graph::process()`), using only audio-thread-owned data: the topo-sorted node array, `InputPool` input lists, and `link_head` processable-links.
 
-**Pitfall (fixed):** earlier, `HostGraph` AGEvents (`addEdge`/`removeEdge`/`removeAllEdges`) walked `HostGraph::Node::{inputs,outputs,linkedNodes}` on the audio thread to mark processable state incrementally. Those vectors mutate on the JS thread under `nodesMutex_` — a cross-thread race. AGEvents must never read HostGraph adjacency for processable state; they only mirror structural edges/links onto the audio graph. The host-side `linkedNodes` list is now kept solely so links can be scrubbed when a linked node is disposed.
+**Pitfall (fixed):** earlier, `HostGraph` AGEvents (`addEdge`/`removeEdge`/`removeAllEdges`) walked `HostGraph::HostVertex::{inputs,outputs,linkedNodes}` on the audio thread to mark processable state incrementally. Those vectors mutate on the JS thread under `nodesMutex_` — a cross-thread race. AGEvents must never read HostGraph adjacency for processable state; they only mirror structural edges/links onto the audio graph. The host-side `linkedNodes` list is now kept solely so links can be scrubbed when a linked node is disposed.
 
 ---
 
@@ -189,7 +189,7 @@ On Android, `AndroidAudioPlayer::onErrorAfterClose` also takes `driverMutex_` be
 
 **Live `AudioContext` render quiescence:** `currentRenders_` on `AudioContext` is incremented at the start of each platform I/O callback (`IOSAudioPlayer::deliverOutputBuffers` / `AndroidAudioPlayer::onAudioReady`) via a reference passed in `initialize()`, and decremented when the callback returns (RAII scope). `suspend()` and `close()` call `waitForRenderQuiescence()` (under `driverMutex_`) before `processAudioEvents()` / `cleanup()`. `NodeAudioPlayer` (WPT harness) receives the same reference but never opens a render scope.
 
-**Player base class:** all three drivers (`AndroidAudioPlayer` on Android, `IOSAudioPlayer`, `NodeAudioPlayer` in `wpt_tests/src/`) derive from `AudioPlayer` (`common/cpp/audioapi/core/AudioPlayer.h`). It owns the shared driver state as protected members: `renderAudio_`, `renderBuffer_` (one render quantum, allocated once in the constructor), `sampleRate_`, `channelCount_`, `currentRenders_`, `context_`, `driverMutex_`, and `isRunning_`. It also takes one constructor signature for every platform, so `AudioContext::initialize()` builds a single `PlatformAudioPlayer` alias. Render through `renderNormalizedQuantum()`, which keeps the output peak-limiting in the player so offline renders are never limited. `AudioPlayerTests.mm` (fabric-example XCTest) hand-copies `IOSAudioPlayer`'s member layout to reach its private members, so any change to `IOSAudioPlayer`'s data members must also be made there.
+**Player base class:** all three drivers (`AndroidAudioPlayer` on Android, `IOSAudioPlayer`, `NodeAudioPlayer` in `wpt_tests/src/`) derive from `AudioPlayer` (`common/cpp/audioapi/core/AudioPlayer.h`). It owns the shared driver state as protected members: `renderAudio_`, `renderBuffer_` (one render quantum, allocated once in the constructor), `sampleRate_`, `channelCount_`, `currentRenders_`, `context_`, `driverMutex_`, and `isRunning_`. It also takes one constructor signature for every platform. `AudioContext::initialize()` calls `createPlatformAudioPlayer()` (declared in `AudioPlayer.h`, defined next to each subclass; the recorder has the matching `createPlatformAudioRecorder()` in `AudioRecorder.h`) instead of including a platform header. Keep it that way: `IOSAudioPlayer.h` and `IOSAudioRecorder.h` are Objective-C++ only, and a plain-C++ `.cpp` that includes them sees a different class definition (raw pointers instead of ARC `__strong` members), so any constructor or inline member emitted from that TU skips the retain and the native object is freed early. Render through `renderNormalizedQuantum()`, which keeps the output peak-limiting in the player so offline renders are never limited. `AudioPlayerTests.mm` (fabric-example XCTest) hand-copies `IOSAudioPlayer`'s member layout to reach its private members, so any change to `IOSAudioPlayer`'s data members must also be made there.
 
 **Graph producer self-drain:** `Graph::enableProducerSelfDrain()` makes producer threads drain the event channels themselves after each enqueue; `disableProducerSelfDrain()` hands consumption back to the audio/render thread. Both flush the channels internally (no separate `processEvents()` call needed) and serialize with in-flight drains via `selfDrainMutex_`, because two producers can drain concurrently: the JS thread (mutations) and the GC finalizer thread (`removeNode`, which self-drains after its Channel B orphan send — otherwise a finalizer burst with no consumer fills the bounded channel and blocks forever, e.g. at process exit). Enable only when there is no audio/render consumer (realtime: construction + after `suspend`/`close` quiescence; offline: before `startRendering` and after a scheduled suspend); disable *before* starting the audio/render consumer; re-enable if start/resume fails.
 
@@ -244,8 +244,29 @@ suspend.then→suspended, event→suspended`.
 
 ---
 
+## Android Notification Subsystem: JS-Queue Confinement
+
+Kotlin rather than C++, but the same discipline. `AudioAPIModule.showNotification` →
+`MediaSessionManager` → `NotificationRegistry.showNotification` → `BaseNotification.show()`/`hide()`
+runs entirely on the **JS thread**; nothing on that path hops threads. `MediaSessionCompat` adopts
+the looper of whichever thread constructed it, so a session created in `initializeIfNeeded()` is
+JS-thread-affine too.
+
+Anything arriving asynchronously (artwork loads) must therefore be delivered back with
+`reactContext.runOnJSQueueThread { ... }`, **not** `runOnUiQueueThread`. `runOnJSQueueThread` always
+posts and never runs inline, so a callback cannot re-enter an update already in progress — which in
+turn makes plain field assignment safe and removes any need for a lock.
+
+Async results also need a **generation counter** (`PlaybackNotification.artworkGeneration`), bumped
+on every new request and in `hide()`. Cancelling cannot recall a result that has already been posted
+to the queue, so the callback compares the generation it captured and drops a stale one. Without it,
+a superseded load overwrites newer artwork or repaints a dismissed notification.
+
+---
+
 ## Common Mistakes
 
+- **Hopping to the UI thread from a notification callback** — `MediaSessionCompat` is bound to the JS queue thread that built it; use `runOnJSQueueThread`. Two `setMetadata` writers on different threads each read-modify-write the session's metadata and clobber each other. Keep one writer that builds from the notification's own fields.
 - **Reading `node_->field_` in a getter** when that field is written by the audio thread → use shadow state or atomics.
 - **Calling `node_->method()` directly from a setter** → always schedule via `scheduleAudioEvent`.
 - **Not clearing callback IDs in the HostObject destructor** → node keeps firing into a GC'd JSI function; call `assignOnXCallbackId(0)` from each event HostObject layer on teardown

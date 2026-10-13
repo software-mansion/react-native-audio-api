@@ -4,6 +4,7 @@
 #import <Foundation/Foundation.h>
 
 #include <algorithm>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -461,6 +462,13 @@ double IOSAudioRecorder::getInputLatency() const
   }
 
   return baseLatency + [sessionManager inputLatencySeconds];
+}
+
+std::shared_ptr<AudioRecorder> createPlatformAudioRecorder(
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const AudioRecorderOptions &options)
+{
+  return std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, options);
 }
 
 } // namespace audioapi

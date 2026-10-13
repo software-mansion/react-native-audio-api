@@ -41,10 +41,6 @@ void ConvolverNode::setBuffer(
     context->getDisposer()->dispose(std::move(buffer_));
   }
 
-  if (threadPool_ != nullptr) {
-    context->getDisposer()->dispose(std::move(threadPool_));
-  }
-
   for (auto &convolver : convolvers_) {
     context->getDisposer()->dispose(std::move(convolver));
   }

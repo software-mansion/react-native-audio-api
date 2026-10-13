@@ -1,4 +1,6 @@
 ENV['RCT_NEW_ARCH_ENABLED'] = '1'
+# The example app exercises remote streaming / HLS demos, which need FFmpeg (off by default).
+ENV['ENABLE_AUDIOAPI_FFMPEG'] = '1'
 
 # Uncomment when building for macOS with Catalyst
 # ENV['RCT_BUILD_FROM_SOURCE'] = '1'

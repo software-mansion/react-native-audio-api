@@ -71,4 +71,14 @@ class AudioPlayer {
   AudioContextLatencyHint latencyHint_;
 };
 
+/// Builds the platform's AudioPlayer.
+std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+    float sampleRate,
+    int channelCount,
+    std::atomic<uint32_t> &currentRenders,
+    std::weak_ptr<AudioContext> context,
+    std::mutex *driverMutex,
+    AudioContextLatencyHint latencyHint);
+
 } // namespace audioapi

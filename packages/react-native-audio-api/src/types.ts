@@ -58,7 +58,10 @@ export interface AudioContextOptions {
    * supported yet.
    */
   latencyHint?: AudioContextLatencyCategory;
+  androidOutputProfile?: AndroidOutputProfile;
 }
+
+export type AndroidOutputProfile = 'media' | 'voiceCommunication';
 
 export interface OfflineAudioContextOptions {
   numberOfChannels: number;

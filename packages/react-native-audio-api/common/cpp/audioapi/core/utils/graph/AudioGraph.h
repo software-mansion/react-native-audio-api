@@ -21,11 +21,11 @@ namespace audioapi::utils::graph {
 ///
 /// @note Can store at most 2^30 nodes due to bit-packed indices (~10^9).
 class AudioGraph {
-  // ── Node ────────────────────────────────────────────────────────────────
+  // ── Vertex ──────────────────────────────────────────────────────────────
 
-  struct Node {
-    Node() = default;
-    explicit Node(std::shared_ptr<NodeHandle> handle) : handle(std::move(handle)) {}
+  struct Vertex {
+    Vertex() = default;
+    explicit Vertex(std::shared_ptr<NodeHandle> handle) : handle(std::move(handle)) {}
 
     std::shared_ptr<NodeHandle> handle = nullptr; // owned handle bridging to HostGraph
     std::uint32_t input_head = InputPool::kNull;  // head of input linked list in pool_
@@ -38,10 +38,9 @@ class AudioGraph {
 
     std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
     unsigned will_be_deleted : 1 = 0;       // scratch — marked for compaction removal
-    std::int32_t after_compaction_ind : 31 =
-        -1; // scratch — new index after compaction / BFS linked-list next
+    std::int32_t target_place : 31 = -1;    // scratch - new index after compaction
 
-    /// Node is removed when: orphaned && inputs.empty() && canBeDestructed()
+    /// Vertex is removed when: orphaned && inputs.empty() && canBeDestructed()
     unsigned orphaned : 1 = 0; // means this node was removed from host graph
 
 #if RN_AUDIO_API_TEST
@@ -67,7 +66,7 @@ class AudioGraph {
   /// audio thread via adoptNodeBuffer(). The returned (old) buffer must be
   /// disposed off the audio thread.
   struct NodeBuffer {
-    std::vector<Node> data;
+    std::vector<Vertex> data;
     explicit NodeBuffer(std::uint32_t capacity) {
       data.reserve(capacity);
     }
@@ -98,10 +97,10 @@ class AudioGraph {
   // ── Accessors ───────────────────────────────────────────────────────────
 
   /// @brief Access node by flat-vector index.
-  [[nodiscard]] Node &operator[](std::uint32_t index);
+  [[nodiscard]] Vertex &operator[](std::uint32_t index);
 
   /// @brief Access node by flat-vector index (const).
-  [[nodiscard]] const Node &operator[](std::uint32_t index) const;
+  [[nodiscard]] const Vertex &operator[](std::uint32_t index) const;
 
   /// @brief Number of live nodes in the graph.
   [[nodiscard]] size_t size() const;
@@ -137,8 +136,8 @@ class AudioGraph {
 
   // ── Mutators ────────────────────────────────────────────────────────────
 
-  /// @brief Marks the topological ordering as dirty so the next process()
-  /// recomputes it.
+  /// @brief Marks the topological ordering as dirty so the next
+  /// sortAndCompact() recomputes it.
   void markDirty();
 
   /// @brief Adds a new node. AudioGraph takes shared ownership of the handle.
@@ -146,7 +145,8 @@ class AudioGraph {
   void addNode(std::shared_ptr<NodeHandle> handle);
 
   /// @brief Recomputes topological order (if dirty), then compacts the graph
-  /// by removing orphaned, input-free, destructible nodes.
+  /// by removing orphaned, input-free, destructible nodes. Compaction is
+  /// skipped entirely when no node is orphaned.
   ///
   /// When a node is compacted out its `shared_ptr<NodeHandle>` is released
   /// (refcount drops 2 → 1). HostGraph detects this via `use_count() == 1`
@@ -159,41 +159,63 @@ class AudioGraph {
   /// Time: O(V + E)
   ///
   /// Extra space: O(1) — everything in place.
-  void process();
+  void sortAndCompact();
 
   /// @brief Recomputes every node's processable state for the coming render
-  /// quantum via a reverse-topological pull.
+  /// quantum.
   ///
-  /// The graph is kept topologically sorted (sources first, sinks last), so
-  /// a right-to-left walk visits every consumer before its producers. Seed
-  /// nodes (AudioDestinationNode, AnalyserNode, ...) are ALWAYS_PROCESSABLE
-  /// and act as pull roots.
+  /// A node renders this quantum when it is reachable from a seed by walking
+  /// dependencies (audio inputs and processable links) backwards. Seeds are
+  /// the nodes whose state is not NOT_PROCESSABLE on entry: the
+  /// ALWAYS_PROCESSABLE pull roots (AudioDestinationNode, AnalyserNode, ...).
+  /// The walk is a depth-first traversal seeded from those roots, with
+  /// `processableState_` doubling as the visited marker: a node is pushed
+  /// only on its NOT -> CONDITIONAL transition, so every node and every
+  /// dependency list is visited at most once. The traversal does not depend
+  /// on the topological order, which is what lets links (whose targets may
+  /// sit anywhere in the array) share the loop with inputs.
   ///
-  /// Because links are not part of the topological order, a marked link
-  /// target may sit *after* the node that pulled it; the pull therefore
-  /// iterates to a fixpoint. State only ever transitions NOT -> CONDITIONAL,
-  /// so the loop is monotonic and terminates. Link-free graphs settle in a
-  /// single pass.
+  /// Uses `target_place` as an embedded stack, the same way kahn_toposort()
+  /// does; it is restored to -1 for every node before returning.
   ///
   /// Must derive state ONLY from `processableState_`, never from
   /// `AudioNode::isProcessable()` — a tail-bearing node keeps the latter true
   /// after a disconnect and would otherwise re-activate its whole upstream
   /// cone.
   ///
-  /// Allocation-free. Call after process() (indices and
-  /// topological order must be settled) and before the forward iter() pass.
+  /// Allocation-free. Call after sortAndCompact() (indices must be settled)
+  /// and before the forward iter() pass.
   /// @note Audio Thread only
   void settleProcessableState();
 
  private:
-  std::vector<Node> nodes;       // always kept topologically sorted
+  std::vector<Vertex> nodes;     // always kept topologically sorted
   InputPool pool_;               // pool backing all input linked lists
-  bool topo_order_dirty = false; // set by markDirty(), cleared by process()
+  bool topo_order_dirty = false; // set by markDirty(), cleared by sortAndCompact()
+
+  /// @brief Flags nodes for compaction (`will_be_deleted`), then scrubs every
+  /// dependency list entry that points at a flagged node. Flagging cascades in
+  /// one left-to-right pass because the array is topologically sorted.
+  void markDeletions();
+
+  /// @brief Rewrites every index stored in the input and link lists through
+  /// `target_place`. Call after targets are assigned and before nodes move.
+  void remapListsToTargetIndex();
+
+  /// @brief Invokes `fn(head)` for each list head that holds dependencies of
+  /// `node`: the audio inputs and the processable links. Dependencies are
+  /// what a processable node pulls into processing; only the input list
+  /// additionally carries audio and orders the toposort.
+  template <typename Fn>
+  static void forEachDependencyList(Vertex &node, Fn fn) {
+    fn(node.input_head);
+    fn(node.link_head);
+  }
 
   /// @brief In-place Kahn's toposort (sources first, sinks last).
   ///
-  /// Uses `after_compaction_ind` as an embedded FIFO linked-list for the
-  /// BFS queue, and cycle-sort for the final permutation.
+  /// Uses `target_place` as an embedded linked-list stack for the
+  /// ready set, and cycle-sort for the final permutation.
   ///
   /// Time: O(V + E)
   ///
@@ -203,8 +225,8 @@ class AudioGraph {
 
 inline auto AudioGraph::iter() {
   return nodes |
-      std::views::filter([](const Node &n) { return n.handle->audioNode->isProcessable(); }) |
-      std::views::transform([this](Node &node) {
+      std::views::filter([](const Vertex &n) { return n.handle->audioNode->isProcessable(); }) |
+      std::views::transform([this](Vertex &node) {
            return Entry{
                .graphObject = *node.handle->audioNode,
                .inputs = pool_.view(node.input_head) |

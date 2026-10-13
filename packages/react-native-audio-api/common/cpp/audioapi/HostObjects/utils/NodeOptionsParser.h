@@ -367,7 +367,7 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
         options.httpHeaders, parseHttpHeaders(runtime, headersValue.asObject(runtime)));
   }
 
-#if RN_AUDIO_API_FFMPEG_DISABLED
+#if !RN_AUDIO_API_FFMPEG_ENABLED
   if (options.requiresFFmpeg) {
     throw jsi::JSError(
         runtime,
