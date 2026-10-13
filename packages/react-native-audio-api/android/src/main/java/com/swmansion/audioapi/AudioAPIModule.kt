@@ -210,10 +210,6 @@ class AudioAPIModule(
   }
 
   override fun getCommunicationDevice(promise: Promise?) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-      promise?.reject("E_UNSUPPORTED", "Communication-device routing requires Android 12 (API 31) or later")
-      return
-    }
     MediaSessionManager.getCommunicationDevice { device -> promise?.resolve(device) }
   }
 

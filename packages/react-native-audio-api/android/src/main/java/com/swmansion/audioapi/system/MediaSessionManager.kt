@@ -11,7 +11,6 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
@@ -41,16 +40,7 @@ object MediaSessionManager {
   private lateinit var playbackNotificationReceiver: PlaybackNotificationReceiver
 
   private val mainHandler = Handler(Looper.getMainLooper())
-  private var androidMode: String? = null
-  private var configuredCommunicationDevice: String? = null
-  private var previousAudioMode: Int? = null
-  private var communicationSessionActive = false
-
-  // Android keeps a requested communication device until it is cleared or the
-  // process dies, with or without a communication session.
-  private var communicationDeviceRequested = false
-
-  private var communicationDeviceCallbacks: CommunicationDeviceCallbacks? = null
+  private lateinit var communicationSession: CommunicationSession
 
   // New notification system
   private lateinit var notificationRegistry: NotificationRegistry
@@ -93,8 +83,10 @@ object MediaSessionManager {
 
     this.audioFocusListener =
       AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, mainHandler) {
-        communicationSessionActive
+        communicationSession.isActive
       }
+    this.communicationSession =
+      CommunicationSession(this.audioManager, this.audioFocusListener, mainHandler, ::emitRouteChange)
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
 
     // Initialize new notification system
@@ -119,8 +111,7 @@ object MediaSessionManager {
     androidCommunicationDevice: String?,
   ) {
     runOnMain {
-      this.androidMode = androidMode?.takeIf { it.isNotEmpty() }
-      this.configuredCommunicationDevice = androidCommunicationDevice?.takeIf { it.isNotEmpty() }
+      communicationSession.configure(androidMode, androidCommunicationDevice)
     }
   }
 
@@ -129,7 +120,12 @@ object MediaSessionManager {
     onComplete: (String?) -> Unit,
   ) {
     runOnMain {
-      onComplete(setAudioSessionActivityOnMain(enabled))
+      if (enabled) {
+        onComplete(communicationSession.activate())
+      } else {
+        communicationSession.deactivate()
+        onComplete(null)
+      }
     }
   }
 
@@ -138,7 +134,7 @@ object MediaSessionManager {
     enabled: Boolean,
   ) {
     runOnMain {
-      if (communicationSessionActive) {
+      if (communicationSession.isActive) {
         return@runOnMain
       }
       if (enabled) {
@@ -154,133 +150,27 @@ object MediaSessionManager {
     onComplete: (String?) -> Unit,
   ) {
     runOnMain {
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-        onComplete("Android communication devices require Android 12 (API 31) or later")
-        return@runOnMain
-      }
-      onComplete(requestCommunicationDevice(device))
+      onComplete(communicationSession.requestDevice(device))
     }
   }
 
   fun getCommunicationDevice(onComplete: (ReadableMap?) -> Unit) {
     runOnMain {
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-        onComplete(null)
-        return@runOnMain
-      }
-      onComplete(audioManager.communicationDevice?.let(::toReadableDeviceInfo))
+      onComplete(communicationSession.currentDevice()?.let(::toReadableDeviceInfo))
     }
-  }
-
-  @RequiresApi(Build.VERSION_CODES.S)
-  private fun activateCommunicationSession(): String? {
-    if (communicationSessionActive) {
-      return null
-    }
-
-    previousAudioMode = audioManager.mode
-    if (!audioFocusListener.requestCommunicationAudioFocus()) {
-      previousAudioMode = null
-      return "Android denied voice-communication audio focus"
-    }
-
-    return try {
-      audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-      communicationDeviceCallbacks =
-        CommunicationDeviceCallbacks(audioManager, mainHandler, ::emitRouteChange).also { it.register() }
-      configuredCommunicationDevice?.let { device ->
-        requestCommunicationDevice(device)?.let { error -> throw IllegalStateException(error) }
-      }
-      communicationSessionActive = true
-      null
-    } catch (error: Exception) {
-      deactivateCommunicationSession()
-      error.message ?: "Could not activate Android communication audio session"
-    }
-  }
-
-  @RequiresApi(Build.VERSION_CODES.S)
-  private fun deactivateCommunicationSession() {
-    val ownsSession = communicationSessionActive || previousAudioMode != null
-    if (!ownsSession && !communicationDeviceRequested) {
-      return
-    }
-
-    communicationSessionActive = false
-    val callbacks = communicationDeviceCallbacks
-    communicationDeviceCallbacks = null
-    if (callbacks != null) {
-      try {
-        callbacks.unregister()
-      } catch (error: Exception) {
-        Log.w("MediaSessionManager", "Could not unregister communication-device callbacks", error)
-      }
-    }
-    audioManager.clearCommunicationDevice()
-    communicationDeviceRequested = false
-    if (ownsSession) {
-      audioFocusListener.abandonCommunicationAudioFocus()
-      previousAudioMode?.let { audioManager.mode = it }
-      previousAudioMode = null
-    }
-  }
-
-  @RequiresApi(Build.VERSION_CODES.S)
-  private fun requestCommunicationDevice(device: String): String? {
-    if (device == "systemDefault") {
-      audioManager.clearCommunicationDevice()
-      communicationDeviceRequested = false
-      return null
-    }
-
-    val deviceType =
-      when (device) {
-        "speaker" -> AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-        "earpiece" -> AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-        else -> return "Unsupported communication device: $device"
-      }
-    val target =
-      audioManager.availableCommunicationDevices.firstOrNull { it.type == deviceType }
-        ?: return "Requested communication device is unavailable: $device"
-
-    if (!audioManager.setCommunicationDevice(target)) {
-      return "Android rejected requested communication device: $device"
-    }
-    communicationDeviceRequested = true
-    return null
-  }
-
-  private fun setAudioSessionActivityOnMain(enabled: Boolean): String? {
-    if (!enabled) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        deactivateCommunicationSession()
-      }
-      return null
-    }
-    if (androidMode != "inCommunication") {
-      return null
-    }
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-      return "Android communication sessions require Android 12 (API 31) or later"
-    }
-    return activateCommunicationSession()
   }
 
   fun cleanup() {
     runOnMain {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        deactivateCommunicationSession()
-      }
+      communicationSession.deactivate()
     }
   }
 
   private fun emitRouteChange(reason: String) {
-    if (communicationSessionActive) {
-      audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(
-        AudioEvent.ROUTE_CHANGE.ordinal,
-        mapOf("reason" to reason),
-      )
-    }
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(
+      AudioEvent.ROUTE_CHANGE.ordinal,
+      mapOf("reason" to reason),
+    )
   }
 
   private fun runOnMain(action: () -> Unit) {
@@ -420,7 +310,6 @@ object MediaSessionManager {
     return devicesInfo
   }
 
-  @RequiresApi(Build.VERSION_CODES.O)
   private fun toReadableDeviceInfo(device: AudioDeviceInfo): ReadableMap =
     Arguments.createMap().apply {
       putString("id", device.id.toString())
@@ -428,7 +317,6 @@ object MediaSessionManager {
       putString("category", parseDeviceCategory(device))
     }
 
-  @RequiresApi(Build.VERSION_CODES.O)
   fun parseDeviceCategory(device: AudioDeviceInfo): String =
     when (device.type) {
       AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Mic"
