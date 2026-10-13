@@ -25,9 +25,6 @@ AudioRecorderHostObject::AudioRecorderHostObject(
     AudioRecorderOptions options) {
   audioRecorder_ = createPlatformAudioRecorder(audioEventHandlerRegistry, options);
 
-  // Serial executor, so start/stop/pause/resume/disableFileOutput run in the order JS called
-  // them even when the caller does not await. The remaining methods run on the JS thread
-  // and are excluded against lane work by the recorder's per-output mutexes.
   lifecycleLane_ = std::make_shared<SerialTaskExecutor>();
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker, lifecycleLane_);
 
