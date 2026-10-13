@@ -1,5 +1,5 @@
 'use strict';
-import type { TurboModule } from 'react-native';
+import type { CodegenTypes, TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 import {
   AudioDeviceInfo,
@@ -22,15 +22,10 @@ interface Spec extends TurboModule {
   isFfmpegEnabled(): boolean;
 
   // AVAudioSession management
-  setSystemActivity(enabled: boolean): Promise<void>;
+  setAudioSessionActivity(enabled: boolean): Promise<void>;
   setSystemOptions(
-    category: string,
-    mode: string,
-    options: Array<string>,
-    allowHaptics: boolean,
-    notifyOthersOnDeactivation: boolean,
-    androidMode: string,
-    androidCommunicationDevice: string
+    ios: CodegenTypes.UnsafeObject,
+    android: CodegenTypes.UnsafeObject
   ): void;
   disableSessionManagement(): void;
 

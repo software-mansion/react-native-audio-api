@@ -1,8 +1,4 @@
-import type {
-  CommunicationDevice,
-  IAudioManager,
-  PermissionStatus,
-} from '../system/types';
+import type { IAudioManager, PermissionStatus } from '../system/types';
 
 const mockAsync =
   <T>(value: T) =>
@@ -16,7 +12,7 @@ const mockSync =
 class AudioManager implements IAudioManager {
   getDevicePreferredSampleRate = mockSync(44100);
   getSystemVolume = mockSync(1);
-  setSystemActivity = mockAsync(undefined);
+  setAudioSessionActivity = mockAsync(undefined);
   setSystemOptions = mockSync({});
   disableSessionManagement = mockSync({});
   observeAudioInterruptions = mockSync(true);
@@ -28,12 +24,8 @@ class AudioManager implements IAudioManager {
   requestNotificationPermissions = mockAsync('Granted' as PermissionStatus);
   checkNotificationPermissions = mockAsync('Granted' as PermissionStatus);
   setInputDevice = mockAsync(undefined);
-  setCommunicationDevice = (_device: CommunicationDevice) =>
-    Promise.reject(new Error('setCommunicationDevice is not supported on web'));
-
-  getCommunicationDevice = () =>
-    Promise.reject(new Error('getCommunicationDevice is not supported on web'));
-
+  setCommunicationDevice = mockAsync(undefined);
+  getCommunicationDevice = mockAsync(null);
   getDevicesInfo = mockAsync({
     availableInputs: [],
     availableOutputs: [],

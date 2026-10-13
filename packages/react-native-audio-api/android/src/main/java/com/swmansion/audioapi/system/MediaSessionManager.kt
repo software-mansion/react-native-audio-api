@@ -50,9 +50,7 @@ object MediaSessionManager {
   // process dies, with or without a communication session.
   private var communicationDeviceRequested = false
 
-  // The API-31 helper is intentionally opaque here so API-30 startup does not
-  // need to resolve its Android-12-only callback types.
-  private var communicationDeviceCallbacks: Any? = null
+  private var communicationDeviceCallbacks: CommunicationDeviceCallbacks? = null
 
   // New notification system
   private lateinit var notificationRegistry: NotificationRegistry
@@ -126,12 +124,12 @@ object MediaSessionManager {
     }
   }
 
-  fun setSystemActivity(
+  fun setAudioSessionActivity(
     enabled: Boolean,
     onComplete: (String?) -> Unit,
   ) {
     runOnMain {
-      onComplete(setSystemActivityOnMain(enabled))
+      onComplete(setAudioSessionActivityOnMain(enabled))
     }
   }
 
@@ -189,7 +187,7 @@ object MediaSessionManager {
     return try {
       audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
       communicationDeviceCallbacks =
-        CommunicationDeviceCallbacks.register(audioManager, mainHandler, ::emitRouteChange)
+        CommunicationDeviceCallbacks(audioManager, mainHandler, ::emitRouteChange).also { it.register() }
       configuredCommunicationDevice?.let { device ->
         requestCommunicationDevice(device)?.let { error -> throw IllegalStateException(error) }
       }
@@ -213,7 +211,7 @@ object MediaSessionManager {
     communicationDeviceCallbacks = null
     if (callbacks != null) {
       try {
-        CommunicationDeviceCallbacks.unregister(callbacks)
+        callbacks.unregister()
       } catch (error: Exception) {
         Log.w("MediaSessionManager", "Could not unregister communication-device callbacks", error)
       }
@@ -252,7 +250,7 @@ object MediaSessionManager {
     return null
   }
 
-  private fun setSystemActivityOnMain(enabled: Boolean): String? {
+  private fun setAudioSessionActivityOnMain(enabled: Boolean): String? {
     if (!enabled) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         deactivateCommunicationSession()
@@ -405,21 +403,11 @@ object MediaSessionManager {
     val availableOutputs = Arguments.createArray()
 
     for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
-      val deviceInfo = Arguments.createMap()
-      deviceInfo.putString("id", inputDevice.getId().toString())
-      deviceInfo.putString("name", inputDevice.productName.toString())
-      deviceInfo.putString("category", parseDeviceCategory(inputDevice))
-
-      availableInputs.pushMap(deviceInfo)
+      availableInputs.pushMap(toReadableDeviceInfo(inputDevice))
     }
 
     for (outputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
-      val deviceInfo = Arguments.createMap()
-      deviceInfo.putString("id", outputDevice.getId().toString())
-      deviceInfo.putString("name", outputDevice.productName.toString())
-      deviceInfo.putString("category", parseDeviceCategory(outputDevice))
-
-      availableOutputs.pushMap(deviceInfo)
+      availableOutputs.pushMap(toReadableDeviceInfo(outputDevice))
     }
 
     val devicesInfo = Arguments.createMap()
@@ -432,7 +420,7 @@ object MediaSessionManager {
     return devicesInfo
   }
 
-  @RequiresApi(Build.VERSION_CODES.S)
+  @RequiresApi(Build.VERSION_CODES.O)
   private fun toReadableDeviceInfo(device: AudioDeviceInfo): ReadableMap =
     Arguments.createMap().apply {
       putString("id", device.id.toString())

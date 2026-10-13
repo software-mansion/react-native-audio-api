@@ -30,13 +30,15 @@ const AudioFile: FC = () => {
       });
 
       AudioManager.setSystemOptions({
-        iosCategory: 'playback',
-        iosMode: 'default',
-        iosOptions: [],
+        ios: {
+          category: 'playback',
+          mode: 'default',
+          options: [],
+        },
       });
 
       try {
-        await AudioManager.setSystemActivity(true);
+        await AudioManager.setAudioSessionActivity(true);
       } catch (error) {
         console.error('Failed to activate audio session:', error);
         Alert.alert(
@@ -85,7 +87,6 @@ const AudioFile: FC = () => {
       await PlaybackNotificationManager.enableControl('pause', true);
       await PlaybackNotificationManager.enableControl('play', true);
       await PlaybackNotificationManager.enableControl('seekTo', true);
-
     } catch (error) {
       console.error('Failed to setup notification:', error);
     }
@@ -100,7 +101,7 @@ const AudioFile: FC = () => {
     return () => {
       AudioPlayer.reset();
       PlaybackNotificationManager.hide();
-      AudioManager.setSystemActivity(false);
+      AudioManager.setAudioSessionActivity(false);
     };
   }, [fetchAudioBuffer]);
 
@@ -152,7 +153,7 @@ const AudioFile: FC = () => {
         if (event.type === 'ended' && wasPlaying) {
           BackgroundTimer.setTimeout(async () => {
             AudioPlayer.setVolume(1.0);
-            AudioManager.setSystemActivity(true);
+            AudioManager.setAudioSessionActivity(true);
             await AudioPlayer.play();
             setIsPlaying(true);
             setWasPlaying(false);
@@ -162,12 +163,9 @@ const AudioFile: FC = () => {
       }
     );
 
-    const duckListener = AudioManager.addSystemEventListener(
-      'duck',
-      () => {
-        AudioPlayer.setVolume(0.2);
-      }
-    );
+    const duckListener = AudioManager.addSystemEventListener('duck', () => {
+      AudioPlayer.setVolume(0.2);
+    });
 
     const seekToListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationSeekTo',

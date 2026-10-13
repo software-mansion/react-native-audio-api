@@ -153,15 +153,19 @@ const formatDb = (db: number) => `${db.toFixed(1)} dBFS`;
 async function recordEcho(setup: EchoSetup): Promise<EchoResult> {
   const { android, ios } = setup;
   AudioManager.setSystemOptions({
-    iosCategory: 'playAndRecord',
-    iosMode: ios.iosMode,
-    // playAndRecord routes to the receiver unless told otherwise.
-    iosOptions: ['defaultToSpeaker'],
-    androidMode: android.androidMode,
-    androidCommunicationDevice: android.androidMode ? 'speaker' : undefined,
+    ios: {
+      category: 'playAndRecord',
+      mode: ios.iosMode,
+      // playAndRecord routes to the receiver unless told otherwise.
+      options: ['defaultToSpeaker'],
+    },
+    android: {
+      mode: android.androidMode,
+      communicationDevice: android.androidMode ? 'speaker' : undefined,
+    },
   });
-  // Without androidMode this only activates the iOS session; Android no-ops.
-  await AudioManager.setSystemActivity(true);
+  // Without android.mode this only activates the iOS session; Android no-ops.
+  await AudioManager.setAudioSessionActivity(true);
   if (Platform.OS === 'android' && android.requestSpeakerWithoutSession) {
     await AudioManager.setCommunicationDevice('speaker');
   }
@@ -233,7 +237,7 @@ async function recordEcho(setup: EchoSetup): Promise<EchoResult> {
       await recorder.stop();
     }
     await context.close();
-    await AudioManager.setSystemActivity(false).catch(() => {});
+    await AudioManager.setAudioSessionActivity(false).catch(() => {});
   }
 }
 
@@ -279,11 +283,13 @@ const EchoCancellation: FC = () => {
   // volume, without voice processing.
   const replay = async (result: EchoResult) => {
     AudioManager.setSystemOptions({
-      iosCategory: 'playback',
-      iosMode: 'default',
-      iosOptions: [],
+      ios: {
+        category: 'playback',
+        mode: 'default',
+        options: [],
+      },
     });
-    await AudioManager.setSystemActivity(true);
+    await AudioManager.setAudioSessionActivity(true);
 
     replayContextRef.current?.close();
     const context = new AudioContext({ androidOutputProfile: 'media' });

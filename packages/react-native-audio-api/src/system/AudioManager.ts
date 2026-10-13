@@ -31,23 +31,19 @@ class AudioManager implements IAudioManager {
    * rejects with a {@link SessionActivationError} carrying the native error
    * details (`nativeErrorInfo`) when available.
    */
-  async setSystemActivity(enabled: boolean): Promise<void> {
+  async setAudioSessionActivity(enabled: boolean): Promise<void> {
     try {
-      await NativeAudioAPIModule.setSystemActivity(enabled);
+      await NativeAudioAPIModule.setAudioSessionActivity(enabled);
     } catch (error) {
       throw parseNativeError(error);
     }
   }
 
+  /** Each platform fills in the defaults for the keys its group leaves out. */
   setSystemOptions(options: SystemOptions) {
     NativeAudioAPIModule.setSystemOptions(
-      options.iosCategory ?? '',
-      options.iosMode ?? '',
-      options.iosOptions ?? [],
-      options.iosAllowHaptics ?? false,
-      options.iosNotifyOthersOnDeactivation ?? true,
-      options.androidMode ?? '',
-      options.androidCommunicationDevice ?? ''
+      options.ios ?? {},
+      options.android ?? {}
     );
   }
 
@@ -137,7 +133,7 @@ class AudioManager implements IAudioManager {
   /**
    * Requests the Android route for voice-communication audio, with or without
    * an `inCommunication` session. `systemDefault` clears the request, as does
-   * `setSystemActivity(false)`.
+   * `setAudioSessionActivity(false)`.
    */
   async setCommunicationDevice(device: CommunicationDevice): Promise<void> {
     await NativeAudioAPIModule.setCommunicationDevice(device);

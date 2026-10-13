@@ -1,4 +1,5 @@
 import { TurboModule } from 'react-native';
+import type { CodegenTypes } from 'react-native';
 import {
   AudioDeviceInfo,
   AudioDevicesInfo,
@@ -19,15 +20,10 @@ interface Spec extends TurboModule {
   isFfmpegEnabled(): boolean;
 
   // AVAudioSession management
-  setSystemActivity(enabled: boolean): Promise<void>;
+  setAudioSessionActivity(enabled: boolean): Promise<void>;
   setSystemOptions(
-    category: string,
-    mode: string,
-    options: Array<string>,
-    allowHaptics: boolean,
-    notifyOthersOnDeactivation: boolean,
-    androidMode: string,
-    androidCommunicationDevice: string
+    ios: CodegenTypes.UnsafeObject,
+    android: CodegenTypes.UnsafeObject
   ): void;
   disableSessionManagement(): void;
 
@@ -72,7 +68,7 @@ const NativeAudioAPIModule: Spec = {
   install: mockSync(true),
   getDevicePreferredSampleRate: mockSync(0),
   isFfmpegEnabled: mockSync(true),
-  setSystemActivity: mockAsync(undefined),
+  setAudioSessionActivity: mockAsync(undefined),
   setSystemOptions: mockSync({}),
   disableSessionManagement: mockSync({}),
   observeAudioInterruptions: mockSync({}),
@@ -89,10 +85,8 @@ const NativeAudioAPIModule: Spec = {
     currentOutputs: [],
   }),
   setInputDevice: mockAsync(undefined),
-  setCommunicationDevice: () =>
-    Promise.reject(new Error('setCommunicationDevice is not supported on web')),
-  getCommunicationDevice: () =>
-    Promise.reject(new Error('getCommunicationDevice is not supported on web')),
+  setCommunicationDevice: mockAsync(undefined),
+  getCommunicationDevice: mockAsync(null),
   showNotification: mockAsync({ success: true }),
   hideNotification: mockAsync({ success: true }),
   isNotificationActive: mockAsync(false),

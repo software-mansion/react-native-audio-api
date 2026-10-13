@@ -44,13 +44,15 @@ const Record: FC = () => {
     }
 
     AudioManager.setSystemOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'voiceChat',
-      iosOptions: ['allowBluetoothHFP'],
+      ios: {
+        category: 'playAndRecord',
+        mode: 'voiceChat',
+        options: ['allowBluetoothHFP'],
+      },
     });
 
     try {
-      await AudioManager.setSystemActivity(true);
+      await AudioManager.setAudioSessionActivity(true);
     } catch (error) {
       console.error('Failed to activate audio session:', error);
       Alert.alert(
@@ -94,7 +96,7 @@ const Record: FC = () => {
 
     audioRecorder.disconnect();
     setStatus(Status.Idle);
-    await AudioManager.setSystemActivity(false);
+    await AudioManager.setAudioSessionActivity(false);
   };
 
   const startRecordForReplay = async () => {
@@ -109,13 +111,15 @@ const Record: FC = () => {
     }
 
     AudioManager.setSystemOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'default',
-      iosOptions: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
+      ios: {
+        category: 'playAndRecord',
+        mode: 'default',
+        options: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
+      },
     });
 
     try {
-      await AudioManager.setSystemActivity(true);
+      await AudioManager.setAudioSessionActivity(true);
     } catch (error) {
       console.error('Failed to activate audio session:', error);
       Alert.alert(
@@ -164,20 +168,22 @@ const Record: FC = () => {
     setTimeout(async () => {
       audioRecorder.stop();
       audioRecorder.clearOnAudioReady();
-      await AudioManager.setSystemActivity(false);
+      await AudioManager.setAudioSessionActivity(false);
       setStatus(Status.Idle);
     }, 5000);
   };
 
   const onStartReplay = async () => {
     AudioManager.setSystemOptions({
-      iosCategory: 'playback',
-      iosMode: 'default',
-      iosOptions: [],
+      ios: {
+        category: 'playback',
+        mode: 'default',
+        options: [],
+      },
     });
 
     try {
-      await AudioManager.setSystemActivity(true);
+      await AudioManager.setAudioSessionActivity(true);
     } catch (error) {
       console.error('Failed to activate audio session:', error);
       Alert.alert(
@@ -208,7 +214,7 @@ const Record: FC = () => {
     setTimeout(
       async () => {
         await audioContext.suspend();
-        await AudioManager.setSystemActivity(false);
+        await AudioManager.setAudioSessionActivity(false);
         setStatus(Status.Idle);
       },
       (nextStartAt - tNow) * 1000

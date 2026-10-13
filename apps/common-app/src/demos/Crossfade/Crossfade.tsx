@@ -35,8 +35,16 @@ const TILE_DISTANCE = ARTWORK_SIZE + TILE_OFFSET;
 const MAX_GAIN = 0.5;
 
 const TRACKS = [
-  { title: 'Up-Beat', cover: require('./images/image_1.jpeg'), uri: require('./tracks/track1.mp3') },
-  { title: 'Chill', cover: require('./images/image_2.jpg'), uri: require('./tracks/track2.mp3') },
+  {
+    title: 'Up-Beat',
+    cover: require('./images/image_1.jpeg'),
+    uri: require('./tracks/track1.mp3'),
+  },
+  {
+    title: 'Chill',
+    cover: require('./images/image_2.jpg'),
+    uri: require('./tracks/track2.mp3'),
+  },
 ] as const;
 
 function equalPowerGain1(progress: number): number {
@@ -118,7 +126,7 @@ const Crossfade: FC = () => {
       if (isPlayingShared.value === 1) {
         scheduleOnRN(applyGainFromProgress, p);
       }
-    },
+    }
   );
 
   useAnimatedReaction(
@@ -128,7 +136,7 @@ const Crossfade: FC = () => {
         scheduleOnRN(commitSwipeEnd, snapTo);
         swipeEndSnapTo.value = -1;
       }
-    },
+    }
   );
 
   useEffect(() => {
@@ -140,8 +148,12 @@ const Crossfade: FC = () => {
         return;
       }
 
-      buffer1.current = await audioContext.current.decodeAudioData(TRACKS[0].uri);
-      buffer2.current = await audioContext.current.decodeAudioData(TRACKS[1].uri);
+      buffer1.current = await audioContext.current.decodeAudioData(
+        TRACKS[0].uri
+      );
+      buffer2.current = await audioContext.current.decodeAudioData(
+        TRACKS[1].uri
+      );
       setTrackDuration(buffer1.current.duration);
       setPlaybackPosition(0);
       setIsLoading(false);
@@ -156,16 +168,23 @@ const Crossfade: FC = () => {
   }, []);
 
   const playAudio = useCallback(async () => {
-    if (!audioContext.current || !buffer1.current || !buffer2.current || isPlaying) {
+    if (
+      !audioContext.current ||
+      !buffer1.current ||
+      !buffer2.current ||
+      isPlaying
+    ) {
       return;
     }
 
     AudioManager.setSystemOptions({
-      iosCategory: 'playback',
-      iosMode: 'default',
-      iosOptions: [],
+      ios: {
+        category: 'playback',
+        mode: 'default',
+        options: [],
+      },
     });
-    await AudioManager.setSystemActivity(true);
+    await AudioManager.setAudioSessionActivity(true);
 
     if (audioContext.current.state === 'suspended') {
       await audioContext.current.resume();
@@ -188,12 +207,18 @@ const Crossfade: FC = () => {
     const now = audioContext.current.currentTime;
     const maxOffset = Math.max(
       0,
-      Math.min(buffer1.current.duration, buffer2.current.duration) - 0.01,
+      Math.min(buffer1.current.duration, buffer2.current.duration) - 0.01
     );
     const startOffset = Math.min(Math.max(0, playbackPosition), maxOffset);
 
-    gainNode1.current.gain.setValueAtTime(visibleTrack === 1 ? MAX_GAIN : 0, now);
-    gainNode2.current.gain.setValueAtTime(visibleTrack !== 1 ? MAX_GAIN : 0, now);
+    gainNode1.current.gain.setValueAtTime(
+      visibleTrack === 1 ? MAX_GAIN : 0,
+      now
+    );
+    gainNode2.current.gain.setValueAtTime(
+      visibleTrack !== 1 ? MAX_GAIN : 0,
+      now
+    );
     progress.value = visibleTrack === 1 ? 0 : 1;
 
     sourceNode1.current.onpositionchanged = (event) => {
@@ -226,7 +251,7 @@ const Crossfade: FC = () => {
     gainNode2.current = null;
 
     await audioContext.current.suspend();
-    await AudioManager.setSystemActivity(false);
+    await AudioManager.setAudioSessionActivity(false);
     setIsPlaying(false);
   }, [isPlaying]);
 
@@ -249,7 +274,10 @@ const Crossfade: FC = () => {
     onUpdate: (event) => {
       const p = Math.max(
         0,
-        Math.min(1, swipeStartProgress.value - event.translationX / ARTWORK_SIZE),
+        Math.min(
+          1,
+          swipeStartProgress.value - event.translationX / ARTWORK_SIZE
+        )
       );
       progress.value = p;
     },
@@ -338,9 +366,7 @@ const Crossfade: FC = () => {
               <Text style={styles.timeText}>
                 {formatTime(playbackPosition)}
               </Text>
-              <Text style={styles.timeText}>
-                {formatTime(trackDuration)}
-              </Text>
+              <Text style={styles.timeText}>{formatTime(trackDuration)}</Text>
             </View>
           </View>
 

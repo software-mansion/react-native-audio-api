@@ -10,7 +10,6 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
@@ -102,11 +101,11 @@ class AudioAPIModule(
 
   override fun isFfmpegEnabled(): Boolean = !BuildConfig.RN_AUDIO_API_FFMPEG_DISABLED
 
-  override fun setSystemActivity(
+  override fun setAudioSessionActivity(
     enabled: Boolean,
     promise: Promise?,
   ) {
-    MediaSessionManager.setSystemActivity(enabled) { error ->
+    MediaSessionManager.setAudioSessionActivity(enabled) { error ->
       if (error == null) {
         promise?.resolve(null)
       } else {
@@ -115,17 +114,18 @@ class AudioAPIModule(
     }
   }
 
+  /** The iOS options are AVAudioSession settings and have no Android counterpart. */
   override fun setSystemOptions(
-    category: String?,
-    mode: String?,
-    options: ReadableArray?,
-    allowHaptics: Boolean,
-    notifyOthersOnDeactivation: Boolean,
-    androidMode: String?,
-    androidCommunicationDevice: String?,
+    ios: ReadableMap?,
+    android: ReadableMap?,
   ) {
-    MediaSessionManager.setSystemOptions(androidMode, androidCommunicationDevice)
+    MediaSessionManager.setSystemOptions(
+      androidMode = android?.optionalString("mode"),
+      androidCommunicationDevice = android?.optionalString("communicationDevice"),
+    )
   }
+
+  private fun ReadableMap.optionalString(key: String): String? = if (hasKey(key)) getString(key) else null
 
   override fun disableSessionManagement() {
     // nothing to do here

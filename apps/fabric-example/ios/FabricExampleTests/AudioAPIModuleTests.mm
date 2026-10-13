@@ -6,7 +6,7 @@
 
 @interface AudioAPIModule (TestingPrivate)
 
-- (void)setSystemActivity:(BOOL)enabled
+- (void)setAudioSessionActivity:(BOOL)enabled
                   resolve:(RCTPromiseResolveBlock)resolve
                    reject:(RCTPromiseRejectBlock)reject;
 
@@ -120,14 +120,14 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   [super tearDown];
 }
 
-- (void)testSetSystemActivityFalseWaitsForSessionDeactivationBeforeResolve
+- (void)testSetAudioSessionActivityFalseWaitsForSessionDeactivationBeforeResolve
 {
-  XCTestExpectation *resolveExpectation = [self expectationWithDescription:@"setSystemActivity"];
+  XCTestExpectation *resolveExpectation = [self expectationWithDescription:@"setAudioSessionActivity"];
   __block NSArray<NSString *> *eventsAtResolve = nil;
   __block NSString *rejectionCode = nil;
   NSMutableArray<NSString *> *eventLog = self.eventLog;
 
-  [self.module setSystemActivity:NO
+  [self.module setAudioSessionActivity:NO
                          resolve:^(id result) {
                            AppendAudioModuleEvent(eventLog, @"resolve");
                            eventsAtResolve = CopyAudioModuleEvents(eventLog);

@@ -44,11 +44,12 @@ export type AndroidAudioMode = 'inCommunication';
 
 export type CommunicationDevice = 'speaker' | 'earpiece' | 'systemDefault';
 
-export interface SystemOptions {
-  iosMode?: IOSMode;
-  iosOptions?: IOSOption[];
-  iosCategory?: IOSCategory;
-  iosAllowHaptics?: boolean;
+/** AVAudioSession configuration; ignored on Android. */
+export interface IOSSystemOptions {
+  category?: IOSCategory;
+  mode?: IOSMode;
+  options?: IOSOption[];
+  allowHaptics?: boolean;
   /**
    * Setting this to `true` will allow other audio apps to resume playing when
    * the session is deactivated.
@@ -56,17 +57,26 @@ export interface SystemOptions {
    * Has no effect when using PlaybackNotificationManager as it takes over the
    * "Now playing" controls.
    */
-  iosNotifyOthersOnDeactivation?: boolean;
+  notifyOthersOnDeactivation?: boolean;
+}
+
+/** Android audio-mode configuration; ignored on iOS. */
+export interface AndroidSystemOptions {
   /**
    * Opts into Android's communication audio mode. Android 12 (API 31) or later
    * is required when this option is used.
    */
-  androidMode?: AndroidAudioMode;
+  mode?: AndroidAudioMode;
   /**
-   * Initial Android communication-device preference. `systemDefault` clears an
-   * explicit preference and lets Android choose the route.
+   * Initial communication-device preference. `systemDefault` clears an explicit
+   * preference and lets Android choose the route.
    */
-  androidCommunicationDevice?: CommunicationDevice;
+  communicationDevice?: CommunicationDevice;
+}
+
+export interface SystemOptions {
+  ios?: IOSSystemOptions;
+  android?: AndroidSystemOptions;
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
@@ -88,7 +98,7 @@ export interface AudioDevicesInfo {
 
 export interface IAudioManager {
   getDevicePreferredSampleRate(): number;
-  setSystemActivity(enabled: boolean): Promise<void>;
+  setAudioSessionActivity(enabled: boolean): Promise<void>;
   setSystemOptions(options: SystemOptions): void;
   disableSessionManagement(): void;
   observeAudioInterruptions(enabled: boolean): void;

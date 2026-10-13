@@ -23,10 +23,8 @@ const INITIAL_GAINS = [0.3, 0.6, 0.1, 1.0, 0.7, 0.7];
 const labelWidth = 56;
 
 /**
- * Graph:
- *   AudioBufferSourceNode (5.1) → ChannelSplitter(6)
- *     → per-channel GainNodes
- *     → ChannelMerger(2) stereo fold-down → destination
+ * Graph: AudioBufferSourceNode (5.1) → ChannelSplitter(6) → per-channel
+ * GainNodes → ChannelMerger(2) stereo fold-down → destination
  *
  * Fold-down: L/C/LFE/Ls → left, R/C/LFE/Rs → right
  */
@@ -65,11 +63,13 @@ const ChannelMergerSplitter: FC = () => {
     }
 
     AudioManager.setSystemOptions({
-      iosCategory: 'playback',
-      iosMode: 'default',
-      iosOptions: [],
+      ios: {
+        category: 'playback',
+        mode: 'default',
+        options: [],
+      },
     });
-    await AudioManager.setSystemActivity(true);
+    await AudioManager.setAudioSessionActivity(true);
 
     if (ctx.state === 'suspended') {
       await ctx.resume();
@@ -170,7 +170,7 @@ const ChannelMergerSplitter: FC = () => {
       bufferRef.current = null;
       ctx.close().catch(() => {});
       audioContextRef.current = null;
-      AudioManager.setSystemActivity(false).catch(() => {});
+      AudioManager.setAudioSessionActivity(false).catch(() => {});
     };
   }, [teardown]);
 
@@ -178,7 +178,8 @@ const ChannelMergerSplitter: FC = () => {
     <Container>
       <ScrollView
         contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.description}>
           Plays a 5.1 surround test (L R C LFE Ls Rs) through
           AudioBufferSourceNode → ChannelSplitter → per-channel gains →

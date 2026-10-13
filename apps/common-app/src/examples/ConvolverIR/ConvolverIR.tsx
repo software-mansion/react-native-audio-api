@@ -62,7 +62,7 @@ const ConvolverIR: FC = () => {
       bufferRef.current = null;
       ctx.close().catch(() => {});
       audioContextRef.current = null;
-      AudioManager.setSystemActivity(false).catch(() => {});
+      AudioManager.setAudioSessionActivity(false).catch(() => {});
     };
   }, []);
 
@@ -72,7 +72,7 @@ const ConvolverIR: FC = () => {
       return;
     }
     bufferSourceRef.current?.stop(0);
-    // await AudioManager.setSystemActivity(false);
+    // await AudioManager.setAudioSessionActivity(false);
     setIsPlaying(false);
   }, []);
 
@@ -89,11 +89,13 @@ const ConvolverIR: FC = () => {
       }
 
       AudioManager.setSystemOptions({
-        iosCategory: 'playback',
-        iosMode: 'default',
-        iosOptions: [],
+        ios: {
+          category: 'playback',
+          mode: 'default',
+          options: [],
+        },
       });
-      await AudioManager.setSystemActivity(true);
+      await AudioManager.setAudioSessionActivity(true);
 
       if (ctx.state === 'suspended') {
         await ctx.resume();
@@ -121,7 +123,7 @@ const ConvolverIR: FC = () => {
       source.start(ctx.currentTime + 0.1, 10);
       setIsPlaying(true);
     },
-    [gain, isPlaying],
+    [gain, isPlaying]
   );
 
   const onPlayWithConvolver = useCallback(() => {

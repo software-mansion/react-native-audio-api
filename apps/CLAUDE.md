@@ -265,11 +265,13 @@ function MyPedal({ context, inputNode, outputNode }: PedalProps) {
 import { AudioManager } from 'react-native-audio-api';
 
 AudioManager.setSystemOptions({
-  iosCategory: 'playback',       // or 'playAndRecord' for mic input
-  iosMode: 'default',
-  iosOptions: [],
+  ios: {
+    category: 'playback', // or 'playAndRecord' for mic input
+    mode: 'default',
+    options: [],
+  },
 });
-await AudioManager.setSystemActivity(true);
+await AudioManager.setAudioSessionActivity(true);
 ```
 
 ### Recording permission
