@@ -11,7 +11,6 @@
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
 #include <audioapi/utils/Result.hpp>
-#include <audioapi/utils/SerialTaskExecutor.hpp>
 #include <memory>
 #include <string>
 #include <utility>

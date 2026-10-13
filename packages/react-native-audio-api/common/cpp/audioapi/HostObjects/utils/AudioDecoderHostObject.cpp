@@ -21,7 +21,7 @@ AudioDecoderHostObject::AudioDecoderHostObject(
 
 namespace {
 
-PromiseResolver rejectWith(std::string message) {
+PromiseResolver rejectWithMessage(std::string message) {
   return [message = std::move(message)](jsi::Runtime &) {
     return message;
   };
@@ -52,7 +52,7 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
     auto result = audiodecoding::decodeWithMemoryBlock(data, size, sampleRate);
 
     if (result.is_err()) {
-      return rejectWith(result.unwrap_err());
+      return rejectWithMessage(result.unwrap_err());
     }
 
     return resolveWithAudioBuffer(result.unwrap());
@@ -68,7 +68,7 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
     auto result = audiodecoding::decodeWithFilePath(sourcePath, sampleRate);
 
     if (result.is_err()) {
-      return rejectWith(result.unwrap_err());
+      return rejectWithMessage(result.unwrap_err());
     }
 
     return resolveWithAudioBuffer(result.unwrap());
@@ -89,7 +89,7 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
             b64, inputSampleRate, inputChannelCount, interleaved);
 
         if (result.is_err()) {
-          return rejectWith(result.unwrap_err());
+          return rejectWithMessage(result.unwrap_err());
         }
 
         return resolveWithAudioBuffer(result.unwrap());

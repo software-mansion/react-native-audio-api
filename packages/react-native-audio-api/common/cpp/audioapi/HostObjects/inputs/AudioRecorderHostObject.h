@@ -4,8 +4,8 @@
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
-#include <audioapi/utils/ITaskExecutor.h>
 #include <audioapi/utils/Macros.h>
+#include <audioapi/utils/SerialTaskExecutor.hpp>
 
 #include <memory>
 
@@ -51,10 +51,9 @@ class AudioRecorderHostObject : public HostObject {
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
-  /// Serial lane for start / stop / pause / resume / disableFileOutput: tasks run strictly in
-  /// call order. Declared after audioRecorder_ so its destructor, which drains the queue before
-  /// joining the worker, still finds a recorder for the stop the HostObject destructor queued.
-  std::shared_ptr<ITaskExecutor> lifecycleLane_;
+  /// Lifecycle calls run FIFO here. Declared after audioRecorder_: the lane destructor drains
+  /// queued tasks (including the stop queued by ~AudioRecorderHostObject) before joining.
+  std::shared_ptr<SerialTaskExecutor> lifecycleLane_;
   /// Promise vendor over lifecycleLane_.
   std::shared_ptr<PromiseVendor> promiseVendor_;
 };
