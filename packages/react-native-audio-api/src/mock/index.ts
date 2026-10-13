@@ -1210,7 +1210,7 @@ const concatAudioFiles = (
   return Promise.resolve(outputPath);
 };
 
-const isFfmpegEnabled = (): boolean => true;
+const isFfmpegEnabled = (): boolean => false;
 
 class AudioManagerMock {
   static getDevicePreferredSampleRate(): number {

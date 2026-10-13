@@ -58,6 +58,13 @@ AudioContextLatencyHint latencyHintFromString(const std::string &hint) {
   return AudioContextLatencyHint::INTERACTIVE;
 }
 
+AndroidOutputProfile androidOutputProfileFromString(const std::string &profile) {
+  if (profile == "voiceCommunication")
+    return AndroidOutputProfile::VoiceCommunication;
+
+  return AndroidOutputProfile::Media;
+}
+
 OverSampleType overSampleTypeFromString(const std::string &type) {
   if (type == "2x")
     return OverSampleType::OVERSAMPLE_2X;
