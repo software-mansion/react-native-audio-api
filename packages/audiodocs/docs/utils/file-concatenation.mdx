@@ -21,12 +21,17 @@ recording is finished.
 :::
 
 :::caution
-**Only WAV, M4A, and FLAC concatenation is supported** — the recording formats
+**Only WAV, M4A, FLAC, and ADTS concatenation is supported** — the recording formats
 available on both iOS and Android.
 
 WAV and FLAC decode the segments and write them out again through the system
 encoder — WAV as 32-bit float PCM, FLAC losslessly. M4A remuxes AAC packets
 with system APIs — iOS AVFoundation and Android MediaExtractor/MediaMuxer.
+
+ADTS (`.aac`) appends complete encoded frames without decoding or re-encoding.
+Inputs must use the same sample rate and channel configuration. An incomplete
+trailing frame, such as one left by an app crash, is discarded before the next
+file's frames are appended.
 :::
 
 :::tip Segment size and quality
@@ -68,7 +73,8 @@ come from the same recorder configuration:
 
 Use an output path with an extension that matches the input files, for example
 joining `.m4a` segments into an `.m4a` output file, `.wav` segments into a
-`.wav` output file and so on.
+`.wav` output file, `.flac` segments into a `.flac` output file, or ADTS `.aac`
+segments into an `.aac` output file.
 
 <details>
 <summary>Example usage with rotated recordings</summary>
