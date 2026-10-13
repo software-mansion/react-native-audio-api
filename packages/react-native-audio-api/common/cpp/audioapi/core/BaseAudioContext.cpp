@@ -149,6 +149,8 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
   graph_->processEvents();
   // sorting, deleting, and deciding which to process
   graph_->process();
+  // nodes left out of this quantum still get to see the clock (unpulled sources finish)
+  graph_->advanceUnpulledNodes(getCurrentSampleFrame());
 
   for (auto &&[node, inputs] : graph_->iter()) {
     node.process(inputs, numFrames);

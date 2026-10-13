@@ -176,6 +176,15 @@ void AudioGraph::settleProcessableState() {
   }
 }
 
+void AudioGraph::advanceUnpulledNodes(std::size_t currentSampleFrame) {
+  for (auto &node : nodes) {
+    auto &graphObject = *node.handle->audioNode;
+    if (!graphObject.isProcessable()) {
+      graphObject.advanceWithoutRender(currentSampleFrame);
+    }
+  }
+}
+
 // ── Kahn's toposort ───────────────────────────────────────────────────────
 
 void AudioGraph::kahn_toposort() {
