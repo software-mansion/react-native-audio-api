@@ -1,4 +1,6 @@
 ENV['RCT_NEW_ARCH_ENABLED'] = '1'
+# The example app exercises remote streaming / HLS demos, which need FFmpeg (off by default).
+ENV['ENABLE_AUDIOAPI_FFMPEG'] = '1'
 
 # Uncomment when building for macOS with Catalyst
 # ENV['RCT_BUILD_FROM_SOURCE'] = '1'
@@ -32,7 +34,7 @@ end
 
 # Minimal XCTest host: links RNAudioAPI + React Native core only
 target 'FabricExampleTestHost' do
-  pod 'RNAudioAPI', :path => '../../../node_modules/react-native-audio-api'
+  pod 'RNAudioAPI', :path => '../../../packages/react-native-audio-api'
 
   use_react_native!(
     :path => RN_RELATIVE_PATH,

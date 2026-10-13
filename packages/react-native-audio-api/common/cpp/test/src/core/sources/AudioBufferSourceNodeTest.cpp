@@ -45,7 +45,7 @@ class TestableAudioBufferSourceNode : public AudioBufferSourceNode {
 /// Recovers the concrete audio node owned by a graph node that was just added
 /// via Graph::addNode (the unique_ptr payload lives inside the NodeHandle).
 template <typename NodeT>
-NodeT *nodeOf(utils::graph::HostGraph::Node *hostNode) {
+NodeT *nodeOf(utils::graph::HostGraph::HostVertex *hostNode) {
   return static_cast<NodeT *>(hostNode->handle->audioNode->asAudioNode());
 }
 
@@ -55,7 +55,7 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
-  utils::graph::HostGraph::Node *destinationHostNode = nullptr;
+  utils::graph::HostGraph::HostVertex *destinationHostNode = nullptr;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
@@ -339,6 +339,76 @@ TEST_F(AudioBufferSourceNodeTest, PitchCorrectedSourceAtUnityRateEndsWithItsBuff
   processGraph();
   processGraph();
   EXPECT_TRUE(node->isFinished());
+}
+
+/// A source that is disconnected before its stop frame is never pulled again, so its
+/// render step (the only place it used to advance to FINISHED) never runs. It must still
+/// end once the clock passes the stop frame, fire `ended` exactly once and then be
+/// compacted out of the graph, otherwise every stop()+disconnect() churn strands a node.
+TEST_F(AudioBufferSourceNodeTest, SourceDisconnectedBeforeStopFrameStillEndsAndIsFreed) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 56;
+
+  auto *graph = context->getGraph().get();
+  auto *hostNode = graph->addNode(makeNode(/*pitchCorrection=*/true));
+  ASSERT_TRUE(graph->addEdge(hostNode, destinationHostNode).is_ok());
+  auto *node = nodeOf<TestableAudioBufferSourceNode>(hostNode);
+  std::weak_ptr<utils::graph::NodeHandle> handleWatch = hostNode->handle;
+
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  processGraph();
+  ASSERT_TRUE(node->isPlaying());
+
+  // Same JS tick as the stop: the node loses its consumer before the stop frame renders.
+  node->stop(context->getCurrentTime());
+  ASSERT_TRUE(graph->removeAllEdges(hostNode).is_ok());
+  ASSERT_TRUE(graph->removeNode(hostNode).is_ok());
+
+  // Quantum starting at the stop frame itself: still owed to the render path's rules,
+  // the stop frame is not strictly in the past yet.
+  processGraph();
+  EXPECT_FALSE(node->isFinished());
+
+  // First quantum that starts after the stop frame: the unpulled node must finish.
+  processGraph();
+  EXPECT_TRUE(node->isFinished());
+
+  // Orphaned + finished: compaction releases the graph's handle, the host side frees the
+  // ghost. `node` dangles from here on.
+  processGraph();
+  graph->collectDisposedNodes();
+  EXPECT_TRUE(handleWatch.expired()) << "the stranded node was never freed";
+}
+
+/// Control: a source that stays connected still finishes through its render step, not the
+/// unpulled tick, so a stop frame inside a rendered quantum ends the node within that same
+/// quantum exactly as before (the tick could not have done it: the stop frame is not yet in
+/// the past at the start of the quantum).
+TEST_F(AudioBufferSourceNodeTest, ConnectedSourceStillEndsThroughRenderPath) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 57;
+
+  auto *node = addNode(makeNode(/*pitchCorrection=*/false));
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  processGraph();
+  ASSERT_TRUE(node->isPlaying());
+
+  node->stop(context->getCurrentTime() + 0.5 * QUANTUM / SAMPLE_RATE);
+  processGraph();
+  EXPECT_TRUE(node->isFinished());
+  processGraph(); // `ended` must not fire a second time
 }
 
 // NOLINTEND

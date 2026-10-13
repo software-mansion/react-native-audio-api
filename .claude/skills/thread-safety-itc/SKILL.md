@@ -115,9 +115,9 @@ Do not call `AudioGraphManager` directly — go through `AudioNode::connect()` /
 
 ### Processable state is audio-thread-only
 
-Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is derived exclusively on the audio thread by `AudioGraph::settleProcessableState()` (a reverse-topological pull run inside `Graph::process()`), using only audio-thread-owned data: the topo-sorted node array, `InputPool` input lists, and `link_head` processable-links.
+Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is derived exclusively on the audio thread by `AudioGraph::settleProcessableState()` (a seed-driven dependency pull run inside `Graph::process()`), using only audio-thread-owned data: the topo-sorted node array, `InputPool` input lists, and `link_head` processable-links.
 
-**Pitfall (fixed):** earlier, `HostGraph` AGEvents (`addEdge`/`removeEdge`/`removeAllEdges`) walked `HostGraph::Node::{inputs,outputs,linkedNodes}` on the audio thread to mark processable state incrementally. Those vectors mutate on the JS thread under `nodesMutex_` — a cross-thread race. AGEvents must never read HostGraph adjacency for processable state; they only mirror structural edges/links onto the audio graph. The host-side `linkedNodes` list is now kept solely so links can be scrubbed when a linked node is disposed.
+**Pitfall (fixed):** earlier, `HostGraph` AGEvents (`addEdge`/`removeEdge`/`removeAllEdges`) walked `HostGraph::HostVertex::{inputs,outputs,linkedNodes}` on the audio thread to mark processable state incrementally. Those vectors mutate on the JS thread under `nodesMutex_` — a cross-thread race. AGEvents must never read HostGraph adjacency for processable state; they only mirror structural edges/links onto the audio graph. The host-side `linkedNodes` list is now kept solely so links can be scrubbed when a linked node is disposed.
 
 ---
 
@@ -244,8 +244,29 @@ suspend.then→suspended, event→suspended`.
 
 ---
 
+## Android Notification Subsystem: JS-Queue Confinement
+
+Kotlin rather than C++, but the same discipline. `AudioAPIModule.showNotification` →
+`MediaSessionManager` → `NotificationRegistry.showNotification` → `BaseNotification.show()`/`hide()`
+runs entirely on the **JS thread**; nothing on that path hops threads. `MediaSessionCompat` adopts
+the looper of whichever thread constructed it, so a session created in `initializeIfNeeded()` is
+JS-thread-affine too.
+
+Anything arriving asynchronously (artwork loads) must therefore be delivered back with
+`reactContext.runOnJSQueueThread { ... }`, **not** `runOnUiQueueThread`. `runOnJSQueueThread` always
+posts and never runs inline, so a callback cannot re-enter an update already in progress — which in
+turn makes plain field assignment safe and removes any need for a lock.
+
+Async results also need a **generation counter** (`PlaybackNotification.artworkGeneration`), bumped
+on every new request and in `hide()`. Cancelling cannot recall a result that has already been posted
+to the queue, so the callback compares the generation it captured and drops a stale one. Without it,
+a superseded load overwrites newer artwork or repaints a dismissed notification.
+
+---
+
 ## Common Mistakes
 
+- **Hopping to the UI thread from a notification callback** — `MediaSessionCompat` is bound to the JS queue thread that built it; use `runOnJSQueueThread`. Two `setMetadata` writers on different threads each read-modify-write the session's metadata and clobber each other. Keep one writer that builds from the notification's own fields.
 - **Reading `node_->field_` in a getter** when that field is written by the audio thread → use shadow state or atomics.
 - **Calling `node_->method()` directly from a setter** → always schedule via `scheduleAudioEvent`.
 - **Not clearing callback IDs in the HostObject destructor** → node keeps firing into a GC'd JSI function; call `assignOnXCallbackId(0)` from each event HostObject layer on teardown

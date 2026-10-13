@@ -3,6 +3,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <audioapi/utils/Macros.h>
+#include <cstddef>
 #include <cstdint>
 
 #include <ranges>
@@ -52,6 +53,16 @@ class GraphObject {
 
   /// @brief Returns whether this node should be processed during audio iteration.
   [[nodiscard]] virtual bool isProcessable() const;
+
+  /// @brief Called once per render quantum, instead of `process()`, for every node that
+  /// is not processable in that quantum. `currentSampleFrame` is the first frame of the
+  /// quantum being rendered. A node that is not pulled by any consumer never runs its
+  /// render step, so this is its only chance to observe the context clock. Scheduled
+  /// sources use it to reach their finished state (and fire `ended`) once their stop time
+  /// has passed while disconnected; otherwise they would never become destructible.
+  /// Default: no-op. Must stay allocation-free.
+  /// @note Audio thread only
+  virtual void advanceWithoutRender(std::size_t currentSampleFrame);
 
   void setProcessableState(PROCESSABLE_STATE state);
 
@@ -116,7 +127,7 @@ class GraphObject {
   PROCESSABLE_STATE processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
 
   /// @brief When set, AudioGraph::settleProcessableState() will never promote
-  /// this node back to CONDITIONAL_PROCESSABLE during the reverse-topo pull.
+  /// this node back to CONDITIONAL_PROCESSABLE during the dependency pull.
   ///
   /// Used to make `disable()` sticky: a source that finished playback while
   /// still connected to a processable downstream must stay idle for good,
