@@ -4,6 +4,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
 import androidx.annotation.RequiresApi
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Decides which input device a recording captures from and brings up the routing that
@@ -16,9 +17,14 @@ import androidx.annotation.RequiresApi
 class AudioInputRouter(
   private val audioManager: AudioManager,
   private val bluetoothScoLink: BluetoothScoLink,
+  private val dispatchRouteChange: (RouteChangeReason) -> Unit,
 ) {
   /** Guards [preferredInputDeviceId] and [acquiredInputRouteCount]. */
   private val inputSelectionLock = Any()
+
+  init {
+    bluetoothScoLink.startObserving(onLinkLost = ::recoverLostBluetoothLink)
+  }
 
   /**
    * Null means the platform picks the capture device.
@@ -38,7 +44,30 @@ class AudioInputRouter(
 
   /** The device the latest [acquireInputRoute] handed out, null for the system default. */
   @Volatile
-  private var captureDeviceId: Int? = null
+  private var routedInputDeviceId: Int? = null
+
+  /**
+   * The device the open capture stream reports.
+   */
+  @Volatile
+  var activeInputDeviceId: Int? = null
+    private set
+
+  /** Set while a Bluetooth link is being re-established after it dropped. */
+  private val linkRecoveryInFlight = AtomicBoolean(false)
+
+  /** The input `getDevicesInfo().currentInputs` reports: the capturing device, else the selection. */
+  val currentInputDeviceId: Int?
+    get() = activeInputDeviceId ?: preferredInputDeviceId
+
+  fun captureStreamOpened(deviceId: Int?) {
+    if (deviceId == activeInputDeviceId) {
+      return
+    }
+
+    activeInputDeviceId = deviceId
+    dispatchRouteChange(RouteChangeReason.CONFIGURATION_CHANGE)
+  }
 
   /** What [acquireInputRoute] hands a recorder. */
   class InputRoute(
@@ -116,13 +145,11 @@ class AudioInputRouter(
 
     val preferredInput = automaticInput()
 
-    if (preferredInput == null || preferredInput.id == captureDeviceId) {
+    if (preferredInput == null || preferredInput.id == routedInputDeviceId) {
       return
     }
 
-    // Off the calling (main) thread: rerouting can wait for a Bluetooth headset's link.
-    // Does nothing when no recording is in progress.
-    Thread { NativeInputRouting.rerouteActiveCapture() }.start()
+    rerouteActiveCaptureOffMainThread()
   }
 
   /**
@@ -144,15 +171,18 @@ class AudioInputRouter(
     if (selectedInputDeviceId != null) {
       val selectedInput = recordableInputs().firstOrNull { it.id == selectedInputDeviceId }
       val routed = selectedInput == null || prepareCaptureRouting(selectedInput)
-      captureDeviceId = selectedInputDeviceId
+      routedInputDeviceId = selectedInputDeviceId
       return InputRoute(selectedInputDeviceId, routed)
     }
 
-    captureDeviceId = automaticInputId()
-    return InputRoute(captureDeviceId, routed = true)
+    routedInputDeviceId = automaticInputId()
+    return InputRoute(routedInputDeviceId, routed = true)
   }
 
-  /** Gives back a route from [acquireInputRoute]; the last one tears the routing down. */
+  /**
+   * Gives back a route from [acquireInputRoute]; the last one tears the routing down and
+   * clears the capturing device, since no stream is open anymore.
+   */
   fun releaseInputRoute() {
     val wasLastCapture =
       synchronized(inputSelectionLock) {
@@ -160,9 +190,60 @@ class AudioInputRouter(
         acquiredInputRouteCount == 0
       }
 
-    if (wasLastCapture) {
-      bluetoothScoLink.tearDown()
+    if (!wasLastCapture) {
+      return
     }
+
+    bluetoothScoLink.tearDown()
+
+    if (activeInputDeviceId != null) {
+      activeInputDeviceId = null
+      dispatchRouteChange(RouteChangeReason.CONFIGURATION_CHANGE)
+    }
+  }
+
+  /**
+   * Brings a Bluetooth headset mic back after the platform dropped a link it had accepted
+   * while the headset stayed connected. [BluetoothScoLink.bringUp] waits for the platform to
+   * accept the headset, but the link itself comes up afterward and can fail to, most often
+   * on a headset picked right as it connects;
+   */
+  @RequiresApi(Build.VERSION_CODES.M)
+  fun recoverLostBluetoothLink() {
+    if (bluetoothInputInUse() == null || !linkRecoveryInFlight.compareAndSet(false, true)) {
+      return
+    }
+
+    rerouteActiveCaptureOffMainThread(onFinished = { linkRecoveryInFlight.set(false) })
+  }
+
+  /**
+   * Moves a recording in progress onto the input [acquireInputRoute] now hands out; does
+   * nothing when no recording is in progress. Off the calling (main) thread, because rerouting
+   * can wait for a Bluetooth headset's link.
+   */
+  private fun rerouteActiveCaptureOffMainThread(onFinished: () -> Unit = {}) {
+    Thread {
+      try {
+        NativeInputRouting.rerouteActiveCapture()
+      } finally {
+        onFinished()
+      }
+    }.start()
+  }
+
+  /** The connected Bluetooth headset mic the current choice captures from, if it is one. */
+  @RequiresApi(Build.VERSION_CODES.M)
+  private fun bluetoothInputInUse(): AudioDeviceInfo? {
+    val selectedInputDeviceId = preferredInputDeviceId
+    val input =
+      if (selectedInputDeviceId != null) {
+        recordableInputs().firstOrNull { it.id == selectedInputDeviceId }
+      } else {
+        automaticInput()
+      }
+
+    return input?.takeIf { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
   }
 
   /**
@@ -187,6 +268,7 @@ class AudioInputRouter(
 
   /** Tears down any routing still up, for when the module goes away mid-recording. */
   fun cleanup() {
+    bluetoothScoLink.stopObserving()
     bluetoothScoLink.tearDown()
   }
 

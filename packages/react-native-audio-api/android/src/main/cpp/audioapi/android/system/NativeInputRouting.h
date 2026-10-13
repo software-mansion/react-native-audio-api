@@ -32,6 +32,11 @@ class NativeInputRouting : public jni::JavaClass<NativeInputRouting> {
   /// @brief Gives back a route from acquireInputRoute(); the last one tears the routing down.
   static void releaseInputRoute();
 
+  /// @brief Tells the router which device the capture stream actually opened on, so
+  /// `getDevicesInfo().currentInputs` reports it; kSystemDefaultDeviceId when the platform
+  /// does not say.
+  static void reportCaptureDevice(int32_t deviceId);
+
   /// @brief Called by Kotlin when the input to capture from changed while a recording
   /// may be running; moves the active recorder onto it.
   /// @returns false when the recorder could not continue on the new input.

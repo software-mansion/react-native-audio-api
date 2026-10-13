@@ -1,7 +1,9 @@
 package com.swmansion.audioapi.system
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.media.AudioDeviceInfo
@@ -32,6 +34,91 @@ class BluetoothScoLink(
   private var started = false
 
   /**
+   * Whether the link came up since [started] was set. A loss is only reported for a link that
+   * was up, so a headset the platform keeps refusing is retried once per connection, not on
+   * every refusal.
+   */
+  @Volatile
+  private var connected = false
+
+  /** Runs when the link drops while [started]; see [startObserving]. */
+  private var onLinkLost: (() -> Unit)? = null
+
+  /** Android 12+: the communication device the platform routes to. */
+  private var communicationDeviceListener: AudioManager.OnCommunicationDeviceChangedListener? = null
+
+  /** Before Android 12: the SCO state broadcast. */
+  private var scoStateReceiver: BroadcastReceiver? = null
+
+  /**
+   * Watches the link and calls [onLinkLost] when the platform routes communication away from
+   * the headset while this instance still holds the link up. Listeners fire on the main thread.
+   */
+  fun startObserving(onLinkLost: () -> Unit) {
+    this.onLinkLost = onLinkLost
+    val context = this.context.get() ?: return
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      val listener =
+        AudioManager.OnCommunicationDeviceChangedListener { device ->
+          onCommunicationRouteChanged(scoRouted = device?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
+        }
+      audioManager.addOnCommunicationDeviceChangedListener(ContextCompat.getMainExecutor(context), listener)
+      communicationDeviceListener = listener
+    } else {
+      val receiver =
+        object : BroadcastReceiver() {
+          @Suppress("DEPRECATION")
+          override fun onReceive(
+            context: Context,
+            intent: Intent,
+          ) {
+            when (intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_ERROR)) {
+              AudioManager.SCO_AUDIO_STATE_CONNECTED -> onCommunicationRouteChanged(scoRouted = true)
+              AudioManager.SCO_AUDIO_STATE_DISCONNECTED -> onCommunicationRouteChanged(scoRouted = false)
+            }
+          }
+        }
+
+      // A system broadcast, so the receiver has to be exported on Android 14+.
+      @Suppress("DEPRECATION")
+      val filter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
+      ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
+      scoStateReceiver = receiver
+    }
+  }
+
+  fun stopObserving() {
+    onLinkLost = null
+
+    communicationDeviceListener?.let {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        audioManager.removeOnCommunicationDeviceChangedListener(it)
+      }
+    }
+    communicationDeviceListener = null
+
+    scoStateReceiver?.let { receiver -> context.get()?.unregisterReceiver(receiver) }
+    scoStateReceiver = null
+  }
+
+  private fun onCommunicationRouteChanged(scoRouted: Boolean) {
+    if (!started) {
+      return
+    }
+
+    if (scoRouted) {
+      connected = true
+      return
+    }
+
+    if (connected) {
+      connected = false
+      onLinkLost?.invoke()
+    }
+  }
+
+  /**
    * Brings the link up for [headsetMic] and waits for it.
    *
    * Blocks for up to [CONNECT_TIMEOUT_MS], so never call it on the main thread.
@@ -40,13 +127,20 @@ class BluetoothScoLink(
    *   request stays in place until [tearDown] so a late connection is not left dangling.
    */
   @RequiresApi(Build.VERSION_CODES.M)
-  fun bringUp(headsetMic: AudioDeviceInfo): Boolean = start(headsetMic) && awaitConnected()
+  fun bringUp(headsetMic: AudioDeviceInfo): Boolean {
+    connected = start(headsetMic) && awaitConnected()
+    return connected
+  }
 
   /** Releases a link this instance started; does nothing otherwise. */
   fun tearDown() {
     if (!started) {
       return
     }
+
+    // Cleared first, so the route change this causes is not taken for a lost link.
+    started = false
+    connected = false
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       audioManager.clearCommunicationDevice()
@@ -56,8 +150,6 @@ class BluetoothScoLink(
       @Suppress("DEPRECATION")
       audioManager.stopBluetoothSco()
     }
-
-    started = false
   }
 
   @RequiresApi(Build.VERSION_CODES.M)

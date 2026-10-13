@@ -46,6 +46,23 @@ object NativeInputRouting {
     }
   }
 
+  /**
+   * Called by the recorder once its capture stream is open.
+   * @param deviceId the device Oboe reports, [SYSTEM_DEFAULT_DEVICE_ID] when the platform does not say.
+   */
+  @JvmStatic
+  fun captureStreamOpened(deviceId: Int) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+      return
+    }
+
+    try {
+      MediaSessionManager.inputRouter.captureStreamOpened(deviceId.takeIf { it != SYSTEM_DEFAULT_DEVICE_ID })
+    } catch (exception: RuntimeException) {
+      Log.w(TAG, "Could not report the capture device", exception)
+    }
+  }
+
   @JvmStatic
   fun releaseInputRoute() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {

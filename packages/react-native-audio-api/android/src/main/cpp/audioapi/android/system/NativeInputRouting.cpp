@@ -32,6 +32,14 @@ std::optional<int32_t> NativeInputRouting::acquireInputRoute() {
   return static_cast<int32_t>(deviceId);
 }
 
+void NativeInputRouting::reportCaptureDevice(int32_t deviceId) {
+  jni::ThreadScope::WithClassLoader([deviceId] {
+    static const auto method =
+        javaClassStatic()->getStaticMethod<void(jint)>("captureStreamOpened");
+    method(javaClassStatic(), static_cast<jint>(deviceId));
+  });
+}
+
 void NativeInputRouting::releaseInputRoute() {
   jni::ThreadScope::WithClassLoader([] {
     static const auto method = javaClassStatic()->getStaticMethod<void()>("releaseInputRoute");

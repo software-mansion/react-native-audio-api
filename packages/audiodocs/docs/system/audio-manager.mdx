@@ -177,7 +177,7 @@ Checks if notification permissions were previously granted.
 
 Checks currently used and available devices.
 
-On Android, `currentInputs` reports the device selected through [`setInputDevice`](#setinputdevice) and is empty until one is selected, since the platform does not report which input it would pick on its own. When the selected device is disconnected, the selection returns to the system default and `currentInputs` is empty again; a reconnected device has to be selected anew. `currentOutputs` is always empty on Android.
+On Android, `currentInputs` reports the device a recording in progress captures from, a `routeChange` event with reason `ConfigurationChange` fires whenever that device changes, including when the recording stops. While nothing is recording it reports the selected device, or nothing when no device is selected, since the platform does not report which input it would pick. `currentOutputs` is always empty on Android.
 
 #### Returns `Promise<AudioDevicesInfo>`, which is resolved after receiving the answer from the system.
 

@@ -89,12 +89,18 @@ object MediaSessionManager {
     this.audioFocusListener =
       AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule)
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
-    this.inputRouter = AudioInputRouter(this.audioManager, BluetoothScoLink(this.audioManager, this.reactContext))
-    this.deviceChangeListener = DeviceChangeListener(this.audioAPIModule)
+    this.inputRouter =
+      AudioInputRouter(this.audioManager, BluetoothScoLink(this.audioManager, this.reactContext), ::dispatchRouteChange)
+    this.deviceChangeListener = DeviceChangeListener()
     this.audioManager.registerAudioDeviceCallback(deviceChangeListener, Handler(Looper.getMainLooper()))
 
     // Initialize new notification system
     this.notificationRegistry = NotificationRegistry(this.reactContext, this.audioAPIModule)
+  }
+
+  fun dispatchRouteChange(reason: RouteChangeReason) {
+    val body = HashMap<String, Any>().apply { put("reason", reason.eventName) }
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.ROUTE_CHANGE.ordinal, body)
   }
 
   /** The system output volume on the volumeChange event's own scale:
@@ -258,12 +264,12 @@ object MediaSessionManager {
     val currentInputs = Arguments.createArray()
     val availableOutputs = Arguments.createArray()
 
-    val selectedInputDeviceId = inputRouter.preferredInputDeviceId
+    val currentInputDeviceId = inputRouter.currentInputDeviceId
 
     for (inputDevice in inputRouter.recordableInputs()) {
       availableInputs.pushMap(describeDevice(inputDevice))
 
-      if (inputDevice.id == selectedInputDeviceId) {
+      if (inputDevice.id == currentInputDeviceId) {
         currentInputs.pushMap(describeDevice(inputDevice))
       }
     }
@@ -313,6 +319,8 @@ object MediaSessionManager {
       AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired Headphones"
       AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth A2DP"
       AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
+      AudioDeviceInfo.TYPE_BLE_HEADSET -> "Bluetooth LE Headset"
+      AudioDeviceInfo.TYPE_BLE_SPEAKER -> "Bluetooth LE Speaker"
       AudioDeviceInfo.TYPE_USB_DEVICE -> "USB Device"
       AudioDeviceInfo.TYPE_USB_HEADSET -> "USB Headset"
       AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB Accessory"

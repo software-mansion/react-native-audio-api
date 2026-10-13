@@ -196,6 +196,8 @@ Result<NoneType, std::string> AndroidAudioRecorder::startCapture(
     return streamResult;
   }
 
+  NativeInputRouting::reportCaptureDevice(mStream_->getDeviceId());
+
   auto formatResult = resolveStreamFormat();
 
   if (!formatResult.is_ok()) {
