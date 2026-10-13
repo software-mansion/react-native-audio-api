@@ -67,8 +67,7 @@ export type AudioDeviceList = AudioDeviceInfo[];
 
 /**
  * An id from `AudioDevicesInfo.availableInputs`, or `'default'` to let the
- * system choose. The intersection keeps `'default'` in completions, which a
- * plain `string` union would swallow.
+ * system choose.
  */
 export type InputDeviceSelection = 'default' | (string & {});
 
