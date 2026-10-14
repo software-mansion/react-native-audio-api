@@ -2,6 +2,7 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
+#import <audioapi/ios/system/AudioEngine.h>
 
 typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFrames);
 
@@ -13,7 +14,7 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 @property (nonatomic, assign) int resolvedBufferSize;
 @property (atomic, assign) BOOL inputArmed;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
-@property (nonatomic, copy) void (^onInputConfigurationChange)(void);
+@property (nonatomic, copy) void (^onInputNotification)(AudioEngineInputNotification);
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
                voiceProcessingEnabled:(BOOL)voiceProcessingEnabled;

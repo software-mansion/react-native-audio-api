@@ -118,7 +118,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   [audioEngine stopIfNecessary];
   [audioEngine attachInputNodeWithReceiverBlock:self.receiverSinkBlock
                          voiceProcessingEnabled:self.voiceProcessingEnabled
-                     onInputConfigurationChange:self.onInputConfigurationChange];
+                            onInputNotification:self.onInputNotification];
 
   if (![audioEngine startIfNecessary]) {
     [audioEngine detachInputNode];
@@ -172,17 +172,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  if (![audioEngine startIfNecessary]) {
-    return NO;
-  }
-
-  // Re-arming is the owner's call: the handler re-resolves the input format and arms only
-  // when the recorder is back in the recording state.
-  if (self.onInputConfigurationChange != nil) {
-    self.onInputConfigurationChange();
-  }
-
-  return YES;
+  return [audioEngine startIfNecessary];
 }
 
 - (void)cleanup
@@ -192,7 +182,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   self.resolvedBufferSize = 0;
   self.receiverBlock = nil;
   self.receiverSinkBlock = nil;
-  self.onInputConfigurationChange = nil;
+  self.onInputNotification = nil;
 }
 
 @end

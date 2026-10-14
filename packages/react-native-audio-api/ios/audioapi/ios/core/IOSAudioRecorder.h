@@ -52,7 +52,10 @@ class IOSAudioRecorder : public AudioRecorder {
 
  private:
   Result<NoneType, std::string> reprepareForLiveInput();
-  void handleInputConfigurationChange();
+  void handleInputNotification(AudioEngineInputNotification notification);
+  void handleHardwareChange();
+  void handleRecordingLost();
+  [[nodiscard]] bool isFileSessionSuspended() const;
   Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
   Result<NoneType, std::string> reprepareCallback(const StreamFormat &format);
 

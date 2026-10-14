@@ -84,7 +84,14 @@ class AudioFileWriter final {
   CloseFileResult closeFile();
 
   /// ios only because android handles input format changes automatically. Returns the file path on success.
+  /// A suspended session continues in a new file.
   OpenFileResult reprepareStreamFormat(const StreamFormat &streamFormat);
+
+  /// JS thread. iOS only, for when the input is lost mid-session: finishes the current file, so
+  /// what was recorded so far stays playable even if the input never comes back, but keeps the
+  /// session going. closeFile() still reports that file. No-op on a suspended session.
+  Result<NoneType, std::string> suspendSession();
+  [[nodiscard]] bool isSessionSuspended() const;
 
   /// Audio thread. @p channels holds one pointer per stream channel, each to numFrames float32
   /// samples, valid only for the call. Never blocks; drops the buffer when no pool slot is free.
@@ -124,8 +131,8 @@ class AudioFileWriter final {
   /// JS thread. Joins the worker, then adds the file to the session totals.
   CloseEncoderResult finishCurrentFile();
 
-  /// @p fileNumber is 1-based. A rotated session numbers every file; one that is not has a
-  /// single file under the plain stem.
+  /// @p fileNumber is 1-based. A rotated session numbers every file; one that is not keeps its
+  /// first file under the plain stem and numbers only the files that follow a suspension.
   [[nodiscard]] std::string fileStem(size_t fileNumber) const;
   [[nodiscard]] Result<std::string, std::string> resolveNextFilePath(
       const std::string &stem,
@@ -173,6 +180,8 @@ class AudioFileWriter final {
   std::string sessionStem_;
   std::vector<std::string> sessionFilePaths_;
   size_t openedFileCount_{0};
+  /// Set by suspendSession(); no file is open until reprepareStreamFormat() opens the next one.
+  bool sessionSuspended_{false};
   int writesSinceLastSizeCheck_{0};
   double finishedFilesSizeMB_{0.0};
   double finishedFilesDurationSec_{0.0};
