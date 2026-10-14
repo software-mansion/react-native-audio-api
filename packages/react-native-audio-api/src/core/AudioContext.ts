@@ -81,9 +81,16 @@ export default class AudioContext extends BaseAudioContext {
    * can start implicitly from the first scheduled source, with no promise to
    * carry the transition, so this records the control-thread state and issues
    * the resume whose resolution publishes it.
+   *
+   * The native side can also suspend the context by itself, when an interruption
+   * ends without resuming the stream. That publishes 'suspended' while the
+   * control-thread state still says 'running', so a published 'suspended'
+   * triggers the resume as well.
    */
   public override markRunningOnSourceStart(): void {
-    if (this._state === 'suspended') {
+    const suspendedNatively =
+      this._state === 'running' && this.state === 'suspended';
+    if (this._state === 'suspended' || suspendedNatively) {
       this.transitionTo('running', () =>
         (this.context as IAudioContext).resume()
       ).catch(() => {

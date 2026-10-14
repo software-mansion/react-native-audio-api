@@ -96,6 +96,17 @@ Result<NoneType, std::string> ActiveRecorderHandle::rerouteInput() {
   return recorder->rerouteInput();
 }
 
+bool ActiveRecorderHandle::resumeIfInterrupted() {
+  std::scoped_lock lock(mutex_);
+  const std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
+  if (!recorder || stateOf(recorder) != RecorderState::Recording || recorder->isRecording()) {
+    return true;
+  }
+
+  recorder->resume();
+  return recorder->isRecording();
+}
+
 Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo() {
   std::scoped_lock lock(mutex_);
   const std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
