@@ -95,3 +95,8 @@ audioContext.onerror = () => {
 };
 ```
 
+## Remarks
+
+#### Asynchronous methods
+
+`suspend`, `resume` and `close` return promises, but a context runs them one at a time, in the order they were called. A later call never overtakes an earlier one, so `audioContext.suspend(); await audioContext.resume();` leaves the context running. Await a call only when you need to observe the state it leaves behind. [`AudioRecorder`](../inputs/audio-recorder.mdx#remarks) orders its lifecycle promises the same way.

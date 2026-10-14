@@ -99,7 +99,7 @@ class AudioAPIModule(
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
-  override fun isFfmpegEnabled(): Boolean = !BuildConfig.RN_AUDIO_API_FFMPEG_DISABLED
+  override fun isFfmpegEnabled(): Boolean = BuildConfig.RN_AUDIO_API_FFMPEG_ENABLED
 
   override fun setAudioSessionActivity(
     enabled: Boolean,
@@ -221,9 +221,9 @@ class AudioAPIModule(
     options: ReadableMap?,
     promise: Promise?,
   ) {
+    val result = Arguments.createMap()
     try {
       if (type == null || key == null) {
-        val result = Arguments.createMap()
         result.putBoolean("success", false)
         result.putString("error", "Type and key are required")
         promise?.resolve(result)
@@ -232,11 +232,9 @@ class AudioAPIModule(
 
       MediaSessionManager.showNotification(type, key, options)
 
-      val result = Arguments.createMap()
       result.putBoolean("success", true)
       promise?.resolve(result)
     } catch (e: Exception) {
-      val result = Arguments.createMap()
       result.putBoolean("success", false)
       result.putString("error", e.message ?: "Unknown error")
       promise?.resolve(result)

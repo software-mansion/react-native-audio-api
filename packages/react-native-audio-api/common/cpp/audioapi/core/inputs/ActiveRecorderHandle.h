@@ -8,7 +8,6 @@
 #include <mutex>
 #include <optional>
 #include <string>
-#include <vector>
 
 namespace audioapi {
 
@@ -40,8 +39,15 @@ class ActiveRecorderHandle {
   /// @brief Pauses an actively recording session; a no-op in any other state.
   RecorderState pause();
 
+  /// @brief pause() if the slot holds @p expected; otherwise leaves the occupant alone and
+  /// returns Idle, which is the only state a recorder outside the slot can be in.
+  RecorderState pause(const std::shared_ptr<AudioRecorder> &expected);
+
   /// @brief Resumes a paused session; a no-op in any other state.
   RecorderState resume();
+
+  /// @brief resume() if the slot holds @p expected; see pause(expected).
+  RecorderState resume(const std::shared_ptr<AudioRecorder> &expected);
 
   /// @brief Stops the occupant and returns AudioRecorder::stop()'s Result,
   /// including the original error. On success with non-empty paths, stashes a
