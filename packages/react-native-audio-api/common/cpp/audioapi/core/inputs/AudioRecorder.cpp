@@ -74,7 +74,8 @@ Result<NoneType, std::string> AudioRecorder::enableFileOutput(
   return Ok(None);
 }
 
-/// JS thread only. Closes the file immediately when called mid-recording.
+/// Control lane only. Closes the file immediately when called mid-recording, which joins
+/// the writer thread; that is why it is queued behind start()/stop() instead of run on JS.
 void AudioRecorder::disableFileOutput() {
   std::shared_ptr<AudioFileWriter> fileWriter;
 
@@ -300,14 +301,16 @@ void AudioRecorder::clearOnErrorCallback() {
   errorCallbackId_.store(0, std::memory_order_release);
 }
 
+/// JS thread. Locked because stop() and disableFileOutput() reset fileWriter_ from the control
+/// lane; the lock is held only while the writer pointer is swapped, never across a file close.
 double AudioRecorder::getCurrentDuration() const {
-  double duration = 0.0;
+  std::scoped_lock fileWriterLock(fileWriterMutex_);
 
   if (usesFileOutput() && fileWriter_ != nullptr) {
-    duration = fileWriter_->getCurrentDuration();
+    return fileWriter_->getCurrentDuration();
   }
 
-  return duration;
+  return 0.0;
 }
 
 RecorderState AudioRecorder::getState() const {
