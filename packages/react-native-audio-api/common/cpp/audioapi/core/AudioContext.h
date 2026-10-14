@@ -47,6 +47,12 @@ class AudioContext : public BaseAudioContext {
   /// @note This method is called when the audio stream fails.
   void onStreamFail();
 
+  /// @brief Called when the system ended an interruption without resuming the audio stream.
+  /// @note Suspends the context as `suspend()` would and publishes `suspended` with a
+  /// `statechange`, since no JS promise carries this transition. Unlike `onStreamFail`, the
+  /// context stays usable: `resume()` restarts the stream. Caller must hold `driverMutex_`.
+  void onSuspendedBySystem();
+
   void assignOnErrorCallbackId(uint64_t callbackId);
 
  private:

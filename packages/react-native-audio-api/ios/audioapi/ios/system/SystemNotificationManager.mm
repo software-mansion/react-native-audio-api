@@ -162,6 +162,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   self.interruptionEndedDelivered = false;
   dispatch_async(dispatch_get_main_queue(), ^{
     bool transitioned = [audioEngine onInterruptionBegin];
+    // TODO(IRTMP): remove temporary log.
+    NSLog(@"[IRTMP] handleInterruptionBegin transitioned=%d", transitioned);
     [sessionManager markInactive];
     if (transitioned) {
       [self emitInterruptionBegan];
@@ -175,6 +177,11 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   dispatch_async(dispatch_get_main_queue(), ^{
     AudioEngineInterruptionEndOutcome outcome = [audioEngine onInterruptionEnd:shouldResume];
+    // TODO(IRTMP): remove temporary log.
+    NSLog(
+        @"[IRTMP] handleInterruptionEnd shouldResume=%d outcome=%ld (0 NoOp, 1 Running, 2 Paused, 3 StillInterrupted)",
+        shouldResume,
+        (long)outcome);
     if (outcome == AudioEngineInterruptionEndOutcomeRunning ||
         outcome == AudioEngineInterruptionEndOutcomePaused) {
       [self emitInterruptionEnded:shouldResume];
@@ -195,6 +202,12 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 {
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
+  // TODO(IRTMP): remove temporary log.
+  NSLog(
+      @"[IRTMP] retryInterruptedRecordingIfNeeded endedDelivered=%d state=%ld cachedShouldResume=%@",
+      self.interruptionEndedDelivered,
+      (long)[audioEngine getState],
+      self.interruptionShouldResume);
   if (self.interruptionEndedDelivered && [audioEngine getState] == AudioEngineStateInterrupted) {
     [self handleInterruptionEnd:[self shouldResumeForInterruptionRecovery]];
   }
@@ -207,6 +220,12 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   NSInteger interruptionOption =
       [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
+  // TODO(IRTMP): remove temporary log.
+  NSLog(
+      @"[IRTMP] handleInterruption type=%ld (1 began, 0 ended) option=%ld userInfo=%@",
+      (long)interruptionType,
+      (long)interruptionOption,
+      notification.userInfo);
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
     [self handleInterruptionBegin];
     return;
@@ -224,6 +243,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   NSInteger secondaryAudioType =
       [notification.userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] integerValue];
 
+  // TODO(IRTMP): remove temporary log.
+  NSLog(@"[IRTMP] handleSecondaryAudio type=%ld (1 begin, 0 end)", (long)secondaryAudioType);
   if (secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeBegin) {
     [self handleInterruptionBegin];
     return;
@@ -330,6 +351,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     // marks the session inactive and rebuilds a graph that cannot start. Leave
     // recovery on those paths; remember the format may have changed so they still
     // rebuild.
+    // TODO(IRTMP): remove temporary log.
+    NSLog(@"[IRTMP] engineConfigurationChange state=%ld", (long)[audioEngine getState]);
     if ([audioEngine getState] == AudioEngineStateInterrupted) {
       [audioEngine markGraphNeedsRebuild];
       return;
@@ -372,6 +395,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   }
 
   self.wasOtherAudioPlaying = shouldSilence;
+  // TODO(IRTMP): remove temporary log.
+  NSLog(@"[IRTMP] checkSecondaryAudioHint shouldSilence=%d", shouldSilence);
 
   if (shouldSilence) {
     [self handleInterruptionBegin];
