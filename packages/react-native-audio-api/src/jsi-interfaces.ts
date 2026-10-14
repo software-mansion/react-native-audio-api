@@ -361,11 +361,11 @@ export interface IAudioRecorder {
   isPaused: () => boolean;
 
   enableFileOutput: (options: AudioRecorderFileOptions) => Result<{}>;
-  disableFileOutput: () => void;
+  disableFileOutput: () => Promise<void>;
 
   // pause and resume methods for file recording
-  pause: () => void;
-  resume: () => void;
+  pause: () => Promise<void>;
+  resume: () => Promise<void>;
 
   // Graph integration methods
   connect: (node: IRecorderAdapterNode) => void;

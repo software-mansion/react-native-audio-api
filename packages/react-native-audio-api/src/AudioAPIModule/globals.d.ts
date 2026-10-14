@@ -8,6 +8,7 @@ import type {
   IOfflineAudioContext,
 } from '../jsi-interfaces';
 import type {
+  AndroidOutputProfile,
   AudioContextLatencyCategory,
   AudioRecorderOptions,
   FileInfo,
@@ -17,7 +18,8 @@ import type {
 declare global {
   var createAudioContext: (
     sampleRate: number,
-    latencyHint?: AudioContextLatencyCategory
+    latencyHint?: AudioContextLatencyCategory,
+    androidOutputProfile?: AndroidOutputProfile
   ) => IAudioContext;
   var createOfflineAudioContext: (
     numberOfChannels: number,

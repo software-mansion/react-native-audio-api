@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -124,6 +126,24 @@ void NodeAudioPlayer::run() {
     renderNormalizedQuantum(RENDER_QUANTUM_SIZE);
     std::this_thread::sleep_for(quantumDuration);
   }
+}
+
+std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+    float sampleRate,
+    int channelCount,
+    std::atomic<uint32_t> &currentRenders,
+    std::weak_ptr<AudioContext> context,
+    std::mutex *driverMutex,
+    AudioContextLatencyHint latencyHint) {
+  return std::make_shared<NodeAudioPlayer>(
+      renderAudio,
+      sampleRate,
+      channelCount,
+      currentRenders,
+      std::move(context),
+      driverMutex,
+      latencyHint);
 }
 
 } // namespace audioapi

@@ -30,7 +30,7 @@ using audioapi::utils::DisposerImpl;
 class GraphNodeGrowthTest : public ::testing::Test {
  protected:
   using PNode = ProcessableMockNode;
-  using HNode = HostGraph::Node;
+  using HostVertex = HostGraph::HostVertex;
 
   static constexpr size_t kPayloadSize = audioapi::DISPOSER_PAYLOAD_SIZE;
   DisposerImpl<kPayloadSize> disposer_{64};
@@ -59,7 +59,7 @@ TEST_F(GraphNodeGrowthTest, NodeGrowEventsDoNotAllocateOnAudioThread) {
   processor.start();
 
   constexpr size_t kNodeCount = 1000;
-  std::vector<HNode *> nodes;
+  std::vector<HostVertex *> nodes;
   nodes.reserve(kNodeCount);
 
   for (size_t i = 0; i < kNodeCount; ++i) {
@@ -107,7 +107,7 @@ TEST_F(GraphNodeGrowthTest, PreReservedCapacityKeepsAudioThreadAllocationFree) {
   MockGraphProcessor<PNode> processor(*graph);
   processor.start();
 
-  std::vector<HNode *> nodes;
+  std::vector<HostVertex *> nodes;
   nodes.reserve(kNodeCount);
 
   for (size_t i = 0; i < kNodeCount; ++i) {

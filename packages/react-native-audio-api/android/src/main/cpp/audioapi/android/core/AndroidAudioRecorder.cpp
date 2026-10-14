@@ -152,7 +152,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 /// @brief prepares and starts the audio recording process.
 /// If audio stream is opened correctly, it will set up any output configured
 /// (file writing, callback, adapter node) and start the stream.
-/// This method should be called from the JS thread only.
+/// Control lane only (the recorder HostObject's single-worker promise vendor).
 /// NOTE: I've noticed some possibly invalid file paths being returned on Android,
 /// RN side requires their "file://" prefix, but sometimes it returned raw path.
 /// Most likely this was due to alpha version mistakes, but in case of problems leaving this here. (ㆆ _ ㆆ)
@@ -244,7 +244,7 @@ void AndroidAudioRecorder::releaseInputRoute() {
 }
 
 /// @brief Stops the audio stream and finalizes any output (file writing, callback, adapter node).
-/// This method should be called from the JS thread only.
+/// Control lane, or any thread holding the ActiveRecorderHandle mutex.
 /// @returns On success, returns the file URI, size in MB and duration in seconds of the recorded file (if file output is enabled).
 /// NOTE: due to the file access nature on Android, the size might sometimes be zeroed (really long files).
 Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
@@ -275,7 +275,7 @@ Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
 
 /// @brief Pauses the audio recording stream.
 /// For session without active file output, this method acts same as stop().
-/// This method should be called from the JS thread only.
+/// Control lane, or any thread holding the ActiveRecorderHandle mutex.
 void AndroidAudioRecorder::pause() {
   std::scoped_lock streamLock(streamMutex_);
   if (!isStreamRecording()) {
@@ -287,7 +287,7 @@ void AndroidAudioRecorder::pause() {
 }
 
 /// @brief Resumes the audio recording stream if it was previously paused.
-/// This method should be called from the JS thread only.
+/// Control lane, or any thread holding the ActiveRecorderHandle mutex.
 void AndroidAudioRecorder::resume() {
   std::scoped_lock streamLock(streamMutex_);
   // No stream while a restart is under way; the restart brings the session back paused.
@@ -493,6 +493,12 @@ double AndroidAudioRecorder::getInputLatency() const {
   }
 
   return 0.0;
+}
+
+std::shared_ptr<AudioRecorder> createPlatformAudioRecorder(
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const AudioRecorderOptions &options) {
+  return std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry, options);
 }
 
 } // namespace audioapi

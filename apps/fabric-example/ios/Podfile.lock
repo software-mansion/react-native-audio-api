@@ -2214,8 +2214,8 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../../../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../../../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
-  - RNAudioAPI (from `../../../node_modules/react-native-audio-api`)
-  - RNAudioWorklets (from `../../../node_modules/react-native-audio-worklets`)
+  - RNAudioAPI (from `../../../packages/react-native-audio-api`)
+  - RNAudioWorklets (from `../../../packages/react-native-audio-worklets`)
   - RNGestureHandler (from `../../../node_modules/react-native-gesture-handler`)
   - RNReanimated (from `../../../node_modules/react-native-reanimated`)
   - RNScreens (from `../../../node_modules/react-native-screens`)
@@ -2399,9 +2399,9 @@ EXTERNAL SOURCES:
   ReactNativeDependencies:
     :podspec: "../../../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
   RNAudioAPI:
-    :path: "../../../node_modules/react-native-audio-api"
+    :path: "../../../packages/react-native-audio-api"
   RNAudioWorklets:
-    :path: "../../../node_modules/react-native-audio-worklets"
+    :path: "../../../packages/react-native-audio-worklets"
   RNGestureHandler:
     :path: "../../../node_modules/react-native-gesture-handler"
   RNReanimated:
@@ -2504,7 +2504,7 @@ SPEC CHECKSUMS:
   ReactCodegen: af9d73dcac8951d8a47920882b803da2986e3da7
   ReactCommon: 5f5a302748322015f2e3334869cdd9b4d0395846
   ReactNativeDependencies: ec5530432d8191b38e278117d498aaff05ea9d6f
-  RNAudioAPI: 5fe6257beb4b9d735cb0916630067b6d2f57b22c
+  RNAudioAPI: e94e8d36feb4962c051aea97878b4b960bd40700
   RNAudioWorklets: e763c48efcbd47d25f61eb5bb49a72d8205b5f4e
   RNGestureHandler: f09eca0b47053142f7543f5c71d183f215ba5d81
   RNReanimated: eabb9b5c492b8e1f16f5523c354ab3a8770c4102
@@ -2514,6 +2514,6 @@ SPEC CHECKSUMS:
   SocketRocket: 37aec555668fb852ec12e3c0de59a86ca58f0871
   Yoga: d1c536142c5ff8ec8cd856ab2a7c227a1d875c8e
 
-PODFILE CHECKSUM: 2fbbdb3fb754264aa345dc912d51c3c6d295cdd9
+PODFILE CHECKSUM: 173d9a4fd76b544439fc62b40ec9f85690145b6f
 
-COCOAPODS: 1.17.0
+COCOAPODS: 1.16.2

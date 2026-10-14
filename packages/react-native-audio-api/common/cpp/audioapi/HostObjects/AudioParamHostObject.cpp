@@ -12,7 +12,7 @@ namespace audioapi {
 
 AudioParamHostObject::AudioParamHostObject(
     std::shared_ptr<utils::graph::Graph> graph,
-    HNode *ownerNode,
+    HostVertex *ownerNode,
     const std::shared_ptr<AudioParam> &param)
     : graph_(std::move(graph)),
       ownerNode_(ownerNode),

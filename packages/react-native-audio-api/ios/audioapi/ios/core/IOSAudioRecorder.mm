@@ -4,6 +4,7 @@
 #import <Foundation/Foundation.h>
 
 #include <algorithm>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -192,7 +193,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
   [nativeRecorder_ cleanup];
 }
 
-/// JS thread only.
+/// Control lane only (the recorder HostObject's single-worker promise vendor).
 Result<NoneType, std::string> IOSAudioRecorder::start()
 {
   if (!isIdle()) {
@@ -310,7 +311,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   return Ok(None);
 }
 
-/// JS thread only.
+/// Control lane, or any thread holding the ActiveRecorderHandle mutex.
 Result<FileInfo, std::string> IOSAudioRecorder::stop()
 {
   DetachedSideEffects sideEffects;
@@ -409,6 +410,13 @@ double IOSAudioRecorder::getInputLatency() const
   }
 
   return baseLatency + [sessionManager inputLatencySeconds];
+}
+
+std::shared_ptr<AudioRecorder> createPlatformAudioRecorder(
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const AudioRecorderOptions &options)
+{
+  return std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, options);
 }
 
 } // namespace audioapi

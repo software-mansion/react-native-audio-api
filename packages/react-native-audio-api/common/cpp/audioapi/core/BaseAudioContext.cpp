@@ -21,19 +21,6 @@ BaseAudioContext::BaseAudioContext(
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       audioEventProducer_(audioEventHandlerRegistry->createAudioEventProducer()),
       stateChangeEvent_(audioEventHandlerRegistry),
-      pendingPromisesOffloader_(
-          std::make_unique<task_offloader::TaskOffloader<
-              ContextPromiseTask,
-              PENDING_PROMISES_OVERFLOW_STRATEGY,
-              PENDING_PROMISES_WAIT_STRATEGY>>(
-              PENDING_PROMISES_CAPACITY,
-              [this](const ContextPromiseTask &task) {
-                if (!task.operation) {
-                  return;
-                }
-                std::scoped_lock lock(driverMutex_);
-                task.operation(*this);
-              })),
       audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY),
       gcAudioEventScheduler_(GC_AUDIO_SCHEDULER_CAPACITY),
       disposer_(
@@ -131,13 +118,26 @@ utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *BaseAudioContext::getDisposer() cons
   return disposer_.get();
 }
 
+std::shared_ptr<ConvolverThreadPool> BaseAudioContext::getConvolverThreadPool() {
+  if (convolverThreadPool_ == nullptr) {
+    convolverThreadPool_ =
+        std::make_shared<ConvolverThreadPool>(CONVOLVER_THREAD_POOL_WORKER_COUNT);
+  }
+  return convolverThreadPool_;
+}
+
 void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
 #ifdef DEBUG
   test::AudioThreadGuard::Scope guard;
 #endif
+  // ongoing modifications of node's properties in graph (f.e. setting param's automation event)
   processAudioEvents();
+  // events mutating graph (f.e. connect/disconnect nodes) are processed in the graph itself
   graph_->processEvents();
+  // sorting, deleting, and deciding which to process
   graph_->process();
+  // nodes left out of this quantum still get to see the clock (unpulled sources finish)
+  graph_->advanceUnpulledNodes(getCurrentSampleFrame());
 
   for (auto &&[node, inputs] : graph_->iter()) {
     node.process(inputs, numFrames);

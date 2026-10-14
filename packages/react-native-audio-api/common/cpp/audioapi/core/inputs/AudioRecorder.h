@@ -22,6 +22,7 @@ class AudioFileProperties;
 class AudioRecorderCallback;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
+struct AudioRecorderOptions;
 
 /// Platform-independent half of a microphone recorder: subclasses own the platform input
 /// stream; the file writer, the JS callback and the adapter node are managed here.
@@ -181,5 +182,10 @@ class AudioRecorder {
   /// The caller must hold adapterNodeMutex_.
   Result<NoneType, std::string> reprepareAdapterNode(const StreamFormat &format);
 };
+
+/// Builds the platform's AudioRecorder.
+std::shared_ptr<AudioRecorder> createPlatformAudioRecorder(
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const AudioRecorderOptions &options);
 
 } // namespace audioapi
