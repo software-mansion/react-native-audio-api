@@ -1,0 +1,314 @@
+---
+sidebar_position: 6
+---
+
+import Mermaid from '@theme/Mermaid';
+
+# Build a full-duplex voice AI assistant
+
+Let's build the audio part of a voice assistant: keep the microphone running while the assistant speaks, then let the user interrupt it. We will use OpenAI Realtime over WebSocket on a physical iOS or Android device.
+
+## What do we actually need?
+
+| Must have for this speakerphone example                                         | Additional work                                                    |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Microphone permission, communication session, voice capture and output settings | Bluetooth selection, route picker, automatic interruption recovery |
+| Short-lived client secret, mono PCM16 transport, one playback queue             | Transcripts, speech indicator, waveform, conversation history UI   |
+| Clear playback on barge-in, discard late decodes, truncate unheard audio        | VAD tuning, transcription-based response filtering                 |
+| Release the microphone and session when ending the call                         | Reconnects, retries, background calling                            |
+
+:::caution Test echo suppression on a real device
+These settings request platform voice processing. Echo cancellation, noise suppression, and automatic gain control depend on the device, OS, route, and vendor processing. Test with the loudspeaker on; do not assume guaranteed hardware AEC.
+:::
+
+## Before you start
+
+Start with a React Native TypeScript app and [set up React Native Audio API 1.0](../fundamentals/getting-started.mdx). This speakerphone example requires Android 12 (API 31)+ or iOS 14+.
+
+Install `base64-js` with `yarn add base64-js`. Put the mobile snippets in one `voiceChat.ts` module. They assume permission is granted and API calls succeed. We show the audio path, not a complete app: UI, error handling, and the commented cleanup sequence belong to your call lifecycle.
+
+<details>
+<summary>Native permissions and local networking</summary>
+
+Add these permissions before `<application>` in `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+```
+
+Add `NSMicrophoneUsageDescription` to your iOS app's `Info.plist` with a microphone purpose string. For a LAN token server, also add `NSLocalNetworkUsageDescription` with a local-network purpose string. Reinstall the app after native configuration changes; run `pod install` in `ios` after installing native dependencies. See [permissions](../other/non-expo-permissions.mdx) for platform setup.
+
+Connect the phone and computer to the same network. For local HTTP only, allow cleartext traffic in the Android **debug** manifest (`android:usesCleartextTraffic="true"` on its existing `<application>`), and an ATS exception in the iOS **debug** configuration (`NSAppTransportSecurity` → `NSAllowsArbitraryLoads`: `true`). These exceptions are unnecessary for an HTTPS token URL.
+
+</details>
+
+## Create a client secret
+
+Keep the primary API key on your server. The standalone token server below is **one suggested local MVP setup**, not a deployment architecture or an Audio API requirement. Client-secret issuance can instead live in your existing backend; the app only needs its token endpoint.
+
+To try this setup, save `token-server.mjs` and run it with Node 20+ using `OPENAI_API_KEY` and optionally `REALTIME_MODEL` in the server environment:
+
+<style>{`
+  .aec-token-server > summary { padding: 1rem 1.25rem; }
+  .aec-token-server > div > div { padding: 0 1.25rem 1.25rem; }
+`}</style>
+
+<details className="aec-token-server">
+<summary>Suggested local MVP — <code>token-server.mjs</code></summary>
+
+```js {26-28}
+import { createServer } from 'node:http';
+
+const model = process.env.REALTIME_MODEL ?? 'gpt-realtime';
+const pcm = { type: 'audio/pcm', rate: 24000 };
+
+createServer(async (req, res) => {
+  if (req.method !== 'GET' || req.url !== '/token') {
+    res.writeHead(404).end();
+    return;
+  }
+  const upstream = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      session: {
+        type: 'realtime',
+        model,
+        output_modalities: ['audio'],
+        audio: {
+          input: {
+            format: pcm,
+            turn_detection: {
+              type: 'semantic_vad',
+              create_response: true,
+              interrupt_response: true,
+            },
+          },
+          output: { format: pcm, voice: 'marin' },
+        },
+      },
+    }),
+  });
+  // Add request/upstream error handling in your server.
+  const { value } = await upstream.json();
+  res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+  res.end(JSON.stringify({ model, value }));
+}).listen(8787, '0.0.0.0'); // Local testing: allow a phone to connect over LAN.
+```
+
+</details>
+
+<br />
+
+Run `node token-server.mjs` on a trusted development network. The port and `0.0.0.0` bind address are local-testing choices, not required hosting settings. On a phone, use your computer's LAN address for the token URL; localhost points at the phone itself. See the [client-secret reference](https://developers.openai.com/api/reference/resources/realtime/subresources/client_secrets/methods/create).
+
+:::tip Let VAD manage the turns
+Semantic VAD creates and cancels responses for us. Input transcription and manual `response.create` events are unnecessary for a basic spoken conversation.
+:::
+
+## Configure the audio path
+
+```tsx title="voiceChat.ts — session settings" {8-9,13}
+import { fromByteArray } from 'base64-js';
+import { AudioContext, AudioManager, AudioRecorder } from 'react-native-audio-api';
+
+const SAMPLE_RATE = 24_000;
+
+async function activateAudio() {
+  AudioManager.setSystemOptions({
+    ios: { category: 'playAndRecord', mode: 'voiceChat', options: ['defaultToSpeaker'] },
+    android: { mode: 'inCommunication', communicationDevice: 'speaker' },
+  });
+  await AudioManager.requestRecordingPermissions();
+  // Continue only if permission is Granted; handle denial in your UI.
+  await AudioManager.setAudioSessionActivity(true);
+}
+```
+
+The settings have separate jobs: [AudioManager](../system/audio-manager.mdx) owns the session and route; [AudioContext](../core/audio-context.mdx#audiocontextoptions) classifies Android playback as voice communication; [AudioRecorder](../inputs/audio-recorder.mdx#audiorecorderoptions) selects the capture processing path. The output profile alone does not activate a session or select the speaker. On iOS, `iosVoiceProcessing: true` opts into Apple's voice-processing I/O; the library handles its native setup and rebuilds.
+
+## Stream the conversation
+
+Pass a fresh secret from `/token`. This opens one socket, recorder, context, and playback queue. The microphone remains active during playback. `onReady` runs after recording starts; resolving `startVoiceChat` alone does not mean the socket is connected.
+
+<Mermaid
+  value={`%%{init: {"flowchart": {"htmlLabels": false}}}%%
+flowchart TB
+  accTitle: Full-duplex audio path
+  accDescr: The microphone streams PCM to Realtime while the playback queue plays its response. Speech detection clears playback for barge-in.
+  capture["Microphone · AudioRecorder"] -->|PCM16| realtime["Realtime · WebSocket"]
+  realtime -->|PCM16| playback["Speaker · Queue + AudioContext"]
+  realtime -.->|Speech starts: clear playback| playback
+  classDef device fill:#e1f3fa,stroke:#38acdd,color:#001a72
+  classDef service fill:#f5eeff,stroke:#782aeb,color:#001a72
+  class capture,playback device
+  class realtime service
+`}
+/>
+
+```tsx title="voiceChat.ts — microphone streaming" {5,8-9}
+export async function startVoiceChat(token: { model: string; value: string }, onReady: () => void) {
+  await activateAudio();
+  const context = new AudioContext({
+    sampleRate: SAMPLE_RATE,
+    androidOutputProfile: 'voiceCommunication',
+  });
+  const recorder = new AudioRecorder({
+    androidInputPreset: 'voiceCommunication',
+    iosVoiceProcessing: true,
+  });
+  const queue = context.createBufferQueueSource();
+  queue.connect(context.destination);
+  const socket = new WebSocket(
+    `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(token.model)}`,
+    ['realtime', `openai-insecure-api-key.${token.value}`]
+  );
+  let stopped = false,
+    queueStarted = false,
+    playbackGeneration = 0;
+  let decoding = Promise.resolve();
+  let recordingStart: ReturnType<AudioRecorder['start']> | undefined;
+  let item: { id: string; contentIndex: number; renderedMs: number } | undefined;
+  const queued = new Map<string, { item: NonNullable<typeof item>; ms: number }>();
+  const interruptedItems = new Set<string>();
+
+  queue.onbufferended = ({ bufferId }) => {
+    const entry = queued.get(bufferId);
+    if (entry) entry.item.renderedMs += entry.ms;
+    queued.delete(bufferId);
+  };
+
+  async function endCall() {
+    stopped = true;
+    playbackGeneration++;
+    // Cleanup (pseudocode — implement in your app):
+    // Close socket; clear recorder callbacks and queue buffers/callback.
+    // Await recordingStart before stopping the recorder.
+    // Stop/disconnect queue; close context; deactivate the audio session.
+  }
+
+  socket.onopen = async () => {
+    if (stopped) return;
+    await context.resume();
+    if (stopped) return;
+    recorder.onAudioReady(
+      { sampleRate: SAMPLE_RATE, bufferLength: 2400, channelCount: 1 },
+      ({ buffer, numFrames }) => {
+        if (!stopped && socket.readyState === WebSocket.OPEN) {
+          socket.send(
+            JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: encodePcm(buffer.getChannelData(0), numFrames, buffer.sampleRate),
+            })
+          );
+        }
+      }
+    );
+    // Check callback registration/start results in your app's error handling.
+    recordingStart = recorder.start();
+    await recordingStart;
+    if (!stopped) onReady();
+  };
+  // Add socket/recorder error handling and call endCall on socket close.
+```
+
+Capture keeps running while the assistant responds. Next, handle incoming audio and barge-in. Continue the same `startVoiceChat` function below:
+
+```tsx title="voiceChat.ts — playback and barge-in"
+  socket.onmessage = ({ data }) => {
+    if (stopped) return;
+    const event = JSON.parse(data);
+    // Handle Realtime error events and failed response.done events in your app.
+    if (event.type === 'input_audio_buffer.speech_started') {
+      playbackGeneration++;
+      queue.clearBuffers();
+      queued.clear();
+      if (item) {
+        interruptedItems.add(item.id);
+        socket.send(
+          JSON.stringify({
+            type: 'conversation.item.truncate',
+            item_id: item.id,
+            content_index: item.contentIndex,
+            audio_end_ms: Math.floor(item.renderedMs),
+          })
+        );
+        item = undefined;
+      }
+    }
+    if (event.type !== 'response.output_audio.delta' || interruptedItems.has(event.item_id)) return;
+    if (item?.id !== event.item_id) {
+      item = { id: event.item_id, contentIndex: event.content_index, renderedMs: 0 };
+    }
+    const currentItem = item!;
+    const generation = playbackGeneration;
+    decoding = decoding.then(async () => {
+      if (stopped || generation !== playbackGeneration) return;
+      const buffer = await context.decodePCMInBase64(event.delta, SAMPLE_RATE, 1, false);
+      if (stopped || generation !== playbackGeneration) return;
+      queued.set(queue.enqueueBuffer(buffer), { item: currentItem, ms: buffer.duration * 1000 });
+      if (!queueStarted) {
+        queue.start();
+        queueStarted = true;
+      }
+    });
+  };
+  return endCall;
+}
+```
+
+The 2,400-frame callback requests 100 ms of mono audio. Decode response chunks serially so they play in arrival order. On speech start, clear the queue and invalidate pending decodes. Truncation uses completed buffers: it can omit the last partially played chunk, but avoids claiming the user heard audio still in the queue. See [queue playback](../sources/audio-buffer-queue-source-node.mdx) and [Realtime interruptions](https://developers.openai.com/api/docs/guides/realtime-conversations#interruption-and-truncation).
+
+## Encode microphone audio
+
+The recorder supplies floats; Realtime needs little-endian PCM16/base64 at 24 kHz. Add this helper to the same module. It also handles a callback sample rate different from the requested one:
+
+<details>
+<summary>PCM16 encoding helper</summary>
+
+```tsx title="voiceChat.ts — PCM encoding"
+function encodePcm(samples: Float32Array, frames: number, inputRate: number) {
+  const ratio = inputRate / SAMPLE_RATE;
+  const bytes = new Uint8Array(Math.floor(frames / ratio) * 2);
+  const view = new DataView(bytes.buffer);
+  for (let i = 0; i < bytes.length / 2; i++) {
+    const position = i * ratio;
+    const left = Math.floor(position),
+      right = Math.min(left + 1, frames - 1);
+    const sample = samples[left] + (samples[right] - samples[left]) * (position - left);
+    view.setInt16(i * 2, Math.round(Math.max(-1, Math.min(1, sample)) * 32767), true);
+  }
+  return fromByteArray(bytes);
+}
+```
+
+</details>
+
+## Try it
+
+Wire these operations to your Connect and End-call buttons. Implement the cleanup comments first: they are pseudocode, not a working disposer. Keep only one call active, show “Connecting” until `onReady`, and fetch a new secret for each connection.
+
+```tsx title="Connect / End call"
+const response = await fetch('http://YOUR_COMPUTER_LAN_IP:8787/token');
+const endCall = await startVoiceChat(await response.json(), () => {
+  // Update your UI: recording has started.
+});
+// End-call button:
+await endCall();
+// Use the same cleanup on screen exit, socket close, or interruption.
+```
+
+On a physical device, ask a question, hear the answer, then speak over it. The assistant should stop while capture continues. End the call and confirm microphone use stops.
+
+## What's additional?
+
+**Quality of life:** transcripts, speech indicators, waveforms, Bluetooth HFP support (`ios.options: ['defaultToSpeaker', 'allowBluetoothHFP']`), and route controls. Diagnose Android routing with `getCommunicationDevice()`; selecting a route is a request, not proof that it is active.
+
+## Summary
+
+The essential path is microphone → PCM16 → WebSocket → decoded PCM → playback queue. Platform communication settings make that path suitable for voice; the rest builds the product around it.
