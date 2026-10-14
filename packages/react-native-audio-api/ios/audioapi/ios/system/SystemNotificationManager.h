@@ -17,6 +17,9 @@
 /// Set when AVAudioSession posts InterruptionEnded (or the secondary-audio equivalent).
 /// Thanks to it it can be decided, whether interruption end retry is necessary.
 @property (nonatomic, assign) bool interruptionEndedDelivered;
+/// `AVAudioSessionInterruptionOptionShouldResume` from the last interruption-ended
+/// notification. Nil until that notification arrives; a foreground retry then resumes.
+@property (nonatomic, strong) NSNumber *interruptionShouldResume;
 @property (nonatomic, assign) bool volumeChangesObserved;
 @property (nonatomic, assign) bool wasOtherAudioPlaying;
 

@@ -1,9 +1,12 @@
 #pragma once
 
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
+#include <audioapi/core/types/AudioContextLatencyHint.h>
+#include <audioapi/core/types/AudioContextOptions.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <jsi/jsi.h>
+
 #include <memory>
 
 namespace audioapi {
@@ -15,9 +18,12 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
  public:
   explicit AudioContextHostObject(
       float sampleRate,
+      AndroidOutputProfile androidOutputProfile,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker);
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      AudioContextLatencyHint latencyHint);
+  ~AudioContextHostObject() override;
 
   JSI_HOST_FUNCTION_DECL(close);
   JSI_HOST_FUNCTION_DECL(resume);
@@ -26,5 +32,6 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
 
   JSI_PROPERTY_GETTER_DECL(outputLatency);
   JSI_PROPERTY_GETTER_DECL(baseLatency);
+  JSI_PROPERTY_SETTER_DECL(onerror);
 };
 } // namespace audioapi

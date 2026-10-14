@@ -4,6 +4,7 @@
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
+#include <audioapi/utils/Macros.h>
 
 #include <memory>
 
@@ -21,6 +22,7 @@ class AudioRecorderHostObject : public HostObject {
       const std::shared_ptr<react::CallInvoker> &callInvoker,
       AudioRecorderOptions options);
   ~AudioRecorderHostObject() override;
+  DELETE_COPY_AND_MOVE(AudioRecorderHostObject);
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);

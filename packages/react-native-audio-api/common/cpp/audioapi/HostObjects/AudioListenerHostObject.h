@@ -36,6 +36,10 @@ class AudioListenerHostObject : public HostObject, public utils::graph::HostNode
   JSI_PROPERTY_GETTER_DECL(upY);
   JSI_PROPERTY_GETTER_DECL(upZ);
 
+  [[nodiscard]] AudioListener *audioListener() const {
+    return listener_.get();
+  }
+
  private:
   std::unique_ptr<AudioListener> listener_;
 

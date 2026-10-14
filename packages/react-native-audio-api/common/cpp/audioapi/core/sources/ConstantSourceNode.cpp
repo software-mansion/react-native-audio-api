@@ -10,7 +10,7 @@ namespace audioapi {
 ConstantSourceNode::ConstantSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const ConstantSourceOptions &options)
-    : AudioScheduledSourceNode(context),
+    : AudioScheduledSourceNode(context, options),
       offsetParam_(
           std::make_shared<AudioParam>(
               options.offset,

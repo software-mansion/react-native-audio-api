@@ -7,7 +7,7 @@
 #include <cstddef>
 #include <memory>
 
-namespace audioapi::android_decoder {
+namespace audioapi::android::decoder {
 
 struct AndroidDecoderState;
 
@@ -42,4 +42,4 @@ class AndroidDecoder : public decoding::OsDecoderBase {
   std::unique_ptr<AndroidDecoderState> impl_;
 };
 
-} // namespace audioapi::android_decoder
+} // namespace audioapi::android::decoder
