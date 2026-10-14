@@ -14,7 +14,20 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 
 typedef NS_ENUM(NSInteger, AudioEngineInputNotification) {
   AudioEngineInputNotificationHardwareChanged = 0,
-  AudioEngineInputNotificationCaptureLost
+  AudioEngineInputNotificationCaptureLost,
+  /// An interruption ended and the engine stays paused until something starts it again.
+  /// The recorder pauses as if the user had paused it.
+  AudioEngineInputNotificationPaused
+};
+
+/// Delivered asynchronously on the main queue, after the engine lock is released, so the
+/// source owner can detach its node.
+typedef NS_ENUM(NSInteger, AudioEngineOutputNotification) {
+  /// The engine could not be restarted; the source's stream has failed.
+  AudioEngineOutputNotificationRecoveryFailed = 0,
+  /// An interruption ended and the engine stays paused until something starts it again.
+  /// The source owner suspends itself.
+  AudioEngineOutputNotificationPaused
 };
 
 /// Result of `onInterruptionEnd:`. Distinguishes a no-op from a failed resume that stays Interrupted.
@@ -24,8 +37,6 @@ typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
   AudioEngineInterruptionEndOutcomePaused,
   AudioEngineInterruptionEndOutcomeStillInterrupted
 };
-
-typedef void (^OnOutputRecoveryFailedBlock)(void);
 
 @interface AudioEngine : NSObject
 
@@ -46,8 +57,8 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
                                    sampleRate:(float)sampleRate
                                  channelCount:(AVAudioChannelCount)channelCount
-                       onOutputRecoveryFailed:
-                           (nullable OnOutputRecoveryFailedBlock)onOutputRecoveryFailed;
+                         onOutputNotification:
+                             (nullable void (^)(AudioEngineOutputNotification))onOutputNotification;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock

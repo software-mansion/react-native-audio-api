@@ -204,4 +204,19 @@ void AudioContext::onStreamFail() {
   onErrorEvent_.dispatchEmpty();
 }
 
+void AudioContext::onSuspendedBySystem() {
+  assertDriverMutexHeld();
+
+  audioPlayer_->suspend();
+  waitForRenderQuiescence();
+
+  getGraph()->enableProducerSelfDrain();
+  // safe to call because the driver mutex is held
+  processAudioEvents();
+
+  setState(ContextState::SUSPENDED);
+  setPublishedState(ContextState::SUSPENDED);
+  dispatchStateChange(ContextState::SUSPENDED);
+}
+
 } // namespace audioapi

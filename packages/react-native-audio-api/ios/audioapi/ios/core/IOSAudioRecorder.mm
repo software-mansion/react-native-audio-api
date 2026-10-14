@@ -124,6 +124,9 @@ void IOSAudioRecorder::handleInputNotification(AudioEngineInputNotification noti
     case AudioEngineInputNotificationCaptureLost:
       handleRecordingLost();
       return;
+    case AudioEngineInputNotificationPaused:
+      handleEnginePaused();
+      return;
   }
 }
 
@@ -155,7 +158,23 @@ void IOSAudioRecorder::handleRecordingLost()
   }
 
   [nativeRecorder_ setInputArmed:false];
+  finishCurrentSegment();
+}
 
+void IOSAudioRecorder::handleEnginePaused()
+{
+  auto expectedState = RecorderState::Recording;
+  if (!state_.compare_exchange_strong(
+          expectedState, RecorderState::Paused, std::memory_order_acq_rel)) {
+    return;
+  }
+
+  [nativeRecorder_ setInputArmed:false];
+  finishCurrentSegment();
+}
+
+void IOSAudioRecorder::finishCurrentSegment()
+{
   std::scoped_lock lock(fileWriterMutex_);
   if (!usesFileOutput() || fileWriter_ == nullptr) {
     return;
@@ -163,9 +182,7 @@ void IOSAudioRecorder::handleRecordingLost()
 
   auto suspendResult = fileWriter_->suspendSession();
   if (suspendResult.is_err()) {
-    NSLog(
-        @"Error while finalizing recording segment after capture was lost: %s",
-        suspendResult.unwrap_err().c_str());
+    NSLog(@"Error while finalizing recording segment: %s", suspendResult.unwrap_err().c_str());
   }
 }
 
@@ -243,7 +260,8 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   }
 
   // The file stays the same and only the encoder's input side follows the new format, unless
-  // capture loss suspended the session: then the session continues in a new file.
+  // the session was suspended (capture lost, or paused by the engine): then it continues in a
+  // new file.
   auto result = fileWriter_->reprepareStreamFormat(format);
   if (result.is_err()) {
     deactivate(fileOutputState_);

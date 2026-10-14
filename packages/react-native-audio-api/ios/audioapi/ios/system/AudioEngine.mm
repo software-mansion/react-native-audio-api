@@ -8,7 +8,7 @@
 @property (nonatomic, copy) AVAudioSourceNodeRenderBlock renderBlock;
 @property (nonatomic, assign) float sampleRate;
 @property (nonatomic, assign) AVAudioChannelCount channelCount;
-@property (nonatomic, copy) OnOutputRecoveryFailedBlock onOutputRecoveryFailed;
+@property (nonatomic, copy) void (^onOutputNotification)(AudioEngineOutputNotification);
 
 @end
 
@@ -53,6 +53,7 @@
 - (void)resetInputNode;
 - (void)rebuildAudioEngineAndResumeIfNeeded;
 - (void)notifyInput:(AudioEngineInputNotification)notification;
+- (void)notifyOutput:(AudioEngineOutputNotification)notification;
 
 @end
 
@@ -160,22 +161,22 @@ static AudioEngine *_sharedInstance = nil;
   }
 }
 
-- (void)notifyOutputRecoveryFailed
+- (void)notifyOutput:(AudioEngineOutputNotification)notification
 {
   NSMutableArray *blocks = [NSMutableArray array];
   for (AudioEngineSourceRegistration *reg in self.sourceRegistrations.allValues) {
-    if (reg.onOutputRecoveryFailed != nil) {
-      [blocks addObject:[reg.onOutputRecoveryFailed copy]];
+    if (reg.onOutputNotification != nil) {
+      [blocks addObject:[reg.onOutputNotification copy]];
     }
   }
   if (blocks.count == 0) {
     return;
   }
 
-  // Invoke after the engine lock is released so player cleanup can detach nodes.
+  // Invoke after the engine lock is released so the source owner can detach its node.
   dispatch_async(dispatch_get_main_queue(), ^{
-    for (OnOutputRecoveryFailedBlock onOutputRecoveryFailed in blocks) {
-      onOutputRecoveryFailed();
+    for (void (^onOutputNotification)(AudioEngineOutputNotification) in blocks) {
+      onOutputNotification(notification);
     }
   });
 }
@@ -331,7 +332,8 @@ static AudioEngine *_sharedInstance = nil;
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
                                    sampleRate:(float)sampleRate
                                  channelCount:(AVAudioChannelCount)channelCount
-                       onOutputRecoveryFailed:(OnOutputRecoveryFailedBlock)onOutputRecoveryFailed
+                         onOutputNotification:
+                             (void (^)(AudioEngineOutputNotification))onOutputNotification
 {
   std::scoped_lock lock(_engineLock);
   [self createAudioEngineIfNeeded];
@@ -341,7 +343,7 @@ static AudioEngine *_sharedInstance = nil;
   registration.renderBlock = renderBlock;
   registration.sampleRate = sampleRate;
   registration.channelCount = channelCount;
-  registration.onOutputRecoveryFailed = onOutputRecoveryFailed;
+  registration.onOutputNotification = onOutputNotification;
 
   self.sourceRegistrations[sourceNodeId] = registration;
   [self materializeSourceNodeWithId:sourceNodeId];
@@ -506,9 +508,9 @@ static AudioEngine *_sharedInstance = nil;
         // Resume recording and playback.
         resumeEngine = YES;
       } else {
-        // TODO: Ideally, we would only resume recording and not playback,
-        // but it would be complex to implement and the usecase is not common,
-        // therefore not resuming the engine is safer.
+        // TODO: Resume only recording, keeping playback sources out of the running graph.
+        // Until then the engine stays paused so playback does not resume against the
+        // system's hint. Every running context counts as playback here, even an idle one.
         resumeEngine = NO;
       }
     } else {
@@ -532,7 +534,8 @@ static AudioEngine *_sharedInstance = nil;
     [self stopEngine];
     [self rebuildAudioEngine];
     self.state = AudioEngineState::AudioEngineStatePaused;
-    [self notifyInput:AudioEngineInputNotificationHardwareChanged];
+    [self notifyOutput:AudioEngineOutputNotificationPaused];
+    [self notifyInput:AudioEngineInputNotificationPaused];
     return AudioEngineInterruptionEndOutcomePaused;
   }
 
@@ -617,7 +620,7 @@ static AudioEngine *_sharedInstance = nil;
     didStartEngine = [self startEngine];
     if (!didStartEngine) {
       self.state = AudioEngineState::AudioEngineStateIdle;
-      [self notifyOutputRecoveryFailed];
+      [self notifyOutput:AudioEngineOutputNotificationRecoveryFailed];
     }
   }
   // TODO(IRTMP): remove temporary log.

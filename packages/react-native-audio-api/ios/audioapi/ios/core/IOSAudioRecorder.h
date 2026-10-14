@@ -55,6 +55,13 @@ class IOSAudioRecorder : public AudioRecorder {
   void handleInputNotification(AudioEngineInputNotification notification);
   void handleHardwareChange();
   void handleRecordingLost();
+  /// Pauses as `pause()` does, without touching the engine, which is already paused. The
+  /// current segment is finalized too: the app is usually in the background here and may be
+  /// suspended and killed, and an unfinalized file is unreadable. `resume()` continues the
+  /// recording in the next segment.
+  void handleEnginePaused();
+  /// Finalizes the open file and keeps the session, so the next format reprepare opens a new one.
+  void finishCurrentSegment();
   [[nodiscard]] bool isFileSessionSuspended() const;
   Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
   Result<NoneType, std::string> reprepareCallback(const StreamFormat &format);
