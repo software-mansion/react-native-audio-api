@@ -5,6 +5,16 @@
 
 @class AudioAPIModule;
 
+typedef NS_ENUM(NSInteger, InterruptionRecoveryState) {
+  /// Nothing is waiting for an interruption to end.
+  InterruptionRecoveryStateNone = 0,
+  /// An interruption stopped the engine and has not ended yet.
+  InterruptionRecoveryStateInterrupted,
+  /// The interruption ended, but a recording or a context meant to continue could not restart.
+  /// Retried when the app returns to the foreground.
+  InterruptionRecoveryStatePending
+};
+
 @interface SystemNotificationManager : NSObject
 
 @property (nonatomic, weak) AudioAPIModule *audioAPIModule;
@@ -14,9 +24,8 @@
 @property (nonatomic, strong) NSTimer *hintPollingTimer;
 @property (nonatomic, assign) bool hadConfigurationChange;
 @property (nonatomic, assign) bool audioInterruptionsObserved;
-/// Set when AVAudioSession posts InterruptionEnded (or the secondary-audio equivalent).
-/// Thanks to it it can be decided, whether interruption end retry is necessary.
-@property (nonatomic, assign) bool interruptionEndedDelivered;
+/// Main queue only.
+@property (nonatomic, assign) InterruptionRecoveryState interruptionRecoveryState;
 /// `AVAudioSessionInterruptionOptionShouldResume` from the last interruption-ended
 /// notification. Nil until that notification arrives; a foreground retry then resumes.
 @property (nonatomic, strong) NSNumber *interruptionShouldResume;

@@ -433,6 +433,8 @@ static AudioEngine *_sharedInstance = nil;
       self.audioEngine != nil && [self.audioEngine isRunning],
       [self hasInput],
       [self hasSources]);
+  [self.sessionManager markInactive];
+
   if (self.state != AudioEngineState::AudioEngineStateRunning) {
     return false;
   }
@@ -475,102 +477,61 @@ static AudioEngine *_sharedInstance = nil;
   self.sessionDeactivationInvalidatedGraph = YES;
 }
 
-- (void)markGraphNeedsRebuild
+- (void)onInterruptionEnd
 {
   std::scoped_lock lock(_engineLock);
-  self.graphNeedsRebuild = true;
-}
-
-- (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
-{
-  std::scoped_lock lock(_engineLock);
-  NSError *error = nil;
-
-  if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
-    // TODO(IRTMP): remove temporary log.
-    NSLog(@"[IRTMP] onInterruptionEnd NoOp state=%ld", (long)self.state);
-    return AudioEngineInterruptionEndOutcomeNoOp;
-  }
-
-  const BOOL hasInput = [self hasInput];
-  const BOOL hasSources = [self hasSources];
-  BOOL resumeEngine = NO;
-
-  // According to <https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume>:
-  // * `shouldResume` only refers to resuming the playback.
-  // * We choose to resume recording unconditionally (but see below).
-  // Below decision tree reflects this policy.
-  // On the long term it would be useful to make this policy configurable.
-
-  if (hasInput) {
-    if (hasSources) {
-      if (shouldResume) {
-        // Resume recording and playback.
-        resumeEngine = YES;
-      } else {
-        // TODO: Resume only recording, keeping playback sources out of the running graph.
-        // Until then the engine stays paused so playback does not resume against the
-        // system's hint. Every running context counts as playback here, even an idle one.
-        resumeEngine = NO;
-      }
-    } else {
-      // There is only recording to resume.
-      resumeEngine = YES;
-    }
-  } else {
-    // There is only playback to resume.
-    resumeEngine = hasSources && shouldResume;
-  }
-
   // TODO(IRTMP): remove temporary log.
-  NSLog(
-      @"[IRTMP] onInterruptionEnd shouldResume=%d hasInput=%d hasSources=%d resumeEngine=%d",
-      shouldResume,
-      hasInput,
-      hasSources,
-      resumeEngine);
-
-  if (!resumeEngine) {
-    [self stopEngine];
-    [self rebuildAudioEngine];
-    self.state = AudioEngineState::AudioEngineStatePaused;
-    [self notifyOutput:AudioEngineOutputNotificationPaused];
-    [self notifyInput:AudioEngineInputNotificationPaused];
-    return AudioEngineInterruptionEndOutcomePaused;
-  }
-
-  if (![self.sessionManager ensureActive:true error:&error]) {
-    NSLog(@"Error while activating audio session after interruption: %@", [error debugDescription]);
-    return AudioEngineInterruptionEndOutcomeStillInterrupted;
+  NSLog(@"[IRTMP] onInterruptionEnd state=%ld", (long)self.state);
+  if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
+    return;
   }
 
   [self stopEngine];
-  [self rebuildAudioEngine];
+  self.graphNeedsRebuild = [self hasTrackedGraph];
+}
 
-  if (self.inputRegistration != nil && self.inputNode == nil) {
-    NSLog(
-        @"Error while materializing the audio input node after interruption: missing live input format");
-    self.state = AudioEngineState::AudioEngineStateInterrupted;
-    [self notifyInput:AudioEngineInputNotificationCaptureLost];
-    return AudioEngineInterruptionEndOutcomeStillInterrupted;
+- (void)onConfigurationChange
+{
+  std::scoped_lock lock(_engineLock);
+  // TODO(IRTMP): remove temporary log.
+  NSLog(@"[IRTMP] onConfigurationChange state=%ld", (long)self.state);
+
+  // AVAudioEngineConfigurationChangeNotification also fires for engines owned by other
+  // libraries in the host app. Without a graph or an engine of our own there is nothing to
+  // restart, and marking the session inactive would corrupt the bookkeeping of apps that
+  // only manage the session.
+  if (![self hasTrackedGraph] && self.audioEngine == nil) {
+    return;
   }
 
-  [self.audioEngine prepare];
-  [self.audioEngine startAndReturnError:&error];
-
-  if (error != nil) {
-    NSLog(
-        @"Error while restarting the audio engine after interruption: %@",
-        [error debugDescription]);
-    self.state = AudioEngineState::AudioEngineStateInterrupted;
-    [self notifyInput:AudioEngineInputNotificationCaptureLost];
-    return AudioEngineInterruptionEndOutcomeStillInterrupted;
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
+    self.graphNeedsRebuild = true;
+    return;
   }
 
-  self.state = AudioEngineState::AudioEngineStateRunning;
-  self.sessionDeactivationInvalidatedGraph = false;
-  [self notifyInput:AudioEngineInputNotificationHardwareChanged];
-  return AudioEngineInterruptionEndOutcomeRunning;
+  [self.sessionManager markInactive];
+  [self rebuildAudioEngineAndResumeIfNeeded];
+}
+
+- (void)onMediaServicesReset
+{
+  std::scoped_lock lock(_engineLock);
+  const bool wasSessionActive = self.sessionManager.isActive;
+
+  if (![self hasTrackedGraph] && self.audioEngine == nil && !wasSessionActive) {
+    return;
+  }
+
+  NSLog(@"[AudioEngine] Media services have been reset, tearing down and rebuilding everything.");
+  [self.sessionManager markInactive];
+
+  if (wasSessionActive) {
+    [self.sessionManager ensureActive:true error:nil];
+  }
+
+  if ([self hasTrackedGraph] || self.audioEngine != nil) {
+    [self rebuildAudioEngineAndResumeIfNeeded];
+  }
 }
 
 - (void)notifyInput:(AudioEngineInputNotification)notification
@@ -671,8 +632,11 @@ static AudioEngine *_sharedInstance = nil;
     [self materializeTrackedNodesIfNeeded];
   }
 
+  // After a failed start below, the next attempt begins from a fresh engine rather than the
+  // one that just failed.
   if (self.inputRegistration != nil && self.inputNode == nil) {
     NSLog(@"Error while materializing the audio input node: missing live input format");
+    self.graphNeedsRebuild = true;
     return false;
   }
 
@@ -681,6 +645,7 @@ static AudioEngine *_sharedInstance = nil;
 
   if (error != nil) {
     NSLog(@"Error while starting the audio engine: %@", [error debugDescription]);
+    self.graphNeedsRebuild = true;
     return false;
   }
 
@@ -731,7 +696,10 @@ static AudioEngine *_sharedInstance = nil;
 - (void)pauseIfNecessary
 {
   std::scoped_lock lock(_engineLock);
-  if (self.state == AudioEngineState::AudioEngineStatePaused) {
+  // The system already stopped an interrupted engine. Keeping Interrupted lets the
+  // interruption's end still rebuild the graph.
+  if (self.state == AudioEngineState::AudioEngineStatePaused ||
+      self.state == AudioEngineState::AudioEngineStateInterrupted) {
     return;
   }
 

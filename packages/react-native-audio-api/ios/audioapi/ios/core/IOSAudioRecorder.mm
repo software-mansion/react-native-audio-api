@@ -121,12 +121,6 @@ void IOSAudioRecorder::handleInputNotification(AudioEngineInputNotification noti
     case AudioEngineInputNotificationHardwareChanged:
       handleHardwareChange();
       return;
-    case AudioEngineInputNotificationCaptureLost:
-      handleRecordingLost();
-      return;
-    case AudioEngineInputNotificationPaused:
-      handleEnginePaused();
-      return;
   }
 }
 
@@ -149,28 +143,6 @@ void IOSAudioRecorder::handleHardwareChange()
   }
 
   reprepareForLiveInput();
-}
-
-void IOSAudioRecorder::handleRecordingLost()
-{
-  if (isIdle()) {
-    return;
-  }
-
-  [nativeRecorder_ setInputArmed:false];
-  finishCurrentSegment();
-}
-
-void IOSAudioRecorder::handleEnginePaused()
-{
-  auto expectedState = RecorderState::Recording;
-  if (!state_.compare_exchange_strong(
-          expectedState, RecorderState::Paused, std::memory_order_acq_rel)) {
-    return;
-  }
-
-  [nativeRecorder_ setInputArmed:false];
-  finishCurrentSegment();
 }
 
 void IOSAudioRecorder::finishCurrentSegment()
@@ -260,8 +232,7 @@ Result<NoneType, std::string> IOSAudioRecorder::reprepareFileWriter(const Stream
   }
 
   // The file stays the same and only the encoder's input side follows the new format, unless
-  // the session was suspended (capture lost, or paused by the engine): then it continues in a
-  // new file.
+  // the session was suspended after a failed resume: then it continues in a new file.
   auto result = fileWriter_->reprepareStreamFormat(format);
   if (result.is_err()) {
     deactivate(fileOutputState_);
@@ -453,21 +424,24 @@ Result<FileInfo, std::string> IOSAudioRecorder::stop()
 
 void IOSAudioRecorder::pause()
 {
-  if (!isRecording()) {
+  auto expectedState = RecorderState::Recording;
+  if (!state_.compare_exchange_strong(
+          expectedState, RecorderState::Paused, std::memory_order_acq_rel)) {
     return;
   }
 
   [nativeRecorder_ pause];
-  state_.store(RecorderState::Paused, std::memory_order_release);
 }
 
 void IOSAudioRecorder::resume()
 {
-  if (!isPaused()) {
+  if (isIdle() || isRecording()) {
     return;
   }
 
   if (![nativeRecorder_ resume]) {
+    [nativeRecorder_ setInputArmed:false];
+    finishCurrentSegment();
     return;
   }
 
@@ -484,18 +458,10 @@ bool IOSAudioRecorder::isRecording() const
       [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
-/// Any thread. A stopped audio engine reads as paused, so an interrupted session looks paused.
+/// Any thread.
 bool IOSAudioRecorder::isPaused() const
 {
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  auto currentState = state_.load(std::memory_order_acquire);
-
-  if (currentState == RecorderState::Idle) {
-    return false;
-  }
-
-  return currentState == RecorderState::Paused ||
-      [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
+  return state_.load(std::memory_order_acquire) == RecorderState::Paused;
 }
 
 /// Any thread.

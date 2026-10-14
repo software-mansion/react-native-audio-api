@@ -57,9 +57,6 @@ void reportOutputNotificationToContext(
     case AudioEngineOutputNotificationRecoveryFailed:
       ctx->onStreamFail();
       return;
-    case AudioEngineOutputNotificationPaused:
-      ctx->onSuspendedBySystem();
-      return;
   }
 }
 

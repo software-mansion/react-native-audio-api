@@ -34,10 +34,18 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<NoneType, std::string> start() override;
   Result<FileInfo, std::string> stop() override;
 
+  /// Also pauses a recording whose capture an interruption stopped, so it stays paused once the
+  /// interruption ends.
   void pause() override;
+  /// Resumes a paused recording, and also restarts capture that the system stopped while the
+  /// recording was meant to continue. When the engine cannot start, the current segment is
+  /// finalized, because the app may be killed before the next attempt and an unfinalized file is
+  /// unreadable. The next successful resume continues in a new segment.
   void resume() override;
 
   bool isRecording() const override;
+  /// Only a pause the user asked for. A recording whose capture was stopped by an interruption is
+  /// neither paused nor recording.
   bool isPaused() const override;
   bool isIdle() const override;
 
@@ -54,12 +62,6 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<NoneType, std::string> reprepareForLiveInput();
   void handleInputNotification(AudioEngineInputNotification notification);
   void handleHardwareChange();
-  void handleRecordingLost();
-  /// Pauses as `pause()` does, without touching the engine, which is already paused. The
-  /// current segment is finalized too: the app is usually in the background here and may be
-  /// suspended and killed, and an unfinalized file is unreadable. `resume()` continues the
-  /// recording in the next segment.
-  void handleEnginePaused();
   /// Finalizes the open file and keeps the session, so the next format reprepare opens a new one.
   void finishCurrentSegment();
   [[nodiscard]] bool isFileSessionSuspended() const;

@@ -43,6 +43,12 @@ class ActiveRecorderHandle {
   /// @brief Resumes a paused session; a no-op in any other state.
   RecorderState resume();
 
+  /// @brief Restarts capture of a session that is meant to be recording but whose input the
+  /// system stopped, e.g. by an audio session interruption. A paused or idle session is left
+  /// alone. Checking and resuming happen under one lock, so a concurrent user pause wins.
+  /// @return false only when such a session could not restart capture.
+  bool resumeIfInterrupted();
+
   /// @brief Stops the occupant and returns AudioRecorder::stop()'s Result,
   /// including the original error. On success with non-empty paths, stashes a
   /// copy for consumeLastRecordingResult() and clears the slot. Blocks until
