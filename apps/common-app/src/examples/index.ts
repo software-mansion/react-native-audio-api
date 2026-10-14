@@ -38,6 +38,7 @@ type NavigationParamList = {
   AudioParamPipeline: undefined;
   TestScreen: undefined;
   LatencyValidation: undefined;
+  VpioPlaybackHangRepro: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;

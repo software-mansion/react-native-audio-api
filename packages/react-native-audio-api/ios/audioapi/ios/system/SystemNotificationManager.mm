@@ -279,9 +279,15 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   switch (routeChangeReason) {
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
-    case AVAudioSessionRouteChangeReasonRouteConfigurationChange:
-      [self handleEngineConfigurationChange:nil];
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
+      // Not a restart: rebuilding the engine reconfigures its I/O unit, which itself posts
+      // RouteConfigurationChange, so restarting here would restart without end. A route
+      // change that alters the hardware format also arrives as
+      // AVAudioEngineConfigurationChangeNotification, which does restart the engine.
+      AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+      dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onRouteChange]; });
       break;
+    }
     default:
       break;
   }
@@ -316,12 +322,17 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
+  // Weak, so a queued handler does not keep a replaced engine alive; one that is gone by the
+  // time the handler runs is no longer ours to restart.
+  __weak AVAudioEngine *changedEngine = notification.object;
+
   dispatch_async(dispatch_get_main_queue(), ^{
-    // This notification is registered with object:nil, so it also fires for
-    // AVAudioEngine instances owned by other libraries in the host app. Without
-    // an engine of our own there is nothing to restart, and marking the session
-    // inactive would corrupt bookkeeping for apps that only manage the session.
-    if (![audioEngine isInUse]) {
+    // Registered with object:nil because the engine is replaced on every rebuild, so this
+    // also fires for AVAudioEngine instances owned by other libraries in the host app and
+    // for engines we have already replaced. Only a change on the engine we currently drive
+    // calls for a restart; acting on any other would rebuild ours for nothing and mark the
+    // session inactive behind the back of an app that only manages the session.
+    if (![audioEngine isCurrentEngine:changedEngine]) {
       return;
     }
 
@@ -334,7 +345,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [audioEngine markGraphNeedsRebuild];
       return;
     }
-
     [sessionManager markInactive];
     [audioEngine restartAudioEngine];
   });
