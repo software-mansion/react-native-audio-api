@@ -424,6 +424,13 @@ static AudioEngine *_sharedInstance = nil;
 - (bool)onInterruptionBegin
 {
   std::scoped_lock lock(_engineLock);
+  // TODO(IRTMP): remove temporary log.
+  NSLog(
+      @"[IRTMP] onInterruptionBegin state=%ld engineRunning=%d hasInput=%d hasSources=%d",
+      (long)self.state,
+      self.audioEngine != nil && [self.audioEngine isRunning],
+      [self hasInput],
+      [self hasSources]);
   if (self.state != AudioEngineState::AudioEngineStateRunning) {
     return false;
   }
@@ -478,6 +485,8 @@ static AudioEngine *_sharedInstance = nil;
   NSError *error = nil;
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
+    // TODO(IRTMP): remove temporary log.
+    NSLog(@"[IRTMP] onInterruptionEnd NoOp state=%ld", (long)self.state);
     return AudioEngineInterruptionEndOutcomeNoOp;
   }
 
@@ -510,6 +519,14 @@ static AudioEngine *_sharedInstance = nil;
     // There is only playback to resume.
     resumeEngine = hasSources && shouldResume;
   }
+
+  // TODO(IRTMP): remove temporary log.
+  NSLog(
+      @"[IRTMP] onInterruptionEnd shouldResume=%d hasInput=%d hasSources=%d resumeEngine=%d",
+      shouldResume,
+      hasInput,
+      hasSources,
+      resumeEngine);
 
   if (!resumeEngine) {
     [self stopEngine];
@@ -593,6 +610,8 @@ static AudioEngine *_sharedInstance = nil;
   [self rebuildAudioEngine];
   self.sessionDeactivationInvalidatedGraph = false;
 
+  // TODO(IRTMP): remove temporary log.
+  const long stateBeforeRestart = (long)self.state;
   BOOL didStartEngine = NO;
   if (self.state == AudioEngineState::AudioEngineStateRunning) {
     didStartEngine = [self startEngine];
@@ -601,6 +620,14 @@ static AudioEngine *_sharedInstance = nil;
       [self notifyOutputRecoveryFailed];
     }
   }
+  // TODO(IRTMP): remove temporary log.
+  NSLog(
+      @"[IRTMP] rebuildAndResume stateBefore=%ld didStart=%d stateAfter=%ld hasInput=%d hasSources=%d",
+      stateBeforeRestart,
+      didStartEngine,
+      (long)self.state,
+      [self hasInput],
+      [self hasSources]);
 
   if (didStartEngine) {
     [self notifyInput:AudioEngineInputNotificationHardwareChanged];
@@ -675,6 +702,13 @@ static AudioEngine *_sharedInstance = nil;
 - (bool)startIfNecessary
 {
   std::scoped_lock lock(_engineLock);
+  // TODO(IRTMP): remove temporary log.
+  NSLog(
+      @"[IRTMP] startIfNecessary state=%ld engineRunning=%d hasInput=%d hasSources=%d",
+      (long)self.state,
+      self.audioEngine != nil && [self.audioEngine isRunning],
+      [self hasInput],
+      [self hasSources]);
   if (self.state == AudioEngineState::AudioEngineStateRunning && self.audioEngine != nil &&
       [self.audioEngine isRunning]) {
     [self materializeTrackedNodesIfNeeded];
@@ -682,7 +716,10 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   if ([self hasTrackedGraph]) {
-    return [self startEngine];
+    bool didStart = [self startEngine];
+    // TODO(IRTMP): remove temporary log.
+    NSLog(@"[IRTMP] startIfNecessary startEngine=%d", didStart);
+    return didStart;
   }
 
   return false;
@@ -711,6 +748,12 @@ static AudioEngine *_sharedInstance = nil;
 - (void)stopIfPossible
 {
   std::scoped_lock lock(_engineLock);
+  // TODO(IRTMP): remove temporary log.
+  NSLog(
+      @"[IRTMP] stopIfPossible state=%ld hasInput=%d hasSources=%d",
+      (long)self.state,
+      [self hasInput],
+      [self hasSources]);
 
   if ([self hasInput] || [self hasSources]) {
     return;
