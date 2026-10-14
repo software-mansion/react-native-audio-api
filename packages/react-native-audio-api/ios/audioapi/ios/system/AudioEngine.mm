@@ -464,10 +464,10 @@ static AudioEngine *_sharedInstance = nil;
 
   [self stopEngine];
   [self rebuildAudioEngine];
+  [self notifyConfigurationChanges];
 
   if (!shouldResume) {
     self.state = AudioEngineState::AudioEngineStatePaused;
-    [self notifyConfigurationChanges];
     return;
   }
 
@@ -479,16 +479,12 @@ static AudioEngine *_sharedInstance = nil;
         @"Error while restarting the audio engine after interruption: %@",
         [error debugDescription]);
     self.state = AudioEngineState::AudioEngineStateIdle;
-
     [self notifyOutputRecoveryFailed];
-
-    [self notifyConfigurationChanges];
     return;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
   self.sessionDeactivationInvalidatedGraph = false;
-  [self notifyConfigurationChanges];
 }
 
 - (void)notifyConfigurationChanges
@@ -531,14 +527,16 @@ static AudioEngine *_sharedInstance = nil;
   [self rebuildAudioEngine];
   self.sessionDeactivationInvalidatedGraph = false;
 
+  // Before startEngine: the input consumers must match the new route's format
+  // before the first render callback arrives on it.
+  [self notifyConfigurationChanges];
+
   if (self.state == AudioEngineState::AudioEngineStateRunning) {
     if (![self startEngine]) {
       self.state = AudioEngineState::AudioEngineStateIdle;
       [self notifyOutputRecoveryFailed];
     }
   }
-
-  [self notifyConfigurationChanges];
 
   _isRebuildingAudioEngine = NO;
 }

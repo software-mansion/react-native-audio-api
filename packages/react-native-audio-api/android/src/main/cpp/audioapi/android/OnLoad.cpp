@@ -1,4 +1,5 @@
 #include <audioapi/android/AudioAPIModule.h>
+#include <audioapi/android/system/NativeInputRouting.h>
 #include <audioapi/android/system/NativeRecorderControl.h>
 
 #include <fbjni/fbjni.h>
@@ -9,5 +10,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
   return facebook::jni::initialize(vm, [] {
     AudioAPIModule::registerNatives();
     NativeRecorderControl::registerNatives();
+    NativeInputRouting::registerNatives();
   });
 }
