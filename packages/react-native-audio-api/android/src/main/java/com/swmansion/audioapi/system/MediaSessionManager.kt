@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.PermissionAwareActivity
 import com.facebook.react.modules.core.PermissionListener
 import com.swmansion.audioapi.AudioAPIModule
@@ -37,10 +38,17 @@ object MediaSessionManager {
   private lateinit var audioManager: AudioManager
   private lateinit var audioFocusListener: AudioFocusListener
   private lateinit var volumeChangeListener: VolumeChangeListener
+  private lateinit var deviceChangeListener: DeviceChangeListener
   private lateinit var playbackNotificationReceiver: PlaybackNotificationReceiver
 
   private val mainHandler = Handler(Looper.getMainLooper())
   private lateinit var communicationSession: CommunicationSession
+
+  lateinit var inputRouter: AudioInputRouter
+    private set
+
+  /** Whether [volumeChangeListener] is registered; unregistering a receiver twice throws. */
+  private var observesVolumeChanges = false
 
   // New notification system
   private lateinit var notificationRegistry: NotificationRegistry
@@ -88,10 +96,16 @@ object MediaSessionManager {
     this.communicationSession =
       CommunicationSession(this.audioManager, this.audioFocusListener, mainHandler, ::emitRouteChange)
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
+    this.inputRouter =
+      AudioInputRouter(this.audioManager, BluetoothScoLink(this.audioManager, this.reactContext), ::dispatchRouteChange)
+    this.deviceChangeListener = DeviceChangeListener()
+    this.audioManager.registerAudioDeviceCallback(deviceChangeListener, Handler(Looper.getMainLooper()))
 
     // Initialize new notification system
     this.notificationRegistry = NotificationRegistry(this.reactContext, this.audioAPIModule)
   }
+
+  fun dispatchRouteChange(reason: RouteChangeReason) = emitRouteChange(reason.eventName)
 
   /** The system output volume on the volumeChange event's own scale:
    * STREAM_MUSIC volume as a 0..1 fraction of its maximum. */
@@ -154,15 +168,38 @@ object MediaSessionManager {
     }
   }
 
+  @RequiresApi(Build.VERSION_CODES.O)
   fun getCommunicationDevice(onComplete: (ReadableMap?) -> Unit) {
     runOnMain {
-      onComplete(communicationSession.currentDevice()?.let(::toReadableDeviceInfo))
+      onComplete(communicationSession.currentDevice()?.let(::describeDevice))
     }
   }
 
   fun cleanup() {
     runOnMain {
-      communicationSession.deactivate()
+      if (::communicationSession.isInitialized) {
+        communicationSession.deactivate()
+      }
+
+      if (::audioFocusListener.isInitialized) {
+        audioFocusListener.abandonAudioFocus()
+      }
+    }
+
+    if (::volumeChangeListener.isInitialized) {
+      observeVolumeChanges(false)
+    }
+
+    if (::playbackNotificationReceiver.isInitialized) {
+      reactContext.get()?.unregisterReceiver(playbackNotificationReceiver)
+    }
+
+    if (::deviceChangeListener.isInitialized) {
+      audioManager.unregisterAudioDeviceCallback(deviceChangeListener)
+    }
+
+    if (::inputRouter.isInitialized) {
+      inputRouter.cleanup()
     }
   }
 
@@ -186,6 +223,10 @@ object MediaSessionManager {
   }
 
   fun observeVolumeChanges(observe: Boolean) {
+    if (observe == observesVolumeChanges) {
+      return
+    }
+
     if (observe) {
       ContextCompat.registerReceiver(
         reactContext.get()!!,
@@ -196,6 +237,8 @@ object MediaSessionManager {
     } else {
       reactContext.get()?.unregisterReceiver(volumeChangeListener)
     }
+
+    observesVolumeChanges = observe
   }
 
   fun requestRecordingPermissions(permissionListener: PermissionListener) {
@@ -290,19 +333,26 @@ object MediaSessionManager {
   @RequiresApi(Build.VERSION_CODES.O)
   fun getDevicesInfo(): ReadableMap {
     val availableInputs = Arguments.createArray()
+    val currentInputs = Arguments.createArray()
     val availableOutputs = Arguments.createArray()
 
-    for (inputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
-      availableInputs.pushMap(toReadableDeviceInfo(inputDevice))
+    val currentInputDeviceId = inputRouter.currentInputDeviceId
+
+    for (inputDevice in inputRouter.recordableInputs()) {
+      availableInputs.pushMap(describeDevice(inputDevice))
+
+      if (inputDevice.id == currentInputDeviceId) {
+        currentInputs.pushMap(describeDevice(inputDevice))
+      }
     }
 
     for (outputDevice in this.audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
-      availableOutputs.pushMap(toReadableDeviceInfo(outputDevice))
+      availableOutputs.pushMap(describeDevice(outputDevice))
     }
 
     val devicesInfo = Arguments.createMap()
 
-    devicesInfo.putArray("currentInputs", Arguments.createArray())
+    devicesInfo.putArray("currentInputs", currentInputs)
     devicesInfo.putArray("currentOutputs", Arguments.createArray())
     devicesInfo.putArray("availableInputs", availableInputs)
     devicesInfo.putArray("availableOutputs", availableOutputs)
@@ -310,13 +360,28 @@ object MediaSessionManager {
     return devicesInfo
   }
 
-  private fun toReadableDeviceInfo(device: AudioDeviceInfo): ReadableMap =
-    Arguments.createMap().apply {
-      putString("id", device.id.toString())
-      putString("name", device.productName.toString())
-      putString("category", parseDeviceCategory(device))
+  @RequiresApi(Build.VERSION_CODES.O)
+  private fun describeDevice(device: AudioDeviceInfo): WritableMap {
+    val deviceInfo = Arguments.createMap()
+    deviceInfo.putString("id", device.id.toString())
+    deviceInfo.putString("name", deviceName(device))
+    deviceInfo.putString("category", parseDeviceCategory(device))
+
+    return deviceInfo
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private fun deviceName(device: AudioDeviceInfo): String {
+    val productName = device.productName.toString()
+
+    if (device.type != AudioDeviceInfo.TYPE_BUILTIN_MIC || device.address.isEmpty()) {
+      return productName
     }
 
+    return "$productName (${device.address})"
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
   fun parseDeviceCategory(device: AudioDeviceInfo): String =
     when (device.type) {
       AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Mic"
@@ -326,6 +391,11 @@ object MediaSessionManager {
       AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired Headphones"
       AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth A2DP"
       AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
+      AudioDeviceInfo.TYPE_BLE_HEADSET -> "Bluetooth LE Headset"
+      AudioDeviceInfo.TYPE_BLE_SPEAKER -> "Bluetooth LE Speaker"
+      AudioDeviceInfo.TYPE_USB_DEVICE -> "USB Device"
+      AudioDeviceInfo.TYPE_USB_HEADSET -> "USB Headset"
+      AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB Accessory"
       else -> "Other (${device.type})"
     }
 

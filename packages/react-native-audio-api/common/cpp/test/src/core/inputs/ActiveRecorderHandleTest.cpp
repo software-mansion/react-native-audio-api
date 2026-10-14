@@ -56,6 +56,9 @@ class FakeAudioRecorder : public AudioRecorder {
   void resume() override {
     state_ = RecorderState::Recording;
   }
+  Result<NoneType, std::string> rerouteInput() override {
+    return Result<NoneType, std::string>::Ok(None);
+  }
 
   bool isRecording() const override {
     return state_ == RecorderState::Recording;
