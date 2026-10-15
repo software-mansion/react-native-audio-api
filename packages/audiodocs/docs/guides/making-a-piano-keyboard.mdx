@@ -3,6 +3,7 @@ sidebar_position: 2
 ---
 
 import InteractiveExample from '@site/src/components/InteractiveExample';
+import PianoFrequenciesDiagram from '@site/src/components/PianoFrequenciesDiagram';
 
 
 # Piano keyboard
@@ -315,7 +316,7 @@ When we change the speed of a sound, it will also change its pitch (frequency). 
 
 Each piano key has its own dominant frequency (e.g., the frequency of the `A4` key is `440Hz`). We can check the frequency of each key, calculate the ratio between them, and use that ratio to adjust the playback rate of the buffers we have.
 
-![Piano keys frequencies](/img/frequencies-on-piano.jpg)
+<PianoFrequenciesDiagram />
 
 Our five keys span the notes from `A3` up to `E4`, so these are the frequencies we will base our calculations on:
 

@@ -264,6 +264,50 @@ import { useOscillatorPlayground } from
 
 To add a new playground: create `src/components/InteractivePlayground/MyExample/useMyPlayground.ts`.
 
+The hook may also return `header` — full-width content rendered above the preview/controls row.
+
+### Effect playgrounds — clickable audio graph for effect nodes
+
+Every effect page (`docs/effects/`) embeds one. The hooks live in
+`src/components/InteractivePlayground/EffectPlayground/effects/use<Node>Playground.tsx` and share:
+
+- `useEffectPlayground` — sample picker, bypass switch, the `AudioGraph` header
+  (`Source → Node(s) → Destination`; clicking a node toggles bypass, clicking the source plays).
+  `effectNodes` takes one or more boxes; the graph sizes boxes from the measured label width and
+  stacks vertically when the container is too narrow for the row. `ChannelSplitterNode` and
+  `ChannelMergerNode` share `useChannelRoutingPlayground`, whose default `stereo` sample is
+  composed at runtime (voice left, music right) so re-routing is unmistakable.
+- `useEffectChain` — owns the `AudioContext`, a looping `AudioBufferSourceNode`, and a dry/wet
+  crossfade; bypass never rewires, it ramps two gains (no clicks). `mixesDrySignal: true` keeps
+  the dry path audible (delay, reverb) so bypass only mutes the wet path.
+- `EffectFactory` — `(ctx, params) => { input, output, update, getFrequencyResponse?, dispose }`.
+  `input`/`output` must stay stable; nodes that cannot be mutated (`IIRFilterNode` coefficients,
+  `WaveShaperNode.curve` is write-once) rebuild the inner node between two pass-through gains.
+- Visualizers in `EffectPlayground/visualizers/`: `SpectrumVisualizer` (spectrum + optional
+  response overlay), `StereoMeterVisualizer` (L/R RMS), `CurveChart` (static array plot); the
+  time-domain `WaveformVisualizer` lives one level up.
+- `buildEffectCode` renders the snippet; pass `bypassedWiring` when the bypassed graph is not a
+  plain `source.connect(ctx.destination)`.
+
+Samples come from `EffectPlayground/sources.ts` (`bgm-01.mp3`, `example-voice-01.mp3`); bytes are
+cached per page and copied before decoding because `decodeAudioData` detaches its input.
+
+```tsx
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useGainPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useGainPlayground';
+
+<InteractivePlayground tag="GainNode" usePlayground={useGainPlayground} />
+```
+
+Pitfall: the web `AnalyserNode` wrapper copies `fftSize` / `smoothingTimeConstant` into plain
+fields, so assigning them does not reach the browser node — the demos rely on the defaults (2048).
+
+Pitfall: `package.json` depends on `react-native-audio-api: latest`, so the docs bundle the
+**published npm release** from `packages/audiodocs/node_modules/`, not the workspace source. A web
+demo may only call APIs that release ships (e.g. `createChannelSplitter` on the web `AudioContext`
+was missing in 0.13.1); reach for the browser objects behind the wrappers (`ctx.context`,
+`node.node`) for documentation-only plumbing such as meters.
+
 ### InteractiveExample — side-by-side code + rendered output
 
 ```tsx
