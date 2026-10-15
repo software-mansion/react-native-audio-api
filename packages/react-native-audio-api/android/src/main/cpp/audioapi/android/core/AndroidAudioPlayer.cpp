@@ -330,7 +330,8 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     std::atomic<uint32_t> &currentRenders,
     std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
-    AudioContextLatencyHint latencyHint) {
+    AudioContextLatencyHint latencyHint,
+    AndroidOutputProfile outputProfile) {
   return std::make_shared<AndroidAudioPlayer>(
       renderAudio,
       sampleRate,
@@ -338,7 +339,8 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
       currentRenders,
       std::move(context),
       driverMutex,
-      latencyHint);
+      latencyHint,
+      outputProfile);
 }
 
 } // namespace audioapi
