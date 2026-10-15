@@ -26,6 +26,10 @@ inline constexpr std::array kSpecsByFormat = {
         .codec = AudioCodec::AAC,
         .extension = "m4a"}, // M4A
     EncoderOutputSpec{
+        .container = AudioContainer::ADTS,
+        .codec = AudioCodec::AAC,
+        .extension = "aac"}, // ADTS
+    EncoderOutputSpec{
         .container = AudioContainer::FLAC,
         .codec = AudioCodec::FLAC,
         .extension = "flac"}, // FLAC
@@ -74,6 +78,7 @@ inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::FLAC,
     AudioFileProperties::FileFormat::ULAW,
     AudioFileProperties::FileFormat::ALAW,
+    AudioFileProperties::FileFormat::ADTS,
 };
 #elif defined(__ANDROID__)
 inline constexpr std::array kSupportedFormats = {
@@ -83,6 +88,7 @@ inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::OPUS_OGG,
     AudioFileProperties::FileFormat::OPUS_WEBM,
     AudioFileProperties::FileFormat::VORBIS_WEBM,
+    AudioFileProperties::FileFormat::ADTS,
 };
 #else
 inline constexpr std::array<AudioFileProperties::FileFormat, 0> kSupportedFormats = {};

@@ -12,11 +12,16 @@
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
+#import <audioapi/encoding/AdtsHeader.h>
+#import <audioapi/encoding/EncoderCapabilities.h>
+#import <audioapi/ios/core/utils/IOSEncoder.h>
 #import <audioapi/utils/AudioFileProperties.h>
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <tuple>
+#include <vector>
 
 using namespace audioapi;
 
@@ -300,7 +305,7 @@ public:
           .subDirectory = "fabric-example-tests",
           .fileName = "ios-recorder-test",
       },
-      AudioFileProperties::StreamConfig{.sampleRate = 44100, .channelCount = 2},
+      AudioLayout{.sampleRate = 44100, .channelCount = 2},
       AudioFileProperties::EncodingConfig{
           .format = AudioFileProperties::FileFormat::WAV,
           .bitRate = 128000,
@@ -624,6 +629,74 @@ public:
   _recorder->disconnect();
 
   XCTAssertFalse(_recorder->isConnected());
+}
+
+@end
+
+/// The file type AVAudioFile writes follows the path extension, so the ADTS format is
+/// proven at the byte level: every frame must start with a sync word and its length must
+/// land exactly on the next one.
+@interface IOSEncoderAdtsTests : XCTestCase
+@end
+
+@implementation IOSEncoderAdtsTests
+
+- (void)testAacExtensionWritesSelfDelimitingAdtsFrames {
+  NSString *path = [NSTemporaryDirectory()
+      stringByAppendingPathComponent:@"ios-encoder-adts-test.aac"];
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+
+  const AudioLayout layout{.sampleRate = 44100, .channelCount = 1};
+  ios::encoder::IOSEncoder encoder(EncoderSettings{
+      .fileLayout = layout,
+      .encoding =
+          AudioFileProperties::EncodingConfig{
+              .format = AudioFileProperties::FileFormat::ADTS,
+              .bitRate = 64000,
+              .bitDepth = AudioFileProperties::BitDepth::Bit16,
+              .flacCompressionLevel = 0,
+              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+          },
+  });
+  const EncoderOutputSpec spec =
+      encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::ADTS);
+  XCTAssertEqual(spec.container, AudioContainer::ADTS);
+
+  auto openResult = encoder.open(
+      StreamFormat{.layout = layout, .maxFramesPerBuffer = 1024}, spec, path.UTF8String);
+  XCTAssertTrue(openResult.is_ok(), @"%s",
+                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
+
+  std::vector<float> samples(1024, 0.25f);
+  const float *channels[1] = {samples.data()};
+  for (int block = 0; block < 40; ++block) {
+    XCTAssertTrue(encoder.encode(channels, 1024).is_ok());
+  }
+  XCTAssertTrue(encoder.close().is_ok());
+
+  NSData *data = [NSData dataWithContentsOfFile:path];
+  XCTAssertGreaterThan(data.length, adts::HEADER_SIZE);
+  const auto *bytes = static_cast<const uint8_t *>(data.bytes);
+
+  size_t offset = 0;
+  size_t frames = 0;
+  while (offset + adts::HEADER_SIZE <= data.length) {
+    adts::HeaderBytes header{};
+    std::memcpy(header.data(), bytes + offset, adts::HEADER_SIZE);
+    XCTAssertEqual(header[0], 0xFF, @"frame %zu", frames);
+    XCTAssertEqual(header[1] & 0xF6, 0xF0, @"frame %zu", frames);
+    // 13-bit frame length straddles bytes 3..5; computed here because nothing in the iOS
+    // library references the ADTS helpers, so they are not linked into the test host.
+    const size_t frameLength = ((static_cast<size_t>(header[3]) & 0x3U) << 11) |
+        (static_cast<size_t>(header[4]) << 3) | (static_cast<size_t>(header[5]) >> 5);
+    XCTAssertGreaterThan(frameLength, adts::HEADER_SIZE, @"frame %zu", frames);
+    offset += frameLength;
+    frames += 1;
+  }
+  XCTAssertEqual(offset, data.length);
+  XCTAssertGreaterThan(frames, 0u);
+
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 
 @end
