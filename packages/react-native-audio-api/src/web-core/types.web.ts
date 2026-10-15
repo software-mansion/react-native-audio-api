@@ -11,6 +11,7 @@ export interface AudioBufferSourceNodeBackend {
 
   start(when?: number, offset?: number, duration?: number): void;
   stop(when?: number): void;
+  dispose(): void;
 
   get onended(): ((event: Event) => void) | null;
   set onended(callback: ((event: Event) => void) | null);

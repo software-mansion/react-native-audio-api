@@ -149,6 +149,36 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 #### Returns `undefined`.
 
 
+### `dispose()`
+
+Permanently retires this source. Call it when you will not use the source again,
+including when abandoning a source before it starts.
+
+```ts
+const source = context.createBufferSource({ pitchCorrection: true });
+source.buffer = buffer;
+source.connect(context.destination);
+source.start();
+
+// When this source is no longer needed:
+source.dispose();
+```
+
+Disposal stops playback, disconnects outputs, clears the buffer and event handlers,
+and cancels pending web initialization. On web, it also requests termination of the
+pitch-correction worklet and releases its PCM and WASM references. Calling it again
+has no effect. It does not emit `ended` or close the audio context.
+
+After disposal, starting, connecting, assigning a buffer, or registering event
+handlers throws `InvalidStateError`. Create a new source to play again.
+
+Use `stop(when)` to schedule a stop, or `disconnect()` when you may reconnect later.
+Those methods do not dispose the source.
+
+This is a React Native Audio API extension, not part of the Web Audio API standard.
+It returns `undefined` immediately. Cleanup runs on the audio thread when it can
+process the request; disposal does not guarantee immediate memory reclamation.
+
 ## Events
 
 It inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).

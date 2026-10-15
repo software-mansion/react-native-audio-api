@@ -410,6 +410,7 @@ function registerWorkletProcessor(Module, audioNodeKey) {
   class WasmProcessor extends AudioWorkletProcessor {
     constructor(options) {
       super(options);
+      this.disposed = false;
       this.wasmReady = false;
       this.wasmModule = null;
       this.channels = 0;
@@ -564,31 +565,47 @@ function registerWorkletProcessor(Module, audioNodeKey) {
         }
       };
       let pendingMessages = [];
-      this.port.onmessage = event => pendingMessages.push(event);
+      const receiveMessage = (event) => {
+        if (event.data[1] === 'dispose') {
+          this.disposed = true;
+          pendingMessages.length = 0;
+          this.audioBuffers = [];
+          this.buffersIn = [];
+          this.buffersOut = [];
+          this.timeMap = [];
+          this.wasmModule = null;
+          this.wasmReady = false;
+          this.port.onmessage = null;
+          this.port.close();
+          return;
+        }
+        if (!this.wasmReady) {
+          pendingMessages.push(event);
+          return;
+        }
+        const [messageId, method, ...args] = event.data;
+        const result = remoteMethods[method](...args);
+        if (result?.transfer) {
+          this.port.postMessage([messageId, result.value], result.transfer);
+        } else {
+          this.port.postMessage([messageId, result]);
+        }
+      };
+      this.port.onmessage = receiveMessage;
       Module().then(wasmModule => {
+        if (this.disposed) return;
         this.wasmModule = wasmModule;
         this.wasmReady = true;
         wasmModule._main();
         this.channels = options.numberOfOutputs ? options.outputChannelCount[0] : 2; // stereo by default
         this.configure();
-        this.port.onmessage = event => {
-          let data = event.data;
-          let messageId = data.shift();
-          let method = data.shift();
-          let result = remoteMethods[method](...data);
-          if (result?.transfer) {
-            this.port.postMessage([messageId, result.value], result.transfer);
-          } else {
-            this.port.postMessage([messageId, result]);
-          }
-        };
         let methodArgCounts = {};
         for (let key in remoteMethods) {
           methodArgCounts[key] = remoteMethods[key].length;
         }
         this.port.postMessage(['ready', methodArgCounts]);
-        pendingMessages.forEach(this.port.onmessage);
-        pendingMessages = null;
+        pendingMessages.forEach(receiveMessage);
+        pendingMessages.length = 0;
       });
     }
     config = {
@@ -621,6 +638,7 @@ function registerWorkletProcessor(Module, audioNodeKey) {
       }
     }
     process(inputList, outputList, parameters) {
+      if (this.disposed) return false;
       if (!this.wasmReady) {
         outputList.forEach(output => {
           output.forEach(channel => {
@@ -749,7 +767,10 @@ SignalsmithStretch = ((Module, audioNodeKey) => {
     return {};
   }
   let promiseKey = Symbol();
-  let createNode = async function (audioContext, options) {
+  let createNode = async function (audioContext, options, signal) {
+    const aborted = () =>
+      new DOMException('Audio source disposed', 'AbortError');
+    if (signal?.aborted || audioContext.state === 'closed') throw aborted();
     /**
     @classdesc An `AudioWorkletNode` with Signalsmith Stretch extensions
     @name StretchNode
@@ -775,57 +796,88 @@ SignalsmithStretch = ((Module, audioNodeKey) => {
         }
         audioContext[promiseKey] = audioContext.audioWorklet.addModule(moduleUrl);
       }
-      await audioContext[promiseKey];
+      let cancelInitialization;
+      const canceled = new Promise((_, reject) => {
+        cancelInitialization = () => reject(aborted());
+      });
+      const contextClosed = () => {
+        if (audioContext.state === 'closed') cancelInitialization();
+      };
+      signal?.addEventListener('abort', cancelInitialization, { once: true });
+      audioContext.addEventListener('statechange', contextClosed);
+      try {
+        await Promise.race([audioContext[promiseKey], canceled]);
+      } finally {
+        signal?.removeEventListener('abort', cancelInitialization);
+        audioContext.removeEventListener('statechange', contextClosed);
+      }
+      if (signal?.aborted || audioContext.state === 'closed') throw aborted();
       audioNode = new AudioWorkletNode(audioContext, audioNodeKey, options);
     }
 
-    // messages with Promise responses
-    let requestMap = {};
+    const requestMap = new Map();
     let idCounter = 0;
     let timeUpdateCallback = null;
-    let post = (transfer, ...data) => {
-      let id = idCounter++;
-      return new Promise(resolve => {
-        requestMap[id] = resolve;
-        audioNode.port.postMessage([id].concat(data), transfer);
+    let disposed = false;
+    let resolveReady, rejectReady;
+    const ready = new Promise((resolve, reject) => {
+      resolveReady = resolve;
+      rejectReady = reject;
+    });
+    const post = (transfer, ...data) => {
+      if (disposed) return Promise.resolve();
+      const id = idCounter++;
+      return new Promise((resolve) => {
+        requestMap.set(id, resolve);
+        audioNode.port.postMessage([id, ...data], transfer);
       });
     };
-    audioNode.inputTime = 0;
-    audioNode.port.onmessage = event => {
-      let data = event.data;
-      let id = data[0],
-        value = data[1];
-      if (id == 'time') {
-        audioNode.inputTime = value;
-        if (timeUpdateCallback) timeUpdateCallback(value);
-      }
-      if (id in requestMap) {
-        requestMap[id](value);
-        delete requestMap[id];
-      }
+    const contextStateChanged = () => {
+      if (audioContext.state === 'closed') audioNode.dispose();
     };
-    return new Promise(resolve => {
-      requestMap['ready'] = remoteMethodKeys => {
-        Object.keys(remoteMethodKeys).forEach(key => {
-          let argCount = remoteMethodKeys[key];
+    audioNode.dispose = () => {
+      if (disposed) return;
+      disposed = true;
+      // No acknowledgement: a suspended or closed context may never render again.
+      audioNode.port.postMessage([idCounter++, 'dispose']);
+      audioNode.disconnect();
+      audioNode.port.onmessage = null;
+      audioNode.port.close();
+      timeUpdateCallback = null;
+      audioNode.onEnded = null;
+      requestMap.forEach((resolve) => resolve());
+      requestMap.clear();
+      signal?.removeEventListener('abort', audioNode.dispose);
+      audioContext.removeEventListener('statechange', contextStateChanged);
+      rejectReady(aborted());
+    };
+    signal?.addEventListener('abort', audioNode.dispose, { once: true });
+    audioContext.addEventListener('statechange', contextStateChanged);
+    audioNode.inputTime = 0;
+    audioNode.port.onmessage = (event) => {
+      const [id, value] = event.data;
+      if (id === 'ready') {
+        Object.keys(value).forEach((key) => {
+          const argCount = value[key];
           audioNode[key] = (...args) => {
-            let transfer = null;
-            if (args.length > argCount) {
-              transfer = args.pop();
-            }
+            const transfer = args.length > argCount ? args.pop() : null;
             return post(transfer, key, ...args);
           };
         });
-        /** @lends StretchNode.prototype
-        @method setUpdateInterval
-        */
         audioNode.setUpdateInterval = (seconds, callback) => {
-          timeUpdateCallback = callback;
+          if (!disposed) timeUpdateCallback = callback;
           return post(null, 'setUpdateInterval', seconds);
         };
-        resolve(audioNode);
-      };
-    });
+        resolveReady(audioNode);
+      } else if (id === 'time') {
+        audioNode.inputTime = value;
+        timeUpdateCallback?.(value);
+      } else if (requestMap.has(id)) {
+        requestMap.get(id)(value);
+        requestMap.delete(id);
+      }
+    };
+    return ready;
   };
   return createNode;
 })(SignalsmithStretch, 'signalsmith-stretch');

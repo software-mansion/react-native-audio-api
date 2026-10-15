@@ -58,11 +58,10 @@ export default class AudioStretcherParam extends AudioParam {
   override readonly maxValue: number;
   private readonly _initialValue: number;
   private _events: StretcherAutomationEvent[] = [];
-  private readonly _onChange:
-    | ((event: StretcherAutomationEvent) => void)
-    | null;
+  private source: globalThis.ConstantSourceNode | null;
+  private _onChange: ((event: StretcherAutomationEvent) => void) | null;
 
-  private readonly _onCancel: ((cancelTime: number) => void) | null;
+  private _onCancel: ((cancelTime: number) => void) | null;
 
   constructor(
     context: BaseAudioContext,
@@ -78,12 +77,23 @@ export default class AudioStretcherParam extends AudioParam {
     });
     source.start(0);
     super(source.offset, context);
+    this.source = source;
     this.defaultValue = defaultValue;
     this.minValue = minValue;
     this.maxValue = maxValue;
     this._initialValue = initialValue;
     this._onChange = onChange ?? null;
     this._onCancel = onCancel ?? null;
+  }
+
+  dispose(): void {
+    this.source?.stop();
+    this.source?.disconnect();
+    this.source = null;
+    this._events = [];
+    this._onChange = null;
+    this._onCancel = null;
+    this.param.cancelScheduledValues(0);
   }
 
   override get value(): number {
