@@ -33,10 +33,10 @@ const ANDROID_VERSION_BY_API_LEVEL: Record<number, number> = {
   36: 16,
 };
 
-export function AndroidAPI({ level, footnote }: { level: number; footnote?: boolean }) {
+export function AndroidAPI({ level }: { level: number }) {
   const version = ANDROID_VERSION_BY_API_LEVEL[level];
   const label = version ? `Android ${version}+ (API ${level})` : `Android API ${level}+`;
-  return <div className={`${styles.badge} ${styles.basic}`}>{label}{footnote ? '*' : ''}</div>;
+  return <div className={`${styles.badge} ${styles.basic}`}>{label}</div>;
 }
 
 export function Experimental({ footnote }: { footnote?: boolean }) {

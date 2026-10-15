@@ -5,7 +5,6 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.util.Log
-import androidx.annotation.RequiresApi
 
 /**
  * Android's voice-communication audio session: transient voice-communication focus,
@@ -46,41 +45,11 @@ class CommunicationSession(
    * and when the session is already active.
    */
   fun activate(): String? {
-    if (mode != "inCommunication") {
+    if (mode != "inCommunication" || isActive) {
       return null
     }
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
       return "Android communication sessions require Android 12 (API 31) or later"
-    }
-    return activateOnApi31()
-  }
-
-  /** Releases focus, mode, callbacks, and the device request; safe to call when nothing is held. */
-  fun deactivate() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      deactivateOnApi31()
-    }
-  }
-
-  /** Null on success, otherwise why Android refused the route. */
-  fun requestDevice(device: String): String? {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-      return "Android communication devices require Android 12 (API 31) or later"
-    }
-    return requestDeviceOnApi31(device)
-  }
-
-  fun currentDevice(): AudioDeviceInfo? {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-      return null
-    }
-    return audioManager.communicationDevice
-  }
-
-  @RequiresApi(Build.VERSION_CODES.S)
-  private fun activateOnApi31(): String? {
-    if (isActive) {
-      return null
     }
 
     previousAudioMode = audioManager.mode
@@ -94,18 +63,21 @@ class CommunicationSession(
       deviceCallbacks =
         CommunicationDeviceCallbacks(audioManager, mainHandler, ::forwardRouteChangeWhileActive).also { it.register() }
       preferredDevice?.let { device ->
-        requestDeviceOnApi31(device)?.let { error -> throw IllegalStateException(error) }
+        requestDevice(device)?.let { error -> throw IllegalStateException(error) }
       }
       isActive = true
       null
     } catch (error: Exception) {
-      deactivateOnApi31()
+      deactivate()
       error.message ?: "Could not activate Android communication audio session"
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.S)
-  private fun deactivateOnApi31() {
+  /** Releases focus, mode, callbacks, and the device request; safe to call when nothing is held. */
+  fun deactivate() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      return
+    }
     val ownsSession = isActive || previousAudioMode != null
     if (!ownsSession && !deviceRequested) {
       return
@@ -130,8 +102,11 @@ class CommunicationSession(
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.S)
-  private fun requestDeviceOnApi31(device: String): String? {
+  /** Null on success, otherwise why Android refused the route. */
+  fun requestDevice(device: String): String? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      return "Android communication devices require Android 12 (API 31) or later"
+    }
     if (device == "systemDefault") {
       audioManager.clearCommunicationDevice()
       deviceRequested = false
@@ -153,6 +128,13 @@ class CommunicationSession(
     }
     deviceRequested = true
     return null
+  }
+
+  fun currentDevice(): AudioDeviceInfo? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      return null
+    }
+    return audioManager.communicationDevice
   }
 
   // A callback can still land on the main thread after a failed activation tore the session down.
