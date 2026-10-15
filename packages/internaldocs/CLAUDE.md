@@ -22,6 +22,8 @@ Write for a maintainer who was not in the design conversation. No chat-log voice
 
 Prefer short pages. Split when a heading is a standalone topic. Cross-links use relative `.mdx` paths.
 
+Shared MDX components live in `packages/docs-theme` and are re-exported from this site. Import badges from `@site/src/components/Badges` (same path as the public docs).
+
 ## Sidebar
 
 Same pattern as `audiodocs`: topic folders, `_category_.json` (`label`, `position`), `sidebar_position` on pages. Do not create `architecture/`, `research/`, or `plans/` folders.

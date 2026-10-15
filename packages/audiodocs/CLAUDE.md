@@ -207,6 +207,8 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ### Badges — inline in tables or text
 
+Implemented in `packages/docs-theme` and re-exported from `@site/src/components/Badges`, so the internal docs site can use the same import.
+
 ```tsx
 import { Optional, ReadOnly, Overridden, IOS, Android, Experimental, MobileOnly }
   from '@site/src/components/Badges';

@@ -24,7 +24,6 @@
   background-color: var(--swm-red-light-100);
 }
 
-
 [data-theme='dark'] .experimental {
   background-color: var(--swm-red-dark-120);
 }
