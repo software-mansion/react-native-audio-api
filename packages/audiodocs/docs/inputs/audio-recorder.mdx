@@ -160,10 +160,12 @@ import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'record',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'record',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
@@ -236,10 +238,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'record',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'record',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
@@ -326,10 +330,12 @@ import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioContext, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'playAndRecord',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'playAndRecord',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
