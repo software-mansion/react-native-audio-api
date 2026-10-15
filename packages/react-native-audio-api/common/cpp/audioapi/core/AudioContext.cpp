@@ -39,12 +39,8 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       currentRenders_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
       &driverMutex_,
-#if defined(ANDROID) && !defined(RN_AUDIO_API_NODE)
       latencyHint_,
       androidOutputProfile_);
-#else
-      latencyHint_);
-#endif
 }
 
 bool AudioContext::tryStartDriver() {
