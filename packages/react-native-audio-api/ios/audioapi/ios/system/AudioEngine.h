@@ -65,20 +65,14 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 /// Records that hardware format may have changed while the engine must not rebuild
 /// yet (`Interrupted`). The next start or interruption-end resume rebuilds the graph.
 - (void)markGraphNeedsRebuild;
-/// Responds to an audio route change without restarting the engine. A running engine is left
-/// as it is: when a route change alters the hardware sample rate or channel count, the engine
-/// stops itself and posts `AVAudioEngineConfigurationChangeNotification`, whose handler
-/// rebuilds it. A stopped engine with a tracked graph is marked for rebuild instead, because
-/// whether a stopped engine observes the change and posts that notification is not
-/// documented; the next start then builds the graph against the current hardware.
+/// Marks a stopped graph for rebuild on the next start and leaves a running engine alone:
+/// a real format change arrives as AVAudioEngineConfigurationChangeNotification instead.
 - (void)onRouteChange;
 
 - (AudioEngineState)getState;
 - (bool)isEngineRunning;
 - (bool)isInUse;
-/// True when @p engine is the AVAudioEngine this object currently drives. False for nil, for
-/// engines owned by other code in the process, and for engines this object has already
-/// replaced during a rebuild.
+/// True only for the AVAudioEngine this object drives now: not nil, foreign or replaced ones.
 - (bool)isCurrentEngine:(AVAudioEngine *)engine;
 
 - (bool)startIfNecessary;
@@ -87,6 +81,8 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 
 - (void)stopIfPossible;
 
+/// @brief Rebuilds the engine and resumes it if it was running, then tells the registered
+/// input after releasing the lock. No-op when there is neither an engine nor a tracked graph.
 - (void)restartAudioEngine;
 
 - (void)logAudioEngineState;

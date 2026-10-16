@@ -280,10 +280,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
     case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
-      // Not a restart: rebuilding the engine reconfigures its I/O unit, which itself posts
-      // RouteConfigurationChange, so restarting here would restart without end. A route
-      // change that alters the hardware format also arrives as
-      // AVAudioEngineConfigurationChangeNotification, which does restart the engine.
+      // Not a restart: a rebuild posts RouteConfigurationChange itself, so restarting would loop.
+      // Real format changes arrive as AVAudioEngineConfigurationChangeNotification.
       AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
       dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onRouteChange]; });
       break;
@@ -322,16 +320,12 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  // Weak, so a queued handler does not keep a replaced engine alive; one that is gone by the
-  // time the handler runs is no longer ours to restart.
+  // Weak, so a queued handler does not keep a replaced engine alive.
   __weak AVAudioEngine *changedEngine = notification.object;
 
   dispatch_async(dispatch_get_main_queue(), ^{
-    // Registered with object:nil because the engine is replaced on every rebuild, so this
-    // also fires for AVAudioEngine instances owned by other libraries in the host app and
-    // for engines we have already replaced. Only a change on the engine we currently drive
-    // calls for a restart; acting on any other would rebuild ours for nothing and mark the
-    // session inactive behind the back of an app that only manages the session.
+    // object:nil also delivers other libraries' engines and ones we already replaced;
+    // only a change on our current engine needs a restart.
     if (![audioEngine isCurrentEngine:changedEngine]) {
       return;
     }
