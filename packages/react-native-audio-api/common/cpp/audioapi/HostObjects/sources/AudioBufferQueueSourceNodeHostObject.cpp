@@ -77,7 +77,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, resume) {
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   auto audioBufferHostObject =
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-  const auto &samples = audioBufferHostObject->audioBuffer_;
+  const auto &sharedBuffer = audioBufferHostObject->sharedBuffer_;
+  const auto &samples = sharedBuffer->getSamples();
   const auto bufferChannelNumber = samples->getNumberOfChannels();
 
   // The first buffer fixes the width the queue plays at.
@@ -88,11 +89,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   std::shared_ptr<AudioBuffer> content;
 
   if (bufferChannelNumber == outputChannelNumber_) {
-    // Played from the JS buffer's own storage: its live getChannelData() views are cut off
-    // and JS writes go copy-on-write from now on, so nothing can change the samples under
-    // the node.
-    audioBufferHostObject->detachReturnedChannelData();
-    content = audioBufferHostObject->shareForPlayback();
+    content = sharedBuffer->acquireContent();
   } else {
     // A buffer of another width is mixed into a private copy of the queue's width.
     content = std::make_shared<AudioBuffer>(

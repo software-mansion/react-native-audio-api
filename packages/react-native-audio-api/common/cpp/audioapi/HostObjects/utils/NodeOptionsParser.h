@@ -164,8 +164,9 @@ inline ConvolverOptions parseConvolverOptions(
     auto bufferValue = optionsObject.getProperty(runtime, "buffer");
     if (bufferValue.isObject() &&
         bufferValue.getObject(runtime).isHostObject<AudioBufferHostObject>(runtime)) {
-      options.buffer =
-          bufferValue.getObject(runtime).asHostObject<AudioBufferHostObject>(runtime)->audioBuffer_;
+      options.buffer = bufferValue.getObject(runtime)
+                           .asHostObject<AudioBufferHostObject>(runtime)
+                           ->sharedBuffer_->getSamples();
     }
   }
   return options;

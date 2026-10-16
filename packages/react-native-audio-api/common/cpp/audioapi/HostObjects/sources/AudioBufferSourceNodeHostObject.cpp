@@ -5,6 +5,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
+#include <audioapi/core/sources/SharedAudioBuffer.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <memory>
@@ -139,11 +140,8 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
 }
 
 void AudioBufferSourceNodeHostObject::acquireBufferContent() {
-  if (assignedBufferHostObject_ != nullptr) {
-    assignedBufferHostObject_->detachReturnedChannelData();
-  }
-
-  auto buffers = prepareNodeBuffers(assignedBufferHostObject_);
+  auto buffers =
+      prepareNodeBuffers(assignedBuffer_ == nullptr ? nullptr : assignedBuffer_->acquireContent());
   auto event =
       [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
         node->setBuffer(buffers.nodeBuffer, buffers.audioBuffer);
@@ -159,17 +157,17 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
     thisValue.asObject(runtime).setExternalMemoryPressure(
         runtime, getMemoryPressure() + bufferHostObject->getSizeInBytes());
 
-    setBuffer(bufferHostObject);
+    setBuffer(bufferHostObject->sharedBuffer_);
   }
 
   return jsi::Value::undefined();
 }
 
 AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::prepareNodeBuffers(
-    const std::shared_ptr<AudioBufferHostObject> &bufferHostObject) {
+    const std::shared_ptr<AudioBuffer> &acquiredContent) {
   NodeBuffers buffers;
 
-  if (bufferHostObject == nullptr) {
+  if (acquiredContent == nullptr) {
     buffers.nodeBuffer = nullptr;
     buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
@@ -178,14 +176,12 @@ AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::pr
     return buffers;
   }
 
-  const auto &buffer = bufferHostObject->audioBuffer_;
   if (pitchCorrection_) {
-    initStretch(static_cast<int>(buffer->getNumberOfChannels()), buffer->getSampleRate());
+    initStretch(
+        static_cast<int>(acquiredContent->getNumberOfChannels()), acquiredContent->getSampleRate());
   }
 
-  // The node reads the JS-facing storage directly; from now on JS writes to it go
-  // copy-on-write, so nothing can change the samples under the node.
-  buffers.nodeBuffer = bufferHostObject->shareForPlayback();
+  buffers.nodeBuffer = acquiredContent;
 
   buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
       RENDER_QUANTUM_SIZE,
@@ -194,15 +190,14 @@ AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::pr
   return buffers;
 }
 
-void AudioBufferSourceNodeHostObject::setBuffer(
-    const std::shared_ptr<AudioBufferHostObject> &bufferHostObject) {
-  assignedBufferHostObject_ = bufferHostObject;
+void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<SharedAudioBuffer> &buffer) {
+  assignedBuffer_ = buffer;
 
   // Publish the new output width on the host thread before renegotiation so
   // MAX / CLAMPED_MAX downstream nodes see it immediately
-  const size_t newOutputChannelNumber = bufferHostObject == nullptr
+  const size_t newOutputChannelNumber = buffer == nullptr
       ? AudioBufferSourceOptions::kDefaultOutputChannelNumber
-      : bufferHostObject->audioBuffer_->getNumberOfChannels();
+      : buffer->getSamples()->getNumberOfChannels();
   if (newOutputChannelNumber != audioBufferSourceNode_->getOutputChannelNumber()) {
     audioBufferSourceNode_->setOutputChannelNumber(newOutputChannelNumber);
     renegotiate();

@@ -53,7 +53,7 @@ JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   irBytes_ = bufferHostObject->getSizeInBytes();
   thisValue.asObject(runtime).setExternalMemoryPressure(runtime, getMemoryPressure());
 
-  setBuffer(bufferHostObject->audioBuffer_);
+  setBuffer(bufferHostObject->sharedBuffer_->getSamples());
 
   return jsi::Value::undefined();
 }
