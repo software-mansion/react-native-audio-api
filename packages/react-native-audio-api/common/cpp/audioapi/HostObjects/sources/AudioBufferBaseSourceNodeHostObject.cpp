@@ -81,18 +81,19 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getOutputLatency) {
 }
 
 void AudioBufferBaseSourceNodeHostObject::initStretch(int channelCount, float sampleRate) {
-  auto handle = node_->handle;
+  if (stretchHasBeenInit_) {
+    return;
+  }
+  stretchHasBeenInit_ = true;
+
   inputLatency_ = WsolaTimeStretcher::INPUT_LATENCY_MS / 1000.0;
   outputLatency_ = WsolaTimeStretcher::OUTPUT_LATENCY_MS / 1000.0;
 
   auto playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
       WsolaTimeStretcher::MAX_PLAYBACK_RATE * RENDER_QUANTUM_SIZE, channelCount, sampleRate);
 
-  auto event = [handle, node = bufferBaseSourceNode_, playbackRateBuffer, channelCount, sampleRate](
-                   BaseAudioContext &) {
-    node->initStretch(static_cast<size_t>(channelCount), sampleRate, playbackRateBuffer);
-  };
-  bufferBaseSourceNode_->scheduleAudioEvent(std::move(event));
+  bufferBaseSourceNode_->initStretch(
+      static_cast<size_t>(channelCount), sampleRate, playbackRateBuffer);
 }
 
 } // namespace audioapi

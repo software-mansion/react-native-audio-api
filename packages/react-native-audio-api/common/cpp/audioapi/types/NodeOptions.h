@@ -191,7 +191,6 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
   /// Spec: with no buffer assigned the node emits one channel of silence.
   static constexpr size_t kDefaultOutputChannelNumber = 1;
 
-  std::shared_ptr<AudioBuffer> buffer = nullptr;
   float loopStart = 0.0f;
   float loopEnd = 0.0f;
   bool loop = false;

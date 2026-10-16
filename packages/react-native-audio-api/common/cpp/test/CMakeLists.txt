@@ -45,6 +45,7 @@ list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")
 
 list(APPEND RNAUDIOAPI_SRC
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/HostObjects/utils/JsEnumParser.cpp"
+  "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/HostObjects/sources/AudioBufferHostObject.cpp"
 )
 
 # AudioThreadGuard provides global operator new/delete overrides. Compile it into
