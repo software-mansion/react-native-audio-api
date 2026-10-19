@@ -56,7 +56,7 @@
 - (BOOL)mustRebuildBeforeStart;
 - (void)rebuildGraphForCurrentHardware;
 - (void)settleStateAfterFailedStart;
-- (dispatch_block_t)rebuildAudioEngineAndResumeIfNeeded;
+- (void)resumeAfterRebuild;
 - (dispatch_block_t)inputNotificationBlock:(AudioEngineInputNotification)notification;
 - (AudioEngineInterruptionEndOutcome)resumeAfterInterruption:(bool)shouldResume
                                                  notifyInput:(dispatch_block_t *)notifyInput;
@@ -642,29 +642,18 @@ static AudioEngine *_sharedInstance = nil;
   return engine != nil && engine == self.audioEngine;
 }
 
-/// @brief Rebuilds, then starts again only if the engine was `Running`. Lock held.
-/// @return What the registered input must be told after the lock is released, or nil.
-- (dispatch_block_t)rebuildAudioEngineAndResumeIfNeeded
+/// @brief Starts the rebuilt engine, unless it was paused, stopped or started meanwhile. Lock held.
+- (void)resumeAfterRebuild
 {
-  const BOOL shouldResume = self.state == AudioEngineState::AudioEngineStateRunning;
-
-  [self rebuildGraphForCurrentHardware];
-
-  BOOL didStartEngine = NO;
-  if (shouldResume) {
-    didStartEngine = [self startEngine];
-
-    if (!didStartEngine) {
-      [self settleStateAfterFailedStart];
-      [self notifyOutputRecoveryFailed];
-    }
+  if (self.state != AudioEngineState::AudioEngineStateRunning || ![self hasTrackedGraph] ||
+      [self.audioEngine isRunning]) {
+    return;
   }
 
-  if (didStartEngine) {
-    return [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged];
+  if (![self startEngine]) {
+    [self settleStateAfterFailedStart];
+    [self notifyOutputRecoveryFailed];
   }
-
-  return nil;
 }
 
 /// @brief True when the graph may no longer match the hardware: interrupted, session
@@ -821,6 +810,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)restartAudioEngine
 {
+  BOOL shouldResume = NO;
   dispatch_block_t notifyInput = nil;
 
   {
@@ -833,11 +823,22 @@ static AudioEngine *_sharedInstance = nil;
       return;
     }
 
-    notifyInput = [self rebuildAudioEngineAndResumeIfNeeded];
+    shouldResume = self.state == AudioEngineState::AudioEngineStateRunning;
+    [self rebuildGraphForCurrentHardware];
+
+    if (shouldResume) {
+      notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged];
+    }
   }
 
+  // Before starting: the input's consumers must match the new format before the first render.
   if (notifyInput != nil) {
     notifyInput();
+  }
+
+  if (shouldResume) {
+    std::scoped_lock lock(_engineLock);
+    [self resumeAfterRebuild];
   }
 }
 

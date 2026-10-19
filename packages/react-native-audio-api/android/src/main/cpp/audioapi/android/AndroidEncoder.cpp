@@ -21,6 +21,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 // AMEDIAMUXER_OUTPUT_FORMAT_OGG was added to the NDK at API level 34; fall back
@@ -746,20 +747,48 @@ OpenEncoderResult AndroidEncoder::open(
     return Err(err);
   }
 
-  const AudioLayout &inputLayout = inputFormat.layout;
-  if (inputLayout != outputLayout_) {
-    if (inputLayout.channelCount > MAX_CHANNEL_COUNT ||
-        outputLayout_.channelCount > MAX_CHANNEL_COUNT) {
-      backend_->close();
-      backend_.reset();
-      return Err("Channel count exceeds MAX_CHANNEL_COUNT");
-    }
-    conversion_ = std::make_unique<ConversionState>(
-        inputLayout, outputLayout_, std::max<size_t>(inputFormat.maxFramesPerBuffer, 1));
+  auto conversionResult = prepareConversion(inputFormat);
+  if (conversionResult.is_err()) {
+    backend_->close();
+    backend_.reset();
+    return Err(conversionResult.unwrap_err());
   }
 
   markOpen();
   return Ok(filePath_);
+}
+
+OpenEncoderResult AndroidEncoder::reprepareInput(const StreamFormat &inputFormat) {
+  if (!isOpen() || backend_ == nullptr) {
+    return Err("Encoder is not open");
+  }
+  if (inputFormat.layout.sampleRate <= 0 || inputFormat.layout.channelCount <= 0) {
+    return Err("Invalid input format: sampleRate and channelCount must be greater than 0");
+  }
+
+  // The frames the old resampler still holds, at most its group delay, are dropped with it.
+  auto conversionResult = prepareConversion(inputFormat);
+  if (conversionResult.is_err()) {
+    return Err(conversionResult.unwrap_err());
+  }
+
+  return Ok(filePath_);
+}
+
+Result<NoneType, std::string> AndroidEncoder::prepareConversion(const StreamFormat &inputFormat) {
+  const AudioLayout &inputLayout = inputFormat.layout;
+  if (inputLayout == outputLayout_) {
+    conversion_.reset();
+    return Ok(None);
+  }
+  if (inputLayout.channelCount > MAX_CHANNEL_COUNT ||
+      outputLayout_.channelCount > MAX_CHANNEL_COUNT) {
+    return Err("Channel count exceeds MAX_CHANNEL_COUNT");
+  }
+
+  conversion_ = std::make_unique<ConversionState>(
+      inputLayout, outputLayout_, std::max<size_t>(inputFormat.maxFramesPerBuffer, 1));
+  return Ok(None);
 }
 
 std::string AndroidEncoder::encodeConverted(const float *const *channels, int numFrames) {

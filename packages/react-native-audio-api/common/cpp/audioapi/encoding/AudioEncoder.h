@@ -54,10 +54,7 @@ class AudioEncoder {
   /// Flushes and closes the output file. Returns {sizeMB, durationSeconds}.
   virtual CloseEncoderResult close() = 0;
 
-  /// Keeps writing the same file from input in @p inputFormat, so a mid-session input change
-  /// (an iOS route change) does not split the recording. Fails, leaving the file as it was,
-  /// on platforms whose encoder cannot be re-pointed; the audio encoded so far keeps counting
-  /// at the rate it arrived in.
+  /// Keeps writing the same file from input in @p inputFormat.
   OpenEncoderResult changeInputFormat(const StreamFormat &inputFormat) {
     // Measured before the hook runs, since implementations overwrite inputFormat_ in it.
     const double durationSoFar = getEncodedDurationSeconds();
@@ -90,15 +87,8 @@ class AudioEncoder {
 
  protected:
   /// Rebuilds whatever the implementation derives from the input format while the output file
-  /// stays open. The default refuses, which is right for every platform but iOS.
-  virtual OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) {
-    // TODO(android): AndroidEncoder cannot re-point at a new input format, and
-    // AndroidAudioRecorder never asks it to — after an Oboe disconnect the stream is
-    // reopened without re-preparing the file writer, so a format change there goes
-    // unnoticed. Implement this and call reprepareStreamFormat from onErrorAfterClose.
-    (void)inputFormat;
-    return OpenEncoderResult::Err("Changing the input format of an open file is iOS only");
-  }
+  /// stays open. Fails, leaving the file as it was, when that is not possible.
+  virtual OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) = 0;
 
   void markOpen() {
     isOpen_.store(true, std::memory_order_release);

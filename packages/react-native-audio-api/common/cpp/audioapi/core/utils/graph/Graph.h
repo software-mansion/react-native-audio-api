@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -106,6 +107,12 @@ class Graph {
   /// Allocation-free.
   /// @note Should be called only from the audio thread.
   void process();
+
+  /// @brief Ticks every node that process() left out of this quantum's
+  /// processable set (see GraphObject::advanceWithoutRender). Call after
+  /// process() and before iter(). Allocation-free.
+  /// @note Should be called only from the audio thread.
+  void advanceUnpulledNodes(std::size_t currentSampleFrame);
 
   /// @brief Returns an iterable view of nodes in topological order.
   ///

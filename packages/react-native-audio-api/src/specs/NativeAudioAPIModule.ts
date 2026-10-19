@@ -42,7 +42,7 @@ interface Spec extends TurboModule {
 
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
-  setInputDevice(deviceId: string): Promise<void>;
+  setInputDevice(deviceId: string | null): Promise<void>;
 
   // Notification system
   showNotification(

@@ -83,8 +83,10 @@ class AudioFileWriter final {
   /// JS thread. Sizes and durations are summed over every file of the session.
   CloseFileResult closeFile();
 
-  /// ios only because android handles input format changes automatically. Returns the file path on success.
-  /// A suspended session continues in a new file.
+  /// JS thread. Keeps the open file and re-points its encoder at @p streamFormat. Drains the
+  /// worker first, so the caller must already have stopped feeding writeAudioData() in the
+  /// old format. On failure the file is finished as far as it got. A suspended session
+  /// continues in a new file instead. Returns the file path.
   OpenFileResult reprepareStreamFormat(const StreamFormat &streamFormat);
 
   /// JS thread. iOS only, for when the input is lost mid-session: finishes the current file, so

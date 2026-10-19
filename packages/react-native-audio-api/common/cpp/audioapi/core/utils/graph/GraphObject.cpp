@@ -1,4 +1,5 @@
 #include <audioapi/core/utils/graph/GraphObject.h>
+#include <cstddef>
 #include <vector>
 
 namespace audioapi::utils::graph {
@@ -10,6 +11,8 @@ bool GraphObject::canBeDestructed() const {
 bool GraphObject::isProcessable() const {
   return processableState_ != PROCESSABLE_STATE::NOT_PROCESSABLE;
 }
+
+void GraphObject::advanceWithoutRender(std::size_t /*currentSampleFrame*/) {}
 
 void GraphObject::setProcessableState(PROCESSABLE_STATE state) {
   processableState_ = state;

@@ -7,10 +7,11 @@ import {
   concatAudioFiles,
   FileFormat,
   RecordingNotificationManager,
+  useAudioInput,
 } from 'react-native-audio-api';
 
 import { Alert, StyleSheet, View } from 'react-native';
-import { Container } from '../../components';
+import { Container, Select } from '../../components';
 
 import { Easing, useSharedValue, withTiming } from 'react-native-reanimated';
 import { audioRecorder as Recorder, audioContext } from '../../singletons';
@@ -50,6 +51,28 @@ const Record: FC = () => {
   const currentPositionSV = useSharedValue(0);
   const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const stateRef = useRef(state);
+  const { availableInputs, currentInput, selectInput } = useAudioInput();
+
+  const inputLabels = availableInputs.map(
+    (device) => `${device.name} · ${device.category} #${device.id}`
+  );
+  const currentInputLabel = currentInput
+    ? inputLabels[availableInputs.indexOf(currentInput)]
+    : 'System default';
+
+  const onSelectInputLabel = async (label: string) => {
+    const input = availableInputs[inputLabels.indexOf(label)];
+
+    if (!input) {
+      return;
+    }
+
+    try {
+      await selectInput(input);
+    } catch (error) {
+      Alert.alert('Input Device Error', `${error}`);
+    }
+  };
 
   const stopPlayback = useCallback(() => {
     const source = playbackSourceRef.current;
@@ -329,6 +352,16 @@ const Record: FC = () => {
   }, []);
 
   useEffect(() => {
+    Recorder.onError((error) => {
+      Alert.alert('Recorder Error', error.message);
+    });
+
+    return () => {
+      Recorder.clearOnError();
+    };
+  }, []);
+
+  useEffect(() => {
     const pauseListener = RecordingNotificationManager.addEventListener(
       'recordingNotificationPause',
       () => {
@@ -392,6 +425,13 @@ const Record: FC = () => {
 
   return (
     <Container disablePadding>
+      <View style={styles.inputPicker}>
+        <Select
+          value={currentInputLabel}
+          options={inputLabels}
+          onChange={onSelectInputLabel}
+        />
+      </View>
       <Status state={state} />
       <View style={styles.spacerM} />
       {[RecordingState.Playing, RecordingState.ReadyToPlay].includes(state) ? (
@@ -420,4 +460,5 @@ export default Record;
 const styles = StyleSheet.create({
   spacerM: { height: 24 },
   spacerS: { height: 12 },
+  inputPicker: { paddingHorizontal: 16, paddingTop: 12 },
 });
