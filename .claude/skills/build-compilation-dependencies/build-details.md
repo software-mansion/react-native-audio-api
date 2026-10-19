@@ -8,14 +8,14 @@
 
 ## Android: `build.gradle` — detailed analysis
 
-### Feature flags (set by app's `gradle.properties`)
+### Feature flags (`newArchEnabled` from `gradle.properties`, build options from the app's `package.json`)
 
 ```groovy
-def isNewArchitectureEnabled() {
-  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+def isNewArchitectureEnabled() {   // on unless the app sets newArchEnabled=false
+  return !rootProject.hasProperty("newArchEnabled") || rootProject.getProperty("newArchEnabled") != "false"
 }
 def isFFmpegEnabled() {
-  return isPropertyTrue("enableAudioapiFFmpeg")
+  return booleanBuildOption("enableFFmpeg")   // app package.json "react-native-audio-api" section
 }
 ```
 
@@ -179,30 +179,21 @@ ReactAndroid/src/main/jni/...     — TurboModule JNI headers
 
 miniaudio's implementation file must be compiled as Objective-C++ on iOS (it uses Apple APIs). CocoaPods can't set per-file compiler flags the same way CMake can, so it gets its own subspec with `compiler_flags = "-x objective-c++"`.
 
-### Prebuilt binaries linked via `-force_load`
+### All prebuilt binaries listed in `s.ios.vendored_frameworks`
 
-All static libs (Opus, Ogg, Vorbis, OpenSSL) use `-force_load` to prevent dead-stripping of symbols needed at runtime but not referenced at link time:
-
-```ruby
-s.xcconfig = {
-  'OTHER_LDFLAGS' => %W[
-    -force_load #{lib_dir}/libopus.a
-    -force_load #{lib_dir}/libogg.a
-    ...
-  ].join(" ")
-}
-```
-
-### FFmpeg xcframeworks listed in `s.ios.vendored_frameworks`
-
-CocoaPods handles embedding and signing automatically:
+Each library is a `<lib>.xcframework` downloaded into `external/xcframeworks/` — the
+static Opus/Ogg/Vorbis ones unless `DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS`, the dynamic FFmpeg ones
+only with FFmpeg enabled. CocoaPods' `[CP] Copy XCFrameworks` picks the device / simulator /
+Catalyst slice, links the static libraries normally (no `-force_load`; every symbol used is
+referenced from miniaudio's decoders) and embeds + signs the FFmpeg frameworks:
 
 ```ruby
-s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_ENABLED ? [
-  'common/cpp/audioapi/external/ffmpeg_ios/libavcodec.xcframework',
-  ...
-] : []
+s.ios.vendored_frameworks = vendored_xcframeworks.map { |xcframework| "#{external_dir_relative}/xcframeworks/#{xcframework}" }
 ```
+
+They are the same release assets `Package.swift` downloads through `binaryTarget(url:checksum:)`.
+FFmpeg headers still come from `external/include_ffmpeg/` (`include_ffmpeg.zip`) for CocoaPods;
+SwiftPM uses the header-only `FFmpegHeaders.xcframework` instead.
 
 ### Header search paths split between pod target and consumers
 

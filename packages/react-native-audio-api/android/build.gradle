@@ -17,21 +17,42 @@ def reactNativeArchitectures() {
   return value ? value.split(",") : ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"]
 }
 
-def isPropertyTrue(name) {
-  return rootProject.hasProperty(name) && rootProject.getProperty(name) == "true"
-}
-
 def isNewArchitectureEnabled() {
-  return isPropertyTrue("newArchEnabled")
+  return !rootProject.hasProperty("newArchEnabled") || rootProject.getProperty("newArchEnabled") != "false"
 }
 
-// FFmpeg is opt-in: `enableAudioapiFFmpeg=true` in the app's gradle.properties turns it on.
+// Build options come from the app's package.json:
+// "react-native-audio-api": { "enableFFmpeg": true, "disableStaticExternalLibs": false }.
+// Bare apps write the section by hand; in Expo apps `expo prebuild` writes it from the plugin options.
+// The Gradle root project is the app's android/, so the app root is its parent.
+def readAudioApiBuildOptions() {
+  def packageJsonFile = new File(rootProject.projectDir.parentFile, "package.json")
+  if (!packageJsonFile.exists()) {
+    return [:]
+  }
+  return new groovy.json.JsonSlurper().parse(packageJsonFile)["react-native-audio-api"] ?: [:]
+}
+
+// `false` when the key is absent; anything but a JSON boolean fails the build rather than
+// silently building the wrong configuration.
+def booleanBuildOption(key) {
+  def options = readAudioApiBuildOptions()
+  if (!options.containsKey(key)) {
+    return false
+  }
+  def value = options[key]
+  if (!(value instanceof Boolean)) {
+    throw new GradleException("[AudioAPI] \"${key}\" in package.json must be true or false, got ${value.inspect()}.")
+  }
+  return value
+}
+
 def isFFmpegEnabled() {
-  return isPropertyTrue("enableAudioapiFFmpeg")
+  return booleanBuildOption("enableFFmpeg")
 }
 
 def isStaticExternalLibsDisabled() {
-  return isPropertyTrue("disableAudioapiStaticExternalLibs")
+  return booleanBuildOption("disableStaticExternalLibs")
 }
 
 apply plugin: "com.android.library"
