@@ -41,11 +41,13 @@
     "android/",
     "CMakeLists.txt",
     "RNAudioWorklets.podspec",
+    "Package.swift",
     "react-native.config.js",
     "!**/__tests__",
     "!**/__mocks__",
     "!**/.*",
-    "!**/node_modules"
+    "!**/node_modules",
+    "ios/spm/include/.gitkeep"
   ],
   "scripts": {
     "test": "jest",
@@ -141,6 +143,13 @@
           "commonjs": true
         }
       ]
+    ]
+  },
+  "swiftpmConfig": {
+    "name": "ReactNativeAudioWorklets",
+    "dependencies": [
+      "react-native-audio-api",
+      "react-native-worklets"
     ]
   },
   "codegenConfig": {
