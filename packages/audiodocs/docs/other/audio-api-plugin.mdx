@@ -19,6 +19,8 @@ interface Options {
   androidForegroundService: boolean;
   androidFSTypes: string[];
   androidFSStopWithTask: boolean;
+  enableFFmpeg: boolean;
+  disableStaticExternalLibs: boolean;
 }
 ```
 
@@ -146,3 +148,15 @@ Set it to `false` to emit `android:stopWithTask="false"` on the service entry â€
 :::info
 The Foreground Service only exists while a library notification is shown, so this option has an effect only if a notification (e.g. via `RecordingNotificationManager.show()`) is displayed before the user closes the app. See [keeping the recording alive when the app is closed](../inputs/audio-recorder.mdx#keeping-the-recording-alive-when-the-app-is-closed) for the full set of requirements.
 :::
+
+### `enableFFmpeg`
+
+Defaults to `false`.
+
+Links the prebuilt FFmpeg libraries into the app, which enables remote URL streaming, HLS (`.m3u8`) playback and remote URL metadata. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx) for what FFmpeg adds and what it costs.
+
+### `disableStaticExternalLibs`
+
+Defaults to `false`.
+
+Removes the bundled Opus / Ogg / Vorbis static libraries. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx#disabling-other-external-libraries).

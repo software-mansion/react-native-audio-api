@@ -13,11 +13,11 @@ WebKit, 3 Clause BSD
 Copyright (c) The WebKit Authors
 [https://github.com/WebKit/webkit](https://github.com/WebKit/webkit)
 
-In addition we utilize FFmpeg library under GNU Lesser General Public License (LGPL) version 2.1 or later
+Builds that enable the optional FFmpeg flag (`enableFFmpeg` / `ENABLE_AUDIOAPI_FFMPEG` / `enableAudioapiFFmpeg`, off by default) link the FFmpeg library under GNU Lesser General Public License (LGPL) version 2.1 or later
 
 - Source: https://github.com/FFmpeg/FFmpeg/releases/tag/n8.0
 - Used in audio decoding module [packages/react-native-audio-api/common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp)
-- Instruction for relinking: [packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/INSTRUCTIONS.md](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/INSTRUCTIONS.md)
+- Instruction for relinking: [packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/relinking.md](https://github.com/software-mansion/react-native-audio-api/blob/main/packages/react-native-audio-api/common/cpp/audioapi/libs/ffmpeg/relinking.md)
 
 Other LGPL components may be included as dependencies.
 The full text of the LGPL license is included in lgplv3 file.

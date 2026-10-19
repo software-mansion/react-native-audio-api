@@ -218,7 +218,7 @@ void AudioAPIModule::registerNatives() {
 
 `registerNatives()` is called from `android/src/main/cpp/audioapi/android/OnLoad.cpp` at `.so` load time.
 
-**`invokeHandlerWithEventNameAndEventBody`**: called from Kotlin (MediaSessionManager callbacks) to fire events into JS. Takes a Java `Map<String, Object>` and converts to `std::unordered_map<std::string, EventValue>`.
+**`invokeHandlerWithEventNameAndEventBody`**: called from Kotlin (MediaSessionManager callbacks) to fire events into JS. Takes a Java `Map<String, Object>` and converts it to a typed `AudioEventPayload` in `buildPayloadFromJniMap` (`android/src/main/cpp/audioapi/android/JniEventPayloadParser.cpp`), which switches on the event. An event without a case there falls to `EmptyPayload{}`: the event still reaches JS, but with an empty body. When Kotlin starts sending a new event, add its case, building the same payload type the iOS side dispatches (e.g. `ROUTE_CHANGE` → `StringPayload{.name = "reason", ...}`).
 
 ---
 

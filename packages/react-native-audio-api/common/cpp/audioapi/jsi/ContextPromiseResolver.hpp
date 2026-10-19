@@ -1,119 +1,85 @@
 #pragma once
 
-#include <concepts>
-#include <cstdint>
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/types/ContextState.h>
+#include <audioapi/jsi/JsiPromise.h>
+#include <audioapi/utils/AudioBuffer.hpp>
+
+#include <jsi/jsi.h>
 #include <functional>
 #include <memory>
 #include <string>
-#include <type_traits>
 #include <utility>
-
-#include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 
-class Promise;
-class BaseAudioContext;
-enum class ContextState : std::uint8_t;
-
-template <typename T>
-class ContextPromiseResolver;
-
-using OfflineAudioContextResultPromise = ContextPromiseResolver<std::shared_ptr<AudioBuffer>>;
-
-namespace detail {
-
-template <typename T>
-struct ContextPromiseResolveFn {
-  using type = std::function<void(const T &)>;
-};
-
-template <>
-struct ContextPromiseResolveFn<void> {
-  using type = std::function<void()>;
-};
-
-struct ContextPromiseNoValue {};
-
-template <typename T>
-using ContextPromiseResolveValue =
-    std::conditional_t<std::is_same_v<T, void>, ContextPromiseNoValue, T>;
-
-} // namespace detail
-
-/// Lifecycle / rendering promise bridge to JSI.
-/// @tparam T Value type resolved into the promise, or `void` for lifecycle ops.
-template <typename T>
+/// Settles one context lifecycle promise (resume / suspend / close / startRendering).
+/// A resolve moves the context to the state the resolver was made for, publishes that state on
+/// the JS thread in the task that resolves the JS promise, then fires `statechange`. A reject
+/// only rejects the JS promise. Subclasses fix what the promise resolves with.
 class ContextPromiseResolver {
  public:
-  ContextPromiseResolver(
-      std::function<void()> resolve,
-      std::function<void(const std::string &)> reject)
-    requires std::same_as<T, void>
-      : resolve_(std::move(resolve)), reject_(std::move(reject)) {}
-
-  ContextPromiseResolver(
-      std::function<void(const detail::ContextPromiseResolveValue<T> &)> resolve,
-      std::function<void(const std::string &)> reject)
-    requires(!std::same_as<T, void>)
-      : resolve_(std::move(resolve)), reject_(std::move(reject)) {}
-
-  void resolve() const
-    requires std::same_as<T, void>
-  {
-    resolve_();
-  }
-
-  void resolve(const detail::ContextPromiseResolveValue<T> &value) const
-    requires(!std::same_as<T, void>)
-  {
-    resolve_(value);
-  }
-
-  static void resolve(const std::shared_ptr<ContextPromiseResolver<T>> &promise)
-    requires std::same_as<T, void>
-  {
-    if (promise != nullptr) {
-      promise->resolve();
-    }
-  }
-
-  static void resolve(
-      const std::shared_ptr<ContextPromiseResolver<T>> &promise,
-      const detail::ContextPromiseResolveValue<T> &value)
-    requires(!std::same_as<T, void>)
-  {
-    if (promise != nullptr) {
-      promise->resolve(value);
-    }
-  }
-
   void reject(const std::string &message) const {
-    reject_(message);
+    jsiPromise_.reject(message);
   }
 
-  static void reject(
-      const std::shared_ptr<ContextPromiseResolver<T>> &promise,
-      const std::string &message) {
-    if (promise != nullptr) {
-      promise->reject(message);
-    }
-  }
-
-  static std::shared_ptr<ContextPromiseResolver<void>> makeContextPromiseResolver(
+ protected:
+  ContextPromiseResolver(
       Promise &&promise,
-      const std::shared_ptr<BaseAudioContext> &audioContext,
+      std::shared_ptr<BaseAudioContext> context,
       ContextState nextState)
-    requires std::same_as<T, void>;
+      : jsiPromise_(std::move(promise)), context_(std::move(context)), nextState_(nextState) {}
 
-  static std::shared_ptr<OfflineAudioContextResultPromise> makeOfflineAudioContextResultResolver(
-      Promise &&promise,
-      const std::shared_ptr<BaseAudioContext> &audioContext)
-    requires(!std::same_as<T, void>);
+  void settle(std::function<jsi::Value(jsi::Runtime &)> &&toValue) const {
+    // Spec: update the state attribute in the same follow-up task that resolves the promise
+    // (before statechange reactions).
+    context_->setState(nextState_);
+    jsiPromise_.resolve([context = context_, nextState = nextState_, toValue = std::move(toValue)](
+                            jsi::Runtime &runtime) {
+      context->setPublishedState(nextState);
+      return toValue(runtime);
+    });
+    // Behind the resolve enqueue; the TS layer orders the offline `complete` event after this
+    // statechange lands.
+    context_->dispatchStateChange(nextState_);
+  }
 
  private:
-  detail::ContextPromiseResolveFn<T>::type resolve_;
-  std::function<void(const std::string &)> reject_;
+  Promise jsiPromise_;
+  std::shared_ptr<BaseAudioContext> context_;
+  ContextState nextState_;
+};
+
+/// Resolves with `undefined`: resume / suspend / close.
+class ContextStateResolver final : public ContextPromiseResolver {
+ public:
+  ContextStateResolver(
+      Promise &&promise,
+      std::shared_ptr<BaseAudioContext> context,
+      ContextState nextState)
+      : ContextPromiseResolver(std::move(promise), std::move(context), nextState) {}
+
+  void resolve() const {
+    settle([](jsi::Runtime &) { return jsi::Value::undefined(); });
+  }
+};
+
+/// Resolves with the rendered `AudioBuffer`: offline `startRendering`.
+class ContextRenderResolver final : public ContextPromiseResolver {
+ public:
+  ContextRenderResolver(
+      Promise &&promise,
+      std::shared_ptr<BaseAudioContext> context,
+      ContextState nextState)
+      : ContextPromiseResolver(std::move(promise), std::move(context), nextState) {}
+
+  void resolve(const std::shared_ptr<AudioBuffer> &buffer) const {
+    settle([buffer](jsi::Runtime &runtime) {
+      return jsi::Object::createFromHostObject(
+          runtime, std::make_shared<AudioBufferHostObject>(buffer));
+    });
+  }
 };
 
 } // namespace audioapi

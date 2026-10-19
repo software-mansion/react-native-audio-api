@@ -68,7 +68,6 @@ target_link_libraries(rnaudioapi_cursor ${LINK_LIBRARIES} gtest gmock gtest_main
 add_library(rnaudioapi_cursor_test OBJECT ${TEST_CPP_SOURCES})
 target_compile_definitions(rnaudioapi_cursor_test PRIVATE
   RN_AUDIO_API_TEST=1
-  RN_AUDIO_API_FFMPEG_DISABLED=1
   RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1
   MA_NO_LIBOPUS=1
   MA_NO_LIBVORBIS=1
@@ -135,6 +134,12 @@ if(APPLE)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
   )
+  if(IOS_SDK_PATH)
+    get_filename_component(IOS_SDKS_DIR "${IOS_SDK_PATH}" DIRECTORY)
+    if(IS_DIRECTORY "${IOS_SDKS_DIR}/iPhoneSimulator.sdk")
+      set(IOS_SDK_PATH "${IOS_SDKS_DIR}/iPhoneSimulator.sdk")
+    endif()
+  endif()
   if(IOS_SDK_PATH)
     target_compile_options(rnaudioapi_cursor_ios PRIVATE -isysroot "${IOS_SDK_PATH}")
     target_compile_options(rnaudioapi_cursor_ios_objc PRIVATE -isysroot "${IOS_SDK_PATH}")

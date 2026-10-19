@@ -17,17 +17,21 @@ def reactNativeArchitectures() {
   return value ? value.split(",") : ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"]
 }
 
-def isNewArchitectureEnabled() {
-  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+def isPropertyTrue(name) {
+  return rootProject.hasProperty(name) && rootProject.getProperty(name) == "true"
 }
 
-def isFFmpegDisabled() {
-  return rootProject.hasProperty("disableAudioapiFFmpeg") && rootProject.getProperty("disableAudioapiFFmpeg") == "true"
+def isNewArchitectureEnabled() {
+  return isPropertyTrue("newArchEnabled")
+}
+
+// FFmpeg is opt-in: `enableAudioapiFFmpeg=true` in the app's gradle.properties turns it on.
+def isFFmpegEnabled() {
+  return isPropertyTrue("enableAudioapiFFmpeg")
 }
 
 def isStaticExternalLibsDisabled() {
-  return rootProject.hasProperty("disableAudioapiStaticExternalLibs") &&
-      rootProject.getProperty("disableAudioapiStaticExternalLibs") == "true"
+  return isPropertyTrue("disableAudioapiStaticExternalLibs")
 }
 
 apply plugin: "com.android.library"
@@ -125,6 +129,9 @@ def audioApiPrefabHeadersDir = layout.buildDirectory.dir("prefab-headers").get()
 
 // Headers staged for the react-native-audio-api prefab (mirrors worklets: include-only).
 def audioApiPrefabHeaderIncludes = ["audioapi/**/*.h", "audioapi/**/*.hpp"]
+// Third-party headers (FFmpeg, Opus, Vorbis, Ogg) are not part of the extension API
+// and are not guaranteed to exist in every build, so they never reach the prefab.
+def audioApiPrefabHeaderExcludes = ["audioapi/external/**"]
 
 def reactProperties = new Properties()
 file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { reactProperties.load(it) }
@@ -132,7 +139,7 @@ file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { rea
 def REACT_NATIVE_VERSION = reactProperties.getProperty("VERSION_NAME")
 def REACT_NATIVE_MINOR_VERSION = REACT_NATIVE_VERSION.startsWith("0.0.0-") ? 1000 : REACT_NATIVE_VERSION.split("\\.")[1].toInteger()
 def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
-def IS_RN_AUDIO_API_FFMPEG_DISABLED = isFFmpegDisabled()
+def IS_RN_AUDIO_API_FFMPEG_ENABLED = isFFmpegEnabled()
 def IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED = isStaticExternalLibsDisabled()
 
 apply from: "./fix-prefab.gradle"
@@ -141,7 +148,7 @@ android {
   sourceSets {
       main {
         // if ffmpeg is disabled, don't include the jniLibs directory, where the ffmpeg .so files are located
-        jniLibs.srcDirs = IS_RN_AUDIO_API_FFMPEG_DISABLED ? [] : ['src/main/jniLibs']
+        jniLibs.srcDirs = IS_RN_AUDIO_API_FFMPEG_ENABLED ? ['src/main/jniLibs'] : []
       }
   }
   if (supportsNamespace()) {
@@ -163,7 +170,7 @@ android {
     consumerProguardFiles("proguard-rules.pro")
 
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
-    buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_DISABLED", isFFmpegDisabled().toString()
+    buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_ENABLED", IS_RN_AUDIO_API_FFMPEG_ENABLED.toString()
     buildConfigField "boolean", "RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED", isStaticExternalLibsDisabled().toString()
 
     externalNativeBuild {
@@ -177,7 +184,7 @@ android {
           "-DREACT_NATIVE_DIR=${toPlatformFileString(reactNativeRootDir.path)}",
           "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
           "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
-          "-DRN_AUDIO_API_FFMPEG_DISABLED=${IS_RN_AUDIO_API_FFMPEG_DISABLED}",
+          "-DRN_AUDIO_API_FFMPEG_ENABLED=${IS_RN_AUDIO_API_FFMPEG_ENABLED}",
           "-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=${IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED}"
         ]
 
@@ -308,10 +315,10 @@ def assertMinimalReactNativeVersion = task assertMinimalReactNativeVersionTask {
 task downloadPrebuiltBinaries(type: Exec) {
   def isWindows = Os.isFamily(Os.FAMILY_WINDOWS)
   if (isWindows) {
-    commandLine 'C:\\Program Files\\Git\\usr\\bin\\bash.exe', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
+    commandLine 'C:\\Program Files\\Git\\usr\\bin\\bash.exe', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegEnabled() ? '' : 'skipffmpeg'
   } else {
-    commandLine 'chmod', '+x', '../scripts/download-prebuilt-binaries.sh'
-    commandLine 'bash', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegDisabled() ? 'skipffmpeg' : ''
+    // Invoked through bash on purpose: the script needs no executable bit this way.
+    commandLine 'bash', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegEnabled() ? '' : 'skipffmpeg'
   }
   environment 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS', isStaticExternalLibsDisabled() ? '1' : '0'
 }
@@ -319,6 +326,7 @@ task downloadPrebuiltBinaries(type: Exec) {
 tasks.register('prepareAudioApiHeadersForPrefabs', Copy) {
     from(audioApiCommonCppDir) {
         include(audioApiPrefabHeaderIncludes)
+        exclude(audioApiPrefabHeaderExcludes)
     }
     from(audioApiAndroidCppDir) {
         include(audioApiPrefabHeaderIncludes)

@@ -593,17 +593,15 @@ static AudioEngine *_sharedInstance = nil;
   [self rebuildAudioEngine];
   self.sessionDeactivationInvalidatedGraph = false;
 
-  BOOL didStartEngine = NO;
   if (self.state == AudioEngineState::AudioEngineStateRunning) {
-    didStartEngine = [self startEngine];
-    if (!didStartEngine) {
+    // Before startEngine: the input consumers must match the new route's format
+    // before the first render callback arrives on it.
+    [self notifyInput:AudioEngineInputNotificationHardwareChanged];
+
+    if (![self startEngine]) {
       self.state = AudioEngineState::AudioEngineStateIdle;
       [self notifyOutputRecoveryFailed];
     }
-  }
-
-  if (didStartEngine) {
-    [self notifyInput:AudioEngineInputNotificationHardwareChanged];
   }
 
   _isRebuildingAudioEngine = NO;

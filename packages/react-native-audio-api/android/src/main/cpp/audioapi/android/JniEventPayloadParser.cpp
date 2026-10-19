@@ -69,6 +69,9 @@ AudioEventPayload buildPayloadFromJniMap(
       return InterruptionPayload{
           .type = jniGetString(map, "type"), .shouldResume = jniGetBool(map, "shouldResume")};
 
+    case AudioEvent::ROUTE_CHANGE:
+      return StringPayload{.name = "reason", .reason = jniGetString(map, "reason")};
+
     case AudioEvent::VOLUME_CHANGE:
     case AudioEvent::PLAYBACK_NOTIFICATION_SKIP_FORWARD:
     case AudioEvent::PLAYBACK_NOTIFICATION_SKIP_BACKWARD:

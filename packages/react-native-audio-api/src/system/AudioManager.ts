@@ -6,6 +6,7 @@ import {
   AudioDevicesInfo,
   AudioFocusType,
   IAudioManager,
+  InputDeviceSelection,
   PermissionStatus,
   SessionOptions,
 } from './types';
@@ -121,13 +122,20 @@ class AudioManager implements IAudioManager {
   }
 
   /**
-   * Selects the given device as the current audio input.
+   * Selects the given device as the current audio input. Passing `'default'`
+   * drops the selection, so the system chooses the input again.
    *
    * Resolves when the input device was set successfully and rejects when the
-   * device cannot be found or the system fails to switch to it.
+   * device cannot be found or the system fails to switch to it; a rejected call
+   * leaves the previous selection in place.
+   *
+   * A recording in progress moves to the new input right away and keeps writing
+   * the same file, whatever the new input's format.
    */
-  async setInputDevice(deviceId: string): Promise<void> {
-    await NativeAudioAPIModule.setInputDevice(deviceId);
+  async setInputDevice(deviceId: InputDeviceSelection): Promise<void> {
+    await NativeAudioAPIModule.setInputDevice(
+      deviceId === 'default' ? null : deviceId
+    );
   }
 }
 
