@@ -96,11 +96,13 @@ openssl-prebuilt/
 prebuilt_libs/
 output/
 
-# External libs
+# External libs (prebuilt binaries and FFmpeg headers fetched by
+# scripts/download-prebuilt-binaries.sh from the rn-audio-libs releases).
 packages/react-native-audio-api/android/src/main/jniLibs/
 packages/react-native-audio-api/common/cpp/audioapi/external/**/*.a
 packages/react-native-audio-api/common/cpp/audioapi/external/*.xcframework
 packages/react-native-audio-api/common/cpp/audioapi/external/ffmpeg_ios/
+packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg/
 
 # Clangd cache
 .cache

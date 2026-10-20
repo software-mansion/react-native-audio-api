@@ -24,7 +24,8 @@ AudioRecorderHostObject::AudioRecorderHostObject(
     AudioRecorderOptions options) {
   audioRecorder_ = createPlatformAudioRecorder(audioEventHandlerRegistry, options);
 
-  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
+  lifecycleLane_ = std::make_shared<SerialTaskExecutor>();
+  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker, lifecycleLane_);
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
@@ -47,7 +48,10 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 AudioRecorderHostObject::~AudioRecorderHostObject() {
-  ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder_);
+  // Queued rather than called, so a start() still waiting on the lane cannot outlive this stop.
+  lifecycleLane_->schedule([audioRecorder = audioRecorder_]() {
+    ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
@@ -138,20 +142,44 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
   return jsResult;
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, disableFileOutput) {
-  audioRecorder_->disableFileOutput();
-  return jsi::Value::undefined();
+namespace {
+
+PromiseResolver resolveWithUndefined() {
+  return [](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
+    return jsi::Value::undefined();
+  };
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, pause) {
-  audioRecorder_->pause();
+} // namespace
 
-  return jsi::Value::undefined();
+/// Closing a file mid-recording joins the writer thread, so it runs on the lane like stop().
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, disableFileOutput) {
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    audioRecorder->disableFileOutput();
+    return resolveWithUndefined();
+  });
+}
+
+/// Through the handle rather than the recorder, so it is excluded against the notification
+/// and audio-session paths that also drive the occupant.
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, pause) {
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    ActiveRecorderHandle::global().pause(audioRecorder);
+    return resolveWithUndefined();
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, resume) {
-  audioRecorder_->resume();
-  return jsi::Value::undefined();
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    ActiveRecorderHandle::global().resume(audioRecorder);
+    return resolveWithUndefined();
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, connect) {
@@ -216,11 +244,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getCurrentDuration) {
   double duration = audioRecorder_->getCurrentDuration();
-  return jsi::Value(duration);
+  return {duration};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioRecorderHostObject, inputLatency) {
-  return jsi::Value(audioRecorder_->getInputLatency());
+  return {audioRecorder_->getInputLatency()};
 }
 
 } // namespace audioapi

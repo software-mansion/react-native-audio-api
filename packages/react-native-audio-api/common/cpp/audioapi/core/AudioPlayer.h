@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/types/AudioContextLatencyHint.h>
+#include <audioapi/core/types/AudioContextOptions.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/Macros.h>
@@ -79,6 +80,7 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     std::atomic<uint32_t> &currentRenders,
     std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
-    AudioContextLatencyHint latencyHint);
+    AudioContextLatencyHint latencyHint,
+    AndroidOutputProfile outputProfile);
 
 } // namespace audioapi

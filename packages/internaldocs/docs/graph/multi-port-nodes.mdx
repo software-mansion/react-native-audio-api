@@ -18,13 +18,13 @@ Also, implementation of [`AudioWorkletNode`](https://webaudio.github.io/web-audi
 
 ## Required changes
 
-### `HostGraph::Node`
+### `HostGraph::HostVertex`
 
 Represent an edge endpoint by its owning node and a port index:
 
 ```cpp
 struct HostGraph::Port {
-  HostGraph::Node *node;
+  HostGraph::HostVertex *node;
   std::uint32_t index;
 };
 using HostGraph::InputPort = HostGraph::Port;
@@ -35,8 +35,8 @@ Change the node adjacency lists to:
 
 ```cpp
 // diff-remove-start
-std::vector<Node *> inputs;
-std::vector<Node *> outputs;
+std::vector<HostVertex *> inputs;
+std::vector<HostVertex *> outputs;
 // diff-remove-end
 // diff-add-start
 std::vector<std::vector<OutputPort>> inputs;
@@ -125,7 +125,7 @@ To be added...
 
 | Path | Why |
 |------|-----|
-| `common/cpp/audioapi/core/utils/graph/HostGraph.h` / `.cpp` | `HostGraph::Node::{inputs,outputs}` are `vector<Node*>` — peer only, no port indices. `addEdge` / `removeEdge` / channel negotiation walk these lists. |
+| `common/cpp/audioapi/core/utils/graph/HostGraph.h` / `.cpp` | `HostGraph::HostVertex::{inputs,outputs}` are `vector<HostVertex*>` — peer only, no port indices. `addEdge` / `removeEdge` / channel negotiation walk these lists. |
 | `common/cpp/audioapi/core/utils/graph/AudioGraph.h` / `.cpp` | Audio-thread adjacency via `input_head` + `InputPool`; `iter()` yields `(GraphObject, inputs)` with **no** output or input port. |
 | `common/cpp/audioapi/core/utils/graph/InputPool.h` / `.cpp` | Edge slots store only the peer node index (`val`) + `next` — no port fields. |
 | `common/cpp/audioapi/core/utils/graph/Graph.h` / `.cpp` | Public `addEdge` / `removeEdge` / `removeAllEdges` / AGEvent replay — unindexed `(from, to)`. |

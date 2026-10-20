@@ -32,6 +32,25 @@ PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
 
 } // namespace
 
+AndroidAudioPlayer::AndroidAudioPlayer(
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+    float sampleRate,
+    int channelCount,
+    std::atomic<uint32_t> &currentRenders,
+    std::weak_ptr<AudioContext> context,
+    std::mutex *driverMutex,
+    AudioContextLatencyHint latencyHint,
+    AndroidOutputProfile outputProfile)
+    : AudioPlayer(
+          renderAudio,
+          sampleRate,
+          channelCount,
+          currentRenders,
+          std::move(context),
+          driverMutex,
+          latencyHint),
+      outputProfile_(outputProfile) {}
+
 bool AndroidAudioPlayer::openAudioStreamLocked() {
   AudioStreamBuilder builder;
 
@@ -45,6 +64,10 @@ bool AndroidAudioPlayer::openAudioStreamLocked() {
       ->setDataCallback(shared_from_this())
       ->setErrorCallback(shared_from_this())
       ->setSampleRate(static_cast<int>(sampleRate_));
+
+  if (outputProfile_ == AndroidOutputProfile::VoiceCommunication) {
+    builder.setUsage(Usage::VoiceCommunication)->setContentType(ContentType::Speech);
+  }
 
   auto result = builder.openStream(mStream_);
   if (result != oboe::Result::OK || mStream_ == nullptr) {
@@ -307,7 +330,8 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     std::atomic<uint32_t> &currentRenders,
     std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
-    AudioContextLatencyHint latencyHint) {
+    AudioContextLatencyHint latencyHint,
+    AndroidOutputProfile outputProfile) {
   return std::make_shared<AndroidAudioPlayer>(
       renderAudio,
       sampleRate,
@@ -315,7 +339,8 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
       currentRenders,
       std::move(context),
       driverMutex,
-      latencyHint);
+      latencyHint,
+      outputProfile);
 }
 
 } // namespace audioapi

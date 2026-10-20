@@ -22,7 +22,10 @@ import {
 } from './constants';
 import StressResourceOwner from './StressResourceOwner';
 import StopRequestedError from './StopRequestedError';
-import { activatePlaybackSession, activateRecordingSession } from './audioSessions';
+import {
+  activatePlaybackSession,
+  activateRecordingSession,
+} from './audioSessions';
 import {
   formatDurationMs,
   formatPlaybackProgressStats,
@@ -699,10 +702,12 @@ const AudioPipelineStress: FC = () => {
             'attempt-wrong-category-record',
             'Attempt recording while the session is configured for playback',
             async () => {
-              AudioManager.setAudioSessionOptions({
-                iosCategory: 'playback',
-                iosMode: 'default',
-                iosOptions: [],
+              AudioManager.setSystemOptions({
+                ios: {
+                  category: 'playback',
+                  mode: 'default',
+                  options: [],
+                },
               });
 
               await AudioManager.setAudioSessionActivity(true);

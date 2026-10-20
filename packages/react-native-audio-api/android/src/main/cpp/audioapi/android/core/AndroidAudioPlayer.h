@@ -9,6 +9,7 @@
 #include <mutex>
 
 #include <audioapi/core/AudioPlayer.h>
+#include <audioapi/core/types/AudioContextOptions.h>
 
 namespace audioapi {
 
@@ -19,7 +20,15 @@ class AndroidAudioPlayer : public AudioPlayer,
                            public AudioStreamErrorCallback,
                            public std::enable_shared_from_this<AndroidAudioPlayer> {
  public:
-  using AudioPlayer::AudioPlayer;
+  AndroidAudioPlayer(
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+      float sampleRate,
+      int channelCount,
+      std::atomic<uint32_t> &currentRenders,
+      std::weak_ptr<AudioContext> context,
+      std::mutex *driverMutex,
+      AudioContextLatencyHint latencyHint,
+      AndroidOutputProfile outputProfile);
 
   ~AndroidAudioPlayer() override {
     cleanup();
@@ -51,6 +60,7 @@ class AndroidAudioPlayer : public AudioPlayer,
   std::atomic<bool> isInitialized_{false};
   /// Updated on the audio thread from each Oboe callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
+  AndroidOutputProfile outputProfile_;
 
   bool openAudioStreamLocked();
   bool rebuildStreamLocked();

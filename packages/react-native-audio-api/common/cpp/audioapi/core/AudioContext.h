@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>
+#include <audioapi/core/types/AudioContextOptions.h>
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
@@ -18,14 +19,15 @@ class AudioContext : public BaseAudioContext {
  public:
   explicit AudioContext(
       float sampleRate,
+      AndroidOutputProfile androidOutputProfile,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       AudioContextLatencyHint latencyHint);
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
 
-  void close(const std::shared_ptr<ContextPromiseResolver<void>> &promise = nullptr);
-  bool resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise);
-  bool suspend(const std::shared_ptr<ContextPromiseResolver<void>> &promise);
+  void close(const std::shared_ptr<ContextStateResolver> &promise);
+  bool resume(const std::shared_ptr<ContextStateResolver> &promise);
+  bool suspend(const std::shared_ptr<ContextStateResolver> &promise);
   bool start();
 
   /// @brief Initializes native audio player and assigns the audio destination node to the context.
@@ -50,6 +52,7 @@ class AudioContext : public BaseAudioContext {
  private:
   std::shared_ptr<AudioPlayer> audioPlayer_;
   AudioContextLatencyHint latencyHint_;
+  AndroidOutputProfile androidOutputProfile_;
   std::atomic<bool> isInitialized_{false};
   /// Audio I/O callback thread increments around each platform render callback;
   /// control thread waits on suspend/close.
@@ -64,6 +67,10 @@ class AudioContext : public BaseAudioContext {
 
   /// Blocks until no audio I/O callback is in flight. Caller must hold `driverMutex_`.
   void waitForRenderQuiescence() const;
+
+  /// Stops the player and releases the driver; shared by `close` and the destructor. Caller
+  /// must hold `driverMutex_`.
+  void stopDriver();
 };
 
 } // namespace audioapi

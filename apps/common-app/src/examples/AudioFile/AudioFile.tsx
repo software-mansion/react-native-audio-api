@@ -29,10 +29,12 @@ const AudioFile: FC = () => {
         setPositionPercentage(offset);
       });
 
-      AudioManager.setAudioSessionOptions({
-        iosCategory: 'playback',
-        iosMode: 'default',
-        iosOptions: [],
+      AudioManager.setSystemOptions({
+        ios: {
+          category: 'playback',
+          mode: 'default',
+          options: [],
+        },
       });
 
       try {
@@ -71,7 +73,9 @@ const AudioFile: FC = () => {
       await PlaybackNotificationManager.show({
         title: 'Audio File',
         artist: 'Software Mansion',
+        artwork: 'https://wallpaperaccess.com/full/2658793.jpg',
         album: 'Audio API',
+        androidSmallIcon: 'logo',
         duration: duration,
         state: 'paused',
         speed: 1.0,
@@ -85,7 +89,6 @@ const AudioFile: FC = () => {
       await PlaybackNotificationManager.enableControl('pause', true);
       await PlaybackNotificationManager.enableControl('play', true);
       await PlaybackNotificationManager.enableControl('seekTo', true);
-
     } catch (error) {
       console.error('Failed to setup notification:', error);
     }
@@ -138,6 +141,20 @@ const AudioFile: FC = () => {
       }
     );
 
+    const nextTrackListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationNextTrack',
+      () => {
+        console.log('Next track event received from notification');
+      }
+    );
+
+    const previousTrackListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationPreviousTrack',
+      () => {
+        console.log('Previous track event received from notification');
+      }
+    );
+
     // Keep interruption handling through AudioManager
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
@@ -162,12 +179,9 @@ const AudioFile: FC = () => {
       }
     );
 
-    const duckListener = AudioManager.addSystemEventListener(
-      'duck',
-      () => {
-        AudioPlayer.setVolume(0.2);
-      }
-    );
+    const duckListener = AudioManager.addSystemEventListener('duck', () => {
+      AudioPlayer.setVolume(0.2);
+    });
 
     const seekToListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationSeekTo',
@@ -184,6 +198,8 @@ const AudioFile: FC = () => {
       seekToListener.remove();
       interruptionSubscription?.remove();
       duckListener.remove();
+      nextTrackListener.remove();
+      previousTrackListener.remove();
     };
   }, [isPlaying, wasPlaying]);
 

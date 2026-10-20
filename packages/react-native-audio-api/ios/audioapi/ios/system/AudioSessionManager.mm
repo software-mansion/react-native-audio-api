@@ -437,6 +437,21 @@ static AudioSessionManager *_sharedInstance = nil;
                 reject:(RCTPromiseRejectBlock)reject
 {
   NSError *error = nil;
+
+  if (deviceId == nil) {
+    if (![self.audioSession setPreferredInput:nil error:&error]) {
+      reject(
+          nil,
+          [NSString stringWithFormat:@"Error while clearing preferred input: %@",
+                                     [error debugDescription]],
+          error);
+      return;
+    }
+
+    resolve(nil);
+    return;
+  }
+
   NSArray<AVAudioSessionPortDescription *> *availableInputs = [self.audioSession availableInputs];
 
   AVAudioSessionPortDescription *selectedInput = nil;
