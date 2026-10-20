@@ -4,11 +4,19 @@ import {
   AudioBuffer,
   GainNode,
   AudioRecorder,
-  AudioManager
+  AudioManager,
 } from 'react-native-audio-api';
 import { Container } from '../../components';
 import { audioContext } from '../../singletons';
-import { ActivityIndicator, View, Button, StyleSheet, ScrollView, Dimensions, Alert } from 'react-native';
+import {
+  ActivityIndicator,
+  View,
+  Button,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  Alert,
+} from 'react-native';
 import OverdrivePedal from './OverdrivePedal';
 import ReverbPedal from './ReverbPedal';
 import AutoWahPedal from './AutoWahPedal';
@@ -38,10 +46,12 @@ export default function PedalBoard() {
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
-      AudioManager.setAudioSessionOptions({
-        iosCategory: 'playAndRecord',
-        iosMode: 'default',
-      })
+      AudioManager.setSystemOptions({
+        ios: {
+          category: 'playAndRecord',
+          mode: 'default',
+        },
+      });
       AudioManager.setAudioSessionActivity(true);
 
       try {
@@ -95,8 +105,10 @@ export default function PedalBoard() {
     for (let i = 0; i < PEDALS.length - 1; i++) {
       pedalOutputNodesRef.current[i].connect(pedalInputNodesRef.current[i + 1]);
     }
-    pedalOutputNodesRef.current[PEDALS.length - 1].connect(audioContext.destination);
-  }
+    pedalOutputNodesRef.current[PEDALS.length - 1].connect(
+      audioContext.destination
+    );
+  };
 
   const togglePlayback = () => {
     if (isPlaying) {
@@ -112,7 +124,7 @@ export default function PedalBoard() {
       sourceNodeRef.current.start();
       setIsPlaying(true);
     }
-  }
+  };
 
   const toggleRecording = async () => {
     if (isRecording) {
@@ -139,10 +151,9 @@ export default function PedalBoard() {
           'Insufficient permissions!',
           'You need to grant audio recording permissions to use this feature.'
         );
-      };
+      }
     }
-  }
-
+  };
 
   return (
     <Container centered>
@@ -151,7 +162,7 @@ export default function PedalBoard() {
       ) : (
         <>
           <ScrollView>
-          {PEDALS.map((pedal, index) => {
+            {PEDALS.map((pedal, index) => {
               const PedalComponent = pedal.component;
               return (
                 <View key={pedal.id} style={styles.container}>
@@ -165,18 +176,18 @@ export default function PedalBoard() {
             })}
           </ScrollView>
           <View style={styles.controls}>
-            <View style= {{ display: isRecording ? 'none' : 'flex' }}>
-            <Button
-              title={isPlaying ? 'Stop' : 'Play'}
-              onPress={togglePlayback}
-            />
+            <View style={{ display: isRecording ? 'none' : 'flex' }}>
+              <Button
+                title={isPlaying ? 'Stop' : 'Play'}
+                onPress={togglePlayback}
+              />
             </View>
 
-            <View style= {{ display: isPlaying ? 'none' : 'flex' }}>
-            <Button
-              title={isRecording ? 'Stop' : 'Record'}
-              onPress={toggleRecording}
-            />
+            <View style={{ display: isPlaying ? 'none' : 'flex' }}>
+              <Button
+                title={isRecording ? 'Stop' : 'Record'}
+                onPress={toggleRecording}
+              />
             </View>
           </View>
         </>

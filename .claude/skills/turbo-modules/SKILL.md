@@ -81,7 +81,7 @@ interface Spec extends TurboModule {
   install(): boolean;                           // synchronous — MUST run first
   getDevicePreferredSampleRate(): number;       // synchronous
   setAudioSessionActivity(enabled: boolean): Promise<boolean>;
-  setAudioSessionOptions(...): void;
+  setSystemOptions(...): void;
   observeAudioInterruptions(focusType, enabled): void;
   requestRecordingPermissions(): Promise<PermissionStatus>;
   // ... audio devices, notifications ...
