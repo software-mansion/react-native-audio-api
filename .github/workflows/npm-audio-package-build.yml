@@ -87,7 +87,6 @@ jobs:
         run: exit 1 # this should never happen
 
       - name: Build package
-        id: build
         working-directory: ${{ env.AUDIO_API_DIR }}
         run: |
           if [[ "${{ inputs.latest-build }}" != "true" && "${{ inputs.old-version-patch }}" != "true" ]]; then
@@ -95,23 +94,6 @@ jobs:
           else
             ./scripts/create-package.sh
           fi
-
-      - name: Check if any node_modules were packed
-        id: check_node_modules
-        working-directory: ${{ env.AUDIO_API_DIR }}
-        run: >-
-          ! grep --silent -E "node_modules/.+" build.log
-
-      - name: Show build log
-        working-directory: ${{ env.AUDIO_API_DIR }}
-        if: failure() && steps.build.outcome == 'failure'
-        run: cat build.log
-
-      - name: Show packed node_modules
-        working-directory: ${{ env.AUDIO_API_DIR }}
-        if: failure() && steps.node_modules.outcome == 'failure'
-        run: >-
-          ! grep -E "node_modules/.+" build.log
 
       - name: Add package name to env
         working-directory: ${{ env.AUDIO_API_DIR }}
