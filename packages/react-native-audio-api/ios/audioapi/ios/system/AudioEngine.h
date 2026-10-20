@@ -83,8 +83,7 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 
 /// @brief Rebuilds the engine against the current hardware and starts it again if it was
 /// running. The input hears `HardwareChanged` between the two, outside the lock, so its
-/// consumers match the new format before the first render callback. No-op when there is
-/// neither an engine nor a tracked graph.
+/// consumers match the new format before the first render callback.
 - (void)restartAudioEngine;
 
 - (void)logAudioEngineState;

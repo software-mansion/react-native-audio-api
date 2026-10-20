@@ -28,7 +28,7 @@
 
 @interface AudioEngine () {
   /// Guards the engine and its tracked graph. Never taken on a thread AVFoundation owns:
-  /// dealloc, stop, reset, prepare and start can wait on that thread while it is held.
+  /// dealloc, stop, reset, prepare and start can wait on the calling thread.
   std::mutex _engineLock;
   /// Tracks whether voice processing is currently engaged on the system input
   /// node of the live engine instance. Reset whenever the engine is recreated.
@@ -282,7 +282,7 @@ static AudioEngine *_sharedInstance = nil;
 }
 
 /// @brief Connects the main mixer to the output in the input's format.
-/// @discussion The voice-processing I/O unit runs both directions and needs matching formats;
+/// @note The voice-processing I/O unit runs both directions and needs matching formats;
 /// with its output bus unconnected or implicitly formatted, the engine stops itself.
 - (void)connectVoiceProcessingIOOutput:(AVAudioFormat *)format
 {
