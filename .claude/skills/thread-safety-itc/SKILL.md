@@ -176,6 +176,16 @@ Tests stay deterministic by writing at most a pool's worth of buffers (32) per o
 
 ---
 
+## Convolver tail prefetch: never `wait()` on the audio thread
+
+`ConvolverNode` does not block on `ConvolverThreadPool`. `Convolver` (`dsp/Convolver.h`) splits the uniformly partitioned IR at `kHeadSegments` (8 blocks): the head is multiplied on the audio thread in `process()`, the tail only needs input that is ≥ 8 blocks old, so `ConvolverNode::scheduleTails()` hands `computeTail(nextTailBlock())` to the pool right after `process()` and the worker has 8 quanta (≈21 ms) of slack. A tail that is not published in time is computed inline for that block (`tailMisses()` counts them) — a late worker costs CPU, never a stall or a glitch. Rules that keep it lock-free:
+
+- Tasks capture the `Convolver` by `shared_ptr` (never `this` / a node member), so a node released mid-flight cannot leave a dangling read (the second half of issue #1339).
+- The audio thread publishes `_blocksProcessed` (release) after writing the delay-line slot; the worker checks it (acquire) before claiming a result slot and again before publishing, and claims the slot with a CAS so a straggler can never write under a newer worker or a reader.
+- The delay line keeps `kHeadSegments` spare slots, so a worker's reads stay valid until it is > 2 × kHeadSegments blocks late; by then its deadline check has already dropped the result.
+- The node hands tails over with `ThreadPool::trySchedule` (wait-free, `try_send` on the load-balancer queue). `schedule()` sends `WAIT_ON_FULL` and blocks the caller when the 32-slot queue is full, so it must never be called from the audio thread (in a device bench with starved workers the queue never actually filled — the balancer drains it in microseconds — but the contract matters more than the odds). A refused tail is just a miss: `process()` computes it inline.
+- `ThreadPool::wait()` waits on `tasksScheduled` itself (atomic wait loop), not on a separate flag: a worker that finished batch N and was preempted before notifying could otherwise release the waiter of batch N+1 (issue #1339). Nothing on the audio thread should call `wait()` at all.
+
 ## Driver synchronization (layered model)
 
 Control-plane synchronization uses two layers — both are non-recursive `std::mutex`, never held on the audio thread.

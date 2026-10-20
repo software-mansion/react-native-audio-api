@@ -302,7 +302,7 @@ yarn workspace react-native-audio-api test:cpp:smoke|extended|full
 yarn workspace react-native-audio-api test:cpp:extended -- graph
 ```
 
-`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
+`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. `tests_tsan` and `tests_asan` link `rnaudioapi_tsan` / `rnaudioapi_asan`, engine copies built with their sanitizer (`add_rnaudioapi_library` in `test/CMakeLists.txt`): header templates such as `ThreadPool`/`SpscChannel` are instantiated in both the engine and the tests, and an uninstrumented copy picked by the linker hides their atomics, so TSan reports false races and ASan/UBSan silently skip engine code. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
 
 ### Coverage (Clang / llvm-cov)
 

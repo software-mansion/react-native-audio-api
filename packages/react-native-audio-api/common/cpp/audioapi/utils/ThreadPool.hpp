@@ -31,7 +31,6 @@ class ThreadPool {
   using Event = std::variant<TaskEvent, StopEvent>;
 
   struct Cntrl {
-    std::atomic<bool> waitingForTasks{false};
     std::atomic<size_t> tasksScheduled{0};
   };
 
@@ -115,40 +114,35 @@ class ThreadPool {
   void schedule(Func &&task, Args &&...args) noexcept
     requires(std::is_invocable_r_v<void, Func, Args...>)
   {
-    controlBlock_->tasksScheduled.fetch_add(1, std::memory_order_release);
+    loadBalancerSender.send(
+        TaskEvent{bindTask(std::forward<Func>(task), std::forward<Args>(args)...)});
+  }
 
-    /// We know that lifetime of each worker thus spsc thus lambda is strongly bounded by ThreadPool lifetime
-    /// so we can safely capture control block pointer unsafely here
-    Cntrl *cntrl = controlBlock_.get();
-    auto boundTask = [cntrl,
-                      f = std::forward<Func>(task),
-                      ... capturedArgs = std::forward<Args>(args)]() mutable {
-      f(std::forward<Args>(capturedArgs)...);
-      size_t left = cntrl->tasksScheduled.fetch_sub(1, std::memory_order_acq_rel) - 1;
-      if (left == 0) {
-        cntrl->waitingForTasks.store(false, std::memory_order_release);
-        cntrl->waitingForTasks.notify_one();
-      }
-    };
-    loadBalancerSender.send(TaskEvent{std::move(boundTask)});
+  /// @brief Like `schedule`, but never blocks: returns false and runs nothing when the
+  /// load-balancer queue is full (workers starved). The caller then does the work itself
+  /// or skips it, so an audio thread can hand off work without ever waiting on the pool.
+  /// @note Wait-free. Same single-scheduler-thread rule as `schedule`.
+  template <typename Func, typename... Args>
+  [[nodiscard]] bool trySchedule(Func &&task, Args &&...args) noexcept
+    requires(std::is_invocable_r_v<void, Func, Args...>)
+  {
+    TaskEvent event{bindTask(std::forward<Func>(task), std::forward<Args>(args)...)};
+    if (loadBalancerSender.try_send(std::move(event)) == channels::spsc::ResponseStatus::SUCCESS) {
+      return true;
+    }
+    markTaskFinished(controlBlock_.get());
+    return false;
   }
 
   /// @brief Waits for all scheduled tasks to complete
+  /// @note Waits on the counter itself rather than a separate "done" flag: a worker that
+  /// finished the previous batch but was preempted before notifying must not be able to
+  /// release a waiter for the next batch (issue #1339).
   void wait() {
-    /// This logic might seem incorrect at first glance
-    /// Main principle for this is that there is only one thread scheduling tasks
-    /// If he is waiting for the tasks he CANNOT schedule new tasks so we can assume partial
-    /// synchronization here.
-    /// We first store true so if any task finishes at this moment he will flip it
-    /// Then we check if there are any tasks scheduled
-    /// If there are none we can return immediately
-    /// If there are some we wait until the last task flips the flag to false
-    controlBlock_->waitingForTasks.store(true, std::memory_order_release);
-    if (controlBlock_->tasksScheduled.load(std::memory_order_acquire) == 0) {
-      controlBlock_->waitingForTasks.store(false, std::memory_order_release);
-      return;
+    size_t pending;
+    while ((pending = controlBlock_->tasksScheduled.load(std::memory_order_acquire)) != 0) {
+      controlBlock_->tasksScheduled.wait(pending, std::memory_order_acquire);
     }
-    controlBlock_->waitingForTasks.wait(true, std::memory_order_acquire);
   }
 
  private:
@@ -157,6 +151,28 @@ class ThreadPool {
   Sender loadBalancerSender;
   std::unique_ptr<Cntrl> controlBlock_;
   bool movedFrom_ = false;
+
+  static void markTaskFinished(Cntrl *cntrl) noexcept {
+    if (cntrl->tasksScheduled.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+      cntrl->tasksScheduled.notify_all();
+    }
+  }
+
+  /// Counts the task as scheduled and wraps it so completion is counted too.
+  template <typename Func, typename... Args>
+  auto bindTask(Func &&task, Args &&...args) noexcept {
+    controlBlock_->tasksScheduled.fetch_add(1, std::memory_order_release);
+
+    /// We know that lifetime of each worker thus spsc thus lambda is strongly bounded by ThreadPool lifetime
+    /// so we can safely capture control block pointer unsafely here
+    Cntrl *cntrl = controlBlock_.get();
+    return [cntrl,
+            f = std::forward<Func>(task),
+            ... capturedArgs = std::forward<Args>(args)]() mutable {
+      f(std::forward<Args>(capturedArgs)...);
+      markTaskFinished(cntrl);
+    };
+  }
 
   void workerThreadFunc(Receiver &&receiver) {
     Receiver localReceiver = std::move(receiver);
