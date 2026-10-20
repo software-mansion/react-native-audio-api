@@ -159,11 +159,12 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  self.interruptionEndedDelivered = false;
   dispatch_async(dispatch_get_main_queue(), ^{
+    self.interruptionEndedDelivered = false;
     bool transitioned = [audioEngine onInterruptionBegin];
     [sessionManager markInactive];
     if (transitioned) {
+      self.interruptionShouldResume = nil;
       [self emitInterruptionBegan];
     }
   });
@@ -174,6 +175,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
   dispatch_async(dispatch_get_main_queue(), ^{
+    self.interruptionEndedDelivered = true;
     AudioEngineInterruptionEndOutcome outcome = [audioEngine onInterruptionEnd:shouldResume];
     if (outcome == AudioEngineInterruptionEndOutcomeRunning ||
         outcome == AudioEngineInterruptionEndOutcomePaused) {
@@ -214,8 +216,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   bool shouldResume = interruptionOption == AVAudioSessionInterruptionOptionShouldResume;
 
-  self.interruptionShouldResume = @(shouldResume);
-  self.interruptionEndedDelivered = true;
+  dispatch_async(dispatch_get_main_queue(), ^{ self.interruptionShouldResume = @(shouldResume); });
   [self handleInterruptionEnd:shouldResume];
 }
 
@@ -231,7 +232,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   bool shouldResume = secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeEnd;
 
-  self.interruptionEndedDelivered = true;
   [self handleInterruptionEnd:shouldResume];
 }
 
@@ -378,7 +378,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     return;
   }
 
-  self.interruptionEndedDelivered = true;
   [self handleInterruptionEnd:[self shouldResumeForInterruptionRecovery]];
 }
 

@@ -531,10 +531,10 @@ static AudioEngine *_sharedInstance = nil;
     NSLog(
         @"Error while materializing the audio input node after interruption: missing live input format");
     self.state = AudioEngineState::AudioEngineStateInterrupted;
-    [self notifyInput:AudioEngineInputNotificationCaptureLost];
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
+  [self notifyInput:AudioEngineInputNotificationHardwareChanged];
   [self.audioEngine prepare];
   [self.audioEngine startAndReturnError:&error];
 
@@ -543,13 +543,11 @@ static AudioEngine *_sharedInstance = nil;
         @"Error while restarting the audio engine after interruption: %@",
         [error debugDescription]);
     self.state = AudioEngineState::AudioEngineStateInterrupted;
-    [self notifyInput:AudioEngineInputNotificationCaptureLost];
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
   self.sessionDeactivationInvalidatedGraph = false;
-  [self notifyInput:AudioEngineInputNotificationHardwareChanged];
   return AudioEngineInterruptionEndOutcomeRunning;
 }
 

@@ -59,8 +59,6 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<NoneType, std::string> reprepareForLiveInput();
   void handleInputNotification(AudioEngineInputNotification notification);
   void handleHardwareChange();
-  void handleRecordingLost();
-  [[nodiscard]] bool isFileSessionSuspended() const;
 
   int32_t inputChannelCount_{0};
 };
