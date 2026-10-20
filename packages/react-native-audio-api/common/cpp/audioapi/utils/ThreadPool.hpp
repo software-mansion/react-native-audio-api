@@ -135,9 +135,6 @@ class ThreadPool {
   }
 
   /// @brief Waits for all scheduled tasks to complete
-  /// @note Waits on the counter itself rather than a separate "done" flag: a worker that
-  /// finished the previous batch but was preempted before notifying must not be able to
-  /// release a waiter for the next batch (issue #1339).
   void wait() {
     size_t pending;
     while ((pending = controlBlock_->tasksScheduled.load(std::memory_order_acquire)) != 0) {
@@ -183,7 +180,9 @@ class ThreadPool {
       /// and whenever we receive StopEvent we can burn some cycles as it will not be expected to execute fast.
       if (std::holds_alternative<StopEvent>(event)) [[unlikely]] {
         break;
-      } else if (std::holds_alternative<TaskEvent>(event)) [[likely]] {
+      }
+
+      if (std::holds_alternative<TaskEvent>(event)) [[likely]] {
         std::get<TaskEvent>(event).task();
       }
     }
@@ -204,7 +203,9 @@ class ThreadPool {
           localWorkerSender.send(StopEvent{});
         }
         break;
-      } else if (std::holds_alternative<TaskEvent>(event)) [[likely]] {
+      }
+
+      if (std::holds_alternative<TaskEvent>(event)) [[likely]] {
         // Dispatch task to the next worker in round-robin fashion
         auto &taskEvent = std::get<TaskEvent>(event);
         localWorkerSenders[nextWorker].send(std::move(taskEvent));

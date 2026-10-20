@@ -69,10 +69,10 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
   _fftBuffer = std::make_unique<DSPAudioArray>(_segSize);
 
   // segments preparation
-  // The spare kHeadSegments slots keep the blocks a tail worker reads from
+  // The spare HEAD_SEGMENTS slots keep the blocks a tail worker reads from
   // being overwritten while its result can still be used.
   _segments.assign(
-      _segCount + kHeadSegments,
+      _segCount + HEAD_SEGMENTS,
       aligned_vec_complex(_fftComplexSize, std::complex<float>(0.0f, 0.0f)));
 
   // ir preparation
@@ -95,13 +95,14 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
   _preMultiplied = aligned_vec_complex(_fftComplexSize);
   _inputBuffer = std::make_unique<DSPAudioArray>(_segSize);
 
-  _tailSlots = std::vector<TailSlot>(kTailSlotCount);
+  _tailSlots = std::vector<TailSlot>(TAIL_SLOT_COUNT);
   for (auto &slot : _tailSlots) {
     slot.spectrum.assign(_fftComplexSize, std::complex<float>(0.0f, 0.0f));
   }
-  // The tails of the first kHeadSegments blocks has to be a silence.
-  for (size_t block = 0; block < kHeadSegments; ++block) {
-    _tailSlots[block % kTailSlotCount].state.store(readyState(block), std::memory_order_relaxed);
+  // The tails of the first HEAD_SEGMENTS blocks only reach input from before the stream
+  // started, so they are silent and ready up front.
+  for (size_t block = 0; block < HEAD_SEGMENTS; ++block) {
+    _tailSlots[block % TAIL_SLOT_COUNT].state.store(readyState(block), std::memory_order_relaxed);
   }
 
   return true;
@@ -213,20 +214,20 @@ void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output) {
   // The P sub filter spectra are pairwisely multiplied with the input spectra
   // in the FDL. The results are accumulated in the frequency-domain.
   memset(_preMultiplied.data(), 0, _preMultiplied.size() * sizeof(std::complex<float>));
-  const size_t headSegments = std::min(kHeadSegments, _segCount);
+  const size_t headSegments = std::min(HEAD_SEGMENTS, _segCount);
   for (size_t age = 0; age < headSegments; ++age) {
     pairwise_complex_multiply_fast(_segmentsIR[age], inputSpectrum(block, age), _preMultiplied);
   }
 
   if (hasTail()) {
-    const TailSlot &slot = _tailSlots[block % kTailSlotCount];
+    const TailSlot &slot = _tailSlots[block % TAIL_SLOT_COUNT];
     if (slot.state.load(std::memory_order_acquire) == readyState(block)) {
       for (size_t bin = 0; bin < _fftComplexSize; ++bin) {
         _preMultiplied[bin] += slot.spectrum[bin];
       }
     } else {
       ++_tailMisses;
-      accumulateSegments(block, kHeadSegments, _preMultiplied);
+      accumulateSegments(block, HEAD_SEGMENTS, _preMultiplied);
     }
   }
 
@@ -242,20 +243,20 @@ void Convolver::computeTail(size_t block) {
   if (!hasTail() || _blocksProcessed.load(std::memory_order_acquire) > block) {
     return;
   }
-  TailSlot &slot = _tailSlots[block % kTailSlotCount];
+  TailSlot &slot = _tailSlots[block % TAIL_SLOT_COUNT];
   size_t state = slot.state.load(std::memory_order_acquire);
-  if ((state & kBusyBit) != 0 || state > readyState(block)) {
+  if ((state & BUSY_BIT) != 0 || state > readyState(block)) {
     return; // another worker is writing, or the slot already belongs to a newer one
   }
 
-  // compare it once again if we observe the same state, and claim the slot for this block. If the CAS fails, it means
-  // another worker has claimed the slot, and we can return without doing any work. because we would be computing to the same slot
+  // Claim the slot only if it still holds the state checked above, so a worker preempted
+  // between the check and the claim can never take a slot a newer block has claimed since.
   if (!slot.state.compare_exchange_strong(
-          state, readyState(block) | kBusyBit, std::memory_order_acq_rel)) {
+          state, readyState(block) | BUSY_BIT, std::memory_order_acq_rel)) {
     return; // the slot changed since the check; the audio thread will compute this tail inline
   }
   memset(slot.spectrum.data(), 0, slot.spectrum.size() * sizeof(std::complex<float>));
-  accumulateSegments(block, kHeadSegments, slot.spectrum);
+  accumulateSegments(block, HEAD_SEGMENTS, slot.spectrum);
   slot.state.store(readyState(block), std::memory_order_release);
 }
 } // namespace audioapi

@@ -101,7 +101,7 @@ TEST(ConvolverTest, InlineTailMatchesDirectConvolution) {
     fx.expectBlock(block, out);
   }
   // Nothing precomputed the tails, so every block past the silent prefix fell back.
-  EXPECT_EQ(ConvolverInspector::tailMisses(*convolver), fx.blocks - Convolver::kHeadSegments);
+  EXPECT_EQ(ConvolverInspector::tailMisses(*convolver), fx.blocks - Convolver::HEAD_SEGMENTS);
 }
 
 TEST(ConvolverTest, ShortIrHasNoTailAndMatchesDirectConvolution) {
