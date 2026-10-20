@@ -472,6 +472,37 @@ static AudioEngine *_sharedInstance = nil;
   self.graphNeedsRebuild = true;
 }
 
+// According to <https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume>:
+// * `shouldResume` only refers to resuming the playback.
+// * We choose to resume recording unconditionally (but see below).
+// Below decision tree reflects this policy.
+// On the long term it would be useful to make this policy configurable.
+static BOOL
+shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BOOL hasSources)
+{
+  BOOL resumeEngine = NO;
+
+  if (hasInput) {
+    if (hasSources) {
+      if (shouldPlaybackResume) {
+        // Resume recording and playback.
+        return YES;
+      } else {
+        // TODO: Ideally, we would only resume recording and not playback,
+        // but it would be complex to implement and the usecase is not common,
+        // therefore not resuming the engine is safer.
+        return NO;
+      }
+    } else {
+      // There is only recording to resume.
+      return YES;
+    }
+  } else {
+    // There is only playback to resume.
+    return hasSources && shouldPlaybackResume;
+  }
+}
+
 - (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
 {
   std::scoped_lock lock(_engineLock);
@@ -481,35 +512,8 @@ static AudioEngine *_sharedInstance = nil;
     return AudioEngineInterruptionEndOutcomeNoOp;
   }
 
-  const BOOL hasInput = [self hasInput];
-  const BOOL hasSources = [self hasSources];
-  BOOL resumeEngine = NO;
-
-  // According to <https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume>:
-  // * `shouldResume` only refers to resuming the playback.
-  // * We choose to resume recording unconditionally (but see below).
-  // Below decision tree reflects this policy.
-  // On the long term it would be useful to make this policy configurable.
-
-  if (hasInput) {
-    if (hasSources) {
-      if (shouldResume) {
-        // Resume recording and playback.
-        resumeEngine = YES;
-      } else {
-        // TODO: Ideally, we would only resume recording and not playback,
-        // but it would be complex to implement and the usecase is not common,
-        // therefore not resuming the engine is safer.
-        resumeEngine = NO;
-      }
-    } else {
-      // There is only recording to resume.
-      resumeEngine = YES;
-    }
-  } else {
-    // There is only playback to resume.
-    resumeEngine = hasSources && shouldResume;
-  }
+  const BOOL resumeEngine =
+      shouldEngineResumeAfterInterruption(shouldResume, [self hasInput], [self hasSources]);
 
   if (!resumeEngine) {
     [self stopEngine];

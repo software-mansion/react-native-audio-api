@@ -197,7 +197,7 @@ Some USB microphones also expose a headphone output, which the platform then pre
 
 ### Resume recording after an interruption <IOS /> {#resumerecordingafteraninterruption}
 
-After the app has been interrupted by a phone call, for example, it is possible to *resume* an audio recording while the app is still backgrounded. It is impossible to start a new recording session from the background. Due to iOS policies and privacy features, the app has to be configured appropriately first:
+After the app has been interrupted by, for example a phone call, it is possible to *resume* an audio recording while the app is still backgrounded. It is impossible to start a new recording session from the background. Due to iOS policies and privacy features, the app has to be configured appropriately first:
 
 - Ensure the session options (set via [`setAudioSessionOptions`](#setaudiosessionoptions)) allow recording and make the app resilient to interruptions from other apps. Refer to the [session configuration guidelines](#sessionoptionsconfigurationguidelines). The following settings are a useful starting point:
   - `iosCategory` set to `record` or `playAndRecord`, so the session can record. These categories also allow background recording. An incompatible category leads to a [`cannotStartPlaying`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotstartplaying) error.
