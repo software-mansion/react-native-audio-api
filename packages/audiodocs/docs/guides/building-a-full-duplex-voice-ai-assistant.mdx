@@ -7,24 +7,25 @@ import Mermaid from '@theme/Mermaid';
 
 # Full-duplex voice chat
 
-In this section, we will get familiar with the Audio API features used in a voice conversation: recording the microphone, playing streamed replies, and handling interruptions. We will focus on the audio side of an app that already has an AI connection.
+In this section, we will explore microphone capture, streamed playback, and interruptions in a voice conversation. We will focus on the Audio API, assuming the app already has an AI connection.
 
 ## Full-duplex audio
 
-**Full duplex** means recording and playback can happen at the same time. The microphone stays active while the assistant speaks, so the user does not have to wait for a reply to finish before speaking again.
+**Full duplex** means recording and playback happen at the same time: the microphone stays active while the assistant speaks, allowing the user to interrupt.
 
-That also means the microphone can pick up the speaker's output. **Acoustic echo cancellation (AEC)** reduces that playback audio in the captured signal. It is separate from speech detection: AEC does not decide when the user is speaking or cancel an AI response.
+**Acoustic echo cancellation (AEC)** reduces loudspeaker audio picked up by the microphone. It does not detect user speech or cancel an AI response.
 
 Three interfaces have different jobs in this audio path:
 
 - [`AudioManager`](../system/audio-manager.mdx) configures the system audio session and route—the speaker, earpiece, or headset used for the conversation.
 - [`AudioRecorder`](../inputs/audio-recorder.mdx) captures microphone audio and delivers it to the app.
-- [`AudioContext`](../core/audio-context.mdx) manages the playback graph: connected audio nodes that carry the reply to the output.
+- [`AudioContext`](../core/audio-context.mdx) manages the playback graph—connected audio nodes carrying replies to the output.
 
-Microphone callbacks, audio decoding, and streamed playback are built-in RNAA features. The parts that need more attention are matching audio formats, tuning chunk size, checking routing and echo behavior on each device, and preventing cancelled replies from playing again. We will explain those boundaries beside the relevant APIs below.
+RNAA provides capture, decoding, and queued playback. The app coordinates audio formats, chunk timing, and cancelled replies; routing and echo behavior need device testing.
 
-<Mermaid
-  value={`%%{init: {"flowchart": {"htmlLabels": false}}}%%
+<div style={{ marginBottom: '2rem' }}>
+  <Mermaid
+    value={`%%{init: {"flowchart": {"htmlLabels": false}}}%%
 flowchart TB
   accTitle: Full-duplex voice audio
   accDescr: Microphone capture continues while replies from the AI connection play through the audio context.
@@ -35,19 +36,22 @@ flowchart TB
   class microphone,playback device
   class connection service
 `}
-/>
+  />
+</div>
 
-The examples below illustrate these interfaces, rather than a complete application. The communication settings described here require Android 12 (API 31)+ or iOS 14+.
+:::info
+The examples below illustrate these interfaces, but bear in mind that the communication settings described here require Android 12 (API 31)+ or iOS 14+.
+:::
 
 ## Voice processing and routing
 
-Recording and playback working independently does not mean the device is configured for a conversation. Voice audio involves both the system session and the individual input and output streams.
+Voice audio needs both a communication session and suitable capture and playback settings.
 
 ### The communication session
 
-`AudioManager` controls how the app uses the device's audio system. On iOS, `playAndRecord` allows capture and playback together, and `voiceChat` selects the voice-chat session mode. On Android, `inCommunication` requests communication mode. Activating that Android session acquires temporary audio focus—permission to take priority over competing audio—and applies the communication-device preference.
+`AudioManager` configures the system session. On iOS, `playAndRecord` allows simultaneous capture and playback, with `voiceChat` selecting voice-chat mode. On Android, `inCommunication` requests communication mode; activating the session requests temporary audio focus—priority over competing audio—and applies the preferred communication route.
 
-With microphone permission already granted, a speakerphone configuration looks like this:
+For a speakerphone conversation:
 
 ```tsx
 import { AudioManager } from 'react-native-audio-api';
@@ -63,11 +67,11 @@ AudioManager.setSystemOptions({
 await AudioManager.setAudioSessionActivity(true);
 ```
 
-The configuration must be in place before creating the audio context or starting capture. Microphone permission is still required; Android communication routing also needs `MODIFY_AUDIO_SETTINGS`. See [permissions](../other/non-expo-permissions.mdx) for the native declarations.
+Configure and activate the session before starting playback or capture. Grant microphone permission and declare Android's `MODIFY_AUDIO_SETTINGS`; see [permissions](../other/non-expo-permissions.mdx).
 
 ### Capture and output settings
 
-[`AudioRecorder`](../inputs/audio-recorder.mdx#audiorecorderoptions) selects the microphone processing path. Android's `voiceCommunication` preset requests communication-oriented capture; `iosVoiceProcessing` opts into Apple's voice-processing input/output path. RNAA handles the native voice-processing setup.
+[`AudioRecorder`](../inputs/audio-recorder.mdx#audiorecorderoptions) requests communication-oriented capture on Android and Apple's voice-processing input/output path on iOS:
 
 ```tsx
 import { AudioRecorder } from 'react-native-audio-api';
@@ -78,7 +82,7 @@ const recorder = new AudioRecorder({
 });
 ```
 
-[`AudioContext`](../core/audio-context.mdx#audiocontextoptions) has a separate Android output setting. **For full-duplex voice chat, prefer `androidOutputProfile: 'voiceCommunication'`.** It marks the output stream as voice communication and speech rather than ordinary media playback.
+[`AudioContext`](../core/audio-context.mdx#audiocontextoptions) separately classifies Android output. **`androidOutputProfile: 'voiceCommunication'` is strongly recommended for full-duplex chat:** it labels playback as voice communication and speech.
 
 ```tsx
 import { AudioContext } from 'react-native-audio-api';
@@ -89,32 +93,46 @@ const audioContext = new AudioContext({
 });
 ```
 
-The output profile is fixed when the context is created and is ignored on iOS. It does **not** acquire audio focus, activate communication mode, or select a speaker by itself. Changing that one option is not a substitute for configuring the session and recorder.
-
-On **Android**, the settings can also be combined differently: keep the `inCommunication` session, speaker request, and `voiceCommunication` microphone preset, but create the context with `androidOutputProfile: 'media'` (the default). This keeps media-classified playback while the communication session is active.
-
-`'media'` is not a higher-quality audio switch. Media playback may receive **no echo cancellation**, even with an active communication session and voice-processing capture; this is heavily device-dependent. It also may not follow the requested communication route. Check both routing and echo behavior on the devices you support; this Android option has no equivalent effect on iOS.
+This Android-only profile is fixed per context; session activation and routing remain [`AudioManager`](../system/audio-manager.mdx)'s job.
 
 :::caution Echo suppression is device-dependent
-These settings request platform voice processing; they do not guarantee hardware AEC or eliminate all echo. Results depend on the device, OS, selected route, volume, and room. Check acoustic behavior on physical devices.
+Platform voice processing does not guarantee hardware AEC or echo-free audio. Results depend on the device, OS, route, volume, and room. Test on physical devices.
 :::
+
+<details>
+<summary>Android-only alternative: media output</summary>
+
+`'media'` classifies playback like music or video, not a different physical speaker. It can still use the loudspeaker and sound fuller, less like a phone call, on some Android devices.
+
+Keep the communication session and voice-capture settings, but replace the context configuration:
+
+```tsx
+const audioContext = new AudioContext({
+  sampleRate: 24_000,
+  androidOutputProfile: 'media',
+});
+```
+
+This is a device-specific alternative, not a guaranteed quality upgrade. **Media output may lack AEC even in a communication session.** Verify echo suppression and routing. This option is ignored on iOS.
+
+</details>
 
 ### The selected route
 
-A reply playing through the earpiece instead of the loudspeaker can look like a playback-volume problem. Before changing the audio graph, check where Android is actually sending communication audio:
+A quiet reply may be using the earpiece instead of the loudspeaker. Check Android's selected route before adjusting volume:
 
 ```tsx
 const device = await AudioManager.getCommunicationDevice();
 console.log(device?.name, device?.category);
 ```
 
-`communicationDevice: 'speaker'` is a route request, not proof of the active route. `getCommunicationDevice()` reports the selected device. Accessories and system decisions can change that route; `routeChange` events let the app react without guessing from how loud the reply sounds.
+`communicationDevice: 'speaker'` requests a route; [`getCommunicationDevice()`](../system/audio-manager.mdx#getcommunicationdevice) verifies it. Observe later changes with [`routeChange`](../system/audio-manager.mdx#systemeventname) through [`addSystemEventListener()`](../system/audio-manager.mdx#addsystemeventlistener).
 
 ## Microphone data
 
-[`onAudioReady`](../inputs/audio-recorder.mdx#onaudioready) delivers chunks of **PCM audio**: numeric samples describing the sound, rather than a compressed file such as MP3. Each callback includes an [`AudioBuffer`](../sources/audio-buffer.mdx) and `numFrames`, the number of valid audio frames in that callback.
+[`onAudioReady`](../inputs/audio-recorder.mdx#onaudioready) delivers **PCM audio**—uncompressed numeric samples—in an [`AudioBuffer`](../sources/audio-buffer.mdx). `numFrames` gives the valid frame count.
 
-An **audio frame** contains one sample for each channel at a moment in time. Mono has one channel; stereo has two. **Sample rate** tells us how many frames represent one second of sound.
+An **audio frame** contains one sample per channel; mono has one channel, stereo two. **Sample rate** is the number of frames per second.
 
 ```tsx
 recorder.onAudioReady(
@@ -127,77 +145,130 @@ recorder.onAudioReady(
 await recorder.start();
 ```
 
-Channel indices start at zero, so `getChannelData(0)` returns the mono channel as a `Float32Array`. Its samples are floating-point values, normally between `-1` and `1`; they are not already PCM16 bytes or base64 text.
+[`getChannelData()`](../sources/audio-buffer.mdx#getchanneldata) returns a `Float32Array`, normally with values between `-1` and `1`—not PCM16 bytes or base64 text.
 
-At 24,000 frames per second, a 2,400-frame chunk represents 100 ms of audio. Smaller chunks can reduce capture batching delay but mean more frequent callbacks and processing. Larger chunks reduce that overhead while making the app wait longer for each batch. This is a tradeoff, not a universal chunk size.
+Here, 2,400 frames at 24 kHz represent 100 ms. Smaller chunks reduce batching delay but increase callback overhead; larger chunks do the opposite.
 
-**If captured speech sounds too fast, too slow, or distorted**, check the format expected by the receiving service. Use the callback's actual `buffer.sampleRate`, channel data, and `numFrames` when preparing it. RNAA delivers the samples; the app is responsible for matching the service's encoding and format.
+**Speech too fast, too slow, or distorted?** Match the service's encoding and format using the callback's actual `buffer.sampleRate`, channel data, and `numFrames`.
 
 ## Streamed playback
 
-An AI reply often arrives as many small pieces rather than one complete recording. [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx) is a playback source that consumes a queue of decoded audio buffers in order. Unlike creating a separate source for every chunk, it gives the reply one continuous playback path.
+[`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx) plays a queue of decoded buffers in order, making it suitable for replies arriving in pieces.
 
-`connect()` attaches the source to the graph. `audioContext.destination` is the graph's output to the device:
+Use [`connect()`](../core/audio-node.mdx#connect) to send the queue to [`audioContext.destination`](../core/base-audio-context.mdx#properties), the device output:
 
 ```tsx
 const playbackQueue = audioContext.createBufferQueueSource();
 playbackQueue.connect(audioContext.destination);
 ```
 
-[`decodePCMInBase64()`](../core/base-audio-context.mdx#decodepcminbase64) converts base64-encoded PCM16 into an `AudioBuffer`. Here, `audioChunk` is a base64 string received by the app, containing mono PCM16 at 24 kHz:
+[`decodePCMInBase64()`](../core/base-audio-context.mdx#decodepcminbase64) converts base64 PCM16 into an `AudioBuffer`. This example receives mono PCM16 at 24 kHz:
 
 ```tsx
 const replyBuffer = await audioContext.decodePCMInBase64(audioChunk, 24_000, 1);
 const bufferId = playbackQueue.enqueueBuffer(replyBuffer);
 ```
 
-The rate and channel count describe the **incoming audio**, not a request to convert arbitrary input into that format. Incorrect values can produce the wrong playback speed or channel layout. RNAA decodes the audio; it does not infer the service's audio format.
+The rate and channel count must describe the **incoming audio**; RNAA does not infer them. Incorrect values change playback speed or channel layout.
 
-Once the first buffer is ready, playback can begin:
+Start after the first buffer is ready:
 
 ```tsx
 playbackQueue.start();
 ```
 
-Call `start()` only once for that queue source, not once per chunk or reply. More buffers can be enqueued while it is playing. An empty queue waits for more audio, so it can also be reused for later replies in the same conversation.
+Call [`start()`](../sources/audio-buffer-queue-source-node.mdx#start--start) once per source. The queue waits when empty and can be reused across replies.
 
-**If pieces of a reply play in the wrong order**, check the decoding flow. The queue preserves enqueue order, but independent asynchronous decode calls may finish in a different order from arrival. The app needs to serialize decoding and enqueueing; the queue cannot restore the original order afterwards. Gaps can also mean the queue is waiting for data, rather than that another `start()` call is needed.
+:::tip Keep chunks in order
+The queue preserves enqueue order. Chain asynchronous decoding to preserve arrival order. A gap may mean missing data, not a need to call `start()` again.
+:::
+
+For each arriving chunk:
+
+```tsx
+let decoding = Promise.resolve();
+
+function enqueueReplyChunk(audioChunk: string) {
+  decoding = decoding.then(async () => {
+    const buffer = await audioContext.decodePCMInBase64(audioChunk, 24_000, 1);
+    playbackQueue.enqueueBuffer(buffer);
+  });
+  // Handle decode failures in your app.
+}
+```
 
 ## Interruptions and audio lifetime
 
 ### When the user speaks over a reply
 
-Interrupting the assistant by speaking is often called **barge-in**. The microphone must remain active for speech detection to work while the reply plays. Once the app receives that speech-detection signal, it can discard the current playback:
+**Barge-in** means speaking over the assistant. Keep capturing, and use the app's speech-detection signal to invalidate the reply and clear playback:
 
 ```tsx
-playbackQueue.clearBuffers();
+let activeReplyId: string | null = null; // Set when a new reply begins.
+
+function interruptReply() {
+  activeReplyId = null;
+  playbackQueue.clearBuffers();
+}
 ```
 
-`clearBuffers()` removes queued audio without stopping the recorder or permanently stopping the source. The next reply can use the same queue. By contrast, `stop()` ends the source's playback; calling `start()` again on that source is not allowed.
+Unlike `stop()`, [`clearBuffers()`](../sources/audio-buffer-queue-source-node.mdx#clearbuffers) leaves the source reusable and does not stop recording.
 
-**If the assistant starts speaking again just after being interrupted**, clearing the queue may not be the missing piece. A decode that was already in progress can finish and enqueue old audio, and the connection can still deliver chunks from the interrupted reply. The app must reject those stale results as well as clear the queue.
+**Audio returning after interruption?** Pending decodes or late chunks may restore it. Check the original reply ID before and after decoding:
 
-A common approach is to label decoding work with the current reply's ID, or an identifier that changes whenever playback is cancelled. A finished decode is only enqueued if its label is still current. Clearing local playback does not cancel the service's response.
+```tsx
+async function decodeCurrentChunk(replyId: string, audioChunk: string) {
+  if (replyId !== activeReplyId) return;
+  const buffer = await audioContext.decodePCMInBase64(audioChunk, 24_000, 1);
+  if (replyId === activeReplyId) playbackQueue.enqueueBuffer(buffer);
+}
+```
+
+Use this guarded decode in the ordered helper, replacing its earlier version:
+
+```tsx
+function enqueueReplyChunk(replyId: string, audioChunk: string) {
+  decoding = decoding.then(() => decodeCurrentChunk(replyId, audioChunk));
+}
+```
+
+Pass each chunk's original reply ID; set `activeReplyId` only when a new reply begins. Cancel the service's response separately from local playback.
 
 ### What has finished playing?
 
-`enqueueBuffer()` returns a buffer ID. The queue's [`onbufferended`](../sources/audio-buffer-queue-source-node.mdx#onbufferended) callback reports completed buffers by that ID, so the app can match them to their durations. Clearing buffers does not emit completion events for the removed audio.
+[`enqueueBuffer()`](../sources/audio-buffer-queue-source-node.mdx#enqueuebuffer) returns an ID reported by [`onbufferended`](../sources/audio-buffer-queue-source-node.mdx#onbufferended) on completion. To track one reply, install the handler before enqueueing:
 
-This matters when updating an AI conversation after an interruption: audio received or enqueued is not necessarily audio already played. Counting completed buffers gives a conservative playback boundary, but omits any partly played buffer and is not a sample-accurate measure of what the listener heard. Device output latency also separates rendering from hearing the sound.
+```tsx
+const durations = new Map<string, number>();
+let completedSeconds = 0;
+playbackQueue.onbufferended = ({ bufferId }) => {
+  completedSeconds += durations.get(bufferId) ?? 0;
+  durations.delete(bufferId);
+};
+```
+
+Replace the existing enqueue call to record each buffer's duration:
+
+```tsx
+const bufferId = playbackQueue.enqueueBuffer(replyBuffer);
+durations.set(bufferId, replyBuffer.duration);
+```
+
+Reset tracking per reply and discard cleared buffers: they emit no completion event. Completed buffers give a conservative playback boundary, not exact listening time; partial playback and device latency are excluded.
 
 ### When the system interrupts audio
 
-A phone call or another app taking audio focus is different from user barge-in. [`AudioManager` system events](../system/audio-manager.mdx#addsystemeventlistener), such as `interruption`, `duck`, and `routeChange`, tell the app about changes outside its own conversation. Ducking is a request to reduce audio volume. The app decides whether to pause or end the conversation and when it is safe to resume; clearing a reply alone does not recover a lost session.
+Phone calls and competing apps differ from barge-in. [`AudioManager` system events](../system/audio-manager.mdx#addsystemeventlistener) report `interruption`, `duck` (reduce volume), and `routeChange`. The app decides when to pause or resume; clearing playback does not restore a lost session.
 
-Keep one context and recorder for the active audio path rather than creating them for every chunk. When the conversation ends, stop recording, release the playback source and callbacks, and deactivate the session. Suspend the context if it will be reused, or close it when it is no longer needed. Otherwise, an idle-looking screen can still hold microphone or audio resources.
+### When the conversation ends
+
+Reuse one context and recorder across chunks. When finished, stop recording, release the source and callbacks, and deactivate the session. Suspend a reusable context or close it permanently to release audio resources.
 
 ## Summary
 
 Full-duplex voice chat combines a few Audio API responsibilities:
 
-- `AudioManager` configures the communication session and route.
-- `AudioRecorder` supplies microphone samples through callbacks.
-- `AudioContext` and `AudioBufferQueueSourceNode` decode and play streamed replies.
+- [`AudioManager`](../system/audio-manager.mdx) configures the communication session and route.
+- [`AudioRecorder`](../inputs/audio-recorder.mdx) supplies microphone samples through callbacks.
+- [`AudioContext`](../core/audio-context.mdx) and [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx) decode and play streamed replies.
 - The app coordinates audio formats, decode ordering, and interruption decisions.
-
-Understanding those boundaries helps distinguish an audio-data problem from a routing or conversation-state problem. See the [AudioManager](../system/audio-manager.mdx), [AudioRecorder](../inputs/audio-recorder.mdx), and [queue source](../sources/audio-buffer-queue-source-node.mdx) references for the individual APIs.
