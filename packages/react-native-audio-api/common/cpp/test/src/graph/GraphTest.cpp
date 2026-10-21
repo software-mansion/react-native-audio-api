@@ -702,4 +702,28 @@ TEST_F(GraphTest, RenegotiateNode_BatchedSourceWideningAfterConnect) {
       << "A source widened to stereo in the same batch as its connect must leave a stereo buffer";
 }
 
+TEST_F(GraphTest, RenegotiateNode_TriangleReadsSiblingAfterItNarrows) {
+  // source → join, source → sibling → join, with source → join connected
+  // first, so a depth-first cascade reaches `join` before `sibling`. `join`
+  // must still read the narrowed width of `sibling`, not the stale one.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/2);
+  auto *sibling = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  auto *join = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, join).is_ok());
+  ASSERT_TRUE(graph->addEdge(source, sibling).is_ok());
+  ASSERT_TRUE(graph->addEdge(sibling, join).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(sibling), 2u);
+  ASSERT_EQ(channelsOf(join), 2u);
+
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(1);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(sibling), 1u);
+  EXPECT_EQ(channelsOf(join), 1u) << "Both inputs of the join are mono now";
+}
+
 } // namespace audioapi::utils::graph
