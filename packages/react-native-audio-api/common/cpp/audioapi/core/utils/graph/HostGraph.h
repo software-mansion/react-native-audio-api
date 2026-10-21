@@ -56,34 +56,6 @@ class HostGraph {
     bool visit(size_t currentTerm);
   };
 
-  /// Per-node scratch for channel-layout negotiation (host thread only).
-  ///
-  /// Follows the same generation-stamp pattern as `TraversalState`: each
-  /// `addEdge` / `removeEdge` bumps `HostGraph::channelLayoutTerm_`, and nodes
-  /// visited in that pass stamp `term` with the current value. A node is
-  /// considered resolved for the pass when `term == channelLayoutTerm_`.
-  ///
-  /// During the pass, `outputChannelNumber` stores how many channels this
-  /// node will present on upstream connections (toward AudioDestinationNode)
-  /// after negotiation — including overrides such as StereoPanner's fixed
-  /// stereo output. Downstream nodes read these pending widths from their
-  /// inputs instead of live output buffers, so multiple connects in one batch
-  /// (before the AGEvent applies buffer swaps on the audio thread) still see
-  /// consistent layouts. Values are never read on the audio thread.
-  struct ChannelLayoutState {
-    size_t term = 0;
-    size_t outputChannelNumber = 0;
-
-    [[nodiscard]] bool isResolvedFor(size_t currentTerm) const {
-      return term == currentTerm;
-    }
-
-    void setResolved(size_t currentTerm, size_t resolvedOutputChannelNumber) {
-      term = currentTerm;
-      outputChannelNumber = resolvedOutputChannelNumber;
-    }
-  };
-
   /// A single node in the HostGraph.
   struct HostVertex {
     std::vector<HostVertex *> inputs;  // reversed edges
@@ -98,7 +70,14 @@ class HostGraph {
     /// scrubbed when a linked node is disposed.
     std::vector<HostVertex *> linkedNodes;
     TraversalState traversalState;
-    ChannelLayoutState channelLayout;
+    /// Visited stamp for channel-negotiation passes; `HostGraph::channelLayoutTerm_`
+    /// is bumped once per structural change.
+    TraversalState channelLayoutTraversal;
+    /// Width of the last negotiated buffer queued for the audio thread, seeded
+    /// in `addNode` from the buffer built at construction (host thread only).
+    /// Negotiation compares against this, not the live buffer: the live one
+    /// still lacks swaps queued earlier in the same render quantum.
+    size_t pendingChannelCount = 0;
     std::shared_ptr<NodeHandle> handle; // shared handle bridging to AudioGraph
     bool ghost = false; // kept for cycle detection until AudioGraph confirms deletion
 
