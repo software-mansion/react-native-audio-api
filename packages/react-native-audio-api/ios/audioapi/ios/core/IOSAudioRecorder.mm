@@ -121,9 +121,6 @@ void IOSAudioRecorder::handleInputNotification(AudioEngineInputNotification noti
     case AudioEngineInputNotificationHardwareChanged:
       handleHardwareChange();
       return;
-    case AudioEngineInputNotificationCaptureLost:
-      handleRecordingLost();
-      return;
   }
 }
 
@@ -138,7 +135,7 @@ void IOSAudioRecorder::handleHardwareChange()
     return;
   }
 
-  if (!formatChanged && !isFileSessionSuspended()) {
+  if (!formatChanged) {
     if (state_.load(std::memory_order_acquire) == RecorderState::Recording) {
       [nativeRecorder_ setInputArmed:true];
     }
@@ -149,33 +146,6 @@ void IOSAudioRecorder::handleHardwareChange()
   if (result.is_err()) {
     reportError("iOS recorder error: " + result.unwrap_err());
   }
-}
-
-void IOSAudioRecorder::handleRecordingLost()
-{
-  if (isIdle()) {
-    return;
-  }
-
-  [nativeRecorder_ setInputArmed:false];
-
-  std::scoped_lock lock(fileWriterMutex_);
-  if (!usesFileOutput() || fileWriter_ == nullptr) {
-    return;
-  }
-
-  auto suspendResult = fileWriter_->suspendSession();
-  if (suspendResult.is_err()) {
-    NSLog(
-        @"Error while finalizing recording segment after capture was lost: %s",
-        suspendResult.unwrap_err().c_str());
-  }
-}
-
-bool IOSAudioRecorder::isFileSessionSuspended() const
-{
-  std::scoped_lock lock(fileWriterMutex_);
-  return usesFileOutput() && fileWriter_ != nullptr && fileWriter_->isSessionSuspended();
 }
 
 Result<NoneType, std::string> IOSAudioRecorder::reprepareForLiveInput()

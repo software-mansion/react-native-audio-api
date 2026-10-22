@@ -43,10 +43,12 @@ const Record: FC = () => {
       return;
     }
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'voiceChat',
-      iosOptions: ['allowBluetoothHFP'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'voiceChat',
+        options: ['allowBluetoothHFP'],
+      },
     });
 
     try {
@@ -108,10 +110,12 @@ const Record: FC = () => {
       return;
     }
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'default',
-      iosOptions: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'default',
+        options: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
+      },
     });
 
     try {
@@ -170,10 +174,12 @@ const Record: FC = () => {
   };
 
   const onStartReplay = async () => {
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playback',
-      iosMode: 'default',
-      iosOptions: [],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playback',
+        mode: 'default',
+        options: [],
+      },
     });
 
     try {

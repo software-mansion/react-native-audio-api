@@ -121,10 +121,12 @@ const Record: FC = () => {
       setHasPermissions(true);
     }
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'default',
+        options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
+      },
     });
 
     try {

@@ -56,7 +56,6 @@ OpenFileResult AudioFileWriter::openFile(const StreamFormat &streamFormat) {
     sessionStem_ = recording_file_name::sessionStem(fileProperties_);
     sessionFilePaths_.clear();
     openedFileCount_ = 0;
-    sessionSuspended_ = false;
     finishedFilesSizeMB_ = 0.0;
     finishedFilesDurationSec_ = 0.0;
   }
@@ -65,19 +64,16 @@ OpenFileResult AudioFileWriter::openFile(const StreamFormat &streamFormat) {
 }
 
 CloseFileResult AudioFileWriter::closeFile() {
-  if (!isSessionSuspended()) {
-    if (!isFileOpen()) {
-      return CloseFileResult::Err("file is not open: " + getFilePath());
-    }
+  if (!isFileOpen()) {
+    return CloseFileResult::Err("file is not open: " + getFilePath());
+  }
 
-    auto finished = finishCurrentFile();
-    if (finished.is_err()) {
-      return CloseFileResult::Err(finished.unwrap_err());
-    }
+  auto finished = finishCurrentFile();
+  if (finished.is_err()) {
+    return CloseFileResult::Err(finished.unwrap_err());
   }
 
   std::scoped_lock lock(fileMutex_);
-  sessionSuspended_ = false;
   ClosedSession session{
       .filePaths = std::move(sessionFilePaths_),
       .sizeMB = finishedFilesSizeMB_,
@@ -90,14 +86,6 @@ CloseFileResult AudioFileWriter::closeFile() {
 }
 
 OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &streamFormat) {
-  if (isSessionSuspended()) {
-    auto openResult = startNextFile(streamFormat);
-    if (openResult.is_ok()) {
-      std::scoped_lock lock(fileMutex_);
-      sessionSuspended_ = false;
-    }
-    return openResult;
-  }
   if (!isFileOpen()) {
     return OpenFileResult::Err("file is not open");
   }
@@ -129,29 +117,6 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &stream
 
   isFileOpen_.store(true, std::memory_order_release);
   return reprepareResult;
-}
-
-Result<NoneType, std::string> AudioFileWriter::suspendSession() {
-  if (isSessionSuspended()) {
-    return Ok(None);
-  }
-  if (!isFileOpen()) {
-    return Err("file is not open: " + getFilePath());
-  }
-
-  auto finished = finishCurrentFile();
-  if (finished.is_err()) {
-    return Err(finished.unwrap_err());
-  }
-
-  std::scoped_lock lock(fileMutex_);
-  sessionSuspended_ = true;
-  return Ok(None);
-}
-
-bool AudioFileWriter::isSessionSuspended() const {
-  std::scoped_lock lock(fileMutex_);
-  return sessionSuspended_;
 }
 
 OpenFileResult AudioFileWriter::startNextFile(const StreamFormat &streamFormat) {
@@ -202,7 +167,7 @@ CloseEncoderResult AudioFileWriter::finishCurrentFile() {
 }
 
 std::string AudioFileWriter::fileStem(size_t fileNumber) const {
-  if (rotatesFiles() || fileNumber > 1) {
+  if (rotatesFiles()) {
     return recording_file_name::segmentStem(sessionStem_, fileNumber);
   }
   return sessionStem_;

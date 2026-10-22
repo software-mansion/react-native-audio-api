@@ -58,8 +58,9 @@
 - (void)settleStateAfterFailedStart;
 - (void)resumeAfterRebuild;
 - (dispatch_block_t)inputNotificationBlock:(AudioEngineInputNotification)notification;
-- (AudioEngineInterruptionEndOutcome)resumeAfterInterruption:(bool)shouldResume
-                                                 notifyInput:(dispatch_block_t *)notifyInput;
+- (AudioEngineInterruptionEndOutcome)rebuildAfterInterruption:(bool)shouldResume
+                                                 readyToStart:(BOOL *)readyToStart;
+- (AudioEngineInterruptionEndOutcome)startAfterInterruption;
 
 @end
 
@@ -503,70 +504,84 @@ static AudioEngine *_sharedInstance = nil;
   self.graphNeedsRebuild = true;
 }
 
+// According to <https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume>:
+// * `shouldResume` only refers to resuming the playback.
+// * We choose to resume recording unconditionally (but see below).
+// Below decision tree reflects this policy.
+// On the long term it would be useful to make this policy configurable.
+static BOOL
+shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BOOL hasSources)
+{
+  if (hasInput) {
+    if (hasSources) {
+      if (shouldPlaybackResume) {
+        // Resume recording and playback.
+        return YES;
+      } else {
+        // TODO: Ideally, we would only resume recording and not playback,
+        // but it would be complex to implement and the usecase is not common,
+        // therefore not resuming the engine is safer.
+        return NO;
+      }
+    } else {
+      // There is only recording to resume.
+      return YES;
+    }
+  } else {
+    // There is only playback to resume.
+    return hasSources && shouldPlaybackResume;
+  }
+}
+
 - (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
 {
   AudioEngineInterruptionEndOutcome outcome;
+  BOOL readyToStart = NO;
   dispatch_block_t notifyInput = nil;
 
   {
     std::scoped_lock lock(_engineLock);
-    outcome = [self resumeAfterInterruption:shouldResume notifyInput:&notifyInput];
+    outcome = [self rebuildAfterInterruption:shouldResume readyToStart:&readyToStart];
+
+    if (outcome == AudioEngineInterruptionEndOutcomePaused || readyToStart) {
+      notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged];
+    }
   }
 
+  // Before starting: the input's consumers must match the new format before the first render.
   if (notifyInput != nil) {
     notifyInput();
   }
 
-  return outcome;
+  if (!readyToStart) {
+    return outcome;
+  }
+
+  std::scoped_lock lock(_engineLock);
+  return [self startAfterInterruption];
 }
 
-/// @brief Resumes an engine the system interrupted, or leaves it `Paused` when policy says not to.
-/// @discussion Expects `_engineLock` to be held. `notifyInput` receives what the registered
-/// input must be told, or stays nil; the caller runs it after releasing the lock.
-- (AudioEngineInterruptionEndOutcome)resumeAfterInterruption:(bool)shouldResume
-                                                 notifyInput:(dispatch_block_t *)notifyInput
+/// @brief Rebuilds an interrupted engine for resuming, or leaves it `Paused` when policy says
+/// not to. Lock held.
+/// @discussion Sets @p readyToStart when the rebuilt engine should be started; the returned
+/// outcome is final only when it is not set.
+- (AudioEngineInterruptionEndOutcome)rebuildAfterInterruption:(bool)shouldResume
+                                                 readyToStart:(BOOL *)readyToStart
 {
   NSError *error = nil;
+  *readyToStart = NO;
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
     return AudioEngineInterruptionEndOutcomeNoOp;
   }
 
-  const BOOL hasInput = [self hasInput];
-  const BOOL hasSources = [self hasSources];
-  BOOL resumeEngine = NO;
-
-  // According to <https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume>:
-  // * `shouldResume` only refers to resuming the playback.
-  // * We choose to resume recording unconditionally (but see below).
-  // Below decision tree reflects this policy.
-  // On the long term it would be useful to make this policy configurable.
-
-  if (hasInput) {
-    if (hasSources) {
-      if (shouldResume) {
-        // Resume recording and playback.
-        resumeEngine = YES;
-      } else {
-        // TODO: Ideally, we would only resume recording and not playback,
-        // but it would be complex to implement and the usecase is not common,
-        // therefore not resuming the engine is safer.
-        resumeEngine = NO;
-      }
-    } else {
-      // There is only recording to resume.
-      resumeEngine = YES;
-    }
-  } else {
-    // There is only playback to resume.
-    resumeEngine = hasSources && shouldResume;
-  }
+  const BOOL resumeEngine =
+      shouldEngineResumeAfterInterruption(shouldResume, [self hasInput], [self hasSources]);
 
   if (!resumeEngine) {
     [self stopEngine];
     [self rebuildAudioEngine];
     self.state = AudioEngineState::AudioEngineStatePaused;
-    *notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged];
     return AudioEngineInterruptionEndOutcomePaused;
   }
 
@@ -582,10 +597,28 @@ static AudioEngine *_sharedInstance = nil;
     NSLog(
         @"Error while materializing the audio input node after interruption: missing live input format");
     self.state = AudioEngineState::AudioEngineStateInterrupted;
-    *notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationCaptureLost];
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
+  // Still Interrupted: startAfterInterruption: runs only if nothing else claimed the engine.
+  self.state = AudioEngineState::AudioEngineStateInterrupted;
+  *readyToStart = YES;
+  return AudioEngineInterruptionEndOutcomeStillInterrupted;
+}
+
+/// @brief Starts the engine rebuilt by rebuildAfterInterruption:, unless it was stopped or
+/// started meanwhile. Lock held.
+- (AudioEngineInterruptionEndOutcome)startAfterInterruption
+{
+  if (self.state == AudioEngineState::AudioEngineStateRunning && [self.audioEngine isRunning]) {
+    return AudioEngineInterruptionEndOutcomeRunning;
+  }
+
+  if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
+    return AudioEngineInterruptionEndOutcomeNoOp;
+  }
+
+  NSError *error = nil;
   [self.audioEngine prepare];
   [self.audioEngine startAndReturnError:&error];
 
@@ -593,14 +626,11 @@ static AudioEngine *_sharedInstance = nil;
     NSLog(
         @"Error while restarting the audio engine after interruption: %@",
         [error debugDescription]);
-    self.state = AudioEngineState::AudioEngineStateInterrupted;
-    *notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationCaptureLost];
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
   self.sessionDeactivationInvalidatedGraph = false;
-  *notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged];
   return AudioEngineInterruptionEndOutcomeRunning;
 }
 
