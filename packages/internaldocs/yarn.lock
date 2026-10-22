@@ -6648,8 +6648,8 @@ __metadata:
 
 "docs-theme@file:../docs-theme::locator=internaldocs%40workspace%3A.":
   version: 0.0.0
-  resolution: "docs-theme@file:../docs-theme#../docs-theme::hash=b7c5f6&locator=internaldocs%40workspace%3A."
-  checksum: 10/c0852315fd2cfa979a2bae93f05523ed8e31779ed648328cf41fffd016edd6f83b708fb977b6528fb4c5386c2837ef7d0c60b02f4a4fec7816d7f1862b672f1e
+  resolution: "docs-theme@file:../docs-theme#../docs-theme::hash=45ad13&locator=internaldocs%40workspace%3A."
+  checksum: 10/378423cee34725c7aa7df5fa7893f4685b9e79ced31e2c54706df96659208c6373ccd35be8f67c405de4be417df1203770a4f2fc6c2dbebd9d9c7b53e901a136
   languageName: node
   linkType: hard
 
