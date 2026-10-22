@@ -358,9 +358,9 @@ CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.ym
 ### Key design decisions
 - Completely standalone — no Gradle, no Xcode, no prebuilt Android libraries needed
 - Sources resolved from `node_modules` (symlinked to `packages/` in yarn workspaces)
-- HostObjects, worklets nodes, AudioContext, and FfmpegDecoder are excluded from the test build
+- HostObjects (except `JsEnumParser.cpp`), AudioContext, and FfmpegDecoder are excluded from the test build. There is no worklets-node filter and no `RN_AUDIO_API_ENABLE_WORKLETS` define; engine sources no longer read that flag
 - HostObject **headers** still compile under `RN_AUDIO_API_TEST`; only their `.cpp` bodies are missing. When a test first links core code that constructs one (e.g. `AudioRecorderCallback` → `AudioBufferHostObject`), the linker fails on the constructor. Fix it with a stub translation unit under `test/src/` that defines just the constructors (see `test/src/AudioBufferHostObjectStub.cpp`), never with an `#if RN_AUDIO_API_TEST` test double inside the production header. The static lib also compiles `jsi/jsi.cpp` so `jsi::HostObject`'s virtuals resolve
-- Compile definitions: `RN_AUDIO_API_ENABLE_WORKLETS=0`, `RN_AUDIO_API_TEST=1` (FFmpeg is off because the define is simply absent)
+- Compile definitions: `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1`, `MA_NO_LIBOPUS=1`, `MA_NO_LIBVORBIS=1` (FFmpeg is off because its define is absent). `add_compile_definitions` is directory-scoped, so every target in this file receives them
 - Google Test auto-fetched via `FetchContent` if not installed locally
 - New test files in `test/src/**/*.cpp` are picked up automatically by glob — no CMakeLists edit needed
 - `jsi.cpp` is compiled into the static lib so library members that reference JSI symbols (e.g. `AudioFileProperties::CreateFromJSIValue`) link when a test first pulls them in; a static-lib member costs nothing unless demanded. If a new test triggers `Undefined symbols: facebook::jsi::...`, the referenced runtime source is missing from the lib — add it there rather than stubbing the symbol
@@ -395,7 +395,7 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | Flag | Android (CMake) | iOS (podspec) | Tests |
 |---|---|---|---|
 | `RN_AUDIO_API_FFMPEG_ENABLED` | `-DRN_AUDIO_API_FFMPEG_ENABLED=1` (only with `enableFFmpeg: true` in the app's package.json) | same | | Not set (off) |
-| `RN_AUDIO_API_ENABLE_WORKLETS` | `-DRN_AUDIO_API_ENABLE_WORKLETS=1/0` | `-DRN_AUDIO_API_ENABLE_WORKLETS=1` | Always set to 0 |
+| `RN_AUDIO_API_ENABLE_WORKLETS` | Not set (engine no longer reads it) | Not set | Not set. `wpt_tests/CMakeLists.txt` still passes `=0` |
 | `RCT_NEW_ARCH_ENABLED` | `-DRCT_NEW_ARCH_ENABLED` | `-DRCT_NEW_ARCH_ENABLED` | Not set |
 | `HAVE_ARM_NEON_INTRINSICS` | Set by CMake SIMD detection | Set by Xcode/Clang for arm64 | Set by CMake SIMD detection |
 | `HAVE_X86_SSE2` | Set by CMake SIMD detection | Not used | Set by CMake SIMD detection |
