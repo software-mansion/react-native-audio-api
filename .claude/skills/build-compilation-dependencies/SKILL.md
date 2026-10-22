@@ -340,6 +340,8 @@ yarn workspace react-native-audio-api test:cpp:extended -- graph
 
 `run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
 
+> **Sanitizer binaries compile every engine translation unit with that sanitizer.** `add_sanitized_tests(<name> <compile-flags> <link-flags>)` builds `tests_<name>` plus `rnaudioapi_<name>` and `rnaudioapi_libs_<name>`. `tsan` uses `-fsanitize=thread`; `asan` uses `-fsanitize=address,undefined`. The plain `rnaudioapi` pair is only for `tests` and the coverage build. TSan misses release/acquire pairs in uninstrumented code, so an uninstrumented engine turns every SPSC hand-off into a false race (`<null>` frames, "As if synchronized via sleep"). ASan and UBSan simply never check a translation unit they did not compile. `AudioThreadGuard.cpp` is compiled into the executable, not the static lib, so its `__SANITIZE_*` macros match that binary. GoogleTest stays the shared uninstrumented target: one gtest cannot be compiled with both sanitizers and with neither.
+
 ### Coverage (Clang / llvm-cov)
 
 ```bash

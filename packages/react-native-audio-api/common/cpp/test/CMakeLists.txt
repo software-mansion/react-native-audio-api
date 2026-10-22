@@ -71,28 +71,40 @@ list(REMOVE_ITEM RNAUDIOAPI_LIBS
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.c"
 )
 
-add_library(rnaudioapi STATIC ${RNAUDIOAPI_SRC} "${JSI_DIR}/jsi/jsi.cpp")
-add_library(rnaudioapi_libs STATIC ${RNAUDIOAPI_LIBS})
+# Defines the static libraries rnaudioapi${suffix} (engine) and
+# rnaudioapi_libs${suffix} (third-party C sources), both compiled with the
+# extra compile options passed after `suffix`.
+function(add_rnaudioapi_libraries suffix)
+  set(engine rnaudioapi${suffix})
+  set(third_party rnaudioapi_libs${suffix})
 
-target_include_directories(rnaudioapi PUBLIC
-  ${ROOT}/packages/react-native-audio-api/common/cpp
-  ${JSI_DIR}
-  "${REACT_NATIVE_DIR}/ReactCommon"
-  "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
-)
+  add_library(${engine} STATIC ${RNAUDIOAPI_SRC} "${JSI_DIR}/jsi/jsi.cpp")
+  add_library(${third_party} STATIC ${RNAUDIOAPI_LIBS})
+  target_compile_options(${engine} PRIVATE ${ARGN})
+  target_compile_options(${third_party} PRIVATE ${ARGN})
 
-if(GTest_FOUND)
-  target_link_libraries(rnaudioapi PUBLIC GTest::gtest GTest::gmock)
-else()
-  target_include_directories(rnaudioapi PUBLIC
-    ${gtest_SOURCE_DIR}/include
-    ${gmock_SOURCE_DIR}/include
+  target_include_directories(${engine} PUBLIC
+    ${ROOT}/packages/react-native-audio-api/common/cpp
+    ${JSI_DIR}
+    "${REACT_NATIVE_DIR}/ReactCommon"
+    "${REACT_NATIVE_DIR}/ReactCommon/callinvoker"
   )
-endif()
 
-target_include_directories(rnaudioapi_libs PUBLIC
-  ${ROOT}/packages/react-native-audio-api/common/cpp
-)
+  if(GTest_FOUND)
+    target_link_libraries(${engine} PUBLIC GTest::gtest GTest::gmock)
+  else()
+    target_include_directories(${engine} PUBLIC
+      ${gtest_SOURCE_DIR}/include
+      ${gmock_SOURCE_DIR}/include
+    )
+  endif()
+
+  target_include_directories(${third_party} PUBLIC
+    ${ROOT}/packages/react-native-audio-api/common/cpp
+  )
+endfunction()
+
+add_rnaudioapi_libraries("")
 
 file(GLOB_RECURSE test_src
   CONFIGURE_DEPENDS
@@ -137,18 +149,22 @@ include(GoogleTest)
 gtest_discover_tests(tests DISCOVERY_MODE PRE_TEST)
 
 if(NOT ENABLE_COVERAGE)
-  # --- Thread Sanitizer build ---
-  add_executable(tests_tsan ${test_src} ${AUDIO_THREAD_GUARD_SRC})
-  target_compile_options(tests_tsan PRIVATE -fsanitize=thread -g -O1)
-  target_link_options(tests_tsan PRIVATE -fsanitize=thread)
-  target_link_libraries(tests_tsan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
+  function(add_sanitized_tests name compile_flags link_flags)
+    add_rnaudioapi_libraries(_${name} ${compile_flags})
+    add_executable(tests_${name} ${test_src} ${AUDIO_THREAD_GUARD_SRC})
+    target_compile_options(tests_${name} PRIVATE ${compile_flags})
+    target_link_options(tests_${name} PRIVATE ${link_flags})
+    target_link_libraries(tests_${name}
+      rnaudioapi_${name}
+      rnaudioapi_libs_${name}
+      GTest::gtest_main
+      GTest::gmock)
+    gtest_discover_tests(tests_${name} DISCOVERY_MODE PRE_TEST)
+  endfunction()
 
-  # --- Address + Undefined Behavior Sanitizer build ---
-  add_executable(tests_asan ${test_src} ${AUDIO_THREAD_GUARD_SRC})
-  target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -g -O1)
-  target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
-  target_link_libraries(tests_asan rnaudioapi rnaudioapi_libs GTest::gtest_main GTest::gmock)
-
-  gtest_discover_tests(tests_tsan DISCOVERY_MODE PRE_TEST)
-  gtest_discover_tests(tests_asan DISCOVERY_MODE PRE_TEST)
+  add_sanitized_tests(tsan "-fsanitize=thread;-g;-O1" "-fsanitize=thread")
+  add_sanitized_tests(
+    asan
+    "-fsanitize=address,undefined;-g;-O1"
+    "-fsanitize=address,undefined")
 endif()
