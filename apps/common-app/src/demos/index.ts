@@ -4,6 +4,7 @@ import PedalBoard from './PedalBoard/PedalBoard';
 import Record from './Record/Record';
 import Crossfade from './Crossfade/Crossfade';
 import VoiceChat from './VoiceChat';
+import Orchestra from './Orchestra';
 
 interface SimplifiedIconProps {
   color?: string;
@@ -49,5 +50,13 @@ export const demos: DemoScreen[] = [
       'Full-duplex AI voice chat with platform echo cancellation and streamed audio.',
     icon: icons.MessagesSquare,
     screen: VoiceChat,
+  },
+  {
+    key: 'Orchestra',
+    title: 'Phone orchestra',
+    subtitle:
+      'Many phones play one piece together: clock sync over WebSocket plus start(when) scheduling. Needs orchestra-server.',
+    icon: icons.Music,
+    screen: Orchestra,
   },
 ] as const;

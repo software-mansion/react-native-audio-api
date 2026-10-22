@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Phone Orchestra</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #1b1e2a;
+    --card: #232736;
+    --raised: #32384d;
+    --line: #3a4056;
+    --text: #fff;
+    --muted: #9aa0b4;
+    --accent: #38ACDD;
+    --danger: #FF7774;
+    --warn: #FFD61E;
+    --ok: #57d68d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; font: 15px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  main { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+
+  header { display: flex; align-items: center; gap: 12px; }
+  h1 { margin: 0; font-size: 22px; }
+  h2 { margin: 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: var(--raised); color: var(--muted); font-size: 13px; }
+  .pill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+  .pill.online::before { background: var(--ok); }
+
+  .top { display: grid; grid-template-columns: 1fr auto; gap: 16px; }
+  @media (max-width: 760px) { .top { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 14px; align-content: start; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+  .now { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  #transport { font-size: 20px; font-weight: 600; }
+  #beat { font-size: 20px; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+  .field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+  .field.grow { flex: 1; min-width: 200px; }
+
+  button, select, input { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--raised); color: var(--text); }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); border-color: var(--accent); }
+  button.danger { background: var(--danger); border-color: var(--danger); }
+  button.small { padding: 4px 10px; font-size: 13px; }
+  select { width: 100%; }
+  input[type=number] { width: 90px; }
+
+  .join { display: flex; gap: 16px; align-items: center; }
+  .join img { border-radius: 6px; background: #fff; flex: none; }
+  .join code { display: block; margin: 6px 0; font-size: 13px; color: var(--accent); }
+  .hint { font-size: 13px; color: var(--muted); max-width: 240px; }
+
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; }
+  td.end, th.end { text-align: right; width: 1%; }
+  .sub { display: block; font-size: 12px; color: var(--muted); }
+  .empty td { color: var(--muted); text-align: center; padding: 24px; }
+  .stale td:not(.end) { opacity: 0.4; }
+  tr.muted td:not(.end) { opacity: 0.35; }
+  button.mute.on { background: var(--danger); border-color: var(--danger); }
+  .warn { color: var(--warn); }
+  .bad { color: var(--danger); }
+
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 3px; vertical-align: middle; }
+  details.parts { position: relative; }
+  details.parts > summary { cursor: pointer; list-style: none; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--raised); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+  details.parts > summary::-webkit-details-marker { display: none; }
+  details.parts[open] > .part-list { position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; min-width: 280px; max-height: 360px; overflow: auto; padding: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px #0008; }
+  .part-list label { display: flex; gap: 8px; align-items: center; padding: 4px 2px; white-space: nowrap; }
+  .part-list .shortcuts { display: flex; gap: 8px; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Phone Orchestra</h1>
+    <span class="pill" id="connection">connecting</span>
+  </header>
+
+  <div class="top">
+    <section class="card">
+      <div class="now">
+        <span id="transport">stopped</span>
+        <span id="beat"></span>
+      </div>
+      <div class="controls">
+        <label class="field grow">Score <select id="score"></select></label>
+        <label class="field">BPM <input id="bpm" type="number" min="30" max="300" /></label>
+        <label class="field">Count-in (s) <input id="countIn" type="number" min="1" max="30" value="3" /></label>
+        <button class="primary" id="start">▶ Start</button>
+        <button class="danger" id="stop">■ Stop</button>
+      </div>
+    </section>
+
+    <section class="card join">
+      <img id="qr" alt="Join QR code" width="132" height="132" />
+      <div>
+        <h2>Join</h2>
+        <code id="joinUrl"></code>
+        <div class="hint">Scan with the phone camera, or type the address into the app.</div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 id="count">Phones</h2>
+      <button class="small" id="rebalance" title="Deal one part to each phone, evenly">Rebalance parts</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Phone</th>
+          <th>Parts</th>
+          <th class="num">RTT</th>
+          <th class="num" title="Worst-case clock error (half the best round trip); jitter is how much the estimate moves between samples">Sync</th>
+          <th class="num" title="Output latency reported by the phone, plus its manual trim">Latency</th>
+          <th class="num">Seen</th>
+          <th class="end"></th>
+        </tr>
+      </thead>
+      <tbody id="players"></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let socket;
+  let state = null;
+  // Dashboard clock offset is only for the beat counter display; the phones do
+  // their own precise sync.
+  let serverOffset = 0;
+
+  function setConnection(label, online) {
+    $('connection').textContent = label;
+    $('connection').classList.toggle('online', online);
+  }
+
+  function connect() {
+    socket = new WebSocket(`ws://${location.host}`);
+    socket.onopen = () => {
+      setConnection('connected', true);
+      socket.send(JSON.stringify({ type: 'hello', role: 'conductor' }));
+    };
+    socket.onclose = () => {
+      setConnection('reconnecting', false);
+      setTimeout(connect, 1000);
+    };
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'state') {
+        serverOffset = message.serverTime - performance.now();
+        state = message;
+        render();
+      }
+    };
+  }
+
+  const send = (message) => socket?.readyState === 1 && socket.send(JSON.stringify(message));
+
+  $('start').onclick = () => send({ type: 'start', inMs: Number($('countIn').value) * 1000 });
+  $('stop').onclick = () => send({ type: 'stop' });
+  $('rebalance').onclick = () => send({ type: 'rebalance' });
+  $('bpm').onchange = () => send({ type: 'setBpm', bpm: Number($('bpm').value) });
+  $('score').onchange = () => send({ type: 'setScore', scoreId: $('score').value });
+
+  const fmt = (value, digits = 1) => (Number.isFinite(value) ? value.toFixed(digits) : '—');
+
+  // A <select> the user is interacting with must not be touched: replacing or
+  // re-valuing it closes the open picker and drops the choice.
+  const isBusy = (element) => document.activeElement === element;
+
+  const clock = (seconds) =>
+    `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+
+  function partLabel(part, bpm) {
+    const cap = part.maxPlayers ? ` (max ${part.maxPlayers})` : '';
+    const firstBeat = part.notes.length ? part.notes[0].beat : 0;
+    // Only worth saying when the part waits long enough to look broken.
+    const entry = firstBeat >= 8 ? ` · enters ${clock((firstBeat * 60) / bpm)}` : '';
+    const instrument = part.instrument ? ` · ${part.instrument.replace(/_\d+$/, '').replace(/_/g, ' ')}` : '';
+    return `${part.name}${instrument}${cap}${entry}`;
+  }
+
+  function setOptions(select, items, key) {
+    if (select.dataset.key === key) return;
+    select.dataset.key = key;
+    select.replaceChildren(
+      ...items.map(({ value, label }) => {
+        const option = document.createElement('option');
+        option.value = String(value);
+        option.textContent = label;
+        return option;
+      })
+    );
+  }
+
+  function render() {
+    if (!state) return;
+    const { transport, score, players, scores, serverTime } = state;
+
+    if (!isBusy($('bpm'))) $('bpm').value = transport.bpm;
+
+    const scoreSelect = $('score');
+    if (!isBusy(scoreSelect)) {
+      setOptions(
+        scoreSelect,
+        scores.map(({ id, title }) => ({ value: id, label: title })),
+        scores.map(({ id }) => id).join('|')
+      );
+      scoreSelect.value = score.id;
+    }
+
+    $('transport').textContent = transport.playing ? `Playing · ${transport.bpm} bpm` : 'Stopped';
+    $('count').textContent = `Phones · ${players.length}`;
+
+    renderPlayers(players, score, transport, serverTime);
+  }
+
+  // One row per phone, created once and updated in place.
+  const rows = new Map();
+  const COLUMNS = ['phone', 'part', 'rtt', 'sync', 'latency', 'seen', 'mute'];
+
+  function createRow(playerId) {
+    const tr = document.createElement('tr');
+    const cells = {};
+    for (const column of COLUMNS) {
+      cells[column] = tr.appendChild(document.createElement('td'));
+    }
+    for (const column of ['rtt', 'sync', 'latency', 'seen']) cells[column].className = 'num';
+
+    // A checklist in a dropdown: a phone can play any set of parts.
+    const picker = document.createElement('details');
+    picker.className = 'parts';
+    const summary = document.createElement('summary');
+    const list = document.createElement('div');
+    list.className = 'part-list';
+    picker.append(summary, list);
+    const assign = (partIndices) => send({ type: 'assignParts', playerId, partIndices });
+    list.addEventListener('change', () =>
+      assign([...list.querySelectorAll('input:checked')].map((box) => Number(box.value)))
+    );
+    cells.part.append(picker);
+
+    const muteButton = document.createElement('button');
+    muteButton.className = 'mute small';
+    muteButton.onclick = () =>
+      send({ type: 'setMuted', playerId, muted: muteButton.dataset.muted !== 'true' });
+    cells.mute.className = 'end';
+    cells.mute.append(muteButton);
+    return { tr, cells, picker, summary, list, assign, muteButton };
+  }
+
+  function renderPartSummary(summary, score, partIndices) {
+    const swatches = partIndices.map((index) => {
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch';
+      swatch.style.background = score.parts[index]?.color ?? '#fff';
+      return swatch;
+    });
+    const names = partIndices.map((index) => score.parts[index]?.name ?? '?');
+    let label;
+    if (partIndices.length === 0) label = 'no part';
+    else if (partIndices.length === score.parts.length && score.parts.length > 1) label = `All ${score.parts.length} parts`;
+    else if (partIndices.length > 2) label = `${names[0]} +${partIndices.length - 1}`;
+    else label = names.join(' + ');
+    summary.replaceChildren(...swatches.slice(0, 6), ` ${label} ▾`);
+  }
+
+  function renderPartList(list, score, bpm, partIndices, assign) {
+    const key = `${score.id}:${score.parts.length}:${bpm}:${partIndices.join(',')}`;
+    if (list.dataset.key === key) return;
+    list.dataset.key = key;
+
+    const shortcuts = document.createElement('div');
+    shortcuts.className = 'shortcuts';
+    // The open list is not redrawn from server state, so tick the boxes here.
+    const setAll = (checked) => {
+      for (const box of list.querySelectorAll('input')) box.checked = checked;
+      assign(checked ? score.parts.map((_, index) => index) : []);
+    };
+    const all = document.createElement('button');
+    all.className = 'small';
+    all.textContent = 'All';
+    all.onclick = () => setAll(true);
+    const none = document.createElement('button');
+    none.className = 'small';
+    none.textContent = 'None';
+    none.onclick = () => setAll(false);
+    shortcuts.append(all, none);
+
+    const boxes = score.parts.map((part, index) => {
+      const label = document.createElement('label');
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.value = String(index);
+      box.checked = partIndices.includes(index);
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch';
+      swatch.style.background = part.color;
+      label.append(box, swatch, partLabel(part, bpm));
+      return label;
+    });
+    list.replaceChildren(shortcuts, ...boxes);
+  }
+
+  function renderPhoneCell(cell, p) {
+    const sub = document.createElement('span');
+    sub.className = 'sub';
+    sub.textContent = [`#${p.id}`, p.platform].filter(Boolean).join(' · ');
+    cell.replaceChildren(p.name ?? 'phone', sub);
+  }
+
+  const emptyRow = document.createElement('tr');
+  emptyRow.className = 'empty';
+  emptyRow.innerHTML = `<td colspan="${COLUMNS.length}">No phones yet. Scan the join code to add one.</td>`;
+
+  function renderPlayers(players, score, transport, serverTime) {
+    const tbody = $('players');
+    const present = new Set();
+
+    if (players.length === 0) {
+      if (!emptyRow.isConnected) tbody.append(emptyRow);
+    } else {
+      emptyRow.remove();
+    }
+
+    players.forEach((p, index) => {
+      present.add(p.id);
+      let row = rows.get(p.id);
+      if (!row) {
+        row = createRow(p.id);
+        rows.set(p.id, row);
+      }
+      // Only move a row when the order really changed: moving it closes its picker.
+      if (tbody.children[index] !== row.tr) {
+        tbody.insertBefore(row.tr, tbody.children[index] ?? null);
+      }
+
+      const { tr, cells, picker, summary, list, assign, muteButton } = row;
+      const stale = p.reportedAt == null || serverTime - p.reportedAt > 6000;
+      tr.classList.toggle('stale', stale);
+      tr.classList.toggle('muted', Boolean(p.muted));
+      muteButton.dataset.muted = String(Boolean(p.muted));
+      muteButton.textContent = p.muted ? 'Muted' : 'Mute';
+      muteButton.classList.toggle('on', Boolean(p.muted));
+
+      renderPhoneCell(cells.phone, p);
+
+      renderPartSummary(summary, score, p.partIndices);
+      // An open checklist is being edited; leave it alone until it closes.
+      if (!picker.open) {
+        renderPartList(list, score, transport.bpm, p.partIndices, assign);
+      }
+
+      cells.rtt.textContent = `${fmt(p.rttMs)} ms`;
+      cells.rtt.className = `num ${p.rttMs > 60 ? 'bad' : p.rttMs > 25 ? 'warn' : ''}`;
+      cells.sync.textContent = `±${fmt(p.uncertaintyMs)} ms`;
+      cells.sync.title = `jitter ${fmt(p.jitterMs)} ms`;
+      // ~10 ms apart is where separate phones stop sounding like one.
+      cells.sync.className = `num ${p.uncertaintyMs > 10 ? 'bad' : p.uncertaintyMs > 5 ? 'warn' : ''}`;
+      const trim = p.trimMs ? ` (trim ${p.trimMs > 0 ? '+' : ''}${fmt(p.trimMs, 0)})` : '';
+      cells.latency.textContent = `${fmt(p.outputLatencyMs, 0)} ms${trim}`;
+      cells.seen.textContent =
+        p.reportedAt == null ? 'never' : `${fmt((serverTime - p.reportedAt) / 1000, 0)} s ago`;
+    });
+
+    for (const [id, row] of rows) {
+      if (!present.has(id)) {
+        row.tr.remove();
+        rows.delete(id);
+      }
+    }
+  }
+
+  function tickBeat() {
+    if (state?.transport.playing) {
+      const { transport, score } = state;
+      const elapsed = performance.now() + serverOffset - transport.startAt;
+      if (elapsed < 0) {
+        $('beat').textContent = `starts in ${(-elapsed / 1000).toFixed(1)} s`;
+      } else {
+        const beat = Math.floor((elapsed * transport.bpm) / 60000) % score.lengthBeats;
+        $('beat').textContent = `bar ${Math.floor(beat / 4) + 1} · beat ${(beat % 4) + 1}`;
+      }
+    } else {
+      $('beat').textContent = '';
+    }
+    requestAnimationFrame(tickBeat);
+  }
+
+  // What the phone connects to after scanning: this dashboard's host, which is
+  // the address that was reachable from at least one device on the network.
+  const serverUrl = `ws://${location.hostname}:${location.port || 80}`;
+  const joinLink = `audioapi-example://orchestra?url=${encodeURIComponent(serverUrl)}`;
+  $('joinUrl').textContent = serverUrl;
+  $('qr').src = `/qr.svg?data=${encodeURIComponent(joinLink)}`;
+
+  connect();
+  tickBeat();
+</script>
+</body>
+</html>

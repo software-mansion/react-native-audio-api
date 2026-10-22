@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
+    "types": ["node"]
+  },
+  "include": ["*.ts", "../src/demos/Orchestra/protocol.ts"]
+}
