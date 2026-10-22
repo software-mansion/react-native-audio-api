@@ -55,11 +55,9 @@ class AudioPlayer {
   [[nodiscard]] virtual bool isRunning() const = 0;
 
   /// @brief Which context frame leaves the output device when, or `std::nullopt` before the
-  /// first rendered callback or on a platform that cannot tell (the default).
+  /// first rendered callback or on a platform that cannot tell.
   /// @note JS Thread only: it is the single reader of the anchors published from the audio thread.
-  [[nodiscard]] virtual std::optional<OutputPresentation> getOutputPresentation() {
-    return std::nullopt;
-  }
+  [[nodiscard]] virtual std::optional<OutputPresentation> getOutputPresentation() = 0;
 
  protected:
   /// One render callback's first output sample, tied to the platform's own timeline.
