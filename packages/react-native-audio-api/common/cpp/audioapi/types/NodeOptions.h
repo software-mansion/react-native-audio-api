@@ -121,7 +121,7 @@ struct PannerOptions : public AudioNodeOptions {
 
 struct ConvolverOptions : AudioNodeOptions {
   bool disableNormalization = false;
-  std::shared_ptr<AudioBuffer> buffer = nullptr;
+  std::shared_ptr<const AudioBuffer> buffer = nullptr;
 
   ConvolverOptions() {
     requiresTailProcessing = true;

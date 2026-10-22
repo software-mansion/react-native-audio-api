@@ -17,9 +17,7 @@ class SharedAudioBuffer {
  public:
   explicit SharedAudioBuffer(std::shared_ptr<AudioBuffer> samples);
 
-  /// @brief For reading only: writing through it bypasses copy-on-write and can change
-  /// samples a node is playing. Write with `copyToChannel` or through `exposeChannel`.
-  [[nodiscard]] const std::shared_ptr<AudioBuffer> &getSamples() const {
+  [[nodiscard]] std::shared_ptr<const AudioBuffer> getSamples() const {
     return samples_;
   }
 

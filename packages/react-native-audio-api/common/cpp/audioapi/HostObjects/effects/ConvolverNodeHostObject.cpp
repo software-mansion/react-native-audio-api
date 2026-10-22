@@ -58,7 +58,7 @@ JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   return jsi::Value::undefined();
 }
 
-void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
+void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<const AudioBuffer> &buffer) {
   if (buffer == nullptr) {
     return;
   }
