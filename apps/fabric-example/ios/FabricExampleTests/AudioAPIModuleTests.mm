@@ -7,8 +7,8 @@
 @interface AudioAPIModule (TestingPrivate)
 
 - (void)setAudioSessionActivity:(BOOL)enabled
-                        resolve:(RCTPromiseResolveBlock)resolve
-                         reject:(RCTPromiseRejectBlock)reject;
+                  resolve:(RCTPromiseResolveBlock)resolve
+                   reject:(RCTPromiseRejectBlock)reject;
 
 @end
 
@@ -128,16 +128,16 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   NSMutableArray<NSString *> *eventLog = self.eventLog;
 
   [self.module setAudioSessionActivity:NO
-                               resolve:^(id result) {
-                                 AppendAudioModuleEvent(eventLog, @"resolve");
-                                 eventsAtResolve = CopyAudioModuleEvents(eventLog);
-                                 XCTAssertNil(result);
-                                 [resolveExpectation fulfill];
-                               }
-                                reject:^(NSString *code, NSString *message, NSError *error) {
-                                  rejectionCode = code;
-                                  [resolveExpectation fulfill];
-                                }];
+                         resolve:^(id result) {
+                           AppendAudioModuleEvent(eventLog, @"resolve");
+                           eventsAtResolve = CopyAudioModuleEvents(eventLog);
+                           XCTAssertNil(result);
+                           [resolveExpectation fulfill];
+                         }
+                          reject:^(NSString *code, NSString *message, NSError *error) {
+                            rejectionCode = code;
+                            [resolveExpectation fulfill];
+                          }];
 
   [self waitForExpectations:@[ resolveExpectation ] timeout:1.0];
 

@@ -88,10 +88,12 @@ const ConvolverIR: FC = () => {
         return;
       }
 
-      AudioManager.setAudioSessionOptions({
-        iosCategory: 'playback',
-        iosMode: 'default',
-        iosOptions: [],
+      AudioManager.setSystemOptions({
+        ios: {
+          category: 'playback',
+          mode: 'default',
+          options: [],
+        },
       });
       await AudioManager.setAudioSessionActivity(true);
 
@@ -121,7 +123,7 @@ const ConvolverIR: FC = () => {
       source.start(ctx.currentTime + 0.1, 10);
       setIsPlaying(true);
     },
-    [gain, isPlaying],
+    [gain, isPlaying]
   );
 
   const onPlayWithConvolver = useCallback(() => {

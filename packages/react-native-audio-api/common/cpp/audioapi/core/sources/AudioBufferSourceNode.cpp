@@ -94,6 +94,10 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
   const auto sampleRate = buffer_->getSampleRate();
   offset = std::min(offset, getVirtualEndFrame(sampleRate) / sampleRate);
 
+  if (loop_) {
+    offset = std::min(offset, loopEnd_);
+  }
+
   vReadIndex_ = sampleRate * offset;
 }
 

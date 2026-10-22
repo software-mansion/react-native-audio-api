@@ -25,6 +25,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/decoding/AudioDecoding.h>
+#include <audioapi/utils/SerialTaskExecutor.hpp>
 
 #include <memory>
 #include <string>
@@ -38,7 +39,11 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
     const std::shared_ptr<react::CallInvoker> &callInvoker,
     int destinationChannelCount)
     : context_(context),
-      promiseVendor_(std::make_shared<PromiseVendor>(runtime, callInvoker)),
+      promiseVendor_(
+          std::make_shared<PromiseVendor>(
+              runtime,
+              callInvoker,
+              std::make_shared<SerialTaskExecutor>())),
       callInvoker_(callInvoker) {
   destination_ = std::make_shared<AudioDestinationNodeHostObject>(
       context_, AudioDestinationOptions(destinationChannelCount));

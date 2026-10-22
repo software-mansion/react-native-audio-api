@@ -12,6 +12,8 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 @property (nonatomic, strong) AVAudioFormat *resolvedInputFormat;
 @property (nonatomic, assign) int resolvedBufferSize;
 @property (atomic, assign) BOOL inputArmed;
+/// Buffers per callback for resolvedInputFormat; a callback with another count is dropped.
+@property (atomic, assign) UInt32 expectedBufferCount;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
 @property (nonatomic, copy) void (^onInputConfigurationChange)(void);
 

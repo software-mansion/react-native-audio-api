@@ -38,9 +38,11 @@ const LatencyValidation: FC = () => {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      cleanupLatencyValidation({ audioContext, audioRecorder }).catch((error) => {
-        console.warn('LatencyValidation cleanup failed', error);
-      });
+      cleanupLatencyValidation({ audioContext, audioRecorder }).catch(
+        (error) => {
+          console.warn('LatencyValidation cleanup failed', error);
+        }
+      );
     };
   }, []);
 
@@ -62,18 +64,22 @@ const LatencyValidation: FC = () => {
       }
 
       if (Platform.OS !== 'web') {
-        AudioManager.setAudioSessionOptions({
-          iosCategory: 'playAndRecord',
-          // 'measurement' keeps the signal path raw (no AGC/EQ) so the loopback
-          // delay is accurate, while running the mic+speaker for the shortest
-          // possible window to keep the idle full-duplex buzz to a minimum.
-          iosMode: 'measurement',
-          iosOptions: ['defaultToSpeaker'],
+        AudioManager.setSystemOptions({
+          ios: {
+            category: 'playAndRecord',
+            // 'measurement' keeps the signal path raw (no AGC/EQ) so the loopback
+            // delay is accurate, while running the mic+speaker for the shortest
+            // possible window to keep the idle full-duplex buzz to a minimum.
+            mode: 'measurement',
+            options: ['defaultToSpeaker'],
+          },
         });
         await AudioManager.setAudioSessionActivity(true);
       }
 
-      setCurrentStep('Playing beep pattern and analyzing microphone capture...');
+      setCurrentStep(
+        'Playing beep pattern and analyzing microphone capture...'
+      );
       appendLog('Reference pattern scheduled. Recording microphone input.');
 
       const result = await runLatencyValidationSuite({

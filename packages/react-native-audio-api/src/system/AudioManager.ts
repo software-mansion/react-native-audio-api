@@ -5,9 +5,12 @@ import { parseNativeError } from './errors';
 import {
   AudioDevicesInfo,
   AudioFocusType,
+  AudioDeviceInfo,
+  CommunicationDevice,
   IAudioManager,
+  InputDeviceSelection,
   PermissionStatus,
-  SessionOptions,
+  SystemOptions,
 } from './types';
 
 class AudioManager implements IAudioManager {
@@ -37,13 +40,11 @@ class AudioManager implements IAudioManager {
     }
   }
 
-  setAudioSessionOptions(options: SessionOptions) {
-    NativeAudioAPIModule.setAudioSessionOptions(
-      options.iosCategory ?? '',
-      options.iosMode ?? '',
-      options.iosOptions ?? [],
-      options.iosAllowHaptics ?? false,
-      options.iosNotifyOthersOnDeactivation ?? true
+  /** Each platform fills in the defaults for the keys its group leaves out. */
+  setSystemOptions(options: SystemOptions) {
+    NativeAudioAPIModule.setSystemOptions(
+      options.ios ?? {},
+      options.android ?? {}
     );
   }
 
@@ -121,13 +122,37 @@ class AudioManager implements IAudioManager {
   }
 
   /**
-   * Selects the given device as the current audio input.
+   * Selects the given device as the current audio input. Passing `'default'`
+   * drops the selection, so the system chooses the input again.
    *
    * Resolves when the input device was set successfully and rejects when the
-   * device cannot be found or the system fails to switch to it.
+   * device cannot be found or the system fails to switch to it; a rejected call
+   * leaves the previous selection in place.
+   *
+   * A recording in progress moves to the new input right away and keeps writing
+   * the same file, whatever the new input's format.
    */
-  async setInputDevice(deviceId: string): Promise<void> {
-    await NativeAudioAPIModule.setInputDevice(deviceId);
+  async setInputDevice(deviceId: InputDeviceSelection): Promise<void> {
+    await NativeAudioAPIModule.setInputDevice(
+      deviceId === 'default' ? null : deviceId
+    );
+  }
+
+  /**
+   * Requests the Android route for voice-communication audio, with or without
+   * an `inCommunication` session. `systemDefault` clears the request, as does
+   * `setAudioSessionActivity(false)`.
+   */
+  async setCommunicationDevice(device: CommunicationDevice): Promise<void> {
+    await NativeAudioAPIModule.setCommunicationDevice(device);
+  }
+
+  /**
+   * Returns Android's currently selected communication device, including a
+   * route selected by the system after an accessory change.
+   */
+  async getCommunicationDevice(): Promise<AudioDeviceInfo | null> {
+    return NativeAudioAPIModule.getCommunicationDevice();
   }
 }
 

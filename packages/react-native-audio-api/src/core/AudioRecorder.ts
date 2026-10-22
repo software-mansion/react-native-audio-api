@@ -102,9 +102,13 @@ export default class AudioRecorder {
     return this.options_;
   }
 
-  disableFileOutput(): void {
+  /**
+   * Disables file output. When called mid-recording, the current file is
+   * finalized first; the returned promise resolves once it is closed.
+   */
+  disableFileOutput(): Promise<void> {
     this.options_ = null;
-    this.recorder.disableFileOutput();
+    return this.recorder.disableFileOutput();
   }
 
   /** Starts the audio recording process with configured output options */
@@ -118,13 +122,13 @@ export default class AudioRecorder {
   }
 
   /** Pauses the audio recording process without tearing down anything */
-  pause(): void {
-    this.recorder.pause();
+  pause(): Promise<void> {
+    return this.recorder.pause();
   }
 
   /** Resumes the audio recording process after being paused */
-  resume(): void {
-    this.recorder.resume();
+  resume(): Promise<void> {
+    return this.recorder.resume();
   }
 
   /** Connects the recorder to a destination node. */
