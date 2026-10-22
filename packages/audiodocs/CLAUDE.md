@@ -210,7 +210,7 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 Implemented in `packages/docs-theme` and re-exported from `@site/src/components/Badges`, so the internal docs site can use the same import.
 
 ```tsx
-import { Optional, ReadOnly, Overridden, IOS, Android, Experimental, MobileOnly }
+import { Optional, ReadOnly, Overridden, IOS, Android, AndroidAPI, Experimental, MobileOnly }
   from '@site/src/components/Badges';
 
 | `gain` <ReadOnly /> | `AudioParam` | `1.0` | ... |
@@ -336,3 +336,4 @@ Block: `$$formula$$`
 `<ReadOnly />` — property cannot be reassigned (AudioParam wrappers are always ReadOnly).
 `<Optional />` — constructor option or parameter is optional.
 `<IOS />` / `<Android />` — feature is platform-specific.
+`<AndroidAPI level={31} />` — feature needs a minimum Android API level; renders `Android 12+ (API 31)` and replaces `<Android />` on that heading.

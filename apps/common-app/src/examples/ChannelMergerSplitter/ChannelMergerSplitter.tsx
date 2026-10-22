@@ -23,10 +23,8 @@ const INITIAL_GAINS = [0.3, 0.6, 0.1, 1.0, 0.7, 0.7];
 const labelWidth = 56;
 
 /**
- * Graph:
- *   AudioBufferSourceNode (5.1) → ChannelSplitter(6)
- *     → per-channel GainNodes
- *     → ChannelMerger(2) stereo fold-down → destination
+ * Graph: AudioBufferSourceNode (5.1) → ChannelSplitter(6) → per-channel
+ * GainNodes → ChannelMerger(2) stereo fold-down → destination
  *
  * Fold-down: L/C/LFE/Ls → left, R/C/LFE/Rs → right
  */
@@ -64,10 +62,12 @@ const ChannelMergerSplitter: FC = () => {
       return;
     }
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playback',
-      iosMode: 'default',
-      iosOptions: [],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playback',
+        mode: 'default',
+        options: [],
+      },
     });
     await AudioManager.setAudioSessionActivity(true);
 
@@ -178,7 +178,8 @@ const ChannelMergerSplitter: FC = () => {
     <Container>
       <ScrollView
         contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.description}>
           Plays a 5.1 surround test (L R C LFE Ls Rs) through
           AudioBufferSourceNode → ChannelSplitter → per-channel gains →

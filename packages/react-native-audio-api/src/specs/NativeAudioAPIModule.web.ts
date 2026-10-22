@@ -1,5 +1,7 @@
 import { TurboModule } from 'react-native';
+import type { CodegenTypes } from 'react-native';
 import {
+  AudioDeviceInfo,
   AudioDevicesInfo,
   AudioFocusType,
   PermissionStatus,
@@ -19,12 +21,9 @@ interface Spec extends TurboModule {
 
   // AVAudioSession management
   setAudioSessionActivity(enabled: boolean): Promise<void>;
-  setAudioSessionOptions(
-    category: string,
-    mode: string,
-    options: Array<string>,
-    allowHaptics: boolean,
-    notifyOthersOnDeactivation: boolean
+  setSystemOptions(
+    ios: CodegenTypes.UnsafeObject,
+    android: CodegenTypes.UnsafeObject
   ): void;
   disableSessionManagement(): void;
 
@@ -42,6 +41,8 @@ interface Spec extends TurboModule {
   // Audio devices
   getDevicesInfo(): Promise<AudioDevicesInfo>;
   setInputDevice(deviceId: string | null): Promise<void>;
+  setCommunicationDevice(device: string): Promise<void>;
+  getCommunicationDevice(): Promise<AudioDeviceInfo | null>;
 
   // New notification system
   showNotification(
@@ -68,7 +69,7 @@ const NativeAudioAPIModule: Spec = {
   getDevicePreferredSampleRate: mockSync(0),
   isFfmpegEnabled: mockSync(true),
   setAudioSessionActivity: mockAsync(undefined),
-  setAudioSessionOptions: mockSync({}),
+  setSystemOptions: mockSync({}),
   disableSessionManagement: mockSync({}),
   observeAudioInterruptions: mockSync({}),
   activelyReclaimSession: mockSync({}),
@@ -84,6 +85,8 @@ const NativeAudioAPIModule: Spec = {
     currentOutputs: [],
   }),
   setInputDevice: mockAsync(undefined),
+  setCommunicationDevice: mockAsync(undefined),
+  getCommunicationDevice: mockAsync(null),
   showNotification: mockAsync({ success: true }),
   hideNotification: mockAsync({ success: true }),
   isNotificationActive: mockAsync(false),
