@@ -39,6 +39,7 @@ type NavigationParamList = {
   AudioParamPipeline: undefined;
   TestScreen: undefined;
   LatencyValidation: undefined;
+  OutputTimestampSync: undefined;
   EchoCancellation: undefined;
 };
 

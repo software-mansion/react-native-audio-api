@@ -3,6 +3,7 @@ import { icons } from 'lucide-react-native';
 import PedalBoard from './PedalBoard/PedalBoard';
 import Record from './Record/Record';
 import Crossfade from './Crossfade/Crossfade';
+import Orchestra from './Orchestra';
 
 interface SimplifiedIconProps {
   color?: string;
@@ -40,5 +41,13 @@ export const demos: DemoScreen[] = [
     subtitle: 'Demonstrates crossfading between two audio files.',
     icon: icons.ArrowLeftRight,
     screen: Crossfade,
+  },
+  {
+    key: 'Orchestra',
+    title: 'Phone orchestra',
+    subtitle:
+      'Many phones play one piece together: clock sync over WebSocket plus start(when) scheduling. Needs orchestra-server.',
+    icon: icons.Music,
+    screen: Orchestra,
   },
 ] as const;
