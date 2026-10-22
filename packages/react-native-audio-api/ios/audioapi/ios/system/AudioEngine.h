@@ -12,6 +12,18 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
   AudioEngineStateInterrupted
 };
 
+typedef NS_ENUM(NSInteger, AudioEngineInputNotification) {
+  AudioEngineInputNotificationHardwareChanged = 0,
+};
+
+/// Result of `onInterruptionEnd:`. Distinguishes a no-op from a failed resume that stays Interrupted.
+typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
+  AudioEngineInterruptionEndOutcomeNoOp = 0,
+  AudioEngineInterruptionEndOutcomeRunning,
+  AudioEngineInterruptionEndOutcomePaused,
+  AudioEngineInterruptionEndOutcomeStillInterrupted
+};
+
 typedef void (^OnOutputRecoveryFailedBlock)(void);
 
 @interface AudioEngine : NSObject
@@ -39,14 +51,19 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-              onInputConfigurationChange:(void (^)(void))onInputConfigurationChange;
+                     onInputNotification:
+                         (void (^)(AudioEngineInputNotification))onInputNotification;
 - (void)detachInputNode;
 - (AVAudioFormat *)getLiveInputFormat;
 
-- (void)onInterruptionBegin;
-- (void)onInterruptionEnd:(bool)shouldResume;
+/// @return true if the engine transitioned from Running to Interrupted.
+- (bool)onInterruptionBegin;
+- (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume;
 - (void)onSessionDeactivated;
 - (void)markSessionDeactivationInvalidatedGraph;
+/// Records that hardware format may have changed while the engine must not rebuild
+/// yet (`Interrupted`). The next start or interruption-end resume rebuilds the graph.
+- (void)markGraphNeedsRebuild;
 
 - (AudioEngineState)getState;
 - (bool)isEngineRunning;

@@ -92,7 +92,8 @@ IOSAudioRecorder::IOSAudioRecorder(
   nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock
                                                 voiceProcessingEnabled:options.iosVoiceProcessing];
 
-  nativeRecorder_.onInputConfigurationChange = ^{ this->handleInputConfigurationChange(); };
+  nativeRecorder_.onInputNotification =
+      ^(AudioEngineInputNotification notification) { this->handleInputNotification(notification); };
 }
 
 Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
@@ -114,7 +115,16 @@ Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
           .maxFramesPerBuffer = static_cast<size_t>(maxFramesPerBuffer)});
 }
 
-void IOSAudioRecorder::handleInputConfigurationChange()
+void IOSAudioRecorder::handleInputNotification(AudioEngineInputNotification notification)
+{
+  switch (notification) {
+    case AudioEngineInputNotificationHardwareChanged:
+      handleHardwareChange();
+      return;
+  }
+}
+
+void IOSAudioRecorder::handleHardwareChange()
 {
   if (isIdle()) {
     return;
@@ -178,7 +188,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
 {
   stop();
 
-  nativeRecorder_.onInputConfigurationChange = nil;
+  nativeRecorder_.onInputNotification = nil;
 
   {
     std::scoped_lock lock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
@@ -356,11 +366,12 @@ void IOSAudioRecorder::resume()
     return;
   }
 
-  state_.store(RecorderState::Recording, std::memory_order_release);
-
   if (![nativeRecorder_ resume]) {
-    state_.store(RecorderState::Paused, std::memory_order_release);
+    return;
   }
+
+  state_.store(RecorderState::Recording, std::memory_order_release);
+  handleHardwareChange();
 }
 
 /// Any thread. Also requires the audio engine to be running, so a recorder whose session was
