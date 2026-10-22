@@ -28,6 +28,7 @@ rm -rf ~/Library/Caches/org.swift.swiftpm/manifests   # or Xcode ▸ File ▸ Pa
 cd ios && npx react-native spm
 ```
 
-[`isFfmpegEnabled()`](./runtime-flags#isffmpegenabled) tells you at runtime which configuration
-the app was built with.
+To confirm an `enableFFmpeg` change took effect, check
+[`isFfmpegEnabled()`](./runtime-flags#isffmpegenabled) at runtime. There is no runtime flag for
+`disableStaticExternalLibs`.
 :::
