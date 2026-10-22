@@ -1,6 +1,7 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
 import type {
   AnalyserOptions,
+  AudioTimestamp,
   AudioBufferSourceOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
@@ -93,6 +94,7 @@ export interface IBaseAudioContext {
 export interface IAudioContext extends IBaseAudioContext {
   readonly baseLatency: number;
   readonly outputLatency: number;
+  getOutputTimestamp(): AudioTimestamp;
   createMediaElementSource: (
     mediaElement: IAudioFileSourceNode
   ) => IMediaElementAudioSourceNode;

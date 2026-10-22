@@ -8,8 +8,13 @@
 
 #include <jni.h>
 
+#include <time.h>
+
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -176,6 +181,17 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
     lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
   }
 
+  if (isRunning_.load(std::memory_order_acquire)) {
+    // Oboe counts this buffer into getFramesWritten() only after the callback returns.
+    publishOutputAnchor(
+        {.contextFrame = renderedFrames_,
+         .hostTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::steady_clock::now().time_since_epoch())
+                           .count(),
+         .streamFrame = oboeStream->getFramesWritten(),
+         .isValid = true});
+  }
+
   const CurrentRenderScope renderScope(currentRenders_);
 
   auto *buffer = static_cast<float *>(audioData);
@@ -296,6 +312,31 @@ double AndroidAudioPlayer::getBaseLatency() const {
   }
 
   return static_cast<double>(RENDER_QUANTUM_SIZE) / static_cast<double>(sampleRate_);
+}
+
+std::optional<OutputPresentation> AndroidAudioPlayer::getOutputPresentation() {
+  const auto anchor = latestOutputAnchor();
+  if (!anchor) {
+    return std::nullopt;
+  }
+
+  {
+    std::scoped_lock lock(streamMutex_);
+    if (isRunningLocked()) {
+      const auto presented = mStream_->getTimestamp(CLOCK_MONOTONIC);
+      if (presented) {
+        return OutputPresentation{
+            .contextFrame =
+                anchor->contextFrame + (presented.value().position - anchor->streamFrame),
+            .presentationTimeNs = presented.value().timestamp};
+      }
+    }
+  }
+
+  const auto outputLatencyNs = static_cast<std::int64_t>(std::llround(getOutputLatency() * 1e9));
+  return OutputPresentation{
+      .contextFrame = anchor->contextFrame,
+      .presentationTimeNs = anchor->hostTimeNs + outputLatencyNs};
 }
 
 double AndroidAudioPlayer::getOutputLatency() const {

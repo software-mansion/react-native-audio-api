@@ -31,7 +31,8 @@ AudioContextHostObject::AudioContextHostObject(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, suspend),
-      JSI_EXPORT_FUNCTION(AudioContextHostObject, createMediaElementSource));
+      JSI_EXPORT_FUNCTION(AudioContextHostObject, createMediaElementSource),
+      JSI_EXPORT_FUNCTION(AudioContextHostObject, getOutputTimestamp));
 }
 
 AudioContextHostObject::~AudioContextHostObject() {
@@ -62,6 +63,16 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
 JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, outputLatency) {
   auto audioContext = std::static_pointer_cast<AudioContext>(context_);
   return {audioContext->getOutputLatency()};
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, getOutputTimestamp) {
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+  const auto timestamp = audioContext->getOutputTimestamp();
+
+  auto jsTimestamp = jsi::Object(runtime);
+  jsTimestamp.setProperty(runtime, "contextTime", timestamp.contextTime);
+  jsTimestamp.setProperty(runtime, "performanceTime", timestamp.performanceTime);
+  return jsTimestamp;
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, baseLatency) {
