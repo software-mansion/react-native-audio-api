@@ -1,0 +1,34 @@
+---
+id: swift-package-manager
+sidebar_label: Swift Package Manager (iOS)
+---
+
+# Swift Package Manager (iOS)
+
+Swift Package Manager (SwiftPM) is an experimental alternative to CocoaPods for building React
+Native iOS apps. To find out what it requires and how to switch an app to it, see the
+[React Native 0.87 announcement](https://reactnative.dev/blog/2026/08/11/react-native-0.87).
+
+`react-native-audio-api` ships a `Package.swift`, so in a SwiftPM app it is autolinked like any
+other library. There is no extra setup step. Swift Package Manager downloads the prebuilt
+Opus / Ogg / Vorbis (and, if enabled, FFmpeg) libraries while it resolves packages.
+
+## Build options
+
+[`enableFFmpeg` and `disableStaticExternalLibs`](./prebuilt-libraries-support.mdx#setting-the-options)
+are read from the `react-native-audio-api` section of the app's `package.json`, as with CocoaPods
+and Gradle.
+
+:::caution
+Swift Package Manager caches an evaluated `Package.swift` by its contents, not by the files it
+reads, so a change to these options is ignored until that cache is reset. After changing them:
+
+```bash
+rm -rf ~/Library/Caches/org.swift.swiftpm/manifests   # or Xcode ▸ File ▸ Packages ▸ Reset Package Caches
+cd ios && npx react-native spm
+```
+
+To confirm an `enableFFmpeg` change took effect, check
+[`isFfmpegEnabled()`](./runtime-flags#isffmpegenabled) at runtime. There is no runtime flag for
+`disableStaticExternalLibs`.
+:::

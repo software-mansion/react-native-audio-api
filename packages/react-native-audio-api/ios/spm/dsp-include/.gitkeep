@@ -1,0 +1,4 @@
+// The RNAudioAPIDSP SwiftPM target exposes no headers, but SwiftPM fails to resolve the package when
+// a target's public headers directory is missing, so Package.swift points publicHeadersPath here.
+// It cannot share ios/spm/include: SwiftPM builds a module over each target's public headers
+// directory, and two modules over one directory fail to compile.

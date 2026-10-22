@@ -1,7 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
-#import <AudioEngine.h>
-#import <AudioSessionManager.h>
 #import <Foundation/Foundation.h>
+#import <audioapi/ios/system/AudioSessionManager.h>
 
 #include <algorithm>
 #include <memory>
