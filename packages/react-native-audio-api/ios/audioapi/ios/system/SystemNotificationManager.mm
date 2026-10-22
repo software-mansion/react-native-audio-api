@@ -279,9 +279,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   switch (routeChangeReason) {
     case AVAudioSessionRouteChangeReasonNewDeviceAvailable:
     case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
-    case AVAudioSessionRouteChangeReasonRouteConfigurationChange:
-      [self handleEngineConfigurationChange:nil];
+    case AVAudioSessionRouteChangeReasonRouteConfigurationChange: {
+      // Not a restart: a rebuild posts RouteConfigurationChange itself, so restarting would loop.
+      // Real format changes arrive as AVAudioEngineConfigurationChangeNotification.
+      AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
+      dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onRouteChange]; });
       break;
+    }
     default:
       break;
   }
@@ -316,12 +320,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
+  // Weak, so a queued handler does not keep a replaced engine alive.
+  __weak AVAudioEngine *changedEngine = notification.object;
+
   dispatch_async(dispatch_get_main_queue(), ^{
-    // This notification is registered with object:nil, so it also fires for
-    // AVAudioEngine instances owned by other libraries in the host app. Without
-    // an engine of our own there is nothing to restart, and marking the session
-    // inactive would corrupt bookkeeping for apps that only manage the session.
-    if (![audioEngine isInUse]) {
+    // object:nil also delivers other libraries' engines and ones we already replaced;
+    // only a change on our current engine needs a restart.
+    if (![audioEngine isCurrentEngine:changedEngine]) {
       return;
     }
 
@@ -334,7 +339,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [audioEngine markGraphNeedsRebuild];
       return;
     }
-
     [sessionManager markInactive];
     [audioEngine restartAudioEngine];
   });

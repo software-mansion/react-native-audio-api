@@ -64,10 +64,15 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 /// Records that hardware format may have changed while the engine must not rebuild
 /// yet (`Interrupted`). The next start or interruption-end resume rebuilds the graph.
 - (void)markGraphNeedsRebuild;
+/// Marks a stopped graph for rebuild on the next start and leaves a running engine alone:
+/// a real format change arrives as AVAudioEngineConfigurationChangeNotification instead.
+- (void)onRouteChange;
 
 - (AudioEngineState)getState;
 - (bool)isEngineRunning;
 - (bool)isInUse;
+/// True only for the AVAudioEngine this object drives now: not nil, foreign or replaced ones.
+- (bool)isCurrentEngine:(AVAudioEngine *)engine;
 
 - (bool)startIfNecessary;
 - (void)pauseIfNecessary;
@@ -75,6 +80,9 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 
 - (void)stopIfPossible;
 
+/// @brief Rebuilds the engine against the current hardware and starts it again if it was
+/// running. The input hears `HardwareChanged` between the two, outside the lock, so its
+/// consumers match the new format before the first render callback.
 - (void)restartAudioEngine;
 
 - (void)logAudioEngineState;
