@@ -70,8 +70,6 @@ const heardAt = (perfMs: number) =>
 oscillator.start(heardAt(performance.now() + 500)); // heard ~500 ms from now
 ```
 
-On iOS the presentation time is CoreAudio's host time for each output buffer plus `AVAudioSession.outputLatency`. On Android it comes from Oboe's `getTimestamp(CLOCK_MONOTONIC)`, falling back to callback time plus `outputLatency` when the stream does not report timestamps (OpenSL ES).
-
 #### Returns `AudioTimestamp`.
 
 | Name | Type | Description |
