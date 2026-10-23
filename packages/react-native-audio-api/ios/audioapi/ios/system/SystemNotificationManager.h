@@ -14,6 +14,13 @@
 @property (nonatomic, strong) NSTimer *hintPollingTimer;
 @property (nonatomic, assign) bool hadConfigurationChange;
 @property (nonatomic, assign) bool audioInterruptionsObserved;
+/// Main queue. Set when AVAudioSession posts InterruptionEnded (or the secondary-audio
+/// equivalent), cleared by the next begin. A foreground retry runs only while it is set.
+@property (nonatomic, assign) bool interruptionEndedDelivered;
+/// Main queue. `AVAudioSessionInterruptionOptionShouldResume` of the current interruption's
+/// ended notification. Nil until it arrives, and again once the engine accepts the next begin,
+/// so a later secondary-audio end never replays an earlier interruption's hint; nil resumes.
+@property (nonatomic, strong) NSNumber *interruptionShouldResume;
 @property (nonatomic, assign) bool volumeChangesObserved;
 @property (nonatomic, assign) bool wasOtherAudioPlaying;
 
