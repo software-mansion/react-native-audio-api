@@ -68,7 +68,7 @@
         return kAudioServicesBadPropertySizeError;
       }
 
-      weakSelf.renderAudio(outputData, frameCount);
+      weakSelf.renderAudio(outputData, frameCount, timestamp);
 
       return kAudioServicesNoError;
     };

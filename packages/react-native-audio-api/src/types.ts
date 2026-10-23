@@ -63,6 +63,17 @@ export interface AudioContextOptions {
 
 export type AndroidOutputProfile = 'media' | 'voiceCommunication';
 
+/**
+ * One moment on two clocks: the context's `currentTime` axis and the
+ * `performance.now()` axis. Returned by `AudioContext.getOutputTimestamp()`.
+ */
+export interface AudioTimestamp {
+  /** Seconds, on the context's `currentTime` axis. */
+  contextTime: number;
+  /** Milliseconds, on the `performance.now()` axis. */
+  performanceTime: number;
+}
+
 export interface OfflineAudioContextOptions {
   numberOfChannels: number;
   length: number;
