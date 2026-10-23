@@ -77,47 +77,44 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, resume) {
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, enqueueBuffer) {
   auto audioBufferHostObject =
       args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-  // TODO: add optimized memory management for buffer changes, e.g.
-  // when the same buffer is reused across threads and
-  // buffer modification is not allowed on JS thread
+  const auto &sharedBuffer = audioBufferHostObject->sharedBuffer_;
+  const auto &samples = sharedBuffer->getSamples();
+  const auto bufferChannelNumber = samples->getNumberOfChannels();
 
-  auto swapBuffer = false; // whether to swap internal node buffer with the new buffer
+  // The first buffer fixes the width the queue plays at.
   if (outputChannelNumber_ == 0) {
-    outputChannelNumber_ = audioBufferHostObject->audioBuffer_->getNumberOfChannels();
-    swapBuffer = true;
+    outputChannelNumber_ = bufferChannelNumber;
   }
 
-  // first buffer defines the output channel number, the rest are mixed to it
-  auto copiedBuffer = std::make_shared<AudioBuffer>(
-      audioBufferHostObject->audioBuffer_->getSize(),
-      outputChannelNumber_,
-      audioBufferHostObject->audioBuffer_->getSampleRate());
+  std::shared_ptr<AudioBuffer> content;
 
-  copiedBuffer->sum(*audioBufferHostObject->audioBuffer_);
+  if (bufferChannelNumber == outputChannelNumber_) {
+    content = sharedBuffer->acquireContent();
+  } else {
+    // A buffer of another width is mixed into a private copy of the queue's width.
+    content = std::make_shared<AudioBuffer>(
+        samples->getSize(), static_cast<int>(outputChannelNumber_), samples->getSampleRate());
+    content->sum(*samples);
+  }
 
   std::shared_ptr<AudioBuffer> tailBuffer = nullptr;
 
   if (pitchCorrection_ && !stretchHasBeenInit_) {
-    initStretch(
-        static_cast<int>(copiedBuffer->getNumberOfChannels()), copiedBuffer->getSampleRate());
+    initStretch(static_cast<int>(outputChannelNumber_), samples->getSampleRate());
     auto extraTailFrames =
-        static_cast<size_t>((inputLatency_ + outputLatency_) * copiedBuffer->getSampleRate());
+        static_cast<size_t>((inputLatency_ + outputLatency_) * samples->getSampleRate());
     tailBuffer = std::make_shared<AudioBuffer>(
-        extraTailFrames, copiedBuffer->getNumberOfChannels(), copiedBuffer->getSampleRate());
+        extraTailFrames, static_cast<int>(outputChannelNumber_), samples->getSampleRate());
     tailBuffer->zero();
-    stretchHasBeenInit_ = true;
   }
 
-  auto event = [node = bufferQueueSourceNode_,
-                copiedBuffer,
+  auto event = [handle = node_->handle,
+                node = bufferQueueSourceNode_,
+                content,
                 bufferId = bufferId_,
-                tailBuffer,
-                swapBuffer,
-                outputChannelNumber = outputChannelNumber_](BaseAudioContext &) {
-    if (swapBuffer) {
-      node->resizeOutputBuffer(static_cast<int>(outputChannelNumber));
-    }
-    node->enqueueBuffer(copiedBuffer, bufferId, tailBuffer);
+                tailBuffer](BaseAudioContext &) {
+    node->resizeOutputBuffer(content->getNumberOfChannels());
+    node->enqueueBuffer(content, bufferId, tailBuffer);
   };
   bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
