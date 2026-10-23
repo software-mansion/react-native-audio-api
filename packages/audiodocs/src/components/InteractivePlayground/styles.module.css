@@ -1,7 +1,12 @@
+.headerRow {
+  padding: 16px 16px 0;
+}
+
 .topRow {
   display: flex;
   flex-direction: row;
   flex: 1;
+  gap: 32px;
   padding: 16px;
 }
 
@@ -181,10 +186,40 @@
   padding: 24px;
 }
 
+.codeToggleRow {
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px 16px;
+}
+
+.codeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--swm-border);
+  background-color: var(--swm-background);
+  color: var(--ifm-font-color-base);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.codeToggle:hover {
+  background-color: var(--swm-code-lines-buttons-background);
+}
+
+.codeToggle:focus-visible {
+  outline: 2px solid var(--swm-purple-light-100);
+  outline-offset: 2px;
+}
 
 @media screen and (max-width: 500px) {
   .topRow {
     flex-direction: column;
+    gap: 24px;
   }
 
   .bottomRow {

@@ -15,6 +15,8 @@ interface FilterListProps<T extends string = string> {
   value: T;
   onChange: (value: T) => void;
   ariaLabel?: string;
+  /** Caption of the drop-down that replaces the button list on narrow screens. */
+  label?: string;
   className?: string;
 }
 
@@ -23,6 +25,7 @@ const FilterList = <T extends string>({
   value,
   onChange,
   ariaLabel = 'Filter type',
+  label = 'Filter type',
   className,
 }: FilterListProps<T>) => {
   const labelId = useId();
@@ -50,13 +53,13 @@ const FilterList = <T extends string>({
       <div className={styles.mobileSelectContainer}>
         <FormControl fullWidth size="small" className={styles.formControl}>
           <InputLabel id={labelId} className={styles.inputLabel}>
-            Filter type
+            {label}
           </InputLabel>
           <Select
             labelId={labelId}
             className={styles.select}
             value={value}
-            label="Filter type"
+            label={label}
             onChange={handleSelectChange}
             inputProps={{ 'aria-label': ariaLabel }}
             MenuProps={{

@@ -5,11 +5,17 @@ sidebar_position: 5
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional, ReadOnly } from '@site/src/components/Badges';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useDelayPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useDelayPlayground';
 
 # DelayNode
 
 The `DelayNode` interface represents latency in an audio signal by a given amount of time. It is an [`AudioNode`](../core/audio-node.mdx) that applies time shift to incoming signal f.e.
 if `delayTime` value is `0.5`, it means that audio will be played after `0.5` seconds.
+
+Press play, then click the `DelayNode` box to mute the echoes and hear the dry voice alone. A `GainNode` feeds part of the delayed signal back into the delay, which is what turns a single repeat into a decaying echo.
+
+<InteractivePlayground tag="DelayNode" usePlayground={useDelayPlayground} />
 
 :::info
 Delay is a node with tail-time, which means that it continues to output non-silent audio with zero input for the duration of `delayTime`.
