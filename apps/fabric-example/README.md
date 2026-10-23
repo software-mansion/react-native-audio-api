@@ -2,6 +2,98 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 
 # Getting Started
 
+## Voice Chat demo
+
+Open **Demo Apps → Voice Chat** for a full-duplex OpenAI Realtime conversation
+using the workspace's upstream RNAA source. No local library patches or overlay
+are required. Use a physical iPhone or an Android 12+ (API 31+) device when
+evaluating acoustic echo cancellation (AEC).
+
+From the repository root, copy the environment template once and set your key:
+
+```sh
+cp -n apps/fabric-example/.env.example apps/fabric-example/.env.local
+# Edit apps/fabric-example/.env.local: OPENAI_API_KEY=...
+```
+
+Start these commands in three terminals, all from the repository root:
+
+```sh
+# Terminal 1: local token server (loads .env.local automatically)
+yarn server
+
+# Terminal 2: one Metro instance
+yarn start --reset-cache
+
+# Terminal 3: build and install on the USB-connected Android device
+adb devices
+adb -s <device-id> reverse tcp:8081 tcp:8081
+adb -s <device-id> reverse tcp:8787 tcp:8787
+yarn android --device <device-id>
+```
+
+For iOS, install Pods from `apps/fabric-example/ios` with
+`bundle exec pod install`, then use `yarn workspace fabric-example ios` or run
+the FabricExample scheme on your device from Xcode. The device must reach Metro
+and the token server on the development machine; use the same LAN and allow
+ports 8081 and 8787 through the local firewall. The app derives the token-server
+host from Metro's bundle URL. `curl http://localhost:8787/health` checks the server.
+
+### Implementation
+
+- [VoiceChat.tsx](../common-app/src/demos/VoiceChat/VoiceChat.tsx): existing
+  FabricExample styling, connection status, and call controls;
+  [components/Transcript.tsx](../common-app/src/demos/VoiceChat/components/Transcript.tsx)
+  renders the conversation.
+- [hooks/useVoiceChat.ts](../common-app/src/demos/VoiceChat/hooks/useVoiceChat.ts):
+  UI state, microphone permission prompting before startup, and cleanup on
+  navigation blur, backgrounding, or unmount.
+- [voiceSession.ts](../common-app/src/demos/VoiceChat/voiceSession.ts): WebSocket
+  events, transcripts, barge-in, and serialized session/interruption lifecycle.
+- [audio/](../common-app/src/demos/VoiceChat/audio): one context and recorder,
+  platform communication settings, serial queued playback, and 24 kHz PCM encoding.
+- [backend/token.ts](../common-app/src/demos/VoiceChat/backend/token.ts): fetches
+  the client secret from the development server using Metro's hostname.
+- [realtime-token-server.mjs](./server/realtime-token-server.mjs): the only
+  process that reads `OPENAI_API_KEY`. It mints a short-lived client secret,
+  fixes the model/voice/session policy, and never sends the standard key to the app.
+
+The fixed policy uses `gpt-realtime-2.1-mini`, `marin`, English transcription and
+instructions, near-field input noise reduction, and low-eagerness semantic VAD.
+The client requests a response after a nonempty transcription and clears playback
+immediately when speech starts. Reply requests wait for the current speech turn
+to end and any outstanding response to finish; late transcripts from older turns
+still appear in the UI but do not trigger replies. An interrupted assistant item
+is truncated at the last whole RNAA buffer confirmed rendered; progress is not sample-accurate
+and may exclude the audible portion of a partially played buffer.
+
+The recorder requests `androidInputPreset: 'voiceCommunication'` and
+`iosVoiceProcessing: true`. Android also uses a `voiceCommunication` output
+profile, a balanced output latency hint, and an `inCommunication` session with
+initial speaker routing. These settings request platform processing; AEC, noise
+suppression, and gain control still depend on the device and route. Test without
+headphones at several speaker volumes, with quiet speech, barge-in, background
+noise, and in a reflective room. Verify audio focus recovery and route restoration
+after ending a call. On iOS, Siri with Bluetooth HFP can leave recording paused
+without an interruption-end event; end and reconnect when necessary.
+During normal iOS interruption recovery, RNAA retains and resumes the recorder;
+the app gates capture callbacks rather than stopping and restarting that recorder.
+
+This server is for trusted local development. Before deploying it, add HTTPS,
+authentication, and rate limiting. Audio is sent to OpenAI, so an application
+using this example should obtain appropriate user consent. The demo ends calls
+in the background and does not implement background-call notifications.
+
+### Checks
+
+```sh
+yarn workspace common-app typecheck:voice
+yarn workspace fabric-example test --runInBand
+yarn workspace fabric-example test:server
+```
+
+The server tests mock OpenAI; they do not use an API key or make paid requests.
+
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
 ## Step 1: Start Metro

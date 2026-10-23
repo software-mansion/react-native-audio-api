@@ -7,7 +7,9 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "yarn workspace common-app test:voice",
+    "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs",
+    "test:server": "node --test server/realtime-token-server.test.mjs"
   },
   "dependencies": {
     "common-app": "workspace:*",

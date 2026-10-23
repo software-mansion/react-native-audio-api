@@ -18,3 +18,9 @@ jobs:
       - name: Run JS integration tests
         working-directory: packages/react-native-audio-api
         run: yarn build && yarn test:js
+
+      - name: Check Voice Chat demo
+        run: |
+          yarn workspace common-app typecheck:voice
+          yarn workspace common-app test:voice --runInBand
+          yarn workspace fabric-example test:server
