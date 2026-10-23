@@ -34,6 +34,9 @@ inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 32
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE = 32;
 // One partitioned-convolution job per IR channel (at most 4) runs in parallel.
 inline constexpr size_t CONVOLVER_THREAD_POOL_WORKER_COUNT = 4;
+// Every convolver queues one tail per quantum; a refused tail is computed on the audio thread.
+inline constexpr size_t CONVOLVER_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 128;
+inline constexpr size_t CONVOLVER_THREAD_POOL_WORKER_QUEUE_SIZE = 128;
 
 // Disposer payload size (= sizeof(std::vector<T>))
 inline constexpr size_t DISPOSER_PAYLOAD_SIZE = 24;
