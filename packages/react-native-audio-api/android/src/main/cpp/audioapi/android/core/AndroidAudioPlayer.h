@@ -66,6 +66,8 @@ class AndroidAudioPlayer : public AudioPlayer,
   /// Updated on the audio thread from each Oboe callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   AndroidOutputProfile outputProfile_;
+  /// `steady_clock` time of the last `startStreamLocked`; guarded by `streamMutex_`.
+  std::int64_t streamStartedAtNs_ = 0;
 
   bool openAudioStreamLocked();
   bool rebuildStreamLocked();

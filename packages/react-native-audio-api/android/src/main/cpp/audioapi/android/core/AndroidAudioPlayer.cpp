@@ -94,6 +94,7 @@ bool AndroidAudioPlayer::rebuildStreamLocked() {
 }
 
 bool AndroidAudioPlayer::startStreamLocked() {
+  streamStartedAtNs_ = steadyClockNowNs();
   const bool started = mStream_ != nullptr && mStream_->requestStart() == oboe::Result::OK;
   isRunning_.store(started, std::memory_order_release);
   return started;
@@ -185,9 +186,7 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
     // Oboe counts this buffer into getFramesWritten() only after the callback returns.
     publishOutputAnchor(
         {.contextFrame = renderedFrames_,
-         .hostTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                           std::chrono::steady_clock::now().time_since_epoch())
-                           .count(),
+         .hostTimeNs = steadyClockNowNs(),
          .streamFrame = oboeStream->getFramesWritten(),
          .isValid = true});
   }
@@ -322,9 +321,12 @@ std::optional<OutputPresentation> AndroidAudioPlayer::getOutputPresentation() {
 
   {
     std::scoped_lock lock(streamMutex_);
-    if (isRunningLocked()) {
+    // An anchor from before the last start may belong to a stream a rebuild replaced, whose
+    // positions the current stream does not continue. A device timestamp from before it is
+    // AAudio's stale pre-pause report, which would interpolate across the pause.
+    if (isRunningLocked() && anchor->hostTimeNs >= streamStartedAtNs_) {
       const auto presented = mStream_->getTimestamp(CLOCK_MONOTONIC);
-      if (presented) {
+      if (presented && presented.value().timestamp >= streamStartedAtNs_) {
         return OutputPresentation{
             .contextFrame =
                 anchor->contextFrame + (presented.value().position - anchor->streamFrame),

@@ -8,6 +8,13 @@
 
 namespace audioapi {
 
+/// Now on the `performance.now()` axis, which every presentation time is expressed in.
+[[nodiscard]] inline std::int64_t steadyClockNowNs() {
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
+
 /// A context sample frame and the `steady_clock` moment it leaves the output device.
 struct OutputPresentation {
   /// Signed: a platform may report a device position from before the context's first frame.
@@ -27,9 +34,7 @@ struct OutputPresentation {
   constexpr double NANOSECONDS_PER_SECOND = 1e9;
   constexpr double NANOSECONDS_PER_MILLISECOND = 1e6;
 
-  const auto nowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                         std::chrono::steady_clock::now().time_since_epoch())
-                         .count();
+  const auto nowNs = steadyClockNowNs();
 
   auto frame = static_cast<double>(presentation.contextFrame);
   auto timeNs = static_cast<double>(presentation.presentationTimeNs);
