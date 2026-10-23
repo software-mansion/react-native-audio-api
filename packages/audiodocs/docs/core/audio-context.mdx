@@ -54,6 +54,29 @@ Creates [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-no
 
 #### Returns [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-node.mdx).
 
+### `getOutputTimestamp`
+
+Returns the context time of the sample leaving the output device now, together with now on the `performance.now()` clock. Use it to line audio up with anything else timed by `performance.now()`: animations, network messages, other devices.
+
+The pair is measured on the audio thread from the platform's own presentation timestamps, so output latency is already included and it is not limited to the render-quantum steps `currentTime` moves in. Both values are `0` until the context has rendered its first block. While the context is suspended the values stop advancing.
+
+```tsx
+const { contextTime, performanceTime } = audioContext.getOutputTimestamp();
+
+// The context time at which a sound is heard at `perfMs` (a performance.now() value):
+const heardAt = (perfMs: number) =>
+  contextTime + (perfMs - performanceTime) / 1000;
+
+oscillator.start(heardAt(performance.now() + 500)); // heard ~500 ms from now
+```
+
+#### Returns `AudioTimestamp`.
+
+| Name | Type | Description |
+| :---: | :---: | :---- |
+| `contextTime` | `number` | Seconds, on the [`currentTime`](./base-audio-context.mdx#properties) axis. Never exceeds `currentTime`. |
+| `performanceTime` | `number` | Milliseconds, on the `performance.now()` axis. |
+
 ### `close`
 
 Closes the audio context, releasing any system audio resources that it uses.

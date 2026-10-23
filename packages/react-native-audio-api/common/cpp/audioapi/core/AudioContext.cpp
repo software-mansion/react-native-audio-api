@@ -1,6 +1,7 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+#include <audioapi/core/utils/OutputTimestamp.h>
 
 #include <memory>
 #include <thread>
@@ -171,6 +172,20 @@ double AudioContext::getBaseLatency() const {
   }
 
   return audioPlayer_->getBaseLatency();
+}
+
+AudioTimestamp AudioContext::getOutputTimestamp() const {
+  if (audioPlayer_ == nullptr) {
+    return {};
+  }
+
+  const auto presentation = audioPlayer_->getOutputPresentation();
+  if (!presentation) {
+    return {};
+  }
+
+  return outputTimestampAt(
+      *presentation, getSampleRate(), getCurrentSampleFrame(), audioPlayer_->isRunning());
 }
 
 double AudioContext::getOutputLatency() const {
