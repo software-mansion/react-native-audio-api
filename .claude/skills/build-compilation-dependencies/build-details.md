@@ -249,17 +249,24 @@ This means **tests build against the installed/published version of the library*
 
 ```cmake
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")  # no JSI in tests
-list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")            # worklets not compiled
-list(REMOVE_ITEM RNAUDIOAPI_SRC ... "AudioContext.cpp")                         # needs real audio I/O
+list(APPEND RNAUDIOAPI_SRC ".../HostObjects/utils/JsEnumParser.cpp")           # the one exception
+list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/AudioThreadGuard\\.cpp$")         # compiled into each test executable
+list(REMOVE_ITEM RNAUDIOAPI_SRC ... "AudioContext.cpp")                        # needs real audio I/O
 list(REMOVE_ITEM RNAUDIOAPI_SRC ... "FfmpegDecoder.cpp")                       # FFmpeg disabled in tests
 ```
+
+`tests_tsan` / `tests_asan` do not reuse those objects. `add_sanitized_tests` compiles a separate `rnaudioapi_<sanitizer>` and `rnaudioapi_libs_<sanitizer>` with the same `-fsanitize=` flags as the executable. Sanitizer instrumentation is per translation unit.
 
 ### Compile definitions always set in tests
 
 ```cmake
-add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
+add_compile_definitions(RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1)
+add_compile_definitions(MA_NO_LIBOPUS=1)
+add_compile_definitions(MA_NO_LIBVORBIS=1)
 ```
+
+Directory-scoped, so the plain libraries, both sanitizer copies, and every test executable all receive them. `RN_AUDIO_API_ENABLE_WORKLETS` is not set; engine sources no longer read it.
 
 Use `RN_AUDIO_API_TEST` in source code to conditionally compile test-only hooks.
 
