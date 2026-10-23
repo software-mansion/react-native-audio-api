@@ -3,7 +3,11 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
+/// `timestamp` is CoreAudio's for the buffer's first frame; may be NULL.
+typedef void (^RenderAudioBlock)(
+    AudioBufferList *outputBuffer,
+    int numFrames,
+    const AudioTimeStamp *timestamp);
 
 @interface NativeAudioPlayer : NSObject
 

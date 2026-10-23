@@ -1,5 +1,5 @@
 import { assertSupportedSampleRate } from '../utils/validation';
-import { AudioContextOptions } from '../types';
+import { AudioContextOptions, AudioTimestamp } from '../types';
 import BaseAudioContext from './BaseAudioContext.web';
 import MediaElementAudioSourceNode from './MediaElementAudioSourceNode.web';
 
@@ -27,6 +27,12 @@ export default class AudioContext extends BaseAudioContext<globalThis.AudioConte
 
   public get outputLatency(): number {
     return this.context.outputLatency;
+  }
+
+  getOutputTimestamp(): AudioTimestamp {
+    const { contextTime = 0, performanceTime = 0 } =
+      this.context.getOutputTimestamp();
+    return { contextTime, performanceTime };
   }
 
   createMediaElementSource(

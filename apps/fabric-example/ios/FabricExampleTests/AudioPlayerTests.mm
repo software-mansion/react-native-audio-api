@@ -36,6 +36,7 @@ class IOSAudioPlayer : public AudioPlayer {
 
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
+  [[nodiscard]] std::optional<OutputPresentation> getOutputPresentation() override;
 
  protected:
   NativeAudioPlayer *createNativePlayer();
@@ -345,7 +346,8 @@ struct TestAudioOutput {
 - (NativeAudioPlayer *)createPlayerWithRenderCallCount:(NSInteger *)renderCallCount
 {
   return [[NativeAudioPlayer alloc]
-          initWithRenderAudio:^(AudioBufferList *outputBuffer, int numFrames) {
+          initWithRenderAudio:^(
+              AudioBufferList *outputBuffer, int numFrames, const AudioTimeStamp *) {
             if (renderCallCount != nullptr) {
               *renderCallCount += 1;
             }
@@ -410,7 +412,8 @@ struct TestAudioOutput {
   __block AVAudioFrameCount renderedFrameCount = 0;
   __block AudioBufferList *renderedBufferList = nullptr;
   NativeAudioPlayer *player = [[NativeAudioPlayer alloc]
-          initWithRenderAudio:^(AudioBufferList *outputBuffer, int numFrames) {
+          initWithRenderAudio:^(
+              AudioBufferList *outputBuffer, int numFrames, const AudioTimeStamp *) {
             renderCallCount += 1;
             renderedFrameCount = static_cast<AVAudioFrameCount>(numFrames);
             renderedBufferList = outputBuffer;
