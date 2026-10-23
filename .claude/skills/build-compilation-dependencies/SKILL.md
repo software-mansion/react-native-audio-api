@@ -302,7 +302,7 @@ yarn workspace react-native-audio-api test:cpp:smoke|extended|full
 yarn workspace react-native-audio-api test:cpp:extended -- graph
 ```
 
-`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. `tests_tsan` and `tests_asan` link `rnaudioapi_tsan` / `rnaudioapi_asan`, engine copies built with their sanitizer (`add_rnaudioapi_library` in `test/CMakeLists.txt`): header templates such as `ThreadPool`/`SpscChannel` are instantiated in both the engine and the tests, and an uninstrumented copy picked by the linker hides their atomics, so TSan reports false races and ASan/UBSan silently skip engine code. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
+`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
 
 ### Coverage (Clang / llvm-cov)
 
@@ -382,6 +382,7 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | iOS compile error `unknown type 'id'` | C++ file included ObjC-only header | Compile that file as ObjC++ (separate subspec with `-x objective-c++`) |
 | `RCT_NEW_ARCH_ENABLED` undefined on Android | Old RN gradle plugin | Ensure `newArchEnabled=true` in app's `gradle.properties` |
 | iOS: `'to_chars' is unavailable: introduced in iOS 16.3` from `formatter_floating_point.h`, instantiated by `std::format<...>` | `std::format` in code compiled for iOS. libc++ availability-gates the whole `<format>` library to iOS 16.3; the podspec minimum is `ios_min_version = '14.0'`. The desktop C++ test build and Android NDK have no such gate, so `yarn test:cpp` passes and only the iOS build fails. | Use `std::string` concatenation / `std::to_string` in `common/cpp` and `ios/`. Zero-pad by hand (`insert(0, n, '0')`). Android-only files (`android/src/main/cpp`) may keep `std::format`. |
+| Android incremental build only: `Unresolved reference` to a top-level Kotlin function, or `Cannot access '…': it is internal in file`, while `--rerun-tasks` passes | Incremental Kotlin rounds treat the module's own earlier classes as a foreign module (library is built through the `node_modules/react-native-audio-api` symlink) | Use only public classes/objects across files in `android/src/main/java`; no top-level functions, no `internal` |
 | clangd only: `'React/RCTBridgeModule.h' file not found` in `.mm` files | `compile_commands.json` has no framework search path | See *clangd compile database* below — regenerate with `yarn setup:clangd` |
 
 ## clangd compile database
