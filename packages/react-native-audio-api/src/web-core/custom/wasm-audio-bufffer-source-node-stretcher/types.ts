@@ -16,6 +16,7 @@ export interface WasmAudioBufferSourceStretcherNode
 
   addBuffers(channels: Float32Array[]): void;
   dropBuffers(): void;
+  dispose(): void;
   schedule(options: ScheduleOptions): void;
 
   start(
@@ -34,5 +35,7 @@ export interface WasmAudioBufferSourceStretcherNode
 }
 
 export type WasmAudioBufferSourceStretcherNodeFactory = (
-  audioContext: globalThis.BaseAudioContext
+  audioContext: globalThis.BaseAudioContext,
+  options?: AudioWorkletNodeOptions,
+  signal?: AbortSignal
 ) => Promise<WasmAudioBufferSourceStretcherNode>;

@@ -51,6 +51,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
   }
 
   public set onended(callback: ((event: EventEmptyType) => void) | null) {
+    this.assertNotDisposed();
     this.onendedCallback = callback ?? undefined;
     this.syncEndedSubscription();
   }
@@ -68,6 +69,7 @@ export default class AudioScheduledSourceNode extends AudioNode {
       return;
     }
 
+    this.assertNotDisposed();
     this.endedListeners.add(listener);
     this.syncEndedSubscription();
   }
@@ -81,6 +83,12 @@ export default class AudioScheduledSourceNode extends AudioNode {
     }
 
     this.endedListeners.delete(listener);
+    this.syncEndedSubscription();
+  }
+
+  protected clearEndedListeners(): void {
+    this.onendedCallback = undefined;
+    this.endedListeners.clear();
     this.syncEndedSubscription();
   }
 

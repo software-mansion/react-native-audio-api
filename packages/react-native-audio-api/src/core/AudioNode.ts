@@ -30,6 +30,8 @@ export default class AudioNode {
     this.numberOfOutputs = this.node.numberOfOutputs;
   }
 
+  protected assertNotDisposed(): void {}
+
   public get channelCount(): number {
     return this.node.channelCount;
   }
@@ -67,6 +69,7 @@ export default class AudioNode {
     output: number = 0,
     input: number = 0
   ): AudioNode | void {
+    this.assertNotDisposed();
     if (this.context !== destination.context) {
       throw new InvalidAccessError(
         'Source and destination are from different BaseAudioContexts'
