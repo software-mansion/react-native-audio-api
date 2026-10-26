@@ -432,6 +432,7 @@ export function midiToScore(
       title: config.title ?? id,
       bpm: Math.round((config.bpm ?? fileBpm) * 10) / 10,
       lengthBeats: Math.ceil(lastBeat / beatsPerBar) * beatsPerBar,
+      beatsPerBar,
       parts,
     },
     parts: imported,

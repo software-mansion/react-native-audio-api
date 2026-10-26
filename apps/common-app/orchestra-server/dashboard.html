@@ -95,6 +95,7 @@
         <label class="field grow">Score <select id="score"></select></label>
         <label class="field">BPM <input id="bpm" type="number" min="30" max="300" /></label>
         <label class="field">Count-in (s) <input id="countIn" type="number" min="1" max="30" value="3" /></label>
+        <label class="field">Start bar <input id="startBar" type="number" min="1" value="1" /></label>
         <button class="primary" id="start">▶ Start</button>
         <button class="danger" id="stop">■ Stop</button>
       </div>
@@ -167,7 +168,12 @@
 
   const send = (message) => socket?.readyState === 1 && socket.send(JSON.stringify(message));
 
-  $('start').onclick = () => send({ type: 'start', inMs: Number($('countIn').value) * 1000 });
+  $('start').onclick = () =>
+    send({
+      type: 'start',
+      inMs: Number($('countIn').value) * 1000,
+      startBar: Number($('startBar').value) || 1,
+    });
   $('stop').onclick = () => send({ type: 'stop' });
   $('rebalance').onclick = () => send({ type: 'rebalance' });
   $('bpm').onchange = () => send({ type: 'setBpm', bpm: Number($('bpm').value) });
@@ -209,6 +215,13 @@
     const { transport, score, players, scores, serverTime } = state;
 
     if (!isBusy($('bpm'))) $('bpm').value = transport.bpm;
+
+    // The server clamps too; this keeps the stepper inside the piece.
+    const lastBar = Math.max(1, Math.ceil(score.lengthBeats / (score.beatsPerBar ?? 4)));
+    $('startBar').max = String(lastBar);
+    if (!isBusy($('startBar')) && Number($('startBar').value) > lastBar) {
+      $('startBar').value = String(lastBar);
+    }
 
     const scoreSelect = $('score');
     if (!isBusy(scoreSelect)) {
@@ -386,11 +399,15 @@
     if (state?.transport.playing) {
       const { transport, score } = state;
       const elapsed = performance.now() + serverOffset - transport.startAt;
+      const beatsPerBar = score.beatsPerBar ?? 4;
       if (elapsed < 0) {
-        $('beat').textContent = `starts in ${(-elapsed / 1000).toFixed(1)} s`;
+        const fromBar = Math.floor((transport.startBeat ?? 0) / beatsPerBar) + 1;
+        $('beat').textContent = `bar ${fromBar} in ${(-elapsed / 1000).toFixed(1)} s`;
       } else {
-        const beat = Math.floor((elapsed * transport.bpm) / 60000) % score.lengthBeats;
-        $('beat').textContent = `bar ${Math.floor(beat / 4) + 1} · beat ${(beat % 4) + 1}`;
+        const beat =
+          Math.floor((transport.startBeat ?? 0) + (elapsed * transport.bpm) / 60000) %
+          score.lengthBeats;
+        $('beat').textContent = `bar ${Math.floor(beat / beatsPerBar) + 1} · beat ${(beat % beatsPerBar) + 1}`;
       }
     } else {
       $('beat').textContent = '';

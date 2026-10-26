@@ -265,12 +265,21 @@ function crossfadeLoop(
   shape: SustainedShape,
   sampleRate: number
 ): void {
-  const fadeFrames = Math.round(LOOP_CROSSFADE_SEC * sampleRate);
-  const loopStart = Math.round(shape.loopStartSec * sampleRate);
-  const loopEnd = Math.min(
-    samples.length,
-    Math.round(shape.loopEndSec * sampleRate)
+  crossfadeLoopFrames(
+    samples,
+    Math.round(shape.loopStartSec * sampleRate),
+    Math.min(samples.length, Math.round(shape.loopEndSec * sampleRate)),
+    Math.round(LOOP_CROSSFADE_SEC * sampleRate)
   );
+}
+
+/** `loopStart` must be at least `fadeFrames` in, since the fade reads before it. */
+export function crossfadeLoopFrames(
+  samples: Float32Array,
+  loopStart: number,
+  loopEnd: number,
+  fadeFrames: number
+): void {
   for (let i = 0; i < fadeFrames; i += 1) {
     const progress = (i + 0.5) / fadeFrames;
     const end = loopEnd - fadeFrames + i;

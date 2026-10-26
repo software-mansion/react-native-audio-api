@@ -3,7 +3,7 @@
 //
 // Every time value is milliseconds on the server's monotonic clock unless the
 // field name says otherwise. `transport.startAt` is the server time at which
-// beat 0 sounds.
+// beat `transport.startBeat` sounds.
 
 export type Timbre =
   | 'bell'
@@ -52,12 +52,19 @@ export interface Score {
   title: string;
   bpm: number;
   lengthBeats: number;
+  /** From the piece's time signature; 4 when absent. */
+  beatsPerBar?: number;
   parts: ScorePart[];
 }
 
 export interface Transport {
   playing: boolean;
   startAt: number;
+  /**
+   * The score beat that sounds at `startAt`: playback can begin mid-piece.
+   * Absent from servers that predate it, which always start at 0.
+   */
+  startBeat?: number;
   bpm: number;
   /** Incremented on every start so phones reset their note cursor. */
   epoch: number;
@@ -103,7 +110,11 @@ export type ClientMessage =
       outputLatencyMs: number;
       trimMs: number;
     }
-  | { type: 'start'; inMs: number }
+  /**
+   * `startBar` counts from 1; playback starts at the top of the first bar when
+   * absent.
+   */
+  | { type: 'start'; inMs: number; startBar?: number }
   | { type: 'stop' }
   | { type: 'setScore'; scoreId: string }
   | { type: 'setBpm'; bpm: number }

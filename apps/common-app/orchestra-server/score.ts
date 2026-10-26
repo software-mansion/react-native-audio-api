@@ -665,6 +665,7 @@ function relayScore(): Score {
     title: 'Relay in D minor',
     bpm: 100,
     lengthBeats: bars.length * BEATS_PER_BAR,
+    beatsPerBar: BEATS_PER_BAR,
     parts,
   };
 }

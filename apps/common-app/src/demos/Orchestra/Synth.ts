@@ -12,7 +12,10 @@ import type {
 } from 'react-native-audio-api';
 
 import { DRUMS } from '../../../orchestra-server/drumKit';
-import InstrumentBank, { type InstrumentRequest } from './InstrumentBank';
+import InstrumentBank, {
+  type InstrumentRequest,
+  type RecordedTake,
+} from './InstrumentBank';
 import SampleBank, {
   PAD_BAKED_ATTACK_SEC,
   steeperDecayTimeConstant,
@@ -143,7 +146,8 @@ export default class Synth {
       const recorded = this.instruments.get(instrument, midi);
       if (recorded) {
         // A drum hit rings out however short the score writes it.
-        const sounding = instrument === DRUMS ? recorded.duration : durationSec;
+        const sounding =
+          instrument === DRUMS ? recorded.buffer.duration : durationSec;
         this.playRecorded(recorded, time, sounding, level);
         return;
       }
@@ -167,15 +171,21 @@ export default class Synth {
   }
 
   // A recorded note keeps its own attack and decay; the gain only releases it
-  // when the score's note ends, like letting go of a key.
+  // when the score's note ends, like letting go of a key. A sound that holds
+  // loops its last stretch for as long as the note outlasts the recording.
   private playRecorded(
-    buffer: AudioBuffer,
+    { buffer, loop }: RecordedTake,
     time: number,
     durationSec: number,
     level: number
   ): void {
     const source = this.context.createBufferSource();
     source.buffer = buffer;
+    if (loop) {
+      source.loop = true;
+      source.loopStart = loop.startSec;
+      source.loopEnd = loop.endSec;
+    }
     const gain = this.context.createGain();
     source.connect(gain);
     gain.connect(this.master);
@@ -186,11 +196,10 @@ export default class Synth {
     gain.gain.setValueAtTime(peak, release);
     gain.gain.setTargetAtTime(0, release, RELEASE_TIME_CONSTANT_SEC);
     source.start(time);
+    const released = release + RELEASE_TIME_CONSTANT_SEC * 6;
     source.stop(
-      Math.min(
-        time + buffer.duration,
-        release + RELEASE_TIME_CONSTANT_SEC * 6
-      ) + STOP_MARGIN_SEC
+      (loop ? released : Math.min(time + buffer.duration, released)) +
+        STOP_MARGIN_SEC
     );
   }
 

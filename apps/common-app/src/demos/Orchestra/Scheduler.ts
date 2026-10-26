@@ -232,7 +232,10 @@ export default class Scheduler {
   ): Cursor {
     const elapsedMs =
       this.clockSync.localToServer(now) - config.transport.startAt;
-    const elapsedBeats = Math.max(0, elapsedMs / msPerBeat);
+    // Counted from beat 0 of the first cycle, so a mid-piece start skips the
+    // notes before it just like notes that already sounded.
+    const elapsedBeats =
+      startBeatOf(config) + Math.max(0, elapsedMs / msPerBeat);
     const cycle = Math.floor(elapsedBeats / config.score.lengthBeats);
     const beatInCycle = elapsedBeats - cycle * config.score.lengthBeats;
 
@@ -372,7 +375,8 @@ export default class Scheduler {
     msPerBeat: number
   ): number {
     return this.clockSync.serverToLocal(
-      config.transport.startAt + absoluteBeat * msPerBeat
+      config.transport.startAt +
+        (absoluteBeat - startBeatOf(config)) * msPerBeat
     );
   }
 
@@ -415,3 +419,6 @@ function voiceFor(
     ),
   };
 }
+
+const startBeatOf = (config: SchedulerConfig): number =>
+  config.transport.startBeat ?? 0;

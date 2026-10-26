@@ -36,6 +36,7 @@ const serverNow = (): number => performance.now();
 const transport: Transport = {
   playing: false,
   startAt: 0,
+  startBeat: 0,
   bpm: scores[DEFAULT_SCORE_ID].bpm,
   epoch: 0,
 };
@@ -194,14 +195,23 @@ function handleMessage(client: Client, raw: string): void {
   }
 
   switch (message.type) {
-    case 'start':
+    case 'start': {
+      const score = currentScore();
+      const beatsPerBar = score.beatsPerBar ?? 4;
+      const lastBar = Math.max(1, Math.ceil(score.lengthBeats / beatsPerBar));
+      const startBar = Math.min(
+        lastBar,
+        Math.max(1, Math.floor(message.startBar ?? 1))
+      );
       transport.playing = true;
       transport.startAt = serverNow() + Math.max(MIN_COUNT_IN_MS, message.inMs);
+      transport.startBeat = (startBar - 1) * beatsPerBar;
       transport.epoch += 1;
       console.log(
-        `▶ start in ${(transport.startAt - serverNow()).toFixed(0)} ms, ${transport.bpm} bpm, ${scoreId}`
+        `▶ start in ${(transport.startAt - serverNow()).toFixed(0)} ms from bar ${startBar}, ${transport.bpm} bpm, ${scoreId}`
       );
       break;
+    }
     case 'stop':
       transport.playing = false;
       console.log('■ stop');
