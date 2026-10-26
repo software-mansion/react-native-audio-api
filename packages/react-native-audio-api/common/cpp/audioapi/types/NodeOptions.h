@@ -121,7 +121,7 @@ struct PannerOptions : public AudioNodeOptions {
 
 struct ConvolverOptions : AudioNodeOptions {
   bool disableNormalization = false;
-  std::shared_ptr<AudioBuffer> buffer = nullptr;
+  std::shared_ptr<const AudioBuffer> buffer = nullptr;
 
   ConvolverOptions() {
     requiresTailProcessing = true;
@@ -191,7 +191,6 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
   /// Spec: with no buffer assigned the node emits one channel of silence.
   static constexpr size_t kDefaultOutputChannelNumber = 1;
 
-  std::shared_ptr<AudioBuffer> buffer = nullptr;
   float loopStart = 0.0f;
   float loopEnd = 0.0f;
   bool loop = false;
