@@ -109,6 +109,16 @@ const candidateCategories = categoryPassMap(candidate);
 const isAssertionFailure = (message) => message.startsWith('X ');
 
 /**
+ * audit.js ends a failing assertion with ` Got <actual>.`, so a subtest that
+ * fails on both sides with a different value would read as a new failure.
+ * The assertion text before it is what identifies the subtest.
+ */
+const subtestIdentity = (message) => {
+  const actualStart = message.lastIndexOf(' Got ');
+  return actualStart === -1 ? message : message.slice(0, actualStart);
+};
+
+/**
  * Exact per-file comparison. Category pass counts cannot see an equal-count
  * swap (test X regresses while test Y starts passing), so when both reports
  * carry per-file data — reports written before it exists fall back to the
@@ -139,10 +149,12 @@ function compareFiles(baselineReport, candidateReport) {
       continue;
     }
 
-    const baseFailures = new Set((base.failures ?? []).filter(isAssertionFailure));
+    const baseFailures = new Set(
+      (base.failures ?? []).filter(isAssertionFailure).map(subtestIdentity)
+    );
     const subtests = (head.failures ?? [])
       .filter(isAssertionFailure)
-      .filter((message) => !baseFailures.has(message));
+      .filter((message) => !baseFailures.has(subtestIdentity(message)));
     if (subtests.length > 0) {
       newFailures.push({ path: filePath, subtests });
     }

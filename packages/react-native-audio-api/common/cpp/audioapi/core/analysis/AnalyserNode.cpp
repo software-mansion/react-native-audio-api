@@ -95,8 +95,13 @@ void AnalyserNode::processNode(int framesToProcess) {
 
   // Down mix the input buffer to mono
   downMixBuffer_->copy(*audioBuffer_);
-  // Copy the down mixed buffer to the input buffer (circular buffer)
-  inputArray_->push_back(*downMixBuffer_->getChannel(0), framesToProcess, true);
+  // Copy the down mixed buffer to the input buffer (circular buffer). Only the newest fftSize
+  // frames are ever read back, so a quantum longer than the ring keeps just its tail.
+  const auto framesToKeep = std::min(static_cast<size_t>(framesToProcess), inputArray_->getSize());
+  inputArray_->push_back(
+      downMixBuffer_->getChannel(0)->begin() + (framesToProcess - framesToKeep),
+      framesToKeep,
+      true);
 
   // Snapshot the latest fftSize_ samples into the triple buffer for the JS thread.
   auto *frame = analysisBuffer_.getForWriter();
