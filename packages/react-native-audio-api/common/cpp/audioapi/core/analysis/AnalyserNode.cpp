@@ -16,7 +16,10 @@ AnalyserNode::AnalyserNode(
       fftSize_(options.fftSize),
       inputArray_(std::make_unique<CircularDSPAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(
-          std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+          std::make_unique<DSPAudioBuffer>(
+              context->getRenderQuantumSize(),
+              1,
+              context->getSampleRate())),
       minDecibels_(options.minDecibels),
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant),

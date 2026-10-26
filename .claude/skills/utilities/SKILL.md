@@ -182,7 +182,7 @@ audioapi::GB_IN_BYTES   // 1024^3.0
 ### `Constants.h` — global audio constants
 
 ```cpp
-RENDER_QUANTUM_SIZE   = 128      // frames per render block — never hardcode 128
+RENDER_QUANTUM_SIZE   = 128      // default frames per render block — never hardcode 128
 MAX_FFT_SIZE          = 32768
 MAX_CHANNEL_COUNT     = 32
 OCTAVE_RANGE          = 1200     // cents per octave

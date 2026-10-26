@@ -19,12 +19,14 @@ declare global {
   var createAudioContext: (
     sampleRate: number,
     latencyHint?: AudioContextLatencyCategory,
-    androidOutputProfile?: AndroidOutputProfile
+    androidOutputProfile?: AndroidOutputProfile,
+    renderQuantumSize?: number
   ) => IAudioContext;
   var createOfflineAudioContext: (
     numberOfChannels: number,
     length: number,
-    sampleRate: number
+    sampleRate: number,
+    renderQuantumSize?: number
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;

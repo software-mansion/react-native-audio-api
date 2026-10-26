@@ -21,6 +21,7 @@ import StereoPannerNode from './StereoPannerNode.web';
 import PannerNode from './PannerNode.web';
 import ConstantSourceNode from './ConstantSourceNode.web';
 import WaveShaperNode from './WaveShaperNode.web';
+import { browserRenderQuantumSize } from './renderQuantumSize.web';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
@@ -28,6 +29,7 @@ export default class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly listener: AudioListener;
   readonly sampleRate: number;
+  readonly renderQuantumSize: number;
 
   public onerror: (() => void) | null = null;
 
@@ -36,12 +38,17 @@ export default class AudioContext implements BaseAudioContext {
       assertSupportedSampleRate(options.sampleRate);
     }
 
-    this.context = new window.AudioContext({
+    const contextOptions: globalThis.AudioContextOptions & {
+      renderSizeHint?: 'default' | 'hardware' | number;
+    } = {
       sampleRate: options?.sampleRate,
       latencyHint: options?.latencyHint,
-    });
+      renderSizeHint: options?.renderSizeHint,
+    };
+    this.context = new window.AudioContext(contextOptions);
 
     this.sampleRate = this.context.sampleRate;
+    this.renderQuantumSize = browserRenderQuantumSize(this.context);
     this.destination = new AudioDestinationNode(this, this.context.destination);
     this.listener = new AudioListener(this, this.context.listener);
 

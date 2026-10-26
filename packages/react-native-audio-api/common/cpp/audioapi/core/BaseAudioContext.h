@@ -54,7 +54,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
   explicit BaseAudioContext(
       float sampleRate,
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      int renderQuantumSize = RENDER_QUANTUM_SIZE);
   virtual ~BaseAudioContext() = default;
   DELETE_COPY_AND_MOVE(BaseAudioContext);
 
@@ -63,6 +64,11 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     return state_.load(std::memory_order_acquire) == ContextState::CLOSED;
   }
   [[nodiscard]] float getSampleRate() const;
+  /// @brief Upper bound of `framesToProcess` for every render call, and the size of every
+  /// per-quantum buffer. A render call may still ask for fewer frames.
+  [[nodiscard]] int getRenderQuantumSize() const {
+    return renderQuantumSize_;
+  }
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
 
@@ -197,6 +203,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
  private:
   std::atomic<float> sampleRate_;
+  const int renderQuantumSize_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   /// context's own lane into the registry's dispatch queue, shared with every node it owns.
   std::shared_ptr<AudioEventProducer> audioEventProducer_;

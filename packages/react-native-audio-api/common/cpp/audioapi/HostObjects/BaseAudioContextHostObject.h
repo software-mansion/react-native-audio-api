@@ -34,6 +34,7 @@ class BaseAudioContextHostObject : public HostObject {
 
   JSI_PROPERTY_GETTER_DECL(listener);
   JSI_PROPERTY_GETTER_DECL(sampleRate);
+  JSI_PROPERTY_GETTER_DECL(renderQuantumSize);
   JSI_PROPERTY_GETTER_DECL(currentTime);
 
   JSI_HOST_FUNCTION_DECL(createRecorderAdapter);

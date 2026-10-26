@@ -20,12 +20,13 @@ OfflineAudioContext::OfflineAudioContext(
     int numberOfChannels,
     size_t length,
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    int renderQuantumSize)
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry, renderQuantumSize),
       length_(length),
       currentSampleFrame_(0),
       audioBuffer_(
-          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, numberOfChannels, sampleRate)),
+          std::make_shared<DSPAudioBuffer>(renderQuantumSize, numberOfChannels, sampleRate)),
       resultBuffer_(std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate)) {
   // The graph is built entirely before startRendering() spawns the render
   // (consumer) thread. Until then there is no consumer draining the bounded
@@ -75,7 +76,8 @@ bool OfflineAudioContext::suspend(
     const std::shared_ptr<ContextStateResolver> &promise) {
   // Control-message body: no locking (see `resume`).
   auto frame = static_cast<size_t>(when * getSampleRate());
-  frame = RENDER_QUANTUM_SIZE * ((frame + RENDER_QUANTUM_SIZE - 1) / RENDER_QUANTUM_SIZE);
+  const auto quantum = static_cast<size_t>(getRenderQuantumSize());
+  frame = quantum * ((frame + quantum - 1) / quantum);
 
   if (frame == 0 || frame <= currentSampleFrame_ || frame >= length_) {
     promise->reject("The suspend time must be within the remaining render duration.");
@@ -118,7 +120,7 @@ void OfflineAudioContext::renderAudio(const std::shared_ptr<ContextStateResolver
     while (!stopRendering_.load(std::memory_order_acquire) && currentSampleFrame_ < length_) {
       Locker locker(driverMutex_);
       int framesToProcess =
-          std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
+          std::min(static_cast<int>(length_ - currentSampleFrame_), getRenderQuantumSize());
 
       audioBuffer_->zero();
       processGraph(audioBuffer_.get(), framesToProcess);

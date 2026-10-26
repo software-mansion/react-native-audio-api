@@ -168,7 +168,7 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
   if (buffer == nullptr) {
     copiedBuffer = nullptr;
     audioBuffer = std::make_shared<DSPAudioBuffer>(
-        RENDER_QUANTUM_SIZE,
+        audioBufferSourceNode_->getContextRenderQuantumSize(),
         AudioBufferSourceOptions::kDefaultOutputChannelNumber,
         audioBufferSourceNode_->getContextSampleRate());
   } else {
@@ -186,7 +186,7 @@ void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffe
     }
 
     audioBuffer = std::make_shared<DSPAudioBuffer>(
-        RENDER_QUANTUM_SIZE,
+        audioBufferSourceNode_->getContextRenderQuantumSize(),
         copiedBuffer->getNumberOfChannels(),
         audioBufferSourceNode_->getContextSampleRate());
   }

@@ -17,6 +17,7 @@ type NotificationType = 'playback' | 'recording' | 'simple';
 interface Spec extends TurboModule {
   install(): boolean;
   getDevicePreferredSampleRate(): number;
+  getDeviceBufferDuration(): number;
   isFfmpegEnabled(): boolean;
 
   // AVAudioSession management
@@ -67,6 +68,7 @@ const mockSync =
 const NativeAudioAPIModule: Spec = {
   install: mockSync(true),
   getDevicePreferredSampleRate: mockSync(0),
+  getDeviceBufferDuration: mockSync(0),
   isFfmpegEnabled: mockSync(true),
   setAudioSessionActivity: mockAsync(undefined),
   setSystemOptions: mockSync({}),

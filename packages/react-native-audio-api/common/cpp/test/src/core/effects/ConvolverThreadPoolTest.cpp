@@ -56,8 +56,8 @@ TEST_F(ConvolverThreadPoolTest, ReassigningBufferKeepsTheSharedPoolAlive) {
 
   auto firstIr = std::make_shared<AudioBuffer>(1024, 1, kSampleRate);
   auto secondIr = std::make_shared<AudioBuffer>(512, 1, kSampleRate);
-  node->setBuffer(firstIr, {}, pool, nullptr, nullptr, 1.0f);
-  node->setBuffer(secondIr, {}, pool, nullptr, nullptr, 1.0f);
+  node->setBuffer(firstIr, {}, pool, nullptr, 1.0f);
+  node->setBuffer(secondIr, {}, pool, nullptr, 1.0f);
 
   // Context + node + this test each hold one reference; the old assignment
   // must not have handed the shared pool to the disposer.

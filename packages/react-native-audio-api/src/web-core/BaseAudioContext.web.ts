@@ -24,6 +24,7 @@ export default interface BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly listener: AudioListener;
   readonly sampleRate: number;
+  readonly renderQuantumSize: number;
 
   get currentTime(): number;
   get state(): ContextState;

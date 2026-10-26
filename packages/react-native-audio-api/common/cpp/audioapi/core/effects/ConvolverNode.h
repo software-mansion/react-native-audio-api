@@ -30,7 +30,6 @@ class ConvolverNode : public AudioNode {
       const std::shared_ptr<AudioBuffer> &buffer,
       std::vector<std::unique_ptr<Convolver>> convolvers,
       const std::shared_ptr<ConvolverThreadPool> &threadPool,
-      const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
       const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
       float scaleFactor);
 
@@ -47,21 +46,20 @@ class ConvolverNode : public AudioNode {
 
  private:
   const float gainCalibrationSampleRate_;
-  size_t internalBufferIndex_;
   float scaleFactor_;
   std::shared_ptr<DSPAudioBuffer> intermediateBuffer_;
 
   // impulse response buffer
   std::shared_ptr<AudioBuffer> buffer_;
-  // buffer to hold internal processed data
-  std::shared_ptr<DSPAudioBuffer> internalBuffer_;
   // vectors of convolvers, one per channel
   std::vector<std::unique_ptr<Convolver>> convolvers_;
   std::shared_ptr<ConvolverThreadPool> threadPool_;
   std::array<int, 4> inputChannelMap_;
   std::array<int, 4> outputChannelMap_;
 
-  void performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+  void performConvolution(
+      const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
+      int framesToProcess);
 };
 
 } // namespace audioapi

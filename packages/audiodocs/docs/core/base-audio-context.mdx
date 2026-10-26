@@ -27,7 +27,7 @@ In general we can distinguish four types of nodes:
 #### Rendering the audio graph
 
 Audio graph rendering is done in blocks of sample-frames. The number of sample-frames in a block is called render quantum size, and the block itself is called a render quantum.
-By default render quantum size value is `128` and it is a constant.
+By default render quantum size value is `128`. It can only be set when the context is constructed, with the `renderSizeHint` option of [`AudioContext`](./audio-context.mdx#audiocontextoptions) or [`OfflineAudioContext`](./offline-audio-context.mdx#constructor), and is read back from [`renderQuantumSize`](#properties).
 
 The [`AudioContext`](./audio-context.mdx) rendering thread is driven by a system-level audio callback.
 Each call has a system-level audio callback buffer size, which is a varying number of sample-frames that needs to be computed on time before the next system-level audio callback arrives,
@@ -44,6 +44,7 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 | `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from `0.0`. | <ReadOnly /> |
 | `destination` | [`AudioDestinationNode`](../destinations/audio-destination-node.mdx) | Final output destination associated with the context. | <ReadOnly /> |
 | `listener` | [`AudioListener`](./audio-listener.mdx) | Listener used for 3D spatialization, shared by all `PannerNode`s in the context. | <ReadOnly /> |
+| `renderQuantumSize` | `number` | Number of sample-frames rendered per render quantum. `128` unless the context was created with a different `renderSizeHint`. | <ReadOnly /> |
 | `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
 | `state` | [`ContextState`](./base-audio-context.mdx#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
 

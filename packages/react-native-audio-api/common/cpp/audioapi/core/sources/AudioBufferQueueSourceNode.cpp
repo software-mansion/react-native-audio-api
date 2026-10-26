@@ -149,7 +149,7 @@ void AudioBufferQueueSourceNode::resizeOutputBuffer(int outputChannelNumber) {
   if (outputChannelNumber_ != outputChannelNumber) {
     setOutputChannelNumber(static_cast<size_t>(outputChannelNumber));
     audioBuffer_ = std::make_shared<DSPAudioBuffer>(
-        RENDER_QUANTUM_SIZE, outputChannelNumber, getContextSampleRate());
+        getContextRenderQuantumSize(), outputChannelNumber, getContextSampleRate());
   }
 }
 
