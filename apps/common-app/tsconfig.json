@@ -2,5 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "moduleSuffixes": [".ios", ".android", ".native", ""]
-  }
+  },
+  "exclude": ["orchestra-server"]
 }
