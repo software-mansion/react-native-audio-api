@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 
 import { Container } from '../../components';
 import { layout } from '../../styles';
+import DevicePanel from './DevicePanel';
 import { useLog } from './log';
 import LogView from './LogView';
 import PlaybackPanel from './PlaybackPanel';
@@ -21,6 +22,7 @@ const AudioIOPlayground: FC = () => {
         <SessionPanel log={log} />
         <RecorderPanel log={log} onTake={setLastTakePath} />
         <PlaybackPanel log={log} lastTakePath={lastTakePath} />
+        <DevicePanel log={log} />
       </ScrollView>
       <LogView entries={entries} onClear={clear} />
     </Container>
