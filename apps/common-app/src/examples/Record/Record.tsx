@@ -20,7 +20,7 @@ enum Status {
 }
 
 const Record: FC = () => {
-  const { availableInputs, currentInput, onSelectInput } = useAudioInput();
+  const { availableInputs, currentInput, selectInput } = useAudioInput();
 
   const [status, setStatus] = useState<Status>(Status.Idle);
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
@@ -43,10 +43,12 @@ const Record: FC = () => {
       return;
     }
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'voiceChat',
-      iosOptions: ['allowBluetoothHFP'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'voiceChat',
+        options: ['allowBluetoothHFP'],
+      },
     });
 
     try {
@@ -108,10 +110,12 @@ const Record: FC = () => {
       return;
     }
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'default',
-      iosOptions: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'default',
+        options: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
+      },
     });
 
     try {
@@ -170,10 +174,12 @@ const Record: FC = () => {
   };
 
   const onStartReplay = async () => {
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playback',
-      iosMode: 'default',
-      iosOptions: [],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playback',
+        mode: 'default',
+        options: [],
+      },
     });
 
     try {
@@ -216,14 +222,22 @@ const Record: FC = () => {
   };
 
   const onSelect = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const input = availableInputs.find((d) => d.id === id);
 
-      if (input) {
-        onSelectInput(input);
+      if (!input) {
+        return;
+      }
+
+      try {
+        await selectInput(input);
+      } catch (error) {
+        // Android refuses a switch while a recorder is running, and either
+        // platform refuses a device that went away between listing and picking.
+        Alert.alert('Input Device Error', `${error}`);
       }
     },
-    [availableInputs, onSelectInput]
+    [availableInputs, selectInput]
   );
 
   useEffect(() => {

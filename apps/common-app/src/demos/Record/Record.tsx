@@ -7,10 +7,11 @@ import {
   concatAudioFiles,
   FileFormat,
   RecordingNotificationManager,
+  useAudioInput,
 } from 'react-native-audio-api';
 
 import { Alert, StyleSheet, View } from 'react-native';
-import { Container } from '../../components';
+import { Container, Select } from '../../components';
 
 import { Easing, useSharedValue, withTiming } from 'react-native-reanimated';
 import { audioRecorder as Recorder, audioContext } from '../../singletons';
@@ -43,11 +44,35 @@ const Record: FC = () => {
       : RecordingState.Recording;
   });
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
+  const [isInterrupted, setIsInterrupted] = useState(false);
   const [recordedBuffer, setRecordedBuffer] = useState<AudioBuffer | null>(
     null
   );
   const currentPositionSV = useSharedValue(0);
   const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const stateRef = useRef(state);
+  const { availableInputs, currentInput, selectInput } = useAudioInput();
+
+  const inputLabels = availableInputs.map(
+    (device) => `${device.name} · ${device.category} #${device.id}`
+  );
+  const currentInputLabel = currentInput
+    ? inputLabels[availableInputs.indexOf(currentInput)]
+    : 'System default';
+
+  const onSelectInputLabel = async (label: string) => {
+    const input = availableInputs[inputLabels.indexOf(label)];
+
+    if (!input) {
+      return;
+    }
+
+    try {
+      await selectInput(input);
+    } catch (error) {
+      Alert.alert('Input Device Error', `${error}`);
+    }
+  };
 
   const stopPlayback = useCallback(() => {
     const source = playbackSourceRef.current;
@@ -96,10 +121,12 @@ const Record: FC = () => {
       setHasPermissions(true);
     }
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'default',
+        options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
+      },
     });
 
     try {
@@ -116,6 +143,7 @@ const Record: FC = () => {
     setupNotification(false);
 
     if (result.status === 'success') {
+      setIsInterrupted(false);
       setState(RecordingState.Recording);
       return;
     }
@@ -128,6 +156,7 @@ const Record: FC = () => {
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
     updateNotification(true);
+    setIsInterrupted(false);
     setState(RecordingState.Paused);
   }, []);
 
@@ -163,6 +192,7 @@ const Record: FC = () => {
     const info = await Recorder.stop();
     AudioRecorder.consumeLastRecordingResult();
     RecordingNotificationManager.hide();
+    setIsInterrupted(false);
     setState(RecordingState.Loading);
 
     if (info.status !== 'success') {
@@ -275,6 +305,10 @@ const Record: FC = () => {
   );
 
   useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
     (async () => {
       const recordingPermissionStatus =
         await AudioManager.checkRecordingPermissions();
@@ -292,6 +326,41 @@ const Record: FC = () => {
         }
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    AudioManager.observeAudioInterruptions(true);
+
+    const interruptionSubscription = AudioManager.addSystemEventListener(
+      'interruption',
+      (event) => {
+        if (event.type === 'began') {
+          if (stateRef.current === RecordingState.Recording) {
+            setIsInterrupted(true);
+          }
+          return;
+        }
+
+        if (event.type === 'ended') {
+          setIsInterrupted(false);
+        }
+      }
+    );
+
+    return () => {
+      interruptionSubscription.remove();
+      AudioManager.observeAudioInterruptions(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    Recorder.onError((error) => {
+      Alert.alert('Recorder Error', error.message);
+    });
+
+    return () => {
+      Recorder.clearOnError();
+    };
   }, []);
 
   useEffect(() => {
@@ -358,6 +427,13 @@ const Record: FC = () => {
 
   return (
     <Container disablePadding>
+      <View style={styles.inputPicker}>
+        <Select
+          value={currentInputLabel}
+          options={inputLabels}
+          onChange={onSelectInputLabel}
+        />
+      </View>
       <Status state={state} />
       <View style={styles.spacerM} />
       {[RecordingState.Playing, RecordingState.ReadyToPlay].includes(state) ? (
@@ -372,7 +448,7 @@ const Record: FC = () => {
         <>
           <RecordingTime state={state} />
           <View style={styles.spacerS} />
-          <RecordingVisualization state={state} />
+          <RecordingVisualization state={state} isInterrupted={isInterrupted} />
         </>
       )}
       <View style={styles.spacerM} />
@@ -386,4 +462,5 @@ export default Record;
 const styles = StyleSheet.create({
   spacerM: { height: 24 },
   spacerS: { height: 12 },
+  inputPicker: { paddingHorizontal: 16, paddingTop: 12 },
 });

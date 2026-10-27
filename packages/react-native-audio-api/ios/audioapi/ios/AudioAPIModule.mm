@@ -131,6 +131,8 @@ RCT_EXPORT_METHOD(
     }
 
     NSError *error = nil;
+    const BOOL managedSessionWasActive =
+        self.audioSessionManager.shouldManageSession && self.audioSessionManager.isActive;
     auto success = [self.audioSessionManager setActive:enabled error:&error];
 
     if (!success) {
@@ -152,7 +154,7 @@ RCT_EXPORT_METHOD(
       return;
     }
 
-    if (!enabled) {
+    if (!enabled && managedSessionWasActive) {
       if ([NSThread isMainThread]) {
         [self handleSessionDeactivation];
       } else {
@@ -164,20 +166,22 @@ RCT_EXPORT_METHOD(
   });
 }
 
-RCT_EXPORT_METHOD(
-    setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-        options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
-            notifyOthersOnDeactivation)
+RCT_EXPORT_METHOD(setSystemOptions : (NSDictionary *)ios android : (NSDictionary *)android)
 {
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
   }
 
-  [self.audioSessionManager setAudioSessionOptions:category
-                                              mode:mode
-                                           options:options
-                                      allowHaptics:allowHaptics
-                        notifyOthersOnDeactivation:notifyOthersOnDeactivation];
+  // The Android options configure Android's audio mode and have no iOS counterpart.
+  NSNumber *notifyOthersOnDeactivation = ios[@"notifyOthersOnDeactivation"];
+
+  [self.audioSessionManager setAudioSessionOptions:ios[@"category"] ?: @""
+                                              mode:ios[@"mode"] ?: @""
+                                           options:ios[@"options"] ?: @[]
+                                      allowHaptics:[ios[@"allowHaptics"] boolValue]
+                        notifyOthersOnDeactivation:notifyOthersOnDeactivation == nil
+                            ? YES
+                            : [notifyOthersOnDeactivation boolValue]];
 }
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (NSString *)focusType enabled : (BOOL)enabled)
@@ -250,6 +254,22 @@ RCT_EXPORT_METHOD(
   });
 }
 
+/// Android-only: iOS routes communication through the audio session, so the request is
+/// accepted and ignored, like the Android-only fields of setSystemOptions.
+RCT_EXPORT_METHOD(
+    setCommunicationDevice : (NSString *)device resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  resolve(nil);
+}
+
+/// Android-only: resolves with null, there is no selected communication device on iOS.
+RCT_EXPORT_METHOD(
+    getCommunicationDevice : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  resolve(nil);
+}
+
 RCT_EXPORT_METHOD(disableSessionManagement)
 {
   [self.audioSessionManager disableSessionManagement];
@@ -260,42 +280,41 @@ RCT_EXPORT_METHOD(
     showNotification : (NSString *)type key : (NSString *)key options : (NSDictionary *)
         options resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    BOOL success = [self.notificationRegistry showNotificationWithType:type
-                                                                   key:key
-                                                               options:options];
-
-    if (success) {
-      resolve(@{@"success" : @true});
-    } else {
-      resolve(@{@"success" : @false, @"error" : @"Failed to show notification"});
-    }
-  });
+  [self.notificationRegistry
+      showNotificationWithType:type
+                           key:key
+                       options:options
+                    completion:^(BOOL success) {
+                      if (success) {
+                        resolve(@{@"success" : @true});
+                      } else {
+                        resolve(@{@"success" : @false, @"error" : @"Failed to show notification"});
+                      }
+                    }];
 }
 
 RCT_EXPORT_METHOD(
     hideNotification : (NSString *)key resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    BOOL success = [self.notificationRegistry hideNotificationWithKey:key];
-
-    if (success) {
-      resolve(@{@"success" : @true});
-    } else {
-      resolve(@{@"success" : @false, @"error" : @"Failed to hide notification"});
-    }
-  });
+  [self.notificationRegistry
+      hideNotificationWithKey:key
+                   completion:^(BOOL success) {
+                     if (success) {
+                       resolve(@{@"success" : @true});
+                     } else {
+                       resolve(@{@"success" : @false, @"error" : @"Failed to hide notification"});
+                     }
+                   }];
 }
 
 RCT_EXPORT_METHOD(
     isNotificationActive : (NSString *)key resolve : (RCTPromiseResolveBlock)
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
-  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    BOOL isActive = [self.notificationRegistry isNotificationActiveWithKey:key];
-    resolve(@(isActive));
-  });
+  [self.notificationRegistry
+      isNotificationActiveWithKey:key
+                       completion:^(BOOL isActive) { resolve(@(isActive)); }];
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED

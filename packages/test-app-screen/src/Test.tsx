@@ -73,7 +73,7 @@ const Test: FC = () => {
         console.error('Recording permission denied', err);
         return;
       }
-      AudioManager.setAudioSessionOptions({
+      AudioManager.setSystemOptions({
         iosCategory: 'playAndRecord',
         iosMode: 'spokenAudio',
         iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],

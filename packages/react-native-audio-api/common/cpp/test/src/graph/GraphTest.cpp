@@ -605,6 +605,28 @@ TEST_F(GraphTest, RenegotiateNode_SourceOutputChannelNumberChange_CascadesDownst
          "downstream buffer must widen to 2 channels";
 }
 
+TEST_F(GraphTest, RenegotiateNode_LeavesSourceBufferToTheSource) {
+  // A source swaps its own output buffer together with the content that sets
+  // its width (AudioBufferSourceNode `setBuffer`); the graph must only cascade
+  // the declared width downstream, never install a buffer on the source.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/1);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(dest), 1u);
+
+  // Declare stereo without swapping the source's buffer, as the host object
+  // does before its own swap event lands.
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(2);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(source), 1u) << "The graph must not touch a source's output buffer";
+  EXPECT_EQ(channelsOf(dest), 2u) << "The declared width still cascades downstream";
+}
+
 TEST_F(GraphTest, RenegotiateNode_CascadesDownstream) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
@@ -628,6 +650,80 @@ TEST_F(GraphTest, RenegotiateNode_CascadesDownstream) {
   EXPECT_EQ(channelsOf(mid), 6u);
   EXPECT_EQ(channelsOf(dest), 6u)
       << "MAX-mode downstream must follow the renegotiated 6-channel upstream output";
+}
+
+// ─── Several changes applied in one render quantum ─────────────────────────
+//
+// On a running context the audio thread applies every queued event at the
+// start of the next quantum, so these tests skip `processEvents()` between the
+// changes. A node that goes back to its live width within the batch must still
+// queue a swap, otherwise the earlier queued swap is applied last.
+
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_BatchedChangesBackToLiveWidth) {
+  auto *mono = addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *stereo =
+      addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(mono, dest).is_ok());
+  ASSERT_TRUE(graph->addEdge(stereo, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "Connecting a mono and a stereo input in one batch must leave a stereo buffer";
+}
+
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_BatchedConnectThenDisconnect) {
+  auto *mono = addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(mono, dest).is_ok());
+  ASSERT_TRUE(graph->removeEdge(mono, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "Without inputs the buffer falls back to channelCount, even if a mono swap was queued";
+}
+
+TEST_F(GraphTest, RenegotiateNode_BatchedSourceWideningAfterConnect) {
+  // Mirrors `source.connect(gain); source.buffer = stereoBuffer;` in one JS task.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/1);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(2);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "A source widened to stereo in the same batch as its connect must leave a stereo buffer";
+}
+
+TEST_F(GraphTest, RenegotiateNode_TriangleReadsSiblingAfterItNarrows) {
+  // source → join, source → sibling → join, with source → join connected
+  // first, so a depth-first cascade reaches `join` before `sibling`. `join`
+  // must still read the narrowed width of `sibling`, not the stale one.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/2);
+  auto *sibling = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  auto *join = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, join).is_ok());
+  ASSERT_TRUE(graph->addEdge(source, sibling).is_ok());
+  ASSERT_TRUE(graph->addEdge(sibling, join).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(sibling), 2u);
+  ASSERT_EQ(channelsOf(join), 2u);
+
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(1);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(sibling), 1u);
+  EXPECT_EQ(channelsOf(join), 1u) << "Both inputs of the join are mono now";
 }
 
 } // namespace audioapi::utils::graph

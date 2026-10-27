@@ -105,7 +105,7 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
     offset = std::min(offset, loopEnd_);
   }
 
-  vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
+  vReadIndex_ = buffer_->getSampleRate() * offset;
 }
 
 void AudioBufferSourceNode::disable() {

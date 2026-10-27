@@ -67,6 +67,7 @@
     "android/",
     "ios",
     "RNAudioAPI.podspec",
+    "Package.swift",
     "metro-config",
     "!ios/build",
     "!android/build",
@@ -85,6 +86,10 @@
     "!common/cpp/test",
     "!android/src/main/jniLibs",
     "!common/cpp/audioapi/external/include_ffmpeg",
+    "!common/cpp/audioapi/external/xcframeworks",
+    "!common/cpp/audioapi/external/android",
+    "ios/spm/include/.gitkeep",
+    "ios/spm/dsp-include/.gitkeep",
     "scripts/setup-rn-audio-api-web.js",
     "scripts/rnaa_utils.rb",
     "scripts/download-prebuilt-binaries.sh",
@@ -250,6 +255,9 @@
     "android": {
       "javaPackageName": "com.swmansion.audioapi"
     }
+  },
+  "swiftpmConfig": {
+    "name": "ReactNativeAudioApi"
   },
   "create-react-native-library": {
     "type": "module-legacy",
