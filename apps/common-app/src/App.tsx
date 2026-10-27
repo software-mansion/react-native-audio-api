@@ -18,6 +18,9 @@ const linking: LinkingOptions<RootStackParamList> = {
     initialRouteName: 'MainTabs',
     screens: {
       RecordDemo: 'record',
+      // audioapi-example://orchestra?url=ws://host:8765 — what the conductor
+      // dashboard's QR code encodes.
+      Orchestra: 'orchestra',
     },
   },
 };
