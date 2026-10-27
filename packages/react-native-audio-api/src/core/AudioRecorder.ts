@@ -78,10 +78,13 @@ export default class AudioRecorder {
    * and **≥ 200 KB** for M4A. This option controls segment file size, not
    * recording memory use.
    *
+   * The file sample rate (`preset.sampleRate`) must be at most 48000 Hz: the
+   * iOS and Android system encoders accept no higher rate.
+   *
    * @throws {@link NotSupportedError} When the format cannot be encoded by this
-   *   platform's system encoders, the file options are invalid, or a recording
-   *   session is active. The previous file-output configuration stays in
-   *   effect.
+   *   platform's system encoders, the file options are invalid (including a
+   *   sample rate above 48000 Hz), or a recording session is active. The
+   *   previous file-output configuration stays in effect.
    */
   enableFileOutput(options?: AudioRecorderFileOptions): void {
     const requestedOptions = options || {};

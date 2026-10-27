@@ -695,7 +695,9 @@ export default MyRecorder;
 
           Must be called while the recorder is idle: the file is created by the next [start](#start). The requested format is checked against the platform's system encoders at this call, so an unsupported format fails here.
 
-          Throws `NotSupportedError` when the format cannot be encoded on this platform, the options are invalid, or a recording (or paused) session is active. In every case the previous file-output configuration stays in effect.
+          The file sample rate (`preset.sampleRate`) must be at most 48000 Hz, the highest rate the iOS and Android system encoders accept.
+
+          Throws `NotSupportedError` when the format cannot be encoded on this platform, the options are invalid (including a sample rate above 48000 Hz), or a recording (or paused) session is active. In every case the previous file-output configuration stays in effect.
 
           For further information, see [AudioRecorderFileOptions](#audiorecorderfileoptions) and the per-platform format table in [FileFormat](#fileformat).
         </div>
@@ -1033,6 +1035,10 @@ Both `Adts` and `Flac` files stay decodable after an app crash, but only the for
 `Adts` accepts only the sample rates the device's AAC encoder supports: 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100 and 48000 Hz with the iOS and Android system encoders.
 :::
 
+:::note Sample rate limit
+Every format is encoded at no more than 48000 Hz, because that is the highest rate the iOS and Android system encoders accept. [`enableFileOutput`](#enablefileoutput) rejects a higher `sampleRate`.
+:::
+
 :::caution Platform support
 Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusOgg` on iOS) fails when file output is enabled, with a descriptive error. Some Android formats also depend on the device OS version (Opus/OGG muxing requires newer releases); if a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, `Flac` or `Adts` for the widest cross-platform support.
 :::
@@ -1193,7 +1199,7 @@ export interface FilePresetType {
       </div></td>
       <td>
         <div class="text-content">
-            Specifies the sampling frequency used during recording. Higher sample rates capture a wider frequency range but increase processing and storage requirements. AAC output in the `Adts` format is limited to the standard AAC rates listed under [`FileFormat`](#fileformat).
+            Specifies the sampling frequency used during recording. Higher sample rates capture a wider frequency range but increase processing and storage requirements. The maximum is 48000 Hz for every format; [`enableFileOutput`](#enablefileoutput) rejects higher values. AAC output in the `Adts` format is limited to the standard AAC rates listed under [`FileFormat`](#fileformat).
         </div>
       </td>
     </tr>
