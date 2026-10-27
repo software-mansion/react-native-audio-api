@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "test:voice": "jest --config jest.voice.config.json",
     "typecheck:voice": "tsc --project tsconfig.voice.json --noEmit"
   },
   "peerDependencies": {

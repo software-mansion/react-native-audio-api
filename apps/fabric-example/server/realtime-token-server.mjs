@@ -3,6 +3,10 @@ import { pathToFileURL } from 'node:url';
 
 const port = Number(process.env.TOKEN_SERVER_PORT ?? 8787);
 const model = 'gpt-realtime-2.1-mini';
+const missingKeyMessage =
+  'Missing OPENAI_API_KEY on the token server. From the repository root, run ' +
+  '`cp -n apps/fabric-example/.env.example apps/fabric-example/.env.local`, ' +
+  'set OPENAI_API_KEY in .env.local, then restart `yarn server`.';
 
 const session = {
   type: 'realtime',
@@ -58,9 +62,7 @@ export const server = createServer(async (request, response) => {
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    sendJson(response, 500, {
-      error: 'Missing OPENAI_API_KEY on the token server',
-    });
+    sendJson(response, 500, { error: missingKeyMessage });
     return;
   }
 
@@ -109,5 +111,8 @@ if (
 ) {
   server.listen(port, '0.0.0.0', () => {
     console.log(`Voice token server listening on http://0.0.0.0:${port}`);
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn(missingKeyMessage);
+    }
   });
 }

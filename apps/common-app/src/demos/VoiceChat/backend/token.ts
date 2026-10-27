@@ -23,10 +23,23 @@ export async function fetchEphemeralKey(
     controller.abort();
   }, TOKEN_REQUEST_TIMEOUT_MS);
 
+  const url = tokenUrl();
   try {
-    const response = await fetch(tokenUrl(), { signal: controller.signal });
+    const response = await fetch(url, { signal: controller.signal }).catch(
+      (error) => {
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw error;
+        }
+        throw new Error(
+          `Could not reach the token server at ${url}. Start it with \`yarn server\` from the repository root.`
+        );
+      }
+    );
     if (!response.ok) {
-      throw new Error(`Token server returned ${response.status}`);
+      const body = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      throw new Error(body.error ?? `Token server returned ${response.status}`);
     }
 
     const body = (await response.json()) as { model?: string; value?: string };
