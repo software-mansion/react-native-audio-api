@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The React Native Gradle plugin turns `usesCleartextTraffic` off for
+     release builds, which also blocks the phone-orchestra demo's plain
+     ws:// link to a conductor on the LAN (its address is only known at
+     runtime, so no domain-scoped exception can cover it). This config takes
+     precedence over that flag on API 24+. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
