@@ -1,0 +1,287 @@
+---
+sidebar_position: 1.5
+sidebar_label: Migrating from 0.x
+---
+
+# Migrating from 0.x to 1.x
+
+Version 1.0 brings the library closer to the [Web Audio API specification](https://webaudio.github.io/web-audio-api/), moves optional features out of the default build, and cleans up APIs that grew organically during the 0.x releases. This page lists everything you may need to change when upgrading from `0.13.x`.
+
+The guide is split into two parts:
+
+1. [Installation and build](#installation-and-build) — changes you hit before the app even starts.
+2. [API changes](#api-changes) — code that no longer compiles or no longer works.
+
+:::tip
+If you use TypeScript, start by upgrading and running `tsc`. Most items in [API changes](#api-changes) surface as type errors. The renamed event handlers are the exception in plain JavaScript — assigning an old name silently creates an unused property.
+:::
+
+## Installation and build
+
+### FFmpeg is now opt-in
+
+In 0.x, FFmpeg was linked by default and you could turn it off. In 1.x, it is **off by default**. Local files, assets and `ArrayBuffer`s — including `m4a`, `aac` and `mp4` — are now decoded with the platform decoders, so most apps no longer need FFmpeg at all.
+
+You still need FFmpeg for:
+
+- remote URL streaming with `createFileSource` or [`<Audio>`](../sources/audio-tag.mdx) (without it, a remote file is downloaded in full before playback starts, so a live stream never starts),
+- HLS (`.m3u8`) sources, which throw `NotSupportedError` without FFmpeg,
+- [`getAudioDuration`](../utils/decoding.mdx) on remote URLs and `<Audio preload="metadata">`.
+
+The build options also moved. The Podfile environment variables and `gradle.properties` keys are no longer read — set the options in your app's `package.json` (or the Expo plugin) instead:
+
+```text title="No longer read"
+// diff-remove-start
+# Podfile
+ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'
+ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] = '1'
+# android/gradle.properties
+disableAudioapiFFmpeg=true
+disableAudioapiStaticExternalLibs=true
+// diff-remove-end
+```
+
+```json title="package.json"
+{
+  "react-native-audio-api": {
+    "enableFFmpeg": true,
+    "disableStaticExternalLibs": false
+  }
+}
+```
+
+With Expo, replace `disableFFmpeg` with `enableFFmpeg` in the plugin options. The plugin writes the values into your `package.json` during `expo prebuild`, so commit that change.
+
+```json
+["react-native-audio-api", {
+// diff-remove-start
+  "disableFFmpeg": true
+// diff-remove-end
+// diff-add-start
+  "enableFFmpeg": true
+// diff-add-end
+}]
+```
+
+:::caution
+If you previously disabled the static external libraries (Opus, Vorbis) through the Podfile or `gradle.properties`, they are linked again until you move the option to `package.json`.
+:::
+
+[`isFfmpegEnabled()`](../other/runtime-flags.mdx#isffmpegenabled) keeps its name, but now returns `false` unless you enabled FFmpeg — including in the `react-native-audio-api/mock` implementation. See [Prebuilt libraries support](../other/prebuilt-libraries-support.mdx) for details.
+
+### Worklets moved to `react-native-audio-worklets`
+
+`WorkletNode`, `WorkletProcessingNode` and `WorkletSourceNode` are no longer part of `react-native-audio-api`, and the `react-native-worklets` auto-detection was removed from the native build. If you use worklets, install the new package:
+
+```sh
+npm install react-native-audio-worklets react-native-worklets
+```
+
+`react-native-audio-worklets` requires `react-native-worklets >= 0.10.0` (0.x required `>= 0.7.0`) and the [New Architecture](https://reactnative.dev/docs/the-new-architecture/landing-page). Code changes are described in [Worklet nodes](#worklet-nodes).
+
+### Deep imports no longer resolve
+
+The package now declares an `exports` map. Only these entry points are public:
+
+- `react-native-audio-api`
+- `react-native-audio-api/mock`
+- `react-native-audio-api/app.plugin.js` (used automatically by the Expo plugin)
+
+Imports such as `react-native-audio-api/lib/...` or `react-native-audio-api/src/...` fail in bundlers and tools that respect package exports (Metro, Jest, webpack, TypeScript with `moduleResolution: "bundler"`). Import everything from the package root.
+
+### Native build defaults
+
+- A missing New Architecture flag now means the New Architecture is **enabled**. Apps on the legacy architecture must set `newArchEnabled=false` (Android) or `RCT_NEW_ARCH_ENABLED=0` (iOS) explicitly. The React Native templates already do this.
+- The package declares `engines.node >= 22`.
+- Swift Package Manager is supported as an alternative to CocoaPods — see [Swift Package Manager](../other/swift-package-manager.mdx). Nothing changes for CocoaPods users.
+
+## API changes
+
+### Event handlers use lowercase names
+
+Event handler properties now follow the Web Audio API naming. The old camelCase names were removed without aliases.
+
+| 0.x | 1.x |
+| :-- | :-- |
+| `onEnded` | `onended` |
+| `onLoopEnded` | `onloopended` |
+| `onBufferEnded` | `onbufferended` |
+| `onPositionChanged` | `onpositionchanged` |
+| `onPositionChangedInterval` | `onpositionchangedInterval` |
+
+```tsx
+// diff-remove-start
+source.onEnded = () => setPlaying(false);
+// diff-remove-end
+// diff-add-start
+source.onended = () => setPlaying(false);
+// diff-add-end
+```
+
+Scheduled sources additionally support `addEventListener('ended', ...)` / `removeEventListener('ended', ...)`, and the `ended` event carries `type` and `target`. Reassigning a handler now replaces the previous one; in 0.x the old callback kept firing.
+
+[`<Audio>`](../sources/audio-tag.mdx) props (`onEnded`, `onPositionChange`, …), `AudioRecorder` callbacks and system events are **not** renamed.
+
+### Removed APIs
+
+| Removed | Replacement |
+| :-- | :-- |
+| `StreamerNode`, `createStreamer()`, `StreamerOptions` | `createFileSource` or [`<Audio>`](../sources/audio-tag.mdx) (remote streaming requires [FFmpeg](#ffmpeg-is-now-opt-in)) |
+| `RecorderAdapterNode`, `createRecorderAdapter()` | [`recorder.connect(context, destination)`](#recorder-graph-connection) |
+| `createWorkletNode()`, `createWorkletProcessingNode()`, `createWorkletSourceNode()`, `AudioWorkletRuntime` | [`react-native-audio-worklets`](#worklet-nodes) |
+| `AudioRecorderStartOptions` | `fileName` in [`enableFileOutput`](#recorder-file-output) |
+| `SessionOptions` type | `SystemOptions` |
+| `BaseAudioBufferSourceOptions` type | `AudioBufferQueueSourceOptions` |
+
+### `AudioRecorder`
+
+#### Recorder graph connection
+
+The recorder connects to the graph directly; the adapter node is created internally.
+
+```tsx
+// diff-remove-start
+const adapter = ctx.createRecorderAdapter();
+recorder.connect(adapter);
+adapter.connect(ctx.destination);
+// diff-remove-end
+// diff-add-start
+recorder.connect(ctx, ctx.destination);
+// diff-add-end
+```
+
+`connect` returns the destination node, so you can keep chaining. See [Graph processing](../inputs/audio-recorder.mdx#graph-processing).
+
+#### Recorder file output
+
+- `start()` no longer takes options. The file name moved to [`enableFileOutput`](../inputs/audio-recorder.mdx#recording-to-file), and `fileNamePrefix` was removed.
+- `fileName` is used exactly as given (no timestamp appended) and overwrites an existing file. Without it, files are named `recording_<timestamp>`. Names must not contain `.`, `/` or `\` and are limited to 128 characters.
+- `enableFileOutput` **throws** `NotSupportedError` instead of returning an error `Result` — when the format cannot be encoded on the platform, when options are invalid, or while recording.
+- Recording to `Caf` on Android is no longer supported and throws.
+
+```tsx
+// diff-remove-start
+const result = recorder.enableFileOutput({ fileNamePrefix: 'take' });
+if (result.status === 'error') { /* ... */ }
+await recorder.start({ fileNameOverride: 'take1' });
+// diff-remove-end
+// diff-add-start
+try {
+  recorder.enableFileOutput({ fileName: 'take1' });
+} catch (e) { /* NotSupportedError */ }
+await recorder.start();
+// diff-add-end
+```
+
+#### Asynchronous `pause`, `resume` and `disableFileOutput`
+
+These methods now return a `Promise<void>`. Calls are serialized with `start()` and `stop()`, and `disableFileOutput()` during a recording resolves once the current file is finalized.
+
+```tsx
+// diff-remove-start
+recorder.pause();
+// diff-remove-end
+// diff-add-start
+await recorder.pause();
+// diff-add-end
+```
+
+### `AudioManager` and hooks
+
+`setAudioSessionOptions` was renamed to [`setSystemOptions`](../system/audio-manager.mdx#setsystemoptions), and iOS options are nested under `ios` without the `ios` prefix. A new optional `android` section configures the Android communication session.
+
+```tsx
+// diff-remove-start
+AudioManager.setAudioSessionOptions({
+  iosCategory: 'playAndRecord',
+  iosMode: 'default',
+  iosOptions: ['defaultToSpeaker'],
+  iosAllowHaptics: true,
+});
+// diff-remove-end
+// diff-add-start
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'playAndRecord',
+    mode: 'default',
+    options: ['defaultToSpeaker'],
+    allowHaptics: true,
+  },
+});
+// diff-add-end
+```
+
+In [`useAudioInput`](../hooks/audio-input.mdx), `onSelectInput` was renamed to `selectInput`. It also accepts `'default'` to hand input selection back to the system, as does [`AudioManager.setInputDevice`](../system/audio-manager.mdx#setinputdevice).
+
+```tsx
+// diff-remove-start
+const { onSelectInput } = useAudioInput();
+// diff-remove-end
+// diff-add-start
+const { selectInput } = useAudioInput();
+// diff-add-end
+```
+
+### `AudioBufferQueueSourceNode`
+
+The node now has a proper playback state machine. Use [`resume()`](../sources/audio-buffer-queue-source-node.mdx#resume) after `pause()` instead of calling `start()` again:
+
+```tsx
+queue.pause();
+// diff-remove-start
+queue.start();
+// diff-remove-end
+// diff-add-start
+queue.resume();
+// diff-add-end
+```
+
+- `start()` can be called only once and throws `InvalidStateError` afterwards, also after `stop()`.
+- The default `offset` of `start(when, offset)` changed from `-1` to `0`.
+- `pause()` throws `InvalidStateError` unless the node is playing; `resume()` throws unless it is paused.
+
+### Worklet nodes
+
+Worklet nodes are classes imported from `react-native-audio-worklets` instead of factory methods on the context. Import `react-native-audio-api` before the worklets package.
+
+```tsx
+// diff-add-start
+import 'react-native-audio-api';
+import { WorkletNode, WorkletProcessingNode } from 'react-native-audio-worklets';
+// diff-add-end
+
+// diff-remove-start
+const viz = ctx.createWorkletNode(
+  (audioData: Float32Array[], channelCount: number) => { 'worklet'; /* ... */ },
+  1024, 2, 'UIRuntime',
+);
+// diff-remove-end
+// diff-add-start
+const viz = new WorkletNode(
+  ctx,
+  (audioData: Float32Array) => { 'worklet'; /* ... */ },
+  1024,
+);
+// diff-add-end
+
+// diff-remove-start
+const fx = ctx.createWorkletProcessingNode(
+  (input, output, framesToProcess, currentTime) => { 'worklet'; /* ... */ },
+  'AudioRuntime',
+);
+// diff-remove-end
+// diff-add-start
+const fx = new WorkletProcessingNode(
+  ctx,
+  (input, output, inputChannelCount, outputChannelCount, framesToProcess, currentTime) => {
+    'worklet';
+    /* ... */
+  },
+);
+// diff-add-end
+```
+
+- `WorkletNode` always runs on the UI runtime and receives a single down-mixed mono `Float32Array`. `bufferLength` must be a power of two between 32 and 32768. A new `'frequency-domain'` mode is available.
+- `WorkletProcessingNode` and `WorkletSourceNode` always run on the audio runtime, and their callbacks receive the channel counts before `framesToProcess`.
+
+See [Worklets](../worklets/introduction.mdx) for the full API, including the new `WorkletAudioContext`.
