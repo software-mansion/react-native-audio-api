@@ -11,11 +11,15 @@ interface RecorderPanelProps {
 }
 
 const RecorderPanel: FC<RecorderPanelProps> = ({ log, onTake }) => {
-  const { status, start, pause, resume, stop } = useRecorder(log, onTake);
+  const { status, level, start, pause, resume, stop } = useRecorder(
+    log,
+    onTake
+  );
 
   return (
     <Section title="Recorder">
       <StatusText testID="recorder-status" text={status} />
+      <StatusText testID="recorder-level" text={level} />
       <ButtonRow>
         <Button testID="recorder-start" title="Record" onPress={start} />
         <Button testID="recorder-pause" title="Pause" onPress={pause} />

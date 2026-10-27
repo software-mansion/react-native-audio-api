@@ -9,6 +9,13 @@ import {
 
 import { recorderOptions } from '../../singletons';
 import { Log, logAction } from './log';
+import {
+  appendLevel,
+  glyphForPeak,
+  LEVEL_CALLBACK_OPTIONS,
+  NO_BUFFERS,
+  peakAmplitude,
+} from './recordingLevel';
 import { usePolled } from './usePolled';
 
 const FILE_OPTIONS = {
@@ -44,6 +51,7 @@ async function joinTake(paths: string[]): Promise<string> {
 /** Owns the playground's own recorder; `onTake` receives each finished file. */
 export function useRecorder(log: Log, onTake: (path: string) => void) {
   const [recorder] = useState(() => new AudioRecorder(recorderOptions));
+  const [level, setLevel] = useState(NO_BUFFERS);
   const status = usePolled(
     useCallback(() => describeRecorder(recorder), [recorder])
   );
@@ -55,9 +63,18 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
     logAction(log, 'recorder enable file output', () =>
       recorder.enableFileOutput(FILE_OPTIONS)
     );
+    logAction(log, 'recorder listen', () => {
+      unwrap(
+        recorder.onAudioReady(LEVEL_CALLBACK_OPTIONS, ({ buffer }) => {
+          const glyph = glyphForPeak(peakAmplitude(buffer.getChannelData(0)));
+          setLevel((previous) => appendLevel(previous, glyph));
+        })
+      );
+    });
     recorder.onError(({ message }) => log(`recorder error ${message}`));
 
     return () => {
+      recorder.clearOnAudioReady();
       recorder.clearOnError();
       if (recorder.isRecording() || recorder.isPaused()) {
         logAction(log, 'recorder stop on leaving the screen', async () => {
@@ -71,6 +88,7 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
   const start = useCallback(async () => {
     const permission = await AudioManager.requestRecordingPermissions();
     log(`recorder permission ${permission}`);
+    setLevel(NO_BUFFERS);
     await logAction(log, 'recorder start', async () =>
       unwrap(await recorder.start())
     );
@@ -113,5 +131,5 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
     }
   }, [log, recorder, onTake]);
 
-  return { status, start, pause, resume, stop };
+  return { status, level, start, pause, resume, stop };
 }
