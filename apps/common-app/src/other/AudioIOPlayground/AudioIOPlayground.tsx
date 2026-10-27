@@ -8,7 +8,7 @@ import { useLog } from './log';
 import LogView from './LogView';
 import PlaybackPanel from './PlaybackPanel';
 import RecorderPanel from './RecorderPanel';
-import SessionPanel from './SessionPanel';
+import SystemPanel from './SystemPanel';
 import { useSystemEventLog } from './useSystemEventLog';
 
 const AudioIOPlayground: FC = () => {
@@ -19,7 +19,7 @@ const AudioIOPlayground: FC = () => {
   return (
     <Container disablePadding>
       <ScrollView contentContainerStyle={styles.panels}>
-        <SessionPanel log={log} />
+        <SystemPanel log={log} />
         <RecorderPanel log={log} onTake={setLastTakePath} />
         <PlaybackPanel log={log} lastTakePath={lastTakePath} />
         <DevicePanel log={log} />

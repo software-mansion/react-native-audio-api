@@ -5,8 +5,8 @@
 export const NO_BUFFERS = 'no buffers';
 
 /**
- * One callback is one column. At the requested quarter-second chunk.
- * Newest stays on the right.
+ * One callback is one column. At the requested quarter-second chunk. Newest
+ * stays on the right.
  */
 const COLUMN_COUNT = 16;
 

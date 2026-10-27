@@ -22,6 +22,7 @@ apps/
         ├── components/       # Shared UI: Container, Button, Slider, Spacer, Switch, Select
         ├── utils/
         │   ├── soundEngines/ # Reusable synth classes (MetronomeSound, Kick, HiHat, Clap)
+        │   ├── systemOptions.ts # Runtime lists of every IOSCategory/IOSMode/IOSOption/AndroidAudioMode/CommunicationDevice (the library exports only the types)
         │   └── usePlayer.tsx # Hook for pattern-based scheduled playback
         ├── singletons/       # Global audioContext and audioRecorder instances
         └── styles.ts         # Shared colors and layout constants
