@@ -8,7 +8,7 @@ namespace audioapi::adts {
 namespace {
 
 /// Indexed by the sampling frequency index of the AudioSpecificConfig.
-constexpr std::array<int, 13> SAMPLING_FREQUENCIES = {
+constexpr std::array<int, 12> SAMPLING_FREQUENCIES = {
     96000,
     88200,
     64000,
