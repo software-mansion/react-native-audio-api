@@ -29,7 +29,7 @@ const PlatformFileBackend &osFileBackend() {
   static const PlatformFileBackend backend{
       .resolveOutputSpec = &encoder_capabilities::resolveOutputSpec,
       .resolvePath = &resolveOsFilePath,
-      .createEncoder = &createOsEncoder,
+      .createEncoder = &createPlatformEncoder,
   };
   return backend;
 }

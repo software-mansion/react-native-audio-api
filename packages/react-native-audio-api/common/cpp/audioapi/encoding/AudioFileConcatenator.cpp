@@ -2,9 +2,11 @@
 #include <audioapi/decoding/DecoderFactory.h>
 #include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/encoding/AudioFileConcatenator.h>
+#include <audioapi/encoding/BundledEncoders.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
 #include <audioapi/encoding/OSEncoding.h>
 #include <audioapi/encoding/OSRemux.h>
+#include <audioapi/encoding/OggOpusRemux.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/FileSystem.hpp>
@@ -66,7 +68,13 @@ ValidationResult validatePaths(
 
 /// The formats concat can write. The output path's extension picks one, and every input must
 /// carry the same extension.
-constexpr std::array CONCAT_OUTPUT_FORMATS = {FileFormat::WAV, FileFormat::M4A, FileFormat::FLAC};
+constexpr std::array CONCAT_OUTPUT_FORMATS = {
+    FileFormat::WAV,
+    FileFormat::M4A,
+    FileFormat::FLAC,
+    FileFormat::OPUS_OGG};
+constexpr const char *UNSUPPORTED_OUTPUT_FORMAT =
+    "concatAudioFiles supports WAV, M4A, FLAC, and OGG (Opus) output.";
 
 std::string extensionOf(FileFormat format) {
   return std::string(encoder_capabilities::specForFormat(format).extension);
@@ -231,6 +239,24 @@ AudioFileConcatResult concatAudioFilesWithOsRemux(
   return remuxConcatAudioFiles(inputPaths, outputPath);
 }
 
+/// Ogg/Opus has no OS remux on either platform; the bundled libogg re-pages the packets.
+AudioFileConcatResult concatAudioFilesWithOggOpusRemux(
+    const std::vector<std::string> &inputPaths,
+    const std::string &outputPath) {
+  for (const auto &inputPath : inputPaths) {
+    if (!path::hasExtension(inputPath, {extensionOf(FileFormat::OPUS_OGG)})) {
+      return Err("concatAudioFiles OGG output requires all input files to use the OGG extension.");
+    }
+  }
+
+#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+  return ogg_opus::concatOggOpusFiles(inputPaths, outputPath);
+#else
+  (void)outputPath;
+  return Err("concatAudioFiles OGG output requires the bundled Opus libraries.");
+#endif
+}
+
 EncoderSettings makeEncoderSettings(FileFormat format, const AudioLayout &layout) {
   return EncoderSettings{
       .fileLayout = layout,
@@ -358,7 +384,7 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
 
 EncoderFactory platformEncoderFactory() {
 #if RN_AUDIO_API_HAS_OS_ENCODER
-  return &createOsEncoder;
+  return &createPlatformEncoder;
 #else
   return {};
 #endif
@@ -389,18 +415,25 @@ AudioFileConcatResult concatAudioFiles(
     return Err(std::move(pathValidationResult).unwrap_err());
   }
 
-  // M4A remuxes the inputs' AAC packets through OS APIs. WAV and FLAC have no remux path on
-  // either platform, so their inputs are decoded and re-encoded through the system encoder:
-  // WAV as float32 PCM, FLAC losslessly.
+  // M4A remuxes the inputs' AAC packets through OS APIs and Ogg/Opus its Opus packets through
+  // the bundled libogg. WAV and FLAC have no remux path on either platform, so their inputs
+  // are decoded and re-encoded through the system encoder: WAV as float32 PCM, FLAC losslessly.
   const auto outputFormat = outputFormatForPath(normalizedOutputPath);
   if (!outputFormat.has_value()) {
-    return Err("concatAudioFiles supports WAV, M4A, and FLAC output.");
+    return Err(UNSUPPORTED_OUTPUT_FORMAT);
   }
 
-  auto result = *outputFormat == FileFormat::M4A
-      ? concatAudioFilesWithOsRemux(normalizedInputPaths, normalizedOutputPath)
-      : concatAudioFilesWithEncoder(
+  AudioFileConcatResult result = [&] {
+    switch (*outputFormat) {
+      case FileFormat::M4A:
+        return concatAudioFilesWithOsRemux(normalizedInputPaths, normalizedOutputPath);
+      case FileFormat::OPUS_OGG:
+        return concatAudioFilesWithOggOpusRemux(normalizedInputPaths, normalizedOutputPath);
+      default:
+        return concatAudioFilesWithEncoder(
             normalizedInputPaths, normalizedOutputPath, *outputFormat, createEncoder);
+    }
+  }();
   return std::move(result).map([&outputPath](const std::string &) { return outputPath; });
 }
 

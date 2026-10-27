@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/encoding/AudioEncoder.h>
+#include <audioapi/encoding/OggOpusEncoder.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
 #include <memory>
@@ -23,8 +24,14 @@ using Encoder = ios::encoder::IOSEncoder;
 
 namespace audioapi {
 
-/// Fails on platforms without a system encoder (e.g. the desktop test build).
-inline CreateEncoderResult createOsEncoder(const EncoderSettings &settings) {
+/// The encoder for the format in @p settings: the platform's system encoder, except Opus,
+/// which has the shared encoder implementation.
+inline CreateEncoderResult createPlatformEncoder(const EncoderSettings &settings) {
+#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+  if (settings.encoding.format == AudioFileProperties::FileFormat::OPUS_OGG) {
+    return CreateEncoderResult::Ok(std::make_unique<ogg_opus::OggOpusEncoder>(settings));
+  }
+#endif
 #if RN_AUDIO_API_HAS_OS_ENCODER
   return CreateEncoderResult::Ok(std::make_unique<os_encoder::Encoder>(settings));
 #else

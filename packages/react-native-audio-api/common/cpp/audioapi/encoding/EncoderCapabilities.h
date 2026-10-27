@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/encoding/BundledEncoders.h>
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/Result.hpp>
@@ -7,8 +8,9 @@
 #include <array>
 #include <string>
 
-/// Declared system-API encoding capabilities of the current platform.
-/// A device may still reject a format at `AudioEncoder::open()`.
+/// Declared encoding capabilities of the current platform: its system encoders, plus the
+/// bundled Ogg/Opus encoder where the system has none. A device may still reject a format at
+/// `AudioEncoder::open()`.
 namespace audioapi::encoder_capabilities {
 
 /// Container/codec/extension of every file format, indexed by `AudioFileProperties::FileFormat`.
@@ -63,7 +65,9 @@ static_assert(
     kSpecsByFormat.size() == static_cast<size_t>(AudioFileProperties::FileFormat::ALAW) + 1,
     "Every AudioFileProperties::FileFormat needs an entry in kSpecsByFormat");
 
-/// Formats the platform's system encoders can produce.
+/// Formats this platform can write. Opus in Ogg comes from the bundled encoder on every
+/// platform (see OSEncoding.h); without it, iOS loses the format and Android falls back to
+/// AMediaMuxer, which writes it on Android 14 and later only.
 #ifdef __APPLE__
 inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::WAV,
@@ -74,6 +78,9 @@ inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::FLAC,
     AudioFileProperties::FileFormat::ULAW,
     AudioFileProperties::FileFormat::ALAW,
+#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+    AudioFileProperties::FileFormat::OPUS_OGG,
+#endif
 };
 #elif defined(__ANDROID__)
 inline constexpr std::array kSupportedFormats = {
@@ -83,6 +90,10 @@ inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::OPUS_OGG,
     AudioFileProperties::FileFormat::OPUS_WEBM,
     AudioFileProperties::FileFormat::VORBIS_WEBM,
+};
+#elif RN_AUDIO_API_BUNDLED_OGG_OPUS
+inline constexpr std::array kSupportedFormats = {
+    AudioFileProperties::FileFormat::OPUS_OGG,
 };
 #else
 inline constexpr std::array<AudioFileProperties::FileFormat, 0> kSupportedFormats = {};
