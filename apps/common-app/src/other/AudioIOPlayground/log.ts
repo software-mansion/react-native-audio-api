@@ -26,6 +26,14 @@ export function describeError(error: unknown): string {
 }
 
 /**
+ * `name(arg, …)` with every argument as JSON: the call exactly as the hook made
+ * it, for the log.
+ */
+export function describeCall(name: string, ...args: unknown[]): string {
+  return `${name}(${args.map((arg) => JSON.stringify(arg)).join(', ')})`;
+}
+
+/**
  * Newest entry first. Every line is mirrored to `console.log` with a
  * `[playground]` prefix, so it interleaves with the native logs in Xcode and
  * Logcat.

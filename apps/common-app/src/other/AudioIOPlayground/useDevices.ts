@@ -5,9 +5,20 @@ import {
   AudioManager,
 } from 'react-native-audio-api';
 
-import { describeError, Log, logAction } from './log';
+import { describeCall, describeError, Log, logAction } from './log';
 
 const SYSTEM_DEFAULT = 'System default';
+
+const CALLS = {
+  read: 'AudioManager.getDevicesInfo()',
+  setInput: 'AudioManager.setInputDevice',
+};
+
+export const DEVICE_CALLS = {
+  read: `${CALLS.read}, again on every 'routeChange' event`,
+  setInput: `${CALLS.setInput}(id), or ${CALLS.setInput}('default') for ${SYSTEM_DEFAULT}`,
+  refresh: CALLS.read,
+};
 
 const EMPTY_DEVICES: AudioDevicesInfo = {
   availableInputs: [],
@@ -42,13 +53,15 @@ export function useDevices(log: Log) {
   }, []);
 
   useEffect(() => {
-    logAction(log, 'devices read', readDevices);
+    logAction(log, CALLS.read, readDevices);
 
     const subscription = AudioManager.addSystemEventListener(
       'routeChange',
       () => {
         readDevices().catch((error) =>
-          log(`devices refresh: failed: ${describeError(error)}`)
+          log(
+            `${CALLS.read} after routeChange: failed: ${describeError(error)}`
+          )
         );
       }
     );
@@ -59,7 +72,7 @@ export function useDevices(log: Log) {
   const selectInput = useCallback(
     (label: string) => {
       if (label === SYSTEM_DEFAULT) {
-        logAction(log, 'devices set input System default', async () => {
+        logAction(log, describeCall(CALLS.setInput, 'default'), async () => {
           await AudioManager.setInputDevice('default');
           await readDevices();
         });
@@ -73,7 +86,7 @@ export function useDevices(log: Log) {
         return;
       }
 
-      logAction(log, `devices set input ${label}`, async () => {
+      logAction(log, describeCall(CALLS.setInput, device.id), async () => {
         await AudioManager.setInputDevice(device.id);
         setSelectedInputId(device.id);
         setDevices(await AudioManager.getDevicesInfo());
@@ -95,6 +108,6 @@ export function useDevices(log: Log) {
       ? deviceLabel(selectedDevice)
       : SYSTEM_DEFAULT,
     selectInput,
-    refresh: () => logAction(log, 'devices refresh', readDevices),
+    refresh: () => logAction(log, CALLS.read, readDevices),
   };
 }

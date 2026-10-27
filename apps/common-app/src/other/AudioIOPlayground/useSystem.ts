@@ -1,21 +1,29 @@
 import { useCallback } from 'react';
+import { Platform } from 'react-native';
 import { AudioManager, SystemOptions } from 'react-native-audio-api';
 
-import { Log, logAction } from './log';
-import { describeSystemOptions } from './systemPresets';
+import { describeCall, Log, logAction } from './log';
+
+export const SYSTEM_CALLS = {
+  apply: `AudioManager.setSystemOptions({ ${Platform.OS}: <fields above> })`,
+  activate: 'AudioManager.setAudioSessionActivity(true)',
+  deactivate: 'AudioManager.setAudioSessionActivity(false)',
+};
 
 export function useSystem(log: Log) {
   const apply = useCallback(
     (options: SystemOptions) =>
-      logAction(log, `system apply ${describeSystemOptions(options)}`, () =>
-        AudioManager.setSystemOptions(options)
+      logAction(
+        log,
+        describeCall('AudioManager.setSystemOptions', options),
+        () => AudioManager.setSystemOptions(options)
       ),
     [log]
   );
 
   const activate = useCallback(
     () =>
-      logAction(log, 'system activate', () =>
+      logAction(log, SYSTEM_CALLS.activate, () =>
         AudioManager.setAudioSessionActivity(true)
       ),
     [log]
@@ -23,7 +31,7 @@ export function useSystem(log: Log) {
 
   const deactivate = useCallback(
     () =>
-      logAction(log, 'system deactivate', () =>
+      logAction(log, SYSTEM_CALLS.deactivate, () =>
         AudioManager.setAudioSessionActivity(false)
       ),
     [log]

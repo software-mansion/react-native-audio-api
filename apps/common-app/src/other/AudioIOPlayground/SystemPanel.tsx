@@ -1,7 +1,6 @@
 import React, { FC, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { Button } from '../../components';
 import AndroidSystemFields from './AndroidSystemFields';
 import IosSystemFields from './IosSystemFields';
 import type { Log } from './log';
@@ -13,8 +12,8 @@ import {
   IOS_PRESETS,
   IosSettings,
 } from './systemPresets';
-import { ButtonRow, Section } from './ui';
-import { useSystem } from './useSystem';
+import { CallButton, Section } from './ui';
+import { SYSTEM_CALLS, useSystem } from './useSystem';
 
 /**
  * Shows only the current platform's `setSystemOptions` group, and Apply sends
@@ -46,19 +45,24 @@ const SystemPanel: FC<{ log: Log }> = ({ log }) => {
           onChange={setAndroidSettings}
         />
       )}
-      <ButtonRow>
-        <Button
-          testID="system-apply"
-          title="Apply"
-          onPress={applyCurrentPlatform}
-        />
-        <Button testID="system-activate" title="Activate" onPress={activate} />
-        <Button
-          testID="system-deactivate"
-          title="Deactivate"
-          onPress={deactivate}
-        />
-      </ButtonRow>
+      <CallButton
+        testID="system-apply"
+        title="Apply"
+        call={SYSTEM_CALLS.apply}
+        onPress={applyCurrentPlatform}
+      />
+      <CallButton
+        testID="system-activate"
+        title="Activate"
+        call={SYSTEM_CALLS.activate}
+        onPress={activate}
+      />
+      <CallButton
+        testID="system-deactivate"
+        title="Deactivate"
+        call={SYSTEM_CALLS.deactivate}
+        onPress={deactivate}
+      />
     </Section>
   );
 };

@@ -1,10 +1,10 @@
 import React, { FC } from 'react';
 import { Platform } from 'react-native';
 
-import { Button, Select } from '../../components';
+import { Select } from '../../components';
 import type { Log } from './log';
-import { ButtonRow, Field, Section, StatusText } from './ui';
-import { useDevices } from './useDevices';
+import { Call, CallButton, Field, Section, StatusText } from './ui';
+import { DEVICE_CALLS, useDevices } from './useDevices';
 
 const DevicePanel: FC<{ log: Log }> = ({ log }) => {
   const {
@@ -19,14 +19,21 @@ const DevicePanel: FC<{ log: Log }> = ({ log }) => {
 
   return (
     <Section title="Devices">
+      <Call text={DEVICE_CALLS.read} />
       <StatusText
         testID="device-current-inputs"
-        text={`current inputs: ${currentInputs}`}
+        text={`currentInputs: ${currentInputs}`}
       />
       <StatusText
         testID="device-current-outputs"
-        text={`current outputs: ${currentOutputs}`}
+        text={`currentOutputs: ${currentOutputs}`}
       />
+      {Platform.OS === 'android' && (
+        <StatusText
+          testID="device-available-outputs"
+          text={`availableOutputs: ${availableOutputs}`}
+        />
+      )}
       <Field label="Input">
         <Select
           testID="device-input"
@@ -35,24 +42,22 @@ const DevicePanel: FC<{ log: Log }> = ({ log }) => {
           onChange={selectInput}
         />
       </Field>
-      {Platform.OS === 'ios' ? (
-        // AVAudioSession has no output setter. This stands in for AVRoutePickerView.
-        <Button
+      <Call text={DEVICE_CALLS.setInput} />
+      {Platform.OS === 'ios' && (
+        <CallButton
           testID="device-output"
           title="Output route"
-          width={140}
+          call="none yet: AVAudioSession has no output setter; stands in for AVRoutePickerView"
           disabled
           onPress={() => {}}
         />
-      ) : (
-        <StatusText
-          testID="device-available-outputs"
-          text={`available outputs: ${availableOutputs}`}
-        />
       )}
-      <ButtonRow>
-        <Button testID="device-refresh" title="Refresh" onPress={refresh} />
-      </ButtonRow>
+      <CallButton
+        testID="device-refresh"
+        title="Refresh"
+        call={DEVICE_CALLS.refresh}
+        onPress={refresh}
+      />
     </Section>
   );
 };

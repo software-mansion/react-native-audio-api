@@ -1,8 +1,19 @@
 import React, { FC, PropsWithChildren } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { Switch } from '../../components';
+import { Button, Switch } from '../../components';
 import { colors, layout } from '../../styles';
+
+export const monospace = Platform.select({
+  ios: 'Menlo',
+  default: 'monospace',
+});
+
+/**
+ * Fits "Output route", the longest title, so every caption starts in one
+ * column.
+ */
+const BUTTON_WIDTH = 120;
 
 export const Section: FC<PropsWithChildren<{ title: string }>> = ({
   title,
@@ -24,8 +35,39 @@ export const Field: FC<PropsWithChildren<{ label: string }>> = ({
   </View>
 );
 
-export const ButtonRow: FC<PropsWithChildren> = ({ children }) => (
-  <View style={styles.buttonRow}>{children}</View>
+/** The library call behind the control above it or beside it. */
+export const Call: FC<{ text: string }> = ({ text }) => (
+  <Text style={styles.call}>{text}</Text>
+);
+
+interface CallButtonProps {
+  testID: string;
+  title: string;
+  call: string;
+  onPress: () => void;
+  disabled?: boolean;
+}
+
+/** One action per row, so a button never moves when a caption wraps. */
+export const CallButton: FC<CallButtonProps> = ({
+  testID,
+  title,
+  call,
+  onPress,
+  disabled,
+}) => (
+  <View style={styles.callButton}>
+    <Button
+      testID={testID}
+      title={title}
+      onPress={onPress}
+      disabled={disabled}
+      width={BUTTON_WIDTH}
+    />
+    <View style={styles.fieldControl}>
+      <Call text={call} />
+    </View>
+  </View>
 );
 
 export const StatusText: FC<{ testID: string; text: string }> = ({
@@ -80,10 +122,15 @@ const styles = StyleSheet.create({
   fieldControl: {
     flex: 1,
   },
-  buttonRow: {
+  callButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: layout.spacing,
+  },
+  call: {
+    color: colors.gray,
+    fontSize: 11,
+    fontFamily: monospace,
   },
   status: {
     color: colors.yellow,

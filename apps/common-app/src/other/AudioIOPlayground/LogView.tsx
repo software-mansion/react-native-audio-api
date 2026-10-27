@@ -1,9 +1,10 @@
 import React, { FC } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '../../components';
 import { colors, layout } from '../../styles';
 import type { LogEntry } from './log';
+import { monospace } from './ui';
 
 interface LogViewProps {
   entries: LogEntry[];
@@ -51,6 +52,6 @@ const styles = StyleSheet.create({
   line: {
     color: colors.gray,
     fontSize: 11,
-    fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+    fontFamily: monospace,
   },
 });

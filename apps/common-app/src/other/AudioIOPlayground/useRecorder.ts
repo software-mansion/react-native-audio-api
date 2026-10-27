@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   AudioManager,
   AudioRecorder,
-  concatAudioFiles,
   FileFormat,
   Result,
 } from 'react-native-audio-api';
 
 import { recorderOptions } from '../../singletons';
-import { Log, logAction } from './log';
+import { joinTake } from './joinTake';
+import { describeCall, Log, logAction } from './log';
 import {
   appendLevel,
   glyphForPeak,
@@ -23,7 +23,24 @@ const FILE_OPTIONS = {
   subDirectory: 'AudioIOPlayground',
   fileName: 'take',
 };
-const JOINED_TAKE_FILE_NAME = 'take-joined.m4a';
+const CALLS = {
+  permission: 'AudioManager.requestRecordingPermissions()',
+  start: 'recorder.start()',
+  pause: 'recorder.pause()',
+  resume: 'recorder.resume()',
+  stop: 'recorder.stop()',
+  consume: 'AudioRecorder.consumeLastRecordingResult()',
+};
+
+export const RECORDER_CALLS = {
+  status:
+    'recorder.isPaused(), recorder.isRecording(), recorder.getCurrentDuration()',
+  level: 'peak of each recorder.onAudioReady buffer',
+  start: `${CALLS.permission}, then ${CALLS.start}`,
+  pause: CALLS.pause,
+  resume: CALLS.resume,
+  stop: `${CALLS.stop}, then ${CALLS.consume}; concatAudioFiles for several files`,
+};
 
 function unwrap<T>(result: Result<T>): T {
   if (result.status === 'error') {
@@ -40,14 +57,6 @@ function describeRecorder(recorder: AudioRecorder): string {
   return recorder.isRecording() ? `recording ${seconds}` : 'idle';
 }
 
-async function joinTake(paths: string[]): Promise<string> {
-  if (paths.length === 1) {
-    return paths[0];
-  }
-  const outputPath = paths[0].replace(/[^/]+$/, JOINED_TAKE_FILE_NAME);
-  return concatAudioFiles(paths, outputPath);
-}
-
 /** Owns the playground's own recorder; `onTake` receives each finished file. */
 export function useRecorder(log: Log, onTake: (path: string) => void) {
   const [recorder] = useState(() => new AudioRecorder(recorderOptions));
@@ -57,27 +66,40 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
   );
 
   useEffect(() => {
-    if (AudioRecorder.isRecordingOngoing()) {
-      log('recorder a recording from elsewhere is still ongoing');
-    }
-    logAction(log, 'recorder enable file output', () =>
-      recorder.enableFileOutput(FILE_OPTIONS)
+    log(describeCall('new AudioRecorder', recorderOptions));
+    log(
+      `AudioRecorder.isRecordingOngoing() → ${AudioRecorder.isRecordingOngoing()}`
     );
-    logAction(log, 'recorder listen', () => {
-      unwrap(
-        recorder.onAudioReady(LEVEL_CALLBACK_OPTIONS, ({ buffer }) => {
-          const glyph = glyphForPeak(peakAmplitude(buffer.getChannelData(0)));
-          setLevel((previous) => appendLevel(previous, glyph));
-        })
-      );
-    });
-    recorder.onError(({ message }) => log(`recorder error ${message}`));
+    const fileOptionsAsWritten = {
+      ...FILE_OPTIONS,
+      format: `FileFormat.${FileFormat[FILE_OPTIONS.format]}`,
+    };
+    logAction(
+      log,
+      describeCall('recorder.enableFileOutput', fileOptionsAsWritten),
+      () => recorder.enableFileOutput(FILE_OPTIONS)
+    );
+    logAction(
+      log,
+      `recorder.onAudioReady(${JSON.stringify(LEVEL_CALLBACK_OPTIONS)}, callback)`,
+      () => {
+        unwrap(
+          recorder.onAudioReady(LEVEL_CALLBACK_OPTIONS, ({ buffer }) => {
+            const peak = peakAmplitude(buffer.getChannelData(0));
+            setLevel((previous) => appendLevel(previous, glyphForPeak(peak)));
+          })
+        );
+      }
+    );
+    logAction(log, 'recorder.onError(callback)', () =>
+      recorder.onError(({ message }) => log(`recorder.onError: ${message}`))
+    );
 
     return () => {
       recorder.clearOnAudioReady();
       recorder.clearOnError();
       if (recorder.isRecording() || recorder.isPaused()) {
-        logAction(log, 'recorder stop on leaving the screen', async () => {
+        logAction(log, `${CALLS.stop} on leaving the screen`, async () => {
           unwrap(await recorder.stop());
           AudioRecorder.consumeLastRecordingResult();
         });
@@ -87,47 +109,39 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
 
   const start = useCallback(async () => {
     const permission = await AudioManager.requestRecordingPermissions();
-    log(`recorder permission ${permission}`);
+    log(`${CALLS.permission} → ${permission}`);
     setLevel(NO_BUFFERS);
-    await logAction(log, 'recorder start', async () =>
+    await logAction(log, CALLS.start, async () =>
       unwrap(await recorder.start())
     );
   }, [log, recorder]);
 
   const pause = useCallback(
-    () => logAction(log, 'recorder pause', () => recorder.pause()),
+    () => logAction(log, CALLS.pause, () => recorder.pause()),
     [log, recorder]
   );
 
   const resume = useCallback(
-    () => logAction(log, 'recorder resume', () => recorder.resume()),
+    () => logAction(log, CALLS.resume, () => recorder.resume()),
     [log, recorder]
   );
 
   const stop = useCallback(async () => {
-    const info = await logAction(log, 'recorder stop', async () =>
+    const info = await logAction(log, CALLS.stop, async () =>
       unwrap(await recorder.stop())
     );
     if (!info) {
       return;
     }
-    // A successful stop also stashes its result for
-    // consumeLastRecordingResult(). Drop it, or the Record demo loads this take
-    // the next time it mounts. The cleanup above does the same.
-    AudioRecorder.consumeLastRecordingResult();
-
-    if (info.paths.length === 0) {
-      log('recorder take has no files');
-      return;
-    }
-    const path = await logAction(
-      log,
-      `recorder join ${info.paths.length} file(s)`,
-      () => joinTake(info.paths)
+    // A successful stop also stashes its result here. Drop it, or the Record
+    // demo loads this take the next time it mounts. The cleanup does the same.
+    await logAction(log, CALLS.consume, () =>
+      AudioRecorder.consumeLastRecordingResult()
     );
-    if (path) {
-      log(`recorder take ${path}`);
-      onTake(path);
+
+    const takePath = await joinTake(log, info.paths);
+    if (takePath) {
+      onTake(takePath);
     }
   }, [log, recorder, onTake]);
 

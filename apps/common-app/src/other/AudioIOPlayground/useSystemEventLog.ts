@@ -4,22 +4,24 @@ import { AudioManager } from 'react-native-audio-api';
 
 import type { Log } from './log';
 
+/** Each event line names the listener it came from and its payload as JSON. */
 export function useSystemEventLog(log: Log) {
   useEffect(() => {
-    AudioManager.observeAudioInterruptions(true);
-    log('system observing interruptions');
+    // 'gain' is what `true` means; spelled out so the log names the focus.
+    AudioManager.observeAudioInterruptions('gain');
+    log(`AudioManager.observeAudioInterruptions('gain')`);
 
     const subscriptions = [
-      AudioManager.addSystemEventListener(
-        'interruption',
-        ({ type, shouldResume }) =>
-          log(`system interruption ${type}, shouldResume ${shouldResume}`)
+      AudioManager.addSystemEventListener('interruption', (event) =>
+        log(`'interruption' event ${JSON.stringify(event)}`)
       ),
-      AudioManager.addSystemEventListener('routeChange', ({ reason }) =>
-        log(`system route change ${reason}`)
+      AudioManager.addSystemEventListener('routeChange', (event) =>
+        log(`'routeChange' event ${JSON.stringify(event)}`)
       ),
-      AudioManager.addSystemEventListener('duck', () => log('system duck')),
-      AppState.addEventListener('change', (state) => log(`app ${state}`)),
+      AudioManager.addSystemEventListener('duck', () => log(`'duck' event`)),
+      AppState.addEventListener('change', (state) =>
+        log(`AppState 'change' event ${state}`)
+      ),
     ];
 
     return () => {

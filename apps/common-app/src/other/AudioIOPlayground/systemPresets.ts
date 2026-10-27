@@ -3,7 +3,6 @@ import type {
   IOSCategory,
   IOSMode,
   IOSOption,
-  SystemOptions,
 } from 'react-native-audio-api';
 
 export interface IosSettings {
@@ -94,20 +93,4 @@ export function matchingAndroidPreset(
     isSameAndroidSettings(ANDROID_PRESETS[name], settings)
   );
   return match ?? CUSTOM_PRESET;
-}
-
-/** One log line per group that is present. */
-export function describeSystemOptions({ ios, android }: SystemOptions): string {
-  const groups: string[] = [];
-  if (ios) {
-    const options = ios.options?.length ? ios.options.join(', ') : 'no options';
-    groups.push(`ios ${ios.category} / ${ios.mode} / ${options}`);
-  }
-  if (android) {
-    groups.push(
-      `android mode ${android.mode ?? 'not set'}, ` +
-        `device ${android.communicationDevice ?? 'not set'}`
-    );
-  }
-  return groups.join('; ');
 }

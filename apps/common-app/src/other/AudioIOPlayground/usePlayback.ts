@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioBufferSourceNode, AudioContext } from 'react-native-audio-api';
 
-import { Log, logAction } from './log';
+import { describeCall, Log, logAction } from './log';
 import { usePolled } from './usePolled';
 
 const SAMPLE_TRACKS = {
@@ -15,6 +15,23 @@ export const PLAYBACK_SOURCE_NAMES: PlaybackSourceName[] = [
   LAST_TAKE,
   ...(Object.keys(SAMPLE_TRACKS) as (keyof typeof SAMPLE_TRACKS)[]),
 ];
+
+const CALLS = {
+  suspend: 'context.suspend()',
+  resume: 'context.resume()',
+  stop: 'source.stop()',
+  close: 'context.close()',
+};
+
+export const PLAYBACK_CALLS = {
+  status: 'context.state, and whether a source is attached',
+  play:
+    'context.decodeAudioData(<source>), then context.createBufferSource(), ' +
+    'source.loop = <loop>, source.connect(context.destination), source.start()',
+  pause: CALLS.suspend,
+  resume: CALLS.resume,
+  stop: CALLS.stop,
+};
 
 function release(source: AudioBufferSourceNode) {
   source.onended = null;
@@ -40,14 +57,16 @@ export function usePlayback(log: Log, lastTakePath: string | null) {
   );
 
   useEffect(() => {
-    context.onstatechange = () => log(`playback context ${context.state}`);
-    context.onerror = () => log('playback context error');
+    log('new AudioContext()');
+    context.onstatechange = () =>
+      log(`context.onstatechange: ${context.state}`);
+    context.onerror = () => log('context.onerror');
 
     return () => {
       if (sourceRef.current) {
         release(sourceRef.current);
       }
-      logAction(log, 'playback close context', () => context.close());
+      logAction(log, CALLS.close, () => context.close());
     };
   }, [context, log]);
 
@@ -56,21 +75,34 @@ export function usePlayback(log: Log, lastTakePath: string | null) {
       const input =
         sourceName === LAST_TAKE ? lastTakePath : SAMPLE_TRACKS[sourceName];
       if (input === null) {
-        log('playback play: no take recorded yet');
+        log('play: no take recorded yet');
         return;
+      }
+
+      const decodeLabel =
+        sourceName === LAST_TAKE
+          ? describeCall('context.decodeAudioData', input)
+          : `context.decodeAudioData(require(${sourceName}))`;
+      const buffer = await logAction(log, decodeLabel, () =>
+        context.decodeAudioData(input)
+      );
+      if (!buffer) {
+        return;
+      }
+
+      const previous = sourceRef.current;
+      if (previous) {
+        await logAction(log, `${CALLS.stop} on the previous source`, () =>
+          previous.stop()
+        );
+        release(previous);
       }
 
       await logAction(
         log,
-        `playback play ${sourceName}, loop ${loop}`,
-        async () => {
-          const buffer = await context.decodeAudioData(input);
-          const previous = sourceRef.current;
-          if (previous) {
-            previous.stop();
-            release(previous);
-          }
-
+        `context.createBufferSource(), source.loop = ${loop}, ` +
+          'source.connect(context.destination), source.start()',
+        () => {
           const source = context.createBufferSource();
           source.buffer = buffer;
           source.loop = loop;
@@ -79,7 +111,7 @@ export function usePlayback(log: Log, lastTakePath: string | null) {
           // callback is cleared and onended never fires.
           sourceRef.current = source;
           source.onended = () => {
-            log('playback source ended');
+            log('source.onended');
             release(source);
             if (sourceRef.current === source) {
               sourceRef.current = null;
@@ -93,22 +125,22 @@ export function usePlayback(log: Log, lastTakePath: string | null) {
   );
 
   const pause = useCallback(
-    () => logAction(log, 'playback suspend context', () => context.suspend()),
+    () => logAction(log, CALLS.suspend, () => context.suspend()),
     [context, log]
   );
 
   const resume = useCallback(
-    () => logAction(log, 'playback resume context', () => context.resume()),
+    () => logAction(log, CALLS.resume, () => context.resume()),
     [context, log]
   );
 
   const stop = useCallback(() => {
     const source = sourceRef.current;
     if (!source) {
-      log('playback stop: no source');
+      log(`${CALLS.stop}: no source`);
       return;
     }
-    logAction(log, 'playback stop source', () => source.stop());
+    logAction(log, CALLS.stop, () => source.stop());
   }, [log]);
 
   return { status, play, pause, resume, stop };
