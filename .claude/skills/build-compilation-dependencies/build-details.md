@@ -191,6 +191,14 @@ referenced from miniaudio's decoders) and embeds + signs the FFmpeg frameworks:
 s.ios.vendored_frameworks = vendored_xcframeworks.map { |xcframework| "#{external_dir_relative}/xcframeworks/#{xcframework}" }
 ```
 
+CocoaPods adds the FFmpeg `-framework` flags only to the app's aggregate xcconfig, so the podspec
+also puts them in `pod_target_xcconfig` `OTHER_LDFLAGS` for FFmpeg builds — without them a
+`use_frameworks! :linkage => :dynamic` build fails to link the `RNAudioAPI` framework itself:
+
+```ruby
+'OTHER_LDFLAGS' => "$(inherited) #{ffmpeg_ldflags}",
+```
+
 They are the same release assets `Package.swift` downloads through `binaryTarget(url:checksum:)`.
 FFmpeg headers still come from `external/include_ffmpeg/` (`include_ffmpeg.zip`) for CocoaPods;
 SwiftPM uses the header-only `FFmpegHeaders.xcframework` instead.

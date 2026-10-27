@@ -134,9 +134,9 @@ Pod::Spec.new do |s|
     "GCC_PREPROCESSOR_DEFINITIONS[config=Debug]" => '$(inherited) HAVE_ACCELERATE=1 DEBUG=1',
     "EXCLUDED_SOURCE_FILE_NAMES[config=Release]" => 'AudioThreadGuard.cpp',
     'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{ffmpeg_flag} #{static_external_libs_flag}",
-    # CocoaPods links a pod's own vendored dynamic frameworks only into the app target, and the
-    # FFmpeg frameworks ship no headers or module maps to auto-link them. A dynamic RNAudioAPI
-    # framework (`use_frameworks! :linkage => :dynamic`) has to link them itself.
+    # CocoaPods links a pod's own vendored dynamic frameworks only into the app target. A dynamic
+    # RNAudioAPI framework (`use_frameworks! :linkage => :dynamic`) must link FFmpeg itself; the
+    # frameworks ship no module maps, so clang cannot auto-link them.
     'OTHER_LDFLAGS' => "$(inherited) #{ffmpeg_ldflags}",
   }
 
