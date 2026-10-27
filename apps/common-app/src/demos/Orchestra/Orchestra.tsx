@@ -26,11 +26,15 @@ import Scheduler from './Scheduler';
 import Synth from './Synth';
 import { NEUTRAL_CONSOLE, type ConsoleSettings } from './Console';
 import ConsolePanel from './ConsolePanel';
+import CountIn from './CountIn';
+import DrumPads from './DrumPads';
 import NoteRoll from './NoteRoll';
 import { mergeParts, type NoteListener } from './Scheduler';
 import type { Score, ScorePart } from './protocol';
 
 const SERVER_PORT = 8765;
+// Matches the dashboard's default, long enough to put the phones down.
+const COUNT_IN_MS = 3000;
 
 // The server usually runs on the laptop that serves the JS bundle, so its
 // host is the best default. Inputs survive navigating away within a session.
@@ -225,6 +229,17 @@ const Orchestra: FC = () => {
     };
   }, []);
 
+  const playing = transport?.playing ?? false;
+  const startBar = snapshot.state?.startBar ?? 1;
+  const toggleTransport = useCallback(() => {
+    const client = engine.current?.client;
+    if (playing) {
+      client?.stop();
+    } else {
+      client?.start(COUNT_IN_MS);
+    }
+  }, [playing]);
+
   const connected = snapshot.status !== 'disconnected';
   const parts =
     snapshot.state && snapshot.me
@@ -244,14 +259,44 @@ const Orchestra: FC = () => {
     return (
       <Container>
         <View style={styles.performance}>
-          <NoteRoll
+          <View style={styles.transportRow}>
+            <Button
+              title={
+                playing
+                  ? '■ Stop'
+                  : startBar > 1
+                    ? `▶ Start at bar ${startBar}`
+                    : '▶ Start'
+              }
+              onPress={toggleTransport}
+              disabled={!snapshot.state}
+              width={startBar > 1 && !playing ? 190 : 110}
+            />
+          </View>
+          <Spacer.Vertical size={12} />
+          <View style={styles.roll}>
+            <NoteRoll
+              notes={myNotes}
+              parts={score?.parts ?? []}
+              lengthBeats={score?.lengthBeats ?? 0}
+              bpm={transport?.bpm ?? 120}
+              playing={transport?.playing ?? false}
+              epoch={transport?.epoch ?? 0}
+              subscribeToBeats={subscribeToBeats}
+              subscribeToNotes={subscribeToNotes}
+            />
+            {engine.current && (
+              <CountIn
+                transport={transport}
+                clockSync={engine.current.client.clockSync}
+                accent={accent}
+              />
+            )}
+          </View>
+          <Spacer.Vertical size={12} />
+          <DrumPads
             notes={myNotes}
             parts={score?.parts ?? []}
-            lengthBeats={score?.lengthBeats ?? 0}
-            bpm={transport?.bpm ?? 120}
-            playing={transport?.playing ?? false}
-            epoch={transport?.epoch ?? 0}
-            subscribeToBeats={subscribeToBeats}
             subscribeToNotes={subscribeToNotes}
           />
           <Spacer.Vertical size={12} />
@@ -330,6 +375,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   performance: {
+    flex: 1,
+  },
+  transportRow: {
+    alignItems: 'center',
+  },
+  roll: {
     flex: 1,
   },
   input: {

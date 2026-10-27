@@ -78,6 +78,15 @@ export default class OrchestraClient {
     });
   }
 
+  /** Starts the piece on every phone after `inMs` of count-in. */
+  start(inMs: number): void {
+    this.send({ type: 'start', inMs });
+  }
+
+  stop(): void {
+    this.send({ type: 'stop' });
+  }
+
   private open(): void {
     this.publish({ status: 'connecting' });
 

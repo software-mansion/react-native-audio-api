@@ -4,11 +4,12 @@
 // Each (track, channel) pair with notes becomes one part. Channel 10 (drums)
 // becomes a 'kit' part on the recorded drum kit. Parts too low for phone speakers move up whole
 // octaves. An optional JSON config next to the file overrides the title,
-// tempo and per-part timbre / phone cap / transposition.
+// tempo and per-part timbre / phone cap / transposition, and can split a drum
+// part into one part per group of kit pieces, so several phones share the kit.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 
-import { DRUMS, drumPieceFor } from './drumKit.ts';
+import { DRUM_PIECES, DRUMS, drumPieceFor, type DrumPiece } from './drumKit.ts';
 
 import type {
   Score,
@@ -274,6 +275,13 @@ export interface MidiPartConfig {
   transpose?: number;
   skip?: boolean;
   color?: string;
+  /**
+   * Drum parts only: replaces the part with one part per entry, named `<part>:
+   * <group>` and holding the hits of the listed kit pieces. Pieces no group
+   * lists stay in a part with the original name. The new parts take their own
+   * entries in `parts`.
+   */
+  splitDrums?: Record<string, DrumPiece[]>;
 }
 
 export interface MidiScoreConfig {
@@ -346,10 +354,12 @@ export function midiToScore(
     );
   }
 
-  const rawParts = collectRawParts(midi);
+  const rawParts = inEntranceOrder(
+    splitDrumParts(collectRawParts(midi), config, warnings)
+  );
   const knownNames = new Set(rawParts.map((part) => part.name));
-  for (const name of Object.keys(config.parts ?? {})) {
-    if (!knownNames.has(name)) {
+  for (const [name, partConfig] of Object.entries(config.parts ?? {})) {
+    if (!knownNames.has(name) && !partConfig.splitDrums) {
       warnings.push(
         `config names part "${name}", which the file does not have`
       );
@@ -468,13 +478,64 @@ function collectRawParts(midi: MidiFile): RawPart[] {
       parts.push({ name: uniqueName(name, parts), channel, program, notes });
     }
   });
-  // Phones are dealt parts in order, so the parts that open the song come
-  // first; among parts entering together, the busier one wins.
+  return parts;
+}
+
+// Phones are dealt parts in order, so the parts that open the song come first;
+// among parts entering together, the busier one wins.
+function inEntranceOrder(parts: RawPart[]): RawPart[] {
   return parts.sort(
     (a, b) =>
       a.notes[0].startTick - b.notes[0].startTick ||
       b.notes.length - a.notes.length
   );
+}
+
+function splitDrumParts(
+  rawParts: RawPart[],
+  config: MidiScoreConfig,
+  warnings: string[]
+): RawPart[] {
+  return rawParts.flatMap((raw) => {
+    const groups = config.parts?.[raw.name]?.splitDrums;
+    if (!groups) {
+      return [raw];
+    }
+    if (raw.channel !== DRUM_CHANNEL) {
+      warnings.push(`part "${raw.name}": splitDrums ignored, not a drum part`);
+      return [raw];
+    }
+
+    const groupByPiece = new Map<DrumPiece, string>();
+    for (const [group, pieces] of Object.entries(groups)) {
+      for (const piece of pieces) {
+        if (!(piece in DRUM_PIECES)) {
+          warnings.push(
+            `part "${raw.name}": unknown drum piece "${piece}" (use ${Object.keys(DRUM_PIECES).join(', ')})`
+          );
+        } else {
+          groupByPiece.set(piece, group);
+        }
+      }
+    }
+
+    const notesByName = new Map<string, MidiNote[]>(
+      [...Object.keys(groups), null].map((group) => [
+        group === null ? raw.name : `${raw.name}: ${group}`,
+        [],
+      ])
+    );
+    for (const note of raw.notes) {
+      const piece = drumPieceFor(note.key);
+      const group = piece ? groupByPiece.get(piece) : undefined;
+      notesByName
+        .get(group === undefined ? raw.name : `${raw.name}: ${group}`)!
+        .push(note);
+    }
+    return [...notesByName]
+      .filter(([, notes]) => notes.length > 0)
+      .map(([name, notes]) => ({ ...raw, name, notes }));
+  });
 }
 
 function uniqueName(name: string, existing: RawPart[]): string {

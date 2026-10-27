@@ -15,7 +15,9 @@ the dashboard (start/stop, tempo, score, per-phone part assignment,
 sync quality). Phones join by pointing their camera at the dashboard's QR
 code: it encodes `audioapi-example://orchestra?url=ws://<host>:8765`, which
 opens the app on the Orchestra screen and connects. The `ws://…` address can
-also be typed in by hand.
+also be typed in by hand. Once connected, any phone can start or stop the
+piece for everyone: its Start button sends the same `start` message as the
+dashboard (3 s count-in, from bar 1), and every phone shows the countdown.
 
 The QR code is rendered by `qrcodegen.ts`, vendored from
 [nayuki/QR-Code-generator](https://github.com/nayuki/QR-Code-generator) (MIT)
@@ -95,3 +97,21 @@ and replaces the one the file selects. Timbres (the synth fallback): `bell`,
 `maxPlayers` caps how many phones are dealt the part automatically (the rest
 fill the uncapped parts). `transpose` (semitones) replaces the automatic octave
 shift. Files that fail to parse are reported and skipped.
+
+`splitDrums` breaks a drum part into one part per group of kit pieces, so the
+kit is shared across phones. Each group becomes a part named `<part>: <group>`
+that takes its own entry in `parts`; pieces no group lists stay in the original
+part. Pieces: `kick`, `snare`, `clap`, `closedHat`, `openHat`, `lowTom`,
+`highTom`, `crash`, `ride`.
+
+```json
+"Drums (ch 10)": {
+  "splitDrums": {
+    "Kick": ["kick"],
+    "Snare": ["snare", "clap"],
+    "Hats": ["closedHat", "openHat"],
+    "Toms": ["lowTom", "highTom", "crash", "ride"]
+  }
+},
+"Drums (ch 10): Kick": { "maxPlayers": 1 }
+```

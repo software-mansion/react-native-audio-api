@@ -136,6 +136,7 @@
 <script>
   const $ = (id) => document.getElementById(id);
   let socket;
+  let everConnected = false;
   let state = null;
   // Dashboard clock offset is only for the beat counter display; the phones do
   // their own precise sync.
@@ -149,6 +150,13 @@
   function connect() {
     socket = new WebSocket(`ws://${location.host}`);
     socket.onopen = () => {
+      // A reconnect usually means the server restarted, possibly with a newer
+      // dashboard; reload so this page never talks to it in an old protocol.
+      if (everConnected) {
+        location.reload();
+        return;
+      }
+      everConnected = true;
       setConnection('connected', true);
       socket.send(JSON.stringify({ type: 'hello', role: 'conductor' }));
     };
@@ -174,6 +182,9 @@
       inMs: Number($('countIn').value) * 1000,
       startBar: Number($('startBar').value) || 1,
     });
+  // Kept on the server so a Start pressed on a phone plays from here too.
+  $('startBar').oninput = () =>
+    send({ type: 'setStartBar', startBar: Number($('startBar').value) || 1 });
   $('stop').onclick = () => send({ type: 'stop' });
   $('rebalance').onclick = () => send({ type: 'rebalance' });
   $('bpm').onchange = () => send({ type: 'setBpm', bpm: Number($('bpm').value) });
@@ -219,9 +230,7 @@
     // The server clamps too; this keeps the stepper inside the piece.
     const lastBar = Math.max(1, Math.ceil(score.lengthBeats / (score.beatsPerBar ?? 4)));
     $('startBar').max = String(lastBar);
-    if (!isBusy($('startBar')) && Number($('startBar').value) > lastBar) {
-      $('startBar').value = String(lastBar);
-    }
+    if (!isBusy($('startBar'))) $('startBar').value = state.startBar ?? 1;
 
     const scoreSelect = $('score');
     if (!isBusy(scoreSelect)) {

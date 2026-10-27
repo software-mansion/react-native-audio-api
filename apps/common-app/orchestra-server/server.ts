@@ -41,12 +41,22 @@ const transport: Transport = {
   epoch: 0,
 };
 let scoreId = DEFAULT_SCORE_ID;
+let startBar = 1;
 
 const clients = new Map<number, Client>();
 let nextClientId = 1;
 
 function currentScore(): Score {
   return scores[scoreId];
+}
+
+function clampToScore(bar: number): number {
+  const score = currentScore();
+  const lastBar = Math.max(
+    1,
+    Math.ceil(score.lengthBeats / (score.beatsPerBar ?? 4))
+  );
+  return Math.min(lastBar, Math.max(1, Math.floor(bar) || 1));
 }
 
 function players(): Client[] {
@@ -66,6 +76,7 @@ function stateMessage(): string {
     transport,
     score: currentScore(),
     players: playersSnapshot(),
+    startBar,
     scores: Object.values(scores).map(({ id, title }) => ({ id, title })),
   };
   return JSON.stringify(message);
@@ -190,37 +201,38 @@ function handleMessage(client: Client, raw: string): void {
       break;
   }
 
-  if (client.role !== 'conductor') {
+  // Any phone may start or stop the piece for everyone; the rest is the
+  // conductor's.
+  const anyoneMay = message.type === 'start' || message.type === 'stop';
+  if (client.role !== 'conductor' && !anyoneMay) {
     return;
   }
 
   switch (message.type) {
     case 'start': {
-      const score = currentScore();
-      const beatsPerBar = score.beatsPerBar ?? 4;
-      const lastBar = Math.max(1, Math.ceil(score.lengthBeats / beatsPerBar));
-      const startBar = Math.min(
-        lastBar,
-        Math.max(1, Math.floor(message.startBar ?? 1))
-      );
+      const fromBar = clampToScore(message.startBar ?? startBar);
       transport.playing = true;
       transport.startAt = serverNow() + Math.max(MIN_COUNT_IN_MS, message.inMs);
-      transport.startBeat = (startBar - 1) * beatsPerBar;
+      transport.startBeat = (fromBar - 1) * (currentScore().beatsPerBar ?? 4);
       transport.epoch += 1;
       console.log(
-        `▶ start in ${(transport.startAt - serverNow()).toFixed(0)} ms from bar ${startBar}, ${transport.bpm} bpm, ${scoreId}`
+        `▶ start in ${(transport.startAt - serverNow()).toFixed(0)} ms from bar ${fromBar}, ${transport.bpm} bpm, ${scoreId}, by ${client.name ?? client.role}`
       );
       break;
     }
+    case 'setStartBar':
+      startBar = clampToScore(message.startBar);
+      break;
     case 'stop':
       transport.playing = false;
-      console.log('■ stop');
+      console.log(`■ stop by ${client.name ?? client.role}`);
       break;
     case 'setScore':
       if (scores[message.scoreId] && message.scoreId !== scoreId) {
         scoreId = message.scoreId;
         transport.playing = false;
         transport.bpm = currentScore().bpm;
+        startBar = clampToScore(startBar);
         rebalanceParts();
       }
       break;
@@ -311,7 +323,10 @@ const httpServer = createServer((request, response) => {
     );
     return;
   }
-  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  response.writeHead(200, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store',
+  });
   response.end(dashboardHtml);
 });
 

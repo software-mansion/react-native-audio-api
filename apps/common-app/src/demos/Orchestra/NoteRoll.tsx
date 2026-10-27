@@ -14,7 +14,11 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { colors } from '../../styles';
-import { DRUM_PIECES, drumPieceFor, type DrumPiece } from '../../../orchestra-server/drumKit';
+import {
+  DRUM_PIECES,
+  drumPieceFor,
+  type DrumPiece,
+} from '../../../orchestra-server/drumKit';
 import type { NoteListener, PartNote } from './Scheduler';
 import type { ScorePart } from './protocol';
 
@@ -320,7 +324,7 @@ interface Grid {
 }
 
 // Cymbals on top, kick at the bottom, like a drum chart.
-const DRUM_ROW_ORDER: readonly DrumPiece[] = [
+export const DRUM_ROW_ORDER: readonly DrumPiece[] = [
   'crash',
   'ride',
   'openHat',

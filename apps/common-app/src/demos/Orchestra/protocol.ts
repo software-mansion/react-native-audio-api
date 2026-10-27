@@ -111,11 +111,12 @@ export type ClientMessage =
       trimMs: number;
     }
   /**
-   * `startBar` counts from 1; playback starts at the top of the first bar when
+   * `startBar` counts from 1; playback starts at the server's `startBar` when
    * absent.
    */
   | { type: 'start'; inMs: number; startBar?: number }
   | { type: 'stop' }
+  | { type: 'setStartBar'; startBar: number }
   | { type: 'setScore'; scoreId: string }
   | { type: 'setBpm'; bpm: number }
   | { type: 'assignParts'; playerId: number; partIndices: number[] }
@@ -131,6 +132,11 @@ export type ServerMessage =
       transport: Transport;
       score: Score;
       players: PlayerInfo[];
+      /**
+       * The bar, counting from 1, that a start without its own `startBar`
+       * plays from; set by the conductor. Absent from servers that predate it.
+       */
+      startBar?: number;
       /** Every score the conductor can switch to. */
       scores: { id: string; title: string }[];
     };
