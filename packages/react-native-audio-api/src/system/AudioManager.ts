@@ -5,10 +5,12 @@ import { parseNativeError } from './errors';
 import {
   AudioDevicesInfo,
   AudioFocusType,
+  AudioDeviceInfo,
+  CommunicationDevice,
   IAudioManager,
   InputDeviceSelection,
   PermissionStatus,
-  SessionOptions,
+  SystemOptions,
 } from './types';
 
 class AudioManager implements IAudioManager {
@@ -38,13 +40,11 @@ class AudioManager implements IAudioManager {
     }
   }
 
-  setAudioSessionOptions(options: SessionOptions) {
-    NativeAudioAPIModule.setAudioSessionOptions(
-      options.iosCategory ?? '',
-      options.iosMode ?? '',
-      options.iosOptions ?? [],
-      options.iosAllowHaptics ?? false,
-      options.iosNotifyOthersOnDeactivation ?? true
+  /** Each platform fills in the defaults for the keys its group leaves out. */
+  setSystemOptions(options: SystemOptions) {
+    NativeAudioAPIModule.setSystemOptions(
+      options.ios ?? {},
+      options.android ?? {}
     );
   }
 
@@ -136,6 +136,23 @@ class AudioManager implements IAudioManager {
     await NativeAudioAPIModule.setInputDevice(
       deviceId === 'default' ? null : deviceId
     );
+  }
+
+  /**
+   * Requests the Android route for voice-communication audio, with or without
+   * an `inCommunication` session. `systemDefault` clears the request, as does
+   * `setAudioSessionActivity(false)`.
+   */
+  async setCommunicationDevice(device: CommunicationDevice): Promise<void> {
+    await NativeAudioAPIModule.setCommunicationDevice(device);
+  }
+
+  /**
+   * Returns Android's currently selected communication device, including a
+   * route selected by the system after an accessory change.
+   */
+  async getCommunicationDevice(): Promise<AudioDeviceInfo | null> {
+    return NativeAudioAPIModule.getCommunicationDevice();
   }
 }
 

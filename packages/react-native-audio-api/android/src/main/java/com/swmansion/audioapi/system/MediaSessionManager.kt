@@ -41,6 +41,9 @@ object MediaSessionManager {
   private lateinit var deviceChangeListener: DeviceChangeListener
   private lateinit var playbackNotificationReceiver: PlaybackNotificationReceiver
 
+  private val mainHandler = Handler(Looper.getMainLooper())
+  private lateinit var communicationSession: CommunicationSession
+
   lateinit var inputRouter: AudioInputRouter
     private set
 
@@ -87,7 +90,11 @@ object MediaSessionManager {
     }
 
     this.audioFocusListener =
-      AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule)
+      AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, mainHandler) {
+        communicationSession.isActive
+      }
+    this.communicationSession =
+      CommunicationSession(this.audioManager, this.audioFocusListener, mainHandler, ::emitRouteChange)
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
     this.inputRouter =
       AudioInputRouter(this.audioManager, BluetoothScoLink(this.audioManager, this.reactContext), ::dispatchRouteChange)
@@ -98,10 +105,7 @@ object MediaSessionManager {
     this.notificationRegistry = NotificationRegistry(this.reactContext, this.audioAPIModule)
   }
 
-  fun dispatchRouteChange(reason: RouteChangeReason) {
-    val body = HashMap<String, Any>().apply { put("reason", reason.eventName) }
-    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(AudioEvent.ROUTE_CHANGE.ordinal, body)
-  }
+  fun dispatchRouteChange(reason: RouteChangeReason) = emitRouteChange(reason.eventName)
 
   /** The system output volume on the volumeChange event's own scale:
    * STREAM_MUSIC volume as a 0..1 fraction of its maximum. */
@@ -116,9 +120,70 @@ object MediaSessionManager {
     return sampleRate.toDouble()
   }
 
+  fun setSystemOptions(
+    androidMode: String?,
+    androidCommunicationDevice: String?,
+  ) {
+    runOnMain {
+      communicationSession.configure(androidMode, androidCommunicationDevice)
+    }
+  }
+
+  fun setAudioSessionActivity(
+    enabled: Boolean,
+    onComplete: (String?) -> Unit,
+  ) {
+    runOnMain {
+      if (enabled) {
+        onComplete(communicationSession.activate())
+      } else {
+        communicationSession.deactivate()
+        onComplete(null)
+      }
+    }
+  }
+
+  fun observeAudioInterruptions(
+    focus: Int,
+    enabled: Boolean,
+  ) {
+    runOnMain {
+      if (communicationSession.isActive) {
+        return@runOnMain
+      }
+      if (enabled) {
+        audioFocusListener.requestAudioFocus(focus)
+      } else {
+        audioFocusListener.abandonAudioFocus()
+      }
+    }
+  }
+
+  fun setCommunicationDevice(
+    device: String,
+    onComplete: (String?) -> Unit,
+  ) {
+    runOnMain {
+      onComplete(communicationSession.requestDevice(device))
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  fun getCommunicationDevice(onComplete: (ReadableMap?) -> Unit) {
+    runOnMain {
+      onComplete(communicationSession.currentDevice()?.let(::describeDevice))
+    }
+  }
+
   fun cleanup() {
-    if (::audioFocusListener.isInitialized) {
-      audioFocusListener.abandonAudioFocus()
+    runOnMain {
+      if (::communicationSession.isInitialized) {
+        communicationSession.deactivate()
+      }
+
+      if (::audioFocusListener.isInitialized) {
+        audioFocusListener.abandonAudioFocus()
+      }
     }
 
     if (::volumeChangeListener.isInitialized) {
@@ -138,12 +203,19 @@ object MediaSessionManager {
     }
   }
 
-  fun requestAudioFocus(focus: Int) {
-    audioFocusListener.requestAudioFocus(focus)
+  private fun emitRouteChange(reason: String) {
+    audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody(
+      AudioEvent.ROUTE_CHANGE.ordinal,
+      mapOf("reason" to reason),
+    )
   }
 
-  fun abandonAudioFocus() {
-    audioFocusListener.abandonAudioFocus()
+  private fun runOnMain(action: () -> Unit) {
+    if (Looper.myLooper() == mainHandler.looper) {
+      action()
+    } else {
+      mainHandler.post(action)
+    }
   }
 
   fun activelyReclaimSession(enabled: Boolean) {

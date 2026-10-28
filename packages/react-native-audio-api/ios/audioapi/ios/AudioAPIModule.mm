@@ -131,6 +131,8 @@ RCT_EXPORT_METHOD(
     }
 
     NSError *error = nil;
+    const BOOL managedSessionWasActive =
+        self.audioSessionManager.shouldManageSession && self.audioSessionManager.isActive;
     auto success = [self.audioSessionManager setActive:enabled error:&error];
 
     if (!success) {
@@ -152,7 +154,7 @@ RCT_EXPORT_METHOD(
       return;
     }
 
-    if (!enabled) {
+    if (!enabled && managedSessionWasActive) {
       if ([NSThread isMainThread]) {
         [self handleSessionDeactivation];
       } else {
@@ -164,20 +166,22 @@ RCT_EXPORT_METHOD(
   });
 }
 
-RCT_EXPORT_METHOD(
-    setAudioSessionOptions : (NSString *)category mode : (NSString *)mode options : (NSArray *)
-        options allowHaptics : (BOOL)allowHaptics notifyOthersOnDeactivation : (BOOL)
-            notifyOthersOnDeactivation)
+RCT_EXPORT_METHOD(setSystemOptions : (NSDictionary *)ios android : (NSDictionary *)android)
 {
   if (!self.audioSessionManager.shouldManageSession) {
     [self.audioSessionManager setShouldManageSession:true];
   }
 
-  [self.audioSessionManager setAudioSessionOptions:category
-                                              mode:mode
-                                           options:options
-                                      allowHaptics:allowHaptics
-                        notifyOthersOnDeactivation:notifyOthersOnDeactivation];
+  // The Android options configure Android's audio mode and have no iOS counterpart.
+  NSNumber *notifyOthersOnDeactivation = ios[@"notifyOthersOnDeactivation"];
+
+  [self.audioSessionManager setAudioSessionOptions:ios[@"category"] ?: @""
+                                              mode:ios[@"mode"] ?: @""
+                                           options:ios[@"options"] ?: @[]
+                                      allowHaptics:[ios[@"allowHaptics"] boolValue]
+                        notifyOthersOnDeactivation:notifyOthersOnDeactivation == nil
+                            ? YES
+                            : [notifyOthersOnDeactivation boolValue]];
 }
 
 RCT_EXPORT_METHOD(observeAudioInterruptions : (NSString *)focusType enabled : (BOOL)enabled)
@@ -248,6 +252,22 @@ RCT_EXPORT_METHOD(
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     [self.audioSessionManager setInputDevice:deviceId resolve:resolve reject:reject];
   });
+}
+
+/// Android-only: iOS routes communication through the audio session, so the request is
+/// accepted and ignored, like the Android-only fields of setSystemOptions.
+RCT_EXPORT_METHOD(
+    setCommunicationDevice : (NSString *)device resolve : (RCTPromiseResolveBlock)
+        resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  resolve(nil);
+}
+
+/// Android-only: resolves with null, there is no selected communication device on iOS.
+RCT_EXPORT_METHOD(
+    getCommunicationDevice : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)reject)
+{
+  resolve(nil);
 }
 
 RCT_EXPORT_METHOD(disableSessionManagement)

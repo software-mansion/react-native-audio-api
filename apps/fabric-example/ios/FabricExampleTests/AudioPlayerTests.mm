@@ -4,6 +4,7 @@
 #import <audioapi/core/AudioPlayer.h>
 #import <audioapi/core/utils/Constants.h>
 #import <audioapi/ios/core/NativeAudioPlayer.h>
+#import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/utils/AudioBuffer.hpp>
@@ -103,11 +104,14 @@ class IOSAudioPlayer : public AudioPlayer {
 @property(nonatomic, assign) NSInteger stopIfPossibleCallCount;
 @property(nonatomic, assign) NSInteger attachSourceNodeCallCount;
 @property(nonatomic, assign) NSInteger detachSourceNodeCallCount;
+@property(nonatomic, assign) NSInteger attachInputNodeCallCount;
 @property(nonatomic, copy) AVAudioSourceNodeRenderBlock lastAttachedRenderBlock;
 @property(nonatomic, assign) float lastAttachedSampleRate;
 @property(nonatomic, assign) AVAudioChannelCount lastAttachedChannelCount;
 @property(nonatomic, copy) NSString *returnedSourceNodeId;
 @property(nonatomic, copy) NSString *lastDetachedSourceNodeId;
+@property(nonatomic, strong) NSMutableSet<NSString *> *attachedSourceNodeIds;
+@property(nonatomic, copy) NSSet<NSString *> *sourceNodeIdsPresentAtLastStart;
 
 @end
 
@@ -118,6 +122,7 @@ class IOSAudioPlayer : public AudioPlayer {
   if (self = [super init]) {
     self.startIfNecessaryResult = YES;
     self.returnedSourceNodeId = @"fake-source-node-id";
+    self.attachedSourceNodeIds = [NSMutableSet set];
   }
 
   return self;
@@ -141,6 +146,7 @@ class IOSAudioPlayer : public AudioPlayer {
 - (bool)startIfNecessary
 {
   self.startIfNecessaryCallCount += 1;
+  self.sourceNodeIdsPresentAtLastStart = [self.attachedSourceNodeIds copy];
   return self.startIfNecessaryResult;
 }
 
@@ -158,6 +164,7 @@ class IOSAudioPlayer : public AudioPlayer {
   self.lastAttachedRenderBlock = renderBlock;
   self.lastAttachedSampleRate = sampleRate;
   self.lastAttachedChannelCount = channelCount;
+  [self.attachedSourceNodeIds addObject:self.returnedSourceNodeId];
   return self.returnedSourceNodeId;
 }
 
@@ -165,6 +172,21 @@ class IOSAudioPlayer : public AudioPlayer {
 {
   self.detachSourceNodeCallCount += 1;
   self.lastDetachedSourceNodeId = sourceNodeId;
+
+  if (sourceNodeId != nil) {
+    [self.attachedSourceNodeIds removeObject:sourceNodeId];
+  }
+}
+
+- (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
+                  voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
+                     onInputNotification:
+                         (void (^)(AudioEngineInputNotification))onInputNotification
+{
+  self.attachInputNodeCallCount += 1;
+  (void)receiverBlock;
+  (void)voiceProcessingEnabled;
+  (void)onInputNotification;
 }
 
 @end
@@ -422,6 +444,61 @@ struct TestAudioOutput {
   XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 0);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 0);
   XCTAssertNil(player.sourceNodeId);
+}
+
+- (void)assertFailedEngineStartDetachesSourceForSelector:(SEL)selector
+{
+  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
+  self.audioEngine.startIfNecessaryResult = NO;
+  typedef BOOL (*NativeAudioPlayerBoolMethod)(id, SEL);
+  NativeAudioPlayerBoolMethod operation =
+      (NativeAudioPlayerBoolMethod)[player methodForSelector:selector];
+
+  XCTAssertFalse(operation(player, selector));
+  XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
+  XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
+  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
+  XCTAssertEqual(self.audioEngine.detachSourceNodeCallCount, 1);
+  XCTAssertEqualObjects(
+      self.audioEngine.lastDetachedSourceNodeId, self.audioEngine.returnedSourceNodeId);
+  XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
+  XCTAssertNil(player.sourceNodeId);
+  XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
+}
+
+- (void)testStartAndResumeDetachSourceWhenEngineFailsToStart
+{
+  [self assertFailedEngineStartDetachesSourceForSelector:@selector(start)];
+
+  self.audioEngine.stopIfNecessaryCallCount = 0;
+  self.audioEngine.attachSourceNodeCallCount = 0;
+  self.audioEngine.startIfNecessaryCallCount = 0;
+  self.audioEngine.detachSourceNodeCallCount = 0;
+  self.audioEngine.stopIfPossibleCallCount = 0;
+  self.audioEngine.lastDetachedSourceNodeId = nil;
+  self.sessionManager.ensureActiveCallCount = 0;
+
+  [self assertFailedEngineStartDetachesSourceForSelector:@selector(resume)];
+}
+
+- (void)testFailedPlayerStartLeavesNoSourceForFollowingRecorderStart
+{
+  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
+  self.audioEngine.startIfNecessaryResult = NO;
+
+  XCTAssertFalse([player start]);
+  XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
+  XCTAssertNil(player.sourceNodeId);
+
+  self.audioEngine.startIfNecessaryResult = YES;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  XCTAssertTrue([recorder start:nil]);
+  XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 1);
+  XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
+  XCTAssertEqual(self.audioEngine.sourceNodeIdsPresentAtLastStart.count, 0UL);
 }
 
 - (void)testAttachSourceNodeIfNeededIsIdempotent

@@ -1,0 +1,2 @@
+// The RNAudioWorklets SwiftPM target exposes no headers, but SwiftPM fails to resolve the package
+// when a target's public headers directory is missing, so Package.swift points publicHeadersPath here.

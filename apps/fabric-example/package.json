@@ -7,7 +7,9 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs",
+    "test:server": "node --test server/realtime-token-server.test.mjs"
   },
   "dependencies": {
     "common-app": "workspace:*",
@@ -21,6 +23,9 @@
   },
   "engines": {
     "node": ">=22.11.0"
+  },
+  "react-native-audio-api": {
+    "enableFFmpeg": true
   },
   "reactNativeVectorIcons": {
     "fontDir": "./assets/fonts"

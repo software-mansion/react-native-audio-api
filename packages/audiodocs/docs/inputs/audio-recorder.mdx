@@ -160,10 +160,12 @@ import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'record',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'record',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
@@ -236,10 +238,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'record',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'record',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
@@ -326,10 +330,12 @@ import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioContext, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'playAndRecord',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'playAndRecord',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
@@ -430,6 +436,9 @@ export default MyRecorder;
           iosVoiceProcessing: true,
         });
         ```
+        <div class="text-content">
+          For a complete example with microphone streaming, assistant playback, barge-in, and session cleanup, see the [FabricExample Voice Chat demo](https://github.com/software-mansion/react-native-audio-api/tree/main/apps/common-app/src/demos/VoiceChat) and its [setup instructions](https://github.com/software-mansion/react-native-audio-api/tree/main/apps/fabric-example#voice-chat-demo). It uses platform voice processing together with the communication session configuration in [AudioManager](../system/audio-manager.mdx).
+        </div>
       </td>
     </tr>
 

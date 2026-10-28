@@ -124,6 +124,7 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 @property(nonatomic, assign) NSInteger stopCallCount;
 @property(nonatomic, assign) NSInteger pauseCallCount;
 @property(nonatomic, assign) NSInteger resumeCallCount;
+@property(nonatomic, assign) BOOL resumeResult;
 @property(nonatomic, assign) NSInteger cleanupCallCount;
 @property(nonatomic, assign) NSInteger setInputArmedCallCount;
 @property(nonatomic, assign) BOOL lastInputArmed;
@@ -145,6 +146,7 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
                                                        channels:2];
     self.mockResolvedBufferSize = 512;
     self.startResult = YES;
+    self.resumeResult = YES;
   }
 
   return self;
@@ -191,7 +193,7 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 
 - (BOOL)resume {
   self.resumeCallCount += 1;
-  return YES;
+  return self.resumeResult;
 }
 
 - (void)cleanup {
@@ -272,7 +274,7 @@ public:
 
   _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<IAudioEventHandlerRegistry>());
   self.originalNativeRecorder = _recorder->replaceNativeRecorder(self.nativeRecorder);
-  self.nativeRecorder.onInputConfigurationChange = self.originalNativeRecorder.onInputConfigurationChange;
+  self.nativeRecorder.onInputNotification = self.originalNativeRecorder.onInputNotification;
 }
 
 - (void)tearDown {
@@ -494,6 +496,19 @@ public:
 
   XCTAssertEqual(self.nativeRecorder.resumeCallCount, 1);
   XCTAssertFalse(_recorder->isPaused());
+}
+
+- (void)testResumeDoesNotStoreRecordingWhenNativeResumeFails {
+  _recorder->setRecorderState(RecorderState::Recording);
+  self.audioEngine.state = AudioEngineStateRunning;
+  _recorder->pause();
+  self.nativeRecorder.resumeResult = NO;
+
+  _recorder->resume();
+
+  XCTAssertEqual(self.nativeRecorder.resumeCallCount, 1);
+  XCTAssertTrue(_recorder->isPaused());
+  XCTAssertFalse(_recorder->isRecording());
 }
 
 - (void)testStopReturnsErrorWhileIdle {
