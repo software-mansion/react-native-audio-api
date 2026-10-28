@@ -37,17 +37,11 @@ file's frames are appended.
 :::
 
 :::tip Segment size and quality
-`concatAudioFiles` joins segments losslessly for **WAV** (32-bit float PCM) and
-**FLAC** (lossless re-encode). For **M4A**,
-Android remuxes the encoded AAC packets losslessly, while iOS re-encodes the
-joined audio once through AVFoundation. **OGG** remuxes the Opus packets
-without re-encoding; each segment's closing padding and the encoder lookahead of the
-next one stay in the stream, so a seam carries up to about 30 ms of silence. Each rotated chunk is
-a separate encode, so very small
+Each rotated chunk is a separate encode, so very small
 [`rotateIntervalBytes`](../inputs/audio-recorder#audiorecorderfileoptions)
 values can still produce clicks, muffled joins, or timing gaps after concatenation.
 
-If playback quality is poor after joining rotated M4A or OGG files, increase `rotateIntervalBytes` (for example **≥ 200 KB**) or record without rotation. WAV and FLAC segments are less sensitive, but the same guidance applies below roughly **512 KB–1 MB** per segment.
+If playback quality is poor after joining rotated files, increase `rotateIntervalBytes` (for example **≥ 200 KB**) or record without rotation.
 :::
 
 ### `concatAudioFiles`
