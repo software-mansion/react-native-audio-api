@@ -1,5 +1,6 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
+#define LOG_MODULE AudioEngine
 #import <audioapi/ios/utils/Log.h>
 
 #include <mutex>
@@ -261,7 +262,6 @@ static AudioEngine *_sharedInstance = nil;
   NSError *sessionError = nil;
   if (![self.sessionManager ensureActive:true error:&sessionError]) {
     AUDIO_LOG_ERROR(
-        logEngine(),
         "Error while activating audio session before input materialization: %{public}@",
         [sessionError debugDescription]);
     return NO;
@@ -329,7 +329,6 @@ static AudioEngine *_sharedInstance = nil;
 
   if (![systemInputNode setVoiceProcessingEnabled:wantsVoiceProcessing error:&error]) {
     AUDIO_LOG_ERROR(
-        logEngine(),
         "Error while setting voice processing to %{public}s: %{public}@",
         wantsVoiceProcessing ? "true" : "false",
         [error debugDescription]);
@@ -379,7 +378,7 @@ static AudioEngine *_sharedInstance = nil;
   AVAudioSourceNode *sourceNode = self.sourceNodes[sourceNodeId];
 
   if (self.sourceRegistrations[sourceNodeId] == nil) {
-    AUDIO_LOG_WARNING(logEngine(), "No source node found with ID: %{public}@", sourceNodeId);
+    AUDIO_LOG_WARNING("No source node found with ID: %{public}@", sourceNodeId);
     return;
   }
 
@@ -449,11 +448,10 @@ static AudioEngine *_sharedInstance = nil;
 - (bool)onInterruptionBegin
 {
   std::scoped_lock lock(_engineLock);
-  AUDIO_LOG_TRACE(logEngine(), "onInterruptionBegin");
+  AUDIO_LOG_TRACE("onInterruptionBegin");
 
   if (self.state != AudioEngineState::AudioEngineStateRunning) {
     AUDIO_LOG_DEBUG(
-        logEngine(),
         "onInterruptionBegin ignored engineState=%{public}s engineRunning=%{public}s",
         audioEngineStateName(self.state),
         logBool(self.audioEngine != nil && [self.audioEngine isRunning]));
@@ -462,7 +460,6 @@ static AudioEngine *_sharedInstance = nil;
 
   self.state = AudioEngineState::AudioEngineStateInterrupted;
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "onInterruptionBegin engineState=running -> interrupted engineRunning=%{public}s",
       logBool(self.audioEngine != nil && [self.audioEngine isRunning]));
   return true;
@@ -471,15 +468,13 @@ static AudioEngine *_sharedInstance = nil;
 - (void)onSessionDeactivated
 {
   std::scoped_lock lock(_engineLock);
-  AUDIO_LOG_TRACE(logEngine(), "onSessionDeactivated");
+  AUDIO_LOG_TRACE("onSessionDeactivated");
   BOOL hadTrackedGraph = [self hasTrackedGraph];
   BOOL hadActiveState = self.state != AudioEngineState::AudioEngineStateIdle;
 
   if (!hadActiveState && !hadTrackedGraph) {
     AUDIO_LOG_DEBUG(
-        logEngine(),
-        "onSessionDeactivated ignored engineState=%{public}s",
-        audioEngineStateName(self.state));
+        "onSessionDeactivated ignored engineState=%{public}s", audioEngineStateName(self.state));
     return;
   }
 
@@ -495,7 +490,6 @@ static AudioEngine *_sharedInstance = nil;
 
   self.state = AudioEngineState::AudioEngineStatePaused;
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "onSessionDeactivated engineState=%{public}s graphNeedsRebuild=%{public}s sessionDeactivationInvalidatedGraph=%{public}s",
       audioEngineStateName(self.state),
       logBool(self.graphNeedsRebuild),
@@ -511,10 +505,9 @@ static AudioEngine *_sharedInstance = nil;
 - (void)markGraphNeedsRebuild
 {
   std::scoped_lock lock(_engineLock);
-  AUDIO_LOG_TRACE(logEngine(), "markGraphNeedsRebuild");
+  AUDIO_LOG_TRACE("markGraphNeedsRebuild");
   self.graphNeedsRebuild = true;
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "markGraphNeedsRebuild engineState=%{public}s graphNeedsRebuild=true",
       audioEngineStateName(self.state));
 }
@@ -560,7 +553,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
 - (AudioEngineInterruptionEndOutcome)onInterruptionEnd:(bool)shouldResume
 {
-  AUDIO_LOG_TRACE(logEngine(), "onInterruptionEnd shouldResume=%{public}s", logBool(shouldResume));
+  AUDIO_LOG_TRACE("onInterruptionEnd shouldResume=%{public}s", logBool(shouldResume));
 
   AudioEngineInterruptionEndOutcome outcome;
   BOOL readyToStart = NO;
@@ -582,7 +575,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if (!readyToStart) {
     AUDIO_LOG_DEBUG(
-        logEngine(),
         "onInterruptionEnd outcome=%{public}s readyToStart=false notifiedInput=%{public}s engineState=%{public}s",
         audioEngineInterruptionEndOutcomeName(outcome),
         logBool(notifyInput != nil),
@@ -593,7 +585,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   std::scoped_lock lock(_engineLock);
   outcome = [self startAfterInterruption];
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "onInterruptionEnd outcome=%{public}s readyToStart=true notifiedInput=true engineState=%{public}s",
       audioEngineInterruptionEndOutcomeName(outcome),
       audioEngineStateName(self.state));
@@ -610,9 +601,8 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   NSError *error = nil;
   *readyToStart = NO;
 
-  AUDIO_LOG_TRACE(logEngine(), "rebuildAfterInterruption");
+  AUDIO_LOG_TRACE("rebuildAfterInterruption");
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "rebuildAfterInterruption engineState=%{public}s shouldResume=%{public}s hasInput=%{public}s hasSources=%{public}s graphNeedsRebuild=%{public}s sessionDeactivationInvalidatedGraph=%{public}s engineRunning=%{public}s",
       audioEngineStateName(self.state),
       logBool(shouldResume),
@@ -628,8 +618,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   const BOOL resumeEngine =
       shouldEngineResumeAfterInterruption(shouldResume, [self hasInput], [self hasSources]);
-  AUDIO_LOG_DEBUG(
-      logEngine(), "rebuildAfterInterruption resumeEngine=%{public}s", logBool(resumeEngine));
+  AUDIO_LOG_DEBUG("rebuildAfterInterruption resumeEngine=%{public}s", logBool(resumeEngine));
 
   if (!resumeEngine) {
     [self stopEngine];
@@ -640,7 +629,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if (![self.sessionManager ensureActive:true error:&error]) {
     AUDIO_LOG_ERROR(
-        logEngine(),
         "Error while activating audio session after interruption: %{public}@",
         [error debugDescription]);
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
@@ -651,7 +639,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
     AUDIO_LOG_ERROR(
-        logEngine(),
         "Error while materializing the audio input node after interruption: missing live input format");
     self.state = AudioEngineState::AudioEngineStateInterrupted;
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
@@ -661,7 +648,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   self.state = AudioEngineState::AudioEngineStateInterrupted;
   *readyToStart = YES;
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "rebuildAfterInterruption readyToStart engineState=%{public}s inputNode=%{public}s",
       audioEngineStateName(self.state),
       logBool(self.inputNode != nil));
@@ -672,9 +658,8 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 /// started meanwhile. Lock held.
 - (AudioEngineInterruptionEndOutcome)startAfterInterruption
 {
-  AUDIO_LOG_TRACE(logEngine(), "startAfterInterruption");
+  AUDIO_LOG_TRACE("startAfterInterruption");
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "startAfterInterruption engineState=%{public}s engineRunning=%{public}s",
       audioEngineStateName(self.state),
       logBool(self.audioEngine != nil && [self.audioEngine isRunning]));
@@ -685,9 +670,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
     AUDIO_LOG_DEBUG(
-        logEngine(),
-        "startAfterInterruption no-op engineState=%{public}s",
-        audioEngineStateName(self.state));
+        "startAfterInterruption no-op engineState=%{public}s", audioEngineStateName(self.state));
     return AudioEngineInterruptionEndOutcomeNoOp;
   }
 
@@ -697,7 +680,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if (error != nil) {
     AUDIO_LOG_ERROR(
-        logEngine(),
         "Error while restarting the audio engine after interruption: %{public}@",
         [error debugDescription]);
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
@@ -816,8 +798,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self createAudioEngineIfNeeded];
 
   if (![self.sessionManager ensureActive:true error:&error]) {
-    AUDIO_LOG_ERROR(
-        logEngine(), "Error while activating audio session: %{public}@", [error debugDescription]);
+    AUDIO_LOG_ERROR("Error while activating audio session: %{public}@", [error debugDescription]);
     return false;
   }
 
@@ -825,8 +806,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self materializeTrackedNodesIfNeeded];
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
-    AUDIO_LOG_ERROR(
-        logEngine(), "Error while materializing the audio input node: missing live input format");
+    AUDIO_LOG_ERROR("Error while materializing the audio input node: missing live input format");
     return false;
   }
 
@@ -834,8 +814,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self.audioEngine startAndReturnError:&error];
 
   if (error != nil) {
-    AUDIO_LOG_ERROR(
-        logEngine(), "Error while starting the audio engine: %{public}@", [error debugDescription]);
+    AUDIO_LOG_ERROR("Error while starting the audio engine: %{public}@", [error debugDescription]);
     return false;
   }
 
@@ -956,13 +935,11 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   AVAudioSession *session = [AVAudioSession sharedInstance];
 
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "Engine isRunning: %{public}s, isInManualRenderingMode: %{public}s",
       self.audioEngine.isRunning ? "true" : "false",
       self.audioEngine.isInManualRenderingMode ? "true" : "false");
 
   AUDIO_LOG_DEBUG(
-      logEngine(),
       "Session category: %{public}@, mode: %{public}@, sampleRate: %f Hz, IO buffer duration: %f s",
       session.category,
       session.mode,
@@ -972,21 +949,16 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   AVAudioSessionRouteDescription *route = session.currentRoute;
 
   for (AVAudioSessionPortDescription *output in route.outputs) {
-    AUDIO_LOG_DEBUG(
-        logEngine(), "Route output: %{public}@ (%{public}@)", output.portType, output.portName);
+    AUDIO_LOG_DEBUG("Route output: %{public}@ (%{public}@)", output.portType, output.portName);
   }
 
   for (AVAudioSessionPortDescription *input in route.inputs) {
-    AUDIO_LOG_DEBUG(
-        logEngine(), "Route input: %{public}@ (%{public}@)", input.portType, input.portName);
+    AUDIO_LOG_DEBUG("Route input: %{public}@ (%{public}@)", input.portType, input.portName);
   }
 
   AVAudioFormat *format = [self.audioEngine.outputNode inputFormatForBus:0];
   AUDIO_LOG_DEBUG(
-      logEngine(),
-      "Engine output format: %.0f Hz, %u channels",
-      format.sampleRate,
-      format.channelCount);
+      "Engine output format: %.0f Hz, %u channels", format.sampleRate, format.channelCount);
 #endif
 }
 

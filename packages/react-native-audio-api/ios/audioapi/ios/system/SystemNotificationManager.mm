@@ -5,6 +5,7 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
+#define LOG_MODULE SystemNotificationManager
 #import <audioapi/ios/utils/Log.h>
 
 @implementation SystemNotificationManager
@@ -124,13 +125,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)handleWillEnterForeground:(NSNotification *)notification
 {
-  AUDIO_LOG_TRACE(logSession(), "willEnterForeground");
+  AUDIO_LOG_TRACE("willEnterForeground");
   [self retryInterruptedRecordingIfNeeded];
 }
 
 - (void)handleDidBecomeActive:(NSNotification *)notification
 {
-  AUDIO_LOG_TRACE(logSession(), "didBecomeActive");
+  AUDIO_LOG_TRACE("didBecomeActive");
   [self retryInterruptedRecordingIfNeeded];
 }
 
@@ -163,7 +164,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
   dispatch_async(dispatch_get_main_queue(), ^{
-    AUDIO_LOG_TRACE(logSession(), "handleInterruptionBegin");
+    AUDIO_LOG_TRACE("handleInterruptionBegin");
     self.interruptionEndedDelivered = false;
     bool transitioned = [audioEngine onInterruptionBegin];
     [sessionManager markInactive];
@@ -172,7 +173,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [self emitInterruptionBegan];
     }
     AUDIO_LOG_DEBUG(
-        logSession(),
         "handleInterruptionBegin transitioned=%{public}s emittedToJs=%{public}s engineState=%{public}s sessionActive=%{public}s",
         logBool(transitioned),
         logBool(transitioned && self.audioInterruptionsObserved),
@@ -186,8 +186,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
   dispatch_async(dispatch_get_main_queue(), ^{
-    AUDIO_LOG_TRACE(
-        logSession(), "handleInterruptionEnd shouldResume=%{public}s", logBool(shouldResume));
+    AUDIO_LOG_TRACE("handleInterruptionEnd shouldResume=%{public}s", logBool(shouldResume));
     self.interruptionEndedDelivered = true;
     AudioEngineInterruptionEndOutcome outcome = [audioEngine onInterruptionEnd:shouldResume];
     bool emitted = outcome == AudioEngineInterruptionEndOutcomeRunning ||
@@ -196,7 +195,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [self emitInterruptionEnded:shouldResume];
     }
     AUDIO_LOG_DEBUG(
-        logSession(),
         "handleInterruptionEnd outcome=%{public}s emittedToJs=%{public}s engineState=%{public}s",
         audioEngineInterruptionEndOutcomeName(outcome),
         logBool(emitted && self.audioInterruptionsObserved),
@@ -215,14 +213,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)retryInterruptedRecordingIfNeeded
 {
-  AUDIO_LOG_TRACE(logSession(), "retryInterruptedRecordingIfNeeded");
+  AUDIO_LOG_TRACE("retryInterruptedRecordingIfNeeded");
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioEngineState engineState = [audioEngine getState];
   bool retry = self.interruptionEndedDelivered && engineState == AudioEngineStateInterrupted;
 
   if (!retry) {
     AUDIO_LOG_TRACE(
-        logSession(),
         "retryInterruptedRecordingIfNeeded skipping interruptionEndedDelivered=%{public}s engineState=%{public}s",
         logBool(self.interruptionEndedDelivered),
         audioEngineStateName(engineState));
@@ -231,7 +228,6 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   bool shouldResume = [self shouldResumeForInterruptionRecovery];
   AUDIO_LOG_DEBUG(
-      logSession(),
       "retryInterruptedRecordingIfNeeded retrying shouldResume=%{public}s interruptionShouldResume=%{public}s engineState=%{public}s",
       logBool(shouldResume),
       self.interruptionShouldResume == nil ? "nil"
@@ -248,18 +244,15 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
-    AUDIO_LOG_TRACE(logSession(), "AVAudioSession interruption began");
+    AUDIO_LOG_TRACE("AVAudioSession interruption began");
     [self handleInterruptionBegin];
     return;
   }
 
   bool shouldResume = interruptionOption == AVAudioSessionInterruptionOptionShouldResume;
   AUDIO_LOG_TRACE(
-      logSession(),
-      "AVAudioSession interruption ended shouldResume=%{public}s",
-      logBool(shouldResume));
-  AUDIO_LOG_DEBUG(
-      logSession(), "AVAudioSession interruption ended option=%ld", (long)interruptionOption);
+      "AVAudioSession interruption ended shouldResume=%{public}s", logBool(shouldResume));
+  AUDIO_LOG_DEBUG("AVAudioSession interruption ended option=%ld", (long)interruptionOption);
 
   dispatch_async(dispatch_get_main_queue(), ^{ self.interruptionShouldResume = @(shouldResume); });
   [self handleInterruptionEnd:shouldResume];
@@ -271,14 +264,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       [notification.userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] integerValue];
 
   if (secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeBegin) {
-    AUDIO_LOG_TRACE(logSession(), "secondary audio hint began");
+    AUDIO_LOG_TRACE("secondary audio hint began");
     [self handleInterruptionBegin];
     return;
   }
 
   bool shouldResume = secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeEnd;
-  AUDIO_LOG_TRACE(
-      logSession(), "secondary audio hint ended shouldResume=%{public}s", logBool(shouldResume));
+  AUDIO_LOG_TRACE("secondary audio hint ended shouldResume=%{public}s", logBool(shouldResume));
 
   [self handleInterruptionEnd:shouldResume];
 }
@@ -348,8 +340,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     return;
   }
 
-  AUDIO_LOG_WARNING(
-      logSession(), "Media services have been reset, tearing down and rebuilding everything.");
+  AUDIO_LOG_WARNING("Media services have been reset, tearing down and rebuilding everything.");
 
   dispatch_async(dispatch_get_main_queue(), ^{
     bool wasSessionActive = sessionManager.isActive;
@@ -372,11 +363,11 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   __weak AVAudioEngine *changedEngine = notification.object;
 
   dispatch_async(dispatch_get_main_queue(), ^{
-    AUDIO_LOG_TRACE(logSession(), "engine configuration change");
+    AUDIO_LOG_TRACE("engine configuration change");
     // object:nil also delivers other libraries' engines and ones we already replaced;
     // only a change on our current engine needs a restart.
     if (![audioEngine isCurrentEngine:changedEngine]) {
-      AUDIO_LOG_DEBUG(logSession(), "engine configuration change ignored: not the current engine");
+      AUDIO_LOG_DEBUG("engine configuration change ignored: not the current engine");
       return;
     }
 
@@ -388,14 +379,12 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     // rebuild.
     if (engineState == AudioEngineStateInterrupted) {
       AUDIO_LOG_DEBUG(
-          logSession(),
           "engine configuration change while interrupted: marking graph for rebuild engineState=%{public}s",
           audioEngineStateName(engineState));
       [audioEngine markGraphNeedsRebuild];
       return;
     }
     AUDIO_LOG_DEBUG(
-        logSession(),
         "engine configuration change restarting engineState=%{public}s sessionActive=%{public}s",
         audioEngineStateName(engineState),
         logBool(sessionManager.isActive));
@@ -437,8 +426,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   self.wasOtherAudioPlaying = shouldSilence;
 
-  AUDIO_LOG_TRACE(
-      logSession(), "secondaryAudioShouldBeSilencedHint=%{public}s", logBool(shouldSilence));
+  AUDIO_LOG_TRACE("secondaryAudioShouldBeSilencedHint=%{public}s", logBool(shouldSilence));
 
   if (shouldSilence) {
     [self handleInterruptionBegin];
