@@ -125,13 +125,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)handleWillEnterForeground:(NSNotification *)notification
 {
-  AUDIO_LOG_TRACE("willEnterForeground");
+  AUDIO_LOG_TRACE_FUNCTION();
   [self retryInterruptedRecordingIfNeeded];
 }
 
 - (void)handleDidBecomeActive:(NSNotification *)notification
 {
-  AUDIO_LOG_TRACE("didBecomeActive");
+  AUDIO_LOG_TRACE_FUNCTION();
   [self retryInterruptedRecordingIfNeeded];
 }
 
@@ -213,7 +213,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
 - (void)retryInterruptedRecordingIfNeeded
 {
-  AUDIO_LOG_TRACE("retryInterruptedRecordingIfNeeded");
+  AUDIO_LOG_TRACE_FUNCTION();
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioEngineState engineState = [audioEngine getState];
   bool retry = self.interruptionEndedDelivered && engineState == AudioEngineStateInterrupted;
