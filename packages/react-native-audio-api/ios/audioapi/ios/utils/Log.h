@@ -26,46 +26,46 @@
 
 #define AUDIO_LOG_SUBSYSTEM "com.swmansion.audioapi"
 
-__unused static inline const char *_Nonnull AudioLogBool(bool value)
+__unused static inline const char *_Nonnull logBool(bool value)
 {
   return value ? "true" : "false";
 }
 
 /** From least to most verbose; a line is printed when its level is at most the minimum level. */
 typedef enum {
-  AudioLogLevelError,
-  AudioLogLevelWarning,
-  AudioLogLevelDebug,
-  AudioLogLevelTrace,
-} AudioLogLevel;
+  LOG_LEVEL_ERROR,
+  LOG_LEVEL_WARNING,
+  LOG_LEVEL_DEBUG,
+  LOG_LEVEL_TRACE,
+} LogLevel;
 
-static inline AudioLogLevel AudioLogLevelFromName(const char *name)
+static inline LogLevel logLevelFromName(const char *_Nullable name)
 {
   if (name == NULL) {
-    return AudioLogLevelError;
+    return LOG_LEVEL_ERROR;
   }
   if (strcmp(name, "warning") == 0) {
-    return AudioLogLevelWarning;
+    return LOG_LEVEL_WARNING;
   }
   if (strcmp(name, "debug") == 0) {
-    return AudioLogLevelDebug;
+    return LOG_LEVEL_DEBUG;
   }
   if (strcmp(name, "trace") == 0) {
-    return AudioLogLevelTrace;
+    return LOG_LEVEL_TRACE;
   }
-  return AudioLogLevelError;
+  return LOG_LEVEL_ERROR;
 }
 
-static inline AudioLogLevel AudioLogMinimumLevel(void)
+static inline LogLevel logMinimumLevel(void)
 {
-  static AudioLogLevel minimumLevel = AudioLogLevelError;
+  static LogLevel minimumLevel = LOG_LEVEL_ERROR;
   static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{ minimumLevel = AudioLogLevelFromName(getenv("AUDIO_LOG_LEVEL")); });
+  dispatch_once(&onceToken, ^{ minimumLevel = logLevelFromName(getenv("AUDIO_LOG_LEVEL")); });
   return minimumLevel;
 }
 
 #define AUDIO_LOG_DEFINE_MODULE(functionName, category) \
-  static inline os_log_t functionName(void) \
+  static inline os_log_t _Nonnull functionName(void) \
   { \
     static os_log_t log; \
     static dispatch_once_t onceToken; \
@@ -73,33 +73,33 @@ static inline AudioLogLevel AudioLogMinimumLevel(void)
     return log; \
   }
 
-AUDIO_LOG_DEFINE_MODULE(AudioLogEngine, "engine")
-AUDIO_LOG_DEFINE_MODULE(AudioLogSession, "session")
-AUDIO_LOG_DEFINE_MODULE(AudioLogRecorder, "recorder")
-AUDIO_LOG_DEFINE_MODULE(AudioLogPlayer, "player")
-AUDIO_LOG_DEFINE_MODULE(AudioLogNotifications, "notifications")
+AUDIO_LOG_DEFINE_MODULE(logEngine, "engine")
+AUDIO_LOG_DEFINE_MODULE(logSession, "session")
+AUDIO_LOG_DEFINE_MODULE(logRecorder, "recorder")
+AUDIO_LOG_DEFINE_MODULE(logPlayer, "player")
+AUDIO_LOG_DEFINE_MODULE(logNotifications, "notifications")
 
 #undef AUDIO_LOG_DEFINE_MODULE
 
 #if defined(DEBUG) && DEBUG
 #define AUDIO_LOG_ERROR(log, fmt, ...) \
   do { \
-    if (AudioLogMinimumLevel() >= AudioLogLevelError) \
+    if (logMinimumLevel() >= LOG_LEVEL_ERROR) \
       os_log_error((log), "[error] " fmt, ##__VA_ARGS__); \
   } while (0)
 #define AUDIO_LOG_WARNING(log, fmt, ...) \
   do { \
-    if (AudioLogMinimumLevel() >= AudioLogLevelWarning) \
+    if (logMinimumLevel() >= LOG_LEVEL_WARNING) \
       os_log((log), "[warning] " fmt, ##__VA_ARGS__); \
   } while (0)
 #define AUDIO_LOG_DEBUG(log, fmt, ...) \
   do { \
-    if (AudioLogMinimumLevel() >= AudioLogLevelDebug) \
+    if (logMinimumLevel() >= LOG_LEVEL_DEBUG) \
       os_log_info((log), "[debug] " fmt, ##__VA_ARGS__); \
   } while (0)
 #define AUDIO_LOG_TRACE(log, fmt, ...) \
   do { \
-    if (AudioLogMinimumLevel() >= AudioLogLevelTrace) \
+    if (logMinimumLevel() >= LOG_LEVEL_TRACE) \
       os_log_debug((log), "[trace] " fmt, ##__VA_ARGS__); \
   } while (0)
 #else

@@ -3,7 +3,7 @@
 #import <audioapi/ios/system/notification/NotificationQueueAssertions.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 #import <audioapi/ios/system/notification/PlaybackNotification.h>
-#import <audioapi/ios/utils/AudioLog.h>
+#import <audioapi/ios/utils/Log.h>
 
 @implementation NotificationRegistry {
   NSMutableDictionary<NSString *, id<BaseNotification>> *_notifications;
@@ -66,7 +66,7 @@
   AUDIOAPI_ASSERT_ON_QUEUE(dispatch_get_main_queue());
 
   if (!key) {
-    AUDIO_LOG_ERROR(AudioLogNotifications(), "Invalid key");
+    AUDIO_LOG_ERROR(logNotifications(), "Invalid key");
     return false;
   }
 
@@ -75,15 +75,14 @@
   bool created = false;
   if (!notification) {
     if (!type) {
-      AUDIO_LOG_ERROR(
-          AudioLogNotifications(), "Type required for new notification: %{public}@", key);
+      AUDIO_LOG_ERROR(logNotifications(), "Type required for new notification: %{public}@", key);
       return false;
     }
 
     notification = [self createNotificationForType:type];
 
     if (!notification) {
-      AUDIO_LOG_ERROR(AudioLogNotifications(), "Unknown notification type: %{public}@", type);
+      AUDIO_LOG_ERROR(logNotifications(), "Unknown notification type: %{public}@", type);
       return false;
     }
 
@@ -94,7 +93,7 @@
   BOOL success = [notification showWithOptions:options];
 
   if (created && !success) {
-    AUDIO_LOG_ERROR(AudioLogNotifications(), "Failed to show notification: %{public}@", key);
+    AUDIO_LOG_ERROR(logNotifications(), "Failed to show notification: %{public}@", key);
   }
 
   return success;
@@ -107,14 +106,14 @@
   id<BaseNotification> notification = _notifications[key];
 
   if (!notification) {
-    AUDIO_LOG_WARNING(AudioLogNotifications(), "No notification found with key: %{public}@", key);
+    AUDIO_LOG_WARNING(logNotifications(), "No notification found with key: %{public}@", key);
     return false;
   }
 
   BOOL success = [notification hide];
 
   if (!success) {
-    AUDIO_LOG_ERROR(AudioLogNotifications(), "Failed to hide notification: %{public}@", key);
+    AUDIO_LOG_ERROR(logNotifications(), "Failed to hide notification: %{public}@", key);
   }
 
   return success;

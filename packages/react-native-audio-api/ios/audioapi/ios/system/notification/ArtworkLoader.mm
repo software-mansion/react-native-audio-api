@@ -1,7 +1,7 @@
 #import <ImageIO/ImageIO.h>
 #import <audioapi/ios/system/notification/ArtworkLoader.h>
 #import <audioapi/ios/system/notification/NotificationQueueAssertions.h>
-#import <audioapi/ios/utils/AudioLog.h>
+#import <audioapi/ios/utils/Log.h>
 
 static const NSTimeInterval kArtworkFetchTimeoutSeconds = 10.0;
 
@@ -152,7 +152,7 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
 {
   _timeoutBlock = dispatch_block_create(DISPATCH_BLOCK_INHERIT_QOS_CLASS, ^{
     AUDIO_LOG_WARNING(
-        AudioLogNotifications(),
+        logNotifications(),
         "Artwork fetch timed out after %.0fs: %{public}@",
         kArtworkFetchTimeoutSeconds,
         self->_url);
@@ -189,7 +189,7 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
 
   if (error != nil) {
     AUDIO_LOG_WARNING(
-        AudioLogNotifications(),
+        logNotifications(),
         "Failed to download artwork from %{public}@: %{public}@",
         _url,
         error.localizedDescription);
@@ -201,7 +201,7 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
     NSInteger statusCode = ((NSHTTPURLResponse *)response).statusCode;
     if (statusCode < 200 || statusCode > 299) {
       AUDIO_LOG_WARNING(
-          AudioLogNotifications(),
+          logNotifications(),
           "Artwork request returned HTTP %ld: %{public}@",
           (long)statusCode,
           _url);
@@ -212,7 +212,7 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
 
   if (data.length == 0 || data.length > kArtworkMaximumDownloadBytes) {
     AUDIO_LOG_WARNING(
-        AudioLogNotifications(),
+        logNotifications(),
         "Rejecting artwork body of %lu bytes: %{public}@",
         (unsigned long)data.length,
         _url);
@@ -232,8 +232,7 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
   dispatch_async(_loader.decodeQueue, ^{
     UIImage *image = decode();
     if (image == nil) {
-      AUDIO_LOG_WARNING(
-          AudioLogNotifications(), "Failed to decode artwork from %{public}@", self->_url);
+      AUDIO_LOG_WARNING(logNotifications(), "Failed to decode artwork from %{public}@", self->_url);
     }
 
     dispatch_async(dispatch_get_main_queue(), ^{ [self settleWithImage:image notify:YES]; });
