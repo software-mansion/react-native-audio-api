@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 
 #include <audioapi/ios/core/utils/IOSFilePath.h>
+#define LOG_MODULE IOSFilePath
 #import <audioapi/ios/utils/Log.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
@@ -43,9 +44,7 @@ NSURL *getFileURL(
 
   if (error != nil) {
     AUDIO_LOG_WARNING(
-        logRecorder(),
-        "Error creating directory for audio recordings: %{public}@",
-        [error debugDescription]);
+        "Error creating directory for audio recordings: %{public}@", [error debugDescription]);
     directoryURL = baseURL;
   }
 

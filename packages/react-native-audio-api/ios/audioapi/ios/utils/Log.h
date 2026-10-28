@@ -9,7 +9,9 @@
 
 /**
  * Native logging for the iOS layer, written to the unified log under the subsystem
- * `com.swmansion.audioapi`, with one category per module.
+ * `com.swmansion.audioapi`. The category is the module name.
+ *
+ * Define `LOG_MODULE` as that name before including this header.
  *
  * Each line starts with its level in brackets (`[error]`, `[warning]`, `[debug]`, `[trace]`),
  * because the unified log has no warning or trace type: filter on that tag, not on the log type.
@@ -39,7 +41,7 @@ typedef enum {
   LOG_LEVEL_TRACE,
 } LogLevel;
 
-static inline LogLevel logLevelFromName(const char *_Nullable name)
+__unused static inline LogLevel logLevelFromName(const char *_Nullable name)
 {
   if (name == NULL) {
     return LOG_LEVEL_ERROR;
@@ -56,7 +58,7 @@ static inline LogLevel logLevelFromName(const char *_Nullable name)
   return LOG_LEVEL_ERROR;
 }
 
-static inline LogLevel logMinimumLevel(void)
+__unused static inline LogLevel logMinimumLevel(void)
 {
   static LogLevel minimumLevel = LOG_LEVEL_ERROR;
   static dispatch_once_t onceToken;
@@ -64,55 +66,54 @@ static inline LogLevel logMinimumLevel(void)
   return minimumLevel;
 }
 
-#define AUDIO_LOG_DEFINE_MODULE(functionName, category) \
-  static inline os_log_t _Nonnull functionName(void) \
-  { \
-    static os_log_t log; \
-    static dispatch_once_t onceToken; \
-    dispatch_once(&onceToken, ^{ log = os_log_create(AUDIO_LOG_SUBSYSTEM, category); }); \
-    return log; \
-  }
+#ifndef LOG_MODULE
+#error "Define LOG_MODULE to the module name before including Log.h"
+#endif
 
-AUDIO_LOG_DEFINE_MODULE(logEngine, "engine")
-AUDIO_LOG_DEFINE_MODULE(logSession, "session")
-AUDIO_LOG_DEFINE_MODULE(logRecorder, "recorder")
-AUDIO_LOG_DEFINE_MODULE(logPlayer, "player")
-AUDIO_LOG_DEFINE_MODULE(logNotifications, "notifications")
+#define LOG_STRINGIFY_IMPL(name) #name
+#define LOG_STRINGIFY(name) LOG_STRINGIFY_IMPL(name)
 
-#undef AUDIO_LOG_DEFINE_MODULE
+__unused static inline os_log_t _Nonnull logModule(void)
+{
+  static os_log_t log;
+  static dispatch_once_t onceToken;
+  dispatch_once(
+      &onceToken, ^{ log = os_log_create(AUDIO_LOG_SUBSYSTEM, LOG_STRINGIFY(LOG_MODULE)); });
+  return log;
+}
 
 #if defined(DEBUG) && DEBUG
-#define AUDIO_LOG_ERROR(log, fmt, ...) \
+#define AUDIO_LOG_ERROR(fmt, ...) \
   do { \
     if (logMinimumLevel() >= LOG_LEVEL_ERROR) \
-      os_log_error((log), "[error] " fmt, ##__VA_ARGS__); \
+      os_log_error(logModule(), "[error] " fmt, ##__VA_ARGS__); \
   } while (0)
-#define AUDIO_LOG_WARNING(log, fmt, ...) \
+#define AUDIO_LOG_WARNING(fmt, ...) \
   do { \
     if (logMinimumLevel() >= LOG_LEVEL_WARNING) \
-      os_log((log), "[warning] " fmt, ##__VA_ARGS__); \
+      os_log(logModule(), "[warning] " fmt, ##__VA_ARGS__); \
   } while (0)
-#define AUDIO_LOG_DEBUG(log, fmt, ...) \
+#define AUDIO_LOG_DEBUG(fmt, ...) \
   do { \
     if (logMinimumLevel() >= LOG_LEVEL_DEBUG) \
-      os_log_info((log), "[debug] " fmt, ##__VA_ARGS__); \
+      os_log_info(logModule(), "[debug] " fmt, ##__VA_ARGS__); \
   } while (0)
-#define AUDIO_LOG_TRACE(log, fmt, ...) \
+#define AUDIO_LOG_TRACE(fmt, ...) \
   do { \
     if (logMinimumLevel() >= LOG_LEVEL_TRACE) \
-      os_log_debug((log), "[trace] " fmt, ##__VA_ARGS__); \
+      os_log_debug(logModule(), "[trace] " fmt, ##__VA_ARGS__); \
   } while (0)
 #else
-#define AUDIO_LOG_ERROR(log, fmt, ...) \
+#define AUDIO_LOG_ERROR(fmt, ...) \
   do { \
   } while (0)
-#define AUDIO_LOG_WARNING(log, fmt, ...) \
+#define AUDIO_LOG_WARNING(fmt, ...) \
   do { \
   } while (0)
-#define AUDIO_LOG_DEBUG(log, fmt, ...) \
+#define AUDIO_LOG_DEBUG(fmt, ...) \
   do { \
   } while (0)
-#define AUDIO_LOG_TRACE(log, fmt, ...) \
+#define AUDIO_LOG_TRACE(fmt, ...) \
   do { \
   } while (0)
 #endif

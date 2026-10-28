@@ -9,6 +9,7 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
+#define LOG_MODULE AudioAPIModule
 #import <audioapi/ios/utils/Log.h>
 
 #import <audioapi/core/inputs/ActiveRecorderHandle.h>
@@ -85,7 +86,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
   audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler);
 
-  AUDIO_LOG_DEBUG(logEngine(), "Installed JSI bindings");
+  AUDIO_LOG_DEBUG("Installed JSI bindings");
   return @YES;
 }
 
