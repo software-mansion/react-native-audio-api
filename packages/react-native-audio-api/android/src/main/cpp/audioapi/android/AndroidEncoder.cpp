@@ -290,6 +290,11 @@ class MediaCodecBackend : public IEncoderBackend {
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, mime);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, sampleRate);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, channelCount);
+    // MediaCodec AAC encoders reject a format without a bit rate.
+    if (isAac && bitRate <= 0) {
+      bitRate = std::min(sampleRate * AAC_DEFAULT_BITS_PER_SAMPLE, AAC_MAX_DEFAULT_BIT_RATE) *
+          channelCount;
+    }
     if (bitRate > 0) {
       AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, bitRate);
     }
@@ -447,8 +452,10 @@ class MediaCodecBackend : public IEncoderBackend {
   static constexpr int64_t STREAM_TIMEOUT_US = 0;
   static constexpr int64_t DRAIN_TIMEOUT_US = 10000;
   static constexpr int MAX_TRY_AGAIN_AT_EOS = 200;
-  static constexpr int AAC_PROFILE_LC = 2;     // MediaCodecInfo.CodecProfileLevel.AACObjectLC
-  static constexpr int PCM_ENCODING_16BIT = 2; // AudioFormat.ENCODING_PCM_16BIT
+  static constexpr int AAC_PROFILE_LC = 2; // MediaCodecInfo.CodecProfileLevel.AACObjectLC
+  static constexpr int AAC_DEFAULT_BITS_PER_SAMPLE = 2;
+  static constexpr int AAC_MAX_DEFAULT_BIT_RATE = 96000; // per channel
+  static constexpr int PCM_ENCODING_16BIT = 2;           // AudioFormat.ENCODING_PCM_16BIT
 
   std::vector<uint8_t> pcmLeftover_;
   uint64_t framesFed_{0};
