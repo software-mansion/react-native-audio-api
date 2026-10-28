@@ -2,6 +2,7 @@ import type {
   AndroidAudioMode,
   AndroidInputPreset,
   AndroidOutputProfile,
+  AudioFocusType,
   CommunicationDevice,
   IOSCategory,
   IOSMode,
@@ -72,6 +73,13 @@ const ANDROID_OUTPUT_PROFILE_KEYS: Record<AndroidOutputProfile, true> = {
   voiceCommunication: true,
 };
 
+const AUDIO_FOCUS_TYPE_KEYS: Record<AudioFocusType, true> = {
+  gain: true,
+  gainTransient: true,
+  gainTransientExclusive: true,
+  gainTransientMayDuck: true,
+};
+
 export const IOS_CATEGORIES = Object.keys(IOS_CATEGORY_KEYS) as IOSCategory[];
 export const IOS_MODES = Object.keys(IOS_MODE_KEYS) as IOSMode[];
 export const IOS_OPTIONS = Object.keys(IOS_OPTION_KEYS) as IOSOption[];
@@ -87,3 +95,6 @@ export const ANDROID_INPUT_PRESETS = Object.keys(
 export const ANDROID_OUTPUT_PROFILES = Object.keys(
   ANDROID_OUTPUT_PROFILE_KEYS
 ) as AndroidOutputProfile[];
+export const AUDIO_FOCUS_TYPES = Object.keys(
+  AUDIO_FOCUS_TYPE_KEYS
+) as AudioFocusType[];

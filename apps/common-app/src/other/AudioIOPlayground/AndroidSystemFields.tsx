@@ -11,22 +11,15 @@ import {
   ANDROID_INPUT_PRESETS,
   ANDROID_MODES,
   ANDROID_OUTPUT_PROFILES,
+  AUDIO_FOCUS_TYPES,
   COMMUNICATION_DEVICES,
 } from '../../utils/systemOptions';
-import {
-  ANDROID_PRESET_NAMES,
-  ANDROID_PRESETS,
-  AndroidDraft,
-  AndroidPresetName,
-  CUSTOM_PRESET,
-  matchingAndroidPreset,
-} from './systemPresets';
+import { AndroidDraft, FocusChoice, NO_FOCUS } from './systemPresets';
 import { Field } from './ui';
 
 /** The field is left out of `setSystemOptions`. */
 const NOT_SET = 'not set';
 
-type PresetChoice = AndroidPresetName | typeof CUSTOM_PRESET;
 type ModeChoice = AndroidAudioMode | typeof NOT_SET;
 type DeviceChoice = CommunicationDevice | typeof NOT_SET;
 
@@ -45,20 +38,14 @@ const AndroidSystemFields: FC<AndroidSystemFieldsProps> = ({
   settings,
   onChange,
 }) => {
-  const selectPreset = (name: PresetChoice) => {
-    if (name !== CUSTOM_PRESET) {
-      onChange(ANDROID_PRESETS[name]);
-    }
-  };
-
   return (
     <>
-      <Field label="Preset">
-        <Select<PresetChoice>
-          testID="system-preset"
-          value={matchingAndroidPreset(settings)}
-          options={ANDROID_PRESET_NAMES}
-          onChange={selectPreset}
+      <Field label="Focus">
+        <Select<FocusChoice>
+          testID="system-focus-type"
+          value={settings.focus}
+          options={[NO_FOCUS, ...AUDIO_FOCUS_TYPES]}
+          onChange={(focus) => onChange({ ...settings, focus })}
         />
       </Field>
       <Field label="Mode">

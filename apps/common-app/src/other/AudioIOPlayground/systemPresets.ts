@@ -3,6 +3,7 @@ import type {
   AndroidOutputProfile,
   AndroidSystemOptions,
   AudioContextOptions,
+  AudioFocusType,
   AudioRecorderOptions,
   IOSCategory,
   IOSMode,
@@ -19,73 +20,135 @@ export interface IosSettings {
 export type AndroidSettings = AndroidSystemOptions;
 
 /**
- * What a preset sets. Besides the `setSystemOptions` group it carries the
- * constructor options of the recorder and the context, which Recreate applies.
- * Only the current platform's fields are used.
+ * `observeAudioInterruptions(false)`: no focus request, other apps keep
+ * playing.
+ */
+export const NO_FOCUS = 'none';
+export type FocusChoice = AudioFocusType | typeof NO_FOCUS;
+
+/**
+ * What a preset sets on one platform. Besides the `setSystemOptions` group it
+ * carries the recorder and context constructor options, and on Android the
+ * focus `observeAudioInterruptions` requests. iOS ignores the focus type, so
+ * its draft has none.
  */
 export type IosDraft = IosSettings & { iosVoiceProcessing: boolean };
 export type AndroidDraft = AndroidSettings & {
+  focus: FocusChoice;
   androidInputPreset: AndroidInputPreset;
   androidOutputProfile: AndroidOutputProfile;
 };
 
+interface Preset {
+  ios: IosDraft;
+  android: AndroidDraft;
+}
+
 export const CUSTOM_PRESET = 'Custom';
 
-export const IOS_PRESETS = {
+const SPEAKER_WITH_BLUETOOTH: IOSOption[] = [
+  'defaultToSpeaker',
+  'allowBluetoothA2DP',
+];
+
+/**
+ * One list for both platforms: each preset names a behaviour and spells it in
+ * each platform's terms. Other apps' audio is the iOS category options on iOS
+ * and the focus type on Android. Echo cancellation is voice processing with
+ * `voiceChat` on iOS and the `voiceCommunication` input preset in
+ * `inCommunication` mode on Android.
+ */
+export const PRESETS = {
+  'Mix with others': {
+    ios: {
+      category: 'playAndRecord',
+      mode: 'default',
+      options: [...SPEAKER_WITH_BLUETOOTH, 'mixWithOthers'],
+      iosVoiceProcessing: false,
+    },
+    android: {
+      focus: NO_FOCUS,
+      androidInputPreset: 'voiceRecognition',
+      androidOutputProfile: 'media',
+    },
+  },
+  'Duck others': {
+    ios: {
+      category: 'playAndRecord',
+      mode: 'default',
+      options: [...SPEAKER_WITH_BLUETOOTH, 'duckOthers'],
+      iosVoiceProcessing: false,
+    },
+    android: {
+      focus: 'gainTransientMayDuck',
+      androidInputPreset: 'voiceRecognition',
+      androidOutputProfile: 'media',
+    },
+  },
+  'Interrupt others': {
+    ios: {
+      category: 'playAndRecord',
+      mode: 'default',
+      options: SPEAKER_WITH_BLUETOOTH,
+      iosVoiceProcessing: false,
+    },
+    android: {
+      focus: 'gain',
+      androidInputPreset: 'voiceRecognition',
+      androidOutputProfile: 'media',
+    },
+  },
   'Record demo': {
-    category: 'playAndRecord',
-    mode: 'default',
-    options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
-    iosVoiceProcessing: false,
+    ios: {
+      category: 'playAndRecord',
+      mode: 'default',
+      options: [...SPEAKER_WITH_BLUETOOTH, 'mixWithOthers'],
+      iosVoiceProcessing: false,
+    },
+    android: {
+      focus: 'gain',
+      androidInputPreset: 'voiceCommunication',
+      androidOutputProfile: 'media',
+    },
   },
-  'Record demo, exclusive': {
-    category: 'playAndRecord',
-    mode: 'default',
-    options: ['defaultToSpeaker', 'allowBluetoothA2DP'],
-    iosVoiceProcessing: false,
+  'Voice call, speaker': {
+    ios: {
+      category: 'playAndRecord',
+      mode: 'voiceChat',
+      options: ['defaultToSpeaker'],
+      iosVoiceProcessing: true,
+    },
+    android: {
+      mode: 'inCommunication',
+      communicationDevice: 'speaker',
+      focus: 'gain',
+      androidInputPreset: 'voiceCommunication',
+      androidOutputProfile: 'media',
+    },
   },
-  Playback: {
-    category: 'playback',
-    mode: 'default',
-    options: [],
-    iosVoiceProcessing: false,
+  'Voice call, earpiece': {
+    ios: {
+      category: 'playAndRecord',
+      mode: 'voiceChat',
+      // Without defaultToSpeaker, playAndRecord routes to the receiver.
+      options: [],
+      iosVoiceProcessing: true,
+    },
+    android: {
+      mode: 'inCommunication',
+      communicationDevice: 'earpiece',
+      focus: 'gain',
+      androidInputPreset: 'voiceCommunication',
+      androidOutputProfile: 'voiceCommunication',
+    },
   },
-} satisfies Record<string, IosDraft>;
+} satisfies Record<string, Preset>;
 
-export const ANDROID_PRESETS = {
-  // No mode: Activate and Deactivate do nothing on Android.
-  'Normal mode': {
-    androidInputPreset: 'voiceCommunication',
-    androidOutputProfile: 'media',
-  },
-  'Normal mode, default mic': {
-    androidInputPreset: 'voiceRecognition',
-    androidOutputProfile: 'media',
-  },
-  'Communication, speaker': {
-    mode: 'inCommunication',
-    communicationDevice: 'speaker',
-    androidInputPreset: 'voiceCommunication',
-    androidOutputProfile: 'media',
-  },
-  'Communication, earpiece': {
-    mode: 'inCommunication',
-    communicationDevice: 'earpiece',
-    androidInputPreset: 'voiceCommunication',
-    androidOutputProfile: 'voiceCommunication',
-  },
-} satisfies Record<string, AndroidDraft>;
+export type PresetName = keyof typeof PRESETS;
+export type PresetChoice = PresetName | typeof CUSTOM_PRESET;
 
-export type IosPresetName = keyof typeof IOS_PRESETS;
-export type AndroidPresetName = keyof typeof ANDROID_PRESETS;
-
-export const DEFAULT_IOS_PRESET: IosPresetName = 'Record demo';
-export const DEFAULT_ANDROID_PRESET: AndroidPresetName = 'Normal mode';
-
-export const IOS_PRESET_NAMES = Object.keys(IOS_PRESETS) as IosPresetName[];
-export const ANDROID_PRESET_NAMES = Object.keys(
-  ANDROID_PRESETS
-) as AndroidPresetName[];
+export const DEFAULT_PRESET: PresetName = 'Record demo';
+export const PRESET_NAMES = Object.keys(PRESETS) as PresetName[];
 
 export function iosSystemGroup({
   category,
@@ -116,41 +179,4 @@ export function androidContextOptions(
   draft: AndroidDraft
 ): AudioContextOptions {
   return { androidOutputProfile: draft.androidOutputProfile };
-}
-
-function isSameIosDraft(left: IosDraft, right: IosDraft): boolean {
-  return (
-    left.category === right.category &&
-    left.mode === right.mode &&
-    left.iosVoiceProcessing === right.iosVoiceProcessing &&
-    left.options.length === right.options.length &&
-    left.options.every((option) => right.options.includes(option))
-  );
-}
-
-function isSameAndroidDraft(left: AndroidDraft, right: AndroidDraft): boolean {
-  return (
-    left.mode === right.mode &&
-    left.communicationDevice === right.communicationDevice &&
-    left.androidInputPreset === right.androidInputPreset &&
-    left.androidOutputProfile === right.androidOutputProfile
-  );
-}
-
-export function matchingIosPreset(
-  draft: IosDraft
-): IosPresetName | typeof CUSTOM_PRESET {
-  const match = IOS_PRESET_NAMES.find((name) =>
-    isSameIosDraft(IOS_PRESETS[name], draft)
-  );
-  return match ?? CUSTOM_PRESET;
-}
-
-export function matchingAndroidPreset(
-  draft: AndroidDraft
-): AndroidPresetName | typeof CUSTOM_PRESET {
-  const match = ANDROID_PRESET_NAMES.find((name) =>
-    isSameAndroidDraft(ANDROID_PRESETS[name], draft)
-  );
-  return match ?? CUSTOM_PRESET;
 }

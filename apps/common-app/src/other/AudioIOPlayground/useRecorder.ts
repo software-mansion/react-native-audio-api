@@ -68,8 +68,8 @@ function describeRecorder(recorder: AudioRecorder): string {
 }
 
 /**
- * Owns the playground's own recorder; `onTake` receives each finished file.
- * Its options are fixed at construction, so `recreate` replaces it.
+ * Owns the playground's own recorder; `onTake` receives each finished file. Its
+ * options are fixed at construction, so `recreate` replaces it.
  */
 export function useRecorder(log: Log, onTake: (path: string) => void) {
   const {

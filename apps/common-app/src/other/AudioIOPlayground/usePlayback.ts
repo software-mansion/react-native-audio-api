@@ -55,8 +55,8 @@ function release(source: AudioBufferSourceNode) {
 
 /**
  * Owns the playground's own context, so it never inherits a context another
- * screen left running. At most one source is attached at a time. The
- * context's options are fixed at construction, so `recreate` replaces it.
+ * screen left running. At most one source is attached at a time. The context's
+ * options are fixed at construction, so `recreate` replaces it.
  */
 export function usePlayback(log: Log, lastTakePath: string | null) {
   const {

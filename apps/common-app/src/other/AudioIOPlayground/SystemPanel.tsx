@@ -5,25 +5,27 @@ import type {
   AudioRecorderOptions,
 } from 'react-native-audio-api';
 
+import { Select } from '../../components';
 import AndroidSystemFields from './AndroidSystemFields';
 import IosSystemFields from './IosSystemFields';
 import type { Log } from './log';
-import { PLAYBACK_CALLS } from './usePlayback';
-import { RECORDER_CALLS } from './useRecorder';
 import {
-  ANDROID_PRESETS,
   androidContextOptions,
   AndroidDraft,
   androidRecorderOptions,
   androidSystemGroup,
-  DEFAULT_ANDROID_PRESET,
-  DEFAULT_IOS_PRESET,
-  IOS_PRESETS,
+  CUSTOM_PRESET,
+  DEFAULT_PRESET,
   IosDraft,
   iosRecorderOptions,
   iosSystemGroup,
+  PRESET_NAMES,
+  PresetChoice,
+  PRESETS,
 } from './systemPresets';
-import { CallButton, Section } from './ui';
+import { CallButton, Field, Section } from './ui';
+import { PLAYBACK_CALLS } from './usePlayback';
+import { RECORDER_CALLS } from './useRecorder';
 import { SYSTEM_CALLS, useSystem } from './useSystem';
 
 interface SystemPanelProps {
@@ -36,30 +38,66 @@ interface SystemPanelProps {
  * Shows only the current platform's fields. Apply sends only that platform's
  * `setSystemOptions` group: the other platform ignores it. The recorder and
  * context fields are constructor options, so they reach native only when the
- * matching Recreate button builds a new object.
+ * matching button builds a new object. A preset fills both platforms' drafts;
+ * editing a field turns the preset box to Custom.
  */
 const SystemPanel: FC<SystemPanelProps> = ({
   log,
   onRecreateRecorder,
   onRecreateContext,
 }) => {
+  const [presetName, setPresetName] = useState<PresetChoice>(DEFAULT_PRESET);
   const [iosDraft, setIosDraft] = useState<IosDraft>(
-    IOS_PRESETS[DEFAULT_IOS_PRESET]
+    PRESETS[DEFAULT_PRESET].ios
   );
   const [androidDraft, setAndroidDraft] = useState<AndroidDraft>(
-    ANDROID_PRESETS[DEFAULT_ANDROID_PRESET]
+    PRESETS[DEFAULT_PRESET].android
   );
-  const { apply, activate, deactivate } = useSystem(log);
+  const { apply, activate, deactivate, requestFocus } = useSystem(log);
   const isIos = Platform.OS === 'ios';
+
+  const selectPreset = (name: PresetChoice) => {
+    setPresetName(name);
+    if (name !== CUSTOM_PRESET) {
+      setIosDraft(PRESETS[name].ios);
+      setAndroidDraft(PRESETS[name].android);
+    }
+  };
+
+  const editIosDraft = (draft: IosDraft) => {
+    setPresetName(CUSTOM_PRESET);
+    setIosDraft(draft);
+  };
+
+  const editAndroidDraft = (draft: AndroidDraft) => {
+    setPresetName(CUSTOM_PRESET);
+    setAndroidDraft(draft);
+  };
 
   return (
     <Section title="System">
+      <Field label="Preset">
+        <Select<PresetChoice>
+          testID="system-preset"
+          value={presetName}
+          options={[...PRESET_NAMES, CUSTOM_PRESET]}
+          onChange={selectPreset}
+        />
+      </Field>
       {isIos ? (
-        <IosSystemFields settings={iosDraft} onChange={setIosDraft} />
+        <IosSystemFields settings={iosDraft} onChange={editIosDraft} />
       ) : (
         <AndroidSystemFields
           settings={androidDraft}
-          onChange={setAndroidDraft}
+          onChange={editAndroidDraft}
+        />
+      )}
+      {!isIos && (
+        <CallButton
+          testID="system-focus"
+          title="Focus"
+          call={SYSTEM_CALLS.focus}
+          onPress={() => requestFocus(androidDraft.focus)}
         />
       )}
       <CallButton

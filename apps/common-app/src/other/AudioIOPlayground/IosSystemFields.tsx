@@ -7,17 +7,8 @@ import {
   IOS_OPTIONS,
 } from '../../utils/systemOptions';
 import MultiSelect from './MultiSelect';
-import {
-  CUSTOM_PRESET,
-  IOS_PRESET_NAMES,
-  IOS_PRESETS,
-  IosDraft,
-  IosPresetName,
-  matchingIosPreset,
-} from './systemPresets';
+import type { IosDraft } from './systemPresets';
 import { Field, LabeledSwitch } from './ui';
-
-type PresetChoice = IosPresetName | typeof CUSTOM_PRESET;
 
 interface IosSystemFieldsProps {
   settings: IosDraft;
@@ -25,22 +16,8 @@ interface IosSystemFieldsProps {
 }
 
 const IosSystemFields: FC<IosSystemFieldsProps> = ({ settings, onChange }) => {
-  const selectPreset = (name: PresetChoice) => {
-    if (name !== CUSTOM_PRESET) {
-      onChange(IOS_PRESETS[name]);
-    }
-  };
-
   return (
     <>
-      <Field label="Preset">
-        <Select<PresetChoice>
-          testID="system-preset"
-          value={matchingIosPreset(settings)}
-          options={IOS_PRESET_NAMES}
-          onChange={selectPreset}
-        />
-      </Field>
       <Field label="Category">
         <Select
           testID="system-category"
