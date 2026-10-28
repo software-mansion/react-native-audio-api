@@ -1,6 +1,6 @@
 #pragma once
 
-#import <NativeAudioPlayer.h>
+#import <audioapi/ios/core/NativeAudioPlayer.h>
 
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>

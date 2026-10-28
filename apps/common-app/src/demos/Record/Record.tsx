@@ -45,11 +45,13 @@ const Record: FC = () => {
       : RecordingState.Recording;
   });
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
+  const [isInterrupted, setIsInterrupted] = useState(false);
   const [recordedBuffer, setRecordedBuffer] = useState<AudioBuffer | null>(
     null
   );
   const currentPositionSV = useSharedValue(0);
   const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const stateRef = useRef(state);
   const { availableInputs, currentInput, selectInput } = useAudioInput();
 
   const inputLabels = availableInputs.map(
@@ -124,7 +126,7 @@ const Record: FC = () => {
       ios: {
         category: 'playAndRecord',
         mode: 'default',
-        options: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+        options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
       },
     });
 
@@ -142,6 +144,7 @@ const Record: FC = () => {
     setupNotification(false);
 
     if (result.status === 'success') {
+      setIsInterrupted(false);
       setState(RecordingState.Recording);
       return;
     }
@@ -154,6 +157,7 @@ const Record: FC = () => {
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
     updateNotification(true);
+    setIsInterrupted(false);
     setState(RecordingState.Paused);
   }, []);
 
@@ -189,6 +193,7 @@ const Record: FC = () => {
     const info = await Recorder.stop();
     AudioRecorder.consumeLastRecordingResult();
     RecordingNotificationManager.hide();
+    setIsInterrupted(false);
     setState(RecordingState.Loading);
 
     if (info.status !== 'success') {
@@ -301,6 +306,10 @@ const Record: FC = () => {
   );
 
   useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
     (async () => {
       const recordingPermissionStatus =
         await AudioManager.checkRecordingPermissions();
@@ -318,6 +327,31 @@ const Record: FC = () => {
         }
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    AudioManager.observeAudioInterruptions(true);
+
+    const interruptionSubscription = AudioManager.addSystemEventListener(
+      'interruption',
+      (event) => {
+        if (event.type === 'began') {
+          if (stateRef.current === RecordingState.Recording) {
+            setIsInterrupted(true);
+          }
+          return;
+        }
+
+        if (event.type === 'ended') {
+          setIsInterrupted(false);
+        }
+      }
+    );
+
+    return () => {
+      interruptionSubscription.remove();
+      AudioManager.observeAudioInterruptions(false);
+    };
   }, []);
 
   useEffect(() => {
@@ -415,7 +449,7 @@ const Record: FC = () => {
         <>
           <RecordingTime state={state} />
           <View style={styles.spacerS} />
-          <RecordingVisualization state={state} />
+          <RecordingVisualization state={state} isInterrupted={isInterrupted} />
         </>
       )}
       <View style={styles.spacerM} />

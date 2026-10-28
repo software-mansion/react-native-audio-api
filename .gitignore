@@ -87,6 +87,7 @@ react-native-audio-api*.tgz
 
 # Envs
 .env
+apps/fabric-example/.env.local
 .cursor/*
 !.cursor/rules/
 !.cursor/rules/*.mdc
@@ -101,8 +102,15 @@ output/
 packages/react-native-audio-api/android/src/main/jniLibs/
 packages/react-native-audio-api/common/cpp/audioapi/external/**/*.a
 packages/react-native-audio-api/common/cpp/audioapi/external/*.xcframework
+packages/react-native-audio-api/common/cpp/audioapi/external/xcframeworks/
+# Pre-xcframework download layout, still present in older checkouts.
 packages/react-native-audio-api/common/cpp/audioapi/external/ffmpeg_ios/
 packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg/
+
+# SwiftPM local state (Package.swift is only resolved inside an app's SPM build)
+.build/
+.swiftpm/
+packages/react-native-audio-api/Package.resolved
 
 # Clangd cache
 .cache

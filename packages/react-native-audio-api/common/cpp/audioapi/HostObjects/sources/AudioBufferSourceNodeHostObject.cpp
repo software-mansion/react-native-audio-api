@@ -5,6 +5,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/AudioBufferSourceNode.h>
+#include <audioapi/core/sources/SharedAudioBuffer.h>
 #include <audioapi/types/NodeOptions.h>
 
 #include <memory>
@@ -24,10 +25,6 @@ AudioBufferSourceNodeHostObject::AudioBufferSourceNodeHostObject(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd) {
-  if (options.buffer != nullptr) {
-    setBuffer(options.buffer);
-  }
-
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loop),
       JSI_EXPORT_PROPERTY_GETTER(AudioBufferSourceNodeHostObject, loopSkip),
@@ -126,6 +123,9 @@ JSI_PROPERTY_SETTER_IMPL(AudioBufferSourceNodeHostObject, onloopended) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
+  hasBeenStarted_ = true;
+  acquireBufferContent();
+
   auto handle = node_->handle;
   auto event = [handle,
                 node = audioBufferSourceNode_,
@@ -139,6 +139,16 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, start) {
   return jsi::Value::undefined();
 }
 
+void AudioBufferSourceNodeHostObject::acquireBufferContent() {
+  auto buffers =
+      prepareNodeBuffers(assignedBuffer_ == nullptr ? nullptr : assignedBuffer_->acquireContent());
+  auto event =
+      [handle = node_->handle, node = audioBufferSourceNode_, buffers](BaseAudioContext &) {
+        node->setBuffer(buffers.nodeBuffer, buffers.audioBuffer);
+      };
+  audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
+}
+
 JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
   if (args[0].isNull()) {
     setBuffer(nullptr);
@@ -147,62 +157,57 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferSourceNodeHostObject, setBuffer) {
     thisValue.asObject(runtime).setExternalMemoryPressure(
         runtime, getMemoryPressure() + bufferHostObject->getSizeInBytes());
 
-    setBuffer(bufferHostObject->audioBuffer_);
+    setBuffer(bufferHostObject->sharedBuffer_);
   }
 
   return jsi::Value::undefined();
 }
 
-void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
-  // TODO: add optimized memory management for buffer changes, e.g.
-  //  when the same buffer is reused across threads and
-  // buffer modification is not allowed on JS thread
-  auto handle = node_->handle;
+AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::prepareNodeBuffers(
+    const std::shared_ptr<AudioBuffer> &acquiredContent) {
+  NodeBuffers buffers;
 
-  std::shared_ptr<AudioBuffer> copiedBuffer;
-  std::shared_ptr<DSPAudioBuffer> audioBuffer;
-  const size_t newOutputChannelNumber = buffer == nullptr
-      ? AudioBufferSourceOptions::kDefaultOutputChannelNumber
-      : buffer->getNumberOfChannels();
-
-  if (buffer == nullptr) {
-    copiedBuffer = nullptr;
-    audioBuffer = std::make_shared<DSPAudioBuffer>(
+  if (acquiredContent == nullptr) {
+    buffers.nodeBuffer = nullptr;
+    buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
         RENDER_QUANTUM_SIZE,
         AudioBufferSourceOptions::kDefaultOutputChannelNumber,
         audioBufferSourceNode_->getContextSampleRate());
-  } else {
-    if (pitchCorrection_) {
-      initStretch(static_cast<int>(buffer->getNumberOfChannels()), buffer->getSampleRate());
-      auto extraTailFrames =
-          static_cast<size_t>((inputLatency_ + outputLatency_) * buffer->getSampleRate());
-      size_t totalSize = buffer->getSize() + extraTailFrames;
-      copiedBuffer = std::make_shared<AudioBuffer>(
-          totalSize, buffer->getNumberOfChannels(), buffer->getSampleRate());
-      copiedBuffer->copy(*buffer, 0, 0, buffer->getSize());
-      copiedBuffer->zero(buffer->getSize(), extraTailFrames);
-    } else {
-      copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
-    }
-
-    audioBuffer = std::make_shared<DSPAudioBuffer>(
-        RENDER_QUANTUM_SIZE,
-        copiedBuffer->getNumberOfChannels(),
-        audioBufferSourceNode_->getContextSampleRate());
+    return buffers;
   }
+
+  if (pitchCorrection_) {
+    initStretch(
+        static_cast<int>(acquiredContent->getNumberOfChannels()), acquiredContent->getSampleRate());
+  }
+
+  buffers.nodeBuffer = acquiredContent;
+
+  buffers.audioBuffer = std::make_shared<DSPAudioBuffer>(
+      RENDER_QUANTUM_SIZE,
+      buffers.nodeBuffer->getNumberOfChannels(),
+      audioBufferSourceNode_->getContextSampleRate());
+  return buffers;
+}
+
+void AudioBufferSourceNodeHostObject::setBuffer(const std::shared_ptr<SharedAudioBuffer> &buffer) {
+  assignedBuffer_ = buffer;
 
   // Publish the new output width on the host thread before renegotiation so
   // MAX / CLAMPED_MAX downstream nodes see it immediately
+  const size_t newOutputChannelNumber = buffer == nullptr
+      ? AudioBufferSourceOptions::kDefaultOutputChannelNumber
+      : buffer->getSamples()->getNumberOfChannels();
   if (newOutputChannelNumber != audioBufferSourceNode_->getOutputChannelNumber()) {
     audioBufferSourceNode_->setOutputChannelNumber(newOutputChannelNumber);
     renegotiate();
   }
 
-  auto event =
-      [handle, node = audioBufferSourceNode_, copiedBuffer, audioBuffer](BaseAudioContext &) {
-        node->setBuffer(copiedBuffer, audioBuffer);
-      };
-  audioBufferSourceNode_->scheduleAudioEvent(std::move(event));
+  // Per Web Audio, assigning a buffer to an already-started source acquires its
+  // content right away, because start() had nothing to acquire back then.
+  if (hasBeenStarted_) {
+    acquireBufferContent();
+  }
 }
 
 } // namespace audioapi

@@ -1,0 +1,3 @@
+// The RNAudioAPI SwiftPM target exposes no headers, but SwiftPM fails to resolve the package when
+// a target's public headers directory is missing, so Package.swift points publicHeadersPath here.
+// Pointing it at common/cpp instead would make SwiftPM build a module over every C++ header there.

@@ -106,24 +106,13 @@ class AudioAPIModuleInstaller {
   static void injectJSIBindings(
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
 };
 ```
 
-Each `get*Function()` private method creates a `jsi::Function` via `jsi::Function::createFromHostFunction()`. The lambda captures the dependencies it needs (`jsCallInvoker`, `audioEventHandlerRegistry`, `uiRuntime`) by value (shared_ptr).
+Each `get*Function()` private method creates a `jsi::Function` via `jsi::Function::createFromHostFunction()`. The lambda captures the dependencies it needs (`jsCallInvoker`, `audioEventHandlerRegistry`) by value (shared_ptr). The header is header-only; there is no `.cpp`.
 
-**Worklets guard**: functions that need the worklets runtime (AudioContext, OfflineAudioContext) have an `#if RN_AUDIO_API_ENABLE_WORKLETS` branch:
-```cpp
-#if RN_AUDIO_API_ENABLE_WORKLETS
-  auto runtimeRegistry = RuntimeRegistry{.uiRuntime = uiRuntime};
-  if (count > 1 && args[1].isObject()) {
-    runtimeRegistry.audioRuntime = worklets::extractWorkletRuntime(runtime, args[1]);
-  }
-#else
-  auto runtimeRegistry = RuntimeRegistry{};
-#endif
-```
+`RN_AUDIO_API_ENABLE_WORKLETS` is gone. `createAudioContext` takes sample rate, an optional latency-hint string, and an optional Android output-profile string. It does not take a worklet runtime.
 
 **Adding a new top-level global**: add a `static jsi::Function getCreateXxxFunction(...)` private method and a `setProperty("createXxx", ...)` call in `injectJSIBindings`. This is only needed for objects that JS creates directly (not objects created as properties of another HostObject).
 

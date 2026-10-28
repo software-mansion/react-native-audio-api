@@ -36,6 +36,11 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// `setChannelCount` from the JS thread is race-free with audio processing.
   [[nodiscard]] size_t getChannelCount() const;
 
+  /// @brief Number of inputs fixed at construction; 0 for source nodes.
+  [[nodiscard]] int getNumberOfInputs() const {
+    return numberOfInputs_;
+  }
+
   void setOutputChannelNumber(size_t outputChannelNumber) {
     outputChannelNumber_.store(static_cast<int>(outputChannelNumber), std::memory_order_release);
   }
@@ -127,9 +132,8 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     setOutputBuffer(buffer);
   }
 
-  /// @brief Number of channels this node emits toward AudioDestinationNode
-  /// when that does not follow its `computedNumberOfChannels`. Default:
-  /// nullopt, the output is as wide as the inputs are mixed to. Sources
+  /// @brief Number of channels this node emits toward AudioDestinationNode.
+  /// Default: nullopt, the output is as wide as the inputs are mixed to. Sources
   /// present `outputChannelNumber_`; StereoPanner always outputs stereo.
   [[nodiscard]] virtual std::optional<size_t> getOutputChannelNumber() const {
     return std::nullopt;
