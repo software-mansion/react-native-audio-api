@@ -87,6 +87,7 @@ react-native-audio-api*.tgz
 
 # Envs
 .env
+apps/fabric-example/.env.local
 .cursor/*
 !.cursor/rules/
 !.cursor/rules/*.mdc

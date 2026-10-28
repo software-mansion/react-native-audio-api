@@ -28,6 +28,10 @@ inline constexpr std::array kSpecsByFormat = {
         .codec = AudioCodec::AAC,
         .extension = "m4a"}, // M4A
     EncoderOutputSpec{
+        .container = AudioContainer::ADTS,
+        .codec = AudioCodec::AAC,
+        .extension = "aac"}, // ADTS
+    EncoderOutputSpec{
         .container = AudioContainer::FLAC,
         .codec = AudioCodec::FLAC,
         .extension = "flac"}, // FLAC
@@ -78,6 +82,7 @@ inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::FLAC,
     AudioFileProperties::FileFormat::ULAW,
     AudioFileProperties::FileFormat::ALAW,
+    AudioFileProperties::FileFormat::ADTS,
 #if RN_AUDIO_API_BUNDLED_OGG_OPUS
     AudioFileProperties::FileFormat::OPUS_OGG,
 #endif
@@ -90,6 +95,7 @@ inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::OPUS_OGG,
     AudioFileProperties::FileFormat::OPUS_WEBM,
     AudioFileProperties::FileFormat::VORBIS_WEBM,
+    AudioFileProperties::FileFormat::ADTS,
 };
 #elif RN_AUDIO_API_BUNDLED_OGG_OPUS
 inline constexpr std::array kSupportedFormats = {

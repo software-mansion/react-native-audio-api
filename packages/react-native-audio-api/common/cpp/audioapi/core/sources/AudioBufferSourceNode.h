@@ -29,6 +29,9 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   /// @note Audio Thread only
   void setLoopEnd(double loopEnd);
+  [[nodiscard]] double getLoopEnd() const {
+    return loopEnd_;
+  }
 
   /// @note Audio Thread only
   void setBuffer(

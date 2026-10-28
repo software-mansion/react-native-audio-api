@@ -21,7 +21,7 @@ recording is finished.
 :::
 
 :::caution
-**Only WAV, M4A, FLAC, and OGG (Opus) concatenation is supported** — the recording formats
+**Only WAV, M4A, FLAC, ADTS, and OGG (Opus) concatenation is supported** — the recording formats
 available on both iOS and Android.
 
 WAV and FLAC decode the segments and write them out again through the system
@@ -29,6 +29,11 @@ encoder — WAV as 32-bit float PCM, FLAC losslessly. M4A remuxes AAC packets
 with system APIs — iOS AVFoundation and Android MediaExtractor/MediaMuxer.
 OGG re-pages the Opus packets with the bundled libogg on both platforms, so it is
 unavailable when the package's static libraries are disabled with `disableStaticExternalLibs`.
+
+ADTS (`.aac`) appends complete encoded frames without decoding or re-encoding.
+Inputs must use the same sample rate and channel configuration. An incomplete
+trailing frame, such as one left by an app crash, is discarded before the next
+file's frames are appended.
 :::
 
 :::tip Segment size and quality
@@ -49,9 +54,9 @@ If playback quality is poor after joining rotated M4A or OGG files, increase `ro
 
 Concatenates compatible local audio files into a single output file.
 
-|  Parameter   |    Type    | Description                                                                           |
-| :---: | :---: | :---- |
-| `inputPaths` | `string[]` | Local filesystem paths or `file://` URLs to concatenate, in output order.             |
+|  Parameter   |    Type    | Description|
+| :----------: | :--------: | :--- |
+| `inputPaths` | `string[]` | Local filesystem paths or `file://` URLs to concatenate, in output order. |
 | `outputPath` |  `string`  | Local filesystem path or `file://` URL where the joined audio file should be written. |
 
 #### Returns `Promise<string>`.
@@ -72,8 +77,8 @@ come from the same recorder configuration:
 
 Use an output path with an extension that matches the input files, for example
 joining `.m4a` segments into an `.m4a` output file, `.wav` segments into a
-`.wav` output file, `.flac` segments into a `.flac` output file, or `.ogg`
-segments into an `.ogg` output file.
+`.wav` output file, `.flac` segments into a `.flac` output file, ADTS `.aac`
+segments into an `.aac` output file, or `.ogg` segments into an `.ogg` output file.
 
 <details>
 <summary>Example usage with rotated recordings</summary>

@@ -111,6 +111,10 @@ Adds another buffer to queue. Returns `bufferId` that can be used to identify th
 
 #### Returns `string`.
 
+:::tip
+The first enqueued buffer sets the number of channels the queue plays at. A buffer with that same number of channels is played directly from its own memory, so enqueuing it costs no copy. A buffer with a different number of channels is first mixed into a copy of the queue's width, which is slower and allocates memory for every such buffer. For best performance, enqueue buffers that all have the same number of channels.
+:::
+
 ### `dequeueBuffer`
 
 Removes a buffer from the queue. Note that [`onbufferended`](audio-buffer-queue-source-node#onbufferended) event will not be fired for the removed buffers.
