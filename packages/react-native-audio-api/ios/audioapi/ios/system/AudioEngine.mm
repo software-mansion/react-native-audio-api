@@ -1,5 +1,6 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
+#import <audioapi/ios/utils/AudioLog.h>
 
 #include <mutex>
 
@@ -259,8 +260,9 @@ static AudioEngine *_sharedInstance = nil;
   [self applyVoiceProcessing];
   NSError *sessionError = nil;
   if (![self.sessionManager ensureActive:true error:&sessionError]) {
-    NSLog(
-        @"Error while activating audio session before input materialization: %@",
+    AUDIO_LOG_ERROR(
+        AudioLogEngine(),
+        "Error while activating audio session before input materialization: %{public}@",
         [sessionError debugDescription]);
     return NO;
   }
@@ -326,9 +328,10 @@ static AudioEngine *_sharedInstance = nil;
   NSError *error = nil;
 
   if (![systemInputNode setVoiceProcessingEnabled:wantsVoiceProcessing error:&error]) {
-    NSLog(
-        @"[AudioEngine] Error while setting voice processing to %@: %@",
-        wantsVoiceProcessing ? @"true" : @"false",
+    AUDIO_LOG_ERROR(
+        AudioLogEngine(),
+        "Error while setting voice processing to %{public}s: %{public}@",
+        wantsVoiceProcessing ? "true" : "false",
         [error debugDescription]);
     return;
   }
@@ -376,7 +379,7 @@ static AudioEngine *_sharedInstance = nil;
   AVAudioSourceNode *sourceNode = self.sourceNodes[sourceNodeId];
 
   if (self.sourceRegistrations[sourceNodeId] == nil) {
-    NSLog(@"[AudioEngine] No source node found with ID: %@", sourceNodeId);
+    AUDIO_LOG_WARNING(AudioLogEngine(), "No source node found with ID: %{public}@", sourceNodeId);
     return;
   }
 
@@ -586,7 +589,10 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   }
 
   if (![self.sessionManager ensureActive:true error:&error]) {
-    NSLog(@"Error while activating audio session after interruption: %@", [error debugDescription]);
+    AUDIO_LOG_ERROR(
+        AudioLogEngine(),
+        "Error while activating audio session after interruption: %{public}@",
+        [error debugDescription]);
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
@@ -594,8 +600,9 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self rebuildAudioEngine];
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
-    NSLog(
-        @"Error while materializing the audio input node after interruption: missing live input format");
+    AUDIO_LOG_ERROR(
+        AudioLogEngine(),
+        "Error while materializing the audio input node after interruption: missing live input format");
     self.state = AudioEngineState::AudioEngineStateInterrupted;
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
@@ -623,8 +630,9 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self.audioEngine startAndReturnError:&error];
 
   if (error != nil) {
-    NSLog(
-        @"Error while restarting the audio engine after interruption: %@",
+    AUDIO_LOG_ERROR(
+        AudioLogEngine(),
+        "Error while restarting the audio engine after interruption: %{public}@",
         [error debugDescription]);
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
@@ -742,7 +750,10 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self createAudioEngineIfNeeded];
 
   if (![self.sessionManager ensureActive:true error:&error]) {
-    NSLog(@"Error while activating audio session: %@", [error debugDescription]);
+    AUDIO_LOG_ERROR(
+        AudioLogEngine(),
+        "Error while activating audio session: %{public}@",
+        [error debugDescription]);
     return false;
   }
 
@@ -750,7 +761,9 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self materializeTrackedNodesIfNeeded];
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
-    NSLog(@"Error while materializing the audio input node: missing live input format");
+    AUDIO_LOG_ERROR(
+        AudioLogEngine(),
+        "Error while materializing the audio input node: missing live input format");
     return false;
   }
 
@@ -758,7 +771,10 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self.audioEngine startAndReturnError:&error];
 
   if (error != nil) {
-    NSLog(@"Error while starting the audio engine: %@", [error debugDescription]);
+    AUDIO_LOG_ERROR(
+        AudioLogEngine(),
+        "Error while starting the audio engine: %{public}@",
+        [error debugDescription]);
     return false;
   }
 
@@ -874,37 +890,46 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
 - (void)logAudioEngineState
 {
+#if defined(DEBUG) && DEBUG
   std::scoped_lock lock(_engineLock);
   AVAudioSession *session = [AVAudioSession sharedInstance];
 
-  NSLog(@"================ 🎧 AVAudioEngine STATE ================");
+  AUDIO_LOG_DEBUG(
+      AudioLogEngine(),
+      "Engine isRunning: %{public}s, isInManualRenderingMode: %{public}s",
+      self.audioEngine.isRunning ? "true" : "false",
+      self.audioEngine.isInManualRenderingMode ? "true" : "false");
 
-  NSLog(@"➡️ engine.isRunning: %@", self.audioEngine.isRunning ? @"true" : @"false");
-  NSLog(
-      @"➡️ engine.isInManualRenderingMode: %@",
-      self.audioEngine.isInManualRenderingMode ? @"true" : @"false");
-
-  NSLog(@"🎚️ Session category: %@", session.category);
-  NSLog(@"🎚️ Session mode: %@", session.mode);
-  NSLog(@"🎚️ Session sampleRate: %f Hz", session.sampleRate);
-  NSLog(@"🎚️ Session IO buffer duration: %f s", session.IOBufferDuration);
+  AUDIO_LOG_DEBUG(
+      AudioLogEngine(),
+      "Session category: %{public}@, mode: %{public}@, sampleRate: %f Hz, IO buffer duration: %f s",
+      session.category,
+      session.mode,
+      session.sampleRate,
+      session.IOBufferDuration);
 
   AVAudioSessionRouteDescription *route = session.currentRoute;
 
-  NSLog(@"🔊 Current audio route outputs:");
   for (AVAudioSessionPortDescription *output in route.outputs) {
-    NSLog(@"  Output: %@ (%@)", output.portType, output.portName);
+    AUDIO_LOG_DEBUG(
+        AudioLogEngine(),
+        "Route output: %{public}@ (%{public}@)",
+        output.portType,
+        output.portName);
   }
 
-  NSLog(@"🎤 Current audio route inputs:");
   for (AVAudioSessionPortDescription *input in route.inputs) {
-    NSLog(@"  Input: %@ (%@)", input.portType, input.portName);
+    AUDIO_LOG_DEBUG(
+        AudioLogEngine(), "Route input: %{public}@ (%{public}@)", input.portType, input.portName);
   }
 
   AVAudioFormat *format = [self.audioEngine.outputNode inputFormatForBus:0];
-  NSLog(@"📐 Engine output format: %.0f Hz, %u channels", format.sampleRate, format.channelCount);
-
-  NSLog(@"=======================================================");
+  AUDIO_LOG_DEBUG(
+      AudioLogEngine(),
+      "Engine output format: %.0f Hz, %u channels",
+      format.sampleRate,
+      format.channelCount);
+#endif
 }
 
 @end

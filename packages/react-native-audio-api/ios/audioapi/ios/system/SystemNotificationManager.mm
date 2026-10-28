@@ -5,6 +5,7 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
+#import <audioapi/ios/utils/AudioLog.h>
 
 @implementation SystemNotificationManager
 
@@ -300,8 +301,8 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     return;
   }
 
-  NSLog(
-      @"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
+  AUDIO_LOG_WARNING(
+      AudioLogSession(), "Media services have been reset, tearing down and rebuilding everything.");
 
   dispatch_async(dispatch_get_main_queue(), ^{
     bool wasSessionActive = sessionManager.isActive;

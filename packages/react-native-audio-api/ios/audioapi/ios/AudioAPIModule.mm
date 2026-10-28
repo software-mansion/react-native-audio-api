@@ -9,6 +9,7 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
+#import <audioapi/ios/utils/AudioLog.h>
 
 #import <audioapi/core/inputs/ActiveRecorderHandle.h>
 #import <audioapi/events/AudioEventHandlerRegistry.h>
@@ -84,7 +85,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
   audioapi::AudioAPIModuleInstaller::injectJSIBindings(jsiRuntime, jsCallInvoker, _eventHandler);
 
-  NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
+  AUDIO_LOG_DEBUG(AudioLogEngine(), "Installed JSI bindings");
   return @YES;
 }
 
