@@ -24,6 +24,39 @@ typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
   AudioEngineInterruptionEndOutcomeStillInterrupted
 };
 
+__unused static inline const char *_Nonnull AudioEngineStateName(AudioEngineState state)
+{
+  switch (state) {
+    case AudioEngineStateIdle:
+      return "idle";
+    case AudioEngineStateRunning:
+      return "running";
+    case AudioEngineStatePaused:
+      return "paused";
+    case AudioEngineStateInterrupted:
+      return "interrupted";
+    default:
+      return "unknown";
+  }
+}
+
+__unused static inline const char *_Nonnull AudioEngineInterruptionEndOutcomeName(
+    AudioEngineInterruptionEndOutcome outcome)
+{
+  switch (outcome) {
+    case AudioEngineInterruptionEndOutcomeNoOp:
+      return "noOp";
+    case AudioEngineInterruptionEndOutcomeRunning:
+      return "running";
+    case AudioEngineInterruptionEndOutcomePaused:
+      return "paused";
+    case AudioEngineInterruptionEndOutcomeStillInterrupted:
+      return "stillInterrupted";
+    default:
+      return "unknown";
+  }
+}
+
 typedef void (^OnOutputRecoveryFailedBlock)(void);
 
 @interface AudioEngine : NSObject
