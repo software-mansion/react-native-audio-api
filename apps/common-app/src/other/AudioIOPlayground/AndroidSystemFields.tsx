@@ -1,19 +1,23 @@
 import React, { FC } from 'react';
 import type {
   AndroidAudioMode,
+  AndroidInputPreset,
+  AndroidOutputProfile,
   CommunicationDevice,
 } from 'react-native-audio-api';
 
 import { Select } from '../../components';
 import {
+  ANDROID_INPUT_PRESETS,
   ANDROID_MODES,
+  ANDROID_OUTPUT_PROFILES,
   COMMUNICATION_DEVICES,
 } from '../../utils/systemOptions';
 import {
   ANDROID_PRESET_NAMES,
   ANDROID_PRESETS,
+  AndroidDraft,
   AndroidPresetName,
-  AndroidSettings,
   CUSTOM_PRESET,
   matchingAndroidPreset,
 } from './systemPresets';
@@ -33,8 +37,8 @@ function fromChoice<T extends string>(
 }
 
 interface AndroidSystemFieldsProps {
-  settings: AndroidSettings;
-  onChange: (settings: AndroidSettings) => void;
+  settings: AndroidDraft;
+  onChange: (settings: AndroidDraft) => void;
 }
 
 const AndroidSystemFields: FC<AndroidSystemFieldsProps> = ({
@@ -77,6 +81,26 @@ const AndroidSystemFields: FC<AndroidSystemFieldsProps> = ({
               ...settings,
               communicationDevice: fromChoice<CommunicationDevice>(device),
             })
+          }
+        />
+      </Field>
+      <Field label="Input">
+        <Select<AndroidInputPreset>
+          testID="system-input-preset"
+          value={settings.androidInputPreset}
+          options={ANDROID_INPUT_PRESETS}
+          onChange={(androidInputPreset) =>
+            onChange({ ...settings, androidInputPreset })
+          }
+        />
+      </Field>
+      <Field label="Output">
+        <Select<AndroidOutputProfile>
+          testID="system-output-profile"
+          value={settings.androidOutputProfile}
+          options={ANDROID_OUTPUT_PROFILES}
+          onChange={(androidOutputProfile) =>
+            onChange({ ...settings, androidOutputProfile })
           }
         />
       </Field>

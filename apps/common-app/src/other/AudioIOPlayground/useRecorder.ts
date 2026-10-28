@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   AudioManager,
   AudioRecorder,
+  AudioRecorderOptions,
   FileFormat,
   Result,
 } from 'react-native-audio-api';
@@ -17,6 +18,7 @@ import {
   peakAmplitude,
 } from './recordingLevel';
 import { usePolled } from './usePolled';
+import { useRecreatable } from './useRecreatable';
 
 const FILE_OPTIONS = {
   format: FileFormat.M4A,
@@ -40,7 +42,15 @@ export const RECORDER_CALLS = {
   pause: CALLS.pause,
   resume: CALLS.resume,
   stop: `${CALLS.stop}, then ${CALLS.consume}; concatAudioFiles for several files`,
+  options: 'the options the current recorder was created with',
+  recreate:
+    'recorder = new AudioRecorder(<options above>); ' +
+    `the previous recorder first runs ${CALLS.stop} if it holds a take`,
 };
+
+function createRecorder(options: AudioRecorderOptions): AudioRecorder {
+  return new AudioRecorder(options);
+}
 
 function unwrap<T>(result: Result<T>): T {
   if (result.status === 'error') {
@@ -57,16 +67,23 @@ function describeRecorder(recorder: AudioRecorder): string {
   return recorder.isRecording() ? `recording ${seconds}` : 'idle';
 }
 
-/** Owns the playground's own recorder; `onTake` receives each finished file. */
+/**
+ * Owns the playground's own recorder; `onTake` receives each finished file.
+ * Its options are fixed at construction, so `recreate` replaces it.
+ */
 export function useRecorder(log: Log, onTake: (path: string) => void) {
-  const [recorder] = useState(() => new AudioRecorder(recorderOptions));
+  const {
+    instance: recorder,
+    options,
+    recreate: recreateRecorder,
+  } = useRecreatable(createRecorder, recorderOptions);
   const [level, setLevel] = useState(NO_BUFFERS);
   const status = usePolled(
     useCallback(() => describeRecorder(recorder), [recorder])
   );
 
   useEffect(() => {
-    log(describeCall('new AudioRecorder', recorderOptions));
+    log(describeCall('new AudioRecorder', options));
     log(
       `AudioRecorder.isRecordingOngoing() → ${AudioRecorder.isRecordingOngoing()}`
     );
@@ -99,13 +116,21 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
       recorder.clearOnAudioReady();
       recorder.clearOnError();
       if (recorder.isRecording() || recorder.isPaused()) {
-        logAction(log, `${CALLS.stop} on leaving the screen`, async () => {
+        logAction(log, `${CALLS.stop} on releasing the recorder`, async () => {
           unwrap(await recorder.stop());
           AudioRecorder.consumeLastRecordingResult();
         });
       }
     };
-  }, [log, recorder]);
+  }, [log, recorder, options]);
+
+  const recreate = useCallback(
+    (nextOptions: AudioRecorderOptions) => {
+      setLevel(NO_BUFFERS);
+      recreateRecorder(nextOptions);
+    },
+    [recreateRecorder]
+  );
 
   const start = useCallback(async () => {
     const permission = await AudioManager.requestRecordingPermissions();
@@ -145,5 +170,5 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
     }
   }, [log, recorder, onTake]);
 
-  return { status, level, start, pause, resume, stop };
+  return { status, level, options, start, pause, resume, stop, recreate };
 }

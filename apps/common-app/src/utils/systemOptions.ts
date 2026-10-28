@@ -1,5 +1,7 @@
 import type {
   AndroidAudioMode,
+  AndroidInputPreset,
+  AndroidOutputProfile,
   CommunicationDevice,
   IOSCategory,
   IOSMode,
@@ -56,6 +58,20 @@ const COMMUNICATION_DEVICE_KEYS: Record<CommunicationDevice, true> = {
   systemDefault: true,
 };
 
+const ANDROID_INPUT_PRESET_KEYS: Record<AndroidInputPreset, true> = {
+  generic: true,
+  camcorder: true,
+  voiceRecognition: true,
+  voiceCommunication: true,
+  unprocessed: true,
+  voicePerformance: true,
+};
+
+const ANDROID_OUTPUT_PROFILE_KEYS: Record<AndroidOutputProfile, true> = {
+  media: true,
+  voiceCommunication: true,
+};
+
 export const IOS_CATEGORIES = Object.keys(IOS_CATEGORY_KEYS) as IOSCategory[];
 export const IOS_MODES = Object.keys(IOS_MODE_KEYS) as IOSMode[];
 export const IOS_OPTIONS = Object.keys(IOS_OPTION_KEYS) as IOSOption[];
@@ -65,3 +81,9 @@ export const ANDROID_MODES = Object.keys(
 export const COMMUNICATION_DEVICES = Object.keys(
   COMMUNICATION_DEVICE_KEYS
 ) as CommunicationDevice[];
+export const ANDROID_INPUT_PRESETS = Object.keys(
+  ANDROID_INPUT_PRESET_KEYS
+) as AndroidInputPreset[];
+export const ANDROID_OUTPUT_PROFILES = Object.keys(
+  ANDROID_OUTPUT_PROFILE_KEYS
+) as AndroidOutputProfile[];

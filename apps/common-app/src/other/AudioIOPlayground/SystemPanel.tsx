@@ -1,55 +1,78 @@
 import React, { FC, useState } from 'react';
 import { Platform } from 'react-native';
+import type {
+  AudioContextOptions,
+  AudioRecorderOptions,
+} from 'react-native-audio-api';
 
 import AndroidSystemFields from './AndroidSystemFields';
 import IosSystemFields from './IosSystemFields';
 import type { Log } from './log';
+import { PLAYBACK_CALLS } from './usePlayback';
+import { RECORDER_CALLS } from './useRecorder';
 import {
   ANDROID_PRESETS,
-  AndroidSettings,
+  androidContextOptions,
+  AndroidDraft,
+  androidRecorderOptions,
+  androidSystemGroup,
   DEFAULT_ANDROID_PRESET,
   DEFAULT_IOS_PRESET,
   IOS_PRESETS,
-  IosSettings,
+  IosDraft,
+  iosRecorderOptions,
+  iosSystemGroup,
 } from './systemPresets';
 import { CallButton, Section } from './ui';
 import { SYSTEM_CALLS, useSystem } from './useSystem';
 
+interface SystemPanelProps {
+  log: Log;
+  onRecreateRecorder: (options: AudioRecorderOptions) => void;
+  onRecreateContext: (options: AudioContextOptions) => void;
+}
+
 /**
- * Shows only the current platform's `setSystemOptions` group, and Apply sends
- * only that group: the other platform ignores it.
+ * Shows only the current platform's fields. Apply sends only that platform's
+ * `setSystemOptions` group: the other platform ignores it. The recorder and
+ * context fields are constructor options, so they reach native only when the
+ * matching Recreate button builds a new object.
  */
-const SystemPanel: FC<{ log: Log }> = ({ log }) => {
-  const [iosSettings, setIosSettings] = useState<IosSettings>(
+const SystemPanel: FC<SystemPanelProps> = ({
+  log,
+  onRecreateRecorder,
+  onRecreateContext,
+}) => {
+  const [iosDraft, setIosDraft] = useState<IosDraft>(
     IOS_PRESETS[DEFAULT_IOS_PRESET]
   );
-  const [androidSettings, setAndroidSettings] = useState<AndroidSettings>(
+  const [androidDraft, setAndroidDraft] = useState<AndroidDraft>(
     ANDROID_PRESETS[DEFAULT_ANDROID_PRESET]
   );
   const { apply, activate, deactivate } = useSystem(log);
-
-  const applyCurrentPlatform = () =>
-    apply(
-      Platform.OS === 'ios'
-        ? { ios: iosSettings }
-        : { android: androidSettings }
-    );
+  const isIos = Platform.OS === 'ios';
 
   return (
     <Section title="System">
-      {Platform.OS === 'ios' ? (
-        <IosSystemFields settings={iosSettings} onChange={setIosSettings} />
+      {isIos ? (
+        <IosSystemFields settings={iosDraft} onChange={setIosDraft} />
       ) : (
         <AndroidSystemFields
-          settings={androidSettings}
-          onChange={setAndroidSettings}
+          settings={androidDraft}
+          onChange={setAndroidDraft}
         />
       )}
       <CallButton
         testID="system-apply"
         title="Apply"
         call={SYSTEM_CALLS.apply}
-        onPress={applyCurrentPlatform}
+        onPress={() =>
+          apply(
+            isIos
+              ? { ios: iosSystemGroup(iosDraft) }
+              : { android: androidSystemGroup(androidDraft) }
+          )
+        }
       />
       <CallButton
         testID="system-activate"
@@ -62,6 +85,26 @@ const SystemPanel: FC<{ log: Log }> = ({ log }) => {
         title="Deactivate"
         call={SYSTEM_CALLS.deactivate}
         onPress={deactivate}
+      />
+      <CallButton
+        testID="system-recreate-recorder"
+        title="New recorder"
+        call={RECORDER_CALLS.recreate}
+        onPress={() =>
+          onRecreateRecorder(
+            isIos
+              ? iosRecorderOptions(iosDraft)
+              : androidRecorderOptions(androidDraft)
+          )
+        }
+      />
+      <CallButton
+        testID="system-recreate-context"
+        title="New context"
+        call={PLAYBACK_CALLS.recreate}
+        onPress={() =>
+          onRecreateContext(isIos ? {} : androidContextOptions(androidDraft))
+        }
       />
     </Section>
   );

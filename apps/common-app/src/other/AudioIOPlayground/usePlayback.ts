@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AudioBufferSourceNode, AudioContext } from 'react-native-audio-api';
+import { useCallback, useEffect, useRef } from 'react';
+import {
+  AudioBufferSourceNode,
+  AudioContext,
+  AudioContextOptions,
+} from 'react-native-audio-api';
 
 import { describeCall, Log, logAction } from './log';
 import { usePolled } from './usePolled';
+import { useRecreatable } from './useRecreatable';
 
 const SAMPLE_TRACKS = {
   'Music sample': require('../../demos/Crossfade/tracks/track1.mp3'),
@@ -31,7 +36,17 @@ export const PLAYBACK_CALLS = {
   pause: CALLS.suspend,
   resume: CALLS.resume,
   stop: CALLS.stop,
+  options: 'the options the current context was created with',
+  recreate:
+    'context = new AudioContext(<options above>); ' +
+    `the previous context first releases its source and runs ${CALLS.close}`,
 };
+
+const DEFAULT_CONTEXT_OPTIONS: AudioContextOptions = {};
+
+function createContext(options: AudioContextOptions): AudioContext {
+  return new AudioContext(options);
+}
 
 function release(source: AudioBufferSourceNode) {
   source.onended = null;
@@ -40,10 +55,15 @@ function release(source: AudioBufferSourceNode) {
 
 /**
  * Owns the playground's own context, so it never inherits a context another
- * screen left running. At most one source is attached at a time.
+ * screen left running. At most one source is attached at a time. The
+ * context's options are fixed at construction, so `recreate` replaces it.
  */
 export function usePlayback(log: Log, lastTakePath: string | null) {
-  const [context] = useState(() => new AudioContext());
+  const {
+    instance: context,
+    options,
+    recreate,
+  } = useRecreatable(createContext, DEFAULT_CONTEXT_OPTIONS);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   const status = usePolled(
@@ -57,7 +77,7 @@ export function usePlayback(log: Log, lastTakePath: string | null) {
   );
 
   useEffect(() => {
-    log('new AudioContext()');
+    log(describeCall('new AudioContext', options));
     context.onstatechange = () =>
       log(`context.onstatechange: ${context.state}`);
     context.onerror = () => log('context.onerror');
@@ -65,10 +85,11 @@ export function usePlayback(log: Log, lastTakePath: string | null) {
     return () => {
       if (sourceRef.current) {
         release(sourceRef.current);
+        sourceRef.current = null;
       }
       logAction(log, CALLS.close, () => context.close());
     };
-  }, [context, log]);
+  }, [context, options, log]);
 
   const play = useCallback(
     async (sourceName: PlaybackSourceName, loop: boolean) => {
@@ -143,5 +164,5 @@ export function usePlayback(log: Log, lastTakePath: string | null) {
     logAction(log, CALLS.stop, () => source.stop());
   }, [log]);
 
-  return { status, play, pause, resume, stop };
+  return { status, options, play, pause, resume, stop, recreate };
 }

@@ -1,7 +1,6 @@
 import React, { FC, useState } from 'react';
 
 import { Select } from '../../components';
-import type { Log } from './log';
 import {
   Call,
   CallButton,
@@ -18,7 +17,7 @@ import {
 } from './usePlayback';
 
 interface PlaybackPanelProps {
-  log: Log;
+  playback: ReturnType<typeof usePlayback>;
   lastTakePath: string | null;
 }
 
@@ -26,11 +25,13 @@ function fileName(path: string): string {
   return path.split('/').pop() ?? path;
 }
 
-const PlaybackPanel: FC<PlaybackPanelProps> = ({ log, lastTakePath }) => {
+const PlaybackPanel: FC<PlaybackPanelProps> = ({
+  playback: { status, options, play, pause, resume, stop },
+  lastTakePath,
+}) => {
   const [sourceName, setSourceName] =
     useState<PlaybackSourceName>('Music sample');
   const [loop, setLoop] = useState(false);
-  const { status, play, pause, resume, stop } = usePlayback(log, lastTakePath);
 
   return (
     <Section title="Playback">
@@ -78,6 +79,8 @@ const PlaybackPanel: FC<PlaybackPanelProps> = ({ log, lastTakePath }) => {
         call={PLAYBACK_CALLS.stop}
         onPress={stop}
       />
+      <StatusText testID="playback-options" text={JSON.stringify(options)} />
+      <Call text={PLAYBACK_CALLS.options} />
     </Section>
   );
 };

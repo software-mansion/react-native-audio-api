@@ -11,17 +11,17 @@ import {
   CUSTOM_PRESET,
   IOS_PRESET_NAMES,
   IOS_PRESETS,
+  IosDraft,
   IosPresetName,
-  IosSettings,
   matchingIosPreset,
 } from './systemPresets';
-import { Field } from './ui';
+import { Field, LabeledSwitch } from './ui';
 
 type PresetChoice = IosPresetName | typeof CUSTOM_PRESET;
 
 interface IosSystemFieldsProps {
-  settings: IosSettings;
-  onChange: (settings: IosSettings) => void;
+  settings: IosDraft;
+  onChange: (settings: IosDraft) => void;
 }
 
 const IosSystemFields: FC<IosSystemFieldsProps> = ({ settings, onChange }) => {
@@ -65,6 +65,14 @@ const IosSystemFields: FC<IosSystemFieldsProps> = ({ settings, onChange }) => {
           onChange={(options) => onChange({ ...settings, options })}
         />
       </Field>
+      <LabeledSwitch
+        testID="system-voice-processing"
+        label="Voice proc."
+        value={settings.iosVoiceProcessing}
+        onValueChange={(iosVoiceProcessing) =>
+          onChange({ ...settings, iosVoiceProcessing })
+        }
+      />
     </>
   );
 };
