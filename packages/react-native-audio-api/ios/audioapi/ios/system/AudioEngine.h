@@ -24,7 +24,7 @@ typedef NS_ENUM(NSInteger, AudioEngineInterruptionEndOutcome) {
   AudioEngineInterruptionEndOutcomeStillInterrupted
 };
 
-__unused static inline const char *_Nonnull AudioEngineStateName(AudioEngineState state)
+__unused static inline const char *_Nonnull audioEngineStateName(AudioEngineState state)
 {
   switch (state) {
     case AudioEngineStateIdle:
@@ -40,7 +40,7 @@ __unused static inline const char *_Nonnull AudioEngineStateName(AudioEngineStat
   }
 }
 
-__unused static inline const char *_Nonnull AudioEngineInterruptionEndOutcomeName(
+__unused static inline const char *_Nonnull audioEngineInterruptionEndOutcomeName(
     AudioEngineInterruptionEndOutcome outcome)
 {
   switch (outcome) {
