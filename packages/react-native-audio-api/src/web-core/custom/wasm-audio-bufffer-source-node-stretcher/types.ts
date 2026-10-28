@@ -9,10 +9,9 @@ export interface ScheduleOptions {
 }
 
 export interface WasmAudioBufferSourceStretcherNode
-  extends globalThis.AudioBufferSourceNode {
-  onEnded:
-    | ((this: globalThis.AudioScheduledSourceNode, ev: Event) => unknown)
-    | null;
+  extends globalThis.AudioWorkletNode {
+  setOneShot(): void;
+  abandon(): void;
 
   addBuffers(channels: Float32Array[]): void;
   dropBuffers(): void;
