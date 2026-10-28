@@ -14,7 +14,9 @@ fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 ios_min_version = '14.0'
 
+ffmpeg_libs = %w[libavcodec libavformat libavutil libswresample]
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_ENABLED ? '-DRN_AUDIO_API_FFMPEG_ENABLED=1' : ''
+ffmpeg_ldflags = $RN_AUDIO_API_FFMPEG_ENABLED ? ffmpeg_libs.map { |lib| "-framework \"#{lib}\"" }.join(' ') : ''
 static_external_libs_flag = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? '-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1 -DMA_NO_LIBOPUS=1 -DMA_NO_LIBVORBIS=1' : ''
 skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_ENABLED ? '' : 'skipffmpeg'
 download_script_env_prefix = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS=1 ' : ''
@@ -70,7 +72,7 @@ Pod::Spec.new do |s|
 
   # Every prebuilt library is a `<lib>.xcframework` in `external/xcframeworks`, the same assets
   # Package.swift uses; CocoaPods picks the device / simulator / Catalyst slice.
-  ffmpeg_xcframeworks = %w[libavcodec libavformat libavutil libswresample].map { |lib| "#{lib}.xcframework" }
+  ffmpeg_xcframeworks = ffmpeg_libs.map { |lib| "#{lib}.xcframework" }
   static_external_lib_xcframeworks = %w[libopusfile libopus libogg libvorbis libvorbisenc libvorbisfile]
     .map { |lib| "#{lib}.xcframework" }
   vendored_xcframeworks = []
@@ -132,6 +134,11 @@ Pod::Spec.new do |s|
     "GCC_PREPROCESSOR_DEFINITIONS[config=Debug]" => '$(inherited) HAVE_ACCELERATE=1 DEBUG=1',
     "EXCLUDED_SOURCE_FILE_NAMES[config=Release]" => 'AudioThreadGuard.cpp',
     'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{ffmpeg_flag} #{static_external_libs_flag}",
+    # CocoaPods links a pod's own vendored dynamic frameworks into the targets that depend on it,
+    # not into the pod's own target. A dynamic RNAudioAPI framework
+    # (`use_frameworks! :linkage => :dynamic`) must link FFmpeg itself; the frameworks ship no
+    # module maps to auto-link them.
+    'OTHER_LDFLAGS' => "$(inherited) #{ffmpeg_ldflags}",
   }
 
   s.xcconfig = {

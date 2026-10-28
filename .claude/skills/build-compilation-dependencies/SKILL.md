@@ -173,6 +173,7 @@ For full per-line analysis see [build-details.md](build-details.md#android-andro
 ### Key behaviors
 - Four subspecs split compilation: `audioapi` (core C++), `audioapi/ios` (ObjC++), `audioapi/audioapi_dsp` (DSP with `-O3`), `audioapi/miniaudio_impl` (compiled as `-x objective-c++`)
 - Every prebuilt (static Opus/Ogg/Vorbis, dynamic FFmpeg) is an `.xcframework` in `s.ios.vendored_frameworks` (named after the library: CocoaPods links a dynamic xcframework as `-framework <xcframework name>`) — the same release assets Package.swift downloads; CocoaPods picks the device/simulator/Catalyst slice and embeds the dynamic ones. The pre-v4.0.0 per-SDK `.a` dirs (`iphoneos/`, `iphonesimulator/`, `macosx/`) and their `-force_load …/$(PLATFORM_NAME)` flags are gone
+- **CocoaPods never links a pod's own vendored dynamic xcframeworks into the pod's own target** (only into targets that depend on it). Under `use_frameworks! :linkage => :dynamic` `RNAudioAPI` must link FFmpeg itself, so the podspec adds `ffmpeg_ldflags` to `pod_target_xcconfig` `OTHER_LDFLAGS` (FFmpeg builds only). Build the xcframework list and the flags from the same `ffmpeg_libs`; see [build-details.md](build-details.md#ffmpeg-link-flags-on-the-pod-target)
 - `Accelerate` framework linked, enabling `HAVE_ACCELERATE=1` for vDSP SIMD on iOS
 - Header search paths split: `pod_target_xcconfig` (library compilation) vs `xcconfig` (app consumers)
 - `rnaa_utils.rb` resolves dynamic paths at `pod install` time (not hardcoded)
