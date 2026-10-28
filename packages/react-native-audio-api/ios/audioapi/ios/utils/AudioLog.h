@@ -3,6 +3,7 @@
 #import <dispatch/dispatch.h>
 #import <os/log.h>
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,6 +25,11 @@
  */
 
 #define AUDIO_LOG_SUBSYSTEM "com.swmansion.audioapi"
+
+__unused static inline const char *_Nonnull AudioLogBool(bool value)
+{
+  return value ? "true" : "false";
+}
 
 /** From least to most verbose; a line is printed when its level is at most the minimum level. */
 typedef enum {
