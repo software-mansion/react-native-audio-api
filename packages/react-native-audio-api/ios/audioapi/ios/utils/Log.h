@@ -12,6 +12,8 @@
  * `com.swmansion.audioapi`. The category is the module name.
  *
  * Define `LOG_MODULE` as that name before including this header.
+ * `AUDIO_LOG_TRACE_FUNCTION()` prints `__func__`. Inside a block that name is the block,
+ * not the enclosing method.
  *
  * Each line starts with its level in brackets (`[error]`, `[warning]`, `[debug]`, `[trace]`),
  * because the unified log has no warning or trace type: filter on that tag, not on the log type.
@@ -103,6 +105,11 @@ __unused static inline os_log_t _Nonnull logModule(void)
     if (logMinimumLevel() >= LOG_LEVEL_TRACE) \
       os_log_debug(logModule(), "[trace] " fmt, ##__VA_ARGS__); \
   } while (0)
+#define AUDIO_LOG_TRACE_FUNCTION() \
+  do { \
+    if (logMinimumLevel() >= LOG_LEVEL_TRACE) \
+      os_log_debug(logModule(), "[trace] %{public}s", __func__); \
+  } while (0)
 #else
 #define AUDIO_LOG_ERROR(fmt, ...) \
   do { \
@@ -114,6 +121,9 @@ __unused static inline os_log_t _Nonnull logModule(void)
   do { \
   } while (0)
 #define AUDIO_LOG_TRACE(fmt, ...) \
+  do { \
+  } while (0)
+#define AUDIO_LOG_TRACE_FUNCTION() \
   do { \
   } while (0)
 #endif
