@@ -60,6 +60,7 @@ Above implementation makes testing and debugging significantly easier. Yet it st
 There are a few possible solutions. The main problem is that most end-to-end mobile testing frameworks don't have a step that allows for a manual interaction.
 
 #### Argent
+##### Approach: `ask.mjs` script without arguments
 The tests could be written in Argent via YAML flow files. Argent has a directive for executing local scripts. The script that would be run would display a prompt for the tester that would allow to collect the feedback in prose:
 
 ```yaml
@@ -77,7 +78,8 @@ There are two possible problems with this approach: According to [Argent docs](h
 
 Without arguments, the prompt dialog would not display the instruction for the tester and would not contain predefined answers. That is only an inconvenience when the tester is reading the terminal where the `echo` is printed. During an agent run the tester may see only the dialog, so the instruction never reaches them. The dialog also cannot be an `stdin` prompt in that terminal, because the tool-server starts the script as a child process, and that process does not read the terminal's keyboard.
 
-There are two possible cases to adjust Argent codebase for the usecase of live interaction with a tester:
+##### Approach: Modify Argent
+There are two possible ways to adjust Argent codebase for the usecase of live interaction with a tester:
 * The simplest solution is to add support for commandline arguments to the scripts.
 * Another is to straightly ask the Argent team to add support for a new `prompt` directive. It would allow to add an option of human interaction and feedback, when it is impossible to automize something. It could have the following syntax:
 
@@ -86,6 +88,11 @@ There are two possible cases to adjust Argent codebase for the usecase of live i
       instruction: "Say something and tell whether the recording can be heard clearly."
       outcomes: ["Outcome A", "Outcome B"]
   ```
+
+##### Approach: Split a flow into multiple files
+Another possible solution is to invert the direction of communication between Argent and this system. Rather than calling the `ask.mjs` script from within an Argent workflow, create a script that executes Argent `.yaml` workflows as a consistent subsequences of automated steps. This makes it easy to request human interaction or feedback between two distinct Argent workflows.
+
+Such an end-to-end (E2E) test can be expressed via a shell, JS or Python script.
 
 #### Appium
 One of the alternative testing frameworks is [Appium](https://github.com/appium/appium). It's got the following features:
