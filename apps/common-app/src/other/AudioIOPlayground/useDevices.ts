@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import {
   AudioDeviceInfo,
   AudioDevicesInfo,
@@ -37,10 +38,21 @@ function formatDeviceList(devices: AudioDeviceInfo[]): string {
 }
 
 /**
+ * On Android an empty current-device list means the library cannot tell, not
+ * that there is no device: `currentOutputs` is never filled, and
+ * `currentInputs` is empty until a take opens a stream or an input is selected.
+ * Printing `unavailable` keeps that gap from reading as `none`.
+ */
+function formatCurrentDevices(devices: AudioDeviceInfo[]): string {
+  if (Platform.OS === 'android' && devices.length === 0) {
+    return 'unavailable';
+  }
+  return formatDeviceList(devices);
+}
+
+/**
  * Reads the route and selects an input through `setInputDevice`. `'default'`
- * clears the selection. On Android `currentInputs` is the open capture device
- * while a take is running, otherwise the selection, and empty when neither is
- * set. `currentOutputs` is always empty.
+ * clears the selection.
  */
 export function useDevices(log: Log) {
   const [devices, setDevices] = useState<AudioDevicesInfo>(EMPTY_DEVICES);
@@ -100,8 +112,8 @@ export function useDevices(log: Log) {
   );
 
   return {
-    currentInputs: formatDeviceList(devices.currentInputs),
-    currentOutputs: formatDeviceList(devices.currentOutputs),
+    currentInputs: formatCurrentDevices(devices.currentInputs),
+    currentOutputs: formatCurrentDevices(devices.currentOutputs),
     availableOutputs: formatDeviceList(devices.availableOutputs),
     inputOptions: [SYSTEM_DEFAULT, ...devices.availableInputs.map(deviceLabel)],
     selectedInputLabel: selectedDevice
