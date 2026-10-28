@@ -191,17 +191,28 @@ referenced from miniaudio's decoders) and embeds + signs the FFmpeg frameworks:
 s.ios.vendored_frameworks = vendored_xcframeworks.map { |xcframework| "#{external_dir_relative}/xcframeworks/#{xcframework}" }
 ```
 
-CocoaPods adds the FFmpeg `-framework` flags only to the app's aggregate xcconfig, so the podspec
-also puts them in `pod_target_xcconfig` `OTHER_LDFLAGS` for FFmpeg builds — without them a
-`use_frameworks! :linkage => :dynamic` build fails to link the `RNAudioAPI` framework itself:
+They are the same release assets `Package.swift` downloads through `binaryTarget(url:checksum:)`.
+FFmpeg headers still come from `external/include_ffmpeg/` (`include_ffmpeg.zip`) for CocoaPods;
+SwiftPM uses the header-only `FFmpegHeaders.xcframework` instead.
+
+### FFmpeg link flags on the pod target
+
+CocoaPods (1.16, `lib/cocoapods/target/build_settings.rb`) links a dynamically built pod's own
+vendored static xcframeworks into the pod target (Opus/Ogg/Vorbis hold static libraries and arrive
+as `-l"opus"` …), but its own vendored dynamic xcframeworks only through
+`dynamic_frameworks_to_import`, which feeds the targets that depend on the pod (the app, a
+dependent pod such as RNAudioWorklets), never the pod itself. The FFmpeg frameworks ship no module
+maps, so clang cannot auto-link them either. A static `RNAudioAPI` never links on its own, so the
+app's link resolves the symbols; under `use_frameworks! :linkage => :dynamic` the framework links
+by itself and fails with undefined `_avformat_*` / `_avcodec_*` / `_swr_*`. The podspec therefore
+adds the flags itself in FFmpeg builds:
 
 ```ruby
 'OTHER_LDFLAGS' => "$(inherited) #{ffmpeg_ldflags}",
 ```
 
-They are the same release assets `Package.swift` downloads through `binaryTarget(url:checksum:)`.
-FFmpeg headers still come from `external/include_ffmpeg/` (`include_ffmpeg.zip`) for CocoaPods;
-SwiftPM uses the header-only `FFmpegHeaders.xcframework` instead.
+Static library and static framework builds archive the pod with libtool, which does not read
+`OTHER_LDFLAGS`, so the flags only take effect in dynamic framework builds.
 
 ### Header search paths split between pod target and consumers
 

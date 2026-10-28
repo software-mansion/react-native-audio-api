@@ -9,7 +9,7 @@ Review this skill when `pre-push-update` reports changes in:
 | `android/CMakeLists.txt` | SIMD detection, RN version flag workaround |
 | `android/src/main/cpp/audioapi/CMakeLists.txt` | Source glob patterns, FFmpeg exclusion, DSP `-O3` targets, IMPORTED lib list, include paths |
 | `android/build.gradle` | Feature flag detection, CMake arg forwarding, BuildConfig fields, worklets task dependency, packaging options |
-| `RNAudioAPI.podspec` | Subspecs table, `miniaudio_impl` workaround, vendored xcframeworks list (mirrors `Package.swift` binary targets), `rnaa_utils.rb` dynamic paths |
+| `RNAudioAPI.podspec` | Subspecs table, `miniaudio_impl` workaround, vendored xcframeworks list (mirrors `Package.swift` binary targets), FFmpeg pod-target `OTHER_LDFLAGS` (`ffmpeg_ldflags` / `ffmpeg_libs`), `rnaa_utils.rb` dynamic paths |
 | `apps/fabric-example/ios/Podfile` | New Architecture enablement, minimum iOS version helper |
 | `common/cpp/test/CMakeLists.txt` | Excluded sources list, compile definitions, GoogleTest fetch URL, include paths, `ENABLE_COVERAGE` |
 | `common/cpp/test/run-coverage.sh` | Coverage build dir, Clang CC/CXX defaults, llvm-profdata/llvm-cov report+HTML, `GITHUB_STEP_SUMMARY`, ignore regexes, smoke filter via `filters.sh` |
