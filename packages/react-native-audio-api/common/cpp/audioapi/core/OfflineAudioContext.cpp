@@ -163,6 +163,10 @@ void OfflineAudioContext::startRendering(const std::shared_ptr<ContextRenderReso
   renderAudio(nullptr);
 }
 
+std::shared_ptr<ConvolverThreadPool> OfflineAudioContext::getConvolverThreadPool() {
+  return nullptr;
+}
+
 bool OfflineAudioContext::isDriverRunning() const {
   return state_.load(std::memory_order_acquire) == ContextState::RUNNING;
 }

@@ -3,6 +3,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
+#include <tuple>
 
 #ifdef ANDROID
 #include <android/log.h>
@@ -27,7 +28,7 @@ ConvolverNode::ConvolverNode(
 
 void ConvolverNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    std::vector<std::unique_ptr<Convolver>> convolvers,
+    std::vector<std::shared_ptr<Convolver>> convolvers,
     const std::shared_ptr<ConvolverThreadPool> &threadPool,
     const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
     const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
@@ -155,10 +156,8 @@ int ConvolverNode::computeTailFrames() const {
 void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer) {
   if (processingBuffer->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threadPool_->schedule([&, i] {
-        convolvers_[i]->process(
-            *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i));
-      });
+      convolvers_[i]->process(
+          *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i));
     }
   } else if (processingBuffer->getNumberOfChannels() == 2) {
     if (convolvers_.size() == 2) {
@@ -169,13 +168,26 @@ void ConvolverNode::performConvolution(const std::shared_ptr<DSPAudioBuffer> &pr
       outputChannelMap_ = {0, 3, 2, 1};
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threadPool_->schedule([this, i, &processingBuffer] {
-        convolvers_[i]->process(
-            *processingBuffer->getChannel(inputChannelMap_[i]),
-            *intermediateBuffer_->getChannel(outputChannelMap_[i]));
-      });
+      convolvers_[i]->process(
+          *processingBuffer->getChannel(inputChannelMap_[i]),
+          *intermediateBuffer_->getChannel(outputChannelMap_[i]));
     }
   }
-  threadPool_->wait();
+  scheduleTails();
+}
+
+void ConvolverNode::scheduleTails() {
+  if (threadPool_ == nullptr) {
+    return;
+  }
+  for (const auto &convolver : convolvers_) {
+    if (!convolver->hasTail()) {
+      continue;
+    }
+    // A full queue means the workers are starved; the tail is then simply never published
+    // and process() computes it inline when that block comes up.
+    (void)threadPool_->trySchedule(
+        [convolver, block = convolver->nextTailBlock()] { convolver->computeTail(block); });
+  }
 }
 } // namespace audioapi

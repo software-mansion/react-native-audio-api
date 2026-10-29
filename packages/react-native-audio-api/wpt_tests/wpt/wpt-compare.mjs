@@ -109,6 +109,14 @@ const candidateCategories = categoryPassMap(candidate);
 const isAssertionFailure = (message) => message.startsWith('X ');
 
 /**
+ * An assertion message also carries what the run measured — a trailing `Got <value>.` and,
+ * for array comparisons, an `Index Actual Expected` table after the first line. A subtest
+ * that fails in both runs with a different value is still the same failing subtest, so only
+ * the first line without the measured value identifies it.
+ */
+const subtestIdentity = (message) => message.split('\n', 1)[0].replace(/ Got .*$/, '');
+
+/**
  * Exact per-file comparison. Category pass counts cannot see an equal-count
  * swap (test X regresses while test Y starts passing), so when both reports
  * carry per-file data — reports written before it exists fall back to the
@@ -139,10 +147,12 @@ function compareFiles(baselineReport, candidateReport) {
       continue;
     }
 
-    const baseFailures = new Set((base.failures ?? []).filter(isAssertionFailure));
+    const baseFailures = new Set(
+      (base.failures ?? []).filter(isAssertionFailure).map(subtestIdentity)
+    );
     const subtests = (head.failures ?? [])
       .filter(isAssertionFailure)
-      .filter((message) => !baseFailures.has(message));
+      .filter((message) => !baseFailures.has(subtestIdentity(message)));
     if (subtests.length > 0) {
       newFailures.push({ path: filePath, subtests });
     }

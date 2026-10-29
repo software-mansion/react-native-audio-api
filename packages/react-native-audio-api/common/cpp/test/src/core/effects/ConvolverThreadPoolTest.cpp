@@ -16,12 +16,23 @@ namespace {
 
 constexpr float kSampleRate = 48000.0f;
 
+/// Stands in for AudioContext, which needs a platform audio player the test build lacks.
+class RealtimeContext : public BaseAudioContext {
+ public:
+  using BaseAudioContext::BaseAudioContext;
+
+ private:
+  [[nodiscard]] bool isDriverRunning() const override {
+    return false;
+  }
+};
+
 class ConvolverThreadPoolTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
 
-  std::shared_ptr<OfflineAudioContext> makeContext() {
-    return std::make_shared<OfflineAudioContext>(2, kSampleRate, kSampleRate, eventRegistry);
+  std::shared_ptr<BaseAudioContext> makeContext() {
+    return std::make_shared<RealtimeContext>(kSampleRate, eventRegistry);
   }
 
   void SetUp() override {
@@ -37,6 +48,12 @@ TEST_F(ConvolverThreadPoolTest, ContextHandsOutOneSharedPool) {
 
   ASSERT_NE(first, nullptr);
   EXPECT_EQ(first, second) << "Repeated buffer assignments must reuse the context pool";
+}
+
+TEST_F(ConvolverThreadPoolTest, OfflineContextComputesTailsInline) {
+  auto context = std::make_shared<OfflineAudioContext>(2, kSampleRate, kSampleRate, eventRegistry);
+
+  EXPECT_EQ(context->getConvolverThreadPool(), nullptr);
 }
 
 TEST_F(ConvolverThreadPoolTest, PoolIsPerContext) {
