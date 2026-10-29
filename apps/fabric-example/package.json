@@ -10,7 +10,6 @@
     "android": "bash scripts/build-and-run-android.sh",
     "ios": "bash scripts/build-and-run-ios.sh",
     "journal-execution": "node scripts/journal-execution.mjs",
-    "journal-view": "node scripts/journal-view.mjs",
     "lint": "eslint .",
     "log:stream:ios": "bash scripts/log-stream-ios.sh",
     "run:android": "bash scripts/run-android.sh",

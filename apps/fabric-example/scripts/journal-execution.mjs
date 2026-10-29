@@ -15,28 +15,31 @@ const ENTER_ALTERNATE_SCREEN = '\x1b[?1049h\x1b[2J\x1b[H';
 const EXIT_ALTERNATE_SCREEN = '\x1b[?1049l';
 const CLEAR_SCREEN = '\x1b[2J\x1b[H';
 const VALID_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+const LEADING_TIMESTAMP_PATTERN = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)/;
 
 function printHelp() {
   console.log(`Usage: node scripts/journal-execution.mjs [options]
 
-Streams logs and records timestamped journal entries into apps/fabric-example/logs/.
+Streams logs and records timestamped journal entries into a temporary directory,
+then merges them into a single <run-name>.log file in apps/fabric-example/logs/ on exit.
 Press any key while streaming to open the interactive journal prompt.
-Press Ctrl+D to exit and save logs and journal.
+Press Ctrl+D to exit and save the merged log and journal file.
 
 Options:
   --platform PLATFORM   ios (default) or android (not yet supported).
-  --name NAME           Optional test label included in the run directory name.
+  --name NAME           Optional test label included in the output file name.
   --device UDID         Stream from this device.
   --simulator           Stream from the booted simulator, even when a device is connected.
   --subsystem LIST      Subsystems, separated by '|' (audioapi, js, all, or full name).
                         Default: audioapi.
   --module LIST         Log categories, e.g. 'AudioEngine|AudioSessionManager'. Default: all.
   --level LEVEL         error, warning, debug or trace. Default: all.
+  --grep PATTERN        Regular expression matched against log lines (does not filter journal entries).
   --help, -h            Show this help.
 
 Examples:
   yarn journal-execution --name siri-interruption --subsystem 'audioapi|js' --level trace
-  yarn journal-execution --simulator --level debug`);
+  yarn journal-execution --simulator --level debug --grep 'interruption|routeChange'`);
 }
 
 function fail(message) {
@@ -47,6 +50,7 @@ function fail(message) {
 function parseArguments(argv) {
   let platform = 'ios';
   let testName = '';
+  let grepArg = '';
   const forwardedArgs = [];
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -72,6 +76,15 @@ function parseArguments(argv) {
           );
         }
         testName = value;
+        i += 1;
+        break;
+      }
+      case '--grep': {
+        const value = argv[i + 1];
+        if (!value) {
+          fail('--grep needs a value');
+        }
+        grepArg = value;
         i += 1;
         break;
       }
@@ -109,7 +122,16 @@ function parseArguments(argv) {
     fail(`Invalid --platform '${platform}'. Expected ios.`);
   }
 
-  return { testName, forwardedArgs };
+  let grepRegex = null;
+  if (grepArg) {
+    try {
+      grepRegex = new RegExp(grepArg);
+    } catch (error) {
+      fail(`Invalid --grep regular expression '${grepArg}': ${error.message}`);
+    }
+  }
+
+  return { testName, forwardedArgs, grepRegex };
 }
 
 function padTwo(value) {
@@ -131,7 +153,7 @@ function formatLogTimestamp(date) {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${millis}`;
 }
 
-function formatDirectoryTimestamp(date) {
+function formatRunTimestamp(date) {
   const year = date.getFullYear();
   const month = padTwo(date.getMonth() + 1);
   const day = padTwo(date.getDate());
@@ -152,19 +174,75 @@ function currentCommitShortHash() {
   }
 }
 
-function createRunDirectory(testName) {
+function createRunPaths(testName) {
   const commitHash = currentCommitShortHash();
-  const timestamp = formatDirectoryTimestamp(new Date());
-  const directoryName = testName
+  const timestamp = formatRunTimestamp(new Date());
+  const baseName = testName
     ? `${commitHash}_${testName}_${timestamp}`
     : `${commitHash}_${timestamp}`;
-  const runDirectory = path.join(LOGS_ROOT_DIR, directoryName);
+  const runDirectory = path.join(LOGS_ROOT_DIR, baseName);
+  const finalLogFilePath = path.join(LOGS_ROOT_DIR, `${baseName}.log`);
   fs.mkdirSync(runDirectory, { recursive: true });
-  return runDirectory;
+  return { runDirectory, finalLogFilePath };
 }
 
-const { testName, forwardedArgs } = parseArguments(process.argv.slice(2));
-const runDirectory = createRunDirectory(testName);
+function readTimestampedEntries(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+  const content = fs.readFileSync(filePath, 'utf8');
+  const lines = content.split(/\r?\n/);
+  const entries = [];
+  let currentEntry = null;
+
+  for (const line of lines) {
+    if (!line) {
+      continue;
+    }
+    const match = line.match(LEADING_TIMESTAMP_PATTERN);
+    if (match) {
+      currentEntry = {
+        timestamp: match[1].slice(0, 23),
+        text: line,
+      };
+      entries.push(currentEntry);
+    } else if (currentEntry) {
+      currentEntry.text += `\n${line}`;
+    } else {
+      entries.push({
+        timestamp: '',
+        text: line,
+      });
+    }
+  }
+
+  return entries;
+}
+
+function mergeRunDirectoryIntoSingleFile(
+  runDirectory,
+  logsFilePath,
+  journalFilePath,
+  finalLogFilePath
+) {
+  const entries = [
+    ...readTimestampedEntries(logsFilePath),
+    ...readTimestampedEntries(journalFilePath),
+  ];
+  entries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+  const mergedContent =
+    entries.length > 0
+      ? `${entries.map((entry) => entry.text).join('\n')}\n`
+      : '';
+  fs.writeFileSync(finalLogFilePath, mergedContent, 'utf8');
+  fs.rmSync(runDirectory, { recursive: true, force: true });
+}
+
+const { testName, forwardedArgs, grepRegex } = parseArguments(
+  process.argv.slice(2)
+);
+const { runDirectory, finalLogFilePath } = createRunPaths(testName);
 const logsFilePath = path.join(runDirectory, 'logs.log');
 const journalFilePath = path.join(runDirectory, 'journal.log');
 
@@ -174,7 +252,7 @@ fs.writeFileSync(journalFilePath, '');
 const logsFileStream = fs.createWriteStream(logsFilePath, { flags: 'a' });
 const journalFileStream = fs.createWriteStream(journalFilePath, { flags: 'a' });
 
-console.error(`Run directory: ${runDirectory}`);
+console.error(`Working directory: ${runDirectory}`);
 console.error(
   'Press any key to enter interactive journal mode. Press Ctrl+D to save and exit.'
 );
@@ -183,7 +261,7 @@ let isInteractive = false;
 let isShuttingDown = false;
 let promptTimestamp = '';
 let promptBuffer = '';
-const bufferedLogChunks = [];
+const bufferedOutputChunks = [];
 
 function renderInteractivePrompt() {
   process.stdout.write(
@@ -204,10 +282,10 @@ function enterInteractiveMode() {
   renderInteractivePrompt();
 }
 
-function flushBufferedLogsToStdout() {
-  while (bufferedLogChunks.length > 0) {
-    const chunk = bufferedLogChunks.shift();
-    process.stdout.write(chunk);
+function flushBufferedOutput() {
+  while (bufferedOutputChunks.length > 0) {
+    const item = bufferedOutputChunks.shift();
+    item.stream.write(item.data);
   }
 }
 
@@ -228,7 +306,7 @@ function exitInteractiveMode(acceptedText) {
       : null;
 
   process.stdout.write(EXIT_ALTERNATE_SCREEN);
-  flushBufferedLogsToStdout();
+  flushBufferedOutput();
   if (savedEntryLine) {
     process.stdout.write(savedEntryLine);
   }
@@ -240,19 +318,32 @@ const logProcess = spawn('bash', [LOG_STREAM_IOS_SCRIPT, ...forwardedArgs], {
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 
-function handleLogChunk(chunk) {
-  logsFileStream.write(chunk);
+function emitLogLine(line) {
+  if (grepRegex && !grepRegex.test(line)) {
+    return;
+  }
+  const lineWithNewline = `${line}\n`;
+  logsFileStream.write(lineWithNewline);
   if (isInteractive) {
-    bufferedLogChunks.push(chunk);
+    bufferedOutputChunks.push({
+      stream: process.stdout,
+      data: lineWithNewline,
+    });
   } else {
-    process.stdout.write(chunk);
+    process.stdout.write(lineWithNewline);
   }
 }
 
-logProcess.stdout.on('data', handleLogChunk);
+const stdoutReadline = readline.createInterface({
+  input: logProcess.stdout,
+  crlfDelay: Infinity,
+});
+
+stdoutReadline.on('line', emitLogLine);
+
 logProcess.stderr.on('data', (chunk) => {
   if (isInteractive) {
-    bufferedLogChunks.push(chunk);
+    bufferedOutputChunks.push({ stream: process.stderr, data: chunk });
   } else {
     process.stderr.write(chunk);
   }
@@ -273,13 +364,20 @@ function shutdown(exitCode = 0) {
   }
   process.stdin.pause();
 
+  stdoutReadline.close();
   if (!logProcess.killed && logProcess.exitCode === null) {
     logProcess.kill('SIGTERM');
   }
 
   logsFileStream.end(() => {
     journalFileStream.end(() => {
-      console.error(`\nSaved logs and journal to ${runDirectory}`);
+      mergeRunDirectoryIntoSingleFile(
+        runDirectory,
+        logsFilePath,
+        journalFilePath,
+        finalLogFilePath
+      );
+      console.error(`\nSaved merged logs and journal to ${finalLogFilePath}`);
       process.exit(exitCode);
     });
   });
