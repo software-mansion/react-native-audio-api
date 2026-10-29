@@ -29,10 +29,12 @@ const AudioFile: FC = () => {
         setPositionPercentage(offset);
       });
 
-      AudioManager.setAudioSessionOptions({
-        iosCategory: 'playback',
-        iosMode: 'default',
-        iosOptions: [],
+      AudioManager.setSystemOptions({
+        ios: {
+          category: 'playback',
+          mode: 'default',
+          options: [],
+        },
       });
 
       try {
@@ -87,7 +89,6 @@ const AudioFile: FC = () => {
       await PlaybackNotificationManager.enableControl('pause', true);
       await PlaybackNotificationManager.enableControl('play', true);
       await PlaybackNotificationManager.enableControl('seekTo', true);
-
     } catch (error) {
       console.error('Failed to setup notification:', error);
     }
@@ -178,12 +179,9 @@ const AudioFile: FC = () => {
       }
     );
 
-    const duckListener = AudioManager.addSystemEventListener(
-      'duck',
-      () => {
-        AudioPlayer.setVolume(0.2);
-      }
-    );
+    const duckListener = AudioManager.addSystemEventListener('duck', () => {
+      AudioPlayer.setVolume(0.2);
+    });
 
     const seekToListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationSeekTo',

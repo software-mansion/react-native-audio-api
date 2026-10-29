@@ -115,14 +115,15 @@
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-             onInputConfigurationChange:(void (^)(void))onInputConfigurationChange
+                     onInputNotification:
+                         (void (^)(AudioEngineInputNotification))onInputNotification
 {
   self.attachInputNodeCallCount += 1;
   self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
   self.lastAttachedInputNode = self.inputNode;
   self.lastAttachedReceiverBlock = receiverBlock;
   self.lastAttachedVoiceProcessingEnabled = voiceProcessingEnabled;
-  (void)onInputConfigurationChange;
+  (void)onInputNotification;
 }
 
 - (bool)startIfNecessary
@@ -432,20 +433,27 @@ static void ClearFakeRecorderSharedAudioSession(void)
       voiceProcessingEnabled:NO];
 
   self.audioEngine.startIfNecessaryResult = YES;
-  __block NSInteger configurationChangeCallCount = 0;
-  recorder.onInputConfigurationChange = ^{
-    configurationChangeCallCount += 1;
-  };
 
   [recorder pause];
-  BOOL resumed = [recorder resume];
+  XCTAssertTrue([recorder resume]);
 
   XCTAssertEqual(self.audioEngine.pauseIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
-  XCTAssertTrue(resumed);
-  // Re-arming is the owner's decision, taken in the configuration-change handler.
-  XCTAssertEqual(configurationChangeCallCount, 1);
+  // Re-arming is the owner's decision, taken in the HardwareChanged handler.
   XCTAssertFalse(recorder.inputArmed);
+}
+
+- (void)testResumeReturnsFalseWhenEngineStartFails
+{
+  self.audioEngine.startIfNecessaryResult = NO;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  [recorder pause];
+  XCTAssertFalse([recorder resume]);
+
+  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
 }
 
 - (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath

@@ -114,7 +114,7 @@ EXCLUDE=(
   # Prebuilt / vendored external libraries — not our code
   ":(exclude)**/external/**"
   ":(exclude)**/prebuilt_libs/**"
-  ":(exclude)**/ffmpeg_ios/**"
+  ":(exclude)**/xcframeworks/**"
   ":(exclude)**/openssl-prebuilt/**"
   ":(exclude)**/jniLibs/**"
   ":(exclude)**/vendor/**"

@@ -4,17 +4,19 @@
 
 you can modify script in scripts/download-prebuilt-binaries.sh
 
-- ios dynamic frameworks are in `ffmpeg_ios.zip` directory
+- ios dynamic frameworks are one zip per library (`libavcodec.xcframework.zip`, `libavformat.xcframework.zip`, `libavutil.xcframework.zip`, `libswresample.xcframework.zip`), each unzipped straight into `common/cpp/audioapi/external/xcframeworks/`
 - android shared libraries are in `jniLibs.zip`
 
 just replace way of downloading them that links to your binaries
 
+SwiftPM builds skip the script: edit the `binaryTarget` URLs and checksums in `Package.swift` instead.
+
 ### Option B)
 
-directly modify libraries in source code
+replace the binaries in place
 
-- ios dynamic frameworks are placed in `common/cpp/audioapi/external`
-- android shared libraries are placed in `android/src/main/jniLibs`
+- ios: `common/cpp/audioapi/external/xcframeworks/*.xcframework`
+- android: `android/src/main/jniLibs/<abi>/*.so`
 
 ---
 `USED_LIBRARIES`:

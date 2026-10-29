@@ -40,6 +40,18 @@ type PendingParamEvent = {
   mapOptions: (value: number) => Omit<ScheduleOptions, 'output'>;
 };
 
+/**
+ * Like a browser source node, a started source stays alive until it fires
+ * `ended`.
+ */
+const startedSources = new Set<AudioBufferSourceNodeStretcher>();
+
+/** Retires the processor of a source that was dropped without ever playing. */
+const abandonedSources =
+  new FinalizationRegistry<WasmAudioBufferSourceStretcherNode>((node) =>
+    node.abandon()
+  );
+
 export default class AudioBufferSourceNodeStretcher implements AudioBufferSourceNodeBackend {
   private stretcherPromise: Promise<WasmAudioBufferSourceStretcherNode> | null =
     null;
@@ -82,6 +94,9 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     this.stretcherPromise = stretcherPromise;
     stretcherPromise.then((node) => {
       this.node = node;
+      node.setOneShot();
+      AudioBufferSourceNodeStretcher.forwardEnded(node, new WeakRef(this));
+      abandonedSources.register(this, node);
     });
 
     this.detune = new AudioStretcherParam(
@@ -115,6 +130,19 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       }
     );
     this.buffer = (options.buffer as AudioBuffer) ?? null;
+  }
+
+  private static forwardEnded(
+    node: WasmAudioBufferSourceStretcherNode,
+    owner: WeakRef<AudioBufferSourceNodeStretcher>
+  ): void {
+    node.addEventListener('ended', (event) => {
+      const source = owner.deref();
+      if (source) {
+        startedSources.delete(source);
+        source._onended?.(event);
+      }
+    });
   }
 
   private runOnStretcher(
@@ -235,6 +263,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     }
 
     this.hasBeenStarted = true;
+    startedSources.add(this);
     const startAt =
       !when || when < this.context.currentTime
         ? this.context.currentTime
@@ -382,8 +411,5 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
 
   set onended(callback: ((event: Event) => void) | null) {
     this._onended = callback;
-    this.runOnStretcher((node) => {
-      node.onEnded = callback;
-    });
   }
 }

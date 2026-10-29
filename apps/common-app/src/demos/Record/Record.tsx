@@ -22,7 +22,7 @@ import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
 
-// concatAudioFiles supports WAV, M4A, and FLAC — the formats recordable on
+// concatAudioFiles supports WAV, M4A, FLAC, and ADTS — the formats recordable on
 // both iOS and Android.
 const RECORDING_EXTENSION = FileFormat.M4A;
 const ROTATING_SIZE = 250_000;
@@ -31,6 +31,7 @@ const RECORDING_EXTENSION_NAME_MAP = {
   [FileFormat.Wav]: 'wav',
   [FileFormat.M4A]: 'm4a',
   [FileFormat.Flac]: 'flac',
+  [FileFormat.Adts]: 'aac',
 };
 
 const Record: FC = () => {
@@ -44,11 +45,13 @@ const Record: FC = () => {
       : RecordingState.Recording;
   });
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
+  const [isInterrupted, setIsInterrupted] = useState(false);
   const [recordedBuffer, setRecordedBuffer] = useState<AudioBuffer | null>(
     null
   );
   const currentPositionSV = useSharedValue(0);
   const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const stateRef = useRef(state);
   const { availableInputs, currentInput, selectInput } = useAudioInput();
 
   const inputLabels = availableInputs.map(
@@ -119,10 +122,12 @@ const Record: FC = () => {
       setHasPermissions(true);
     }
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'default',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'default',
+        options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
+      },
     });
 
     try {
@@ -139,6 +144,7 @@ const Record: FC = () => {
     setupNotification(false);
 
     if (result.status === 'success') {
+      setIsInterrupted(false);
       setState(RecordingState.Recording);
       return;
     }
@@ -151,6 +157,7 @@ const Record: FC = () => {
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
     updateNotification(true);
+    setIsInterrupted(false);
     setState(RecordingState.Paused);
   }, []);
 
@@ -186,6 +193,7 @@ const Record: FC = () => {
     const info = await Recorder.stop();
     AudioRecorder.consumeLastRecordingResult();
     RecordingNotificationManager.hide();
+    setIsInterrupted(false);
     setState(RecordingState.Loading);
 
     if (info.status !== 'success') {
@@ -298,6 +306,10 @@ const Record: FC = () => {
   );
 
   useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
     (async () => {
       const recordingPermissionStatus =
         await AudioManager.checkRecordingPermissions();
@@ -315,6 +327,31 @@ const Record: FC = () => {
         }
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    AudioManager.observeAudioInterruptions(true);
+
+    const interruptionSubscription = AudioManager.addSystemEventListener(
+      'interruption',
+      (event) => {
+        if (event.type === 'began') {
+          if (stateRef.current === RecordingState.Recording) {
+            setIsInterrupted(true);
+          }
+          return;
+        }
+
+        if (event.type === 'ended') {
+          setIsInterrupted(false);
+        }
+      }
+    );
+
+    return () => {
+      interruptionSubscription.remove();
+      AudioManager.observeAudioInterruptions(false);
+    };
   }, []);
 
   useEffect(() => {
@@ -412,7 +449,7 @@ const Record: FC = () => {
         <>
           <RecordingTime state={state} />
           <View style={styles.spacerS} />
-          <RecordingVisualization state={state} />
+          <RecordingVisualization state={state} isInterrupted={isInterrupted} />
         </>
       )}
       <View style={styles.spacerM} />

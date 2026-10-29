@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { Optional, ReadOnly, IOS, Experimental } from '@site/src/components/Badges';
+import { Optional, ReadOnly, IOS, AndroidAPI, MobileOnly, Experimental } from '@site/src/components/Badges';
 
 # AudioManager
 
@@ -17,10 +17,12 @@ import { useEffect } from 'react';
 
 function App() {
     // set AVAudioSession example options (iOS)
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playback',
-      iosMode: 'default',
-      iosOptions: ['allowBluetoothHFP', 'allowAirPlay'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playback',
+        mode: 'default',
+        options: ['allowBluetoothHFP', 'allowAirPlay'],
+      },
     })
     // enabling emission of events
     AudioManager.observeAudioInterruptions(true);
@@ -44,29 +46,53 @@ function App() {
 
 ## Methods
 
-### `setAudioSessionOptions` <IOS />
-
-:::warning AVAudioSession Compatibility
-Not all `iosOptions` are compatible with every `iosCategory`. Passing an invalid combination to the native API (for example, explicitly setting `allowBluetoothA2DP` alongside the `playback` category) will cause the configuration to fail. This can result in a `SessionActivationError` and total audio silence.
-
-Always verify valid category and option combinations in [Apple's AVAudioSession Documentation](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc).
-:::
+### `setSystemOptions` <MobileOnly /> {#setsystemoptions}
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| options | [`SessionOptions`](./audio-manager.mdx#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors). |
+| options | [`SystemOptions`](./audio-manager.mdx#systemoptions) | Platform options, grouped under `ios` ([AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) settings) and `android` (audio mode and communication route). Each group is ignored on the other platform. |
 
 #### Returns `undefined`.
 
-### `setAudioSessionActivity` <IOS /> {#setaudiosessionactivity}
+On Android 12 (API 31) or later, set `android: { mode: 'inCommunication' }` before activating the session to request Android's communication audio mode. The optional `android.communicationDevice` requests `'speaker'`, `'earpiece'`, or `'systemDefault'` as the initial route. Existing Android behavior is unchanged when `android.mode` is omitted.
+
+### `setAudioSessionActivity` <MobileOnly /> {#setaudiosessionactivity}
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity. |
+| enabled | `boolean` | Activates or deactivates the platform audio session. On iOS this sets [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity. On Android it has an effect only with `android: { mode: 'inCommunication' }` from `setSystemOptions()`, where it acquires or releases the communication session described below. |
 
 #### Returns `Promise<void>`, which resolves when the audio session activity was set successfully. On failure, the promise rejects with a `SessionActivationError` that carries the native error details (`nativeErrorInfo`) when available.
 
 Deactivating the session while a recording is in progress or paused stops that recording first, since an inactive session would corrupt its output. The finalized files are then available through [`AudioRecorder.consumeLastRecordingResult()`](../inputs/audio-recorder.mdx#consumelastrecordingresult). Prefer calling [`AudioRecorder.stop()`](../inputs/audio-recorder.mdx#stop) yourself before deactivating, so the file info arrives through its promise.
+
+With Android `inCommunication` mode, activation requests transient focus using voice-communication/speech attributes, enters `MODE_IN_COMMUNICATION`, and applies the configured initial communication-device preference. Deactivation clears the request, abandons that focus, and restores the prior mode. Activation rejects below API 31 or if Android denies focus or the requested route. After a permanent focus loss, deactivate the session before starting a new one; the library does not reacquire focus automatically.
+
+### `setCommunicationDevice` <AndroidAPI level={31} /> {#setcommunicationdevice}
+
+Requests the Android route for voice-communication audio. It works with or without an `inCommunication` session and only affects streams with the `voiceCommunication` output profile. Without a session Android sends those streams to the earpiece by default, so request `'speaker'` for a loudspeaker route.
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `device` | [`CommunicationDevice`](./audio-manager.mdx#communicationdevice) | The route to request. |
+
+#### Returns `Promise<void>`, which rejects if the requested built-in device is unavailable or Android rejects the request.
+
+Android keeps the request until you request `'systemDefault'`, call `setAudioSessionActivity(false)`, or the app process ends. The next activation applies `android.communicationDevice` from `setSystemOptions()` again.
+
+Use [`getCommunicationDevice()`](./audio-manager.mdx#getcommunicationdevice) to observe the route Android selected. `routeChange` events fire only during a session.
+
+### `getCommunicationDevice` <AndroidAPI level={31} /> {#getcommunicationdevice}
+
+Returns the device Android currently selected for communication, including an accessory chosen by the system. It does not return the requested preference.
+
+#### Returns `Promise<AudioDeviceInfo | null>`, which resolves with `null` below Android 12 (API 31).
+
+On iOS and web both calls are no-op.
+
+:::info
+`androidInputPreset: 'voiceCommunication'` on `AudioRecorder` requests the Android capture path. `androidOutputProfile: 'voiceCommunication'` on `AudioContext` classifies Oboe playback as voice communication. `android: { mode: 'inCommunication' }` in `setSystemOptions` owns Android focus, mode, and communication-device routing. These APIs request platform voice-processing facilities; acoustic echo cancellation, noise suppression, and automatic gain control remain device- and route-dependent.
+:::
 
 ### `disableSessionManagement` <IOS />
 
@@ -75,7 +101,7 @@ Deactivating the session while a recording is in progress or paused stops that r
 Disables all internal default [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession) configurations and management done by the `react-native-audio-api` package. After calling this method, user is responsible for managing audio session entirely on their own.
 Typical use-case for this method is when user wants to fully control audio session outside of `react-native-audio-api` package,
 commonly when using another audio library along `react-native-audio-api`. The method has to be called before `AudioContext` is created, for example in app initialization code.
-Any later call to `setAudioSessionOptions` or `setAudioSessionActivity` will re-enable internal audio session management.
+Any later call to `setSystemOptions` or `setAudioSessionActivity` will re-enable internal audio session management.
 
 ### `getDevicePreferredSampleRate`
 
@@ -201,6 +227,20 @@ Some USB microphones also expose a headphone output, which the platform then pre
 
 ## Remarks
 
+### Resume recording after an interruption <IOS /> {#resumerecordingafteraninterruption}
+
+After the app has been interrupted by, for example a phone call, it is possible to *resume* an audio recording while the app is still backgrounded. It is impossible to start a new recording session from the background. Due to iOS policies and privacy features, the app has to be configured appropriately first:
+
+- Ensure the session options (set via [`setSystemOptions`](#setsystemoptions)) allow recording and make the app resilient to interruptions from other apps. Refer to the [session configuration guidelines](#sessionoptionsconfigurationguidelines). The following settings are a useful starting point:
+  - `ios.category` set to `record` or `playAndRecord`, so the session can record. These categories also allow background recording. An incompatible category leads to a [`cannotStartPlaying`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotstartplaying) error.
+  - `ios.mode` set to `default`.
+  - `ios.options` include `mixWithOthers`, so the system can mix this session with audio from active sessions in other apps. Trying to resume recording in the background with a non-mixable session leads to [`cannotInterruptOthers`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotinterruptothers).
+- The app must declare [background audio mode](../other/audio-api-plugin.mdx#iosbackgroundmode).
+
+Even if background interruption recovery is unsuccessful, the library retries with a best-effort strategy when the app returns to the foreground after a failed resume.
+
+## Types
+
 ### `AudioFocusType`
 <details>
 <summary>Type definitions</summary>
@@ -213,10 +253,11 @@ type AudioFocusType =
 ```
 </details>
 
-### `SessionOptions`
+### `SystemOptions`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type IOSCategory =
   | 'ambient'
@@ -251,22 +292,55 @@ type IOSOption =
   | 'mixWithOthers'
   | 'overrideMutedMicrophoneInterruption';
 
-interface SessionOptions {
-  iosMode?: IOSMode;
-  iosOptions?: IOSOption[];
-  iosCategory?: IOSCategory;
-  iosAllowHaptics?: boolean;
+interface IOSSystemOptions {
+  category?: IOSCategory;
+  mode?: IOSMode;
+  options?: IOSOption[];
+  allowHaptics?: boolean;
   // Has no effect when using PlaybackNotificationManager as it takes over the "Now playing" controls
-  iosNotifyOthersOnDeactivation?: boolean;
+  notifyOthersOnDeactivation?: boolean;
+}
+
+interface AndroidSystemOptions {
+  mode?: 'inCommunication';
+  communicationDevice?: CommunicationDevice;
+}
+
+interface SystemOptions {
+  ios?: IOSSystemOptions; // ignored on Android
+  android?: AndroidSystemOptions; // ignored on iOS
 }
 ```
 </details>
 
+#### Configuration guidelines {#sessionoptionsconfigurationguidelines}
+
+Each string union maps directly to the corresponding Apple type:
+
+- `IOSCategory` maps to [`AVAudioSession.Category`](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct)
+- `IOSMode` maps to [`AVAudioSession.Mode`](https://developer.apple.com/documentation/avfaudio/avaudiosession/mode-swift.struct)
+- `IOSOption` maps to [`AVAudioSession.CategoryOptions`](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct)
+
+:::warning AVAudioSession Compatibility
+Not all `ios.options` are compatible with every `ios.category`. Passing an invalid combination to the native API (for example, explicitly setting `allowBluetoothA2DP` alongside the `playback` category) will cause the configuration to fail. This can result in a `SessionActivationError` and total audio silence.
+
+Always verify valid category and option combinations in [Apple's AVAudioSession Documentation](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc).
+:::
+
+### `CommunicationDevice`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type CommunicationDevice = 'speaker' | 'earpiece' | 'systemDefault';
+```
+</details>
 
 ### `SystemEventName`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 interface EventEmptyType {}
 
@@ -331,15 +405,18 @@ interface AudioEventSubscription {
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
 ```
+
 </details>
 
 ### `AudioDeviceInfo`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 export interface AudioDeviceInfo {
   id: string; // unique device identifier
@@ -347,12 +424,14 @@ export interface AudioDeviceInfo {
   category: string; // device category (e.g. "Built-In Microphone", "Bluetooth")
 }
 ```
+
 </details>
 
 ### `AudioDevicesInfo`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 export type AudioDeviceList = AudioDeviceInfo[];
 
@@ -363,4 +442,5 @@ export interface AudioDevicesInfo {
   currentOutputs: AudioDeviceList; // iOS
 }
 ```
+
 </details>

@@ -19,8 +19,8 @@ interface Options {
   androidForegroundService: boolean;
   androidFSTypes: string[];
   androidFSStopWithTask: boolean;
-  enableFFmpeg: boolean;
-  disableStaticExternalLibs: boolean;
+  enableFFmpeg?: boolean;
+  disableStaticExternalLibs?: boolean;
 }
 ```
 
@@ -87,7 +87,7 @@ export default {
 
 Defaults to `true`.
 
-Allows the app to play audio in the background on iOS.
+Allows the app to play audio in the background on iOS. Corresponds to adding `audio` to [`UIBackgroundModes`](https://developer.apple.com/documentation/bundleresources/information-property-list/uibackgroundmodes).
 
 ### `iosMicrophonePermission`
 
@@ -160,3 +160,7 @@ Links the prebuilt FFmpeg libraries into the app, which enables remote URL strea
 Defaults to `false`.
 
 Removes the bundled Opus / Ogg / Vorbis static libraries. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx#disabling-other-external-libraries).
+
+:::note
+`expo prebuild` writes `enableFFmpeg` and `disableStaticExternalLibs` into the `react-native-audio-api` section of the app's `package.json`, which every build (CocoaPods, Swift Package Manager, Gradle) reads. The one given here overwrites it on every prebuild, so keep each option in one place only.
+:::

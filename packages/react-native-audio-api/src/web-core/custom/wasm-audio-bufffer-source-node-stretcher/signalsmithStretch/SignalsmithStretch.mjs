@@ -458,6 +458,12 @@ function registerWorkletProcessor(Module, audioNodeKey) {
       this.timeIntervalSamples = sampleRate * 0.1;
       this.timeIntervalCounter = 0;
 
+      // One-shot mode (see setOneShot): the processor retires once playback is over.
+      this.oneShot = false;
+      this.startScheduled = false;
+      this.abandoned = false;
+      this.finished = false;
+
       this.timeMap = [
         {
           active: false,
@@ -481,6 +487,16 @@ function registerWorkletProcessor(Module, audioNodeKey) {
         setUpdateInterval: (seconds) => {
           this.timeIntervalSamples = sampleRate * seconds;
         },
+        // Like an AudioBufferSourceNode: once started, the processor finishes when it has
+        // stopped or played past the end of a non-looping buffer, posts 'ended' and returns
+        // false from process() so the browser can retire it.
+        setOneShot: () => {
+          this.oneShot = true;
+        },
+        // The owner is gone: a source that is not playing finishes right away.
+        abandon: () => {
+          this.abandoned = true;
+        },
         stop: (when) => {
           if (typeof when !== 'number') when = currentTime;
           return remoteMethods.schedule({ active: false, output: when });
@@ -491,6 +507,7 @@ function registerWorkletProcessor(Module, audioNodeKey) {
             return remoteMethods.schedule(when);
           }
 
+          this.startScheduled = true;
           let obj = {
             active: true,
             input: 0,
@@ -703,7 +720,33 @@ function registerWorkletProcessor(Module, audioNodeKey) {
       }
     }
 
+    hasFinishedPlaying(segment, outputTime) {
+      if (segment.active) {
+        let looping = segment.loopEnd - segment.loopStart > 0;
+        if (looping || this.audioBuffersEnd === 0) return false;
+        let playhead =
+          segment.input + (outputTime - segment.output) * segment.rate;
+        // The whole STFT input window has moved past the last buffered sample.
+        return (
+          playhead - this.outputLatencySeconds >=
+          this.audioBuffersEnd / sampleRate
+        );
+      }
+      return (
+        (this.startScheduled || this.abandoned) && this.timeMap.length === 1
+      );
+    }
+
+    finish() {
+      this.finished = true;
+      this.audioBuffers = [];
+      this.audioBuffersStart = this.audioBuffersEnd = 0;
+      this.wasmModule = null;
+      this.port.postMessage(['ended']);
+    }
+
     process(inputList, outputList, parameters) {
+      if (this.finished) return false;
       if (!this.wasmReady) {
         outputList.forEach((output) => {
           output.forEach((channel) => {
@@ -719,6 +762,12 @@ function registerWorkletProcessor(Module, audioNodeKey) {
         this.timeMap.shift();
       }
       let currentMapSegment = this.timeMap[0];
+
+      if (this.oneShot && this.hasFinishedPlaying(currentMapSegment, outputTime)) {
+        this.finish();
+        outputList[0].forEach((channel) => channel.fill(0));
+        return false;
+      }
 
       let wasmModule = this.wasmModule;
       wasmModule._setTransposeSemitones(
@@ -926,6 +975,9 @@ SignalsmithStretch = ((Module, audioNodeKey) => {
       if (id == 'time') {
         audioNode.inputTime = value;
         if (timeUpdateCallback) timeUpdateCallback(value);
+      }
+      if (id == 'ended') {
+        audioNode.dispatchEvent(new Event('ended'));
       }
       if (id in requestMap) {
         requestMap[id](value);

@@ -41,9 +41,17 @@ class WsolaTimeStretcher {
   // some arbitrary value has to be set here to limit the size of the buffer for wsola algorithm
   static constexpr float MAX_PLAYBACK_RATE = 4;
 
-  /// Rough latency estimates for buffer tail padding (seconds).
+  /// Rough latency estimates (milliseconds) reported to JS and used to size the
+  /// silent tail that drains the stretcher once its source runs out.
   static constexpr float INPUT_LATENCY_MS = 20.0f;
   static constexpr float OUTPUT_LATENCY_MS = 10.0f;
+
+  /// @brief How many frames of silence a source has to keep feeding after its last real
+  /// sample so the audio still buffered in the stretcher reaches the output.
+  [[nodiscard]] static size_t latencyTailFrames(float sampleRate) {
+    constexpr float kMsPerSecond = 1000.0f;
+    return static_cast<size_t>((INPUT_LATENCY_MS + OUTPUT_LATENCY_MS) / kMsPerSecond * sampleRate);
+  }
 
  private:
   static constexpr float OLA_WINDOW_MS = 20.0f;

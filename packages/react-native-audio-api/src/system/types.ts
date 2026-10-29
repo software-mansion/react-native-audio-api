@@ -40,11 +40,16 @@ export type AudioFocusType =
   | 'gainTransientExclusive'
   | 'gainTransientMayDuck';
 
-export interface SessionOptions {
-  iosMode?: IOSMode;
-  iosOptions?: IOSOption[];
-  iosCategory?: IOSCategory;
-  iosAllowHaptics?: boolean;
+export type AndroidAudioMode = 'inCommunication';
+
+export type CommunicationDevice = 'speaker' | 'earpiece' | 'systemDefault';
+
+/** AVAudioSession configuration; ignored on Android. */
+export interface IOSSystemOptions {
+  category?: IOSCategory;
+  mode?: IOSMode;
+  options?: IOSOption[];
+  allowHaptics?: boolean;
   /**
    * Setting this to `true` will allow other audio apps to resume playing when
    * the session is deactivated.
@@ -52,7 +57,26 @@ export interface SessionOptions {
    * Has no effect when using PlaybackNotificationManager as it takes over the
    * "Now playing" controls.
    */
-  iosNotifyOthersOnDeactivation?: boolean;
+  notifyOthersOnDeactivation?: boolean;
+}
+
+/** Android audio-mode configuration; ignored on iOS. */
+export interface AndroidSystemOptions {
+  /**
+   * Opts into Android's communication audio mode. Android 12 (API 31) or later
+   * is required when this option is used.
+   */
+  mode?: AndroidAudioMode;
+  /**
+   * Initial communication-device preference. `systemDefault` clears an explicit
+   * preference and lets Android choose the route.
+   */
+  communicationDevice?: CommunicationDevice;
+}
+
+export interface SystemOptions {
+  ios?: IOSSystemOptions;
+  android?: AndroidSystemOptions;
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';
@@ -87,7 +111,7 @@ export interface AudioDevicesInfo {
 export interface IAudioManager {
   getDevicePreferredSampleRate(): number;
   setAudioSessionActivity(enabled: boolean): Promise<void>;
-  setAudioSessionOptions(options: SessionOptions): void;
+  setSystemOptions(options: SystemOptions): void;
   disableSessionManagement(): void;
   observeAudioInterruptions(enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
@@ -103,4 +127,6 @@ export interface IAudioManager {
   checkNotificationPermissions(): Promise<PermissionStatus>;
   getDevicesInfo(): Promise<AudioDevicesInfo>;
   setInputDevice(deviceId: InputDeviceSelection): Promise<void>;
+  setCommunicationDevice(device: CommunicationDevice): Promise<void>;
+  getCommunicationDevice(): Promise<AudioDeviceInfo | null>;
 }

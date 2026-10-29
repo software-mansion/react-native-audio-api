@@ -8,14 +8,14 @@
 
 ## Android: `build.gradle` — detailed analysis
 
-### Feature flags (set by app's `gradle.properties`)
+### Feature flags (`newArchEnabled` from `gradle.properties`, build options from the app's `package.json`)
 
 ```groovy
-def isNewArchitectureEnabled() {
-  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+def isNewArchitectureEnabled() {   // on unless the app sets newArchEnabled=false
+  return !rootProject.hasProperty("newArchEnabled") || rootProject.getProperty("newArchEnabled") != "false"
 }
 def isFFmpegEnabled() {
-  return isPropertyTrue("enableAudioapiFFmpeg")
+  return booleanBuildOption("enableFFmpeg")   // app package.json "react-native-audio-api" section
 }
 ```
 
@@ -179,30 +179,40 @@ ReactAndroid/src/main/jni/...     — TurboModule JNI headers
 
 miniaudio's implementation file must be compiled as Objective-C++ on iOS (it uses Apple APIs). CocoaPods can't set per-file compiler flags the same way CMake can, so it gets its own subspec with `compiler_flags = "-x objective-c++"`.
 
-### Prebuilt binaries linked via `-force_load`
+### All prebuilt binaries listed in `s.ios.vendored_frameworks`
 
-All static libs (Opus, Ogg, Vorbis, OpenSSL) use `-force_load` to prevent dead-stripping of symbols needed at runtime but not referenced at link time:
-
-```ruby
-s.xcconfig = {
-  'OTHER_LDFLAGS' => %W[
-    -force_load #{lib_dir}/libopus.a
-    -force_load #{lib_dir}/libogg.a
-    ...
-  ].join(" ")
-}
-```
-
-### FFmpeg xcframeworks listed in `s.ios.vendored_frameworks`
-
-CocoaPods handles embedding and signing automatically:
+Each library is a `<lib>.xcframework` downloaded into `external/xcframeworks/` — the
+static Opus/Ogg/Vorbis ones unless `DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS`, the dynamic FFmpeg ones
+only with FFmpeg enabled. CocoaPods' `[CP] Copy XCFrameworks` picks the device / simulator /
+Catalyst slice, links the static libraries normally (no `-force_load`; every symbol used is
+referenced from miniaudio's decoders) and embeds + signs the FFmpeg frameworks:
 
 ```ruby
-s.ios.vendored_frameworks = $RN_AUDIO_API_FFMPEG_ENABLED ? [
-  'common/cpp/audioapi/external/ffmpeg_ios/libavcodec.xcframework',
-  ...
-] : []
+s.ios.vendored_frameworks = vendored_xcframeworks.map { |xcframework| "#{external_dir_relative}/xcframeworks/#{xcframework}" }
 ```
+
+They are the same release assets `Package.swift` downloads through `binaryTarget(url:checksum:)`.
+FFmpeg headers still come from `external/include_ffmpeg/` (`include_ffmpeg.zip`) for CocoaPods;
+SwiftPM uses the header-only `FFmpegHeaders.xcframework` instead.
+
+### FFmpeg link flags on the pod target
+
+CocoaPods (1.16, `lib/cocoapods/target/build_settings.rb`) links a dynamically built pod's own
+vendored static xcframeworks into the pod target (Opus/Ogg/Vorbis hold static libraries and arrive
+as `-l"opus"` …), but its own vendored dynamic xcframeworks only through
+`dynamic_frameworks_to_import`, which feeds the targets that depend on the pod (the app, a
+dependent pod such as RNAudioWorklets), never the pod itself. The FFmpeg frameworks ship no module
+maps, so clang cannot auto-link them either. A static `RNAudioAPI` never links on its own, so the
+app's link resolves the symbols; under `use_frameworks! :linkage => :dynamic` the framework links
+by itself and fails with undefined `_avformat_*` / `_avcodec_*` / `_swr_*`. The podspec therefore
+adds the flags itself in FFmpeg builds:
+
+```ruby
+'OTHER_LDFLAGS' => "$(inherited) #{ffmpeg_ldflags}",
+```
+
+Static library and static framework builds archive the pod with libtool, which does not read
+`OTHER_LDFLAGS`, so the flags only take effect in dynamic framework builds.
 
 ### Header search paths split between pod target and consumers
 
@@ -258,17 +268,24 @@ This means **tests build against the installed/published version of the library*
 
 ```cmake
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")  # no JSI in tests
-list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/Worklet.*Node\\.cpp$")            # worklets not compiled
-list(REMOVE_ITEM RNAUDIOAPI_SRC ... "AudioContext.cpp")                         # needs real audio I/O
+list(APPEND RNAUDIOAPI_SRC ".../HostObjects/utils/JsEnumParser.cpp")           # the one exception
+list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/AudioThreadGuard\\.cpp$")         # compiled into each test executable
+list(REMOVE_ITEM RNAUDIOAPI_SRC ... "AudioContext.cpp")                        # needs real audio I/O
 list(REMOVE_ITEM RNAUDIOAPI_SRC ... "FfmpegDecoder.cpp")                       # FFmpeg disabled in tests
 ```
+
+`tests_tsan` / `tests_asan` do not reuse those objects. `add_sanitized_tests` compiles a separate `rnaudioapi_<sanitizer>` and `rnaudioapi_libs_<sanitizer>` with the same `-fsanitize=` flags as the executable. Sanitizer instrumentation is per translation unit.
 
 ### Compile definitions always set in tests
 
 ```cmake
-add_compile_definitions(RN_AUDIO_API_ENABLE_WORKLETS=0)
 add_compile_definitions(RN_AUDIO_API_TEST=1)
+add_compile_definitions(RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1)
+add_compile_definitions(MA_NO_LIBOPUS=1)
+add_compile_definitions(MA_NO_LIBVORBIS=1)
 ```
+
+Directory-scoped, so the plain libraries, both sanitizer copies, and every test executable all receive them. `RN_AUDIO_API_ENABLE_WORKLETS` is not set; engine sources no longer read it.
 
 Use `RN_AUDIO_API_TEST` in source code to conditionally compile test-only hooks.
 
