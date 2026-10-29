@@ -12,7 +12,7 @@ WORKLETS_DB="$REPO_ROOT/packages/react-native-audio-worklets/compile_commands.js
 # regenerating. Slow — only needed after native deps/config actually change.
 if [[ "${1:-}" == "--clean" ]]; then
   (cd "$REPO_ROOT/apps/fabric-example/ios" && pod deintegrate && pod install)
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api run build:android)
+  (cd "$REPO_ROOT" && yarn workspace fabric-example run build:android --all-architectures)
 fi
 
 cmake -B build .
