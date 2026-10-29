@@ -21,12 +21,14 @@ recording is finished.
 :::
 
 :::caution
-**Only WAV, M4A, FLAC, and ADTS concatenation is supported** — the recording formats
+**Only WAV, M4A, FLAC, ADTS, and OGG (Opus) concatenation is supported** — the recording formats
 available on both iOS and Android.
 
 WAV and FLAC decode the segments and write them out again through the system
 encoder — WAV as 32-bit float PCM, FLAC losslessly. M4A remuxes AAC packets
 with system APIs — iOS AVFoundation and Android MediaExtractor/MediaMuxer.
+OGG re-pages the Opus packets with the bundled libogg on both platforms, so it is
+unavailable when the package's static libraries are disabled with [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries).
 
 ADTS (`.aac`) appends complete encoded frames without decoding or re-encoding.
 Inputs must use the same sample rate and channel configuration. An incomplete
@@ -35,15 +37,11 @@ file's frames are appended.
 :::
 
 :::tip Segment size and quality
-`concatAudioFiles` joins segments losslessly for **WAV** (32-bit float PCM) and
-**FLAC** (lossless re-encode). For **M4A**,
-Android remuxes the encoded AAC packets losslessly, while iOS re-encodes the
-joined audio once through AVFoundation. Each rotated chunk is
-a separate AAC encode, so very small
+Each rotated chunk is a separate encode, so very small
 [`rotateIntervalBytes`](../inputs/audio-recorder#audiorecorderfileoptions)
 values can still produce clicks, muffled joins, or timing gaps after concatenation.
 
-If playback quality is poor after joining rotated M4A files, increase `rotateIntervalBytes` (for example **≥ 200 KB**) or record without rotation. WAV and FLAC segments are less sensitive, but the same guidance applies below roughly **512 KB–1 MB** per segment.
+If playback quality is poor after joining rotated files, increase `rotateIntervalBytes` (for example **≥ 200 KB**) or record without rotation.
 :::
 
 ### `concatAudioFiles`
@@ -73,8 +71,8 @@ come from the same recorder configuration:
 
 Use an output path with an extension that matches the input files, for example
 joining `.m4a` segments into an `.m4a` output file, `.wav` segments into a
-`.wav` output file, `.flac` segments into a `.flac` output file, or ADTS `.aac`
-segments into an `.aac` output file.
+`.wav` output file, `.flac` segments into a `.flac` output file, ADTS `.aac`
+segments into an `.aac` output file, or `.ogg` segments into an `.ogg` output file.
 
 <details>
 <summary>Example usage with rotated recordings</summary>

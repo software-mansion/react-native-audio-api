@@ -28,8 +28,7 @@ Result<EncoderOutputSpec, std::string> resolveOutputSpec(FileFormat format) {
   }
 
   std::string message = std::string(toString(spec.codec)) + " in " + toString(spec.container) +
-      " is not encodable via system APIs on this platform. Choose a format supported by the "
-      "device's system encoders.";
+      " cannot be encoded on this platform. Choose a format listed as supported for it.";
   return Result<EncoderOutputSpec, std::string>::Err(message);
 }
 

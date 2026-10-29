@@ -25,13 +25,14 @@
 #include <utility>
 #include <vector>
 
-// AMEDIAMUXER_OUTPUT_FORMAT_OGG was added to the NDK at API level 34; fall back
-// to a numeric value so builds against older NDK headers still compile. Runtime
-// availability is still gated by the device OS version.
-// NOLINTBEGIN
+// AMediaMuxer writes Ogg from API level 34 on. The constant arrived in the NDK headers at the
+// same level, so a numeric fallback keeps older NDKs compiling; the device OS still decides at
+// runtime.
 #ifndef AMEDIAMUXER_OUTPUT_FORMAT_OGG
 #define AMEDIAMUXER_OUTPUT_FORMAT_OGG 4
 #endif
+
+// NOLINTBEGIN
 
 namespace audioapi::android::encoder {
 namespace {
@@ -465,7 +466,9 @@ class MediaCodecBackend : public IEncoderBackend {
 };
 
 // ---------------------------------------------------------------------------
-// Muxed backend — AAC / Opus / Vorbis via AMediaMuxer.
+// Muxed backend — AAC in M4A, Opus and Vorbis in WebM, and Opus in Ogg (Android 14 and later)
+// via AMediaMuxer. encoding::createEncoder (EncoderFactory.cpp) sends Opus in Ogg to the bundled
+// encoder instead whenever the build has it, so Ogg reaches this backend only without it.
 // ---------------------------------------------------------------------------
 
 class MuxedBackend : public MediaCodecBackend {
@@ -493,8 +496,11 @@ class MuxedBackend : public MediaCodecBackend {
         if (bitRate <= 0) {
           bitRate = 96000;
         }
-        muxerFormat_ = outputSpec.container == AudioContainer::OGG ? AMEDIAMUXER_OUTPUT_FORMAT_OGG
-                                                                   : AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
+        if (outputSpec.container == AudioContainer::WEBM) {
+          muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
+        } else {
+          muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_OGG;
+        }
         break;
       case AudioCodec::VORBIS:
         mime = "audio/vorbis";
