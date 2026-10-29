@@ -109,14 +109,12 @@ const candidateCategories = categoryPassMap(candidate);
 const isAssertionFailure = (message) => message.startsWith('X ');
 
 /**
- * audit.js ends a failing assertion with ` Got <actual>.`, so a subtest that
- * fails on both sides with a different value would read as a new failure.
- * The assertion text before it is what identifies the subtest.
+ * An assertion message also carries what the run measured — a trailing `Got <value>.` and,
+ * for array comparisons, an `Index Actual Expected` table after the first line. A subtest
+ * that fails in both runs with a different value is still the same failing subtest, so only
+ * the first line without the measured value identifies it.
  */
-const subtestIdentity = (message) => {
-  const actualStart = message.lastIndexOf(' Got ');
-  return actualStart === -1 ? message : message.slice(0, actualStart);
-};
+const subtestIdentity = (message) => message.split('\n', 1)[0].replace(/ Got .*$/, '');
 
 /**
  * Exact per-file comparison. Category pass counts cannot see an equal-count

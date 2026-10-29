@@ -1,4 +1,5 @@
 #import <AVFoundation/AVFoundation.h>
+#import <AudioToolbox/AudioToolbox.h>
 #import <Foundation/Foundation.h>
 
 #include <audioapi/encoding/EncoderOutputSpec.h>
@@ -7,6 +8,7 @@
 #include <audioapi/utils/UnitConversion.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <limits>
 #include <string>
@@ -85,6 +87,57 @@ static NSInteger bitsForBitDepth(AudioFileProperties::BitDepth bitDepth)
   }
 }
 
+/// The AAC encoder accepts only a sample-rate- and channel-dependent set of bit rates and fails to
+/// open the file otherwise; returns the accepted one closest to `requested`.
+static size_t nearestSupportedAacBitRate(const AudioLayout &layout, size_t requested)
+{
+  AudioStreamBasicDescription pcmFormat = {};
+  pcmFormat.mSampleRate = layout.sampleRate;
+  pcmFormat.mFormatID = kAudioFormatLinearPCM;
+  pcmFormat.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked;
+  pcmFormat.mChannelsPerFrame = static_cast<UInt32>(layout.channelCount);
+  pcmFormat.mBitsPerChannel = 32;
+  pcmFormat.mFramesPerPacket = 1;
+  pcmFormat.mBytesPerFrame = sizeof(float) * pcmFormat.mChannelsPerFrame;
+  pcmFormat.mBytesPerPacket = pcmFormat.mBytesPerFrame;
+
+  AudioStreamBasicDescription aacFormat = {};
+  aacFormat.mSampleRate = layout.sampleRate;
+  aacFormat.mFormatID = kAudioFormatMPEG4AAC;
+  aacFormat.mChannelsPerFrame = static_cast<UInt32>(layout.channelCount);
+
+  AudioConverterRef converter = nullptr;
+  if (AudioConverterNew(&pcmFormat, &aacFormat, &converter) != noErr) {
+    // Opening the file reports the unsupported format itself.
+    return requested;
+  }
+
+  UInt32 size = 0;
+  std::vector<AudioValueRange> supportedRanges;
+  if (AudioConverterGetPropertyInfo(
+          converter, kAudioConverterApplicableEncodeBitRates, &size, nullptr) == noErr) {
+    supportedRanges.resize(size / sizeof(AudioValueRange));
+    if (AudioConverterGetProperty(
+            converter, kAudioConverterApplicableEncodeBitRates, &size, supportedRanges.data()) !=
+        noErr) {
+      supportedRanges.clear();
+    }
+  }
+  AudioConverterDispose(converter);
+
+  auto nearest = static_cast<double>(requested);
+  double nearestDistance = std::numeric_limits<double>::infinity();
+  for (const AudioValueRange &range : supportedRanges) {
+    double candidate = std::clamp(static_cast<double>(requested), range.mMinimum, range.mMaximum);
+    double distance = std::abs(candidate - static_cast<double>(requested));
+    if (distance < nearestDistance) {
+      nearest = candidate;
+      nearestDistance = distance;
+    }
+  }
+  return static_cast<size_t>(nearest);
+}
+
 static NSDictionary *buildFileSettings(
     const EncoderSettings &encoderSettings,
     const EncoderOutputSpec &outputSpec)
@@ -99,7 +152,17 @@ static NSDictionary *buildFileSettings(
       @(avAudioQualityFor(encoderSettings.encoding.iosAudioQuality));
 
   if (formatId == kAudioFormatMPEG4AAC && encoderSettings.encoding.bitRate > 0) {
-    settings[AVEncoderBitRateKey] = @(encoderSettings.encoding.bitRate);
+    size_t requestedBitRate = encoderSettings.encoding.bitRate;
+    size_t bitRate = nearestSupportedAacBitRate(encoderSettings.fileLayout, requestedBitRate);
+    if (bitRate != requestedBitRate) {
+      NSLog(
+          @"[RNAudioApi] AAC bit rate %zu not supported at %.0f Hz with %d channel(s), using %zu",
+          requestedBitRate,
+          static_cast<double>(encoderSettings.fileLayout.sampleRate),
+          encoderSettings.fileLayout.channelCount,
+          bitRate);
+    }
+    settings[AVEncoderBitRateKey] = @(bitRate);
   }
 
   if (formatId == kAudioFormatLinearPCM) {

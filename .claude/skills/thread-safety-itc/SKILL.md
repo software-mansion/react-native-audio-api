@@ -178,6 +178,17 @@ Tests stay deterministic by writing at most a pool's worth of buffers (32) per o
 
 ---
 
+## Convolver tail prefetch: never `wait()` on the audio thread
+
+`ConvolverNode` does not block on `ConvolverThreadPool`. `Convolver` (`dsp/Convolver.h`) splits the uniformly partitioned IR at `HEAD_SEGMENTS` (8 blocks): the head is multiplied on the audio thread in `process()`, the tail only needs input that is ≥ 8 blocks old, so `ConvolverNode::scheduleTails()` hands `computeTail(nextTailBlock())` to the pool right after `process()` and the worker has 8 quanta (≈21 ms) of slack. Output block k is Σ_i X[k-i]·H[i] over the IR partitions H[i]; only the first `HEAD_SEGMENTS` terms depend on recent input, which is why the tail of block k+HEAD_SEGMENTS is computable as soon as block k is in. A tail that is not published in time is computed inline for that block (the private `_tailMisses` counter, read in tests through `ConvolverInspector`) — a late worker costs CPU, never a stall or a glitch. Rules that keep it lock-free:
+
+- Tasks capture the `Convolver` by `shared_ptr` (never `this` / a node member), so a node released mid-flight cannot leave a dangling read (the second half of issue #1339).
+- Each of the `TAIL_SLOT_COUNT` (= HEAD_SEGMENTS + 1) result slots has one atomic `state`: `readyState(block) = (block + 1) << 1`, plus `BUSY_BIT` while a worker writes. A worker claims with one `compare_exchange_strong` that succeeds only if the slot is neither busy nor owned by a newer block, so a straggler preempted anywhere can never overwrite a newer block's spectrum — a separate deadline re-check could not guarantee that. The claim `memset`s the spectrum before accumulating (`accumulateSegments` adds), and publishes `readyState(block)` with release.
+- `process(block)` uses a slot only on an exact `== readyState(block)` match (acquire). That match proves the worker's delay-line reads finished before `process(block)`, and the first overwrite of anything it read is `process(block + 9)`, so a consumed result is always built from valid input. The audio thread never writes a slot outside `init`.
+- A worker still reading the delay line ≥ 17 quanta after scheduling races `doFFT` on `_segments` (formally UB, result tagged with an already rendered block, so never read). Known and accepted; early abort in `accumulateSegments` would make it rarer, not impossible.
+- The node hands tails over with `ThreadPool::trySchedule` (wait-free, `try_send` on the load-balancer queue). `schedule()` sends `WAIT_ON_FULL` and blocks the caller when the load-balancer queue (`CONVOLVER_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE`) is full, so it must never be called from the audio thread (in a device bench with starved workers the queue never actually filled — the balancer drains it in microseconds — but the contract matters more than the odds). A refused tail is just a miss: `process()` computes it inline.
+- `ThreadPool::wait()` waits on `tasksScheduled` itself (atomic wait loop), not on a separate flag: a worker that finished batch N and was preempted before notifying could otherwise release the waiter of batch N+1 (issue #1339). Nothing on the audio thread should call `wait()` at all.
+
 ## Driver synchronization (layered model)
 
 Control-plane synchronization uses two layers — both are non-recursive `std::mutex`, never held on the audio thread.

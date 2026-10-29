@@ -340,8 +340,7 @@ return result;
 
 ```cpp
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
-  auto channel          = static_cast<int>(args[0].getNumber());
-  auto audioArrayBuffer = audioBuffer_->getSharedChannel(channel);
+  auto audioArrayBuffer = sharedBuffer_->exposeChannel(static_cast<size_t>(args[0].getNumber()));
   auto arrayBuffer      = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
   auto float32ArrayCtor = runtime.global()
@@ -354,6 +353,14 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   return float32Array;
 }
 ```
+
+The view aliases native memory for as long as JS keeps it, and the `shared_ptr` inside the `jsi::ArrayBuffer` keeps that memory alive on its own. When the native side later needs the view to stop aliasing (Web Audio's "acquire the content" on `AudioBufferSourceNode.start()`), it must retain the returned storage and replace it afterwards, so the old view keeps the old storage and stops reaching the buffer.
+
+That bookkeeping — copy-on-write against playing nodes, tracking exposed views, the spec's `copyFromChannel` / `copyToChannel` range rules — lives in the engine class `core/sources/SharedAudioBuffer`, not in `AudioBufferHostObject`. An AudioBuffer involves no inter-thread events (every member runs on the JS thread), so nothing forces its logic into the host layer; the host object only unpacks JSI arguments and wraps the returned storage. `SharedAudioBuffer` is unit-tested in `test/src/core/sources/SharedAudioBufferTest.cpp`, which the HostObject layer cannot be (see `build-compilation-dependencies`). Its per-channel flag vectors are sized in the constructor: sizing them lazily on first share crashed the view cut-off the moment the order of the two steps flipped.
+
+`AudioBufferSourceNodeHostObject` holds the assigned `SharedAudioBuffer` and hands samples to the audio thread in exactly one place, `acquireBufferContent`, which runs on `start()` and on a `setBuffer()` made after start. A `setBuffer()` before start only records the buffer and publishes its channel count; the node reads nothing until acquire, so every JS write made in between is played and nothing has to track content versions. `SharedAudioBuffer::acquireContent` both cuts off the live views and returns the storage-sharing buffer the node plays.
+
+`AudioBufferQueueSourceNodeHostObject::enqueueBuffer` reuses the same mechanism: a buffer of the queue's width is shared through `SharedAudioBuffer::acquireContent` instead of copied, only a buffer of another width is mixed into a private copy, and the TS wrapper calls `invalidateChannelDataCache` after every enqueue. The stretcher is configured inline on the JS thread by the host base `initStretch`, once per node and with no audio event: the audio thread touches it only once the node has content, and the first content is always scheduled behind that call. Audio events are `FatFunction<72, …>`; a handle, a node pointer, two `shared_ptr`s and one scalar already fill the slot, so derive what you can on the audio thread (the queue event reads the width off its content) instead of capturing it.
 
 ### External memory pressure
 

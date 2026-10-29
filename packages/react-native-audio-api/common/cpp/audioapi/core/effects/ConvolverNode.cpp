@@ -119,12 +119,18 @@ void ConvolverNode::performConvolution(
     int framesToProcess) {
   // 32 bits keeps each task within the pool's fixed task storage.
   const auto frames = static_cast<uint32_t>(framesToProcess);
+  const bool hasThreadPool = threadPool_ != nullptr;
   if (processingBuffer->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threadPool_->schedule([this, &processingBuffer, i, frames] {
+      if (hasThreadPool) {
+        threadPool_->schedule([this, &processingBuffer, i, frames] {
+          convolvers_[i]->process(
+              *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i), frames);
+        });
+      } else {
         convolvers_[i]->process(
             *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i), frames);
-      });
+      }
     }
   } else if (processingBuffer->getNumberOfChannels() == 2) {
     if (convolvers_.size() == 2) {
@@ -135,14 +141,23 @@ void ConvolverNode::performConvolution(
       outputChannelMap_ = {0, 3, 2, 1};
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
-      threadPool_->schedule([this, &processingBuffer, i, frames] {
+      if (hasThreadPool) {
+        threadPool_->schedule([this, &processingBuffer, i, frames] {
+          convolvers_[i]->process(
+              *processingBuffer->getChannel(inputChannelMap_[i]),
+              *intermediateBuffer_->getChannel(outputChannelMap_[i]),
+              frames);
+        });
+      } else {
         convolvers_[i]->process(
             *processingBuffer->getChannel(inputChannelMap_[i]),
             *intermediateBuffer_->getChannel(outputChannelMap_[i]),
             frames);
-      });
+      }
     }
   }
-  threadPool_->wait();
+  if (hasThreadPool) {
+    threadPool_->wait();
+  }
 }
 } // namespace audioapi

@@ -49,6 +49,7 @@ void AudioBufferBaseSourceNode::initStretch(
     const std::shared_ptr<DSPAudioBuffer> &playbackRateBuffer) {
   wsolaStretcher_.configure(channelCount, sampleRate);
   playbackRateBuffer_ = playbackRateBuffer;
+  stretchTailFramesLeft_ = WsolaTimeStretcher::latencyTailFrames(sampleRate);
 }
 
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
@@ -141,7 +142,18 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       detune / static_cast<float>(SEMITONES_PER_OCTAVE));
 
   const float bufferPlaybackRate = rate >= 0.0f ? rate : -rate;
+  const bool stopTimeReached = isStopScheduled();
   runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, bufferPlaybackRate, false);
+
+  // The source ran dry (as opposed to stop() time arriving), but the stretcher still
+  // holds audio. The processor has already zero-filled the rest of the input, so keep
+  // feeding that silence until the tail has drained, then let the node finish.
+  const bool sourceRanDry = !stopTimeReached && isStopScheduled();
+  if (sourceRanDry && stretchTailFramesLeft_ > 0) {
+    playbackState_ = PlaybackState::PLAYING;
+    stretchTailFramesLeft_ -=
+        std::min(stretchTailFramesLeft_, static_cast<size_t>(framesNeededToStretch));
+  }
 
   wsolaStretcher_.process(
       *playbackRateBuffer_,

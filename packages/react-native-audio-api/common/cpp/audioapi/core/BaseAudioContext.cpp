@@ -122,8 +122,10 @@ utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *BaseAudioContext::getDisposer() cons
 
 std::shared_ptr<ConvolverThreadPool> BaseAudioContext::getConvolverThreadPool() {
   if (convolverThreadPool_ == nullptr) {
-    convolverThreadPool_ =
-        std::make_shared<ConvolverThreadPool>(CONVOLVER_THREAD_POOL_WORKER_COUNT);
+    convolverThreadPool_ = std::make_shared<ConvolverThreadPool>(
+        CONVOLVER_THREAD_POOL_WORKER_COUNT,
+        CONVOLVER_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE,
+        CONVOLVER_THREAD_POOL_WORKER_QUEUE_SIZE);
   }
   return convolverThreadPool_;
 }

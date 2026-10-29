@@ -92,6 +92,7 @@ export enum FileFormat {
   Wav,
   Caf,
   M4A,
+  Adts,
   Flac,
   Aiff,
   Alac,

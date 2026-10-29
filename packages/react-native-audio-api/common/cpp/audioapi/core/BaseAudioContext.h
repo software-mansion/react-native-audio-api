@@ -103,8 +103,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   /// @brief Lazily created pool shared by every ConvolverNode of this context. Nodes render
   /// sequentially on the one render thread, so sharing keeps the pool single-producer.
+  /// @return The pool, or null when the context wants convolver tails computed inline.
   /// @note JS thread only.
-  std::shared_ptr<ConvolverThreadPool> getConvolverThreadPool();
+  virtual std::shared_ptr<ConvolverThreadPool> getConvolverThreadPool();
 
   /// @brief Assigns the audio destination node to the context.
   /// @param destination The audio destination node to be associated with the context.
