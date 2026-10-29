@@ -91,8 +91,8 @@ yarn validate:fast
 ### Native compile checks (when platform code changes)
 
 ```bash
-yarn validate:android   # yarn workspace … build:android (~3–4 min)
-yarn validate:ios       # yarn workspace … build:ios (macOS only)
+yarn validate:android   # yarn workspace fabric-example build:android --all-architectures (~4–6 min)
+yarn validate:ios       # yarn workspace fabric-example build:ios --simulator --pod-install (macOS only)
 yarn validate:full      # --fast + C++ extended + --android + --ios
 ```
 
