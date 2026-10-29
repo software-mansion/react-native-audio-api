@@ -16,6 +16,7 @@
     "run:ios": "bash scripts/run-ios.sh",
     "start": "react-native start",
     "test": "jest",
+    "test:e2e": "bash scripts/run-e2e-test.sh",
     "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs",
     "test:server": "node --test server/realtime-token-server.test.mjs"
   },
