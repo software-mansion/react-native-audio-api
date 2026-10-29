@@ -235,17 +235,20 @@ Keep it in sync with the podspec; how each podspec feature maps:
 # From the monorepo root first:
 yarn install
 
-# Then install pods — must be done from the ios/ directory:
-cd apps/fabric-example/ios
-pod install
-
-# Run the app (from repo root):
-yarn workspace fabric-example ios
+# Build (pod install included when needed), install and launch. Metro must run for debug:
+yarn ios [--level LEVEL] [--configuration debug|release] [--device UDID | --simulator] [--rn-cli]
 # or open Xcode:
 open apps/fabric-example/ios/FabricExample.xcworkspace
 ```
 
-**When to re-run `pod install`**:
+**Build and run scripts** (`apps/fabric-example/scripts/`, same convention on both platforms). Root `yarn ios` / `yarn android` and `yarn workspace fabric-example ios` / `android` all run `build-and-run-<platform>.sh`. On iOS, `build-and-run-ios.sh` runs `build:ios` + `run:ios` by default (pass `--rn-cli` to delegate to `react-native run-ios`), and all iOS build paths share Xcode's standard `~/Library/Developer/Xcode/DerivedData/FabricExample-<hash>` directory. On Android, `build-and-run-android.sh` and `run-android.sh` delegate to `react-native run-android` (with `--binary-path` on `run:android` so Gradle is skipped). A `run:<platform>` never builds, so it relaunches in seconds (iOS: with another `--level`, which sets `AUDIO_LOG_LEVEL`; Android has no level until it has native logging). Targets are device-first: `--device ID` (UDID / adb serial), else the first USB device, else the first booted simulator / running emulator; `--simulator` / `--emulator` force the virtual one. Selection lives in `scripts/shared/{common,ios,android}.sh` (not `lib/`: the editor tools refuse `lib/` paths). Pitfalls:
+- `build-ios.sh` runs `pod install` only when `Pods/Manifest.lock` is missing, differs from `Podfile.lock`, or is older than `Podfile`, the app `package.json`, `yarn.lock` or a `packages/*/*.podspec`; `--pod-install` forces it. A no-op `pod install` does not rewrite `Manifest.lock`, so the script touches it. It uses `bundle exec` only when `bundle check` passes.
+- `build-android.sh` builds only the target's ABI (`-PreactNativeArchitectures`); an APK built for one ABI does not install on another. `--all-architectures` is what `validate.sh` and `setup:clangd:clean` use.
+- Bash in these scripts is macOS's 3.2, and `set -e` is off inside `$(...)`: validate inputs before command substitutions that depend on them.
+
+The library package knows nothing about FabricExample: `build:ios` and `build:android` live in `apps/fabric-example/package.json`.
+
+**When to re-run `pod install`** (`build:ios` detects most of these; pass `--pod-install` otherwise):
 - After `yarn install` (any dependency change)
 - After changing `RNAudioAPI.podspec`
 - After adding/removing iOS source files that need to be picked up
@@ -260,7 +263,7 @@ open apps/fabric-example/ios/FabricExample.xcworkspace
 ### Android (fabric-example)
 
 ```bash
-yarn workspace fabric-example android
+yarn android [--configuration debug|release] [--device SERIAL | --emulator]
 # or open in Android Studio:
 open apps/fabric-example/android
 ```
@@ -281,8 +284,8 @@ CI intentionally skips native Android/iOS builds (expensive). Use the tiered loc
 yarn validate:fast      # CI parity (format, lint, typecheck, enum sync, build, C++ + JS tests)
 yarn validate:cpp       # C++ smoke
 yarn validate:cpp-extended  # C++ extended (all categories)
-yarn validate:android   # yarn workspace … build:android
-yarn validate:ios       # yarn workspace … build:ios (macOS only)
+yarn validate:android   # yarn workspace fabric-example build:android --all-architectures
+yarn validate:ios       # yarn workspace fabric-example build:ios --simulator --pod-install (macOS only)
 yarn validate:full      # --fast + C++ extended + --android + --ios
 ```
 

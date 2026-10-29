@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build:android": {
+      "inputs": [
+        "package.json",
+        "scripts/build-android.sh",
+        "scripts/shared/**",
+        "android",
+        "!android/.gradle",
+        "!android/build",
+        "!android/app/build"
+      ],
+      "outputs": []
+    },
+    "build:ios": {
+      "inputs": [
+        "package.json",
+        "scripts/build-ios.sh",
+        "scripts/shared/**",
+        "ios",
+        "!ios/build",
+        "!ios/Pods"
+      ],
+      "outputs": []
+    }
+  }
+}
