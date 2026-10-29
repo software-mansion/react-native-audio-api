@@ -56,18 +56,19 @@ else:
     newest = max(android_dbs, key=lambda p: p.stat().st_mtime)
     entries = json.loads(newest.read_text())
 
-    # Rewrite the node_modules symlink path Gradle resolved through to the
-    # real path, so clangd matches the files open in the editor.
+    # Gradle reports the library either through the node_modules symlink or,
+    # when autolinking registers the realpath, through packages/ directly.
+    # Normalise to the real path so clangd matches the files open in the editor.
     node_modules_dir = str(repo_root / "node_modules" / "react-native-audio-api")
     real_dir = str(package_dir)
 
     by_file = {e["file"]: e for e in json.loads(root_db.read_text())}
     merged = 0
     for entry in entries:
-        if node_modules_dir not in entry["file"]:
-            continue
         entry["file"] = entry["file"].replace(node_modules_dir, real_dir)
         entry["command"] = entry["command"].replace(node_modules_dir, real_dir)
+        if not entry["file"].startswith(real_dir + "/"):
+            continue
         by_file[entry["file"]] = entry
         merged += 1
 
