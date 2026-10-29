@@ -19,6 +19,9 @@ class AudioDecoderBackend {
 
   [[nodiscard]] virtual size_t readPcmFrames(float *outInterleaved, size_t frameCount) = 0;
   [[nodiscard]] virtual DecoderResult seekToTime(double seconds) = 0;
+  /// Asks the platform to favour decoding speed over power, for decoding a
+  /// whole file at once rather than streaming it in real time. No-op by default.
+  virtual void preferThroughput() {}
   virtual void close() = 0;
   [[nodiscard]] virtual bool isOpen() const = 0;
 

@@ -67,6 +67,13 @@ class AlignedAudioArray {
     return size_;
   }
 
+  /// @brief Changes the length in place, keeping existing samples and zero-filling growth.
+  /// @note Shrinking keeps the allocation; growing may reallocate and invalidate pointers.
+  void resize(size_t size) {
+    data_.resize(size, 0.0f);
+    size_ = size;
+  }
+
   float &operator[](size_t index) noexcept {
     return data_[index];
   }

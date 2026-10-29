@@ -48,33 +48,54 @@ makeEncodedMemorySource(const void *data, size_t size, int sampleRate) {
       .sampleRate = sampleRate};
 }
 
+constexpr float MAX_TRUSTED_ESTIMATE_SECONDS = 30.0F * 60.0F;
+
+// Decodes straight into the returned planar buffer, sized up front from the
+// decoder's frame estimate, so peak memory stays near one copy of the PCM.
 AudioBufferResult decodeAll(decoding::AudioDecoderBackend &decoder) {
+  constexpr size_t chunkFrames = decoding::AudioDecoderBackend::CHUNK_SIZE;
+  decoder.preferThroughput();
   const int channels = std::max(1, decoder.outputChannels());
   const auto outputSampleRate = static_cast<float>(decoder.outputSampleRate());
 
-  std::vector<float> interleaved;
-  std::vector<float> chunk(
-      decoding::AudioDecoderBackend::CHUNK_SIZE * static_cast<size_t>(channels));
+  // Container durations are estimates; leave headroom for encoder padding, and
+  // trust them only up to half an hour so a corrupt header cannot force a huge
+  // allocation. Longer files grow geometrically past that.
+  const size_t estimatedFrames = decoder.getTotalPcmFrameCount();
+  const auto maxTrustedEstimate =
+      static_cast<size_t>(std::max(1.0F, outputSampleRate) * MAX_TRUSTED_ESTIMATE_SECONDS);
+  const size_t trustedEstimate = std::min(estimatedFrames, maxTrustedEstimate);
+  const size_t initialCapacity = trustedEstimate + trustedEstimate / 64 + chunkFrames;
+  auto audioBuffer = std::make_shared<AudioBuffer>(initialCapacity, channels, outputSampleRate);
 
+  std::vector<float> chunk(chunkFrames * static_cast<size_t>(channels));
+  size_t framesDecoded = 0;
   while (true) {
-    const size_t framesRead =
-        decoder.readPcmFrames(chunk.data(), decoding::AudioDecoderBackend::CHUNK_SIZE);
+    const size_t framesRead = decoder.readPcmFrames(chunk.data(), chunkFrames);
     if (framesRead == 0) {
       break;
     }
-    interleaved.insert(
-        interleaved.end(),
-        chunk.begin(),
-        chunk.begin() + static_cast<std::ptrdiff_t>(framesRead * static_cast<size_t>(channels)));
+    if (framesDecoded + framesRead > audioBuffer->getSize()) {
+      audioBuffer->resize(std::max(framesDecoded + framesRead, audioBuffer->getSize() * 3 / 2));
+    }
+    audioBuffer->deinterleaveFrom(chunk.data(), framesDecoded, framesRead);
+    framesDecoded += framesRead;
   }
 
-  if (interleaved.empty()) {
+  if (framesDecoded == 0) {
     return Err("Failed to decode any frames");
   }
 
-  const size_t outputFrames = interleaved.size() / static_cast<size_t>(channels);
-  auto audioBuffer = std::make_shared<AudioBuffer>(outputFrames, channels, outputSampleRate);
-  audioBuffer->deinterleaveFrom(interleaved.data(), outputFrames);
+  const size_t capacity = audioBuffer->getSize();
+  // Shrinking in place keeps the allocation, so only trim small slack that
+  // way; a badly overestimated duration gets an exact-size copy instead.
+  if (capacity - framesDecoded <= framesDecoded / 8) {
+    audioBuffer->resize(framesDecoded);
+  } else {
+    auto exact = std::make_shared<AudioBuffer>(framesDecoded, channels, outputSampleRate);
+    exact->copy(*audioBuffer, 0, 0, framesDecoded);
+    audioBuffer = std::move(exact);
+  }
   return Ok(std::move(audioBuffer));
 }
 
