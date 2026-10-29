@@ -28,6 +28,11 @@ Press Ctrl+D to exit and save the merged log and journal file.
 Options:
   --platform PLATFORM   ios (default) or android (not yet supported).
   --name NAME           Optional test label included in the output file name.
+  --output-dir DIR      Directory where the temporary run folder and merged .log file are written.
+                        Default: apps/fabric-example/logs.
+  --headless            Disable interactive keyboard input and stdout log echoing; stream only
+                        to disk until SIGTERM/SIGINT merges logs.log and journal.log.
+  --run-dir-file FILE   Write the path of the created temporary run directory to FILE once ready.
   --device UDID         Stream from this device.
   --simulator           Stream from the booted simulator, even when a device is connected.
   --subsystem LIST      Subsystems, separated by '|' (audioapi, js, all, or full name).
@@ -50,6 +55,9 @@ function fail(message) {
 function parseArguments(argv) {
   let platform = 'ios';
   let testName = '';
+  let outputDir = LOGS_ROOT_DIR;
+  let headless = false;
+  let runDirFile = '';
   let grepArg = '';
   const forwardedArgs = [];
 
@@ -76,6 +84,27 @@ function parseArguments(argv) {
           );
         }
         testName = value;
+        i += 1;
+        break;
+      }
+      case '--output-dir': {
+        const value = argv[i + 1];
+        if (!value) {
+          fail('--output-dir needs a value');
+        }
+        outputDir = path.resolve(value);
+        i += 1;
+        break;
+      }
+      case '--headless':
+        headless = true;
+        break;
+      case '--run-dir-file': {
+        const value = argv[i + 1];
+        if (!value) {
+          fail('--run-dir-file needs a value');
+        }
+        runDirFile = path.resolve(value);
         i += 1;
         break;
       }
@@ -131,7 +160,14 @@ function parseArguments(argv) {
     }
   }
 
-  return { testName, forwardedArgs, grepRegex };
+  return {
+    testName,
+    outputDir,
+    headless,
+    runDirFile,
+    forwardedArgs,
+    grepRegex,
+  };
 }
 
 function padTwo(value) {
@@ -174,14 +210,14 @@ function currentCommitShortHash() {
   }
 }
 
-function createRunPaths(testName) {
+function createRunPaths(testName, outputDir) {
   const commitHash = currentCommitShortHash();
   const timestamp = formatRunTimestamp(new Date());
   const baseName = testName
     ? `${commitHash}_${testName}_${timestamp}`
     : `${commitHash}_${timestamp}`;
-  const runDirectory = path.join(LOGS_ROOT_DIR, baseName);
-  const finalLogFilePath = path.join(LOGS_ROOT_DIR, `${baseName}.log`);
+  const runDirectory = path.join(outputDir, baseName);
+  const finalLogFilePath = path.join(outputDir, `${baseName}.log`);
   fs.mkdirSync(runDirectory, { recursive: true });
   return { runDirectory, finalLogFilePath };
 }
@@ -239,23 +275,28 @@ function mergeRunDirectoryIntoSingleFile(
   fs.rmSync(runDirectory, { recursive: true, force: true });
 }
 
-const { testName, forwardedArgs, grepRegex } = parseArguments(
-  process.argv.slice(2)
-);
-const { runDirectory, finalLogFilePath } = createRunPaths(testName);
+const { testName, outputDir, headless, runDirFile, forwardedArgs, grepRegex } =
+  parseArguments(process.argv.slice(2));
+const { runDirectory, finalLogFilePath } = createRunPaths(testName, outputDir);
 const logsFilePath = path.join(runDirectory, 'logs.log');
 const journalFilePath = path.join(runDirectory, 'journal.log');
 
 fs.writeFileSync(logsFilePath, '');
 fs.writeFileSync(journalFilePath, '');
+if (runDirFile) {
+  fs.mkdirSync(path.dirname(runDirFile), { recursive: true });
+  fs.writeFileSync(runDirFile, `${runDirectory}\n`, 'utf8');
+}
 
 const logsFileStream = fs.createWriteStream(logsFilePath, { flags: 'a' });
 const journalFileStream = fs.createWriteStream(journalFilePath, { flags: 'a' });
 
 console.error(`Working directory: ${runDirectory}`);
-console.error(
-  'Press any key to enter interactive journal mode. Press Ctrl+D to save and exit.'
-);
+if (!headless) {
+  console.error(
+    'Press any key to enter interactive journal mode. Press Ctrl+D to save and exit.'
+  );
+}
 
 let isInteractive = false;
 let isShuttingDown = false;
@@ -324,6 +365,9 @@ function emitLogLine(line) {
   }
   const lineWithNewline = `${line}\n`;
   logsFileStream.write(lineWithNewline);
+  if (headless) {
+    return;
+  }
   if (isInteractive) {
     bufferedOutputChunks.push({
       stream: process.stdout,
@@ -359,10 +403,12 @@ function shutdown(exitCode = 0) {
     exitInteractiveMode(promptBuffer);
   }
 
-  if (process.stdin.isTTY) {
-    process.stdin.setRawMode(false);
+  if (!headless) {
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(false);
+    }
+    process.stdin.pause();
   }
-  process.stdin.pause();
 
   stdoutReadline.close();
   if (!logProcess.killed && logProcess.exitCode === null) {
@@ -387,44 +433,46 @@ logProcess.on('close', (code) => {
   shutdown(code ?? 0);
 });
 
-readline.emitKeypressEvents(process.stdin);
-if (process.stdin.isTTY) {
-  process.stdin.setRawMode(true);
+if (!headless) {
+  readline.emitKeypressEvents(process.stdin);
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+  }
+  process.stdin.resume();
+
+  process.stdin.on('keypress', (character, key = {}) => {
+    if (key.ctrl && (key.name === 'd' || key.name === 'c')) {
+      shutdown(0);
+      return;
+    }
+
+    if (!isInteractive) {
+      enterInteractiveMode();
+      return;
+    }
+
+    if (key.name === 'escape') {
+      exitInteractiveMode(null);
+      return;
+    }
+
+    if (key.name === 'return' || key.name === 'enter') {
+      exitInteractiveMode(promptBuffer);
+      return;
+    }
+
+    if (key.name === 'backspace') {
+      promptBuffer = promptBuffer.slice(0, -1);
+      renderInteractivePrompt();
+      return;
+    }
+
+    if (character && !key.ctrl && !key.meta && character >= ' ') {
+      promptBuffer += character;
+      renderInteractivePrompt();
+    }
+  });
 }
-process.stdin.resume();
-
-process.stdin.on('keypress', (character, key = {}) => {
-  if (key.ctrl && (key.name === 'd' || key.name === 'c')) {
-    shutdown(0);
-    return;
-  }
-
-  if (!isInteractive) {
-    enterInteractiveMode();
-    return;
-  }
-
-  if (key.name === 'escape') {
-    exitInteractiveMode(null);
-    return;
-  }
-
-  if (key.name === 'return' || key.name === 'enter') {
-    exitInteractiveMode(promptBuffer);
-    return;
-  }
-
-  if (key.name === 'backspace') {
-    promptBuffer = promptBuffer.slice(0, -1);
-    renderInteractivePrompt();
-    return;
-  }
-
-  if (character && !key.ctrl && !key.meta && character >= ' ') {
-    promptBuffer += character;
-    renderInteractivePrompt();
-  }
-});
 
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
