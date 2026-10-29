@@ -2,40 +2,40 @@
 
 print_help() {
   cat <<'EOF'
-Usage: bash scripts/log-stream-ios.sh [--device UDID] [--module LIST] [--level LEVEL]
+Usage: bash scripts/log-stream-ios.sh [--device UDID] [--subsystem LIST] [--module LIST] [--level LEVEL]
 
-Streams the react-native-audio-api native log (subsystem com.swmansion.audioapi).
-With no --device it uses the first iPhone or iPad connected over USB, and the
-booted simulator when none is.
+Streams iOS logs from the first USB device, or from the booted simulator if none is connected.
+Devices need pymobiledevice3 (pipx install pymobiledevice3).
 
 Options:
-  --device UDID    Stream from this physical device. Requires pymobiledevice3
-                   (pipx install pymobiledevice3), which is also what finds the
-                   first USB device when this is omitted. Without it, the
-                   booted simulator is used. List UDIDs with
-                   'pymobiledevice3 usbmux list --usb'.
-  --module LIST    Keep only these modules (log categories), separated by '|'.
-                   Example: 'AudioEngine|AudioSessionManager'. Default: every module.
-  --level LEVEL    Keep LEVEL and every more severe level, in the order
-                   error, warning, debug, trace. Same meaning as AUDIO_LOG_LEVEL,
-                   which decides what the app prints in the first place.
-                   Default: every level.
-  --help, -h       Show this help.
+  --device UDID       Stream from this device.
+  --subsystem LIST    Subsystems, separated by '|'. A full name is used as-is.
+                      Shortcuts:
+                        audioapi  com.swmansion.audioapi (default)
+                        js        com.facebook.react.log
+                        all       every subsystem
+
+  --module LIST       Log categories, e.g. 'AudioEngine|AudioSessionManager'. Default: all.
+  --level LEVEL       error, warning, debug or trace. Keeps that level and the more severe ones.
+                      Default: all.
+  --help, -h          Show this help.
 
 Examples:
-  yarn workspace fabric-example log:stream:ios
-  yarn workspace fabric-example log:stream:ios --module 'AudioEngine|AudioSessionManager' --level warning
-  yarn workspace fabric-example log:stream:ios --device <udid> --level debug
+  yarn workspace fabric-example log:stream:ios --level warning
+  yarn workspace fabric-example log:stream:ios --subsystem 'audioapi|js' --level trace
+  yarn workspace fabric-example log:stream:ios --subsystem all
 EOF
 }
 
 set -euo pipefail
 
-readonly SUBSYSTEM="com.swmansion.audioapi"
+readonly OWN_SUBSYSTEM="com.swmansion.audioapi"
 readonly LEVELS_BY_SEVERITY=(error warning debug trace)
 readonly MODULE_NAME_PATTERN='^[A-Za-z_][A-Za-z0-9_]*$'
+readonly SUBSYSTEM_NAME_PATTERN='^[A-Za-z0-9][A-Za-z0-9_-]*(\.[A-Za-z0-9_-]+)+$'
 
 device_udid=""
+subsystems="audioapi"
 modules=""
 level=""
 
@@ -43,6 +43,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --device)
       device_udid="${2:?--device needs a UDID}"
+      shift
+      ;;
+    --subsystem)
+      subsystems="${2:?--subsystem needs a value}"
       shift
       ;;
     --module)
@@ -65,6 +69,28 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
+
+selected_subsystems=()
+if [[ "$subsystems" != "all" ]]; then
+  IFS='|' read -r -a subsystem_list <<<"$subsystems"
+  for subsystem in "${subsystem_list[@]}"; do
+    case "$subsystem" in
+      audioapi) selected_subsystems+=("$OWN_SUBSYSTEM") ;;
+      js) selected_subsystems+=("com.facebook.react.log") ;;
+      all)
+        echo "'all' cannot be combined with other subsystems." >&2
+        exit 1
+        ;;
+      *)
+        if [[ ! "$subsystem" =~ $SUBSYSTEM_NAME_PATTERN ]]; then
+          echo "Unknown subsystem: '$subsystem'. Use audioapi, js, all, or a full name such as com.apple.network." >&2
+          exit 1
+        fi
+        selected_subsystems+=("$subsystem")
+        ;;
+    esac
+  done
+fi
 
 selected_modules=()
 if [[ -n "$modules" ]]; then
@@ -89,9 +115,11 @@ if [[ -n "$level" ]]; then
   fi
 fi
 
-# The unified log has no warning or trace type, so the level is matched on the tag that Log.h
-# puts at the start of every message. Log.h writes debug lines as os_log_info and trace lines as
-# os_log_debug, so both backends also skip those log types when the level excludes them.
+# The unified log has no warning or trace type, so for OWN_SUBSYSTEM the level is matched on the
+# tag Log.h puts at the start of every message. Other subsystems carry no such tag, so their level
+# comes from the log type, using the same mapping Log.h uses: debug is info and trace is debug.
+# Dropping those two types is done by the stream itself, for every subsystem. On top of that,
+# `error` keeps only the error and fault types of other subsystems.
 
 stream_from_simulator() {
   if ! xcrun simctl list devices booted | grep -q "(Booted)"; then
@@ -99,16 +127,25 @@ stream_from_simulator() {
     exit 1
   fi
 
-  local predicate="subsystem == \"$SUBSYSTEM\""
+  local clauses=()
+  if [[ ${#selected_subsystems[@]} -gt 0 ]]; then
+    local quoted_subsystems
+    quoted_subsystems="$(printf ', "%s"' "${selected_subsystems[@]}")"
+    clauses+=("subsystem IN {${quoted_subsystems#, }}")
+  fi
   if [[ ${#selected_modules[@]} -gt 0 ]]; then
     local quoted_modules
     quoted_modules="$(printf ', "%s"' "${selected_modules[@]}")"
-    predicate+=" AND category IN {${quoted_modules#, }}"
+    clauses+=("category IN {${quoted_modules#, }}")
   fi
   if [[ ${#selected_levels[@]} -gt 0 ]]; then
     local tag_matches
     tag_matches="$(printf ' OR eventMessage BEGINSWITH "[%s]"' "${selected_levels[@]}")"
-    predicate+=" AND (${tag_matches# OR })"
+    local other_subsystems="subsystem != \"$OWN_SUBSYSTEM\""
+    if [[ "$level" == "error" ]]; then
+      other_subsystems+=' AND (messageType == "error" OR messageType == "fault")'
+    fi
+    clauses+=("((subsystem == \"$OWN_SUBSYSTEM\" AND (${tag_matches# OR })) OR ($other_subsystems))")
   fi
 
   local stream_level
@@ -118,10 +155,13 @@ stream_from_simulator() {
     *) stream_level="debug" ;;
   esac
 
-  exec xcrun simctl spawn booted log stream \
-    --style compact \
-    --level "$stream_level" \
-    --predicate "$predicate"
+  local arguments=(log stream --style compact --level "$stream_level")
+  if [[ ${#clauses[@]} -gt 0 ]]; then
+    local predicate
+    predicate="$(printf ' AND %s' "${clauses[@]}")"
+    arguments+=(--predicate "${predicate# AND }")
+  fi
+  exec xcrun simctl spawn booted "${arguments[@]}"
 }
 
 # Apple's tools cannot stream a device log: `log stream` has no device option, and
@@ -133,7 +173,11 @@ stream_from_device() {
     exit 1
   fi
 
-  local arguments=(syslog live --udid "$device_udid" --subsystem "$SUBSYSTEM" --label)
+  local arguments=(syslog live --udid "$device_udid" --label)
+  local subsystem
+  for subsystem in "${selected_subsystems[@]+"${selected_subsystems[@]}"}"; do
+    arguments+=(--subsystem "$subsystem")
+  done
   local module
   for module in "${selected_modules[@]+"${selected_modules[@]}"}"; do
     arguments+=(--category "$module")
@@ -143,10 +187,17 @@ stream_from_device() {
     debug) arguments+=(--no-debug) ;;
   esac
   if [[ ${#selected_levels[@]} -gt 0 ]]; then
-    # pymobiledevice3 renders "... <LEVEL>: message", so ">: " anchors the tag to the message start.
+    # A line is "<time> <process>{<image>}[<pid>] <TYPE>: <message> [<subsystem>][<category>]",
+    # and a line is kept when any --regex matches it.
+    local own_label="\\[${OWN_SUBSYSTEM//./\\.}\\]\\[[^]]*\\]\$"
     local level_alternatives
     level_alternatives="$(IFS='|'; echo "${selected_levels[*]}")"
-    arguments+=(--regex ">: \\[($level_alternatives)\\] ")
+    local other_subsystem_line="^(?!.* $own_label)"
+    if [[ "$level" == "error" ]]; then
+      other_subsystem_line+=".*?\\] <(ERROR|FAULT)>: "
+    fi
+    arguments+=(--regex ">: \\[($level_alternatives)\\] .* $own_label")
+    arguments+=(--regex "$other_subsystem_line")
   fi
 
   exec pymobiledevice3 "${arguments[@]}"
