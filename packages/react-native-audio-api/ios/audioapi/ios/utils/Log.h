@@ -17,8 +17,9 @@
  *
  * Each line starts with its level in brackets (`[error]`, `[warning]`, `[debug]`, `[trace]`),
  * because the unified log has no warning or trace type: filter on that tag, not on the log type.
- * Debug lines are `os_log_info` and trace lines are `os_log_debug`, which the system drops unless
- * a debugger is attached or `log config --mode "level:debug"` is set for the subsystem.
+ * Debug lines are `os_log_info` and trace lines are `os_log_debug`. The system does not persist
+ * them by default, so they reach only live readers: an attached debugger or
+ * `log stream --level debug` (`apps/fabric-example/scripts/log-stream-ios.sh`).
  *
  * Debug builds print the levels up to the one named by the `AUDIO_LOG_LEVEL` environment variable
  * (`error`, `warning`, `debug`, `trace`), read once per launch; absent or unrecognized means
