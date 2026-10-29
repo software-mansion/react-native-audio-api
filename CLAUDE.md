@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 ### Monorepo Structure
+
 ```
 packages/react-native-audio-api/   # Main library
 apps/common-app/                   # Example RN app
@@ -26,6 +27,7 @@ packages/custom-node-generator/    # Code generation tooling
 4. **iOS Native** (`ios/audioapi/ios/`) — Objective-C++ (`.mm`), CocoaPods (`RNAudioAPI.podspec`), CoreAudio I/O
 
 ### Key Architectural Patterns
+
 - **JSI**: Audio nodes are exposed as C++ JSI HostObjects — no bridge serialization
 - **Audio Thread Safety**: Real-time audio processing happens on a dedicated audio thread; JS-side calls must not block it
 - **Dual Platform**: TypeScript code has separate paths for React Native (native engine) and Web (delegates to browser Web Audio API)
@@ -39,6 +41,7 @@ packages/custom-node-generator/    # Code generation tooling
 - **Testable C++ dependencies**: consumers take interface types (`std::shared_ptr<I…>`); construct concrete implementations only at platform bootstrap. Example: audio event registry (use `IAudioEventHandlerRegistry` more often than `AudioEventHandlerRegistry`).
 
 ### Native Module Entry Points
+
 - iOS: `ios/audioapi/ios/AudioAPIModule.mm`
 - Android: `android/src/main/java/com/swmansion/audioapi/AudioAPIModule.kt`
 - TurboModule spec: `src/specs/NativeAudioAPIModule.ts`
@@ -47,12 +50,12 @@ packages/custom-node-generator/    # Code generation tooling
 
 The following URLs can be fetched without approval and are useful during development:
 
-| URL | When to use |
-|---|---|
-| https://webaudio.github.io/web-audio-api/ | Web Audio API W3C spec — parameter defaults, processing semantics, error conditions |
-| https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API | MDN — friendlier spec reference, examples |
-| https://en.cppreference.com/ | C++ standard library reference — containers, algorithms, atomics, memory model |
-| https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules | RN New Architecture — TurboModules, JSI, fbjni patterns |
+| URL                                                                | When to use                                                                         |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| https://webaudio.github.io/web-audio-api/                          | Web Audio API W3C spec — parameter defaults, processing semantics, error conditions |
+| https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API     | MDN — friendlier spec reference, examples                                           |
+| https://en.cppreference.com/                                       | C++ standard library reference — containers, algorithms, atomics, memory model      |
+| https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules | RN New Architecture — TurboModules, JSI, fbjni patterns                             |
 
 Fetch these proactively when implementing a new node (to check spec compliance), when using an unfamiliar C++ stdlib class, or when working on the TurboModule / JSI installation layer.
 
@@ -72,12 +75,12 @@ The user expects Claude to make these parallelization decisions without being pr
 
 When implementing anything new, mirror structure and style from these proven files. Ask the agent to explain any intentional deviation.
 
-| Task | Reference file(s) |
-|---|---|
-| New C++ effect/analysis node | `common/cpp/audioapi/core/effects/GainNode.h` + `.cpp` |
-| New JSI HostObject | `common/cpp/audioapi/HostObjects/effects/GainNodeHostObject.h` + `.cpp` |
-| New scheduled source node | `common/cpp/audioapi/core/sources/OscillatorNode.h` + `.cpp` |
-| New TypeScript API class | `packages/react-native-audio-api/src/core/GainNode.ts` |
+| Task                         | Reference file(s)                                                       |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| New C++ effect/analysis node | `common/cpp/audioapi/core/effects/GainNode.h` + `.cpp`                  |
+| New JSI HostObject           | `common/cpp/audioapi/HostObjects/effects/GainNodeHostObject.h` + `.cpp` |
+| New scheduled source node    | `common/cpp/audioapi/core/sources/OscillatorNode.h` + `.cpp`            |
+| New TypeScript API class     | `packages/react-native-audio-api/src/core/GainNode.ts`                  |
 
 ### Writing Expressive Code
 
@@ -89,19 +92,20 @@ Before adding or modifying source code, read and follow `.claude/skills/expressi
 
 Detailed skill files live in `.claude/skills/`. Each skill lives in its own directory as `<name>/SKILL.md` and is auto-loaded by Claude Code based on YAML frontmatter trigger phrases. Consult the relevant skill before starting work in that area.
 
-| Skill directory | Domain |
-|---|---|
-| `host-objects/` | C++ JSI HostObject layer — creating and maintaining HostObjects |
-| `audio-nodes/` | C++ audio node engine — implementing and connecting audio nodes |
-| `turbo-modules/` | TurboModule/JSI wiring — spec → native → HostObject installation |
-| `web-audio-api/` | Web Audio API spec conformance and browser passthrough layer |
-| `build-compilation-dependencies/` | CMake, Gradle, podspec, prebuilt libraries |
-| `thread-safety-itc/` | Audio thread safety, lock-free patterns, event system |
-| `post-work-checks/` | Ordered checklist to run after every change |
-| `flow/` | End-to-end feature implementation flow (tests + docs required) |
-| `utilities/` | Shared DSP and C++/TS utility helpers |
-| `expressive-code/` | Naming and comment style — self-documenting code, when to comment, anti-patterns |
-| `writing-skills/` | How to write, structure, and maintain skill files |
+| Skill directory                   | Domain                                                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `host-objects/`                   | C++ JSI HostObject layer — creating and maintaining HostObjects                                                   |
+| `audio-nodes/`                    | C++ audio node engine — implementing and connecting audio nodes                                                   |
+| `turbo-modules/`                  | TurboModule/JSI wiring — spec → native → HostObject installation                                                  |
+| `web-audio-api/`                  | Web Audio API spec conformance and browser passthrough layer                                                      |
+| `build-compilation-dependencies/` | CMake, Gradle, podspec, prebuilt libraries                                                                        |
+| `thread-safety-itc/`              | Audio thread safety, lock-free patterns, event system                                                             |
+| `post-work-checks/`               | Ordered checklist to run after every change                                                                       |
+| `flow/`                           | End-to-end feature implementation flow (tests + docs required)                                                    |
+| `utilities/`                      | Shared DSP and C++/TS utility helpers                                                                             |
+| `semi-automated-tests/`           | Semi-automated E2E tests in `apps/fabric-example/tests/` (Argent fragments + human prompts + log/journal capture) |
+| `expressive-code/`                | Naming and comment style — self-documenting code, when to comment, anti-patterns                                  |
+| `writing-skills/`                 | How to write, structure, and maintain skill files                                                                 |
 
 See `.claude/README.md` for a full description of the Claude Code setup and the `/pre-push-update` command.
 
