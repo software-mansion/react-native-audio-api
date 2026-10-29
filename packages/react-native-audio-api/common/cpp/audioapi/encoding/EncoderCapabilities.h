@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/encoding/BundledEncoders.h>
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/Result.hpp>
@@ -70,7 +69,7 @@ static_assert(
     "Every AudioFileProperties::FileFormat needs an entry in kSpecsByFormat");
 
 /// Formats this platform can write. Opus in Ogg comes from the bundled encoder on every
-/// platform (see OSEncoding.h); without it, iOS loses the format and Android falls back to
+/// platform (see EncoderFactory.cpp); without it, iOS loses the format and Android falls back to
 /// AMediaMuxer, which writes it on Android 14 and later only.
 #ifdef __APPLE__
 inline constexpr std::array kSupportedFormats = {
@@ -83,7 +82,7 @@ inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::ULAW,
     AudioFileProperties::FileFormat::ALAW,
     AudioFileProperties::FileFormat::ADTS,
-#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+#if !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
     AudioFileProperties::FileFormat::OPUS_OGG,
 #endif
 };
@@ -97,7 +96,7 @@ inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::VORBIS_WEBM,
     AudioFileProperties::FileFormat::ADTS,
 };
-#elif RN_AUDIO_API_BUNDLED_OGG_OPUS
+#elif !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
 inline constexpr std::array kSupportedFormats = {
     AudioFileProperties::FileFormat::OPUS_OGG,
 };

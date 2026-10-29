@@ -1,6 +1,6 @@
 #include <audioapi/encoding/OggStreamWriter.h>
 
-#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+#if !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
 
 #include <cstdio>
 #include <random>
@@ -106,4 +106,4 @@ Result<NoneType, std::string> OggStreamWriter::writeBytes(const unsigned char *d
 
 } // namespace audioapi::ogg_opus
 
-#endif // RN_AUDIO_API_BUNDLED_OGG_OPUS
+#endif // !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED

@@ -1,12 +1,11 @@
 #pragma once
 
-#include <audioapi/encoding/BundledEncoders.h>
 #include <audioapi/utils/Result.hpp>
 
 #include <string>
 #include <vector>
 
-#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+#if !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
 
 namespace audioapi::ogg_opus {
 
@@ -23,4 +22,4 @@ namespace audioapi::ogg_opus {
 
 } // namespace audioapi::ogg_opus
 
-#endif // RN_AUDIO_API_BUNDLED_OGG_OPUS
+#endif // !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED

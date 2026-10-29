@@ -28,7 +28,7 @@ WAV and FLAC decode the segments and write them out again through the system
 encoder — WAV as 32-bit float PCM, FLAC losslessly. M4A remuxes AAC packets
 with system APIs — iOS AVFoundation and Android MediaExtractor/MediaMuxer.
 OGG re-pages the Opus packets with the bundled libogg on both platforms, so it is
-unavailable when the package's static libraries are disabled with `disableStaticExternalLibs`.
+unavailable when the package's static libraries are disabled with [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries).
 
 ADTS (`.aac`) appends complete encoded frames without decoding or re-encoding.
 Inputs must use the same sample rate and channel configuration. An incomplete

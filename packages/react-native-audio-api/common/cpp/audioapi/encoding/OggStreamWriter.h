@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/encoding/BundledEncoders.h>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 
@@ -10,7 +9,7 @@
 #include <cstdio>
 #include <string>
 
-#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+#if !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
 
 #include <audioapi/external/include/ogg/ogg.h>
 
@@ -59,4 +58,4 @@ class OggStreamWriter {
 
 } // namespace audioapi::ogg_opus
 
-#endif // RN_AUDIO_API_BUNDLED_OGG_OPUS
+#endif // !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED

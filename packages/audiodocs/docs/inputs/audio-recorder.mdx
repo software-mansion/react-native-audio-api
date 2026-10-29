@@ -997,8 +997,6 @@ restarts at `_001` every time. Make the name unique per recording yourself.
 
 Describes desired file extension as well as codecs, containers (and muxers!) used to encode the file.
 
-Because each platform exposes a different set of encoders, format support is platform-specific.
-
 ```tsx
 enum FileFormat {
   Wav,
@@ -1016,7 +1014,7 @@ enum FileFormat {
 }
 ```
 
-The table below lists which formats each platform can encode:
+Each platform exposes a different set of encoders, making format support platform-specific. The table below lists which formats each platform can encode:
 
 | `FileFormat` | Container / codec | iOS | Android |
 | :--- | :--- | :---: | :---: |
@@ -1047,7 +1045,7 @@ Selecting a format the current platform cannot encode (for example `Caf` on Andr
 :::
 
 :::note Opus
-Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through `disableStaticExternalLibs`, it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
+Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries), it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
 :::
 
 #### FileInfo

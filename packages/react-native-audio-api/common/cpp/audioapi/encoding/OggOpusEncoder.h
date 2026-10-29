@@ -1,14 +1,13 @@
 #pragma once
 
 #include <audioapi/encoding/AudioEncoder.h>
-#include <audioapi/encoding/BundledEncoders.h>
 #include <audioapi/utils/Result.hpp>
 
 #include <cstddef>
 #include <memory>
 #include <string>
 
-#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+#if !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
 
 namespace audioapi::ogg_opus {
 
@@ -59,4 +58,4 @@ class OggOpusEncoder final : public AudioEncoder {
 
 } // namespace audioapi::ogg_opus
 
-#endif // RN_AUDIO_API_BUNDLED_OGG_OPUS
+#endif // !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED

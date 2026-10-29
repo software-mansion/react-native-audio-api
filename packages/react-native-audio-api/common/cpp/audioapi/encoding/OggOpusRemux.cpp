@@ -1,7 +1,7 @@
 #include <audioapi/encoding/OggOpusRemux.h>
 #include "audioapi/utils/Macros.h"
 
-#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+#if !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
 
 #include <audioapi/encoding/OggStreamWriter.h>
 #include <audioapi/external/include/ogg/ogg.h>
@@ -261,4 +261,4 @@ Result<std::string, std::string> concatOggOpusFiles(
 
 } // namespace audioapi::ogg_opus
 
-#endif // RN_AUDIO_API_BUNDLED_OGG_OPUS
+#endif // !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED

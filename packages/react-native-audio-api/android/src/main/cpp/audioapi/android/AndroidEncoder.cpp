@@ -3,7 +3,6 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/encoding/AdtsHeader.h>
-#include <audioapi/encoding/BundledEncoders.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/FileSystem.hpp>
@@ -26,13 +25,11 @@
 #include <utility>
 #include <vector>
 
-#if !RN_AUDIO_API_BUNDLED_OGG_OPUS
-// Without the bundled encoder, Opus in Ogg goes through AMediaMuxer, which writes that
-// container from API level 34 on. The constant arrived in the NDK headers at the same level,
-// so a numeric fallback keeps older NDKs compiling; the device OS still decides at runtime.
+// AMediaMuxer writes Ogg from API level 34 on. The constant arrived in the NDK headers at the
+// same level, so a numeric fallback keeps older NDKs compiling; the device OS still decides at
+// runtime.
 #ifndef AMEDIAMUXER_OUTPUT_FORMAT_OGG
 #define AMEDIAMUXER_OUTPUT_FORMAT_OGG 4
-#endif
 #endif
 
 // NOLINTBEGIN
@@ -469,9 +466,9 @@ class MediaCodecBackend : public IEncoderBackend {
 };
 
 // ---------------------------------------------------------------------------
-// Muxed backend — AAC in M4A, Opus and Vorbis in WebM via AMediaMuxer. Opus in Ogg goes
-// through the bundled encoder (see OSEncoding.h), as on every platform; a build without it
-// muxes Ogg here, on Android 14 and later.
+// Muxed backend — AAC in M4A, Opus and Vorbis in WebM, and Opus in Ogg (Android 14 and later)
+// via AMediaMuxer. encoding::createEncoder (EncoderFactory.cpp) sends Opus in Ogg to the bundled
+// encoder instead whenever the build has it, so Ogg reaches this backend only without it.
 // ---------------------------------------------------------------------------
 
 class MuxedBackend : public MediaCodecBackend {
@@ -502,11 +499,7 @@ class MuxedBackend : public MediaCodecBackend {
         if (outputSpec.container == AudioContainer::WEBM) {
           muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
         } else {
-#if RN_AUDIO_API_BUNDLED_OGG_OPUS
-          return "MuxedBackend: Opus in Ogg goes through the bundled encoder";
-#else
           muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_OGG;
-#endif
         }
         break;
       case AudioCodec::VORBIS:

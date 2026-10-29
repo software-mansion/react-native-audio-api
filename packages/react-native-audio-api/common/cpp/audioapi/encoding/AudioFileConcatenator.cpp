@@ -3,8 +3,8 @@
 #include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/encoding/AdtsHeader.h>
 #include <audioapi/encoding/AudioFileConcatenator.h>
-#include <audioapi/encoding/BundledEncoders.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
+#include <audioapi/encoding/EncoderFactory.h>
 #include <audioapi/encoding/OSEncoding.h>
 #include <audioapi/encoding/OSRemux.h>
 #include <audioapi/encoding/OggOpusRemux.h>
@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -75,11 +76,43 @@ ValidationResult validatePaths(
 /// carry the same extension.
 constexpr std::array CONCAT_OUTPUT_FORMATS =
     {FileFormat::WAV, FileFormat::M4A, FileFormat::FLAC, FileFormat::ADTS, FileFormat::OPUS_OGG};
-constexpr const char *UNSUPPORTED_OUTPUT_FORMAT =
-    "concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) output.";
 
 std::string extensionOf(FileFormat format) {
   return std::string(encoder_capabilities::specForFormat(format).extension);
+}
+
+std::string toUpper(std::string text) {
+  std::ranges::transform(text, text.begin(), [](unsigned char character) {
+    return static_cast<char>(std::toupper(character));
+  });
+  return text;
+}
+
+/// How concat errors name @p format, one of CONCAT_OUTPUT_FORMATS.
+std::string concatFormatName(FileFormat format) {
+  switch (format) {
+    case FileFormat::ADTS:
+      return "ADTS";
+    case FileFormat::OPUS_OGG:
+      return "OGG";
+    default:
+      return toUpper(extensionOf(format));
+  }
+}
+
+/// Concat never converts between containers, so every input must carry the output's extension.
+ValidationResult validateInputExtensions(
+    const std::vector<std::string> &inputPaths,
+    FileFormat outputFormat) {
+  const std::string extension = extensionOf(outputFormat);
+  for (const auto &inputPath : inputPaths) {
+    if (!path::hasExtension(inputPath, {extension})) {
+      return Err(
+          "concatAudioFiles " + concatFormatName(outputFormat) +
+          " output requires all input files to use the " + toUpper(extension) + " extension.");
+    }
+  }
+  return Ok(None);
 }
 
 std::optional<FileFormat> outputFormatForPath(const std::string &path) {
@@ -248,12 +281,6 @@ ValidationResult validateRiffWaveOutputSize(
 AudioFileConcatResult concatAudioFilesWithOsRemux(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
-  for (const auto &inputPath : inputPaths) {
-    if (!path::hasExtension(inputPath, {extensionOf(FileFormat::M4A)})) {
-      return Err("concatAudioFiles M4A output requires all input files to use the M4A extension.");
-    }
-  }
-
   return remuxConcatAudioFiles(inputPaths, outputPath);
 }
 
@@ -261,15 +288,10 @@ AudioFileConcatResult concatAudioFilesWithOsRemux(
 AudioFileConcatResult concatAudioFilesWithOggOpusRemux(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
-  for (const auto &inputPath : inputPaths) {
-    if (!path::hasExtension(inputPath, {extensionOf(FileFormat::OPUS_OGG)})) {
-      return Err("concatAudioFiles OGG output requires all input files to use the OGG extension.");
-    }
-  }
-
-#if RN_AUDIO_API_BUNDLED_OGG_OPUS
+#if !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
   return ogg_opus::concatOggOpusFiles(inputPaths, outputPath);
 #else
+  (void)inputPaths;
   (void)outputPath;
   return Err("concatAudioFiles OGG output requires the bundled Opus libraries.");
 #endif
@@ -300,15 +322,7 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
     const EncoderFactory &createEncoder) {
   const EncoderOutputSpec outputSpec = encoder_capabilities::specForFormat(format);
   const bool isWav = format == FileFormat::WAV;
-  const std::string formatName = isWav ? "WAV" : "FLAC";
-
-  for (const auto &inputPath : inputPaths) {
-    if (!path::hasExtension(inputPath, {std::string(outputSpec.extension)})) {
-      return Err(
-          "concatAudioFiles " + formatName + " output requires all input files to use the " +
-          formatName + " extension.");
-    }
-  }
+  const std::string formatName = concatFormatName(format);
 
   const std::string unavailableError =
       "concatAudioFiles " + formatName + " output requires iOS or Android.";
@@ -495,12 +509,6 @@ appendLeadingBytes(const std::string &inputPath, std::streamoff byteCount, std::
 AudioFileConcatResult concatAudioFilesWithFrameAppend(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
-  for (const auto &inputPath : inputPaths) {
-    if (!path::hasExtension(inputPath, {extensionOf(FileFormat::ADTS)})) {
-      return Err("concatAudioFiles ADTS output requires all input files to use the AAC extension.");
-    }
-  }
-
   std::vector<AdtsInputInfo> inputs;
   inputs.reserve(inputPaths.size());
   for (const auto &inputPath : inputPaths) {
@@ -541,9 +549,31 @@ AudioFileConcatResult concatAudioFilesWithFrameAppend(
   return Ok(outputPath);
 }
 
+/// Writes @p inputPaths to @p outputPath in @p format through the path that format takes:
+/// a remux, a frame append, or a decode and re-encode.
+AudioFileConcatResult concatAudioFilesAs(
+    FileFormat format,
+    const std::vector<std::string> &inputPaths,
+    const std::string &outputPath,
+    const EncoderFactory &createEncoder) {
+  switch (format) {
+    case FileFormat::M4A:
+      return concatAudioFilesWithOsRemux(inputPaths, outputPath);
+    case FileFormat::ADTS:
+      return concatAudioFilesWithFrameAppend(inputPaths, outputPath);
+    case FileFormat::OPUS_OGG:
+      return concatAudioFilesWithOggOpusRemux(inputPaths, outputPath);
+    case FileFormat::WAV:
+    case FileFormat::FLAC:
+      return concatAudioFilesWithEncoder(inputPaths, outputPath, format, createEncoder);
+    default:
+      return Err("concatAudioFiles cannot write ." + extensionOf(format) + " output.");
+  }
+}
+
 EncoderFactory platformEncoderFactory() {
 #if RN_AUDIO_API_HAS_OS_ENCODER
-  return &createPlatformEncoder;
+  return &encoding::createEncoder;
 #else
   return {};
 #endif
@@ -580,25 +610,18 @@ AudioFileConcatResult concatAudioFiles(
   // re-encoded through the system encoder: WAV as float32 PCM, FLAC losslessly.
   const auto outputFormat = outputFormatForPath(normalizedOutputPath);
   if (!outputFormat.has_value()) {
-    return Err(UNSUPPORTED_OUTPUT_FORMAT);
+    return Err("concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) output.");
+  }
+  auto extensionValidationResult = validateInputExtensions(normalizedInputPaths, *outputFormat);
+  if (extensionValidationResult.is_err()) {
+    return Err(std::move(extensionValidationResult).unwrap_err());
   }
 
   // The output is written under a staging name and moved into place once complete, so a failure
   // never leaves a truncated file at the output path and the output may be one of the inputs.
   const std::string stagingPath = makeStagingPath(normalizedOutputPath);
-  AudioFileConcatResult result = [&] {
-    switch (*outputFormat) {
-      case FileFormat::M4A:
-        return concatAudioFilesWithOsRemux(normalizedInputPaths, stagingPath);
-      case FileFormat::ADTS:
-        return concatAudioFilesWithFrameAppend(normalizedInputPaths, stagingPath);
-      case FileFormat::OPUS_OGG:
-        return concatAudioFilesWithOggOpusRemux(normalizedInputPaths, stagingPath);
-      default:
-        return concatAudioFilesWithEncoder(
-            normalizedInputPaths, stagingPath, *outputFormat, createEncoder);
-    }
-  }();
+  AudioFileConcatResult result =
+      concatAudioFilesAs(*outputFormat, normalizedInputPaths, stagingPath, createEncoder);
   if (result.is_err()) {
     file_system::removeFile(stagingPath);
     return Err(std::move(result).unwrap_err());

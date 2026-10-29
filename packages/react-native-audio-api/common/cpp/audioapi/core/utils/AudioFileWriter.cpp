@@ -1,7 +1,7 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/RecordingFileName.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
-#include <audioapi/encoding/OSEncoding.h>
+#include <audioapi/encoding/EncoderFactory.h>
 #include <audioapi/encoding/OSFilePath.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/events/AudioEventPayload.h>
@@ -29,7 +29,7 @@ const PlatformFileBackend &osFileBackend() {
   static const PlatformFileBackend backend{
       .resolveOutputSpec = &encoder_capabilities::resolveOutputSpec,
       .resolvePath = &resolveOsFilePath,
-      .createEncoder = &createPlatformEncoder,
+      .createEncoder = &encoding::createEncoder,
   };
   return backend;
 }
