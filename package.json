@@ -23,6 +23,8 @@
     "check-audio-enum-sync": "bash packages/react-native-audio-api/scripts/check-enum-sync.sh",
     "android": "yarn workspace fabric-example build-and-run:android",
     "ios": "yarn workspace fabric-example build-and-run:ios",
+    "journal-execution": "yarn workspace fabric-example journal-execution",
+    "journal-view": "yarn workspace fabric-example journal-view",
     "server": "yarn workspace fabric-example server",
     "start": "yarn workspace fabric-example start",
     "validate:fast": "bash scripts/validate.sh --fast",
