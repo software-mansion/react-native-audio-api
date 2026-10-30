@@ -123,3 +123,7 @@ build-coverage/
 *.profraw
 *.profdata
 coverage-html/
+
+# Fabric example execution logs and journals
+apps/fabric-example/logs/
+
