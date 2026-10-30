@@ -1,0 +1,5 @@
+executionPrerequisite: Audio I/O Playground is open after the warmup take finished playing
+steps:
+  - echo: Start the recording that will be interrupted in the background
+  - tap: { id: recorder-start }
+  - await: { text: { in: { id: recorder-status }, matches: '^recording ' } }

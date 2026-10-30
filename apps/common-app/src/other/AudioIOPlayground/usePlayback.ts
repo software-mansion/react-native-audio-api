@@ -25,6 +25,7 @@ const CALLS = {
   suspend: 'context.suspend()',
   resume: 'context.resume()',
   stop: 'source.stop()',
+  disconnect: 'source.disconnect()',
   close: 'context.close()',
 };
 
@@ -36,6 +37,7 @@ export const PLAYBACK_CALLS = {
   pause: CALLS.suspend,
   resume: CALLS.resume,
   stop: CALLS.stop,
+  disconnect: CALLS.disconnect,
   options: 'the options the current context was created with',
   recreate:
     'context = new AudioContext(<options above>); ' +
@@ -164,5 +166,19 @@ export function usePlayback(log: Log, lastTakePath: string | null) {
     logAction(log, CALLS.stop, () => source.stop());
   }, [log]);
 
-  return { status, options, play, pause, resume, stop, recreate };
+  const disconnect = useCallback(() => {
+    const source = sourceRef.current;
+    if (!source) {
+      log(`${CALLS.disconnect}: no source`);
+      return;
+    }
+    logAction(log, CALLS.disconnect, () => {
+      release(source);
+      if (sourceRef.current === source) {
+        sourceRef.current = null;
+      }
+    });
+  }, [log]);
+
+  return { status, options, play, pause, resume, stop, disconnect, recreate };
 }

@@ -39,7 +39,7 @@ const RecordButton: FC<RecordButtonProps> = ({ state, onToggleState }) => {
   }, [onToggleState, state]);
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable testID="record-toggle" onPress={onPress}>
       {({ pressed }) => <RecordButtonInner pressed={pressed} state={state} />}
     </Pressable>
   );

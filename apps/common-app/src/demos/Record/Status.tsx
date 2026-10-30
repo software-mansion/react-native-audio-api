@@ -26,7 +26,9 @@ const Status: FC<StatusProps> = ({ state }) => {
 
   return (
     <View style={styles.statusView}>
-      <Text style={styles.statusText}>{statusText}</Text>
+      <Text testID="record-status" style={styles.statusText}>
+        {statusText}
+      </Text>
     </View>
   );
 };

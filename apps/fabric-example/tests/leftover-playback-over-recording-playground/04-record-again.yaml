@@ -1,0 +1,9 @@
+executionPrerequisite: Audio I/O Playground has started or finished playback of the interrupted take
+steps:
+  - echo: Disconnect the playback source, then start another recording
+  - when: { text: { in: { id: playback-status }, contains: source playing } }
+    steps:
+      - tap: { id: playback-disconnect }
+      - await: { text: { in: { id: playback-status }, contains: "no source" } }
+  - tap: { id: recorder-start }
+  - await: { text: { in: { id: recorder-status }, matches: '^recording ' } }

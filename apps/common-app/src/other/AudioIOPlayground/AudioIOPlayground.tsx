@@ -9,11 +9,13 @@ import LogView from './LogView';
 import PlaybackPanel from './PlaybackPanel';
 import RecorderPanel from './RecorderPanel';
 import SystemPanel from './SystemPanel';
+import { CompactContext } from './ui';
 import { usePlayback } from './usePlayback';
 import { useRecorder } from './useRecorder';
 import { useSystemEventLog } from './useSystemEventLog';
 
 const AudioIOPlayground: FC = () => {
+  const [isCompact, setCompact] = useState(false);
   const { entries, log, clear } = useLog();
   const [lastTakePath, setLastTakePath] = useState<string | null>(null);
   useSystemEventLog(log);
@@ -22,19 +24,30 @@ const AudioIOPlayground: FC = () => {
   const playback = usePlayback(log, lastTakePath);
 
   return (
-    <Container disablePadding>
-      <ScrollView contentContainerStyle={styles.panels}>
-        <SystemPanel
-          log={log}
-          onRecreateRecorder={recorder.recreate}
-          onRecreateContext={playback.recreate}
+    <CompactContext.Provider value={isCompact}>
+      <Container disablePadding>
+        <ScrollView
+          contentContainerStyle={[
+            styles.panels,
+            isCompact && styles.compactPanels,
+          ]}
+        >
+          <SystemPanel
+            log={log}
+            onRecreateRecorder={recorder.recreate}
+            onRecreateContext={playback.recreate}
+          />
+          <RecorderPanel recorder={recorder} />
+          <PlaybackPanel playback={playback} lastTakePath={lastTakePath} />
+          <DevicePanel log={log} />
+        </ScrollView>
+        <LogView
+          entries={entries}
+          onToggleCompact={() => setCompact((current) => !current)}
+          onClear={clear}
         />
-        <RecorderPanel recorder={recorder} />
-        <PlaybackPanel playback={playback} lastTakePath={lastTakePath} />
-        <DevicePanel log={log} />
-      </ScrollView>
-      <LogView entries={entries} onClear={clear} />
-    </Container>
+      </Container>
+    </CompactContext.Provider>
   );
 };
 
@@ -43,5 +56,8 @@ export default AudioIOPlayground;
 const styles = StyleSheet.create({
   panels: {
     paddingHorizontal: 2 * layout.spacing,
+  },
+  compactPanels: {
+    paddingHorizontal: layout.spacing,
   },
 });
