@@ -3,6 +3,8 @@
 #import <audioapi/ios/system/notification/NotificationQueueAssertions.h>
 #import <audioapi/ios/system/notification/NotificationRegistry.h>
 #import <audioapi/ios/system/notification/PlaybackNotification.h>
+#define LOG_MODULE NotificationRegistry
+#import <audioapi/ios/utils/Log.h>
 
 @implementation NotificationRegistry {
   NSMutableDictionary<NSString *, id<BaseNotification>> *_notifications;
@@ -65,7 +67,7 @@
   AUDIOAPI_ASSERT_ON_QUEUE(dispatch_get_main_queue());
 
   if (!key) {
-    NSLog(@"[NotificationRegistry] Invalid key");
+    AUDIO_LOG_ERROR("Invalid key");
     return false;
   }
 
@@ -74,14 +76,14 @@
   bool created = false;
   if (!notification) {
     if (!type) {
-      NSLog(@"[NotificationRegistry] Type required for new notification: %@", key);
+      AUDIO_LOG_ERROR("Type required for new notification: %{public}@", key);
       return false;
     }
 
     notification = [self createNotificationForType:type];
 
     if (!notification) {
-      NSLog(@"[NotificationRegistry] Unknown notification type: %@", type);
+      AUDIO_LOG_ERROR("Unknown notification type: %{public}@", type);
       return false;
     }
 
@@ -92,7 +94,7 @@
   BOOL success = [notification showWithOptions:options];
 
   if (created && !success) {
-    NSLog(@"[NotificationRegistry] Failed to show notification: %@", key);
+    AUDIO_LOG_ERROR("Failed to show notification: %{public}@", key);
   }
 
   return success;
@@ -105,14 +107,14 @@
   id<BaseNotification> notification = _notifications[key];
 
   if (!notification) {
-    NSLog(@"[NotificationRegistry] No notification found with key: %@", key);
+    AUDIO_LOG_WARNING("No notification found with key: %{public}@", key);
     return false;
   }
 
   BOOL success = [notification hide];
 
   if (!success) {
-    NSLog(@"[NotificationRegistry] Failed to hide notification: %@", key);
+    AUDIO_LOG_ERROR("Failed to hide notification: %{public}@", key);
   }
 
   return success;
