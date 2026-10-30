@@ -745,7 +745,7 @@
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
 
   XCTAssertFalse([self.audioEngine startIfNecessary]);
-  XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
   XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
   XCTAssertEqual(fakeEngine.startCallCount, 0);
 }
