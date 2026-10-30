@@ -8,6 +8,7 @@ interface ButtonProps {
   onPress: () => void;
   disabled?: boolean;
   width?: number;
+  testID?: string;
 }
 
 const Button: FC<ButtonProps> = ({
@@ -15,9 +16,11 @@ const Button: FC<ButtonProps> = ({
   onPress,
   disabled = false,
   width = 100,
+  testID,
 }) => {
   return (
     <Pressable
+      testID={testID}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [

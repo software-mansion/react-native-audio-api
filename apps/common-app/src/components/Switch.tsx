@@ -11,12 +11,13 @@ import { colors } from '../styles';
 interface SwitchProps {
   value: boolean;
   onValueChange: (value: boolean) => void;
+  testID?: string;
 }
 
 const size = 24;
 
 const Switch: FC<SwitchProps> = (props) => {
-  const { value, onValueChange } = props;
+  const { value, onValueChange, testID } = props;
 
   const onPress = () => {
     onValueChange(!value);
@@ -35,7 +36,7 @@ const Switch: FC<SwitchProps> = (props) => {
   }));
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable testID={testID} onPress={onPress}>
       <Animated.View style={[styles.container, containerStyle]}>
         <Animated.View
           collapsable={false}
