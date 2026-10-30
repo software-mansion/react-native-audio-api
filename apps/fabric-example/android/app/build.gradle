@@ -2,6 +2,14 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+// Resolves a package directory with Node, so these paths hold for hoisted and isolated
+// node_modules alike. Packages react-native depends on are resolved from its location.
+def resolvePackageDir(String name) {
+    def fromReactNative = name == "react-native" ? "" : ", {paths: [require.resolve('react-native/package.json')]}"
+    def script = "require.resolve('${name}/package.json'${fromReactNative})"
+    return new File(["node", "--print", script].execute(null, projectDir).text.trim()).parentFile
+}
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -11,11 +19,11 @@ react {
     //   The root of your project, i.e. where "package.json" lives. Default is '../..'
     // root = file("../../")
     //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
-    reactNativeDir = file("../../../../node_modules/react-native")
+    reactNativeDir = resolvePackageDir("react-native")
     //   The folder where the react-native Codegen package is. Default is ../../node_modules/@react-native/codegen
-    codegenDir = file("../../../../node_modules/@react-native/codegen")
+    codegenDir = resolvePackageDir("@react-native/codegen")
     //   The cli.js file which is the React Native CLI entrypoint. Default is ../../node_modules/react-native/cli.js
-    cliFile = file("../../../../node_modules/react-native/cli.js")
+    cliFile = new File(resolvePackageDir("react-native"), "cli.js")
 
     /* Variants */
     //   The list of variants to that are debuggable. For those we're going to
@@ -45,7 +53,7 @@ react {
 
     /* Hermes Commands */
     //   The hermes compiler command to run. By default it is 'hermesc'
-    hermesCommand = "../../node_modules/hermes-compiler/hermesc/%OS-BIN%/hermesc"
+    hermesCommand = new File(resolvePackageDir("hermes-compiler"), "hermesc/%OS-BIN%/hermesc").path
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]

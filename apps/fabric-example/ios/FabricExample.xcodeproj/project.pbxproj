@@ -540,7 +540,6 @@
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3222233e.--PRODUCT-NAME-rfc1034identifier-";
 				PRODUCT_NAME = FabricExample;
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -579,7 +578,6 @@
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "fdsfsdfsdcom-eseg3222233e.--PRODUCT-NAME-rfc1034identifier-";
 				PRODUCT_NAME = FabricExample;
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
@@ -798,7 +796,6 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.reactnativeaudioapi.fabricexampleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -826,7 +823,6 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.reactnativeaudioapi.fabricexampleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -866,7 +862,6 @@
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.reactnativeaudioapi.fabricexample.testhost;
 				PRODUCT_NAME = FabricExampleTestHost;
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -904,7 +899,6 @@
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.reactnativeaudioapi.fabricexample.testhost;
 				PRODUCT_NAME = FabricExampleTestHost;
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
