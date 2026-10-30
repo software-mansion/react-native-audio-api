@@ -20,7 +20,7 @@ prompt_action "While it is recording, send FabricExample to the background. In S
 run_flow "03-stop-and-play-interrupted-take.yaml"
 
 prompt_choice "What did you hear while that take showed playing?" \
-  --pass "1" \
+  --pass "2" \
   --continue "3" \
   "Only the speech from before the meeting was audible" \
   "The whole take was clearly audible" \
@@ -32,6 +32,6 @@ run_flow "04-record-again.yaml"
 prompt_action "Stay on this screen and listen while it records. Speak for about 3 seconds."
 
 prompt_choice "During that recording, did audio from the previous take play out of the speaker?" \
-  --pass "1" \
+  --pass "2" \
   "Yes, the previous take was audible while recording" \
   "No, only the room was audible"
