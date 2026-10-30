@@ -7,21 +7,28 @@
 #include <audioapi/utils/Path.h>
 
 #include <android/api-level.h>
+#include <android/performance_hint.h>
 #include <media/NdkMediaCodec.h>
 #include <media/NdkMediaExtractor.h>
 #include <media/NdkMediaFormat.h>
+#include <chrono>
 
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <cmath>
+#include <condition_variable>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <deque>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -35,6 +42,14 @@ constexpr int ENCODING_PCM_8 = 3;
 constexpr int ENCODING_PCM_FLOAT = 4;
 constexpr int RESAMPLE_MAX_IN_FRAMES = 4096;
 constexpr int64_t CODEC_TIMEOUT_US = 5000;
+constexpr auto CODEC_TIMEOUT = std::chrono::microseconds(CODEC_TIMEOUT_US);
+// Track mime the extractor uses for already-decoded PCM (e.g. WAV).
+constexpr const char *MIME_AUDIO_RAW = "audio/raw";
+constexpr size_t RAW_PACKET_INITIAL_BYTES = size_t{64} * 1024;
+constexpr size_t RAW_PACKET_MAX_BYTES = size_t{16} * 1024 * 1024;
+// Shorter than any decode step on purpose: every report then asks for more
+// CPU, keeping the clocks raised for the whole decode.
+constexpr int64_t THROUGHPUT_HINT_TARGET_NS = 1'000'000;
 // Bail out of the drain loop if MediaCodec keeps saying "try again" after EOS
 // input without ever flagging EOS output (defensive against a stuck codec).
 constexpr int MAX_TRY_AGAIN_AFTER_EOS = 200;
@@ -60,6 +75,134 @@ struct MediaCodecDeleter {
 using MediaExtractorPtr = std::unique_ptr<AMediaExtractor, FnDeleter<AMediaExtractor_delete>>;
 using MediaCodecPtr = std::unique_ptr<AMediaCodec, MediaCodecDeleter>;
 using FilePtr = std::unique_ptr<FILE, FnDeleter<fclose>>;
+
+// Fields of a codec output format; 0 marks a key the format did not carry.
+struct CodecOutputFormat {
+  int sampleRate = 0;
+  int channels = 0;
+  int pcmEncoding = ENCODING_PCM_16;
+};
+
+CodecOutputFormat readCodecOutputFormat(AMediaFormat *format) {
+  CodecOutputFormat fields;
+  AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, &fields.sampleRate);
+  AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, &fields.channels);
+  if (!AMediaFormat_getInt32(format, "pcm-encoding", &fields.pcmEncoding)) {
+    fields.pcmEncoding = ENCODING_PCM_16;
+  }
+  return fields;
+}
+
+// A filled output buffer, or (when outputFormat is set) a format change that
+// must apply before the buffers queued after it.
+struct AsyncOutputEvent {
+  int32_t index = -1;
+  AMediaCodecBufferInfo info{};
+  std::optional<CodecOutputFormat> outputFormat;
+};
+
+// Buffer indices handed over by the codec's callback thread in async mode.
+// After a flush, callbacks already in flight may still deliver indices from
+// before it; those buffers are no longer owned by the client, so their
+// getInputBuffer / getOutputBuffer lookup fails and the event is dropped.
+struct AsyncCodecEvents {
+  std::mutex mutex;
+  std::condition_variable ready;
+  std::deque<int32_t> inputs;
+  std::deque<AsyncOutputEvent> outputs;
+  bool failed = false;
+  // The NDK delivers every callback on one thread of its own.
+  std::atomic<pid_t> callbackThreadId{0};
+
+  void clear() {
+    std::scoped_lock lock(mutex);
+    inputs.clear();
+    outputs.clear();
+    failed = false;
+  }
+};
+
+void onAsyncInputAvailable(AMediaCodec * /*codec*/, void *userdata, int32_t index) {
+  auto &events = *static_cast<AsyncCodecEvents *>(userdata);
+  events.callbackThreadId.store(gettid(), std::memory_order_relaxed);
+  {
+    std::scoped_lock lock(events.mutex);
+    // A stale pre-flush callback and a fresh one can name the same buffer.
+    if (std::find(events.inputs.begin(), events.inputs.end(), index) == events.inputs.end()) {
+      events.inputs.push_back(index);
+    }
+  }
+  events.ready.notify_one();
+}
+
+void onAsyncOutputAvailable(
+    AMediaCodec * /*codec*/,
+    void *userdata,
+    int32_t index,
+    AMediaCodecBufferInfo *info) {
+  auto &events = *static_cast<AsyncCodecEvents *>(userdata);
+  {
+    std::scoped_lock lock(events.mutex);
+    events.outputs.push_back(AsyncOutputEvent{.index = index, .info = *info});
+  }
+  events.ready.notify_one();
+}
+
+void onAsyncFormatChanged(AMediaCodec * /*codec*/, void *userdata, AMediaFormat *format) {
+  auto &events = *static_cast<AsyncCodecEvents *>(userdata);
+  const CodecOutputFormat fields = readCodecOutputFormat(format);
+  // The NDK hands the callback a copy it never frees.
+  AMediaFormat_delete(format);
+  {
+    std::scoped_lock lock(events.mutex);
+    events.outputs.push_back(AsyncOutputEvent{.outputFormat = fields});
+  }
+  events.ready.notify_one();
+}
+
+void onAsyncError(
+    AMediaCodec * /*codec*/,
+    void *userdata,
+    media_status_t /*error*/,
+    int32_t /*actionCode*/,
+    const char * /*detail*/) {
+  auto &events = *static_cast<AsyncCodecEvents *>(userdata);
+  {
+    std::scoped_lock lock(events.mutex);
+    events.failed = true;
+  }
+  events.ready.notify_one();
+}
+
+struct PerformanceHintSessionCloser {
+  void operator()(APerformanceHintSession *session) const {
+    if (__builtin_available(android 33, *)) {
+      APerformanceHint_closeSession(session);
+    }
+  }
+};
+
+using PerformanceHintSessionPtr =
+    std::unique_ptr<APerformanceHintSession, PerformanceHintSessionCloser>;
+
+// Null below API 33 or when the device offers no performance hint sessions.
+PerformanceHintSessionPtr createThroughputHintSession(const std::vector<int32_t> &threadIds) {
+  if (__builtin_available(android 33, *)) {
+    APerformanceHintManager *manager = APerformanceHint_getManager();
+    if (manager == nullptr) {
+      return nullptr;
+    }
+    return PerformanceHintSessionPtr(APerformanceHint_createSession(
+        manager, threadIds.data(), threadIds.size(), THROUGHPUT_HINT_TARGET_NS));
+  }
+  return nullptr;
+}
+
+void reportThroughputHintWork(APerformanceHintSession *session, int64_t durationNs) {
+  if (__builtin_available(android 33, *)) {
+    APerformanceHint_reportActualWorkDuration(session, std::max<int64_t>(durationNs, 1));
+  }
+}
 
 decoding::DecoderResult attachMemoryExtractorViaTempFile(
     AMediaExtractor *extractor,
@@ -94,7 +237,12 @@ struct AndroidDecoderState {
   FilePtr tempFile;
   AndroidMemoryDataSource dataSource;
   MediaExtractorPtr extractor;
+  // Outlives the codec, whose callbacks write into it until AMediaCodec_delete.
+  std::unique_ptr<AsyncCodecEvents> asyncEvents;
   MediaCodecPtr codec;
+  // The track is already PCM: packets are converted directly and no codec runs.
+  bool rawPcmTrack = false;
+  std::vector<uint8_t> rawPacket;
 
   int audioTrackIndex = -1;
   std::string codecMime;
@@ -122,6 +270,13 @@ struct AndroidDecoderState {
   std::unique_ptr<r8b::MultiChannelResampler> resampler;
   std::unique_ptr<AudioBuffer> resampleIn;
   std::unique_ptr<AudioBuffer> resampleOut;
+
+  // Decoding is a chain of short bursts on threads in two processes; none of
+  // them stays busy long enough for the CPU governor to raise clocks, which
+  // roughly halves decoding speed. The session asks for those clocks on our
+  // side of the chain: the decoding thread and the codec callback thread.
+  PerformanceHintSessionPtr throughputHint;
+  bool throughputHintRequested = false;
 };
 
 namespace {
@@ -141,22 +296,29 @@ void compactConsumed(std::vector<float> &buffer, size_t &cursor) {
 void appendNativePcm(AndroidDecoderState &state, const uint8_t *bytes, size_t byteCount) {
   compactConsumed(state.nativeLeftover, state.nativeCursor);
   auto &pcm = state.nativeLeftover;
+  const size_t base = pcm.size();
   if (state.pcmEncoding == ENCODING_PCM_FLOAT) {
     const size_t sampleCount = byteCount / sizeof(float);
-    const auto *samples = reinterpret_cast<const float *>(bytes);
-    pcm.insert(pcm.end(), samples, samples + sampleCount);
+    pcm.resize(base + sampleCount);
+    std::memcpy(pcm.data() + base, bytes, sampleCount * sizeof(float));
     return;
   }
   if (state.pcmEncoding == ENCODING_PCM_8) {
+    pcm.resize(base + byteCount);
+    float *out = pcm.data() + base;
     for (size_t i = 0; i < byteCount; ++i) {
-      pcm.push_back((static_cast<float>(bytes[i]) - 128.0f) / 128.0f);
+      out[i] = (static_cast<float>(bytes[i]) - 128.0f) / 128.0f;
     }
     return;
   }
   const size_t sampleCount = byteCount / sizeof(int16_t);
-  const auto *pcm16 = reinterpret_cast<const int16_t *>(bytes);
+  pcm.resize(base + sampleCount);
+  float *out = pcm.data() + base;
+  // memcpy per sample: codec output buffers carry no int16 alignment guarantee.
   for (size_t i = 0; i < sampleCount; ++i) {
-    pcm.push_back(static_cast<float>(pcm16[i]) / 32768.0f);
+    int16_t sample = 0;
+    std::memcpy(&sample, bytes + i * sizeof(int16_t), sizeof(sample));
+    out[i] = static_cast<float>(sample) / 32768.0f;
   }
 }
 
@@ -193,20 +355,20 @@ void setupResamplerIfNeeded(AndroidDecoderState &state) {
 // Applies MediaCodec output format. When rate/channels change vs track metadata
 // (common with AAC), rebuilds the resampler and drops PCM produced under the
 // previous layout so leftover samples are not misinterpreted.
-void applyCodecOutputFormat(AndroidDecoderState &state, AMediaFormat *outFormat) {
+void applyCodecOutputFormat(AndroidDecoderState &state, const CodecOutputFormat &format) {
   const int previousChannels = state.channels;
   const int previousNativeRate = state.nativeSampleRate;
 
-  AMediaFormat_getInt32(outFormat, AMEDIAFORMAT_KEY_SAMPLE_RATE, &state.nativeSampleRate);
-  AMediaFormat_getInt32(outFormat, AMEDIAFORMAT_KEY_CHANNEL_COUNT, &state.channels);
-  if (!AMediaFormat_getInt32(outFormat, "pcm-encoding", &state.pcmEncoding)) {
-    state.pcmEncoding = ENCODING_PCM_16;
+  state.pcmEncoding = format.pcmEncoding;
+  if (format.channels > 0) {
+    state.channels = format.channels;
+  } else if (state.channels <= 0) {
+    state.channels = 1;
   }
-  if (state.channels <= 0) {
-    state.channels = previousChannels > 0 ? previousChannels : 1;
-  }
-  if (state.nativeSampleRate <= 0) {
-    state.nativeSampleRate = previousNativeRate > 0 ? previousNativeRate : 44100;
+  if (format.sampleRate > 0) {
+    state.nativeSampleRate = format.sampleRate;
+  } else if (state.nativeSampleRate <= 0) {
+    state.nativeSampleRate = 44100;
   }
 
   if (state.channels == previousChannels && state.nativeSampleRate == previousNativeRate) {
@@ -220,62 +382,173 @@ void applyCodecOutputFormat(AndroidDecoderState &state, AMediaFormat *outFormat)
   setupResamplerIfNeeded(state);
 }
 
-// Advances the codec one step: feeds at most one input packet and drains at
-// most one output buffer into nativeLeftover. Sets outputEnded at EOS.
-void pumpCodec(AndroidDecoderState &state) {
-  if (state.outputEnded) {
-    return;
-  }
-
+// Fills the codec input buffer at `index` with the next extractor packet, or
+// with end-of-stream once the extractor runs dry. Returns false when the
+// buffer is not ours (a stale async index) and nothing was queued.
+bool queueNextPacket(AndroidDecoderState &state, size_t index) {
   auto *codec = state.codec.get();
   auto *extractor = state.extractor.get();
 
+  size_t bufSize = 0;
+  uint8_t *buf = AMediaCodec_getInputBuffer(codec, index, &bufSize);
+  if (buf == nullptr) {
+    return false;
+  }
+
+  const ssize_t sampleSize = AMediaExtractor_readSampleData(extractor, buf, bufSize);
+  if (sampleSize < 0) {
+    AMediaCodec_queueInputBuffer(codec, index, 0, 0, 0, AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM);
+    state.inputEnded = true;
+  } else {
+    const int64_t pts = AMediaExtractor_getSampleTime(extractor);
+    AMediaCodec_queueInputBuffer(codec, index, 0, static_cast<size_t>(sampleSize), pts, 0);
+    AMediaExtractor_advance(extractor);
+  }
+  return true;
+}
+
+// Appends the PCM of the codec output buffer at `index` to nativeLeftover and
+// hands the buffer back. Sets outputEnded at EOS. A buffer that is not ours
+// (a stale async index) is ignored, EOS flag included.
+void drainOutputBuffer(
+    AndroidDecoderState &state,
+    size_t index,
+    const AMediaCodecBufferInfo &info) {
+  auto *codec = state.codec.get();
+
+  size_t outBufSize = 0;
+  uint8_t *outBuf = AMediaCodec_getOutputBuffer(codec, index, &outBufSize);
+  if (outBuf == nullptr) {
+    return;
+  }
+
+  state.tryAgainAfterEos = 0;
+  const auto offset = std::min(static_cast<size_t>(std::max(info.offset, 0)), outBufSize);
+  const auto size = std::min(static_cast<size_t>(std::max(info.size, 0)), outBufSize - offset);
+  if (size > 0) {
+    appendNativePcm(state, outBuf + offset, size);
+  }
+  AMediaCodec_releaseOutputBuffer(codec, index, false);
+  if ((info.flags & AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM) != 0) {
+    state.outputEnded = true;
+  }
+}
+
+void countTryAgainAfterEos(AndroidDecoderState &state) {
+  if (state.inputEnded && ++state.tryAgainAfterEos > MAX_TRY_AGAIN_AFTER_EOS) {
+    state.outputEnded = true;
+  }
+}
+
+// Sync mode: feeds at most one input packet and drains at most one output
+// buffer, each behind a blocking dequeue call.
+void pumpCodecSync(AndroidDecoderState &state) {
+  auto *codec = state.codec.get();
+
   if (!state.inputEnded) {
     const ssize_t inIndex = AMediaCodec_dequeueInputBuffer(codec, CODEC_TIMEOUT_US);
-    if (inIndex >= 0) {
-      size_t bufSize = 0;
-      uint8_t *buf = AMediaCodec_getInputBuffer(codec, static_cast<size_t>(inIndex), &bufSize);
-      const ssize_t sampleSize =
-          buf != nullptr ? AMediaExtractor_readSampleData(extractor, buf, bufSize) : -1;
-      if (sampleSize < 0) {
-        AMediaCodec_queueInputBuffer(
-            codec, static_cast<size_t>(inIndex), 0, 0, 0, AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM);
-        state.inputEnded = true;
-      } else {
-        const int64_t pts = AMediaExtractor_getSampleTime(extractor);
-        AMediaCodec_queueInputBuffer(
-            codec, static_cast<size_t>(inIndex), 0, static_cast<size_t>(sampleSize), pts, 0);
-        AMediaExtractor_advance(extractor);
-      }
+    if (inIndex >= 0 && !queueNextPacket(state, static_cast<size_t>(inIndex))) {
+      state.inputEnded = true;
     }
   }
 
   AMediaCodecBufferInfo info{};
   const ssize_t outIndex = AMediaCodec_dequeueOutputBuffer(codec, &info, CODEC_TIMEOUT_US);
   if (outIndex >= 0) {
-    state.tryAgainAfterEos = 0;
-    if (info.size > 0) {
-      size_t outBufSize = 0;
-      uint8_t *outBuf =
-          AMediaCodec_getOutputBuffer(codec, static_cast<size_t>(outIndex), &outBufSize);
-      if (outBuf != nullptr) {
-        appendNativePcm(state, outBuf + info.offset, static_cast<size_t>(info.size));
-      }
-    }
-    AMediaCodec_releaseOutputBuffer(codec, static_cast<size_t>(outIndex), false);
-    if ((info.flags & AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM) != 0) {
-      state.outputEnded = true;
-    }
+    drainOutputBuffer(state, static_cast<size_t>(outIndex), info);
   } else if (outIndex == AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED) {
     AMediaFormat *outFormat = AMediaCodec_getOutputFormat(codec);
     if (outFormat != nullptr) {
-      applyCodecOutputFormat(state, outFormat);
+      applyCodecOutputFormat(state, readCodecOutputFormat(outFormat));
       AMediaFormat_delete(outFormat);
     }
   } else if (outIndex == AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
-    if (state.inputEnded && ++state.tryAgainAfterEos > MAX_TRY_AGAIN_AFTER_EOS) {
-      state.outputEnded = true;
+    countTryAgainAfterEos(state);
+  }
+}
+
+// Async mode: waits for the codec callbacks, then feeds every input buffer and
+// drains every output buffer they announced. Skipping the dequeue calls saves
+// two of the six blocking codec round trips each packet costs in sync mode.
+void pumpCodecAsync(AndroidDecoderState &state) {
+  auto &events = *state.asyncEvents;
+  std::deque<int32_t> inputs;
+  std::deque<AsyncOutputEvent> outputs;
+  bool failed = false;
+  {
+    std::unique_lock lock(events.mutex);
+    events.ready.wait_for(lock, CODEC_TIMEOUT, [&] {
+      return events.failed || !events.outputs.empty() ||
+          (!state.inputEnded && !events.inputs.empty());
+    });
+    failed = events.failed;
+    if (!state.inputEnded) {
+      inputs.swap(events.inputs);
     }
+    outputs.swap(events.outputs);
+  }
+
+  if (failed) {
+    state.outputEnded = true;
+    return;
+  }
+  if (inputs.empty() && outputs.empty()) {
+    countTryAgainAfterEos(state);
+    return;
+  }
+
+  for (const int32_t index : inputs) {
+    if (state.inputEnded) {
+      break;
+    }
+    queueNextPacket(state, static_cast<size_t>(index));
+  }
+  for (const auto &event : outputs) {
+    if (state.outputEnded) {
+      break;
+    }
+    if (event.outputFormat.has_value()) {
+      applyCodecOutputFormat(state, *event.outputFormat);
+    } else {
+      drainOutputBuffer(state, static_cast<size_t>(event.index), event.info);
+    }
+  }
+}
+
+// Raw PCM track: converts the next extractor packet without a codec round trip.
+void pumpRawPcm(AndroidDecoderState &state) {
+  auto *extractor = state.extractor.get();
+  ssize_t packetBytes =
+      AMediaExtractor_readSampleData(extractor, state.rawPacket.data(), state.rawPacket.size());
+  // readSampleData also fails when the packet outgrows the buffer; a packet
+  // still has a timestamp then, while the end of the track has none.
+  while (packetBytes < 0 && AMediaExtractor_getSampleTime(extractor) >= 0 &&
+         state.rawPacket.size() < RAW_PACKET_MAX_BYTES) {
+    state.rawPacket.resize(state.rawPacket.size() * 2);
+    packetBytes =
+        AMediaExtractor_readSampleData(extractor, state.rawPacket.data(), state.rawPacket.size());
+  }
+  if (packetBytes < 0) {
+    state.inputEnded = true;
+    state.outputEnded = true;
+    return;
+  }
+  appendNativePcm(state, state.rawPacket.data(), static_cast<size_t>(packetBytes));
+  AMediaExtractor_advance(extractor);
+}
+
+// Advances the codec, appending whatever PCM it produced to nativeLeftover.
+// Sets outputEnded at EOS.
+void pumpCodec(AndroidDecoderState &state) {
+  if (state.outputEnded) {
+    return;
+  }
+  if (state.rawPcmTrack) {
+    pumpRawPcm(state);
+  } else if (state.asyncEvents != nullptr) {
+    pumpCodecAsync(state);
+  } else {
+    pumpCodecSync(state);
   }
 }
 
@@ -374,6 +647,14 @@ decoding::DecoderResult configureExtractorMetadata(
   state.codecMime = mime != nullptr ? mime : "audio/mp4a-latm";
   AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, &state.nativeSampleRate);
   AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, &state.channels);
+  state.rawPcmTrack = state.codecMime == MIME_AUDIO_RAW;
+  if (state.rawPcmTrack) {
+    state.pcmEncoding = readCodecOutputFormat(format).pcmEncoding;
+    int32_t maxPacketBytes = 0;
+    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_MAX_INPUT_SIZE, &maxPacketBytes);
+    state.rawPacket.resize(
+        std::max(RAW_PACKET_INITIAL_BYTES, static_cast<size_t>(std::max(maxPacketBytes, 0))));
+  }
   int64_t durationUs = 0;
   AMediaFormat_getInt64(format, AMEDIAFORMAT_KEY_DURATION, &durationUs);
   AMediaFormat_delete(format);
@@ -384,8 +665,43 @@ decoding::DecoderResult configureExtractorMetadata(
   return Ok(None);
 }
 
+// Routes codec buffer notifications into state.asyncEvents. Must run before
+// configure; returns false, leaving the codec in sync mode, below API 28.
+bool enableAsyncCallbacks(AndroidDecoderState &state, AMediaCodec *codec) {
+  if (__builtin_available(android 28, *)) {
+    auto events = std::make_unique<AsyncCodecEvents>();
+    const AMediaCodecOnAsyncNotifyCallback callbacks{
+        .onAsyncInputAvailable = onAsyncInputAvailable,
+        .onAsyncOutputAvailable = onAsyncOutputAvailable,
+        .onAsyncFormatChanged = onAsyncFormatChanged,
+        .onAsyncError = onAsyncError,
+    };
+    if (AMediaCodec_setAsyncNotifyCallback(codec, callbacks, events.get()) != AMEDIA_OK) {
+      return false;
+    }
+    state.asyncEvents = std::move(events);
+    return true;
+  }
+  return false;
+}
+
+// Joins the calling (decoding) thread and the codec callback thread into one
+// performance hint session. Tried once per decoder; without support it is a no-op.
+void startThroughputHint(AndroidDecoderState &state) {
+  state.throughputHintRequested = true;
+  std::vector<int32_t> threadIds{gettid()};
+  if (state.asyncEvents != nullptr) {
+    const pid_t callbackThreadId =
+        state.asyncEvents->callbackThreadId.load(std::memory_order_relaxed);
+    if (callbackThreadId != 0 && callbackThreadId != threadIds.front()) {
+      threadIds.push_back(callbackThreadId);
+    }
+  }
+  state.throughputHint = createThroughputHintSession(threadIds);
+}
+
 decoding::DecoderResult ensureCodecStarted(AndroidDecoderState &state) {
-  if (state.codec != nullptr) {
+  if (state.codec != nullptr || state.rawPcmTrack) {
     return Ok(None);
   }
   if (state.extractor == nullptr || state.audioTrackIndex < 0) {
@@ -403,8 +719,11 @@ decoding::DecoderResult ensureCodecStarted(AndroidDecoderState &state) {
     AMediaFormat_delete(format);
     return Err("AndroidDecoder: createDecoderByType failed");
   }
+  state.asyncEvents.reset();
+  enableAsyncCallbacks(state, codec);
   if (AMediaCodec_configure(codec, format, nullptr, nullptr, 0) != AMEDIA_OK) {
     AMediaCodec_delete(codec);
+    state.asyncEvents.reset();
     AMediaFormat_delete(format);
     return Err("AndroidDecoder: configure failed");
   }
@@ -412,6 +731,7 @@ decoding::DecoderResult ensureCodecStarted(AndroidDecoderState &state) {
 
   if (AMediaCodec_start(codec) != AMEDIA_OK) {
     AMediaCodec_delete(codec);
+    state.asyncEvents.reset();
     return Err("AndroidDecoder: start failed");
   }
 
@@ -555,6 +875,10 @@ size_t AndroidDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   if (ensureCodecStarted(state).is_err()) {
     return 0;
   }
+  if (preferThroughput_ && !state.throughputHintRequested) {
+    startThroughputHint(state);
+  }
+  const auto workStart = std::chrono::steady_clock::now();
 
   size_t filled = 0; // frames
   // The caller sized outInterleaved from outputChannels(), so this call must
@@ -598,6 +922,14 @@ size_t AndroidDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
     }
   }
 
+  if (state.throughputHint != nullptr) {
+    reportThroughputHintWork(
+        state.throughputHint.get(),
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now() - workStart)
+            .count());
+  }
+
   framePosition_ += static_cast<int64_t>(filled);
   return filled;
 }
@@ -620,7 +952,16 @@ decoding::DecoderResult AndroidDecoder::seekToTime(double seconds) {
       AMEDIA_OK) {
     return Err("AndroidDecoder::seekToTime: AMediaExtractor_seekTo failed");
   }
-  AMediaCodec_flush(state.codec.get());
+  if (state.codec != nullptr) {
+    AMediaCodec_flush(state.codec.get());
+  }
+  if (state.asyncEvents != nullptr) {
+    // A flushed async codec stays silent until restarted.
+    state.asyncEvents->clear();
+    if (AMediaCodec_start(state.codec.get()) != AMEDIA_OK) {
+      return Err("AndroidDecoder::seekToTime: restarting the codec after flush failed");
+    }
+  }
 
   state.nativeLeftover.clear();
   state.nativeCursor = 0;
@@ -638,6 +979,10 @@ decoding::DecoderResult AndroidDecoder::seekToTime(double seconds) {
   framePosition_ =
       static_cast<int64_t>(std::llround(seconds * static_cast<double>(outputSampleRate_)));
   return Ok(None);
+}
+
+void AndroidDecoder::preferThroughput() {
+  preferThroughput_ = true;
 }
 
 void AndroidDecoder::releaseImpl() {

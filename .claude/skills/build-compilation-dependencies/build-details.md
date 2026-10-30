@@ -134,6 +134,8 @@ endif()
 set_source_files_properties(${DSP_CPP_SOURCES} PROPERTIES COMPILE_FLAGS "-O3")
 ```
 
+The glob only catches `dsp/**/*.cpp`. Header-only DSP (r8brain's `CDSPResampler`) compiles at the optimization level of the file that includes it, so a hot includer needs its own `-O3` entry. `AndroidDecoding.cpp` has one: at Debug `-O0`, decode resampling ran about 9× slower.
+
 ### Static prebuilt libs imported via `IMPORTED_LOCATION`
 
 ```cmake
