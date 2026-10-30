@@ -37,6 +37,12 @@ export {
   MIN_SUPPORTED_SAMPLE_RATE,
 } from './sampleRate';
 
+export {
+  DEFAULT_RENDER_QUANTUM_SIZE,
+  maxRenderQuantumSize,
+  resolveRenderQuantumSize,
+} from './renderSizeHint';
+
 export { validateIIRFilterOptions } from './iirFilter';
 
 export {

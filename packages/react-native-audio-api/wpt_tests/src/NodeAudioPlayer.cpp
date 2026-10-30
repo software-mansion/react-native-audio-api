@@ -113,8 +113,8 @@ double NodeAudioPlayer::getBaseLatency() const {
 
 void NodeAudioPlayer::run() {
   const auto sampleRate = std::max(sampleRate_, 1.0f);
-  const auto quantumDuration = std::chrono::microseconds(static_cast<int64_t>(
-      (static_cast<double>(RENDER_QUANTUM_SIZE) * 1'000'000.0) / sampleRate));
+  const auto quantumDuration = std::chrono::microseconds(
+      static_cast<int64_t>((static_cast<double>(renderQuantumSize_) * 1'000'000.0) / sampleRate));
 
   while (!shouldStop_.load(std::memory_order_acquire)) {
     if (isPaused_.load(std::memory_order_acquire)) {
@@ -123,7 +123,7 @@ void NodeAudioPlayer::run() {
     }
 
     renderBuffer_->zero();
-    renderNormalizedQuantum(RENDER_QUANTUM_SIZE);
+    renderNormalizedQuantum(renderQuantumSize_);
     std::this_thread::sleep_for(quantumDuration);
   }
 }
@@ -132,6 +132,7 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
+    int renderQuantumSize,
     std::atomic<uint32_t> &currentRenders,
     std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
@@ -141,6 +142,7 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
       renderAudio,
       sampleRate,
       channelCount,
+      renderQuantumSize,
       currentRenders,
       std::move(context),
       driverMutex,

@@ -19,6 +19,8 @@ type AudioFocusType =
 interface Spec extends TurboModule {
   install(): boolean;
   getDevicePreferredSampleRate(): number;
+  /** Length of one hardware output callback in seconds, or 0 when unknown. */
+  getDeviceBufferDuration(): number;
   isFfmpegEnabled(): boolean;
 
   // AVAudioSession management

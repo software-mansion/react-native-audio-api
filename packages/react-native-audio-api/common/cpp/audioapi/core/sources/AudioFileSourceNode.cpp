@@ -122,7 +122,9 @@ bool AudioFileSourceNode::initDecoder(
   duration_ = decoderState_->duration;
 
   audioBuffer_ = std::make_shared<DSPAudioBuffer>(
-      static_cast<size_t>(RENDER_QUANTUM_SIZE), outputChannelNumber_, context->getSampleRate());
+      static_cast<size_t>(context->getRenderQuantumSize()),
+      outputChannelNumber_,
+      context->getSampleRate());
   wsolaStretcher_.configure(
       static_cast<size_t>(outputChannelNumber_), static_cast<float>(sampleRate_));
   playbackRateBuffer_ = std::make_shared<DSPAudioBuffer>(

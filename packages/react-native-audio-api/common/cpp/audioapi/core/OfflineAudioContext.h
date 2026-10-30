@@ -18,7 +18,8 @@ class OfflineAudioContext : public BaseAudioContext {
       int numberOfChannels,
       size_t length,
       float sampleRate,
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      int renderQuantumSize = RENDER_QUANTUM_SIZE);
   ~OfflineAudioContext() override;
   DELETE_COPY_AND_MOVE(OfflineAudioContext);
 

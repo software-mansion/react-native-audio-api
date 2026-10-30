@@ -16,7 +16,10 @@ AnalyserNode::AnalyserNode(
       fftSize_(options.fftSize),
       inputArray_(std::make_unique<CircularDSPAudioArray>(MAX_FFT_SIZE * 2)),
       downMixBuffer_(
-          std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())),
+          std::make_unique<DSPAudioBuffer>(
+              context->getRenderQuantumSize(),
+              1,
+              context->getSampleRate())),
       minDecibels_(options.minDecibels),
       maxDecibels_(options.maxDecibels),
       smoothingTimeConstant_(options.smoothingTimeConstant),
@@ -92,8 +95,13 @@ void AnalyserNode::processNode(int framesToProcess) {
 
   // Down mix the input buffer to mono
   downMixBuffer_->copy(*audioBuffer_);
-  // Copy the down mixed buffer to the input buffer (circular buffer)
-  inputArray_->push_back(*downMixBuffer_->getChannel(0), framesToProcess, true);
+  // Copy the down mixed buffer to the input buffer (circular buffer). Only the newest fftSize
+  // frames are ever read back, so a quantum longer than the ring keeps just its tail.
+  const auto framesToKeep = std::min(static_cast<size_t>(framesToProcess), inputArray_->getSize());
+  inputArray_->push_back(
+      downMixBuffer_->getChannel(0)->begin() + (framesToProcess - framesToKeep),
+      framesToKeep,
+      true);
 
   // Snapshot the latest fftSize_ samples into the triple buffer for the JS thread.
   auto *frame = analysisBuffer_.getForWriter();

@@ -11,7 +11,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <vector>
 
 namespace audioapi {
 
@@ -21,20 +20,22 @@ Convolver::Convolver()
       _segSize(0),
       _segCount(0),
       _fftComplexSize(0),
-      _fft(nullptr) {}
+      _fft(nullptr),
+      _current(0),
+      _inputFill(0) {}
 
 void Convolver::reset() {
   _blockSize = 0;
   _segSize = 0;
   _segCount = 0;
   _fftComplexSize = 0;
+  _current = 0;
+  _inputFill = 0;
   _fft = nullptr;
   _segments.clear();
   _segmentsIR.clear();
   _preMultiplied.clear();
-  _tailSlots.clear();
-  _blocksProcessed.store(0, std::memory_order_relaxed);
-  _tailMisses = 0;
+  _blockSpectrum.clear();
   if (_fftBuffer != nullptr) {
     _fftBuffer->zero();
   }
@@ -69,11 +70,10 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
   _fftBuffer = std::make_unique<DSPAudioArray>(_segSize);
 
   // segments preparation
-  // The spare HEAD_SEGMENTS slots keep the blocks a tail worker reads from
-  // being overwritten while its result can still be used.
-  _segments.assign(
-      _segCount + HEAD_SEGMENTS,
-      aligned_vec_complex(_fftComplexSize, std::complex<float>(0.0f, 0.0f)));
+  for (int i = 0; i < _segCount; ++i) {
+    aligned_vec_complex vec(_fftComplexSize, std::complex<float>(0.0f, 0.0f));
+    _segments.push_back(vec);
+  }
 
   // ir preparation
   for (int i = 0; i < _segCount; ++i) {
@@ -81,36 +81,24 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
     const size_t remainingSamples = irLen - (i * _blockSize);
     const size_t samplesToCopy = std::min(_blockSize, remainingSamples);
 
-    // Each sub filter is zero-padded to length 2B and transformed using a
-    // 2B-point real-to-complex FFT. The whole buffer is cleared so a final,
-    // partial sub filter does not keep samples of the previous one.
-    _fftBuffer->zero();
     if (samplesToCopy > 0) {
       _fftBuffer->copy(ir, i * _blockSize, 0, samplesToCopy);
     }
+    // Each sub filter is zero-padded to length 2B and transformed using a
+    // 2B-point real-to-complex FFT. A short last sub filter is padded too, or it
+    // would keep the previous sub filter's tail.
+    _fftBuffer->zero(samplesToCopy, _segSize - samplesToCopy);
     _fft->doFFT(*_fftBuffer, segment);
     _segmentsIR.push_back(segment);
   }
 
   _preMultiplied = aligned_vec_complex(_fftComplexSize);
+  _blockSpectrum = aligned_vec_complex(_fftComplexSize);
   _inputBuffer = std::make_unique<DSPAudioArray>(_segSize);
-
-  _tailSlots = std::vector<TailSlot>(TAIL_SLOT_COUNT);
-  for (auto &slot : _tailSlots) {
-    slot.spectrum.assign(_fftComplexSize, std::complex<float>(0.0f, 0.0f));
-  }
-  // The tails of the first HEAD_SEGMENTS blocks only reach input from before the stream
-  // started, so they are silent and ready up front.
-  for (size_t block = 0; block < HEAD_SEGMENTS; ++block) {
-    _tailSlots[block % TAIL_SLOT_COUNT].state.store(readyState(block), std::memory_order_relaxed);
-  }
+  _current = 0;
+  _inputFill = 0;
 
   return true;
-}
-
-const Convolver::aligned_vec_complex &Convolver::inputSpectrum(size_t block, size_t age) const {
-  const size_t ringSize = _segments.size();
-  return _segments[(block % ringSize + ringSize - age) % ringSize];
 }
 
 /// @brief Fast pairwise complex multiplication using ARM NEON intrinsics
@@ -185,78 +173,59 @@ void pairwise_complex_multiply_fast(
 #endif
 }
 
-void Convolver::accumulateSegments(size_t block, size_t fromSegment, aligned_vec_complex &into)
-    const {
-  for (size_t age = fromSegment; age < _segCount; ++age) {
-    pairwise_complex_multiply_fast(_segmentsIR[age], inputSpectrum(block, age), into);
-  }
-}
-
-void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output) {
+void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output, size_t framesToProcess) {
   if (_segCount == 0) {
-    output.zero();
+    output.zero(0, framesToProcess);
     return;
   }
-  const size_t block = _blocksProcessed.load(std::memory_order_relaxed);
 
-  // The input buffer acts as a 2B-point sliding window of the input signal.
-  // With each new input block, the right half of the input buffer is shifted
-  // to the left and the new block is stored in the right half.
-  _inputBuffer->copyWithin(_blockSize, 0, _blockSize);
-  _inputBuffer->copy(input, 0, _blockSize, _blockSize);
+  size_t processed = 0;
+  while (processed < framesToProcess) {
+    if (_inputFill == 0) {
+      accumulateCompletedBlocks();
+    }
 
-  // A 2B-point real-to-complex FFT is computed from the input buffer,
-  // resulting in B+1 complex-conjugate symmetric DFT coefficients. The
-  // result is stored in the delay line slot for this block.
-  _fft->doFFT(*_inputBuffer, _segments[block % _segments.size()]);
-  _blocksProcessed.store(block + 1, std::memory_order_release);
+    const size_t chunk = std::min(framesToProcess - processed, _blockSize - _inputFill);
+    const size_t windowPosition = _blockSize + _inputFill;
 
-  // The P sub filter spectra are pairwisely multiplied with the input spectra
-  // in the FDL. The results are accumulated in the frequency-domain.
-  memset(_preMultiplied.data(), 0, _preMultiplied.size() * sizeof(std::complex<float>));
-  const size_t headSegments = std::min(HEAD_SEGMENTS, _segCount);
-  for (size_t age = 0; age < headSegments; ++age) {
-    pairwise_complex_multiply_fast(_segmentsIR[age], inputSpectrum(block, age), _preMultiplied);
-  }
+    // The input buffer is a 2B-point window: the previous block on the left, the block being
+    // filled on the right. Frames of this block that have not arrived yet are still zero, and an
+    // output frame only depends on input frames at or before its own position, so the partial
+    // block yields exact output for every frame received so far.
+    _inputBuffer->copy(input, processed, windowPosition, chunk);
+    _fft->doFFT(*_inputBuffer, _segments[_current]);
 
-  if (hasTail()) {
-    const TailSlot &slot = _tailSlots[block % TAIL_SLOT_COUNT];
-    if (slot.state.load(std::memory_order_acquire) == readyState(block)) {
-      for (size_t bin = 0; bin < _fftComplexSize; ++bin) {
-        _preMultiplied[bin] += slot.spectrum[bin];
-      }
-    } else {
-      ++_tailMisses;
-      accumulateSegments(block, HEAD_SEGMENTS, _preMultiplied);
+    std::ranges::copy(_preMultiplied, _blockSpectrum.begin());
+    pairwise_complex_multiply_fast(_segmentsIR[0], _segments[_current], _blockSpectrum);
+    // Of the 2B-point IFFT, the left half is discarded (overlap-save); the right half lines up
+    // with the right half of the input window.
+    _fft->doInverseFFT(_blockSpectrum, *_fftBuffer);
+    output.copy(*_fftBuffer, windowPosition, processed, chunk);
+
+    _inputFill += chunk;
+    processed += chunk;
+    if (_inputFill == _blockSize) {
+      advanceBlock();
     }
   }
-
-  // Of the accumulated spectral convolutions, an 2B-point complex-to-real
-  // IFFT is computed. From the resulting 2B samples, the left half is
-  // discarded and the right half is returned as the next output block.
-  _fft->doInverseFFT(_preMultiplied, *_fftBuffer);
-
-  output.copy(*_fftBuffer, _blockSize, 0, _blockSize);
 }
 
-void Convolver::computeTail(size_t block) {
-  if (!hasTail() || _blocksProcessed.load(std::memory_order_acquire) > block) {
-    return;
+void Convolver::accumulateCompletedBlocks() {
+  // Sub filter i meets the input block i blocks back; slot `_current` belongs to the block
+  // being filled, so the completed blocks sit at the following FDL slots.
+  memset(_preMultiplied.data(), 0, _preMultiplied.size() * sizeof(std::complex<float>));
+  for (size_t i = 1; i < _segCount; ++i) {
+    const size_t indexAudio = (_current + i) % _segCount;
+    pairwise_complex_multiply_fast(_segmentsIR[i], _segments[indexAudio], _preMultiplied);
   }
-  TailSlot &slot = _tailSlots[block % TAIL_SLOT_COUNT];
-  size_t state = slot.state.load(std::memory_order_acquire);
-  if ((state & BUSY_BIT) != 0 || state > readyState(block)) {
-    return; // another worker is writing, or the slot already belongs to a newer one
-  }
+}
 
-  // Claim the slot only if it still holds the state checked above, so a worker preempted
-  // between the check and the claim can never take a slot a newer block has claimed since.
-  if (!slot.state.compare_exchange_strong(
-          state, readyState(block) | BUSY_BIT, std::memory_order_acq_rel)) {
-    return; // the slot changed since the check; the audio thread will compute this tail inline
-  }
-  memset(slot.spectrum.data(), 0, slot.spectrum.size() * sizeof(std::complex<float>));
-  accumulateSegments(block, HEAD_SEGMENTS, slot.spectrum);
-  slot.state.store(readyState(block), std::memory_order_release);
+void Convolver::advanceBlock() {
+  // The completed block's spectrum stays in its FDL slot; the window slides by one block and
+  // the next block starts from silence.
+  _inputBuffer->copyWithin(_blockSize, 0, _blockSize);
+  _inputBuffer->zero(_blockSize, _blockSize);
+  _inputFill = 0;
+  _current = (_current > 0) ? _current - 1 : _segCount - 1;
 }
 } // namespace audioapi

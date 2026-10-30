@@ -36,8 +36,8 @@ This page tracks how closely React Native Audio API follows the [Web Audio API](
 | PeriodicWave | ✅ |
 | StereoPannerNode | ✅ |
 | WaveShaperNode | ✅ |
-| AudioContext | 🚧 | Available props and methods: `baseLatency`, `outputLatency`, `close`, `suspend`, `resume` |
-| BaseAudioContext | 🚧 | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes |
+| AudioContext | 🚧 | Available props and methods: `baseLatency`, `outputLatency`, `close`, `suspend`, `resume`. `renderSizeHint` accepts `'default'`, `'hardware'` (resolved once, when the context is created) or a number. |
+| BaseAudioContext | 🚧 | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `renderQuantumSize`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes |
 | PannerNode | 🚧 | Equal-power spatialization, distance models, and cone gain. `panningModel` is `'equalpower'` only (`'HRTF'` not exposed yet). |
 | AudioSinkInfo | ❌ |
 | AudioWorklet | ❌ |

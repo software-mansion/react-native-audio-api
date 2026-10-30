@@ -15,13 +15,15 @@ AudioContextHostObject::AudioContextHostObject(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker,
-    AudioContextLatencyHint latencyHint)
+    AudioContextLatencyHint latencyHint,
+    int renderQuantumSize)
     : BaseAudioContextHostObject(
           std::make_shared<AudioContext>(
               sampleRate,
               androidOutputProfile,
               audioEventHandlerRegistry,
-              latencyHint),
+              latencyHint,
+              renderQuantumSize),
           runtime,
           callInvoker) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, outputLatency));

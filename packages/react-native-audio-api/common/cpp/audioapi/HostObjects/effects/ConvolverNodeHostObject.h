@@ -23,7 +23,7 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
 
   [[nodiscard]] size_t getMemoryPressure() const override {
     // Approximate IR-driven allocations: IR copy + partitioned convolver
-    // state + internal/intermediate DSP buffers ≈ 3 * IR bytes.
+    // state + intermediate DSP buffer ≈ 3 * IR bytes.
     return AudioNodeHostObject::getMemoryPressure() + 3 * irBytes_;
   }
 

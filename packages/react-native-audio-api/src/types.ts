@@ -50,6 +50,15 @@ export type AudioContextLatencyCategory =
   | 'interactive'
   | 'playback';
 
+/**
+ * `'default'` is 128 frames. `'hardware'` uses the length of the device's
+ * output callback, read once when the context is created (128 for an
+ * `OfflineAudioContext`). A number requests that many frames per render quantum
+ * and may be any integer from 1 to 6 times the context's sample rate (Web Audio
+ * API §2.5), not only a power of two.
+ */
+export type AudioContextRenderSizeHint = 'default' | 'hardware' | number;
+
 export interface AudioContextOptions {
   sampleRate?: number;
   /**
@@ -59,6 +68,7 @@ export interface AudioContextOptions {
    */
   latencyHint?: AudioContextLatencyCategory;
   androidOutputProfile?: AndroidOutputProfile;
+  renderSizeHint?: AudioContextRenderSizeHint;
 }
 
 export type AndroidOutputProfile = 'media' | 'voiceCommunication';
@@ -67,6 +77,7 @@ export interface OfflineAudioContextOptions {
   numberOfChannels: number;
   length: number;
   sampleRate: number;
+  renderSizeHint?: AudioContextRenderSizeHint;
 }
 
 export enum FileDirectory {

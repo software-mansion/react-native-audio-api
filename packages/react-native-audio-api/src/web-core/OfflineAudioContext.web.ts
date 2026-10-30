@@ -21,6 +21,7 @@ import ConvolverNode from './ConvolverNode.web';
 import DelayNode from './DelayNode.web';
 import ChannelMergerNode from './ChannelMergerNode.web';
 import ChannelSplitterNode from './ChannelSplitterNode.web';
+import { browserRenderQuantumSize } from './renderQuantumSize.web';
 
 export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
@@ -28,6 +29,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly listener: AudioListener;
   readonly sampleRate: number;
+  readonly renderQuantumSize: number;
 
   constructor(options: OfflineAudioContextOptions);
   constructor(numberOfChannels: number, length: number, sampleRate: number);
@@ -51,6 +53,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
     }
 
     this.sampleRate = this.context.sampleRate;
+    this.renderQuantumSize = browserRenderQuantumSize(this.context);
     this.destination = new AudioDestinationNode(this, this.context.destination);
     this.listener = new AudioListener(this, this.context.listener);
   }
