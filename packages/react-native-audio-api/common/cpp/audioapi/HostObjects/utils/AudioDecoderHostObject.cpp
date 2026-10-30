@@ -27,14 +27,9 @@ PromiseResolver rejectWithMessage(std::string message) {
   };
 }
 
-/// Wraps @p buffer in an `AudioBuffer` JS object, its sample memory reported to the JS garbage
-/// collector.
 PromiseResolver resolveWithAudioBuffer(std::shared_ptr<AudioBuffer> buffer) {
   return [buffer = std::move(buffer)](jsi::Runtime &runtime) {
-    auto hostObject = std::make_shared<AudioBufferHostObject>(buffer);
-    auto object = jsi::Object::createFromHostObject(runtime, hostObject);
-    object.setExternalMemoryPressure(runtime, hostObject->getSizeInBytes());
-    return object;
+    return AudioBufferHostObject::createJsObject(runtime, buffer);
   };
 }
 
