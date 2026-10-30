@@ -605,7 +605,7 @@
 }
 
 - (void)testOnSessionDeactivatedTransitionsInterruptedToPaused {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *fakeEngine = [self createFakeAudioEngine];
   fakeEngine.fakeRunning = NO;
   self.audioEngine.state = AudioEngineStateInterrupted;
 
