@@ -131,19 +131,25 @@ stream_from_simulator() {
     quoted_subsystems="$(printf ', "%s"' "${selected_subsystems[@]}")"
     clauses+=("subsystem IN {${quoted_subsystems#, }}")
   fi
+  local own_clauses=()
   if [[ ${#selected_modules[@]} -gt 0 ]]; then
     local quoted_modules
     quoted_modules="$(printf ', "%s"' "${selected_modules[@]}")"
-    clauses+=("category IN {${quoted_modules#, }}")
+    own_clauses+=("category IN {${quoted_modules#, }}")
   fi
   if [[ ${#selected_levels[@]} -gt 0 ]]; then
     local tag_matches
     tag_matches="$(printf ' OR eventMessage BEGINSWITH "[%s]"' "${selected_levels[@]}")"
+    own_clauses+=("(${tag_matches# OR })")
+  fi
+  if [[ ${#own_clauses[@]} -gt 0 ]]; then
+    local own_predicate
+    own_predicate="$(printf ' AND %s' "${own_clauses[@]}")"
     local other_subsystems="subsystem != \"$OWN_SUBSYSTEM\""
     if [[ "$level" == "error" ]]; then
       other_subsystems+=' AND (messageType == "error" OR messageType == "fault")'
     fi
-    clauses+=("((subsystem == \"$OWN_SUBSYSTEM\" AND (${tag_matches# OR })) OR ($other_subsystems))")
+    clauses+=("((subsystem == \"$OWN_SUBSYSTEM\"$own_predicate) OR ($other_subsystems))")
   fi
 
   local stream_level
@@ -176,26 +182,44 @@ stream_from_device() {
   for subsystem in "${selected_subsystems[@]+"${selected_subsystems[@]}"}"; do
     arguments+=(--subsystem "$subsystem")
   done
-  local module
-  for module in "${selected_modules[@]+"${selected_modules[@]}"}"; do
-    arguments+=(--category "$module")
-  done
+  local only_own_subsystem=false
+  if [[ ${#selected_subsystems[@]} -eq 1 && "${selected_subsystems[0]}" == "$OWN_SUBSYSTEM" ]]; then
+    only_own_subsystem=true
+  fi
+
+  if [[ "$only_own_subsystem" == true ]]; then
+    local module
+    for module in "${selected_modules[@]+"${selected_modules[@]}"}"; do
+      arguments+=(--category "$module")
+    done
+  fi
   case "$level" in
     error|warning) arguments+=(--no-info --no-debug) ;;
     debug) arguments+=(--no-debug) ;;
   esac
-  if [[ ${#selected_levels[@]} -gt 0 ]]; then
+  if [[ ${#selected_levels[@]} -gt 0 ]] || [[ "$only_own_subsystem" == false && ${#selected_modules[@]} -gt 0 ]]; then
     # A line is "<time> <process>{<image>}[<pid>] <TYPE>: <message> [<subsystem>][<category>]",
     # and a line is kept when any --regex matches it.
     local own_label="\\[${OWN_SUBSYSTEM//./\\.}\\]\\[[^]]*\\]\$"
-    local level_alternatives
-    level_alternatives="$(IFS='|'; echo "${selected_levels[*]}")"
+    local module_pattern="[^]]*"
+    if [[ ${#selected_modules[@]} -gt 0 ]]; then
+      module_pattern="($(IFS='|'; echo "${selected_modules[*]}"))"
+    fi
+    local own_matched_label="\\[${OWN_SUBSYSTEM//./\\.}\\]\\[$module_pattern\\]\$"
+    local own_line=" $own_matched_label"
+    if [[ ${#selected_levels[@]} -gt 0 ]]; then
+      local level_alternatives
+      level_alternatives="$(IFS='|'; echo "${selected_levels[*]}")"
+      own_line=">: \\[($level_alternatives)\\] .* $own_matched_label"
+    fi
     local other_subsystem_line="^(?!.* $own_label)"
     if [[ "$level" == "error" ]]; then
       other_subsystem_line+=".*?\\] <(ERROR|FAULT)>: "
     fi
-    arguments+=(--regex ">: \\[($level_alternatives)\\] .* $own_label")
-    arguments+=(--regex "$other_subsystem_line")
+    arguments+=(--regex "$own_line")
+    if [[ "$only_own_subsystem" == false ]]; then
+      arguments+=(--regex "$other_subsystem_line")
+    fi
   fi
 
   exec pymobiledevice3 "${arguments[@]}"
