@@ -17,6 +17,8 @@ Options:
   --option LABEL          Add a choice option (repeatable, used with --mode choice).
   --pass-options LIST     Comma-separated 1-based option indices that count as a pass
                           (e.g. "1" or "1,2"). Selecting any other option exits with 1.
+  --continue-options LIST Comma-separated 1-based option indices that count as a failure
+                          but exit 2 so the test can keep going.
   --gui                   Use native macOS dialogs (osascript) instead of terminal stdin.
   --help, -h              Show this help.`);
 }
@@ -33,6 +35,7 @@ function parseArguments(argv) {
   let useGui = false;
   const options = [];
   const passOptions = new Set();
+  const continueOptions = new Set();
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -88,6 +91,21 @@ function parseArguments(argv) {
         i += 1;
         break;
       }
+      case '--continue-options': {
+        const value = argv[i + 1];
+        if (!value) {
+          fail('--continue-options needs a value');
+        }
+        for (const item of value.split(',')) {
+          const parsed = Number.parseInt(item.trim(), 10);
+          if (!Number.isFinite(parsed) || parsed < 1) {
+            fail(`Invalid option number in --continue-options: '${item}'`);
+          }
+          continueOptions.add(parsed);
+        }
+        i += 1;
+        break;
+      }
       case '--gui':
         useGui = true;
         break;
@@ -111,7 +129,15 @@ function parseArguments(argv) {
     fail('--mode choice requires at least two --option values.');
   }
 
-  return { mode, message, journalFile, options, passOptions, useGui };
+  return {
+    mode,
+    message,
+    journalFile,
+    options,
+    passOptions,
+    continueOptions,
+    useGui,
+  };
 }
 
 function padTwo(value) {
@@ -272,6 +298,7 @@ async function runChoicePrompt({
   message,
   options,
   passOptions,
+  continueOptions,
   journalFile,
   tty,
 }) {
@@ -368,14 +395,16 @@ async function runChoicePrompt({
   );
 
   if (passOptions.size > 0 && !passOptions.has(selectedIndex)) {
+    const keepGoing = continueOptions.has(selectedIndex);
+    const continuation = keepGoing ? '; continuing' : '';
     appendJournal(
       journalFile,
-      `[test:failed] Human reported non-passing outcome [${selectedIndex}] ${selectedLabel}`
+      `[test:failed] Human reported non-passing outcome [${selectedIndex}] ${selectedLabel}${continuation}`
     );
     console.error(
-      `Test failed based on human verification: [${selectedIndex}] ${selectedLabel}`
+      `Test failed based on human verification: [${selectedIndex}] ${selectedLabel}${continuation}`
     );
-    process.exit(1);
+    process.exit(keepGoing ? 2 : 1);
   }
 }
 

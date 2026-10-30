@@ -1,0 +1,7 @@
+executionPrerequisite: The Recorder demo is in the foreground after the meet.jit.si interruption, still showing Recording
+steps:
+  - echo: Stop the interrupted recording and start playback
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Ready to Play' } }
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Playing...' } }

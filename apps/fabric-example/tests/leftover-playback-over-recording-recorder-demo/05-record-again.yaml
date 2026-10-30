@@ -1,0 +1,9 @@
+executionPrerequisite: The Recorder demo has finished or is still playing the interrupted take
+steps:
+  - echo: Return to idle if playback is still running, then start another recording
+  - when: { text: { in: { id: record-status }, equals: 'Playing...' } }
+    steps:
+      - tap: { id: record-toggle }
+      - await: { text: { in: { id: record-status }, equals: Idle } }
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Recording...' } }
