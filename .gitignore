@@ -132,4 +132,5 @@ coverage-html/
 
 # Fabric example execution logs and journals
 apps/fabric-example/logs/
+apps/fabric-example/tests/**/logs/
 

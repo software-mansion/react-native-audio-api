@@ -2,100 +2,178 @@
 sidebar_position: 2
 sidebar_custom_props:
   tags:
-    - plan
     - wip
 ---
 
 # Semi-Automated End-to-End Testing, Debugging and Evidence Collection System (S.A.T.D.E.C.S.)
 
 ## Rationale
-Some functionalities are only manually tested from time to time. It is because they are not trivially testable automatically (they might require user interaction and/or interaction with the environment). Because of that, the testing process itself is not well defined. Finding regressions is hard and time consuming. Even when a regression is spotted, it is hard to navigate through the evidence, because it first needs to be manually collected from multiple places and filtered. Much of the work can be automated.
 
-## Solution
-### Features
-The system would provide the following:
-* method for manually testing features that aren't trivially testable automatically;
-  * Even if there existed an automatic method, it might be unfeasible to implement it from day one.
-* uniform framework for creating end-to-end tests;
-* logging system with the following features:
-  * convenient collection of logs for later analysis,
-  * journaling the call trace,
-  * Obj C/Kotlin, C++ and JS logs in one timeline,
-  * human observations of behavior,
-  * robust filtering of all of the above;
-* formalized instructions on how to test all functionalities;
-* good integration with agents.
-  * Agents should be able to write and execute tests in this framework. It would make it easier for them to ask for human feedback in the process of debugging.
+Some audio features cannot be tested by fully automated E2E tests alone because they require physical or environmental interaction (speaking into a microphone, plugging or unplugging headphones, answering a phone call, locking the screen, or judging whether playback sounds clean). When these scenarios are tested purely by hand, the steps drift between runs and evidence is scattered across Xcode/Logcat output and ad-hoc notes.
 
-### Flow
-The key component is a computer interface (e.g. a CLI).
-* When a programmer runs a test, it performs all actions that can be automated on a phone (e.g. navigating screens in the Fabric Example).
-* Once a human interaction is necessary, an appropriate instruction is displayed and a prompt that allows for providing feedback that will be saved for future analysis. For example it might tell the human to say something, to interrupt the app with another app. Once done, the human journals the outcome (either by picking one of the predefined options or by writing with prose).
-* When a test (or a subset of tests) is finished, all relevant logs are available on the development machine.
-* It is then possible to filter the logs according to the following criteria:
-  * programming language,
-  * modules, functions,
-  * whether it is a log or a human journal.
+This system standardizes semi-automated testing in `apps/fabric-example`:
 
-### Relation to current solutions
-Currently, there are already multiple Fabric Example tests and they would work well with the above generalization. It allows to run all of the tests in a single run with minimal tester interaction. When any of the tests fails, it would allow to easily access, filter and navigate the timeline of tests executions and outcomes from a computer. It is convenient to control the testing process from a computer, but it doesn't need to be necessary.
+- **Automated device steps** are driven by [Argent](https://docs.swmansion.com/argent/) YAML fragment workflows.
+- **Human interactions and observations** are requested between workflows via interactive CLI prompts.
+- **Native, JavaScript, and human journal logs** are streamed in parallel and merged chronologically into a single timestamped `.log` file per run.
 
-### Logs structure
-Each run should be stored in a folder named by the commit hash, optionally name of what it tests and a timestamp. The folder would store logs from all programming languages and also the journal. It is not necessary to store all logs in a single file as it would get too messy. One thing is to keep in mind that all logs have timestamps. It allows for later combining it into one timeline. The tool that would display the combined timeline should also have options to trigger the filters. It also might be beneficial to filter logs before saving them to the drive, so they don't take too much space.
+---
 
-## Implementation order
-### Basic features
-The initial implementation should only consist of what is most useful in the short term:
+## Practical Guide
 
-* configurable logging system on iOS in the Objective C codebase;
-  * logs code only compiled on debug target,
-  * ability to trigger trace logs on/off on runtime (via an environment variable for example),
-* standardized collection of logs;
-* minimal tool that records logs and allows the tester to journal their experience with respect to chronology;
-* instructions in internaldocs on how to test some functionalities that require human interaction.
+### Quick Start & Running Tests
 
-### Maximizing automation
-Above implementation makes testing and debugging significantly easier. Yet it still leaves place for automating multiple steps of a test and doesn't allow to formalize them in a test language. Because of that, agents have less possibilities of debugging.
+Tests run against an already running `FabricExample` app instance.
 
-There are a few possible solutions. The main problem is that most end-to-end mobile testing frameworks don't have a step that allows for a manual interaction.
+:::note Physical iOS Device Setup
+When running on a physical iPhone, make sure **Developer Mode** is enabled (**Settings → Privacy & Security → Developer Mode**) and **Enable UI Automation** is turned **ON** under **Settings → Developer → Enable UI Automation**. On the first Argent run, trust the developer certificate under **Settings → General → VPN & Device Management**.
+:::
 
-#### Argent
-##### Approach: `ask.mjs` script without arguments
-The tests could be written in Argent via YAML flow files. Argent has a directive for executing local scripts. The script that would be run would display a prompt for the tester that would allow to collect the feedback in prose:
+```bash
+# 1. Start Metro (if using a debug build)
+yarn start
 
-```yaml
-- echo: Interrupt playback with a phone call, then say whether audio resumed.
-- script: { path: ../../scripts/ask.mjs, timeout: 180000 }
+# 2. Build and launch FabricExample with native trace logs (iOS)
+yarn ios --level trace             # device-first: USB iPhone or booted simulator
+# or: yarn ios --simulator --level trace
+
+# 3. Run all semi-automated E2E tests sequentially
+yarn test:e2e
+
+# 4. Or list and run a specific test
+yarn test:e2e --list
+yarn test:e2e recording-and-playback
+yarn test:e2e recording-and-playback --simulator --level debug
 ```
 
-There are two possible problems with this approach: According to [Argent docs](https://docs.swmansion.com/argent/docs/reference/flow-yaml/#local-scripts), local scripts are meant for "setup or cleanup that device steps cannot do", so this solution serves as a workaround. Another problem is that the `script` directive doesn't allow to pass any arguments to the script, therefore the following **would not** work:
+All flags passed to `yarn test:e2e` (`--device <udid>`, `--simulator`, `--level <level>`, `--gui`, `--grep <regex>`) are forwarded directly to each test's `run.sh` script.
 
-```yaml
- - script:
-     path: ../../scripts/ask.mjs
-     args: ["Interrupt playback with a phone call", "Outcome A", "Outcome B"]
+When a test finishes, it prints the location of the final merged evidence file:
+`apps/fabric-example/tests/<test-name>/logs/<commit>_<test-name>_<timestamp>.log`.
+
+---
+
+### Writing a New Test
+
+The simplest way to create a new test is to describe the scenario to an AI agent (what automated UI steps should run, when the human should interact, and what outcome should be verified) and let the agent generate the `run.sh` script and record the Argent `.yaml` fragments.
+
+Each test lives in its own directory under `apps/fabric-example/tests/<test-name>/`:
+
+```
+apps/fabric-example/tests/<test-name>/
+├── 01-start-recording.yaml    # Argent fragment before human interaction
+├── 02-stop-and-verify.yaml    # Argent fragment after human interaction
+└── run.sh                     # Orchestration script (executable)
 ```
 
-Without arguments, the prompt dialog would not display the instruction for the tester and would not contain predefined answers. That is only an inconvenience when the tester is reading the terminal where the `echo` is printed. During an agent run the tester may see only the dialog, so the instruction never reaches them. The dialog also cannot be an `stdin` prompt in that terminal, because the tool-server starts the script as a child process, and that process does not read the terminal's keyboard.
+#### 1. Test Script (`run.sh`)
 
-##### Approach: Modify Argent
-There are two possible ways to adjust Argent codebase for the usecase of live interaction with a tester:
-* The simplest solution is to add support for commandline arguments to the scripts.
-* Another is to straightly ask the Argent team to add support for a new `prompt` directive. It would allow to add an option of human interaction and feedback, when it is impossible to automize something. It could have the following syntax:
+Create `apps/fabric-example/tests/<test-name>/run.sh` and make it executable (`chmod +x run.sh`):
 
-  ```yaml
-  - prompt:
-      instruction: "Say something and tell whether the recording can be heard clearly."
-      outcomes: ["Outcome A", "Outcome B"]
-  ```
+#### 2. Argent Fragment Workflows (`.yaml`)
 
-##### Approach: Split a flow into multiple files
-Another possible solution is to invert the direction of communication between Argent and this system. Rather than calling the `ask.mjs` script from within an Argent workflow, create a script that executes Argent `.yaml` workflows as a consistent subsequences of automated steps. This makes it easy to request human interaction or feedback between two distinct Argent workflows.
+Every workflow `.yaml` in `apps/fabric-example/tests/` must be a **fragment** denoted with `executionPrerequisite: ...`. It shouldn't have a `launch:`.
 
-Such an end-to-end (E2E) test can be expressed via a shell, JS or Python script.
+#### 3. Available Prompt Types
 
-#### Appium
-One of the alternative testing frameworks is [Appium](https://github.com/appium/appium). It's got the following features:
-* It supports physical iPhones and Android devices.
-* The tests can be written in a programming language (including JS and Java), which allows for extending them with custom instructions such as a prompt for a human to do something and provide feedback.
-* It can be controlled by agents through [`appium-mcp`](https://github.com/appium/appium-mcp).
+The following functions are provided after sourcing `test-harness.sh`:
+
+- `prompt_action "<instruction>"`: Instructs the human to perform an action. Appends `[prompt:action:start]` and `[prompt:action:done]` (with any optional human note) to `journal.log`.
+- `prompt_choice "<question>" [--pass "1,2"] "<option 1>" "<option 2>" ...`: Presents numbered choices plus an automatic `Other (provide custom answer)` option. If `--pass` is specified and the user selects a non-passing option, logs `[test:failed]` and exits non-zero.
+- `prompt_text "<question>"`: Prompts for free-form prose notes.
+- `journal_note "<text>"`: Appends an arbitrary timestamped `[journal] <text>` line to `journal.log`.
+
+Add `--gui` to `run.sh` or pass it via CLI to render prompts as native macOS dialogs (`osascript`) when running in environments without an interactive TTY.
+
+Choice prompt example:
+
+```text
+── Human Verification ────────────────────────────────────────────────────
+What did you observe when Siri was activated?
+─────────────────────────────────────────────────────────────────────────
+  1) Recording indicator stayed orange and resumed smoothly
+  2) Recording stopped immediately and did not resume
+  3) App crashed or audio became distorted
+  4) Other (provide custom answer)
+
+Select [1-4]: 1
+Optional note (Enter to skip): audio resumed within ~0.5s after dismissing Siri
+```
+
+What gets recorded in the `.log` file:
+
+```text
+2026-10-29 19:20:21.115 [journal] [prompt:question] What did you observe when Siri was activated?
+2026-10-29 19:20:29.440 [journal] [prompt:answer] What did you observe when Siri was activated? -> [1] Recording indicator stayed orange and resumed smoothly (note: audio resumed within ~0.5s after dismissing Siri)
+```
+
+If the tester selects option `2`, `3`, or `4`, the test harness logs `[test:failed]` and exits with code `1`, failing the run while preserving all captured native and JS logs up to that point.
+
+---
+
+### Interactive Manual Journaling
+
+For exploratory manual debugging without an Argent script:
+
+```bash
+yarn journal-execution --name siri-interruption --subsystem 'audioapi|js' --level trace
+```
+
+- Streams filtered logs live to the terminal.
+- Press **any key** to enter interactive journaling mode: terminal output freezes while background logs continue buffering, and an alternate screen prompt opens (`Enter` to save, `Esc` to discard).
+- Press **`Ctrl+D`** to exit and save the chronologically merged log file in `apps/fabric-example/logs/<commit>[_<name>]_<timestamp>.log`.
+
+---
+
+### Commands Summary
+
+| Command                                        | Script                             | Purpose                                                |
+| ---------------------------------------------- | ---------------------------------- | ------------------------------------------------------ |
+| `yarn test:e2e`                                | `scripts/run-e2e-test.sh`          | Runs all semi-automated tests sequentially.            |
+| `yarn test:e2e --list`                         | `scripts/run-e2e-test.sh`          | Lists runnable tests in `apps/fabric-example/tests/`.  |
+| `yarn test:e2e <name> [flags]`                 | `scripts/run-e2e-test.sh`          | Runs a specific test with optional target/level flags. |
+| `yarn journal-execution [flags]`               | `scripts/journal-execution.mjs`    | Standalone interactive log streaming and journaling.   |
+| `yarn workspace fabric-example log:stream:ios` | `scripts/log-stream-ios.sh`        | Streams filtered iOS logs from device or simulator.    |
+| `yarn ios [--level trace]`                     | `scripts/build-and-run-ios.sh`     | Builds and launches iOS app with log level.            |
+| `yarn android`                                 | `scripts/build-and-run-android.sh` | Builds and launches Android app.                       |
+
+---
+
+## Details
+
+### Log Filtering Layers
+
+Logs are filtered at three places depending on what is needed:
+
+1. **Compile-time:** In Release builds, `AUDIO_LOG_*` macros expand to no-ops, so no log calls or format strings exist in the binary.
+2. **Runtime:** In Debug builds, `Log.h` checks the `AUDIO_LOG_LEVEL` environment variable (`error` by default) once at startup and skips log calls above that verbosity level. It is especially useful with `trace` level logs, which tend to be located in significant number of places.
+3. **Computer:** `log-stream-ios.sh` filters the OS log stream by `--subsystem`, `--module`, and `--level`, and `journal-execution.mjs` optionally filters log lines with `--grep` before saving to `logs.log` (human `[journal]` entries are never filtered out).
+
+### Native iOS Logging (`Log.h`)
+
+Header: `packages/react-native-audio-api/ios/audioapi/ios/utils/Log.h`.
+
+Each Objective-C/Objective-C++ file defines `LOG_MODULE` before importing `<audioapi/ios/utils/Log.h>`:
+
+```objc
+#define LOG_MODULE AudioSessionManager
+#import <audioapi/ios/utils/Log.h>
+```
+
+- **Subsystem & Category:** Writes to Apple's unified log under `com.swmansion.audioapi` with the category set to `LOG_MODULE`.
+- **Levels:** `error`, `warning`, `debug`, and `trace`. Messages are prefixed with `[<level>]` (`AUDIO_LOG_ERROR`, `AUDIO_LOG_WARNING`, `AUDIO_LOG_DEBUG`, `AUDIO_LOG_TRACE`, and `AUDIO_LOG_TRACE_FUNCTION`).
+
+### Limitations
+
+Argent does not natively support interactive human prompts inside `.yaml` workflows (even its `script:` directive cannot pass arguments or read from the caller's terminal `stdin`). Because of this, each test must be split into multiple `.yaml` fragment files orchestrated by an external `run.sh` script. Native support in Argent for a `prompt` directive (or passing arguments to interactive scripts) would allow expressing an entire semi-automated test in a single `.yaml` file.
+
+---
+
+## ToDo
+- Android
+    - [ ] Log streaming
+    - [ ] Log journaling
+    - [ ] Tests support
+- Logging
+    - [ ] C++
+    - [ ] Kotlin

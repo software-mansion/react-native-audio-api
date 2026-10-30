@@ -24,6 +24,7 @@
     "android": "yarn workspace fabric-example build-and-run:android",
     "ios": "yarn workspace fabric-example build-and-run:ios",
     "journal-execution": "yarn workspace fabric-example journal-execution",
+    "test:e2e": "yarn workspace fabric-example test:e2e",
     "server": "yarn workspace fabric-example server",
     "start": "yarn workspace fabric-example start",
     "validate:fast": "bash scripts/validate.sh --fast",
