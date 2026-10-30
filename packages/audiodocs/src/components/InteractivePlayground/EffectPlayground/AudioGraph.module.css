@@ -1,0 +1,138 @@
+.container {
+  width: 100%;
+}
+
+.graph {
+  --audiodocs-graph-active-fill: var(--swm-red-light-20);
+  --audiodocs-graph-active-stroke: var(--swm-red-light-100);
+
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+  font-family: var(--swm-body-font), sans-serif;
+}
+
+:root[data-theme='dark'] .graph {
+  --audiodocs-graph-active-fill: var(--swm-red-dark-140);
+  --audiodocs-graph-active-stroke: var(--swm-red-dark-100);
+}
+
+.node {
+  outline: none;
+}
+
+.interactive {
+  cursor: pointer;
+}
+
+.box {
+  fill: var(--swm-background);
+  stroke: var(--swm-border);
+  stroke-width: 1.5;
+  transition: fill 0.15s ease, stroke 0.15s ease, filter 0.15s ease;
+}
+
+.interactive:hover .box {
+  filter: brightness(0.96);
+}
+
+:root[data-theme='dark'] .interactive:hover .box {
+  filter: brightness(1.25);
+}
+
+.interactive:focus-visible .box {
+  stroke: var(--swm-purple-light-100);
+  stroke-width: 2;
+}
+
+.effectActive .box {
+  fill: var(--audiodocs-graph-active-fill);
+  stroke: var(--audiodocs-graph-active-stroke);
+  stroke-width: 2;
+}
+
+.effectBypassed .box {
+  fill: var(--swm-off-background);
+  stroke-dasharray: 5 4;
+}
+
+.effectBypassed .label,
+.effectBypassed .sublabel,
+.effectBypassed .icon {
+  opacity: 0.55;
+}
+
+.label {
+  fill: var(--ifm-font-color-base);
+  font-family: var(--swm-code-font), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.sublabel {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.65;
+  font-size: 11px;
+  user-select: none;
+}
+
+.icon {
+  fill: var(--ifm-font-color-base);
+}
+
+.iconStroke {
+  fill: none;
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.spinner {
+  fill: none;
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 22 13;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: audiodocs-graph-spin 1s linear infinite;
+}
+
+@keyframes audiodocs-graph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.edge {
+  fill: none;
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.edgeDimmed {
+  opacity: 0.3;
+  stroke-dasharray: 4 4;
+}
+
+.arrowHead {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.8;
+}
+
+.arrowHeadDimmed {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.3;
+}
+
+.edgeLabel {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.65;
+  font-size: 11px;
+  user-select: none;
+}

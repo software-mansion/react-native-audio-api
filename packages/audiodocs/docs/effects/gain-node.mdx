@@ -5,10 +5,16 @@ sidebar_position: 6
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional, ReadOnly } from '@site/src/components/Badges';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useGainPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useGainPlayground';
 
 # GainNode
 
 The `GainNode` interface represents a change in volume (amplitude) of the audio signal. It is an [`AudioNode`](../core/audio-node.mdx) with a single `gain` [`AudioParam`](../core/audio-param.mdx) that multiplies every sample passing through it.
+
+Press play, then click the `GainNode` box in the graph to switch it on and off while listening. The slider changes the node in real time, the waveform shows the amplitude shrinking or growing, and the code below always matches what you hear.
+
+<InteractivePlayground tag="GainNode" usePlayground={useGainPlayground} />
 
 :::tip
 Direct, immediate gain changes often cause audible clicks. Use the scheduling methods of [`AudioParam`](../core/audio-param.mdx) (e.g. `linearRampToValueAtTime`, `exponentialRampToValueAtTime`) to smoothly interpolate volume transitions.

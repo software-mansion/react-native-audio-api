@@ -5,11 +5,17 @@ sidebar_position: 4
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional } from '@site/src/components/Badges';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useConvolverPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useConvolverPlayground';
 
 # ConvolverNode
 
 The `ConvolverNode` interface represents a linear convolution effect that can be applied to a signal given an impulse response.
 This is the easiest way to achieve `echo` or [`reverb`](https://en.wikipedia.org/wiki/Reverb_effect) effects.
+
+Press play, then click the `ConvolverNode` box to take the reverb away. The impulse response is generated in code: a burst of noise that fades out over the chosen duration, which the convolver smears across the dry signal.
+
+<InteractivePlayground tag="ConvolverNode" usePlayground={useConvolverPlayground} />
 
 
 :::info

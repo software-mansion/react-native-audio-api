@@ -1,0 +1,97 @@
+.figure {
+  --figure-source: var(--swm-blue-light-100);
+  --figure-effect: var(--swm-red-light-100);
+  --figure-analysis: var(--swm-green-light-100);
+  --figure-destination: var(--swm-purple-light-100);
+
+  width: 100%;
+  margin: 1.5rem 0;
+}
+
+:root[data-theme='dark'] .figure {
+  --figure-source: var(--swm-blue-dark-100);
+  --figure-effect: var(--swm-red-dark-100);
+  --figure-analysis: var(--swm-green-dark-100);
+  --figure-destination: var(--swm-purple-dark-100);
+}
+
+.scroller {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  min-width: 640px;
+  height: auto;
+  font-family: var(--swm-code-font), monospace;
+}
+
+.box {
+  fill: var(--swm-background);
+  stroke-width: 3;
+}
+
+.source {
+  stroke: var(--figure-source);
+  background-color: var(--figure-source);
+}
+
+.effect {
+  stroke: var(--figure-effect);
+  background-color: var(--figure-effect);
+}
+
+.analysis {
+  stroke: var(--figure-analysis);
+  background-color: var(--figure-analysis);
+}
+
+.destination {
+  stroke: var(--figure-destination);
+  background-color: var(--figure-destination);
+}
+
+.label {
+  fill: var(--ifm-font-color-base);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.edge {
+  fill: none;
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.arrowHead {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.85;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--ifm-font-color-base);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
