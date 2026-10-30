@@ -46,6 +46,7 @@
 @property(nonatomic, assign) AVAudioSessionCategoryOptions categoryOptions;
 @property(nonatomic, assign) BOOL allowHapticsAndSystemSoundsDuringRecording;
 @property(nonatomic, assign) double sampleRate;
+@property(nonatomic, assign) NSTimeInterval preferredIOBufferDuration;
 @property(nonatomic, assign) NSInteger inputNumberOfChannels;
 @property(nonatomic, strong) NSArray<FakeAudioPortDescription *> *availableInputs;
 @property(nonatomic, strong) FakeAudioRouteDescription *currentRoute;
@@ -134,6 +135,12 @@
   }
 
   return self.setActiveError == nil;
+}
+
+- (BOOL)setPreferredIOBufferDuration:(NSTimeInterval)duration error:(NSError **)error
+{
+  self.preferredIOBufferDuration = duration;
+  return YES;
 }
 
 - (BOOL)setPreferredInput:(FakeAudioPortDescription *)inPort error:(NSError **)error

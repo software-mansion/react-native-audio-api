@@ -14,6 +14,8 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/encoding/AdtsHeader.h>
 #import <audioapi/encoding/EncoderCapabilities.h>
+#import <audioapi/events/AudioEventProducer.h>
+#import <audioapi/events/IAudioEventHandlerRegistry.h>
 #import <audioapi/ios/core/utils/IOSEncoder.h>
 #import <audioapi/utils/AudioFileProperties.h>
 
@@ -31,6 +33,42 @@ static NSString *NSStringFromStdString(const std::string &value) {
 
 namespace audioapi {
 
+/// Contexts take an event producer from their registry on construction, so tests need a
+/// registry even when no event is ever dispatched.
+class NullAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
+ public:
+  uint64_t registerHandler(
+      AudioEvent eventName,
+      const std::shared_ptr<facebook::jsi::Function> &handler) override {
+    return 0;
+  }
+
+  void unregisterHandler(AudioEvent eventName, uint64_t listenerId) override {}
+
+  bool dispatchEvent(
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    return false;
+  }
+
+  bool dispatchEventFromAudioThread(
+      AudioEventProducer &producer,
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    return false;
+  }
+
+  std::shared_ptr<AudioEventProducer> createAudioEventProducer() override {
+    return std::make_shared<AudioEventProducer>(producerQueue_);
+  }
+
+ private:
+  /// Only ever a binding target for the producers handed out above; nothing is enqueued.
+  moodycamel::ConcurrentQueue<int> producerQueue_;
+};
+
 struct RecorderAdapterTestFixture {
   std::shared_ptr<OfflineAudioContext> context;
   std::shared_ptr<utils::graph::NodeHandle> handle;
@@ -42,8 +80,8 @@ struct RecorderAdapterTestFixture {
 
 static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
   RecorderAdapterTestFixture fixture;
-  fixture.context =
-      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr);
+  fixture.context = std::make_shared<OfflineAudioContext>(
+      2, 512, 44100.0f, std::make_shared<NullAudioEventHandlerRegistry>());
   auto adapterNode = std::make_unique<RecorderAdapterNode>(fixture.context);
   fixture.handle =
       std::make_shared<utils::graph::NodeHandle>(0, std::move(adapterNode));
@@ -277,7 +315,8 @@ public:
   self.audioEngine = [[FakeIOSRecorderAudioEngine alloc] init];
   self.nativeRecorder = [[FakeNativeAudioRecorder alloc] init];
 
-  _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<IAudioEventHandlerRegistry>());
+  _recorder = std::make_unique<TestableIOSAudioRecorder>(
+      std::make_shared<NullAudioEventHandlerRegistry>());
   self.originalNativeRecorder = _recorder->replaceNativeRecorder(self.nativeRecorder);
   self.nativeRecorder.onInputNotification = self.originalNativeRecorder.onInputNotification;
 }

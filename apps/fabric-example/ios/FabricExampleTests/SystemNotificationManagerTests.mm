@@ -155,6 +155,13 @@
   return true;
 }
 
+/// A fake never owns the AVAudioEngine a notification carries, so without this the manager
+/// would drop every configuration change as belonging to another engine.
+- (bool)isCurrentEngine:(AVAudioEngine *)engine
+{
+  return true;
+}
+
 @end
 
 @interface SNMFakeAudioSessionManager : AudioSessionManager
